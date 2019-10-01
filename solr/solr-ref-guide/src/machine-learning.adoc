@@ -575,6 +575,38 @@ The `kmeans` functions performs k-means clustering of the rows of a matrix.
 Once the clustering has been completed there are a number of useful functions available
 for examining the clusters and centroids.
 
+
+=== 2D Cluster Visualization
+
+The `zplot` function has direct support for plotting 2D clusters by using the *clusters* named parameter.
+The example demonstrates this capability by clustering and visualizing latitude and longitude points.
+
+In this example the `random` function draws a sample of records from the nyc311 (complaints database) collection where
+the complaint description matches "rat sighting" and latitude is populated in the record. The latitude and longitude fields
+are then vectorized and added as rows to a matrix. The matrix is transposed so each row contains a single latitude, longitude
+point. The `kmeans` function is then used to cluster the latitude and longitude points into 5 clusters. The `zplot` function
+is then used visualize the clusters as a scatter chart.
+
+image::images/math-expressions/2Dcluster.png[]
+
+The scatter plot above shows each lat/lon point plotted on a Euclidean plain. Each cluster is shown in
+a different. This plot provides a significant amount of information about size, shape and dispersion
+of the different clusters.
+
+The centroids of each cluster can then be easily plotted on a *map* to visualize the center of the
+clusters. In the example below the centroids are extracted from the clusters using the `getCentroids`
+function, which returns a matrix of the centroids. In example the matrix contains 2D lan/lon points.
+
+The `colAt` function is then used to extract the latitude and longitude columns by index from the matrix, which
+are plotted using `zplot`. A map visualization is used display the centroid clusters.
+
+image::images/math-expressions/2Dcentroids.png[]
+
+The map can be zoomed to understand clearly where the center of clusters lie on the map.
+
+image::images/math-expressions/centroidzoom.png[]
+
+
 === Phrase Extraction
 
 In the example below the `kmeans` function is used to cluster a result set from a movie review data-set
@@ -646,7 +678,7 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
-=== 2D Cluster Visualization
+
 
 == Multi K-Means Clustering
 
