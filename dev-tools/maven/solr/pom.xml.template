@@ -55,21 +55,21 @@
       <subscribe>solr-user-subscribe@lucene.apache.org</subscribe>
       <unsubscribe>solr-user-unsubscribe@lucene.apache.org</unsubscribe>
       <archive>
-        http://mail-archives.apache.org/mod_mbox/solr-user/
+        https://mail-archives.apache.org/mod_mbox/solr-user/
       </archive>
     </mailingList>
     <mailingList>
       <name>Java Developer List</name>
       <subscribe>dev-subscribe@lucene.apache.org</subscribe>
       <unsubscribe>dev-unsubscribe@lucene.apache.org</unsubscribe>
-      <archive>http://mail-archives.apache.org/mod_mbox/lucene-dev/</archive>
+      <archive>https://mail-archives.apache.org/mod_mbox/lucene-dev/</archive>
     </mailingList>
     <mailingList>
       <name>Java Commits List</name>
       <subscribe>commits-subscribe@lucene.apache.org</subscribe>
       <unsubscribe>commits-unsubscribe@lucene.apache.org</unsubscribe>
       <archive>
-        http://mail-archives.apache.org/mod_mbox/lucene-java-commits/
+        https://mail-archives.apache.org/mod_mbox/lucene-java-commits/
       </archive>
     </mailingList>
   </mailingLists>
@@ -78,12 +78,12 @@
     <repository>
       <id>maven-restlet</id>
       <name>Public online Restlet repository</name>
-      <url>http://maven.restlet.org</url>
+      <url>https://maven.restlet.com</url>
     </repository>
     <repository>
       <id>releases.cloudera.com</id>
       <name>Cloudera Releases</name>
-      <url>https://repository.cloudera.com/artifactory/libs-release</url>
+      <url>https://repository.cloudera.com/artifactory/libs-release-local/</url>
     </repository>
   </repositories>
   <build>
