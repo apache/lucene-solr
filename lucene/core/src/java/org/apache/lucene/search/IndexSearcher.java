@@ -479,7 +479,7 @@ public class IndexSearcher {
       private final HitsThresholdChecker hitsThresholdChecker = (executor == null || leafSlices.length <= 1) ? HitsThresholdChecker.create(TOTAL_HITS_THRESHOLD) :
           HitsThresholdChecker.createShared(TOTAL_HITS_THRESHOLD);
 
-      private final BottomValueChecker bottomValueChecker = BottomValueChecker.createMaxBottomScoreChecker();
+      private final BottomValueChecker bottomValueChecker = (executor == null || leafSlices.length <= 1) ? null : BottomValueChecker.createMaxBottomScoreChecker();
 
       @Override
       public TopScoreDocCollector newCollector() throws IOException {
@@ -611,7 +611,8 @@ public class IndexSearcher {
 
       private final HitsThresholdChecker hitsThresholdChecker = (executor == null || leafSlices.length <= 1) ? HitsThresholdChecker.create(TOTAL_HITS_THRESHOLD) :
           HitsThresholdChecker.createShared(TOTAL_HITS_THRESHOLD);
-      private final BottomValueChecker bottomValueChecker = (executor == null || leafSlices.length <= 1) ? BottomValueChecker.createMaxBottomScoreChecker() : null;
+
+      private final BottomValueChecker bottomValueChecker = (executor == null || leafSlices.length <= 1) ? null : BottomValueChecker.createMaxBottomScoreChecker();
 
       @Override
       public TopFieldCollector newCollector() throws IOException {

@@ -145,6 +145,10 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
           }
 
           if (score <= pqTop.score) {
+            // the document is not competitive but we need to update the minimum competitive score
+            // if we just reached the total hits threshold or if the global minimum score (bottomValueChecker)
+            // has been updated
+            updateMinCompetitiveScore(scorer, totalHitsRelation == TotalHits.Relation.EQUAL_TO);
             // Since docs are returned in-order (i.e., increasing doc Id), a document
             // with equal score to pqTop.score cannot compete since HitQueue favors
             // documents with lower doc Ids. Therefore reject those docs too.

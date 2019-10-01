@@ -165,8 +165,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
             add(slot, doc);
             if (queueFull) {
               comparator.setBottom(bottom.slot);
-              updateMinCompetitiveScore(scorer, true);
             }
+            updateMinCompetitiveScore(scorer, true);
           }
         }
 
@@ -251,6 +251,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
           final int topCmp = reverseMul * comparator.compareTop(doc);
           if (topCmp > 0 || (topCmp == 0 && doc <= afterDoc)) {
             // Already collected on a previous page
+            updateMinCompetitiveScore(scorer, totalHitsRelation == Relation.EQUAL_TO);
             return;
           }
 
@@ -275,8 +276,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
             queueFull = collectedHits == numHits;
             if (queueFull) {
               comparator.setBottom(bottom.slot);
-              updateMinCompetitiveScore(scorer, true);
             }
+            updateMinCompetitiveScore(scorer, true);
           }
         }
       };
