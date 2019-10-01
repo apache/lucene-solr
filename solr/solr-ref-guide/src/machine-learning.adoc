@@ -327,12 +327,12 @@ engines query, term statistics, scoring and ranking capability to perform a fast
 nearest neighbor search for similar documents over large distributed indexes.
 
 The results of this
-search can be used directly or provide *candidates* records for machine learning operations such
+search can be used directly or provide *candidates* for machine learning operations such
 as a secondary knn vector search.
 
 The example below shows the `knnSearch` function run over a movie reviews data set. The
-search returns the 50 documents most similar to document id *83e9b5b0-...*
-based on the similarity of the *review_t* field which contains
+search returns the 50 documents most similar to document id *83e9b5b0-...* based on
+the similarity of the *review_t* field which contains
 the text of the review. The *mindf* and *maxdf* specify the min and max document frequency of the terms
 used to perform the search. This makes the query faster by eliminating very high frequency terms
 and terms and also improves accuracy be removing noise from search.
@@ -370,20 +370,35 @@ image::images/math-expressions/knn.png[]
 
 == K-Nearest Neighbor Regression
 
-K-nearest neighbor regression is a non-linear, multi-variate regression method. Knn regression is a lazy learning
+K-nearest neighbor regression is a non-linear, bivariate and multivariate regression method.
+Knn regression is a lazy learning
 technique which means it does not fit a model to the training set in advance. Instead the
 entire training set of observations and outcomes are held in memory and predictions are made
 by averaging the outcomes of the k-nearest neighbors.
+
+The `knnRegress` function is used to perform nearet neighbor regression.
+
+
+=== 2D Non-Linear Regression
+
+The example below shows the *regression plot* for knn regression applied to a 2D scatter plot.
+
+In this example the `random` function is used to draw 500 random samples from the *logs* collection
+containing two fields *filesize_d* and *eresponse_d*. The sample is then vectorized with the
+*filesize_d* field stored in a vector assigned to variable *x* and the *eresponse_d* stored in
+variable *y*. The `knnRegress` function is the applied with 20 as the nearest neighbor parameter.
+The `predict` function is then called to predict values for original *x* vector. Finally
+`zplot` is used to plot original *x* and *y* vectors along with the predictions.
+
+image::images/math-expressions/knnRegress.png[]
+
+=== Multivariate Non-Linear Regression
 
 The `knnRegress` function prepares the training set for use with the `predict` function.
 
 Below is an example of the `knnRegress` function. In this example 10,000 random samples
 are taken, each containing the variables `filesize_d`, `service_d` and `response_d`. The pairs of
 `filesize_d` and `service_d` will be used to predict the value of `response_d`.
-
-
-image::images/math-expressions/knnRegress.png[]
-
 
 
 
