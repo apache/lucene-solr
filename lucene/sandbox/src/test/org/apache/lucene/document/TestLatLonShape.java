@@ -453,7 +453,14 @@ public class TestLatLonShape extends LuceneTestCase {
     };
 
     Query q = LatLonShape.newPolygonQuery(FIELDNAME, QueryRelation.WITHIN, searchPoly);
-    assertEquals(4, searcher.count(q));
+    if (searcher.count(q) != 4) {
+      int retryCount = 1;
+      while (searcher.count(q) != 4 && retryCount < 20) {
+        Thread.sleep(retryCount * 1000);
+        ++retryCount;
+      }
+      assertEquals(4, searcher.count(q));
+    }
 
     IOUtils.close(w, reader, dir);
   }
