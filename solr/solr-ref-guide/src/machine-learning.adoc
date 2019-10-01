@@ -699,7 +699,7 @@ When this expression is sent to the `/stream` handler it responds with:
 == Multi K-Means Clustering
 
 K-means clustering will produce different results depending on
-the initial placement of the centroids. K-means is fast enough
+the initial placement of the centroids. K-means is also fast enough
 that multiple trials can be performed and the best outcome selected.
 
 The `multiKmeans` function runs the k-means clustering algorithm for a given number of trials and selects the
@@ -710,13 +710,13 @@ rather than a single trial of the `kmeans` function.
 
 [source,text]
 ----
-let(a=select(random(collection3, q="body:oil", rows="500", fl="id, body"),
+let(a=select(search(reviews, q="review_t:\"star wars\"", rows="500"),
                     id,
-                    analyze(body, body_bigram) as terms),
-    b=termVectors(a, maxDocFreq=.09, minDocFreq=.03, minTermLength=14, exclude="_,copyright"),
-    c=multiKmeans(b, 5, 100),
-    d=getCentroids(c),
-    e=topFeatures(d, 5))
+                    analyze(review_t, text_bigrams) as terms),
+    vectors=termVectors(a, maxDocFreq=.10, minDocFreq=.03, minTermLength=13, exclude="_,br,have,',what"),
+    clusters=multiKmeans(vectors, 5, 15),
+    centroids=getCentroids(clusters),
+    phrases=topFeatures(centroids, 5))
 ----
 
 This expression returns the following response:
@@ -727,47 +727,46 @@ This expression returns the following response:
   "result-set": {
     "docs": [
       {
-        "e": [
+        "phrases": [
           [
-            "enron enronxgate",
-            "energy trading",
-            "energy markets",
-            "energy services",
-            "unleaded gasoline"
+            "science fiction",
+            "original star",
+            "production values",
+            "fiction films",
+            "forbidden planet"
           ],
           [
-            "maharashtra state",
-            "electricity board",
-            "state electricity",
-            "energy trading",
-            "chief financial"
+            "empire strikes",
+            "princess leia",
+            "luke skywalker",
+            "phantom menace"
           ],
           [
-            "price controls",
-            "electricity prices",
-            "francisco chronicle",
-            "wholesale electricity",
-            "power generators"
+            "carrie fisher",
+            "harrison ford",
+            "luke skywalker",
+            "empire strikes",
+            "original films"
           ],
           [
-            "southern california",
-            "california edison",
-            "public utilities",
-            "francisco chronicle",
-            "utilities commission"
+            "phantom menace",
+            "original trilogy",
+            "harrison ford",
+            "character development",
+            "john williams"
           ],
           [
-            "california edison",
-            "power purchases",
-            "system operator",
-            "term contracts",
-            "independent system"
+            "rebel alliance",
+            "empire strikes",
+            "princess leia",
+            "original trilogy",
+            "luke skywalker"
           ]
         ]
       },
       {
         "EOF": true,
-        "RESPONSE_TIME": 1182
+        "RESPONSE_TIME": 84
       }
     ]
   }
