@@ -120,6 +120,9 @@ Other
 
 * LUCENE-8975: Code Cleanup: Use entryset for map iteration wherever possible.
 
+* LUCENE-8993, LUCENE-8807: Changed all repository and download references in build files
+  to HTTPS. (Uwe Schindler)
+
 ======================= Lucene 8.2.0 =======================
 
 API Changes
