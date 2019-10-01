@@ -677,6 +677,14 @@ public abstract class FieldComparator<T> {
       }
     }
 
+    private BytesRef getValueForDoc(int docID) throws IOException {
+      if (termsIndex.advanceExact(docID)) {
+        return termsIndex.binaryValue();
+      } else {
+        return null;
+      }
+    }
+
     @Override
     public int compare(int slot1, int slot2) {
       if (readerGen[slot1] == readerGen[slot2]) {
@@ -717,8 +725,9 @@ public abstract class FieldComparator<T> {
     }
 
     @Override
-    public Integer getDocValue(int docID) throws IOException {
-      return getOrdForDoc(docID);
+    public BytesRef getDocValue(int docID) throws IOException {
+      //return getOrdForDoc(docID);
+      return getValueForDoc(docID);
     }
 
     @Override

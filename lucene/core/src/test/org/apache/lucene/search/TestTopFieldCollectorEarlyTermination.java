@@ -18,10 +18,15 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -38,6 +43,7 @@ import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.lucene.util.TestUtil;
 
 public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
@@ -60,7 +66,8 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
 
   private void createRandomIndex(boolean singleSortedSegment) throws IOException {
     dir = newDirectory();
-    numDocs = atLeast(150);
+    //numDocs = atLeast(150);
+    numDocs = 5;
     final int numTerms = TestUtil.nextInt(random(), 1, numDocs / 5);
     Set<String> randomTerms = new HashSet<>();
     while (randomTerms.size() < numTerms) {
@@ -108,6 +115,20 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
     dir.close();
   }
 
+  private IndexSearcher createConcurrentSearcherWithSmallSlices(ExecutorService executor) {
+    return new IndexSearcher(reader, executor) {
+      @Override
+      protected LeafSlice[] slices(List<LeafReaderContext> leaves) {
+        ArrayList<LeafSlice> slices = new ArrayList<>();
+        for (LeafReaderContext ctx : leaves) {
+          slices.add(new LeafSlice(Arrays.asList(ctx)));
+        }
+
+        return slices.toArray(new LeafSlice[0]);
+      }
+    };
+  }
+
   public void testEarlyTermination() throws IOException {
     doTestEarlyTermination(false);
   }
@@ -124,45 +145,65 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
       for (LeafReaderContext ctx : reader.leaves()) {
         maxSegmentSize = Math.max(ctx.reader().numDocs(), maxSegmentSize);
       }
+      ExecutorService service = new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS,
+          new LinkedBlockingQueue<Runnable>(),
+          new NamedThreadFactory("TestIndexSearcher"));
       for (int j = 0; j < iters; ++j) {
-        final IndexSearcher searcher = newSearcher(reader);
-        final int numHits = TestUtil.nextInt(random(), 1, numDocs);
-        FieldDoc after;
-        if (paging) {
-          assert searcher.getIndexReader().numDocs() > 0;
-          TopFieldDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
-          after = (FieldDoc) td.scoreDocs[td.scoreDocs.length - 1];
-        } else {
-          after = null;
-        }
-        final TopFieldCollector collector1 = TopFieldCollector.create(sort, numHits, after, Integer.MAX_VALUE);
-        final TopFieldCollector collector2 = TopFieldCollector.create(sort, numHits, after, 1);
+        final IndexSearcher[] searchers = {newSearcher(reader), createConcurrentSearcherWithSmallSlices(service)};
+        for (IndexSearcher searcher : searchers) {
+          final int numHits = TestUtil.nextInt(random(), 1, numDocs);
+          FieldDoc after;
+          if (paging) {
+            assert searcher.getIndexReader().numDocs() > 0;
+            TopFieldDocs td = searcher.search(new MatchAllDocsQuery(), 10, sort);
+            after = (FieldDoc) td.scoreDocs[td.scoreDocs.length - 1];
+          } else {
+            after = null;
+          }
+          final TopFieldCollector collector1 = TopFieldCollector.create(sort, numHits, after, Integer.MAX_VALUE);
+          final TopFieldCollector collector2 = TopFieldCollector.create(sort, numHits, after, 1);
 
-        final Query query;
-        if (random().nextBoolean()) {
-          query = new TermQuery(new Term("s", RandomPicks.randomFrom(random(), terms)));
-        } else {
-          query = new MatchAllDocsQuery();
-        }
-        searcher.search(query, collector1);
-        searcher.search(query, collector2);
-        TopDocs td1 = collector1.topDocs();
-        TopDocs td2 = collector2.topDocs();
+          final Query query;
+          if (random().nextBoolean()) {
+            query = new TermQuery(new Term("s", RandomPicks.randomFrom(random(), terms)));
+          } else {
+            query = new MatchAllDocsQuery();
+          }
+          TopDocs td1;
+          TopDocs td2;
 
-        assertFalse(collector1.isEarlyTerminated());
-        if (paging == false && maxSegmentSize > numHits && query instanceof MatchAllDocsQuery) {
-          // Make sure that we sometimes early terminate
-          assertTrue(collector2.isEarlyTerminated());
+          if (searcher.getExecutor() != null) {
+            CollectorManager<TopFieldCollector, TopFieldDocs> collectorManager = TopFieldCollector.createSharedManager(sort,
+                numHits, after, 1);
+            td2 = searcher.search(query, collectorManager);
+            searcher.search(query, collector1);
+            td1 = collector1.topDocs();
+          } else {
+            searcher.search(query, collector1);
+            searcher.search(query, collector2);
+            td1 = collector1.topDocs();
+            td2 = collector2.topDocs();
+          }
+
+          assertFalse(collector1.isEarlyTerminated());
+          if (paging == false && maxSegmentSize > numHits && query instanceof MatchAllDocsQuery &&
+              searcher.getExecutor() == null) {
+            // Make sure that we sometimes early terminate
+            assertTrue(collector2.isEarlyTerminated());
+          }
+          if (collector2.isEarlyTerminated()) {
+            assertTrue(td2.totalHits.value >= td1.scoreDocs.length);
+            assertTrue(td2.totalHits.value <= reader.maxDoc());
+          } else {
+            if (searcher.getExecutor() == null) {
+              assertEquals(td2.totalHits.value, td1.totalHits.value);
+            }
+          }
+          CheckHits.checkEqual(query, td1.scoreDocs, td2.scoreDocs);
         }
-        if (collector2.isEarlyTerminated()) {
-          assertTrue(td2.totalHits.value >= td1.scoreDocs.length);
-          assertTrue(td2.totalHits.value <= reader.maxDoc());
-        } else {
-          assertEquals(td2.totalHits.value, td1.totalHits.value);
-        }
-        CheckHits.checkEqual(query, td1.scoreDocs, td2.scoreDocs);
       }
       closeIndex();
+      service.shutdown();
     }
   }
   
