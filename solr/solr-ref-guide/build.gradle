@@ -191,7 +191,7 @@ task bareBonesAsciiDoctor(type: org.asciidoctor.gradle.AsciidoctorTask) {
   backend "html5"
   logDocuments false
   separateOutputDirs false
-  
+
   options([
     header_footer: false,
     doctype: 'book',
@@ -237,43 +237,4 @@ task bareBonesHtmlValidation(type: JavaExec) {
   if (project.hasProperty("local.javadocs")) {
     args += "-check-all-relative-links"
   }
-}
-
-// general Asciidoc params for HTML conversion - barebones if still needed?
-asciidoctor {
-  doFirst {
-    println ("Starting Ref Guide build")
-  }
-  doLast {
-    println ("Finished Ref Guide build")
-  }
-  logDocuments = true
-  outputs.upToDateWhen { false }
-
-  backends 'html5'
-  sourceDir file('src/')
-  outputDir file('../build/solr-ref-guide/')
-  options doctype: 'book'
-
-  attributes [
-          /*
-    safemode: 'unsafe',
-    source-highlighter : 'coderay',
-    'figure-caption!' : '' ,
-    idprefix : '' ,
-    idseparator : '-' ,
-    icons : 'font' ,
-    icon-set : 'fa' ,
-    section-toc : ''
-           */
-  ]
-}
-
-// Jekyll for HTML conversion - doesn't work yet
-task jekyll(type: JRubyExec) {
-  dependsOn jrubyPrepare
-
-  script 'jekyll'
-  workingDir = file('src/')
-  scriptArgs 'build', workingDir
 }
