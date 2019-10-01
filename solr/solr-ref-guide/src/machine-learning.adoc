@@ -609,14 +609,30 @@ image::images/math-expressions/centroidzoom.png[]
 
 === Phrase Extraction
 
-In the example below the `kmeans` function is used to cluster a result set from a movie review data-set
-and then the top features are extracted from the cluster centroids.
+Clustering can also be used to extract key phrases from a text field in a search result set. The example below
+demonstrates this capability.
+
+NOTE: The example below works with TF-IDF _term vectors_.
+The section <<term-vectors.adoc#term-vectors,Text Analysis and Term Vectors>> offers
+a full explanation of this features.
+
+
+In the example the `search` function returns documents where the *review_t* field matches the phrase "star wars".
+The `select` function is run over the result set and applies the `analyze` function
+which uses the Lucene/Solr analyzer attached to the schema field *text_bigrams* to re-analyze the *review_t*
+field. This analyzer returns bigrams which are then annotated to documents in a field called *terms*.
+
+The `termVectors` function then creates TD-IDF term vectors from the bigrams stored in the *terms* field.
+The `kmeans` function is then used to cluster the bigram term vectors.
+Finally the top 5 features are extracted from the centroids an returned. Notice
+that the features are all bigram phrases with semantic significance to the result set. 
+
 
 [source,text]
 ----
-let(a=select(search(reviews, q="text_t:\"star wars\"", rows="500"),
+let(a=select(search(reviews, q="review_t:\"star wars\"", rows="500"),
                     id,
-                    analyze(text_t, text_bigrams) as terms),
+                    analyze(review_t, text_bigrams) as terms),
     vectors=termVectors(a, maxDocFreq=.10, minDocFreq=.03, minTermLength=13, exclude="_,br,have,',what"),
     clusters=kmeans(vectors, 5),
     centroids=getCentroids(clusters),
