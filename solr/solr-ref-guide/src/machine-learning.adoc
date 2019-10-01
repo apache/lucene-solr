@@ -322,7 +322,28 @@ When this expression is sent to the `/stream` handler it responds with:
 The `knnSearch` function returns the k-nearest neighbors
 for a document based on text similarity.
 Under the covers the `knnSearch` function
-uses the More Like This query parser plugin.
+uses the More Like This query parser plugin. This capability uses the search
+engines query, term statistics, scoring and ranking capability to perform a fast,
+nearest neighbor search for similar documents over large distributed indexes.
+
+The results of this
+search can be used directly or provide *candidates* records for machine learning operations such
+as a secondary knn vector search.
+
+The example below shows the `knnSearch` function run over a movie reviews data set. The
+search returns the 50 documents most similar to document id *83e9b5b0-...*
+based on the similarity of the *review_t* field which contains
+the text of the review. The *mindf* and *maxdf* specify the min and max document frequency of the terms
+used to perform the search. This makes the query faster by eliminating very high frequency terms
+and terms and also improves accuracy be removing noise from search.
+
+
+image::images/math-expressions/knnSearch.png[]
+
+NOTE: In this example the `select`
+function is used to truncate the review in the output to 220 characters to make it easier
+to read in a table.
+
 
 == K-Nearest Neighbor (KNN)
 

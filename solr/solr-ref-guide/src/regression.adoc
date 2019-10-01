@@ -135,7 +135,7 @@ let(a=random(logs, q="*:*", rows="5000", fl="filesize_d, response_d"),
 
 When this expression is sent to the `/stream` handler it responds with:
 
-[source,json]
+[source,text]
 ----
 {
   "result-set": {
@@ -271,11 +271,11 @@ independent variables and the `response_d` values, stored in variable *`d`*, as 
 [source,text]
 ----
 let(a=random(testapp, q="*:*", rows="30000", fl="filesize_d, load_d, response_d"),
-    b=col(a, filesize_d),
-    c=col(a, load_d),
-    d=col(a, response_d),
-    e=transpose(matrix(b, c)),
-    f=olsRegress(e, d))
+    x=col(a, filesize_d),
+    y=col(a, load_d),
+    z=col(a, response_d),
+    m=transpose(matrix(x, y)),
+    r=olsRegress(m, z))
 ----
 
 Notice in the response that the RSquared of the regression analysis is 1. This means that linear relationship between
