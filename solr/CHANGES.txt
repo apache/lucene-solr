@@ -259,6 +259,9 @@ Bug Fixes
 * SOLR-13712: JMX MBeans are not exposed because of race condition between creating platform mbean server and
   registering mbeans. (shalin)
 
+* SOLR-13802: Managed schema manipulations were not persisting the optional luceneMatchVersion that can be set
+  on an Analyzer. (Thomas Wöckinger)
+
 Other Changes
 ----------------------
 
