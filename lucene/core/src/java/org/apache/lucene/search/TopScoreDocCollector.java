@@ -62,8 +62,6 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
         @Override
         public void setScorer(Scorable scorer) throws IOException {
           super.setScorer(scorer);
-          // reset the minimum competitive score
-          minCompetitiveScore = 0f;
           updateMinCompetitiveScore(scorer);
         }
 
@@ -78,9 +76,9 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
           hitsThresholdChecker.incrementHitCount();
 
           if (score <= pqTop.score) {
-            if (totalHitsRelation == TotalHits.Relation.EQUAL_TO) {
-              // we can start setting the min competitive score if we just
-              // reached totalHitsThreshold
+            if (totalHitsRelation == TotalHits.Relation.EQUAL_TO && hitsThresholdChecker.isThresholdReached()) {
+              // we just reached totalHitsThreshold, we can start setting the min
+              // competitive score now
               updateMinCompetitiveScore(scorer);
             }
             // Since docs are returned in-order (i.e., increasing doc Id), a document
@@ -141,24 +139,24 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
 
           if (score > after.score || (score == after.score && doc <= afterDoc)) {
             // hit was collected on a previous page
-            if (totalHitsRelation == TotalHits.Relation.EQUAL_TO) {
-              // we can start setting the min competitive score if we just
-              // reached totalHitsThreshold
+            if (totalHitsRelation == TotalHits.Relation.EQUAL_TO && hitsThresholdChecker.isThresholdReached()) {
+              // we just reached totalHitsThreshold, we can start setting the min
+              // competitive score now
               updateMinCompetitiveScore(scorer);
             }
             return;
           }
 
           if (score <= pqTop.score) {
-            if (totalHitsRelation == TotalHits.Relation.EQUAL_TO) {
-              // we can start setting the min competitive score if we just
-              // reached totalHitsThreshold
+            if (totalHitsRelation == TotalHits.Relation.EQUAL_TO && hitsThresholdChecker.isThresholdReached()) {
+              // we just reached totalHitsThreshold, we can start setting the min
+              // competitive score now
               updateMinCompetitiveScore(scorer);
             }
+
             // Since docs are returned in-order (i.e., increasing doc Id), a document
             // with equal score to pqTop.score cannot compete since HitQueue favors
             // documents with lower doc Ids. Therefore reject those docs too.
-
             return;
           }
           collectedHits++;
@@ -255,9 +253,6 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
   }
 
   ScoreDoc pqTop;
-  // the minimum competitive score that is currently
-  // used by the underlying scorer (see setScorer)
-  float minCompetitiveScore;
   final HitsThresholdChecker hitsThresholdChecker;
   final BottomValueChecker bottomValueChecker;
 
@@ -288,44 +283,31 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
     return hitsThresholdChecker.scoreMode();
   }
 
-  public boolean isQueueFull() {
-    return pqTop != null && pqTop.score != Float.NEGATIVE_INFINITY;
-  }
-
   protected void updateMinCompetitiveScore(Scorable scorer) throws IOException {
-    if (hitsThresholdChecker.isThresholdReached()) {
-      boolean hasChanged = false;
-      if (isQueueFull()) {
+    if (hitsThresholdChecker.isThresholdReached()
+          && ((bottomValueChecker != null && bottomValueChecker.getBottomValue() > 0)
+          || (pqTop != null && pqTop.score != Float.NEGATIVE_INFINITY))) { // -Infinity is the score of sentinels
+      float bottomScore = 0f;
+
+      if (pqTop != null && pqTop.score != Float.NEGATIVE_INFINITY) {
         // since we tie-break on doc id and collect in doc id order, we can require
         // the next float
-        float localMinScore = Math.nextUp(pqTop.score);
-        if (localMinScore > minCompetitiveScore) {
-          hasChanged = true;
-          minCompetitiveScore = localMinScore;
-          if (bottomValueChecker != null) {
-            // we don't use the next float here since we register a minimum value
-            // for other segments that might have smaller doc ids
-            bottomValueChecker.updateThreadLocalBottomValue(pqTop.score);
-          }
+        bottomScore = Math.nextUp(pqTop.score);
+
+        if (bottomValueChecker != null) {
+          bottomValueChecker.updateThreadLocalBottomValue(pqTop.score);
         }
       }
 
       // Global bottom can only be greater than or equal to the local bottom score
       // The updating of global bottom score for this hit before getting here should
       // ensure that
-      if (bottomValueChecker != null) {
-        float globalMinScore = bottomValueChecker.getBottomValue();
-        if (globalMinScore > minCompetitiveScore) {
-          assert isQueueFull() == false || bottomValueChecker.getBottomValue() > Math.nextUp(pqTop.score);
-          hasChanged = true;
-          minCompetitiveScore = bottomValueChecker.getBottomValue();
-        }
+      if (bottomValueChecker != null && bottomValueChecker.getBottomValue() > bottomScore) {
+        bottomScore = bottomValueChecker.getBottomValue();
       }
 
-      if (hasChanged) {
-        scorer.setMinCompetitiveScore(minCompetitiveScore);
-        totalHitsRelation = TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO;
-      }
+      scorer.setMinCompetitiveScore(bottomScore);
+      totalHitsRelation = TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO;
     }
   }
 }

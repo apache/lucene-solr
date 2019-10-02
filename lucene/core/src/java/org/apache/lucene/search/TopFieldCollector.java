@@ -124,8 +124,6 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
         @Override
         public void setScorer(Scorable scorer) throws IOException {
           super.setScorer(scorer);
-          // reset the minimum competitive score
-          minCompetitiveScore = 0f;
           updateMinCompetitiveScore(scorer);
         }
 
@@ -145,9 +143,9 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
                 } else {
                   collectedAllCompetitiveHits = true;
                 }
-              } else if (totalHitsRelation == TotalHits.Relation.EQUAL_TO) {
-                // we can start setting the min competitive score if we just
-                // reached totalHitsThreshold
+              } else if (totalHitsRelation == Relation.EQUAL_TO) {
+                // we just reached totalHitsThreshold, we can start setting the min
+                // competitive score now
                 updateMinCompetitiveScore(scorer);
               }
               return;
@@ -167,8 +165,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
             add(slot, doc);
             if (queueFull) {
               comparator.setBottom(bottom.slot);
+              updateMinCompetitiveScore(scorer);
             }
-            updateMinCompetitiveScore(scorer);
           }
         }
 
@@ -241,10 +239,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
                 } else {
                   collectedAllCompetitiveHits = true;
                 }
-              } else if (totalHitsRelation == TotalHits.Relation.EQUAL_TO) {
-                // we can start setting the min competitive score if we just
-                // reached totalHitsThreshold
-                updateMinCompetitiveScore(scorer);
+              } else if (totalHitsRelation == Relation.EQUAL_TO) {
+                  updateMinCompetitiveScore(scorer);
               }
               return;
             }
@@ -282,8 +278,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
             queueFull = collectedHits == numHits;
             if (queueFull) {
               comparator.setBottom(bottom.slot);
+              updateMinCompetitiveScore(scorer);
             }
-            updateMinCompetitiveScore(scorer);
           }
         }
       };
@@ -343,30 +339,28 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   }
 
   protected void updateMinCompetitiveScore(Scorable scorer) throws IOException {
-    if (canSetMinScore && hitsThresholdChecker.isThresholdReached()) {
-      boolean hasChanged = false;
+    if (canSetMinScore
+          && hitsThresholdChecker.isThresholdReached()
+          && ((bottomValueChecker != null && bottomValueChecker.getBottomValue() > 0) || queueFull)) {
+      assert firstComparator != null;
+      float bottomScore = 0f;
+
       if (queueFull) {
-        assert bottom != null && firstComparator != null;
-        float localMinScore = firstComparator.value(bottom.slot);
-        if (localMinScore > minCompetitiveScore) {
-          hasChanged = true;
-          minCompetitiveScore = localMinScore;
-          if (bottomValueChecker != null) {
-            bottomValueChecker.updateThreadLocalBottomValue(minCompetitiveScore);
-          }
+        bottomScore = firstComparator.value(bottom.slot);
+        if (bottomValueChecker != null) {
+          bottomValueChecker.updateThreadLocalBottomValue(bottomScore);
         }
       }
-      if (bottomValueChecker != null) {
-        float globalMinScore = bottomValueChecker.getBottomValue();
-        if (globalMinScore > minCompetitiveScore) {
-          hasChanged = true;
-          minCompetitiveScore = globalMinScore;
-        }
+
+      // Global bottom can only be greater than or equal to the local bottom score
+      // The updating of global bottom score for this hit before getting here should
+      // ensure that
+      if (bottomValueChecker != null && bottomValueChecker.getBottomValue() > bottomScore) {
+        bottomScore = bottomValueChecker.getBottomValue();
       }
-      if (hasChanged) {
-        scorer.setMinCompetitiveScore(minCompetitiveScore);
-        totalHitsRelation = TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO;
-      }
+
+      scorer.setMinCompetitiveScore(bottomScore);
+      totalHitsRelation = TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO;
     }
   }
 
