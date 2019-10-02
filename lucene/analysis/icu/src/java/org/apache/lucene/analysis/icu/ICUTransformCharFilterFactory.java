@@ -76,6 +76,10 @@ public class ICUTransformCharFilterFactory extends CharFilterFactory {
   private static final char ID_DELIM = ';';
 
   private static final String[] NORM_ID_ARR = new String[] {"NFC", "NFD", "NFKC", "NFKD", "FCC", "FCD"};
+
+  /**
+   * Return true if the specified String represents the id of a NormalizationTransliterator, otherwise false.
+   */
   private static boolean isUnicodeNormalizationId(String id) {
     if (id.indexOf(';') >= 0) {
       // it's compound
@@ -92,6 +96,21 @@ public class ICUTransformCharFilterFactory extends CharFilterFactory {
     return false;
   }
 
+  /**
+   * This is based on the {@link com.ibm.icu.text.CompoundTransliterator#toRules(boolean)}
+   * method, modified to return a version of rules with initial and trailing unicode
+   * normalization removed. If neither leading nor trailing unicode normalization is present,
+   * then no modifications are called for which this method indicates by returning null.
+   *
+   * Analogous to the contract for {@link com.ibm.icu.text.Transliterator#toRules(boolean)}, any
+   * modified rules String returned should be sufficient to recreate a Transliterator based
+   * on the specified input Transliterator, via {@link com.ibm.icu.text.Transliterator#createFromRules(String, String, int)}.
+   *
+   * @param escapeUnprintable escape unprintable chars
+   * @param t the Transliterator to base modified rules on.
+   * @return modified form of rules for input Transliterator, or null if no modification is
+   * called for.
+   */
   public static String modifyRules(boolean escapeUnprintable, Transliterator t) {
     final Transliterator[] trans = t.getElements();
     final int start;
@@ -157,6 +176,7 @@ public class ICUTransformCharFilterFactory extends CharFilterFactory {
 
   /**
    * Append c to buf, unless buf is empty or buf already ends in c.
+   * (convenience method copied from {@link com.ibm.icu.text.CompoundTransliterator})
    */
   private static void _smartAppend(StringBuilder buf, char c) {
     if (buf.length() != 0 &&
@@ -165,7 +185,13 @@ public class ICUTransformCharFilterFactory extends CharFilterFactory {
     }
   }
 
-  public static  String baseToRules(boolean escapeUnprintable, Transliterator t) {
+  /**
+   * This method is essentially copied from {@link com.ibm.icu.text.Transliterator#baseToRules(boolean)}
+   * @param escapeUnprintable escape unprintable chars
+   * @param t the Transliterator to dump rules for
+   * @return String representing rules for the specified Transliterator
+   */
+  private static String baseToRules(boolean escapeUnprintable, Transliterator t) {
     // The base class implementation of toRules munges the ID into
     // the correct format. That is: foo => ::foo
     // KEEP in sync with rbt_pars
