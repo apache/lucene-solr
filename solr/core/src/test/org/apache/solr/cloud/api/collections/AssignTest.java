@@ -163,7 +163,7 @@ public class AssignTest extends SolrTestCaseJ4 {
   
   @Test
   public void testBuildShardSharedShardName() throws Exception {
-    String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
+    Path zkDir = createTempDir("zkData");
     ZkTestServer server = new ZkTestServer(zkDir);
     server.run();
     try (SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), 10000)) {
