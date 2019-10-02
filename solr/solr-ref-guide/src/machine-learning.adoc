@@ -780,22 +780,23 @@ allows vectors to be assigned to more then one cluster. The `fuzziness` paramete
 is a value between 1 and 2 that determines how fuzzy to make the cluster assignment.
 
 After the clustering has been performed the `getMembershipMatrix` function can be called
-on the clustering result to return a matrix describing which clusters each vector belongs to.
+on the clustering result to return a matrix describing the probabilities
+of cluster membership for each vector.
 This matrix can be used to understand relationships between clusters.
 
 In the example below `fuzzyKmeans` is used to cluster the movie reviews matching the phrase "star wars".
 But instead of looking at the clusters or centroids the `getMembershipMatrix` is used to return the
 membership probabilities for each document. The membership matrix is comprised of a row for each
 vector that was clustered. There is a column in the matrix for each cluster.
-The values in the matrix are the probability that the vector belongs to a specific cluster.
+The values in the matrix contain the probability that a specific vector belongs to a specific cluster.
 
-In the example the `corr` function is used to create a *correlation matrix* of the columns of the
+In the example the `corr` function is used to create a *correlation matrix* from the columns of the
 membership matrix. In other words the correlation matrix shows the correlation of the clusters
 based on the document co-occurrence in the clusters.
 
 Notice that in the example cluster3 and cluster5 are very highly correlated, which means that
 many documents had a probability of occurring in both clusters. Further analysis of the key features
-in both clusters can done to understand the reason how these cluster are interconnected.
+in both clusters can be performed to understand how these clusters are interconnected.
 
 [source,text]
 ----
