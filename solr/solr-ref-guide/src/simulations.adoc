@@ -16,12 +16,19 @@
 // specific language governing permissions and limitations
 // under the License.
 
-
 Monte Carlo simulations are commonly used to model the behavior of
 stochastic (random) systems. This section of the user guide covers
 the basics of performing Monte Carlo simulations with Math Expressions.
 
-== A Random Walk
+<<Random Time Series, Random Time Series>> -
+<<Autocorrelation, Autocorrelation>> -
+<<Visualizing the Distribution, Visualizing the Distribution>> -
+<<Fitting the Distribution, Fitting the Distribution>> -
+<<Monte Carlo, Monte Carlo>> -
+<<Random Walk, Random Walk>> -
+<<Multivariate Normal Distribution, Multivariate Normal Distribution>>
+
+== Random Time Series
 
 The daily movement of stock prices is often described as a "random walk".
 But what does that really mean, and how is this different than a random time series?
