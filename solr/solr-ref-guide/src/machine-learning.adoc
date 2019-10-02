@@ -633,7 +633,7 @@ that the features are all bigram phrases with semantic significance to the resul
 let(a=select(search(reviews, q="review_t:\"star wars\"", rows="500"),
                     id,
                     analyze(review_t, text_bigrams) as terms),
-    vectors=termVectors(a, maxDocFreq=.10, minDocFreq=.03, minTermLength=13, exclude="_,br,have,',what"),
+    vectors=termVectors(a, maxDocFreq=.10, minDocFreq=.03, minTermLength=13, exclude="_,br,have"),
     clusters=kmeans(vectors, 5),
     centroids=getCentroids(clusters),
     phrases=topFeatures(centroids, 5))
@@ -713,7 +713,7 @@ rather than a single trial of the `kmeans` function.
 let(a=select(search(reviews, q="review_t:\"star wars\"", rows="500"),
                     id,
                     analyze(review_t, text_bigrams) as terms),
-    vectors=termVectors(a, maxDocFreq=.10, minDocFreq=.03, minTermLength=13, exclude="_,br,have,',what"),
+    vectors=termVectors(a, maxDocFreq=.10, minDocFreq=.03, minTermLength=13, exclude="_,br,have"),
     clusters=multiKmeans(vectors, 5, 15),
     centroids=getCentroids(clusters),
     phrases=topFeatures(centroids, 5))
@@ -781,34 +781,33 @@ is a value between 1 and 2 that determines how fuzzy to make the cluster assignm
 
 After the clustering has been performed the `getMembershipMatrix` function can be called
 on the clustering result to return a matrix describing which clusters each vector belongs to.
-There is a row in the matrix for each vector that was clustered. There is a column in the matrix
-for each cluster. The values in the columns are the probability that the vector belonged to the specific
-cluster.
+This matrix can be used to understand relationships between clusters.
 
-A simple example will make this more clear. In the example below 300 documents are analyzed and
-then turned into a term vector matrix. Then the `fuzzyKmeans` function clusters the
-term vectors into 12 clusters with a fuzziness factor of 1.25.
+In the example below `fuzzyKmeans` is used to cluster the movie reviews matching the phrase "star wars".
+But instead of looking at the clusters or centroids the `getMembershipMatrix` is used to return the
+membership probabilities for each document. The membership matrix is comprised of a row for each
+vector that was clustered. There is a column in the matrix for each cluster.
+The values in the matrix are the probability that the vector belongs to a specific cluster.
+
+In the example the `corr` function is used to create a *correlation matrix* of the columns of the
+membership matrix. In other words the correlation matrix shows the correlation of the clusters
+based on the document co-occurrence in the clusters.
+
+Notice that in the example cluster3 and cluster5 are very highly correlated, which means that
+many documents had a probability of occurring in both clusters. Further analysis of the key features
+in both clusters can done to understand the reason how these cluster are interconnected.
 
 [source,text]
 ----
-let(a=select(random(collection3, q="body:oil", rows="300", fl="id, body"),
-                   id,
-                   analyze(body, body_bigram) as terms),
-   b=termVectors(a, maxDocFreq=.09, minDocFreq=.03, minTermLength=14, exclude="_,copyright"),
-   c=fuzzyKmeans(b, 12, fuzziness=1.25),
-   d=getMembershipMatrix(c),  <1>
-   e=rowAt(d, 0),  <2>
-   f=precision(e, 5))  <3>
+let(a=select(search(reviews, q="text_t:\"star wars\"", rows="500"),
+                    id,
+                    analyze(text_t, body) as terms),
+    vectors=termVectors(a, maxDocFreq=.10, minDocFreq=.03, minTermLength=13, exclude="_,br,have"),
+    clusters=fuzzyKmeans(vectors, 5, fuzziness=1.3),
+    m=getMembershipMatrix(clusters),
+    corr=corr(m))
 ----
 
-<1> The `getMembershipMatrix` function is used to return the membership matrix;
-<2> and the first row of membership matrix is retrieved with the `rowAt` function.
-<3> The `precision` function is then applied to the first row
-of the matrix to make it easier to read.
-
-This expression returns a single vector representing the cluster membership probabilities for the first
-term vector. Notice that the term vector has the highest association with the 12^th^ cluster,
-but also has significant associations with the 3^rd^, 5^th^, 6^th^ and 7^th^ clusters:
 
 [source,json]
 ----
@@ -816,24 +815,47 @@ but also has significant associations with the 3^rd^, 5^th^, 6^th^ and 7^th^ clu
   "result-set": {
     "docs": [
       {
-        "f": [
-          0,
-          0,
-          0.178,
-          0,
-          0.17707,
-          0.17775,
-          0.16214,
-          0,
-          0,
-          0,
-          0,
-          0.30504
+        "corr": [
+          [
+            1,
+            -0.3107483649904961,
+            -0.01238925922725737,
+            -0.034546141301127015,
+            -0.012389261961639414
+          ],
+          [
+            -0.3107483649904961,
+            1,
+            -0.7752380698457411,
+            -0.49268725855405776,
+            -0.7752380691584819
+          ],
+          [
+            -0.01238925922725737,
+            -0.7752380698457411,
+            1,
+            -0.0508166330303757,
+            0.9999999999999954
+          ],
+          [
+            -0.034546141301127015,
+            -0.49268725855405776,
+            -0.0508166330303757,
+            1,
+            -0.05081663258795273
+          ],
+          [
+            -0.012389261961639414,
+            -0.7752380691584819,
+            0.9999999999999954,
+            -0.05081663258795273,
+            1
+          ]
         ]
       },
       {
         "EOF": true,
-        "RESPONSE_TIME": 2157
+        "RESPONSE_TIME": 245
       }
     ]
   }
