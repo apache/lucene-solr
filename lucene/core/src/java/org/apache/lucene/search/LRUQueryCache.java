@@ -22,16 +22,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
-import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Executor;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
@@ -99,11 +95,6 @@ public class LRUQueryCache implements QueryCache, Accountable {
   // maps queries that are contained in the cache to a singleton so that this
   // cache does not store several copies of the same query
   private final Map<Query, Query> uniqueQueries;
-  // Marks the inflight queries that are being asynchronously loaded into the cache
-  // This is used to ensure that multiple threads do not trigger loading
-  // of the same query in the same cache. We use a set because it is an invariant that
-  // the entries of this data structure be unique.
-  private final Set<Query> inFlightAsyncLoadQueries = new HashSet<>();
   // The contract between this set and the per-leaf caches is that per-leaf caches
   // are only allowed to store sub-sets of the queries that are contained in
   // mostRecentlyUsedQueries. This is why write operations are performed under a lock
@@ -271,7 +262,6 @@ public class LRUQueryCache implements QueryCache, Accountable {
     assert lock.isHeldByCurrentThread();
     assert key instanceof BoostQuery == false;
     assert key instanceof ConstantScoreQuery == false;
-
     final IndexReader.CacheKey readerKey = cacheHelper.getKey();
     final LeafCache leafCache = cache.get(readerKey);
     if (leafCache == null) {
@@ -378,7 +368,6 @@ public class LRUQueryCache implements QueryCache, Accountable {
         onEviction(singleton);
       }
     } finally {
-      inFlightAsyncLoadQueries.remove(query);
       lock.unlock();
     }
   }
@@ -400,7 +389,6 @@ public class LRUQueryCache implements QueryCache, Accountable {
       cache.clear();
       // Note that this also clears the uniqueQueries map since mostRecentlyUsedQueries is the uniqueQueries.keySet view:
       mostRecentlyUsedQueries.clear();
-      inFlightAsyncLoadQueries.clear();
       onClear();
     } finally {
       lock.unlock();
@@ -460,37 +448,13 @@ public class LRUQueryCache implements QueryCache, Accountable {
     }
   }
 
-  // pkg-private for testing
-  // return the list of queries being loaded asynchronously
-  List<Query> inFlightQueries() {
-    return new ArrayList<>(inFlightAsyncLoadQueries);
-  }
-
   @Override
   public Weight doCache(Weight weight, QueryCachingPolicy policy) {
-    Weight originalWeight = getOriginalWeight(weight);
-
-    return new CachingWrapperWeight(originalWeight, policy);
-  }
-
-  // Should be used only when the user wishes to trade throughput for latency
-  // This method was not merged in the method above as to not break the existing contract
-  // advertised by QueryCache
-  @Override
-  public Weight doCache(final Weight weight, QueryCachingPolicy policy, Executor executor) {
-    assert executor != null;
-    Weight originalWeight = getOriginalWeight(weight);
-
-    return new CachingWrapperWeight(originalWeight, policy, executor);
-  }
-
-  // Get original weight from the cached weight
-  private Weight getOriginalWeight(Weight weight) {
     while (weight instanceof CachingWrapperWeight) {
       weight = ((CachingWrapperWeight) weight).in;
     }
 
-    return weight;
+    return new CachingWrapperWeight(weight, policy);
   }
 
   @Override
@@ -692,21 +656,10 @@ public class LRUQueryCache implements QueryCache, Accountable {
     // threads when IndexSearcher is created with threads
     private final AtomicBoolean used;
 
-    private final Executor executor;
-
     CachingWrapperWeight(Weight in, QueryCachingPolicy policy) {
       super(in.getQuery(), 1f);
       this.in = in;
       this.policy = policy;
-      this.executor = null;
-      used = new AtomicBoolean(false);
-    }
-
-    CachingWrapperWeight(Weight in, QueryCachingPolicy policy, Executor executor) {
-      super(in.getQuery(), 1f);
-      this.in = in;
-      this.policy = policy;
-      this.executor = executor;
       used = new AtomicBoolean(false);
     }
 
@@ -779,24 +732,8 @@ public class LRUQueryCache implements QueryCache, Accountable {
 
       if (docIdSet == null) {
         if (policy.shouldCache(in.getQuery())) {
-          boolean cacheSynchronously = executor == null;
-
-          // If asynchronous caching is requested, perform the same and return
-          // the uncached iterator
-          if (cacheSynchronously == false) {
-            cacheSynchronously = cacheAsynchronously(context, cacheHelper);
-
-            // If async caching failed, synchronous caching will
-            // be performed, hence do not return the uncached value
-            if (cacheSynchronously == false) {
-              return in.scorerSupplier(context);
-            }
-          }
-
-          if (cacheSynchronously) {
-            docIdSet = cache(context);
-            putIfAbsent(in.getQuery(), docIdSet, cacheHelper);
-          }
+          docIdSet = cache(context);
+          putIfAbsent(in.getQuery(), docIdSet, cacheHelper);
         } else {
           return in.scorerSupplier(context);
         }
@@ -876,23 +813,8 @@ public class LRUQueryCache implements QueryCache, Accountable {
 
       if (docIdSet == null) {
         if (policy.shouldCache(in.getQuery())) {
-          boolean cacheSynchronously = executor == null;
-          // If asynchronous caching is requested, perform the same and return
-          // the uncached iterator
-          if (cacheSynchronously == false) {
-            cacheSynchronously = cacheAsynchronously(context, cacheHelper);
-
-            // If async caching failed, we will perform synchronous caching
-            // hence do not return the uncached value here
-            if (cacheSynchronously == false) {
-              return in.bulkScorer(context);
-            }
-          }
-
-          if (cacheSynchronously) {
-            docIdSet = cache(context);
-            putIfAbsent(in.getQuery(), docIdSet, cacheHelper);
-          }
+          docIdSet = cache(context);
+          putIfAbsent(in.getQuery(), docIdSet, cacheHelper);
         } else {
           return in.bulkScorer(context);
         }
@@ -910,38 +832,5 @@ public class LRUQueryCache implements QueryCache, Accountable {
       return new DefaultBulkScorer(new ConstantScoreScorer(this, 0f, ScoreMode.COMPLETE_NO_SCORES, disi));
     }
 
-    // Perform a cache load asynchronously
-    // @return true if synchronous caching is needed, false otherwise
-    private boolean cacheAsynchronously(LeafReaderContext context, IndexReader.CacheHelper cacheHelper) {
-      /*
-       * If the current query is already being asynchronously cached,
-       * do not trigger another cache operation
-       */
-      if (inFlightAsyncLoadQueries.add(in.getQuery()) == false) {
-        return false;
-      }
-
-      FutureTask<Void> task = new FutureTask<>(() -> {
-        DocIdSet localDocIdSet = cache(context);
-        putIfAbsent(in.getQuery(), localDocIdSet, cacheHelper);
-
-        // Remove the key from inflight -- the key is loaded now
-        Object retValue = inFlightAsyncLoadQueries.remove(in.getQuery());
-
-        // The query should have been present in the inflight queries set before
-        // we actually loaded it -- hence the removal of the key should be successful
-        assert retValue != null;
-
-        return null;
-      });
-      try {
-        executor.execute(task);
-      } catch (RejectedExecutionException e) {
-        // Trigger synchronous caching
-        return true;
-      }
-
-      return false;
-    }
   }
 }

@@ -17,8 +17,6 @@
 package org.apache.lucene.search;
 
 
-import java.util.concurrent.Executor;
-
 /**
  * A cache for queries.
  *
@@ -34,11 +32,5 @@ public interface QueryCache {
    * @see Collector#scoreMode()
    */
   Weight doCache(Weight weight, QueryCachingPolicy policy);
-
-  /**
-   * Same as above, but allows passing in an Executor to perform caching
-   * asynchronously
-   */
-  Weight doCache(Weight weight, QueryCachingPolicy policy, Executor executor);
 
 }

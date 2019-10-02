@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -190,11 +189,6 @@ public class TestIndexSearcher extends LuceneTestCase {
     QueryCache dummyCache = new QueryCache() {
       @Override
       public Weight doCache(Weight weight, QueryCachingPolicy policy) {
-        return doCache(weight, policy, null);
-      }
-
-      @Override
-      public Weight doCache(Weight weight, QueryCachingPolicy policy, Executor executor) {
         return weight;
       }
     };
