@@ -126,7 +126,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
           super.setScorer(scorer);
           // reset the minimum competitive score
           minCompetitiveScore = 0f;
-          updateMinCompetitiveScore(scorer, true);
+          updateMinCompetitiveScore(scorer);
         }
 
         @Override
@@ -145,8 +145,10 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
                 } else {
                   collectedAllCompetitiveHits = true;
                 }
-              } else {
-                updateMinCompetitiveScore(scorer, totalHitsRelation == Relation.EQUAL_TO);
+              } else if (totalHitsRelation == TotalHits.Relation.EQUAL_TO) {
+                // we can start setting the min competitive score if we just
+                // reached totalHitsThreshold
+                updateMinCompetitiveScore(scorer);
               }
               return;
             }
@@ -155,7 +157,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
             comparator.copy(bottom.slot, doc);
             updateBottom(doc);
             comparator.setBottom(bottom.slot);
-            updateMinCompetitiveScore(scorer, true);
+            updateMinCompetitiveScore(scorer);
           } else {
             // Startup transient: queue hasn't gathered numHits yet
             final int slot = totalHits - 1;
@@ -166,7 +168,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
             if (queueFull) {
               comparator.setBottom(bottom.slot);
             }
-            updateMinCompetitiveScore(scorer, true);
+            updateMinCompetitiveScore(scorer);
           }
         }
 
@@ -215,7 +217,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
         public void setScorer(Scorable scorer) throws IOException {
           super.setScorer(scorer);
           minCompetitiveScore = 0f;
-          updateMinCompetitiveScore(scorer, true);
+          updateMinCompetitiveScore(scorer);
         }
 
         @Override
@@ -239,10 +241,10 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
                 } else {
                   collectedAllCompetitiveHits = true;
                 }
-              } else {
-                // we just reached totalHitsThreshold, we can start setting the min
-                // competitive score now
-                updateMinCompetitiveScore(scorer, totalHitsRelation == Relation.EQUAL_TO);
+              } else if (totalHitsRelation == TotalHits.Relation.EQUAL_TO) {
+                // we can start setting the min competitive score if we just
+                // reached totalHitsThreshold
+                updateMinCompetitiveScore(scorer);
               }
               return;
             }
@@ -251,7 +253,11 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
           final int topCmp = reverseMul * comparator.compareTop(doc);
           if (topCmp > 0 || (topCmp == 0 && doc <= afterDoc)) {
             // Already collected on a previous page
-            updateMinCompetitiveScore(scorer, totalHitsRelation == Relation.EQUAL_TO);
+            if (totalHitsRelation == TotalHits.Relation.EQUAL_TO) {
+              // we can start setting the min competitive score if we just
+              // reached totalHitsThreshold
+              updateMinCompetitiveScore(scorer);
+            }
             return;
           }
 
@@ -262,7 +268,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
             updateBottom(doc);
 
             comparator.setBottom(bottom.slot);
-            updateMinCompetitiveScore(scorer, true);
+            updateMinCompetitiveScore(scorer);
           } else {
             collectedHits++;
 
@@ -277,7 +283,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
             if (queueFull) {
               comparator.setBottom(bottom.slot);
             }
-            updateMinCompetitiveScore(scorer, true);
+            updateMinCompetitiveScore(scorer);
           }
         }
       };
@@ -336,10 +342,10 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     return scoreMode;
   }
 
-  protected void updateMinCompetitiveScore(Scorable scorer, boolean checkQueue) throws IOException {
+  protected void updateMinCompetitiveScore(Scorable scorer) throws IOException {
     if (canSetMinScore && hitsThresholdChecker.isThresholdReached()) {
       boolean hasChanged = false;
-      if (checkQueue && queueFull) {
+      if (queueFull) {
         assert bottom != null && firstComparator != null;
         float localMinScore = firstComparator.value(bottom.slot);
         if (localMinScore > minCompetitiveScore) {

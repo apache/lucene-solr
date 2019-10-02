@@ -64,7 +64,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
           super.setScorer(scorer);
           // reset the minimum competitive score
           minCompetitiveScore = 0f;
-          updateMinCompetitiveScore(scorer, true);
+          updateMinCompetitiveScore(scorer);
         }
 
         @Override
@@ -78,10 +78,11 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
           hitsThresholdChecker.incrementHitCount();
 
           if (score <= pqTop.score) {
-            // the document is not competitive but we need to update the minimum competitive score
-            // if we just reached the total hits threshold or if the global minimum score (bottomValueChecker)
-            // has been updated
-            updateMinCompetitiveScore(scorer, totalHitsRelation == TotalHits.Relation.EQUAL_TO);
+            if (totalHitsRelation == TotalHits.Relation.EQUAL_TO) {
+              // we can start setting the min competitive score if we just
+              // reached totalHitsThreshold
+              updateMinCompetitiveScore(scorer);
+            }
             // Since docs are returned in-order (i.e., increasing doc Id), a document
             // with equal score to pqTop.score cannot compete since HitQueue favors
             // documents with lower doc Ids. Therefore reject those docs too.
@@ -90,7 +91,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
           pqTop.doc = doc + docBase;
           pqTop.score = score;
           pqTop = pq.updateTop();
-          updateMinCompetitiveScore(scorer, true);
+          updateMinCompetitiveScore(scorer);
         }
 
       };
@@ -140,25 +141,31 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
 
           if (score > after.score || (score == after.score && doc <= afterDoc)) {
             // hit was collected on a previous page
-            updateMinCompetitiveScore(scorer, totalHitsRelation == TotalHits.Relation.EQUAL_TO);
+            if (totalHitsRelation == TotalHits.Relation.EQUAL_TO) {
+              // we can start setting the min competitive score if we just
+              // reached totalHitsThreshold
+              updateMinCompetitiveScore(scorer);
+            }
             return;
           }
 
           if (score <= pqTop.score) {
-            // the document is not competitive but we need to update the minimum competitive score
-            // if we just reached the total hits threshold or if the global minimum score (bottomValueChecker)
-            // has been updated
-            updateMinCompetitiveScore(scorer, totalHitsRelation == TotalHits.Relation.EQUAL_TO);
+            if (totalHitsRelation == TotalHits.Relation.EQUAL_TO) {
+              // we can start setting the min competitive score if we just
+              // reached totalHitsThreshold
+              updateMinCompetitiveScore(scorer);
+            }
             // Since docs are returned in-order (i.e., increasing doc Id), a document
             // with equal score to pqTop.score cannot compete since HitQueue favors
             // documents with lower doc Ids. Therefore reject those docs too.
+
             return;
           }
           collectedHits++;
           pqTop.doc = doc + docBase;
           pqTop.score = score;
           pqTop = pq.updateTop();
-          updateMinCompetitiveScore(scorer, true);
+          updateMinCompetitiveScore(scorer);
         }
       };
     }
@@ -285,10 +292,10 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
     return pqTop != null && pqTop.score != Float.NEGATIVE_INFINITY;
   }
 
-  protected void updateMinCompetitiveScore(Scorable scorer, boolean checkQueue) throws IOException {
+  protected void updateMinCompetitiveScore(Scorable scorer) throws IOException {
     if (hitsThresholdChecker.isThresholdReached()) {
       boolean hasChanged = false;
-      if (checkQueue && isQueueFull()) {
+      if (isQueueFull()) {
         // since we tie-break on doc id and collect in doc id order, we can require
         // the next float
         float localMinScore = Math.nextUp(pqTop.score);
