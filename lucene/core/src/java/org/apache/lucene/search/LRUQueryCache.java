@@ -22,14 +22,13 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RejectedExecutionException;
@@ -110,6 +109,17 @@ public class LRUQueryCache implements QueryCache, Accountable {
     public IndexReader.CacheKey getCacheKey() {
       return cacheKey;
     }
+
+    @Override
+    public int hashCode() { return query.hashCode() ^ cacheKey.hashCode(); }
+
+    @Override
+    public boolean equals(Object o) {
+      if (!(o instanceof MapKey)) return false;
+      MapKey input = (MapKey) o;
+      return this.query.equals(input.getQuery()) &&
+          this.getCacheKey().equals(input.getCacheKey());
+    }
   }
 
   private final int maxSize;
@@ -122,7 +132,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
   // This is used to ensure that multiple threads do not trigger loading
   // of the same query in the same cache. We use a set because it is an invariant that
   // the entries of this data structure be unique.
-  private final Map<MapKey, IndexReader.CacheKey> inFlightAsyncLoadQueries = new HashMap<>();
+  private final Set<MapKey> inFlightAsyncLoadQueries = new HashSet<>();
   // The contract between this set and the per-leaf caches is that per-leaf caches
   // are only allowed to store sub-sets of the queries that are contained in
   // mostRecentlyUsedQueries. This is why write operations are performed under a lock
@@ -137,9 +147,6 @@ public class LRUQueryCache implements QueryCache, Accountable {
   private volatile long missCount;
   private volatile long cacheCount;
   private volatile long cacheSize;
-
-  // For testing
-  private CountDownLatch countDownLatch;
 
   /**
    * Expert: Create a new instance that will cache at most <code>maxSize</code>
@@ -400,17 +407,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
         onEviction(singleton);
       }
     } finally {
-      removeQuery(query);
       lock.unlock();
-    }
-  }
-
-  private void removeQuery(Query query) {
-    for (MapKey mapKey : inFlightAsyncLoadQueries.keySet()) {
-      if (mapKey.query == query) {
-        inFlightAsyncLoadQueries.remove(mapKey);
-        return;
-      }
     }
   }
 
@@ -431,7 +428,6 @@ public class LRUQueryCache implements QueryCache, Accountable {
       cache.clear();
       // Note that this also clears the uniqueQueries map since mostRecentlyUsedQueries is the uniqueQueries.keySet view:
       mostRecentlyUsedQueries.clear();
-      inFlightAsyncLoadQueries.clear();
       onClear();
     } finally {
       lock.unlock();
@@ -492,16 +488,13 @@ public class LRUQueryCache implements QueryCache, Accountable {
   }
 
   // pkg-private for testing
-  void setCountDownLatch(CountDownLatch latch) {
-    this.countDownLatch = latch;
-  }
-
-  // pkg-private for testing
   // return the list of queries being loaded asynchronously
   List<Query> inFlightQueries() {
     List<Query> returnList = new ArrayList<>();
 
-    for (MapKey mapKey : inFlightAsyncLoadQueries.keySet()) {
+    Iterator iterator = inFlightAsyncLoadQueries.iterator();
+    while (iterator.hasNext()) {
+      MapKey mapKey = (MapKey) iterator.next();
       returnList.add(mapKey.query);
     }
 
@@ -510,9 +503,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
 
   @Override
   public Weight doCache(Weight weight, QueryCachingPolicy policy) {
-    Weight originalWeight = getOriginalWeight(weight);
-
-    return new CachingWrapperWeight(originalWeight, policy);
+    return doCache(weight, policy, null /* executor */);
   }
 
   // Should be used only when the user wishes to trade throughput for latency
@@ -520,19 +511,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
   // advertised by QueryCache
   @Override
   public Weight doCache(final Weight weight, QueryCachingPolicy policy, Executor executor) {
-    assert executor != null;
-    Weight originalWeight = getOriginalWeight(weight);
-
-    return new CachingWrapperWeight(originalWeight, policy, executor);
-  }
-
-  // Get original weight from the cached weight
-  private Weight getOriginalWeight(Weight weight) {
-    while (weight instanceof CachingWrapperWeight) {
-      weight = ((CachingWrapperWeight) weight).in;
-    }
-
-    return weight;
+    return new CachingWrapperWeight(weight, policy, executor);
   }
 
   @Override
@@ -959,28 +938,21 @@ public class LRUQueryCache implements QueryCache, Accountable {
        * If the current query is already being asynchronously cached,
        * do not trigger another cache operation
        */
-      Object returnValue = inFlightAsyncLoadQueries.putIfAbsent(new MapKey(in.getQuery(),
-          cacheHelper.getKey()), cacheHelper.getKey());
-
-      assert returnValue == null || returnValue == cacheHelper.getKey();
-
-      if (returnValue != null) {
+      if (inFlightAsyncLoadQueries.add(new MapKey(in.getQuery(),
+          cacheHelper.getKey())) == false) {
         return false;
       }
 
       FutureTask<Void> task = new FutureTask<>(() -> {
-        DocIdSet localDocIdSet = cache(context);
-        putIfAbsent(in.getQuery(), localDocIdSet, cacheHelper);
-
-        // Remove the key from inflight -- the key is loaded now
-        Object retValue = inFlightAsyncLoadQueries.remove(new MapKey(in.getQuery(), cacheHelper.getKey()));
-
-        // The query should have been present in the inflight queries set before
-        // we actually loaded it -- hence the removal of the key should be successful
-        assert retValue != null;
-
-        if (countDownLatch != null) {
-          countDownLatch.countDown();
+        try {
+          DocIdSet localDocIdSet = cache(context);
+          putIfAbsent(in.getQuery(), localDocIdSet, cacheHelper);
+        } finally {
+          // Remove the key from inflight
+          Object retValue = inFlightAsyncLoadQueries.remove(new MapKey(in.getQuery(), cacheHelper.getKey()));
+          // The query should have been present in the inflight queries set before
+          // we actually loaded it -- hence the removal of the key should be successful
+          assert retValue != null;
         }
 
         return null;
@@ -988,6 +960,9 @@ public class LRUQueryCache implements QueryCache, Accountable {
       try {
         executor.execute(task);
       } catch (RejectedExecutionException e) {
+        Object retValue = inFlightAsyncLoadQueries.remove(new MapKey(in.getQuery(), cacheHelper.getKey()));
+        assert retValue != null;
+
         // Trigger synchronous caching
         return true;
       }

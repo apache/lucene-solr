@@ -291,7 +291,15 @@ public class TestLRUQueryCache extends LuceneTestCase {
 
     IndexSearcher searcher = new IndexSearcher(reader, service);
 
-    final LRUQueryCache queryCache = new LRUQueryCache(2, 100000, context -> true);
+    final CountDownLatch[] latch = {new CountDownLatch(1)};
+
+    final LRUQueryCache queryCache = new LRUQueryCache(2, 100000, context -> true) {
+      @Override
+      protected void onDocIdSetCache(Object readerCoreKey, long ramBytesUsed) {
+        super.onDocIdSetCache(readerCoreKey, ramBytesUsed);
+        latch[0].countDown();
+      }
+    };
 
     final Query blue = new TermQuery(new Term("color", "blue"));
     final Query red = new TermQuery(new Term("color", "red"));
@@ -306,8 +314,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     assertEquals(Collections.emptyList(), queryCache.cachedQueries());
 
     searcher.setQueryCachingPolicy(ALWAYS_CACHE);
-    CountDownLatch latch = new CountDownLatch(1);
-    queryCache.setCountDownLatch(latch);
+
     // First read should miss
     searcher.search(new ConstantScoreQuery(red), 1);
 
@@ -315,7 +322,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
       searcher.search(new ConstantScoreQuery(red), 1);
     } else {
       // Let the cache load be completed
-      latch.await(200, TimeUnit.MILLISECONDS);
+      latch[0].await(200, TimeUnit.MILLISECONDS);
       searcher.search(new ConstantScoreQuery(red), 1);
     }
 
@@ -323,44 +330,41 @@ public class TestLRUQueryCache extends LuceneTestCase {
     searcher.search(new ConstantScoreQuery(red), 1);
     assertEquals(Collections.singletonList(red), queryCache.cachedQueries());
 
-    latch = new CountDownLatch(1);
-    queryCache.setCountDownLatch(latch);
+    latch[0] = new CountDownLatch(1);
     searcher.search(new ConstantScoreQuery(green), 1);
     if (!(queryCache.cachedQueries().equals(Arrays.asList(red)))) {
       assertEquals(Arrays.asList(red, green), queryCache.cachedQueries());
     } else {
       // Let the cache load be completed
-      latch.await(200, TimeUnit.MILLISECONDS);
+      latch[0].await(200, TimeUnit.MILLISECONDS);
       assertEquals(Arrays.asList(red, green), queryCache.cachedQueries());
     }
 
     searcher.search(new ConstantScoreQuery(red), 1);
     assertEquals(Arrays.asList(green, red), queryCache.cachedQueries());
 
-    latch = new CountDownLatch(1);
-    queryCache.setCountDownLatch(latch);
+    latch[0] = new CountDownLatch(1);
 
     searcher.search(new ConstantScoreQuery(blue), 1);
     if (!(queryCache.cachedQueries().equals(Arrays.asList(green, red)))) {
       assertEquals(Arrays.asList(red, blue), queryCache.cachedQueries());
     } else {
       // Let the cache load be completed
-      latch.await(200, TimeUnit.MILLISECONDS);
+      latch[0].await(200, TimeUnit.MILLISECONDS);
       assertEquals(Arrays.asList(red, blue), queryCache.cachedQueries());
     }
 
     searcher.search(new ConstantScoreQuery(blue), 1);
     assertEquals(Arrays.asList(red, blue), queryCache.cachedQueries());
 
-    latch = new CountDownLatch(1);
-    queryCache.setCountDownLatch(latch);
+    latch[0] = new CountDownLatch(1);
 
     searcher.search(new ConstantScoreQuery(green), 1);
     if (!(queryCache.cachedQueries().equals(Arrays.asList(red, blue)))) {
       assertEquals(Arrays.asList(blue, green), queryCache.cachedQueries());
     } else {
       // Let the cache load be completed
-      latch.await(200, TimeUnit.MILLISECONDS);
+      latch[0].await(200, TimeUnit.MILLISECONDS);
       assertEquals(Arrays.asList(blue, green), queryCache.cachedQueries());
     }
 
@@ -397,7 +401,15 @@ public class TestLRUQueryCache extends LuceneTestCase {
 
     IndexSearcher searcher = new IndexSearcher(reader, service);
 
-    final LRUQueryCache queryCache = new LRUQueryCache(2, 100000, context -> true);
+    final CountDownLatch latch = new CountDownLatch(1);
+
+    final LRUQueryCache queryCache = new LRUQueryCache(2, 100000, context -> true) {
+      @Override
+      protected void onDocIdSetCache(Object readerCoreKey, long ramBytesUsed) {
+        super.onDocIdSetCache(readerCoreKey, ramBytesUsed);
+        latch.countDown();
+      }
+    };
 
     final Query green = new TermQuery(new Term("color", "green"));
 
@@ -405,8 +417,6 @@ public class TestLRUQueryCache extends LuceneTestCase {
 
     searcher.setQueryCache(queryCache);
     searcher.setQueryCachingPolicy(ALWAYS_CACHE);
-    CountDownLatch latch = new CountDownLatch(1);
-    queryCache.setCountDownLatch(latch);
 
     FutureTask<Void> task = new FutureTask<>(() -> {
       searcher.search(new ConstantScoreQuery(green), 1);
@@ -1470,29 +1480,45 @@ public class TestLRUQueryCache extends LuceneTestCase {
 
     assertEquals(0, cache.getCacheCount());
 
-    cache = new LRUQueryCache(2, 10000, new LRUQueryCache.MinSegmentSizePredicate(1, 0f));
+    final CountDownLatch[] latch = { new CountDownLatch(1)};
+    cache = new LRUQueryCache(2, 10000,
+        new LRUQueryCache.MinSegmentSizePredicate(1, 0f)) {
+        @Override
+        protected void onDocIdSetCache(Object readerCoreKey, long ramBytesUsed) {
+          super.onDocIdSetCache(readerCoreKey, ramBytesUsed);
+          latch[0].countDown();
+        }
+      };
+
     searcher.setQueryCache(cache);
-    CountDownLatch latch = new CountDownLatch(1);
-    cache.setCountDownLatch(latch);
+
     searcher.count(new DummyQuery());
 
     if (cache.getCacheCount() != 1) {
       try {
-        latch.await(200, TimeUnit.MILLISECONDS);
+        latch[0].await(200, TimeUnit.MILLISECONDS);
       } catch (InterruptedException e) {
         throw new RuntimeException(e.getMessage());
       }
       assertEquals(1, cache.getCacheCount());
     }
 
-    cache = new LRUQueryCache(2, 10000, new LRUQueryCache.MinSegmentSizePredicate(0, .6f));
+    latch[0] = new CountDownLatch(1);
+    cache = new LRUQueryCache(2, 10000,
+        new LRUQueryCache.MinSegmentSizePredicate(0, .6f)) {
+      @Override
+      protected void onDocIdSetCache(Object readerCoreKey, long ramBytesUsed) {
+        super.onDocIdSetCache(readerCoreKey, ramBytesUsed);
+        latch[0].countDown();
+      }
+    };
+
     searcher.setQueryCache(cache);
-    latch = new CountDownLatch(1);
-    cache.setCountDownLatch(latch);
+
     searcher.count(new DummyQuery());
     if (cache.getCacheCount() != 1) {
       try {
-        latch.await(200, TimeUnit.MILLISECONDS);
+        latch[0].await(200, TimeUnit.MILLISECONDS);
       } catch (InterruptedException e) {
         throw new RuntimeException(e.getMessage());
       }
