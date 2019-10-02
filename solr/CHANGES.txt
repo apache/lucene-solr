@@ -113,8 +113,6 @@ New Features
   when using compositeIds.  Document distribution is calculated using the "id_prefix" field (if it exists) containing
   just the compositeId prefixes, or directly from the indexed "id" field otherwise. (yonik, Megan Carey)
 
-* SOLR-13565: Node level runtime libs loaded from remote urls  (noble)
-
 * SOLR-13553: Node level custom RequestHandlers (noble)
 
 * SOLR-13622: Add cat() stream source to create tuples from lines in local files (Jason Gerlowski and Joel Bernstein)
@@ -124,15 +122,8 @@ New Features
 
 * SOLR-13682: command line option to export documents to a file (noble)
 
-* SOLR-13650: Solr now can define and add "packages" with plugins. Each plugin can choose to
-  load from one of those packages & updating packages can reload those plugins independently (noble)
-
 * SOLR-13257: Support deterministic replica routing preferences for better cache usage (Michael Gibney
   via Christine Poerschke, Tomás Fernández Löbbe)
-
-* SOLR-13707: API to expose the currently used package name, details for each plugin (noble)
-
-* SOLR-13710: Persist package jars locally & expose them over http at /api/node/blob  (noble)
 
 * SOLR-13122: Ability to query aliases in Solr Admin UI (janhoy)
 
@@ -159,8 +150,6 @@ Improvements
 * SOLR-13558, SOLR-13693: Allow dynamic resizing of SolrCache-s. (ab)
 
 * SOLR-6305: Ability to set the replication factor for index files created by HDFSDirectoryFactory (Boris Pasko via Kevin Risden)
-
-* SOLR-13677: All Metrics Gauges should be unregistered by the objects that registered them (noble)
 
 * SOLR-13702: Some components register twice their metric names (janhoy)
 
@@ -276,8 +265,6 @@ Other Changes
 * SOLR-13629: Clean trailing whitespace from 'analytics' contrib (Neal Sidhwaney via Jason Gerlowski)
 
 * SOLR-13643: Add Getters/Setters in ResponseBuilder for analytics response handling (Neal Sidhwaney via Munendra S N)
-
-* SOLR-13659: Refactor CacheConfig to lazily load the the implementation class (noble)
 
 * SOLR-13680: Use try-with-resource to close the closeable resource (Furkan KAMACI, Munendra S N)
 

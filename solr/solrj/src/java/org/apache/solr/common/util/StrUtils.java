@@ -40,15 +40,6 @@ public class StrUtils {
 
   }
 
-  static final String DELIM_CHARS = "/:;.,%#";
-  public static List<String> split(String s, char sep){
-    if(DELIM_CHARS.indexOf(s.charAt(0)) >-1){
-     sep = s.charAt(0);
-    }
-    return splitSmart(s,sep, true);
-
-  }
-
   public static List<String> splitSmart(String s, char separator, boolean trimEmpty) {
     List<String> l = splitSmart(s, separator);
     if(trimEmpty){
@@ -157,7 +148,7 @@ public class StrUtils {
    */
   public static List<String> splitFileNames(String fileNames) {
     if (fileNames == null)
-      return Collections.emptyList();
+      return Collections.<String>emptyList();
 
     List<String> result = new ArrayList<>();
     for (String file : fileNames.split("(?<!\\\\),")) {

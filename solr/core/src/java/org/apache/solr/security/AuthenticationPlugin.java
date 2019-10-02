@@ -29,11 +29,12 @@ import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
-import org.apache.http.HttpRequest;
-import org.apache.http.protocol.HttpContext;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
+
+import org.apache.http.HttpRequest;
+import org.apache.http.protocol.HttpContext;
 import org.eclipse.jetty.client.api.Request;
 
 /**
@@ -65,7 +66,7 @@ public abstract class AuthenticationPlugin implements Closeable, SolrInfoBean, S
    * @param pluginConfig Config parameters, possibly from a ZK source
    */
   public abstract void init(Map<String, Object> pluginConfig);
-
+ 
   /**
    * This method attempts to authenticate the request. Upon a successful authentication, this
    * must call the next filter in the filter chain and set the user principal of the request,
@@ -106,10 +107,10 @@ public abstract class AuthenticationPlugin implements Closeable, SolrInfoBean, S
    * delegate to {@link PKIAuthenticationPlugin}. Return true to indicate that your plugin
    * did handle the request, or false to signal that PKI plugin should handle it. This method
    * will be called by {@link PKIAuthenticationPlugin}'s interceptor.
-   *
+   * 
    * <p>
    *   If not overridden, this method will return true for plugins implementing {@link HttpClientBuilderPlugin}.
-   *   This method can be overridden by subclasses e.g. to set HTTP headers, even if you don't use a clientBuilder.
+   *   This method can be overridden by subclasses e.g. to set HTTP headers, even if you don't use a clientBuilder. 
    * </p>
    * @param httpRequest the httpRequest that is about to be sent to another internal Solr node
    * @param httpContext the context of that request.
@@ -136,7 +137,7 @@ public abstract class AuthenticationPlugin implements Closeable, SolrInfoBean, S
   protected boolean interceptInternodeRequest(Request request) {
     return this instanceof HttpClientBuilderPlugin;
   }
-
+  
   /**
    * Cleanup any per request  data
    */
@@ -160,7 +161,7 @@ public abstract class AuthenticationPlugin implements Closeable, SolrInfoBean, S
     metricNames.addAll(Arrays.asList("errors", "requests", "authenticated", "passThrough",
         "failWrongCredentials", "failMissingCredentials", "requestTimes", "totalTime"));
   }
-
+  
   @Override
   public String getName() {
     return this.getClass().getName();
@@ -185,5 +186,5 @@ public abstract class AuthenticationPlugin implements Closeable, SolrInfoBean, S
   public MetricRegistry getMetricRegistry() {
     return registry;
   }
-
+  
 }

@@ -39,7 +39,6 @@ public interface PermissionNameProvider {
     CORE_READ_PERM("core-admin-read", null),
     CORE_EDIT_PERM("core-admin-edit", null),
     READ_PERM("read", "*"),
-    CUSTOM_PERM("custom-op", null),//custom operation , user-defined
     UPDATE_PERM("update", "*"),
     CONFIG_EDIT_PERM("config-edit", unmodifiableSet(new HashSet<>(asList("*", null)))),
     CONFIG_READ_PERM("config-read", "*"),
@@ -52,8 +51,6 @@ public interface PermissionNameProvider {
     AUTOSCALING_WRITE_PERM("autoscaling-write", null),
     AUTOSCALING_HISTORY_READ_PERM("autoscaling-history-read", null),
     METRICS_HISTORY_READ_PERM("metrics-history-read", null),
-    BLOB_READ("blob-read", null),
-    BLOB_WRITE("blob-write", null),
     ALL("all", unmodifiableSet(new HashSet<>(asList("*", null))))
     ;
     final String name;
