@@ -22,6 +22,7 @@ package org.apache.lucene.search;
  */
 public class FieldValueChecker {
   public volatile Object value;
+  public volatile int minimumDoc;
   private FieldComparator[] fieldComparators;
   private int[] reverseMul;
 
@@ -33,26 +34,28 @@ public class FieldValueChecker {
   }
 
   boolean isBottomValuePresent() {
-    //return false;
     return this.value != null;
   }
 
-  void checkAndUpdateBottomValue(Object value) {
+  void checkAndUpdateBottomValue(Object value, int doc) {
     synchronized (this) {
       if (this.value == null) {
+        //System.out.println("Setting value " + value);
         this.value = value;
+        this.minimumDoc = doc;
         return;
       }
 
-      if (isValueCompetitive(value, 0)== true) {
+      if (isValueCompetitive(value, doc)== true) {
+        //System.out.println("Updating value " + this.value + " new value " + value);
         this.value = value;
+        this.minimumDoc = doc;
       }
     }
   }
 
   boolean isValueCompetitive(Object value, int doc) {
     if (this.value == null) {
-      //System.out.println("Null case false " + doc);
       return true;
     }
 
@@ -69,21 +72,35 @@ public class FieldValueChecker {
         int resultValue = reverseMul[i] * fieldComparators[i].compareValues(baseValue[i], candidateValue[i]);
         if (resultValue != 0) {
           if (resultValue > 0) {
-            //System.out.println("True1 " + doc);
+            //System.out.println("True1 " + " my val " + baseValue[i] + " incoming val " + candidateValue[i]);
             return true;
           }
 
-          //System.out.println("False1 " + doc);
+          //System.out.println("False1 " + " my val " + baseValue[i] + " incoming val " + candidateValue[i]);
           return false;
         }
       }
 
       // For equal values, we return false since docs are collected in order
-      //System.out.println("False2 " + doc);
+      if (doc > minimumDoc) {
+        //System.out.println("False2 " + " incoming doc " + doc + " my doc " + minimumDoc);
+      } else {
+        //System.out.println("True equal1");
+        return true;
+      }
       return false;
     }
 
-    return reverseMul[0] * fieldComparators[0].compareValues(this.value, value) > 0;
+    int returnValue = reverseMul[0] * fieldComparators[0].compareValues(this.value, value);
+    if (returnValue > 0) {
+      //System.out.println("Returning3 true" + returnValue + " for doc " + doc + " my value " + this.value + " incoming value " + value);
+      return true;
+    } else if (returnValue == 0) {
+      //System.out.println("Returning4 true" + returnValue + " for doc " + doc + " my value " + this.value + " incoming value " + value);
+      return true;
+    }
+    //System.out.println("Returning5 false" + returnValue + " for doc " + doc + " my value " + this.value + " incoming value " + value);
+    return false;
   }
 
   /* Create a FieldValueChecker instance from given sort parameters */

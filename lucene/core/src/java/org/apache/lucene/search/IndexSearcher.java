@@ -601,7 +601,8 @@ public class IndexSearcher {
 
       private final HitsThresholdChecker hitsThresholdChecker = (executor == null || leafSlices.length <= 1) ? HitsThresholdChecker.create(TOTAL_HITS_THRESHOLD) :
           HitsThresholdChecker.createShared(TOTAL_HITS_THRESHOLD);
-      private final FieldValueChecker fieldValueChecker = FieldValueChecker.createFieldValueChecker(sort, cappedNumHits);
+      private final FieldValueChecker fieldValueChecker = (executor == null || leafSlices.length <= 1) ? null :
+          FieldValueChecker.createFieldValueChecker(sort, cappedNumHits);
 
       @Override
       public TopFieldCollector newCollector() throws IOException {
