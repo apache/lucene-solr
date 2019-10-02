@@ -20,8 +20,8 @@ The math expressions library supports simple and multivariate linear regression.
 
 <<Simple Linear Regression, Simple Linear Regression>> -
 <<Regression Plot, Regression Plot>> -
-<<Multivariate Linear Regression, Multivariate Linear Regression>> -
-<<Residual Plot, Residual Plot>>
+<<Residual Plot, Residual Plot>> -
+<<Multivariate Linear Regression, Multivariate Linear Regression>>
 
 == Simple Linear Regression
 
@@ -471,8 +471,7 @@ When this expression is sent to the `/stream` handler it responds with:
 
 === Residual Plot
 
-Although we can't do a regression plot with multi-variate linear regression we can do a residual plot, and visualize the errors
-of the regression. The residual plot for multi-variate linear regression is the same as for simple linear regression.
+The residual plot for multi-variate linear regression is the same as for simple linear regression.
 The predictions are plotted on the *x* axis and the error is plotted on the *y* axis.
 
 image::images/math-expressions/residual-plot2.png[]
