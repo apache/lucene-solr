@@ -118,6 +118,9 @@ the total hits is not requested.
 * LUCENE-8755: spatial-extras quad and packed quad prefix trees now index points faster.
   (Chongchen Chen, David Smiley)
 
+* LUCENE-8860: add additional leaf node level optimizations in LatLonShapeBoundingBoxQuery.
+  (Igor Motov via Ignacio Vera)
+
 Bug Fixes
 
 * LUCENE-8755: spatial-extras quad and packed quad prefix trees could throw a
