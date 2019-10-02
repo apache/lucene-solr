@@ -18,10 +18,12 @@ package org.apache.lucene.search.suggest.document;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.ToDoubleFunction;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -44,9 +46,12 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.TestUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 
 import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 import static org.apache.lucene.search.suggest.document.TestSuggestField.Entry;
@@ -312,6 +317,67 @@ public class TestPrefixCompletionQuery extends LuceneTestCase {
     TopSuggestDocs suggestions = collector.get();
     assertSuggestions(suggestions, expectedResults.subList(0, topN).toArray(new Entry[0]));
     assertTrue(suggestions.isComplete());
+
+    reader.close();
+    iw.close();
+  }
+
+  /**
+   * A large scale tests where the collector rejects based on docIds
+   */
+  public void testCollectorWithManyRejects() throws Exception {
+    Analyzer analyzer = new MockAnalyzer(random());
+    RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
+    Set<Integer> acceptedDocs = new HashSet<>();
+    List<Entry> expectedResults = new ArrayList<Entry>();
+
+    for (int docCount = 0; docCount < 10000; docCount++) {
+      Document document = new Document();
+      String value = "ab" + RandomStrings.randomAsciiAlphanumOfLength(random(), 10) +"_" + docCount;
+      document.add(new SuggestField("suggest_field", value, docCount));
+      if (random().nextDouble() > 0.75) {
+        acceptedDocs.add(docCount);
+        expectedResults.add(new Entry(value, null, docCount));
+      }
+      iw.addDocument(document);
+    }
+    ToDoubleFunction<Entry> fn = e -> e.value;
+    expectedResults.sort(Comparator.comparingDouble(fn).reversed());
+
+    if (rarely()) {
+      iw.commit();
+    }
+
+    DirectoryReader reader = iw.getReader();
+    SuggestIndexSearcher indexSearcher = new SuggestIndexSearcher(reader);
+
+    PrefixCompletionQuery query = new PrefixCompletionQuery(analyzer, new Term("suggest_field", "ab"));
+    int topN = TestUtil.nextInt(random(), 1, acceptedDocs.size());
+
+    TopSuggestDocsCollector collector = new TopSuggestDocsCollector(topN, false) {
+
+      @Override
+      public boolean collect(int docID, CharSequence key, CharSequence context, float score) throws IOException {
+          if (key.toString().startsWith("aboVU")) {
+              System.out.println("here");
+          }
+          String idPart = key.toString().split("_")[1];
+          if (acceptedDocs.contains(Integer.parseInt(idPart))) {
+              super.collect(docID, key, context, score);
+              return true;
+          }
+          return false;
+      }
+
+      @Override
+      protected boolean canReject() {
+        return true;
+      }
+    };
+
+    indexSearcher.suggest(query, collector);
+    TopSuggestDocs suggestions = collector.get();
+    assertSuggestions(suggestions, expectedResults.subList(0, topN).toArray(new Entry[0]));
 
     reader.close();
     iw.close();
