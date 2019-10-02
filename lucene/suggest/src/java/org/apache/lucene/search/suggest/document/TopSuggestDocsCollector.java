@@ -182,7 +182,8 @@ public class TopSuggestDocsCollector extends SimpleCollector {
     }
 
     if (suggestScoreDocs.length > 0) {
-      return new TopSuggestDocs(new TotalHits(suggestScoreDocs.length, TotalHits.Relation.EQUAL_TO), suggestScoreDocs);
+      return new TopSuggestDocs(new TotalHits(suggestScoreDocs.length, TotalHits.Relation.EQUAL_TO),
+          suggestScoreDocs, this.isComplete);
     } else {
       return TopSuggestDocs.EMPTY;
     }
@@ -208,7 +209,7 @@ public class TopSuggestDocsCollector extends SimpleCollector {
   /**
    * returns true if the collector clearly exhausted all possibilities to collect results
    */
-  public boolean isComplete() {
+  boolean isComplete() {
     return this.isComplete ;
   }
 

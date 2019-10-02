@@ -32,7 +32,8 @@ public class TopSuggestDocs extends TopDocs {
   /**
    * Singleton for empty {@link TopSuggestDocs}
    */
-  public final static TopSuggestDocs EMPTY = new TopSuggestDocs(new TotalHits(0, TotalHits.Relation.EQUAL_TO), new SuggestScoreDoc[0]);
+  public final static TopSuggestDocs EMPTY = new TopSuggestDocs(new TotalHits(0, TotalHits.Relation.EQUAL_TO),
+      new SuggestScoreDoc[0], true);
 
   /**
    * {@link org.apache.lucene.search.ScoreDoc} with an
@@ -89,12 +90,18 @@ public class TopSuggestDocs extends TopDocs {
   }
 
   /**
+   * Indicates that all possibilities for completions were exhausted
+   */
+  final boolean isComplete;
+
+  /**
    * {@link org.apache.lucene.search.TopDocs} wrapper with
    * {@link TopSuggestDocs.SuggestScoreDoc}
    * instead of {@link org.apache.lucene.search.ScoreDoc}
    */
-  public TopSuggestDocs(TotalHits totalHits, SuggestScoreDoc[] scoreDocs) {
+  public TopSuggestDocs(TotalHits totalHits, SuggestScoreDoc[] scoreDocs, boolean isComplete) {
     super(totalHits, scoreDocs);
+    this.isComplete = isComplete;
   }
 
   /**
@@ -116,19 +123,28 @@ public class TopSuggestDocs extends TopDocs {
    */
   public static TopSuggestDocs merge(int topN, TopSuggestDocs[] shardHits) {
     SuggestScoreDocPriorityQueue priorityQueue = new SuggestScoreDocPriorityQueue(topN);
+    boolean allComplete = true;
     for (TopSuggestDocs shardHit : shardHits) {
       for (SuggestScoreDoc scoreDoc : shardHit.scoreLookupDocs()) {
         if (scoreDoc == priorityQueue.insertWithOverflow(scoreDoc)) {
           break;
         }
       }
+      allComplete = allComplete && shardHit.isComplete;
     }
     SuggestScoreDoc[] topNResults = priorityQueue.getResults();
     if (topNResults.length > 0) {
-      return new TopSuggestDocs(new TotalHits(topNResults.length, TotalHits.Relation.EQUAL_TO), topNResults);
+      return new TopSuggestDocs(new TotalHits(topNResults.length, TotalHits.Relation.EQUAL_TO), topNResults,
+          allComplete);
     } else {
       return TopSuggestDocs.EMPTY;
     }
   }
 
+  /**
+   * returns true if we exhausted all possibilities to collect results
+   */
+  public boolean isComplete() {
+    return this.isComplete;
+  }
 }
