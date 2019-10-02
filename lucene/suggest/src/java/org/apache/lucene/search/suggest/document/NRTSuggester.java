@@ -203,15 +203,14 @@ public final class NRTSuggester implements Accountable {
         }
         boolean duplicateSurfaceForm = false;
         boolean collected = false;
+        char[] surfaceForm = null;
         if (collector.doSkipDuplicates()) {
           // now record that we've seen this surface form:
-          char[] key = new char[spare.length()];
-          System.arraycopy(spare.chars(), 0, key, 0, spare.length());
-          if (collector.seenSurfaceForms.contains(key)) {
+          surfaceForm = new char[spare.length()];
+          System.arraycopy(spare.chars(), 0, surfaceForm, 0, spare.length());
+          if (collector.seenSurfaceForms.contains(surfaceForm)) {
             // we already collected a higher scoring document with this key, in this segment:
             duplicateSurfaceForm = true;
-          } else {
-            collector.seenSurfaceForms.add(key);
           }
         }
 
@@ -220,6 +219,10 @@ public final class NRTSuggester implements Accountable {
           try {
             float score = scorer.score(decode(path.output.output1), path.boost);
             collected = collector.collect(docID, spare.toCharsRef(), path.context, score);
+            // also store the surface form as "seen" in case we are de-duplicating on surface forms in the collector also
+            if (collector.doSkipDuplicates() && collected) {
+              collector.seenSurfaceForms.add(surfaceForm);
+            }
           } catch (IOException e) {
             throw new RuntimeException(e);
           }
