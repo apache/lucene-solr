@@ -331,7 +331,7 @@ public class TestPrefixCompletionQuery extends LuceneTestCase {
     Set<Integer> acceptedDocs = new HashSet<>();
     List<Entry> expectedResults = new ArrayList<Entry>();
 
-    for (int docCount = 0; docCount < 10000; docCount++) {
+    for (int docCount = 0; docCount < 5000; docCount++) {
       Document document = new Document();
       String value = "ab" + RandomStrings.randomAsciiAlphanumOfLength(random(), 10) +"_" + docCount;
       document.add(new SuggestField("suggest_field", value, docCount));
@@ -358,9 +358,6 @@ public class TestPrefixCompletionQuery extends LuceneTestCase {
 
       @Override
       public boolean collect(int docID, CharSequence key, CharSequence context, float score) throws IOException {
-          if (key.toString().startsWith("aboVU")) {
-              System.out.println("here");
-          }
           String idPart = key.toString().split("_")[1];
           if (acceptedDocs.contains(Integer.parseInt(idPart))) {
               super.collect(docID, key, context, score);
