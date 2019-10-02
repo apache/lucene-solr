@@ -301,14 +301,17 @@ public class TestPrefixCompletionQuery extends LuceneTestCase {
           }
           return collected;
       }
+
+      @Override
+      protected boolean canReject() {
+        return true;
+      }
     };
 
     indexSearcher.suggest(query, collector);
     TopSuggestDocs suggestions = collector.get();
     assertSuggestions(suggestions, expectedResults.subList(0, topN).toArray(new Entry[0]));
-
-    // TODO expecting true here, why false?
-    assertFalse(suggestions.isComplete());
+    assertTrue(suggestions.isComplete());
 
     reader.close();
     iw.close();

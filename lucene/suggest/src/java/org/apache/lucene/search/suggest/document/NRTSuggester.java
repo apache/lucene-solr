@@ -144,7 +144,8 @@ public final class NRTSuggester implements Accountable {
     // have been collected, regardless of the set topN value. This value is the
     // maximum number of suggestions that can be collected.
     final int topN = collector.getCountToCollect() * prefixPaths.size();
-    final int queueSize = getMaxTopNSearcherQueueSize(topN, scorer.reader.numDocs(), liveDocsRatio, scorer.filtered);
+    final int queueSize = getMaxTopNSearcherQueueSize(topN, scorer.reader.numDocs(), liveDocsRatio,
+        scorer.filtered, collector.canReject());
 
     final CharsRefBuilder spare = new CharsRefBuilder();
 
@@ -298,15 +299,23 @@ public final class NRTSuggester implements Accountable {
    * <p>
    * If a <code>filter</code> is applied, the queue size is increased by
    * half the number of live documents.
+   *
+   * If the collector can reject documents upon collecting, the queue size is
+   * increased by half the number of live documents again.
+   *
    * <p>
    * The maximum queue size is {@link #MAX_TOP_N_QUEUE_SIZE}
    */
-  private int getMaxTopNSearcherQueueSize(int topN, int numDocs, double liveDocsRatio, boolean filterEnabled) {
+  private int getMaxTopNSearcherQueueSize(int topN, int numDocs, double liveDocsRatio, boolean filterEnabled,
+      boolean collectorCanReject) {
     long maxQueueSize = topN * maxAnalyzedPathsPerOutput;
     // liveDocRatio can be at most 1.0 (if no docs were deleted)
     assert liveDocsRatio <= 1.0d;
     maxQueueSize = (long) (maxQueueSize / liveDocsRatio);
     if (filterEnabled) {
+      maxQueueSize = maxQueueSize + (numDocs/2);
+    }
+    if (collectorCanReject) {
       maxQueueSize = maxQueueSize + (numDocs/2);
     }
     return (int) Math.min(MAX_TOP_N_QUEUE_SIZE, maxQueueSize);

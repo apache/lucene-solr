@@ -220,4 +220,12 @@ public class TopSuggestDocsCollector extends SimpleCollector {
   void notComplete() {
     this.isComplete = false;
   }
+
+  /**
+   * indicate if this collectors {@link #collect(int, CharSequence, CharSequence, float)} method potentially rejects
+   * documents. This information can be used to e.g. estimating necessary queue sizes in the searcher.
+   */
+  protected boolean canReject() {
+    return false;
+  }
 }
