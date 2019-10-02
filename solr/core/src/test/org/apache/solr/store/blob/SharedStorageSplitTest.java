@@ -18,8 +18,10 @@ package org.apache.solr.store.blob;
 
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import junit.framework.TestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -27,13 +29,9 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.UpdateResponse;
-import org.apache.solr.cloud.api.collections.Assign;
-import org.apache.solr.cloud.api.collections.SplitByPrefixTest;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Replica.Type;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.store.blob.client.CoreStorageClient;
 import org.apache.solr.store.shared.SolrCloudSharedStoreTestCase;
 import org.junit.AfterClass;
@@ -66,8 +64,7 @@ public class SharedStorageSplitTest extends SolrCloudSharedStoreTestCase  {
     shutdownCluster();
   }
 
-  void doSplitShard(String collectionName, boolean sharedStorage, int repFactor, int nPrefixes, int nDocsPerPrefix) throws Exception {
-
+  CloudSolrClient createCollection(String collectionName, boolean sharedStorage, int repFactor) throws Exception {
     if (sharedStorage) {
       CollectionAdminRequest
           .createCollection(collectionName, "conf", 1, 0, 0, 0)
@@ -86,6 +83,11 @@ public class SharedStorageSplitTest extends SolrCloudSharedStoreTestCase  {
 
     CloudSolrClient client = cluster.getSolrClient();
     client.setDefaultCollection(collectionName);
+    return client;
+  }
+
+  void doSplitShard(String collectionName, boolean sharedStorage, int repFactor, int nPrefixes, int nDocsPerPrefix) throws Exception {
+    CloudSolrClient client = createCollection(collectionName, sharedStorage, repFactor);
 
     if (random().nextBoolean()) {
       for (int i = 0; i < nPrefixes; i++) {
@@ -172,6 +174,69 @@ public class SharedStorageSplitTest extends SolrCloudSharedStoreTestCase  {
   public void testSplit() throws Exception {
     doSplitShard("c1", true, 1, 2, 2);
     doSplitShard("c2", true, 2, 2, 2);
+  }
+
+
+  void doLiveSplitShard(String collectionName, boolean sharedStorage, int repFactor) throws Exception {
+    final CloudSolrClient client = createCollection(collectionName, sharedStorage, repFactor);
+
+    final AtomicBoolean doIndex = new AtomicBoolean(true);
+    final AtomicInteger docsIndexed = new AtomicInteger();
+    Thread indexThread = null;
+    try {
+      // start indexing client before we initiate a shard split
+      indexThread = new Thread(() -> {
+        while (doIndex.get()) {
+          try {
+            Thread.sleep(10);  // cap indexing rate at 100 docs per second...
+            int currDoc = docsIndexed.get();
+
+            // Try all docs in the same update request
+            UpdateRequest updateReq = new UpdateRequest();
+            updateReq.add(sdoc("id", "doc_" + currDoc));
+            UpdateResponse ursp = updateReq.commit(client, collectionName);
+            assertEquals(0, ursp.getStatus());  // for now, don't accept any failures
+            if (ursp.getStatus() == 0) {
+              docsIndexed.incrementAndGet();
+            }
+          } catch (Exception e) {
+            TestCase.fail(e.getMessage());
+            break;
+          }
+        }
+      });
+      indexThread.start();
+
+      Thread.sleep(100);  // wait for a few docs to be indexed before invoking split
+      int docCount = docsIndexed.get();
+
+      CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(collectionName)
+          .setShardName("shard1");
+      splitShard.process(client);
+      waitForState("Timed out waiting for sub shards to be active.",
+          collectionName, activeClusterShape(2, 3*repFactor));  // 2 repFactor for the new split shards, 1 repFactor for old replicas
+
+      // make sure that docs were able to be indexed during the split
+      assertTrue(docsIndexed.get() > docCount);
+
+      Thread.sleep(100);  // wait for a few more docs to be indexed after split
+
+    } finally {
+      // shut down the indexer
+      doIndex.set(false);
+      if (indexThread != null) {
+        indexThread.join();
+      }
+    }
+
+    assertTrue(docsIndexed.get() > 0);
+
+    checkExpectedDocs(client, repFactor, docsIndexed.get());
+  }
+
+  @Test
+  public void testLiveSplit() throws Exception {
+    doLiveSplitShard("livesplit1", true, 1);
   }
 
 }
