@@ -28,6 +28,7 @@ import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
 import java.net.URLDecoder;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.AbstractMap;
@@ -53,6 +54,9 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
@@ -91,7 +95,7 @@ public class Utils {
   public static final Function NEW_SYNCHRONIZED_ARRAYLIST_FUN = o -> Collections.synchronizedList(new ArrayList<>());
   public static final Function NEW_HASHSET_FUN = o -> new HashSet<>();
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
   public static Map getDeepCopy(Map map, int maxDepth) {
     return getDeepCopy(map, maxDepth, true, false);
   }
@@ -100,21 +104,18 @@ public class Utils {
     return getDeepCopy(map, maxDepth, mutable, false);
   }
 
-  public static Map getDeepCopy(Map map, int maxDepth, boolean mutable, boolean sorted) {
-    if(map == null) return null;
-    if (maxDepth < 1) return map;
-    Map copy;
-    if (sorted) {
-      copy = new TreeMap();
-    } else {
-      copy = map instanceof LinkedHashMap?  new LinkedHashMap(map.size()): new HashMap(map.size());
+  public static final Function<JSONParser, ObjectBuilder> MAPWRITEROBJBUILDER = jsonParser -> {
+    try {
+      return new ObjectBuilder(jsonParser) {
+        @Override
+        public Object newObject() {
+          return new LinkedHashMapWriter();
+        }
+      };
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
-    for (Object o : map.entrySet()) {
-      Map.Entry e = (Map.Entry) o;
-      copy.put(e.getKey(), makeDeepCopy(e.getValue(),maxDepth, mutable, sorted));
-    }
-    return mutable ? copy : Collections.unmodifiableMap(copy);
-  }
+  };
 
   public static void forEachMapEntry(Object o, String path, BiConsumer fun) {
     Object val = Utils.getObjectByPath(o, false, path);
@@ -144,6 +145,40 @@ public class Utils {
       ((Map) o).forEach((k, v) -> fun.accept(k, v));
     }
   }
+  public static final Function<JSONParser, ObjectBuilder> MAPOBJBUILDER = jsonParser -> {
+    try {
+      return new ObjectBuilder(jsonParser) {
+        @Override
+        public Object newObject() {
+          return new HashMap();
+        }
+      };
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  };
+  public static final Pattern ARRAY_ELEMENT_INDEX = Pattern
+      .compile("(\\S*?)\\[([-]?\\d+)\\]");
+
+  public static Map getDeepCopy(Map map, int maxDepth, boolean mutable, boolean sorted) {
+    if (map == null) return null;
+    if (maxDepth < 1) return map;
+    Map copy;
+    if (sorted) {
+      copy = new TreeMap();
+    } else {
+      copy = map instanceof LinkedHashMap ? new LinkedHashMap(map.size()) : new HashMap(map.size());
+    }
+    for (Object o : map.entrySet()) {
+      Map.Entry e = (Map.Entry) o;
+      copy.put(e.getKey(), makeDeepCopy(e.getValue(), maxDepth, mutable, sorted));
+    }
+    return mutable ? copy : Collections.unmodifiableMap(copy);
+  }
+
+  public static Collection getDeepCopy(Collection c, int maxDepth, boolean mutable) {
+    return getDeepCopy(c, maxDepth, mutable, false);
+  }
 
   private static Object makeDeepCopy(Object v, int maxDepth, boolean mutable, boolean sorted) {
     if (v instanceof MapWriter && maxDepth > 1) {
@@ -151,7 +186,7 @@ public class Utils {
     } else if (v instanceof IteratorWriter && maxDepth > 1) {
       v = ((IteratorWriter) v).toList(new ArrayList<>());
       if (sorted) {
-        Collections.sort((List)v);
+        Collections.sort((List) v);
       }
     }
 
@@ -161,29 +196,6 @@ public class Utils {
       v = getDeepCopy((Collection) v, maxDepth - 1, mutable, sorted);
     }
     return v;
-  }
-
-  public static InputStream toJavabin(Object o) throws IOException {
-    try (final JavaBinCodec jbc = new JavaBinCodec()) {
-      BinaryRequestWriter.BAOS baos = new BinaryRequestWriter.BAOS();
-      jbc.marshal(o,baos);
-      return new ByteBufferInputStream(ByteBuffer.wrap(baos.getbuf(),0,baos.size()));
-    }
-  }
-
-  public static Collection getDeepCopy(Collection c, int maxDepth, boolean mutable) {
-    return getDeepCopy(c, maxDepth, mutable, false);
-  }
-
-  public static Collection getDeepCopy(Collection c, int maxDepth, boolean mutable, boolean sorted) {
-    if (c == null || maxDepth < 1) return c;
-    Collection result = c instanceof Set ?
-        ( sorted? new TreeSet() : new HashSet()) : new ArrayList();
-    for (Object o : c) result.add(makeDeepCopy(o, maxDepth, mutable, sorted));
-    if (sorted && (result instanceof List)) {
-      Collections.sort((List)result);
-    }
-    return mutable ? result : result instanceof Set ? unmodifiableSet((Set) result) : unmodifiableList((List) result);
   }
 
   public static void writeJson(Object o, OutputStream os, boolean indent) throws IOException {
@@ -199,35 +211,12 @@ public class Utils {
     return writer;
   }
 
-  private static class MapWriterJSONWriter extends JSONWriter {
-
-    public MapWriterJSONWriter(CharArr out, int indentSize) {
-      super(out, indentSize);
+  public static InputStream toJavabin(Object o) throws IOException {
+    try (final JavaBinCodec jbc = new JavaBinCodec()) {
+      BinaryRequestWriter.BAOS baos = new BinaryRequestWriter.BAOS();
+      jbc.marshal(o, baos);
+      return new ByteBufferInputStream(ByteBuffer.wrap(baos.getbuf(), 0, baos.size()));
     }
-
-    @Override
-    public void handleUnknownClass(Object o) {
-      if (o instanceof MapWriter) {
-        Map m = ((MapWriter)o).toMap(new LinkedHashMap<>());
-        write(m);
-      } else {
-        super.handleUnknownClass(o);
-      }
-    }
-  }
-
-  public static byte[] toJSON(Object o) {
-    if(o == null) return new byte[0];
-    CharArr out = new CharArr();
-    if (!(o instanceof List) && !(o instanceof Map)) {
-      if (o instanceof MapWriter)  {
-        o = ((MapWriter)o).toMap(new LinkedHashMap<>());
-      } else if(o instanceof IteratorWriter){
-        o = ((IteratorWriter)o).toList(new ArrayList<>());
-      }
-    }
-    new MapWriterJSONWriter(out, 2).write(o); // indentation by default
-    return toUTF8(out);
   }
 
   public static String toJSONString(Object o) {
@@ -274,15 +263,29 @@ public class Utils {
     return propMap;
   }
 
-  public static Object fromJSON(InputStream is){
-    return fromJSON(new InputStreamReader(is, UTF_8));
-  }
-  public static Object fromJSON(Reader is){
-    try {
-      return STANDARDOBJBUILDER.apply(getJSONParser(is)).getVal();
-    } catch (IOException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parse error", e);
+  public static Collection getDeepCopy(Collection c, int maxDepth, boolean mutable, boolean sorted) {
+    if (c == null || maxDepth < 1) return c;
+    Collection result = c instanceof Set ?
+        (sorted ? new TreeSet() : new HashSet()) : new ArrayList();
+    for (Object o : c) result.add(makeDeepCopy(o, maxDepth, mutable, sorted));
+    if (sorted && (result instanceof List)) {
+      Collections.sort((List) result);
     }
+    return mutable ? result : result instanceof Set ? unmodifiableSet((Set) result) : unmodifiableList((List) result);
+  }
+
+  public static byte[] toJSON(Object o) {
+    if (o == null) return new byte[0];
+    CharArr out = new CharArr();
+    if (!(o instanceof List) && !(o instanceof Map)) {
+      if (o instanceof MapWriter) {
+        o = ((MapWriter) o).toMap(new LinkedHashMap<>());
+      } else if (o instanceof IteratorWriter) {
+        o = ((IteratorWriter) o).toList(new ArrayList<>());
+      }
+    }
+    new MapWriterJSONWriter(out, 2).write(o); // indentation by default
+    return toUTF8(out);
   }
 
 
@@ -293,35 +296,14 @@ public class Utils {
       throw new RuntimeException(e);
     }
   };
-  public static final Function<JSONParser, ObjectBuilder> MAPWRITEROBJBUILDER = jsonParser -> {
-    try {
-      return new ObjectBuilder(jsonParser){
-        @Override
-        public Object newObject() {
-          return new LinkedHashMapWriter();
-        }
-      };
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  };
 
-  public static final Function<JSONParser, ObjectBuilder> MAPOBJBUILDER = jsonParser -> {
-    try {
-      return new ObjectBuilder(jsonParser){
-        @Override
-        public Object newObject() {
-          return new HashMap();
-        }
-      };
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  };
+  public static Object fromJSON(InputStream is) {
+    return fromJSON(new InputStreamReader(is, UTF_8));
+  }
 
-  public static Object fromJSON(InputStream is, Function<JSONParser, ObjectBuilder> objBuilderProvider) {
+  public static Object fromJSON(Reader is) {
     try {
-      return objBuilderProvider.apply(getJSONParser((new InputStreamReader(is, StandardCharsets.UTF_8)))).getVal();
+      return STANDARDOBJBUILDER.apply(getJSONParser(is)).getVal();
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parse error", e);
     }
@@ -336,10 +318,19 @@ public class Utils {
       return fromJSON(stream);
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                              "Resource error: " + e.getMessage(), e);
+          "Resource error: " + e.getMessage(), e);
     }
   }
-  public static JSONParser getJSONParser(Reader reader){
+
+  public static Object fromJSON(InputStream is, Function<JSONParser, ObjectBuilder> objBuilderProvider) {
+    try {
+      return objBuilderProvider.apply(getJSONParser((new InputStreamReader(is, StandardCharsets.UTF_8)))).getVal();
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parse error", e);
+    }
+  }
+
+  public static JSONParser getJSONParser(Reader reader) {
     JSONParser parser = new JSONParser(reader);
     parser.setFlags(parser.getFlags() |
         JSONParser.ALLOW_MISSING_COLON_COMMA_BEFORE_OBJECT |
@@ -347,11 +338,11 @@ public class Utils {
     return parser;
   }
 
-  public static Object fromJSONString(String json)  {
+  public static Object fromJSONString(String json) {
     try {
       return STANDARDOBJBUILDER.apply(getJSONParser(new StringReader(json))).getVal();
     } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parse error : "+ json, e );
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parse error : " + json, e);
     }
   }
 
@@ -363,10 +354,10 @@ public class Utils {
 
   public static boolean setObjectByPath(Object root, String hierarchy, Object value) {
     List<String> parts = StrUtils.splitSmart(hierarchy, '/', true);
-    return setObjectByPath(root, parts, value);
+    return setObjectByPath(root, parts, value, true);
   }
 
-  public static boolean setObjectByPath(Object root, List<String> hierarchy, Object value) {
+  public static boolean setObjectByPath(Object root, List<String> hierarchy, Object value, boolean insertMissing) {
     if (root == null) return false;
     if (!isMapLike(root)) throw new RuntimeException("must be a Map or NamedList");
     Object obj = root;
@@ -382,7 +373,10 @@ public class Utils {
       }
       if (i < hierarchy.size() - 1) {
         Object o = getVal(obj, s, -1);
-        if (o == null) return false;
+        if (o == null) {
+          if (insertMissing) insertItem(o = new LinkedHashMap<>(), obj, s);
+          else return false;
+        }
         if (idx > -1) {
           List l = (List) o;
           o = idx < l.size() ? l.get(idx) : null;
@@ -391,14 +385,7 @@ public class Utils {
         obj = o;
       } else {
         if (idx == -2) {
-          if (obj instanceof NamedList) {
-            NamedList namedList = (NamedList) obj;
-            int location = namedList.indexOf(s, 0);
-            if (location == -1) namedList.add(s, value);
-            else namedList.setVal(location, value);
-          } else if (obj instanceof Map) {
-            ((Map) obj).put(s, value);
-          }
+          insertItem(value, obj, s);
           return true;
         } else {
           Object v = getVal(obj, s, -1);
@@ -422,10 +409,20 @@ public class Utils {
 
   }
 
+  private static void insertItem(Object value, Object container, String name) {
+    if (container instanceof NamedList) {
+      NamedList namedList = (NamedList) container;
+      int location = namedList.indexOf(name, 0);
+      if (location == -1) namedList.add(name, value);
+      else namedList.setVal(location, value);
+    } else if (container instanceof Map) {
+      ((Map) container).put(name, value);
+    }
+  }
 
   public static Object getObjectByPath(Object root, boolean onlyPrimitive, List<String> hierarchy) {
-    if(root == null) return null;
-    if(!isMapLike(root)) return null;
+    if (root == null) return null;
+    if (!isMapLike(root)) return null;
     Object obj = root;
     for (int i = 0; i < hierarchy.size(); i++) {
       int idx = -1;
@@ -518,6 +515,7 @@ public class Utils {
       try {
         ((MapWriter) obj).writeMap(new MapWriter.EntryWriter() {
           int count = -1;
+
           @Override
           public MapWriter.EntryWriter put(CharSequence k, Object v) {
             if (result[0] != null) return this;
@@ -533,15 +531,14 @@ public class Utils {
         throw new RuntimeException(e);
       }
       return result[0];
-    }
-    else if (obj instanceof Map) return ((Map) obj).get(key);
+    } else if (obj instanceof Map) return ((Map) obj).get(key);
     else throw new RuntimeException("must be a NamedList or Map");
   }
 
   /**
    * If the passed entity has content, make sure it is fully
    * read and closed.
-   * 
+   *
    * @param entity to consume or null
    */
   public static void consumeFully(HttpEntity entity) {
@@ -562,31 +559,21 @@ public class Utils {
 
   /**
    * Make sure the InputStream is fully read.
-   * 
+   *
    * @param is to read
    * @throws IOException on problem with IO
    */
   private static void readFully(InputStream is) throws IOException {
     is.skip(is.available());
-    while (is.read() != -1) {}
-  }
-
-  public static Map<String, Object> getJson(DistribStateManager distribStateManager, String path) throws InterruptedException, IOException, KeeperException {
-    VersionedData data = null;
-    try {
-      data = distribStateManager.getData(path);
-    } catch (KeeperException.NoNodeException | NoSuchElementException e) {
-      return Collections.emptyMap();
+    while (is.read() != -1) {
     }
-    if (data == null || data.getData() == null || data.getData().length == 0) return Collections.emptyMap();
-    return (Map<String, Object>) Utils.fromJSON(data.getData());
   }
 
   /**
    * Assumes data in ZooKeeper is a JSON string, deserializes it and returns as a Map
    *
-   * @param zkClient the zookeeper client
-   * @param path the path to the znode being read
+   * @param zkClient        the zookeeper client
+   * @param path            the path to the znode being read
    * @param retryOnConnLoss whether to retry the operation automatically on connection loss, see {@link org.apache.solr.common.cloud.ZkCmdExecutor#retryOperation(ZkOperation)}
    * @return a Map if the node exists and contains valid JSON or an empty map if znode does not exist or has a null data
    */
@@ -602,39 +589,23 @@ public class Utils {
     return Collections.emptyMap();
   }
 
-  public static final Pattern ARRAY_ELEMENT_INDEX = Pattern
-      .compile("(\\S*?)\\[([-]?\\d+)\\]");
-
-  public static SpecProvider getSpec(final String name) {
-    return () -> {
-      return ValidatingJsonMap.parse(CommonParams.APISPEC_LOCATION + name + ".json", CommonParams.APISPEC_LOCATION);
-    };
-  }
-
-  public static String parseMetricsReplicaName(String collectionName, String coreName) {
-    if (collectionName == null || !coreName.startsWith(collectionName)) {
-      return null;
-    } else {
-      // split "collection1_shard1_1_replica1" into parts
-      if (coreName.length() > collectionName.length()) {
-        String str = coreName.substring(collectionName.length() + 1);
-        int pos = str.lastIndexOf("_replica");
-        if (pos == -1) { // ?? no _replicaN part ??
-          return str;
-        } else {
-          return str.substring(pos + 1);
-        }
-      } else {
-        return null;
-      }
+  public static Map<String, Object> getJson(DistribStateManager distribStateManager, String path) throws InterruptedException, IOException, KeeperException {
+    VersionedData data = null;
+    try {
+      data = distribStateManager.getData(path);
+    } catch (KeeperException.NoNodeException | NoSuchElementException e) {
+      return Collections.emptyMap();
     }
+    if (data == null || data.getData() == null || data.getData().length == 0) return Collections.emptyMap();
+    return (Map<String, Object>) Utils.fromJSON(data.getData());
   }
 
-  /**Applies one json over other. The 'input' is applied over the sink
-   * The values in input isapplied over the values in 'sink' . If a value is 'null'
+  /**
+   * Applies one json over other. The 'input' is applied over the sink
+   * The values in input are applied over the values in 'sink' . If a value is 'null'
    * that value is removed from sink
    *
-   * @param sink the original json object to start with. Ensure that this Map is mutable
+   * @param sink  the original json object to start with. Ensure that this Map is mutable
    * @param input the json with new values
    * @return whether there was any change made to sink or not.
    */
@@ -672,17 +643,59 @@ public class Utils {
     return isModified;
   }
 
+  public static SpecProvider getSpec(final String name) {
+    return () -> {
+      return ValidatingJsonMap.parse(CommonParams.APISPEC_LOCATION + name + ".json", CommonParams.APISPEC_LOCATION);
+    };
+  }
+
+  public static String parseMetricsReplicaName(String collectionName, String coreName) {
+    if (collectionName == null || !coreName.startsWith(collectionName)) {
+      return null;
+    } else {
+      // split "collection1_shard1_1_replica1" into parts
+      if (coreName.length() > collectionName.length()) {
+        String str = coreName.substring(collectionName.length() + 1);
+        int pos = str.lastIndexOf("_replica");
+        if (pos == -1) { // ?? no _replicaN part ??
+          return str;
+        } else {
+          return str.substring(pos + 1);
+        }
+      } else {
+        return null;
+      }
+    }
+  }
+
   public static String getBaseUrlForNodeName(final String nodeName, String urlScheme) {
     final int _offset = nodeName.indexOf("_");
     if (_offset < 0) {
       throw new IllegalArgumentException("nodeName does not contain expected '_' separator: " + nodeName);
     }
-    final String hostAndPort = nodeName.substring(0,_offset);
+    final String hostAndPort = nodeName.substring(0, _offset);
     try {
-      final String path = URLDecoder.decode(nodeName.substring(1+_offset), "UTF-8");
+      final String path = URLDecoder.decode(nodeName.substring(1 + _offset), "UTF-8");
       return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + path));
     } catch (UnsupportedEncodingException e) {
       throw new IllegalStateException("JVM Does not seem to support UTF-8", e);
+    }
+  }
+
+  private static class MapWriterJSONWriter extends JSONWriter {
+
+    public MapWriterJSONWriter(CharArr out, int indentSize) {
+      super(out, indentSize);
+    }
+
+    @Override
+    public void handleUnknownClass(Object o) {
+      if (o instanceof MapWriter) {
+        Map m = ((MapWriter) o).toMap(new LinkedHashMap<>());
+        write(m);
+      } else {
+        super.handleUnknownClass(o);
+      }
     }
   }
 
@@ -711,6 +724,69 @@ public class Utils {
       logger.error(e.getMessage(), e);
     }
     return def;
+  }
+
+  public interface InputStreamConsumer<T> {
+
+    T accept(InputStream is) throws IOException;
+
+  }
+  public static final InputStreamConsumer<?> JAVABINCONSUMER = is -> new JavaBinCodec().unmarshal(is);
+  public static final InputStreamConsumer<?> JSONCONSUMER = is -> Utils.fromJSON(is);
+  public static InputStreamConsumer<ByteBuffer> newBytesConsumer(int maxSize){
+    return is -> {
+      try (BinaryRequestWriter.BAOS bos = new BinaryRequestWriter.BAOS()) {
+        long sz = 0;
+        int next = is.read();
+        while (next > -1) {
+          if (++sz > maxSize) throw new BufferOverflowException();
+          bos.write(next);
+          next = is.read();
+        }
+        bos.flush();
+        return ByteBuffer.wrap( bos.getbuf(), 0, bos.size());
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    };
+
+  }
+
+
+
+
+  public static <T> T executeGET(HttpClient client, String url, InputStreamConsumer<T> consumer) throws SolrException {
+    T result = null;
+    HttpGet httpGet = new HttpGet(url);
+    HttpResponse rsp = null;
+    try {
+      rsp = client.execute(httpGet);
+    } catch (IOException e) {
+      log.error("Error in request to url : "+ url, e);
+      throw new SolrException(SolrException.ErrorCode.UNKNOWN, "error sending request");
+    }
+    int statusCode = rsp.getStatusLine().getStatusCode();
+    if(statusCode != 200) {
+      try {
+        log.error("Failed a request to : {} ,  status :{}  body {}",url, rsp.getStatusLine(),  EntityUtils.toString(rsp.getEntity(), StandardCharsets.UTF_8));
+      } catch (IOException e) {
+        log.error("could not print error", e);
+      }
+      throw new SolrException(SolrException.ErrorCode.getErrorCode(statusCode), "Unknown error");
+    }
+    HttpEntity entity = rsp.getEntity();
+    try{
+      InputStream is = entity.getContent();
+      if(consumer != null) {
+
+        result = consumer.accept(is);
+      }
+    } catch (IOException e) {
+      throw new SolrException(SolrException.ErrorCode.UNKNOWN, e);
+    } finally {
+      Utils.consumeFully(entity);
+    }
+    return result;
   }
 
 }

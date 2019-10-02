@@ -48,6 +48,7 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
   // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   //17-Aug-2018 commented @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
   public void testDynamicLoading() throws Exception {
+
     System.setProperty("enable.runtime.lib", "true");
     setupRestTestHarnesses();
 
@@ -97,7 +98,7 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
 
 
     assertNotNull(map = (Map) map.get("error"));
-    assertTrue("full output " + map, map.get("msg").toString().contains("no such blob or version available: colltest/1" ));
+    assertTrue("full output " + map, map.get("msg").toString().contains("no such resource available: colltest/1" ));
     payload = " {\n" +
         "  'set' : {'watched': {" +
         "                    'x':'X val',\n" +
@@ -127,9 +128,6 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
       Thread.sleep(100);
     }
     ByteBuffer jar = null;
-
-//     jar = persistZip("/tmp/runtimelibs.jar.bin", TestDynamicLoading.class, RuntimeLibReqHandler.class, RuntimeLibResponseWriter.class, RuntimeLibSearchComponent.class);
-//    if(true) return;
 
     jar = getFileContent("runtimecode/runtimelibs.jar.bin");
     TestBlobHandler.postAndCheck(cloudClient, baseURL, blobName, jar, 1);
@@ -284,4 +282,8 @@ public class TestDynamicLoading extends AbstractFullDistribZkTestBase {
     return bos.getByteBuffer();
   }
 
+/*  public static void main(String[] args) throws Exception {
+    persistZip("/tmp/runtimelibs_v3.jar.bin", TestDynamicLoading.class, RuntimeLibReqHandler.class, RuntimeLibResponseWriter.class, RuntimeLibSearchComponent.class);
+    if(true) return;
+  }*/
 }

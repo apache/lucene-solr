@@ -169,6 +169,32 @@
       "required": [
         "name"
       ]
+    },
+    "add-requesthandler": {
+      "type": "object",
+      "documentation": "",
+      "description" : "Create a node level request handler",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Name of the request handler. This is the path"
+        },
+        "class": {
+          "type": "string",
+          "description": "The class name"
+        },
+        "package" : {
+          "type": "string",
+          "description": " The package from where the plugin can be loaded from"
+        }
+      },
+      "required": ["name", "class"],
+      "additionalProperties": true
+    },
+    "delete-requesthandler" : {
+      "description" : "delete a requesthandler",
+      "type": "string"
     }
+
   }
 }

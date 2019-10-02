@@ -16,17 +16,14 @@
  */
 package org.apache.solr.core;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
-import java.math.BigInteger;
 import java.nio.ByteBuffer;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -34,6 +31,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
@@ -45,14 +43,12 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
-import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.SimplePostTool;
 import org.apache.zookeeper.server.ByteBufferInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 import static org.apache.solr.common.SolrException.ErrorCode.SERVICE_UNAVAILABLE;
 import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 
@@ -60,7 +56,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
  * The purpose of this class is to store the Jars loaded in memory and to keep only one copy of the Jar in a single node.
  */
 public class BlobRepository {
-  private static final long MAX_JAR_SIZE = Long.parseLong(System.getProperty("runtme.lib.size", String.valueOf(5 * 1024 * 1024)));
+  private static final long MAX_JAR_SIZE = Long.parseLong(System.getProperty("runtime.lib.size", String.valueOf(5 * 1024 * 1024)));
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   static final Random RANDOM;
   static final Pattern BLOB_KEY_PATTERN_CHECKER = Pattern.compile(".*/\\d+");
@@ -76,6 +72,7 @@ public class BlobRepository {
     }
   }
 
+
   private final CoreContainer coreContainer;
   private Map<String, BlobContent> blobs = createMap();
 
@@ -87,6 +84,7 @@ public class BlobRepository {
   public BlobRepository(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
   }
+
 
   // I wanted to {@link SolrCore#loadDecodeAndCacheBlob(String, Decoder)} below but precommit complains
 
@@ -116,13 +114,6 @@ public class BlobRepository {
     return getBlobIncRef(key.concat(decoder.getName()), () -> addBlob(key, decoder));
   }
 
-  BlobContentRef getBlobIncRef(String key, Decoder decoder, String url, String sha512) {
-    StringBuffer keyBuilder = new StringBuffer(key);
-    if (decoder != null) keyBuilder.append(decoder.getName());
-    keyBuilder.append("/").append(sha512);
-
-    return getBlobIncRef(keyBuilder.toString(), () -> new BlobContent<>(key, fetchBlobAndVerify(key, url, sha512), decoder));
-  }
 
   // do the actual work returning the appropriate type...
   private <T> BlobContentRef<T> getBlobIncRef(String key, Callable<BlobContent<T>> blobCreator) {
@@ -166,31 +157,14 @@ public class BlobRepository {
     return aBlob;
   }
 
-  static String INVALID_JAR_MSG = "Invalid jar from {0} , expected sha512 hash : {1} , actual : {2}";
 
-  private ByteBuffer fetchBlobAndVerify(String key, String url, String sha512) {
-    ByteBuffer byteBuffer = fetchFromUrl(key, url);
-    String computedDigest = sha512Digest(byteBuffer);
-    if (!computedDigest.equals(sha512)) {
-      throw new SolrException(SERVER_ERROR, StrUtils.formatString(INVALID_JAR_MSG, url, sha512, computedDigest));
 
-    }
-    return byteBuffer;
-  }
-
-  public static String sha512Digest(ByteBuffer byteBuffer) {
-    MessageDigest digest = null;
+  public static String sha256Digest(ByteBuffer buf) {
     try {
-      digest = MessageDigest.getInstance("SHA-512");
-    } catch (NoSuchAlgorithmException e) {
-      //unlikely
-      throw new SolrException(SERVER_ERROR, e);
+      return DigestUtils.sha256Hex(new ByteBufferInputStream(ByteBuffer.wrap(buf.array(), buf.arrayOffset(), buf.limit())));
+    } catch (IOException e) {
+      throw new RuntimeException("Unable to compute sha256", e);
     }
-    digest.update(byteBuffer);
-    return String.format(
-        Locale.ROOT,
-        "%0128x",
-        new BigInteger(1, digest.digest()));
   }
 
 
@@ -214,13 +188,14 @@ public class BlobRepository {
       entity = response.getEntity();
       int statusCode = response.getStatusLine().getStatusCode();
       if (statusCode != 200) {
-        throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "no such blob or version available: " + key);
+        throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "no such resource available: " + key + ", url : " + url);
       }
 
       try (InputStream is = entity.getContent()) {
         b = SimplePostTool.inputStreamToByteArray(is, MAX_JAR_SIZE);
       }
     } catch (Exception e) {
+      log.error("Error loading resource " + url, e);
       if (e instanceof SolrException) {
         throw (SolrException) e;
       } else {
@@ -281,6 +256,7 @@ public class BlobRepository {
     }
   }
 
+
   public static class BlobContent<T> {
     public final String key;
     private final T content; // holds byte buffer or cached object, holding both is a waste of memory
@@ -334,7 +310,7 @@ public class BlobRepository {
   public static class BlobContentRef<T> {
     public final BlobContent<T> blob;
 
-    private BlobContentRef(BlobContent<T> blob) {
+    public BlobContentRef(BlobContent<T> blob) {
       this.blob = blob;
     }
   }

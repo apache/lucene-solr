@@ -1,0 +1,11 @@
+{
+  "methods": [
+    "GET"
+  ],
+  "url": {
+    "paths": [
+      "/node/filestore/package",
+      "/node/filestore/package/{id}"
+    ]
+  }
+}

@@ -55,10 +55,13 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.zookeeper.CreateMode;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.cloud.ZkConfigManager.CONFIGS_ZKNODE;
 
 /**
  * Base class for SolrCloud tests
@@ -87,9 +90,12 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   private static class Config {
     final String name;
     final Path path;
-    private Config(String name, Path path) {
+    final Map<String, byte[]> extraConfig;
+
+    private Config(String name, Path path, Map<String, byte[]> extraConfig) {
       this.name = name;
       this.path = path;
+      this.extraConfig = extraConfig;
     }
   }
 
@@ -181,7 +187,12 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
      * @param configPath the path to the config files
      */
     public Builder addConfig(String configName, Path configPath) {
-      this.configs.add(new Config(configName, configPath));
+      this.configs.add(new Config(configName, configPath, null));
+      return this;
+    }
+
+    public Builder addConfig(String configName, Path configPath, Map<String, byte[]> extraConfig) {
+      this.configs.add(new Config(configName, configPath, extraConfig));
       return this;
     }
 
@@ -206,8 +217,8 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
      *
      * @throws Exception if an error occurs on startup
      */
-    public void configure() throws Exception {
-      cluster = build();
+    public MiniSolrCloudCluster configure() throws Exception {
+      return cluster = build();
     }
 
     /**
@@ -221,7 +232,15 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
           null, securityJson, trackJettyMetrics);
       CloudSolrClient client = cluster.getSolrClient();
       for (Config config : configs) {
-        ((ZkClientClusterStateProvider)client.getClusterStateProvider()).uploadConfig(config.path, config.name);
+        ((ZkClientClusterStateProvider) client.getClusterStateProvider()).uploadConfig(config.path, config.name);
+        if (config.extraConfig != null) {
+          for (Map.Entry<String, byte[]> e : config.extraConfig.entrySet()) {
+            ((ZkClientClusterStateProvider) client.getClusterStateProvider()).getZkStateReader().getZkClient()
+                .create(CONFIGS_ZKNODE + "/" + config.name + "/" + e.getKey(), e.getValue(), CreateMode.PERSISTENT, true);
+
+          }
+
+        }
       }
 
       if (clusterProperties.size() > 0) {

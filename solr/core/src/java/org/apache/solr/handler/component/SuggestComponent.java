@@ -90,7 +90,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
 
   protected SolrMetricManager metricManager;
   protected String registryName;
-  
+
   /**
    * Key is the dictionary name used in SolrConfig, value is the corresponding {@link SolrSuggester}
    */

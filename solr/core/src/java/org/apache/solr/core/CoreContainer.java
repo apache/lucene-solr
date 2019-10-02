@@ -47,6 +47,7 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
+import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
@@ -192,6 +193,10 @@ public class CoreContainer {
 
   private final BlobRepository blobRepository = new BlobRepository(this);
 
+  private final DistribFileStore fileStore = new DistribFileStore(this);
+
+  final ContainerRequestHandlers containerRequestHandlers = new ContainerRequestHandlers(this);
+
   private volatile PluginBag<SolrRequestHandler> containerHandlers = new PluginBag<>(SolrRequestHandler.class, null);
 
   private volatile boolean asyncSolrCoreLoad;
@@ -217,6 +222,8 @@ public class CoreContainer {
   protected volatile MetricsCollectorHandler metricsCollectorHandler;
 
   protected volatile AutoscalingHistoryHandler autoscalingHistoryHandler;
+
+  private final PackageBag packageBag = new PackageBag(this);
 
 
   // Bits for the state variable.
@@ -625,6 +632,7 @@ public class CoreContainer {
 
     zkSys.initZooKeeper(this, solrHome, cfg.getCloudConfig());
     if (isZooKeeperAware()) {
+      getZkController().getZkStateReader().registerClusterPropertiesListener(packageBag);
       pkiAuthenticationPlugin = new PKIAuthenticationPlugin(this, zkSys.getZkController().getNodeName(),
           (PublicKeyHandler) containerHandlers.get(PublicKeyHandler.PATH));
       pkiAuthenticationPlugin.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, "/authentication/pki");
@@ -637,6 +645,8 @@ public class CoreContainer {
     reloadSecurityProperties();
     this.backupRepoFactory = new BackupRepositoryFactory(cfg.getBackupRepositoryPlugins());
 
+    containerHandlers.put(new AnnotatedApi(containerRequestHandlers));
+    containerHandlers.put(new AnnotatedApi(fileStore.fileStoreRead));
     createHandler(ZK_PATH, ZookeeperInfoHandler.class.getName(), ZookeeperInfoHandler.class);
     createHandler(ZK_STATUS_PATH, ZookeeperStatusHandler.class.getName(), ZookeeperStatusHandler.class);
     collectionsHandler = createHandler(COLLECTIONS_HANDLER_PATH, cfg.getCollectionsHandlerClass(), CollectionsHandler.class);
@@ -1537,7 +1547,7 @@ public class CoreContainer {
       } catch (SolrCoreState.CoreIsClosedException e) {
         throw e;
       } catch (Exception e) {
-        coreInitFailures.put(cd.getName(), new CoreLoadFailure(cd, (Exception) e));
+        coreInitFailures.put(cd.getName(), new CoreLoadFailure(cd, e));
         throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to reload core [" + cd.getName() + "]", e);
       } finally {
         if (!success && newCore != null && newCore.getOpenCount() > 0) {
@@ -1755,6 +1765,10 @@ public class CoreContainer {
     return blobRepository;
   }
 
+  public DistribFileStore getFileStore(){
+    return fileStore;
+  }
+
   /**
    * If using asyncSolrCoreLoad=true, calling this after {@link #load()} will
    * not return until all cores have finished loading.
@@ -1780,6 +1794,14 @@ public class CoreContainer {
       ((SolrMetricProducer) handler).initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, path);
     }
     return handler;
+  }
+
+  public PluginBag<SolrRequestHandler> getContainerHandlers() {
+    return containerHandlers;
+  }
+
+  public PackageBag getPackageBag(){
+    return packageBag;
   }
 
   public CoreAdminHandler getMultiCoreHandler() {
@@ -1893,6 +1915,10 @@ public class CoreContainer {
 
   public AuditLoggerPlugin getAuditLoggerPlugin() {
     return auditloggerPlugin == null ? null : auditloggerPlugin.plugin;
+  }
+
+  public ContainerRequestHandlers getContainerRequestHandlers(){
+    return containerRequestHandlers;
   }
 
   public NodeConfig getNodeConfig() {

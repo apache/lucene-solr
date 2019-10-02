@@ -1,0 +1,31 @@
+{
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "A name for the library"
+    },
+    "files": {
+      "type": "array",
+      "items": {
+       "#include" :"cluster.package.Commands.file.properties"
+      }
+    },
+    "file": {
+      "#include" :"cluster.package.Commands.file.properties"
+    },
+    "repository": {
+      "type": "string",
+      "description": "the repository name"
+    },
+    "version": {
+      "type": "string",
+      "description": "version of he package"
+    }
+  },
+  "required": [
+    "name",
+    "version"
+  ],
+  "oneOf" : ["file","files"]
+}

@@ -16,12 +16,11 @@
  */
 package org.apache.solr.rest.schema;
 
-import java.util.List;
-import java.util.Map;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
+import java.util.List;
+import java.util.Map;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
