@@ -973,7 +973,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
         putIfAbsent(in.getQuery(), localDocIdSet, cacheHelper);
 
         // Remove the key from inflight -- the key is loaded now
-        Object retValue = inFlightAsyncLoadQueries.remove(in.getQuery());
+        Object retValue = inFlightAsyncLoadQueries.remove(new MapKey(in.getQuery(), cacheHelper.getKey()));
 
         // The query should have been present in the inflight queries set before
         // we actually loaded it -- hence the removal of the key should be successful
