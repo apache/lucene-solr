@@ -140,6 +140,12 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
           }
 
           boolean isHitGloballyCompetitive = fieldValueChecker.isValueCompetitive(currentValue, doc);
+          if (queueFull) {
+            boolean temp = reverseMul * comparator.compareBottom(doc) > 0;
+            if (isHitGloballyCompetitive != temp) {
+              System.out.println("Not match1 global " + isHitGloballyCompetitive + " local " + temp + " global value " + fieldValueChecker.value.toString() + " local value " + comparator.getDocValue(doc));
+            }
+          }
 
           if (queueFull || (fieldValueChecker.isBottomValuePresent() && isHitGloballyCompetitive == false)) {
             if (collectedAllCompetitiveHits || (reverseMul * comparator.compareBottom(doc) <= 0 ||
@@ -184,6 +190,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
             if (queueFull) {
               comparator.setBottom(bottom.slot);
               updateMinCompetitiveScore(scorer);
+              fieldValueChecker.checkAndUpdateBottomValue(bottom.value);
             }
           }
         }

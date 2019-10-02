@@ -21,7 +21,7 @@ package org.apache.lucene.search;
  * Maintains bottom feature value across multiple collectors
  */
 public class FieldValueChecker {
-  private volatile Object value;
+  public volatile Object value;
   private FieldComparator[] fieldComparators;
   private int[] reverseMul;
 
@@ -51,9 +51,9 @@ public class FieldValueChecker {
   }
 
   boolean isValueCompetitive(Object value, int doc) {
-    if (value == null || this.value == null) {
+    if (this.value == null) {
       //System.out.println("Null case false " + doc);
-      return false;
+      return true;
     }
 
     if (value instanceof Object[]) {
