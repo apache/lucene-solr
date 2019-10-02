@@ -21,6 +21,7 @@ The math expressions library supports simple and multivariate linear regression.
 <<Simple Linear Regression, Simple Linear Regression>> -
 <<Regression Plot, Regression Plot>> -
 <<Multivariate Linear Regression, Multivariate Linear Regression>>
+<<Residual Plot, Residual Plot>>
 
 == Simple Linear Regression
 
