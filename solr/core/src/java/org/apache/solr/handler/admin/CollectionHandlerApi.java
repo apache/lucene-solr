@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.api.Api;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionApiMapping;
 import org.apache.solr.client.solrj.request.CollectionApiMapping.CommandMeta;
 import org.apache.solr.client.solrj.request.CollectionApiMapping.Meta;
@@ -41,6 +42,7 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
 
   final CollectionsHandler handler;
   final Collection<ApiCommand> apiCommands;
+
   public CollectionHandlerApi(CollectionsHandler handler) {
     this.handler = handler;
     apiCommands = createApiMapping();
@@ -85,9 +87,23 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
     return apiCommands;
   }
 
+  //the commands at /cluster are mixed ,V2Only and mixed. So, if a command is not found in the V2Only
+  // set it should use a fallack
+  Api clusterPathAPI;
+
+  @Override
+  protected Api getApi(Map<SolrRequest.METHOD, Map<V2EndPoint, List<ApiCommand>>> commandsMapping, V2EndPoint op) {
+    Api api = super.getApi(commandsMapping, op);
+    if (op.getSpecName().equals(CollectionApiMapping.EndPoint.CLUSTER_CMD.getSpecName())) {
+
+      this.clusterPathAPI = api;
+    }
+    return api;
+  }
+
   @Override
   protected Collection<Api> getV2OnlyApis() {
-    return new ClusterAPI(handler.getCoreContainer()).getAllApis();
+    return new ClusterAPI(handler.getCoreContainer()).getAllApis(this);
   }
 
 }

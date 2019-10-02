@@ -35,10 +35,15 @@ import org.apache.solr.security.PermissionNameProvider;
 public class AnnotatedApi extends Api implements PermissionNameProvider {
   private EndPoint endPoint;
   private Map<String, Cmd> commands = new HashMap<>();
+  private final Api fallback;
 
+  public AnnotatedApi (Object obj) {
+    this(obj, null);
 
-  public AnnotatedApi(Object obj) {
+  }
+  public AnnotatedApi(Object obj, Api fallback) {
     super(Utils.getSpec(readSpec(obj.getClass())));
+    this.fallback = fallback;
     Class<?> klas = obj.getClass();
     if (!Modifier.isPublic(klas.getModifiers())) {
       throw new RuntimeException(obj.getClass().getName() + " is not public");
@@ -88,8 +93,13 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
       }
     }
     if (!allExists) {
-      throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST, "error processing commands",
-          CommandOperation.captureErrors(cmds));
+      if(fallback != null){
+        fallback.call(req,rsp);
+        return;
+      } else {
+        throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST, "error processing commands",
+            CommandOperation.captureErrors(cmds));
+      }
     }
 
     for (CommandOperation cmd : cmds) {

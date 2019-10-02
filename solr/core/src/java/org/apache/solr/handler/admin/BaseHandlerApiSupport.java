@@ -81,7 +81,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
   }
 
 
-  private Api getApi(Map<SolrRequest.METHOD, Map<V2EndPoint, List<ApiCommand>>> commandsMapping, final V2EndPoint op) {
+  protected Api getApi(Map<SolrRequest.METHOD, Map<V2EndPoint, List<ApiCommand>>> commandsMapping, final V2EndPoint op) {
     final BaseHandlerApiSupport apiHandler = this;
     return new Api(Utils.getSpec(op.getSpecName())) {
       @Override

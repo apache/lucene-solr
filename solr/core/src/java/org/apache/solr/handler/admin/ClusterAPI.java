@@ -130,15 +130,16 @@ public class ClusterAPI {
 
   }
 
-  public List<Api> getAllApis() {
+  public List<Api> getAllApis(CollectionHandlerApi collHandler) {
     List<Api> result = new ArrayList<>();
     result.add(new AnnotatedApi(new ClusterAPI.ListNodes()));
     result.add(new AnnotatedApi(new FileStoreWrite()));
     result.add(new AnnotatedApi(new ClusterAPI.PkgRead()));
     result.add(new AnnotatedApi(new ClusterAPI.PkgEdit()));
-    result.add(new AnnotatedApi(new ClusterAPI.ClusterCommands()));
+    result.add(new AnnotatedApi(new ClusterAPI.ClusterCommands() , collHandler.clusterPathAPI));
     return result;
   }
+
 
   @EndPoint(
       spec = "cluster.packages.Commands",
