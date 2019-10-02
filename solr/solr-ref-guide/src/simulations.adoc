@@ -22,8 +22,7 @@ the basics of performing Monte Carlo simulations with Math Expressions.
 
 <<Random Time Series, Random Time Series>> -
 <<Autocorrelation, Autocorrelation>> -
-<<Visualizing the Distribution, Visualizing the Distribution>> -
-<<Fitting the Distribution, Fitting the Distribution>> -
+<<Visualizing the Distribution, Visualizing & Fitting the Distribution>> -
 <<Monte Carlo, Monte Carlo>> -
 <<Random Walk, Random Walk>> -
 <<Multivariate Normal Distribution, Multivariate Normal Distribution>>
