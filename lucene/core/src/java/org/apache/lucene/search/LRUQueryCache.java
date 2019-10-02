@@ -22,13 +22,14 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.ConcurrentModificationException;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RejectedExecutionException;
@@ -92,6 +93,24 @@ import static org.apache.lucene.util.RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_U
  * @lucene.experimental
  */
 public class LRUQueryCache implements QueryCache, Accountable {
+  /** Act as key for the inflight queries map */
+  private static class MapKey {
+    private final Query query;
+    private final IndexReader.CacheKey cacheKey;
+
+    public MapKey(Query query, IndexReader.CacheKey cacheKey) {
+      this.query = query;
+      this.cacheKey = cacheKey;
+    }
+
+    public Query getQuery() {
+      return query;
+    }
+
+    public IndexReader.CacheKey getCacheKey() {
+      return cacheKey;
+    }
+  }
 
   private final int maxSize;
   private final long maxRamBytesUsed;
@@ -103,7 +122,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
   // This is used to ensure that multiple threads do not trigger loading
   // of the same query in the same cache. We use a set because it is an invariant that
   // the entries of this data structure be unique.
-  private final Set<Query> inFlightAsyncLoadQueries = new HashSet<>();
+  private final Map<MapKey, IndexReader.CacheKey> inFlightAsyncLoadQueries = new HashMap<>();
   // The contract between this set and the per-leaf caches is that per-leaf caches
   // are only allowed to store sub-sets of the queries that are contained in
   // mostRecentlyUsedQueries. This is why write operations are performed under a lock
@@ -118,6 +137,9 @@ public class LRUQueryCache implements QueryCache, Accountable {
   private volatile long missCount;
   private volatile long cacheCount;
   private volatile long cacheSize;
+
+  // For testing
+  private CountDownLatch countDownLatch;
 
   /**
    * Expert: Create a new instance that will cache at most <code>maxSize</code>
@@ -378,8 +400,17 @@ public class LRUQueryCache implements QueryCache, Accountable {
         onEviction(singleton);
       }
     } finally {
-      inFlightAsyncLoadQueries.remove(query);
+      removeQuery(query);
       lock.unlock();
+    }
+  }
+
+  private void removeQuery(Query query) {
+    for (MapKey mapKey : inFlightAsyncLoadQueries.keySet()) {
+      if (mapKey.query == query) {
+        inFlightAsyncLoadQueries.remove(mapKey);
+        return;
+      }
     }
   }
 
@@ -461,9 +492,20 @@ public class LRUQueryCache implements QueryCache, Accountable {
   }
 
   // pkg-private for testing
+  void setCountDownLatch(CountDownLatch latch) {
+    this.countDownLatch = latch;
+  }
+
+  // pkg-private for testing
   // return the list of queries being loaded asynchronously
   List<Query> inFlightQueries() {
-    return new ArrayList<>(inFlightAsyncLoadQueries);
+    List<Query> returnList = new ArrayList<>();
+
+    for (MapKey mapKey : inFlightAsyncLoadQueries.keySet()) {
+      returnList.add(mapKey.query);
+    }
+
+    return returnList;
   }
 
   @Override
@@ -917,7 +959,12 @@ public class LRUQueryCache implements QueryCache, Accountable {
        * If the current query is already being asynchronously cached,
        * do not trigger another cache operation
        */
-      if (inFlightAsyncLoadQueries.add(in.getQuery()) == false) {
+      Object returnValue = inFlightAsyncLoadQueries.putIfAbsent(new MapKey(in.getQuery(),
+          cacheHelper.getKey()), cacheHelper.getKey());
+
+      assert returnValue == null || returnValue == cacheHelper.getKey();
+
+      if (returnValue != null) {
         return false;
       }
 
@@ -931,6 +978,10 @@ public class LRUQueryCache implements QueryCache, Accountable {
         // The query should have been present in the inflight queries set before
         // we actually loaded it -- hence the removal of the key should be successful
         assert retValue != null;
+
+        if (countDownLatch != null) {
+          countDownLatch.countDown();
+        }
 
         return null;
       });

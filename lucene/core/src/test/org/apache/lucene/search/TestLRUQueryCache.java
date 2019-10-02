@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.FutureTask;
@@ -305,6 +306,8 @@ public class TestLRUQueryCache extends LuceneTestCase {
     assertEquals(Collections.emptyList(), queryCache.cachedQueries());
 
     searcher.setQueryCachingPolicy(ALWAYS_CACHE);
+    CountDownLatch latch = new CountDownLatch(1);
+    queryCache.setCountDownLatch(latch);
     // First read should miss
     searcher.search(new ConstantScoreQuery(red), 1);
 
@@ -312,7 +315,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
       searcher.search(new ConstantScoreQuery(red), 1);
     } else {
       // Let the cache load be completed
-      Thread.sleep(200);
+      latch.await(200, TimeUnit.MILLISECONDS);
       searcher.search(new ConstantScoreQuery(red), 1);
     }
 
@@ -320,36 +323,44 @@ public class TestLRUQueryCache extends LuceneTestCase {
     searcher.search(new ConstantScoreQuery(red), 1);
     assertEquals(Collections.singletonList(red), queryCache.cachedQueries());
 
+    latch = new CountDownLatch(1);
+    queryCache.setCountDownLatch(latch);
     searcher.search(new ConstantScoreQuery(green), 1);
     if (!(queryCache.cachedQueries().equals(Arrays.asList(red)))) {
       assertEquals(Arrays.asList(red, green), queryCache.cachedQueries());
     } else {
       // Let the cache load be completed
-      Thread.sleep(200);
+      latch.await(200, TimeUnit.MILLISECONDS);
       assertEquals(Arrays.asList(red, green), queryCache.cachedQueries());
     }
 
     searcher.search(new ConstantScoreQuery(red), 1);
     assertEquals(Arrays.asList(green, red), queryCache.cachedQueries());
 
+    latch = new CountDownLatch(1);
+    queryCache.setCountDownLatch(latch);
+
     searcher.search(new ConstantScoreQuery(blue), 1);
     if (!(queryCache.cachedQueries().equals(Arrays.asList(green, red)))) {
       assertEquals(Arrays.asList(red, blue), queryCache.cachedQueries());
     } else {
       // Let the cache load be completed
-      Thread.sleep(200);
+      latch.await(200, TimeUnit.MILLISECONDS);
       assertEquals(Arrays.asList(red, blue), queryCache.cachedQueries());
     }
 
     searcher.search(new ConstantScoreQuery(blue), 1);
     assertEquals(Arrays.asList(red, blue), queryCache.cachedQueries());
 
+    latch = new CountDownLatch(1);
+    queryCache.setCountDownLatch(latch);
+
     searcher.search(new ConstantScoreQuery(green), 1);
     if (!(queryCache.cachedQueries().equals(Arrays.asList(red, blue)))) {
       assertEquals(Arrays.asList(blue, green), queryCache.cachedQueries());
     } else {
       // Let the cache load be completed
-      Thread.sleep(200);
+      latch.await(200, TimeUnit.MILLISECONDS);
       assertEquals(Arrays.asList(blue, green), queryCache.cachedQueries());
     }
 
@@ -394,6 +405,8 @@ public class TestLRUQueryCache extends LuceneTestCase {
 
     searcher.setQueryCache(queryCache);
     searcher.setQueryCachingPolicy(ALWAYS_CACHE);
+    CountDownLatch latch = new CountDownLatch(1);
+    queryCache.setCountDownLatch(latch);
 
     FutureTask<Void> task = new FutureTask<>(() -> {
       searcher.search(new ConstantScoreQuery(green), 1);
@@ -405,7 +418,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
       stressService.submit(task);
     }
 
-    Thread.sleep(3000);
+    latch.await(3000, TimeUnit.MILLISECONDS);
     assertEquals(Arrays.asList(green), queryCache.cachedQueries());
 
     reader.close();
@@ -413,6 +426,60 @@ public class TestLRUQueryCache extends LuceneTestCase {
     dir.close();
     service.shutdown();
     stressService.shutdown();
+  }
+
+  public void testLRUConcurrentCachingAcrossSegments() throws Exception {
+    Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+
+    int numDocs = atLeast(150);
+    int numIterations = atLeast(3);
+
+    for (int i = 0; i < numIterations; i++) {
+      for (int j = 0; j < numDocs; j++) {
+        Document doc = new Document();
+        StringField f = new StringField("color", "blue", Store.NO);
+        doc.add(f);
+        w.addDocument(doc);
+        w.addDocument(doc);
+        w.addDocument(doc);
+      }
+      w.commit();
+    }
+
+    final DirectoryReader reader = w.getReader();
+
+    ExecutorService service = new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS,
+        new LinkedBlockingQueue<Runnable>(),
+        new NamedThreadFactory("TestLRUQueryCache"));
+
+    IndexSearcher searcher = new IndexSearcher(reader, service) {
+      @Override
+      protected LeafSlice[] slices(List<LeafReaderContext> leaves) {
+        ArrayList<LeafSlice> slices = new ArrayList<>();
+        for (LeafReaderContext ctx : leaves) {
+          slices.add(new LeafSlice(Arrays.asList(ctx)));
+        }
+        return slices.toArray(new LeafSlice[0]);
+      }
+    };
+
+    final LRUQueryCache queryCache = new LRUQueryCache(2, 100000, context -> true);
+
+    final Query blue = new TermQuery(new Term("color", "blue"));
+
+    assertEquals(Collections.emptyList(), queryCache.cachedQueries());
+
+    searcher.setQueryCache(queryCache);
+    searcher.setQueryCachingPolicy(ALWAYS_CACHE);
+    assert searcher.getSlices().length > 1;
+
+    searcher.search(new ConstantScoreQuery(blue), 1);
+
+    reader.close();
+    w.close();
+    dir.close();
+    service.shutdown();
   }
 
   public void testClearFilter() throws IOException {
