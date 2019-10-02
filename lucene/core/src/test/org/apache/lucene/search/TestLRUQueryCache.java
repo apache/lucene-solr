@@ -1467,17 +1467,37 @@ public class TestLRUQueryCache extends LuceneTestCase {
     LRUQueryCache cache = new LRUQueryCache(2, 10000, new LRUQueryCache.MinSegmentSizePredicate(2, 0f));
     searcher.setQueryCache(cache);
     searcher.count(new DummyQuery());
+
     assertEquals(0, cache.getCacheCount());
 
     cache = new LRUQueryCache(2, 10000, new LRUQueryCache.MinSegmentSizePredicate(1, 0f));
     searcher.setQueryCache(cache);
+    CountDownLatch latch = new CountDownLatch(1);
+    cache.setCountDownLatch(latch);
     searcher.count(new DummyQuery());
-    assertEquals(1, cache.getCacheCount());
+
+    if (cache.getCacheCount() != 1) {
+      try {
+        latch.await(200, TimeUnit.MILLISECONDS);
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e.getMessage());
+      }
+      assertEquals(1, cache.getCacheCount());
+    }
 
     cache = new LRUQueryCache(2, 10000, new LRUQueryCache.MinSegmentSizePredicate(0, .6f));
     searcher.setQueryCache(cache);
+    latch = new CountDownLatch(1);
+    cache.setCountDownLatch(latch);
     searcher.count(new DummyQuery());
-    assertEquals(1, cache.getCacheCount());
+    if (cache.getCacheCount() != 1) {
+      try {
+        latch.await(200, TimeUnit.MILLISECONDS);
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e.getMessage());
+      }
+      assertEquals(1, cache.getCacheCount());
+    }
 
     w.addDocument(new Document());
     reader.close();
