@@ -141,6 +141,7 @@ public class SolrUpdateManager {
     }
 
     addOrUpdatePackage(op, id, version, sha256, repository, release.sig, metadataSha256, release.metadata);
+    
     return true;
   }
 

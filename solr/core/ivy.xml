@@ -140,6 +140,9 @@
     <dependency org="com.jayway.jsonpath" name="json-path" rev="${/com.jayway.jsonpath/json-path}" conf="compile"/>
 
     <dependency org="com.github.zafarkhaja" name="java-semver" rev="0.9.0" conf="compile"/>
+    <dependency org="net.minidev" name="json-smart" rev="2.2.1" conf="compile"/>
+    <dependency org="net.minidev" name="asm" rev="1.0.2" conf="compile"/>
+
 
     <dependency org="org.rrd4j" name="rrd4j" rev="${/org.rrd4j/rrd4j}" conf="compile"/>
 

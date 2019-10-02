@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -96,7 +98,7 @@ public class PackageTool extends SolrCLI.ToolBase {
           if (cli.getArgList().size()==1) {
             update(pluginManager, updateManager);
           } else {
-            updatePlugin(pluginManager, updateManager, cli.getArgs()[1], cli.getArgList().subList(2, cli.getArgList().size()));
+            updatePackage(pluginManager, updateManager, zkHost, cli.getArgs()[1], cli.getArgList().subList(2, cli.getArgList().size()));
           }
           break;
         default:
@@ -179,16 +181,42 @@ public class PackageTool extends SolrCLI.ToolBase {
     }
   }
 
-  protected void updatePlugin(SolrPackageManager pluginManager, SolrUpdateManager updateManager, String pluginName, List args) throws PluginException {
+  protected void updatePackage(SolrPackageManager packageManager, SolrUpdateManager updateManager, String zkHost,
+      String packageName, List args) throws PluginException {
     if (updateManager.hasUpdates()) {
-      String latestVersion = updateManager.getLastPackageRelease(pluginName).version;
-      System.out.println("Updating ["+pluginName+"] to version: "+latestVersion);
-      updateManager.updatePackage(pluginName, latestVersion);
+      String latestVersion = updateManager.getLastPackageRelease(packageName).version;
+      SolrPackageInstance installedPackage = packageManager.getPackage(packageName);
+      System.out.println("Updating ["+packageName+"] from " + installedPackage.getVersion() + " to version "+latestVersion);
+      
+      List<String> collectionsDeployedIn = getDeployedCollections(zkHost, packageManager, installedPackage);
+      System.out.println("Already deployed on collections: "+collectionsDeployedIn);
+      updateManager.updatePackage(packageName, latestVersion);
+      
+      SolrPackageInstance updatedPackage = packageManager.getPackage(packageName);
+      System.out.println("Verifying version "+updatedPackage.getVersion()+" on "+collectionsDeployedIn
+          +", result: "+packageManager.verify(updatedPackage, collectionsDeployedIn));
     } else {
-      System.out.println("Package "+pluginName+" is already up to date.");
+      System.out.println("Package "+packageName+" is already up to date.");
     }
   }
 
+  private List<String> getDeployedCollections(String zkHost, SolrPackageManager packageManager, SolrPackageInstance pkg) {
+    
+    List<String> allCollections;
+    try (SolrZkClient zkClient = new SolrZkClient(zkHost, 30000)) {
+      allCollections = zkClient.getChildren("/collections", null, true);
+    } catch (KeeperException | InterruptedException e) {
+      throw new RuntimeException(e);
+    }
+    System.out.println("Need to verify if these collections have the plugin installed? "+ allCollections);
+    List<String> deployed = new ArrayList<String>();
+    for (String collection: allCollections) {
+      if (packageManager.verify(pkg, Collections.singletonList(collection))) {
+        deployed.add(collection);
+      }
+    }
+    return deployed;
+  }
   
   @SuppressWarnings("static-access")
   public Option[] getOptions() {

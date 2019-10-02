@@ -4,6 +4,7 @@ package org.apache.solr.packagemanager;
 import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -65,14 +66,14 @@ public class SolrPackage implements Serializable, Comparable<SolrPackage> {
     public String updateCommand;
 
     @JsonProperty("uninstall-command")
-    public String uninstallCommands;
+    public String uninstallCommand;
 
     @JsonProperty("verify-command")
-    public String verifyCommand;
+    public Command verifyCommand;
 
     @Override
     public String toString() {
-      return id + ": {setup: "+setupCommand+", update: "+updateCommand+", uninstall: "+uninstallCommands+", verify: "+verifyCommand+"}";
+      return id + ": {setup: "+setupCommand+", update: "+updateCommand+", uninstall: "+uninstallCommand+", verify: "+verifyCommand+"}";
     }
   }
 
@@ -89,5 +90,17 @@ public class SolrPackage implements Serializable, Comparable<SolrPackage> {
     this.repositoryId = repositoryId;
   }
 
+  public static class Command {
+    public String path;
+    public String method;
+    public Map payload;
+    public String condition;
+    public String expected;
+    
+    @Override
+      public String toString() {
+        return method + " " + path + ", Payload: "+ payload+", Condition: "+condition+", expected: "+expected;
+      }
+  }
 }
 

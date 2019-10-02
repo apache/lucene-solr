@@ -15,16 +15,19 @@ import java.util.Map;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.solr.packagemanager.SolrPackage.Command;
 import org.apache.solr.packagemanager.SolrPackage.Metadata;
 import org.apache.solr.packagemanager.SolrPackage.Plugin;
 import org.apache.solr.packagemanager.pf4j.DefaultVersionManager;
 import org.apache.solr.packagemanager.pf4j.VersionManager;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jayway.jsonpath.JsonPath;
 
 public class SolrPackageManager {
 
@@ -70,22 +73,63 @@ public class SolrPackageManager {
     return ret;
   }
 
-  public boolean deployInstallPackage(String pluginId, List<String> collections) {
-    SolrPackageInstance plugin = getPackage(pluginId);
+  String solrBaseUrl = "http://localhost:8983";
 
-    for (Plugin p: plugin.getPlugins()) {
+  public boolean deployInstallPackage(String pluginId, List<String> collections) {
+    SolrPackageInstance pkg = getPackage(pluginId);
+
+    for (Plugin p: pkg.getPlugins()) {
       System.out.println(p.setupCommand);
       for (String collection: collections) {
         System.out.println("Executing " + p.setupCommand + " for collection:" + collection);
         postJson("http://localhost:8983/solr/"+collection+"/config", p.setupCommand);
       }
     }
-    return true;
+    
+    boolean success = verify(pkg, collections);
+    if (success) {
+      System.out.println("Deployed and verified package: "+pkg.id+", version: "+pkg.version);
+    }
+    return success;
+  }
+  
+  //nocommit should this be private?
+  public boolean verify(SolrPackageInstance pkg, List<String> collections) {
+    // verify deployment succeeded?
+    boolean success = true;
+    for (Plugin p: pkg.getPlugins()) {
+      System.out.println(p.verifyCommand);
+      for (String collection: collections) {
+        System.out.println("Executing " + p.verifyCommand + " for collection:" + collection);
+        //postJson("http://localhost:8983/solr/"+collection+"/config", p.setupCommand);
+        Command cmd = p.verifyCommand;
+        String url = solrBaseUrl + resolve(cmd.path, collection, pkg.version, pkg.id);
+
+        if ("GET".equalsIgnoreCase(cmd.method)) {
+          String response = get(url);
+          System.out.println(response);
+          String actualValue = JsonPath.parse(response).read(cmd.condition);
+          String expectedValue = resolve(cmd.expected, collection, pkg.version, pkg.id);
+          System.out.println("Actual: "+actualValue+", expected: "+expectedValue);
+          if (!expectedValue.equals(actualValue)) {
+            System.out.println("Failed to deploy plugin: "+p.id);
+            success = false;
+          }
+        }
+      }
+    }
+    return success;
+  }
+  
+  private String resolve(String str, String collection, String packageVersion, String packageName) {
+    return str.replaceAll("\\{collection\\}", collection)
+        .replaceAll("\\{package-version\\}", packageVersion)
+        .replaceAll("\\{package-name\\}", packageName);
   }
 
   public boolean deployUpdatePackage(String pluginId, List<String> collections) {
-    SolrPackageInstance plugin = getPackage(pluginId);
-    for (Plugin p: plugin.getPlugins()) {
+    SolrPackageInstance pkg = getPackage(pluginId);
+    for (Plugin p: pkg.getPlugins()) {
 
       System.out.println(p.updateCommand);
       for (String collection: collections) {
@@ -93,9 +137,39 @@ public class SolrPackageManager {
         postJson("http://localhost:8983/solr/"+collection+"/config", p.updateCommand);
       }
     }
+    boolean success = verify(pkg, collections);
+    if (success) {
+      System.out.println("Deployed and verified package: "+pkg.id+", version: "+pkg.version);
+    }
     return true;
   }
 
+
+  private String get(String url) {
+    try (CloseableHttpClient client = HttpClients.createDefault();) {
+      HttpGet httpGet = new HttpGet(url);
+      httpGet.setHeader("Content-type", "application/json");
+
+      CloseableHttpResponse response = client.execute(httpGet);
+
+      try {
+        HttpEntity rspEntity = response.getEntity();
+        if (rspEntity != null) {
+          InputStream is = rspEntity.getContent();
+          StringWriter writer = new StringWriter();
+          IOUtils.copy(is, writer, "UTF-8");
+          String results = writer.toString();
+
+          return(results);
+        }
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    } catch (IOException e1) {
+      throw new RuntimeException(e1);
+    }
+    return null;
+  }
 
   private void postJson(String url, String postBody) {
     try (CloseableHttpClient client = HttpClients.createDefault();) {
