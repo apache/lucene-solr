@@ -61,7 +61,9 @@ public class ICUTransformCharFilterFactory extends CharFilterFactory {
     if (assumeExternalUnicodeNormalization || ((modifiedRules = modifyRules(false, stockTransliterator)) == null)) {
       this.transliterator = stockTransliterator;
     } else {
-      this.transliterator = Transliterator.createFromRules(stockTransliterator.getID(), modifiedRules, Transliterator.FORWARD);
+      String baseId = stockTransliterator.getID();
+      String modId = baseId.concat(baseId.lastIndexOf('/') < 0 ? "/X_NO_NORM_IO" : "_X_NO_NORM_IO");
+      this.transliterator = Transliterator.createFromRules(modId, modifiedRules, Transliterator.FORWARD);
     }
     if (!args.isEmpty()) {
       throw new IllegalArgumentException("Unknown parameters: " + args);
