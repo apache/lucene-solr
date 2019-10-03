@@ -152,6 +152,8 @@ New Features
 
 * SOLR-13625: Add CsvStream, TsvStream Streaming Expressions and supporting Stream Evaluators (Joel bernstein)
 
+* SOLR-8241: Add CaffeineCache, an efficient implementation of SolrCache.(Ben Manes, Shawn Heisey, David Smiley, Andrzej Bialecki)
+
 Improvements
 ----------------------
 
