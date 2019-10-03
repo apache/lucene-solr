@@ -376,7 +376,7 @@ technique which means it does not fit a model to the training set in advance. In
 entire training set of observations and outcomes are held in memory and predictions are made
 by averaging the outcomes of the k-nearest neighbors.
 
-The `knnRegress` function is used to perform nearet neighbor regression.
+The `knnRegress` function is used to perform nearest neighbor regression.
 
 
 === 2D Non-Linear Regression
@@ -385,12 +385,18 @@ The example below shows the *regression plot* for knn regression applied to a 2D
 
 In this example the `random` function is used to draw 500 random samples from the *logs* collection
 containing two fields *filesize_d* and *eresponse_d*. The sample is then vectorized with the
-*filesize_d* field stored in a vector assigned to variable *x* and the *eresponse_d* stored in
-variable *y*. The `knnRegress` function is the applied with 20 as the nearest neighbor parameter.
-The `predict` function is then called to predict values for original *x* vector. Finally
-`zplot` is used to plot original *x* and *y* vectors along with the predictions.
+*filesize_d* field stored in a vector assigned to variable *x* and the *eresponse_d* vector stored in
+variable *y*. The `knnRegress` function is then applied with 20 as the nearest neighbor parameter,
+which returns a knn function which can be used to predict values.
+The `predict` function is then called on the knn function to predict values for the original *x* vector.
+Finally `zplot` is used to plot original *x* and *y* vectors along with the predictions.
 
 image::images/math-expressions/knnRegress.png[]
+
+Notice that the regression plot shows a non-linear relations ship between the *filesize_d*
+field and the *eresponse_d* field. Also note that knn regression
+plots a non-linear curve through the scatter plot. The larger the size
+of K (nearest neighbors), the smoother the line.
 
 === Multivariate Non-Linear Regression
 
@@ -401,15 +407,14 @@ are taken, each containing the variables `filesize_d`, `service_d` and `response
 `filesize_d` and `service_d` will be used to predict the value of `response_d`.
 
 
-
 [source,text]
 ----
-let(samples=random(collection1, q="*:*", rows="10000", fl="filesize_d, service_d, response_d"),
-    filesizes=col(samples, filesize_d),
-    serviceLevels=col(samples, service_d),
-    outcomes=col(samples, response_d),
-    observations=transpose(matrix(filesizes, serviceLevels)),
-    lazyModel=knnRegress(observations, outcomes , 5))
+let(a=random(logs, q="*:*", rows="500", fl="filesize_d,  load_d, eresponse_d"),
+     x=col(a, filesize_d),
+     y=col(a, load_d),
+     z=col(a, eresponse_d),
+     obs=transpose(matrix(x, y)),
+     r=knnRegress(obs, z , 20))
 ----
 
 This expression returns the following response. Notice that `knnRegress` returns a tuple describing the regression inputs:
@@ -584,27 +589,35 @@ The example demonstrates this capability by clustering and visualizing latitude 
 In this example the `random` function draws a sample of records from the nyc311 (complaints database) collection where
 the complaint description matches "rat sighting" and latitude is populated in the record. The latitude and longitude fields
 are then vectorized and added as rows to a matrix. The matrix is transposed so each row contains a single latitude, longitude
-point. The `kmeans` function is then used to cluster the latitude and longitude points into 5 clusters. The `zplot` function
+point. The `kmeans` function is then used to cluster the latitude and longitude points into 21 clusters. The `zplot` function
 is then used to visualize the clusters as a scatter chart.
 
-image::images/math-expressions/2Dcluster.png[]
+image::images/math-expressions/2Dcluster1.png[]
 
-The scatter plot above shows each lat/lon point plotted on a Euclidean plain. Each cluster is shown in
-a different color. This plot provides a significant amount of information about the size, shape and dispersion
-of the clusters.
+The scatter plot above shows each lat/lon point plotted on a Euclidean plain with longitude on the
+*x* axis and
+latitude on *y* axis. Each cluster is shown in a different color. This plot provides interesting
+insight in the clusters of rat sightings throughout the boroughs of New York City. For
+example it highlights a cluster of dense sightings in Brooklyn at cluster5 and cluster17,
+surrounded by less dense clusters.
 
 The centroids of each cluster can then be easily plotted on a *map* to visualize the center of the
 clusters. In the example below the centroids are extracted from the clusters using the `getCentroids`
 function, which returns a matrix of the centroids.
 
-In the example the centroids matrix contains 2D lan/lon points. The `colAt` function is then used to extract the latitude and longitude columns by index from the matrix, which
-are plotted using `zplot`. A map visualization is used to display the centroid clusters.
+The centroids matrix contains 2D lan/lon points. The `colAt` function can then be used
+to extract the latitude and longitude columns by index from the matrix and
+plotted with `zplot`. A map visualization is used below to display the centroid clusters.
 
-image::images/math-expressions/2Dcentroids.png[]
 
-The map can be zoomed to understand clearly where the center of clusters lie.
+image::images/math-expressions/centroidplot.png[]
+
+
+The map can then be zoomed to get a closer look at the centroids in the high density areas shown
+in the clustered scatter plot.
 
 image::images/math-expressions/centroidzoom.png[]
+
 
 
 === Phrase Extraction
