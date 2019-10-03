@@ -76,7 +76,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
   private CacheStats priorStats;
   private long priorInserts;
 
-  private String description;
+  private String description = "Caffeine Cache";
   private LongAdder inserts;
   private Cache<K,V> cache;
   private long warmupTime;
@@ -340,25 +340,27 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
   public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
     registry = manager.registry(registryName);
     cacheMap = new MetricsMap((detailed, map) -> {
-      CacheStats stats = cache.stats();
-      long insertCount = inserts.sum();
+      if (cache != null) {
+        CacheStats stats = cache.stats();
+        long insertCount = inserts.sum();
 
-      map.put(LOOKUPS_PARAM, stats.requestCount());
-      map.put(HITS_PARAM, stats.hitCount());
-      map.put(HIT_RATIO_PARAM, stats.hitRate());
-      map.put(INSERTS_PARAM, insertCount);
-      map.put(EVICTIONS_PARAM, stats.evictionCount());
-      map.put(SIZE_PARAM, cache.asMap().size());
-      map.put("warmupTime", warmupTime);
-      map.put(RAM_BYTES_USED_PARAM, ramBytesUsed());
-      map.put(MAX_RAM_MB_PARAM, getMaxRamMB());
+        map.put(LOOKUPS_PARAM, stats.requestCount());
+        map.put(HITS_PARAM, stats.hitCount());
+        map.put(HIT_RATIO_PARAM, stats.hitRate());
+        map.put(INSERTS_PARAM, insertCount);
+        map.put(EVICTIONS_PARAM, stats.evictionCount());
+        map.put(SIZE_PARAM, cache.asMap().size());
+        map.put("warmupTime", warmupTime);
+        map.put(RAM_BYTES_USED_PARAM, ramBytesUsed());
+        map.put(MAX_RAM_MB_PARAM, getMaxRamMB());
 
-      CacheStats cumulativeStats = priorStats.plus(stats);
-      map.put("cumulative_lookups", cumulativeStats.requestCount());
-      map.put("cumulative_hits", cumulativeStats.hitCount());
-      map.put("cumulative_hitratio", cumulativeStats.hitRate());
-      map.put("cumulative_inserts", priorInserts + insertCount);
-      map.put("cumulative_evictions", cumulativeStats.evictionCount());
+        CacheStats cumulativeStats = priorStats.plus(stats);
+        map.put("cumulative_lookups", cumulativeStats.requestCount());
+        map.put("cumulative_hits", cumulativeStats.hitCount());
+        map.put("cumulative_hitratio", cumulativeStats.hitRate());
+        map.put("cumulative_inserts", priorInserts + insertCount);
+        map.put("cumulative_evictions", cumulativeStats.evictionCount());
+      }
     });
     manager.registerGauge(this, registryName, cacheMap, tag, true, scope, getCategory().toString());
   }
