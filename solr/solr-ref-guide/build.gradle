@@ -20,7 +20,8 @@
 // it as a project dependency. This would enable this module to *not* be a java module at all
 // and inherit from base, adding just refGuide-related tasks.
 
-import com.github.jrubygradle.JRubyExec
+import java.time.*
+import java.time.format.*
 
 // Using 1.x versions of asciidoctor-gradle since 2.x wouldn't work
 plugins {
@@ -36,6 +37,7 @@ repositories {
 configurations {
   tools
   refGuide
+  depVer
 }
 
 dependencies {
@@ -56,6 +58,14 @@ dependencies {
   tools ('org.apache.logging.log4j:log4j-core')
   tools ('com.google.guava:guava')
   tools ('commons-codec:commons-codec')
+
+  depVer ('commons-codec:commons-codec')
+  depVer ('io.dropwizard.metrics:metrics-core')
+  depVer ('org.apache.logging.log4j:log4j-core')
+  depVer ('org.apache.opennlp:opennlp-tools')
+  depVer ('org.apache.tika:tika-core')
+  depVer ('org.apache.velocity.tools:velocity-tools-generic')
+  depVer ('org.apache.zookeeper:zookeeper')
 }
 
 sourceSets {
@@ -87,8 +97,10 @@ ext {
     solrGuideVersion = "${solrDocsVersion}-DRAFT"
   }
 
-  solrGuideDraftStatus = "${!solrGuideVersion.matches(/^\d+\.\d+(|\.\d+)$/)}"
+  solrGuideDraftStatus = solrGuideVersion.matches(/^\d+\.\d+(|\.\d+)$/) ? "" : "DRAFT"
   solrGuideVersionPath = solrGuideVersion.replaceAll(/^(\d+)\.(\d+)(-DRAFT)?.*/, "\$1_\$2\$3")
+
+  javadocLink = "https://docs.oracle.com/en/java/javase/11/docs/api/"
 
   if (project.hasProperty("local.javadocs")) {
     htmlSolrJavadocs = "link:../../docs/"
@@ -100,24 +112,27 @@ ext {
 
   bareBonesDir = file("${buildDir}/bare-bones-html")
 
+  def tstamp = ZonedDateTime.now()
+  buildDate = DateTimeFormatter.ofPattern("yyyy-MM-dd").format(tstamp)
+  buildTime = DateTimeFormatter.ofPattern("HH:mm:ss").format(tstamp)
+  buildYear = DateTimeFormatter.ofPattern("yyyy").format(tstamp)
+
   // TODO: Compute remaining property values as they are in ant. What should we do with dependency/ ivy versions?
   props = [
     "solr-guide-draft-status": solrGuideDraftStatus,
     "solr-guide-version": solrGuideVersion,
     "solr-guide-version-path": solrGuideVersionPath,
     "solr-docs-version": solrDocsVersion,
-    "java-javadocs": "(javadoc.link)",
+    "javadoc.link": javadocLink,
+    "java-javadocs": javadocLink,
     "solr-javadocs": htmlSolrJavadocs,
+    "html-solr-javadocs": htmlSolrJavadocs,
     "lucene-javadocs": htmlLuceneJavadocs,
-    "build-date": "(DSTAMP)",
-    "build-year": "(current.year)",
-    "ivy-commons-codec-version": "(ivyversions./commons-codec/commons-codec)",
-    "ivy-dropwizard-version": "(ivyversions.io.dropwizard.metrics.version)",
-    "ivy-log4j-version": "(ivyversions.org.apache.logging.log4j.version)",
-    "ivy-opennlp-version": "(ivyversions./org.apache.opennlp/opennlp-tools)",
-    "ivy-tika-version": "(ivyversions.org.apache.tika.version)",
-    "ivy-velocity-tools-version": "(ivyversions.org.apache.velocity.tools.version)",
-    "ivy-zookeeper-version": "(ivyversions./org.apache.zookeeper/zookeeper)"
+    "html-lucene-javadocs": htmlLuceneJavadocs,
+    "build-date": buildDate,
+    "DSTAMP": buildDate,
+    "build-year": buildYear,
+    "current.year": buildYear
   ]
 }
 
@@ -128,9 +143,6 @@ task buildInit(type: Sync) {
   // it'd require a change in the template that is backwards incompatible.
   def dummyAntProject = new org.apache.tools.ant.Project()
   props.each { k, v -> dummyAntProject.setProperty(k, v) }
-
-  // Emit info about properties for clarity.
-  logger.warn("Building ref guide with:\n" + props.collect({k, v -> "  ${k} -> ${v}"}).join('\n'))
 
   // If replaceable properties change, we have to rerun.
   inputs.properties props
@@ -145,6 +157,28 @@ task buildInit(type: Sync) {
     filteringCharset = 'UTF-8'
     filter(org.apache.tools.ant.filters.ExpandProperties, project: dummyAntProject)
   })
+
+  doFirst {
+    // These properties have to be resolved after configuration phase (palantir's constraint)
+    // so we can't use them as input for caches.
+    def propsFull = [:]
+    [
+      ["ivyversions./commons-codec/commons-codec", "commons-codec", "commons-codec"],
+      ["ivyversions.io.dropwizard.metrics.version", "io.dropwizard.metrics", "metrics-core"],
+      ["ivyversions.org.apache.logging.log4j.version", "org.apache.logging.log4j", "log4j-core"],
+      ["ivyversions./org.apache.opennlp/opennlp-tools", "org.apache.opennlp", "opennlp-tools"],
+      ["ivyversions.org.apache.tika.version", "org.apache.tika", "tika-core"],
+      ["ivyversions.org.apache.velocity.tools.version", "org.apache.velocity.tools", "velocity-tools-generic"],
+      ["ivyversions./org.apache.zookeeper/zookeeper", "org.apache.zookeeper", "zookeeper"]
+    ].each { antProp, depGroup, depId ->
+      propsFull[antProp] = getVersion(depGroup, depId, configurations.depVer)
+    }
+
+    propsFull.each {k, v -> dummyAntProject.setProperty(k, v) }
+
+    // Emit info about properties for clarity.
+    logger.warn("Building ref guide with:\n" + (propsFull + props).collect({k, v -> "  ${k} -> ${v}"}).join('\n'))
+  }
 
   into buildContentDir
 }
@@ -168,9 +202,9 @@ task buildNavDataFiles(type: JavaExec) {
   doFirst {
     // Remove previously generated files first.
     [
-            "pdf-main-body.adoc",
-            "scrollnav.json",
-            "sidebar.json"
+      "pdf-main-body.adoc",
+      "scrollnav.json",
+      "sidebar.json"
     ].each { name ->
       project.delete(file("${buildContentDir}/_data/${name}"))
     }
@@ -179,7 +213,7 @@ task buildNavDataFiles(type: JavaExec) {
 
 // Define the asciidoctorj version
 asciidoctorj {
-  version = '1.5.0-alpha.16'
+  version = '1.6.0-alpha.5'
 }
 
 task bareBonesAsciiDoctor(type: org.asciidoctor.gradle.AsciidoctorTask) {
@@ -188,7 +222,7 @@ task bareBonesAsciiDoctor(type: org.asciidoctor.gradle.AsciidoctorTask) {
   sourceDir buildContentDir
   outputDir bareBonesDir
 
-  backend "html5"
+  backends "html5"
   logDocuments false
   separateOutputDirs false
 
