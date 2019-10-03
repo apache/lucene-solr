@@ -606,7 +606,7 @@ clusters. In the example below the centroids are extracted from the clusters usi
 function, which returns a matrix of the centroids.
 
 The centroids matrix contains 2D lan/lon points. The `colAt` function can then be used
-to extract the latitude and longitude columns by index from the matrix and
+to extract the latitude and longitude columns by index from the matrix so they can be
 plotted with `zplot`. A map visualization is used below to display the centroid clusters.
 
 
