@@ -156,9 +156,10 @@ public class CorePullerFeeder extends CoreSyncFeeder {
     }
 
     PullCoreInfo(String collectionName, String shardName, String coreName, String sharedStoreName,
+        String lastReadMetadataSuffix, String newMetadataSuffix, int zkVersion,
         boolean createCoreIfAbsent, boolean waitForSearcher) {
-      // TODO - just super() to avoid compile errors
-      super();
+      super(collectionName, shardName, coreName, sharedStoreName, lastReadMetadataSuffix,
+          newMetadataSuffix, zkVersion);
       this.waitForSearcher = waitForSearcher;
       this.createCoreIfAbsent = createCoreIfAbsent;
     }
@@ -178,7 +179,7 @@ public class CorePullerFeeder extends CoreSyncFeeder {
   }
 
   /**
-   * We only want one entry in the list for each core, so when a second entry arrives, we merge them on 
+   * We only want one entry in the list for each shard, so when a second entry arrives, we merge them on 
    * their shared store name
    */
   static class PullCoreInfoMerger implements DeduplicatingList.Merger<String, PullCoreInfo> {
@@ -189,16 +190,57 @@ public class CorePullerFeeder extends CoreSyncFeeder {
 
     static PullCoreInfo mergePullCoreInfos(PullCoreInfo v1, PullCoreInfo v2) {
       assert v1.getSharedStoreName().equals(v2.getSharedStoreName());
+      assert v1.getDedupeKey().equals(v2.getDedupeKey());
+      assert v1.getCoreName().equals(v2.getCoreName());
+      
+      // Merging the version number here implies an ordering on the pull operation
+      // enqueued as we want higher version-ed operations to be what the pulling
+      // mechanisms pull off of due to presence of metadataSuffix information
+      // Therefore these flags are dependent on which version in either PullCoreInfos 
+      // is higher EXCEPT in the case where they are the same
+      boolean waitForSearcher = false;
+      boolean createCoreIfAbsent = false;
 
-      // if one needs to wait then merged will have to wait as well 
-      final boolean waitForSearcher = v1.waitForSearcher || v2.waitForSearcher;
-
-      // if one wants to create core if absent then merged will have to create as well 
-      final boolean createCoreIfAbsent = v1.createCoreIfAbsent || v2.createCoreIfAbsent;
-
-
+      // TODO newMetadataSuffix isn't used in the pull pipeline but the argument is nevertheless
+      // required when enqueuing a new pull and propagated downward. We should refactor 
+      // PullCoreInfo and PushPullData to make these concerns only relevant where they are needed
+      String newMetadataSuffix = null;
+      String lastReadMetadataSuffix = null;
+      int version = -1;
+      
+      // if the versions are the same then the last read metadata suffix should be the same
+      if (v1.getZkVersion() == v2.getZkVersion()) {
+        assert v1.getLastReadMetadataSuffix().equals(v2.getLastReadMetadataSuffix());
+        lastReadMetadataSuffix = v1.getLastReadMetadataSuffix();
+        // this doesn't matter which structure it comes from
+        newMetadataSuffix = v1.getNewMetadataSuffix();
+        version = v1.getZkVersion();
+        
+        // if one needs to wait then merged will have to wait as well
+        waitForSearcher = v1.waitForSearcher || v2.waitForSearcher;
+        // if one wants to create core if absent then merged will have to create as well
+        createCoreIfAbsent = v1.createCoreIfAbsent || v2.createCoreIfAbsent;
+      } else if (v1.getZkVersion() > v2.getZkVersion()) {
+        // version number increments on updates so the higher version will result in a pull
+        // from the most up-to-date state on blob
+        lastReadMetadataSuffix = v1.getLastReadMetadataSuffix();
+        newMetadataSuffix = v1.getNewMetadataSuffix();
+        version = v1.getZkVersion();
+        
+        waitForSearcher = v1.waitForSearcher;
+        createCoreIfAbsent = v1.createCoreIfAbsent;
+      } else {
+        lastReadMetadataSuffix = v2.getLastReadMetadataSuffix();
+        newMetadataSuffix = v2.getNewMetadataSuffix();
+        version = v2.getZkVersion();
+        
+        waitForSearcher = v2.waitForSearcher;
+        createCoreIfAbsent = v2.createCoreIfAbsent;
+      }
+      
       return new PullCoreInfo(v1.getCollectionName(), v1.getShardName(), v1.getCoreName(), 
-          v1.getSharedStoreName(), createCoreIfAbsent, createCoreIfAbsent);
+          v1.getSharedStoreName(), lastReadMetadataSuffix, newMetadataSuffix, version, 
+          createCoreIfAbsent, waitForSearcher); 
     }
   }
 

@@ -42,6 +42,7 @@ import org.apache.solr.store.blob.util.DeduplicatingList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Throwables;
 
 /**
@@ -81,7 +82,8 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
         callback, pullsInFlight, coresCreatedNotPulledYet);
   }
 
-  private CorePullTask(CoreContainer coreContainer, PullCoreInfo pullCoreInfo, long queuedTimeMs, int attempts,
+  @VisibleForTesting
+  CorePullTask(CoreContainer coreContainer, PullCoreInfo pullCoreInfo, long queuedTimeMs, int attempts,
       long lastAttemptTimestamp, PullCoreCallback callback, HashMap<String, Long> pullsInFlight, 
       Set<String> coresCreatedNotPulledYet) {
     this.coreContainer = coreContainer;
@@ -107,7 +109,7 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
    */
   static class PullTaskMerger implements DeduplicatingList.Merger<String, CorePullTask> {
     /**
-     * Given two tasks (that have not yet started executing!) that target the same core (and would basically do the
+     * Given two tasks (that have not yet started executing!) that target the same shard (and would basically do the
      * same things were they both executed), returns a merged task that can replace both and that retains the oldest
      * enqueue time and the smallest number of attempts, so we don't "lose" retries because of the merge yet we
      * correctly report that tasks might have been waiting for execution for a long while.
@@ -123,10 +125,9 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
       int mergedAttempts;
       long mergedLatAttemptsTimestamp;
 
-      // Synchronizing on the tasks separately to not risk deadlock (even though in practice there's only one
-      // concurrent
-      // call to this method anyway since it's called from DeduplicatingList.addDeduplicated() and we syncrhonize
-      // on the
+      // Synchronizing on the tasks separately to not risk deadlock (even though in 
+      // practice there's only one concurrent call to this method anyway since it's 
+      // called from DeduplicatingList.addDeduplicated() and we synchronize on the
       // list there).
       synchronized (task1) {
         mergedAttempts = task1.attempts;
@@ -178,6 +179,10 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
 
   public PullCoreInfo getPullCoreInfo() {
     return pullCoreInfo;
+  }
+  
+  public long getQueuedTimeMs() {
+    return this.queuedTimeMs;
   }
 
   /**
