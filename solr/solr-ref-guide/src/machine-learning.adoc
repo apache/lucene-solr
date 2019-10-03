@@ -597,7 +597,7 @@ image::images/math-expressions/2DCluster1.png[]
 The scatter plot above shows each lat/lon point plotted on a Euclidean plain with longitude on the
 *x* axis and
 latitude on *y* axis. Each cluster is shown in a different color. This plot provides interesting
-insight in the clusters of rat sightings throughout the boroughs of New York City. For
+insight into the clusters of rat sightings throughout the five boroughs of New York City. For
 example it highlights a cluster of dense sightings in Brooklyn at cluster5 and cluster17,
 surrounded by less dense clusters.
 
