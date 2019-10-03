@@ -614,7 +614,7 @@ image::images/math-expressions/centroidplot.png[]
 
 
 The map can then be zoomed to get a closer look at the centroids in the high density areas shown
-in the clustered scatter plot.
+in the cluster scatter plot.
 
 image::images/math-expressions/centroidzoom.png[]
 
