@@ -241,8 +241,27 @@ public abstract class PointValues {
    * than {@link #intersect(IntersectVisitor)}.
    * @see DocIdSetIterator#cost */
   public long estimateDocCount(IntersectVisitor visitor) {
-    return (long) Math.ceil(estimatePointCount(visitor) / ((double) size() / getDocCount()));
+    long estimatedPointCount = estimatePointCount(visitor);
+    int docCount = getDocCount();
+    double size = size();
+    if (estimatedPointCount >= size) {
+      // math all docs
+      return docCount;
+    } else if (size == docCount || estimatedPointCount == 0L ) {
+      // if the point count estimate is 0 or we have only single values
+      // return this estimate
+      return  estimatedPointCount;
+    } else {
+      // in case of multi values estimate the number of docs using the solution provided in
+      // https://math.stackexchange.com/questions/1175295/urn-problem-probability-of-drawing-balls-of-k-unique-colors
+      // then approximate the solution for points per doc << size() which results in the expression
+      // D * (1 - ((N - n) / N)^(N/D))
+      // where D is the total number of docs, N the total number of points and n the estimated point count
+      long docEstimate = (long) (docCount * (1d - Math.pow((size - estimatedPointCount) / size, size / docCount)));
+      return docEstimate == 0L ? 1L : docEstimate;
+    }
   }
+
 
   /** Returns minimum value for each dimension, packed, or null if {@link #size} is <code>0</code> */
   public abstract byte[] getMinPackedValue() throws IOException;
