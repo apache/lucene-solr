@@ -592,7 +592,7 @@ are then vectorized and added as rows to a matrix. The matrix is transposed so e
 point. The `kmeans` function is then used to cluster the latitude and longitude points into 21 clusters. The `zplot` function
 is then used to visualize the clusters as a scatter chart.
 
-image::images/math-expressions/2Dcluster1.png[]
+image::images/math-expressions/2DCluster1.png[]
 
 The scatter plot above shows each lat/lon point plotted on a Euclidean plain with longitude on the
 *x* axis and
