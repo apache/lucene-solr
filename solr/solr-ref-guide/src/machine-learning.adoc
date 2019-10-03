@@ -589,8 +589,9 @@ The example demonstrates this capability by clustering and visualizing latitude 
 In this example the `random` function draws a sample of records from the nyc311 (complaints database) collection where
 the complaint description matches "rat sighting" and latitude is populated in the record. The latitude and longitude fields
 are then vectorized and added as rows to a matrix. The matrix is transposed so each row contains a single latitude, longitude
-point. The `kmeans` function is then used to cluster the latitude and longitude points into 21 clusters. The `zplot` function
-is then used to visualize the clusters as a scatter plot.
+point. The `kmeans` function is then used to cluster the latitude and longitude points into 21 clusters.
+Finally, the `zplot` function
+is used to visualize the clusters as a scatter plot.
 
 image::images/math-expressions/2DCluster1.png[]
 
