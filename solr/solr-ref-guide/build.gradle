@@ -356,7 +356,7 @@ task buildRawPdf {
 }
 
 task buildPdf(type: JavaExec) {
-    // dependsOn buildRawPdf
+    dependsOn buildRawPdf
 
     classpath = sourceSets.tools.runtimeClasspath
     main = 'ReducePDFSize'
