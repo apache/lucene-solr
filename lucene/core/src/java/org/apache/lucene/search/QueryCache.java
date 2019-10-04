@@ -32,12 +32,7 @@ public interface QueryCache {
    * matching docs per-segment accordingly to the given <code>policy</code>.
    * NOTE: The returned weight will only be equivalent if scores are not needed.
    * @see Collector#scoreMode()
-   */
-  Weight doCache(Weight weight, QueryCachingPolicy policy);
-
-  /**
-   * Same as above, but allows passing in an Executor to perform caching
-   * asynchronously
+   * If the Executor is not null, it will be used to perform asynchronous caching
    */
   Weight doCache(Weight weight, QueryCachingPolicy policy, Executor executor);
 

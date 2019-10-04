@@ -1417,7 +1417,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     // test that the bulk scorer is propagated when a scorer should not be cached
     Weight weight = searcher.createWeight(new MatchAllDocsQuery(), ScoreMode.COMPLETE_NO_SCORES, 1);
     weight = new WeightWrapper(weight, scorerCalled, bulkScorerCalled);
-    weight = cache.doCache(weight, NEVER_CACHE);
+    weight = cache.doCache(weight, NEVER_CACHE, null /* executor */);
     weight.bulkScorer(leaf);
     assertEquals(true, bulkScorerCalled.get());
     assertEquals(false, scorerCalled.get());
@@ -1427,7 +1427,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     bulkScorerCalled.set(false);
     weight = searcher.createWeight(new MatchAllDocsQuery(), ScoreMode.COMPLETE_NO_SCORES, 1);
     weight = new WeightWrapper(weight, scorerCalled, bulkScorerCalled);
-    weight = cache.doCache(weight, ALWAYS_CACHE);
+    weight = cache.doCache(weight, ALWAYS_CACHE, null /* executor */);
     weight.scorer(leaf);
     assertEquals(true, bulkScorerCalled.get());
     assertEquals(false, scorerCalled.get());
@@ -1464,7 +1464,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     dir.close();
   }
 
-  public void testMinSegmentSizePredicate() throws IOException {
+  public void testMinSegmentSizePredicate() throws IOException, InterruptedException {
     Directory dir = newDirectory();
     IndexWriterConfig iwc = newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE);
     RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc);
@@ -1516,11 +1516,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
 
     searcher.count(new DummyQuery());
     if (cache.getCacheCount() != 1) {
-      try {
-        latch[0].await(200, TimeUnit.MILLISECONDS);
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e.getMessage());
-      }
+      latch[0].await(200, TimeUnit.MILLISECONDS);
       assertEquals(1, cache.getCacheCount());
     }
 

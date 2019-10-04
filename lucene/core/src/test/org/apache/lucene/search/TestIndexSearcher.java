@@ -189,11 +189,6 @@ public class TestIndexSearcher extends LuceneTestCase {
     assertEquals(IndexSearcher.getDefaultQueryCache(), searcher.getQueryCache());
     QueryCache dummyCache = new QueryCache() {
       @Override
-      public Weight doCache(Weight weight, QueryCachingPolicy policy) {
-        return doCache(weight, policy, null);
-      }
-
-      @Override
       public Weight doCache(Weight weight, QueryCachingPolicy policy, Executor executor) {
         return weight;
       }

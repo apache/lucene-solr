@@ -850,11 +850,7 @@ public class IndexSearcher {
     final QueryCache queryCache = this.queryCache;
     Weight weight = query.createWeight(this, scoreMode, boost);
     if (scoreMode.needsScores() == false && queryCache != null) {
-      if (executor != null) {
-        weight = queryCache.doCache(weight, queryCachingPolicy, executor);
-      } else {
-        weight = queryCache.doCache(weight, queryCachingPolicy);
-      }
+      weight = queryCache.doCache(weight, queryCachingPolicy, executor);
     }
     return weight;
   }

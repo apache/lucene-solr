@@ -452,14 +452,6 @@ public class LRUQueryCache implements QueryCache, Accountable {
   }
 
   @Override
-  public Weight doCache(Weight weight, QueryCachingPolicy policy) {
-    return doCache(weight, policy, null /* executor */);
-  }
-
-  // Should be used only when the user wishes to trade throughput for latency
-  // This method was not merged in the method above as to not break the existing contract
-  // advertised by QueryCache
-  @Override
   public Weight doCache(final Weight weight, QueryCachingPolicy policy, Executor executor) {
     return new CachingWrapperWeight(weight, policy, executor);
   }
@@ -743,20 +735,21 @@ public class LRUQueryCache implements QueryCache, Accountable {
       if (docIdSet == null) {
         if (policy.shouldCache(in.getQuery())) {
           boolean cacheSynchronously = executor == null;
+          boolean asyncCachingSucceeded = false;
 
           // If asynchronous caching is requested, perform the same and return
           // the uncached iterator
           if (cacheSynchronously == false) {
-            cacheSynchronously = cacheAsynchronously(context, cacheHelper);
+            asyncCachingSucceeded = cacheAsynchronously(context, cacheHelper);
 
             // If async caching failed, synchronous caching will
             // be performed, hence do not return the uncached value
-            if (cacheSynchronously == false) {
+            if (asyncCachingSucceeded) {
               return in.scorerSupplier(context);
             }
           }
 
-          if (cacheSynchronously) {
+          if (cacheSynchronously || !asyncCachingSucceeded) {
             docIdSet = cache(context);
             putIfAbsent(in.getQuery(), docIdSet, cacheHelper);
           }
@@ -874,7 +867,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
     }
 
     // Perform a cache load asynchronously
-    // @return true if synchronous caching is needed, false otherwise
+    // @return true if asynchronous caching succeeded, false otherwise
     private boolean cacheAsynchronously(LeafReaderContext context, IndexReader.CacheHelper cacheHelper) {
       FutureTask<Void> task = new FutureTask<>(() -> {
         DocIdSet localDocIdSet = cache(context);
@@ -886,10 +879,10 @@ public class LRUQueryCache implements QueryCache, Accountable {
         executor.execute(task);
       } catch (RejectedExecutionException e) {
         // Trigger synchronous caching
-        return true;
+        return false;
       }
 
-      return false;
+      return true;
     }
   }
 }
