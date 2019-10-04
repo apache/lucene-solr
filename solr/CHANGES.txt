@@ -71,6 +71,14 @@ Improvements
 
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
 
+Bug Fixes
+----------------------
+
+* SOLR-13793: HttpSolrCall now maintains internal request count (solr.internalRequestCount) for remote queries and limits
+ them to number of shard replicas. This avoids making too many cascading calls to remote servers, which can bring down
+ nodes containing said collection.
+ (Kesharee Nandan Vishwakarma)
+
 Other Changes
 ----------------------
 
