@@ -197,6 +197,9 @@ Improvements
 
 * SOLR-13771: Add -v and -m to ulimit section of reference guide  and bin/solr checks (Erick Erickson)
 
+* SOLR-13795: Managed schema operations should do a core reload in Solr standalone mode.
+  (Thomas Wöckinger via David Smiley)
+
 Bug Fixes
 ----------------------
 
