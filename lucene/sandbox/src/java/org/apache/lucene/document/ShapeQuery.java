@@ -282,7 +282,7 @@ abstract class ShapeQuery extends Query {
     public long cost() {
       if (cost == -1) {
         // Computing the cost may be expensive, so only do it if necessary
-        cost = values.estimatePointCount(getEstimateVisitor(query));
+        cost = values.estimateDocCount(getEstimateVisitor(query));
         assert cost >= 0;
       }
       return cost;

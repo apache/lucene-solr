@@ -22,6 +22,10 @@ API Changes
   And don't call if docFreq <= 0.  The previous implementation survives as deprecated and final.  It's removed in 9.0.
   (Bruno Roustant, David Smiley, Alan Woodward)
 
+* LUCENE-8990: PointValues#estimateDocCount(visitor) estimates the number of documents that would be matched by
+  the given IntersectVisitor. THe method is used to compute the cost() of ScorerSuppliers instead of
+  PointValues#estimatePointCount(visitor). (Ignacio Vera, Adrien Grand)
+
 New Features
 
 * LUCENE-8936: Add SpanishMinimalStemFilter (vinod kumar via Tomoko Uchida)
