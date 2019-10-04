@@ -420,7 +420,6 @@ public class TestLRUQueryCache extends LuceneTestCase {
 
     FutureTask<Void> task = new FutureTask<>(() -> {
       searcher.search(new ConstantScoreQuery(green), 1);
-      assertEquals(1, queryCache.inFlightQueries().size());
       return null;
     });
 
