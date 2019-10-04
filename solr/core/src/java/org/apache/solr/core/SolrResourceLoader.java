@@ -52,6 +52,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.ResourceLoader;
@@ -479,6 +480,11 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
    */
   private static final Map<String, String> classNameCache = new ConcurrentHashMap<>();
 
+  @VisibleForTesting
+  static void clearCache() {
+    classNameCache.clear();
+  }
+
   // Using this pattern, legacy analysis components from previous Solr versions are identified and delegated to SPI loader:
   private static final Pattern legacyAnalysisPattern = 
       Pattern.compile("((\\Q"+base+".analysis.\\E)|(\\Q"+project+".\\E))([\\p{L}_$][\\p{L}\\p{N}_$]+?)(TokenFilter|Filter|Tokenizer|CharFilter)Factory");
@@ -506,11 +512,11 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
       if(c != null) {
         try {
           return Class.forName(c, true, classLoader).asSubclass(expectedType);
-        } catch (ClassNotFoundException e) {
-          //this is unlikely
-          log.error("Unable to load cached class-name :  "+ c +" for shortname : "+cname + e);
+        } catch (ClassNotFoundException | ClassCastException e) {
+          // this can happen if the legacyAnalysisPattern below caches the wrong thing
+          log.warn("Unable to load cached class, attempting lookup. name={} shortname={} reason={}", c, cname, e);
+          classNameCache.remove(cname);
         }
-
       }
     }
     

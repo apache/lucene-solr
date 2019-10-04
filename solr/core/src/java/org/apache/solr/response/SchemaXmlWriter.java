@@ -219,6 +219,8 @@ public class SchemaXmlWriter extends TextResponseWriter {
         if ( ! "solr.TokenizerChain".equals(analyzerProperties.getVal(i))) {
           writeAttr(name, analyzerProperties.getVal(i).toString());
         }
+      } else if (name.equals(IndexSchema.LUCENE_MATCH_VERSION_PARAM)) {
+        writeAttr(name, analyzerProperties.getVal(i).toString());
       }
     }
     boolean isEmptyTag

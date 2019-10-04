@@ -54,9 +54,6 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
 
   public static final String MIN_SIZE_PARAM = "minSize";
   public static final String ACCEPTABLE_SIZE_PARAM = "acceptableSize";
-  public static final String INITIAL_SIZE_PARAM = "initialSize";
-  public static final String CLEANUP_THREAD_PARAM = "cleanupThread";
-  public static final String SHOW_ITEMS_PARAM = "showItems";
 
   // contains the statistics objects for all open caches of the same type
   private List<ConcurrentLRUCache.Stats> statsList;
@@ -73,6 +70,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
   private int initialSize;
   private int acceptableSize;
   private boolean cleanupThread;
+  private int maxIdleTimeSec;
   private long ramLowerWatermark;
 
   private MetricsMap cacheMap;
@@ -109,17 +107,24 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
     str = (String) args.get(SHOW_ITEMS_PARAM);
     showItems = str == null ? 0 : Integer.parseInt(str);
 
+    str = (String) args.get(MAX_IDLE_TIME_PARAM);
+    if (str == null) {
+      maxIdleTimeSec = -1;
+    } else {
+      maxIdleTimeSec = Integer.parseInt(str);
+    }
+
     str = (String) args.get(MAX_RAM_MB_PARAM);
     long maxRamMB = str == null ? -1 : (long) Double.parseDouble(str);
     this.maxRamBytes = maxRamMB < 0 ? Long.MAX_VALUE : maxRamMB * 1024L * 1024L;
     if (maxRamBytes != Long.MAX_VALUE) {
       ramLowerWatermark = Math.round(maxRamBytes * 0.8);
       description = generateDescription(maxRamBytes, ramLowerWatermark, cleanupThread);
-      cache = new ConcurrentLRUCache<>(ramLowerWatermark, maxRamBytes, cleanupThread, null);
+      cache = new ConcurrentLRUCache<>(ramLowerWatermark, maxRamBytes, cleanupThread, null, maxIdleTimeSec);
     } else {
       ramLowerWatermark = -1L;
       description = generateDescription(maxSize, initialSize, minSizeLimit, acceptableSize, cleanupThread);
-      cache = new ConcurrentLRUCache<>(maxSize, minSizeLimit, acceptableSize, initialSize, cleanupThread, false, null);
+      cache = new ConcurrentLRUCache<>(maxSize, minSizeLimit, acceptableSize, initialSize, cleanupThread, false, null, maxIdleTimeSec);
     }
 
     cache.setAlive(false);
@@ -257,11 +262,13 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
         long hits = stats.getCumulativeHits();
         long inserts = stats.getCumulativePuts();
         long evictions = stats.getCumulativeEvictions();
+        long idleEvictions = stats.getCumulativeIdleEvictions();
         long size = stats.getCurrentSize();
         long clookups = 0;
         long chits = 0;
         long cinserts = 0;
         long cevictions = 0;
+        long cIdleEvictions = 0;
 
         // NOTE: It is safe to iterate on a CopyOnWriteArrayList
         for (ConcurrentLRUCache.Stats statistiscs : statsList) {
@@ -269,6 +276,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
           chits += statistiscs.getCumulativeHits();
           cinserts += statistiscs.getCumulativePuts();
           cevictions += statistiscs.getCumulativeEvictions();
+          cIdleEvictions += statistiscs.getCumulativeIdleEvictions();
         }
 
         map.put(LOOKUPS_PARAM, lookups);
@@ -278,6 +286,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
         map.put(EVICTIONS_PARAM, evictions);
         map.put(SIZE_PARAM, size);
         map.put("cleanupThread", cleanupThread);
+        map.put("idleEvictions", idleEvictions);
         map.put(RAM_BYTES_USED_PARAM, ramBytesUsed());
         map.put(MAX_RAM_MB_PARAM, getMaxRamMB());
 
@@ -287,6 +296,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
         map.put("cumulative_hitratio", calcHitRatio(clookups, chits));
         map.put("cumulative_inserts", cinserts);
         map.put("cumulative_evictions", cevictions);
+        map.put("cumulative_idleEvictions", cIdleEvictions);
 
         if (detailed && showItems != 0) {
           Map items = cache.getLatestAccessedItems(showItems == -1 ? Integer.MAX_VALUE : showItems);

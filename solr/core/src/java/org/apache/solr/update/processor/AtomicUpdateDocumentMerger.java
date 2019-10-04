@@ -195,8 +195,9 @@ public class AtomicUpdateDocumentMerger {
       }
       // else it's a atomic update map...
       Map<String, Object> fieldValueMap = (Map<String, Object>)fieldValue;
-      for (String op : fieldValueMap.keySet()) {
-        Object obj = fieldValueMap.get(op);
+      for (Entry<String, Object> entry : fieldValueMap.entrySet()) {
+        String op = entry.getKey();
+        Object obj = entry.getValue();
         if (!op.equals("set") && !op.equals("inc")) {
           // not a supported in-place update op
           return Collections.emptySet();

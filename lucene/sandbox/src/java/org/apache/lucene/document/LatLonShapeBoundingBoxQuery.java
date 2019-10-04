@@ -42,6 +42,9 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
   @Override
   protected Relation relateRangeBBoxToQuery(int minXOffset, int minYOffset, byte[] minTriangle,
                                             int maxXOffset, int maxYOffset, byte[] maxTriangle) {
+    if (queryRelation == QueryRelation.INTERSECTS || queryRelation == QueryRelation.DISJOINT) {
+      return rectangle2D.intersectRangeBBox(minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
+    }
     return rectangle2D.relateRangeBBox(minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
   }
 
@@ -58,9 +61,6 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
     int cY = scratchTriangle.cY;
     int cX = scratchTriangle.cX;
 
-    if (queryRelation == QueryRelation.WITHIN) {
-      return rectangle2D.containsTriangle(aX, aY, bX, bY, cX, cY);
-    }
     switch (queryRelation) {
       case INTERSECTS: return rectangle2D.intersectsTriangle(aX, aY, bX, bY, cX, cY);
       case WITHIN: return rectangle2D.containsTriangle(aX, aY, bX, bY, cX, cY);

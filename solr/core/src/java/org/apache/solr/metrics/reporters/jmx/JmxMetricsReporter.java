@@ -28,7 +28,6 @@ import javax.management.Query;
 import javax.management.QueryExp;
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
-import java.lang.management.ManagementFactory;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -157,9 +156,6 @@ public class JmxMetricsReporter implements Reporter, Closeable {
     }
 
     public JmxMetricsReporter build() {
-      if (mBeanServer == null) {
-        mBeanServer = ManagementFactory.getPlatformMBeanServer();
-      }
       if (tag == null) {
         tag = Integer.toHexString(this.hashCode());
       }
