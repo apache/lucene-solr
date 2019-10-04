@@ -79,7 +79,13 @@ public class TopGroups<T> {
     /* Avg score across all shards for this group. */
     Avg,
   }
-
+  /**
+   * If either value is NaN then return the other value, otherwise
+   * return the greater of the two values by calling Math.max.
+   * @param currentMaxScore - one value
+   * @param newMaxScore - another value
+   * @return ignoring any NaN return the greater of currentMaxScore and newMaxScore
+   */
   private static float updateMaxScore(float currentMaxScore, float newMaxScore){
     if (Float.isNaN(currentMaxScore)) return newMaxScore;
     if (Float.isNaN(newMaxScore)) return currentMaxScore;
@@ -141,12 +147,12 @@ public class TopGroups<T> {
     } else {
       shardTopDocs = new TopFieldDocs[shardGroups.length];
     }
-    float totalMaxScore = Float.NaN;
+    float totalMaxScore = Float.MIN_VALUE;
 
     for(int groupIDX=0;groupIDX<numGroups;groupIDX++) {
       final T groupValue = shardGroups[0].groups[groupIDX].groupValue;
       //System.out.println("  merge groupValue=" + groupValue + " sortValues=" + Arrays.toString(shardGroups[0].groups[groupIDX].groupSortValues));
-      float maxScore = Float.NaN;
+      float maxScore = Float.MIN_VALUE;
       int totalHits = 0;
       double scoreSum = 0.0;
       for(int shardIDX=0;shardIDX<shardGroups.length;shardIDX++) {

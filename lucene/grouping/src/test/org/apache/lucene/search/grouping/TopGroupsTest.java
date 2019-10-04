@@ -131,7 +131,7 @@ public class TopGroupsTest extends LuceneTestCase {
         // if we merge empty groups that we should not have a max Score
         shardGroups = new TopGroups[]{emptyTopGroups, emptyTopGroups};
         mergedTopGroups = TopGroups.<String>merge(shardGroups, Sort.RELEVANCE, Sort.RELEVANCE, 0, 2, TopGroups.ScoreMergeMode.Total);
-        assertTrue(Float.isNaN(mergedTopGroups.maxScore));
+        assertEquals(Float.MIN_VALUE, mergedTopGroups.maxScore, 0);
 
         // create results for the second shard
         // docId 3 group1 score 3.0 max score 3.0
