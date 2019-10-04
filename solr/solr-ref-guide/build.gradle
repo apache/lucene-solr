@@ -36,8 +36,8 @@
 
 import java.time.*
 import java.time.format.*
-import org.asciidoctor.*
 import java.nio.file.*
+import org.asciidoctor.*
 
 buildscript {
     repositories {
@@ -52,6 +52,7 @@ buildscript {
 
 plugins {
     id 'java'
+    id 'com.github.jruby-gradle.base' version '1.6.0'
 }
 
 configurations {
@@ -84,6 +85,17 @@ dependencies {
     depVer('org.apache.tika:tika-core')
     depVer('org.apache.velocity.tools:velocity-tools-generic')
     depVer('org.apache.zookeeper:zookeeper')
+
+    // jekyll dependencies
+    jrubyExec 'rubygems:jekyll:3.5.2'
+    jrubyExec 'rubygems:jekyll-asciidoc:2.1.1'
+    jrubyExec 'rubygems:pygments.rb:1.1.2'
+
+    // don't know why we have to explicitly add these deps but it doesn't resolve them
+    // automatically.
+    jrubyExec 'rubygems:tilt:2.0.10'
+    jrubyExec 'rubygems:slim:4.0.1'
+    jrubyExec 'rubygems:concurrent-ruby:1.0.5'
 }
 
 sourceSets {
@@ -366,4 +378,32 @@ task buildPdf(type: JavaExec) {
             file("${buildDir}/pdf-tmp/SolrRefGuide-all.pdf"),
             pdfFilename
     ])
+}
+
+task buildSiteJekyll(type: com.github.jrubygradle.JRubyExec) {
+    dependsOn buildNavDataFiles
+
+    inputs.dir buildContentDir
+    outputs.dir file("${buildDir}/html-site")
+
+    script 'jekyll'
+    scriptArgs 'build', '--verbose'
+    workingDir buildContentDir
+}
+
+task buildSite(type: JavaExec) {
+    dependsOn buildSiteJekyll
+    description "Builds an HTML Site w/Jekyll and verifies the anchors+links are valid"
+
+    classpath = sourceSets.tools.runtimeClasspath
+    main = 'CheckLinksAndAnchors'
+    workingDir = buildContentDir
+
+    args([
+            file("${buildDir}/html-site"),
+    ])
+
+    if (project.hasProperty("local.javadocs")) {
+        args += "-check-all-relative-links"
+    }
 }
