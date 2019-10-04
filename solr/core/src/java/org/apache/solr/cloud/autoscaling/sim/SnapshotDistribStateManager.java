@@ -215,6 +215,11 @@ public class SnapshotDistribStateManager implements DistribStateManager {
     }
     return new AutoScalingConfig(map);
   }
+  
+  @Override 
+  public VersionedData setAndGetResult(String path, byte[] data, int version) throws BadVersionException, NoSuchElementException, IOException, KeeperException, InterruptedException {
+    throw new UnsupportedOperationException("setAndGetResult");
+  }
 
   @Override
   public void close() throws IOException {

@@ -632,6 +632,25 @@ public class SimDistribStateManager implements DistribStateManager {
     map.put(AutoScalingParams.ZK_VERSION, version);
     return new AutoScalingConfig(map);
   }
+  
+  @Override 
+  public VersionedData setAndGetResult(String path, byte[] data, int version) throws BadVersionException, NoSuchElementException, IOException, KeeperException, InterruptedException {
+    if (data != null && data.length > juteMaxbuffer) {
+      throw new IOException("Len error " + data.length);
+    }
+    multiLock.lock();
+    Node n = null;
+    try {
+      n = traverse(path, false, CreateMode.PERSISTENT);
+      if (n == null) {
+        throw new NoSuchElementException(path);
+      }
+    } finally {
+      multiLock.unlock();
+    }
+    n.setData(data, version);
+    return n.getData(null);
+  }
 
   // ------------ simulator methods --------------
 

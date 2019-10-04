@@ -29,6 +29,9 @@ limitations under the License.
           <dt>Config name:</dt>
             <dd class="value">{{selectedCollection.configName}}</dd>
 
+          <dt>Shared storage based:</dt>
+            <dd class="ico value" ng-class="selectedCollection.sharedIndex=='true' ? 'ico-1' : 'ico-0'"><span>yes</span></dd>
+
           <dt>Max shards per node:</dt>
             <dd class="value">{{selectedCollection.maxShardsPerNode}}</dd>
 

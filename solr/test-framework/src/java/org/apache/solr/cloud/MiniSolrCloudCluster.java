@@ -503,7 +503,20 @@ public class MiniSolrCloudCluster {
     if (!jettys.contains(jetty)) jettys.add(jetty);
     return jetty;
   }
-
+  
+  /**
+   * Add a previously stopped node back to the cluster
+   * @param jetty a {@link JettySolrRunner} previously returned by {@link #stopJettySolrRunner(int)}
+   * @param reusePort true if you want to reuse the port
+   * @return the started node
+   * @throws Exception on error
+   */
+  public JettySolrRunner startJettySolrRunner(JettySolrRunner jetty, boolean reusePort) throws Exception {
+    jetty.start(reusePort);
+    if (!jettys.contains(jetty)) jettys.add(jetty);
+    return jetty;
+  }
+  
   /**
    * Stop the given Solr instance. It will be removed from the cluster's list of running instances.
    * @param jetty a {@link JettySolrRunner} to be stopped

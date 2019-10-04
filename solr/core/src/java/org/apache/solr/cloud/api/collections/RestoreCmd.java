@@ -78,6 +78,9 @@ import org.apache.solr.handler.component.ShardHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/** Restore is NOT working with Shared storage based collections (having replicas of type {@link Replica.Type#SHARED}).<br>
+    If/once we make it work, delete this comment. */
+
 public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 

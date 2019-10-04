@@ -87,6 +87,7 @@ public class PolicyHelper {
                                                           int nrtReplicas,
                                                           int tlogReplicas,
                                                           int pullReplicas,
+                                                          int sharedReplicas,
                                                           List<String> nodesList) {
     List<ReplicaPosition> positions = new ArrayList<>();
     ThreadLocal<Map<String, String>> policyMapping = getPolicyMapping(cloudManager);
@@ -159,6 +160,7 @@ public class PolicyHelper {
       typeVsCount.put(Replica.Type.NRT, nrtReplicas);
       typeVsCount.put(Replica.Type.TLOG, tlogReplicas);
       typeVsCount.put(Replica.Type.PULL, pullReplicas);
+      typeVsCount.put(Replica.Type.SHARED, sharedReplicas);
       for (String shardName : shardNames) {
         int idx = 0;
         for (Map.Entry<Replica.Type, Integer> e : typeVsCount.entrySet()) {
@@ -305,6 +307,7 @@ public class PolicyHelper {
           addMissingReplicas(replicaCount, coll, slice.getName(), Replica.Type.NRT, ctx);
           addMissingReplicas(replicaCount, coll, slice.getName(), Replica.Type.PULL, ctx);
           addMissingReplicas(replicaCount, coll, slice.getName(), Replica.Type.TLOG, ctx);
+          addMissingReplicas(replicaCount, coll, slice.getName(), Replica.Type.SHARED, ctx);
         }
     ));
   }

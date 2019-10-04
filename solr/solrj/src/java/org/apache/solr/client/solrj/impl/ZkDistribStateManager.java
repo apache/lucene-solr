@@ -197,6 +197,23 @@ public class ZkDistribStateManager implements DistribStateManager {
     map.put(AutoScalingParams.ZK_VERSION, stat.getVersion());
     return new AutoScalingConfig(map);
   }
+  
+  @Override 
+  public VersionedData setAndGetResult(String path, byte[] data, int version) throws BadVersionException, NoSuchElementException, IOException, KeeperException, InterruptedException {
+    try {
+      Stat stat = zkClient.setData(path, data, version, true);
+      return new VersionedData(stat.getVersion(), data, 
+          stat.getEphemeralOwner() != 0 ? CreateMode.EPHEMERAL : CreateMode.PERSISTENT,
+              String.valueOf(stat.getEphemeralOwner()));
+    } catch (KeeperException.NoNodeException e) {
+      throw new NoSuchElementException(path);
+    } catch (KeeperException.BadVersionException e) {
+      throw new BadVersionException(version, path);
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new AlreadyClosedException();
+    }
+  }
 
   @Override
   public void close() throws IOException {

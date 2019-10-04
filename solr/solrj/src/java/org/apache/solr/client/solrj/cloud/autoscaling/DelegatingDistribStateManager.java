@@ -99,6 +99,11 @@ public class DelegatingDistribStateManager implements DistribStateManager {
   public AutoScalingConfig getAutoScalingConfig() throws InterruptedException, IOException {
     return delegate.getAutoScalingConfig();
   }
+  
+  @Override 
+  public VersionedData setAndGetResult(String path, byte[] data, int version) throws BadVersionException, NoSuchElementException, IOException, KeeperException, InterruptedException {
+    return delegate.setAndGetResult(path, data, version);
+  }
 
   @Override
   public void close() throws IOException {
