@@ -182,8 +182,9 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
             }
             updateMinCompetitiveScore(scorer);
           } else {
+            ++collectedHits;
             // Startup transient: queue hasn't gathered numHits yet
-            final int slot = totalHits - 1;
+            final int slot = collectedHits - 1;
 
             // Copy hit into queue
             comparator.copy(slot, doc);
@@ -216,7 +217,6 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   private final static class PagingFieldCollector extends TopFieldCollector {
 
     final Sort sort;
-    int collectedHits;
     final FieldValueHitQueue<Entry> queue;
     final FieldDoc after;
 
@@ -584,7 +584,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
   final void add(int slot, int doc, Object object) {
     bottom = pq.add(new Entry(slot, docBase + doc, object));
-    queueFull = totalHits == numHits;
+    queueFull = collectedHits == numHits;
   }
 
   final void updateBottom(int doc) {

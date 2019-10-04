@@ -48,6 +48,9 @@ public abstract class TopDocsCollector<T extends ScoreDoc> implements Collector 
   /** The total number of documents that the collector encountered. */
   protected int totalHits;
 
+  /** The number of hits collected by the collector */
+  protected int collectedHits;
+
   /** Whether {@link #totalHits} is exact or a lower bound. */
   protected TotalHits.Relation totalHitsRelation = TotalHits.Relation.EQUAL_TO;
 
