@@ -407,7 +407,97 @@ By default, the ranges used to compute range faceting between `start` and `end` 
 * "all" shorthand for lower, upper, edge, outer
 
 |facet |Aggregations, metrics, or nested facets that will be calculated for every returned bucket
+|ranges a|List of arbitrary range when specified calculates facet on given ranges rather than `start`, `gap` and `end`. With `start`, `end` and `gap` the width of the range or bucket is always fixed. If range faceting needs to computed on varying range width then, `ranges` should be specified.
+
+* Specifying `start`, `end` or `gap` along with `ranges` is disallowed and request would fail.
+* When `ranges` are specified in the range facet, `hardend`, `include` and `other` parameters are ignored.
+
+Refer <<Arbitrary Range>>
 |===
+
+==== Arbitrary Range
+
+An arbitrary range consists of from and to values over which range bucket is computed. This range can be specified in two syntax.
+
+[width="100%",cols="10%,90%",options="header",]
+|===
+|Parameter |Description
+|from |The lower bound of the range. When not specified defaults to `*`.
+|to |The upper bound of the range. When not specified defaults to `*`.
+|inclusive_from |A boolean, which if true means that include the lower bound `from`. This defaults to `true`.
+|inclusive_to |A boolean, which if true means that include the upper bound `to`. This default to `false`.
+|range a|The range is specified as string. This is semantically similar to `facet.interval`
+
+* When `range` is specified then, all the above parameters `from`, `to` and etc in the range are ignored
+* `range` always start with `(` or `[` and ends with `)` or `]`
+** `(` - exclude lower bound
+** `[` - include lower bound
+** `)` - exclude upper bound
+** `]` - include upper bound
+
+For example, For range `(5,10]` 5 is excluded and 10 is included
+|===
+
+===== other with ranges
+
+`other` parameter is ignored when `ranges` is specified but there are ways to achieve same behavior with `ranges`.
+
+* `before` - This is equivalent to `[*,some_val)` or just specifying `to` value
+* `after` - This is equivalent to `(som_val, *]` or just specifying `from` value
+* `between` - This is equivalent to specifying `start`, `end` as `from` and `to` respectively
+
+===== include with ranges
+
+`include` parameter is ignored when `ranges` is specified but there are ways to achieve same behavior with `ranges`. `lower`, `upper`, `outer`, `edge` all can be achieved using combination of `inclusive_to` and `inclusive_from`.
+
+Range facet with `ranges`
+
+[source,bash]
+----
+curl http://localhost:8983/solr/techproducts/query -d '
+{
+  "query": "*:*",
+  "facet": {
+    "prices": {
+      "type": "range",
+      "field": "price",
+      "ranges": [
+        {
+          "from": 0,
+          "to": 20,
+          "inclusive_from": true,
+          "inclusive_to": false
+        },
+        {
+          "range": "[40,100)"
+        }
+      ]
+    }
+  }
+}'
+----
+
+The output from the range facet above would look a bit like:
+
+[source,json]
+----
+{
+  "prices": {
+    "buckets": [
+      {
+        "val": "[0,20)",
+        "count": 5
+      },
+      {
+        "val": "[40,100)",
+        "count": 2
+      }
+    ]
+  }
+}
+----
+
+NOTE: When `range` is specified, its value in the request is used as key in the response. In the other case, key is generated using `from`, `to`, `inclusive_to` and `inclusive_from`. Currently, custom `key` is not supported.
 
 === Heatmap Facet
 

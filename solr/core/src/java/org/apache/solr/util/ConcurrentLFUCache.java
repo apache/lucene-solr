@@ -17,17 +17,21 @@
 package org.apache.solr.util;
 
 import java.lang.ref.WeakReference;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.TimeUnit;
+//import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.util.Cache;
+import org.apache.solr.common.util.TimeSource;
 
 import static org.apache.lucene.util.RamUsageEstimator.HASHTABLE_RAM_BYTES_PER_ENTRY;
 import static org.apache.lucene.util.RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED;
@@ -63,11 +67,21 @@ public class ConcurrentLFUCache<K, V> implements Cache<K,V>, Accountable {
   private final EvictionListener<K, V> evictionListener;
   private CleanupThread cleanupThread;
   private boolean timeDecay;
-  private final AtomicLong ramBytes = new AtomicLong(0);
+  private long maxIdleTimeNs;
+  private final TimeSource timeSource = TimeSource.NANO_TIME;
+  private final AtomicLong oldestEntry = new AtomicLong(0L);
+  private final LongAdder ramBytes = new LongAdder();
 
   public ConcurrentLFUCache(int upperWaterMark, final int lowerWaterMark, int acceptableSize,
                             int initialSize, boolean runCleanupThread, boolean runNewThreadForCleanup,
                             EvictionListener<K, V> evictionListener, boolean timeDecay) {
+    this(upperWaterMark, lowerWaterMark, acceptableSize, initialSize, runCleanupThread,
+        runNewThreadForCleanup, evictionListener, timeDecay, -1);
+  }
+
+  public ConcurrentLFUCache(int upperWaterMark, final int lowerWaterMark, int acceptableSize,
+                            int initialSize, boolean runCleanupThread, boolean runNewThreadForCleanup,
+                            EvictionListener<K, V> evictionListener, boolean timeDecay, int maxIdleTimeSec) {
     setUpperWaterMark(upperWaterMark);
     setLowerWaterMark(lowerWaterMark);
     setAcceptableWaterMark(acceptableSize);
@@ -75,12 +89,13 @@ public class ConcurrentLFUCache<K, V> implements Cache<K,V>, Accountable {
     this.evictionListener = evictionListener;
     setNewThreadForCleanup(runNewThreadForCleanup);
     setTimeDecay(timeDecay);
+    setMaxIdleTime(maxIdleTimeSec);
     setRunCleanupThread(runCleanupThread);
   }
 
   public ConcurrentLFUCache(int size, int lowerWatermark) {
     this(size, lowerWatermark, (int) Math.floor((lowerWatermark + size) / 2),
-        (int) Math.ceil(0.75 * size), false, false, null, true);
+        (int) Math.ceil(0.75 * size), false, false, null, true, -1);
   }
 
   public void setAlive(boolean live) {
@@ -106,13 +121,25 @@ public class ConcurrentLFUCache<K, V> implements Cache<K,V>, Accountable {
     this.timeDecay = timeDecay;
   }
 
+  public void setMaxIdleTime(int maxIdleTime) {
+    long oldMaxIdleTimeNs = maxIdleTimeNs;
+    maxIdleTimeNs = maxIdleTime > 0 ? TimeUnit.NANOSECONDS.convert(maxIdleTime, TimeUnit.SECONDS) : Long.MAX_VALUE;
+    if (cleanupThread != null && maxIdleTimeNs < oldMaxIdleTimeNs) {
+      cleanupThread.wakeThread();
+    }
+  }
+
   public synchronized void setNewThreadForCleanup(boolean newThreadForCleanup) {
     this.newThreadForCleanup = newThreadForCleanup;
+    if (newThreadForCleanup) {
+      setRunCleanupThread(false);
+    }
   }
 
   public synchronized void setRunCleanupThread(boolean runCleanupThread) {
     this.runCleanupThread = runCleanupThread;
     if (this.runCleanupThread) {
+      newThreadForCleanup = false;
       if (cleanupThread == null) {
         cleanupThread = new CleanupThread(this);
         cleanupThread.start();
@@ -129,22 +156,21 @@ public class ConcurrentLFUCache<K, V> implements Cache<K,V>, Accountable {
   public V get(K key) {
     CacheEntry<K, V> e = map.get(key);
     if (e == null) {
-      if (islive) stats.missCounter.incrementAndGet();
-      return null;
+      if (islive) stats.missCounter.increment();
+    } else if (islive) {
+      e.lastAccessed = timeSource.getEpochTimeNs();
+      stats.accessCounter.increment();
+      e.hits.increment();
     }
-    if (islive) {
-      e.lastAccessed = stats.accessCounter.incrementAndGet();
-      e.hits.incrementAndGet();
-    }
-    return e.value;
+    return e != null ? e.value : null;
   }
 
   @Override
   public V remove(K key) {
     CacheEntry<K, V> cacheEntry = map.remove(key);
     if (cacheEntry != null) {
-      stats.size.decrementAndGet();
-      ramBytes.addAndGet(-cacheEntry.ramBytesUsed() - HASHTABLE_RAM_BYTES_PER_ENTRY);
+      stats.size.decrement();
+      ramBytes.add(-cacheEntry.ramBytesUsed() - HASHTABLE_RAM_BYTES_PER_ENTRY);
       return cacheEntry.value;
     }
     return null;
@@ -153,21 +179,33 @@ public class ConcurrentLFUCache<K, V> implements Cache<K,V>, Accountable {
   @Override
   public V put(K key, V val) {
     if (val == null) return null;
-    CacheEntry<K, V> e = new CacheEntry<>(key, val, stats.accessCounter.incrementAndGet());
-    CacheEntry<K, V> oldCacheEntry = map.put(key, e);
+    CacheEntry<K, V> e = new CacheEntry<>(key, val, timeSource.getEpochTimeNs());
+    return putCacheEntry(e);
+  }
+
+  /**
+   * Visible for testing to create synthetic cache entries.
+   * @lucene.internal
+   */
+  public V putCacheEntry(CacheEntry<K, V> e) {
+    stats.accessCounter.increment();
+    // initialize oldestEntry
+    oldestEntry.updateAndGet(x -> x > e.lastAccessed  || x == 0 ? e.lastAccessed : x);
+    CacheEntry<K, V> oldCacheEntry = map.put(e.key, e);
     int currentSize;
     if (oldCacheEntry == null) {
-      currentSize = stats.size.incrementAndGet();
-      ramBytes.addAndGet(e.ramBytesUsed() + HASHTABLE_RAM_BYTES_PER_ENTRY); // added key + value + entry
+      stats.size.increment();
+      currentSize = stats.size.intValue();
+      ramBytes.add(e.ramBytesUsed() + HASHTABLE_RAM_BYTES_PER_ENTRY); // added key + value + entry
     } else {
-      currentSize = stats.size.get();
-      ramBytes.addAndGet(-oldCacheEntry.ramBytesUsed());
-      ramBytes.addAndGet(e.ramBytesUsed());
+      currentSize = stats.size.intValue();
+      ramBytes.add(-oldCacheEntry.ramBytesUsed());
+      ramBytes.add(e.ramBytesUsed());
     }
     if (islive) {
-      stats.putCounter.incrementAndGet();
+      stats.putCounter.increment();
     } else {
-      stats.nonLivePutCounter.incrementAndGet();
+      stats.nonLivePutCounter.increment();
     }
 
     // Check if we need to clear out old entries from the cache.
@@ -180,7 +218,9 @@ public class ConcurrentLFUCache<K, V> implements Cache<K,V>, Accountable {
     //
     // Thread safety note: isCleaning read is piggybacked (comes after) other volatile reads
     // in this method.
-    if (currentSize > upperWaterMark && !isCleaning) {
+    boolean evictByIdleTime = maxIdleTimeNs != Long.MAX_VALUE;
+    long idleCutoff = evictByIdleTime ? timeSource.getEpochTimeNs() - maxIdleTimeNs : -1L;
+    if ((currentSize > upperWaterMark || (evictByIdleTime && oldestEntry.get() < idleCutoff)) && !isCleaning) {
       if (newThreadForCleanup) {
         new Thread(this::markAndSweep).start();
       } else if (cleanupThread != null) {
@@ -194,35 +234,66 @@ public class ConcurrentLFUCache<K, V> implements Cache<K,V>, Accountable {
 
   /**
    * Removes items from the cache to bring the size down to the lowerWaterMark.
+   * <p>Visible for unit testing.</p>
+   * @lucene.internal
    */
-  private void markAndSweep() {
+  public void markAndSweep() {
     if (!markAndSweepLock.tryLock()) return;
     try {
       long lowHitCount = this.lowHitCount;
       isCleaning = true;
       this.lowHitCount = lowHitCount; // volatile write to make isCleaning visible
       
-      int sz = stats.size.get();
-      if (sz <= upperWaterMark) {
+      int sz = stats.size.intValue();
+      boolean evictByIdleTime = maxIdleTimeNs != Long.MAX_VALUE;
+      long idleCutoff = evictByIdleTime ? timeSource.getEpochTimeNs() - maxIdleTimeNs : -1L;
+      if (sz <= upperWaterMark && (evictByIdleTime && oldestEntry.get() > idleCutoff)) {
         /* SOLR-7585: Even though we acquired a lock, multiple threads might detect a need for calling this method.
          * Locking keeps these from executing at the same time, so they run sequentially.  The second and subsequent
          * sequential runs of this method don't need to be done, since there are no elements to remove.
         */
         return;
       }
-      
+
+      // first evict by idleTime - it's less costly to do an additional pass over the
+      // map than to manage the outdated entries in a TreeSet
+      if (evictByIdleTime) {
+        long currentOldestEntry = Long.MAX_VALUE;
+        Iterator<Map.Entry<Object, CacheEntry<K, V>>> iterator = map.entrySet().iterator();
+        while (iterator.hasNext()) {
+          Map.Entry<Object, CacheEntry<K, V>> entry = iterator.next();
+          entry.getValue().lastAccessedCopy = entry.getValue().lastAccessed;
+          if (entry.getValue().lastAccessedCopy < idleCutoff) {
+            iterator.remove();
+            postRemoveEntry(entry.getValue());
+            stats.evictionIdleCounter.increment();
+          } else {
+            if (entry.getValue().lastAccessedCopy < currentOldestEntry) {
+              currentOldestEntry = entry.getValue().lastAccessedCopy;
+            }
+          }
+        }
+        if (currentOldestEntry != Long.MAX_VALUE) {
+          oldestEntry.set(currentOldestEntry);
+        }
+        // refresh size and maybe return
+        sz = stats.size.intValue();
+        if (sz <= upperWaterMark) {
+          return;
+        }
+      }
       int wantToRemove = sz - lowerWaterMark;
-      
+
       TreeSet<CacheEntry<K, V>> tree = new TreeSet<>();
-      
+
       for (CacheEntry<K, V> ce : map.values()) {
         // set hitsCopy to avoid later Atomic reads.  Primitive types are faster than the atomic get().
-        ce.hitsCopy = ce.hits.get();
+        ce.hitsCopy = ce.hits.longValue();
         ce.lastAccessedCopy = ce.lastAccessed;
         if (timeDecay) {
-          ce.hits.set(ce.hitsCopy >>> 1);
+          ce.hits.reset();
+          ce.hits.add(ce.hitsCopy >>> 1);
         }
-        
         if (tree.size() < wantToRemove) {
           tree.add(ce);
         } else {
@@ -249,6 +320,18 @@ public class ConcurrentLFUCache<K, V> implements Cache<K,V>, Accountable {
       for (CacheEntry<K, V> e : tree) {
         evictEntry(e.key);
       }
+      if (evictByIdleTime) {
+        // do a full pass because we don't what is the max. age of remaining items
+        long currentOldestEntry = Long.MAX_VALUE;
+        for (CacheEntry<K, V> e : map.values()) {
+          if (e.lastAccessedCopy < currentOldestEntry) {
+            currentOldestEntry = e.lastAccessedCopy;
+          }
+        }
+        if (currentOldestEntry != Long.MAX_VALUE) {
+          oldestEntry.set(currentOldestEntry);
+        }
+      }
     } finally {
       isCleaning = false; // set before markAndSweep.unlock() for visibility
       markAndSweepLock.unlock();
@@ -257,10 +340,14 @@ public class ConcurrentLFUCache<K, V> implements Cache<K,V>, Accountable {
 
   private void evictEntry(K key) {
     CacheEntry<K, V> o = map.remove(key);
+    postRemoveEntry(o);
+  }
+
+  private void postRemoveEntry(CacheEntry<K, V> o) {
     if (o == null) return;
-    ramBytes.addAndGet(-(o.ramBytesUsed() + HASHTABLE_RAM_BYTES_PER_ENTRY));
-    stats.size.decrementAndGet();
-    stats.evictionCounter.incrementAndGet();
+    ramBytes.add(-(o.ramBytesUsed() + HASHTABLE_RAM_BYTES_PER_ENTRY));
+    stats.size.decrement();
+    stats.evictionCounter.increment();
     if (evictionListener != null) evictionListener.evictedEntry(o.key, o.value);
   }
 
@@ -283,7 +370,7 @@ public class ConcurrentLFUCache<K, V> implements Cache<K,V>, Accountable {
     try {
       for (Map.Entry<Object, CacheEntry<K, V>> entry : map.entrySet()) {
         CacheEntry<K, V> ce = entry.getValue();
-        ce.hitsCopy = ce.hits.get();
+        ce.hitsCopy = ce.hits.longValue();
         ce.lastAccessedCopy = ce.lastAccessed;
         if (tree.size() < n) {
           tree.add(ce);
@@ -327,7 +414,7 @@ public class ConcurrentLFUCache<K, V> implements Cache<K,V>, Accountable {
     try {
       for (Map.Entry<Object, CacheEntry<K, V>> entry : map.entrySet()) {
         CacheEntry<K, V> ce = entry.getValue();
-        ce.hitsCopy = ce.hits.get();
+        ce.hitsCopy = ce.hits.longValue();
         ce.lastAccessedCopy = ce.lastAccessed;
         if (tree.size() < n) {
           tree.add(ce);
@@ -353,13 +440,13 @@ public class ConcurrentLFUCache<K, V> implements Cache<K,V>, Accountable {
   }
 
   public int size() {
-    return stats.size.get();
+    return stats.size.intValue();
   }
 
   @Override
   public void clear() {
     map.clear();
-    ramBytes.set(0);
+    ramBytes.reset();
   }
 
   public Map<Object, CacheEntry<K, V>> getMap() {
@@ -368,7 +455,7 @@ public class ConcurrentLFUCache<K, V> implements Cache<K,V>, Accountable {
 
   @Override
   public long ramBytesUsed() {
-    return BASE_RAM_BYTES_USED + ramBytes.get();
+    return BASE_RAM_BYTES_USED + ramBytes.sum();
   }
 
   public static class CacheEntry<K, V> implements Comparable<CacheEntry<K, V>>, Accountable {
@@ -379,7 +466,7 @@ public class ConcurrentLFUCache<K, V> implements Cache<K,V>, Accountable {
     final K key;
     final V value;
     final long ramBytesUsed;
-    volatile AtomicLong hits = new AtomicLong(0);
+    final LongAdder hits = new LongAdder();
     long hitsCopy = 0;
     volatile long lastAccessed = 0;
     long lastAccessedCopy = 0;
@@ -416,7 +503,7 @@ public class ConcurrentLFUCache<K, V> implements Cache<K,V>, Accountable {
 
     @Override
     public String toString() {
-      return "key: " + key + " value: " + value + " hits:" + hits.get();
+      return "key: " + key + " value: " + value + " hits:" + hits.longValue();
     }
 
     @Override
@@ -445,51 +532,63 @@ public class ConcurrentLFUCache<K, V> implements Cache<K,V>, Accountable {
   public static class Stats implements Accountable {
     private static final long RAM_BYTES_USED =
         RamUsageEstimator.shallowSizeOfInstance(Stats.class) +
-            5 * RamUsageEstimator.primitiveSizes.get(long.class) +
-            RamUsageEstimator.primitiveSizes.get(int.class);
+            // LongAdder
+            7 * (
+                RamUsageEstimator.NUM_BYTES_ARRAY_HEADER +
+                    RamUsageEstimator.primitiveSizes.get(long.class) +
+                    2 * (RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.primitiveSizes.get(long.class))
+            );
 
-    private final AtomicLong accessCounter = new AtomicLong(0),
-        putCounter = new AtomicLong(0),
-        nonLivePutCounter = new AtomicLong(0),
-        missCounter = new AtomicLong();
-    private final AtomicInteger size = new AtomicInteger();
-    private AtomicLong evictionCounter = new AtomicLong();
+    private final LongAdder accessCounter = new LongAdder();
+    private final LongAdder putCounter = new LongAdder();
+    private final LongAdder nonLivePutCounter = new LongAdder();
+    private final LongAdder missCounter = new LongAdder();
+    private final LongAdder size = new LongAdder();
+    private LongAdder evictionCounter = new LongAdder();
+    private LongAdder evictionIdleCounter = new LongAdder();
 
     public long getCumulativeLookups() {
-      return (accessCounter.get() - putCounter.get() - nonLivePutCounter.get()) + missCounter.get();
+      return (accessCounter.longValue() - putCounter.longValue() - nonLivePutCounter.longValue()) + missCounter.longValue();
     }
 
     public long getCumulativeHits() {
-      return accessCounter.get() - putCounter.get() - nonLivePutCounter.get();
+      return accessCounter.longValue() - putCounter.longValue() - nonLivePutCounter.longValue();
     }
 
     public long getCumulativePuts() {
-      return putCounter.get();
+      return putCounter.longValue();
     }
 
     public long getCumulativeEvictions() {
-      return evictionCounter.get();
+      return evictionCounter.longValue();
+    }
+
+    public long getCumulativeIdleEvictions() {
+      return evictionIdleCounter.longValue();
     }
 
     public int getCurrentSize() {
-      return size.get();
+      return size.intValue();
     }
 
     public long getCumulativeNonLivePuts() {
-      return nonLivePutCounter.get();
+      return nonLivePutCounter.longValue();
     }
 
     public long getCumulativeMisses() {
-      return missCounter.get();
+      return missCounter.longValue();
     }
 
     public void add(Stats other) {
-      accessCounter.addAndGet(other.accessCounter.get());
-      putCounter.addAndGet(other.putCounter.get());
-      nonLivePutCounter.addAndGet(other.nonLivePutCounter.get());
-      missCounter.addAndGet(other.missCounter.get());
-      evictionCounter.addAndGet(other.evictionCounter.get());
-      size.set(Math.max(size.get(), other.size.get()));
+      accessCounter.add(other.accessCounter.longValue());
+      putCounter.add(other.putCounter.longValue());
+      nonLivePutCounter.add(other.nonLivePutCounter.longValue());
+      missCounter.add(other.missCounter.longValue());
+      evictionCounter.add(other.evictionCounter.longValue());
+      evictionIdleCounter.add(other.evictionIdleCounter.longValue());
+      long maxSize = Math.max(size.longValue(), other.size.longValue());
+      size.reset();
+      size.add(maxSize);
     }
 
     @Override
@@ -514,15 +613,18 @@ public class ConcurrentLFUCache<K, V> implements Cache<K,V>, Accountable {
     @Override
     public void run() {
       while (true) {
+        ConcurrentLFUCache c = cache.get();
+        if(c == null) break;
         synchronized (this) {
           if (stop) break;
+          long waitTimeMs =  c.maxIdleTimeNs != Long.MAX_VALUE ? TimeUnit.MILLISECONDS.convert(c.maxIdleTimeNs, TimeUnit.NANOSECONDS) : 0L;
           try {
-            this.wait();
+            this.wait(waitTimeMs);
           } catch (InterruptedException e) {
           }
         }
         if (stop) break;
-        ConcurrentLFUCache c = cache.get();
+        c = cache.get();
         if (c == null) break;
         c.markAndSweep();
       }

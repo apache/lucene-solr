@@ -62,7 +62,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
   private AuthenticationProvider authenticationProvider;
   private final static ThreadLocal<Header> authHeader = new ThreadLocal<>();
   private static final String X_REQUESTED_WITH_HEADER = "X-Requested-With";
-  private boolean blockUnknown = false;
+  private boolean blockUnknown = true;
   private boolean forwardCredentials = false;
 
   public boolean authenticate(String username, String pwd) {

@@ -25,7 +25,6 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.google.common.base.Strings;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -74,7 +73,7 @@ public class EmbeddedSolrServer extends SolrClient {
    * Create an EmbeddedSolrServer using a given solr home directory
    *
    * @param solrHome        the solr home directory
-   * @param defaultCoreName the core to route requests to by default
+   * @param defaultCoreName the core to route requests to by default (optional)
    */
   public EmbeddedSolrServer(Path solrHome, String defaultCoreName) {
     this(load(new CoreContainer(SolrXmlConfig.fromSolrHome(solrHome))), defaultCoreName);
@@ -84,7 +83,7 @@ public class EmbeddedSolrServer extends SolrClient {
    * Create an EmbeddedSolrServer using a NodeConfig
    *
    * @param nodeConfig      the configuration
-   * @param defaultCoreName the core to route requests to by default
+   * @param defaultCoreName the core to route requests to by default (optional)
    */
   public EmbeddedSolrServer(NodeConfig nodeConfig, String defaultCoreName) {
     this(load(new CoreContainer(nodeConfig)), defaultCoreName);
@@ -109,14 +108,12 @@ public class EmbeddedSolrServer extends SolrClient {
    * {@link #close()} is called.
    *
    * @param coreContainer the core container
-   * @param coreName      the core to route requests to by default
+   * @param coreName      the core to route requests to by default (optional)
    */
   public EmbeddedSolrServer(CoreContainer coreContainer, String coreName) {
     if (coreContainer == null) {
       throw new NullPointerException("CoreContainer instance required");
     }
-    if (Strings.isNullOrEmpty(coreName))
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Core name cannot be empty");
     this.coreContainer = coreContainer;
     this.coreName = coreName;
     _parser = new SolrRequestParsers(null);
@@ -150,8 +147,13 @@ public class EmbeddedSolrServer extends SolrClient {
       }
     }
 
-    if (coreName == null)
+    if (coreName == null) {
       coreName = this.coreName;
+      if (coreName == null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "No core specified on request and no default core has been set.");
+      }
+    }
 
     // Check for cores action
     SolrQueryRequest req = null;

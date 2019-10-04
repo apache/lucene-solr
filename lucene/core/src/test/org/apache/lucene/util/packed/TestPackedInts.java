@@ -344,7 +344,7 @@ public class TestPackedInts extends LuceneTestCase {
     List<PackedInts.Mutable> packedInts = createPackedInts(valueCount, bitsPerValue);
     for (PackedInts.Mutable packedInt: packedInts) {
       try {
-        fill(packedInt, PackedInts.maxValue(bitsPerValue), randomSeed);
+        fill(packedInt, bitsPerValue, randomSeed);
       } catch (Exception e) {
         e.printStackTrace(System.err);
         fail(String.format(Locale.ROOT,
@@ -359,25 +359,7 @@ public class TestPackedInts extends LuceneTestCase {
   private static List<PackedInts.Mutable> createPackedInts(
           int valueCount, int bitsPerValue) {
     List<PackedInts.Mutable> packedInts = new ArrayList<>();
-    if (bitsPerValue <= 8) {
-      packedInts.add(new Direct8(valueCount));
-    }
-    if (bitsPerValue <= 16) {
-      packedInts.add(new Direct16(valueCount));
-    }
-    if (bitsPerValue <= 24 && valueCount <= Packed8ThreeBlocks.MAX_SIZE) {
-      packedInts.add(new Packed8ThreeBlocks(valueCount));
-    }
-    if (bitsPerValue <= 32) {
-      packedInts.add(new Direct32(valueCount));
-    }
-    if (bitsPerValue <= 48 && valueCount <= Packed16ThreeBlocks.MAX_SIZE) {
-      packedInts.add(new Packed16ThreeBlocks(valueCount));
-    }
-    if (bitsPerValue <= 63) {
-      packedInts.add(new Packed64(valueCount, bitsPerValue));
-    }
-    packedInts.add(new Direct64(valueCount));
+    packedInts.add(new Packed64(valueCount, bitsPerValue));
     for (int bpv = bitsPerValue; bpv <= Packed64SingleBlock.MAX_SUPPORTED_BITS_PER_VALUE; ++bpv) {
       if (Packed64SingleBlock.isSupported(bpv)) {
         packedInts.add(Packed64SingleBlock.create(valueCount, bpv));
@@ -386,10 +368,11 @@ public class TestPackedInts extends LuceneTestCase {
     return packedInts;
   }
 
-  private static void fill(PackedInts.Mutable packedInt, long maxValue, long randomSeed) {
+  private static void fill(PackedInts.Mutable packedInt, int bitsPerValue, long randomSeed) {
     Random rnd2 = new Random(randomSeed);
+    final long maxValue = bitsPerValue == 64 ? Long.MAX_VALUE : (1L << bitsPerValue) - 1;
     for (int i = 0 ; i < packedInt.size() ; i++) {
-      long value = TestUtil.nextLong(rnd2, 0, maxValue);
+      long value = bitsPerValue == 64 ? random().nextLong() : TestUtil.nextLong(rnd2, 0, maxValue);
       packedInt.set(i, value);
       assertEquals(String.format(Locale.ROOT,
               "The set/get of the value at index %d should match for %s",
@@ -495,34 +478,6 @@ public class TestPackedInts extends LuceneTestCase {
       assertEquals("The value at position " + (INDEX-1)
           + " should be correct for " + p64sb.getClass().getSimpleName(),
           1, p64sb.get(INDEX-1));
-    }
-
-    int index = Integer.MAX_VALUE / 24 + 1;
-    Packed8ThreeBlocks p8 = null;
-    try {
-      p8 = new Packed8ThreeBlocks(index);
-    } catch (OutOfMemoryError oome) {
-      // Ignore: see comment above
-    }
-    if (p8 != null) {
-      p8.set(index - 1, 1);
-      assertEquals("The value at position " + (index-1)
-                   + " should be correct for Packed8ThreeBlocks", 1, p8.get(index-1));
-      p8 = null;
-    }
-
-    index = Integer.MAX_VALUE / 48 + 1;
-    Packed16ThreeBlocks p16 = null;
-    try {
-      p16 = new Packed16ThreeBlocks(index);
-    } catch (OutOfMemoryError oome) {
-      // Ignore: see comment above
-    }
-    if (p16 != null) {
-      p16.set(index - 1, 1);
-      assertEquals("The value at position " + (index-1)
-                   + " should be correct for Packed16ThreeBlocks", 1, p16.get(index-1));
-      p16 = null;
     }
   }
 

@@ -1060,8 +1060,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       copy(req.getParams().required(), m, COLLECTION_PROP);
       addMapObject(m, RULE);
       addMapObject(m, SNITCH);
-      for (String prop : m.keySet()) {
-        if ("".equals(m.get(prop))) {
+      for (Map.Entry<String, Object> entry : m.entrySet()) {
+        String prop = entry.getKey();
+        if ("".equals(entry.getValue())) {
           // set to an empty string is equivalent to removing the property, see SOLR-12507
           m.put(prop, null);
         }

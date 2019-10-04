@@ -125,13 +125,14 @@ public class CatStream extends TupleStream implements Expressible {
   @Override
   public Tuple read() throws IOException {
     if (maxLines >= 0 && linesReturned >= maxLines) {
-      if (currentFileLines != null) currentFileLines.close();
+      closeCurrentFileIfSet();
       return createEofTuple();
     } else if (currentFileHasMoreLinesToRead()) {
       return fetchNextLineFromCurrentFile();
     } else if (advanceToNextFileWithData()) {
       return fetchNextLineFromCurrentFile();
     } else { // No more data
+      closeCurrentFileIfSet();
       return createEofTuple();
     }
   }
@@ -187,9 +188,7 @@ public class CatStream extends TupleStream implements Expressible {
 
   private boolean advanceToNextFileWithData() throws IOException {
     while (allFilesToCrawl.hasNext()) {
-      if (currentFileLines != null) {
-        currentFileLines.close();
-      }
+      closeCurrentFileIfSet();
       currentFilePath = allFilesToCrawl.next();
       currentFileLines = FileUtils.lineIterator(new File(currentFilePath.absolutePath), "UTF-8");
       if (currentFileLines.hasNext()) return true;
@@ -219,6 +218,14 @@ public class CatStream extends TupleStream implements Expressible {
 
   private String getAbsolutePath(String pathRelativeToChroot) {
     return Paths.get(chroot, pathRelativeToChroot).toString();
+  }
+
+  private void closeCurrentFileIfSet() {
+    if (currentFilePath != null) {
+      currentFileLines.close();
+      currentFilePath = null;
+      currentFileLines = null;
+    }
   }
 
   private void findReadableFiles(CrawlFile seed, List<CrawlFile> foundFiles) {

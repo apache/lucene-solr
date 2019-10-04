@@ -149,7 +149,9 @@ public class NodeLostTrigger extends TriggerBase {
 
       Set<String> newLiveNodes = new HashSet<>(cloudManager.getClusterStateProvider().getLiveNodes());
       log.debug("Running NodeLostTrigger: {} with currently live nodes: {} and last live nodes: {}", name, newLiveNodes.size(), lastLiveNodes.size());
-
+      log.trace("Current Live Nodes for {}: {}", name, newLiveNodes);
+      log.trace("Last Live Nodes for {}: {}", name, lastLiveNodes);
+      
       // have any nodes that we were tracking been added to the cluster?
       // if so, remove them from the tracking map
       Set<String> trackingKeySet = nodeNameVsTimeRemoved.keySet();
@@ -191,6 +193,7 @@ public class NodeLostTrigger extends TriggerBase {
             log.debug("NodeLostTrigger processor for lost nodes: {} is not ready, will try later", nodeNames);
           }
         } else  {
+          log.debug("NodeLostTrigger firing, but no processor - so removing lost nodes: {}", nodeNames);
           nodeNames.forEach(n -> {
             nodeNameVsTimeRemoved.remove(n);
           });

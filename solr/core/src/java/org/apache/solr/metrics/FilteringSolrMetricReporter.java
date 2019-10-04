@@ -21,6 +21,9 @@ import java.util.List;
 
 import com.codahale.metrics.MetricFilter;
 
+/**
+ * A {@link SolrMetricReporter} that supports (prefix) filters.
+ */
 public abstract class FilteringSolrMetricReporter extends SolrMetricReporter {
 
   protected List<String> filters = new ArrayList<>();
