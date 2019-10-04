@@ -38,6 +38,9 @@ public interface SolrCache<K,V> extends SolrInfoBean, SolrMetricProducer {
   String RAM_BYTES_USED_PARAM = "ramBytesUsed";
   String MAX_RAM_MB_PARAM = "maxRamMB";
   String MAX_IDLE_TIME_PARAM = "maxIdleTime";
+  String INITIAL_SIZE_PARAM = "initialSize";
+  String CLEANUP_THREAD_PARAM = "cleanupThread";
+  String SHOW_ITEMS_PARAM = "showItems";
 
   /**
    * The initialization routine. Instance specific arguments are passed in

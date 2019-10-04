@@ -35,6 +35,7 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SimilarityFactory;
 import org.apache.solr.search.similarities.SchemaSimilarityFactory;
 import org.apache.solr.util.RESTfulServerProvider;
@@ -183,12 +184,14 @@ public class TestBulkSchemaAPI extends RestTestBase {
     response = restTestHarness.post("/schema", json(addFieldTypeAnalyzerWithClass + suffix));
     map = (Map) fromJSONString(response);
     assertNull(response, map.get("error"));
+    
+    restTestHarness.checkAdminResponseStatus("/admin/cores?wt=xml&action=RELOAD&core=" + coreName, "0");
 
     map = getObj(restTestHarness, "myNewTextFieldWithAnalyzerClass", "fieldTypes");
     assertNotNull(map);
     Map analyzer = (Map)map.get("analyzer");
     assertEquals("org.apache.lucene.analysis.core.WhitespaceAnalyzer", String.valueOf(analyzer.get("class")));
-    assertEquals("5.0.0", String.valueOf(analyzer.get("luceneMatchVersion")));
+    assertEquals("5.0.0", String.valueOf(analyzer.get(IndexSchema.LUCENE_MATCH_VERSION_PARAM)));
   }
 
   public void testAnalyzerByName() throws Exception {

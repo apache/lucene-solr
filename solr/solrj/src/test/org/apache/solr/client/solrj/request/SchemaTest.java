@@ -622,6 +622,8 @@ public class SchemaTest extends RestTestBase {
     SchemaResponse.UpdateResponse addFieldTypeResponse = addFieldTypeRequest.process(getSolrClient());
     assertValidSchemaResponse(addFieldTypeResponse);
 
+    restTestHarness.reload();
+    
     SchemaRequest.FieldType fieldTypeRequest = new SchemaRequest.FieldType(fieldTypeName);
     SchemaResponse.FieldTypeResponse newFieldTypeResponse = fieldTypeRequest.process(getSolrClient());
     assertValidSchemaResponse(newFieldTypeResponse);

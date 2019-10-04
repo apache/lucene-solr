@@ -54,9 +54,6 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
 
   public static final String MIN_SIZE_PARAM = "minSize";
   public static final String ACCEPTABLE_SIZE_PARAM = "acceptableSize";
-  public static final String INITIAL_SIZE_PARAM = "initialSize";
-  public static final String CLEANUP_THREAD_PARAM = "cleanupThread";
-  public static final String SHOW_ITEMS_PARAM = "showItems";
 
   // contains the statistics objects for all open caches of the same type
   private List<ConcurrentLRUCache.Stats> statsList;
