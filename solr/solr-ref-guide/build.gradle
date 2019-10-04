@@ -29,6 +29,11 @@
 // TODO 3: task names currently roughly correspond to ant tasks. Simpler aliases (such as 'html', 'pdf')
 // would be much clearer.
 
+// TODO 4: currently buildscript dependencies are hardcoded (asciidoctor) because they can't be resolved
+// using Palantir's plugin. This is another reason to switch to gradle-based tools -- then
+// only the build script dependencies would be needed and asciidoctorj would be removed from version
+// properties entirely (it is only used locally in this build file).
+
 import java.time.*
 import java.time.format.*
 import org.asciidoctor.*
