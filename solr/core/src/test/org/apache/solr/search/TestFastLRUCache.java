@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.WildcardQuery;
@@ -33,6 +34,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
+import java.util.TreeMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -471,7 +473,7 @@ public class TestFastLRUCache extends SolrTestCase {
   }
 
 
-  void cachePerfTest(final SolrCache sc, final int nThreads, final int numGets, int cacheSize, final int maxKey) {
+  double[] cachePerfTest(final SolrCache sc, final int nThreads, final int numGets, int cacheSize, final int maxKey) {
     Map l = new HashMap();
     l.put("size", ""+cacheSize);
     l.put("initialSize", ""+cacheSize);
@@ -512,37 +514,73 @@ public class TestFastLRUCache extends SolrTestCase {
       }
     }
 
-    System.out.println("time=" + timer.getTime() + " impl=" +sc.getClass().getSimpleName()
-                       +" nThreads= " + nThreads + " size="+cacheSize+" maxKey="+maxKey+" gets="+numGets
-                       +" hitRatio="+(1-(((double)puts.get())/numGets)));
+    double time = timer.getTime();
+    double hitRatio = (1-(((double)puts.get())/numGets));
+//    System.out.println("time=" + time + " impl=" +sc.getClass().getSimpleName()
+//                       +" nThreads= " + nThreads + " size="+cacheSize+" maxKey="+maxKey+" gets="+numGets
+//                       +" hitRatio="+(1-(((double)puts.get())/numGets)));
+    return new double[]{time, hitRatio};
   }
 
-  void perfTestBoth(int nThreads, int numGets, int cacheSize, int maxKey) {
-    cachePerfTest(new LRUCache(), nThreads, numGets, cacheSize, maxKey);
-    cachePerfTest(new FastLRUCache(), nThreads, numGets, cacheSize, maxKey);
+  private int NUM_RUNS = 5;
+  void perfTestBoth(int maxThreads, int numGets, int cacheSize, int maxKey,
+                    Map<String, Map<String, SummaryStatistics>> timeStats,
+                    Map<String, Map<String, SummaryStatistics>> hitStats) {
+    for (int nThreads = 1 ; nThreads <= maxThreads; nThreads++) {
+      String testKey = "threads=" + nThreads + ",gets=" + numGets + ",size=" + cacheSize + ",maxKey=" + maxKey;
+      System.err.println(testKey);
+      for (int i = 0; i < NUM_RUNS; i++) {
+        double[] data = cachePerfTest(new LRUCache(), nThreads, numGets, cacheSize, maxKey);
+        timeStats.computeIfAbsent(testKey, k -> new TreeMap<>())
+            .computeIfAbsent("LRUCache", k -> new SummaryStatistics())
+            .addValue(data[0]);
+        hitStats.computeIfAbsent(testKey, k -> new TreeMap<>())
+            .computeIfAbsent("LRUCache", k -> new SummaryStatistics())
+            .addValue(data[1]);
+        data = cachePerfTest(new CaffeineCache(), nThreads, numGets, cacheSize, maxKey);
+        timeStats.computeIfAbsent(testKey, k -> new TreeMap<>())
+            .computeIfAbsent("CaffeineCache", k -> new SummaryStatistics())
+            .addValue(data[0]);
+        hitStats.computeIfAbsent(testKey, k -> new TreeMap<>())
+            .computeIfAbsent("CaffeineCache", k -> new SummaryStatistics())
+            .addValue(data[1]);
+        data = cachePerfTest(new FastLRUCache(), nThreads, numGets, cacheSize, maxKey);
+        timeStats.computeIfAbsent(testKey, k -> new TreeMap<>())
+            .computeIfAbsent("FastLRUCache", k -> new SummaryStatistics())
+            .addValue(data[0]);
+        hitStats.computeIfAbsent(testKey, k -> new TreeMap<>())
+            .computeIfAbsent("FastLRUCache", k -> new SummaryStatistics())
+            .addValue(data[1]);
+      }
+    }
   }
 
+  int NUM_THREADS = 4;
   /***
       public void testCachePerf() {
+        Map<String, Map<String, SummaryStatistics>> timeStats = new TreeMap<>();
+        Map<String, Map<String, SummaryStatistics>> hitStats = new TreeMap<>();
       // warmup
-      perfTestBoth(2, 100000, 100000, 120000);
-      perfTestBoth(1, 2000000, 100000, 100000); // big cache, 100% hit ratio
-      perfTestBoth(2, 2000000, 100000, 100000); // big cache, 100% hit ratio
-      perfTestBoth(1, 2000000, 100000, 120000); // big cache, bigger hit ratio
-      perfTestBoth(2, 2000000, 100000, 120000); // big cache, bigger hit ratio
-      perfTestBoth(1, 2000000, 100000, 200000); // big cache, ~50% hit ratio
-      perfTestBoth(2, 2000000, 100000, 200000); // big cache, ~50% hit ratio
-      perfTestBoth(1, 2000000, 100000, 1000000); // big cache, ~10% hit ratio
-      perfTestBoth(2, 2000000, 100000, 1000000); // big cache, ~10% hit ratio
+      perfTestBoth(NUM_THREADS, 100000, 100000, 120000, new HashMap<>(), new HashMap());
 
-      perfTestBoth(1, 2000000, 1000, 1000); // small cache, ~100% hit ratio
-      perfTestBoth(2, 2000000, 1000, 1000); // small cache, ~100% hit ratio
-      perfTestBoth(1, 2000000, 1000, 1200); // small cache, bigger hit ratio
-      perfTestBoth(2, 2000000, 1000, 1200); // small cache, bigger hit ratio
-      perfTestBoth(1, 2000000, 1000, 2000); // small cache, ~50% hit ratio
-      perfTestBoth(2, 2000000, 1000, 2000); // small cache, ~50% hit ratio
-      perfTestBoth(1, 2000000, 1000, 10000); // small cache, ~10% hit ratio
-      perfTestBoth(2, 2000000, 1000, 10000); // small cache, ~10% hit ratio
+      perfTestBoth(NUM_THREADS, 2000000, 100000, 100000, timeStats, hitStats); // big cache, 100% hit ratio
+      perfTestBoth(NUM_THREADS, 2000000, 100000, 120000, timeStats, hitStats); // big cache, bigger hit ratio
+      perfTestBoth(NUM_THREADS, 2000000, 100000, 200000, timeStats, hitStats); // big cache, ~50% hit ratio
+      perfTestBoth(NUM_THREADS, 2000000, 100000, 1000000, timeStats, hitStats); // big cache, ~10% hit ratio
+
+      perfTestBoth(NUM_THREADS, 2000000, 1000, 1000, timeStats, hitStats); // small cache, ~100% hit ratio
+      perfTestBoth(NUM_THREADS, 2000000, 1000, 1200, timeStats, hitStats); // small cache, bigger hit ratio
+      perfTestBoth(NUM_THREADS, 2000000, 1000, 2000, timeStats, hitStats); // small cache, ~50% hit ratio
+      perfTestBoth(NUM_THREADS, 2000000, 1000, 10000, timeStats, hitStats); // small cache, ~10% hit ratio
+
+        System.out.println("\n=====================\n");
+        timeStats.forEach((testKey, map) -> {
+          Map<String, SummaryStatistics> hits = hitStats.get(testKey);
+          System.out.println("* " + testKey);
+          map.forEach((type, summary) -> {
+            System.out.println("\t" + String.format("%14s", type) + "\ttime " + summary.getMean() + "\thitRatio " + hits.get(type).getMean());
+          });
+        });
       }
   ***/
 
