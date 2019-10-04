@@ -301,6 +301,8 @@ Other Changes
 * SOLR-13812: Add javadocs, uneven rejection and basic test coverage for the SolrTestCaseJ4.params method.
   (Diego Ceccarelli, Christine Poerschke, Munendra S N)
 
+* SOLR-13767: Upgrade jackson to 2.10.0 (marungo)
+
 ==================  8.2.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
