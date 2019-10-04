@@ -339,11 +339,12 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
       long size = TestUtil.nextLong(random(), 1, Long.MAX_VALUE);
       int maxDoc = (size > Integer.MAX_VALUE) ? Integer.MAX_VALUE : Math.toIntExact(size);
       int docCount = TestUtil.nextInt(random(), 1, maxDoc);
-      long estimatePointCount = TestUtil.nextLong(random(), 0, size);
-      PointValues values = getPointValues(size, docCount, estimatePointCount);
+      long estimatedPointCount = TestUtil.nextLong(random(), 0, size);
+      PointValues values = getPointValues(size, docCount, estimatedPointCount);
       long docs = values.estimateDocCount(null);
-      assertTrue(docs <= estimatePointCount);
+      assertTrue(docs <= estimatedPointCount);
       assertTrue(docs <= maxDoc);
+      assertTrue(docs >= estimatedPointCount / (size/docCount));
     }
   }
 
