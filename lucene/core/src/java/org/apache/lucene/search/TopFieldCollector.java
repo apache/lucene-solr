@@ -133,34 +133,22 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
           Object currentValue = null;
 
-          try {
-            currentValue = comparator.getDocValue(doc);
-          } catch (UnsupportedOperationException e) {
-            // Do nothing -- a null value will set the right value
-          }
-
-          if (fieldValueChecker == null && queueFull) {
-            boolean foofoo = reverseMul * comparator.compareBottom(doc) > 0;
-            boolean foofoo2 = reverseMul * comparator.compareBottom(doc) == 0;
-            //System.out.println("Sequential match case " + foofoo + " for doc " + (doc + docBase) + " and equality " + foofoo2);
-          } else {
-            //System.out.println("Running parallel case " + (doc + docBase));
-          }
-
-          boolean isHitGloballyCompetitive = fieldValueChecker != null ? fieldValueChecker.isValueCompetitive(currentValue, (doc + docBase))
-              : true;
-          if (queueFull) {
-            boolean temp = reverseMul * comparator.compareBottom(doc) > 0;
-            if (fieldValueChecker != null && isHitGloballyCompetitive != temp) {
-              //System.out.println("Not match1 global " + isHitGloballyCompetitive + " local " + temp + " global value " + fieldValueChecker.value.toString() + " local value " + comparator.getDocValue(doc) + " doc " + (doc + docBase));
+          if (fieldValueChecker != null) {
+            try {
+              currentValue = comparator.getDocValue(doc);
+            } catch (UnsupportedOperationException e) {
+              fieldValueChecker.disableGlobalHitCheck();
             }
           }
 
-          if (queueFull || (fieldValueChecker != null && fieldValueChecker.isBottomValuePresent() &&
-                fieldValueChecker.isValueCompetitive(currentValue, (doc + docBase)) == false)) {
-            if (collectedAllCompetitiveHits || (reverseMul * comparator.compareBottom(doc) <= 0 ||
-                (fieldValueChecker != null && fieldValueChecker.isBottomValuePresent() &&
-                    fieldValueChecker.isValueCompetitive(currentValue, (doc + docBase)) == false))) {
+          boolean isHitGloballyCompetitive = isHitGloballyCompetitive(currentValue, doc);
+
+          // There is a potential race condition here -- the hit may no longer be competitive between the
+          // two checks. However, the tradeoff is performing the global check twice -- which is expensive.
+          // Hence, the worst we can end up is an extra non competitive hit
+          if (queueFull || (isHitGloballyCompetitive == false)) {
+            if (collectedAllCompetitiveHits || (isHitGloballyCompetitive == false ||
+                reverseMul * comparator.compareBottom(doc) <= 0)) {
               // since docs are visited in doc Id order, if compare is 0, it means
               // this document is largest than anything else in the queue, and
               // therefore not competitive.
@@ -181,12 +169,15 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
             // This hit is competitive - replace bottom element in queue & adjustTop
             comparator.copy(bottom.slot, doc);
-            //System.out.println("Adding new doc1 " + (doc + docBase));
-            // TODO: atris
-            updateBottom(doc, currentValue);
-            //updateBottom(doc);
+
+            if (fieldValueChecker != null) {
+              updateBottom(doc, currentValue);
+            } else {
+              updateBottom(doc);
+            }
+
             comparator.setBottom(bottom.slot);
-            if (queueFull && fieldValueChecker != null) {
+            if (fieldValueChecker != null) {
               fieldValueChecker.checkAndUpdateBottomValue(bottom.value, (bottom.doc + docBase));
             }
             updateMinCompetitiveScore(scorer);
@@ -196,9 +187,13 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
             // Copy hit into queue
             comparator.copy(slot, doc);
-            //System.out.println("Adding2 " + (doc + docBase));
-            //TODO: Use comparator's internal PQ directly
-            add(slot, doc, currentValue);
+
+            if (fieldValueChecker != null) {
+              //TODO: Use comparator's internal PQ directly
+              add(slot, doc, currentValue);
+            } else {
+              add(slot, doc);
+            }
 
             if (queueFull) {
               comparator.setBottom(bottom.slot);
@@ -266,19 +261,24 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
           Object currentValue = null;
 
-          try {
-            currentValue = comparator.getDocValue(doc);
-          } catch (UnsupportedOperationException e) {
-            // Do nothing -- a null value will set the right value
+          if (fieldValueChecker != null) {
+            try {
+              currentValue = comparator.getDocValue(doc);
+            } catch (UnsupportedOperationException e) {
+              fieldValueChecker.disableGlobalHitCheck();
+            }
           }
 
-          if (queueFull || (fieldValueChecker != null && fieldValueChecker.isBottomValuePresent() &&
-                fieldValueChecker.isValueCompetitive(currentValue, (doc + docBase)))) {
+          boolean isHitGloballyCompetitive = isHitGloballyCompetitive(currentValue, doc);
+
+          // There is a potential race condition here -- the hit may no longer be competitive between the
+          // two checks. However, the tradeoff is performing the global check twice -- which is expensive.
+          // Hence, the worst we can end up is an extra non competitive hit
+          if (queueFull || isHitGloballyCompetitive == false) {
             // Fastmatch: return if this hit is no better than
             // the worst hit currently in the queue:
-            if (collectedAllCompetitiveHits || reverseMul * comparator.compareBottom(doc) <= 0 ||
-                  (fieldValueChecker != null && fieldValueChecker.isBottomValuePresent() &&
-                    fieldValueChecker.isValueCompetitive(currentValue, (doc + docBase)))) {
+            if (collectedAllCompetitiveHits || (isHitGloballyCompetitive == false ||
+                reverseMul * comparator.compareBottom(doc) <= 0)) {
               // since docs are visited in doc Id order, if compare is 0, it means
               // this document is largest than anything else in the queue, and
               // therefore not competitive.
@@ -306,13 +306,15 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
             // This hit is competitive - replace bottom element in queue & adjustTop
             comparator.copy(bottom.slot, doc);
 
-            // TODO: atris
-            updateBottom(doc, currentValue);
-            //updateBottom(doc);
+            if (fieldValueChecker != null) {
+              updateBottom(doc, currentValue);
+            } else {
+              updateBottom(doc);
+            }
 
             comparator.setBottom(bottom.slot);
 
-            if (queueFull && fieldValueChecker != null) {
+            if (fieldValueChecker != null) {
               fieldValueChecker.checkAndUpdateBottomValue(bottom.value, bottom.doc + docBase);
             }
             updateMinCompetitiveScore(scorer);
@@ -325,8 +327,13 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
             // Copy hit into queue
             comparator.copy(slot, doc);
 
-            //TODO: Use comparator's PQ directly
-            bottom = pq.add(new Entry(slot, docBase + doc, currentValue));
+            if (fieldValueChecker != null) {
+              //TODO: Use comparator's PQ directly
+              bottom = pq.add(new Entry(slot, docBase + doc, currentValue));
+            } else {
+              bottom = pq.add(new Entry(slot, docBase + doc));
+            }
+
             queueFull = collectedHits == numHits;
             if (queueFull) {
               comparator.setBottom(bottom.slot);
@@ -340,6 +347,16 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       };
     }
 
+  }
+
+  /** Check if hit is globally competitive **/
+  boolean isHitGloballyCompetitive(Object currentValue, int doc) {
+    if (fieldValueChecker == null || fieldValueChecker.isBottomValuePresent() == false) {
+      // Return true to make this check ineffective
+      return true;
+    }
+
+    return fieldValueChecker.isValueCompetitive(currentValue, (doc + docBase));
   }
 
   private static final ScoreDoc[] EMPTY_SCOREDOCS = new ScoreDoc[0];

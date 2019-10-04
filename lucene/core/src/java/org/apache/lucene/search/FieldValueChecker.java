@@ -25,6 +25,7 @@ public class FieldValueChecker {
   public volatile int minimumDoc;
   private FieldComparator[] fieldComparators;
   private int[] reverseMul;
+  private boolean isEnabled = false;
 
   public FieldValueChecker(final FieldComparator[] fieldComparators, final int[] reverseMul) {
     assert fieldComparators.length == reverseMul.length;
@@ -33,7 +34,15 @@ public class FieldValueChecker {
     this.reverseMul = reverseMul;
   }
 
+  void disableGlobalHitCheck() {
+    isEnabled = false;
+  }
+
   boolean isBottomValuePresent() {
+    if (!isEnabled) {
+      return false;
+    }
+
     return this.value != null;
   }
 
