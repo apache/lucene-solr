@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.geo;
 
-import java.util.Arrays;
 import java.util.Objects;
 
 import org.apache.lucene.index.PointValues;
