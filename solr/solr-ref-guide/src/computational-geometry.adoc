@@ -19,21 +19,32 @@
 
 This section of the math expressions user guide covers computational geometry functions.
 
+<<Convex Hull, Convex Hull>> -
+<<Enclosing Disk, Enclosing Disk>>
+
+
 == Convex Hull
 
 A convex hull is the smallest convex set of points that encloses a data set. Math expressions has support for computing
 the convex hull of a 2D data set. Once a convex hull has been calculated, a set of math expression functions
 can be applied to geometrically describe the convex hull.
 
-The `convexHull` function finds the convex hull of an observation matrix of 2D vectors.
-Each row of the matrix is a 2D observation.
 
 
+=== Visualization
+
+The `convexHull` function can be used visualize a border around a set of 2D
+
+
+image::images/math-expressions/convex0.png[]
+
+image::images/math-expressions/hullplot.png[]
 
 
 image::images/math-expressions/convex1.png[]
 
 image::images/math-expressions/convex2.png[]
+
 
 
 
