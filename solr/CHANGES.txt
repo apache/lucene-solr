@@ -296,6 +296,8 @@ Other Changes
 * SOLR-13747: New TestSSLTestConfig.testFailIfUserRunsTestsWithJVMThatHasKnownSSLBugs() to give people running
   tests more visibility if/when they use a known-buggy JVM causing most SSL tests to silently SKIP. (hossman)
 
+* SOLR-13791: Remove remaining Commons BeanUtils references. (Andras Salamon, Christine Poerschke)
+
 ==================  8.2.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
