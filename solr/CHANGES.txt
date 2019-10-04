@@ -167,6 +167,8 @@ Other Changes
 * SOLR-13998: Add thread safety annotations to Solr. This only introduces the annotations and doesn't add these to
   existing classes. (Anshum Gupta, Mark Miller)
 
+* SOLR-13818: Upgrade jackson to 2.10.0 (marungo, Andras Salamon via Kevin Risden)
+
 ==================  8.3.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
