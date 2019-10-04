@@ -298,6 +298,9 @@ Other Changes
 
 * SOLR-13791: Remove remaining Commons BeanUtils references. (Andras Salamon, Christine Poerschke)
 
+* SOLR-13812: Add javadocs, uneven rejection and basic test coverage for the SolrTestCaseJ4.params method.
+  (Diego Ceccarelli, Christine Poerschke, Munendra S N)
+
 ==================  8.2.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
