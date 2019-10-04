@@ -79,4 +79,26 @@ public interface DisMaxParams {
   
   /** query and init param for field list */
   public static String GEN = "gen";
+
+  /**
+   * User fields. The fields that can be used by the end user to create field-specific queries.
+   */
+  public static String UF = "uf";
+    
+  /**
+   * Lowercase Operators. If set to true, 'or' and 'and' will be considered OR and AND, otherwise
+   * lowercase operators will be considered terms to search for.
+   */
+  public static String LOWERCASE_OPS = "lowercaseOperators";
+
+  /**
+   * Multiplicative boost. Boost functions which scores are going to be multiplied to the score
+   * of the main query (instead of just added, like with bf)
+   */
+  public static String MULT_BOOST = "boost";
+
+  /**
+   * If set to true, stopwords are removed from the query.
+   */
+  public static String STOPWORDS = "stopwords";
 }
