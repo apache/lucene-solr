@@ -130,6 +130,8 @@ Other
 * LUCENE-8993, LUCENE-8807: Changed all repository and download references in build files
   to HTTPS. (Uwe Schindler)
 
+* LUCENE-8998: Fix OverviewImplTest.testIsOptimized reproducible failure. (Tomoko Uchida)
+
 ======================= Lucene 8.2.0 =======================
 
 API Changes
