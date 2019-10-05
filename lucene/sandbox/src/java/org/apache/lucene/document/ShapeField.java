@@ -596,6 +596,15 @@ public final class ShapeField {
    * Represents a encoded triangle using {@link ShapeField#decodeTriangle(byte[], DecodedTriangle)}.
    */
   public static class DecodedTriangle {
+    /**
+     * type of triangle:
+     * <p><ul>
+     * <li>POINT: all coordinates are equal
+     * <li>LINE: first and third coordinates are equal
+     * <li>TRIANGLE: all coordinates are different
+     * <li>UNKNOWN: Stored triangle does not contain type information. The type is resolved during decoding.
+     * </ul><p>
+     */
     public enum TYPE {
       POINT, LINE, TRIANGLE, UNKNOWN
     }
