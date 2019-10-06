@@ -187,6 +187,8 @@ Improvements
 * SOLR-13795: Managed schema operations should do a core reload in Solr standalone mode.
   (Thomas Wöckinger via David Smiley)
 
+* SOLR-13719: Introducing SolrClient.ping(collection) in SolrJ (Geza Nagy via Mikhail Khludnev) 
+
 Bug Fixes
 ----------------------
 
