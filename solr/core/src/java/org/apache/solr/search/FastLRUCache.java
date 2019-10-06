@@ -16,14 +16,6 @@
  */
 package org.apache.solr.search;
 
-import java.lang.invoke.MethodHandles;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeUnit;
-
 import com.codahale.metrics.MetricRegistry;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -33,6 +25,14 @@ import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.util.ConcurrentLRUCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.lang.invoke.MethodHandles;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 
 /**
  * SolrCache based on ConcurrentLRUCache implementation.
@@ -47,7 +47,7 @@ import org.slf4j.LoggerFactory;
  * @see org.apache.solr.search.SolrCache
  * @since solr 1.4
  */
-public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>, Accountable {
+public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>, Accountable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(FastLRUCache.class);
@@ -61,7 +61,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
   private long warmupTime = 0;
 
   private String description = "Concurrent LRU Cache";
-  private ConcurrentLRUCache<K, V> cache;
+  private ConcurrentLRUCache<K,V> cache;
   private int showItems = 0;
 
   private long maxRamBytes;
@@ -102,7 +102,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
     str = (String) args.get(INITIAL_SIZE_PARAM);
     initialSize = str == null ? maxSize : Integer.parseInt(str);
     str = (String) args.get(CLEANUP_THREAD_PARAM);
-    cleanupThread = str != null && Boolean.parseBoolean(str);
+    cleanupThread = str == null ? false : Boolean.parseBoolean(str);
 
     str = (String) args.get(SHOW_ITEMS_PARAM);
     showItems = str == null ? 0 : Integer.parseInt(str);
@@ -117,7 +117,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
     str = (String) args.get(MAX_RAM_MB_PARAM);
     long maxRamMB = str == null ? -1 : (long) Double.parseDouble(str);
     this.maxRamBytes = maxRamMB < 0 ? Long.MAX_VALUE : maxRamMB * 1024L * 1024L;
-    if (maxRamBytes != Long.MAX_VALUE) {
+    if (maxRamBytes != Long.MAX_VALUE)  {
       ramLowerWatermark = Math.round(maxRamBytes * 0.8);
       description = generateDescription(maxRamBytes, ramLowerWatermark, cleanupThread);
       cache = new ConcurrentLRUCache<>(ramLowerWatermark, maxRamBytes, cleanupThread, null, maxIdleTimeSec);
@@ -156,7 +156,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
    */
   protected String generateDescription(int limit, int initialSize, int minLimit, int acceptableLimit, boolean newThread) {
     String description = "Concurrent LRU Cache(maxSize=" + limit + ", initialSize=" + initialSize +
-        ", minSize=" + minLimit + ", acceptableSize=" + acceptableLimit + ", cleanupThread=" + newThread;
+        ", minSize="+minLimit + ", acceptableSize="+acceptableLimit+", cleanupThread="+newThread;
     if (isAutowarmingOn()) {
       description += ", " + getAutowarmDescription();
     }
@@ -217,9 +217,10 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
       for (int i = itemsArr.length - 1; i >= 0; i--) {
         try {
           boolean continueRegen = regenerator.regenerateItem(searcher,
-              this, old, itemsArr[i].getKey(), itemsArr[i].getValue());
+                  this, old, itemsArr[i].getKey(), itemsArr[i].getValue());
           if (!continueRegen) break;
-        } catch (Exception e) {
+        }
+        catch (Exception e) {
           SolrException.log(log, "Error during auto-warming of key:" + itemsArr[i].getKey(), e);
         }
       }
@@ -299,14 +300,14 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
         map.put("cumulative_idleEvictions", cIdleEvictions);
 
         if (detailed && showItems != 0) {
-          Map items = cache.getLatestAccessedItems(showItems == -1 ? Integer.MAX_VALUE : showItems);
-          for (Map.Entry e : (Set<Map.Entry>) items.entrySet()) {
+          Map items = cache.getLatestAccessedItems( showItems == -1 ? Integer.MAX_VALUE : showItems );
+          for (Map.Entry e : (Set <Map.Entry>)items.entrySet()) {
             Object k = e.getKey();
             Object v = e.getValue();
 
             String ks = "item_" + k;
             String vs = v.toString();
-            map.put(ks, vs);
+            map.put(ks,vs);
           }
 
         }

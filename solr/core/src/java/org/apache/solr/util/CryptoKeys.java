@@ -21,6 +21,7 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -72,11 +73,11 @@ public final class CryptoKeys {
       boolean verified;
       try {
         verified = CryptoKeys.verify(entry.getValue(), Base64.base64ToByteArray(sig), data);
-        log.debug("verified {} ", verified);
+        log.info("verified {} ", verified);
         if (verified) return entry.getKey();
       } catch (Exception e) {
         exception = e;
-        log.debug("NOT verified  ");
+        log.info("NOT verified  ");
       }
 
     }
@@ -103,17 +104,22 @@ public final class CryptoKeys {
    * @param data      The data tha is signed
    */
   public static boolean verify(PublicKey publicKey, byte[] sig, ByteBuffer data) throws InvalidKeyException, SignatureException {
-    data = ByteBuffer.wrap(data.array(), data.arrayOffset(), data.limit());
+    int oldPos = data.position();
+    Signature signature = null;
     try {
-      Signature signature = Signature.getInstance("SHA1withRSA");
+      signature = Signature.getInstance("SHA1withRSA");
       signature.initVerify(publicKey);
       signature.update(data);
-      return signature.verify(sig);
-    } catch (NoSuchAlgorithmException e) {
-      //wil not happen
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    }
+      boolean verify = signature.verify(sig);
+      return verify;
 
+    } catch (NoSuchAlgorithmException e) {
+      //will not happen
+    } finally {
+      //Signature.update resets the position. set it back to old
+      data.position(oldPos);
+    }
+    return false;
   }
 
   private static byte[][] evpBytesTokey(int key_len, int iv_len, MessageDigest md,
