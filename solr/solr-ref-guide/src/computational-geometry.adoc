@@ -33,7 +33,9 @@ can be applied to geometrically describe and visualize the convex hull.
 
 The `convexHull` function can be used to visualize a border around a
 set of 2D points. Border visualizations can be useful for understanding where data points are
-in relation to the border. In the examples below the `convexHull` is used
+in relation to the border.
+
+In the examples below the `convexHull` function is used
 to visualize a boarder for a set of latitude and longitude points of rat sightings in the nyc311
 complaints database. An investigation of the boarder around the rat sightings can be done
 to better understand how rats may be entering or exiting the specific region.
