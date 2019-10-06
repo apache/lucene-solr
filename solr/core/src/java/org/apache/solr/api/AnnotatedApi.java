@@ -45,6 +45,16 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
 
+/**This class implements an Api just from  an annotated java class
+ * The class must have an annotation {@link EndPoint}
+ * Each method must have an annotation {@link Command}
+ * The methods that implement a command should have the first 2 parameters
+ * {@link SolrQueryRequest} and {@link SolrQueryResponse} or it may optionally
+ * have a third parameter which could be a java class annotated with jackson annotations.
+ * The third parameter is only valid if it is using a json command payload
+ *
+ */
+
 public class AnnotatedApi extends Api implements PermissionNameProvider {
   private EndPoint endPoint;
   private Map<String, Cmd> commands = new HashMap<>();
