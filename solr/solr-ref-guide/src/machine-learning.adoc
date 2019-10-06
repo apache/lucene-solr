@@ -584,7 +584,9 @@ for examining the clusters and centroids.
 === 2D Cluster Visualization
 
 The `zplot` function has direct support for plotting 2D clusters by using the *clusters* named parameter.
-The example demonstrates this capability by clustering and visualizing latitude and longitude points.
+The example below demonstrates this capability by clustering and visualizing latitude and longitude points.
+
+==== Clustered Scatter Plot
 
 In this example the `random` function draws a sample of records from the nyc311 (complaints database) collection where
 the complaint description matches "rat sighting" and latitude is populated in the record. The latitude and longitude fields
@@ -601,6 +603,8 @@ latitude on *y* axis. Each cluster is shown in a different color. This plot prov
 insight into the clusters of rat sightings throughout the five boroughs of New York City. For
 example it highlights a cluster of dense sightings in Brooklyn at cluster5 and cluster17,
 surrounded by less dense clusters.
+
+==== Plotting the Centroids
 
 The centroids of each cluster can then be easily plotted on a *map* to visualize the center of the
 clusters. In the example below the centroids are extracted from the clusters using the `getCentroids`
