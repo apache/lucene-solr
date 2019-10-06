@@ -108,7 +108,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
 
       for (Method method : klas.getMethods()) {
         Command command = method.getAnnotation(Command.class);
-        if (command != null && !command.name().isBlank()) {
+        if (command != null && !command.name().isEmpty()) {
           cmds.put(command.name(), AnnotatedApi.createSchema(method));
         }
       }
