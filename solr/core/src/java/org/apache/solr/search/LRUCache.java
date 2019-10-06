@@ -18,11 +18,11 @@ package org.apache.solr.search;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 
@@ -234,8 +234,8 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
   }
 
   /**
-   *
-   * @return Returns the description of this cache.
+   * 
+   * @return Returns the description of this cache. 
    */
   private String generateDescription() {
     String description = "LRU Cache(maxSize=" + getMaxSize() + ", initialSize=" + initialSize;
@@ -341,9 +341,9 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
 
       // Don't do the autowarming in the synchronized block, just pull out the keys and values.
       synchronized (other.map) {
-
+        
         int sz = autowarm.getWarmCount(other.map.size());
-
+        
         keys = new Object[sz];
         vals = new Object[sz];
 
@@ -382,6 +382,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
   public void close() {
 
   }
+
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
