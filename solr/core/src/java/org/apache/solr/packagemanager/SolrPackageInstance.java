@@ -1,6 +1,7 @@
 package org.apache.solr.packagemanager;
 
 import java.util.List;
+import java.util.Map;
 
 import org.apache.solr.packagemanager.SolrPackage.Plugin;
 
@@ -12,13 +13,15 @@ public class SolrPackageInstance {
 	final public String description;
 	final public String version;
 	final public List<Plugin> plugins;
+	final Map<String, String> parameterDefaults;
 	
 	public SolrPackageInstance(String id, String description, String version,
-	    List<Plugin> plugins) {
+	    List<Plugin> plugins, Map<String, String> params) {
 		this.id = id;
 		this.description = description;
 		this.version = version;
 		this.plugins = plugins;
+		this.parameterDefaults = params;
 	}
 
 	public String getPluginId() {

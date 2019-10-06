@@ -24,14 +24,13 @@ import org.apache.solr.packagemanager.SolrPackage.Command;
 import org.apache.solr.packagemanager.SolrPackage.Metadata;
 import org.apache.solr.packagemanager.SolrPackage.Plugin;
 import org.apache.solr.packagemanager.pf4j.DefaultVersionManager;
-import org.apache.solr.packagemanager.pf4j.VersionManager;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
 
 public class SolrPackageManager {
 
-  final VersionManager versionManager;
+  final DefaultVersionManager versionManager;
 
   public SolrPackageManager(File repo) {
     versionManager = new DefaultVersionManager();
@@ -60,9 +59,10 @@ public class SolrPackageManager {
       System.out.println("clusterprops are: "+clusterPropsJson);
       for (Object packageName: packagesJson.keySet()) {
         Map pkg = (Map)packagesJson.get(packageName);
-        List<Plugin> solrplugins = fetchMetadata(pkg.get("metadata").toString()).plugins;
+        Metadata metadata = fetchMetadata(pkg.get("metadata").toString());
+        List<Plugin> solrplugins = metadata.plugins;
         SolrPackageInstance pkgInstance = new SolrPackageInstance(pkg.get("name").toString(), null, 
-            pkg.get("version").toString(), solrplugins);
+            pkg.get("version").toString(), solrplugins, metadata.parameterDefaults);
         packages.put(packageName.toString(), pkgInstance);
         ret.add(pkgInstance);
       }
@@ -75,24 +75,64 @@ public class SolrPackageManager {
 
   String solrBaseUrl = "http://localhost:8983";
 
-  public boolean deployInstallPackage(String pluginId, List<String> collections) {
-    SolrPackageInstance pkg = getPackage(pluginId);
+  public boolean deployInstallPackage(String packageName, List<String> collections, String overrides[]) {
+    SolrPackageInstance pkg = getPackage(packageName);
 
-    for (Plugin p: pkg.getPlugins()) {
-      System.out.println(p.setupCommand);
-      for (String collection: collections) {
-        System.out.println("Executing " + p.setupCommand + " for collection:" + collection);
-        postJson("http://localhost:8983/solr/"+collection+"/config", p.setupCommand);
+    for (String collection: collections) {
+      Map<String, String> collectionParameterOverrides = new HashMap<String,String>();
+      if (overrides != null) {
+        for (String override: overrides) {
+          collectionParameterOverrides.put(override.split("=")[0], override.split("=")[1]);
+        }
+      }
+      try {
+        // nocommit: it overwrites params of other packages (use set or update)
+        
+        boolean packageParamsExist = ((Map)((Map)new ObjectMapper().readValue(
+            get("http://localhost:8983/api/collections/abc/config/params/packages"), Map.class)
+            ).get("response")).containsKey("params");
+        
+        postJson("http://localhost:8983/api/collections/"+collection+"/config/params",
+            new ObjectMapper().writeValueAsString(
+                Map.of(packageParamsExist? "update": "set", 
+                    Map.of("packages", Map.of(packageName, collectionParameterOverrides)))));
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+
+      for (Plugin p: pkg.getPlugins()) {
+        System.out.println(p.setupCommand);
+
+        Map<String, String> systemParams = new HashMap<String,String>();
+        systemParams.put("collection", collection);
+        systemParams.put("package-name", pkg.id);
+        systemParams.put("package-version", pkg.version);
+
+        String cmd = resolve(p.setupCommand, pkg.parameterDefaults, collectionParameterOverrides, systemParams);
+        System.out.println("Executing " + cmd + " for collection:" + collection);
+        postJson("http://localhost:8983/solr/"+collection+"/config", cmd);
       }
     }
-    
+
     boolean success = verify(pkg, collections);
     if (success) {
       System.out.println("Deployed and verified package: "+pkg.id+", version: "+pkg.version);
     }
     return success;
   }
-  
+
+  private String resolve(String str, Map<String, String> defaults, Map<String, String> overrides, Map<String, String> systemParams) {
+    for (String param: defaults.keySet()) {
+      str = str.replaceAll("\\$\\{"+param+"\\}", overrides.containsKey(param)? overrides.get(param): defaults.get(param));
+    }
+    for (String param: overrides.keySet()) {
+      str = str.replaceAll("\\$\\{"+param+"\\}", overrides.get(param));
+    }
+    for (String param: systemParams.keySet()) {
+      str = str.replaceAll("\\$\\{"+param+"\\}", systemParams.get(param));
+    }
+    return str;
+  }
   //nocommit should this be private?
   public boolean verify(SolrPackageInstance pkg, List<String> collections) {
     // verify deployment succeeded?
@@ -101,31 +141,42 @@ public class SolrPackageManager {
       System.out.println(p.verifyCommand);
       for (String collection: collections) {
         System.out.println("Executing " + p.verifyCommand + " for collection:" + collection);
-        //postJson("http://localhost:8983/solr/"+collection+"/config", p.setupCommand);
+        Map<String, String> collectionParameterOverrides;
+        try {
+          collectionParameterOverrides = (Map<String, String>)((Map)((Map)((Map)new ObjectMapper().readValue(get("http://localhost:8983/api/collections/abc/config/params/packages"), Map.class).get("response")).get("params")).get("packages")).get(pkg.id);
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
+        
         Command cmd = p.verifyCommand;
-        String url = solrBaseUrl + resolve(cmd.path, collection, pkg.version, pkg.id);
+
+        Map<String, String> systemParams = new HashMap<String,String>();
+        systemParams.put("collection", collection);
+        systemParams.put("package-name", pkg.id);
+        systemParams.put("package-version", pkg.version);
+        String url = solrBaseUrl + resolve(cmd.path, pkg.parameterDefaults, collectionParameterOverrides, systemParams);
 
         if ("GET".equalsIgnoreCase(cmd.method)) {
           String response = get(url);
           System.out.println(response);
-          String actualValue = JsonPath.parse(response).read(cmd.condition);
-          String expectedValue = resolve(cmd.expected, collection, pkg.version, pkg.id);
+          String actualValue = JsonPath.parse(response).read(resolve(cmd.condition, pkg.parameterDefaults, collectionParameterOverrides, systemParams));
+          String expectedValue = resolve(cmd.expected, pkg.parameterDefaults, collectionParameterOverrides, systemParams);
           System.out.println("Actual: "+actualValue+", expected: "+expectedValue);
           if (!expectedValue.equals(actualValue)) {
             System.out.println("Failed to deploy plugin: "+p.id);
             success = false;
           }
-        }
+        } // commit POST?
       }
     }
     return success;
   }
-  
-  private String resolve(String str, String collection, String packageVersion, String packageName) {
+
+  /*private String resolve(String str, String collection, String packageVersion, String packageName) {
     return str.replaceAll("\\{collection\\}", collection)
         .replaceAll("\\{package-version\\}", packageVersion)
         .replaceAll("\\{package-name\\}", packageName);
-  }
+  }*/
 
   public boolean deployUpdatePackage(String pluginId, List<String> collections) {
     SolrPackageInstance pkg = getPackage(pluginId);
@@ -172,6 +223,7 @@ public class SolrPackageManager {
   }
 
   private void postJson(String url, String postBody) {
+    System.out.println("Posting to "+url+": "+postBody);
     try (CloseableHttpClient client = HttpClients.createDefault();) {
       HttpPost httpPost = new HttpPost(url);
       StringEntity entity = new StringEntity(postBody);

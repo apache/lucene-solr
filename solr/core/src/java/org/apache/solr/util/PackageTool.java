@@ -22,6 +22,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -89,7 +90,10 @@ public class PackageTool extends SolrCLI.ToolBase {
           install(pluginManager, updateManager, cli.getArgList().subList(1, cli.getArgList().size()));
           break;
         case "deploy":
-          deploy(pluginManager, updateManager, cli.getArgList().subList(1, cli.getArgList().size()));
+          String colls[] = cli.getOptionValues("collections");
+          String params[] = cli.getOptionValues("param");
+          System.out.println("coll: "+Arrays.toString(colls)+", params: "+Arrays.toString(params));
+          deploy(pluginManager, updateManager, cli.getArgList().get(1).toString(), colls, params);
           break;
         case "redeploy":
           redeploy(pluginManager, updateManager, cli.getArgList().subList(1, cli.getArgList().size()));
@@ -156,8 +160,9 @@ public class PackageTool extends SolrCLI.ToolBase {
     updateManager.installPackage(args.get(0).toString(), args.get(1).toString());
     System.out.println(args.get(0).toString() + " installed.");
   }
-  protected void deploy(SolrPackageManager pluginManager, SolrUpdateManager updateManager, List args) throws PluginException {
-    System.out.println(pluginManager.deployInstallPackage(args.get(0).toString(), args.subList(1, args.size())));
+  protected void deploy(SolrPackageManager pluginManager, SolrUpdateManager updateManager, String packageName,
+      String collections[], String parameters[]) throws PluginException {
+    System.out.println(pluginManager.deployInstallPackage(packageName, Arrays.asList(collections), parameters));
   }
 
   protected void redeploy(SolrPackageManager pluginManager, SolrUpdateManager updateManager, List args) throws PluginException {
@@ -227,6 +232,22 @@ public class PackageTool extends SolrCLI.ToolBase {
         .isRequired(false)
         .withDescription("Address of the Solr Web application, defaults to: "+SolrCLI.DEFAULT_SOLR_URL)
         .create("solrUrl"),
+        
+        OptionBuilder
+        .withArgName("COLLECTIONS")
+        .hasArgs()
+        .isRequired(false)
+        .withDescription("Solr URL scheme: http or https, defaults to http if not specified")
+        .create("collections"),
+
+        OptionBuilder
+        .withArgName("PARAMS")
+        .hasArgs()
+        .isRequired(false)
+        .withDescription("Solr URL scheme: http or https, defaults to http if not specified")
+        .withLongOpt("param")
+        .create("p"),
+
     };
   }
 

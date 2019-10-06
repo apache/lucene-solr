@@ -15,7 +15,6 @@
  */
 package org.apache.solr.packagemanager.pf4j;
 
-import org.pf4j.util.StringUtils;
 
 /**
  * An exception used to indicate that a plugin problem occurred.

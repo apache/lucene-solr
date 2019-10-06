@@ -17,15 +17,13 @@ package org.apache.solr.packagemanager.pf4j;
 
 import com.github.zafarkhaja.semver.Version;
 import com.github.zafarkhaja.semver.expr.Expression;
-import org.pf4j.util.StringUtils;
 
 /**
- * Default implementation for {@link VersionManager}.
  * This implementation uses jSemVer (a Java implementation of the SemVer Specification).
  *
  * @author Decebal Suiu
  */
-public class DefaultVersionManager implements VersionManager {
+public class DefaultVersionManager {
 
     /**
      * Checks if a version satisfies the specified SemVer {@link Expression} string.
@@ -34,12 +32,10 @@ public class DefaultVersionManager implements VersionManager {
      * See https://github.com/zafarkhaja/jsemver#semver-expressions-api-ranges for more info.
      *
      */
-    @Override
     public boolean checkVersionConstraint(String version, String constraint) {
         return StringUtils.isNullOrEmpty(constraint) || Version.valueOf(version).satisfies(constraint);
     }
 
-    @Override
     public int compareVersions(String v1, String v2) {
         return Version.valueOf(v1).compareTo(Version.valueOf(v2));
     }

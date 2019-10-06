@@ -11,7 +11,6 @@ import java.util.Map;
 
 import org.apache.solr.packagemanager.SolrPackage.SolrPackageRelease;
 import org.apache.solr.packagemanager.pf4j.CompoundVerifier;
-import org.apache.solr.packagemanager.pf4j.DefaultUpdateRepository;
 import org.apache.solr.packagemanager.pf4j.FileDownloader;
 import org.apache.solr.packagemanager.pf4j.FileVerifier;
 import org.apache.solr.packagemanager.pf4j.SimpleFileDownloader;
@@ -23,7 +22,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 public class SolrPackageRepository {
-  private static final Logger log = LoggerFactory.getLogger(DefaultUpdateRepository.class);
+  private static final Logger log = LoggerFactory.getLogger(SolrPackageRepository.class);
 
   @JsonProperty("id")
   public String id;

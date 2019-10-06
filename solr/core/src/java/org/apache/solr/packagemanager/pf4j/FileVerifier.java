@@ -21,19 +21,13 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.solr.packagemanager.SolrPackage;
+
 /**
  * Interface to verify a file.
  */
 public interface FileVerifier {
 
-    /**
-     * Verifies a plugin release according to certain rules
-     *
-     * @param context the file verifier context object
-     * @param file    the path to the downloaded file itself
-     * @throws IOException     if there was a problem accessing file
-     * @throws VerifyException in case of problems verifying the file
-     */
     void verify(Context context, Path file) throws IOException, VerifyException;
 
     /**
@@ -48,7 +42,7 @@ public interface FileVerifier {
         public String sha512sum;
         public Map<String,Object> meta = new HashMap<>();
 
-        public Context(String id, PluginInfo.PluginRelease pluginRelease) {
+        public Context(String id, SolrPackage.SolrPackageRelease pluginRelease) {
             this.id = id;
             this.date = pluginRelease.date;
             this.version = pluginRelease.version;

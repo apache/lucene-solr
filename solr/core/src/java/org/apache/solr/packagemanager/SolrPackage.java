@@ -42,6 +42,7 @@ public class SolrPackage implements Serializable, Comparable<SolrPackage> {
           ", max='" + metadata.maxSolrVersion + '\'' +
           ", dependencies='" + metadata.dependencies + '\'' +
           ", plugins='" + metadata.plugins + '\'' +
+          ", paramDefaults='" + metadata.parameterDefaults + '\'' +
           ", sha512sum='" + sha512sum + '\'' +
           '}';
     }
@@ -55,6 +56,8 @@ public class SolrPackage implements Serializable, Comparable<SolrPackage> {
 
     public List<String> dependencies;
     public List<Plugin> plugins;
+    @JsonProperty("parameter-defaults")
+    public Map<String, String> parameterDefaults;
   }
 
   public static class Plugin {

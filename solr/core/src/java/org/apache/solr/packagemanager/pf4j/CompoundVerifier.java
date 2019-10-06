@@ -46,14 +46,6 @@ public class CompoundVerifier implements FileVerifier {
         this.verifiers = verifiers;
     }
 
-    /**
-     * Verifies a plugin release using all configured {@link FileVerifier}s
-     *
-     * @param context the file verifier context object
-     * @param file    the path to the downloaded file itself
-     * @throws IOException     if there was a problem accessing file
-     * @throws VerifyException in case of problems verifying the file
-     */
     @Override
     public void verify(Context context, Path file) throws IOException, VerifyException {
         for (FileVerifier verifier : getVerifiers()) {

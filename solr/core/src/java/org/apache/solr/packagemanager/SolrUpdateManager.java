@@ -32,7 +32,6 @@ import org.apache.solr.packagemanager.pf4j.FileDownloader;
 import org.apache.solr.packagemanager.pf4j.FileVerifier;
 import org.apache.solr.packagemanager.pf4j.PluginException;
 import org.apache.solr.packagemanager.pf4j.SimpleFileDownloader;
-import org.apache.solr.packagemanager.pf4j.VersionManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +43,7 @@ public class SolrUpdateManager {
   final private String repositoriesJsonStr;
   protected List<SolrPackageRepository> repositories;
   
-  private VersionManager versionManager;
+  private DefaultVersionManager versionManager;
   private String systemVersion;
   private Map<String, SolrPackageRelease> lastPluginRelease = new HashMap<>();
 
