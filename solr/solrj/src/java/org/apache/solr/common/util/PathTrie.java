@@ -123,8 +123,8 @@ public class PathTrie<T> {
     private synchronized void insert(List<String> path, T o) {
       String part = path.get(0);
       Node matchedChild = null;
-      if ("*".equals(name) && !reserved.contains(path.get(0)) ) {
-        throw new RuntimeException("cannot have children for wild card '*'");
+      if ("*".equals(name)) {
+        return;
       }
       if (children == null) children = new ConcurrentHashMap<>();
 
@@ -182,9 +182,9 @@ public class PathTrie<T> {
       if (templateName != null) templateVariables.put(templateName, pathSegments.get(index - 1));
       if (pathSegments.size() < index + 1) {
         findAvailableChildren("", availableSubPaths);
-        if(obj == null ){//this is not a leaf node
+        if (obj == null) {//this is not a leaf node
           Node n = children.get("*");
-          if(n != null){
+          if (n != null) {
             return n.obj;
           }
 

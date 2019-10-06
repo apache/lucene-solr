@@ -84,7 +84,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
 
   private static SpecProvider readSpec(Class klas) {
     EndPoint endPoint = (EndPoint) klas.getAnnotation(EndPoint.class);
-    if (endPoint == null) throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "invalid class");
+    if (endPoint == null) throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid class :  "+ klas.getName());
     EndPoint endPoint1 = (EndPoint) klas.getAnnotation(EndPoint.class);
     return () -> {
       Map map = new LinkedHashMap();
@@ -126,7 +126,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
     boolean allExists = true;
     for (CommandOperation cmd : cmds) {
       if (!commands.containsKey(cmd.name)) {
-        cmd.addError("No such command supported :" + cmd.name);
+        cmd.addError("No such command supported: " + cmd.name);
         allExists = false;
       }
     }
@@ -135,7 +135,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
         fallback.call(req, rsp);
         return;
       } else {
-        throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST, "error processing commands",
+        throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST, "Error processing commands",
             CommandOperation.captureErrors(cmds));
       }
     }

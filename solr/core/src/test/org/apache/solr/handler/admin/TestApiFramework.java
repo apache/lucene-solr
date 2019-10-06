@@ -338,7 +338,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
   }
 
 
-  private void assertConditions(Map root, Map conditions) {
+  public static void assertConditions(Map root, Map conditions) {
     for (Object o : conditions.entrySet()) {
       Map.Entry e = (Map.Entry) o;
       String path = (String) e.getKey();

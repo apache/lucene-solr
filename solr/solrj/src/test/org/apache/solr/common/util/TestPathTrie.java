@@ -69,11 +69,5 @@ public class TestPathTrie extends SolrTestCaseJ4 {
     templateValues.clear();
     assertEquals("W" ,pathTrie.lookup("/aa/bb/somepart/tt/hello/world/from/solr", templateValues));
     assertEquals(templateValues.get("*"), "/hello/world/from/solr");
-
-
-
-
-
-
   }
 }

@@ -40,7 +40,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableSet;
 
-public class ValidatingJsonMap implements Map<String, Object> , NavigableObject {
+public class ValidatingJsonMap implements Map<String, Object>, NavigableObject {
 
   private static final String INCLUDE = "#include";
   private static final String RESOURCE_EXTENSION = ".json";
