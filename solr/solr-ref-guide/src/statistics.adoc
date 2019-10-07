@@ -357,10 +357,34 @@ has a steeper slope. The higher standard deviation creates a steeper slope
 because the percentile values are are dispersed farther from the mean.
 
 
-== Covariance and Correlation
+== Correlation and Covariance
 
 Covariance and Correlation measure how random variables fluctuate
 together.
+
+=== Correlation and Correlation Matrices
+
+Correlation is covariance that has been scaled between
+-1 and 1.
+
+Three correlation types are supported:
+
+* *pearsons* (default)
+* *kendalls*
+* *spearmans*
+
+The type of correlation is specified by adding the *type* named parameter in the
+function call. The example below demonstrates the use of the `corr` function with
+the *type* named parameter.
+
+image::images/math-expressions/correlation.png[]
+
+Like the `cov` function, the `corr` function automatically builds a correlation matrix
+if a matrix is passed as a parameter. The correlation matrix is built by correlating the columns
+of the matrix passed in.
+
+image::images/math-expressions/corrmatrix.png[]
+
 
 === Covariance and Covariance Matrices
 
@@ -430,26 +454,7 @@ in the following format:
 
 The covariance matrix is always square. So a covariance matrix created from 3 vectors will produce a 3 x 3 matrix.
 
-=== Correlation and Correlation Matrices
 
-Correlation is covariance that has been scaled between
--1 and 1.
-
-Three correlation types are supported:
-
-* *pearsons* (default)
-* *kendalls*
-* *spearmans*
-
-The type of correlation is specified by adding the *type* named parameter in the
-function call. The example below demonstrates the use of the `corr` function with
-the *type* named parameter.
-
-image::images/math-expressions/correlation.png[]
-
-Like the `cov` function, the `corr` function automatically builds a correlation matrix
-if a matrix is passed as a parameter. The correlation matrix is built by correlating the columns
-of the matrix passed in.
 
 == Statistical Inference Tests
 
