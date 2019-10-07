@@ -50,19 +50,24 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
   private static class SimpleTopScoreDocCollector extends TopScoreDocCollector {
 
     SimpleTopScoreDocCollector(int numHits, HitsThresholdChecker hitsThresholdChecker,
-                               BottomValueChecker bottomValueChecker) {
-      super(numHits, hitsThresholdChecker, bottomValueChecker);
+                               MaxScoreAccumulator minScoreAcc) {
+      super(numHits, hitsThresholdChecker, minScoreAcc);
     }
 
     @Override
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
-      final int docBase = context.docBase;
+      // reset the minimum competitive score
+      docBase = context.docBase;
       return new ScorerLeafCollector() {
 
         @Override
         public void setScorer(Scorable scorer) throws IOException {
           super.setScorer(scorer);
+          minCompetitiveScore = 0f;
           updateMinCompetitiveScore(scorer);
+          if (minScoreAcc != null) {
+            updateGlobalMinCompetitiveScore(scorer);
+          }
         }
 
         @Override
@@ -75,8 +80,12 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
           totalHits++;
           hitsThresholdChecker.incrementHitCount();
 
+          if (minScoreAcc != null && totalHits % minScoreAcc.modInterval == 0) {
+            updateGlobalMinCompetitiveScore(scorer);
+          }
+
           if (score <= pqTop.score) {
-            if (totalHitsRelation == TotalHits.Relation.EQUAL_TO && hitsThresholdChecker.isThresholdReached()) {
+            if (totalHitsRelation == TotalHits.Relation.EQUAL_TO) {
               // we just reached totalHitsThreshold, we can start setting the min
               // competitive score now
               updateMinCompetitiveScore(scorer);
@@ -102,8 +111,8 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
     private int collectedHits;
 
     PagingTopScoreDocCollector(int numHits, ScoreDoc after, HitsThresholdChecker hitsThresholdChecker,
-                               BottomValueChecker bottomValueChecker) {
-      super(numHits, hitsThresholdChecker, bottomValueChecker);
+                               MaxScoreAccumulator minScoreAcc) {
+      super(numHits, hitsThresholdChecker, minScoreAcc);
       this.after = after;
       this.collectedHits = 0;
     }
@@ -123,7 +132,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
 
     @Override
     public LeafCollector getLeafCollector(LeafReaderContext context) throws IOException {
-      final int docBase = context.docBase;
+      docBase = context.docBase;
       final int afterDoc = after.doc - context.docBase;
 
       return new ScorerLeafCollector() {
@@ -137,9 +146,13 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
           totalHits++;
           hitsThresholdChecker.incrementHitCount();
 
+          if (minScoreAcc != null && totalHits % minScoreAcc.modInterval == 0) {
+            updateGlobalMinCompetitiveScore(scorer);
+          }
+
           if (score > after.score || (score == after.score && doc <= afterDoc)) {
             // hit was collected on a previous page
-            if (totalHitsRelation == TotalHits.Relation.EQUAL_TO && hitsThresholdChecker.isThresholdReached()) {
+            if (totalHitsRelation == TotalHits.Relation.EQUAL_TO) {
               // we just reached totalHitsThreshold, we can start setting the min
               // competitive score now
               updateMinCompetitiveScore(scorer);
@@ -148,7 +161,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
           }
 
           if (score <= pqTop.score) {
-            if (totalHitsRelation == TotalHits.Relation.EQUAL_TO && hitsThresholdChecker.isThresholdReached()) {
+            if (totalHitsRelation == TotalHits.Relation.EQUAL_TO) {
               // we just reached totalHitsThreshold, we can start setting the min
               // competitive score now
               updateMinCompetitiveScore(scorer);
@@ -207,7 +220,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
   }
 
   static TopScoreDocCollector create(int numHits, ScoreDoc after, HitsThresholdChecker hitsThresholdChecker,
-                                     BottomValueChecker bottomValueChecker) {
+                                     MaxScoreAccumulator minScoreAcc) {
 
     if (numHits <= 0) {
       throw new IllegalArgumentException("numHits must be > 0; please use TotalHitCountCollector if you just need the total hit count");
@@ -218,25 +231,26 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
     }
 
     if (after == null) {
-      return new SimpleTopScoreDocCollector(numHits, hitsThresholdChecker, bottomValueChecker);
+      return new SimpleTopScoreDocCollector(numHits, hitsThresholdChecker, minScoreAcc);
     } else {
-      return new PagingTopScoreDocCollector(numHits, after, hitsThresholdChecker, bottomValueChecker);
+      return new PagingTopScoreDocCollector(numHits, after, hitsThresholdChecker, minScoreAcc);
     }
   }
 
   /**
    * Create a CollectorManager which uses a shared hit counter to maintain number of hits
+   * and a shared {@link MaxScoreAccumulator} to propagate the minimum score accross segments
    */
   public static CollectorManager<TopScoreDocCollector, TopDocs> createSharedManager(int numHits, FieldDoc after,
-                                                                                      int totalHitsThreshold) {
+                                                                                      int totalHitsThreshold, int maxDocs) {
     return new CollectorManager<>() {
 
       private final HitsThresholdChecker hitsThresholdChecker = HitsThresholdChecker.createShared(totalHitsThreshold);
-      private final BottomValueChecker bottomValueChecker = BottomValueChecker.createMaxBottomScoreChecker();
+      private final MaxScoreAccumulator minScoreAcc = new MaxScoreAccumulator();
 
       @Override
       public TopScoreDocCollector newCollector() throws IOException {
-        return TopScoreDocCollector.create(numHits, after, hitsThresholdChecker, bottomValueChecker);
+        return TopScoreDocCollector.create(numHits, after, hitsThresholdChecker, minScoreAcc);
       }
 
       @Override
@@ -252,13 +266,15 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
     };
   }
 
+  int docBase;
   ScoreDoc pqTop;
   final HitsThresholdChecker hitsThresholdChecker;
-  final BottomValueChecker bottomValueChecker;
+  final MaxScoreAccumulator minScoreAcc;
+  float minCompetitiveScore;
 
   // prevents instantiation
   TopScoreDocCollector(int numHits, HitsThresholdChecker hitsThresholdChecker,
-                       BottomValueChecker bottomValueChecker) {
+                       MaxScoreAccumulator minScoreAcc) {
     super(new HitQueue(numHits, true));
     assert hitsThresholdChecker != null;
 
@@ -266,7 +282,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
     // that at this point top() is already initialized.
     pqTop = pq.top();
     this.hitsThresholdChecker = hitsThresholdChecker;
-    this.bottomValueChecker = bottomValueChecker;
+    this.minScoreAcc = minScoreAcc;
   }
 
   @Override
@@ -283,31 +299,41 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
     return hitsThresholdChecker.scoreMode();
   }
 
+  protected void updateGlobalMinCompetitiveScore(Scorable scorer) throws IOException {
+    assert minScoreAcc != null;
+    MaxScoreAccumulator.Result maxMinScore = minScoreAcc.get();
+    if (maxMinScore != null) {
+      // since we tie-break on doc id and collect in doc id order we can require
+      // the next float if the global minimum score is set on a document that is
+      // greater than the ids in the current leaf
+      float score = maxMinScore.docID > docBase ? Math.nextUp(maxMinScore.score) : maxMinScore.score;
+      if (score > minCompetitiveScore) {
+        assert hitsThresholdChecker.isThresholdReached();
+        scorer.setMinCompetitiveScore(score);
+        minCompetitiveScore = score;
+        totalHitsRelation = TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO;
+      }
+    }
+  }
+
   protected void updateMinCompetitiveScore(Scorable scorer) throws IOException {
     if (hitsThresholdChecker.isThresholdReached()
-          && ((bottomValueChecker != null && bottomValueChecker.getBottomValue() > 0)
-          || (pqTop != null && pqTop.score != Float.NEGATIVE_INFINITY))) { // -Infinity is the score of sentinels
-      float bottomScore = 0f;
-
-      if (pqTop != null && pqTop.score != Float.NEGATIVE_INFINITY) {
-        // since we tie-break on doc id and collect in doc id order, we can require
-        // the next float
-        bottomScore = Math.nextUp(pqTop.score);
-
-        if (bottomValueChecker != null) {
-          bottomValueChecker.updateThreadLocalBottomValue(pqTop.score);
+          && pqTop != null
+          && pqTop.score != Float.NEGATIVE_INFINITY) { // -Infinity is the score of sentinels
+      // since we tie-break on doc id and collect in doc id order, we can require
+      // the next float
+      float localMinScore = Math.nextUp(pqTop.score);
+      if (localMinScore > minCompetitiveScore) {
+        scorer.setMinCompetitiveScore(localMinScore);
+        totalHitsRelation = TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO;
+        minCompetitiveScore = localMinScore;
+        if (minScoreAcc!= null) {
+          // we don't use the next float but we register the document
+          // id so that other leaves can require it if they are after
+          // the current maximum
+          minScoreAcc.accumulate(pqTop.doc, pqTop.score);
         }
       }
-
-      // Global bottom can only be greater than or equal to the local bottom score
-      // The updating of global bottom score for this hit before getting here should
-      // ensure that
-      if (bottomValueChecker != null && bottomValueChecker.getBottomValue() > bottomScore) {
-        bottomScore = bottomValueChecker.getBottomValue();
-      }
-
-      scorer.setMinCompetitiveScore(bottomScore);
-      totalHitsRelation = TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO;
     }
   }
 }
