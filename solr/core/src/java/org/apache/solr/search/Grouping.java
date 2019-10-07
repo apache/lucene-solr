@@ -887,8 +887,7 @@ public class Grouping {
 
     @Override
     protected void finish() throws IOException {
-      TopDocsCollector topDocsCollector = (TopDocsCollector) collector.getDelegate();
-      TopDocs topDocs = topDocsCollector.topDocs();
+      TopDocs topDocs = topCollector.topDocs();
       float maxScore;
       if (withinGroupSort == null || withinGroupSort.equals(Sort.RELEVANCE)) {
         maxScore = topDocs.scoreDocs.length == 0 ? Float.NaN : topDocs.scoreDocs[0].score;
@@ -899,6 +898,11 @@ public class Grouping {
       }
       
       GroupDocs<String> groupDocs = new GroupDocs<>(Float.NaN, maxScore, topDocs.totalHits, topDocs.scoreDocs, query.toString(), null);
+
+      if (needScores) {
+        TopFieldCollector.populateScores(groupDocs.scoreDocs, searcher, Grouping.this.query);
+      }
+
       if (main) {
         mainResult = getDocList(groupDocs);
       } else {
