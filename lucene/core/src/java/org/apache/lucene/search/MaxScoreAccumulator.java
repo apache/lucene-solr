@@ -17,7 +17,6 @@
 
 package org.apache.lucene.search;
 
-import java.util.Objects;
 import java.util.concurrent.atomic.LongAccumulator;
 
 /**
