@@ -198,6 +198,9 @@ Bug Fixes
 
 * SOLR-13790: LRUStatsCache size explosion and ineffective caching. (ab)
 
+* SOLR-13539: Fix for class-cast issues during atomic-update 'removeregex' operations. This also incorporated some
+  tests Tim wrote as a part of SOLR-9505. (Tim Owen via Jason Gerlowski)
+
 Other Changes
 ----------------------
 
