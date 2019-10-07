@@ -40,7 +40,7 @@ image::images/math-expressions/searchiris.png[]
 
 *<<variables.adoc#variables, Variables and Vectorization>>*: Vectorizing result sets and assigning and visualizing variables.
 
-*<<matrix-math.adoc#matrix-math,Matrix Math>>*: Matrix math and manipulation.
+*<<matrix-math.adoc#matrix-math,Matrix Math>>*: Matrix math, manipulation and visualization.
 
 *<<term-vectors.adoc#term-vectors,Text Analysis and Term Vectors>>*: Text analysis and TF-IDF term vectors.
 
