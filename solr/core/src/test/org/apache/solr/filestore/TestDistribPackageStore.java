@@ -17,6 +17,7 @@
 
 package org.apache.solr.filestore;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.List;
@@ -37,41 +38,50 @@ import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.LogLevel;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.server.ByteBufferInputStream;
 
 import static org.apache.solr.common.util.Utils.JAVABINCONSUMER;
 import static org.apache.solr.core.TestDynamicLoading.getFileContent;
 
-@LogLevel("org.apache.solr.core.FileStoreAPI=DEBUG;org.apache.solr.core.DistribFileStore=DEBUG")
-public class TestDistribFileStore extends SolrCloudTestCase {
+@LogLevel("org.apache.solr.core.PackageStoreAPI=DEBUG;org.apache.solr.core.DistribPackageStore=DEBUG")
+public class TestDistribPackageStore extends SolrCloudTestCase {
 
-  public void testFileStoreManagement() throws Exception {
+  public void testPackageStoreManagement() throws Exception {
     MiniSolrCloudCluster cluster =
         configureCluster(4)
         .withJettyConfig(jetty -> jetty.enableV2(true))
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
     try {
+
+      byte[] derFile = readFile("cryptokeys/pub_key512.der");
+      cluster.getZkClient().makePath("/keys/exe", true);
+      cluster.getZkClient().create("/keys/exe/pub_key512.der", derFile, CreateMode.PERSISTENT, true);
       postFile(cluster.getSolrClient(), getFileContent("runtimecode/runtimelibs.jar.bin"),
-          "/package/mypkg/v1.0/runtimelibs.jar");
+          "/package/mypkg/v1.0/runtimelibs.jar",
+          "L3q/qIGs4NaF6JiO0ZkMUFa88j0OmYc+I6O7BOdNuMct/xoZ4h73aZHZGc0+nmI1f/U3bOlMPINlSOM6LK3JpQ=="
+          );
 
       assertResponseValues(10,
           cluster.getSolrClient(),
-          new V2Request.Builder("/node/filestore/package/mypkg/v1.0")
+          new V2Request.Builder("/node/files/package/mypkg/v1.0")
               .withMethod(SolrRequest.METHOD.GET)
               .build(),
           Utils.makeMap(
               ":files:/package/mypkg/v1.0[0]:name", "runtimelibs.jar",
-              ":files:/package/mypkg/v1.0[0]:sha512", "d01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420"
+              ":files:/package/mypkg/v1.0[0]:sha512", "d01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420",
+              ":files:/package/mypkg/v1.0[0]:sig[0]", "L3q/qIGs4NaF6JiO0ZkMUFa88j0OmYc+I6O7BOdNuMct/xoZ4h73aZHZGc0+nmI1f/U3bOlMPINlSOM6LK3JpQ=="
           )
       );
 
       assertResponseValues(10,
           cluster.getSolrClient(),
-          new V2Request.Builder("/node/filestore/package/mypkg")
+          new V2Request.Builder("/node/files/package/mypkg")
               .withMethod(SolrRequest.METHOD.GET)
               .build(),
           Utils.makeMap(
@@ -87,7 +97,7 @@ public class TestDistribFileStore extends SolrCloudTestCase {
       );
       for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
         String baseUrl = jettySolrRunner.getBaseUrl().toString().replace("/solr", "/api");
-        String url = baseUrl + "/node/filestore/package/mypkg/v1.0/runtimelibs.jar?wt=javabin&meta=true";
+        String url = baseUrl + "/node/files/package/mypkg/v1.0/runtimelibs.jar?wt=javabin&meta=true";
 
         assertResponseValues(10, new Callable() {
           @Override
@@ -104,7 +114,7 @@ public class TestDistribFileStore extends SolrCloudTestCase {
         }, expected);
 
         try (HttpSolrClient solrClient = (HttpSolrClient) jettySolrRunner.newClient()) {
-          ByteBuffer buf = Utils.executeGET(solrClient.getHttpClient(), baseUrl + "/node/filestore/package/mypkg/v1.0/runtimelibs.jar",
+          ByteBuffer buf = Utils.executeGET(solrClient.getHttpClient(), baseUrl + "/node/files/package/mypkg/v1.0/runtimelibs.jar",
               Utils.newBytesConsumer(Integer.MAX_VALUE));
           assertEquals(
               "d01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420",
@@ -164,14 +174,28 @@ public class TestDistribFileStore extends SolrCloudTestCase {
 
 
 
-  private void postFile(SolrClient client, ByteBuffer buffer, String name) throws SolrServerException, IOException {
-    V2Response rsp = new V2Request.Builder("/cluster/filestore" + name)
+  private void postFile(SolrClient client, ByteBuffer buffer, String name, String sig)
+      throws SolrServerException, IOException {
+    String resource = "/cluster/files" + name;
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add("sig", sig);
+    V2Response rsp = new V2Request.Builder(resource)
         .withMethod(SolrRequest.METHOD.POST)
         .withPayload(buffer)
         .forceV2(true)
         .withMimeType("application/octet-stream")
+        .withParams(params)
         .build()
         .process(client);
     assertEquals(name, rsp.getResponse().get(CommonParams.FILE));
+  }
+
+  public static byte[] readFile(String fname) throws IOException {
+    byte[] buf = null;
+    try (FileInputStream fis = new FileInputStream(getFile(fname))) {
+      buf = new byte[fis.available()];
+      fis.read(buf);
+    }
+    return buf;
   }
 }
