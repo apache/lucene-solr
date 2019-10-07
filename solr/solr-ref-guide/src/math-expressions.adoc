@@ -50,7 +50,7 @@ image::images/math-expressions/searchiris.png[]
 
 *<<regression.adoc#regression,Linear Regression>>*: Simple and multivariate linear regression.
 
-*<<curve-fitting.adoc#curve-fitting,Curve Fitting>>*: Polynomial, Harmonic and Gaussian curve fitting.
+*<<curve-fitting.adoc#curve-fitting,Curve Fitting>>*: Polynomial, harmonic and Gaussian curve fitting.
 
 *<<time-series.adoc#time-series,Time Series>>*: Time series aggregation, visualization, smoothing, differencing, anomaly detection and forecasting.
 
