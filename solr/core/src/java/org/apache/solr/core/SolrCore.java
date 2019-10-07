@@ -193,8 +193,6 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
   private boolean isReloaded = false;
 
-  private StatsCache statsCache;
-
   private final SolrConfig solrConfig;
   private final SolrResourceLoader resourceLoader;
   private volatile IndexSchema schema;
@@ -982,8 +980,6 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       reqHandlers = new RequestHandlers(this);
       reqHandlers.initHandlersFromConfig(solrConfig);
 
-      statsCache = initStatsCache();
-
       // cause the executor to stall so firstSearcher events won't fire
       // until after inform() has been called for all components.
       // searchExecutor must be single-threaded for this to work
@@ -1417,7 +1413,10 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     return factory.getCodec();
   }
 
-  private StatsCache initStatsCache() {
+  /**
+   * Create an instance of {@link StatsCache} using configured parameters.
+   */
+  public StatsCache createStatsCache() {
     final StatsCache cache;
     PluginInfo pluginInfo = solrConfig.getPluginInfo(StatsCache.class.getName());
     if (pluginInfo != null && pluginInfo.className != null && pluginInfo.className.length() > 0) {
@@ -1429,13 +1428,6 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       cache = new LocalStatsCache();
     }
     return cache;
-  }
-
-  /**
-   * Get the StatsCache.
-   */
-  public StatsCache getStatsCache() {
-    return statsCache;
   }
 
   /**
