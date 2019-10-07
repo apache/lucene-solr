@@ -196,6 +196,8 @@ Bug Fixes
 * SOLR-13802: Managed schema manipulations were not persisting the optional luceneMatchVersion that can be set
   on an Analyzer. (Thomas Wöckinger)
 
+* SOLR-13790: LRUStatsCache size explosion and ineffective caching. (ab)
+
 Other Changes
 ----------------------
 
