@@ -27,6 +27,7 @@ import org.apache.commons.math3.linear.RealMatrix;
 import org.apache.commons.math3.ml.clustering.CentroidCluster;
 import org.apache.commons.math3.ml.distance.EuclideanDistance;
 import org.apache.commons.math3.ml.clustering.FuzzyKMeansClusterer;
+import org.apache.solr.client.solrj.io.stream.ZplotStream;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -100,6 +101,11 @@ public class FuzzyKmeansEvaluator extends RecursiveObjectEvaluator implements Tw
     double[][] mmData = realMatrix.getData();
     Matrix mmMatrix = new Matrix(mmData);
     mmMatrix.setRowLabels(matrix.getRowLabels());
+    List<String> clusterCols = new ArrayList();
+    for(int i=0; i<clusters.size(); i++) {
+      clusterCols.add("cluster"+ ZplotStream.pad(Integer.toString(i), clusters.size()));
+    }
+    mmMatrix.setRowLabels(clusterCols);
     return new KmeansEvaluator.ClusterTuple(fields, clusters, matrix.getColumnLabels(),mmMatrix);
   }
 }
