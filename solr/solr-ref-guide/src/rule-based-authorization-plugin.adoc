@@ -47,7 +47,7 @@ Administrators can use permissions from a list of predefined options or define t
 
 Like all of Solr's security plugins, configuration for RBAP lives in a file or ZooKeeper node with the name `security.json`.  See <<authentication-and-authorization-plugins.adoc#enable-plugins-with-security-json,here>> for more information on how to setup `security.json` in your cluster.
 
-In addition to manual edits to `security.json`, Solr offers an <<Authorization API>> for modifying RBAP configuration.
+Solr offers an <<Authorization API>> for making changes to RBAP configuration.  Authorized administrators should use this to make changes under most circumstances.  Users may also make edits to `security.json` directly if it is stored in ZooKeeper, but this is an expert-level feature and is discouraged in most circumstances.  The API simplifies some aspects of configuration, and provides error-responses that isn't provided when editing ZooKeeper directly.
 
 === Configuration Syntax
 
@@ -224,13 +224,15 @@ The permission syntax discussed above doesn't do anything to prevent multiple pe
 
 Since Solr only uses the first matching permission it finds, it's important for administrators to understand what ordering Solr uses when processing the permission list.
 
-The ordering Solr users is complicated.  Solr tries to check first any permissions which are specific or relevant to the incoming request, only moving on to more general permissions if none of the more-specific ones match.  In effect, this means that different requests may check the same permissions in very different orders.
+The ordering Solr uses is complex.  Solr tries to check first any permissions which are specific or relevant to the incoming request, only moving on to more general permissions if none of the more-specific ones match.  In effect, this means that different requests may check the same permissions in very different orders.
 
 If the incoming request is collection-agnostic (doesn't apply to a paritcular collection), Solr checks permissions in the following order:
+
 . Permissions with a `collection` value of `null` and a `path` value matching the request's request handler
 . Permissions with a `collection` value of `null` and a `path` value of `*`
 
 If the incoming request is to a collection, Solr checks permissions in the following order:
+
 . Permissions with `collection` and `path` values matching the request specifically (not a wildcard match)
 . Permissions with `collection` matching the request specifically, and a `path` value of `*`
 . Permissions with `path` matching the request specifically, and a `collection` value of `*`
