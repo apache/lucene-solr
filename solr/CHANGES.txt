@@ -258,6 +258,9 @@ Bug Fixes
 * SOLR-13802: Managed schema manipulations were not persisting the optional luceneMatchVersion that can be set
   on an Analyzer. (Thomas Wöckinger)
 
+* SOLR-13539: Fix for class-cast issues during atomic-update 'removeregex' operations. This also incorporated some
+  tests Tim wrote as a part of SOLR-9505. (Tim Owen via Jason Gerlowski)
+
 Other Changes
 ----------------------
 
