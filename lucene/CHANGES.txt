@@ -189,6 +189,9 @@ Other
 
 * LUCENE-8998: Fix OverviewImplTest.testIsOptimized reproducible failure. (Tomoko Uchida)
 
+* LUCENE-8999: LuceneTestCase.expectThrows now propogates assert/assumption failures up to the test
+  w/o wrapping in a new assertion failure unless the caller has explicitly expected them (hossman)
+
 ======================= Lucene 8.2.0 =======================
 
 API Changes
