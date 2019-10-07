@@ -45,6 +45,7 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
 
   @BeforeClass
   public static void beforeClass() throws Exception {
+    System.setProperty("enable.update.log","true");
     initCore("solrconfig.xml", "schema.xml");
   }
 
