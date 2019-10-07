@@ -56,7 +56,7 @@ image::images/math-expressions/searchiris.png[]
 
 *<<numerical-analysis.adoc#numerical-analysis,Interpolation and Numerical Calculus>>*: Interpolation, derivatives and integrals.
 
-*<<dsp.adoc#dsp,Signal Processing>>*: Functions commonly used with digital signal processing.
+*<<dsp.adoc#dsp,Signal Processing>>*: Convolution, cross-correlation, autocorrelation and Fourier transforms (fft).
 
 *<<simulations.adoc#simulations,Simulations>>*: Monte Carlo simulations and random walks
 
