@@ -206,8 +206,8 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
      *
      * @throws Exception if an error occurs on startup
      */
-    public void configure() throws Exception {
-      cluster = build();
+    public MiniSolrCloudCluster configure() throws Exception {
+      return cluster = build();
     }
 
     /**
