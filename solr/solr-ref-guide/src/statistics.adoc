@@ -23,7 +23,7 @@ available in math expressions.
 
 <<descriptive-statistics, Descriptive Statistics>> - <<Histograms and Frequency Tables, Histograms>> -
 <<Frequency Tables, Frequency Tables>> - <<Percentiles, Percentiles>> - <<Quantile Plots, Quantile Plots>> -
-<<Covariance and Correlation, Covariance and Correlation>> - <<Statistical Inference Tests, Inference Tests>> -
+<<Correlation and Covariance, Correlation and Covariance>> - <<Statistical Inference Tests, Inference Tests>> -
 <<Transformations, Transformations>> - <<Z-scores, Z-scores>>
 
 
