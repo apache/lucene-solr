@@ -27,7 +27,7 @@ Solr's Admin UI interacts with Solr using its regular APIs. When rule-based auth
 
 "Users", "roles" and "permissions" play a central role in configuring authorization correctly.
 
- In Rule-Based Authorization, administrators define a series of roles based on the permissions they want those roles to confer.  Users are then assigned one or more roles.
+In Rule-Based Authorization, administrators define a series of roles based on the permissions they want those roles to confer.  Users are then assigned one or more roles.
 
 === Users
 
