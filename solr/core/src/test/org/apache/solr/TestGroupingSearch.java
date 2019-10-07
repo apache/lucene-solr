@@ -574,6 +574,12 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
              ,"/grouped/id:1000=={'matches':10,'doclist':{'numFound':0,'start':0,'docs':[]}}"
     );
 
+    // group.query and sort
+    assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.query",f+":1", "fl","id,score", "rows","2", "group.limit","2", "sort",f+" desc, score desc", "indent","off")
+        ,"/grouped/"+f+":1==" +
+            "{'matches':10,'doclist':{'numFound':3,'start':0,'maxScore':10.0,'docs':[{'id':'8','score':10.0},{'id':'10','score':3.0}]}},"
+    );
+
     // group.query and offset
     assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.query","id:[2 TO 5]", "fl","id", "group.limit","3", "group.offset","2")
        ,"/grouped=={'id:[2 TO 5]':{'matches':10," +

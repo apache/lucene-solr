@@ -241,6 +241,10 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
         "fl", "id", "group.format", "simple", "sort", i1 + " asc, id asc");
     query("q", "*:*",
         "group", "true",
+        "group.query", t1 + ":kings OR " + t1 + ":eggs", "group.limit", "3",
+        "fl", "id,score", "group.format", "simple", "sort", i1 + " asc, id asc");
+    query("q", "*:*",
+        "group", "true",
         "group.query", t1 + ":kings OR " + t1 + ":eggs",
         "fl", "id", "group.main", "true", "sort", i1 + " asc, id asc");
     query("q", "*:*",
