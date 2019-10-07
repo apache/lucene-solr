@@ -385,6 +385,9 @@ of the matrix passed in.
 
 image::images/math-expressions/corrmatrix.png[]
 
+image::images/math-expressions/corrmatrix2.png[]
+
+
 
 === Covariance and Covariance Matrices
 
