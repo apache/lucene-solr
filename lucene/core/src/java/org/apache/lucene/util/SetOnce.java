@@ -38,7 +38,7 @@ public final class SetOnce<T> implements Cloneable {
   }
 
   /** Holding object and marking that it was already set */
-  private final class Wrapper {
+  private static final class Wrapper<T> {
     private T object;
 
     private Wrapper(T object) {
@@ -46,14 +46,14 @@ public final class SetOnce<T> implements Cloneable {
     }
   }
 
-  private final AtomicReference<Wrapper> set;
+  private final AtomicReference<Wrapper<T>> set;
   
   /**
    * A default constructor which does not set the internal object, and allows
    * setting it by calling {@link #set(Object)}.
    */
   public SetOnce() {
-    set = new AtomicReference();
+    set = new AtomicReference<>();
   }
 
   /**
@@ -65,7 +65,7 @@ public final class SetOnce<T> implements Cloneable {
    * @see #set(Object)
    */
   public SetOnce(T obj) {
-    set = new AtomicReference(new Wrapper(obj));
+    set = new AtomicReference<>(new Wrapper<>(obj));
   }
   
   /** Sets the given object. If the object has already been set, an exception is thrown. */
@@ -80,12 +80,12 @@ public final class SetOnce<T> implements Cloneable {
    * @return true if object was set successfully, false otherwise
    * */
   public final boolean trySet(T obj) {
-    return set.compareAndSet(null, new Wrapper(obj));
+    return set.compareAndSet(null, new Wrapper<>(obj));
   }
   
   /** Returns the object set by {@link #set(Object)}. */
   public final T get() {
-    Wrapper wrapper = set.get();
+    Wrapper<T> wrapper = set.get();
     return wrapper == null ? null : wrapper.object;
   }
 }
