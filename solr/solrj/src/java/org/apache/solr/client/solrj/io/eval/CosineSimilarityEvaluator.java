@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 
+import org.apache.commons.math3.util.Precision;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
@@ -51,7 +52,7 @@ public class CosineSimilarityEvaluator extends RecursiveNumericEvaluator impleme
     return cosineSimilarity(d1, d2);
   }
 
-  private double cosineSimilarity(double[] vectorA, double[] vectorB) {
+  public static double cosineSimilarity(double[] vectorA, double[] vectorB) {
     double dotProduct = 0.0;
     double normA = 0.0;
     double normB = 0.0;
@@ -60,7 +61,8 @@ public class CosineSimilarityEvaluator extends RecursiveNumericEvaluator impleme
       normA += Math.pow(vectorA[i], 2);
       normB += Math.pow(vectorB[i], 2);
     }
-    return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+    double d = dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+    return Precision.round(d, 8);
   }
 
 }

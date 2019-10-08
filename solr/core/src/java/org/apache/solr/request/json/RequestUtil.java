@@ -270,6 +270,8 @@ public class RequestUtil {
           ObjectUtil.mergeObjects(json, path, o, handler);
         }
       }
+    } catch (JSONParser.ParseException e ) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     } catch (IOException e) {
       // impossible
     }

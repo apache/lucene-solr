@@ -229,6 +229,27 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(s2, "c-d-hello");
   }
 
+
+  @Test
+  public void testTrunc() throws Exception {
+    String expr = " select(list(tuple(field1=\"abcde\", field2=\"012345\")), trunc(field1, 2) as field3, trunc(field2, 4) as field4)";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertEquals(tuples.size(),  1);
+    String s1 = tuples.get(0).getString("field3");
+    assertEquals(s1, "ab");
+    String s2 = tuples.get(0).getString("field4");
+    assertEquals(s2, "0123");
+  }
+
   @Test
   public void testUpperLowerSingle() throws Exception {
     String expr = " select(list(tuple(field1=\"a\", field2=\"C\")), upper(field1) as field3, lower(field2) as field4)";
@@ -247,6 +268,28 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(s1, "A");
     String s2 = tuples.get(0).getString("field4");
     assertEquals(s2, "c");
+  }
+
+
+  @Test
+  public void testTruncArray() throws Exception {
+    String expr = " select(list(tuple(field1=array(\"aaaa\",\"bbbb\",\"cccc\"))), trunc(field1, 3) as field2)";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", expr);
+    paramsLoc.set("qt", "/stream");
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertEquals(tuples.size(),  1);
+    List<String> l1 = (List<String>)tuples.get(0).get("field2");
+    assertEquals(l1.get(0), "aaa");
+    assertEquals(l1.get(1), "bbb");
+    assertEquals(l1.get(2), "ccc");
+
   }
 
   @Test
@@ -720,6 +763,27 @@ public class MathExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
     assertTrue(tuples.get(0).getDouble("cov").equals(-625.0D));
+  }
+
+  @Test
+  public void testCosineDistance() throws Exception {
+    String cexpr = "let(echo=true, " +
+        "a=array(1,2,3,4)," +
+        "b=array(10, 20, 30, 45), " +
+        "c=distance(a, b, cosine()), " +
+        ")";
+
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString() + "/" + COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+    Number d = (Number) tuples.get(0).get("c");
+    assertEquals(d.doubleValue(), 0.0017046159, 0.0001);
   }
 
   @Test
@@ -1498,58 +1562,24 @@ public class MathExpressionTest extends SolrCloudTestCase {
 
   @Test
   public void testZplot() throws Exception {
-    String cexpr = "let(c=tuple(a=add(1,2), b=add(2,3))," +
-        "               zplot(table=c))";
+
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+
+
+
+    String cexpr = "let(a=array(1,2,3,4)," +
+        "        b=array(10,11,12,13),"+
+        "        zplot(x=a, y=b))";
 
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
-    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
     TupleStream solrStream = new SolrStream(url, paramsLoc);
     StreamContext context = new StreamContext();
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
-    assertTrue(tuples.size() == 1);
-    Tuple out = tuples.get(0);
-
-    assertEquals(out.getDouble("a").doubleValue(), 3.0, 0.0);
-    assertEquals(out.getDouble("b").doubleValue(), 5.0, 0.0);
-
-    cexpr = "let(c=list(tuple(a=add(1,2), b=add(2,3)), tuple(a=add(1,3), b=add(2,4)))," +
-        "        zplot(table=c))";
-
-    paramsLoc = new ModifiableSolrParams();
-    paramsLoc.set("expr", cexpr);
-    paramsLoc.set("qt", "/stream");
-    solrStream = new SolrStream(url, paramsLoc);
-    context = new StreamContext();
-    solrStream.setStreamContext(context);
-    tuples = getTuples(solrStream);
-    assertTrue(tuples.size() == 2);
-    out = tuples.get(0);
-
-    assertEquals(out.getDouble("a").doubleValue(), 3.0, 0.0);
-    assertEquals(out.getDouble("b").doubleValue(), 5.0, 0.0);
-
-    out = tuples.get(1);
-
-    assertEquals(out.getDouble("a").doubleValue(), 4.0, 0.0);
-    assertEquals(out.getDouble("b").doubleValue(), 6.0, 0.0);
-
-
-    cexpr = "let(a=array(1,2,3,4)," +
-        "        b=array(10,11,12,13),"+
-        "        zplot(x=a, y=b))";
-
-    paramsLoc = new ModifiableSolrParams();
-    paramsLoc.set("expr", cexpr);
-    paramsLoc.set("qt", "/stream");
-    solrStream = new SolrStream(url, paramsLoc);
-    context = new StreamContext();
-    solrStream.setStreamContext(context);
-    tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 4);
-    out = tuples.get(0);
+    Tuple out = tuples.get(0);
 
     assertEquals(out.getDouble("x").doubleValue(), 1.0, 0.0);
     assertEquals(out.getDouble("y").doubleValue(), 10.0, 0.0);
@@ -1680,6 +1710,152 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertTrue(clusters.contains("cluster3"));
     assertTrue(clusters.contains("cluster4"));
     assertTrue(clusters.contains("cluster5"));
+
+    cexpr = "let(a=matrix(array(0,1,2,3,4,5,6,7,8,9,10,11), array(10,11,12,13,14,15,16,17,18,19,20,21))," +
+        "        zplot(heat=a))";
+
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    solrStream = new SolrStream(url, paramsLoc);
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 24);
+    Tuple tuple = tuples.get(0);
+    String xLabel = tuple.getString("x");
+    String yLabel = tuple.getString("y");
+    Number z = tuple.getLong("z");
+
+    assertEquals(xLabel, "col00");
+    assertEquals(yLabel, "row0");
+    assertEquals(z.longValue(), 0L);
+
+    tuple = tuples.get(1);
+    xLabel = tuple.getString("x");
+    yLabel = tuple.getString("y");
+    z = tuple.getLong("z");
+
+    assertEquals(xLabel, "col01");
+    assertEquals(yLabel, "row0");
+    assertEquals(z.longValue(), 1L);
+
+    tuple = tuples.get(2);
+    xLabel = tuple.getString("x");
+    yLabel = tuple.getString("y");
+    z = tuple.getLong("z");
+
+    assertEquals(xLabel, "col02");
+    assertEquals(yLabel, "row0");
+    assertEquals(z.longValue(), 2L);
+
+    tuple = tuples.get(12);
+    xLabel = tuple.getString("x");
+    yLabel = tuple.getString("y");
+    z = tuple.getLong("z");
+
+    assertEquals(xLabel, "col00");
+    assertEquals(yLabel, "row1");
+    assertEquals(z.longValue(), 10L);
+
+
+    cexpr = "let(a=transpose(matrix(array(0, 1, 2, 3, 4, 5, 6, 7,8,9,10,11), " +
+        "                           array(10,11,12,13,14,15,16,17,18,19,20,21)))," +
+        "        zplot(heat=a))";
+
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    solrStream = new SolrStream(url, paramsLoc);
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 24);
+    tuple = tuples.get(0);
+    xLabel = tuple.getString("x");
+    yLabel = tuple.getString("y");
+    z = tuple.getLong("z");
+
+    assertEquals(xLabel, "col0");
+    assertEquals(yLabel, "row00");
+    assertEquals(z.longValue(), 0L);
+
+    tuple = tuples.get(1);
+    xLabel = tuple.getString("x");
+    yLabel = tuple.getString("y");
+    z = tuple.getLong("z");
+
+    assertEquals(xLabel, "col1");
+    assertEquals(yLabel, "row00");
+    assertEquals(z.longValue(), 10L);
+
+    tuple = tuples.get(2);
+    xLabel = tuple.getString("x");
+    yLabel = tuple.getString("y");
+    z = tuple.getLong("z");
+
+    assertEquals(xLabel, "col0");
+    assertEquals(yLabel, "row01");
+    assertEquals(z.longValue(), 1L);
+
+    tuple = tuples.get(12);
+    xLabel = tuple.getString("x");
+    yLabel = tuple.getString("y");
+    z = tuple.getLong("z");
+
+    assertEquals(xLabel, "col0");
+    assertEquals(yLabel, "row06");
+    assertEquals(z.longValue(), 6L);
+
+    cexpr = "let(a=matrix(array(0, 1, 2, 3, 4, 5, 6, 7,8,9,10,11), " +
+        "                 array(10,11,12,13,14,15,16,17,18,19,20,21))," +
+        "        b=setRowLabels(a, array(\"blah1\", \"blah2\")),"+
+        "        c=setColumnLabels(b, array(\"rah1\", \"rah2\", \"rah3\", \"rah4\", \"rah5\", \"rah6\", \"rah7\", \"rah8\", \"rah9\", \"rah10\", \"rah11\", \"rah12\")),"+
+        "        zplot(heat=c))";
+
+    paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    solrStream = new SolrStream(url, paramsLoc);
+    context = new StreamContext();
+    solrStream.setStreamContext(context);
+    tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 24);
+    tuple = tuples.get(0);
+    xLabel = tuple.getString("x");
+    yLabel = tuple.getString("y");
+    z = tuple.getLong("z");
+
+    assertEquals(xLabel, "rah1");
+    assertEquals(yLabel, "blah1");
+    assertEquals(z.longValue(), 0L);
+
+    tuple = tuples.get(1);
+    xLabel = tuple.getString("x");
+    yLabel = tuple.getString("y");
+    z = tuple.getLong("z");
+
+    assertEquals(xLabel, "rah2");
+    assertEquals(yLabel, "blah1");
+    assertEquals(z.longValue(), 1L);
+
+    tuple = tuples.get(2);
+    xLabel = tuple.getString("x");
+    yLabel = tuple.getString("y");
+    z = tuple.getLong("z");
+
+    assertEquals(xLabel, "rah3");
+    assertEquals(yLabel, "blah1");
+    assertEquals(z.longValue(), 2L);
+
+    tuple = tuples.get(12);
+    xLabel = tuple.getString("x");
+    yLabel = tuple.getString("y");
+    z = tuple.getLong("z");
+
+    assertEquals(xLabel, "rah1");
+    assertEquals(yLabel, "blah2");
+    assertEquals(z.longValue(), 10L);
   }
 
 
@@ -3343,7 +3519,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
     Number cs = (Number)tuples.get(0).get("return-value");
-    assertTrue(cs.doubleValue() == 0.9838197164968291);
+    assertEquals(cs.doubleValue(),0.9838197164968291, .00000001);
   }
 
   @Test
@@ -4085,9 +4261,10 @@ public class MathExpressionTest extends SolrCloudTestCase {
     String cexpr = "let(echo=true, " +
                        "a=sequence(50, 1, 0), " +
                        "b=spline(a), " +
-                       "c=integrate(b, 0, 49), " +
-                       "d=integrate(b, 0, 20), " +
-                       "e=integrate(b, 20, 49))";
+                       "c=integral(b, 0, 49), " +
+                       "d=integral(b, 0, 20), " +
+                       "e=integral(b, 20, 49)," +
+                       "f=integral(b))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
@@ -4103,6 +4280,9 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(integral.doubleValue(), 20, 0.0);
     integral = (Number)tuples.get(0).get("e");
     assertEquals(integral.doubleValue(), 29, 0.0);
+    List<Number> integrals = (List<Number>)tuples.get(0).get("f");
+    assertEquals(integrals.size(), 50);
+    assertEquals(integrals.get(49).intValue(), 49);
   }
 
   @Test
@@ -4313,7 +4493,8 @@ public class MathExpressionTest extends SolrCloudTestCase {
 
   }
 
-  @Test
+
+    @Test
   public void testLerp() throws Exception {
     String cexpr = "let(echo=true," +
         "    a=array(0,1,2,3,4,5,6,7), " +
@@ -5068,7 +5249,9 @@ public class MathExpressionTest extends SolrCloudTestCase {
                        "f=corr(d), " +
                        "g=corr(d, type=kendalls), " +
                        "h=corr(d, type=spearmans)," +
-                       "i=corrPValues(f))";
+                       "i=corrPValues(f)," +
+        "               j=getRowLabels(f)," +
+        "               k=getColumnLabels(f))";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
     paramsLoc.set("qt", "/stream");
@@ -5157,6 +5340,20 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(row3.get(0).doubleValue(), 0.28548201004998375, 0);
     assertEquals(row3.get(1).doubleValue(), 0.28548201004998375, 0);
     assertEquals(row3.get(2).doubleValue(), 0, 0);
+
+    List<String> rowLabels = (List<String>)tuples.get(0).get("j");
+    assertEquals(rowLabels.size(), 3);
+    assertEquals(rowLabels.get(0), "col0");
+    assertEquals(rowLabels.get(1), "col1");
+    assertEquals(rowLabels.get(2), "col2");
+
+    List<String> colLabels = (List<String>)tuples.get(0).get("k");
+    assertEquals(colLabels.size(), 3);
+    assertEquals(colLabels.get(0), "col0");
+    assertEquals(colLabels.get(1), "col1");
+    assertEquals(colLabels.get(2), "col2");
+
+
   }
 
   @Test

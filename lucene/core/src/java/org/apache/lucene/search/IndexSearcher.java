@@ -31,6 +31,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
+import java.util.concurrent.RejectedExecutionException;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
@@ -468,9 +469,12 @@ public class IndexSearcher {
 
       private final HitsThresholdChecker hitsThresholdChecker = (executor == null || leafSlices.length <= 1) ? HitsThresholdChecker.create(TOTAL_HITS_THRESHOLD) :
           HitsThresholdChecker.createShared(TOTAL_HITS_THRESHOLD);
+
+      private final BottomValueChecker bottomValueChecker = BottomValueChecker.createMaxBottomScoreChecker();
+
       @Override
       public TopScoreDocCollector newCollector() throws IOException {
-        return TopScoreDocCollector.create(cappedNumHits, after, hitsThresholdChecker);
+        return TopScoreDocCollector.create(cappedNumHits, after, hitsThresholdChecker, bottomValueChecker);
       }
 
       @Override
@@ -664,8 +668,20 @@ public class IndexSearcher {
           search(Arrays.asList(leaves), weight, collector);
           return collector;
         });
-        executor.execute(task);
-        topDocsFutures.add(task);
+        boolean executedOnCallerThread = false;
+        try {
+          executor.execute(task);
+        } catch (RejectedExecutionException e) {
+          // Execute on caller thread
+          search(Arrays.asList(leaves), weight, collector);
+          topDocsFutures.add(CompletableFuture.completedFuture(collector));
+          executedOnCallerThread = true;
+        }
+
+        // Do not add the task's future if it was not used
+        if (executedOnCallerThread == false) {
+          topDocsFutures.add(task);
+        }
       }
       final LeafReaderContext[] leaves = leafSlices[leafSlices.length - 1].leaves;
       final C collector = collectors.get(leafSlices.length - 1);
