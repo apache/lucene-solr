@@ -393,7 +393,7 @@ The example below demonstrates the power of correlation matrices combined with 2
 In this example the `facet2D` function is used to generate a two dimensional facet aggregation
 over the fields *complaint_type_s* and *zip_s* from the *nyc311* complaints database.
 The *top 20* complaint types and the *top 25* zip codes for each complaint type are aggregated.
-The result is a stream of tuples each containing fields *complaint_type_s*, *zip_s* and
+The result is a stream of tuples each containing the fields *complaint_type_s*, *zip_s* and
 the count for the pair.
 
 The `pivot` function is then used to pivot the fields into a *matrix* with the *zip_s*
