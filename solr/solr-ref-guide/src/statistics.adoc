@@ -402,7 +402,7 @@ the values in the cells of the matrix.
 
 The `corr` function is then used correlate the *columns* of the matrix. This produces a correlation matrix
 that shows how complaint types are correlated based on the zip codes they appear in. Another way to look at this
-is it shows which complaint types tend to co-occur across zip codes.
+is it shows how the different complaint types tend to co-occur across zip codes.
 
 Finally the `zplot` function is used to plot the correlation matrix as a heat map.
 
