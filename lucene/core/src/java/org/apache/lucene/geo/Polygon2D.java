@@ -85,7 +85,7 @@ public class Polygon2D implements Component2D {
    */
   @Override
   public boolean contains(double x, double y) {
-    if (Component2D.containsPoint(x, y, minX, maxX, minY, maxY)) { //minX <= x && maxX >= x && minY <= y && maxY >= y) {
+    if (Component2D.containsPoint(x, y, minX, maxX, minY, maxY)) {
       return internalContains(x, y);
     }
     return false;
