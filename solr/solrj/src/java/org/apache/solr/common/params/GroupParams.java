@@ -66,5 +66,11 @@ public interface GroupParams {
   public static final String GROUP_DISTRIBUTED_SECOND = GROUP + ".distributed.second";
 
   public static final String GROUP_DISTRIBUTED_TOPGROUPS_PREFIX = GROUP + ".topgroups.";
+
+  /** If true activates optimization for speed up grouping.
+   * Setting this to true is only compatible with group.limit = 1 */
+  public static final String GROUP_SKIP_DISTRIBUTED_SECOND = GROUP + ".skip.second.step";
+  /** default value for GROUP_SKIP_DISTRIBUTED_SECOND */
+  public static final boolean GROUP_SKIP_DISTRIBUTED_SECOND_DEFAULT = false;
 }
 

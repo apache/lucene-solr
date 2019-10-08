@@ -860,9 +860,13 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
         }
       }
     }
-
-    cmp = compare(a.getNumFound(), b.getNumFound(), 0, handle);
-    if (cmp != null) return ".numFound" + cmp;
+    final int checkNumFound = flags(handle, "numFound");
+    if (checkNumFound == 0){
+      cmp = compare(a.getNumFound(), b.getNumFound(), 0, handle);
+      if (cmp != null) return ".numFound" + cmp;
+    } else if (checkNumFound != SKIP) {
+        assert (f & SKIPVAL) != 0;
+    }
 
     cmp = compare(a.getStart(), b.getStart(), 0, handle);
     if (cmp != null) return ".start" + cmp;

@@ -22,14 +22,18 @@ import java.util.List;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.response.Group;
+import org.apache.solr.client.solrj.response.GroupCommand;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.SolrTestCaseJ4.SuppressPointFields;
+import org.junit.Assert;
 import org.junit.Test;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -425,6 +429,192 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     
     //Debug
     simpleQuery("q", "*:*", "rows", 10, "fl", "id," + i1, "group", "true", "group.field", i1, "debug", "true");
+
+    doTestGroupSkipSecondStepAlt();
+    doTestGroupSkipSecondStep();
+  }
+
+  /*
+    SOLR-11831, test skipping the second grouping step if the query only retrieves on document per group
+   */
+  private void doTestGroupSkipSecondStepAlt() throws Exception {
+
+    // group.skip.second.step (absent/false/true) have an equivalent
+    // outcome only because the query matches nothing
+
+    ModifiableSolrParams solrParams = params(
+            "q", "1234doesnotmatchanything1234",
+            "fl",  "id," + i1,
+            "group", "true",
+            "group.field", i1);
+    setDistributedParams(solrParams);
+
+    variantQuery(
+        solrParams,
+        params(), // Test with no group.skip.second.step (use the default)
+        params("group.skip.second.step", "false"),
+        params("group.skip.second.step", "true")
+        );
+
+    // when the query matches something numFound needs to be ignored because
+    // the number of documents per group will not be computed i.e. numFound=1
+    // will always be returned
+    // TODO: can we test for numFound=1 somehow?
+    assertFalse(handle.containsKey("numFound"));
+    handle.put("numFound", SKIP);
+
+    solrParams = params(
+            "q", "{!func}id_i1",
+            "rows", "3",
+            "fl",  "id," + i1,
+            "group", "true",
+            "group.field", i1,
+            "group.skip.second.step", "true");
+    setDistributedParams(solrParams);
+
+    try {
+      variantQuery(
+          solrParams,
+          params(),
+          params("group.limit", "1")
+          );
+    } finally {
+      handle.remove("numFound");
+    }
+  }
+
+  private void doTestGroupSkipSecondStep() throws Exception {
+    ignoreException(GroupParams.GROUP_SKIP_DISTRIBUTED_SECOND); // don't print stack trace for exception raised by group.skip.second.step
+    // Ignore numFound if group.skip.second.step is enabled because the number of documents per group will not be computed (will default to 1)
+    handle.put("numFound", SKIP);
+    query("q", "kings", "group.skip.second.step", true, "fl", "id," + i1, "group", "true", "group.field", i1);
+
+    ignoreException("Illegal grouping specification");
+    assertSimpleQueryThrows("q", "{!func}id_i1", "group.skip.second.step", true, "fl", "id," + i1, "group", "true", "group.field", i1, "group.ngroups", true);
+    assertSimpleQueryThrows("q", "{!func}id", "group.skip.second.step", true, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 5);
+    assertSimpleQueryThrows("q", "{!func}id_i1", "group.skip.second.step", true, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 0);
+
+    // if group.sort fields list is a prefix of sort fields list, the query should succeed
+    query("q", "{!func}id_i1", "group.skip.second.step", true, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 1, "sort", i1+" desc, id_i1 desc","group.sort", i1+" desc, id_i1 desc");
+    // if sort is present and group.sort is absent then sort would also be used for group.sort -- it should pass?
+    query("q", "{!func}id_i1", "group.skip.second.step", true, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 1, "sort", i1+" desc, id_i1 desc");
+
+    // group sorted in a different way should fail
+    assertSimpleQueryThrows("q", "{!func}id_i1", "group.skip.second.step", true, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 1, "group.sort", i1+" desc");
+
+    query("q", "{!func}id_i1", "rows", 3, "group.skip.second.step", true,  "fl",  "id," + i1, "group", "true",
+        "group.field", i1, "sort", tlong+" desc,"+i1+" asc", "group.sort", tlong+" desc");
+
+    query("q", "{!func}id_i1", "rows", 3, "group.skip.second.step", true,  "fl",  "id," + i1, "group", "true",
+        "group.field", i1, "sort", tlong+" desc,"+i1+" asc", "group.sort", tlong+" desc");
+    query("q", "{!func}id_i1", "rows", 3, "group.skip.second.step", true,  "fl",  "id," + i1, "group", "true",
+        "group.field", i1, "sort", tlong+" desc,"+i1+" asc", "group.sort", tlong+" desc,"+ i1+" asc");
+    // not a prefix, should fail
+    assertSimpleQueryThrows("q", "{!func}id_i1", "rows", 3, "group.skip.second.step", true,  "fl",  "id," + i1, "group", "true",
+        "group.field", i1, "sort", tlong+" desc,"+i1+" asc", "group.sort",i1+" asc,"+tlong+" desc");
+
+    // check that the requests fails if group.func is used with group.skip.second.step instead of group.field
+    assertSimpleQueryThrows("q", "{!func}id_i1", "rows", 3, "group.skip.second.step", true,  "fl",  "id," + i1, "group", "true",
+            "group.func", i1);
+
+    // check that the requests fails if group.query is used with group.skip.second.step instead of group.field
+    assertSimpleQueryThrows("q", "{!func}id_i1", "rows", 3, "group.skip.second.step", true,  "fl",  "id," + i1, "group", "true",
+            "group.query", "{!func}id_1");
+
+    /// check that group.skip.second.step works properly with group.main == true (using a different
+    //  EndResultTransformer but still sharing the skipping logic)
+    query("q", "{!func}id_i1", "rows", 3, "group.skip.second.step", true,  "fl",  "id," + i1, "group", "true",
+        "group.field", i1, "sort", tlong+" desc,"+i1+" asc", "group.sort", tlong+" desc", "group.main", true);
+    query("q", "kings", "group.skip.second.step", true, "fl", "id," + i1, "group", "true", "group.field", i1, "group.main", true);
+    // check zero results
+    query("q", "this_wont_match_any_document", "group.skip.second.step", true, "fl", "id," + i1, "group", "true", "group.field", i1, "group.main", true);
+    // check that group.skip.second.step works properly with group.format == simple (using a different
+    // EndResultTransformer but still sharing the skipping logic)
+    query("q", "{!func}id_i1", "rows", 3, "group.skip.second.step", true,  "fl",  "id," + i1, "group", "true",
+        "group.field", i1, "sort", tlong+" desc,"+i1+" asc", "group.sort", tlong+" desc", "group.format", "simple");
+    // check that group.skip.second.step works properly with group.format == simple
+    query("q", "kings", "group.skip.second.step", true, "fl", "id," + i1, "group", "true", "group.field", i1, "group.format", "simple");
+    query("q", "{!func}id_i1", "rows", "3", "group.skip.second.step", "true", "fl", "id," + i1+",id_i1,score", "group", "true", "group.field", i1, "group.limit", "1");
+    query("q", "{!func}id_i1", "rows", "3", "group.skip.second.step", "false", "fl", "id," + i1+",id_i1,score", "group", "true", "group.field", i1, "group.limit", "1");
+
+
+    assertNumFoundWithSkipSecondGroupingStep("q", "kings", "group.skip.second.step", "true", "fl", "id," + i1, "group", "true", "group.field", i1);
+    assertNumFoundWithSkipSecondGroupingStep( "q", "{!func}id_i1", "rows", "3", "fl", "id," + i1+",id_i1", "group", "true", "group.field", i1, "group.limit", "1","sort", tlong+" desc");
+    assertNumFoundWithSkipSecondGroupingStep("q", "{!func}id_i1", "rows", "3", "fl", "id," + i1+",id_i1,score", "group", "true", "group.field", i1, "group.limit", "1");
+
+    // score in fl and in sort (by default)
+    testMaxScoreWithSkipSecondGroupingStep("q", "{!func}id_i1", "rows", "3", "fl", "id," + i1+",id_i1,score", "group", "true", "group.field", i1, "group.limit", "1");
+    // no score and different sort (should not return maxScore)
+    testMaxScoreWithSkipSecondGroupingStep("q", "{!func}id_i1", "rows", "3", "fl", "id," + i1+",id_i1", "group", "true", "group.field", i1, "group.limit", "1","sort", tlong+" desc");
+    // no score in fl, sort in score (by default)
+    testMaxScoreWithSkipSecondGroupingStep("q", "{!func}id_i1", "rows", "3", "fl", "id," + i1+",id_i1", "group", "true", "group.field", i1, "group.limit", "1");
+    // no score in fl and sort by secondary field
+    testMaxScoreWithSkipSecondGroupingStep("q", "{!func}id_i1", "rows", "3", "fl", "id," + i1+",id_i1", "group", "true", "group.field", i1, "group.limit", "1", "sort", tlong+" desc, score desc");
+    
+    handle.remove("numFound");
+  }
+
+  // When group.skip.second.step is enabled numFound in each group will be 1.
+  private void assertNumFoundWithSkipSecondGroupingStep(String ... params) throws IOException, SolrServerException {
+    ModifiableSolrParams solrParams = params(params);
+    solrParams.set("group.skip.second.step", "true");
+    setDistributedParams(solrParams);
+    QueryResponse skipSecondStep = queryServer(solrParams);
+    for (GroupCommand gc : skipSecondStep.getGroupResponse().getValues()){
+      for (Group group : gc.getValues()){
+        if (! group.getResult().isEmpty()){
+          Assert.assertEquals(1, group.getResult().getNumFound());
+        }
+      }
+    }
+  }
+
+  // will check that maxScore is the same in a distribute query regardless of group.skip.second.step enabled or not.
+  private void testMaxScoreWithSkipSecondGroupingStep(String ... params) throws IOException, SolrServerException {
+    Integer maxScoreConf = handle.get("maxScore");
+    handle.remove("maxScore");
+    ModifiableSolrParams solrParams = params(params);
+    setDistributedParams(solrParams);
+
+    solrParams.set("group.skip.second.step", "true");
+
+    // normal solr query
+    QueryResponse skipSecondStep = queryServer(solrParams);
+    solrParams.set("group.skip.second.step", "false");
+    QueryResponse expectedResponse = queryServer(solrParams);
+
+    List<GroupCommand> skipSecondStepGroups = skipSecondStep.getGroupResponse().getValues();
+    List<GroupCommand> expectedGroups = expectedResponse.getGroupResponse().getValues();
+    Assert.assertEquals(expectedGroups.size(), skipSecondStepGroups.size());
+    int size = expectedGroups.size();
+    for (int i = 0; i < size; i++){
+      List<Group> expectedValues = expectedGroups.get(i).getValues();
+      List<Group> skipSecondStepValues = skipSecondStepGroups.get(i).getValues();
+      Assert.assertEquals(expectedValues.size(), skipSecondStepValues.size());
+      for (int j = 0; j < expectedValues.size(); j++){
+        Float expectedMaxScore = expectedValues.get(j).getResult().getMaxScore();
+
+        if ( expectedMaxScore != null && expectedMaxScore.isNaN()){
+          Assert.assertTrue(skipSecondStepValues.get(j).getResult().getMaxScore().isNaN());
+        } else {
+          Assert.assertEquals(expectedMaxScore, skipSecondStepValues.get(j).getResult().getMaxScore());
+        }
+      }
+    }
+    handle.put("maxScore", maxScoreConf);
+
+  }
+
+
+
+  private void assertSimpleQueryThrows(Object... queryParams) {
+    boolean requestFailed = false;
+    try {
+      simpleQuery(queryParams);
+    } catch (Exception e) {
+      requestFailed = true;
+    }
+    assertTrue(requestFailed);
   }
 
   private void simpleQuery(Object... queryParams) throws SolrServerException, IOException {
