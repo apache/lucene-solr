@@ -77,7 +77,7 @@ public class PackageStoreAPI {
 
   @EndPoint(
       path = "/cluster/files/*",
-      method = SolrRequest.METHOD.POST,
+      method = SolrRequest.METHOD.PUT,
       permission = PermissionNameProvider.Name.FILESTORE_WRITE_PERM)
   public class FSWrite {
 

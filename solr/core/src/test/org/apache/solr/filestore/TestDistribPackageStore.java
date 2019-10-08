@@ -23,14 +23,17 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.function.Predicate;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteExecutionException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.V2Response;
@@ -62,6 +65,17 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
       byte[] derFile = readFile("cryptokeys/pub_key512.der");
       cluster.getZkClient().makePath("/keys/exe", true);
       cluster.getZkClient().create("/keys/exe/pub_key512.der", derFile, CreateMode.PERSISTENT, true);
+
+      try {
+        postFile(cluster.getSolrClient(), getFileContent("runtimecode/runtimelibs.jar.bin"),
+            "/package/mypkg/v1.0/runtimelibs.jar",
+            "j+Rflxi64tXdqosIhbusqi6GTwZq8znunC/dzwcWW0/dHlFGKDurOaE1Nz9FSPJuXbHkVLj638yZ0Lp1ssnoYA=="
+        );
+        fail("should have failed because of wrong signature ");
+      } catch (RemoteExecutionException e) {
+        assertTrue(e.getMessage().contains("Signature does not match"));
+      }
+
       postFile(cluster.getSolrClient(), getFileContent("runtimecode/runtimelibs.jar.bin"),
           "/package/mypkg/v1.0/runtimelibs.jar",
           "L3q/qIGs4NaF6JiO0ZkMUFa88j0OmYc+I6O7BOdNuMct/xoZ4h73aZHZGc0+nmI1f/U3bOlMPINlSOM6LK3JpQ=="
@@ -90,6 +104,27 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
           )
       );
 
+      class Fetcher implements Callable {
+        String url;
+        JettySolrRunner jetty;
+        Fetcher(String s, JettySolrRunner jettySolrRunner){
+          this.url = s;
+          this.jetty = jettySolrRunner;
+        }
+        @Override
+        public NavigableObject call() throws Exception {
+          try (HttpSolrClient solrClient = (HttpSolrClient) jetty.newClient()) {
+            return (NavigableObject) Utils.executeGET(solrClient.getHttpClient(), this.url, JAVABINCONSUMER);
+          }
+        }
+
+        @Override
+        public String toString() {
+          return url;
+        }
+
+      }
+
       Map expected = Utils.makeMap(
           ":files:/package/mypkg/v1.0/runtimelibs.jar:name", "runtimelibs.jar",
           ":files:/package/mypkg/v1.0[0]:sha512", "d01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420"
@@ -99,19 +134,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
         String baseUrl = jettySolrRunner.getBaseUrl().toString().replace("/solr", "/api");
         String url = baseUrl + "/node/files/package/mypkg/v1.0/runtimelibs.jar?wt=javabin&meta=true";
 
-        assertResponseValues(10, new Callable() {
-          @Override
-          public NavigableObject call() throws Exception {
-            try (HttpSolrClient solrClient = (HttpSolrClient) jettySolrRunner.newClient()) {
-              return (NavigableObject) Utils.executeGET(solrClient.getHttpClient(), url, JAVABINCONSUMER);
-            }
-          }
-
-          @Override
-          public String toString() {
-            return url;
-          }
-        }, expected);
+        assertResponseValues(10, new Fetcher(url, jettySolrRunner), expected);
 
         try (HttpSolrClient solrClient = (HttpSolrClient) jettySolrRunner.newClient()) {
           ByteBuffer buf = Utils.executeGET(solrClient.getHttpClient(), baseUrl + "/node/files/package/mypkg/v1.0/runtimelibs.jar",
@@ -124,6 +147,32 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
         }
 
       }
+
+      postFile(cluster.getSolrClient(), getFileContent("runtimecode/runtimelibs_v2.jar.bin"),
+          "/package/mypkg/v1.0/runtimelibs_v2.jar",
+          null
+      );
+
+      expected = Utils.makeMap(
+          ":files:/package/mypkg/v1.0", (Predicate<Object>) o -> {
+            List l = (List) o;
+            assertEquals(2, l.size());
+            Set expectedKeys = ImmutableSet.of("runtimelibs_v2.jar", "runtimelibs.jar");
+            for (Object file : l) {
+              if(! expectedKeys.contains(Utils.getObjectByPath(file, true, "name"))) return false;
+            }
+
+            return true;
+          }
+      );
+      for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
+        String baseUrl = jettySolrRunner.getBaseUrl().toString().replace("/solr", "/api");
+        String url = baseUrl + "/node/files/package/mypkg/v1.0?wt=javabin";
+
+        assertResponseValues(10, new Fetcher(url, jettySolrRunner), expected);
+
+      }
+
 
 
     } finally {
@@ -180,7 +229,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("sig", sig);
     V2Response rsp = new V2Request.Builder(resource)
-        .withMethod(SolrRequest.METHOD.POST)
+        .withMethod(SolrRequest.METHOD.PUT)
         .withPayload(buffer)
         .forceV2(true)
         .withMimeType("application/octet-stream")
