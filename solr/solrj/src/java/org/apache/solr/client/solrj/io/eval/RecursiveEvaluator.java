@@ -126,14 +126,6 @@ public abstract class RecursiveEvaluator implements StreamEvaluator, ValueWorker
       return value;
     } else if(value instanceof BigDecimal){
       BigDecimal bd = (BigDecimal)value;
-      if(bd.signum() == 0 || bd.scale() <= 0 || bd.stripTrailingZeros().scale() <= 0){
-        try{
-          return bd.longValueExact();
-        }
-        catch(ArithmeticException e){
-          // value was too big for a long, so use a double which can handle scientific notation
-        }
-      }
       
       return bd.doubleValue();
     }
