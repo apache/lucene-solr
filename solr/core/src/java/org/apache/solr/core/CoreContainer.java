@@ -47,6 +47,7 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
+import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
@@ -76,6 +77,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.BackupRepositoryFactory;
+import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SnapShooter;
 import org.apache.solr.handler.admin.AutoscalingHistoryHandler;
@@ -217,6 +219,8 @@ public class CoreContainer {
   protected volatile MetricsCollectorHandler metricsCollectorHandler;
 
   protected volatile AutoscalingHistoryHandler autoscalingHistoryHandler;
+
+  private PackageStoreAPI packageStoreAPI;
 
 
   // Bits for the state variable.
@@ -599,6 +603,10 @@ public class CoreContainer {
         }
       }
     }
+
+    packageStoreAPI = new PackageStoreAPI(this);
+    containerHandlers.getApiBag().register(new AnnotatedApi(packageStoreAPI.readAPI), Collections.EMPTY_MAP);
+    containerHandlers.getApiBag().register(new AnnotatedApi(packageStoreAPI.writeAPI), Collections.EMPTY_MAP);
 
     metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig());
 

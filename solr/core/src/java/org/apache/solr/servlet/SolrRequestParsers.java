@@ -63,6 +63,7 @@ import org.apache.solr.util.RTimerTree;
 import org.apache.solr.util.SolrFileCleaningTracker;
 import org.apache.solr.util.tracing.GlobalTracer;
 
+import static org.apache.solr.client.solrj.impl.BinaryResponseParser.BINARY_CONTENT_TYPE;
 import static org.apache.solr.common.params.CommonParams.PATH;
 
 
@@ -732,6 +733,7 @@ public class SolrRequestParsers
       String contentType = req.getContentType();
       String method = req.getMethod(); // No need to uppercase... HTTP verbs are case sensitive
       String uri = req.getRequestURI();
+      boolean isRawPut = "PUT".equals(method) && BINARY_CONTENT_TYPE.equals(contentType);
       boolean isPost = "POST".equals(method);
 
       // SOLR-6787 changed the behavior of a POST without content type.  Previously it would throw an exception,
@@ -747,7 +749,7 @@ public class SolrRequestParsers
       // POST was handled normally, but other methods (PUT/DELETE)
       // were handled by restlet if the URI contained /schema or /config
       // "handled by restlet" means that we don't attempt to handle any request body here.
-      if (!isPost) {
+      if (!isPost && !isRawPut) {
         if (contentType == null) {
           return parseQueryString(req.getQueryString());
         }
