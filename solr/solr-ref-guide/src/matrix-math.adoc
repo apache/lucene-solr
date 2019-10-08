@@ -131,14 +131,10 @@ responds with:
 The `zplot` function can plot matrices as a heat map using the *heat* named parameter.
 Heat maps are powerful visualization tools for displaying *correlation* and *distance*
 matrices described later in the guide.
-The example below though shows a simple 2x2 matrix visualized using the heat map
-visualization is Apache Zeppelin.
+The example below shows a 2x2 matrix visualized using the heat map
+visualization in Apache Zeppelin.
 
-NOTE: In the heat map visualization the rows are read from the *bottom* up. The
-rows and columns are listed in ascending label order.
-This convention becomes
-quite useful when visualizing matrices where the labels are generated
-directly from the data.
+NOTE: In the visualization below the rows are read from the *bottom* up, which is the common convention for heat maps.
 
 image::images/math-expressions/matrix.png[]
 
