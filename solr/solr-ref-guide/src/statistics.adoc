@@ -359,12 +359,12 @@ because the percentile values are are dispersed farther from the mean.
 
 == Correlation and Covariance
 
-Covariance and Correlation measure how random variables fluctuate
+Correlation and Covariance measure how random variables fluctuate
 together.
 
 === Correlation and Correlation Matrices
 
-Correlation is covariance that has been scaled between
+Correlation is a measure of the linear correlation between two vectors. Correlation is scaled between
 -1 and 1.
 
 Three correlation types are supported:
@@ -379,17 +379,50 @@ the *type* named parameter.
 
 image::images/math-expressions/correlation.png[]
 
-Like the `cov` function, the `corr` function automatically builds a correlation matrix
-if a matrix is passed as a parameter. The correlation matrix is built by correlating the columns
-of the matrix passed in.
+==== Correlation Matrices
+
+Correlation matrices are powerful tools for visualizing the correlation between two or more
+vectors.
+
+The `corr` function builds a correlation matrix
+if a matrix is passed as a parameter. The correlation matrix is computed by correlating the *columns*
+of the matrix.
+
+The example below demonstrates power of correlation matrices.
+
+In this example the `facet2D` function is used to generate a two dimensional facet aggregation
+over the *complaint_type_s* field and the *zip_s* field in the *nyc311* complaints collection.
+In this example the top 20 complaint types and the top 20 zip codes for each complaint type is
+calculated. This returns a stream of tuples each containing a *complaint_type_s*, *zip_s* and
+along with the count for the pair.
+
+The `pivot` function is then used to pivot the fields into a *matrix* with the *zip_s*
+field as the *rows* and the *complaint_type* fields as the *columns*. The `count(*)` field populates
+the values inside the cells of the matrix.
+
+The `corr` function is then used correlate the *rows* of the matrix. This produces a correlation matrix
+shows how complaint types are correlated based on the zip codes they appear in. Another way to look at this
+is it shows which complaint types co-occur across zip codes.
+
+Finally the `zplot` function is used to plot the correlation matrix as a heat map.
 
 image::images/math-expressions/corrmatrix.png[]
 
+Notice in the example the correlation is square with complaint types shown on both
+the *x* and *y* axises. The color of the cells in the heatmap shows the
+intensity of the correlation between the complaint types.
+
+The heatmap is interactive, so mousing over one of the high intensity cells pops up the values
+for the cell.
+
 image::images/math-expressions/corrmatrix2.png[]
 
-
+Notice that HEAT/HOT WATER and UNSANITARY CONDITION complaints have a correlation of 8 (rounded to the nearest
+tenth).
 
 === Covariance and Covariance Matrices
+
+Covariance is an unscaled measure of correlation.
 
 The `cov` function calculates the covariance of two vectors of data.
 
