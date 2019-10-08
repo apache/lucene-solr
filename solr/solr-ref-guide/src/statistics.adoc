@@ -388,17 +388,17 @@ The `corr` function builds a correlation matrix
 if a matrix is passed as a parameter. The correlation matrix is computed by correlating the *columns*
 of the matrix.
 
-The example below demonstrates power of correlation matrices.
+The example below demonstrates the power of correlation matrices combined with 2 dimensional faceting.
 
 In this example the `facet2D` function is used to generate a two dimensional facet aggregation
-over the *complaint_type_s* field and the *zip_s* field in the *nyc311* complaints collection.
-In this example the top 20 complaint types and the top 20 zip codes for each complaint type is
-calculated. This returns a stream of tuples each containing a *complaint_type_s*, *zip_s* and
-along with the count for the pair.
+over the fields *complaint_type_s* field and *zip_s* from the *nyc311* complaints database.
+The *top 20* complaint types and the *top 25* zip codes for each complaint type are aggregated.
+The result is a stream of tuples each containing fields *complaint_type_s*, *zip_s* and
+the count for the pair.
 
 The `pivot` function is then used to pivot the fields into a *matrix* with the *zip_s*
-field as the *rows* and the *complaint_type* fields as the *columns*. The `count(*)` field populates
-the values inside the cells of the matrix.
+field as the *rows* and the *complaint_type_s* field as the *columns*. The `count(*)` field populates
+the values in the cells of the matrix.
 
 The `corr` function is then used correlate the *rows* of the matrix. This produces a correlation matrix
 shows how complaint types are correlated based on the zip codes they appear in. Another way to look at this
