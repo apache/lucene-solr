@@ -203,6 +203,8 @@ Bug Fixes
 * SOLR-13539: Fix for class-cast issues during atomic-update 'removeregex' operations. This also incorporated some
   tests Tim wrote as a part of SOLR-9505. (Tim Owen via Jason Gerlowski)
 
+* SOLR-13376: Multi-node race condition to create/remove nodeLost markers. (hoss, ab)
+
 Other Changes
 ----------------------
 
