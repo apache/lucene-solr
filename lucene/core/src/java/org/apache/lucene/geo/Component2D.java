@@ -70,6 +70,11 @@ public interface Component2D {
     return (minY2 < minY1 && maxY2 > maxY1&& minX2 < minX1 && maxX2 > maxX1);
   }
 
+  /** returns true if rectangle (defined by minX, maxX, minY, maxY) contains the X Y point */
+  static boolean containsPoint(final double x, final double y, final double minX, final double maxX, final double minY, final double maxY) {
+    return x >= minX && x <= maxX && y >= minY && y <= maxY;
+  }
+
   /**
    * Compute whether the given x, y point is in a triangle; uses the winding order method */
   static boolean pointInTriangle(double minX, double maxX, double minY, double maxY, double x, double y, double aX, double aY, double bX, double bY, double cX, double cY) {
