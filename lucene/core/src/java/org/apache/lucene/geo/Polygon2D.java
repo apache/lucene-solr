@@ -85,7 +85,7 @@ public class Polygon2D implements Component2D {
    */
   @Override
   public boolean contains(double x, double y) {
-    if (minX < x && maxX > x && minY < y && maxY > y) {
+    if (Rectangle.containsPoint(y, x, minY, maxY, minX, maxX)) { //minX <= x && maxX >= x && minY <= y && maxY >= y) {
       return internalContains(x, y);
     }
     return false;
@@ -127,7 +127,7 @@ public class Polygon2D implements Component2D {
       }
       return Relation.CELL_INSIDE_QUERY;
     }  else if (numCorners == 0) {
-      if (minY >= tree.y1 && maxY <= tree.y1 && minX >= tree.x2 && maxX <= tree.x2) {
+      if (Rectangle.containsPoint(tree.y1, tree.x1, minY, maxY, minX, maxX)) {
         return Relation.CELL_CROSSES_QUERY;
       }
       if (tree.crossesBox(minX, maxX, minY, maxY, false)) {
