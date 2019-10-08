@@ -21,17 +21,17 @@ as both inputs and outputs of many mathematical functions.
 This section of the user guide covers the basics of matrix creation,
 manipulation and matrix math.
 
-<<Matrix Function, Matrix Function >> -
-<<Accessing Rows and Columns, Rows and Columns>> -
+<<Matrices, Matrices>> -
 <<Row and Column Labels, Labels>> -
-<<Pair Sorting, Pair Sorting>> -
+<<Visualization, Visualization>> -
+<<Accessing Rows and Columns, Rows and Columns>> -
 <<Attributes, Attributes>> -
 <<Dimensions, Dimensions>> -
 <<Transposition, Transposition>> -
 <<Summations, Summations>> -
 <<Scalar Matrix Math, Matrix Math>>
 
-== Matrix Function
+== Matrices
 
 A matrix can be created with the `matrix` function.
 The matrix function is passed a list of `arrays` with
@@ -73,6 +73,75 @@ responds with:
   }
 ----
 
+== Row and Column Labels
+
+A matrix can have column and rows and labels. The functions
+`setRowLabels`, `setColumnLabels`, `getRowLabels` and `getColumnLabels`
+can be used to set and get the labels. The label values
+are set using string arrays.
+
+The example below sets the row and column labels. In other sections of the
+user guide examples are shown where functions return matrices
+with the labels already set.
+
+Below is a simple example of setting and
+getting row and column labels
+on a matrix.
+
+[source,text]
+----
+let(echo="d, e",
+    a=matrix(array(1, 2),
+             array(4, 5)),
+    b=setRowLabels(a, array("rowA", "rowB")),
+    c=setColumnLabels(b, array("colA", "colB")),
+    d=getRowLabels(c),
+    e=getColumnLabels(c))
+----
+
+When this expression is sent to the `/stream` handler it
+responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "d": [
+          "rowA",
+          "rowB"
+        ],
+        "e": [
+          "colA",
+          "colB"
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 0
+      }
+    ]
+  }
+}
+----
+
+== Visualization
+
+The `zplot` function can plot matrices as a heat map using the *heat* named parameter.
+Heat maps are powerful visualization tools for displaying *correlation* and *distance*
+matrices described later in the guide.
+The example below though shows a simple 2x2 matrix visualized using the heat map
+visualization is Apache Zeppelin.
+
+NOTE: In the visualization below the rows and columns are listed in ascending
+*label* order starting from the lower left corner. This convention is natural for
+visualizing large *correlation* and *distance* matrices where the rows
+and the columns have the same labels.
+
+image::images/math-expressions/matrix.png[]
+
+
 == Accessing Rows and Columns
 
 The rows and columns of a matrix can be accessed using the `rowAt`
@@ -107,112 +176,6 @@ responds with:
       {
         "EOF": true,
         "RESPONSE_TIME": 0
-      }
-    ]
-  }
-}
-----
-
-== Row and Column Labels
-
-A matrix can have column and rows and labels. The functions
-`setRowLabels`, `setColumnLabels`, `getRowLabels` and `getColumnLabels`
-can be used to set and get the labels. The label values
-are set using string arrays.
-
-The example below sets the row and column labels. In other sections of the
-user guide examples are shown where functions return matrices
-with the labels already set.
-
-Below is a simple example of setting and
-getting row and column labels
-on a matrix.
-
-[source,text]
-----
-let(echo="d, e",
-    a=matrix(array(1, 2),
-             array(4, 5)),
-    b=setRowLabels(a, array("row0", "row1")),
-    c=setColumnLabels(b, array("col0", "col1")),
-    d=getRowLabels(c),
-    e=getColumnLabels(c))
-----
-
-When this expression is sent to the `/stream` handler it
-responds with:
-
-[source,json]
-----
-{
-  "result-set": {
-    "docs": [
-      {
-        "d": [
-          "row0",
-          "row1"
-        ],
-        "e": [
-          "col0",
-          "col1"
-        ]
-      },
-      {
-        "EOF": true,
-        "RESPONSE_TIME": 0
-      }
-    ]
-  }
-}
-----
-
-
-== Pair Sorting Vectors
-
-The `pairSort` function can be used to sort two vectors based on the values in
-the first vector. The sorting operation maintains the pairing between
-the two vectors during the sort.
-
-The `pairSort` function returns a matrix containing the
-pair sorted vectors. The first row in the matrix is the first vector,
-the second row in the matrix is the second vector.
-
-The individual vectors can then be accessed using the `rowAt` function.
-
-The example below performs a pair sort of two vectors and returns the
-matrix containing the sorted vectors.
-
-----
-let(a=array(10, 2, 1),
-    b=array(100, 200, 300),
-    c=pairSort(a, b))
-----
-
-When this expression is sent to the `/stream` handler it
-responds with:
-
-[source,json]
-----
-{
-  "result-set": {
-    "docs": [
-      {
-        "c": [
-          [
-            1,
-            2,
-            10
-          ],
-          [
-            300,
-            200,
-            100
-          ]
-        ]
-      },
-      {
-        "EOF": true,
-        "RESPONSE_TIME": 1
       }
     ]
   }
