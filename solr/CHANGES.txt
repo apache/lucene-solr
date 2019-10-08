@@ -143,6 +143,8 @@ New Features
 
 * SOLR-8241: Add CaffeineCache, an efficient implementation of SolrCache.(Ben Manes, Shawn Heisey, David Smiley, Andrzej Bialecki)
 
+* SOLR-13821: A Package store to store and load files (noble, ishan)
+
 Improvements
 ----------------------
 
