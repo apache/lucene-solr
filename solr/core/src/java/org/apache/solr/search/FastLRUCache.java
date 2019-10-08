@@ -140,6 +140,63 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
       statsList.add(new ConcurrentLRUCache.Stats());
     }
     statsList.add(cache.getStats());
+    cacheMap = new MetricsMap((detailed, map) -> {
+      if (cache != null) {
+        ConcurrentLRUCache.Stats stats = cache.getStats();
+        long lookups = stats.getCumulativeLookups();
+        long hits = stats.getCumulativeHits();
+        long inserts = stats.getCumulativePuts();
+        long evictions = stats.getCumulativeEvictions();
+        long idleEvictions = stats.getCumulativeIdleEvictions();
+        long size = stats.getCurrentSize();
+        long clookups = 0;
+        long chits = 0;
+        long cinserts = 0;
+        long cevictions = 0;
+        long cIdleEvictions = 0;
+
+        // NOTE: It is safe to iterate on a CopyOnWriteArrayList
+        for (ConcurrentLRUCache.Stats statistiscs : statsList) {
+          clookups += statistiscs.getCumulativeLookups();
+          chits += statistiscs.getCumulativeHits();
+          cinserts += statistiscs.getCumulativePuts();
+          cevictions += statistiscs.getCumulativeEvictions();
+          cIdleEvictions += statistiscs.getCumulativeIdleEvictions();
+        }
+
+        map.put(LOOKUPS_PARAM, lookups);
+        map.put(HITS_PARAM, hits);
+        map.put(HIT_RATIO_PARAM, calcHitRatio(lookups, hits));
+        map.put(INSERTS_PARAM, inserts);
+        map.put(EVICTIONS_PARAM, evictions);
+        map.put(SIZE_PARAM, size);
+        map.put("cleanupThread", cleanupThread);
+        map.put("idleEvictions", idleEvictions);
+        map.put(RAM_BYTES_USED_PARAM, ramBytesUsed());
+        map.put(MAX_RAM_MB_PARAM, getMaxRamMB());
+
+        map.put("warmupTime", warmupTime);
+        map.put("cumulative_lookups", clookups);
+        map.put("cumulative_hits", chits);
+        map.put("cumulative_hitratio", calcHitRatio(clookups, chits));
+        map.put("cumulative_inserts", cinserts);
+        map.put("cumulative_evictions", cevictions);
+        map.put("cumulative_idleEvictions", cIdleEvictions);
+
+        if (detailed && showItems != 0) {
+          Map items = cache.getLatestAccessedItems(showItems == -1 ? Integer.MAX_VALUE : showItems);
+          for (Map.Entry e : (Set<Map.Entry>) items.entrySet()) {
+            Object k = e.getKey();
+            Object v = e.getValue();
+
+            String ks = "item_" + k;
+            String vs = v.toString();
+            map.put(ks, vs);
+          }
+
+        }
+      }
+    });
     return statsList;
   }
 
@@ -256,66 +313,8 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K,V>,
   @Override
   public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
     registry = manager.registry(registryName);
-    cacheMap = new MetricsMap((detailed, map) -> {
-      if (cache != null) {
-        ConcurrentLRUCache.Stats stats = cache.getStats();
-        long lookups = stats.getCumulativeLookups();
-        long hits = stats.getCumulativeHits();
-        long inserts = stats.getCumulativePuts();
-        long evictions = stats.getCumulativeEvictions();
-        long idleEvictions = stats.getCumulativeIdleEvictions();
-        long size = stats.getCurrentSize();
-        long clookups = 0;
-        long chits = 0;
-        long cinserts = 0;
-        long cevictions = 0;
-        long cIdleEvictions = 0;
-
-        // NOTE: It is safe to iterate on a CopyOnWriteArrayList
-        for (ConcurrentLRUCache.Stats statistiscs : statsList) {
-          clookups += statistiscs.getCumulativeLookups();
-          chits += statistiscs.getCumulativeHits();
-          cinserts += statistiscs.getCumulativePuts();
-          cevictions += statistiscs.getCumulativeEvictions();
-          cIdleEvictions += statistiscs.getCumulativeIdleEvictions();
-        }
-
-        map.put(LOOKUPS_PARAM, lookups);
-        map.put(HITS_PARAM, hits);
-        map.put(HIT_RATIO_PARAM, calcHitRatio(lookups, hits));
-        map.put(INSERTS_PARAM, inserts);
-        map.put(EVICTIONS_PARAM, evictions);
-        map.put(SIZE_PARAM, size);
-        map.put("cleanupThread", cleanupThread);
-        map.put("idleEvictions", idleEvictions);
-        map.put(RAM_BYTES_USED_PARAM, ramBytesUsed());
-        map.put(MAX_RAM_MB_PARAM, getMaxRamMB());
-
-        map.put("warmupTime", warmupTime);
-        map.put("cumulative_lookups", clookups);
-        map.put("cumulative_hits", chits);
-        map.put("cumulative_hitratio", calcHitRatio(clookups, chits));
-        map.put("cumulative_inserts", cinserts);
-        map.put("cumulative_evictions", cevictions);
-        map.put("cumulative_idleEvictions", cIdleEvictions);
-
-        if (detailed && showItems != 0) {
-          Map items = cache.getLatestAccessedItems( showItems == -1 ? Integer.MAX_VALUE : showItems );
-          for (Map.Entry e : (Set <Map.Entry>)items.entrySet()) {
-            Object k = e.getKey();
-            Object v = e.getValue();
-
-            String ks = "item_" + k;
-            String vs = v.toString();
-            map.put(ks,vs);
-          }
-
-        }
-      }
-    });
     manager.registerGauge(this, registryName, cacheMap, tag, true, scope, getCategory().toString());
   }
-
 
   // for unit tests only
   MetricsMap getMetricsMap() {

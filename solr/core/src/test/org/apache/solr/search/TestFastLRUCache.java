@@ -54,14 +54,14 @@ public class TestFastLRUCache extends SolrTestCase {
 
   public void testPercentageAutowarm() throws IOException {
     FastLRUCache<Object, Object> fastCache = new FastLRUCache<>();
-    fastCache.initializeMetrics(metricManager, registry, "foo", scope);
-    MetricsMap metrics = fastCache.getMetricsMap();
     Map<String, String> params = new HashMap<>();
     params.put("size", "100");
     params.put("initialSize", "10");
     params.put("autowarmCount", "100%");
     CacheRegenerator cr = new NoOpRegenerator();
     Object o = fastCache.init(params, null, cr);
+    fastCache.initializeMetrics(metricManager, registry, "foo", scope);
+    MetricsMap metrics = fastCache.getMetricsMap();
     fastCache.setState(SolrCache.State.LIVE);
     for (int i = 0; i < 101; i++) {
       fastCache.put(i + 1, "" + (i + 1));
@@ -74,9 +74,9 @@ public class TestFastLRUCache extends SolrTestCase {
     assertEquals(101L, nl.get("inserts"));
     assertEquals(null, fastCache.get(1));  // first item put in should be the first out
     FastLRUCache<Object, Object> fastCacheNew = new FastLRUCache<>();
+    fastCacheNew.init(params, o, cr);
     fastCacheNew.initializeMetrics(metricManager, registry, "foo", scope);
     metrics = fastCacheNew.getMetricsMap();
-    fastCacheNew.init(params, o, cr);
     fastCacheNew.warm(null, fastCache);
     fastCacheNew.setState(SolrCache.State.LIVE);
     fastCache.close();
@@ -104,21 +104,21 @@ public class TestFastLRUCache extends SolrTestCase {
   
   private void doTestPercentageAutowarm(int limit, int percentage, int[] hits, int[]misses) {
     FastLRUCache<Object, Object> fastCache = new FastLRUCache<>();
-    fastCache.initializeMetrics(metricManager, registry, "foo", scope);
     Map<String, String> params = new HashMap<>();
     params.put("size", String.valueOf(limit));
     params.put("initialSize", "10");
     params.put("autowarmCount", percentage + "%");
     CacheRegenerator cr = new NoOpRegenerator();
     Object o = fastCache.init(params, null, cr);
+    fastCache.initializeMetrics(metricManager, registry, "foo", scope);
     fastCache.setState(SolrCache.State.LIVE);
     for (int i = 1; i <= limit; i++) {
       fastCache.put(i, "" + i);//adds numbers from 1 to 100
     }
 
     FastLRUCache<Object, Object> fastCacheNew = new FastLRUCache<>();
-    fastCacheNew.initializeMetrics(metricManager, registry, "foo", scope);
     fastCacheNew.init(params, o, cr);
+    fastCacheNew.initializeMetrics(metricManager, registry, "foo", scope);
     fastCacheNew.warm(null, fastCache);
     fastCacheNew.setState(SolrCache.State.LIVE);
     fastCache.close();
@@ -138,12 +138,12 @@ public class TestFastLRUCache extends SolrTestCase {
   
   public void testNoAutowarm() throws IOException {
     FastLRUCache<Object, Object> fastCache = new FastLRUCache<>();
-    fastCache.initializeMetrics(metricManager, registry, "foo", scope);
     Map<String, String> params = new HashMap<>();
     params.put("size", "100");
     params.put("initialSize", "10");
     CacheRegenerator cr = new NoOpRegenerator();
     Object o = fastCache.init(params, null, cr);
+    fastCache.initializeMetrics(metricManager, registry, "foo", scope);
     fastCache.setState(SolrCache.State.LIVE);
     for (int i = 0; i < 101; i++) {
       fastCache.put(i + 1, "" + (i + 1));
@@ -198,13 +198,13 @@ public class TestFastLRUCache extends SolrTestCase {
   
   public void testSimple() throws IOException {
     FastLRUCache sc = new FastLRUCache();
-    sc.initializeMetrics(metricManager, registry, "foo", scope);
     Map l = new HashMap();
     l.put("size", "100");
     l.put("initialSize", "10");
     l.put("autowarmCount", "25");
     CacheRegenerator cr = new NoOpRegenerator();
     Object o = sc.init(l, null, cr);
+    sc.initializeMetrics(metricManager, registry, "foo", scope);
     sc.setState(SolrCache.State.LIVE);
     for (int i = 0; i < 101; i++) {
       sc.put(i + 1, "" + (i + 1));
@@ -221,8 +221,8 @@ public class TestFastLRUCache extends SolrTestCase {
 
 
     FastLRUCache scNew = new FastLRUCache();
-    scNew.initializeMetrics(metricManager, registry, "foo", scope);
     scNew.init(l, o, cr);
+    scNew.initializeMetrics(metricManager, registry, "foo", scope);
     scNew.warm(null, sc);
     scNew.setState(SolrCache.State.LIVE);
     sc.close();
@@ -307,13 +307,13 @@ public class TestFastLRUCache extends SolrTestCase {
   public void testAccountable() {
     FastLRUCache<Query, DocSet> sc = new FastLRUCache<>();
     try {
-      sc.initializeMetrics(metricManager, registry, "foo", scope);
       Map l = new HashMap();
       l.put("size", "100");
       l.put("initialSize", "10");
       l.put("autowarmCount", "25");
       CacheRegenerator cr = new NoOpRegenerator();
       Object o = sc.init(l, null, cr);
+      sc.initializeMetrics(metricManager, registry, "foo", scope);
       sc.setState(SolrCache.State.LIVE);
       long initialBytes = sc.ramBytesUsed();
       WildcardQuery q = new WildcardQuery(new Term("foo", "bar"));
@@ -334,12 +334,12 @@ public class TestFastLRUCache extends SolrTestCase {
 
   public void testSetLimits() throws Exception {
     FastLRUCache<String, Accountable> cache = new FastLRUCache<>();
-    cache.initializeMetrics(metricManager, registry, "foo", scope);
     Map<String, String> params = new HashMap<>();
     params.put("size", "6");
     params.put("maxRamMB", "8");
     CacheRegenerator cr = new NoOpRegenerator();
     Object o = cache.init(params, null, cr);
+    cache.initializeMetrics(metricManager, registry, "foo", scope);
     for (int i = 0; i < 6; i++) {
       cache.put("" + i, new Accountable() {
         @Override

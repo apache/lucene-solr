@@ -498,6 +498,14 @@
     </analyzer>
   </fieldType>
   <fieldType name="severityType" class="${solr.tests.EnumFieldType}" enumsConfig="enumsConfig.xml" enumName="severity"/>
+  
+  <fieldType name="binary" class="solr.BinaryField" />
+  <fieldType name="collation" class="solr.CollationField" language="en" />
+  <fieldType name="externalFile" class="solr.ExternalFileField" />
+  <fieldType name="icuCollation" class="solr.ICUCollationField" locale="en" />
+  <fieldType name="latLonPointSpatial" class="solr.LatLonPointSpatialField" />
+  <fieldType name="randomSort" class="solr.RandomSortField" />
+  <fieldType name="point" class="solr.PointType" subFieldSuffix="_coordinate" />
 
   <fieldType name="sortable_text" class="solr.SortableTextField">
     <analyzer>
@@ -631,6 +639,28 @@
   <field name="intRemove" type="int" indexed="true" stored="true" multiValued="true"/>
   <field name="dateRemove" type="date" indexed="true" stored="true" multiValued="true"/>
   <field name="floatRemove" type="float" indexed="true" stored="true" multiValued="true"/>
+
+  <field name="binaryRemove" type="binary" indexed="true" stored="true" multiValued="true"/>
+  <field name="booleanRemove" type="boolean" indexed="true" stored="true" multiValued="true"/>
+  <field name="collationRemove" type="collation" indexed="true" stored="true" multiValued="true"/>
+  <field name="datePointRemove" type="pdate" indexed="true" stored="true" multiValued="true"/>
+  <field name="dateRangeRemove" type="dateRange" indexed="true" stored="true" multiValued="true"/>
+  <field name="doublePointRemove" type="pdouble" indexed="true" stored="true" multiValued="true"/>
+  <field name="externalFileRemove" type="externalFile" indexed="true" stored="true" multiValued="true"/>
+  <field name="floatPointRemove" type="pfloat" indexed="true" stored="true" multiValued="true"/>
+  <field name="icuCollationRemove" type="icuCollation" indexed="true" stored="true" multiValued="true"/>
+  <field name="intPointRemove" type="pint" indexed="true" stored="true" multiValued="true"/>
+  <field name="latLonPointSpatialRemove" type="latLonPointSpatial" indexed="true" stored="true" multiValued="true"/>
+  <field name="latLonRemove" type="location" indexed="true" stored="true" multiValued="true"/>
+  <field name="longPointRemove" type="plong" indexed="true" stored="true" multiValued="true"/>
+  <field name="point_0_coordinate" type="float" indexed="true" stored="true" multiValued="true"/>
+  <field name="point_1_coordinate" type="float" indexed="true" stored="true" multiValued="true"/>
+  <field name="pointRemove" type="point" indexed="true" stored="true" multiValued="true"/>
+  <field name="randomSortRemove" type="randomSort" indexed="true" stored="true" multiValued="true"/>
+  <field name="spatialRecursivePrefixTreeRemove" type="location_rpt" indexed="true" stored="true" multiValued="true"/>
+  <field name="stringRemove" type="string" indexed="true" stored="true" multiValued="true"/>
+  <field name="textRemove" type="text" indexed="true" stored="true" multiValued="true"/>
+  <field name="uuidRemove" type="uuid" indexed="true" stored="true" multiValued="true"/>
 
   <field name="nopositionstext" type="nopositions" indexed="true" stored="true"/>
 
