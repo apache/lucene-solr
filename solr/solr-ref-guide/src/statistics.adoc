@@ -408,11 +408,11 @@ Finally the `zplot` function is used to plot the correlation matrix as a heat ma
 
 image::images/math-expressions/corrmatrix.png[]
 
-Notice in the example the correlation is square with complaint types shown on both
-the *x* and *y* axises. The color of the cells in the heatmap shows the
+Notice in the example the correlation matrix is square with complaint types shown on both
+the *x* and *y* axises. The color of the cells in the heat map shows the
 intensity of the correlation between the complaint types.
 
-The heatmap is interactive, so mousing over one of the high intensity cells pops up the values
+The heat map is interactive, so mousing over one of the cells pops up the values
 for the cell.
 
 image::images/math-expressions/corrmatrix2.png[]
