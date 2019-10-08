@@ -134,7 +134,7 @@ matrices described later in the guide.
 The example below shows a 2x2 matrix visualized using the heat map
 visualization in Apache Zeppelin.
 
-NOTE: In the visualization below the rows are read from the *bottom* up, which is the common convention for heat maps.
+NOTE: In the visualization below the rows are read from the *bottom* up, which is a common convention for heat maps.
 
 image::images/math-expressions/matrix.png[]
 
