@@ -49,7 +49,6 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.params.DisMaxParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.parser.QueryParser;
@@ -62,6 +61,8 @@ import org.apache.solr.util.SolrPluginUtils;
 
 import com.google.common.collect.Multimap;
 import com.google.common.collect.Multimaps;
+
+import static org.apache.solr.common.params.ExtendedDisMaxParams.*;
 
 /**
  * Query parser that generates DisjunctionMaxQueries based on user configuration.
@@ -78,11 +79,6 @@ public class ExtendedDismaxQParser extends QParser {
 
   /** shorten the class references for utilities */
   private static class U extends SolrPluginUtils {
-    /* :NOOP */
-  }
-  
-  /** shorten the class references for utilities */
-  private static interface DMP extends DisMaxParams {
     /* :NOOP */
   }
   
@@ -390,7 +386,7 @@ public class ExtendedDismaxQParser extends QParser {
       String mmSpec = config.minShouldMatch;
 
       if (foundOperators(clauses, config.lowercaseOperators)) {
-        mmSpec = params.get(DisMaxParams.MM, "0%"); // Use provided mm spec if present, otherwise turn off mm processing
+        mmSpec = params.get(MM, "0%"); // Use provided mm spec if present, otherwise turn off mm processing
       }
       query = SolrPluginUtils.setMinShouldMatch((BooleanQuery)query, mmSpec, config.mmAutoRelax);
     }
@@ -679,7 +675,7 @@ public class ExtendedDismaxQParser extends QParser {
       debugInfo.add("parsed_boost_queries",
           QueryParsing.toString(boostQueries, getReq().getSchema()));
     }
-    debugInfo.add("boostfuncs", getReq().getParams().getParams(DisMaxParams.BF));
+    debugInfo.add("boostfuncs", getReq().getParams().getParams(BF));
   }
 
   protected static class Clause {
@@ -1670,7 +1666,7 @@ public class ExtendedDismaxQParser extends QParser {
       solrParams = SolrParams.wrapDefaults(localParams, params);
       schema = req.getSchema();
       minShouldMatch = DisMaxQParser.parseMinShouldMatch(schema, solrParams); // req.getSearcher() here causes searcher refcount imbalance
-      userFields = new UserFields(U.parseFieldBoosts(solrParams.getParams(DMP.UF)));
+      userFields = new UserFields(U.parseFieldBoosts(solrParams.getParams(UF)));
       try {
         queryFields = DisMaxQParser.parseQueryFields(schema, solrParams);  // req.getSearcher() here causes searcher refcount imbalance
       } catch (SyntaxError e) {
@@ -1678,37 +1674,37 @@ public class ExtendedDismaxQParser extends QParser {
       }
       // Phrase slop array
       int pslop[] = new int[4];
-      pslop[0] = solrParams.getInt(DisMaxParams.PS, 0);
-      pslop[2] = solrParams.getInt(DisMaxParams.PS2, pslop[0]);
-      pslop[3] = solrParams.getInt(DisMaxParams.PS3, pslop[0]);
+      pslop[0] = solrParams.getInt(PS, 0);
+      pslop[2] = solrParams.getInt(PS2, pslop[0]);
+      pslop[3] = solrParams.getInt(PS3, pslop[0]);
       
-      List<FieldParams> phraseFields = U.parseFieldBoostsAndSlop(solrParams.getParams(DMP.PF),0,pslop[0]);
-      List<FieldParams> phraseFields2 = U.parseFieldBoostsAndSlop(solrParams.getParams(DMP.PF2),2,pslop[2]);
-      List<FieldParams> phraseFields3 = U.parseFieldBoostsAndSlop(solrParams.getParams(DMP.PF3),3,pslop[3]);
+      List<FieldParams> phraseFields = U.parseFieldBoostsAndSlop(solrParams.getParams(PF),0,pslop[0]);
+      List<FieldParams> phraseFields2 = U.parseFieldBoostsAndSlop(solrParams.getParams(PF2),2,pslop[2]);
+      List<FieldParams> phraseFields3 = U.parseFieldBoostsAndSlop(solrParams.getParams(PF3),3,pslop[3]);
       
       allPhraseFields = new ArrayList<>(phraseFields.size() + phraseFields2.size() + phraseFields3.size());
       allPhraseFields.addAll(phraseFields);
       allPhraseFields.addAll(phraseFields2);
       allPhraseFields.addAll(phraseFields3);
       
-      tiebreaker = solrParams.getFloat(DisMaxParams.TIE, 0.0f);
+      tiebreaker = solrParams.getFloat(TIE, 0.0f);
       
-      qslop = solrParams.getInt(DisMaxParams.QS, 0);
+      qslop = solrParams.getInt(QS, 0);
       
-      stopwords = solrParams.getBool(DMP.STOPWORDS, true);
+      stopwords = solrParams.getBool(STOPWORDS, true);
 
-      mmAutoRelax = solrParams.getBool(DMP.MM_AUTORELAX, false);
+      mmAutoRelax = solrParams.getBool(MM_AUTORELAX, false);
       
-      altQ = solrParams.get( DisMaxParams.ALTQ );
+      altQ = solrParams.get( ALTQ );
 
-      lowercaseOperators = solrParams.getBool(DMP.LOWERCASE_OPS, false);
+      lowercaseOperators = solrParams.getBool(LOWERCASE_OPS, false);
       
       /* * * Boosting Query * * */
-      boostParams = solrParams.getParams(DisMaxParams.BQ);
+      boostParams = solrParams.getParams(BQ);
       
-      boostFuncs = solrParams.getParams(DisMaxParams.BF);
+      boostFuncs = solrParams.getParams(BF);
       
-      multBoosts = solrParams.getParams(DMP.MULT_BOOST);
+      multBoosts = solrParams.getParams(MULT_BOOST);
 
       splitOnWhitespace = solrParams.getBool(QueryParsing.SPLIT_ON_WHITESPACE, SolrQueryParser.DEFAULT_SPLIT_ON_WHITESPACE);
     }
