@@ -95,7 +95,7 @@ public class Utils {
   public static final Function NEW_SYNCHRONIZED_ARRAYLIST_FUN = o -> Collections.synchronizedList(new ArrayList<>());
   public static final Function NEW_HASHSET_FUN = o -> new HashSet<>();
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
   public static Map getDeepCopy(Map map, int maxDepth) {
     return getDeepCopy(map, maxDepth, true, false);
   }
@@ -105,17 +105,17 @@ public class Utils {
   }
 
   public static Map getDeepCopy(Map map, int maxDepth, boolean mutable, boolean sorted) {
-    if(map == null) return null;
+    if (map == null) return null;
     if (maxDepth < 1) return map;
     Map copy;
     if (sorted) {
       copy = new TreeMap();
     } else {
-      copy = map instanceof LinkedHashMap?  new LinkedHashMap(map.size()): new HashMap(map.size());
+      copy = map instanceof LinkedHashMap ? new LinkedHashMap(map.size()) : new HashMap(map.size());
     }
     for (Object o : map.entrySet()) {
       Map.Entry e = (Map.Entry) o;
-      copy.put(e.getKey(), makeDeepCopy(e.getValue(),maxDepth, mutable, sorted));
+      copy.put(e.getKey(), makeDeepCopy(e.getValue(), maxDepth, mutable, sorted));
     }
     return mutable ? copy : Collections.unmodifiableMap(copy);
   }
@@ -155,7 +155,7 @@ public class Utils {
     } else if (v instanceof IteratorWriter && maxDepth > 1) {
       v = ((IteratorWriter) v).toList(new ArrayList<>());
       if (sorted) {
-        Collections.sort((List)v);
+        Collections.sort((List) v);
       }
     }
 
@@ -170,8 +170,8 @@ public class Utils {
   public static InputStream toJavabin(Object o) throws IOException {
     try (final JavaBinCodec jbc = new JavaBinCodec()) {
       BinaryRequestWriter.BAOS baos = new BinaryRequestWriter.BAOS();
-      jbc.marshal(o,baos);
-      return new ByteBufferInputStream(ByteBuffer.wrap(baos.getbuf(),0,baos.size()));
+      jbc.marshal(o, baos);
+      return new ByteBufferInputStream(ByteBuffer.wrap(baos.getbuf(), 0, baos.size()));
     }
   }
 
@@ -182,10 +182,10 @@ public class Utils {
   public static Collection getDeepCopy(Collection c, int maxDepth, boolean mutable, boolean sorted) {
     if (c == null || maxDepth < 1) return c;
     Collection result = c instanceof Set ?
-        ( sorted? new TreeSet() : new HashSet()) : new ArrayList();
+        (sorted ? new TreeSet() : new HashSet()) : new ArrayList();
     for (Object o : c) result.add(makeDeepCopy(o, maxDepth, mutable, sorted));
     if (sorted && (result instanceof List)) {
-      Collections.sort((List)result);
+      Collections.sort((List) result);
     }
     return mutable ? result : result instanceof Set ? unmodifiableSet((Set) result) : unmodifiableList((List) result);
   }
@@ -212,7 +212,7 @@ public class Utils {
     @Override
     public void handleUnknownClass(Object o) {
       if (o instanceof MapWriter) {
-        Map m = ((MapWriter)o).toMap(new LinkedHashMap<>());
+        Map m = ((MapWriter) o).toMap(new LinkedHashMap<>());
         write(m);
       } else {
         super.handleUnknownClass(o);
@@ -221,13 +221,13 @@ public class Utils {
   }
 
   public static byte[] toJSON(Object o) {
-    if(o == null) return new byte[0];
+    if (o == null) return new byte[0];
     CharArr out = new CharArr();
     if (!(o instanceof List) && !(o instanceof Map)) {
-      if (o instanceof MapWriter)  {
-        o = ((MapWriter)o).toMap(new LinkedHashMap<>());
-      } else if(o instanceof IteratorWriter){
-        o = ((IteratorWriter)o).toList(new ArrayList<>());
+      if (o instanceof MapWriter) {
+        o = ((MapWriter) o).toMap(new LinkedHashMap<>());
+      } else if (o instanceof IteratorWriter) {
+        o = ((IteratorWriter) o).toList(new ArrayList<>());
       }
     }
     new MapWriterJSONWriter(out, 2).write(o); // indentation by default
@@ -278,10 +278,11 @@ public class Utils {
     return propMap;
   }
 
-  public static Object fromJSON(InputStream is){
+  public static Object fromJSON(InputStream is) {
     return fromJSON(new InputStreamReader(is, UTF_8));
   }
-  public static Object fromJSON(Reader is){
+
+  public static Object fromJSON(Reader is) {
     try {
       return STANDARDOBJBUILDER.apply(getJSONParser(is)).getVal();
     } catch (IOException e) {
@@ -299,7 +300,7 @@ public class Utils {
   };
   public static final Function<JSONParser, ObjectBuilder> MAPWRITEROBJBUILDER = jsonParser -> {
     try {
-      return new ObjectBuilder(jsonParser){
+      return new ObjectBuilder(jsonParser) {
         @Override
         public Object newObject() {
           return new LinkedHashMapWriter();
@@ -312,7 +313,7 @@ public class Utils {
 
   public static final Function<JSONParser, ObjectBuilder> MAPOBJBUILDER = jsonParser -> {
     try {
-      return new ObjectBuilder(jsonParser){
+      return new ObjectBuilder(jsonParser) {
         @Override
         public Object newObject() {
           return new HashMap();
@@ -340,10 +341,11 @@ public class Utils {
       return fromJSON(stream);
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                              "Resource error: " + e.getMessage(), e);
+          "Resource error: " + e.getMessage(), e);
     }
   }
-  public static JSONParser getJSONParser(Reader reader){
+
+  public static JSONParser getJSONParser(Reader reader) {
     JSONParser parser = new JSONParser(reader);
     parser.setFlags(parser.getFlags() |
         JSONParser.ALLOW_MISSING_COLON_COMMA_BEFORE_OBJECT |
@@ -351,11 +353,11 @@ public class Utils {
     return parser;
   }
 
-  public static Object fromJSONString(String json)  {
+  public static Object fromJSONString(String json) {
     try {
       return STANDARDOBJBUILDER.apply(getJSONParser(new StringReader(json))).getVal();
     } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parse error : "+ json, e );
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parse error : " + json, e);
     }
   }
 
@@ -428,8 +430,8 @@ public class Utils {
 
 
   public static Object getObjectByPath(Object root, boolean onlyPrimitive, List<String> hierarchy) {
-    if(root == null) return null;
-    if(!isMapLike(root)) return null;
+    if (root == null) return null;
+    if (!isMapLike(root)) return null;
     Object obj = root;
     for (int i = 0; i < hierarchy.size(); i++) {
       int idx = -1;
@@ -522,6 +524,7 @@ public class Utils {
       try {
         ((MapWriter) obj).writeMap(new MapWriter.EntryWriter() {
           int count = -1;
+
           @Override
           public MapWriter.EntryWriter put(CharSequence k, Object v) {
             if (result[0] != null) return this;
@@ -537,15 +540,14 @@ public class Utils {
         throw new RuntimeException(e);
       }
       return result[0];
-    }
-    else if (obj instanceof Map) return ((Map) obj).get(key);
+    } else if (obj instanceof Map) return ((Map) obj).get(key);
     else throw new RuntimeException("must be a NamedList or Map");
   }
 
   /**
    * If the passed entity has content, make sure it is fully
    * read and closed.
-   * 
+   *
    * @param entity to consume or null
    */
   public static void consumeFully(HttpEntity entity) {
@@ -566,13 +568,14 @@ public class Utils {
 
   /**
    * Make sure the InputStream is fully read.
-   * 
+   *
    * @param is to read
    * @throws IOException on problem with IO
    */
   private static void readFully(InputStream is) throws IOException {
     is.skip(is.available());
-    while (is.read() != -1) {}
+    while (is.read() != -1) {
+    }
   }
 
   public static Map<String, Object> getJson(DistribStateManager distribStateManager, String path) throws InterruptedException, IOException, KeeperException {
@@ -589,8 +592,8 @@ public class Utils {
   /**
    * Assumes data in ZooKeeper is a JSON string, deserializes it and returns as a Map
    *
-   * @param zkClient the zookeeper client
-   * @param path the path to the znode being read
+   * @param zkClient        the zookeeper client
+   * @param path            the path to the znode being read
    * @param retryOnConnLoss whether to retry the operation automatically on connection loss, see {@link org.apache.solr.common.cloud.ZkCmdExecutor#retryOperation(ZkOperation)}
    * @return a Map if the node exists and contains valid JSON or an empty map if znode does not exist or has a null data
    */
@@ -634,11 +637,12 @@ public class Utils {
     }
   }
 
-  /**Applies one json over other. The 'input' is applied over the sink
+  /**
+   * Applies one json over other. The 'input' is applied over the sink
    * The values in input isapplied over the values in 'sink' . If a value is 'null'
    * that value is removed from sink
    *
-   * @param sink the original json object to start with. Ensure that this Map is mutable
+   * @param sink  the original json object to start with. Ensure that this Map is mutable
    * @param input the json with new values
    * @return whether there was any change made to sink or not.
    */
@@ -681,9 +685,9 @@ public class Utils {
     if (_offset < 0) {
       throw new IllegalArgumentException("nodeName does not contain expected '_' separator: " + nodeName);
     }
-    final String hostAndPort = nodeName.substring(0,_offset);
+    final String hostAndPort = nodeName.substring(0, _offset);
     try {
-      final String path = URLDecoder.decode(nodeName.substring(1+_offset), "UTF-8");
+      final String path = URLDecoder.decode(nodeName.substring(1 + _offset), "UTF-8");
       return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + path));
     } catch (UnsupportedEncodingException e) {
       throw new IllegalStateException("JVM Does not seem to support UTF-8", e);
@@ -725,7 +729,8 @@ public class Utils {
 
   public static final InputStreamConsumer<?> JAVABINCONSUMER = is -> new JavaBinCodec().unmarshal(is);
   public static final InputStreamConsumer<?> JSONCONSUMER = is -> Utils.fromJSON(is);
-  public static InputStreamConsumer<ByteBuffer> newBytesConsumer(int maxSize){
+
+  public static InputStreamConsumer<ByteBuffer> newBytesConsumer(int maxSize) {
     return is -> {
       try (BinaryRequestWriter.BAOS bos = new BinaryRequestWriter.BAOS()) {
         long sz = 0;
@@ -736,15 +741,13 @@ public class Utils {
           next = is.read();
         }
         bos.flush();
-        return ByteBuffer.wrap( bos.getbuf(), 0, bos.size());
+        return ByteBuffer.wrap(bos.getbuf(), 0, bos.size());
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
     };
 
   }
-
-
 
 
   public static <T> T executeGET(HttpClient client, String url, InputStreamConsumer<T> consumer) throws SolrException {
@@ -754,22 +757,22 @@ public class Utils {
     try {
       rsp = client.execute(httpGet);
     } catch (IOException e) {
-      log.error("Error in request to url : "+ url, e);
+      log.error("Error in request to url : " + url, e);
       throw new SolrException(SolrException.ErrorCode.UNKNOWN, "error sending request");
     }
     int statusCode = rsp.getStatusLine().getStatusCode();
-    if(statusCode != 200) {
+    if (statusCode != 200) {
       try {
-        log.error("Failed a request to : {} ,  status :{}  body {}",url, rsp.getStatusLine(),  EntityUtils.toString(rsp.getEntity(), StandardCharsets.UTF_8));
+        log.error("Failed a request to : {} ,  status :{}  body {}", url, rsp.getStatusLine(), EntityUtils.toString(rsp.getEntity(), StandardCharsets.UTF_8));
       } catch (IOException e) {
         log.error("could not print error", e);
       }
       throw new SolrException(SolrException.ErrorCode.getErrorCode(statusCode), "Unknown error");
     }
     HttpEntity entity = rsp.getEntity();
-    try{
+    try {
       InputStream is = entity.getContent();
-      if(consumer != null) {
+      if (consumer != null) {
 
         result = consumer.accept(is);
       }
