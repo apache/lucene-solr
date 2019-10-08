@@ -30,8 +30,9 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.filestore.PackageStoreAPI.MetaData;
 import org.apache.zookeeper.server.ByteBufferInputStream;
 
-/** The interface to be implemented by any package store provider
- *  * @lucene.experimental
+/**
+ * The interface to be implemented by any package store provider
+ * * @lucene.experimental
  */
 public interface PackageStore {
 
@@ -49,7 +50,6 @@ public interface PackageStore {
   /**
    * Fetch a resource from another node
    * internal
-   *
    */
   boolean fetch(String path, String from);
 
@@ -76,19 +76,19 @@ public interface PackageStore {
       this.path = path;
     }
 
-    public String getPath(){
+    public String getPath() {
       return path;
     }
 
 
-
     public InputStream getInputStream() {
-      if(buf != null) return new ByteBufferInputStream(buf);
+      if (buf != null) return new ByteBufferInputStream(buf);
       return null;
 
     }
 
-    /**For very large files , only a stream would be available
+    /**
+     * For very large files , only a stream would be available
      * This method would return null;
      */
     public ByteBuffer getBuffer() {
@@ -96,7 +96,7 @@ public interface PackageStore {
 
     }
 
-    public MetaData getMetaData(){
+    public MetaData getMetaData() {
       return meta;
     }
 
@@ -107,7 +107,7 @@ public interface PackageStore {
     FILE, DIRECTORY, NOFILE, METADATA
   }
 
-  interface  FileDetails extends MapWriter {
+  interface FileDetails extends MapWriter {
 
     MetaData getMetaData();
 
@@ -116,8 +116,7 @@ public interface PackageStore {
     boolean isDir();
 
 
-    }
-
+  }
 
 
 }
