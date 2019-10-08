@@ -265,6 +265,8 @@ Bug Fixes
 
 * SOLR-13790: LRUStatsCache size explosion and ineffective caching. (ab)
 
+* SOLR-13376: Multi-node race condition to create/remove nodeLost markers. (hoss, ab)
+
 Other Changes
 ----------------------
 
