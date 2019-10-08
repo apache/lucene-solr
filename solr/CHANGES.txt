@@ -81,6 +81,8 @@ New Features
 
 * SOLR-13821: A Package store to store and load package artefacts (noble, Ishan Chattopadhyaya)
 
+* SOLR-13298: Allow zplot to plot matrices (Joel Bernstein)
+
 Improvements
 ----------------------
 
