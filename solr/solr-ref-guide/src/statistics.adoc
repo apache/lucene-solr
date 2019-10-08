@@ -385,7 +385,7 @@ Correlation matrices are powerful tools for visualizing the correlation between 
 vectors.
 
 The `corr` function builds a correlation matrix
-if a matrix is passed as a parameter. The correlation matrix is computed by correlating the *columns*
+if a matrix is passed as the parameter. The correlation matrix is computed by correlating the *columns*
 of the matrix.
 
 The example below demonstrates the power of correlation matrices combined with 2 dimensional faceting.
