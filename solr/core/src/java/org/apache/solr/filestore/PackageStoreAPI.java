@@ -139,7 +139,7 @@ public class PackageStoreAPI {
                          ByteBuffer buf) throws SolrException {
       Map<String, byte[]> keys = CloudUtil.getTrustedKeys(
           coreContainer.getZkController().getZkClient(), "exe");
-      if(keys == null || keys.isEmpty()){
+      if (keys == null || keys.isEmpty()) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "ZK does not have any keys");
       }
@@ -151,9 +151,9 @@ public class PackageStoreAPI {
             "Error parsing public keyts in ZooKeeper");
       }
       for (String sig : sigs) {
-       if(cryptoKeys.verify(sig, buf) == null){
-         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Signature does not match any public key : " +sig );
-       }
+        if (cryptoKeys.verify(sig, buf) == null) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Signature does not match any public key : " + sig);
+        }
 
       }
     }
@@ -178,7 +178,7 @@ public class PackageStoreAPI {
           } catch (Exception e) {
             log.error("Failed to download file: " + pathCopy, e);
           }
-          log.info("downloaded file : {}", pathCopy);
+          log.info("downloaded file: {}", pathCopy);
         });
         return;
 
@@ -219,7 +219,7 @@ public class PackageStoreAPI {
           try {
             org.apache.commons.io.IOUtils.copy(it.getInputStream(), os);
           } catch (IOException e) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "error reading file" + path);
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error reading file" + path);
           }
         });
 
