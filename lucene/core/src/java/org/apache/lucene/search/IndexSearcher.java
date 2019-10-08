@@ -187,9 +187,6 @@ public class IndexSearcher {
    *  If a task is rejected by the host Executor, the failed task
    *  will then be executed on the caller thread. This is done to
    *  ensure that a query succeeds, albeit with a higher latency.
-   *  If a user wishes to modify the said behaviour, they can either
-   *  handle the exception in the provided Executor, or override
-   *  the said method in a custom extension of IndexSearcher.
    *  NOTE:
    *  if you are using {@link NIOFSDirectory}, do not use
    *  the shutdownNow method of ExecutorService as this uses

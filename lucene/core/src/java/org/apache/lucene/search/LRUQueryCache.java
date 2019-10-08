@@ -749,7 +749,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
             }
           }
 
-          if (cacheSynchronously || !asyncCachingSucceeded) {
+          if (cacheSynchronously || asyncCachingSucceeded == false) {
             docIdSet = cache(context);
             putIfAbsent(in.getQuery(), docIdSet, cacheHelper);
           }
@@ -870,8 +870,11 @@ public class LRUQueryCache implements QueryCache, Accountable {
     // @return true if asynchronous caching succeeded, false otherwise
     private boolean cacheAsynchronously(LeafReaderContext context, IndexReader.CacheHelper cacheHelper) {
       FutureTask<Void> task = new FutureTask<>(() -> {
-        DocIdSet localDocIdSet = cache(context);
-        putIfAbsent(in.getQuery(), localDocIdSet, cacheHelper);
+        // If the reader is being closed -- do nothing
+        if (context.reader().tryIncRef()) {
+          DocIdSet localDocIdSet = cache(context);
+          putIfAbsent(in.getQuery(), localDocIdSet, cacheHelper);
+        }
 
         return null;
       });
