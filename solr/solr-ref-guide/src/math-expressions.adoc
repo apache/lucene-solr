@@ -60,6 +60,6 @@ image::images/math-expressions/searchiris.png[]
 
 *<<simulations.adoc#simulations,Simulations>>*: Monte Carlo simulations and random walks
 
-*<<machine-learning.adoc#machine-learning,Machine Learning>>*: Distance, KNN, KNN regression, K-means and fuzzy K-means and other ML functions.
+*<<machine-learning.adoc#machine-learning,Machine Learning>>*: Distance, KNN, KNN regression, K-means, fuzzy K-means and other ML functions.
 
 *<<computational-geometry.adoc#computational-geometry,Computational Geometry>>*: Convex Hulls and Enclosing Disks.
