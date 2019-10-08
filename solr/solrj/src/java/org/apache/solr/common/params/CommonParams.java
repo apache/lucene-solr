@@ -296,5 +296,8 @@ public interface CommonParams {
 
   String JAVABIN_MIME = "application/javabin";
 
+  String FILE = "file";
+  String FILES = "files";
+
 }
 
