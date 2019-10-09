@@ -370,13 +370,14 @@ public final class ICUTransformCharFilter extends BaseCharFilter {
     len = Math.min(position.start - outputCursor, len);
     buffer.getChars(outputCursor, outputCursor + len, cbuf, begin);
     outputCursor += len;
-    if (outputCursor > BUFFER_PRUNE_THRESHOLD) {
-      buffer.delete(0, outputCursor);
-      position.contextStart -= outputCursor;
-      position.start -= outputCursor;
-      position.limit -= outputCursor;
-      position.contextLimit -= outputCursor;
-      outputCursor = 0;
+    if (outputCursor > BUFFER_PRUNE_THRESHOLD && position.contextStart > BUFFER_PRUNE_THRESHOLD) {
+      final int pruneSize = Math.min(outputCursor, position.contextStart);
+      buffer.delete(0, pruneSize);
+      position.contextStart -= pruneSize;
+      position.start -= pruneSize;
+      position.limit -= pruneSize;
+      position.contextLimit -= pruneSize;
+      outputCursor -= pruneSize;
     }
     return len;
   }
