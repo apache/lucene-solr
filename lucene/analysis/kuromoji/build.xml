@@ -32,23 +32,37 @@
   <import file="../analysis-module-build.xml"/> 
 
   <!-- default configuration: uses mecab-ipadic -->
-  <property name="ipadic.type" value="ipadic"/>
-  <property name="ipadic.version" value="mecab-ipadic-2.7.0-20070801" />
+  <property name="dict.type" value="ipadic"/>
+  <property name="dict.version" value="mecab-ipadic-2.7.0-20070801" />
+  <property name="dict.is.ipadic" value="true"/>
 
   <!-- alternative configuration: uses mecab-naist-jdic
-  <property name="ipadic.type" value="naist"/>
-  <property name="ipadic.version" value="mecab-naist-jdic-0.6.3b-20111013" />
+  <property name="dict.type" value="naist"/>
+  <property name="dict.version" value="mecab-naist-jdic-0.6.3b-20111013" />
+  <property name="dict.is.ipadic" value="true"/>
   -->
-  
-  <property name="dict.src.file" value="${ipadic.version}.tar.gz" />
-  <property name="dict.src.dir" value="${build.dir}/${ipadic.version}" />
+  <!-- alternative configuration: uses UniDic
+  <property name="dict.type" value="unidic"/>
+  <property name="dict.version" value="unidic-mecab-2.1.2_src"/>
+  <property name="dict.src.file" value="${dict.version}.zip" />
+  <property name="dict.is.unidic" value="true"/>
+  -->
+
+  <!-- for ipadic -->
+  <property name="dict.src.file" value="${dict.version}.tar.gz" />
   <property name="dict.encoding" value="euc-jp"/>
   <property name="dict.format" value="ipadic"/>
+
+  <!-- for UniDic
+  <property name="dict.encoding" value="utf-8"/>
+  <property name="dict.format" value="unidic"/>
+  -->
+
+  <property name="dict.src.dir" value="${build.dir}/${dict.version}" />
   <property name="dict.normalize" value="false"/>
   <property name="dict.target.dir" location="${resources.dir}"/>
 
-
-  <available type="dir" file="${build.dir}/${ipadic.version}" property="dict.available"/>
+  <available type="dir" file="${build.dir}/${dict.version}" property="dict.available"/>
 
   <path id="classpath">
     <dirset dir="${build.dir}">
@@ -59,14 +73,20 @@
   </path>
 
   <target name="compile-core" depends="jar-analyzers-common, common.compile-core" />
-  <target name="download-dict" depends="ivy-availability-check,ivy-fail,ivy-configure" unless="dict.available">
-     <ivy:retrieve pattern="${build.dir}/${dict.src.file}" conf="${ipadic.type}" symlink="${ivy.symlink}"/>
-     <!-- TODO: we should checksum too -->
-     <gunzip src="${build.dir}/${dict.src.file}"/>
-     <untar src="${build.dir}/${ipadic.version}.tar" dest="${build.dir}"/>
+  <target name="download-dict" depends="ivy-availability-check,ivy-fail,ivy-configure" unless="dict.available" if="dict.is.ipadic">
+    <ivy:retrieve pattern="${build.dir}/${dict.src.file}" conf="${dict.type}" symlink="${ivy.symlink}"/>
+    <!-- TODO: we should checksum too -->
+    <gunzip src="${build.dir}/${dict.src.file}"/>
+    <untar src="${build.dir}/${dict.version}.tar" dest="${build.dir}"/>
   </target>
 
-  <target name="patch-dict" depends="download-dict">
+  <target name="download-dict-unidic" depends="ivy-availability-check,ivy-fail,ivy-configure" unless="dict.available" if="dict.is.unidic">
+    <ivy:retrieve pattern="${build.dir}/${dict.src.file}" conf="${dict.type}" symlink="${ivy.symlink}"/>
+    <!-- TODO: we should checksum too -->
+    <unzip src="${build.dir}/${dict.src.file}" dest="${build.dir}"/>
+  </target>
+
+  <target name="patch-dict" depends="download-dict,download-dict-unidic" if="dict.is.ipadic">
     <patch patchfile="src/tools/patches/Noun.proper.csv.patch"
            originalfile="${dict.src.dir}/Noun.proper.csv"/>
   </target>

@@ -28,14 +28,18 @@ import java.util.Comparator;
 import java.util.List;
 
 import org.apache.lucene.analysis.ja.dict.CharacterDefinition;
+import org.apache.lucene.analysis.ja.util.DictionaryBuilder.DictionaryFormat;
 
 class UnknownDictionaryBuilder {
   private static final String NGRAM_DICTIONARY_ENTRY = "NGRAM,5,5,-32768,記号,一般,*,*,*,*,*,*,*";
 
   private final String encoding;
+  private final DictionaryFormat format;
 
-  UnknownDictionaryBuilder(String encoding) {
+
+  UnknownDictionaryBuilder(DictionaryFormat format, String encoding) {
     this.encoding = encoding;
+    this.format = format;
   }
 
   public UnknownDictionaryWriter build(Path dir) throws IOException {
@@ -61,7 +65,12 @@ class UnknownDictionaryBuilder {
       while ((line = lineReader.readLine()) != null) {
         // note: unk.def only has 10 fields, it simplifies the writer to just append empty reading and pronunciation,
         // even though the unknown dictionary returns hardcoded null here.
-        final String[] parsed = CSVUtil.parse(line + ",*,*"); // Probably we don't need to validate entry
+        final String[] parsed;
+        if (this.format == DictionaryFormat.UNIDIC) {
+          parsed = CSVUtil.parse(line + ",*,*,*"); // UniDic needs one more column
+        } else {
+          parsed = CSVUtil.parse(line + ",*,*"); // Probably we don't need to validate entry
+        }
         lines.add(parsed);
       }
     }
