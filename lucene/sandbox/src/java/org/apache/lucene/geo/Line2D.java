@@ -76,10 +76,10 @@ public final class Line2D implements Component2D {
 
   @Override
   public boolean contains(double x, double y) {
-    if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, x, x, y, y)) {
-      return false;
+    if (Component2D.containsPoint(x, y, this.minX, this.maxX, this.minY, this.maxY)) {
+      return tree.isPointOnLine(x, y);
     }
-    return tree.isPointOnLine(x, y);
+    return false;
   }
 
   @Override
