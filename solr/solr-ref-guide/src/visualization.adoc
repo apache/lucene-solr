@@ -19,17 +19,17 @@
 
 == Gallery
 
-=== Numbers
+=== Result Tables
 
-image::images/math-expressions/number.png[]
-
-=== Tables
-
-image::images/math-expressions/table.png[]
+image::images/math-expressions/search-sort.png[]
 
 === Random Sampling & Scatter Plots
 
-image::images/math-expressions/xyscatter.png[]
+image::images/math-expressions/bivariate.png[]
+
+=== Visualizing CSV Files
+
+image::images/math-expressions/csv.png[]
 
 === Probability Distributions
 
@@ -37,13 +37,13 @@ image::images/math-expressions/dist.png[]
 
 === Monte Carlo Simulations
 
-image::images/math-expressions/monte-carlo.png[]
+image::images/math-expressions/randomwalk5.png[]
 
 === Quantile Plots
 
 image::images/math-expressions/quantiles.png[]
 
-=== Time Series
+=== Time Series Aggregation
 
 image::images/math-expressions/timeseries1.png[]
 
@@ -51,17 +51,29 @@ image::images/math-expressions/timeseries1.png[]
 
 image::images/math-expressions/movingavg.png[]
 
-=== Time Series With Non-Linear Trend Line
+=== Time Series Forecast
 
-image::images/math-expressions/timemodel.png[]
+image::images/math-expressions/forecast.png[]
 
 === Multiple Time Lines
 
 image::images/math-expressions/timecompare.png[]
 
-=== Geospatial Search and Mapping
+=== Correlation Matrices and Heat Maps
 
-image::images/math-expressions/map.png[]
+image::images/math-expressions/corrmatrix.png[]
+
+=== Clustering
+
+image::images/math-expressions/2DCluster1.png[]
+
+=== Mapping Cluster Centroids
+
+image::images/math-expressions/centroidplot.png[]
+
+=== Convex Hulls
+
+image::images/math-expressions/convex1.png[]
 
 === Cartograms
 
@@ -74,26 +86,6 @@ image::images/math-expressions/sterms.png[]
 === Phrase Aggregation
 
 image::images/math-expressions/text-analytics.png[]
-
-=== Clustering
-
-image::images/math-expressions/clusters.png[]
-
-=== Convex Hulls
-
-image::images/math-expressions/convex.png[]
-
-=== SQL Aggregations
-
-image::images/math-expressions/sqlagg.png[]
-
-=== Visualizing CSV Files
-
-image::images/math-expressions/csv.png[]
-
-=== Matrices and Heat Maps
-
-image::images/math-expressions/heat.png[]
 
 === Linear Regression
 
@@ -128,5 +120,3 @@ image::images/math-expressions/autocorr.png[]
 image::images/math-expressions/fft.png[]
 
 
-
-== Apache Zeppelin / Zeppelin-Solr Interpreter
