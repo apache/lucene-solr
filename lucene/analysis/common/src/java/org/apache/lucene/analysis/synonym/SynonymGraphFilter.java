@@ -37,7 +37,6 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
-import org.apache.lucene.util.RollingBuffer;
 import org.apache.lucene.util.fst.FST;
 
 // TODO: maybe we should resolve token -> wordID then run
