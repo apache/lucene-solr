@@ -20,9 +20,7 @@ package org.apache.lucene.analysis.synonym;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Queue;
 
@@ -35,6 +33,7 @@ import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.store.ByteArrayDataInput;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
@@ -324,7 +323,7 @@ public final class SynonymGraphFilter extends TokenFilter {
       int curTokenNum = 0;
       for(int chUpto=0; chUpto<=chEnd; chUpto++) {
         if (chUpto == chEnd || scratchChars.charAt(chUpto) == SynonymMap.WORD_SEPARATOR) {
-          char[] term = Arrays.copyOfRange(scratchChars.chars(), lastStart, chUpto);
+          char[] term = ArrayUtil.copyOfSubArray(scratchChars.chars(), lastStart, chUpto);
           lastStart = 1 + chUpto;
 
           int startNode;
@@ -399,7 +398,7 @@ public final class SynonymGraphFilter extends TokenFilter {
     int endNode = startNode + posLenAtt.getPositionLength();
     AttributeSource.State state = captureState();
 
-    char[] term = Arrays.copyOf(termAtt.buffer(), termAtt.length());
+    char[] term = ArrayUtil.copyOfSubArray(termAtt.buffer(), 0, termAtt.length());
     BufferedToken token = new BufferedToken(
         term,
         state,
