@@ -87,6 +87,13 @@ When specifying `mm` values, keep in mind the following:
 The default value of `mm` is 0% (all clauses optional), unless `q.op` is specified as "AND", in which case `mm` defaults to 100% (all clauses required).  
 
 
+=== mm.autoRelax (Minimum Should Match Auto-Relax) Parameter
+
+If `true`, the number of clauses required (<<the-dismax-query-parser.adoc#mm-minimum-should-match-parameter,minimum should match>>) will automatically be relaxed if a clause is removed (by e.g., stopwords filter) from some but not all <<the-dismax-query-parser.adoc#qf-query-fields-parameter,`qf`>> fields. Use this parameter as a workaround if you experience that queries return zero hits due to uneven stopword removal between the `qf` fields.
+
+Note that relaxing `mm` may cause undesired side effects, such as hurting the precision of the search, depending on the nature of your index content.
+
+
 === pf (Phrase Fields) Parameter
 
 Once the list of matching documents has been identified using the `fq` and `qf` parameters, the `pf` parameter can be used to "boost" the score of documents in cases where all of the terms in the q parameter appear in close proximity.
