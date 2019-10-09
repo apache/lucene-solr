@@ -761,7 +761,7 @@ that multiple trials can be performed and the best outcome selected.
 The `multiKmeans` function runs the k-means clustering algorithm for a given number of trials and selects the
 best result based on which trial produces the lowest intra-cluster variance.
 
-The example below is identical to centroids example except that it uses `multiKmeans` with 100 trials,
+The example below is identical to centroids example except that it uses `multiKmeans` with 15 trials,
 rather than a single trial of the `kmeans` function.
 
 [source,text]
