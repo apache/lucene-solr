@@ -18,10 +18,13 @@ package org.apache.solr.store.blob;
 
 import java.nio.file.Path;
 import java.util.Collection;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
-import junit.framework.TestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -32,17 +35,25 @@ import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.store.blob.client.BlobCoreMetadata;
 import org.apache.solr.store.blob.client.CoreStorageClient;
+import org.apache.solr.store.blob.process.BlobProcessUtil;
+import org.apache.solr.store.blob.process.CorePullTask;
+import org.apache.solr.store.blob.process.CorePullTask.PullCoreCallback;
+import org.apache.solr.store.blob.process.CorePullerFeeder;
+import org.apache.solr.store.blob.process.CoreSyncStatus;
 import org.apache.solr.store.shared.SolrCloudSharedStoreTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * Tests for shard splitting in conjunction with shared storage
  */
 public class SharedStorageSplitTest extends SolrCloudSharedStoreTestCase  {
+
+  static Map<String, Map<String, CountDownLatch>> solrProcessesTaskTracker = new HashMap<>();
   
   @BeforeClass
   public static void setupCluster() throws Exception {    
@@ -56,6 +67,7 @@ public class SharedStorageSplitTest extends SolrCloudSharedStoreTestCase  {
     // configure same client for each runner, this isn't a concurrency test so this is fine
     for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
       setupTestSharedClientForNode(getBlobStorageProviderTestInstance(storageClient), runner);
+      solrProcessesTaskTracker.put(runner.getNodeName(), configureTestBlobProcessForNode(runner));
     }
   }
   
@@ -65,7 +77,8 @@ public class SharedStorageSplitTest extends SolrCloudSharedStoreTestCase  {
     shutdownCluster();
   }
 
-  CloudSolrClient createCollection(String collectionName, boolean sharedStorage, int repFactor) throws Exception {
+  void doSplitShard(String collectionName, boolean sharedStorage, int repFactor, int nPrefixes, int nDocsPerPrefix) throws Exception {
+
     if (sharedStorage) {
       CollectionAdminRequest
           .createCollection(collectionName, "conf", 1, 0, 0, 0)
@@ -84,11 +97,6 @@ public class SharedStorageSplitTest extends SolrCloudSharedStoreTestCase  {
 
     CloudSolrClient client = cluster.getSolrClient();
     client.setDefaultCollection(collectionName);
-    return client;
-  }
-
-  void doSplitShard(String collectionName, boolean sharedStorage, int repFactor, int nPrefixes, int nDocsPerPrefix) throws Exception {
-    CloudSolrClient client = createCollection(collectionName, sharedStorage, repFactor);
 
     if (random().nextBoolean()) {
       for (int i = 0; i < nPrefixes; i++) {
@@ -129,8 +137,17 @@ public class SharedStorageSplitTest extends SolrCloudSharedStoreTestCase  {
     Collection<Slice> slices = collection.getSlices();
 
     if (repFactor > 1) {
+      // set up count down latches to wait for pulls to complete
+      List<CountDownLatch> latches = new LinkedList<>();
+
       for (Slice slice : slices) {
+        CountDownLatch cdl = new CountDownLatch(slice.getReplicas().size());
+        latches.add(cdl);
         for (Replica replica : slice.getReplicas()) {
+          // ensure we count down for all replicas per slice.
+          String sharedShardName = (String) slice.getProperties().get(ZkStateReader.SHARED_SHARD_NAME);
+          solrProcessesTaskTracker.get(replica.getNodeName())
+            .put(sharedShardName, cdl);
           SolrClient replicaClient = getHttpSolrClient(replica.getBaseUrl() + "/" + replica.getCoreName());
           try {
             replicaClient.query(params("q", "*:* priming pull", "distrib", "false"));
@@ -140,29 +157,30 @@ public class SharedStorageSplitTest extends SolrCloudSharedStoreTestCase  {
         }
       }
 
-      // TODO super ugly and inappropriate but the pull shouldn't take long. At some point we'll
-      // make our end-to-end async testing nicer by supporting test listeners for the async tasks
-      Thread.sleep(5000);
+      for (CountDownLatch latch : latches) {
+        assertTrue(latch.await(60, TimeUnit.SECONDS));
+      }
+
     }
 
     long totCount = 0;
-      for (Slice slice : slices) {
-        if (!slice.getState().equals(Slice.State.ACTIVE)) continue;
-        long lastReplicaCount = -1;
-        for (Replica replica : slice.getReplicas()) {
-          SolrClient replicaClient = getHttpSolrClient(replica.getBaseUrl() + "/" + replica.getCoreName());
-          long numFound = 0;
-          try {
-            numFound = replicaClient.query(params("q", "*:*", "distrib", "false")).getResults().getNumFound();
-          } finally {
-            replicaClient.close();
-          }
-          if (lastReplicaCount >= 0) {
-            assertEquals("Replica doc count for " + replica, lastReplicaCount, numFound);
-          }
-          lastReplicaCount = numFound;
+    for (Slice slice : slices) {
+      if (!slice.getState().equals(Slice.State.ACTIVE)) continue;
+      long lastReplicaCount = -1;
+      for (Replica replica : slice.getReplicas()) {
+        SolrClient replicaClient = getHttpSolrClient(replica.getBaseUrl() + "/" + replica.getCoreName());
+        long numFound = 0;
+        try {
+          numFound = replicaClient.query(params("q", "*:*", "distrib", "false")).getResults().getNumFound();
+        } finally {
+          replicaClient.close();
         }
-        totCount += lastReplicaCount;
+        if (lastReplicaCount >= 0) {
+          assertEquals("Replica doc count for " + replica, lastReplicaCount, numFound);
+        }
+        lastReplicaCount = numFound;
+      }
+      totCount += lastReplicaCount;
     }
 
     assertEquals(numExpected, totCount);
@@ -177,68 +195,28 @@ public class SharedStorageSplitTest extends SolrCloudSharedStoreTestCase  {
     doSplitShard("c2", true, 2, 2, 2);
   }
 
+  private static Map<String, CountDownLatch> configureTestBlobProcessForNode(JettySolrRunner runner) {
+    Map<String, CountDownLatch> asyncPullTracker = new HashMap<>();
 
-  void doLiveSplitShard(String collectionName, boolean sharedStorage, int repFactor) throws Exception {
-    final CloudSolrClient client = createCollection(collectionName, sharedStorage, repFactor);
-
-    final AtomicBoolean doIndex = new AtomicBoolean(true);
-    final AtomicInteger docsIndexed = new AtomicInteger();
-    Thread indexThread = null;
-    try {
-      // start indexing client before we initiate a shard split
-      indexThread = new Thread(() -> {
-        while (doIndex.get()) {
-          try {
-            Thread.sleep(10);  // cap indexing rate at 100 docs per second...
-            int currDoc = docsIndexed.get();
-
-            // Try all docs in the same update request
-            UpdateRequest updateReq = new UpdateRequest();
-            updateReq.add(sdoc("id", "doc_" + currDoc));
-            UpdateResponse ursp = updateReq.commit(client, collectionName);
-            assertEquals(0, ursp.getStatus());  // for now, don't accept any failures
-            if (ursp.getStatus() == 0) {
-              docsIndexed.incrementAndGet();
+    CorePullerFeeder cpf = new CorePullerFeeder(runner.getCoreContainer()) {  
+      @Override
+      protected CorePullTask.PullCoreCallback getCorePullTaskCallback() {
+        return new PullCoreCallback() {
+          @Override
+          public void finishedPull(CorePullTask pullTask, BlobCoreMetadata blobMetadata, CoreSyncStatus status,
+              String message) throws InterruptedException {
+            CountDownLatch latch = asyncPullTracker.get(pullTask.getPullCoreInfo().getDedupeKey());
+            if (latch != null) {
+              latch.countDown();
             }
-          } catch (Exception e) {
-            TestCase.fail(e.getMessage());
-            break;
           }
-        }
-      });
-      indexThread.start();
-
-      Thread.sleep(100);  // wait for a few docs to be indexed before invoking split
-      int docCount = docsIndexed.get();
-
-      CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(collectionName)
-          .setShardName("shard1");
-      splitShard.process(client);
-      waitForState("Timed out waiting for sub shards to be active.",
-          collectionName, activeClusterShape(2, 3*repFactor));  // 2 repFactor for the new split shards, 1 repFactor for old replicas
-
-      // make sure that docs were able to be indexed during the split
-      assertTrue(docsIndexed.get() > docCount);
-
-      Thread.sleep(100);  // wait for a few more docs to be indexed after split
-
-    } finally {
-      // shut down the indexer
-      doIndex.set(false);
-      if (indexThread != null) {
-        indexThread.join();
+        };
       }
-    }
+    };
 
-    assertTrue(docsIndexed.get() > 0);
-
-    checkExpectedDocs(client, repFactor, docsIndexed.get());
-  }
-
-  @Test
-  @Ignore // need future fixes for this
-  public void testLiveSplit() throws Exception {
-    doLiveSplitShard("livesplit1", true, 1);
+    BlobProcessUtil testUtil = new BlobProcessUtil(runner.getCoreContainer(), cpf);
+    setupTestBlobProcessUtilForNode(testUtil, runner);
+    return asyncPullTracker;
   }
 
 }

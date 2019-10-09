@@ -149,7 +149,6 @@ public class SimpleSharedStoreEndToEndPullTest extends SolrCloudSharedStoreTestC
       assertEquals(0, resp.getResults().getNumFound());
       
       // wait until pull is finished
-      //CountDownLatch latch = asyncPullTasks.get(followerReplica.getCoreName());
       assertTrue(latch.await(120, TimeUnit.SECONDS));
       
       // do another query to verify we've pulled everything

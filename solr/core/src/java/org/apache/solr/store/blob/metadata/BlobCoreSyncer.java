@@ -161,7 +161,7 @@ public class BlobCoreSyncer {
           pull(pushPullData, waitForSearcher, emptyCoreAwaitingPull, cores);
         } catch (Exception ex) {
           // wrap every thrown exception in a solr exception
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error trying to push to blob store", ex);
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error trying to pull from blob store", ex);
         }
       }
     }

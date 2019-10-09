@@ -18,6 +18,10 @@ package org.apache.solr.store.shared;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -29,7 +33,13 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.store.blob.client.BlobCoreMetadata;
 import org.apache.solr.store.blob.client.CoreStorageClient;
+import org.apache.solr.store.blob.process.BlobProcessUtil;
+import org.apache.solr.store.blob.process.CorePullTask;
+import org.apache.solr.store.blob.process.CorePullTask.PullCoreCallback;
+import org.apache.solr.store.blob.process.CorePullerFeeder;
+import org.apache.solr.store.blob.process.CoreSyncStatus;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -114,6 +124,7 @@ public class SimpleSharedStoreMissingCorePullTest extends SolrCloudSharedStoreTe
       runner = cluster.startJettySolrRunner(runner, true);
       cluster.waitForNode(runner, /* seconds */ 30);
       setupTestSharedClientForNode(getBlobStorageProviderTestInstance(storageClient), cluster.getJettySolrRunner(0));
+      Map<String, CountDownLatch> asyncPullLatches = configureTestBlobProcessForNode(cluster.getJettySolrRunner(0));
       
       collection = cloudClient.getZkStateReader().getClusterState().getCollection(collectionName);
       shardLeaderReplica = collection.getLeader("shard1");
@@ -123,8 +134,15 @@ public class SimpleSharedStoreMissingCorePullTest extends SolrCloudSharedStoreTe
       core = cc.getCore(shardLeaderReplica.getCoreName());
       
       assertNull(core);
-      
-      // do a query to trigger missing core pulls
+
+      // do a query to trigger missing core pulls - this client request will wait for 5 seconds
+      // before the request fails with pull in progress. This is okay as the syncer is meant
+      // to support this.
+      // We want to wait until the pull completes so set up a count down latch for the follower's
+      // core that we'll wait until pull finishes before verifying
+      CountDownLatch latch = new CountDownLatch(1);
+      asyncPullLatches.put(shardLeaderReplica.getCoreName(), latch);
+
       try {
         resp = cloudClient.query(collectionName, params);
         assertEquals(1, resp.getResults().getNumFound());
@@ -134,10 +152,9 @@ public class SimpleSharedStoreMissingCorePullTest extends SolrCloudSharedStoreTe
         // so we can accept that in this test
       }
       
-      // TODO super ugly and inappropriate but the pull shouldn't take long. At some point we'll
-      // make our end-to-end async testing nicer by supporting test listeners for the async tasks 
-      Thread.sleep(5000);
-      
+      // wait until pull is finished
+      assertTrue(latch.await(120, TimeUnit.SECONDS));
+
       core = cc.getCore(shardLeaderReplica.getCoreName());
       // verify we pulled
       assertTrue(core.getDeletionPolicy().getLatestCommit().getFileNames().size() > 1);
@@ -151,5 +168,27 @@ public class SimpleSharedStoreMissingCorePullTest extends SolrCloudSharedStoreTe
         core.close();
       }
     }
+  }
+
+  private Map<String, CountDownLatch> configureTestBlobProcessForNode(JettySolrRunner runner) {
+    Map<String, CountDownLatch> asyncPullTracker = new HashMap<>();
+
+    CorePullerFeeder cpf = new CorePullerFeeder(runner.getCoreContainer()) {
+      @Override
+      protected CorePullTask.PullCoreCallback getCorePullTaskCallback() {
+        return new PullCoreCallback() {
+          @Override
+          public void finishedPull(CorePullTask pullTask, BlobCoreMetadata blobMetadata, CoreSyncStatus status,
+              String message) throws InterruptedException {
+            CountDownLatch latch = asyncPullTracker.get(pullTask.getPullCoreInfo().getCoreName());
+            latch.countDown();
+          }
+        };
+      }
+    };
+
+    BlobProcessUtil testUtil = new BlobProcessUtil(runner.getCoreContainer(), cpf);
+    setupTestBlobProcessUtilForNode(testUtil, runner);
+    return asyncPullTracker;
   }
 }
