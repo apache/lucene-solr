@@ -20,188 +20,19 @@
 This section of the math expressions user guide covers machine learning
 functions.
 
-<<Feature Scaling, Feature Scaling>> -
 <<Distance and Distance Measures, Distance>> -
-<<knnSearch, knnSearch>> -
 <<K-Nearest Neighbor (KNN), KNN>> -
 <<K-Nearest Neighbor Regression, KNN Regression>> -
 <<K-Means Clustering, K-means Clustering>> -
-<<Fuzzy K-Means Clustering, Fuzzy K-means>>
+<<Fuzzy K-Means Clustering, Fuzzy K-means>> -
+<<Feature Scaling, Feature Scaling>>
 
-== Feature Scaling
-
-Before performing machine learning operations its often necessary to
-scale the feature vectors so they can be compared at the same scale.
-
-All the scaling functions below operate on vectors and matrices.
-When operating on a matrix the rows of the matrix are scaled.
-
-=== Min/Max Scaling
-
-The `minMaxScale` function scales a vector or matrix between a minimum and maximum value.
-By default it will scale between 0 and 1 if min/max values are not provided.
-
-Below is a plot of a sine wave, with an amplitude of 1, before and
-after it has been scaled between -5 and 5.
-
-image::images/math-expressions/minmaxscale.png[]
-
-
-Below is a simple example of min/max scaling of a matrix between 0 and 1.
-Notice that once brought into the same scale the vectors are the same.
-
-[source,text]
-----
-let(a=array(20, 30, 40, 50),
-    b=array(200, 300, 400, 500),
-    c=matrix(a, b),
-    d=minMaxScale(c))
-----
-
-When this expression is sent to the `/stream` handler it responds with:
-
-[source,json]
-----
-{
-  "result-set": {
-    "docs": [
-      {
-        "d": [
-          [
-            0,
-            0.3333333333333333,
-            0.6666666666666666,
-            1
-          ],
-          [
-            0,
-            0.3333333333333333,
-            0.6666666666666666,
-            1
-          ]
-        ]
-      },
-      {
-        "EOF": true,
-        "RESPONSE_TIME": 0
-      }
-    ]
-  }
-}
-----
-
-=== Standardization
-
-The `standardize` function scales a vector so that it has a
-mean of 0 and a standard deviation of 1.
-
-Below is a plot of a sine wave, with an amplitude of 1, before and
-after it has been standardized.
-
-image::images/math-expressions/standardize.png[]
-
-Below is a simple example of of a standardized matrix.
-Notice that once brought into the same scale the vectors are the same.
-
-[source,text]
-----
-let(a=array(20, 30, 40, 50),
-    b=array(200, 300, 400, 500),
-    c=matrix(a, b),
-    d=standardize(c))
-----
-
-When this expression is sent to the `/stream` handler it responds with:
-
-[source,json]
-----
-{
-  "result-set": {
-    "docs": [
-      {
-        "d": [
-          [
-            -1.161895003862225,
-            -0.3872983346207417,
-            0.3872983346207417,
-            1.161895003862225
-          ],
-          [
-            -1.1618950038622249,
-            -0.38729833462074165,
-            0.38729833462074165,
-            1.1618950038622249
-          ]
-        ]
-      },
-      {
-        "EOF": true,
-        "RESPONSE_TIME": 17
-      }
-    ]
-  }
-}
-----
-
-=== Unit Vectors
-
-The `unitize` function scales vectors to a magnitude of 1. A vector with a
-magnitude of 1 is known as a unit vector. Unit vectors are preferred
-when the vector math deals with vector direction rather than magnitude.
-
-Below is a plot of a sine wave, with an amplitude of 1, before and
-after it has been unitized.
-
-image::images/math-expressions/unitize.png[]
-
-Below is a simple example of a unitized matrix.
-Notice that once brought into the same scale the vectors are the same.
-
-[source,text]
-----
-let(a=array(20, 30, 40, 50),
-    b=array(200, 300, 400, 500),
-    c=matrix(a, b),
-    d=unitize(c))
-----
-
-When this expression is sent to the `/stream` handler it responds with:
-
-[source,json]
-----
-{
-  "result-set": {
-    "docs": [
-      {
-        "d": [
-          [
-            0.2721655269759087,
-            0.40824829046386296,
-            0.5443310539518174,
-            0.6804138174397716
-          ],
-          [
-            0.2721655269759087,
-            0.4082482904638631,
-            0.5443310539518174,
-            0.6804138174397717
-          ]
-        ]
-      },
-      {
-        "EOF": true,
-        "RESPONSE_TIME": 6
-      }
-    ]
-  }
-}
-----
 
 == Distance and Distance Measures
 
 The `distance` function computes the distance for two numeric arrays or a distance matrix for the columns of a matrix.
 
-There are five distance measure functions that return a function that performs the actual distance calculation:
+There are six distance measure functions that return a function that performs the actual distance calculation:
 
 * `euclidean` (default)
 * `manhattan`
@@ -270,52 +101,38 @@ When this expression is sent to the `/stream` handler it responds with:
 ----
 
 
-Below is an example for computing a distance matrix for columns
-of a matrix:
+Distance matrices are powerful tools for visualizing the distance
+between two or more
+vectors.
 
-[source,text]
-----
-let(a=array(20, 30, 40),
-    b=array(21, 29, 41),
-    c=array(31, 40, 50),
-    d=matrix(a, b, c),
-    c=distance(d))
-----
+The `distance` function builds a distance matrix
+if a matrix is passed as the parameter. The distance matrix is computed for the *columns*
+of the matrix.
 
-When this expression is sent to the `/stream` handler it responds with:
+The example below demonstrates the power of distance matrices combined with 2 dimensional faceting.
 
-[source,json]
-----
-{
-  "result-set": {
-    "docs": [
-      {
-        "e": [
-          [
-            0,
-            15.652475842498529,
-            34.07345007480164
-          ],
-          [
-            15.652475842498529,
-            0,
-            18.547236990991408
-          ],
-          [
-            34.07345007480164,
-            18.547236990991408,
-            0
-          ]
-        ]
-      },
-      {
-        "EOF": true,
-        "RESPONSE_TIME": 24
-      }
-    ]
-  }
-}
-----
+In this example the `facet2D` function is used to generate a two dimensional facet aggregation
+over the fields *complaint_type_s* and *zip_s* from the *nyc311* complaints database.
+The *top 20* complaint types and the *top 25* zip codes for each complaint type are aggregated.
+The result is a stream of tuples each containing the fields *complaint_type_s*, *zip_s* and
+the count for the pair.
+
+The `pivot` function is then used to pivot the fields into a *matrix* with the *zip_s*
+field as the *rows* and the *complaint_type_s* field as the *columns*. The `count(*)` field populates
+the values in the cells of the matrix.
+
+The `distance` function is then used to compute the distance matrix for the columns
+of the matrix using `cosine` distance. This produces a distance matrix
+that shows distance between complaint types based on the zip codes they appear in.
+
+Finally the `zplot` function is used to plot the distance matrix as a heat map. Notice that the
+heat map has been configured so that the intensity of color increases as the distance between vectors
+decreases.
+
+
+image::images/math-expressions/distance.png[]
+
+
 
 == knnSearch
 
@@ -855,3 +672,172 @@ Further analysis of the features in both clusters can be performed to understand
 the relationship between cluster1 and cluster5.
 
 image::images/math-expressions/fuzzyk.png[]
+
+== Feature Scaling
+
+Before performing machine learning operations its often necessary to
+scale the feature vectors so they can be compared at the same scale.
+
+All the scaling functions below operate on vectors and matrices.
+When operating on a matrix the rows of the matrix are scaled.
+
+=== Min/Max Scaling
+
+The `minMaxScale` function scales a vector or matrix between a minimum and maximum value.
+By default it will scale between 0 and 1 if min/max values are not provided.
+
+Below is a plot of a sine wave, with an amplitude of 1, before and
+after it has been scaled between -5 and 5.
+
+image::images/math-expressions/minmaxscale.png[]
+
+
+Below is a simple example of min/max scaling of a matrix between 0 and 1.
+Notice that once brought into the same scale the vectors are the same.
+
+[source,text]
+----
+let(a=array(20, 30, 40, 50),
+    b=array(200, 300, 400, 500),
+    c=matrix(a, b),
+    d=minMaxScale(c))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "d": [
+          [
+            0,
+            0.3333333333333333,
+            0.6666666666666666,
+            1
+          ],
+          [
+            0,
+            0.3333333333333333,
+            0.6666666666666666,
+            1
+          ]
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 0
+      }
+    ]
+  }
+}
+----
+
+=== Standardization
+
+The `standardize` function scales a vector so that it has a
+mean of 0 and a standard deviation of 1.
+
+Below is a plot of a sine wave, with an amplitude of 1, before and
+after it has been standardized.
+
+image::images/math-expressions/standardize.png[]
+
+Below is a simple example of of a standardized matrix.
+Notice that once brought into the same scale the vectors are the same.
+
+[source,text]
+----
+let(a=array(20, 30, 40, 50),
+    b=array(200, 300, 400, 500),
+    c=matrix(a, b),
+    d=standardize(c))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "d": [
+          [
+            -1.161895003862225,
+            -0.3872983346207417,
+            0.3872983346207417,
+            1.161895003862225
+          ],
+          [
+            -1.1618950038622249,
+            -0.38729833462074165,
+            0.38729833462074165,
+            1.1618950038622249
+          ]
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 17
+      }
+    ]
+  }
+}
+----
+
+=== Unit Vectors
+
+The `unitize` function scales vectors to a magnitude of 1. A vector with a
+magnitude of 1 is known as a unit vector. Unit vectors are preferred
+when the vector math deals with vector direction rather than magnitude.
+
+Below is a plot of a sine wave, with an amplitude of 1, before and
+after it has been unitized.
+
+image::images/math-expressions/unitize.png[]
+
+Below is a simple example of a unitized matrix.
+Notice that once brought into the same scale the vectors are the same.
+
+[source,text]
+----
+let(a=array(20, 30, 40, 50),
+    b=array(200, 300, 400, 500),
+    c=matrix(a, b),
+    d=unitize(c))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "d": [
+          [
+            0.2721655269759087,
+            0.40824829046386296,
+            0.5443310539518174,
+            0.6804138174397716
+          ],
+          [
+            0.2721655269759087,
+            0.4082482904638631,
+            0.5443310539518174,
+            0.6804138174397717
+          ]
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 6
+      }
+    ]
+  }
+}
+----
