@@ -23,6 +23,27 @@ package org.apache.solr.common.params;
  * both for Plugin initialization and for Requests.
  */
 public interface ExtendedDisMaxParams extends DisMaxParams {
+  
+  /**
+   * Query and init param for bigram phrase boost fields.
+   */
+  public static String PF2 = "pf2";
+  
+  /**
+   * Query and init param for trigram phrase boost fields.
+   */
+  public static String PF3 = "pf3";
+
+  /**
+   * Default phrase slop for bigram phrases (pf2).
+   */
+  public static String PS2 = "ps2";
+  
+  /**
+   * Default phrase slop for trigram phrases (pf3).
+   */
+  public static String PS3 = "ps3";
+
   /**
    * User fields. The fields that can be used by the end user to create field-specific queries.
    */
