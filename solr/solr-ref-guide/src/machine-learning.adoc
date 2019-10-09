@@ -846,76 +846,12 @@ membership probabilities for each document. The membership matrix is comprised o
 vector that was clustered. There is a column in the matrix for each cluster.
 The values in the matrix contain the probability that a specific vector belongs to a specific cluster.
 
-In the example the `corr` function is used to create a *correlation matrix* from the columns of the
-membership matrix. In other words the correlation matrix shows the correlation of the clusters
-based on the document co-occurrence in the clusters.
+In the example the `distance` function is then used to create a *distance matrix* from the columns of the
+membership matrix. The distance matrix is then visualized with the `zplot` function as a heat map. Notice
+that the heat map has been configured to increase in color intensity as the distance shortens.
 
-Notice that in the example cluster3 and cluster5 are very highly correlated, which means that
-many documents had a probability of occurring in both clusters. Further analysis of the key features
-in both clusters can be performed to understand how these clusters are interconnected.
+In the example cluster1 and cluster5 have the shortest distance between the clusters.
+Further analysis of the features in both clusters can be performed to understand
+the relationship between cluster1 and cluster5.
 
-[source,text]
-----
-let(a=select(search(reviews, q="text_t:\"star wars\"", rows="500"),
-                    id,
-                    analyze(text_t, body) as terms),
-    vectors=termVectors(a, maxDocFreq=.10, minDocFreq=.03, minTermLength=13, exclude="_,br,have"),
-    clusters=fuzzyKmeans(vectors, 5, fuzziness=1.3),
-    m=getMembershipMatrix(clusters),
-    corr=corr(m))
-----
-
-
-[source,json]
-----
-{
-  "result-set": {
-    "docs": [
-      {
-        "corr": [
-          [
-            1,
-            -0.3107483649904961,
-            -0.01238925922725737,
-            -0.034546141301127015,
-            -0.012389261961639414
-          ],
-          [
-            -0.3107483649904961,
-            1,
-            -0.7752380698457411,
-            -0.49268725855405776,
-            -0.7752380691584819
-          ],
-          [
-            -0.01238925922725737,
-            -0.7752380698457411,
-            1,
-            -0.0508166330303757,
-            0.9999999999999954
-          ],
-          [
-            -0.034546141301127015,
-            -0.49268725855405776,
-            -0.0508166330303757,
-            1,
-            -0.05081663258795273
-          ],
-          [
-            -0.012389261961639414,
-            -0.7752380691584819,
-            0.9999999999999954,
-            -0.05081663258795273,
-            1
-          ]
-        ]
-      },
-      {
-        "EOF": true,
-        "RESPONSE_TIME": 245
-      }
-    ]
-  }
-}
-----
-
+image::images/math-expressions/fuzzyk.png[]
