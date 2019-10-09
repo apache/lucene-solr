@@ -39,6 +39,10 @@ image::images/math-expressions/dist.png[]
 
 image::images/math-expressions/randomwalk5.png[]
 
+=== Random Walks
+
+image::images/math-expressions/randomwalk6.png[]
+
 === Quantile Plots
 
 image::images/math-expressions/quantiles.png[]
