@@ -687,8 +687,8 @@ that the features are all bigram phrases with semantic significance to the resul
 [source,text]
 ----
 let(a=select(search(reviews, q="review_t:\"star wars\"", rows="500"),
-                    id,
-                    analyze(review_t, text_bigrams) as terms),
+             id,
+             analyze(review_t, text_bigrams) as terms),
     vectors=termVectors(a, maxDocFreq=.10, minDocFreq=.03, minTermLength=13, exclude="_,br,have"),
     clusters=kmeans(vectors, 5),
     centroids=getCentroids(clusters),
