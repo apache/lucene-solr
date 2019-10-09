@@ -105,6 +105,10 @@ public class TopSuggestDocs extends TopDocs {
     this.isComplete = isComplete;
   }
 
+  public TopSuggestDocs(TotalHits totalHits, SuggestScoreDoc[] scoreDocs) {
+    this(totalHits, scoreDocs, true);
+  }
+
   /**
    * Returns {@link TopSuggestDocs.SuggestScoreDoc}s
    * for this instance
