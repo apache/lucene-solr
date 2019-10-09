@@ -28,7 +28,7 @@ functions.
 <<Feature Scaling, Feature Scaling>>
 
 
-== Distance and Distance Measures
+== Distance and Distance Matrices
 
 The `distance` function computes the distance for two numeric arrays or a distance matrix for the columns of a matrix.
 
@@ -100,6 +100,7 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
+=== Distance Matrices
 
 Distance matrices are powerful tools for visualizing the distance
 between two or more
