@@ -18,9 +18,13 @@
 package org.apache.lucene.analysis.synonym;
 
 import java.io.IOException;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Queue;
 
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
@@ -98,67 +102,44 @@ public final class SynonymGraphFilter extends TokenFilter {
   private final ByteArrayDataInput bytesReader = new ByteArrayDataInput();
   private final BytesRef scratchBytes = new BytesRef();
   private final CharsRefBuilder scratchChars = new CharsRefBuilder();
-  private final LinkedList<BufferedOutputToken> outputBuffer = new LinkedList<>();
-
-  private int nextNodeOut;
-  private int lastNodeOut;
-  private int maxLookaheadUsed;
+  private final Queue<BufferedToken> tokenQueue;
 
   // For testing:
   private int captureCount;
 
-  private boolean liveToken;
 
-  // Start/end offset of the current match:
-  private int matchStartOffset;
-  private int matchEndOffset;
-
-  // True once the input TokenStream is exhausted:
-  private boolean finished;
-
-  private int lookaheadNextRead;
-  private int lookaheadNextWrite;
-
-  private RollingBuffer<BufferedInputToken> lookahead = new RollingBuffer<BufferedInputToken>() {
-    @Override
-    protected BufferedInputToken newInstance() {
-      return new BufferedInputToken();
-    }
-  };
-
-  static class BufferedInputToken implements RollingBuffer.Resettable {
-    final CharsRefBuilder term = new CharsRefBuilder();
-    AttributeSource.State state;
-    int startOffset = -1;
-    int endOffset = -1;
-
-    @Override
-    public void reset() {
-      state = null;
-      term.clear();
-
-      // Intentionally invalid to ferret out bugs:
-      startOffset = -1;
-      endOffset = -1;
-    }
-  }
-
-  static class BufferedOutputToken {
-    final String term;
-
-    // Non-null if this was an incoming token:
+  static class BufferedToken{
+    final char[] term;
     final State state;
+    int startNode;
+    int endNode;
+    int startOffset;
+    int endOffset;
+    int captureIndex = -1;// for debug
 
-    final int startNode;
-    final int endNode;
-
-    public BufferedOutputToken(State state, String term, int startNode, int endNode) {
-      this.state = state;
+    BufferedToken(char[] term, State state, int startNode, int endNode) {
       this.term = term;
+      this.state = state;
       this.startNode = startNode;
       this.endNode = endNode;
     }
+
+
+    @Override
+    public String toString(){
+      return new String(term);
+    }
   }
+
+  private int prevInputStartNode;
+  private int prevOutputStartNode;
+  private int deltaStartNode;
+
+  // True once the input TokenStream is exhausted:
+  private boolean inputFinished;
+
+  private Queue<BufferedToken> lookahead;
+  private BufferedToken lastInputToken;
 
   /**
    * Apply previously built synonyms to incoming tokens.
@@ -178,206 +159,115 @@ public final class SynonymGraphFilter extends TokenFilter {
     this.fstReader = fst.getBytesReader();
     scratchArc = new FST.Arc<>();
     this.ignoreCase = ignoreCase;
+    this.tokenQueue = new ArrayDeque<>();
+    this.lookahead = new ArrayDeque<>();
   }
 
   @Override
   public boolean incrementToken() throws IOException {
-    //System.out.println("\nS: incrToken lastNodeOut=" + lastNodeOut + " nextNodeOut=" + nextNodeOut);
-
-    assert lastNodeOut <= nextNodeOut;
-      
-    if (outputBuffer.isEmpty() == false) {
-      // We still have pending outputs from a prior synonym match:
-      releaseBufferedToken();
-      //System.out.println("  syn: ret buffered=" + this);
-      assert liveToken == false;
-      return true;
-    }
-
-    // Try to parse a new synonym match at the current token:
-
-    if (parse()) {
-      // A new match was found:
-      releaseBufferedToken();
-      //System.out.println("  syn: after parse, ret buffered=" + this);
-      assert liveToken == false;
-      return true;
-    }
-
-    if (lookaheadNextRead == lookaheadNextWrite) {
-
-      // Fast path: parse pulled one token, but it didn't match
-      // the start for any synonym, so we now return it "live" w/o having
-      // cloned all of its atts:
-      if (finished) {
-        //System.out.println("  syn: ret END");
+      if (!tokenQueue.isEmpty()){
+        BufferedToken token = tokenQueue.poll();
+        releaseBufferedToken(token);
+        return true;
+      }
+      if (inputFinished && lookahead.isEmpty()) {
         return false;
       }
+      parse();
+      return releaseBufferedToken();
+  }
 
-      assert liveToken;
-      liveToken = false;
-
-      // NOTE: no need to change posInc since it's relative, i.e. whatever
-      // node our output is upto will just increase by the incoming posInc.
-      // We also don't need to change posLen, but only because we cannot
-      // consume a graph, so the incoming token can never span a future
-      // synonym match.
-
-    } else {
-      // We still have buffered lookahead tokens from a previous
-      // parse attempt that required lookahead; just replay them now:
-      //System.out.println("  restore buffer");
-      assert lookaheadNextRead < lookaheadNextWrite: "read=" + lookaheadNextRead + " write=" + lookaheadNextWrite;
-      BufferedInputToken token = lookahead.get(lookaheadNextRead);
-      lookaheadNextRead++;
-
-      restoreState(token.state);
-
-      lookahead.freeBefore(lookaheadNextRead);
-
-      //System.out.println("  after restore offset=" + offsetAtt.startOffset() + "-" + offsetAtt.endOffset());
-      assert liveToken == false;
+  private boolean releaseBufferedToken() throws IOException {
+    if (tokenQueue.isEmpty()) {
+      return false;
     }
-
-    lastNodeOut += posIncrAtt.getPositionIncrement();
-    nextNodeOut = lastNodeOut + posLenAtt.getPositionLength();
-
-    //System.out.println("  syn: ret lookahead=" + this);
-
+    BufferedToken token = tokenQueue.poll();
+    releaseBufferedToken(token);
     return true;
   }
 
-  private void releaseBufferedToken() throws IOException {
-    //System.out.println("  releaseBufferedToken");
-
-    BufferedOutputToken token = outputBuffer.pollFirst();
-
+  private void releaseBufferedToken(BufferedToken token) throws IOException {
     if (token.state != null) {
-      // This is an original input token (keepOrig=true case):
-      //System.out.println("    hasState");
       restoreState(token.state);
-      //System.out.println("    startOffset=" + offsetAtt.startOffset() + " endOffset=" + offsetAtt.endOffset());
     } else {
       clearAttributes();
-      //System.out.println("    no state");
-      termAtt.append(token.term);
-
+      termAtt.copyBuffer(token.term, 0, token.term.length);
       // We better have a match already:
-      assert matchStartOffset != -1;
-
-      offsetAtt.setOffset(matchStartOffset, matchEndOffset);
-      //System.out.println("    startOffset=" + matchStartOffset + " endOffset=" + matchEndOffset);
+      offsetAtt.setOffset(token.startOffset, token.endOffset);
       typeAtt.setType(TYPE_SYNONYM);
     }
 
-    //System.out.println("    lastNodeOut=" + lastNodeOut);
-    //System.out.println("    term=" + termAtt);
-    if (lastNodeOut == -1) {
-      lastNodeOut = 0;
-    }
-    posIncrAtt.setPositionIncrement(token.startNode - lastNodeOut);
-    lastNodeOut = token.startNode;
+    posIncrAtt.setPositionIncrement(token.startNode - prevOutputStartNode);
+    prevOutputStartNode = token.startNode;
     posLenAtt.setPositionLength(token.endNode - token.startNode);
+    // System.out.println("releaseBufferedToken term: " + termAtt.toString() + ",posIncrAtt:" + posIncrAtt.getPositionIncrement() + ", token.startNode:" + token.startNode + ", token.endNode:" + token.endNode + ", tokenInQueue:" + tokenQueue.size());
   }
 
-  /** Scans the next input token(s) to see if a synonym matches.  Returns true
-   *  if a match was found. */
-  private boolean parse() throws IOException {
-    // System.out.println(Thread.currentThread().getName() + ": S: parse: " + System.identityHashCode(this));
+  // return new pendingOutput, return null if doesn't match.
+  private BytesRef termMatch(char[] term, BytesRef pendingOutput, int bufferLen) throws  IOException{
+    int bufUpto = 0;
+    while (bufUpto < bufferLen) {
+      final int codePoint = Character.codePointAt(term, bufUpto, bufferLen);
+      if (fst.findTargetArc(ignoreCase ? Character.toLowerCase(codePoint) : codePoint, scratchArc, scratchArc, fstReader) == null) {
+        return null;
+      }
+      // Accum the output
+      pendingOutput = fst.outputs.add(pendingOutput, scratchArc.output());
+      bufUpto += Character.charCount(codePoint);
+    }
+    return pendingOutput;
+  }
 
-    // Holds the longest match we've seen so far:
+  /** Scans the next input token(s) to see if a synonym matches. returns true if the token is not captured in Queue.*/
+  private void parse() throws  IOException {
     BytesRef matchOutput = null;
-    int matchInputLength = 0;
-
     BytesRef pendingOutput = fst.outputs.getNoOutput();
     fst.getFirstArc(scratchArc);
-
     assert scratchArc.output() == fst.outputs.getNoOutput();
-
-    // How many tokens in the current match
-    int matchLength = 0;
-    boolean doFinalCapture = false;
-
-    int lookaheadUpto = lookaheadNextRead;
-    matchStartOffset = -1;
-
-    byToken:
-    while (true) {
-      //System.out.println("  cycle lookaheadUpto=" + lookaheadUpto + " maxPos=" + lookahead.getMaxPos());
-      
-      // Pull next token's chars:
-      final char[] buffer;
-      final int bufferLen;
-      final int inputEndOffset;
-
-      if (lookaheadUpto <= lookahead.getMaxPos()) {
-        // Still in our lookahead buffer
-        BufferedInputToken token = lookahead.get(lookaheadUpto);
-        lookaheadUpto++;
-        buffer = token.term.chars();
-        bufferLen = token.term.length();
-        inputEndOffset = token.endOffset;
-        //System.out.println("    use buffer now max=" + lookahead.getMaxPos());
-        if (matchStartOffset == -1) {
-          matchStartOffset = token.startOffset;
-        }
-      } else {
-
-        // We used up our lookahead buffer of input tokens
-        // -- pull next real input token:
-
-        assert finished || liveToken == false;
-
-        if (finished) {
-          //System.out.println("    break: finished");
-          break;
-        } else if (input.incrementToken()) {
-          //System.out.println("    input.incrToken");
-          liveToken = true;
-          buffer = termAtt.buffer();
-          bufferLen = termAtt.length();
-          if (matchStartOffset == -1) {
-            matchStartOffset = offsetAtt.startOffset();
-          }
-          if (nextNodeOut == -1){
-            nextNodeOut = posIncrAtt.getPositionIncrement();
-          }
-          inputEndOffset = offsetAtt.endOffset();
-
-          lookaheadUpto++;
-        } else {
-          // No more input tokens
-          finished = true;
-          //System.out.println("    break: now set finished");
+    int lookaheadIndex = 0;
+    int matchedLength = 0;
+    Iterator<BufferedToken> it = lookahead.iterator();
+    int lastEndNode = -1;
+    int lastEndOffset = 0;
+    int lastEndNode2 = 0;
+    boolean restored = false;
+    while(true){
+      BufferedToken token = null;
+      if (it.hasNext()){
+        token = it.next();
+      }else{
+        if (inputFinished){
           break;
         }
-      }
-
-      matchLength++;
-      //System.out.println("    cycle term=" + new String(buffer, 0, bufferLen));
-
-      // Run each char in this token through the FST:
-      int bufUpto = 0;
-      while (bufUpto < bufferLen) {
-        final int codePoint = Character.codePointAt(buffer, bufUpto, bufferLen);
-        if (fst.findTargetArc(ignoreCase ? Character.toLowerCase(codePoint) : codePoint, scratchArc, scratchArc, fstReader) == null) {
-          break byToken;
+        if (!restored && lastInputToken != null) {
+          // restore state before increase
+          restoreState(lastInputToken.state);
         }
-
-        // Accum the output
-        pendingOutput = fst.outputs.add(pendingOutput, scratchArc.output());
-        bufUpto += Character.charCount(codePoint);
+        restored = true;
+        if(!input.incrementToken()){
+          inputFinished = true;
+          break;
+        }
+        token = capture();
+        lastInputToken = token;
+        lookahead.offer(token);
+      }
+      if (lastEndNode != -1 && lastEndNode != token.startNode){
+        // it's not consecutive
+        break;
+      }
+      lastEndNode = token.endNode;
+      pendingOutput = termMatch(token.term, pendingOutput, token.term.length);
+      if (pendingOutput == null){
+        break;
       }
 
-      assert bufUpto == bufferLen;
-
-      // OK, entire token matched; now see if this is a final
-      // state in the FST (a match):
-      if (scratchArc.isFinal()) {
+      lookaheadIndex += 1;
+      if (scratchArc.isFinal()){
         matchOutput = fst.outputs.add(pendingOutput, scratchArc.nextFinalOutput());
-        matchInputLength = matchLength;
-        matchEndOffset = inputEndOffset;
-        //System.out.println("    ** match");
+        matchedLength = lookaheadIndex;
+        lastEndOffset = token.endOffset;
+        lastEndNode2 = token.endNode;
       }
 
       // See if the FST can continue matching (ie, needs to
@@ -391,210 +281,156 @@ public final class SynonymGraphFilter extends TokenFilter {
         // More matching is possible -- accum the output (if
         // any) of the WORD_SEP arc:
         pendingOutput = fst.outputs.add(pendingOutput, scratchArc.output());
-        doFinalCapture = true;
-        if (liveToken) {
-          capture();
-        }
       }
     }
-
-    if (doFinalCapture && liveToken && finished == false) {
-      // Must capture the final token if we captured any prior tokens:
-      capture();
+    if (lookahead.isEmpty()){
+      // input is empty
+      return;
     }
-
-    if (matchOutput != null) {
-
-      if (liveToken) {
-        // Single input token synonym; we must buffer it now:
-        capture();
-      }
-
+    if (matchOutput != null){
       // There is a match!
-      bufferOutputTokens(matchOutput, matchInputLength);
-      lookaheadNextRead += matchInputLength;
-      //System.out.println("  precmatch; set lookaheadNextRead=" + lookaheadNextRead + " now max=" + lookahead.getMaxPos());
-      lookahead.freeBefore(lookaheadNextRead);
-      //System.out.println("  match; set lookaheadNextRead=" + lookaheadNextRead + " now max=" + lookahead.getMaxPos());
-      return true;
+      bufferSynonym(lookahead, matchedLength, matchOutput, lastEndOffset, lastEndNode2);
     } else {
-      //System.out.println("  no match; lookaheadNextRead=" + lookaheadNextRead);
-      return false;
+      BufferedToken t = lookahead.poll();
+      tokenQueue.offer(t);
     }
-
-    //System.out.println("  parse done inputSkipCount=" + inputSkipCount + " nextRead=" + nextRead + " nextWrite=" + nextWrite);
   }
 
   /** Expands the output graph into the necessary tokens, adding
    *  synonyms as side paths parallel to the input tokens, and
    *  buffers them in the output token buffer. */
-  private void bufferOutputTokens(BytesRef bytes, int matchInputLength) {
+  private void bufferSynonym(Queue<BufferedToken> lookahead, int consumed, BytesRef bytes, int lastEndOffset, int lastEndNode){
+    assert tokenQueue.isEmpty();
     bytesReader.reset(bytes.bytes, bytes.offset, bytes.length);
-
     final int code = bytesReader.readVInt();
     final boolean keepOrig = (code & 0x1) == 0;
-    //System.out.println("  buffer: keepOrig=" + keepOrig + " matchInputLength=" + matchInputLength);
-
-    // How many nodes along all paths; we need this to assign the
-    // node ID for the final end node where all paths merge back:
-    int totalPathNodes;
-    if (keepOrig) {
-      assert matchInputLength > 0;
-      totalPathNodes = matchInputLength - 1;
-    } else {
-      totalPathNodes = 0;
-    }
-
     // How many synonyms we will insert over this match:
     final int count = code >>> 1;
 
-    // TODO: we could encode this instead into the FST:
+    BufferedToken firstToken = lookahead.peek();
+    int oriLength = lastEndNode- firstToken.startNode;
 
-    // 1st pass: count how many new nodes we need
-    List<List<String>> paths = new ArrayList<>();
+    List<List<BufferedToken>> paths = new ArrayList<>();
+    int lengthExceptHead = 0;
     for(int outputIDX=0;outputIDX<count;outputIDX++) {
       int wordID = bytesReader.readVInt();
       synonyms.words.get(wordID, scratchBytes);
       scratchChars.copyUTF8Bytes(scratchBytes);
       int lastStart = 0;
 
-      List<String> path = new ArrayList<>();
+      List<BufferedToken> path = new ArrayList<>();
       paths.add(path);
       int chEnd = scratchChars.length();
+      int curTokenNum = 0;
       for(int chUpto=0; chUpto<=chEnd; chUpto++) {
         if (chUpto == chEnd || scratchChars.charAt(chUpto) == SynonymMap.WORD_SEPARATOR) {
-          path.add(new String(scratchChars.chars(), lastStart, chUpto - lastStart));
+          char[] term = Arrays.copyOfRange(scratchChars.chars(), lastStart, chUpto);
           lastStart = 1 + chUpto;
+
+          int startNode;
+          int endNode;
+          if (curTokenNum != 0) {
+            startNode = firstToken.startNode + lengthExceptHead + 1;
+            endNode = startNode + 1;
+            lengthExceptHead += 1;
+          } else {
+            startNode = firstToken.startNode;
+            endNode = startNode + lengthExceptHead + 1;
+          }
+          BufferedToken t = new BufferedToken(term, null, startNode, endNode);
+          t.endOffset = lastEndOffset;
+          t.startOffset = firstToken.startOffset;
+          path.add(t);
+          curTokenNum += 1;
         }
       }
-
-      assert path.size() > 0;
-      totalPathNodes += path.size() - 1;
-    }
-    //System.out.println("  totalPathNodes=" + totalPathNodes);
-
-    // 2nd pass: buffer tokens for the graph fragment
-
-    // NOTE: totalPathNodes will be 0 in the case where the matched
-    // input is a single token and all outputs are also a single token
-
-    // We "spawn" a side-path for each of the outputs for this matched
-    // synonym, all ending back at this end node:
-
-    int startNode = nextNodeOut;
-
-    int endNode = startNode + totalPathNodes + 1;
-    //System.out.println("  " + paths.size() + " new side-paths");
-
-    // First, fanout all tokens departing start node for these new side paths:
-    int newNodeCount = 0;
-    for(List<String> path : paths) {
-      int pathEndNode;
-      //System.out.println("    path size=" + path.size());
-      if (path.size() == 1) {
-        // Single token output, so there are no intermediate nodes:
-        pathEndNode = endNode;
-      } else {
-        pathEndNode = nextNodeOut + newNodeCount + 1;
-        newNodeCount += path.size() - 1;
-      }
-      outputBuffer.add(new BufferedOutputToken(null, path.get(0), startNode, pathEndNode));
     }
 
-    // We must do the original tokens last, else the offsets "go backwards":
+    List<BufferedToken> path = null;
     if (keepOrig) {
-      BufferedInputToken token = lookahead.get(lookaheadNextRead);
-      int inputEndNode;
-      if (matchInputLength == 1) {
-        // Single token matched input, so there are no intermediate nodes:
-        inputEndNode = endNode;
-      } else {
-        inputEndNode = nextNodeOut + newNodeCount + 1;
-      }
-
-      //System.out.println("    keepOrig first token: " + token.term);
-
-      outputBuffer.add(new BufferedOutputToken(token.state, token.term.toString(), startNode, inputEndNode));
+      path =new ArrayList<>();
     }
-
-    nextNodeOut = endNode;
-
-    // Do full side-path for each syn output:
-    for(int pathID=0;pathID<paths.size();pathID++) {
-      List<String> path = paths.get(pathID);
-      if (path.size() > 1) {
-        int lastNode = outputBuffer.get(pathID).endNode;
-        for(int i=1;i<path.size()-1;i++) {
-          outputBuffer.add(new BufferedOutputToken(null, path.get(i), lastNode, lastNode+1));
-          lastNode++;
+    BufferedToken token = null;
+    for(int i = 0; i < consumed; i++){
+      token = lookahead.poll();
+      if (keepOrig){
+        if (i != 0) {
+          // move original tokens to the end
+          token.startNode += lengthExceptHead;
         }
-        outputBuffer.add(new BufferedOutputToken(null, path.get(path.size()-1), lastNode, endNode));
+        token.endNode += lengthExceptHead;
+        path.add(token);
       }
     }
+    final BufferedToken lastToken = token;
+    if (keepOrig) {
+      lengthExceptHead += oriLength - 1;
+      paths.add(path);
+    }
+    int deltaDelta = lengthExceptHead - (oriLength - 1);
+    deltaStartNode += deltaDelta;
+    if (deltaDelta != 0){
+      lookahead.forEach((BufferedToken t) -> {
+        t.startNode += deltaDelta;
+        t.endNode += deltaDelta;
+      });
+    }
 
-    if (keepOrig && matchInputLength > 1) {
-      // Do full "side path" with the original tokens:
-      int lastNode = outputBuffer.get(paths.size()).endNode;
-      for(int i=1;i<matchInputLength-1;i++) {
-        BufferedInputToken token = lookahead.get(lookaheadNextRead + i);
-        outputBuffer.add(new BufferedOutputToken(token.state, token.term.toString(), lastNode, lastNode+1));
-        lastNode++;
+    int curEndNode = firstToken.startNode + lengthExceptHead + 1;
+    paths.forEach((List<BufferedToken> p) -> {
+      int size = p.size();
+      p.get(size - 1).endNode = curEndNode;
+
+      tokenQueue.offer(p.get(0));
+    });
+    paths.forEach((List<BufferedToken> p) ->{
+      int size = p.size();
+      for (int i = 1; i < size; i++) {
+        tokenQueue.offer(p.get(i));
       }
-      BufferedInputToken token = lookahead.get(lookaheadNextRead + matchInputLength - 1);
-      outputBuffer.add(new BufferedOutputToken(token.state, token.term.toString(), lastNode, endNode));
-    }
+    });
 
-    /*
-    System.out.println("  after buffer: " + outputBuffer.size() + " tokens:");
-    for(BufferedOutputToken token : outputBuffer) {
-      System.out.println("    tok: " + token.term + " startNode=" + token.startNode + " endNode=" + token.endNode);
-    }
-    */
   }
 
   /** Buffers the current input token into lookahead buffer. */
-  private void capture() {
-    assert liveToken;
-    liveToken = false;
-    BufferedInputToken token = lookahead.get(lookaheadNextWrite);
-    lookaheadNextWrite++;
+  private BufferedToken capture() {
+    prevInputStartNode += posIncrAtt.getPositionIncrement();
+    int startNode = prevInputStartNode + deltaStartNode;
+    int endNode = startNode + posLenAtt.getPositionLength();
+    AttributeSource.State state = captureState();
 
-    token.state = captureState();
+    char[] term = Arrays.copyOf(termAtt.buffer(), termAtt.length());
+    BufferedToken token = new BufferedToken(
+        term,
+        state,
+        startNode,
+        endNode
+    );
     token.startOffset = offsetAtt.startOffset();
     token.endOffset = offsetAtt.endOffset();
-    assert token.term.length() == 0;
-    token.term.append(termAtt);
-
+    token.captureIndex = captureCount;
     captureCount++;
-    maxLookaheadUsed = Math.max(maxLookaheadUsed, lookahead.getBufferSize());
-    //System.out.println("  maxLookaheadUsed=" + maxLookaheadUsed);
+    // System.out.println("capture: " + token.captureIndex + ", term: " + termAtt.toString() + ", term.size: " + termAtt + ", startOffset: " + token.startOffset + ", endOffset: " + token.endOffset + ", startNode: " + token.startNode + ", endNode:" + token.endNode);
+    return token;
   }
 
   @Override
   public void reset() throws IOException {
     super.reset();
-    lookahead.reset();
-    lookaheadNextWrite = 0;
-    lookaheadNextRead = 0;
+    prevOutputStartNode = 0;
+    prevInputStartNode = 0;
+    deltaStartNode = 0;
     captureCount = 0;
-    lastNodeOut = -1;
-    nextNodeOut = -1;
-    matchStartOffset = -1;
-    matchEndOffset = -1;
-    finished = false;
-    liveToken = false;
-    outputBuffer.clear();
-    maxLookaheadUsed = 0;
-    //System.out.println("S: reset");
+    inputFinished = false;
+    this.tokenQueue.clear();
+    this.lookahead.clear();
   }
 
-  // for testing
-  int getCaptureCount() {
+  public int getCaptureCount(){
     return captureCount;
   }
 
-  // for testing
-  int getMaxLookaheadUsed() {
-    return maxLookaheadUsed;
+  int getMaxLookaheadUsed(){
+    return 0;
   }
 }
