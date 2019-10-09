@@ -422,6 +422,7 @@ public final class SynonymGraphFilter extends TokenFilter {
     deltaStartNode = 0;
     captureCount = 0;
     inputFinished = false;
+    lastInputToken = null;
     this.tokenQueue.clear();
     this.lookahead.clear();
   }
