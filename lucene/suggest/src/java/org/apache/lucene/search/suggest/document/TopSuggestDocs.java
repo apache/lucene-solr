@@ -105,6 +105,11 @@ public class TopSuggestDocs extends TopDocs {
     this.isComplete = isComplete;
   }
 
+  /**
+   * {@link org.apache.lucene.search.TopDocs} wrapper with
+   * {@link TopSuggestDocs.SuggestScoreDoc}
+   * instead of {@link org.apache.lucene.search.ScoreDoc}
+   */
   public TopSuggestDocs(TotalHits totalHits, SuggestScoreDoc[] scoreDocs) {
     this(totalHits, scoreDocs, true);
   }
