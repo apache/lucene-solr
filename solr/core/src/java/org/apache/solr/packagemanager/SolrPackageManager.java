@@ -32,27 +32,30 @@ public class SolrPackageManager {
 
   final DefaultVersionManager versionManager;
 
-  public SolrPackageManager(File repo) {
+  final String solrBaseUrl;
+  
+  public SolrPackageManager(File repo, String solrBaseUrl) {
     versionManager = new DefaultVersionManager();
+    this.solrBaseUrl = solrBaseUrl;
   }
 
   Map<String, SolrPackageInstance> packages = null;
 
   Metadata fetchMetadata(String blobSha256) throws MalformedURLException, IOException {
     String metadataJson = 
-        IOUtils.toString(new URL("http://localhost:8983/api/node/blob"+"/"+blobSha256).openStream(), "UTF-8");
+        IOUtils.toString(new URL(solrBaseUrl + "/api/node/blob"+"/"+blobSha256).openStream(), "UTF-8");
     System.out.println("Fetched metadata blob: "+metadataJson);
     Metadata metadata = new ObjectMapper().readValue(metadataJson, Metadata.class);
     System.out.println("Now metadata: "+metadata);
     return metadata;
   }
 
-  public List<SolrPackageInstance> getPlugins() {
+  public List<SolrPackageInstance> getPackages() {
     System.out.println("Getting packages from clusterprops...");
     List<SolrPackageInstance> ret = new ArrayList<SolrPackageInstance>();
     packages = new HashMap<String, SolrPackageInstance>();
     try {
-      String clusterPropsZnode = IOUtils.toString(new URL("http://localhost:8983/solr/admin/zookeeper?detail=true&path=/clusterprops.json&wt=json").openStream(), "UTF-8");
+      String clusterPropsZnode = IOUtils.toString(new URL(solrBaseUrl + "/solr/admin/zookeeper?detail=true&path=/clusterprops.json&wt=json").openStream(), "UTF-8");
       String clusterPropsJson = ((Map)new ObjectMapper().readValue(clusterPropsZnode, Map.class).get("znode")).get("data").toString();
       Map packagesJson = (Map)new ObjectMapper().readValue(clusterPropsJson, Map.class).get("packages");
 
@@ -73,8 +76,6 @@ public class SolrPackageManager {
     return ret;
   }
 
-  String solrBaseUrl = "http://localhost:8983";
-
   public boolean deployInstallPackage(String packageName, List<String> collections, String overrides[]) {
     SolrPackageInstance pkg = getPackage(packageName);
 
@@ -89,10 +90,10 @@ public class SolrPackageManager {
         // nocommit: it overwrites params of other packages (use set or update)
         
         boolean packageParamsExist = ((Map)((Map)new ObjectMapper().readValue(
-            get("http://localhost:8983/api/collections/abc/config/params/packages"), Map.class)
+            get(solrBaseUrl + "/api/collections/abc/config/params/packages"), Map.class)
             ).get("response")).containsKey("params");
         
-        postJson("http://localhost:8983/api/collections/"+collection+"/config/params",
+        postJson(solrBaseUrl + "/api/collections/"+collection+"/config/params",
             new ObjectMapper().writeValueAsString(
                 Map.of(packageParamsExist? "update": "set", 
                     Map.of("packages", Map.of(packageName, collectionParameterOverrides)))));
@@ -110,7 +111,7 @@ public class SolrPackageManager {
 
         String cmd = resolve(p.setupCommand, pkg.parameterDefaults, collectionParameterOverrides, systemParams);
         System.out.println("Executing " + cmd + " for collection:" + collection);
-        postJson("http://localhost:8983/solr/"+collection+"/config", cmd);
+        postJson(solrBaseUrl + "/solr/"+collection+"/config", cmd);
       }
     }
 
@@ -143,7 +144,8 @@ public class SolrPackageManager {
         System.out.println("Executing " + p.verifyCommand + " for collection:" + collection);
         Map<String, String> collectionParameterOverrides;
         try {
-          collectionParameterOverrides = (Map<String, String>)((Map)((Map)((Map)new ObjectMapper().readValue(get("http://localhost:8983/api/collections/abc/config/params/packages"), Map.class).get("response")).get("params")).get("packages")).get(pkg.id);
+          collectionParameterOverrides = (Map<String, String>)((Map)((Map)((Map)new ObjectMapper().readValue
+              (get(solrBaseUrl + "/api/collections/abc/config/params/packages"), Map.class).get("response")).get("params")).get("packages")).get(pkg.id);
         } catch (IOException e) {
           throw new RuntimeException(e);
         }
@@ -172,12 +174,6 @@ public class SolrPackageManager {
     return success;
   }
 
-  /*private String resolve(String str, String collection, String packageVersion, String packageName) {
-    return str.replaceAll("\\{collection\\}", collection)
-        .replaceAll("\\{package-version\\}", packageVersion)
-        .replaceAll("\\{package-name\\}", packageName);
-  }*/
-
   public boolean deployUpdatePackage(String pluginId, List<String> collections) {
     SolrPackageInstance pkg = getPackage(pluginId);
     for (Plugin p: pkg.getPlugins()) {
@@ -185,7 +181,7 @@ public class SolrPackageManager {
       System.out.println(p.updateCommand);
       for (String collection: collections) {
         System.out.println("Executing " + p.updateCommand + " for collection:" + collection);
-        postJson("http://localhost:8983/solr/"+collection+"/config", p.updateCommand);
+        postJson(solrBaseUrl + "/solr/"+collection+"/config", p.updateCommand);
       }
     }
     boolean success = verify(pkg, collections);
@@ -251,7 +247,7 @@ public class SolrPackageManager {
   }
 
   public SolrPackageInstance getPackage(String pluginId) {
-    getPlugins();
+    getPackages();
     return packages.get(pluginId);
   }
 }

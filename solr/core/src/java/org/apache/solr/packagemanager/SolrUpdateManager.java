@@ -47,14 +47,16 @@ public class SolrUpdateManager {
   private String systemVersion;
   private Map<String, SolrPackageRelease> lastPluginRelease = new HashMap<>();
 
+  final String solrBaseUrl;
 
   private static final Logger log = LoggerFactory.getLogger(SolrUpdateManager.class);
 
-  public SolrUpdateManager(SolrPackageManager pluginManager, String repositoriesJsonStr) {
+  public SolrUpdateManager(SolrPackageManager pluginManager, String repositoriesJsonStr, String solrBaseUrl) {
     this.packageManager = pluginManager;
     this.repositoriesJsonStr = repositoriesJsonStr;
     versionManager = new DefaultVersionManager();
     systemVersion = "0.0.0";
+    this.solrBaseUrl = solrBaseUrl;
   }
 
   protected synchronized void initRepositoriesFromJson() {
@@ -168,7 +170,7 @@ public class SolrUpdateManager {
 
     System.out.println("Posting package: "+json);
     try (CloseableHttpClient client = HttpClients.createDefault();) {
-      HttpPost httpPost = new HttpPost("http://localhost:8983/api/cluster/package");
+      HttpPost httpPost = new HttpPost(solrBaseUrl + "/api/cluster/package");
       StringEntity entity = new StringEntity(json);
       httpPost.setEntity(entity);
       httpPost.setHeader("Accept", "application/json");
@@ -197,7 +199,7 @@ public class SolrUpdateManager {
   }
 
   private String uploadToBlobHandler(Path downloaded) {
-    String url = "http://localhost:8983/api/cluster/blob";
+    String url = solrBaseUrl + "/api/cluster/blob";
     File file = downloaded.toFile();
     try (CloseableHttpClient client = HttpClients.createDefault();) {
       HttpPost post = new HttpPost(url);
@@ -371,7 +373,7 @@ public class SolrUpdateManager {
    */
   public List<SolrPackage> getUpdates() {
       List<SolrPackage> updates = new ArrayList<>();
-      for (SolrPackageInstance installed : packageManager.getPlugins()) {
+      for (SolrPackageInstance installed : packageManager.getPackages()) {
           String pluginId = installed.getPluginId();
           if (hasPluginUpdate(pluginId)) {
               updates.add(getPackagesMap().get(pluginId));
