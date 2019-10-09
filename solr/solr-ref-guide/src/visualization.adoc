@@ -27,6 +27,10 @@ image::images/math-expressions/search-sort.png[]
 
 image::images/math-expressions/bivariate.png[]
 
+=== Correlation Matrices and Heat Maps
+
+image::images/math-expressions/corrmatrix.png[]
+
 === Visualizing CSV Files
 
 image::images/math-expressions/csv.png[]
@@ -63,9 +67,7 @@ image::images/math-expressions/forecast.png[]
 
 image::images/math-expressions/timecompare.png[]
 
-=== Correlation Matrices and Heat Maps
 
-image::images/math-expressions/corrmatrix.png[]
 
 === Clustering
 
