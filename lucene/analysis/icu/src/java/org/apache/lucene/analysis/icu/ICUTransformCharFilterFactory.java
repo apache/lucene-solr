@@ -58,7 +58,7 @@ public class ICUTransformCharFilterFactory extends CharFilterFactory {
     boolean assumeExternalUnicodeNormalization = getBoolean(args, "assumeExternalUnicodeNormalization", false);
     Transliterator stockTransliterator = Transliterator.getInstance(id, dir);
     final String modifiedRules;
-    if (assumeExternalUnicodeNormalization || ((modifiedRules = modifyRules(false, stockTransliterator)) == null)) {
+    if (!assumeExternalUnicodeNormalization || ((modifiedRules = modifyRules(false, stockTransliterator)) == null)) {
       this.transliterator = stockTransliterator;
     } else {
       String baseId = stockTransliterator.getID();
