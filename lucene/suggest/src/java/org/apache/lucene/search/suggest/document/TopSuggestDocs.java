@@ -20,6 +20,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.suggest.Lookup;
+import org.apache.lucene.util.fst.Util.TopNSearcher;
 
 /**
  * {@link org.apache.lucene.search.TopDocs} wrapper with
@@ -130,7 +131,7 @@ public class TopSuggestDocs extends TopDocs {
           break;
         }
       }
-      allComplete = allComplete && shardHit.isComplete;
+      allComplete &= shardHit.isComplete;
     }
     SuggestScoreDoc[] topNResults = priorityQueue.getResults();
     if (topNResults.length > 0) {
@@ -142,7 +143,8 @@ public class TopSuggestDocs extends TopDocs {
   }
 
   /**
-   * returns true if we exhausted all possibilities to collect results
+   * Indicates if the list of results is complete or not. Might be <code>false</code> if the {@link TopNSearcher} rejected
+   * too many of the queued results.
    */
   public boolean isComplete() {
     return this.isComplete;

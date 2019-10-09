@@ -299,7 +299,6 @@ public final class NRTSuggester implements Accountable {
    * <p>
    * If a <code>filter</code> is applied, the queue size is increased by
    * half the number of live documents.
-   *
    * <p>
    * The maximum queue size is {@link #MAX_TOP_N_QUEUE_SIZE}
    */
