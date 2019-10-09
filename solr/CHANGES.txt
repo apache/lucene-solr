@@ -305,6 +305,9 @@ Bug Fixes
 
 * SOLR-13376: Multi-node race condition to create/remove nodeLost markers. (hoss, ab)
 
+* SOLR-13293: ConcurrentUpdateHttp2SolrClient always log AsynchronousCloseException exception error on indexing.
+  (Cao Manh Dat)
+
 Other Changes
 ----------------------
 
