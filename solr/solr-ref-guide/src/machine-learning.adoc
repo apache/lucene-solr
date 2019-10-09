@@ -347,12 +347,12 @@ to read in a table.
 
 == K-Nearest Neighbor (KNN)
 
-The `knn` function searches the rows of a matrix for the
-k-nearest neighbors of a search vector. The `knn` function
-returns a matrix of the k-nearest neighbors.
+The `knn` function searches the rows of a matrix with a search vector and
+returns a matrix of the k-nearest neighbors. This allows for secondary vector
+searches over result sets.
 
-The `knn` function supports changing of the distance measure by providing one of these
-distance measure functions as the fourth parameter:
+The `knn` function supports changing of the distance measure by providing one of the following
+distance measure functions:
 
 * `euclidean` (Default)
 * `manhattan`
@@ -361,12 +361,50 @@ distance measure functions as the fourth parameter:
 * `cosine`
 * `haversineMeters` (Geospatial distance measure)
 
-NOTE: The example below works with TF-IDF _term vectors_.
-The section <<term-vectors.adoc#term-vectors,Text Analysis and Term Vectors>> offers
-a full explanation of this features.
+The example below shows how to perform a secondary search over an aggregation
+result set. The goal of the example is to find zip codes in the nyc311 complaint
+database that have similar complaint types to the zip code 10280.
+
+The first step in the example is to use the `facet2D` function to perform a two
+dimensional aggregation over the *zip_s* and *complaint_type* fields. In the example
+the top 119 zip codes and top 5 complaint types for each zip code are calculated
+for the borough of Manhattan. The result is a list of tuples each containing
+the *zip_s*, *complaint_type_s* and the *count* for combination.
+
+The list of tuples is then *pivoted* into a matrix with the `pivot` function. The
+`pivot` function in this example returns a matrix with rows of zip codes
+and columns of complaint types. The `count(*)` field from the tuples
+populates the cells of the matrix. This matrix will be used as the secondary
+search matrix.
+
+The next step is to locate the vector for the 10280 zip code. This is done in
+three steps in the example. The first step is to retrieve the row labels from
+the matrix with `getRowLabels` function. The row labels in this case are zip codes which were populated
+by the `pivot` function. Then the `indexOf` function is used
+to find the *index* of the "10280" zip code in the list of row labels. The `rowAt`
+function is then used to return the vector at that *index* from the matrix. This vector
+is the *search vector*.
+
+Now that we have a matrix and search vector we can use the `knn` function to perform the search.
+In the example the `knn` function searches the matrix with the search vector with a K of 5, using
+*cosine* distance. Cosine distance is useful for comparing sparse vectors which is the case in this
+example. The `knn` function returns a matrix with the top 5 nearest neighbors to the search vector.
+
+The `knn` function populates the row and column labels of the return matrix and
+also adds a vector of *distances* for each row as an attribute to the matrix.
+
+In the example the `zplot` function extracts the row labels and
+the distance vector with the `getRowLabels` and `getAttribute` functions.
+The `topFeatures` function is used to extract
+the top 5 column labels for each zip code vector, based on the counts for each
+column. Then `zplot` outputs the data in a format that can be visualized in
+a table with Zeppelin-Solr.
 
 image::images/math-expressions/knn.png[]
 
+The table above shows each zip code returned by the `knn` function along
+with the list of complaints and distances. These are the zip codes that are most similar
+to the 10280 zip code based on complaint types in Manhattan.
 
 == K-Nearest Neighbor Regression
 
