@@ -227,7 +227,7 @@ Improvements
 * SOLR-13795: Managed schema operations should do a core reload in Solr standalone mode.
   (Thomas Wöckinger via David Smiley)
 
-* SOLR-13719: Introducing SolrClient.ping(collection) in SolrJ (Geza Nagy via Mikhail Khludnev) 
+* SOLR-13719: Introducing SolrClient.ping(collection) in SolrJ (Geza Nagy via Mikhail Khludnev)
 
 Bug Fixes
 ----------------------
@@ -309,6 +309,8 @@ Bug Fixes
   (Cao Manh Dat)
 
 * SOLR-13828: Improve ExecutePlanAction error handling. (ab)
+
+* SOLR-13760: Fix regression in support for Date math in TRA start date that was introduced by SOLR-13375
 
 Other Changes
 ----------------------
