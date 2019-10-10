@@ -295,7 +295,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
 
   private void consumeFully(InputStream is) {
     if (is != null) {
-      try (is) {
+      try {
         // make sure the stream is full read
         is.skip(is.available());
         while (is.read() != -1) {
@@ -304,6 +304,12 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
         // nothing to do then
       } catch (IOException e) {
         // quiet
+      } finally {
+        try {
+          is.close();
+        } catch (IOException e) {
+          // quiet
+        }
       }
     }
   }
