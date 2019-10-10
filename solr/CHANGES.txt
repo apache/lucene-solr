@@ -308,6 +308,8 @@ Bug Fixes
 * SOLR-13293: ConcurrentUpdateHttp2SolrClient always log AsynchronousCloseException exception error on indexing.
   (Cao Manh Dat)
 
+* SOLR-13828: Improve ExecutePlanAction error handling. (ab)
+
 Other Changes
 ----------------------
 
