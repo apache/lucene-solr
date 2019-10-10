@@ -33,7 +33,7 @@
     <dependency org="mecab" name="mecab-naist-jdic" rev="${/mecab/mecab-naist-jdic}" conf="naist">
       <artifact name="mecab-naist-jdic" type=".tar.gz" url=" https://rwthaachen.dl.osdn.jp/naist-jdic/53500/mecab-naist-jdic-0.6.3b-20111013.tar.gz"/>
     </dependency>
-    <dependency org="mecab" name="mecab-unidic" rev="2.1.2" conf="unidic">
+    <dependency org="mecab" name="mecab-unidic" rev="${/mecab/mecab-unidic}" conf="unidic">
       <artifact name="unidic" type=".zip" url=" http://ja.osdn.net/frs/redir.php?m=iij&amp;f=unidic%2F58338%2Funidic-mecab-2.1.2_src.zip"/>
     </dependency>
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>
