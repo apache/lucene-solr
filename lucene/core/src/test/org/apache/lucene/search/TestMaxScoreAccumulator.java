@@ -44,9 +44,9 @@ public class TestMaxScoreAccumulator extends LuceneTestCase {
     MaxScoreAccumulator acc = new MaxScoreAccumulator();
     int numDocs = atLeast(100);
     int maxDocs = atLeast(10000);
-    MaxScoreAccumulator.Result max = new MaxScoreAccumulator.Result(-1, -1);
+    MaxScoreAccumulator.DocAndScore max = new MaxScoreAccumulator.DocAndScore(-1, -1);
     for (int i = 0; i < numDocs; i++) {
-      MaxScoreAccumulator.Result res = new MaxScoreAccumulator.Result(random().nextInt(maxDocs), random().nextFloat());
+      MaxScoreAccumulator.DocAndScore res = new MaxScoreAccumulator.DocAndScore(random().nextInt(maxDocs), random().nextFloat());
       acc.accumulate(res.docID, res.score);
       if (res.compareTo(max) > 0) {
         max = res;

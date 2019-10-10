@@ -58,6 +58,9 @@ Improvements
 * LUCENE-8213: LRUQueryCache#doCache now uses IndexSearcher's Executor (if present)
   to asynchronously cache heavy queries (Atri Sharma)
 
+* LUCENE-8992: TopFieldCollector and TopScoreDocCollector can now share minimum scores across leaves
+  concurrently. (Jim Ferenczi)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 

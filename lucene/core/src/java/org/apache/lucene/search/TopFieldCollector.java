@@ -27,6 +27,7 @@ import java.util.Objects;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.search.FieldValueHitQueue.Entry;
+import org.apache.lucene.search.MaxScoreAccumulator.DocAndScore;
 import org.apache.lucene.search.TotalHits.Relation;
 
 /**
@@ -153,8 +154,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
                   collectedAllCompetitiveHits = true;
                 }
               } else if (totalHitsRelation == Relation.EQUAL_TO) {
-                // we just reached totalHitsThreshold, we can start setting the min
-                // competitive score now
+                // we can start setting the min competitive score if the
+                // threshold is reached for the first time here.
                 updateMinCompetitiveScore(scorer);
               }
               return;
@@ -255,10 +256,10 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
                 } else {
                   collectedAllCompetitiveHits = true;
                 }
-              } else if (totalHitsRelation == Relation.EQUAL_TO) {
-                // we just reached totalHitsThreshold, we can start setting the min
-                // competitive score now
-                  updateMinCompetitiveScore(scorer);
+              } else if (totalHitsRelation == TotalHits.Relation.EQUAL_TO) {
+                // we can start setting the min competitive score if the
+                // threshold is reached for the first time here.
+                updateMinCompetitiveScore(scorer);
               }
               return;
             }
@@ -362,7 +363,10 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     assert minScoreAcc != null;
     if (canSetMinScore
           && hitsThresholdChecker.isThresholdReached()) {
-      MaxScoreAccumulator.Result maxMinScore = minScoreAcc.get();
+      // we can start checking the global maximum score even
+      // if the local queue is not full because the threshold
+      // is reached.
+      DocAndScore maxMinScore = minScoreAcc.get();
       if (maxMinScore != null && maxMinScore.score > minCompetitiveScore) {
         scorer.setMinCompetitiveScore(maxMinScore.score);
         minCompetitiveScore = maxMinScore.score;
@@ -373,8 +377,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
   protected void updateMinCompetitiveScore(Scorable scorer) throws IOException {
     if (canSetMinScore
-          && hitsThresholdChecker.isThresholdReached()
-          && queueFull) {
+          && queueFull
+          && hitsThresholdChecker.isThresholdReached()) {
       assert bottom != null && firstComparator != null;
       float minScore = firstComparator.value(bottom.slot);
       if (minScore > minCompetitiveScore) {

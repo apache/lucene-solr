@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Collection;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.search.MaxScoreAccumulator.DocAndScore;
 
 /**
  * A {@link Collector} implementation that collects the top-scoring hits,
@@ -301,7 +302,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
 
   protected void updateGlobalMinCompetitiveScore(Scorable scorer) throws IOException {
     assert minScoreAcc != null;
-    MaxScoreAccumulator.Result maxMinScore = minScoreAcc.get();
+    DocAndScore maxMinScore = minScoreAcc.get();
     if (maxMinScore != null) {
       // since we tie-break on doc id and collect in doc id order we can require
       // the next float if the global minimum score is set on a document that is

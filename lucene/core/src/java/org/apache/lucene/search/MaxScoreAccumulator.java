@@ -37,31 +37,31 @@ final class MaxScoreAccumulator {
 
   void accumulate(int docID, float score) {
     assert docID >= 0 && score >= 0;
-    long encode = (((long) Float.floatToIntBits(score)) << 32) | (docID & 0xffffffffL);
+    long encode = (((long) Float.floatToIntBits(score)) << 32) | docID;
     acc.accumulate(encode);
   }
 
-  Result get() {
+  DocAndScore get() {
     long value = acc.get();
     if (value == Long.MIN_VALUE) {
       return null;
     }
     float score = Float.intBitsToFloat((int) (value >> 32));
     int docID = (int) value;
-    return new Result(docID, score);
+    return new DocAndScore(docID, score);
   }
 
-  static class Result implements Comparable<Result> {
+  static class DocAndScore implements Comparable<DocAndScore> {
     final int docID;
     final float score;
 
-    Result(int docID, float score) {
+    DocAndScore(int docID, float score) {
       this.docID = docID;
       this.score = score;
     }
 
     @Override
-    public int compareTo(Result o) {
+    public int compareTo(DocAndScore o) {
       int cmp = Float.compare(score, o.score);
       if (cmp == 0) {
         return Integer.compare(docID, o.docID);
@@ -73,14 +73,14 @@ final class MaxScoreAccumulator {
     public boolean equals(Object o) {
       if (this == o) return true;
       if (o == null || getClass() != o.getClass()) return false;
-      Result result = (Result) o;
+      DocAndScore result = (DocAndScore) o;
       return docID == result.docID &&
           Float.compare(result.score, score) == 0;
     }
 
     @Override
     public String toString() {
-      return "Max{" +
+      return "DocAndScore{" +
           "docID=" + docID +
           ", score=" + score +
           '}';
