@@ -90,7 +90,7 @@ public  class EdgeTree {
   // THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
   // CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
   // IN THE SOFTWARE.
-  public boolean contains(double x, double y, AtomicBoolean isOnEdge) {
+  protected boolean contains(double x, double y, AtomicBoolean isOnEdge) {
     boolean res = false;
     if (isOnEdge.get() == false && y <= this.max) {
       if (y == this.y1 && y == this.y2 ||
@@ -117,7 +117,7 @@ public  class EdgeTree {
   }
 
   /** returns true if the provided x, y point lies on the line */
-  public boolean isPointOnLine(double x, double y) {
+  protected boolean isPointOnLine(double x, double y) {
     if (y <= max) {
       if (orient(x1, y1, x2, y2, x, y) == 0) {
         return true;
@@ -134,7 +134,7 @@ public  class EdgeTree {
 
 
   /** Returns true if the triangle crosses any edge in this edge subtree */
-  public boolean crossesTriangle(double minX, double maxX, double minY, double maxY,
+  protected boolean crossesTriangle(double minX, double maxX, double minY, double maxY,
                           double ax, double ay, double bx, double by, double cx, double cy) {
       if (minY <= max) {
         double dy = y1;
@@ -169,7 +169,7 @@ public  class EdgeTree {
     }
 
   /** Returns true if the box crosses any edge in this edge subtree */
-  public boolean crossesBox(double minX, double maxX, double minY, double maxY, boolean includeBoundary) {
+  protected boolean crossesBox(double minX, double maxX, double minY, double maxY, boolean includeBoundary) {
     // we just have to cross one edge to answer the question, so we descend the tree and return when we do.
     if (minY <= max) {
       // we compute line intersections of every polygon edge with every box line.
@@ -223,7 +223,7 @@ public  class EdgeTree {
   }
 
   /** Returns true if the line crosses any edge in this edge subtree */
-  public boolean crossesLine(double minX, double maxX, double minY, double maxY, double a2x, double a2y, double b2x, double b2y) {
+  protected boolean crossesLine(double minX, double maxX, double minY, double maxY, double a2x, double a2y, double b2x, double b2y) {
     if (minY <= max) {
       double a1x = x1;
       double a1y = y1;
@@ -252,7 +252,7 @@ public  class EdgeTree {
    * Creates an edge interval tree from a set of geometry vertices.
    * @return root node of the tree.
    */
-  public static EdgeTree createTree(double[] x, double[] y) {
+  protected static EdgeTree createTree(double[] x, double[] y) {
     EdgeTree edges[] = new EdgeTree[x.length - 1];
     for (int i = 1; i < x.length; i++) {
       double x1 = x[i-1];

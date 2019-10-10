@@ -67,7 +67,7 @@ public interface Component2D {
 
   /** Compute whether the first bounding box 1 is within the second bounding box **/
   static boolean within(double minX1, double maxX1, double minY1, double maxY1, double minX2, double maxX2, double minY2, double maxY2) {
-    return (minY2 < minY1 && maxY2 > maxY1&& minX2 < minX1 && maxX2 > maxX1);
+    return (minY2 <= minY1 && maxY2 >= maxY1 && minX2 <= minX1 && maxX2 >= maxX1);
   }
 
   /** returns true if rectangle (defined by minX, maxX, minY, maxY) contains the X Y point */
