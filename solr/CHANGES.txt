@@ -308,6 +308,8 @@ Bug Fixes
 * SOLR-13293: ConcurrentUpdateHttp2SolrClient always log AsynchronousCloseException exception error on indexing.
   (Cao Manh Dat)
 
+* SOLR-13665: Added missing netty dependencies to solrJ and upgraded netty to v 4.1.29.Final (Jörn Franke, janhoy)
+
 Other Changes
 ----------------------
 
