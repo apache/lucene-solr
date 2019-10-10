@@ -245,8 +245,11 @@ task buildInit(type: Sync) {
         filter(org.apache.tools.ant.filters.ExpandProperties, project: dummyAntProject)
     })
 
-    afterEvaluate {
-        props.each { k, v -> dummyAntProject.setProperty(k, v) }
+    doFirst {
+        props.each { k, v -> 
+          dummyAntProject.setProperty(k, v)
+          println("# " + k + " " + v)
+        }
     }
 
     into buildContentDir
