@@ -52,9 +52,9 @@ public class CorePullerThread implements Runnable {
 
       } catch (InterruptedException ie) {
         log.info("Puller thread " + Thread.currentThread().getName()
-            + " got interrupted. Shutting down Blob CorePullerFeeder.");
+            + " got interrupted. Shutting down Blob CorePullerFeeder if not already.");
 
-        // Stop the puller feeder that will close the other threads and reinterrupt ourselves
+        // Stop the puller feeder that will close the other threads and re-interrupt ourselves
         pullerFeeder.close();
         Thread.currentThread().interrupt();
         break;

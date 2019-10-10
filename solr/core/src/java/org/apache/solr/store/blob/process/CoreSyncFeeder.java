@@ -20,8 +20,8 @@ import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.commons.lang3.exception.ExceptionUtils;
 //import com.force.commons.util.concurrent.NamedThreadFactory; difference?
 import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.solr.core.CoreContainer;
@@ -63,8 +63,6 @@ public abstract class CoreSyncFeeder implements Runnable, Closeable {
     private volatile Thread executionThread;
     private volatile boolean closed = false;
 
-    private final AtomicBoolean shouldContinue = new AtomicBoolean(true);
-
     protected CoreSyncFeeder(CoreContainer cores, int numSyncThreads) {
         this.numSyncThreads = numSyncThreads;
         this.cores = cores;
@@ -100,7 +98,8 @@ public abstract class CoreSyncFeeder implements Runnable, Closeable {
                 feedTheMonsters();
             } catch (Throwable e) {
                 if (!closed) {
-                  // TODO send warning message here
+                  log.error("CoreSyncFeeder thread encountered an error and is exiting "
+                      + "while close() was not called. " + ExceptionUtils.getStackTrace(e));
                 }
             } finally {
                 // If we stop, have our syncer "thread pool" stop as well since there's not much they can do anyway
@@ -116,24 +115,22 @@ public abstract class CoreSyncFeeder implements Runnable, Closeable {
     }
 
     boolean shouldContinueRunning() {
-        // Theoretically shouldContinue should get set to false before the CoreContainer is shutdown,
-        // but just in case we'll check both.
-        return shouldContinue.get() && !this.cores.isShutDown();
+      return !this.cores.isShutDown();
     }
 
     @Override
     public void close() {
+      if (!closed) {
         closed = true;
-
         Thread thread = this.executionThread;
         if (thread != null) {
-            this.executionThread = null; // race to set to null but ok to try to interrupt twice
-            log.info(String.format("Closing CoreSyncFeeder; interrupting execution thread %s.", thread.getName()));
-            thread.interrupt();
-            
+          this.executionThread = null; // race to set to null but ok to try to interrupt twice
+          log.info(String.format("Closing CoreSyncFeeder; interrupting execution thread %s.", thread.getName()));
+          thread.interrupt();
         } else {
-            log.warn("Closing CoreSyncFeeder before any syncer thread was started. Weird.");
+          log.warn("Closing CoreSyncFeeder before any syncer thread was started. Weird.");
         }
+      }
     }
 
     abstract String getMonsterThreadName();

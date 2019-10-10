@@ -296,11 +296,11 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
 
       // The following call can fail if blob is corrupt (in non trivial ways, trivial ways are identified by other cases)
       // pull was successful
-      if (CorePullerFeeder.isEmptyCoreAwaitingPull(coreContainer, pullCoreInfo.getCoreName())) {
+      //if (CorePullerFeeder.isEmptyCoreAwaitingPull(coreContainer, pullCoreInfo.getCoreName())) {
         // the javadoc for pulledBlob suggests that it is only meant to be called if we pulled from scratch
         // therefore only limiting this call when we created the local core for this pull ourselves
         // BlobTransientLog.get().getCorruptCoreTracker().pulledBlob(pullCoreInfo.coreName, blobMetadata);
-      }
+      //}
     } catch (InterruptedException e) {
       throw e;
     } catch (Exception e) {
