@@ -511,7 +511,7 @@ public class Grouping {
    * A group command is also responsible for creating the response structure.
    * <p>
    * Note: Maybe the creating the response structure should be done in something like a ReponseBuilder???
-   * Warning NOT thread safe!
+   * Warning NOT thread save!
    */
   public abstract class Command<T> {
 
@@ -898,9 +898,7 @@ public class Grouping {
         maxScore = Float.NaN;
       }
       
-      String queryString = (query != null)? query.toString(): ""; 
-      GroupDocs<String> groupDocs = new GroupDocs<>(Float.NaN, maxScore, topDocs.totalHits, topDocs.scoreDocs, queryString, null);
-      
+      GroupDocs<String> groupDocs = new GroupDocs<>(Float.NaN, maxScore, topDocs.totalHits, topDocs.scoreDocs, query.toString(), null);
       if (main) {
         mainResult = getDocList(groupDocs);
       } else {
