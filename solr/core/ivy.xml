@@ -59,12 +59,6 @@
     <dependency org="com.lmax" name="disruptor" rev="${/com.lmax/disruptor}" conf="compile"/>
     <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="compile"/>
 
-<!--
-    <dependency org="io.netty" name="netty-handler" rev="${/io.netty/netty-handler}" conf="compile"/>
-    <dependency org="io.netty" name="netty-transport" rev="${/io.netty/netty-transport}" conf="compile"/>
-    <dependency org="io.netty" name="netty-transport-native-epoll" rev="${/io.netty/netty-transport-native-epoll}" conf="compile"/>
--->
-
     <dependency org="org.mockito" name="mockito-core" rev="${/org.mockito/mockito-core}" conf="test"/>
     <dependency org="net.bytebuddy" name="byte-buddy" rev="${/net.bytebuddy/byte-buddy}" conf="test"/>
     <dependency org="org.objenesis" name="objenesis" rev="${/org.objenesis/objenesis}" conf="test"/>
