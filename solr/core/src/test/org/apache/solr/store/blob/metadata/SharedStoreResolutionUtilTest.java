@@ -25,13 +25,13 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.store.blob.client.BlobCoreMetadata;
 import org.apache.solr.store.blob.client.BlobCoreMetadata.BlobFile;
 import org.apache.solr.store.blob.client.BlobCoreMetadataBuilder;
 import org.apache.solr.store.blob.metadata.ServerSideMetadata.CoreFileData;
 import org.apache.solr.store.blob.metadata.SharedStoreResolutionUtil.SharedMetadataResolutionResult;
-import org.apache.solr.store.shared.SolrCloudSharedStoreTestCase;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -40,10 +40,10 @@ import com.google.common.collect.ImmutableSet;
 /**
  * Unit tests for {@link SharedStoreResolutionUtil}.
  */
-public class SharedStoreResolutionUtilTest extends SolrCloudSharedStoreTestCase {
-  
+public class SharedStoreResolutionUtilTest extends SolrTestCaseJ4 {
+
   @BeforeClass
-  public static void beforeClass() {
+  public static void setupTests() {
     assumeWorkingMockito();
   }
   

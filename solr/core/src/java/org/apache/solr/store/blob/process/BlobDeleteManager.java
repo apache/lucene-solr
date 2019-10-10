@@ -1,5 +1,6 @@
 package org.apache.solr.store.blob.process;
 
+import java.lang.invoke.MethodHandles;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -11,12 +12,16 @@ import java.util.concurrent.TimeUnit;
 import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.solr.store.blob.client.CoreStorageClient;
 import org.apache.solr.store.blob.metadata.CorePushPull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Manager of blobs (files) to delete, putting them in a queue (if space left on the queue) then consumed and processed
  * by {@link BlobDeleterTask}
  */
 public class BlobDeleteManager {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   /**
    * Limit to the number of blob files to delete accepted on the delete queue (and lost in case of server crash). When

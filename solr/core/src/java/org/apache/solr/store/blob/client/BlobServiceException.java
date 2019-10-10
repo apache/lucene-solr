@@ -24,15 +24,15 @@ package org.apache.solr.store.blob.client;
  */
 public class BlobServiceException extends BlobException {
     
-    public BlobServiceException(Throwable cause) {
-        super(cause);
-    }
+  public BlobServiceException(Throwable cause) {
+    super(cause);
+  }
 
-    public BlobServiceException(String message) {
-        super(message);
-    }
+  public BlobServiceException(String message) {
+    super(message);
+  }
 
-    public BlobServiceException(String message, Throwable cause) {
-        super(message, cause);
-    }
+  public BlobServiceException(String message, Throwable cause) {
+    super(message, cause);
+  }
 }

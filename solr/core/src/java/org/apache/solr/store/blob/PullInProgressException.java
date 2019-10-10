@@ -21,7 +21,7 @@ package org.apache.solr.store.blob;
  * available so can't be used and request can't be handled.
  */
 public class PullInProgressException extends Exception {
-    public PullInProgressException(String message) {
-        super(message);
-    }
+  public PullInProgressException(String message) {
+    super(message);
+  }
 }

@@ -1,6 +1,4 @@
 package org.apache.solr.store.blob.util;
-import static org.junit.Assert.assertTrue;
-
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 import java.util.UUID;
@@ -57,7 +55,7 @@ public class BlobStoreUtils {
    * @throws SolrException if the local core was not successfully sync'd.
    */
   public static void syncLocalCoreWithSharedStore(String collectionName, String coreName, String shardName, CoreContainer coreContainer) throws SolrException {
-    assertTrue(coreContainer.isZooKeeperAware());
+    assert coreContainer.isZooKeeperAware();
 
     ZkController zkController = coreContainer.getZkController();
     SharedShardMetadataController sharedMetadataController = coreContainer.getSharedStoreManager().getSharedShardMetadataController();

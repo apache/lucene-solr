@@ -21,7 +21,7 @@ import org.slf4j.LoggerFactory;
  */
 public class SharedStoreResolutionUtil {
 
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static String SEGMENTS_N_PREFIX = "segments_";
 
@@ -153,7 +153,7 @@ public class SharedStoreResolutionUtil {
                   " localSize=%s blobSize=%s localChecksum=%s blobCheckSum=%s",
               distant.getSharedBlobName(), local.getCoreName(), bf.getSolrFileName(), bf.getBlobName(),
               cf.getFileSize(), bf.getFileSize(), cf.getChecksum(), bf.getChecksum());
-          logger.info(message);
+          log.info(message);
           localConflictingWithBlob = true;
         }
       }

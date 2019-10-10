@@ -58,7 +58,8 @@ public class BlobStoreUtilsTest extends SolrCloudSharedStoreTestCase {
   private static CoreStorageClient storageClient;
   
   @BeforeClass
-  public static void setupTestClass() throws Exception {    
+  public static void setupTestClass() throws Exception {
+    assumeWorkingMockito();
     sharedStoreRootPath = createTempDir("tempDir");
     storageClient = setupLocalBlobStoreClient(sharedStoreRootPath, DEFAULT_BLOB_DIR_NAME);
     

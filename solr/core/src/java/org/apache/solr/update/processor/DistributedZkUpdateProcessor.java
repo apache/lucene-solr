@@ -18,7 +18,6 @@
 package org.apache.solr.update.processor;
 
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
-import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -1096,7 +1095,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     String coreName = req.getCore().getName();
     String shardName = cloudDesc.getShardId();
     String collectionName = cloudDesc.getCollectionName();
-    assertEquals(replicaType, Replica.Type.SHARED);
+    assert Replica.Type.SHARED.equals(replicaType);
     // Peers and subShardLeaders should only forward the update request to leader replica,
     // hence not need to sync with the blob store at this point.
     if (!isLeader || isSubShardLeader) {

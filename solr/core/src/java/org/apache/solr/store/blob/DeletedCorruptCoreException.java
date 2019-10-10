@@ -21,7 +21,7 @@ package org.apache.solr.store.blob;
  * another version from Blob Store.
  */
 public class DeletedCorruptCoreException extends Exception {
-    public DeletedCorruptCoreException(String message) {
-        super(message);
-    }
+  public DeletedCorruptCoreException(String message) {
+    super(message);
+  }
 }

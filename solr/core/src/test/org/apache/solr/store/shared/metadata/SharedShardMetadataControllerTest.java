@@ -50,7 +50,8 @@ public class SharedShardMetadataControllerTest extends SolrCloudTestCase {
   static SolrCloudManager cloudManager; 
   
   @BeforeClass
-  public static void setupCluster() throws Exception {    
+  public static void setupCluster() throws Exception {
+    assumeWorkingMockito();
     configureCluster(1)
       .addConfig("conf", configset("cloud-minimal"))
       .configure();

@@ -54,6 +54,7 @@ public class CorePushPullTest extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void setupTest() throws Exception {
+    assumeWorkingMockito();
     // set up the temp directory for a local blob store
     localBlobDir = createTempDir("tempDir");
     System.setProperty(LocalStorageClient.BLOB_STORE_LOCAL_FS_ROOT_DIR_PROPERTY, localBlobDir.resolve("LocalBlobStore/").toString());
