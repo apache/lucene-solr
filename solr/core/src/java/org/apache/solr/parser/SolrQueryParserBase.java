@@ -1049,7 +1049,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     } else {
       // intercept magic field name of "_" to use as a hook for our
       // own functions.
-      if (allowSubQueryParsing && field.charAt(0) == '_' && parser != null) {
+      if (allowSubQueryParsing && field.startsWith("_") && parser != null) {
         MagicFieldName magic = MagicFieldName.get(field);
         if (null != magic) {
           subQParser = parser.subQuery(queryText, magic.subParser);
