@@ -17,19 +17,19 @@
 
 package org.apache.solr.api;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import org.apache.solr.common.util.CommandOperation;
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.METHOD)
-public @interface Command {
-  /**if this is not a json command , leave it empty.
-   * Keep in mind that you cannot have duplicates.
-   * Only one method per name
-   *
-   */
-  String name() default "";
+public  class PayloadObj<T> extends CommandOperation {
 
+  private T obj;
+
+
+  public PayloadObj(String operationName, Object metaData, T obj) {
+    super(operationName, metaData);
+    this.obj = obj;
+  }
+
+  public T get(){
+    return obj;
+  }
 }
