@@ -16,6 +16,10 @@
  */
 package org.apache.solr.client.solrj.request;
 
+import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,10 +50,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.restlet.ext.servlet.ServerServlet;
-
-import static org.hamcrest.CoreMatchers.anyOf;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
 
 /**
  * Test the functionality (accuracy and failure) of the methods exposed by the classes

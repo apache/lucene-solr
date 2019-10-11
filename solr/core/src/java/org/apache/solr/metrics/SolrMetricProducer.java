@@ -17,19 +17,19 @@
 package org.apache.solr.metrics;
 
 /**
- * Used by objects that expose metrics through {@link SolrCoreMetricManager}.
+ * Used by objects that expose metrics through {@link SolrMetricManager}.
  */
 public interface SolrMetricProducer {
 
   /**
    * Initializes metrics specific to this producer
-   * @param manager  an instance of {@link SolrMetricManager}
+   * @param manager an instance of {@link SolrMetricManager}
    * @param registry registry name where metrics are registered
-   * @param tag      a symbolic tag that represents this instance of the producer,
-   *                 or a group of related instances that have the same life-cycle. This tag is
-   *                 used when managing life-cycle of some metrics and is set when
-   *                 {@link #initializeMetrics(SolrMetricManager, String, String, String)} is called.
-   * @param scope    scope of the metrics (eg. handler name) to separate metrics of
+   * @param tag a symbolic tag that represents this instance of the producer,
+   * or a group of related instances that have the same life-cycle. This tag is
+   * used when managing life-cycle of some metrics and is set when
+   * {@link #initializeMetrics(SolrMetricManager, String, String, String)} is called.
+   * @param scope scope of the metrics (eg. handler name) to separate metrics of
    */
   void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope);
 }

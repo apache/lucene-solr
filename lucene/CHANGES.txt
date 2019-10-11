@@ -52,6 +52,8 @@ Improvements
 
 * LUCENE-8937: Avoid agressive stemming on numbers in the FrenchMinimalStemmer.
   (Adrien Gallou via Tomoko Uchida)
+  
+* LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
 
 Bug fixes
 
@@ -61,6 +63,32 @@ Bug fixes
 Other
 
 * LUCENE-8768: Fix Javadocs build in Java 11. (Namgyu Kim)
+
+======================= Lucene 8.4.0 =======================
+
+API Changes
+---------------------
+(No changes)
+
+New Features
+---------------------
+(No changes)
+
+Improvements
+---------------------
+(No changes)
+
+Optimizations
+---------------------
+(No changes)
+
+Bug Fixes
+---------------------
+(No changes)
+
+Other
+---------------------
+(No changes)
 
 ======================= Lucene 8.3.0 =======================
 
@@ -80,6 +108,10 @@ API Changes
 * LUCENE-8921: IndexSearcher.termStatistics() no longer takes a TermStates; it takes the docFreq and totalTermFreq.
   And don't call if docFreq <= 0.  The previous implementation survives as deprecated and final.  It's removed in 9.0.
   (Bruno Roustant, David Smiley, Alan Woodward)
+
+* LUCENE-8990: PointValues#estimateDocCount(visitor) estimates the number of documents that would be matched by
+  the given IntersectVisitor. THe method is used to compute the cost() of ScorerSuppliers instead of
+  PointValues#estimatePointCount(visitor). (Ignacio Vera, Adrien Grand)
 
 New Features
 
@@ -152,11 +184,17 @@ the total hits is not requested.
 * LUCENE-8755: spatial-extras quad and packed quad prefix trees now index points faster.
   (Chongchen Chen, David Smiley)
 
+* LUCENE-8860: add additional leaf node level optimizations in LatLonShapeBoundingBoxQuery.
+  (Igor Motov via Ignacio Vera)
+  
 * LUCENE-8968: Improve performance of WITHIN and DISJOINT queries for Shape queries by
   doing just one pass whenever possible. (Ignacio Vera)
 
 * LUCENE-8939: Introduce shared count based early termination across multiple slices
   (Atri Sharma)
+
+* LUCENE-8980: Blocktree's seekExact now short-circuits false if the term isn't in the min-max range of the segment.
+  Large perf gain for ID/time like data when populated sequentially.  (Guoqiang Jiang)
 
 Bug Fixes
 
@@ -171,6 +209,14 @@ Other
 * LUCENE-8758: QuadPrefixTree: removed levelS and levelN fields which weren't used. (Amish Shah)
 
 * LUCENE-8975: Code Cleanup: Use entryset for map iteration wherever possible.
+
+* LUCENE-8993, LUCENE-8807: Changed all repository and download references in build files
+  to HTTPS. (Uwe Schindler)
+
+* LUCENE-8998: Fix OverviewImplTest.testIsOptimized reproducible failure. (Tomoko Uchida)
+
+* LUCENE-8999: LuceneTestCase.expectThrows now propogates assert/assumption failures up to the test
+  w/o wrapping in a new assertion failure unless the caller has explicitly expected them (hossman)
 
 ======================= Lucene 8.2.0 =======================
 

@@ -141,6 +141,10 @@ public class TestInjection {
 
   public volatile static Integer delayBeforeSlaveCommitRefresh=null;
 
+  public volatile static Integer delayInExecutePlanAction=null;
+
+  public volatile static boolean failInExecutePlanAction = false;
+
   public volatile static boolean uifOutOfMemoryError = false;
 
   public volatile static Map<String, String> additionalSystemProps = null;
@@ -171,6 +175,8 @@ public class TestInjection {
     failIndexFingerprintRequests = null;
     wrongIndexFingerprint = null;
     delayBeforeSlaveCommitRefresh = null;
+    delayInExecutePlanAction = null;
+    failInExecutePlanAction = false;
     uifOutOfMemoryError = false;
     notifyPauseForeverDone();
     newSearcherHooks.clear();

@@ -111,8 +111,7 @@ public class SolrDocumentFetcher {
     this.searcher = searcher;
     this.enableLazyFieldLoading = solrConfig.enableLazyFieldLoading;
     if (cachingEnabled) {
-      documentCache = solrConfig.documentCacheConfig == null ? null :
-          solrConfig.documentCacheConfig.newInstance(searcher.getCore());
+      documentCache = solrConfig.documentCacheConfig == null ? null : solrConfig.documentCacheConfig.newInstance();
     } else {
       documentCache = null;
     }
