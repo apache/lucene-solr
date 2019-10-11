@@ -206,7 +206,7 @@ public class SplitShardTest extends SolrCloudTestCase {
       indexThread = new Thread(() -> {
         while (doIndex.get()) {
           try {
-            Thread.sleep(10);  // cap indexing rate at 100 docs per second...
+            // Thread.sleep(10);  // uncomment this to cap indexing rate at 100 docs per second...
             int currDoc = docsIndexed.get();
 
             // Try all docs in the same update request
@@ -262,6 +262,7 @@ public class SplitShardTest extends SolrCloudTestCase {
     }
 
     assertEquals("Documents are missing!", docsIndexed.get(), numDocs);
+    log.info("Number of documents indexed and queried : " + numDocs);
   }
 
   @Test
