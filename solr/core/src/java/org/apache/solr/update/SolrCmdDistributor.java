@@ -433,11 +433,6 @@ public class SolrCmdDistributor implements Closeable {
           }
         } catch (Exception e) {
           log.warn("Failed to parse response from {} during replication factor accounting", node, e);
-        } finally {
-          try {
-            inputStream.close();
-          } catch (Exception ignore) {
-          }
         }
       }
       return Integer.MAX_VALUE;

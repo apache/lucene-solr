@@ -29,7 +29,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.LuceneTestCase;
 
-
 public class TestFstDirect extends LuceneTestCase {
 
   public void testDenseWithGap() throws Exception {

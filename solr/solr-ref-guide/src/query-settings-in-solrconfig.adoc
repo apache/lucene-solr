@@ -33,21 +33,26 @@ Solr caches are associated with a specific instance of an Index Searcher, a spec
 
 When a new searcher is opened, the current searcher continues servicing requests while the new one auto-warms its cache. The new searcher uses the current searcher's cache to pre-populate its own. When the new searcher is ready, it is registered as the current searcher and begins handling all new search requests. The old searcher will be closed once it has finished servicing all its requests.
 
-In Solr, there are three cache implementations: `solr.search.LRUCache`, `solr.search.FastLRUCache,` and `solr.search.LFUCache`.
+=== Cache implementations
+In Solr, the following cache implementations are available: recommended `solr.search.CaffeineCache`, and legacy implementations: `solr.search.LRUCache`, `solr.search.FastLRUCache,` and `solr.search.LFUCache`.
+
+The `CaffeineCache` is an implementation backed by the https://github.com/ben-manes/caffeine[Caffeine caching library]. By default it uses a Window TinyLFU (W-TinyLFU) eviction policy, which allows the eviction based on both frequency and recency of use in O(1) time with a small footprint. Generally this cache implementation is recommended over other legacy caches as it usually offers lower memory footprint, higher hit ratio and better multi-threaded performance over legacy caches.
 
 The acronym LRU stands for Least Recently Used. When an LRU cache fills up, the entry with the oldest last-accessed timestamp is evicted to make room for the new entry. The net effect is that entries that are accessed frequently tend to stay in the cache, while those that are not accessed frequently tend to drop out and will be re-fetched from the index if needed again.
 
 The `FastLRUCache`, which was introduced in Solr 1.4, is designed to be lock-free, so it is well suited for caches which are hit several times in a request.
 
-Both `LRUCache` and `FastLRUCache` use an auto-warm count that supports both integers and percentages which get evaluated relative to the current size of the cache when warming happens.
+`CaffeineCache`, `LRUCache` and `FastLRUCache` use an auto-warm count that supports both integers and percentages which get evaluated relative to the current size of the cache when warming happens.
 
 The `LFUCache` refers to the Least Frequently Used cache. This works in a way similar to the LRU cache, except that when the cache fills up, the entry that has been used the least is evicted.
 
 The Statistics page in the Solr Admin UI will display information about the performance of all the active caches. This information can help you fine-tune the sizes of the various caches appropriately for your particular application. When a Searcher terminates, a summary of its cache usage is also written to the log.
 
-Each cache has settings to define its initial size (`initialSize`), maximum size (`size`) and number of items to use for during warming (`autowarmCount`). The LRU and FastLRU cache implementations can take a percentage instead of an absolute value for `autowarmCount`.
+Each cache has settings to define its initial size (`initialSize`), maximum size (`size`) and number of items to use for during warming (`autowarmCount`). The Caffeine, LRU and FastLRU cache implementations can take a percentage instead of an absolute value for `autowarmCount`.
 
 Each cache implementation also supports a `maxIdleTime` attribute that controls the automatic eviction of entries that haven't been used for a while. This attribute is expressed in seconds, with the default value of `0` meaning no entries are automatically evicted due to exceeded idle time. Smaller values of this attribute will cause older entries to be evicted quickly, which will reduce cache memory usage but may instead cause thrashing due to a repeating eviction-lookup-miss-insertion cycle of the same entries. Larger values will cause entries to stay around longer, waiting to be reused, at the cost of increased memory usage. Reasonable values, depending on the query volume and patterns, may lie somewhere between 60-3600. Please note that this condition is evaluated synchronously and before other eviction conditions on every entry insertion.
+
+`CaffeineCache`, `LRUCache` and `FastLRUCache` support a `maxRamMB` attribute that limits the maximum amount of memory a cache may consume. When both `size` and `maxRamMB` limits are specified the behavior will differ among implementations: in `CaffeineCache` the `maxRamMB` limit will take precedence and the `size` limit will be ignored, while in `LRUCache` and `FastLRUCache` both limits will be observed, with entries being evicted whenever any of the limits is reached.
 
 `FastLRUCache` and `LFUCache` support `showItems` attribute. This is the number of cache items to display in the stats page for the cache. It is for debugging.
 

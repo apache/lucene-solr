@@ -16,17 +16,16 @@
  */
 package org.apache.solr.search;
 
-import java.util.Map;
-
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricProducer;
+
+import java.util.Map;
 
 
 /**
  * Primary API for dealing with Solr's internal caches.
  */
 public interface SolrCache<K,V> extends SolrInfoBean, SolrMetricProducer {
-  String TYPE = "cache";
 
   String HIT_RATIO_PARAM = "hitratio";
   String HITS_PARAM = "hits";
@@ -38,6 +37,9 @@ public interface SolrCache<K,V> extends SolrInfoBean, SolrMetricProducer {
   String RAM_BYTES_USED_PARAM = "ramBytesUsed";
   String MAX_RAM_MB_PARAM = "maxRamMB";
   String MAX_IDLE_TIME_PARAM = "maxIdleTime";
+  String INITIAL_SIZE_PARAM = "initialSize";
+  String CLEANUP_THREAD_PARAM = "cleanupThread";
+  String SHOW_ITEMS_PARAM = "showItems";
 
   /**
    * The initialization routine. Instance specific arguments are passed in
@@ -61,7 +63,7 @@ public interface SolrCache<K,V> extends SolrInfoBean, SolrMetricProducer {
    * regenerate an item in the new cache from an entry in the old cache.
    *
    */
-  Object init(Map args, Object persistence, CacheRegenerator regenerator);
+  public Object init(Map args, Object persistence, CacheRegenerator regenerator);
   // I don't think we need a factory for faster creation given that these
   // will be associated with slow-to-create SolrIndexSearchers.
   // change to NamedList when other plugins do?
@@ -77,29 +79,29 @@ public interface SolrCache<K,V> extends SolrInfoBean, SolrMetricProducer {
    *
    * :TODO: verify this.
    */
-  String name();
+  public String name();
 
 
   // Should SolrCache just extend the java.util.Map interface?
   // Following the conventions of the java.util.Map interface in any case.
 
   /** :TODO: copy from Map */
-  int size();
+  public int size();
 
   /** :TODO: copy from Map */
-  V put(K key, V value);
+  public V put(K key, V value);
 
   /** :TODO: copy from Map */
-  V get(K key);
+  public V get(K key);
 
   /** :TODO: copy from Map */
-  void clear();
+  public void clear();
 
   /** 
    * Enumeration of possible States for cache instances.
    * :TODO: only state that seems to ever be set is LIVE ?
   */
-  enum State {
+  public enum State { 
     /** :TODO */
     CREATED, 
     /** :TODO */
@@ -116,14 +118,14 @@ public interface SolrCache<K,V> extends SolrInfoBean, SolrMetricProducer {
    * The cache user (SolrIndexSearcher) will take care of switching
    * cache states.
    */
-  void setState(State state);
+  public void setState(State state);
 
   /**
    * Returns the last State set on this instance
    *
    * @see #setState
    */
-  State getState();
+  public State getState();
 
   /**
    * Warm this cache associated with <code>searcher</code> using the <code>old</code>
@@ -135,7 +137,7 @@ public interface SolrCache<K,V> extends SolrInfoBean, SolrMetricProducer {
 
 
   /** Frees any non-memory resources */
-  void close();
+  public void close();
 
   /** Returns maximum size limit (number of items) if set and supported, -1 otherwise. */
   int getMaxSize();

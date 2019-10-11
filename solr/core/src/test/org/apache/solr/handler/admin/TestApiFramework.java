@@ -17,6 +17,9 @@
 
 package org.apache.solr.handler.admin;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -24,14 +27,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
+import org.apache.solr.api.Command;
+import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.V2HttpCall;
 import org.apache.solr.api.V2HttpCall.CompositeApi;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.ContentStream;
+import org.apache.solr.common.util.ContentStreamBase;
+import org.apache.solr.common.util.JsonSchemaValidator;
 import org.apache.solr.common.util.PathTrie;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
@@ -43,11 +55,15 @@ import org.apache.solr.handler.SchemaHandler;
 import org.apache.solr.handler.SolrConfigHandler;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.request.SolrQueryRequestBase;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.security.PermissionNameProvider;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.solr.api.ApiBag.EMPTY_SPEC;
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.GET;
+import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.common.params.CommonParams.COLLECTIONS_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.CONFIGSETS_HANDLER_PATH;
 import static org.apache.solr.common.params.CommonParams.CORES_HANDLER_PATH;
@@ -152,6 +168,122 @@ public class TestApiFramework extends SolrTestCaseJ4 {
 
   }
 
+  public void testPayload() {
+    String json = "{package:pkg1, version: '0.1', files  :[a.jar, b.jar]}";
+    Utils.fromJSONString(json);
+
+    ApiBag apiBag = new ApiBag(false);
+    AnnotatedApi api = new AnnotatedApi(new ApiTest());
+    apiBag.register(api, Collections.emptyMap());
+
+    ValidatingJsonMap spec = api.getSpec();
+
+    assertEquals("POST", spec._getStr("/methods[0]",null) );
+    assertEquals("POST", spec._getStr("/methods[0]",null) );
+    assertEquals("/cluster/package", spec._getStr("/url/paths[0]",null) );
+    assertEquals("string", spec._getStr("/commands/add/properties/package/type",null) );
+    assertEquals("array", spec._getStr("/commands/add/properties/files/type",null) );
+    assertEquals("string", spec._getStr("/commands/add/properties/files/items/type",null) );
+    assertEquals("string", spec._getStr("/commands/delete/items/type",null) );
+    SolrQueryResponse rsp = v2ApiInvoke(apiBag, "/cluster/package", "POST", new ModifiableSolrParams(),
+        new ByteArrayInputStream("{add:{package:mypkg, version: '1.0', files : [a.jar, b.jar]}}".getBytes(UTF_8)));
+
+
+    AddVersion addversion = (AddVersion) rsp.getValues().get("add");
+    assertEquals("mypkg", addversion.pkg);
+    assertEquals("1.0", addversion.version);
+    assertEquals("a.jar", addversion.files.get(0));
+    assertEquals("b.jar", addversion.files.get(1));
+
+
+
+  }
+
+  @EndPoint(method = POST, path = "/cluster/package", permission = PermissionNameProvider.Name.ALL)
+  public static class ApiTest {
+    @Command(name = "add")
+    public void add(SolrQueryRequest req, SolrQueryResponse rsp, AddVersion addVersion) {
+      rsp.add("add", addVersion);
+
+    }
+
+    @Command(name = "delete")
+    public void del(SolrQueryRequest req, SolrQueryResponse rsp, List<String> names) {
+      rsp.add("delete",names);
+
+    }
+
+  }
+
+  public static class AddVersion {
+    @JsonProperty(value = "package", required = true)
+    public String pkg;
+    @JsonProperty(value = "version", required = true)
+    public String version;
+    @JsonProperty(value = "files", required = true)
+    public List<String> files;
+  }
+
+  public void testAnnotatedApi() {
+    ApiBag apiBag = new ApiBag(false);
+    apiBag.register(new AnnotatedApi(new DummyTest()), Collections.emptyMap());
+    SolrQueryResponse rsp = v2ApiInvoke(apiBag, "/node/filestore/package/mypkg/jar1.jar", "GET",
+        new ModifiableSolrParams(), null);
+    assertEquals("/package/mypkg/jar1.jar", rsp.getValues().get("path"));
+  }
+
+  @EndPoint(
+      path = "/node/filestore/*",
+      method = SolrRequest.METHOD.GET,
+      permission = PermissionNameProvider.Name.ALL)
+  public class DummyTest {
+    @Command
+    public void read(SolrQueryRequest req, SolrQueryResponse rsp) {
+      rsp.add("FSRead.called", "true");
+      rsp.add("path", req.getPathTemplateValues().get("*"));
+    }
+  }
+
+  private static SolrQueryResponse v2ApiInvoke(ApiBag bag, String uri, String method, SolrParams params, InputStream payload) {
+    if (params == null) params = new ModifiableSolrParams();
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    HashMap<String, String> templateVals = new HashMap<>();
+    Api[] currentApi = new Api[1];
+
+    SolrQueryRequestBase req = new SolrQueryRequestBase(null, params) {
+
+      @Override
+      public Map<String, String> getPathTemplateValues() {
+        return templateVals;
+      }
+
+      @Override
+      protected Map<String, JsonSchemaValidator> getValidators() {
+        return currentApi[0] == null?
+            Collections.emptyMap():
+            currentApi[0].getCommandSchema();
+      }
+
+      @Override
+      public Iterable<ContentStream> getContentStreams() {
+        return Collections.singletonList(new ContentStreamBase() {
+          @Override
+          public InputStream getStream() throws IOException {
+            return payload;
+          }
+        });
+
+      }
+    };
+    Api api = bag.lookup(uri, method, templateVals);
+    currentApi[0] = api;
+
+
+    api.call(req, rsp);
+    return rsp;
+
+  }
+
   public void testTrailingTemplatePaths() {
     PathTrie<Api> registry = new PathTrie<>();
     Api api = new Api(EMPTY_SPEC) {
@@ -204,7 +336,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
   }
 
 
-  private void assertConditions(Map root, Map conditions) {
+  public static void assertConditions(Map root, Map conditions) {
     for (Object o : conditions.entrySet()) {
       Map.Entry e = (Map.Entry) o;
       String path = (String) e.getKey();
