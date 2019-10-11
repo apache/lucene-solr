@@ -168,7 +168,7 @@ public class TestApiFramework extends SolrTestCaseJ4 {
 
   }
 
-  public void testPayload() {
+  public void testPayload() throws IOException {
     String json = "{package:pkg1, version: '0.1', files  :[a.jar, b.jar]}";
     Utils.fromJSONString(json);
 
@@ -212,6 +212,8 @@ public class TestApiFramework extends SolrTestCaseJ4 {
       rsp.add("delete",names);
 
     }
+
+
 
   }
 
