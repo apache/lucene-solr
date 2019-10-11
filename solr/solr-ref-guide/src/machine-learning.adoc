@@ -134,7 +134,6 @@ decreases.
 image::images/math-expressions/distance.png[]
 
 
-
 == knnSearch
 
 The `knnSearch` function returns the k-nearest neighbors
@@ -256,178 +255,119 @@ of K (nearest neighbors), the smoother the line.
 
 === Multivariate Non-Linear Regression
 
-The `knnRegress` function prepares the training set for use with the `predict` function.
+The `knnRegress` function is also powerful and flexible tool for
+multi-variate non-linear regression.
 
-Below is an example of the `knnRegress` function. In this example 10,000 random samples
-are taken, each containing the variables `filesize_d`, `service_d` and `response_d`. The pairs of
-`filesize_d` and `service_d` will be used to predict the value of `response_d`.
+In the example below a multi-variate regression is demonstrated using
+a database designed for analyzing and predicting wine quality. The
+A database contains nearly 1600 records with 9 predictors of wine quality:
+pH, alcohol, fixed_acidity, sulphates, density, free_sulfur_dioxide,
+volatile_acidity, citric_acid, residual_sugar. There is also a field
+called quality which was ranking assigned to each wine ranging
+from 3 to 8.
 
+Using `knnRegress` we can predict wine quality for vectors containing
+the predictor values.
 
-[source,text]
-----
-let(a=random(logs, q="*:*", rows="500", fl="filesize_d,  load_d, eresponse_d"),
-     x=col(a, filesize_d),
-     y=col(a, load_d),
-     z=col(a, eresponse_d),
-     obs=transpose(matrix(x, y)),
-     r=knnRegress(obs, z , 20))
-----
+In the example a search is performed on the *redwine* collection to
+bring back all the rows in the database. Then the quality and each
+predictor field are read into vectors and set to variables.
 
-This expression returns the following response. Notice that `knnRegress` returns a tuple describing the regression inputs:
+The predictor variables are then added as rows to a matrix which is
+transposed so each row in the matrix contains one observation of
+predictors. This is our observation matrix which is assigned to variable
+*obs*.
 
-[source,json]
-----
-{
-  "result-set": {
-    "docs": [
-      {
-        "lazyModel": {
-          "features": 2,
-          "robust": false,
-          "distance": "EuclideanDistance",
-          "observations": 10000,
-          "scale": false,
-          "k": 5
-        }
-      },
-      {
-        "EOF": true,
-        "RESPONSE_TIME": 170
-      }
-    ]
-  }
-}
-----
+Then the `knnRegress` function sets up the regression model for
+predicting quality based on the observation data. The value for K is
+set to 5 in the example, so the average quality of 5 nearest neighbors
+will be used to calculate the quality.
 
-=== Prediction and Residuals
+The `predict` function is then used to generate a vector of predictions
+for the entire observation set. These predictions will be used to determine
+how well the KNN regression performed over the training set.
 
-The output of `knnRegress` can be used with the `predict` function like other regression models.
+The error or *residuals* for the regression is then calculated by
+subtracting the predicted quality from the observed quality.
+The `ebeSubtract` function is used to perform the element-by-element
+vector subtraction.
 
-In the example below the `predict` function is used to predict results for the original training
-data. The sumSq of the residuals is then calculated.
+Finally the `zplot` function formats the predictions and errors for
+for visualization of the *residuals plot*.
 
-[source,text]
-----
-let(samples=random(collection1, q="*:*", rows="10000", fl="filesize_d, service_d, response_d"),
-    filesizes=col(samples, filesize_d),
-    serviceLevels=col(samples, service_d),
-    outcomes=col(samples, response_d),
-    observations=transpose(matrix(filesizes, serviceLevels)),
-    lazyModel=knnRegress(observations, outcomes , 5),
-    predictions=predict(lazyModel, observations),
-    residuals=ebeSubtract(outcomes, predictions),
-    sumSqErr=sumSq(residuals))
-----
+image::images/math-expressions/redwine1.png[]
 
-This expression returns the following response:
+The residuals plot plots the prediction values on the *x* axis and the error for the
+prediction on the *y* axis. The scatter plot shows how the errors
+the errors are distributed across the range of predictions.
 
-[source,json]
-----
-{
-  "result-set": {
-    "docs": [
-      {
-        "sumSqErr": 1920290.1204126712
-      },
-      {
-        "EOF": true,
-        "RESPONSE_TIME": 3796
-      }
-    ]
-  }
-}
-----
+The residuals plot can be interpreted to understand how the KNN regression performed on the
+training data.
 
-=== Setting Feature Scaling
+* The plot shows that the prediction error appear to be fairly evenly distributed
+above and below zero. The density of the errors increases as it approaches zero. The larger
+bubbles size reflects the count of the errors at that point in the plot. This provides
+and intuitive feel for the models error.
 
-If the features in the observation matrix are not in the same scale then the larger features
-will carry more weight in the distance calculation then the smaller features. This can greatly
-impact the accuracy of the prediction. The `knnRegress` function has a `scale` parameter which
-can be set to `true` to automatically scale the features in the same range.
+* The plot also shows the variance of the error at the different levels of
+prediction. This provides an understanding of how well KKN regression is working
+for the entire range of predictions.
 
-The example below shows `knnRegress` with feature scaling turned on.
+The residuals can also be visualized using a histogram to better understand
+the shape of the residuals distribution. The example below shows the same KNN
+regression as above but with a plot of the distribution of the errors.
 
-Notice that when feature scaling is turned on the `sumSqErr` in the output is much lower.
-This shows how much more accurate the predictions are when feature scaling is turned on in
-this particular example. This is because the `filesize_d` feature is significantly larger then
-the `service_d` feature.
+In the example the `zplot` function is used to plot the `empiricalDistribution`
+function of the residuals, with an 11 bin histogram.
+
+image::images/math-expressions/redwine2.png[]
+
+Notice that the errors follow a bell curve centered close to 0. From this plot
+we can see the probability of getting prediction errors between -1 and 1 is quite high.
+
+*Additional KNN Regression Parameters*
+
+The `knnRegression` parameter has three additional parameters that make it suitable for many
+different regession scenarios.
+
+1) Any of the distance measures can be used to used for the regression simply by adding the function
+to the call. The allows for regression analysis over sparse vectors (cosine), dense vectors and
+geo-spatial lat/lon vectors (haversineMeters).
+
+Sample syntax:
 
 [source,text]
 ----
-let(samples=random(collection1, q="*:*", rows="10000", fl="filesize_d, service_d, response_d"),
-    filesizes=col(samples, filesize_d),
-    serviceLevels=col(samples, service_d),
-    outcomes=col(samples, response_d),
-    observations=transpose(matrix(filesizes, serviceLevels)),
-    lazyModel=knnRegress(observations, outcomes , 5, scale=true),
-    predictions=predict(lazyModel, observations),
-    residuals=ebeSubtract(outcomes, predictions),
-    sumSqErr=sumSq(residuals))
+r=knnRegress(obs, quality, 5, cosine()),
 ----
 
-This expression returns the following response:
+2) The `robust` named parameter can be used to perform a regression analysis that is robust
+to outliers in the outcomes. When the `robust` named parameter is used the median outcome
+of the K nearest neighbors is used rather then then average.
 
-[source,json]
-----
-{
-  "result-set": {
-    "docs": [
-      {
-        "sumSqErr": 4076.794951120683
-      },
-      {
-        "EOF": true,
-        "RESPONSE_TIME": 3790
-      }
-    ]
-  }
-}
-----
-
-
-=== Setting Robust Regression
-
-The default prediction approach is to take the mean of the outcomes of the k-nearest
-neighbors. If the outcomes contain outliers the mean value can be skewed. Setting
-the `robust` parameter to `true` will take the median outcome of the k-nearest neighbors.
-This provides a regression prediction that is robust to outliers.
-
-=== Setting the Distance Measure
-
-The distance measure can be changed for the k-nearest neighbor search by adding a distance measure
-function to the `knnRegress` parameters. Below is an example using `manhattan` distance.
+Sample syntax:
 
 [source,text]
 ----
-let(samples=random(collection1, q="*:*", rows="10000", fl="filesize_d, service_d, response_d"),
-    filesizes=col(samples, filesize_d),
-    serviceLevels=col(samples, service_d),
-    outcomes=col(samples, response_d),
-    observations=transpose(matrix(filesizes, serviceLevels)),
-    lazyModel=knnRegress(observations, outcomes, 5, manhattan(), scale=true),
-    predictions=predict(lazyModel, observations),
-    residuals=ebeSubtract(outcomes, predictions),
-    sumSqErr=sumSq(residuals))
+r=knnRegress(obs, quality, 5, robust="true"),
 ----
 
-This expression returns the following response:
+3) The `scale` named parameter can be used to scale the columns of the observations and search vectors
+at prediction time. This can improve the performance of the KNN regression when the feature columns
+are at such different scales that the distance calculations are over-weighted on specific columns.
 
-[source,json]
+Sample syntax:
+
+[source,text]
 ----
-{
-  "result-set": {
-    "docs": [
-      {
-        "sumSqErr": 4761.221942288098
-      },
-      {
-        "EOF": true,
-        "RESPONSE_TIME": 3571
-      }
-    ]
-  }
-}
+r=knnRegress(obs, quality, 5, scale="true"),
 ----
+
+
+
+
+
+
 
 
 == K-Means Clustering
