@@ -101,6 +101,8 @@ public class LRUQueryCache implements QueryCache, Accountable {
   private final Set<Query> mostRecentlyUsedQueries;
   private final Map<IndexReader.CacheKey, LeafCache> cache;
   private final ReentrantLock lock;
+  private final long skipCacheFactor;
+  private final long skipCacheCost;
 
   // these variables are volatile so that we do not need to sync reads
   // but increments need to be performed under the lock
@@ -114,12 +116,19 @@ public class LRUQueryCache implements QueryCache, Accountable {
    * Expert: Create a new instance that will cache at most <code>maxSize</code>
    * queries with at most <code>maxRamBytesUsed</code> bytes of memory, only on
    * leaves that satisfy {@code leavesToCache}.
+   *
+   * Also, clauses whose cost is
+   * over than {@code skipCacheCost} and more than {@code skipCacheFactor} times the cost of the top-level query
+   * will not be cached in order to not slow down queries too much due to caching.
    */
   public LRUQueryCache(int maxSize, long maxRamBytesUsed,
-      Predicate<LeafReaderContext> leavesToCache) {
+                       Predicate<LeafReaderContext> leavesToCache,
+                       long skipCacheCost, long skipCacheFactor) {
     this.maxSize = maxSize;
     this.maxRamBytesUsed = maxRamBytesUsed;
     this.leavesToCache = leavesToCache;
+    this.skipCacheCost = skipCacheCost;
+    this.skipCacheFactor = skipCacheFactor;
     uniqueQueries = new LinkedHashMap<>(16, 0.75f, true);
     mostRecentlyUsedQueries = uniqueQueries.keySet();
     cache = new IdentityHashMap<>();
@@ -141,7 +150,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
    * be cached in order to not hurt latency too much because of caching.
    */
   public LRUQueryCache(int maxSize, long maxRamBytesUsed) {
-    this(maxSize, maxRamBytesUsed, new MinSegmentSizePredicate(10000, .03f));
+    this(maxSize, maxRamBytesUsed, new MinSegmentSizePredicate(10000, .03f), 250, 5000000);
   }
 
   // pkg-private for testing
@@ -732,8 +741,39 @@ public class LRUQueryCache implements QueryCache, Accountable {
 
       if (docIdSet == null) {
         if (policy.shouldCache(in.getQuery())) {
-          docIdSet = cache(context);
-          putIfAbsent(in.getQuery(), docIdSet, cacheHelper);
+          final ScorerSupplier supplier = in.scorerSupplier(context);
+          if (supplier == null) {
+            putIfAbsent(in.getQuery(), DocIdSet.EMPTY, cacheHelper);
+            return null;
+          }
+
+          final long cost = supplier.cost();
+          return new ScorerSupplier() {
+            @Override
+            public Scorer get(long leadCost) throws IOException {
+              // skip cache operation which would slow query down too much
+              if (cost > skipCacheCost && cost > leadCost * skipCacheFactor
+                  && in.getQuery() instanceof IndexOrDocValuesQuery) {
+                return supplier.get(leadCost);
+              }
+
+              Scorer scorer = supplier.get(Long.MAX_VALUE);
+              DocIdSet docIdSet = cacheImpl(new DefaultBulkScorer(scorer), context.reader().maxDoc());
+              putIfAbsent(in.getQuery(), docIdSet, cacheHelper);
+              DocIdSetIterator disi = docIdSet.iterator();
+              if (disi == null) {
+                // docIdSet.iterator() is allowed to return null when empty but we want a non-null iterator here
+                disi = DocIdSetIterator.empty();
+              }
+
+              return new ConstantScoreScorer(CachingWrapperWeight.this, 0f, ScoreMode.COMPLETE_NO_SCORES, disi);
+            }
+
+            @Override
+            public long cost() {
+              return cost;
+            }
+          };
         } else {
           return in.scorerSupplier(context);
         }
@@ -753,7 +793,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
         public Scorer get(long LeadCost) throws IOException {
           return new ConstantScoreScorer(CachingWrapperWeight.this, 0f, ScoreMode.COMPLETE_NO_SCORES, disi);
         }
-        
+
         @Override
         public long cost() {
           return disi.cost();
