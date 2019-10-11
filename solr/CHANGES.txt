@@ -250,6 +250,8 @@ Bug Fixes
 
 * SOLR-13760: Fix regression in support for Date math in TRA start date that was introduced by SOLR-13375
 
+* SOLR-13829: RecursiveEvaluator casts Continuous numbers to Discrete Numbers, causing mismatch (Trey Grainger, Joel Bernstein)
+
 Other Changes
 ----------------------
 
