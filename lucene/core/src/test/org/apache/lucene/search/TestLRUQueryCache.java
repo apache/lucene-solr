@@ -1713,7 +1713,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     t.join();
   }
 
-  public void testSkipCostlyCaching1() throws IOException {
+  public void testSkipCostlyCaching() throws IOException {
     Directory dir = newDirectory();
     final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
     Document doc1 = new Document();

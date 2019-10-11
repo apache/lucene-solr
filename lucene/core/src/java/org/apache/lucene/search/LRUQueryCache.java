@@ -752,7 +752,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
             @Override
             public Scorer get(long leadCost) throws IOException {
               // skip cache operation which would slow query down too much
-              if (cost > skipCacheCost && cost > leadCost * skipCacheFactor
+              if ((cost > skipCacheCost || cost > leadCost * skipCacheFactor)
                   && in.getQuery() instanceof IndexOrDocValuesQuery) {
                 return supplier.get(leadCost);
               }
