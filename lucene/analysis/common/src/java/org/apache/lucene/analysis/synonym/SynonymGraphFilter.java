@@ -171,11 +171,14 @@ public final class SynonymGraphFilter extends TokenFilter {
       if (inputFinished && lookahead.isEmpty()) {
         return false;
       }
-      parse();
+      if (parse()) {
+        releaseCurrentToken();
+        return true;
+      }
       return releaseBufferedToken();
   }
 
-  private boolean releaseBufferedToken() throws IOException {
+  private boolean releaseBufferedToken() {
     if (tokenQueue.isEmpty()) {
       return false;
     }
@@ -184,7 +187,14 @@ public final class SynonymGraphFilter extends TokenFilter {
     return true;
   }
 
-  private void releaseBufferedToken(BufferedToken token) throws IOException {
+  private void releaseCurrentToken() {
+    prevInputStartNode += posIncrAtt.getPositionIncrement();
+    int startNode = prevInputStartNode + deltaStartNode;
+    posIncrAtt.setPositionIncrement(startNode - prevOutputStartNode);
+    prevOutputStartNode = startNode;
+  }
+
+  private void releaseBufferedToken(BufferedToken token) {
     if (token.state != null) {
       restoreState(token.state);
     } else {
@@ -217,7 +227,7 @@ public final class SynonymGraphFilter extends TokenFilter {
   }
 
   /** Scans the next input token(s) to see if a synonym matches. returns true if the token is not captured in Queue.*/
-  private void parse() throws  IOException {
+  private boolean parse() throws  IOException {
     BytesRef matchOutput = null;
     BytesRef pendingOutput = fst.outputs.getNoOutput();
     fst.getFirstArc(scratchArc);
@@ -233,6 +243,11 @@ public final class SynonymGraphFilter extends TokenFilter {
       BufferedToken token = null;
       if (it.hasNext()){
         token = it.next();
+        if (lastEndNode != -1 && lastEndNode != token.startNode){
+          // it's not consecutive
+          break;
+        }
+        pendingOutput = termMatch(token.term, pendingOutput, token.term.length);
       }else{
         if (inputFinished){
           break;
@@ -246,16 +261,22 @@ public final class SynonymGraphFilter extends TokenFilter {
           inputFinished = true;
           break;
         }
+        char[] termBuffer = termAtt.buffer();
+        pendingOutput = termMatch(termBuffer, pendingOutput, termAtt.length());
+        if (pendingOutput == null && lookahead.isEmpty()){
+          // no match at the beginning, we can release current token without capture.
+          return true;
+        }
+
         token = capture();
         lastInputToken = token;
         lookahead.offer(token);
-      }
-      if (lastEndNode != -1 && lastEndNode != token.startNode){
-        // it's not consecutive
-        break;
+        if (lastEndNode != -1 && lastEndNode != token.startNode){
+          // it's not consecutive
+          break;
+        }
       }
       lastEndNode = token.endNode;
-      pendingOutput = termMatch(token.term, pendingOutput, token.term.length);
       if (pendingOutput == null){
         break;
       }
@@ -283,7 +304,7 @@ public final class SynonymGraphFilter extends TokenFilter {
     }
     if (lookahead.isEmpty()){
       // input is empty
-      return;
+      return false;
     }
     if (matchOutput != null){
       // There is a match!
@@ -292,6 +313,7 @@ public final class SynonymGraphFilter extends TokenFilter {
       BufferedToken t = lookahead.poll();
       tokenQueue.offer(t);
     }
+    return false;
   }
 
   /** Expands the output graph into the necessary tokens, adding

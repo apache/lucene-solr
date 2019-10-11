@@ -380,23 +380,23 @@ public class TestSynonymGraphFilter extends BaseTokenStreamTestCase {
     a.close();
   }
 
-//  public void testNoCaptureIfNoMatch() throws Exception {
-//    SynonymMap.Builder b = new SynonymMap.Builder();
-//    add(b, "a b", "x y", true);
-//
-//    Analyzer a = getAnalyzer(b, true);
-//
-//    assertAnalyzesTo(a,
-//                     "c d d",
-//                     new String[] {"c", "d", "d"},
-//                     new int[]    { 0,   2,   4},
-//                     new int[]    { 1,   3,   5},
-//                     new String[] {"word", "word", "word"},
-//                     new int[]    { 1,   1,   1},
-//                     new int[]    { 1,   1,   1});
-//    assertEquals(0, synFilter.getCaptureCount());
-//    a.close();
-//  }
+  public void testNoCaptureIfNoMatch() throws Exception {
+    SynonymMap.Builder b = new SynonymMap.Builder();
+    add(b, "a b", "x y", true);
+
+    Analyzer a = getAnalyzer(b, true);
+
+    assertAnalyzesTo(a,
+                     "c d d",
+                     new String[] {"c", "d", "d"},
+                     new int[]    { 0,   2,   4},
+                     new int[]    { 1,   3,   5},
+                     new String[] {"word", "word", "word"},
+                     new int[]    { 1,   1,   1},
+                     new int[]    { 1,   1,   1});
+    assertEquals(0, synFilter.getCaptureCount());
+    a.close();
+  }
 
   public void testBasicNotKeepOrigOneOutput() throws Exception {
     SynonymMap.Builder b = new SynonymMap.Builder();
@@ -700,13 +700,13 @@ public class TestSynonymGraphFilter extends BaseTokenStreamTestCase {
     assertAnalyzesTo(a, "p q r s t",
                      new String[] {"p", "q", "r", "s", "t"},
                      new int[] {1, 1, 1, 1, 1});
-    // assertEquals(0, synFilter.getCaptureCount());
+    assertEquals(0, synFilter.getCaptureCount());
 
     // captureStates are necessary for the single-token syn case:
     assertAnalyzesTo(a, "p q z y t",
                      new String[] {"p", "q", "boo", "bee", "y", "t"},
                      new int[] {1, 1, 1, 1, 0, 1});
-    // assertTrue(synFilter.getCaptureCount() > 0);
+    assertTrue(synFilter.getCaptureCount() > 0);
   }
 
   public void testBasic2() throws Exception {
