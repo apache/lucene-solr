@@ -38,6 +38,8 @@ Bug fixes
 * SOLR-12291: prematurely reporting not yet finished async Collections API call as completed 
   when collection's replicas are collocated at least at one node (Varun Thacker, Mikhail Khludnev)
 
+* SOLR-13828: Improve ExecutePlanAction error handling.
+
 ==================  7.7.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
