@@ -29,13 +29,16 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
@@ -318,13 +321,10 @@ public class TestLRUQueryCache extends LuceneTestCase {
     // First read should miss
     searcher.search(new ConstantScoreQuery(red), 1);
 
-    if (!(queryCache.cachedQueries().equals(Collections.emptyList()))) {
-      searcher.search(new ConstantScoreQuery(red), 1);
-    } else {
-      // Let the cache load be completed
-      latch[0].await(200, TimeUnit.MILLISECONDS);
-      searcher.search(new ConstantScoreQuery(red), 1);
-    }
+
+    // Let the cache load be completed
+    latch[0].await();
+    searcher.search(new ConstantScoreQuery(red), 1);
 
     // Second read should hit
     searcher.search(new ConstantScoreQuery(red), 1);
@@ -332,13 +332,10 @@ public class TestLRUQueryCache extends LuceneTestCase {
 
     latch[0] = new CountDownLatch(1);
     searcher.search(new ConstantScoreQuery(green), 1);
-    if (!(queryCache.cachedQueries().equals(Arrays.asList(red)))) {
-      assertEquals(Arrays.asList(red, green), queryCache.cachedQueries());
-    } else {
-      // Let the cache load be completed
-      latch[0].await(200, TimeUnit.MILLISECONDS);
-      assertEquals(Arrays.asList(red, green), queryCache.cachedQueries());
-    }
+
+    // Let the cache load be completed
+    latch[0].await();
+    assertEquals(Arrays.asList(red, green), queryCache.cachedQueries());
 
     searcher.search(new ConstantScoreQuery(red), 1);
     assertEquals(Arrays.asList(green, red), queryCache.cachedQueries());
@@ -346,13 +343,10 @@ public class TestLRUQueryCache extends LuceneTestCase {
     latch[0] = new CountDownLatch(1);
 
     searcher.search(new ConstantScoreQuery(blue), 1);
-    if (!(queryCache.cachedQueries().equals(Arrays.asList(green, red)))) {
-      assertEquals(Arrays.asList(red, blue), queryCache.cachedQueries());
-    } else {
-      // Let the cache load be completed
-      latch[0].await(200, TimeUnit.MILLISECONDS);
-      assertEquals(Arrays.asList(red, blue), queryCache.cachedQueries());
-    }
+
+    // Let the cache load be completed
+    latch[0].await();
+    assertEquals(Arrays.asList(red, blue), queryCache.cachedQueries());
 
     searcher.search(new ConstantScoreQuery(blue), 1);
     assertEquals(Arrays.asList(red, blue), queryCache.cachedQueries());
@@ -360,13 +354,10 @@ public class TestLRUQueryCache extends LuceneTestCase {
     latch[0] = new CountDownLatch(1);
 
     searcher.search(new ConstantScoreQuery(green), 1);
-    if (!(queryCache.cachedQueries().equals(Arrays.asList(red, blue)))) {
-      assertEquals(Arrays.asList(blue, green), queryCache.cachedQueries());
-    } else {
-      // Let the cache load be completed
-      latch[0].await(200, TimeUnit.MILLISECONDS);
-      assertEquals(Arrays.asList(blue, green), queryCache.cachedQueries());
-    }
+
+    // Let the cache load be completed
+    latch[0].await();
+    assertEquals(Arrays.asList(blue, green), queryCache.cachedQueries());
 
     searcher.setQueryCachingPolicy(NEVER_CACHE);
     searcher.search(new ConstantScoreQuery(red), 1);
@@ -427,7 +418,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
       stressService.submit(task);
     }
 
-    latch.await(3000, TimeUnit.MILLISECONDS);
+    latch.await();
     assertEquals(Arrays.asList(green), queryCache.cachedQueries());
 
     reader.close();
@@ -1493,14 +1484,8 @@ public class TestLRUQueryCache extends LuceneTestCase {
 
     searcher.count(new DummyQuery());
 
-    if (cache.getCacheCount() != 1) {
-      try {
-        latch[0].await(200, TimeUnit.MILLISECONDS);
-      } catch (InterruptedException e) {
-        throw new RuntimeException(e.getMessage());
-      }
-      assertEquals(1, cache.getCacheCount());
-    }
+    latch[0].await();
+    assertEquals(1, cache.getCacheCount());
 
     latch[0] = new CountDownLatch(1);
     cache = new LRUQueryCache(2, 10000,
@@ -1515,10 +1500,9 @@ public class TestLRUQueryCache extends LuceneTestCase {
     searcher.setQueryCache(cache);
 
     searcher.count(new DummyQuery());
-    if (cache.getCacheCount() != 1) {
-      latch[0].await(200, TimeUnit.MILLISECONDS);
-      assertEquals(1, cache.getCacheCount());
-    }
+
+    latch[0].await();
+    assertEquals(1, cache.getCacheCount());
 
     w.addDocument(new Document());
     reader.close();
@@ -1969,5 +1953,181 @@ public class TestLRUQueryCache extends LuceneTestCase {
     });
     t.start();
     t.join();
+  }
+
+  public void testRejectedExecution() throws IOException {
+    ExecutorService service = new TestIndexSearcher.RejectingMockExecutor();
+    Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+
+    Document doc = new Document();
+    StringField f = new StringField("color", "blue", Store.NO);
+    doc.add(f);
+    w.addDocument(doc);
+    f.setStringValue("red");
+    w.addDocument(doc);
+    f.setStringValue("green");
+    w.addDocument(doc);
+    final DirectoryReader reader = w.getReader();
+
+    final Query red = new TermQuery(new Term("color", "red"));
+
+    IndexSearcher searcher = new IndexSearcher(reader, service);
+
+    final LRUQueryCache queryCache = new LRUQueryCache(2, 100000, context -> true);
+
+    searcher.setQueryCache(queryCache);
+    searcher.setQueryCachingPolicy(ALWAYS_CACHE);
+
+    // To ensure that failing ExecutorService still allows query to run
+    // successfully
+
+    searcher.search(new ConstantScoreQuery(red), 1);
+    assertEquals(Collections.singletonList(red), queryCache.cachedQueries());
+
+    reader.close();
+    w.close();
+    dir.close();
+    service.shutdown();
+  }
+
+  public void testClosedReaderExecution() throws IOException {
+    CountDownLatch latch = new CountDownLatch(1);
+    ExecutorService service = new BlockedMockExecutor(latch);
+
+    Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+
+    for (int i = 0; i < 100; i++) {
+      Document doc = new Document();
+      StringField f = new StringField("color", "blue", Store.NO);
+      doc.add(f);
+      w.addDocument(doc);
+      f.setStringValue("red");
+      w.addDocument(doc);
+      f.setStringValue("green");
+      w.addDocument(doc);
+
+      if (i % 10 == 0) {
+        w.commit();
+      }
+    }
+
+    final DirectoryReader reader = w.getReader();
+
+    final Query red = new TermQuery(new Term("color", "red"));
+
+    IndexSearcher searcher = new IndexSearcher(reader, service) {
+      @Override
+      protected LeafSlice[] slices(List<LeafReaderContext> leaves) {
+        ArrayList<LeafSlice> slices = new ArrayList<>();
+        for (LeafReaderContext ctx : leaves) {
+          slices.add(new LeafSlice(Arrays.asList(ctx)));
+        }
+        return slices.toArray(new LeafSlice[0]);
+      }
+    };
+
+    final LRUQueryCache queryCache = new LRUQueryCache(2, 100000, context -> true);
+
+    searcher.setQueryCache(queryCache);
+    searcher.setQueryCachingPolicy(ALWAYS_CACHE);
+
+    // To ensure that failing ExecutorService still allows query to run
+    // successfully
+
+    ExecutorService tempService = new ThreadPoolExecutor(2, 2, 0L, TimeUnit.MILLISECONDS,
+        new LinkedBlockingQueue<Runnable>(),
+        new NamedThreadFactory("TestLRUQueryCache"));
+
+    tempService.submit(new Runnable() {
+      @Override
+      public void run() {
+        try {
+          Thread.sleep(100);
+          reader.close();
+        } catch (Exception e) {
+          throw new RuntimeException(e.getMessage());
+        }
+
+        latch.countDown();
+
+      }
+    });
+
+    searcher.search(new ConstantScoreQuery(red), 1);
+
+    assertEquals(Collections.singletonList(red), queryCache.cachedQueries());
+
+    reader.close();
+    w.close();
+    dir.close();
+    service.shutdown();
+    tempService.shutdown();
+  }
+
+  public static class BlockedMockExecutor implements ExecutorService {
+
+    private final CountDownLatch countDownLatch;
+
+    public BlockedMockExecutor(final CountDownLatch latch) {
+      this.countDownLatch = latch;
+    }
+
+    public void shutdown() {
+    }
+
+    public List<Runnable> shutdownNow() {
+      throw new UnsupportedOperationException();
+    }
+
+    public boolean isShutdown() {
+      throw new UnsupportedOperationException();
+    }
+
+    public boolean isTerminated() {
+      throw new UnsupportedOperationException();
+    }
+
+    public boolean awaitTermination(final long l, final TimeUnit timeUnit) throws InterruptedException {
+      throw new UnsupportedOperationException();
+    }
+
+    public <T> Future<T> submit(final Callable<T> tCallable) {
+      throw new UnsupportedOperationException();
+    }
+
+    public <T> Future<T> submit(final Runnable runnable, final T t) {
+      throw new UnsupportedOperationException();
+    }
+
+    public Future<?> submit(final Runnable runnable) {
+      throw  new UnsupportedOperationException();
+    }
+
+    public <T> List<Future<T>> invokeAll(final Collection<? extends Callable<T>> callables) throws InterruptedException {
+      throw new UnsupportedOperationException();
+    }
+
+    public <T> List<Future<T>> invokeAll(final Collection<? extends Callable<T>> callables, final long l, final TimeUnit timeUnit) throws InterruptedException {
+      throw new UnsupportedOperationException();
+    }
+
+    public <T> T invokeAny(final Collection<? extends Callable<T>> callables) throws InterruptedException, ExecutionException {
+      throw new UnsupportedOperationException();
+    }
+
+    public <T> T invokeAny(final Collection<? extends Callable<T>> callables, final long l, final TimeUnit timeUnit) throws InterruptedException, ExecutionException, TimeoutException {
+      throw new UnsupportedOperationException();
+    }
+
+    public void execute(final Runnable runnable) {
+      try {
+        countDownLatch.await();
+        runnable.run();
+      } catch (InterruptedException e) {
+        throw new RuntimeException(e.getMessage());
+      }
+    }
   }
 }

@@ -735,11 +735,11 @@ public class LRUQueryCache implements QueryCache, Accountable {
       if (docIdSet == null) {
         if (policy.shouldCache(in.getQuery())) {
           boolean cacheSynchronously = executor == null;
-          boolean asyncCachingSucceeded = false;
 
           // If asynchronous caching is requested, perform the same and return
           // the uncached iterator
           if (cacheSynchronously == false) {
+            boolean asyncCachingSucceeded;
             asyncCachingSucceeded = cacheAsynchronously(context, cacheHelper);
 
             // If async caching failed, synchronous caching will
@@ -749,10 +749,8 @@ public class LRUQueryCache implements QueryCache, Accountable {
             }
           }
 
-          if (cacheSynchronously || asyncCachingSucceeded == false) {
-            docIdSet = cache(context);
-            putIfAbsent(in.getQuery(), docIdSet, cacheHelper);
-          }
+          docIdSet = cache(context);
+          putIfAbsent(in.getQuery(), docIdSet, cacheHelper);
         } else {
           return in.scorerSupplier(context);
         }
@@ -836,19 +834,17 @@ public class LRUQueryCache implements QueryCache, Accountable {
           // If asynchronous caching is requested, perform the same and return
           // the uncached iterator
           if (cacheSynchronously == false) {
-            cacheSynchronously = cacheAsynchronously(context, cacheHelper);
+            boolean asyncCachingSucceeded = cacheAsynchronously(context, cacheHelper);
 
             // If async caching failed, we will perform synchronous caching
             // hence do not return the uncached value here
-            if (cacheSynchronously == false) {
+            if (asyncCachingSucceeded == false) {
               return in.bulkScorer(context);
             }
           }
 
-          if (cacheSynchronously) {
-            docIdSet = cache(context);
-            putIfAbsent(in.getQuery(), docIdSet, cacheHelper);
-          }
+          docIdSet = cache(context);
+          putIfAbsent(in.getQuery(), docIdSet, cacheHelper);
         } else {
           return in.bulkScorer(context);
         }
@@ -872,8 +868,12 @@ public class LRUQueryCache implements QueryCache, Accountable {
       FutureTask<Void> task = new FutureTask<>(() -> {
         // If the reader is being closed -- do nothing
         if (context.reader().tryIncRef()) {
-          DocIdSet localDocIdSet = cache(context);
-          putIfAbsent(in.getQuery(), localDocIdSet, cacheHelper);
+          try {
+            DocIdSet localDocIdSet = cache(context);
+            putIfAbsent(in.getQuery(), localDocIdSet, cacheHelper);
+          } finally {
+            context.reader().decRef();
+          }
         }
 
         return null;
