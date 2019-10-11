@@ -1730,7 +1730,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     searcher.setQueryCachingPolicy(ALWAYS_CACHE);
     w.close();
 
-    // lead cost is 1, cost of wow is 1, cost of bar is 2
+    // lead cost is 1, cost of subQuery1 is 1, cost of subQuery2 is 2
     BooleanQuery.Builder bq = new BooleanQuery.Builder();
     TermQuery subQuery1 = new TermQuery(new Term("name", "tom"));
     IndexOrDocValuesQuery subQuery2 = new IndexOrDocValuesQuery(
