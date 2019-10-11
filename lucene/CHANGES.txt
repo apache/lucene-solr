@@ -19,7 +19,10 @@ Improvements
 
 Optimizations
 ---------------------
-(No changes)
+
+* LUCENE-8928: When building a kd-tree for dimensions n > 2, compute exact bounds for an inner node every N splits
+  to improve the quality of the tree. N is defined by SPLITS_BEFORE_EXACT_BOUNDS which is set to 4.
+  (Ignacio Vera, Adrien Grand)
 
 Bug Fixes
 ---------------------
