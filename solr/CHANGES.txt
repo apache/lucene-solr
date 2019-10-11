@@ -252,6 +252,10 @@ Bug Fixes
 
 * SOLR-13829: RecursiveEvaluator casts Continuous numbers to Discrete Numbers, causing mismatch (Trey Grainger, Joel Bernstein)
 
+* SOLR-13815: Live shard split (where updates actively continue during the split) can lose updates due to cluster
+  state happening to change between checking if the current shard is active and later checking if there are any
+  sub-shard leaders to forward the update to. (yonik)
+
 Other Changes
 ----------------------
 
