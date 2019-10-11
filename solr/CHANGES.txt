@@ -264,6 +264,9 @@ Bug Fixes
   the number of replicas. This avoids making too many cascading calls to remote servers, which, if not restricted, can
   bring down nodes containing the said collection (Kesharee Nandan Vishwakarma, Ishan Chattopadhyaya)
 
+* SOLR-13834: ZkController#getSolrCloudManager() created a new instance of ZkStateReader, thereby causing mismatch in the
+  visibility of the cluster state and, as a result, undesired race conditions (Clay Goddard via Ishan Chattopadhyaya)
+
 Other Changes
 ----------------------
 
