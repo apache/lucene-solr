@@ -89,13 +89,13 @@ public class DistribPackageStore implements PackageStore {
   @Override
   public Path getRealpath(String path) {
     if (File.separatorChar == '\\') {
-      path = path.replaceAll("/", File.separator);
+      path = path.replace('/' ,  File.separatorChar);
     }
     if (path.charAt(0) != File.separatorChar) {
       path = File.separator + path;
     }
     return new File(this.coreContainer.getResourceLoader().getInstancePath() +
-        "/" + PackageStoreAPI.PACKAGESTORE_DIRECTORY + path).toPath();
+        File.separator + PackageStoreAPI.PACKAGESTORE_DIRECTORY + path).toPath();
   }
 
   class FileInfo {
