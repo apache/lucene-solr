@@ -39,13 +39,13 @@ image::images/math-expressions/csv.png[]
 
 image::images/math-expressions/dist.png[]
 
-=== Monte Carlo Simulations
+=== Histograms
 
-image::images/math-expressions/randomwalk5.png[]
+image::images/math-expressions/cumProb.png[]
 
-=== Random Walks
+=== Frequency Tables
 
-image::images/math-expressions/randomwalk6.png[]
+image::images/math-expressions/freqTable1.png[]
 
 === Quantile Plots
 
@@ -67,7 +67,25 @@ image::images/math-expressions/forecast.png[]
 
 image::images/math-expressions/timecompare.png[]
 
+=== Linear Regression
 
+image::images/math-expressions/linear.png[]
+
+=== Knn Regression
+
+image::images/math-expressions/knnRegress.png[]
+
+=== Multivariate, Non-linear Regression with Residual Plot
+
+image::images/math-expressions/redwine1.png[]
+
+=== Monte Carlo Simulations
+
+image::images/math-expressions/randomwalk5.png[]
+
+=== Random Walks
+
+image::images/math-expressions/randomwalk6.png[]
 
 === Clustering
 
@@ -81,10 +99,6 @@ image::images/math-expressions/centroidplot.png[]
 
 image::images/math-expressions/convex1.png[]
 
-=== Cartograms
-
-image::images/math-expressions/cartogram.png[]
-
 === Significant Terms
 
 image::images/math-expressions/sterms.png[]
@@ -92,18 +106,6 @@ image::images/math-expressions/sterms.png[]
 === Phrase Aggregation
 
 image::images/math-expressions/text-analytics.png[]
-
-=== Linear Regression
-
-image::images/math-expressions/linear.png[]
-
-=== Knn Regression
-
-image::images/math-expressions/knnRegress.png[]
-
-=== Residuals Plot
-
-image::images/math-expressions/residual-plot.png[]
 
 === Curve Fitting
 
@@ -113,9 +115,13 @@ image::images/math-expressions/hfit.png[]
 
 image::images/math-expressions/interpolate1.png[]
 
-=== Sine Waves and Derivatives
+=== Derivatives
 
 image::images/math-expressions/sined.png[]
+
+=== Integrals
+
+image::images/math-expressions/integral.png[]
 
 === Autocorrelation
 
