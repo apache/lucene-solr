@@ -68,6 +68,7 @@ import org.apache.solr.core.RequestParams;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -245,8 +246,22 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             if (componentName != null) {
               Map map = (Map) val.get(parts.get(1));
               if (map != null) {
-                val.put(parts.get(1), makeMap(componentName, map.get(componentName)));
+                Object o = map.get(componentName);
+                val.put(parts.get(1), makeMap(componentName, o));
+                if(req.getParams().getBool("meta", false)){
+                  for (PackageListeners.Listener listener :
+                      req.getCore().getPackageListeners().getListeners()) {
+                    PluginInfo info = listener.pluginInfo();
+                    if(info.type.equals(parts.get(1)) && info.name.equals(componentName)){
+                      if (o instanceof Map) {
+                        Map m1 = (Map) o;
+                        m1.put("_packageinfo_", listener.getPackageVersion());
+                      }
+                    }
+                  }
+                }
               }
+
             }
 
             resp.add("config", val);
@@ -488,6 +503,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       }
       List errs = CommandOperation.captureErrors(ops);
       if (!errs.isEmpty()) {
+        log.error("ERRROR:" +Utils.toJSONString(errs));
         throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST,"error processing commands", errs);
       }
 
@@ -495,7 +511,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       if (loader instanceof ZkSolrResourceLoader) {
         int latestVersion = ZkController.persistConfigResourceToZooKeeper((ZkSolrResourceLoader) loader, overlay.getZnodeVersion(),
             ConfigOverlay.RESOURCE_NAME, overlay.toByteArray(), true);
-        log.info("Executed config commands successfully and persisted to ZK {}", ops);
+        log.debug("Executed config commands successfully and persisted to ZK {}", ops);
         waitForAllReplicasState(req.getCore().getCoreDescriptor().getCloudDescriptor().getCollectionName(),
             req.getCore().getCoreContainer().getZkController(),
             ConfigOverlay.NAME,
@@ -503,7 +519,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       } else {
         SolrResourceLoader.persistConfLocally(loader, ConfigOverlay.RESOURCE_NAME, overlay.toByteArray());
         req.getCore().getCoreContainer().reload(req.getCore().getName());
-        log.info("Executed config commands successfully and persited to File System {}", ops);
+        log.debug("Executed config commands successfully and persited to File System {}", ops);
       }
 
     }
@@ -570,6 +586,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
         try {
           req.getCore().createInitInstance(new PluginInfo(SolrRequestHandler.TYPE, op.getDataMap()), expected, clz, "");
         } catch (Exception e) {
+          log.error("Error checking plugin : ",e);
           op.addError(e.getMessage());
           return false;
         }
