@@ -647,7 +647,10 @@ public class HttpSolrCall {
     }
   }
 
-  private String getQueryStingWithInternalRequestCount(){
+  /**
+   * This method returns query string with internal request count (number of remote queries for a given request)
+   */
+  private String getQuerySting(){
     int internalRequestCount = queryParams.getInt(INTERNAL_REQUEST_COUNT, 0);
     ModifiableSolrParams updatedQueryParams = new ModifiableSolrParams(queryParams);
     updatedQueryParams.set(INTERNAL_REQUEST_COUNT, internalRequestCount + 1);
@@ -659,7 +662,8 @@ public class HttpSolrCall {
     HttpRequestBase method;
     HttpEntity httpEntity = null;
     try {
-      String urlstr = coreUrl + getQueryStingWithInternalRequestCount();
+      // get query string with internal request count
+      String urlstr = coreUrl + getQuerySting();
 
       boolean isPostOrPutRequest = "POST".equals(req.getMethod()) || "PUT".equals(req.getMethod());
       if ("GET".equals(req.getMethod())) {
@@ -954,13 +958,11 @@ public class HttpSolrCall {
     return core;
   }
 
-  private int getSlicesAndReplicationFactorForCollections(ClusterState clusterState,
+  private void getSlicesForCollections(ClusterState clusterState,
                                        Collection<Slice> slices, boolean activeSlices) {
-    int replicationFactor = 3;
     if (activeSlices) {
       for (Map.Entry<String, DocCollection> entry : clusterState.getCollectionsMap().entrySet()) {
         final Slice[] activeCollectionSlices = entry.getValue().getActiveSlicesArr();
-        replicationFactor = entry.getValue().getReplicationFactor();
         for (Slice s : activeCollectionSlices) {
           slices.add(s);
         }
@@ -968,29 +970,26 @@ public class HttpSolrCall {
     } else {
       for (Map.Entry<String, DocCollection> entry : clusterState.getCollectionsMap().entrySet()) {
         final Collection<Slice> collectionSlices = entry.getValue().getSlices();
-        replicationFactor = entry.getValue().getReplicationFactor();
         if (collectionSlices != null) {
           slices.addAll(collectionSlices);
         }
       }
     }
-    return replicationFactor;
   }
 
   protected String getRemoteCoreUrl(String collectionName, String origCorename) throws SolrException {
     ClusterState clusterState = cores.getZkController().getClusterState();
     final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName);
     Slice[] slices = (docCollection != null) ? docCollection.getActiveSlicesArr() : null;
-    int replicationFactor = (docCollection != null) ? docCollection.getReplicationFactor() : 0;
     List<Slice> activeSlices = new ArrayList<>();
     boolean byCoreName = false;
 
     if (slices == null) {
       byCoreName = true;
       activeSlices = new ArrayList<>();
-      replicationFactor = getSlicesAndReplicationFactorForCollections(clusterState, activeSlices, true);
+      getSlicesForCollections(clusterState, activeSlices, true);
       if (activeSlices.isEmpty()) {
-        replicationFactor = getSlicesAndReplicationFactorForCollections(clusterState, activeSlices, false);
+        getSlicesForCollections(clusterState, activeSlices, false);
       }
     } else {
       for (Slice s : slices) {
@@ -1002,6 +1001,11 @@ public class HttpSolrCall {
       return null;
     }
 
+    int totalReplicas = 0;
+    for (Slice slice : slices){
+      totalReplicas += slice.getReplicas().size();
+    }
+
     // XXX (ab) most likely this is not needed? it seems all code paths
     // XXX already make sure the collectionName is on the list
     if (!collectionsList.contains(collectionName)) {
@@ -1011,10 +1015,9 @@ public class HttpSolrCall {
     String coreUrl = getCoreUrl(collectionName, origCorename, clusterState,
         activeSlices, byCoreName, true);
 
-    int replicaCount = activeSlices.size() * replicationFactor;
     // avoid making mutually recursive calls to remote nodes
     if (coreUrl == null) {
-      if(queryParams.getInt(INTERNAL_REQUEST_COUNT, 0) > replicaCount){
+      if(queryParams.getInt(INTERNAL_REQUEST_COUNT, 0) > totalReplicas){
         throw new SolrException(SolrException.ErrorCode.INVALID_STATE,
             String.format(Locale.ROOT, "No active replicas found for collection: %s", collectionName));
       }
