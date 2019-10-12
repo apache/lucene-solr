@@ -93,6 +93,10 @@ Other
 ---------------------
 (No changes)
 
+Build
+
+* Upgrade forbiddenapis to version 2.7; upgrade Groovy to 2.4.17.  (Uwe Schindler)
+
 ======================= Lucene 8.3.0 =======================
 
 API Changes
