@@ -18,6 +18,7 @@
 package org.apache.solr.api;
 
 
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -44,6 +45,8 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class implements an Api just from  an annotated java class
@@ -56,6 +59,9 @@ import org.apache.solr.security.PermissionNameProvider;
  */
 
 public class AnnotatedApi extends Api implements PermissionNameProvider {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  public static final String ERR ="Error executing commands :";
   private EndPoint endPoint;
   private Map<String, Cmd> commands = new HashMap<>();
   private final Api fallback;
@@ -155,7 +161,8 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
 
     List<Map> errs = CommandOperation.captureErrors(cmds);
     if (!errs.isEmpty()) {
-      throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST, "Error in executing commands", errs);
+      log.error(ERR+ Utils.toJSONString(errs));
+      throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST, ERR , errs);
     }
 
   }
@@ -220,7 +227,6 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
           }
           if (isWrappedInPayloadObj) {
             PayloadObj<Object> payloadObj = new PayloadObj<>(cmd.name, cmd.getCommandData(), o);
-            cmd = payloadObj;
             method.invoke(obj, req, rsp, payloadObj);
           } else {
             method.invoke(obj, req, rsp, o);
@@ -260,7 +266,6 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
 
   public static Map<String, Object> createSchema(Method m) {
     Type[] types = m.getGenericParameterTypes();
-    Map<String, Object> result;
     if (types.length == 3) {
       return createSchemaFromType(types[2]);
 
@@ -297,8 +302,6 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
       JsonProperty p = fld.getAnnotation(JsonProperty.class);
       if (p == null) continue;
       props.put(p.value(), createSchemaFromType(fld.getGenericType()));
-
-
     }
   }
 
