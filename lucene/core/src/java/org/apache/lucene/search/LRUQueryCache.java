@@ -102,7 +102,6 @@ public class LRUQueryCache implements QueryCache, Accountable {
   private final Map<IndexReader.CacheKey, LeafCache> cache;
   private final ReentrantLock lock;
   private final long skipCacheFactor;
-  private final long skipCacheCost;
 
   // these variables are volatile so that we do not need to sync reads
   // but increments need to be performed under the lock
@@ -117,17 +116,14 @@ public class LRUQueryCache implements QueryCache, Accountable {
    * queries with at most <code>maxRamBytesUsed</code> bytes of memory, only on
    * leaves that satisfy {@code leavesToCache}.
    *
-   * Also, clauses whose cost is
-   * over than {@code skipCacheCost} and more than {@code skipCacheFactor} times the cost of the top-level query
-   * will not be cached in order to not slow down queries too much due to caching.
+   * Also, clauses whose cost is {@code skipCacheFactor} times more than the cost of the top-level query
+   * will not be cached in order to not slow down queries too much.
    */
   public LRUQueryCache(int maxSize, long maxRamBytesUsed,
-                       Predicate<LeafReaderContext> leavesToCache,
-                       long skipCacheCost, long skipCacheFactor) {
+                       Predicate<LeafReaderContext> leavesToCache, long skipCacheFactor) {
     this.maxSize = maxSize;
     this.maxRamBytesUsed = maxRamBytesUsed;
     this.leavesToCache = leavesToCache;
-    this.skipCacheCost = skipCacheCost;
     this.skipCacheFactor = skipCacheFactor;
     uniqueQueries = new LinkedHashMap<>(16, 0.75f, true);
     mostRecentlyUsedQueries = uniqueQueries.keySet();
@@ -150,7 +146,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
    * be cached in order to not hurt latency too much because of caching.
    */
   public LRUQueryCache(int maxSize, long maxRamBytesUsed) {
-    this(maxSize, maxRamBytesUsed, new MinSegmentSizePredicate(10000, .03f), 250, 5000000);
+    this(maxSize, maxRamBytesUsed, new MinSegmentSizePredicate(10000, .03f), 250);
   }
 
   // pkg-private for testing
@@ -752,8 +748,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
             @Override
             public Scorer get(long leadCost) throws IOException {
               // skip cache operation which would slow query down too much
-              if ((cost > skipCacheCost || cost > leadCost * skipCacheFactor)
-                  && in.getQuery() instanceof IndexOrDocValuesQuery) {
+              if (cost > leadCost * skipCacheFactor) {
                 return supplier.get(leadCost);
               }
 
