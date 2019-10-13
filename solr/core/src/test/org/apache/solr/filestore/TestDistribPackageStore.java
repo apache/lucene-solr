@@ -17,6 +17,9 @@
 
 package org.apache.solr.filestore;
 
+import static org.apache.solr.common.util.Utils.JAVABINCONSUMER;
+import static org.apache.solr.core.TestDynamicLoading.getFileContent;
+
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -27,7 +30,6 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.function.Predicate;
 
-import com.google.common.collect.ImmutableSet;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -48,8 +50,7 @@ import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.server.ByteBufferInputStream;
 
-import static org.apache.solr.common.util.Utils.JAVABINCONSUMER;
-import static org.apache.solr.core.TestDynamicLoading.getFileContent;
+import com.google.common.collect.ImmutableSet;
 
 @LogLevel("org.apache.solr.core.PackageStoreAPI=DEBUG;org.apache.solr.core.DistribPackageStore=DEBUG")
 public class TestDistribPackageStore extends SolrCloudTestCase {
