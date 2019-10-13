@@ -129,12 +129,15 @@ public class AuditEvent {
     this.solrPort = httpRequest.getLocalPort();
     this.solrIp = httpRequest.getLocalAddr();
     this.clientIp = httpRequest.getRemoteAddr();
-    this.resource = httpRequest.getContextPath();
+    this.resource = httpRequest.getPathInfo();
     this.httpMethod = httpRequest.getMethod();
     this.httpQueryString = httpRequest.getQueryString();
     this.headers = getHeadersFromRequest(httpRequest);
     this.requestUrl = httpRequest.getRequestURL();
     this.nodeName = MDC.get(ZkStateReader.NODE_NAME_PROP);
+    httpRequest.getParameterMap().forEach((k, v) -> {
+      this.solrParams.put(k, Arrays.asList(v));
+    });
 
     setRequestType(findRequestType());
 
@@ -459,14 +462,14 @@ public class AuditEvent {
   }
   
   private static final List<String> ADMIN_PATH_REGEXES = Arrays.asList(
-      "^/solr/admin/.*",
-      "^/api/(c|collections)/$",
-      "^/api/(c|collections)/[^/]+/config$",
-      "^/api/(c|collections)/[^/]+/schema$",
-      "^/api/(c|collections)/[^/]+/shards.*",
-      "^/api/cores.*$",
-      "^/api/node$",
-      "^/api/cluster$");
+      "^/admin/.*",
+      "^/(____v2|api)/(c|collections)$",
+      "^/(____v2|api)/(c|collections)/[^/]+/config$",
+      "^/(____v2|api)/(c|collections)/[^/]+/schema$",
+      "^/(____v2|api)/(c|collections)/[^/]+/shards.*",
+      "^/(____v2|api)/cores.*$",
+      "^/(____v2|api)/node$",
+      "^/(____v2|api)/cluster$");
 
   private static final List<String> STREAMING_PATH_REGEXES = Collections.singletonList(".*/stream.*");
 
