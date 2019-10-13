@@ -115,7 +115,7 @@ public class DistribPackageStore implements PackageStore {
         if (!parent.exists()) {
           parent.mkdirs();
         }
-        Map m = (Map) Utils.fromJSON(meta.array());
+        Map m = (Map) Utils.fromJSON(meta.array(), meta.arrayOffset(), meta.limit());
         if (m == null || m.isEmpty()) {
           throw new SolrException(SERVER_ERROR, "invalid metadata , discarding : " + path);
         }
@@ -187,7 +187,7 @@ public class DistribPackageStore implements PackageStore {
         metadata = Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
             baseUrl + "/node/files" + getMetaPath(),
             Utils.newBytesConsumer((int) MAX_PKG_SIZE));
-        m = (Map) Utils.fromJSON(metadata.array());
+        m = (Map) Utils.fromJSON(metadata.array(), metadata.arrayOffset(), metadata.limit());
       } catch (SolrException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error fetching metadata", e);
       }
