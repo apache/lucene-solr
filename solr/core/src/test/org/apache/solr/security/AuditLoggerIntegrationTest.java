@@ -188,7 +188,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     } catch (SolrException ex) {
       waitForAuditEventCallbacks(1);
       CallbackReceiver receiver = testHarness.get().receiver;
-      assertAuditEvent(receiver.popEvent(), UNAUTHORIZED, "/admin/collections", ADMIN, null,403);
+      assertAuditEvent(receiver.popEvent(), REJECTED, "/admin/collections", ADMIN, null, 401);
     }
   }
 

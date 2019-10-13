@@ -478,9 +478,12 @@ public class HttpSolrCall {
         for (Map.Entry<String, String> e : headers.entrySet()) response.setHeader(e.getKey(), e.getValue());
       }
       log.debug("USER_REQUIRED "+req.getHeader("Authorization")+" "+ req.getUserPrincipal());
+      sendError(authResponse.statusCode,
+          "Authentication failed, Response code: " + authResponse.statusCode);
       if (shouldAudit(EventType.REJECTED)) {
         cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.REJECTED, req, context));
       }
+      return RETURN;
     }
     if (!(authResponse.statusCode == HttpStatus.SC_ACCEPTED) && !(authResponse.statusCode == HttpStatus.SC_OK)) {
       log.info("USER_REQUIRED auth header {} context : {} ", req.getHeader("Authorization"), context);
