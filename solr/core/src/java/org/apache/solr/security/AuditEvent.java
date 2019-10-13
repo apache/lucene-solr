@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.servlet.SolrRequestParsers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -135,8 +136,8 @@ public class AuditEvent {
     this.headers = getHeadersFromRequest(httpRequest);
     this.requestUrl = httpRequest.getRequestURL();
     this.nodeName = MDC.get(ZkStateReader.NODE_NAME_PROP);
-    httpRequest.getParameterMap().forEach((k, v) -> {
-      this.solrParams.put(k, Arrays.asList(v));
+    SolrRequestParsers.parseQueryString(httpQueryString).forEach(sp -> {
+      this.solrParams.put(sp.getKey(), Arrays.asList(sp.getValue()));
     });
 
     setRequestType(findRequestType());
