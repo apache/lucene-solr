@@ -318,6 +318,8 @@ Bug Fixes
   state happening to change between checking if the current shard is active and later checking if there are any
   sub-shard leaders to forward the update to. (yonik)
 
+* SOLR-13835: HttpSolrCall produces incorrect extra AuditEvent on AuthorizationResponse.PROMPT (janhoy, hossman)
+
 Other Changes
 ----------------------
 
