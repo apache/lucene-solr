@@ -60,7 +60,6 @@ import static org.apache.solr.client.solrj.request.CollectionAdminRequest.getOve
 import static org.apache.solr.security.AuditEvent.EventType.COMPLETED;
 import static org.apache.solr.security.AuditEvent.EventType.ERROR;
 import static org.apache.solr.security.AuditEvent.EventType.REJECTED;
-import static org.apache.solr.security.AuditEvent.EventType.UNAUTHORIZED;
 import static org.apache.solr.security.AuditEvent.RequestType.ADMIN;
 import static org.apache.solr.security.AuditEvent.RequestType.SEARCH;
 
