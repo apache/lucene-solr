@@ -38,7 +38,9 @@ New Features
 
 Improvements
 ---------------------
-(No changes)
+
+*SOLR-13731: javabin must support a 1:1 mapping of the JSON update format (noble)
+
 
 Optimizations
 ---------------------
