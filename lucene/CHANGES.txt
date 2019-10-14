@@ -99,6 +99,9 @@ Other
 
 * LUCENE-8994: Code Cleanup - Pass values to list constructor instead of empty constructor followed by addAll(). (Koen De Groote)
 
+* LUCENE-8746: Refactor EdgeTree - Introduce a Component tree that represents the tree of components (e.g polygons).
+  Edge tree is now just a tree of edges. (Ignacio Vera)
+
 Build
 
 * Upgrade forbiddenapis to version 2.7; upgrade Groovy to 2.4.17.  (Uwe Schindler)
