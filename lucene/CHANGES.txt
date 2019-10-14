@@ -79,8 +79,11 @@ Improvements
 (No changes)
 
 Optimizations
----------------------
-(No changes)
+
+* BaseDirectoryReader no longer sums up the `LeafReader#numDocs` of its leaves
+  eagerly. This especially helps when creating views of readers that hide
+  documents, since computing the number of live documents is an expensive
+  operation. (Adrien Grand)
 
 Bug Fixes
 ---------------------
