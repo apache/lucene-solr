@@ -587,8 +587,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       }
       nonRoutableRequest.setParams(nonRoutableParams);
       nonRoutableRequest.setBasicAuthCredentials(request.getBasicAuthUser(), request.getBasicAuthPassword());
-      List<String> urlList = new ArrayList<>();
-      urlList.addAll(routes.keySet());
+      List<String> urlList = new ArrayList<>(routes.keySet());
       Collections.shuffle(urlList, rand);
       LBSolrClient.Req req = new LBSolrClient.Req(nonRoutableRequest, urlList);
       try {
