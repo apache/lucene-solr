@@ -92,7 +92,7 @@ import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
 import org.apache.solr.handler.IndexFetcher.IndexFetchResult;
 import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetrics;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -863,20 +863,21 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   @Override
-  public void initializeMetrics(SolrMetrics m) {
-    super.initializeMetrics(m);
-    solrMetrics.gauge(this,  () -> (core != null && !core.isClosed() ? NumberUtils.readableSize(core.getIndexSize()) : ""),
-        true, "indexSize", getCategory().toString());
-    solrMetrics.gauge(this, () -> (core != null && !core.isClosed() ? getIndexVersion().toString() : ""),
-         true, "indexVersion", getCategory().toString());
-    solrMetrics.gauge(this, () -> (core != null && !core.isClosed() ? getIndexVersion().generation : 0),
-        true, GENERATION, getCategory().toString());
-    solrMetrics.gauge(this, () -> (core != null && !core.isClosed() ? core.getIndexDir() : ""),
-        true, "indexPath", getCategory().toString());
-    solrMetrics.gauge(this, () -> isMaster,
-         true, "isMaster", getCategory().toString());
-    solrMetrics.gauge(this, () -> isSlave,
-         true, "isSlave", getCategory().toString());
+  public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
+    super.initializeMetrics(manager, registry, tag, scope);
+
+    manager.registerGauge(this, registry, () -> (core != null && !core.isClosed() ? NumberUtils.readableSize(core.getIndexSize()) : ""),
+        tag, true, "indexSize", getCategory().toString(), scope);
+    manager.registerGauge(this, registry, () -> (core != null && !core.isClosed() ? getIndexVersion().toString() : ""),
+        tag, true, "indexVersion", getCategory().toString(), scope);
+    manager.registerGauge(this, registry, () -> (core != null && !core.isClosed() ? getIndexVersion().generation : 0),
+        tag, true, GENERATION, getCategory().toString(), scope);
+    manager.registerGauge(this, registry, () -> (core != null && !core.isClosed() ? core.getIndexDir() : ""),
+        tag, true, "indexPath", getCategory().toString(), scope);
+    manager.registerGauge(this, registry, () -> isMaster,
+        tag, true, "isMaster", getCategory().toString(), scope);
+    manager.registerGauge(this, registry, () -> isSlave,
+        tag, true, "isSlave", getCategory().toString(), scope);
     final MetricsMap fetcherMap = new MetricsMap((detailed, map) -> {
       IndexFetcher fetcher = currentIndexFetcher;
       if (fetcher != null) {
@@ -905,13 +906,13 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         addVal(map, IndexFetcher.CONF_FILES_REPLICATED, props, String.class);
       }
     });
-    solrMetrics.gauge(this , fetcherMap, true, "fetcher", getCategory().toString());
-    solrMetrics.gauge(this, () -> isMaster && includeConfFiles != null ? includeConfFiles : "",
-         true, "confFilesToReplicate", getCategory().toString());
-    solrMetrics.gauge(this, () -> isMaster ? getReplicateAfterStrings() : Collections.<String>emptyList(),
-        true, REPLICATE_AFTER, getCategory().toString());
-    solrMetrics.gauge(this,  () -> isMaster && replicationEnabled.get(),
-        true, "replicationEnabled", getCategory().toString());
+    manager.registerGauge(this, registry, fetcherMap, tag, true, "fetcher", getCategory().toString(), scope);
+    manager.registerGauge(this, registry, () -> isMaster && includeConfFiles != null ? includeConfFiles : "",
+        tag, true, "confFilesToReplicate", getCategory().toString(), scope);
+    manager.registerGauge(this, registry, () -> isMaster ? getReplicateAfterStrings() : Collections.<String>emptyList(),
+        tag, true, REPLICATE_AFTER, getCategory().toString(), scope);
+    manager.registerGauge(this, registry, () -> isMaster && replicationEnabled.get(),
+        tag, true, "replicationEnabled", getCategory().toString(), scope);
   }
 
   //TODO Should a failure retrieving any piece of info mark the overall request as a failure?  Is there a core set of values that are required to make a response here useful?
@@ -1386,7 +1387,7 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
     });
   }
 
-  public void shutdown() {
+  public void close() {
     if (executorService != null) executorService.shutdown();
     if (pollingIndexFetcher != null) {
       pollingIndexFetcher.destroy();

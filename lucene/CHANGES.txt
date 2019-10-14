@@ -35,6 +35,9 @@ API Changes
 
 * LUCENE-8933: Validate JapaneseTokenizer user dictionary entry. (Tomoko Uchida)
 
+* LUCENE-8905: Better defence against malformed arguments in TopDocsCollector
+  (Atri Sharma)
+
 Improvements
 
 * LUCENE-8757: When provided with an ExecutorService to run queries across
@@ -45,8 +48,12 @@ Improvements
   docs on equal scores. Also, remove the ability of TopDocs.merge to set shard
   indices (Atri Sharma, Adrien Grand, Simon Willnauer)
 
+* LUCENE-8958: Shared count early termination for relevance sorted indices (Atri Sharma)
+
 * LUCENE-8937: Avoid agressive stemming on numbers in the FrenchMinimalStemmer.
   (Adrien Gallou via Tomoko Uchida)
+  
+* LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
 
 Bug fixes
 
@@ -56,6 +63,39 @@ Bug fixes
 Other
 
 * LUCENE-8768: Fix Javadocs build in Java 11. (Namgyu Kim)
+
+======================= Lucene 8.4.0 =======================
+
+API Changes
+---------------------
+(No changes)
+
+New Features
+---------------------
+(No changes)
+
+Improvements
+---------------------
+(No changes)
+
+Optimizations
+---------------------
+
+* LUCENE-8928: When building a kd-tree for dimensions n > 2, compute exact bounds for an inner node every N splits
+  to improve the quality of the tree. N is defined by SPLITS_BEFORE_EXACT_BOUNDS which is set to 4.
+  (Ignacio Vera, Adrien Grand)
+
+Bug Fixes
+---------------------
+(No changes)
+
+Other
+---------------------
+(No changes)
+
+Build
+
+* Upgrade forbiddenapis to version 2.7; upgrade Groovy to 2.4.17.  (Uwe Schindler)
 
 ======================= Lucene 8.3.0 =======================
 
@@ -69,11 +109,22 @@ API Changes
   should do likewise for analysis components for tokenized text, or else changes to the encoding in future versions
   may be incompatible with older indexes.  (Chongchen Chen, David Smiley)
 
+* LUCENE-8956: QueryRescorer now only sorts the first topN hits instead of all
+  initial hits. (Paul Sanwald via Adrien Grand)
+
+* LUCENE-8921: IndexSearcher.termStatistics() no longer takes a TermStates; it takes the docFreq and totalTermFreq.
+  And don't call if docFreq <= 0.  The previous implementation survives as deprecated and final.  It's removed in 9.0.
+  (Bruno Roustant, David Smiley, Alan Woodward)
+
+* LUCENE-8990: PointValues#estimateDocCount(visitor) estimates the number of documents that would be matched by
+  the given IntersectVisitor. THe method is used to compute the cost() of ScorerSuppliers instead of
+  PointValues#estimatePointCount(visitor). (Ignacio Vera, Adrien Grand)
+
 New Features
 
 * LUCENE-8936: Add SpanishMinimalStemFilter (vinod kumar via Tomoko Uchida)
 
-* LUCENE-8764: Add "export all terms" feature to Luke. (Leonardo Menezes via Tomoko Uchida)
+* LUCENE-8764 LUCENE-8945: Add "export all terms and doc freqs" feature to Luke with delimiters. (Leonardo Menezes, Amish Shah via Tomoko Uchida)
 
 * LUCENE-8747: Composite Matches from multiple subqueries now allow access to
   their submatches, and a new NamedMatches API allows marking of subqueries
@@ -81,6 +132,12 @@ New Features
   (Alan Woodward, Jim Ferenczi)
 
 * LUCENE-8769: Introduce Range Query For Multiple Connected Ranges (Atri Sharma)
+
+* LUCENE-8960: Introduce LatLonDocValuesPointInPolygonQuery for LatLonDocValuesField (Ignacio Vera)
+
+* LUCENE-8753: New UniformSplitPostingsFormat (name "UniformSplit") primarily benefiting in simplicity and
+  extensibility.  New STUniformSplitPostingsFormat (name "SharedTermsUniformSplit") that shares a single internal
+  term dictionary across fields.  (Bruno Roustant, Juan Rodriguez, David Smiley)
 
 Improvements
 
@@ -103,9 +160,22 @@ Improvements
 * LUCENE-8906: Expose Lucene50PostingsFormat.IntBlockTermState as public so that other postings formats can re-use it.
   (Bruno Roustant)
 
+* LUCENE-8942: Remove redundant parameters and improve visibility strictness in
+  LRUQueryCache (Atri Sharma)
+
 * SOLR-13663: Introduce <SpanPositionRange> into XML Query Parser (Alessandro Benedetti via Mikhail Khludnev)
 
 * LUCENE-8952: Use a sort key instead of true distance in NearestNeighbor (Julie Tibshirani).
+
+* LUCENE-8620: Tessellator labels the edges of the generated triangles whether they belong to
+  the original polygon. This information is added to the triangle encoding. (Ignacio Vera)
+
+* LUCENE-8964: Fix geojson shape parsing on string arrays in properties
+  (Alexander Reelsen)
+
+* LUCENE-8976: Use exact distance between point and bounding rectangle in FloatPointNearestNeighbor. (Ignacio Vera)
+
+* LUCENE-8966: The Korean analyzer now splits tokens on boundaries between digits and alphabetic characters. (Jim Ferenczi)
 
 Optimizations
 
@@ -121,6 +191,18 @@ the total hits is not requested.
 * LUCENE-8755: spatial-extras quad and packed quad prefix trees now index points faster.
   (Chongchen Chen, David Smiley)
 
+* LUCENE-8860: add additional leaf node level optimizations in LatLonShapeBoundingBoxQuery.
+  (Igor Motov via Ignacio Vera)
+  
+* LUCENE-8968: Improve performance of WITHIN and DISJOINT queries for Shape queries by
+  doing just one pass whenever possible. (Ignacio Vera)
+
+* LUCENE-8939: Introduce shared count based early termination across multiple slices
+  (Atri Sharma)
+
+* LUCENE-8980: Blocktree's seekExact now short-circuits false if the term isn't in the min-max range of the segment.
+  Large perf gain for ID/time like data when populated sequentially.  (Guoqiang Jiang)
+
 Bug Fixes
 
 * LUCENE-8755: spatial-extras quad and packed quad prefix trees could throw a
@@ -132,6 +214,16 @@ Other
   (Tomoko Uchida, Uwe Schindler)
 
 * LUCENE-8758: QuadPrefixTree: removed levelS and levelN fields which weren't used. (Amish Shah)
+
+* LUCENE-8975: Code Cleanup: Use entryset for map iteration wherever possible.
+
+* LUCENE-8993, LUCENE-8807: Changed all repository and download references in build files
+  to HTTPS. (Uwe Schindler)
+
+* LUCENE-8998: Fix OverviewImplTest.testIsOptimized reproducible failure. (Tomoko Uchida)
+
+* LUCENE-8999: LuceneTestCase.expectThrows now propogates assert/assumption failures up to the test
+  w/o wrapping in a new assertion failure unless the caller has explicitly expected them (hossman)
 
 ======================= Lucene 8.2.0 =======================
 

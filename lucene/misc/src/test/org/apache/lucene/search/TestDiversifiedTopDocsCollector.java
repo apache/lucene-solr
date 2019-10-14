@@ -93,7 +93,11 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
     DiversifiedTopDocsCollector tdc = doDiversifiedSearch(numResults, 15);
 
     // start < 0
-    assertEquals(0, tdc.topDocs(-1).scoreDocs.length);
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+      tdc.topDocs(-1);
+    });
+
+    assertEquals("Expected value of starting position is between 0 and 5, got -1", expected.getMessage());
 
     // start > pq.size()
     assertEquals(0, tdc.topDocs(numResults + 1).scoreDocs.length);
@@ -102,7 +106,11 @@ public class TestDiversifiedTopDocsCollector extends LuceneTestCase {
     assertEquals(0, tdc.topDocs(numResults).scoreDocs.length);
 
     // howMany < 0
-    assertEquals(0, tdc.topDocs(0, -1).scoreDocs.length);
+    expected = expectThrows(IllegalArgumentException.class, () -> {
+      tdc.topDocs(0, -1);
+    });
+
+    assertEquals("Number of hits requested must be greater than 0 but value was -1", expected.getMessage());
 
     // howMany == 0
     assertEquals(0, tdc.topDocs(0, 0).scoreDocs.length);

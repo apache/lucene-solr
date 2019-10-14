@@ -754,6 +754,7 @@ public final class KoreanTokenizer extends Tokenizer {
           unknownWordLength = 1;
           UnicodeScript scriptCode = UnicodeScript.of(firstCharacter);
           final boolean isPunct = isPunctuation(firstCharacter);
+          final boolean isDigit = Character.isDigit(firstCharacter);
           for (int posAhead = pos + 1; unknownWordLength < MAX_UNKNOWN_WORD_LENGTH; posAhead++) {
             int next = buffer.get(posAhead);
             if (next == -1) {
@@ -768,8 +769,11 @@ public final class KoreanTokenizer extends Tokenizer {
                 || chType == Character.NON_SPACING_MARK;
 
             if (sameScript
-                && isPunctuation(ch, chType) == isPunct
-                && characterDefinition.isGroup(ch)) {
+                  // split on punctuation
+                  && isPunctuation(ch, chType) == isPunct
+                  // split on digit
+                  && Character.isDigit(ch) == isDigit
+                  && characterDefinition.isGroup(ch)) {
               unknownWordLength++;
             } else {
               break;

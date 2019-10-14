@@ -17,21 +17,19 @@
 package org.apache.solr.search;
 
 import java.lang.invoke.MethodHandles;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
 import com.codahale.metrics.MetricRegistry;
-import com.google.common.collect.ImmutableList;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetrics;
 import org.apache.solr.util.ConcurrentLFUCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,8 +76,10 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
   private ConcurrentLFUCache<K, V> cache;
   private int showItems = 0;
   private Boolean timeDecay = true;
+  private int maxIdleTimeSec;
   private MetricsMap cacheMap;
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
+  private MetricRegistry registry;
 
   private int maxSize;
   private int minSizeLimit;
@@ -116,18 +116,25 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
     str = (String) args.get(AUTOWARM_COUNT_PARAM);
     autowarmCount = str == null ? 0 : Integer.parseInt(str);
     str = (String) args.get(CLEANUP_THREAD_PARAM);
-    cleanupThread = str != null && Boolean.parseBoolean(str);
+    cleanupThread = str == null ? false : Boolean.parseBoolean(str);
 
     str = (String) args.get(SHOW_ITEMS_PARAM);
     showItems = str == null ? 0 : Integer.parseInt(str);
 
     // Don't make this "efficient" by removing the test, default is true and omitting the param will make it false.
     str = (String) args.get(TIME_DECAY_PARAM);
-    timeDecay = (str == null) || Boolean.parseBoolean(str);
+    timeDecay = (str == null) ? true : Boolean.parseBoolean(str);
 
+    str = (String) args.get(MAX_IDLE_TIME_PARAM);
+    if (str == null) {
+      maxIdleTimeSec = -1;
+    } else {
+      maxIdleTimeSec = Integer.parseInt(str);
+    }
     description = generateDescription();
 
-    cache = new ConcurrentLFUCache<>(maxSize, minSizeLimit, acceptableSize, initialSize, cleanupThread, false, null, timeDecay);
+    cache = new ConcurrentLFUCache<>(maxSize, minSizeLimit, acceptableSize, initialSize,
+        cleanupThread, false, null, timeDecay, maxIdleTimeSec);
     cache.setAlive(false);
 
     statsList = (List<ConcurrentLFUCache.Stats>) persistence;
@@ -147,7 +154,8 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
   private String generateDescription() {
     String descr = "Concurrent LFU Cache(maxSize=" + maxSize + ", initialSize=" + initialSize +
         ", minSize=" + minSizeLimit + ", acceptableSize=" + acceptableSize + ", cleanupThread=" + cleanupThread +
-        ", timeDecay=" + timeDecay;
+        ", timeDecay=" + timeDecay +
+        ", maxIdleTime=" + maxIdleTimeSec;
     if (autowarmCount > 0) {
       descr += ", autowarmCount=" + autowarmCount + ", regenerator=" + regenerator;
     }
@@ -227,7 +235,6 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
     statsList.get(0).add(cache.getStats());
     statsList.remove(cache.getStats());
     cache.destroy();
-    if (solrMetrics != null) solrMetrics.unregister();
   }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
@@ -255,17 +262,9 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
     return "0." + hundredths;
   }
 
-
-  private SolrMetrics solrMetrics;
-
   @Override
-  public SolrMetrics getMetrics() {
-    return solrMetrics;
-  }
-
-  @Override
-  public void initializeMetrics(SolrMetrics info) {
-    solrMetrics = info.getChildInfo(this);
+  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
+    registry = manager.registry(registryName);
     cacheMap = new MetricsMap((detailed, map) -> {
       if (cache != null) {
         ConcurrentLFUCache.Stats stats = cache.getStats();
@@ -273,6 +272,7 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
         long hits = stats.getCumulativeHits();
         long inserts = stats.getCumulativePuts();
         long evictions = stats.getCumulativeEvictions();
+        long idleEvictions = stats.getCumulativeIdleEvictions();
         long size = stats.getCurrentSize();
 
         map.put(LOOKUPS_PARAM, lookups);
@@ -288,7 +288,9 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
         map.put(CLEANUP_THREAD_PARAM, cleanupThread);
         map.put(SHOW_ITEMS_PARAM, showItems);
         map.put(TIME_DECAY_PARAM, timeDecay);
-
+        map.put(RAM_BYTES_USED_PARAM, ramBytesUsed());
+        map.put(MAX_IDLE_TIME_PARAM, maxIdleTimeSec);
+        map.put("idleEvictions", idleEvictions);
 
         map.put("warmupTime", warmupTime);
 
@@ -296,6 +298,7 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
         long chits = 0;
         long cinserts = 0;
         long cevictions = 0;
+        long cidleEvictions = 0;
 
         // NOTE: It is safe to iterate on a CopyOnWriteArrayList
         for (ConcurrentLFUCache.Stats statistics : statsList) {
@@ -303,13 +306,14 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
           chits += statistics.getCumulativeHits();
           cinserts += statistics.getCumulativePuts();
           cevictions += statistics.getCumulativeEvictions();
+          cidleEvictions += statistics.getCumulativeIdleEvictions();
         }
         map.put("cumulative_lookups", clookups);
         map.put("cumulative_hits", chits);
         map.put("cumulative_hitratio", calcHitRatio(clookups, chits));
         map.put("cumulative_inserts", cinserts);
         map.put("cumulative_evictions", cevictions);
-        map.put(RAM_BYTES_USED_PARAM, ramBytesUsed());
+        map.put("cumulative_idleEvictions", cidleEvictions);
 
         if (detailed && showItems != 0) {
           Map items = cache.getMostUsedItems(showItems == -1 ? Integer.MAX_VALUE : showItems);
@@ -326,8 +330,7 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
 
       }
     });
-    String metricName = SolrMetricManager.makeName(ImmutableList.of(getCategory().toString()), solrMetrics.scope);
-    solrMetrics.gauge(this, cacheMap, true, metricName);
+    manager.registerGauge(this, registryName, cacheMap, tag, true, scope, getCategory().toString());
   }
 
   // for unit tests only
@@ -342,8 +345,7 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
 
   @Override
   public MetricRegistry getMetricRegistry() {
-    return solrMetrics == null ? null : solrMetrics.getRegistry();
-
+    return registry;
   }
 
   @Override
@@ -400,5 +402,4 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
       }
     }
   }
-
 }

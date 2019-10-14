@@ -28,8 +28,8 @@ import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.norm.IdentityNormalizer;
 import org.apache.solr.ltr.norm.Normalizer;
 import org.apache.solr.util.SolrPluginUtils;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class TestNeuralNetworkModel extends TestRerankBase {
@@ -44,13 +44,13 @@ public class TestNeuralNetworkModel extends TestRerankBase {
         features, norms, featureStoreName, allFeatures, params);
   }
 
-  @BeforeClass
-  public static void setup() throws Exception {
+  @Before
+  public void setup() throws Exception {
     setuptest(false);
   }
   
-  @AfterClass
-  public static void after() throws Exception {
+  @After
+  public void after() throws Exception {
     aftertest();
   }
 

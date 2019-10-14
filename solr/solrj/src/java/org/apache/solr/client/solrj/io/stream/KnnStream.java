@@ -227,8 +227,8 @@ public class KnnStream extends TupleStream implements Expressible  {
     if(documentIterator.hasNext()) {
       Map map = new HashMap();
       SolrDocument doc = documentIterator.next();
-      for(String key  : doc.keySet()) {
-        map.put(key, doc.get(key));
+      for(Entry<String, Object> entry : doc.entrySet()) {
+        map.put(entry.getKey(), entry.getValue());
       }
       return new Tuple(map);
     } else {
@@ -241,9 +241,9 @@ public class KnnStream extends TupleStream implements Expressible  {
 
   private ModifiableSolrParams getParams(Map<String, String> props) {
     ModifiableSolrParams params = new ModifiableSolrParams();
-    for(String key : props.keySet()) {
-      String value = props.get(key);
-      params.add(key, value);
+    for(Entry<String, String> entry : props.entrySet()) {
+      String value = entry.getValue();
+      params.add(entry.getKey(), value);
     }
     return params;
   }

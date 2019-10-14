@@ -18,6 +18,7 @@ package org.apache.solr.update.processor;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
@@ -74,6 +75,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertQ(req("q", "cat:*", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "cat:bbb", "indent", "true"), "//result[@numFound = '3']");
+    assertQ(req("q", "cat:ccc", "indent", "true"), "//result[@numFound = '3']");
 
 
     doc = new SolrInputDocument();
@@ -87,6 +89,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertQ(req("q", "cat:*", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "cat:bbb", "indent", "true"), "//result[@numFound = '2']");
+    assertQ(req("q", "cat:ccc", "indent", "true"), "//result[@numFound = '3']"); // remove only removed first occurrence
 
     doc = new SolrInputDocument();
     doc.setField("id", "21");
@@ -141,6 +144,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '3']");
+    assertQ(req("q", "intRemove:333", "indent", "true"), "//result[@numFound = '3']");
 
 
     doc = new SolrInputDocument();
@@ -154,6 +158,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '2']");
+    assertQ(req("q", "intRemove:333", "indent", "true"), "//result[@numFound = '3']"); // remove only removed first occurrence
 
     doc = new SolrInputDocument();
     doc.setField("id", "1021");
@@ -209,6 +214,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '3']");
+    assertQ(req("q", "intRemove:333", "indent", "true"), "//result[@numFound = '3']");
 
 
     doc = new SolrInputDocument();
@@ -222,6 +228,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '2']");
+    assertQ(req("q", "intRemove:333", "indent", "true"), "//result[@numFound = '3']"); // remove only removed first occurrence
 
     doc = new SolrInputDocument();
     doc.setField("id", "1021");
@@ -273,6 +280,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '3']");
+    assertQ(req("q", "intRemove:333", "indent", "true"), "//result[@numFound = '3']");
 
 
     doc = new SolrInputDocument();
@@ -286,6 +294,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '2']");
+    assertQ(req("q", "intRemove:333", "indent", "true"), "//result[@numFound = '3']"); // remove only removed first occurrence
 
     doc = new SolrInputDocument();
     doc.setField("id", "1021");
@@ -338,6 +347,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '3']");
+    assertQ(req("q", "intRemove:333", "indent", "true"), "//result[@numFound = '3']");
 
     doc = new SolrInputDocument();
     doc.setField("id", "1001");
@@ -350,6 +360,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '2']");
+    assertQ(req("q", "intRemove:333", "indent", "true"), "//result[@numFound = '3']"); // remove only removed first occurrence
 
     doc = new SolrInputDocument();
     doc.setField("id", "1021");
@@ -422,6 +433,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '3']");
+    assertQ(req("q", "intRemove:333", "indent", "true"), "//result[@numFound = '3']");
 
 
     doc = new SolrInputDocument();
@@ -435,6 +447,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:222", "indent", "true"), "//result[@numFound = '2']");
+    assertQ(req("q", "intRemove:333", "indent", "true"), "//result[@numFound = '3']"); // remove only removed first occurrence
 
     doc = new SolrInputDocument();
     doc.setField("id", "1021");
@@ -488,6 +501,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:22222222", "indent", "true"), "//result[@numFound = '3']");
+    assertQ(req("q", "intRemove:33333333", "indent", "true"), "//result[@numFound = '3']");
 
 
     doc = new SolrInputDocument();
@@ -501,6 +515,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertQ(req("q", "intRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "intRemove:22222222", "indent", "true"), "//result[@numFound = '2']");
+    assertQ(req("q", "intRemove:33333333", "indent", "true"), "//result[@numFound = '3']"); // remove only removed first occurrence
 
     doc = new SolrInputDocument();
     doc.setField("id", "1021");
@@ -558,6 +573,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
       assertQ(req("q", "dateRemove:*", "indent", "true"), "//result[@numFound = '4']");
     }
     assertQ(req("q", "dateRemove:\"2014-09-02T12:00:00Z\"", "indent", "true"), "//result[@numFound = '3']");
+    assertQ(req("q", "dateRemove:\"2014-09-03T12:00:00Z\"", "indent", "true"), "//result[@numFound = '3']");
 
     doc = new SolrInputDocument();
     doc.setField("id", "10001");
@@ -671,6 +687,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertQ(req("q", "dateRemove:*", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "dateRemove:\"2014-09-02T12:00:00Z\"", "indent", "true"), "//result[@numFound = '2']");
+    assertQ(req("q", "dateRemove:\"2014-09-03T12:00:00Z\"", "indent", "true"), "//result[@numFound = '3']"); // remove only removed first occurrence
 
     doc = new SolrInputDocument();
     doc.setField("id", "10021");
@@ -793,6 +810,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertQ(req("q", "floatRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "floatRemove:\"222.222\"", "indent", "true"), "//result[@numFound = '3']");
+    assertQ(req("q", "floatRemove:\"333.333\"", "indent", "true"), "//result[@numFound = '3']");
 
 
     doc = new SolrInputDocument();
@@ -807,6 +825,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertQ(req("q", "floatRemove:[* TO *]", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "floatRemove:\"222.222\"", "indent", "true"), "//result[@numFound = '2']");
+    assertQ(req("q", "floatRemove:\"333.333\"", "indent", "true"), "//result[@numFound = '3']"); // remove only removed first occurrence
 
     doc = new SolrInputDocument();
     doc.setField("id", "10021");
@@ -831,7 +850,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
     assertQ(req("q", "floatRemove:\"111.111\"", "indent", "true"), "//result[@numFound = '3']");
   }
 
- @Test
+  @Test
   public void testRemoveregex() throws Exception {
     SolrInputDocument doc;
 
@@ -861,6 +880,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertQ(req("q", "cat:*", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "cat:bbb", "indent", "true"), "//result[@numFound = '3']");
+    assertQ(req("q", "cat:ccc", "indent", "true"), "//result[@numFound = '3']");
 
 
     doc = new SolrInputDocument();
@@ -874,6 +894,7 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertQ(req("q", "cat:*", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "cat:bbb", "indent", "true"), "//result[@numFound = '2']");
+    assertQ(req("q", "cat:ccc", "indent", "true"), "//result[@numFound = '2']"); // removeregex does remove all occurrences
 
     doc = new SolrInputDocument();
     doc.setField("id", "21");
@@ -896,6 +917,43 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertQ(req("q", "cat:*", "indent", "true"), "//result[@numFound = '4']");
     assertQ(req("q", "cat:aaa", "indent", "true"), "//result[@numFound = '3']");
+  }
+
+  @Test
+  public void testRemoveregexMustMatchWholeValue() throws Exception {
+    SolrInputDocument doc;
+
+    doc = new SolrInputDocument();
+    doc.setField("id", "1");
+    doc.setField("cat", new String[]{"aaa", "bbb", "ccc", "ccc", "ddd"});
+    assertU(adoc(doc));
+    assertU(commit());
+
+    assertQ(req("q", "cat:*", "indent", "true"), "//result[@numFound = '1']");
+    assertQ(req("q", "cat:bbb", "indent", "true"), "//result[@numFound = '1']");
+
+
+    doc = new SolrInputDocument();
+    doc.setField("id", "1");
+    List<String> removeList = new ArrayList<>();
+    removeList.add("bb");
+    doc.setField("cat", ImmutableMap.of("removeregex", removeList)); //behavior when hitting Solr through ZK
+    assertU(adoc(doc));
+    assertU(commit());
+
+    assertQ(req("q", "cat:*", "indent", "true"), "//result[@numFound = '1']");
+    assertQ(req("q", "cat:bbb", "indent", "true"), "//result[@numFound = '1']"); // Was not removed - regex didn't match whole value
+
+    doc = new SolrInputDocument();
+    doc.setField("id", "1");
+    removeList = new ArrayList<>();
+    removeList.add("bbb");
+    doc.setField("cat", ImmutableMap.of("removeregex", removeList)); //behavior when hitting Solr through ZK
+    assertU(adoc(doc));
+    assertU(commit());
+
+    assertQ(req("q", "cat:*", "indent", "true"), "//result[@numFound = '1']");
+    assertQ(req("q", "cat:bbb", "indent", "true"), "//result[@numFound = '0']"); // Was removed now - regex matches
   }
 
   @Test
@@ -972,6 +1030,55 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
 
     assertQ(req("q", "cat:*", "indent", "true"), "//result[@numFound = '3']");
     assertQ(req("q", "cat:bbb", "indent", "true"), "//result[@numFound = '2']"); //'cat' field not present, do 'add' atomic operation
+  }
+
+  @Test
+  public void testAddMultiple() throws Exception {
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.setField("id", "3");
+    doc.setField("cat", new String[]{"aaa", "ccc"});
+    assertU(adoc(doc));
+    assertU(commit());
+
+    assertQ(req("q", "cat:*", "indent", "true"), "//result[@numFound = '1']");
+    assertQ(req("q", "cat:bbb", "indent", "true"), "//result[@numFound = '0']");
+
+
+    doc = new SolrInputDocument();
+    doc.setField("id", "3");
+    doc.setField("cat", ImmutableMap.of("add", "bbb"));
+    assertU(adoc(doc));
+    assertU(commit());
+
+    assertQ(req("q", "cat:*", "indent", "true"), "//result[@numFound = '1']");
+    assertQ(req("q", "cat:bbb", "indent", "true"), "//result[@numFound = '1']");
+
+    doc = new SolrInputDocument();
+    doc.setField("id", "3");
+    doc.setField("cat", ImmutableMap.of("add", "bbb"));
+    assertU(adoc(doc));
+    assertU(commit());
+
+    assertQ(req("q", "cat:*", "indent", "true"), "//result[@numFound = '1']");
+    assertQ(req("q", "cat:bbb", "indent", "true"), "//result[@numFound = '1']"); // Should now have 2 occurrences of bbb
+
+    doc = new SolrInputDocument();
+    doc.setField("id", "3");
+    doc.setField("cat", ImmutableMap.of("remove", "bbb"));
+    assertU(adoc(doc));
+    assertU(commit());
+
+    assertQ(req("q", "cat:*", "indent", "true"), "//result[@numFound = '1']");
+    assertQ(req("q", "cat:bbb", "indent", "true"), "//result[@numFound = '1']"); // remove only removed first occurrence
+
+    doc = new SolrInputDocument();
+    doc.setField("id", "3");
+    doc.setField("cat", ImmutableMap.of("remove", "bbb"));
+    assertU(adoc(doc));
+    assertU(commit());
+
+    assertQ(req("q", "cat:*", "indent", "true"), "//result[@numFound = '1']");
+    assertQ(req("q", "cat:bbb", "indent", "true"), "//result[@numFound = '0']"); // remove now removed last occurrence
   }
 
   @Test
@@ -1177,6 +1284,36 @@ public class AtomicUpdatesTest extends SolrTestCaseJ4 {
         "/response/docs/[0]/id=='103'",
         "/response/docs/[0]/single_s_dvn=='abcupdate'",
         "/response/docs/[0]/single_i_dvn==5");
+  }
+
+  /**
+   * Test what happens if we try to update the parent of a doc with children.
+   * This fails because _root_ is not stored which is currently required for doing this.
+   */
+  @Test
+  public void testUpdateNestedDocUnsupported() throws Exception {
+    assertU(adoc(sdoc(
+        "id", "1",
+        "children", Arrays.asList(sdoc(
+            "id", "100",
+            "cat", "childCat1")
+        )
+    )));
+
+    assertU(commit());
+
+    // update the parent doc to have a category
+    try {
+      assertU(adoc(sdoc(
+          "id", "1",
+          "cat", Collections.singletonMap("add", Arrays.asList("parentCat"))
+      )));
+      fail("expected a failure");
+    } catch (Exception e) {
+      assertEquals("org.apache.solr.common.SolrException: " +
+          "This schema does not support partial updates to nested docs. See ref guide.", e.toString());
+    }
+
   }
 
   @Test

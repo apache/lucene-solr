@@ -279,9 +279,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
 
           } finally {
             try {
-              if (rspBody != null) {
-                while (rspBody.read() != -1) {}
-              }
+              consumeFully(rspBody);
             } catch (Exception e) {
               log.error("Error consuming and closing http response stream.", e);
             }
@@ -292,6 +290,21 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
         log.error("Interrupted on polling from queue", e);
       }
 
+    }
+  }
+
+  private void consumeFully(InputStream is) {
+    if (is != null) {
+      try (is) {
+        // make sure the stream is full read
+        is.skip(is.available());
+        while (is.read() != -1) {
+        }
+      } catch (UnsupportedOperationException e) {
+        // nothing to do then
+      } catch (IOException e) {
+        // quiet
+      }
     }
   }
 
@@ -512,6 +525,7 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
 
   /**
    * Intended to be used as an extension point for doing post processing after a request completes.
+   * @param respBody the body of the response, subclasses must not close this stream.
    */
   public void onSuccess(Response resp, InputStream respBody) {
     // no-op by design, override to add functionality

@@ -293,7 +293,8 @@ public interface CommonParams {
 
   String JAVABIN_MIME = "application/javabin";
 
-  String PACKAGE = "package";
+  String FILE = "file";
+  String FILES = "files";
 
   String CHILDDOC = "_childDocuments_";
 
