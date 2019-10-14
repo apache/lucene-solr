@@ -1012,8 +1012,7 @@ public class HttpSolrCall {
     Collections.shuffle(slices, random);
 
     for (Slice slice : slices) {
-      List<Replica> randomizedReplicas = new ArrayList<>();
-      randomizedReplicas.addAll(slice.getReplicas());
+      List<Replica> randomizedReplicas = new ArrayList<>(slice.getReplicas());
       Collections.shuffle(randomizedReplicas, random);
 
       for (Replica replica : randomizedReplicas) {
