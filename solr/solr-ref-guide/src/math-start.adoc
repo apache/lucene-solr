@@ -16,28 +16,39 @@
 // specific language governing permissions and limitations
 // under the License.
 
+<<Language, Language>> -
+<<Execution, Execution>> -
+<<Visualization, Visualization>>
 
 == Language
 
-*Streaming Expressions* and *Math Expressions* are expression languages that run
-inside Solr Cloud. The languages consist of function expressions that are designed
-to be nested or *composed*.  Streaming Expressions and Math Expressions can be combined to *search, sort,
-sample, aggregate, transform, analyse* and *visualize* data in Solr Cloud collections.
+*Streaming Expressions* and *Math Expressions* are function languages that run
+inside Solr Cloud. The languages consist of functions
+that are designed to be *composed* to form programming logic.
 
-*Streaming Expressions* all return streams of data. This allows Streaming Expressions to be
-composed in ways that form a pipeline. A *Stream Source*, such as *search*, initiates
-a stream of Tuples. A Stream Decorator, such as *select*, wraps the Stream Source and transforms
+*Streaming Expressions* are functions that return streams of tuples. Streaming Expression functions can be
+composed to form a transformation pipeline. The pipeline starts with a *Stream Source*, such as *search*,
+which initiates a stream of tuples. One or more *Stream Decorators*, such as *select*, wraps the Stream Source and transforms
 the stream of Tuples.
 
-*Math Expressions* do not return streams of data. Math Expressions return primatives and in-memory
-arrays and matrices. Many of the Math Expressions are designed to work on arrays and matrices
-to perform *statistical* and mathematical operations.
+*Math Expressions* are functions that operate over and return primitives and in-memory
+arrays and matrices. The core use case for Math Expressions is performing mathematical operations and
+visualization.
+
+Streaming Expressions and Math Expressions can be combined to *search,
+sample, aggregate, transform, analyze* and *visualize* data in Solr Cloud collections.
 
 
 == Execution
 
-Solr's /stream handler excutes Streaming Expressions and Math Expressions. The easiest way
-to run Streaming Expressions and Math expressions is through the *stream* panel on the Solr admin
+Solr's /stream handler executes Streaming Expressions and Math Expressions.
+The /stream handler compiles the expression, runs the expression logic
+and returns a JSON result.
+
+=== Admin Stream Panel
+
+The easiest way to run Streaming Expressions and Math expressions is through
+the *stream* panel on the Solr admin
 UI.
 
 A sample *search* Streaming Expression is shown in the screenshot below:
@@ -51,15 +62,83 @@ A sample *add* Math Expression is shown in the screenshot below:
 
 image::images/math-expressions/add.png[]
 
+=== Curl Example
 
-== Curl
+The http interface to the /stream handler can be used to
+send an streaming expression request and retrieve the response.
 
+Curl is a useful tool for running streaming expressions when the result
+needs to be spooled to disk or is too large for the Solr admin stream panel. Below
+is an example of a curl command to the /stream handler.
+
+[source,text]
+----
+curl --data-urlencode 'expr=search(enron_emails,
+                                   q="from:1800flowers*",
+                                   fl="from, to",
+                                   sort="from asc")' http://localhost:8983/solr/enron_emails/stream
+
+----
+
+The JSON response from the stream handler for this request is shown below:
+
+[source,text]
+----
+{"result-set":{"docs":[
+   {"from":"1800flowers.133139412@s2u2.com","to":"lcampbel@enron.com"},
+   {"from":"1800flowers.93690065@s2u2.com","to":"jtholt@ect.enron.com"},
+   {"from":"1800flowers.96749439@s2u2.com","to":"alewis@enron.com"},
+   {"from":"1800flowers@1800flowers.flonetwork.com","to":"lcampbel@enron.com"},
+   {"from":"1800flowers@1800flowers.flonetwork.com","to":"lcampbel@enron.com"},
+   {"from":"1800flowers@1800flowers.flonetwork.com","to":"lcampbel@enron.com"},
+   {"from":"1800flowers@1800flowers.flonetwork.com","to":"lcampbel@enron.com"},
+   {"from":"1800flowers@1800flowers.flonetwork.com","to":"lcampbel@enron.com"},
+   {"from":"1800flowers@shop2u.com","to":"ebass@enron.com"},
+   {"from":"1800flowers@shop2u.com","to":"lcampbel@enron.com"},
+   {"from":"1800flowers@shop2u.com","to":"lcampbel@enron.com"},
+   {"from":"1800flowers@shop2u.com","to":"lcampbel@enron.com"},
+   {"from":"1800flowers@shop2u.com","to":"ebass@enron.com"},
+   {"from":"1800flowers@shop2u.com","to":"ebass@enron.com"},
+   {"EOF":true,"RESPONSE_TIME":33}]}
+}
+----
 
 == Visualization
 
+The visualizations in this guide were performed with Apache Zeppelin using the
+Zeppelin-Solr interpreter.
+
+=== Zeppelin-Solr
+
+The Zeppelin-Solr interpreter allows Streaming Expressions and Math Expressions
+to be executed and results visualized in Apache Zeppelin. The instructions for
+ installing and configuring Zeppelin-Solr can be found on the Github repository for
+ the project:
 https://github.com/lucidworks/zeppelin-solr
 
+Once installed the Solr Interpreter can be configured to connect to your Solr instance.
+The screenshot below shows the panel for configuring Zeppelin-Solr.
+
 image::images/math-expressions/zepconf.png[]
+
+Configure the solr.baseUrl and solr.collection to point the location where the Streaming
+Expressions and Math Expressions will be sent for execution. The solr.collection is
+just the execution collection and does not need to hold data, although it can hold data.
+Streaming Expressions can choose to query any of the collections that are attached
+to the same Solr Cloud as the execution collection.
+
+=== zplot
+
+Streaming Expression result sets can be visualized automatically by Zeppelin-Solr.
+
+Math Expression results need to be formatted for visualization using the `zplot` function.
+The `zplot` function has support for plotting *vectors*, *matrices*, *probability distributions* and
+*2D clustering results*.
+
+There are many examples in the guide which show how to visualize both Streaming Expressions
+and Math Expressions.
+
+
 
 
 
