@@ -86,8 +86,8 @@ Optimizations
   (Ignacio Vera, Adrien Grand)
 
 Bug Fixes
----------------------
-(No changes)
+
+* LUCENE-9001: Fix race condition in SetOnce. (Przemko Robakowski)
 
 Other
 
