@@ -2043,8 +2043,6 @@ public class TestLRUQueryCache extends LuceneTestCase {
     searcher.setQueryCache(queryCache);
     searcher.setQueryCachingPolicy(ALWAYS_CACHE);
 
-    CountDownLatch startLatch = new CountDownLatch(1);
-
     // To ensure that failing ExecutorService still allows query to run
     // successfully
 
@@ -2057,6 +2055,12 @@ public class TestLRUQueryCache extends LuceneTestCase {
       public void run() {
         try {
           Thread.sleep(100);
+          List<LeafReaderContext> leaves = searcher.leafContexts;
+
+          for (LeafReaderContext leafReaderContext : leaves) {
+            leafReaderContext.reader().close();
+          }
+
           reader.close();
         } catch (Exception e) {
           throw new RuntimeException(e.getMessage());
@@ -2069,10 +2073,8 @@ public class TestLRUQueryCache extends LuceneTestCase {
 
     expectThrows(AlreadyClosedException.class, () -> searcher.search(new ConstantScoreQuery(red), 1));
 
-    assertEquals(queryCache.cachedQueries(), Collections.emptyList());
+    assertEquals(Collections.emptyList(), queryCache.cachedQueries());
 
-    reader.close();
-    w.close();
     dir.close();
     service.shutdown();
     tempService.shutdown();
