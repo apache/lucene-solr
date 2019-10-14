@@ -123,13 +123,13 @@ Administrators can write their own custom permissions that can match requests ba
 Each custom permission is a JSON object under the `permissions` property, with one or more of the properties below:
 
 name:: An optional identifier for the permission.  For custom permissions, this is used only as a clue to administrators about what this permission does.  Even so, care must be taken when setting this property to avoid colliding with one of Solr's predefined permissions, whose names are semantically meaningful.  If this name matches a predefined permission, Solr ignores any other properties set and uses the semantics of the predefined permission instead.
-collection:: An optional property identifying which collection(s) this permission applies to.  The value can either be a single collection name, or a JSON array containing multiple collections.  The wildcard `\*` can be used to indicate that this rule applies to all collections.  Similarly the special value "null" can be used to indicate that this permission governs Solr's collection-agnostic APIs.  If not specified, this property defaults to `["*", "null"]`.
+collection:: An optional property identifying which collection(s) this permission applies to.  The value can either be a single collection name, or a JSON array containing multiple collections.  The wildcard `\*` can be used to indicate that this rule applies to all collections.  Similarly the special value `null` can be used to indicate that this permission governs Solr's collection-agnostic ("admin") APIs.  If not specified, this property defaults to `"*"`.
 +
 [NOTE]
 ====
 The collection property can only be used to match _collections_.  It currently cannot be used to match aliases.  Aliases are resolved before Solr's security plugins are invoked; a `collection` property given an alias will never match because RBAP will be comparing an alias name to already-resolved collection names.  Instead, set a `collection` property that contains all collections in the alias concerned (or the `*` wildcard).
 ====
-path:: An optional property identifying which request handlers this permission applies to.  The value can either be a single request handler, or a JSON list containing multiple.  The wildcard `\*` can be used to indicate that this permission applies to all request handlers.  If not specified, this property defaults to `*`.
+path:: An optional property identifying which paths this permission applies to.  The value can either be a single path string, or a JSON array containing multiple strings.  For APIs accessing collections, path values should start after the collection name, and often just look like the request handler (e.g. `"/select"`).  For collection-agnostic ("admin") APIs, path values should start at the `"/admin` path segment.  The wildcard `\*` can be used to indicate that this permission applies to all paths.  If not specified, this property defaults to `null`.
 method:: An optional property identifying which HTTP methods this permission applies to.  Options include `HEAD`, `POST`, `PUT`, `GET`, `DELETE`, and the wildcard `\*`.  Multiple values can also be specified using a JSON array.  If not specified, this property defaults to `*`.
 params:: An optional property identifying which query parameters this permission applies to.  The value is a JSON object containing the names and values of request parameters that must be matched for this permission to apply.
 +
@@ -230,13 +230,16 @@ If the incoming request is collection-agnostic (doesn't apply to a paritcular co
 
 . Permissions with a `collection` value of `null` and a `path` value matching the request's request handler
 . Permissions with a `collection` value of `null` and a `path` value of `*`
+. Permissions with a `collection` value of `null` and a `path` value of `null`
 
 If the incoming request is to a collection, Solr checks permissions in the following order:
 
 . Permissions with `collection` and `path` values matching the request specifically (not a wildcard match)
 . Permissions with `collection` matching the request specifically, and a `path` value of `*`
+. Permissions with `collection` matching the request specifically, and a `path` value of `null`
 . Permissions with `path` matching the request specifically, and a `collection` value of `*`
 . Permissions with both `collection` and `path` values of `*`.
+. Permissions with a `collection` value of `*` and a `path` value of `null`
 
 As an example, consider the permissions below:
 
