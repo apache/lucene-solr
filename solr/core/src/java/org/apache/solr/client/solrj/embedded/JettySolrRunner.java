@@ -371,14 +371,12 @@ public class JettySolrRunner {
 
         debugFilter = root.addFilter(DebugFilter.class, "*", EnumSet.of(DispatcherType.REQUEST) );
         extraFilters = new LinkedList<>();
-        for (Class<? extends Filter> filterClass : config.extraFilters.keySet()) {
-          extraFilters.add(root.addFilter(filterClass, config.extraFilters.get(filterClass),
-              EnumSet.of(DispatcherType.REQUEST)));
+        for (Map.Entry<Class<? extends Filter>, String> entry : config.extraFilters.entrySet()) {
+          extraFilters.add(root.addFilter(entry.getKey(), entry.getValue(), EnumSet.of(DispatcherType.REQUEST)));
         }
 
-        for (ServletHolder servletHolder : config.extraServlets.keySet()) {
-          String pathSpec = config.extraServlets.get(servletHolder);
-          root.addServlet(servletHolder, pathSpec);
+        for (Map.Entry<ServletHolder, String> entry : config.extraServlets.entrySet()) {
+          root.addServlet(entry.getKey(), entry.getValue());
         }
         dispatchFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
         dispatchFilter.setHeldClass(SolrDispatchFilter.class);

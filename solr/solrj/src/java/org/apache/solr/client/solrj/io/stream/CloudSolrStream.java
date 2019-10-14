@@ -359,9 +359,9 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     }
 
     // Check collection case insensitive
-    for(String collectionMapKey : collectionsMap.keySet()) {
-      if(collectionMapKey.equalsIgnoreCase(collectionName)) {
-        return collectionsMap.get(collectionMapKey).getActiveSlicesArr();
+    for(Entry<String, DocCollection> entry : collectionsMap.entrySet()) {
+      if(entry.getKey().equalsIgnoreCase(collectionName)) {
+        return entry.getValue().getActiveSlicesArr();
       }
     }
 

@@ -29,8 +29,8 @@ Bug Fixes
 * LUCENE-9001: Fix race condition in SetOnce. (Przemko Robakowski)
 
 Other
----------------------
-(No changes)
+
+* LUCENE-8979: Code Cleanup: Use entryset for map iteration wherever possible. - Part 2 (Koen De Groote)
 
 * LUCENE-8746: Refactor EdgeTree - Introduce a Component tree that represents the tree of components (e.g polygons).
   Edge tree is now just a tree of edges. (Ignacio Vera)
@@ -161,7 +161,7 @@ Other
 
 * LUCENE-8758: QuadPrefixTree: removed levelS and levelN fields which weren't used. (Amish Shah)
 
-* LUCENE-8975: Code Cleanup: Use entryset for map iteration wherever possible.
+* LUCENE-8975: Code Cleanup: Use entryset for map iteration wherever possible. (Koen De Groote)
 
 * LUCENE-8993, LUCENE-8807: Changed all repository and download references in build files
   to HTTPS. (Uwe Schindler)

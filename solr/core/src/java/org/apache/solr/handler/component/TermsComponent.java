@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.index.IndexReaderContext;
@@ -505,14 +506,15 @@ public class TermsComponent extends SearchComponent {
       TermsResponse termsResponse = new TermsResponse(terms);
 
       // loop though each field and add each term+freq to map
-      for (String key : fieldmap.keySet()) {
-        HashMap<String, TermsResponse.Term> termmap = fieldmap.get(key);
-        List<TermsResponse.Term> termlist = termsResponse.getTerms(key);
+      for (Map.Entry<String, HashMap<String, TermsResponse.Term>> entry : fieldmap.entrySet()) {
+        List<TermsResponse.Term> termlist = termsResponse.getTerms(entry.getKey());
 
         // skip this field if there are no terms
         if (termlist == null) {
           continue;
         }
+
+        HashMap<String, TermsResponse.Term> termmap = entry.getValue();
 
         // loop though each term
         for (TermsResponse.Term tc : termlist) {
@@ -553,13 +555,13 @@ public class TermsComponent extends SearchComponent {
       }
 
       // loop through each field we want terms from
-      for (String key : fieldmap.keySet()) {
+      for (Map.Entry<String, HashMap<String, TermsResponse.Term>> entry : fieldmap.entrySet()) {
         NamedList<Object> fieldterms = new SimpleOrderedMap<>();
         TermsResponse.Term[] data = null;
         if (sort) {
-          data = getCountSorted(fieldmap.get(key));
+          data = getCountSorted(entry.getValue());
         } else {
-          data = getLexSorted(fieldmap.get(key));
+          data = getLexSorted(entry.getValue());
         }
 
         boolean includeTotalTermFreq = params.getBool(TermsParams.TERMS_TTF, false);
@@ -576,7 +578,7 @@ public class TermsComponent extends SearchComponent {
           }
         }
 
-        response.add(key, fieldterms);
+        response.add(entry.getKey(), fieldterms);
       }
 
       return response;

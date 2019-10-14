@@ -113,8 +113,8 @@ public class MultipassTermFilteredPresearcher extends TermFilteredPresearcher {
     @Override
     public Query build() {
       Map<String, BytesRef[]> collectedTerms = new HashMap<>();
-      for (String field : terms.keySet()) {
-        collectedTerms.put(field, convertHash(terms.get(field)));
+      for (Map.Entry<String, BytesRefHash> entry : terms.entrySet()) {
+        collectedTerms.put(entry.getKey(), convertHash(entry.getValue()));
       }
       BooleanQuery.Builder parent = new BooleanQuery.Builder();
       for (int i = 0; i < passes; i++) {
