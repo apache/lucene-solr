@@ -119,7 +119,15 @@ public  class EdgeTree {
   /** returns true if the provided x, y point lies on the line */
   protected boolean isPointOnLine(double x, double y) {
     if (y <= max) {
-      if (orient(x1, y1, x2, y2, x, y) == 0) {
+      double a1x = x1;
+      double a1y = y1;
+      double b1x = x2;
+      double b1y = y2;
+      boolean outside = (a1y < y && b1y < y) ||
+          (a1y > y && b1y > y) ||
+          (a1x < x && b1x < x) ||
+          (a1x > x && b1x > x);
+      if (outside == false && orient(a1x, a1y, b1x, b1y, x, y) == 0) {
         return true;
       }
       if (left != null && left.isPointOnLine(x, y)) {
