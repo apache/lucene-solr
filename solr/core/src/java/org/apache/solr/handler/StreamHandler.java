@@ -45,6 +45,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.CoreContainer;
@@ -164,6 +165,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     int numWorkers = params.getInt("numWorkers", 1);
     boolean local = params.getBool("streamLocalOnly", false);
     StreamContext context = new StreamContext();
+    context.setSolrParams(params);
     context.put("shards", getCollectionShards(params));
     context.workerID = worker;
     context.numWorkers = numWorkers;

@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.cloud;
+package org.apache.solr.common.cloud;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -29,13 +29,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
-import org.apache.solr.client.solrj.impl.PreferenceRule;
+import org.apache.solr.client.solrj.routing.PreferenceRule;
 import org.apache.solr.common.SolrCloseable;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ShardParams;
-import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +52,8 @@ public class NodesSysPropsCacher implements SolrCloseable {
 
   private final AtomicBoolean isRunning = new AtomicBoolean(false);
   private final NodeStateProvider nodeStateProvider;
-  private final Map<String, String> additionalProps = TestInjection.injectAdditionalProps();
+  private static Map<String, String> injectedAdditionalProps = null;
+  private Map<String, String> additionalProps = injectedAdditionalProps;
   private final String currentNode;
   private final ConcurrentHashMap<String, Map<String, Object>> cache = new ConcurrentHashMap<>();
   private final AtomicInteger fetchCounting = new AtomicInteger(0);
@@ -63,9 +61,9 @@ public class NodesSysPropsCacher implements SolrCloseable {
   private volatile boolean isClosed;
   private volatile Collection<String> tags = new ArrayList<>();
 
-  NodesSysPropsCacher(NodeStateProvider nodeStateProvider,
-                      String currentNode,
-                      ZkStateReader stateReader) {
+  public NodesSysPropsCacher(NodeStateProvider nodeStateProvider,
+                             String currentNode,
+                             ZkStateReader stateReader) {
     this.nodeStateProvider = nodeStateProvider;
     this.currentNode = currentNode;
 
@@ -177,12 +175,10 @@ public class NodesSysPropsCacher implements SolrCloseable {
     return result;
   }
 
-  @VisibleForTesting
   public int getCacheSize() {
     return cache.size();
   }
 
-  @VisibleForTesting
   public boolean isRunning() {
     return isRunning.get();
   }
@@ -200,5 +196,12 @@ public class NodesSysPropsCacher implements SolrCloseable {
   public void close() {
     isClosed = true;
     pause();
+  }
+
+  /**
+   * For testing only
+   */
+  public static void setAdditionalProps(Map<String, String> additionalProps) {
+    NodesSysPropsCacher.injectedAdditionalProps = additionalProps;
   }
 }

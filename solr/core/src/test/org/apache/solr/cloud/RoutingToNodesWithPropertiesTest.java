@@ -36,6 +36,7 @@ import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.cloud.NodesSysPropsCacher;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -67,6 +68,7 @@ public class RoutingToNodesWithPropertiesTest extends SolrCloudTestCase {
 
   @Before
   public void setupCluster() throws Exception {
+    NodesSysPropsCacher.setAdditionalProps(ImmutableMap.of("zone", "us-west1"));
     TestInjection.additionalSystemProps = ImmutableMap.of("zone", "us-west1");
     configureCluster(2)
         .withSolrXml(TEST_PATH().resolve("solr-trackingshardhandler.xml"))
@@ -75,6 +77,7 @@ public class RoutingToNodesWithPropertiesTest extends SolrCloudTestCase {
 
     zone1Nodes.addAll(cluster.getJettySolrRunners().stream().map(JettySolrRunner::getNodeName).collect(Collectors.toSet()));
     TestInjection.additionalSystemProps = ImmutableMap.of("zone", "us-west2");
+    NodesSysPropsCacher.setAdditionalProps(ImmutableMap.of("zone", "us-west2"));
     zone2Nodes.add(cluster.startJettySolrRunner().getNodeName());
     zone2Nodes.add(cluster.startJettySolrRunner().getNodeName());
 
@@ -114,9 +117,9 @@ public class RoutingToNodesWithPropertiesTest extends SolrCloudTestCase {
       assertEquals("us-west1", map.get(PROP_NAME));
     }
 
-    for (String zone1Node: zone2Nodes) {
+    for (String zone2Node: zone2Nodes) {
       NodeStateProvider nodeStateProvider = cloudManager.getNodeStateProvider();
-      Map<String, Object> map = nodeStateProvider.getNodeValues(zone1Node, Collections.singletonList(PROP_NAME));
+      Map<String, Object> map = nodeStateProvider.getNodeValues(zone2Node, Collections.singletonList(PROP_NAME));
       assertEquals("us-west2", map.get(PROP_NAME));
     }
 

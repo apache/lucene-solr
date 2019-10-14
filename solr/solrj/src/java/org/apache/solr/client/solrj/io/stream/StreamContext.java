@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.solr.client.solrj.io.ModelCache;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.common.params.SolrParams;
 
 /**
  * The StreamContext is passed to TupleStreams using the TupleStream.setStreamContext() method.
@@ -46,6 +47,15 @@ public class StreamContext implements Serializable {
   private ModelCache modelCache;
   private StreamFactory streamFactory;
   private boolean local;
+  private SolrParams solrParams;
+
+  public void setSolrParams(SolrParams solrParams) {
+    this.solrParams = solrParams;
+  }
+
+  public SolrParams getSolrParams() {
+    return solrParams;
+  }
 
   public ConcurrentMap getObjectCache() {
     return this.objectCache;
