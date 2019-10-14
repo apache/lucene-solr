@@ -163,6 +163,9 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
                 // we just reached totalHitsThreshold, we can start setting the min
                 // competitive score now
                 updateMinCompetitiveScore(scorer);
+                if (fieldValueChecker != null) {
+                  fieldValueChecker.checkAndUpdateBottomValue(bottom.value, (bottom.doc + docBase));
+                }
               }
               return;
             }

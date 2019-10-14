@@ -25,7 +25,7 @@ public class FieldValueChecker {
   public volatile int minimumDoc;
   private FieldComparator[] fieldComparators;
   private int[] reverseMul;
-  private boolean isEnabled = false;
+  private boolean isEnabled = true;
 
   public FieldValueChecker(final FieldComparator[] fieldComparators, final int[] reverseMul) {
     assert fieldComparators.length == reverseMul.length;

@@ -322,24 +322,30 @@ public class TestTopFieldCollectorEarlyTermination extends LuceneTestCase {
     iwc.setIndexSort(sort);
 
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir, iwc);
-    int firstSegmentNumDocs = atLeast(10);
-    int secondSegmentNumDocs = atLeast(5);
+    int firstSegmentNumDocs = atLeast(100);
+    int secondSegmentNumDocs = atLeast(50);
 
     for (int i = 0; i < firstSegmentNumDocs; i++) {
       Document doc = new Document();
       doc.add(new NumericDocValuesField("value2", 0));
       doc.add(newStringField("value2", "1", Field.Store.YES));
       writer.addDocument(doc);
+
+      if (i % 10 == 0) {
+        writer.commit();
+      }
     }
-    writer.commit();
 
     for (int i = 0; i < secondSegmentNumDocs; i++) {
       Document doc = new Document();
       doc.add(new NumericDocValuesField("value2", 1));
       doc.add(newStringField("value2", "0", Field.Store.YES));
       writer.addDocument(doc);
+
+      if (i % 10 == 0) {
+        writer.commit();
+      }
     }
-    writer.commit();
 
     reader = writer.getReader();
     writer.close();
