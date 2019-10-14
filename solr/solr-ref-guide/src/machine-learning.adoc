@@ -358,9 +358,10 @@ as a secondary knn vector search.
 
 The example below shows the `knnSearch` function on a movie reviews data set. The
 search returns the 50 documents most similar to a specific document id (*83e9b5b0...*) based on
-the similarity of the *review_t* field. The *mindf* and *maxdf* specify the min and max document frequency of the terms
-used to perform the search. These parameters can make the query faster by eliminating
-very high frequency terms and also improves accuracy be removing noise from search.
+the similarity of the *review_t* field. The *mindf* and *maxdf* specify the min and max
+document frequency of the terms used to perform the search. These parameters can make the
+query faster by eliminating very high frequency terms and also improves accuracy by
+removing noise from search.
 
 image::images/math-expressions/knnSearch.png[]
 
