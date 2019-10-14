@@ -57,11 +57,11 @@ public class FieldValueChecker {
         this.minimumDoc = doc;
         return;
       }
-    }
 
-    if (isValueCompetitive(value, doc)== true) {
-      this.value = value;
-      this.minimumDoc = doc;
+      if (isValueCompetitive(value, doc) == true) {
+        this.value = value;
+        this.minimumDoc = doc;
+      }
     }
   }
 
