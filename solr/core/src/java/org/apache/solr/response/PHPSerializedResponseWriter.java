@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.Map;
 
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
@@ -137,16 +138,18 @@ class PHPSerializedWriter extends JSONWriter {
     }
 
     writeMapOpener(single.size() + multi.size());
-    for(String fname: single.keySet()){
-      Object val = single.get(fname);
+    for(Map.Entry<String, Object> entry : single.entrySet()){
+      String fname = entry.getKey();
+      Object val = entry.getValue();
       writeKey(fname, true);
       writeVal(fname, val);
     }
     
-    for(String fname: multi.keySet()){
+    for(Map.Entry<String, Object> entry : multi.entrySet()){
+      String fname = entry.getKey();
       writeKey(fname, true);
 
-      Object val = multi.get(fname);
+      Object val = entry.getValue();
       if (!(val instanceof Collection)) {
         // should never be reached if multivalued fields are stored as a Collection
         // so I'm assuming a size of 1 just to wrap the single value

@@ -745,8 +745,8 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         throw toThrow;
       }
     }
-    for (String updateType: versions.keySet()) {
-      condensed.add(updateType, versions.get(updateType));
+    for (Map.Entry<String, NamedList> entry : versions.entrySet()) {
+      condensed.add(entry.getKey(), entry.getValue());
     }
     condensed.add("responseHeader", cheader);
     return condensed;

@@ -29,12 +29,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -45,7 +43,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.core.BlobRepository;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.filestore.PackageStoreAPI.MetaData;
 import org.apache.zookeeper.server.ByteBufferInputStream;
@@ -62,6 +59,7 @@ public class DistribPackageStore implements PackageStore {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final CoreContainer coreContainer;
   private Map<String, FileInfo> tmpFiles = new ConcurrentHashMap<>();
+
   public DistribPackageStore(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
     ensurePackageStoreDir(coreContainer.getResourceLoader().getInstancePath());
@@ -73,23 +71,13 @@ public class DistribPackageStore implements PackageStore {
   }
 
 
-  /**
-   * get a list of nodes randomly shuffled
-   * * @lucene.internal
-   */
-  public ArrayList<String> shuffledNodes() {
-    Set<String> liveNodes = coreContainer.getZkController().getZkStateReader().getClusterState().getLiveNodes();
-    ArrayList<String> l = new ArrayList(liveNodes);
-    l.remove(myNode());
-    Collections.shuffle(l, BlobRepository.RANDOM);
-    return l;
-  }
+
 
 
   @Override
   public Path getRealpath(String path) {
     if (File.separatorChar == '\\') {
-      path = path.replace('/' ,  File.separatorChar);
+      path = path.replace('/', File.separatorChar);
     }
     if (path.charAt(0) != File.separatorChar) {
       path = File.separator + path;
@@ -182,7 +170,7 @@ public class DistribPackageStore implements PackageStore {
       try {
         IOUtils.deleteFilesIfExist(getRealpath(path), getRealpath(getMetaPath()));
       } catch (IOException e) {
-        log.error("Unable to delete files: "+path);
+        log.error("Unable to delete files: " + path);
       }
 
     }
@@ -224,8 +212,7 @@ public class DistribPackageStore implements PackageStore {
     }
 
     boolean fetchFromAnyNode() {
-
-      ArrayList<String> l = shuffledNodes();
+      ArrayList<String> l = coreContainer.getPackageStoreAPI().shuffledNodes();
       ZkStateReader stateReader = coreContainer.getZkController().getZkStateReader();
       for (String liveNode : l) {
         try {
@@ -273,17 +260,15 @@ public class DistribPackageStore implements PackageStore {
     }
 
 
-
-
     public FileDetails getDetails() {
-      FileType type = getType(path);
+      FileType type = getType(path, false);
 
       return new FileDetails() {
         @Override
         public MetaData getMetaData() {
           try {
             return readMetaData();
-          } catch (Exception e){
+          } catch (Exception e) {
             throw new RuntimeException(e);
           }
         }
@@ -307,18 +292,17 @@ public class DistribPackageStore implements PackageStore {
             return;
           }
           ew.put("timestamp", getTimeStamp());
-          metaData.writeMap(ew);
+          if(metaData != null)
+            metaData.writeMap(ew);
 
         }
       };
-
-
     }
 
     public void readData(Consumer<FileEntry> consumer) throws IOException {
       MetaData meta = readMetaData();
       try (InputStream is = new FileInputStream(realPath().toFile())) {
-        consumer.accept(new FileEntry(null, meta,path ){
+        consumer.accept(new FileEntry(null, meta, path) {
           @Override
           public InputStream getInputStream() {
             return is;
@@ -337,10 +321,10 @@ public class DistribPackageStore implements PackageStore {
     byte[] bytes = baos.toByteArray();
     info.persistToFile(entry.buf, ByteBuffer.wrap(bytes, 0, bytes.length));
     tmpFiles.put(entry.getPath(), info);
-    List<String> nodes = shuffledNodes();
+    List<String> nodes =  coreContainer.getPackageStoreAPI().shuffledNodes();
     int i = 0;
     int FETCHFROM_SRC = 50;
-    String myNodeName = myNode();
+    String myNodeName = coreContainer.getZkController().getNodeName();
     try {
       for (String node : nodes) {
         String baseUrl = coreContainer.getZkController().getZkStateReader().getBaseUrlForNodeName(node);
@@ -395,11 +379,11 @@ public class DistribPackageStore implements PackageStore {
   }
 
   @Override
-  public synchronized boolean fetch(String path, String from) {
+  public boolean fetch(String path, String from) {
     if (path == null || path.isEmpty()) return false;
     FileInfo f = new FileInfo(path);
     try {
-      if(f.exists(true, false)){
+      if (f.exists(true, false)) {
         return true;
       }
     } catch (IOException e) {
@@ -419,7 +403,7 @@ public class DistribPackageStore implements PackageStore {
   }
 
   @Override
-  public synchronized void get(String path, Consumer<FileEntry> consumer) throws IOException {
+  public void get(String path, Consumer<FileEntry> consumer, boolean fetchmissing) throws IOException {
     File file = getRealpath(path).toFile();
     String simpleName = file.getName();
     if (isMetaDataFile(simpleName)) {
@@ -440,10 +424,10 @@ public class DistribPackageStore implements PackageStore {
 
 
   @Override
-  public synchronized List list(String path, Predicate<String> predicate) {
+  public List list(String path, Predicate<String> predicate) {
     File file = getRealpath(path).toFile();
     List<FileDetails> fileDetails = new ArrayList<>();
-    FileType type = getType(path);
+    FileType type = getType(path, false);
     if (type == FileType.DIRECTORY) {
       file.list((dir, name) -> {
         if (predicate == null || predicate.test(name)) {
@@ -455,7 +439,6 @@ public class DistribPackageStore implements PackageStore {
       });
 
     } else if (type == FileType.FILE) {
-
       fileDetails.add(new FileInfo(path).getDetails());
     }
 
@@ -464,9 +447,14 @@ public class DistribPackageStore implements PackageStore {
 
 
   @Override
-  public synchronized FileType getType(String path) {
+  public FileType getType(String path, boolean fetchMissing) {
     File file = getRealpath(path).toFile();
-    if (!file.exists()) return FileType.NOFILE;
+    if (!file.exists() && fetchMissing) {
+      if (fetch(path, null)) {
+        file = getRealpath(path).toFile();
+      }
+      if (!file.exists()) return FileType.NOFILE;
+    }
     if (file.isDirectory()) return FileType.DIRECTORY;
     return isMetaDataFile(file.getName()) ? FileType.METADATA : FileType.FILE;
   }

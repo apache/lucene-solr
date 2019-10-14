@@ -86,12 +86,16 @@ Optimizations
   (Ignacio Vera, Adrien Grand)
 
 Bug Fixes
----------------------
-(No changes)
+
+* LUCENE-9001: Fix race condition in SetOnce. (Przemko Robakowski)
 
 Other
----------------------
-(No changes)
+
+* LUCENE-8979: Code Cleanup: Use entryset for map iteration wherever possible. - Part 2 (Koen De Groote)
+
+Build
+
+* Upgrade forbiddenapis to version 2.7; upgrade Groovy to 2.4.17.  (Uwe Schindler)
 
 ======================= Lucene 8.3.0 =======================
 
@@ -211,7 +215,7 @@ Other
 
 * LUCENE-8758: QuadPrefixTree: removed levelS and levelN fields which weren't used. (Amish Shah)
 
-* LUCENE-8975: Code Cleanup: Use entryset for map iteration wherever possible.
+* LUCENE-8975: Code Cleanup: Use entryset for map iteration wherever possible. (Koen De Groote)
 
 * LUCENE-8993, LUCENE-8807: Changed all repository and download references in build files
   to HTTPS. (Uwe Schindler)
