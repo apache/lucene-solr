@@ -102,7 +102,9 @@ New Features
 
 Improvements
 ---------------------
-(No changes)
+
+*SOLR-13731: javabin must support a 1:1 mapping of the JSON update format (noble)
+
 
 Optimizations
 ---------------------
@@ -313,6 +315,10 @@ Bug Fixes
 * SOLR-13760: Fix regression in support for Date math in TRA start date that was introduced by SOLR-13375
 
 * SOLR-13829: RecursiveEvaluator casts Continuous numbers to Discrete Numbers, causing mismatch (Trey Grainger, Joel Bernstein)
+
+* SOLR-13815: Live shard split (where updates actively continue during the split) can lose updates due to cluster
+  state happening to change between checking if the current shard is active and later checking if there are any
+  sub-shard leaders to forward the update to. (yonik)
 
 Other Changes
 ----------------------

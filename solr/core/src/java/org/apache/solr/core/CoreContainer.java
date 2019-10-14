@@ -580,6 +580,9 @@ public class CoreContainer {
     return replayUpdatesExecutor;
   }
 
+  public PackageStoreAPI getPackageStoreAPI() {
+    return packageStoreAPI;
+  }
   //-------------------------------------------------------------------
   // Initialization / Cleanup
   //-------------------------------------------------------------------

@@ -32,6 +32,4 @@ public @interface Command {
    */
   String name() default "";
 
-  String jsonSchema() default "";
-
 }

@@ -87,6 +87,26 @@ public final class CryptoKeys implements CLIO {
     return null;
   }
 
+  public String verify(String sig, InputStream is) {
+    exception = null;
+    for (Map.Entry<String, PublicKey> entry : keys.entrySet()) {
+      boolean verified;
+      try {
+        verified = CryptoKeys.verify(entry.getValue(), Base64.base64ToByteArray(sig), is);
+        log.debug("verified {} ", verified);
+        if (verified) return entry.getKey();
+      } catch (Exception e) {
+        exception = e;
+        log.debug("NOT verified  ");
+      }
+
+    }
+
+    return null;
+  }
+
+
+
 
   /**
    * Create PublicKey from a .DER file
