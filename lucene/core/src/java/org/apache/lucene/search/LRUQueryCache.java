@@ -398,6 +398,15 @@ public class LRUQueryCache implements QueryCache, Accountable {
     }
   }
 
+  // Get original weight from the cached weight
+  private Weight getOriginalWeight(Weight weight) {
+    while (weight instanceof CachingWrapperWeight) {
+      weight = ((CachingWrapperWeight) weight).in;
+    }
+
+    return weight;
+  }
+
   // pkg-private for testing
   void assertConsistent() {
     lock.lock();
@@ -453,7 +462,9 @@ public class LRUQueryCache implements QueryCache, Accountable {
 
   @Override
   public Weight doCache(final Weight weight, QueryCachingPolicy policy, Executor executor) {
-    return new CachingWrapperWeight(weight, policy, executor);
+    Weight originalWeight = getOriginalWeight(weight);
+
+    return new CachingWrapperWeight(originalWeight, policy, executor);
   }
 
   @Override
@@ -739,8 +750,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
           // If asynchronous caching is requested, perform the same and return
           // the uncached iterator
           if (cacheSynchronously == false) {
-            boolean asyncCachingSucceeded;
-            asyncCachingSucceeded = cacheAsynchronously(context, cacheHelper);
+            boolean asyncCachingSucceeded = cacheAsynchronously(context, cacheHelper);
 
             // If async caching failed, synchronous caching will
             // be performed, hence do not return the uncached value

@@ -64,6 +64,7 @@ import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.SerialMergeScheduler;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
@@ -321,14 +322,14 @@ public class TestLRUQueryCache extends LuceneTestCase {
     // First read should miss
     searcher.search(new ConstantScoreQuery(red), 1);
 
-
     // Let the cache load be completed
     latch[0].await();
-    searcher.search(new ConstantScoreQuery(red), 1);
+    assertEquals(Collections.singletonList(red), queryCache.cachedQueries());
 
     // Second read should hit
     searcher.search(new ConstantScoreQuery(red), 1);
     assertEquals(Collections.singletonList(red), queryCache.cachedQueries());
+    assertEquals(queryCache.getHitCount(), 1);
 
     latch[0] = new CountDownLatch(1);
     searcher.search(new ConstantScoreQuery(green), 1);
@@ -339,6 +340,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
 
     searcher.search(new ConstantScoreQuery(red), 1);
     assertEquals(Arrays.asList(green, red), queryCache.cachedQueries());
+    assertEquals(2, queryCache.getCacheCount());
 
     latch[0] = new CountDownLatch(1);
 
@@ -350,6 +352,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
 
     searcher.search(new ConstantScoreQuery(blue), 1);
     assertEquals(Arrays.asList(red, blue), queryCache.cachedQueries());
+    assertEquals(3, queryCache.getCacheCount());
 
     latch[0] = new CountDownLatch(1);
 
@@ -359,6 +362,9 @@ public class TestLRUQueryCache extends LuceneTestCase {
     latch[0].await();
     assertEquals(Arrays.asList(blue, green), queryCache.cachedQueries());
 
+    service.shutdown();
+    service.awaitTermination(300, TimeUnit.MILLISECONDS);
+
     searcher.setQueryCachingPolicy(NEVER_CACHE);
     searcher.search(new ConstantScoreQuery(red), 1);
     assertEquals(Arrays.asList(blue, green), queryCache.cachedQueries());
@@ -366,7 +372,6 @@ public class TestLRUQueryCache extends LuceneTestCase {
     reader.close();
     w.close();
     dir.close();
-    service.shutdown();
   }
 
   public void testLRUConcurrentLoadsOfSameQuery() throws Exception {
@@ -409,7 +414,10 @@ public class TestLRUQueryCache extends LuceneTestCase {
     searcher.setQueryCache(queryCache);
     searcher.setQueryCachingPolicy(ALWAYS_CACHE);
 
+    CountDownLatch startLatch = new CountDownLatch(1);
+
     FutureTask<Void> task = new FutureTask<>(() -> {
+      startLatch.await();
       searcher.search(new ConstantScoreQuery(green), 1);
       return null;
     });
@@ -417,6 +425,8 @@ public class TestLRUQueryCache extends LuceneTestCase {
     for (int i = 0; i < 5; i++) {
       stressService.submit(task);
     }
+
+    startLatch.countDown();
 
     latch.await();
     assertEquals(Arrays.asList(green), queryCache.cachedQueries());
@@ -2024,7 +2034,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
         for (LeafReaderContext ctx : leaves) {
           slices.add(new LeafSlice(Arrays.asList(ctx)));
         }
-        return slices.toArray(new LeafSlice[0]);
+        return slices.toArray(LeafSlice[]::new);
       }
     };
 
@@ -2032,6 +2042,8 @@ public class TestLRUQueryCache extends LuceneTestCase {
 
     searcher.setQueryCache(queryCache);
     searcher.setQueryCachingPolicy(ALWAYS_CACHE);
+
+    CountDownLatch startLatch = new CountDownLatch(1);
 
     // To ensure that failing ExecutorService still allows query to run
     // successfully
@@ -2055,9 +2067,9 @@ public class TestLRUQueryCache extends LuceneTestCase {
       }
     });
 
-    searcher.search(new ConstantScoreQuery(red), 1);
+    expectThrows(AlreadyClosedException.class, () -> searcher.search(new ConstantScoreQuery(red), 1));
 
-    assertEquals(Collections.singletonList(red), queryCache.cachedQueries());
+    assertEquals(queryCache.cachedQueries(), Collections.emptyList());
 
     reader.close();
     w.close();
