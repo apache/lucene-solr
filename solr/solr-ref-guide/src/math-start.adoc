@@ -121,7 +121,7 @@ The screenshot below shows the panel for configuring Zeppelin-Solr.
 
 image::images/math-expressions/zepconf.png[]
 
-Configure the solr.baseUrl and solr.collection to point the location where the Streaming
+Configure the solr.baseUrl and solr.collection to point to the location where the Streaming
 Expressions and Math Expressions will be sent for execution. The solr.collection is
 just the execution collection and does not need to hold data, although it can hold data.
 Streaming Expressions can choose to query any of the collections that are attached
