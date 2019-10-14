@@ -110,6 +110,8 @@ public class BinaryField extends FieldType  {
   public Object toNativeType(Object val) {
     if (val instanceof byte[]) {
       return ByteBuffer.wrap((byte[]) val);
+    } else if (val instanceof CharSequence) {
+      return ByteBuffer.wrap(Base64.base64ToByteArray(((CharSequence)val).toString()));
     }
     return super.toNativeType(val);
   }
