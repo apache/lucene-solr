@@ -987,8 +987,7 @@ public class SolrCLI {
         cloudManager.saveSnapshot(targetDir, true, redact);
         System.err.println("- saved autoscaling snapshot to " + targetDir.getAbsolutePath());
       }
-      HashSet<String> liveNodes = new HashSet<>();
-      liveNodes.addAll(cloudManager.getClusterStateProvider().getLiveNodes());
+      HashSet<String> liveNodes = new HashSet<>(cloudManager.getClusterStateProvider().getLiveNodes());
       boolean withSuggestions = cli.hasOption("s");
       boolean withDiagnostics = cli.hasOption("d") || cli.hasOption("n");
       boolean withSortedNodes = cli.hasOption("n");

@@ -2158,8 +2158,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     log.info("Took {} ms to see all replicas become active.", timer.getTime());
 
-    List<Replica> replicas = new ArrayList<>();
-    replicas.addAll(notLeaders.values());
+    List<Replica> replicas = new ArrayList<>(notLeaders.values());
     return replicas;
   }
 
