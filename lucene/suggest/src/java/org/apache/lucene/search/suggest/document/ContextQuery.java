@@ -156,15 +156,15 @@ public class ContextQuery extends CompletionQuery implements Accountable {
   public String toString(String field) {
     StringBuilder buffer = new StringBuilder();
     BytesRefBuilder scratch = new BytesRefBuilder();
-    for (IntsRef context : contexts.keySet()) {
+    for (Map.Entry<IntsRef, ContextMetaData> entry : contexts.entrySet()) {
       if (buffer.length() != 0) {
         buffer.append(",");
       } else {
         buffer.append("contexts");
         buffer.append(":[");
       }
-      buffer.append(Util.toBytesRef(context, scratch).utf8ToString());
-      ContextMetaData metaData = contexts.get(context);
+      buffer.append(Util.toBytesRef(entry.getKey(), scratch).utf8ToString());
+      ContextMetaData metaData = entry.getValue();
       if (metaData.exact == false) {
         buffer.append("*");
       }
