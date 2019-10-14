@@ -164,10 +164,10 @@ result set. The goal of the example is to find zip codes in the nyc311 complaint
 database that have similar complaint types to the zip code 10280.
 
 The first step in the example is to use the `facet2D` function to perform a two
-dimensional aggregation over the *zip_s* and *complaint_type* fields. In the example
+dimensional aggregation over the *zip_s* and *complaint_type_s* fields. In the example
 the top 119 zip codes and top 5 complaint types for each zip code are calculated
 for the borough of Manhattan. The result is a list of tuples each containing
-the *zip_s*, *complaint_type_s* and the *count* for combination.
+the *zip_s*, *complaint_type_s* and the *count* for the combination.
 
 The list of tuples is then *pivoted* into a matrix with the `pivot` function. The
 `pivot` function in this example returns a matrix with rows of zip codes
@@ -177,7 +177,7 @@ search matrix.
 
 The next step is to locate the vector for the 10280 zip code. This is done in
 three steps in the example. The first step is to retrieve the row labels from
-the matrix with `getRowLabels` function. The row labels in this case are zip codes which were populated
+the matrix with the `getRowLabels` function. The row labels in this case are zip codes which were populated
 by the `pivot` function. Then the `indexOf` function is used
 to find the *index* of the "10280" zip code in the list of row labels. The `rowAt`
 function is then used to return the vector at that *index* from the matrix. This vector
@@ -202,12 +202,12 @@ image::images/math-expressions/knn.png[]
 
 The table above shows each zip code returned by the `knn` function along
 with the list of complaints and distances. These are the zip codes that are most similar
-to the 10280 zip code based on complaint types in Manhattan.
+to the 10280 zip code based on their top 5 complaint types.
 
 == K-Nearest Neighbor Regression
 
 K-nearest neighbor regression is a non-linear, bivariate and multivariate regression method.
-Knn regression is a lazy learning
+KNN regression is a lazy learning
 technique which means it does not fit a model to the training set in advance. Instead the
 entire training set of observations and outcomes are held in memory and predictions are made
 by averaging the outcomes of the k-nearest neighbors.
@@ -217,86 +217,85 @@ The `knnRegress` function is used to perform nearest neighbor regression.
 
 === 2D Non-Linear Regression
 
-The example below shows the *regression plot* for knn regression applied to a 2D scatter plot.
+The example below shows the *regression plot* for KNN regression applied to a 2D scatter plot.
 
 In this example the `random` function is used to draw 500 random samples from the *logs* collection
 containing two fields *filesize_d* and *eresponse_d*. The sample is then vectorized with the
 *filesize_d* field stored in a vector assigned to variable *x* and the *eresponse_d* vector stored in
 variable *y*. The `knnRegress` function is then applied with 20 as the nearest neighbor parameter,
-which returns a knn function which can be used to predict values.
-The `predict` function is then called on the knn function to predict values for the original *x* vector.
-Finally `zplot` is used to plot original *x* and *y* vectors along with the predictions.
+which returns a KNN function which can be used to predict values.
+The `predict` function is then called on the KNN function to predict values for the original *x* vector.
+Finally `zplot` is used to plot the original *x* and *y* vectors along with the predictions.
 
 image::images/math-expressions/knnRegress.png[]
 
 Notice that the regression plot shows a non-linear relations ship between the *filesize_d*
-field and the *eresponse_d* field. Also note that knn regression
+field and the *eresponse_d* field. Also note that KNN regression
 plots a non-linear curve through the scatter plot. The larger the size
 of K (nearest neighbors), the smoother the line.
 
 === Multivariate Non-Linear Regression
 
-The `knnRegress` function is also powerful and flexible tool for
+The `knnRegress` function is also a powerful and flexible tool for
 multi-variate non-linear regression.
 
-In the example below a multi-variate regression is demonstrated using
+In the example below a multi-variate regression is performed using
 a database designed for analyzing and predicting wine quality. The
-A database contains nearly 1600 records with 9 predictors of wine quality:
+database contains nearly 1600 records with 9 predictors of wine quality:
 pH, alcohol, fixed_acidity, sulphates, density, free_sulfur_dioxide,
 volatile_acidity, citric_acid, residual_sugar. There is also a field
-called quality which was ranking assigned to each wine ranging
+called quality assigned to each wine ranging
 from 3 to 8.
 
-Using `knnRegress` we can predict wine quality for vectors containing
+KNN regression can be used to predict wine quality for vectors containing
 the predictor values.
 
 In the example a search is performed on the *redwine* collection to
-bring back all the rows in the database. Then the quality and each
-predictor field are read into vectors and set to variables.
+return all the rows in the database of observations. Then the quality field and
+predictor fields are read into vectors and set to variables.
 
-The predictor variables are then added as rows to a matrix which is
-transposed so each row in the matrix contains one observation of
-predictors. This is our observation matrix which is assigned to variable
+The predictor variables are added as rows to a matrix which is
+transposed so each row in the matrix contains one observation with the 9
+predictor values. This is our observation matrix which is assigned to the variable
 *obs*.
 
-Then the `knnRegress` function sets up the regression model for
-predicting quality based on the observation data. The value for K is
-set to 5 in the example, so the average quality of 5 nearest neighbors
-will be used to calculate the quality.
+Then the `knnRegress` function regresses the observations with quality outcomes.
+The value for K is set to 5 in the example, so the average quality of the 5
+nearest neighbors will be used to calculate the quality.
 
 The `predict` function is then used to generate a vector of predictions
 for the entire observation set. These predictions will be used to determine
-how well the KNN regression performed over the training set.
+how well the KNN regression performed over the observation data.
 
-The error or *residuals* for the regression is then calculated by
-subtracting the predicted quality from the observed quality.
+The error or *residuals* for the regression are then calculated by
+subtracting the *predicted* quality from the *observed* quality.
 The `ebeSubtract` function is used to perform the element-by-element
-vector subtraction.
+subtraction between the two vectors.
 
 Finally the `zplot` function formats the predictions and errors for
-for visualization of the *residuals plot*.
+for the visualization of the *residual plot*.
 
 image::images/math-expressions/redwine1.png[]
 
-The residuals plot plots the prediction values on the *x* axis and the error for the
+The residual plot plots the *predicted* values on the *x* axis and the *error* for the
 prediction on the *y* axis. The scatter plot shows how the errors
-the errors are distributed across the range of predictions.
+are distributed across the full range of predictions.
 
-The residuals plot can be interpreted to understand how the KNN regression performed on the
+The residual plot can be interpreted to understand how the KNN regression performed on the
 training data.
 
-* The plot shows that the prediction error appear to be fairly evenly distributed
-above and below zero. The density of the errors increases as it approaches zero. The larger
-bubbles size reflects the count of the errors at that point in the plot. This provides
-and intuitive feel for the models error.
+* The plot shows the prediction error appears to be fairly evenly distributed
+above and below zero. The density of the errors increases as it approaches zero. The
+bubble size reflects the density of errors at the specific point in the plot.
+This provides an intuitive feel for the distribution of the model's error.
 
-* The plot also shows the variance of the error at the different levels of
-prediction. This provides an understanding of how well KKN regression is working
-for the entire range of predictions.
+* The plot also visualizes the variance of the error across the range of
+predictions. This provides an intuitive understanding of whether the KNN predictions
+will have similar error variance across the full range predictions.
 
 The residuals can also be visualized using a histogram to better understand
 the shape of the residuals distribution. The example below shows the same KNN
-regression as above but with a plot of the distribution of the errors.
+regression as above with a plot of the distribution of the errors.
 
 In the example the `zplot` function is used to plot the `empiricalDistribution`
 function of the residuals, with an 11 bin histogram.
@@ -308,11 +307,11 @@ we can see the probability of getting prediction errors between -1 and 1 is quit
 
 *Additional KNN Regression Parameters*
 
-The `knnRegression` parameter has three additional parameters that make it suitable for many
-different regession scenarios.
+The `knnRegression` function has three additional parameters that make it suitable for many
+different regression scenarios.
 
-1) Any of the distance measures can be used to used for the regression simply by adding the function
-to the call. The allows for regression analysis over sparse vectors (cosine), dense vectors and
+1) Any of the distance measures can be used for the regression simply by adding the function
+to the call. This allows for regression analysis over sparse vectors (cosine), dense vectors and
 geo-spatial lat/lon vectors (haversineMeters).
 
 Sample syntax:
@@ -335,7 +334,7 @@ r=knnRegress(obs, quality, 5, robust="true"),
 
 3) The `scale` named parameter can be used to scale the columns of the observations and search vectors
 at prediction time. This can improve the performance of the KNN regression when the feature columns
-are at such different scales that the distance calculations are over-weighted on specific columns.
+are at different scales causing the distance calculations to be place too much weight on the larger columns.
 
 Sample syntax:
 
