@@ -18,14 +18,12 @@ package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
-import org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -44,10 +42,6 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
 
   private static final String USERNAME = "solr";
   private static final String PASSWORD = "solr";
-
-  static {
-    System.setProperty("basicauth", String.format(Locale.ROOT,"{}:{}", USERNAME, PASSWORD));
-  }
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -107,8 +101,6 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
     // run same set of tests on v2 client which uses V2HttpCall
     Http2SolrClient v2Client = new Http2SolrClient.Builder(cluster.getJettySolrRunner(0).getBaseUrl().toString())
         .build();
-    PreemptiveBasicAuthClientBuilderFactory factory = new PreemptiveBasicAuthClientBuilderFactory();
-    factory.setup(v2Client);
 
     error = expectThrows(SolrException.class,
         "Request should fail after trying all replica nodes once",
