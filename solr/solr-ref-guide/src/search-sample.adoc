@@ -133,8 +133,7 @@ image::images/math-expressions/bivariate.png[]
 
 Aggregations are a powerful statistical tool for summarizing large data sets and
 surfacing patterns, trends and correlations within the data. Aggregations are also a powerful
-tool for visualization and provide data sets for further statistical analysis. The sections
-below discuss some of the main aggregation functions in Streaming Expressions.
+tool for visualization and provide data sets for further statistical analysis.
 
 === facet
 
@@ -165,6 +164,9 @@ The example below shows the multi-dimension aggregation visualized as a grouped 
 
 image::images/math-expressions/facetviz2.png[]
 
+The `facet` function supports any combination of count(*), sum, avg, min,
+max aggregate functions.
+
 === facet2D
 
 The `facet2D` function performs two dimensional aggregations that can be
@@ -181,6 +183,8 @@ then visualized as a heatmap.
 
 image::images/math-expressions/facet2D.png[]
 
+The `facet2D` function supports one of the following aggregate functions: count(*), sum(field),
+avg(field), min(field), max(field).
 
 === timeseries
 
@@ -194,6 +198,9 @@ calculated for the stock ticker *amzn* between a specific date range.
 The output of the `timeseries` function is then visualized with a line chart.
 
 image::images/math-expressions/timeseries1.png[]
+
+The `timeseries` function supports any combination of count(*), sum, avg, min,
+max aggregate functions.
 
 === significantTerms
 
@@ -276,3 +283,7 @@ number of days with a change greater then .25 on the same days that *jpm* had a 
 then .25.
 
 image::images/math-expressions/nodestab.png[]
+
+The `nodes` function supports any combination of count(*), sum, avg, min,
+max aggregate functions.
+
