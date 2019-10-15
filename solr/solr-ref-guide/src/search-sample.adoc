@@ -164,8 +164,9 @@ The example below shows the multi-dimension aggregation visualized as a grouped 
 
 image::images/math-expressions/facetviz2.png[]
 
-The `facet` function supports any combination of count(*), sum, avg, min,
-max aggregate functions.
+The `facet` function supports any combination of the following aggregate functions: count(*), sum, avg, min,
+max.
+
 
 === facet2D
 
@@ -199,8 +200,9 @@ The output of the `timeseries` function is then visualized with a line chart.
 
 image::images/math-expressions/timeseries1.png[]
 
-The `timeseries` function supports any combination of count(*), sum, avg, min,
-max aggregate functions.
+The `timeseries` function supports any combination of the following aggregate functions: count(*), sum, avg, min,
+max.
+
 
 === significantTerms
 
@@ -284,6 +286,6 @@ then .25.
 
 image::images/math-expressions/nodestab.png[]
 
-The `nodes` function supports any combination of count(*), sum, avg, min,
-max aggregate functions.
+The `nodes` function supports any combination of the following aggregate functions: count(*), sum, avg, min,
+max.
 
