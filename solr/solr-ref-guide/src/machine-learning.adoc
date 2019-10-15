@@ -360,8 +360,8 @@ The example below shows the `knnSearch` function on a movie reviews data set. Th
 search returns the 50 documents most similar to a specific document id (*83e9b5b0...*) based on
 the similarity of the *review_t* field. The *mindf* and *maxdf* specify the min and max
 document frequency of the terms used to perform the search. These parameters can make the
-query faster by eliminating very high frequency terms and also improves accuracy by
-removing noise from search.
+query faster by eliminating high frequency terms and also improves accuracy by
+removing noise terms from the search.
 
 image::images/math-expressions/knnSearch.png[]
 
@@ -402,7 +402,7 @@ surrounded by less dense clusters.
 
 ==== Plotting the Centroids
 
-The centroids of each cluster can then be easily plotted on a *map* to visualize the center of the
+The centroids of each cluster can then be plotted on a *map* to visualize the center of the
 clusters. In the example below the centroids are extracted from the clusters using the `getCentroids`
 function, which returns a matrix of the centroids.
 
@@ -423,13 +423,13 @@ image::images/math-expressions/centroidzoom.png[]
 
 === Phrase Extraction
 
-Clustering can also be used to extract key phrases from a text field in a search result set. The example below
-demonstrates this capability.
+K-means clustering produces centroids or *prototype* vectors which can be used to represent
+each cluster. In this example the key features of the centroids are extracted
+to represent the key phrases for clusters of TF-IDF term vectors.
 
 NOTE: The example below works with TF-IDF _term vectors_.
 The section <<term-vectors.adoc#term-vectors,Text Analysis and Term Vectors>> offers
 a full explanation of this features.
-
 
 In the example the `search` function returns documents where the *review_t* field matches the phrase "star wars".
 The `select` function is run over the result set and applies the `analyze` function
@@ -437,10 +437,9 @@ which uses the Lucene/Solr analyzer attached to the schema field *text_bigrams* 
 field. This analyzer returns bigrams which are then annotated to documents in a field called *terms*.
 
 The `termVectors` function then creates TD-IDF term vectors from the bigrams stored in the *terms* field.
-The `kmeans` function is then used to cluster the bigram term vectors.
+The `kmeans` function is then used to cluster the bigram term vectors into 5 clusters.
 Finally the top 5 features are extracted from the centroids an returned. Notice
-that the features are all bigram phrases with semantic significance to the result set.
-
+that the features are all bigram phrases with semantic significance.
 
 [source,text]
 ----
@@ -508,18 +507,16 @@ When this expression is sent to the `/stream` handler it responds with:
 }
 ----
 
-
-
 == Multi K-Means Clustering
 
-K-means clustering will produce different results depending on
-the initial placement of the centroids. K-means is also fast enough
-that multiple trials can be performed and the best outcome selected.
+K-means clustering will produce different outcomes depending on
+the initial placement of the centroids. K-means is fast enough
+that multiple trials can be performed so that the best outcome can be selected.
 
 The `multiKmeans` function runs the k-means clustering algorithm for a given number of trials and selects the
 best result based on which trial produces the lowest intra-cluster variance.
 
-The example below is identical to centroids example except that it uses `multiKmeans` with 15 trials,
+The example below is identical to the phrase extraction example except that it uses `multiKmeans` with 15 trials,
 rather than a single trial of the `kmeans` function.
 
 [source,text]
@@ -605,14 +602,15 @@ vector that was clustered. There is a column in the matrix for each cluster.
 The values in the matrix contain the probability that a specific vector belongs to a specific cluster.
 
 In the example the `distance` function is then used to create a *distance matrix* from the columns of the
-membership matrix. The distance matrix is then visualized with the `zplot` function as a heat map. Notice
-that the heat map has been configured to increase in color intensity as the distance shortens.
+membership matrix. The distance matrix is then visualized with the `zplot` function as a heat map.
 
 In the example cluster1 and cluster5 have the shortest distance between the clusters.
 Further analysis of the features in both clusters can be performed to understand
 the relationship between cluster1 and cluster5.
 
 image::images/math-expressions/fuzzyk.png[]
+
+NOTE: The heat map has been configured to increase in color intensity as the distance shortens.
 
 == Feature Scaling
 
