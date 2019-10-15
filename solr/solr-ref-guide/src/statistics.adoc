@@ -378,7 +378,7 @@ function call.
 
 In the example below a random sample containing two fields, *filesize_d* and *response_d*, is drawn from
 the logs collection using the `random` function. The fields are vectorized into the
-variables *x* and *y* and then the *Spearmans* correlation for
+variables *x* and *y* and then *Spearman's* correlation for
 the two vectors is calculated using the `corr` function.
 
 image::images/math-expressions/correlation.png[]
