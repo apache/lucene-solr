@@ -184,8 +184,8 @@ then visualized as a heatmap.
 
 image::images/math-expressions/facet2D.png[]
 
-The `facet2D` function supports one of the following aggregate functions: count(*), sum(field),
-avg(field), min(field), max(field).
+The `facet2D` function supports one of the following aggregate functions: count(*), sum,
+avg, min, max.
 
 === timeseries
 
