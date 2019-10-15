@@ -76,7 +76,7 @@ public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
     return delegate;
   }
 
-  public void close() {
+  public void close() throws Exception {
     delegate.close();
   }
 

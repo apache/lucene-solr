@@ -134,7 +134,7 @@ public class TestLFUCache extends SolrTestCaseJ4 {
 
 
   @Test
-  public void testSimple() throws IOException {
+  public void testSimple() throws Exception {
     SolrMetricManager metricManager = new SolrMetricManager();
     Random r = random();
     String registry = TestUtil.randomSimpleString(r, 2, 10);

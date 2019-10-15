@@ -38,7 +38,7 @@ public class TestLRUCache extends SolrTestCase {
   String registry = TestUtil.randomSimpleString(random(), 2, 10);
   String scope = TestUtil.randomSimpleString(random(), 2, 10);
 
-  public void testFullAutowarm() throws IOException {
+  public void testFullAutowarm() throws Exception {
     LRUCache<Object, Object> lruCache = new LRUCache<>();
     Map<String, String> params = new HashMap<>();
     params.put("size", "100");
@@ -64,14 +64,14 @@ public class TestLRUCache extends SolrTestCase {
     lruCacheNew.close();
   }
   
-  public void testPercentageAutowarm() throws IOException {
+  public void testPercentageAutowarm() throws Exception {
       doTestPercentageAutowarm(100, 50, new int[]{51, 55, 60, 70, 80, 99, 100}, new int[]{1, 2, 3, 5, 10, 20, 30, 40, 50});
       doTestPercentageAutowarm(100, 25, new int[]{76, 80, 99, 100}, new int[]{1, 2, 3, 5, 10, 20, 30, 40, 50, 51, 55, 60, 70});
       doTestPercentageAutowarm(1000, 10, new int[]{901, 930, 950, 999, 1000}, new int[]{1, 5, 100, 200, 300, 400, 800, 899, 900});
       doTestPercentageAutowarm(10, 10, new int[]{10}, new int[]{1, 5, 9, 100, 200, 300, 400, 800, 899, 900});
   }
   
-  private void doTestPercentageAutowarm(int limit, int percentage, int[] hits, int[]misses) {
+  private void doTestPercentageAutowarm(int limit, int percentage, int[] hits, int[]misses) throws Exception {
     LRUCache<Object, Object> lruCache = new LRUCache<>();
     Map<String, String> params = new HashMap<>();
     params.put("size", String.valueOf(limit));
@@ -101,7 +101,7 @@ public class TestLRUCache extends SolrTestCase {
   }
   
   @SuppressWarnings("unchecked")
-  public void testNoAutowarm() throws IOException {
+  public void testNoAutowarm() throws Exception {
     LRUCache<Object, Object> lruCache = new LRUCache<>();
     lruCache.initializeMetrics(metricManager, registry, "foo", scope);
     Map<String, String> params = new HashMap<>();

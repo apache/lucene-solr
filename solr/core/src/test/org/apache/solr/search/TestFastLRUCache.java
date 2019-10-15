@@ -52,7 +52,7 @@ public class TestFastLRUCache extends SolrTestCase {
   String registry = TestUtil.randomSimpleString(random(), 2, 10);
   String scope = TestUtil.randomSimpleString(random(), 2, 10);
 
-  public void testPercentageAutowarm() throws IOException {
+  public void testPercentageAutowarm() throws Exception {
     FastLRUCache<Object, Object> fastCache = new FastLRUCache<>();
     Map<String, String> params = new HashMap<>();
     params.put("size", "100");
@@ -94,7 +94,7 @@ public class TestFastLRUCache extends SolrTestCase {
     fastCacheNew.close();
   }
   
-  public void testPercentageAutowarmMultiple() throws IOException {
+  public void testPercentageAutowarmMultiple() throws Exception {
     doTestPercentageAutowarm(100, 50, new int[]{51, 55, 60, 70, 80, 99, 100}, new int[]{1, 2, 3, 5, 10, 20, 30, 40, 50});
     doTestPercentageAutowarm(100, 25, new int[]{76, 80, 99, 100}, new int[]{1, 2, 3, 5, 10, 20, 30, 40, 50, 51, 55, 60, 70});
     doTestPercentageAutowarm(1000, 10, new int[]{901, 930, 950, 999, 1000}, new int[]{1, 5, 100, 200, 300, 400, 800, 899, 900});
@@ -102,7 +102,7 @@ public class TestFastLRUCache extends SolrTestCase {
     doTestPercentageAutowarm(100, 0, new int[]{}, new int[]{1, 10, 25, 51, 55, 60, 70, 80, 99, 100, 200, 300});
   }
   
-  private void doTestPercentageAutowarm(int limit, int percentage, int[] hits, int[]misses) {
+  private void doTestPercentageAutowarm(int limit, int percentage, int[] hits, int[]misses) throws Exception {
     FastLRUCache<Object, Object> fastCache = new FastLRUCache<>();
     Map<String, String> params = new HashMap<>();
     params.put("size", String.valueOf(limit));
@@ -136,7 +136,7 @@ public class TestFastLRUCache extends SolrTestCase {
     fastCacheNew.close();
   }
   
-  public void testNoAutowarm() throws IOException {
+  public void testNoAutowarm() throws Exception {
     FastLRUCache<Object, Object> fastCache = new FastLRUCache<>();
     Map<String, String> params = new HashMap<>();
     params.put("size", "100");
@@ -166,7 +166,7 @@ public class TestFastLRUCache extends SolrTestCase {
     fastCacheNew.close();
   }
   
-  public void testFullAutowarm() throws IOException {
+  public void testFullAutowarm() throws Exception {
     FastLRUCache<Object, Object> cache = new FastLRUCache<>();
     Map<Object, Object> params = new HashMap<>();
     params.put("size", "100");
@@ -196,7 +196,7 @@ public class TestFastLRUCache extends SolrTestCase {
     cacheNew.close();
   }
   
-  public void testSimple() throws IOException {
+  public void testSimple() throws Exception {
     FastLRUCache sc = new FastLRUCache();
     Map l = new HashMap();
     l.put("size", "100");
@@ -304,7 +304,7 @@ public class TestFastLRUCache extends SolrTestCase {
     System.out.println("time=" + timer.getTime() + ", minSize="+minSize+",maxSize="+maxSize);
   }
 
-  public void testAccountable() {
+  public void testAccountable() throws Exception {
     FastLRUCache<Query, DocSet> sc = new FastLRUCache<>();
     try {
       Map l = new HashMap();

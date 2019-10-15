@@ -59,6 +59,7 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
@@ -479,7 +480,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
 
     for (SolrCache cache : cacheList) {
-      cache.close();
+      try {
+        cache.close();
+      } catch (Exception e) {
+        SolrException.log(log, "Exception closing cache " + cache.name(), e);
+      }
     }
 
     if (releaseDirectory) {
