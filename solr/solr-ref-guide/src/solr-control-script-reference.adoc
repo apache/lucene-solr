@@ -891,11 +891,11 @@ Export all documents from a collection `gettingstarted` to a file called `gettin
 
 *Arguments*
 
-* `format` : `jsonl` (default) or `javabin`. `format=javabin` exports to a file with extension `.javabin` which is the native Solr format. This is compact & faster to import
+* `format` : `jsonl` (default) or `javabin`. `format=javabin` exports to a file with extension `.javabin` which is the native Solr format. This is compact & faster to import.
 * `out` : export file name
-* `query` : a custom query , default is *:*
-* `fields`: a comma separated list of fields to be exported
-* `limit` : no:of docs. default is 100 , send  -1 to import all the docs
+* `query` : a custom query, default is `*:*`.
+* `fields`: a comma separated list of fields to be exported.
+* `limit` : number of documents, default is 100, send `-1` to import all the documents.
 
 === Importing the data to a collection
 

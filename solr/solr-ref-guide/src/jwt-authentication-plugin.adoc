@@ -55,7 +55,7 @@ redirectUris         ; Valid location(s) for redirect after external authenticat
 issuers              ; List of issuers (Identity providers) to  support. See section <<issuer-configuration,Issuer configuration>> for configuration syntax ;
 |===
 
-=== Issuer configuration
+=== Issuer Configuration
 
 This plugin supports one or more token issuers (IdPs). Issuers are configured as a list of JSON objects under the `issuers` configuration key. The first issuer in the list is the "Primary Issuer", which is the one used for logging in to the Admin UI.
 
