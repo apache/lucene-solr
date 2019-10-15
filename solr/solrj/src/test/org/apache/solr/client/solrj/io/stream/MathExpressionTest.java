@@ -1203,7 +1203,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     List<Tuple> tuples = getTuples(solrStream);
     assertTrue(tuples.size() == 1);
     Tuple tuple = tuples.get(0);
-    long binomialCoefficient = (long) tuple.get("return-value");
+    long binomialCoefficient = tuple.getLong("return-value");
     assertEquals(binomialCoefficient, 56);
   }
 
@@ -3523,6 +3523,24 @@ public class MathExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testCosineSimilaritySort() throws Exception {
+    String cexpr = "sort(select(list(tuple(id=\"1\", f=array(1,2,3,4)), tuple(id=\"2\",f=array(10,2,3,4)))," +
+        "                 cosineSimilarity(f, array(1,2,3,4)) as sim, id)," +
+        "                by=\"sim desc\")";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertEquals(tuples.size(), 2);
+    assertEquals(tuples.get(0).getString("id"), "1");
+  }
+
+
+  @Test
   public void testPoissonDistribution() throws Exception {
     String cexpr = "let(a=poissonDistribution(100)," +
         "               b=sample(a, 10000)," +
@@ -5591,13 +5609,13 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertTrue(tuples.size() == 1);
     List<Number> convolution = (List<Number>)(tuples.get(0)).get("conv");
     assertTrue(convolution.size() == 7);
-    assertTrue(convolution.get(0).equals(20000L));
-    assertTrue(convolution.get(1).equals(20000L));
-    assertTrue(convolution.get(2).equals(25000L));
-    assertTrue(convolution.get(3).equals(30000L));
-    assertTrue(convolution.get(4).equals(15000L));
-    assertTrue(convolution.get(5).equals(10000L));
-    assertTrue(convolution.get(6).equals(5000L));
+    assertTrue(convolution.get(0).equals(20000D));
+    assertTrue(convolution.get(1).equals(20000D));
+    assertTrue(convolution.get(2).equals(25000D));
+    assertTrue(convolution.get(3).equals(30000D));
+    assertTrue(convolution.get(4).equals(15000D));
+    assertTrue(convolution.get(5).equals(10000D));
+    assertTrue(convolution.get(6).equals(5000D));
   }
 
   @Test
@@ -5648,7 +5666,7 @@ public class MathExpressionTest extends SolrCloudTestCase {
     double prediction = tuple.getDouble("p");
     assertTrue(prediction == 600.0D);
     List<Number> predictions = (List<Number>)tuple.get("pl");
-    assertList(predictions, 200L, 400L, 600L, 200L, 400L, 800L, 1200L);
+    assertList(predictions, 200D, 400D, 600D, 200D, 400D, 800D, 1200D);
   }
 
   @Test
