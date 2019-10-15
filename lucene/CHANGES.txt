@@ -14,8 +14,9 @@ New Features
 (No changes)
 
 Improvements
----------------------
-(No changes)
+
+* LUCENE-9006: WordDelimiterGraphFilter's catenateAll token is now ordered before any token parts, like WDF did.
+  (David Smiley)
 
 Optimizations
 
