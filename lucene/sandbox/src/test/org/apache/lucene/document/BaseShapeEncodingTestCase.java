@@ -472,6 +472,7 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
     verifyEncoding(ay, ax, ay, ax, ay, ax);
   }
 
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8746")
   public void testRandomLineEncoding() {
     double ay = nextY();
     double ax = nextX();
