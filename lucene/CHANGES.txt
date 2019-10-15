@@ -76,6 +76,9 @@ New Features
 
 Improvements
 
+* LUCENE-9002: Skip costly caching clause in LRUQueryCache if it makes the query
+  many times slower. (Guoqiang Jiang)
+
 * LUCENE-9006: WordDelimiterGraphFilter's catenateAll token is now ordered before any token parts, like WDF did.
   (David Smiley)
 
