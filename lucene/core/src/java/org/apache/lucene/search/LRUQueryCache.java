@@ -40,6 +40,7 @@ import org.apache.lucene.index.IndexReaderContext;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.TieredMergePolicy;
+import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.BitDocIdSet;
@@ -848,7 +849,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
 
             // If async caching failed, we will perform synchronous caching
             // hence do not return the uncached value here
-            if (asyncCachingSucceeded == false) {
+            if (asyncCachingSucceeded) {
               return in.bulkScorer(context);
             }
           }

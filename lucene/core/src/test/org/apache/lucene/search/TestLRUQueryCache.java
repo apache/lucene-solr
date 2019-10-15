@@ -2054,12 +2054,13 @@ public class TestLRUQueryCache extends LuceneTestCase {
       @Override
       public void run() {
         try {
-          Thread.sleep(100);
           List<LeafReaderContext> leaves = searcher.leafContexts;
 
-          for (LeafReaderContext leafReaderContext : leaves) {
-            leafReaderContext.reader().close();
+          for (LeafReaderContext context : leaves) {
+            context.reader().close();
           }
+
+          searcher.reader.close();
 
           reader.close();
         } catch (Exception e) {
@@ -2078,6 +2079,48 @@ public class TestLRUQueryCache extends LuceneTestCase {
     dir.close();
     service.shutdown();
     tempService.shutdown();
+  }
+
+  public void testFailedAsyncCaching() throws IOException {
+    ExecutorService service = new TestIndexSearcher.RejectingMockExecutor();
+
+    Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+
+    for (int i = 0; i < 5; i++) {
+      Document doc = new Document();
+      StringField f = new StringField("color", "blue", Store.NO);
+      doc.add(f);
+      w.addDocument(doc);
+      f.setStringValue("red");
+      w.addDocument(doc);
+      f.setStringValue("green");
+      w.addDocument(doc);
+    }
+
+    w.commit();
+
+    final DirectoryReader reader = w.getReader();
+
+    final Query red = new TermQuery(new Term("color", "red"));
+
+    IndexSearcher searcher = new IndexSearcher(reader, service);
+
+    assertEquals(1, searcher.leafContexts.size());
+
+    final LRUQueryCache queryCache = new LRUQueryCache(2, 100000, context -> true);
+
+    searcher.setQueryCache(queryCache);
+    searcher.setQueryCachingPolicy(ALWAYS_CACHE);
+
+    searcher.search(new ConstantScoreQuery(red), 1);
+
+    assertEquals(Collections.singletonList(red), queryCache.cachedQueries());
+
+    w.close();
+    reader.close();
+    dir.close();
+    service.shutdown();
   }
 
   public static class BlockedMockExecutor implements ExecutorService {
