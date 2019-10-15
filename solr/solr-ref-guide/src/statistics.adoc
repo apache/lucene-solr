@@ -374,8 +374,12 @@ Three correlation types are supported:
 * *spearmans*
 
 The type of correlation is specified by adding the *type* named parameter in the
-function call. The example below demonstrates the use of the `corr` function with
-the *type* named parameter.
+function call.
+
+In the example below a random sample containing two fields, *filesize_d* and *response_d*, is drawn from
+the logs collection using the `random` function. The fields are vectorized into the
+variables *x* and *y* and then the *Spearmans* correlation for
+the two vectors is calculated using the `corr` function.
 
 image::images/math-expressions/correlation.png[]
 
