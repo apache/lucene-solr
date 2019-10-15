@@ -133,6 +133,8 @@ import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETURN;
 public class HttpSolrCall {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  public static final String INTERNAL_REQUEST_COUNT = "_forwardedCount";
+
   public static final Random random;
   static {
     // We try to make things reproducible in the context of our tests by initializing the random instance
@@ -426,9 +428,9 @@ public class HttpSolrCall {
     }
   }
 
-  protected void extractRemotePath(String collectionName, String origCorename) throws UnsupportedEncodingException, KeeperException, InterruptedException {
+  protected void extractRemotePath(String collectionName, String origCorename) throws UnsupportedEncodingException, KeeperException, InterruptedException, SolrException {
     assert core == null;
-    coreUrl = getRemotCoreUrl(collectionName, origCorename);
+    coreUrl = getRemoteCoreUrl(collectionName, origCorename);
     // don't proxy for internal update requests
     invalidStates = checkStateVersionsAreValid(queryParams.get(CloudSolrClient.STATE_VERSION));
     if (coreUrl != null
@@ -589,11 +591,18 @@ public class HttpSolrCall {
     }
   }
 
+  private String getQuerySting() {
+    int internalRequestCount = queryParams.getInt(INTERNAL_REQUEST_COUNT, 0);
+    ModifiableSolrParams updatedQueryParams = new ModifiableSolrParams(queryParams);
+    updatedQueryParams.set(INTERNAL_REQUEST_COUNT, internalRequestCount + 1);
+    return updatedQueryParams.toQueryString();
+  }
+
   private void remoteQuery(String coreUrl, HttpServletResponse resp) throws IOException {
     HttpRequestBase method = null;
     HttpEntity httpEntity = null;
     try {
-      String urlstr = coreUrl + queryParams.toQueryString();
+      String urlstr = coreUrl + getQuerySting();
 
       boolean isPostOrPutRequest = "POST".equals(req.getMethod()) || "PUT".equals(req.getMethod());
       if ("GET".equals(req.getMethod())) {
@@ -892,12 +901,14 @@ public class HttpSolrCall {
     }
   }
 
-  protected String getRemotCoreUrl(String collectionName, String origCorename) {
+  protected String getRemoteCoreUrl(String collectionName, String origCorename) throws SolrException {
     ClusterState clusterState = cores.getZkController().getClusterState();
     final DocCollection docCollection = clusterState.getCollectionOrNull(collectionName);
     Slice[] slices = (docCollection != null) ? docCollection.getActiveSlicesArr() : null;
     List<Slice> activeSlices = new ArrayList<>();
     boolean byCoreName = false;
+
+    int totalReplicas = 0;
 
     if (slices == null) {
       byCoreName = true;
@@ -912,6 +923,9 @@ public class HttpSolrCall {
       }
     }
 
+    for (Slice s: activeSlices) {
+      totalReplicas += s.getReplicas().size();
+    }
     if (activeSlices.isEmpty()) {
       return null;
     }
@@ -920,7 +934,13 @@ public class HttpSolrCall {
     String coreUrl = getCoreUrl(collectionName, origCorename, clusterState,
         activeSlices, byCoreName, true);
 
+    // Avoid getting into a recursive loop of requests being forwarded by
+    // stopping forwarding and erroring out after (totalReplicas) forwards
     if (coreUrl == null) {
+      if (queryParams.getInt(INTERNAL_REQUEST_COUNT, 0) > totalReplicas){
+        throw new SolrException(SolrException.ErrorCode.INVALID_STATE,
+            "No active replicas found for collection: " + collectionName);
+      }
       coreUrl = getCoreUrl(collectionName, origCorename, clusterState,
           activeSlices, byCoreName, false);
     }
