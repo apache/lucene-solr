@@ -116,7 +116,7 @@ The start commands provided with the Prometheus Exporter support the use of cust
 Sets the initial (`Xms`) and max (`Xmx`) Java heap size. The default is `512m`.
 
 `JAVA_MEM`::
-Custom java memory settings (e.g. `-Xms1g -Xmx2g`). This is ignored if `JAVA_HEAP` is provided.
+Custom java memory settings (e.g., `-Xms1g -Xmx2g`). This is ignored if `JAVA_HEAP` is provided.
 
 `GC_TUNE`::
 Custom Java garbage collection settings. The default is `-XX:+UseG1GC`.
