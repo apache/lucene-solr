@@ -216,6 +216,8 @@ Bug Fixes
   state happening to change between checking if the current shard is active and later checking if there are any
   sub-shard leaders to forward the update to. (yonik)
 
+* SOLR-13665: Added missing netty dependencies to solrJ and upgraded netty to v 4.1.29.Final (Jörn Franke, janhoy)
+
 Other Changes
 ----------------------
 
