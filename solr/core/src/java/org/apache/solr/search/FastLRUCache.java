@@ -29,7 +29,8 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetrics;
+import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.util.ConcurrentLRUCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -284,8 +285,8 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
 
 
   @Override
-  public void close() {
-    if (metricsInfo != null) metricsInfo.unregister();
+  public void close() throws Exception {
+    SolrCache.super.close();
     // add the stats to the cumulative stats object (the first in the statsList)
     statsList.get(0).add(cache.getStats());
     statsList.remove(cache.getStats());
@@ -309,15 +310,15 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
   }
 
 
-  SolrMetrics metricsInfo;
+  SolrMetricsContext metricsInfo;
 
   @Override
-  public SolrMetrics getMetrics() {
+  public SolrMetricsContext getSolrMetricsContext() {
     return metricsInfo;
   }
 
   @Override
-  public void initializeMetrics(SolrMetrics metricsInfo) {
+  public void initializeMetrics(SolrMetricsContext metricsInfo) {
     this.metricsInfo = metricsInfo;
     metricsInfo.metricManager.registerGauge(this, metricsInfo.registry, cacheMap, metricsInfo.tag, true, metricsInfo.scope, getCategory().toString());
   }

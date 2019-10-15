@@ -33,7 +33,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetrics;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -377,11 +377,6 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
     warmupTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - warmingStartTime, TimeUnit.NANOSECONDS);
   }
 
-  @Override
-  public void close() {
-    if(solrMetrics != null) solrMetrics.unregister();
-  }
-
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
 
@@ -400,16 +395,16 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
     return metricNames;
   }
 
-  SolrMetrics solrMetrics;
+  SolrMetricsContext solrMetricsContext;
 
   @Override
-  public SolrMetrics getMetrics() {
-    return solrMetrics;
+  public SolrMetricsContext getSolrMetricsContext() {
+    return solrMetricsContext;
   }
 
   @Override
-  public void initializeMetrics(SolrMetrics m) {
-    solrMetrics = m.getChildInfo(this);
+  public void initializeMetrics(SolrMetricsContext m) {
+    solrMetricsContext = m.getChildInfo(this);
     cacheMap = new MetricsMap((detailed, res) -> {
       synchronized (map) {
         res.put(LOOKUPS_PARAM, lookups);
@@ -438,7 +433,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
       res.put("cumulative_evictionsRamUsage", stats.evictionsRamUsage.longValue());
       res.put("cumulative_evictionsIdleTime", stats.evictionsIdleTime.longValue());
     });
-    solrMetrics.metricManager.registerGauge(this, solrMetrics.registry, cacheMap, solrMetrics.tag, true, solrMetrics.scope, getCategory().toString());
+    solrMetricsContext.metricManager.registerGauge(this, solrMetricsContext.registry, cacheMap, solrMetricsContext.tag, true, solrMetricsContext.scope, getCategory().toString());
   }
 
   // for unit tests only
@@ -448,7 +443,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
 
   @Override
   public MetricRegistry getMetricRegistry() {
-    return solrMetrics ==null ?null: solrMetrics.getRegistry();
+    return solrMetricsContext ==null ?null: solrMetricsContext.getRegistry();
   }
 
   @Override

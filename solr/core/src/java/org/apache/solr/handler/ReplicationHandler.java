@@ -92,7 +92,7 @@ import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.LocalFileSystemRepository;
 import org.apache.solr.handler.IndexFetcher.IndexFetchResult;
 import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetrics;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
@@ -863,19 +863,19 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   @Override
-  public void initializeMetrics(SolrMetrics m) {
+  public void initializeMetrics(SolrMetricsContext m) {
     super.initializeMetrics(m);
-    solrMetrics.gauge(this,  () -> (core != null && !core.isClosed() ? NumberUtils.readableSize(core.getIndexSize()) : ""),
+    solrMetricsContext.gauge(this,  () -> (core != null && !core.isClosed() ? NumberUtils.readableSize(core.getIndexSize()) : ""),
         true, "indexSize", getCategory().toString());
-    solrMetrics.gauge(this, () -> (core != null && !core.isClosed() ? getIndexVersion().toString() : ""),
+    solrMetricsContext.gauge(this, () -> (core != null && !core.isClosed() ? getIndexVersion().toString() : ""),
          true, "indexVersion", getCategory().toString());
-    solrMetrics.gauge(this, () -> (core != null && !core.isClosed() ? getIndexVersion().generation : 0),
+    solrMetricsContext.gauge(this, () -> (core != null && !core.isClosed() ? getIndexVersion().generation : 0),
         true, GENERATION, getCategory().toString());
-    solrMetrics.gauge(this, () -> (core != null && !core.isClosed() ? core.getIndexDir() : ""),
+    solrMetricsContext.gauge(this, () -> (core != null && !core.isClosed() ? core.getIndexDir() : ""),
         true, "indexPath", getCategory().toString());
-    solrMetrics.gauge(this, () -> isMaster,
+    solrMetricsContext.gauge(this, () -> isMaster,
          true, "isMaster", getCategory().toString());
-    solrMetrics.gauge(this, () -> isSlave,
+    solrMetricsContext.gauge(this, () -> isSlave,
          true, "isSlave", getCategory().toString());
     final MetricsMap fetcherMap = new MetricsMap((detailed, map) -> {
       IndexFetcher fetcher = currentIndexFetcher;
@@ -905,12 +905,12 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         addVal(map, IndexFetcher.CONF_FILES_REPLICATED, props, String.class);
       }
     });
-    solrMetrics.gauge(this , fetcherMap, true, "fetcher", getCategory().toString());
-    solrMetrics.gauge(this, () -> isMaster && includeConfFiles != null ? includeConfFiles : "",
+    solrMetricsContext.gauge(this , fetcherMap, true, "fetcher", getCategory().toString());
+    solrMetricsContext.gauge(this, () -> isMaster && includeConfFiles != null ? includeConfFiles : "",
          true, "confFilesToReplicate", getCategory().toString());
-    solrMetrics.gauge(this, () -> isMaster ? getReplicateAfterStrings() : Collections.<String>emptyList(),
+    solrMetricsContext.gauge(this, () -> isMaster ? getReplicateAfterStrings() : Collections.<String>emptyList(),
         true, REPLICATE_AFTER, getCategory().toString());
-    solrMetrics.gauge(this,  () -> isMaster && replicationEnabled.get(),
+    solrMetricsContext.gauge(this,  () -> isMaster && replicationEnabled.get(),
         true, "replicationEnabled", getCategory().toString());
   }
 

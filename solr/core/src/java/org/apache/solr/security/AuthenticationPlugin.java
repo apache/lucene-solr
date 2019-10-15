@@ -32,7 +32,7 @@ import org.apache.http.HttpRequest;
 import org.apache.http.protocol.HttpContext;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricProducer;
-import org.apache.solr.metrics.SolrMetrics;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.eclipse.jetty.client.api.Request;
 
 /**
@@ -138,15 +138,15 @@ public abstract class AuthenticationPlugin implements SolrInfoBean, SolrMetricPr
    */
   public void closeRequest() {
   }
-  protected SolrMetrics metrics;
+  protected SolrMetricsContext metrics;
 
   @Override
-  public SolrMetrics getMetrics() {
+  public SolrMetricsContext getSolrMetricsContext() {
     return metrics;
   }
 
   @Override
-  public void initializeMetrics(SolrMetrics metrics) {
+  public void initializeMetrics(SolrMetricsContext metrics) {
     this.metrics = metrics.getChildInfo(this);
     // Metrics
     numErrors = this.metrics.meter(this, "errors", getCategory().toString());

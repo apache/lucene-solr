@@ -29,7 +29,7 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetrics;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.util.ConcurrentLFUCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -229,12 +229,12 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
 
 
   @Override
-  public void close() {
+  public void close() throws Exception {
+    SolrCache.super.close();
     // add the stats to the cumulative stats object (the first in the statsList)
     statsList.get(0).add(cache.getStats());
     statsList.remove(cache.getStats());
     cache.destroy();
-    if (solrMetrics != null) solrMetrics.unregister();
   }
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
@@ -263,16 +263,16 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
   }
 
 
-  private SolrMetrics solrMetrics;
+  private SolrMetricsContext solrMetricsContext;
 
   @Override
-  public SolrMetrics getMetrics() {
-    return solrMetrics;
+  public SolrMetricsContext getSolrMetricsContext() {
+    return solrMetricsContext;
   }
 
   @Override
-  public void initializeMetrics(SolrMetrics info) {
-    solrMetrics = info.getChildInfo(this);
+  public void initializeMetrics(SolrMetricsContext info) {
+    solrMetricsContext = info.getChildInfo(this);
     cacheMap = new MetricsMap((detailed, map) -> {
       if (cache != null) {
         ConcurrentLFUCache.Stats stats = cache.getStats();
@@ -338,7 +338,7 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
 
       }
     });
-    solrMetrics.metricManager.registerGauge(this, solrMetrics.registry, cacheMap, solrMetrics.getTag(), true, solrMetrics.scope, getCategory().toString());
+    solrMetricsContext.metricManager.registerGauge(this, solrMetricsContext.registry, cacheMap, solrMetricsContext.getTag(), true, solrMetricsContext.scope, getCategory().toString());
   }
 
   // for unit tests only
@@ -353,7 +353,7 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
 
   @Override
   public MetricRegistry getMetricRegistry() {
-    return solrMetrics == null ? null : solrMetrics.getRegistry();
+    return solrMetricsContext == null ? null : solrMetricsContext.getRegistry();
 
   }
 

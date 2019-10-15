@@ -22,14 +22,17 @@ package org.apache.solr.metrics;
 public interface SolrMetricProducer extends AutoCloseable {
 
   /**
-   * Unique metric name is in the format of A.B.C
+   * Unique metric tag identifies components with the same life-cycle, which should
+   * be registered / unregistered together. It is in the format of A:B:C, where
    * A is the parent of B is the parent of C and so on.
-   * If object "B" is unregistered , C also must get unregistered.
-   * If object "A" is unregistered ,  B , C also must get unregistered.
+   * If object "B" is unregistered C also must get unregistered.
+   * If object "A" is unregistered B and C also must get unregistered.
    */
   default String getUniqueMetricTag(String parentName) {
     String name = getClass().getSimpleName() + "@" + Integer.toHexString(hashCode());
-    if (parentName != null && parentName.contains(name)) return parentName;
+    if (parentName != null && parentName.contains(name)) {
+      throw new RuntimeException("Parent already includes this component? parent=" + parentName + ", this=" + name);
+    }
     return parentName == null ?
         name :
         parentName + ":" + name;
@@ -45,25 +48,28 @@ public interface SolrMetricProducer extends AutoCloseable {
    *                 or a group of related instances that have the same life-cycle. This tag is
    *                 used when managing life-cycle of some metrics and is set when
    *                 {@link #initializeMetrics(SolrMetricManager, String, String, String)} is called.
-   * @param scope    scope of the metrics (eg. handler name) to separate metrics of
+   * @param scope    scope of the metrics (eg. handler name) to separate metrics of components with
+   *                 the same implementation but different scope
+   * @deprecated use {@link #initializeMetrics(SolrMetricsContext)} instead
    */
   default void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
-    initializeMetrics(new SolrMetrics(manager, registry, tag, scope));
+    initializeMetrics(new SolrMetricsContext(manager, registry, tag, scope));
 
   }
 
-  default void initializeMetrics(SolrMetrics info) {
-    throw new RuntimeException("This means , the class has not implemented both of these methods");
+  default void initializeMetrics(SolrMetricsContext context) {
+    throw new RuntimeException("You must implement either initializeMetrics(SolrMetricsContext) or " +
+        "initializeMetrics(SolrMetricManager, String, String, String)");
 
   }
 
-  default SolrMetrics getMetrics() {
+  default SolrMetricsContext getSolrMetricsContext() {
     return null;
   }
 
   @Override
   default void close() throws Exception {
-    SolrMetrics info = getMetrics();
+    SolrMetricsContext info = getSolrMetricsContext();
     if (info == null || info.tag.indexOf(':') == -1) return;//this will end up unregistering the root itself
     info.unregister();
   }

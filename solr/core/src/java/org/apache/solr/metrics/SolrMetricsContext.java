@@ -29,14 +29,13 @@ import org.apache.solr.core.SolrInfoBean;
 
 import static org.apache.solr.metrics.SolrMetricManager.makeName;
 
-public class SolrMetrics {
+public class SolrMetricsContext {
   public final String registry;
   public final SolrMetricManager metricManager;
   public final String tag;
   public final String scope;
-  private SolrMetrics parent;
 
-  public SolrMetrics(SolrMetricManager metricManager, String registry, String tag, String scope) {
+  public SolrMetricsContext(SolrMetricManager metricManager, String registry, String tag, String scope) {
     this.registry = registry;
     this.metricManager = metricManager;
     this.tag = tag;
@@ -51,16 +50,16 @@ public class SolrMetrics {
     metricManager.unregisterGauges(registry, tag);
   }
 
-  public SolrMetrics getChildInfo(SolrMetricProducer producer) {
-    SolrMetrics metricsInfo = new SolrMetrics(metricManager, registry, producer.getUniqueMetricTag(tag), scope);
-    metricsInfo.parent = this;
+  public SolrMetricsContext getChildInfo(SolrMetricProducer producer) {
+    SolrMetricsContext metricsInfo = new SolrMetricsContext(metricManager, registry, producer.getUniqueMetricTag(tag), scope);
     return metricsInfo;
   }
 
   public Meter meter(SolrInfoBean info, String metricName, String... metricpath) {
-    return metricManager.meter(info, getRegistry(), createName(metricName, metricpath));
+    return metricManager.meter(info, registry, createName(metricName, metricpath));
   }
 
+  // adds the scope
   private String createName(String metricName, String... metricpath) {
     ArrayList<String> l = new ArrayList<>();
     if(metricpath != null ) {
@@ -71,21 +70,17 @@ public class SolrMetrics {
   }
 
   public Counter counter(SolrInfoBean info, String metricName, String... metricpath) {
-    return metricManager.counter(info, getRegistry(), createName(metricName, metricpath));
+    return metricManager.counter(info, registry, createName(metricName, metricpath));
 
   }
 
   public void gauge(SolrInfoBean info, Gauge<?> gauge, boolean force, String metricName, String... metricpath) {
-    metricManager.registerGauge(info, getRegistry(), new SolrMetricManager.GaugeWrapper<>(gauge, tag), force, createName(metricName, metricpath));
+    metricManager.registerGauge(info, registry, gauge, tag, force, createName(metricName, metricpath));
   }
 
   public Timer timer(SolrInfoBean info, String metricName, String... metricpath) {
-    return metricManager.timer(info, getRegistry(), createName(metricName, metricpath));
+    return metricManager.timer(info, registry, createName(metricName, metricpath));
 
-  }
-
-  public SolrMetrics getParent() {
-    return parent;
   }
 
   public MetricRegistry getRegistry() {

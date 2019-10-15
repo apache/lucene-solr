@@ -202,7 +202,8 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
   }
 
   @Override
-  public void close() {
+  public void close() throws Exception {
+    SolrCache.super.close();
     cache.invalidateAll();
     cache.cleanUp();
     if (executor instanceof ExecutorService) {

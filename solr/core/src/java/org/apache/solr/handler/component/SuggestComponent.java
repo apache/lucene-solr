@@ -49,7 +49,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricProducer;
-import org.apache.solr.metrics.SolrMetrics;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.spelling.suggest.SolrSuggester;
 import org.apache.solr.spelling.suggest.SuggesterOptions;
@@ -87,6 +87,8 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
   
   @SuppressWarnings("unchecked")
   protected NamedList initParams;
+
+  protected SolrMetricsContext metricsContext;
 
   /**
    * Key is the dictionary name used in SolrConfig, value is the corresponding {@link SolrSuggester}
@@ -347,25 +349,23 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
     return "Suggester component";
   }
 
-  protected SolrMetrics metricsInfo;
-
   @Override
-  public SolrMetrics getMetrics() {
-    return metricsInfo;
+  public SolrMetricsContext getSolrMetricsContext() {
+    return metricsContext;
   }
 
   @Override
-  public void initializeMetrics(SolrMetrics info) {
-    this.metricsInfo = info.getChildInfo(this);
+  public void initializeMetrics(SolrMetricsContext metricsContext) {
+    this.metricsContext = metricsContext.getChildInfo(this);
 
-    metricsInfo.metricManager.registerGauge(this, info.registry, () -> ramBytesUsed(), metricsInfo.tag, true, "totalSizeInBytes", getCategory().toString(), metricsInfo.scope);
+    this.metricsContext.gauge(this, () -> ramBytesUsed(), true, "totalSizeInBytes", getCategory().toString());
     MetricsMap suggestersMap = new MetricsMap((detailed, map) -> {
       for (Map.Entry<String, SolrSuggester> entry : suggesters.entrySet()) {
         SolrSuggester suggester = entry.getValue();
         map.put(entry.getKey(), suggester.toString());
       }
     });
-    metricsInfo.metricManager.registerGauge(this, metricsInfo.registry, suggestersMap, metricsInfo.tag, true, "suggesters", getCategory().toString(), metricsInfo.scope);
+    this.metricsContext.gauge(this, suggestersMap, true, "suggesters", getCategory().toString());
   }
 
   @Override
