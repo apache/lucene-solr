@@ -21,8 +21,7 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-import java.io.IOException;
-import java.io.InputStream;
+
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -43,7 +42,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.google.common.collect.ImmutableMap;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Base64;
 import org.slf4j.Logger;
@@ -63,7 +61,7 @@ public final class CryptoKeys {
       m.put(e.getKey(), getX509PublicKey(e.getValue()));
 
     }
-    this.keys = ImmutableMap.copyOf(m);
+    this.keys = m;
   }
 
   /**
@@ -75,11 +73,11 @@ public final class CryptoKeys {
       boolean verified;
       try {
         verified = CryptoKeys.verify(entry.getValue(), Base64.base64ToByteArray(sig), data);
-        log.debug("verified {} ", verified);
+        log.info("verified {} ", verified);
         if (verified) return entry.getKey();
       } catch (Exception e) {
         exception = e;
-        log.debug("NOT verified  ");
+        log.info("NOT verified  ");
       }
 
     }
@@ -106,42 +104,23 @@ public final class CryptoKeys {
    * @param data      The data tha is signed
    */
   public static boolean verify(PublicKey publicKey, byte[] sig, ByteBuffer data) throws InvalidKeyException, SignatureException {
-    data = ByteBuffer.wrap(data.array(), data.arrayOffset(), data.limit());
+    int oldPos = data.position();
+    Signature signature = null;
     try {
-      Signature signature = Signature.getInstance("SHA1withRSA");
+      signature = Signature.getInstance("SHA1withRSA");
       signature.initVerify(publicKey);
       signature.update(data);
-      return signature.verify(sig);
-    } catch (NoSuchAlgorithmException e) {
-      //wil not happen
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    }
+      boolean verify = signature.verify(sig);
+      return verify;
 
-  }
-
-  public static boolean verify(PublicKey publicKey, byte[] sig, InputStream is)
-      throws InvalidKeyException, SignatureException, IOException {
-    try {
-      Signature signature = Signature.getInstance("SHA1withRSA");
-      signature.initVerify(publicKey);
-      byte[] buf = new byte[1024];
-      while (true) {
-        int sz = is.read(buf);
-        if (sz == -1) break;
-        signature.update(buf, 0, sz);
-      }
-      try {
-        return signature.verify(sig);
-      } catch (SignatureException e) {
-        return false;
-      }
     } catch (NoSuchAlgorithmException e) {
       //will not happen
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    } finally {
+      //Signature.update resets the position. set it back to old
+      data.position(oldPos);
     }
-
+    return false;
   }
-
 
   private static byte[][] evpBytesTokey(int key_len, int iv_len, MessageDigest md,
                                         byte[] salt, byte[] data, int count) {

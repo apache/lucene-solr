@@ -18,15 +18,11 @@
 package org.apache.solr.client.solrj.request;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.io.IOUtils;
-import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.response.V2Response;
@@ -46,10 +42,8 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
   private SolrParams solrParams;
   public final boolean useBinary;
   private String collection;
-  private String mimeType;
   private boolean forceV2 = false;
   private boolean isPerCollectionRequest = false;
-  private ResponseParser parser;
 
   private V2Request(METHOD m, String resource, boolean useBinary) {
     super(m, resource);
@@ -62,7 +56,7 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
 
   }
 
-  public boolean isForceV2() {
+  public boolean isForceV2(){
     return forceV2;
   }
 
@@ -81,15 +75,6 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
     return new RequestWriter.ContentWriter() {
       @Override
       public void write(OutputStream os) throws IOException {
-        if (payload instanceof ByteBuffer) {
-          ByteBuffer b = (ByteBuffer) payload;
-          os.write(b.array(), b.arrayOffset(), b.limit());
-          return;
-        }
-        if (payload instanceof InputStream) {
-          IOUtils.copy((InputStream) payload, os);
-          return;
-        }
         if (useBinary) {
           new JavaBinCodec().marshal(payload, os);
         } else {
@@ -99,7 +84,6 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
 
       @Override
       public String getContentType() {
-        if (mimeType != null) return mimeType;
         return useBinary ? JAVABIN_MIME : JSON_MIME;
       }
     };
@@ -127,12 +111,6 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
     ew.putIfNotNull("command", payload);
   }
 
-  @Override
-  public ResponseParser getResponseParser() {
-    if (parser != null) return parser;
-    return super.getResponseParser();
-  }
-
   public static class Builder {
     private String resource;
     private METHOD method = METHOD.GET;
@@ -141,8 +119,6 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
     private boolean useBinary = false;
 
     private boolean forceV2EndPoint = false;
-    private ResponseParser parser;
-    private String mimeType;
 
     /**
      * Create a Builder object based on the provided resource.
@@ -197,24 +173,11 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
       return this;
     }
 
-    public Builder withResponseParser(ResponseParser parser) {
-      this.parser = parser;
-      return this;
-    }
-
-    public Builder withMimeType(String mimeType) {
-      this.mimeType = mimeType;
-      return this;
-
-    }
-
     public V2Request build() {
       V2Request v2Request = new V2Request(method, resource, useBinary);
       v2Request.solrParams = params;
       v2Request.payload = payload;
       v2Request.forceV2 = forceV2EndPoint;
-      v2Request.mimeType = mimeType;
-      v2Request.parser = parser;
       return v2Request;
     }
   }
