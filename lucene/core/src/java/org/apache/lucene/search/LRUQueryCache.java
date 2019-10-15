@@ -101,7 +101,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
   private final Set<Query> mostRecentlyUsedQueries;
   private final Map<IndexReader.CacheKey, LeafCache> cache;
   private final ReentrantLock lock;
-  private final long skipCacheFactor;
+  private final float skipCacheFactor;
 
   // these variables are volatile so that we do not need to sync reads
   // but increments need to be performed under the lock
@@ -120,11 +120,15 @@ public class LRUQueryCache implements QueryCache, Accountable {
    * will not be cached in order to not slow down queries too much.
    */
   public LRUQueryCache(int maxSize, long maxRamBytesUsed,
-                       Predicate<LeafReaderContext> leavesToCache, long skipCacheFactor) {
+                       Predicate<LeafReaderContext> leavesToCache, float skipCacheFactor) {
     this.maxSize = maxSize;
     this.maxRamBytesUsed = maxRamBytesUsed;
     this.leavesToCache = leavesToCache;
+    if (skipCacheFactor < 1) {
+      throw new IllegalArgumentException("skipCacheFactor must be no less than 1, get " + skipCacheFactor);
+    }
     this.skipCacheFactor = skipCacheFactor;
+
     uniqueQueries = new LinkedHashMap<>(16, 0.75f, true);
     mostRecentlyUsedQueries = uniqueQueries.keySet();
     cache = new IdentityHashMap<>();
@@ -748,7 +752,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
             @Override
             public Scorer get(long leadCost) throws IOException {
               // skip cache operation which would slow query down too much
-              if (cost > leadCost * skipCacheFactor) {
+              if (cost / skipCacheFactor > leadCost) {
                 return supplier.get(leadCost);
               }
 
