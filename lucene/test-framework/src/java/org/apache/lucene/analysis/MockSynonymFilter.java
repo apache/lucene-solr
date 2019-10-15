@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
+import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
 import org.apache.lucene.util.AttributeSource;
 
 /** adds synonym of "dog" for "dogs", and synonym of "cavy" for "guinea pig". */
@@ -33,6 +34,7 @@ public class MockSynonymFilter extends TokenFilter {
   PositionIncrementAttribute posIncAtt = addAttribute(PositionIncrementAttribute.class);
   OffsetAttribute offsetAtt = addAttribute(OffsetAttribute.class);
   PositionLengthAttribute posLenAtt = addAttribute(PositionLengthAttribute.class);
+  TypeAttribute typeAtt = addAttribute(TypeAttribute.class);
   List<AttributeSource> tokenQueue = new ArrayList<>();
   boolean endOfInput = false;
 
@@ -85,6 +87,7 @@ public class MockSynonymFilter extends TokenFilter {
     posIncAtt.setPositionIncrement(0);
     posLenAtt.setPositionLength(posLen);
     offsetAtt.setOffset(offsetAtt.startOffset(), endOffset);
+    typeAtt.setType("SYNONYM");
     tokenQueue.add(cloneAttributes());
   }
   private void addSynonymAndRestoreOrigToken(String synonymText, int posLen, int endOffset) {

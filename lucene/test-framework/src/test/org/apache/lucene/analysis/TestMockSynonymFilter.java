@@ -35,7 +35,7 @@ public class TestMockSynonymFilter extends BaseTokenStreamTestCase {
         new String[]{"dogs", "dog"},
         new int[]{0, 0}, // start offset
         new int[]{4, 4}, // end offset
-        null,
+        new String[] { "word", "SYNONYM"},
         new int[]{1, 0}, // position increment
         new int[]{1, 1}, // position length
         true); // check that offsets are correct
@@ -44,7 +44,7 @@ public class TestMockSynonymFilter extends BaseTokenStreamTestCase {
         new String[]{"small", "dogs", "dog"},
         new int[]{0, 6, 6},   // start offset
         new int[]{5, 10, 10}, // end offset
-        null,
+        new String[] { "word", "word", "SYNONYM"},
         new int[]{1, 1, 0},   // position increment
         new int[]{1, 1, 1},   // position length
         true); // check that offsets are correct
@@ -53,7 +53,7 @@ public class TestMockSynonymFilter extends BaseTokenStreamTestCase {
         new String[]{"dogs", "dog", "running"},
         new int[]{0, 0, 5},  // start offset
         new int[]{4, 4, 12}, // end offset
-        null,
+        new String[] { "word", "SYNONYM",  "word"},
         new int[]{1, 0, 1},  // position increment
         new int[]{1, 1, 1},  // position length
         true); // check that offsets are correct
@@ -62,7 +62,7 @@ public class TestMockSynonymFilter extends BaseTokenStreamTestCase {
         new String[]{"small", "dogs", "dog", "running"},
         new int[]{0, 6, 6, 11},   // start offset
         new int[]{5, 10, 10, 18}, // end offset
-        null,
+        new String[] { "word", "word", "SYNONYM", "word"},
         new int[]{1, 1, 0, 1},    // position increment
         new int[]{1, 1, 1, 1},    // position length
         true); // check that offsets are correct
@@ -71,7 +71,7 @@ public class TestMockSynonymFilter extends BaseTokenStreamTestCase {
         new String[]{"guinea"},
         new int[]{0}, // start offset
         new int[]{6}, // end offset
-        null,
+        new String[] { "word" },
         new int[]{1}, // position increment
         new int[]{1}, // position length
         true); // check that offsets are correct
@@ -80,7 +80,7 @@ public class TestMockSynonymFilter extends BaseTokenStreamTestCase {
         new String[]{"pig"},
         new int[]{0}, // start offset
         new int[]{3}, // end offset
-        null,
+        new String[] { "word"},
         new int[]{1}, // position increment
         new int[]{1}, // position length
         true); // check that offsets are correct
@@ -89,7 +89,7 @@ public class TestMockSynonymFilter extends BaseTokenStreamTestCase {
         new String[]{"guinea", "cavy", "pig"},
         new int[]{0, 0, 7},   // start offset
         new int[]{6, 10, 10}, // end offset
-        null,
+        new String[] { "word", "SYNONYM", "word"},
         new int[]{1, 0, 1},   // position increment
         new int[]{1, 2, 1},   // position length
         true); // check that offsets are correct
@@ -98,7 +98,7 @@ public class TestMockSynonymFilter extends BaseTokenStreamTestCase {
         new String[]{"guinea", "dogs", "dog"},
         new int[]{0, 7, 7},   // start offset
         new int[]{6, 11, 11}, // end offset
-        null,
+        new String[] { "word", "word", "SYNONYM" },
         new int[]{1, 1, 0},   // position increment
         new int[]{1, 1, 1},   // position length
         true); // check that offsets are correct
@@ -107,7 +107,7 @@ public class TestMockSynonymFilter extends BaseTokenStreamTestCase {
         new String[]{"dogs", "dog", "guinea"},
         new int[]{0, 0, 5},  // start offset
         new int[]{4, 4, 11}, // end offset
-        null,
+        new String[] { "word", "SYNONYM", "word" },
         new int[]{1, 0, 1},  // position increment
         new int[]{1, 1, 1},  // position length
         true); // check that offsets are correct
@@ -116,7 +116,7 @@ public class TestMockSynonymFilter extends BaseTokenStreamTestCase {
         new String[]{"dogs", "dog", "guinea", "cavy", "pig"},
         new int[]{0, 0, 5, 5, 12},   // start offset
         new int[]{4, 4, 11, 15, 15}, // end offset
-        null,
+        new String[] { "word", "SYNONYM", "word", "SYNONYM", "word" },
         new int[]{1, 0, 1, 0, 1},    // position increment
         new int[]{1, 1, 1, 2, 1},    // position length
         true); // check that offsets are correct
@@ -125,7 +125,7 @@ public class TestMockSynonymFilter extends BaseTokenStreamTestCase {
         new String[]{"guinea", "cavy", "pig", "dogs", "dog"},
         new int[]{0, 0, 7, 11, 11},   // start offset
         new int[]{6, 10, 10, 15, 15}, // end offset
-        null,
+        new String[] { "word", "SYNONYM", "word", "word", "SYNONYM" },
         new int[]{1, 0, 1, 1, 0},     // position increment
         new int[]{1, 2, 1, 1, 1},     // position length
         true); // check that offsets are correct
@@ -134,7 +134,7 @@ public class TestMockSynonymFilter extends BaseTokenStreamTestCase {
         new String[]{"small", "dogs", "dog", "and", "guinea", "cavy", "pig", "running"},
         new int[]{0, 6, 6, 11, 15, 15, 22, 26},   // start offset
         new int[]{5, 10, 10, 14, 21, 25, 25, 33}, // end offset
-        null,
+        new String[] { "word", "word", "SYNONYM", "word", "word", "SYNONYM", "word", "word" },
         new int[]{1, 1, 0, 1, 1, 0, 1, 1},        // position increment
         new int[]{1, 1, 1, 1, 1, 2, 1, 1},        // position length
         true); // check that offsets are correct
@@ -143,7 +143,7 @@ public class TestMockSynonymFilter extends BaseTokenStreamTestCase {
         new String[]{"small", "guinea", "cavy", "pig", "and", "dogs", "dog", "running"},
         new int[]{0, 6, 6, 13, 17, 21, 21, 26},   // start offset
         new int[]{5, 12, 16, 16, 20, 25, 25, 33}, // end offset
-        null,
+        new String[] { "word", "word", "SYNONYM", "word", "word", "word", "SYNONYM", "word" },
         new int[]{1, 1, 0, 1, 1, 1, 0, 1},        // position increment
         new int[]{1, 1, 2, 1, 1, 1, 1, 1},        // position length
         true); // check that offsets are correct
