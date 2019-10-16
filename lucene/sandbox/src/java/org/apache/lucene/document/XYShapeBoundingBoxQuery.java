@@ -18,7 +18,6 @@ package org.apache.lucene.document;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
-import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.XYRectangle;
 import org.apache.lucene.geo.XYRectangle2D;
 import org.apache.lucene.index.PointValues;

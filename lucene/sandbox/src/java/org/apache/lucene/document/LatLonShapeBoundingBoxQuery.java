@@ -18,7 +18,6 @@ package org.apache.lucene.document;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
-import org.apache.lucene.geo.EdgeTree;
 import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.geo.Rectangle2D;
 import org.apache.lucene.index.PointValues.Relation;
