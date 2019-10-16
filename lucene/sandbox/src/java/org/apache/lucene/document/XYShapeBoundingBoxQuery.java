@@ -47,28 +47,28 @@ public class XYShapeBoundingBoxQuery extends ShapeQuery {
   @Override
   protected PointValues.Relation relateRangeBBoxToQuery(int minXOffset, int minYOffset, byte[] minTriangle,
                                                         int maxXOffset, int maxYOffset, byte[] maxTriangle) {
-    float minY = (float) decode(NumericUtils.sortableBytesToInt(minTriangle, minYOffset));
-    float minX = (float) decode(NumericUtils.sortableBytesToInt(minTriangle, minXOffset));
-    float maxY = (float) decode(NumericUtils.sortableBytesToInt(maxTriangle, maxYOffset));
-    float maxX = (float) decode(NumericUtils.sortableBytesToInt(maxTriangle, maxXOffset));
+    double minY = decode(NumericUtils.sortableBytesToInt(minTriangle, minYOffset));
+    double minX = decode(NumericUtils.sortableBytesToInt(minTriangle, minXOffset));
+    double maxY = decode(NumericUtils.sortableBytesToInt(maxTriangle, maxYOffset));
+    double maxX = decode(NumericUtils.sortableBytesToInt(maxTriangle, maxXOffset));
      // check internal node against query
     PointValues.Relation rel = rectangle2D.relate(minX, maxX, minY, maxY);
     // TODO: Check if this really helps
     if (queryRelation == QueryRelation.INTERSECTS && rel == PointValues.Relation.CELL_CROSSES_QUERY) {
       // for intersects we can restrict the conditions by using the inner box
-      float innerMaxY = (float) decode(NumericUtils.sortableBytesToInt(maxTriangle, minYOffset));
+      double innerMaxY = decode(NumericUtils.sortableBytesToInt(maxTriangle, minYOffset));
       if (rectangle2D.relate(minX, maxX, minY, innerMaxY) == PointValues.Relation.CELL_INSIDE_QUERY) {
         return PointValues.Relation.CELL_INSIDE_QUERY;
       }
-      float innerMaX = (float) decode(NumericUtils.sortableBytesToInt(maxTriangle, minXOffset));
+      double innerMaX = decode(NumericUtils.sortableBytesToInt(maxTriangle, minXOffset));
       if (rectangle2D.relate(minX, innerMaX, minY, maxY) == PointValues.Relation.CELL_INSIDE_QUERY) {
         return PointValues.Relation.CELL_INSIDE_QUERY;
       }
-      float innerMinY = (float) decode(NumericUtils.sortableBytesToInt(minTriangle, maxYOffset));
+      double innerMinY = decode(NumericUtils.sortableBytesToInt(minTriangle, maxYOffset));
       if (rectangle2D.relate(minX, maxX, innerMinY, maxY) == PointValues.Relation.CELL_INSIDE_QUERY) {
         return PointValues.Relation.CELL_INSIDE_QUERY;
       }
-      float innerMinX = (float) decode(NumericUtils.sortableBytesToInt(minTriangle, maxXOffset));
+      double innerMinX = decode(NumericUtils.sortableBytesToInt(minTriangle, maxXOffset));
       if (rectangle2D.relate(innerMinX, maxX, minY, maxY) == PointValues.Relation.CELL_INSIDE_QUERY) {
         return PointValues.Relation.CELL_INSIDE_QUERY;
       }
@@ -82,12 +82,12 @@ public class XYShapeBoundingBoxQuery extends ShapeQuery {
     // decode indexed triangle
     ShapeField.decodeTriangle(t, scratchTriangle);
 
-    float aY = (float) decode(scratchTriangle.aY);
-    float aX = (float) decode(scratchTriangle.aX);
-    float bY = (float) decode(scratchTriangle.bY);
-    float bX = (float) decode(scratchTriangle.bX);
-    float cY = (float) decode(scratchTriangle.cY);
-    float cX = (float) decode(scratchTriangle.cX);
+    double aY = decode(scratchTriangle.aY);
+    double aX = decode(scratchTriangle.aX);
+    double bY = decode(scratchTriangle.bY);
+    double bX = decode(scratchTriangle.bX);
+    double cY = decode(scratchTriangle.cY);
+    double cX = decode(scratchTriangle.cX);
 
     switch (queryRelation) {
       case INTERSECTS: return rectangle2D.relateTriangle(aX, aY, bX, bY, cX, cY) != PointValues.Relation.CELL_OUTSIDE_QUERY;
