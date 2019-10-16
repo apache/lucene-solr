@@ -30,7 +30,7 @@ between two random variables. Sample observations are provided with two
 numeric arrays. The first numeric array is the independent variable and
 the second array is the dependent variable.
 
-In the example below the `random` function selects 5000 random samples each containing
+In the example below the `random` function selects 50000 random samples each containing
 the fields `filesize_d` and `response_d`. The two fields are vectorized
 and stored in variables *`b`* and *`c`*. Then the `regress` function performs a regression
 analysis on the two numeric arrays.
