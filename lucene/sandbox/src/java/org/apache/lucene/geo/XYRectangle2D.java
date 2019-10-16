@@ -146,7 +146,7 @@ public class XYRectangle2D implements Component2D {
       return WithinRelation.CANDIDATE;
     }
     // Check if shape is within the triangle
-    if (Component2D.pointInTriangle(minX, maxX, minY, maxY, minX, minY, ax, ay, bx, by, cx, cy)) {
+    if (Component2D.pointInTriangle(minX, maxX, minY, maxY, this.minX, this.minY, ax, ay, bx, by, cx, cy)) {
       return WithinRelation.CANDIDATE;
     }
     return relation;
