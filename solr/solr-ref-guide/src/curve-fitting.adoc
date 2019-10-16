@@ -53,7 +53,7 @@ by `zplot` along with the original observations.
 
 The fitted model can also be used
 by the `predict` function in the same manner as linear regression. The example below
-uses the fitted model to predict a response time for a files size of 42000.
+uses the fitted model to predict a response time for a file size of 42000.
 
 
 image::images/math-expressions/polyfit-predict.png[]
