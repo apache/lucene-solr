@@ -17,7 +17,7 @@
 package org.apache.solr.metrics;
 
 /**
- * Used by objects that expose metrics through {@link SolrCoreMetricManager}.
+ * Used by objects that expose metrics through {@link SolrMetricManager}.
  */
 public interface SolrMetricProducer {
 

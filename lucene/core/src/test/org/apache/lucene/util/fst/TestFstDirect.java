@@ -29,38 +29,49 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.LuceneTestCase;
 
-import org.junit.Before;
-
 public class TestFstDirect extends LuceneTestCase {
 
-  private List<String> words;
-
-  @Before
-  public void before() {
-    words = new ArrayList<>();
-  }
-
   public void testDenseWithGap() throws Exception {
-    //words.addAll(Arrays.asList("apple", "berry", "cherry", "damson", "fig", "grape"));
-    words.addAll(Arrays.asList("ah", "bi", "cj", "dk", "fl", "gm"));
-    final BytesRefFSTEnum<Object> fstEnum = new BytesRefFSTEnum<>(buildFST(words));
+    List<String> words = Arrays.asList("ah", "bi", "cj", "dk", "fl", "gm");
+    List<BytesRef> entries = new ArrayList<>();
     for (String word : words) {
-      assertNotNull(word + " not found", fstEnum.seekExact(new BytesRef(word)));
+      entries.add(new BytesRef(word.getBytes("ascii")));
+    }
+    final BytesRefFSTEnum<Object> fstEnum = new BytesRefFSTEnum<>(buildFST(entries));
+    for (BytesRef entry : entries) {
+      assertNotNull(entry.utf8ToString() + " not found", fstEnum.seekExact(entry));
     }
   }
 
+  public void testDeDupTails() throws Exception {
+    List<BytesRef> entries = new ArrayList<>();
+    for (int i = 0; i < 1000000; i += 4) {
+      byte[] b = new byte[3];
+      int val = i;
+      for (int j = b.length - 1; j >= 0; --j) {
+        b[j] = (byte) (val & 0xff);
+        val >>= 8;
+      }
+      entries.add(new BytesRef(b));
+    }
+    long size = buildFST(entries).ramBytesUsed();
+    // Size is 1664 when we use only list-encoding.  We were previously failing to ever de-dup
+    // arrays-with-gaps, which led this case to blow up.
+    assertTrue(size < 3000);
+    //printf("fst size = %d bytes", size);
+  }
 
-  private FST<Object> buildFST(List<String> words) throws Exception {
-    long start = System.nanoTime();
+  private FST<Object> buildFST(List<BytesRef> entries) throws Exception {
     final Outputs<Object> outputs = NoOutputs.getSingleton();
     final Builder<Object> b = new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs, true, 15);
-
-    for (String word : words) {
-      b.add(Util.toIntsRef(new BytesRef(word), new IntsRefBuilder()), outputs.getNoOutput());
+    BytesRef last = null;
+    for (BytesRef entry : entries) {
+      if (entry.equals(last) == false) {
+        b.add(Util.toIntsRef(entry, new IntsRefBuilder()), outputs.getNoOutput());
+      }
+      last = entry;
     }
     FST<Object> fst = b.finish();
-    long t = System.nanoTime();
-    printf("Built FST of %d bytes in %d ms", fst.ramBytesUsed(), nsToMs(t - start));
     return fst;
   }
 
@@ -79,9 +90,9 @@ public class TestFstDirect extends LuceneTestCase {
     BytesRefFSTEnum<BytesRef> fstEnum = new BytesRefFSTEnum<>(fst);
     int sparseArrayArcCount = 0, directArrayArcCount = 0, listArcCount = 0;
     while(fstEnum.next() != null) {
-      if (fstEnum.arcs[fstEnum.upto].bytesPerArc == 0) {
+      if (fstEnum.arcs[fstEnum.upto].bytesPerArc() == 0) {
         listArcCount ++;
-      } else if (fstEnum.arcs[fstEnum.upto].arcIdx == Integer.MIN_VALUE) {
+      } else if (fstEnum.arcs[fstEnum.upto].arcIdx() == Integer.MIN_VALUE) {
         directArrayArcCount ++;
       } else {
         sparseArrayArcCount ++;

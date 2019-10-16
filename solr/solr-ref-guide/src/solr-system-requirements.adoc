@@ -39,11 +39,11 @@ Java HotSpot(TM) 64-Bit Server VM (build 25.60-b23, mixed mode)
 
 The exact output will vary, but you need to make sure you meet the minimum version requirement. We also recommend choosing a version that is not end-of-life from its vendor. Oracle/OpenJDK are the most tested JREs and are preferred. It's also preferred to use the latest available official release.
 
-Some versions of Java VM have bugs that may impact your implementation. To be sure, check the page https://wiki.apache.org/lucene-java/JavaBugs[Lucene Java Bugs].
+Some versions of Java VM have bugs that may impact your implementation. To be sure, check the page https://wiki.apache.org/confluence/display/LUCENEJAVA/JavaBugs[Lucene Java Bugs].
 
 === Sources for Java
 
-Java is available from a number of providers. Lucene and Solr regularly test with https://jdk.java.net/[OpenJDK] nad Oracle versions of Java. Some are free, others have a cost, some provide security patches and support, others do not. We recommend you read the article https://medium.com/@javachampions/java-is-still-free-2-0-0-6b9aa8d6d244[Java is still free by Java Champions] to help you decide.
+Java is available from a number of providers. Lucene and Solr regularly test with https://jdk.java.net/[OpenJDK] and Oracle versions of Java. Some are free, others have a cost, some provide security patches and support, others do not. We recommend you read the article https://medium.com/@javachampions/java-is-still-free-2-0-0-6b9aa8d6d244[Java is still free by Java Champions] to help you decide.
 
 The Lucene project does not endorse any particular provider of Java.
 

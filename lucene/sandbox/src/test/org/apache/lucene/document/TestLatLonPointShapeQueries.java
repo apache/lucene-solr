@@ -17,18 +17,14 @@
 package org.apache.lucene.document;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
-import org.apache.lucene.document.LatLonShape.QueryRelation;
-import org.apache.lucene.geo.EdgeTree;
+import org.apache.lucene.document.ShapeField.QueryRelation;
+import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Line;
-import org.apache.lucene.geo.Line2D;
-import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.index.PointValues.Relation;
 
-/** random bounding box and polygon query tests for random generated {@code latitude, longitude} points */
+/** random bounding box, line, and polygon query tests for random generated {@code latitude, longitude} points */
 public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
-
-  protected final PointValidator VALIDATOR = new PointValidator();
 
   @Override
   protected ShapeType getShapeType() {
@@ -67,17 +63,20 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
   }
 
   @Override
-  protected Validator getValidator(QueryRelation relation) {
-    VALIDATOR.setRelation(relation);
-    return VALIDATOR;
+  protected Validator getValidator() {
+    return new PointValidator(this.ENCODER);
   }
 
   protected static class PointValidator extends Validator {
+    protected PointValidator(Encoder encoder) {
+      super(encoder);
+    }
+
     @Override
     public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
       Point p = (Point)shape;
-      double lat = quantizeLat(p.lat);
-      double lon = quantizeLon(p.lon);
+      double lat = encoder.quantizeY(p.lat);
+      double lon = encoder.quantizeX(p.lon);
       boolean isDisjoint = lat < minLat || lat > maxLat;
 
       isDisjoint = isDisjoint || ((minLon > maxLon)
@@ -90,20 +89,12 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
     }
 
     @Override
-    public boolean testLineQuery(Line2D line2d, Object shape) {
-      return testPoint(line2d, (Point) shape);
-    }
-
-    @Override
-    public boolean testPolygonQuery(Polygon2D poly2d, Object shape) {
-      return testPoint(poly2d, (Point) shape);
-    }
-
-    private boolean testPoint(EdgeTree tree, Point p) {
-      double lat = quantizeLat(p.lat);
-      double lon = quantizeLon(p.lon);
+    public boolean testComponentQuery(Component2D query, Object shape) {
+      Point p =  (Point) shape;
+      double lat = encoder.quantizeY(p.lat);
+      double lon = encoder.quantizeX(p.lon);
       // for consistency w/ the query we test the point as a triangle
-      Relation r = tree.relateTriangle(lon, lat, lon, lat, lon, lat);
+      Relation r = query.relateTriangle(lon, lat, lon, lat, lon, lat);
       if (queryRelation == QueryRelation.WITHIN) {
         return r == Relation.CELL_INSIDE_QUERY;
       } else if (queryRelation == QueryRelation.DISJOINT) {

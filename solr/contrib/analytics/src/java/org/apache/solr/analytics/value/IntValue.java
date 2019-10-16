@@ -36,13 +36,13 @@ public interface IntValue extends IntValueStream, AnalyticsValue {
    * Get the int representation of the current value.
    * <p>
    * NOTE: The value returned is not valid unless calling {@link #exists()} afterwards returns {@code TRUE}.
-   * 
+   *
    * @return the current value
    */
   int getInt();
 
   /**
-   * An interface that represents all of the types a {@link IntValue} should be able to cast to. 
+   * An interface that represents all of the types a {@link IntValue} should be able to cast to.
    */
   public static interface CastingIntValue extends IntValue, LongValue, FloatValue,DoubleValue, StringValue, ComparableValue { }
 

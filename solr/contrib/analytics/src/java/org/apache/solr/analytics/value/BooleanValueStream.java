@@ -29,16 +29,16 @@ import org.apache.solr.analytics.util.function.BooleanConsumer;
 public interface BooleanValueStream extends AnalyticsValueStream {
   /**
    * Stream the boolean representations of all current values, if any exist.
-   * 
+   *
    * @param cons The consumer to accept the values
    */
   void streamBooleans(BooleanConsumer cons);
-  
+
   /**
-   * An interface that represents all of the types a {@link BooleanValueStream} should be able to cast to. 
+   * An interface that represents all of the types a {@link BooleanValueStream} should be able to cast to.
    */
   public static interface CastingBooleanValueStream extends BooleanValueStream, StringValueStream {}
-  
+
   /**
    * An abstract base for {@link CastingBooleanValueStream} that automatically casts to all types if {@link #streamBooleans} is implemented.
    */

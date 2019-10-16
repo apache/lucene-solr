@@ -360,6 +360,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   public static void waitForCollection(ZkStateReader reader, String collection, int slices) throws Exception {
+    log.info("waitForCollection ({}): slices={}", collection, slices);
     // wait until shards have started registering...
     int cnt = 30;
     while (!reader.getClusterState().hasCollection(collection)) {
@@ -399,13 +400,21 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     List<CollectionAdminRequest> createPullReplicaRequests = Collections.synchronizedList(new ArrayList<>());
     StringBuilder sb = new StringBuilder();
 
+    // HACK: Don't be fooled by the replication factor of '1'...
+    //
+    // This CREATE command asks for a repFactor of 1, but uses an empty nodeSet.
+    // This allows this method to create a collection with numShards == sliceCount,
+    // but no actual cores ... yet.  The actual replicas are added later (once the actual
+    // jetty instances are started)
     assertEquals(0, CollectionAdminRequest
-        .createCollection(DEFAULT_COLLECTION, "conf1", sliceCount, 1)
-        .setStateFormat(Integer.parseInt(getStateFormat()))
-        .setCreateNodeSet("")
-        .process(cloudClient).getStatus());
+                 .createCollection(DEFAULT_COLLECTION, "conf1", sliceCount, 1) // not real rep factor!
+                 .setStateFormat(Integer.parseInt(getStateFormat()))
+                 .setCreateNodeSet("") // empty node set prevents creation of cores
+                 .process(cloudClient).getStatus());
     
-    cloudClient.waitForState(DEFAULT_COLLECTION, 30, TimeUnit.SECONDS, (c) -> c != null && c.getSlices().size() == sliceCount);
+    cloudClient.waitForState(DEFAULT_COLLECTION, 30, TimeUnit.SECONDS,
+                             // expect sliceCount active shards, but no active replicas
+                             SolrCloudTestCase.activeClusterShape(sliceCount, 0));
     
     ExecutorService customThreadPool = ExecutorUtil.newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory("closeThreadPool"));
 
@@ -579,21 +588,29 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   protected void waitForLiveNode(JettySolrRunner j) throws InterruptedException, TimeoutException {
+    log.info("waitForLiveNode: {}", j.getNodeName());
     cloudClient.getZkStateReader().waitForLiveNodes(30, TimeUnit.SECONDS, SolrCloudTestCase.containsLiveNode(j.getNodeName()));
   }
 
   protected void waitForActiveReplicaCount(CloudSolrClient client, String collection, int expectedNumReplicas) throws TimeoutException, NotInClusterStateException {
+    log.info("Waiting to see {} active replicas in collection: {}", expectedNumReplicas, collection);
     AtomicInteger nReplicas = new AtomicInteger();
     try {
-      client.getZkStateReader().waitForState(collection, 30, TimeUnit.SECONDS, (c) -> {
-        if (c == null)
-          return false;
-        int numReplicas = getTotalReplicas(c, c.getName());
-        nReplicas.set(numReplicas);
-        if (numReplicas == expectedNumReplicas) return true;
-
-        return false;
-      });
+      client.getZkStateReader().waitForState(collection, 30, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
+          if (collectionState == null) {
+            return false;
+          }
+          int activeReplicas = 0;
+          for (Slice slice : collectionState) {
+            for (Replica replica : slice) {
+              if (replica.isActive(liveNodes)) {
+                activeReplicas++;
+              }
+            }
+          }
+          nReplicas.set(activeReplicas);
+          return (activeReplicas == expectedNumReplicas);
+        });
     } catch (TimeoutException | InterruptedException e) {
       try {
         printLayout();
@@ -610,7 +627,13 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return 0;
   }
 
-  /* Total number of replicas (number of cores serving an index to the collection) shown by the cluster state */
+  /** 
+   * Total number of replicas for all shards as indicated by the cluster state, regardless of status.
+   *
+   * @deprecated This method is virtually useless as it does not consider the status of either
+   *             the shard or replica, nor wether the node hosting each replica is alive.
+   */
+  @Deprecated
   protected int getTotalReplicas(DocCollection c, String collection) {
     if (c == null) return 0;  // support for when collection hasn't been created yet
     int cnt = 0;
@@ -2135,8 +2158,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     log.info("Took {} ms to see all replicas become active.", timer.getTime());
 
-    List<Replica> replicas = new ArrayList<>();
-    replicas.addAll(notLeaders.values());
+    List<Replica> replicas = new ArrayList<>(notLeaders.values());
     return replicas;
   }
 
@@ -2219,6 +2241,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
 
   protected void waitForReplicationFromReplicas(String collectionName, ZkStateReader zkStateReader, TimeOut timeout) throws KeeperException, InterruptedException, IOException {
+    log.info("waitForReplicationFromReplicas: {}", collectionName);
     zkStateReader.forceUpdateCollection(collectionName);
     DocCollection collection = zkStateReader.getClusterState().getCollection(collectionName);
     Map<String, CoreContainer> containers = new HashMap<>();
@@ -2283,6 +2306,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
   }
   
   protected void waitForAllWarmingSearchers() throws InterruptedException {
+    log.info("waitForAllWarmingSearchers");
     for (JettySolrRunner jetty:jettys) {
       if (!jetty.isRunning()) {
         continue;

@@ -19,17 +19,13 @@ package org.apache.lucene.document;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.document.LatLonShape.QueryRelation;
-import org.apache.lucene.geo.Line2D;
+import org.apache.lucene.document.ShapeField.QueryRelation;
+import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.Polygon;
-import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.geo.Tessellator;
 
-/** random bounding box and polygon query tests for random indexed arrays of {@link Polygon} types */
+/** random bounding box, line, and polygon query tests for random indexed arrays of {@link Polygon} types */
 public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase {
-
-  protected final MultiPolygonValidator VALIDATOR = new MultiPolygonValidator();
-  protected final TestLatLonPolygonShapeQueries.PolygonValidator POLYGONVALIDATOR = new TestLatLonPolygonShapeQueries.PolygonValidator();
 
   @Override
   protected ShapeType getShapeType() {
@@ -71,13 +67,24 @@ public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase 
   }
 
   @Override
-  protected Validator getValidator(QueryRelation relation) {
-    VALIDATOR.setRelation(relation);
-    POLYGONVALIDATOR.setRelation(relation);
-    return VALIDATOR;
+  protected Validator getValidator() {
+    return new MultiPolygonValidator(ENCODER);
   }
 
   protected class MultiPolygonValidator extends Validator {
+    TestLatLonPolygonShapeQueries.PolygonValidator POLYGONVALIDATOR;
+    MultiPolygonValidator(Encoder encoder) {
+      super(encoder);
+      POLYGONVALIDATOR = new TestLatLonPolygonShapeQueries.PolygonValidator(encoder);
+    }
+
+    @Override
+    public Validator setRelation(QueryRelation relation) {
+      super.setRelation(relation);
+      POLYGONVALIDATOR.queryRelation = relation;
+      return this;
+    }
+
     @Override
     public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
       Polygon[] polygons = (Polygon[])shape;
@@ -95,26 +102,10 @@ public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase 
     }
 
     @Override
-    public boolean testLineQuery(Line2D query, Object shape) {
+    public boolean testComponentQuery(Component2D query, Object shape) {
       Polygon[] polygons = (Polygon[])shape;
       for (Polygon p : polygons) {
-        boolean b = POLYGONVALIDATOR.testLineQuery(query, p);
-        if (b == true && queryRelation == QueryRelation.INTERSECTS) {
-          return true;
-        } else if (b == false && queryRelation == QueryRelation.DISJOINT) {
-          return false;
-        } else if (b == false && queryRelation == QueryRelation.WITHIN) {
-          return false;
-        }
-      }
-      return queryRelation != QueryRelation.INTERSECTS;
-    }
-
-    @Override
-    public boolean testPolygonQuery(Polygon2D query, Object shape) {
-      Polygon[] polygons = (Polygon[])shape;
-      for (Polygon p : polygons) {
-        boolean b = POLYGONVALIDATOR.testPolygonQuery(query, p);
+        boolean b = POLYGONVALIDATOR.testComponentQuery(query, p);
         if (b == true && queryRelation == QueryRelation.INTERSECTS) {
           return true;
         } else if (b == false && queryRelation == QueryRelation.DISJOINT) {

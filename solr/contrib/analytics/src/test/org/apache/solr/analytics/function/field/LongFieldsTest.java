@@ -25,7 +25,7 @@ import org.apache.solr.analytics.ExpressionFactory;
 import org.junit.Test;
 
 public class LongFieldsTest extends AbstractAnalyticsFieldTest {
-  
+
   @Test
   public void expressionFactoryCreationTest() {
     ExpressionFactory fact = getExpressionFactory();
@@ -40,7 +40,7 @@ public class LongFieldsTest extends AbstractAnalyticsFieldTest {
   public void singleValuedTrieLongTest() throws IOException {
     LongField valueField = new LongField("long_l_t");
     Map<String,Long> values = new HashMap<>();
-    
+
     Set<String> missing = collectFieldValues(valueField, id -> {
       long value = valueField.getLong();
       if (valueField.exists()) {
@@ -48,7 +48,7 @@ public class LongFieldsTest extends AbstractAnalyticsFieldTest {
       }
       return valueField.exists();
     });
-    
+
     checkSingleFieldValues(singleLongs, values, missing);
   }
 
@@ -56,7 +56,7 @@ public class LongFieldsTest extends AbstractAnalyticsFieldTest {
   public void singleValuedPointLongTest() throws IOException {
     LongField valueField = new LongField("long_l_p");
     Map<String,Long> values = new HashMap<>();
-    
+
     Set<String> missing = collectFieldValues(valueField, id -> {
       long value = valueField.getLong();
       if (valueField.exists()) {
@@ -64,7 +64,7 @@ public class LongFieldsTest extends AbstractAnalyticsFieldTest {
       }
       return valueField.exists();
     });
-    
+
     checkSingleFieldValues(singleLongs, values, missing);
   }
 
@@ -72,7 +72,7 @@ public class LongFieldsTest extends AbstractAnalyticsFieldTest {
   public void multiValuedTrieLongTest() throws IOException {
     LongMultiTrieField valueField = new LongMultiTrieField("long_lm_t");
     Map<String,Map<Long,Integer>> values = new HashMap<>();
-    
+
     Set<String> missing = collectFieldValues(valueField, id -> {
       Map<Long, Integer> doc = new HashMap<>();
       valueField.streamLongs( value -> {
@@ -83,7 +83,7 @@ public class LongFieldsTest extends AbstractAnalyticsFieldTest {
       }
       return doc.size() > 0;
     });
-    
+
     checkMultiFieldValues(multiLongs, values, missing, true);
   }
 
@@ -91,7 +91,7 @@ public class LongFieldsTest extends AbstractAnalyticsFieldTest {
   public void multiValuedPointLongTest() throws IOException {
     LongMultiPointField valueField = new LongMultiPointField("long_lm_p");
     Map<String,Map<Long,Integer>> values = new HashMap<>();
-    
+
     Set<String> missing = collectFieldValues(valueField, id -> {
       Map<Long, Integer> doc = new HashMap<>();
       valueField.streamLongs( value -> {
@@ -102,7 +102,7 @@ public class LongFieldsTest extends AbstractAnalyticsFieldTest {
       }
       return doc.size() > 0;
     });
-    
+
     checkMultiFieldValues(multiLongs, values, missing, false);
   }
 }

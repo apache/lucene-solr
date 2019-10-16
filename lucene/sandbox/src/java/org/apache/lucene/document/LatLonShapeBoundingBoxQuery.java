@@ -16,23 +16,24 @@
  */
 package org.apache.lucene.document;
 
+import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.geo.Rectangle2D;
 import org.apache.lucene.index.PointValues.Relation;
 
 /**
- * Finds all previously indexed shapes that intersect the specified bounding box.
+ * Finds all previously indexed geo shapes that intersect the specified bounding box.
  *
  * <p>The field must be indexed using
  * {@link org.apache.lucene.document.LatLonShape#createIndexableFields} added per document.
  *
  *  @lucene.experimental
  **/
-final class LatLonShapeBoundingBoxQuery extends LatLonShapeQuery {
+final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
   final Rectangle rectangle;
   final Rectangle2D rectangle2D;
 
-  public LatLonShapeBoundingBoxQuery(String field, LatLonShape.QueryRelation queryRelation, double minLat, double maxLat, double minLon, double maxLon) {
+  public LatLonShapeBoundingBoxQuery(String field, QueryRelation queryRelation, double minLat, double maxLat, double minLon, double maxLon) {
     super(field, queryRelation);
     this.rectangle = new Rectangle(minLat, maxLat, minLon, maxLon);
     this.rectangle2D = Rectangle2D.create(this.rectangle);
@@ -41,26 +42,31 @@ final class LatLonShapeBoundingBoxQuery extends LatLonShapeQuery {
   @Override
   protected Relation relateRangeBBoxToQuery(int minXOffset, int minYOffset, byte[] minTriangle,
                                             int maxXOffset, int maxYOffset, byte[] maxTriangle) {
+    if (queryRelation == QueryRelation.INTERSECTS || queryRelation == QueryRelation.DISJOINT) {
+      return rectangle2D.intersectRangeBBox(minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
+    }
     return rectangle2D.relateRangeBBox(minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
   }
 
   /** returns true if the query matches the encoded triangle */
   @Override
-  protected boolean queryMatches(byte[] t, int[] scratchTriangle, LatLonShape.QueryRelation queryRelation) {
+  protected boolean queryMatches(byte[] t, ShapeField.DecodedTriangle scratchTriangle, QueryRelation queryRelation) {
     // decode indexed triangle
-    LatLonShape.decodeTriangle(t, scratchTriangle);
+    ShapeField.decodeTriangle(t, scratchTriangle);
 
-    int aY = scratchTriangle[0];
-    int aX = scratchTriangle[1];
-    int bY = scratchTriangle[2];
-    int bX = scratchTriangle[3];
-    int cY = scratchTriangle[4];
-    int cX = scratchTriangle[5];
+    int aY = scratchTriangle.aY;
+    int aX = scratchTriangle.aX;
+    int bY = scratchTriangle.bY;
+    int bX = scratchTriangle.bX;
+    int cY = scratchTriangle.cY;
+    int cX = scratchTriangle.cX;
 
-    if (queryRelation == LatLonShape.QueryRelation.WITHIN) {
-      return rectangle2D.containsTriangle(aX, aY, bX, bY, cX, cY);
+    switch (queryRelation) {
+      case INTERSECTS: return rectangle2D.intersectsTriangle(aX, aY, bX, bY, cX, cY);
+      case WITHIN: return rectangle2D.containsTriangle(aX, aY, bX, bY, cX, cY);
+      case DISJOINT: return rectangle2D.intersectsTriangle(aX, aY, bX, bY, cX, cY) == false;
+      default: throw new IllegalArgumentException("Unsupported query type :[" + queryRelation + "]");
     }
-    return rectangle2D.intersectsTriangle(aX, aY, bX, bY, cX, cY);
   }
 
   @Override

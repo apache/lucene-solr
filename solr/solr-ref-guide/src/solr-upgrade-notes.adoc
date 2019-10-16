@@ -1,5 +1,5 @@
 = Solr Upgrade Notes
-:page-children: major-changes-in-solr-8, major-changes-in-solr-7, major-changes-from-solr-5-to-solr-6
+:page-children: major-changes-in-solr-9, major-changes-in-solr-8, major-changes-in-solr-7, major-changes-from-solr-5-to-solr-6
 :page-toclevels: 3
 :page-tocclass: right
 // Licensed to the Apache Software Foundation (ASF) under one
@@ -30,6 +30,71 @@ Detailed steps for upgrading a Solr cluster are in the section <<upgrading-a-sol
 == Upgrading to 8.x Releases
 
 If you are upgrading from 7.x, see the section <<Upgrading from 7.x Releases>> below.
+
+=== Solr 8.3
+
+See the 8.3 Release Notes for an overview of the main new features of Solr 8.3.
+
+When upgrading to 8.3.x users should be aware of the following major changes from 8.2.
+
+*JWT Authentication*
+
+JWT Authentication now supports multiple identity providers.
+To allow this, the parameter `jwkUrl` has been deprecated and replaced with `jwksUrl`.
+Implementations using `jwkUrl` will continue to work as normal, but users
+ should plan to transition their configurations to use `jwksUrl` instead as
+ soon as feasible.
+
+*Caches*
+
+* Solr has a new cache implementation, `CaffeineCache`, which is now recommended over other caches. This cache is expected to generally provide most users lower memory footprint, higher hit ratio, and better multi-threaded performance.
++
+Since caching has a direct impact on the performance of your Solr
+ implementation, before switching to any new cache implementation in
+ production, take care to test for your environment and traffic patterns so
+ you fully understand the ramifications of the change.
+
+* A new parameter, `maxIdleTime`, allows automatic eviction of cache items that have not been used in the defined amount of time. This allows the cache to release some memory and should aid those who want or need to fine-tune their caches.
+
+See the section <<query-settings-in-solrconfig.adoc#query-settings-in-solrconfig,Query Settings in SolrConfig>> for more details about these and other cache options and parameters.
+
+=== Solr 8.2
+
+See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote82[8.2 Release Notes] for an overview of the main new features of Solr 8.2.
+
+When upgrading to 8.2.x, users should be aware of the following major changes from v8.1.
+
+*ZooKeeper 3.5.5*
+
+Solr 8.2 updates the version of ZooKeeper included with Solr to v3.5.5.
+
+It is recommended that external ensembles set up to work with Solr also be updated to ZooKeeper 3.5.5.
+
+This ZooKeeper release includes many new security features.
+In order for Solr's Admin UI to work with 3.5.5, the `zoo.cfg` file must allow access to ZooKeeper's "four-letter commands".
+At a minimum, `ruok`, `conf`, and `mntr` must be enabled, but other commands can optionally be enabled if you choose.
+See the section <<setting-up-an-external-zookeeper-ensemble.adoc#configuration-for-a-zookeeper-ensemble,Configuration for a ZooKeeper Ensemble>> for details.
+
+[WARNING]
+Until 8.3, https://issues.apache.org/jira/browse/SOLR-13672[SOLR-13672] causes the ZK Status screen in the Admin UI to not be able to report status. This only impacts the UI, ZooKeeper still operates correctly.
+
+*Routed Aliases*
+
+* Routed aliases now use collection properties to identify collections that belong to the alias; prior to 8.2, these aliases used core properties.
++
+This is backward-compatible and aliases created with prior versions will
+ continue to work. However, new collections will no longer add the
+ `routedAliasName` property to the `core.properties` file so any external code
+ depending on this location will need to be updated.
+
+// TODO: aliases.adoc still says this is per-core?
+
+* Time-routed aliases now include a `TRA` infix in the collection name, in the pattern `<alias>_TRA_<timestamp>`. +
+Collections created with older versions will continue to work.
+
+*Distributed Tracing Support*
+
+This release adds support for tracing requests in Solr. Please review the section <<solr-tracing.adoc#solr-tracing,Distributed Solr Tracing>> for details on how to configure this feature.
 
 === Solr 8.1
 

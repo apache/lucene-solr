@@ -159,7 +159,7 @@ public final class NRTSuggester implements Accountable {
           // We are removing dups
           if (path.payload == -1) {
             // This path didn't yet see the complete surface form; let's see if it just did with the arc output we just added:
-            BytesRef arcOutput = path.arc.output.output2;
+            BytesRef arcOutput = path.arc.output().output2;
             BytesRef output = path.output.output2;
             for(int i=0;i<arcOutput.length;i++) {
               if (arcOutput.bytes[arcOutput.offset + i] == payloadSep) {

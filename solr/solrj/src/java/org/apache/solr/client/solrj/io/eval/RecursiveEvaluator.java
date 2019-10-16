@@ -73,6 +73,27 @@ public abstract class RecursiveEvaluator implements StreamEvaluator, ValueWorker
       return new BigDecimal(value.toString());
     }
     else if(value instanceof Collection){
+      //Let's first check to see if we have a List of Strings.
+      //If we do let's try and convert to a list of doubles and see what happens
+      try {
+        List<Number> vector = new ArrayList();
+        boolean allDoubles = true;
+        for(Object o : (Collection)value) {
+          if(o instanceof String) {
+            Double d = Double.parseDouble(o.toString());
+            vector.add(d);
+          } else {
+            allDoubles = false;
+            break;
+          }
+        }
+        if(allDoubles) {
+          return vector;
+        }
+      } catch(Exception e) {
+
+      }
+
       return ((Collection<?>)value).stream().map(innerValue -> normalizeInputType(innerValue)).collect(Collectors.toList());
     }
     else if(value.getClass().isArray()){
@@ -105,27 +126,16 @@ public abstract class RecursiveEvaluator implements StreamEvaluator, ValueWorker
       return value;
     } else if(value instanceof BigDecimal){
       BigDecimal bd = (BigDecimal)value;
-      if(bd.signum() == 0 || bd.scale() <= 0 || bd.stripTrailingZeros().scale() <= 0){
-        try{
-          return bd.longValueExact();
-        }
-        catch(ArithmeticException e){
-          // value was too big for a long, so use a double which can handle scientific notation
-        }
-      }
-      
       return bd.doubleValue();
     }
+    else if(value instanceof Long || value instanceof Integer) {
+      return ((Number) value).longValue();
+    }
     else if(value instanceof Double){
-      if(Double.isNaN((Double)value)){
-        return value;
-      }
-      
-      // could be a long so recurse back in as a BigDecimal
-      return normalizeOutputType(new BigDecimal((Double)value));
+      return value;
     }
     else if(value instanceof Number){
-      return normalizeOutputType(new BigDecimal(((Number)value).toString()));
+      return ((Number) value).doubleValue();
     }
     else if(value instanceof List){
       // normalize each value in the list

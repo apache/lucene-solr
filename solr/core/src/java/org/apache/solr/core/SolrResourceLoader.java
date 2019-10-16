@@ -52,6 +52,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.ResourceLoader;
@@ -479,6 +480,11 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
    */
   private static final Map<String, String> classNameCache = new ConcurrentHashMap<>();
 
+  @VisibleForTesting
+  static void clearCache() {
+    classNameCache.clear();
+  }
+
   // Using this pattern, legacy analysis components from previous Solr versions are identified and delegated to SPI loader:
   private static final Pattern legacyAnalysisPattern = 
       Pattern.compile("((\\Q"+base+".analysis.\\E)|(\\Q"+project+".\\E))([\\p{L}_$][\\p{L}\\p{N}_$]+?)(TokenFilter|Filter|Tokenizer|CharFilter)Factory");
@@ -506,11 +512,11 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
       if(c != null) {
         try {
           return Class.forName(c, true, classLoader).asSubclass(expectedType);
-        } catch (ClassNotFoundException e) {
-          //this is unlikely
-          log.error("Unable to load cached class-name :  "+ c +" for shortname : "+cname + e);
+        } catch (ClassNotFoundException | ClassCastException e) {
+          // this can happen if the legacyAnalysisPattern below caches the wrong thing
+          log.warn("Unable to load cached class, attempting lookup. name={} shortname={} reason={}", c, cname, e);
+          classNameCache.remove(cname);
         }
-
       }
     }
     
@@ -799,6 +805,32 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
       logOnceInfo("home_default", project + " home defaulted to '" + home + "' (could not find system property or JNDI)");
     }
     return Paths.get(home);
+  }
+
+  /**
+   * Solr allows users to store arbitrary files in a special directory located directly under SOLR_HOME.
+   *
+   * This directory is generally created by each node on startup.  Files located in this directory can then be
+   * manipulated using select Solr features (e.g. streaming expressions).
+   */
+  public static final String USER_FILES_DIRECTORY = "userfiles";
+  public static void ensureUserFilesDataDir(Path solrHome) {
+    final Path userFilesPath = getUserFilesPath(solrHome);
+    final File userFilesDirectory = new File(userFilesPath.toString());
+    if (! userFilesDirectory.exists()) {
+      try {
+        final boolean created = userFilesDirectory.mkdir();
+        if (! created) {
+          log.warn("Unable to create [{}] directory in SOLR_HOME [{}].  Features requiring this directory may fail.", USER_FILES_DIRECTORY, solrHome);
+        }
+      } catch (Exception e) {
+          log.warn("Unable to create [" + USER_FILES_DIRECTORY + "] directory in SOLR_HOME [" + solrHome + "].  Features requiring this directory may fail.", e);
+      }
+    }
+  }
+
+  public static Path getUserFilesPath(Path solrHome) {
+    return Paths.get(solrHome.toAbsolutePath().toString(), USER_FILES_DIRECTORY).toAbsolutePath();
   }
 
   // Logs a message only once per startup

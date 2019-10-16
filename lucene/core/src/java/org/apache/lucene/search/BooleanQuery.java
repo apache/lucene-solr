@@ -41,6 +41,34 @@ import org.apache.lucene.search.BooleanClause.Occur;
   */
 public class BooleanQuery extends Query implements Iterable<BooleanClause> {
 
+  /** Thrown when an attempt is made to add more than {@link
+   * #getMaxClauseCount()} clauses. This typically happens if
+   * a PrefixQuery, FuzzyQuery, WildcardQuery, or TermRangeQuery
+   * is expanded to many terms during search.
+   * @deprecated use {@link IndexSearcher.TooManyClauses}
+   */
+  @Deprecated // Remove in Lucene 10
+  public static class TooManyClauses extends IndexSearcher.TooManyClauses { }
+
+  /** Return the maximum number of clauses permitted, 1024 by default.
+   * Attempts to add more than the permitted number of clauses cause {@link
+   * TooManyClauses} to be thrown.
+   * @see IndexSearcher#setMaxClauseCount(int)
+   * @deprecated use {@link IndexSearcher#getMaxClauseCount()}
+   */
+  @Deprecated // Remove in Lucene 10
+  public static int getMaxClauseCount() { return IndexSearcher.getMaxClauseCount(); }
+
+  /**
+   * Set the maximum number of clauses permitted per BooleanQuery.
+   * Default value is 1024.
+   * @deprecated use {@link IndexSearcher#setMaxClauseCount(int)}
+   */
+  @Deprecated // Remove in Lucene 10
+  public static void setMaxClauseCount(int maxClauseCount) {
+    IndexSearcher.setMaxClauseCount(maxClauseCount);
+  }
+
   /** A builder for boolean queries. */
   public static class Builder {
 
@@ -478,10 +506,13 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
 
   @Override
   public void visit(QueryVisitor visitor) {
-    for (BooleanClause.Occur occur : clauseSets.keySet()) {
-      if (clauseSets.get(occur).size() > 0) {
-        QueryVisitor v = visitor.getSubVisitor(occur, this);
-        for (Query q : clauseSets.get(occur)) {
+    for (Map.Entry<Occur, Collection<Query>> entry : clauseSets.entrySet()) {
+      Occur clauseOccur = entry.getKey();
+      Collection<Query> clauseQueries = entry.getValue();
+
+      if (clauseQueries.size() > 0) {
+        QueryVisitor v = visitor.getSubVisitor(clauseOccur, this);
+        for (Query q : clauseQueries) {
           q.visit(v);
         }
       }

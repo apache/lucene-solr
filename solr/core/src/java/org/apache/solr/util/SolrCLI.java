@@ -26,7 +26,6 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
-import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.URL;
@@ -146,7 +145,6 @@ import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.solr.common.SolrException.ErrorCode.FORBIDDEN;
 import static org.apache.solr.common.SolrException.ErrorCode.UNAUTHORIZED;
 import static org.apache.solr.common.params.CommonParams.DISTRIB;
@@ -418,6 +416,8 @@ public class SolrCLI implements CLIO {
       return new AuthTool();
     else if ("autoscaling".equals(toolType))
       return new AutoscalingTool();
+    else if ("export".equals(toolType))
+      return new ExportTool();
 
     // If you add a built-in tool to this class, add it here to avoid
     // classpath scanning
@@ -449,6 +449,7 @@ public class SolrCLI implements CLIO {
     formatter.printHelp("cp", getToolOptions(new ZkCpTool()));
     formatter.printHelp("mv", getToolOptions(new ZkMvTool()));
     formatter.printHelp("ls", getToolOptions(new ZkLsTool()));
+    formatter.printHelp("export", getToolOptions(new ExportTool()));
 
     List<Class<Tool>> toolClasses = findToolClassesInPackage("org.apache.solr.util");
     for (Class<Tool> next : toolClasses) {
@@ -566,14 +567,15 @@ public class SolrCLI implements CLIO {
     if (path.startsWith("file:") && path.contains("!")) {
       String[] split = path.split("!");
       URL jar = new URL(split[0]);
-      ZipInputStream zip = new ZipInputStream(jar.openStream());
-      ZipEntry entry;
-      while ((entry = zip.getNextEntry()) != null) {
-        if (entry.getName().endsWith(".class")) {
-          String className = entry.getName().replaceAll("[$].*", "")
-              .replaceAll("[.]class", "").replace('/', '.');
-          if (className.startsWith(packageName))
-            classes.add(className);
+      try (ZipInputStream zip = new ZipInputStream(jar.openStream())) {
+        ZipEntry entry;
+        while ((entry = zip.getNextEntry()) != null) {
+          if (entry.getName().endsWith(".class")) {
+            String className = entry.getName().replaceAll("[$].*", "")
+                .replaceAll("[.]class", "").replace('/', '.');
+            if (className.startsWith(packageName))
+              classes.add(className);
+          }
         }
       }
     }
@@ -860,8 +862,6 @@ public class SolrCLI implements CLIO {
 
 
   public static class AutoscalingTool extends ToolBase {
-    static final String NODE_REDACTION_PREFIX = "N_";
-    static final String COLL_REDACTION_PREFIX = "COLL_";
 
     public AutoscalingTool() {
       this(CLIO.getOutStream());
@@ -984,19 +984,18 @@ public class SolrCLI implements CLIO {
           }
         }
       }
+      boolean redact = cli.hasOption("r");
       if (cli.hasOption("save")) {
         File targetDir = new File(cli.getOptionValue("save"));
-        cloudManager.saveSnapshot(targetDir, true);
+        cloudManager.saveSnapshot(targetDir, true, redact);
         CLIO.err("- saved autoscaling snapshot to " + targetDir.getAbsolutePath());
       }
-      HashSet<String> liveNodes = new HashSet<>();
-      liveNodes.addAll(cloudManager.getClusterStateProvider().getLiveNodes());
+      HashSet<String> liveNodes = new HashSet<>(cloudManager.getClusterStateProvider().getLiveNodes());
       boolean withSuggestions = cli.hasOption("s");
       boolean withDiagnostics = cli.hasOption("d") || cli.hasOption("n");
       boolean withSortedNodes = cli.hasOption("n");
       boolean withClusterState = cli.hasOption("c");
       boolean withStats = cli.hasOption("stats");
-      boolean redact = cli.hasOption("r");
       if (cli.hasOption("all")) {
         withSuggestions = true;
         withDiagnostics = true;
@@ -1005,25 +1004,11 @@ public class SolrCLI implements CLIO {
         withStats = true;
       }
       // prepare to redact also host names / IPs in base_url and other properties
-      Set<String> redactNames = new HashSet<>();
-      for (String nodeName : liveNodes) {
-        String urlString = Utils.getBaseUrlForNodeName(nodeName, "http");
-        try {
-          URL u = new URL(urlString);
-          // protocol format
-          redactNames.add(u.getHost() + ":" + u.getPort());
-          // node name format
-          redactNames.add(u.getHost() + "_" + u.getPort() + "_");
-        } catch (MalformedURLException e) {
-          log.warn("Invalid URL for node name " + nodeName + ", replacing including protocol and path", e);
-          redactNames.add(urlString);
-          redactNames.add(Utils.getBaseUrlForNodeName(nodeName, "https"));
-        }
-      }
-      // redact collection names too
-      Set<String> redactCollections = new HashSet<>();
       ClusterState clusterState = cloudManager.getClusterStateProvider().getClusterState();
-      clusterState.forEachCollection(coll -> redactCollections.add(coll.getName()));
+      RedactionUtils.RedactionContext ctx = null;
+      if (redact) {
+        ctx = SimUtils.getRedactionContext(clusterState);
+      }
       if (!withSuggestions && !withDiagnostics) {
         withSuggestions = true;
       }
@@ -1041,13 +1026,12 @@ public class SolrCLI implements CLIO {
         }
         Map<String, Object> simulationResults = new HashMap<>();
         simulate(cloudManager, config, simulationResults, saveSimulated, withClusterState,
-            withStats, withSuggestions, withSortedNodes, withDiagnostics, iterations);
+            withStats, withSuggestions, withSortedNodes, withDiagnostics, iterations, redact);
         results.put("simulation", simulationResults);
       }
       String data = Utils.toJSONString(results);
       if (redact) {
-        data = RedactionUtils.redactNames(redactCollections, COLL_REDACTION_PREFIX, data);
-        data = RedactionUtils.redactNames(redactNames, NODE_REDACTION_PREFIX, data);
+        data = RedactionUtils.redactNames(ctx.getRedactions(), data);
       }
       stdout.println(data);
     }
@@ -1112,7 +1096,7 @@ public class SolrCLI implements CLIO {
                           boolean withStats,
                           boolean withSuggestions,
                           boolean withSortedNodes,
-                          boolean withDiagnostics, int iterations) throws Exception {
+                          boolean withDiagnostics, int iterations, boolean redact) throws Exception {
       File saveDir = null;
       if (saveSimulated != null) {
         saveDir = new File(saveSimulated);
@@ -1143,10 +1127,10 @@ public class SolrCLI implements CLIO {
         SnapshotCloudManager snapshotCloudManager = new SnapshotCloudManager(simCloudManager, config);
         if (saveDir != null) {
           File target = new File(saveDir, "step" + loop + "_start");
-          snapshotCloudManager.saveSnapshot(target, true);
+          snapshotCloudManager.saveSnapshot(target, true, redact);
         }
         if (verbose) {
-          Map<String, Object> snapshot = snapshotCloudManager.getSnapshot(false);
+          Map<String, Object> snapshot = snapshotCloudManager.getSnapshot(false, redact);
           snapshot.remove(SnapshotCloudManager.DISTRIB_STATE_KEY);
           snapshot.remove(SnapshotCloudManager.MANAGER_STATE_KEY);
           perStep.put("snapshotStart", snapshot);
@@ -1212,10 +1196,10 @@ public class SolrCLI implements CLIO {
         snapshotCloudManager = new SnapshotCloudManager(simCloudManager, config);
         if (saveDir != null) {
           File target = new File(saveDir, "step" + loop + "_stop");
-          snapshotCloudManager.saveSnapshot(target, true);
+          snapshotCloudManager.saveSnapshot(target, true, redact);
         }
         if (verbose) {
-          Map<String, Object> snapshot = snapshotCloudManager.getSnapshot(false);
+          Map<String, Object> snapshot = snapshotCloudManager.getSnapshot(false, redact);
           snapshot.remove(SnapshotCloudManager.DISTRIB_STATE_KEY);
           snapshot.remove(SnapshotCloudManager.MANAGER_STATE_KEY);
           perStep.put("snapshotStop", snapshot);
@@ -3290,7 +3274,7 @@ public class SolrCLI implements CLIO {
 
       echo("\nWelcome to the SolrCloud example!\n");
 
-      Scanner readInput = prompt ? new Scanner(userInput, UTF_8.name()) : null;
+      Scanner readInput = prompt ? new Scanner(userInput, StandardCharsets.UTF_8.name()) : null;
       if (prompt) {
         echo("This interactive session will help you launch a SolrCloud cluster on your local workstation.");
 
@@ -3482,8 +3466,9 @@ public class SolrCLI implements CLIO {
         Map<String,String> startEnv = new HashMap<>();
         Map<String,String> procEnv = EnvironmentUtils.getProcEnvironment();
         if (procEnv != null) {
-          for (String envVar : procEnv.keySet()) {
-            String envVarVal = procEnv.get(envVar);
+          for (Map.Entry<String, String> entry : procEnv.entrySet()) {
+            String envVar = entry.getKey();
+            String envVarVal = entry.getValue();
             if (envVarVal != null && !"EXAMPLE".equals(envVar) && !envVar.startsWith("SOLR_")) {
               startEnv.put(envVar, envVarVal);
             }
@@ -4296,7 +4281,8 @@ public class SolrCLI implements CLIO {
           String config = StrUtils.join(Arrays.asList(cli.getOptionValues("config")), ' ');
           // config is base64 encoded (to get around parsing problems), decode it
           config = config.replaceAll(" ", "");
-          config = new String(Base64.getDecoder().decode(config.getBytes("UTF-8")), "UTF-8");
+          config = new String(Base64.getDecoder()
+              .decode(config.getBytes(StandardCharsets.UTF_8)), StandardCharsets.UTF_8);
           config = config.replaceAll("\n", "").replaceAll("\r", "");
 
           String solrIncludeFilename = cli.getOptionValue("solrIncludeFile");
@@ -4410,7 +4396,7 @@ public class SolrCLI implements CLIO {
             password = new String(console.readPassword("Enter password: "));
           }
 
-          boolean blockUnknown = Boolean.valueOf(cli.getOptionValue("blockUnknown", "false"));
+          boolean blockUnknown = Boolean.valueOf(cli.getOptionValue("blockUnknown", "true"));
 
           String securityJson = "{" +
               "\n  \"authentication\":{" +

@@ -1291,13 +1291,15 @@
      <queryResponseWriter name="schema.xml" class="solr.SchemaXmlResponseWriter"/>
     -->
 
-  <queryResponseWriter name="json" class="solr.JSONResponseWriter">
-    <!-- For the purposes of the tutorial, JSON responses are written as
-     plain text so that they are easy to read in *any* browser.
-     If you expect a MIME type of "application/json" just remove this override.
-    -->
-    <str name="content-type">text/plain; charset=UTF-8</str>
-  </queryResponseWriter>
+  <!-- Overriding the content-type of the response writer.
+       For example, Default content-type of JSON is application/json. This can be overridden to
+       text/plain so that response is easy to read in *any* browser.
+   -->
+  <!--
+     <queryResponseWriter name="json" class="solr.JSONResponseWriter">
+        <str name="content-type">text/plain; charset=UTF-8</str>
+      </queryResponseWriter>
+   -->
 
   <!--
      Custom response writers can be declared as needed...

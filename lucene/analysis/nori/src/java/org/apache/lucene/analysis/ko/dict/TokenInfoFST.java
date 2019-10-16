@@ -28,7 +28,7 @@ public final class TokenInfoFST {
   private final FST<Long> fst;
 
   private final int cacheCeiling;
-  private final FST.Arc<Long> rootCache[];
+  private final FST.Arc<Long>[] rootCache;
   
   public final Long NO_OUTPUT;
 
@@ -41,7 +41,7 @@ public final class TokenInfoFST {
   
   @SuppressWarnings({"rawtypes","unchecked"})
   private FST.Arc<Long>[] cacheRootArcs() throws IOException {
-    FST.Arc<Long> rootCache[] = new FST.Arc[1+(cacheCeiling-0xAC00)];
+    FST.Arc<Long>[] rootCache = new FST.Arc[1+(cacheCeiling-0xAC00)];
     FST.Arc<Long> firstArc = new FST.Arc<>();
     fst.getFirstArc(firstArc);
     FST.Arc<Long> arc = new FST.Arc<>();

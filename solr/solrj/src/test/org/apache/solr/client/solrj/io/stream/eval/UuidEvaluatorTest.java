@@ -18,7 +18,6 @@ package org.apache.solr.client.solrj.io.stream.eval;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.UUID;
 
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -43,10 +42,12 @@ public class UuidEvaluatorTest extends SolrTestCase {
   }
     
   @Test
-  public void isUuidType() throws Exception{
+  public void testUuid() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("uuid()");
-    
-    Assert.assertTrue(evaluator.evaluate(null) instanceof UUID);
-    Assert.assertTrue(evaluator.evaluate(new Tuple(values)) instanceof UUID);
-  }    
+    Assert.assertTrue(evaluator.evaluate(null) instanceof String);
+    String uuid = (String)evaluator.evaluate(null);
+    assertEquals(uuid.split("-").length, 5);
+    String uuid1 = (String)evaluator.evaluate(new Tuple(values));
+    assertNotEquals(uuid, uuid1);
+  }
 }

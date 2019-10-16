@@ -554,6 +554,9 @@ public class TestTessellator extends LuceneTestCase {
     Polygon polygon = (Polygon) SimpleWKTShapeParser.parse(wkt);
     List<Tessellator.Triangle> tessellation = Tessellator.tessellate(polygon);
     assertEquals(area(polygon), area(tessellation), 0.0);
+    for (Tessellator.Triangle t : tessellation) {
+      checkTriangleEdgesFromPolygon(polygon, t);
+    }
   }
 
   private double area(Polygon p) {
@@ -572,10 +575,83 @@ public class TestTessellator extends LuceneTestCase {
   private double area(List<Tessellator.Triangle> triangles) {
     double area = 0;
     for (Tessellator.Triangle t : triangles) {
-      double[] lats = new double[] {t.getLat(0), t.getLat(1), t.getLat(2), t.getLat(0)};
-      double[] lons = new double[] {t.getLon(0), t.getLon(1), t.getLon(2), t.getLon(0)};
+      double[] lats = new double[] {t.getY(0), t.getY(1), t.getY(2), t.getY(0)};
+      double[] lons = new double[] {t.getX(0), t.getX(1), t.getX(2), t.getX(0)};
       area += area(new Polygon(lats, lons));
     }
     return area;
+  }
+
+  private void checkTriangleEdgesFromPolygon(Polygon p, Tessellator.Triangle t) {
+    // first edge
+    assertEquals(t.isEdgefromPolygon(0), isEdgeFromPolygon(p, t.getX(0), t.getY(0), t.getX(1), t.getY(1)));
+    // second edge
+    assertEquals(t.isEdgefromPolygon(1), isEdgeFromPolygon(p, t.getX(1), t.getY(1), t.getX(2), t.getY(2)));
+    // third edge
+    assertEquals(t.isEdgefromPolygon(2), isEdgeFromPolygon(p, t.getX(2), t.getY(2), t.getX(0), t.getY(0)));
+  }
+
+  private boolean isEdgeFromPolygon(Polygon p, double aLon, double aLat, double bLon, double bLat) {
+    for (int i = 0; i < p.getPolyLats().length - 1; i++) {
+      if (isPointInLine(p.getPolyLon(i), p.getPolyLat(i), p.getPolyLon(i + 1), p.getPolyLat(i + 1), aLon, aLat) &&
+          isPointInLine(p.getPolyLon(i), p.getPolyLat(i), p.getPolyLon(i + 1), p.getPolyLat(i + 1), bLon, bLat)) {
+        return true;
+      }
+      if (p.getPolyLon(i) != p.getPolyLon(i + 1) || p.getPolyLat(i) != p.getPolyLat(i + 1)) {
+        //Check for co-planar points
+        final int length = p.getPolyLats().length;
+        final int offset = i + 2;
+        int j = 0;
+        int index = getIndex(length, j + offset);
+        while (j < length  && area(p.getPolyLon(i), p.getPolyLat(i), p.getPolyLon(i + 1), p.getPolyLat(i + 1), p.getPolyLon(index), p.getPolyLat(index)) == 0) {
+          if (isPointInLine(p.getPolyLon(i), p.getPolyLat(i), p.getPolyLon(index), p.getPolyLat(index), aLon, aLat) &&
+              isPointInLine(p.getPolyLon(i), p.getPolyLat(i), p.getPolyLon(index), p.getPolyLat(index), bLon, bLat)) {
+            return true;
+          }
+          index = getIndex(length, ++j + offset);
+        }
+      }
+    }
+    if (p.getHoles() != null && p.getHoles().length > 0) {
+      for (Polygon hole : p.getHoles()) {
+        if (isEdgeFromPolygon(hole, aLon, aLat, bLon, bLat)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  private int getIndex(int size, int index) {
+    if (index < size) {
+      return index;
+    }
+    return index - size;
+  }
+
+  /** Compute signed area of triangle */
+  private double area(final double aX, final double aY, final double bX, final double bY,
+                      final double cX, final double cY) {
+    return (bY - aY) * (cX - bX) - (bX - aX) * (cY - bY);
+  }
+
+  private  boolean isPointInLine(final double aX, final double aY, final double bX, final double bY, double lon, double lat) {
+    double dxc = lon - aX;
+    double dyc = lat - aY;
+
+    double dxl = bX - aX;
+    double dyl = bY - aY;
+
+    if (dxc * dyl - dyc * dxl == 0) {
+      if (Math.abs(dxl) >= Math.abs(dyl))
+        return dxl > 0 ?
+            aX <= lon && lon <= bX :
+            bX <= lon && lon <= aX;
+      else
+        return dyl > 0 ?
+            aY <= lat && lat <= bY :
+            bY <= lat && lat <= aY;
+    }
+    return false;
   }
 }

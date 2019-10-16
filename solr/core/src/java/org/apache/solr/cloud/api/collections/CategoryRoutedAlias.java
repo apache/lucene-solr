@@ -18,31 +18,27 @@
 package org.apache.solr.cloud.api.collections;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-import org.apache.solr.cloud.ZkController;
+import org.apache.solr.client.solrj.RoutedAliasTypes;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Aliases;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.admin.CollectionsHandler;
-import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.AddUpdateCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 
-public class CategoryRoutedAlias implements RoutedAlias {
+public class CategoryRoutedAlias extends RoutedAlias {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String COLLECTION_INFIX = "__CRA__";
 
@@ -51,7 +47,7 @@ public class CategoryRoutedAlias implements RoutedAlias {
   // expects a collection but also works with an alias to handle or error out on empty alias. The
   // collection with this constant as a suffix is automatically removed after the alias begins to
   // receive data.
-  public static final String UNINITIALIZED = "NEW_CATEGORY_ROUTED_ALIAS_WAITING_FOR_DATA__TEMP";
+  public static final String UNINITIALIZED = "NEW_CATEGORY_ROUTED_ALIAS_WAITING_FOR_DATA_TEMP";
 
   @SuppressWarnings("WeakerAccess")
   public static final String ROUTER_MAX_CARDINALITY = "router.maxCardinality";
@@ -60,25 +56,24 @@ public class CategoryRoutedAlias implements RoutedAlias {
    * Parameters required for creating a category routed alias
    */
   @SuppressWarnings("WeakerAccess")
-  public static final Set<String> REQUIRED_ROUTER_PARAMS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+  public static final Set<String> REQUIRED_ROUTER_PARAMS = Set.of(
       CommonParams.NAME,
       ROUTER_TYPE_NAME,
       ROUTER_FIELD,
       ROUTER_MAX_CARDINALITY
-  )));
+  );
 
-  @SuppressWarnings("WeakerAccess")
   public static final String ROUTER_MUST_MATCH = "router.mustMatch";
 
   /**
    * Optional parameters for creating a category routed alias excluding parameters for collection creation.
    */
   @SuppressWarnings("WeakerAccess")
-  public static final Set<String> OPTIONAL_ROUTER_PARAMS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+  public static final Set<String> OPTIONAL_ROUTER_PARAMS = Set.of(
       ROUTER_MAX_CARDINALITY,
-      ROUTER_MUST_MATCH)));
+      ROUTER_MUST_MATCH);
 
-  private Aliases parsedAliases; // a cached reference to the source of what we parse into parsedCollectionsDesc
+  private Aliases aliases;
   private final String aliasName;
   private final Map<String, String> aliasMetadata;
   private final Integer maxCardinality;
@@ -89,18 +84,18 @@ public class CategoryRoutedAlias implements RoutedAlias {
     this.aliasMetadata = aliasMetadata;
     this.maxCardinality = parseMaxCardinality(aliasMetadata.get(ROUTER_MAX_CARDINALITY));
     final String mustMatch = this.aliasMetadata.get(ROUTER_MUST_MATCH);
-    this.mustMatch = mustMatch == null? null: compileMustMatch(mustMatch);
+    this.mustMatch = mustMatch == null ? null : compileMustMatch(mustMatch);
   }
 
   @Override
-  public boolean updateParsedCollectionAliases(ZkController zkController) {
-    final Aliases aliases = zkController.getZkStateReader().getAliases(); // note: might be different from last request
-    if (this.parsedAliases != aliases) {
-      if (this.parsedAliases != null) {
+  public boolean updateParsedCollectionAliases(ZkStateReader zkStateReader, boolean contextualize) {
+    final Aliases aliases = zkStateReader.getAliases(); // note: might be different from last request
+    if (this.aliases != aliases) {
+      if (this.aliases != null) {
         log.debug("Observing possibly updated alias: {}", getAliasName());
       }
       // slightly inefficient, but not easy to make changes to the return value of parseCollections
-      this.parsedAliases = aliases;
+      this.aliases = aliases;
       return true;
     }
     return false;
@@ -117,22 +112,27 @@ public class CategoryRoutedAlias implements RoutedAlias {
   }
 
   @Override
+  public RoutedAliasTypes getRoutedAliasType() {
+    return RoutedAliasTypes.CATEGORY;
+  }
+
+  @Override
   public void validateRouteValue(AddUpdateCommand cmd) throws SolrException {
-    if (this.parsedAliases == null) {
-      updateParsedCollectionAliases(cmd.getReq().getCore().getCoreContainer().getZkController());
+    if (this.aliases == null) {
+      updateParsedCollectionAliases(cmd.getReq().getCore().getCoreContainer().getZkController().zkStateReader, false);
     }
 
     Object fieldValue = cmd.getSolrInputDocument().getFieldValue(getRouteField());
     // possible future enhancement: allow specification of an "unknown" category name to where we can send
     // docs that are uncategorized.
     if (fieldValue == null) {
-      throw new SolrException(BAD_REQUEST,"Route value is null");
+      throw new SolrException(BAD_REQUEST, "Route value is null");
     }
 
     String dataValue = String.valueOf(fieldValue);
 
     String candidateCollectionName = buildCollectionNameFromValue(dataValue);
-    List<String> cols = getCollectionList(this.parsedAliases);
+    List<String> cols = getCollectionList(this.aliases);
 
     if (cols.contains(candidateCollectionName)) {
       return;
@@ -173,53 +173,6 @@ public class CategoryRoutedAlias implements RoutedAlias {
     return aliasName + COLLECTION_INFIX + safeKeyValue(value);
   }
 
-  /**
-   * Method to possibly create a collection. It's possible that the collection will already have been created
-   * either by a prior invocation in this thread or another thread. This method is idempotent, multiple invocations
-   * are harmless.
-   *
-   * @param cmd The command that might cause collection creation
-   * @return the collection to which the the update should be directed, possibly a newly created collection.
-   */
-  @Override
-  public String createCollectionsIfRequired(AddUpdateCommand cmd) {
-    SolrQueryRequest req = cmd.getReq();
-    SolrCore core = req.getCore();
-    CoreContainer coreContainer = core.getCoreContainer();
-    CollectionsHandler collectionsHandler = coreContainer.getCollectionsHandler();
-    String dataValue = String.valueOf(cmd.getSolrInputDocument().getFieldValue(getRouteField()));
-    String candidateCollectionName = buildCollectionNameFromValue(dataValue);
-
-    try {
-      // Note: CRA's have no way to predict values that determine collection so preemptive async creation
-      // is not possible. We have no choice but to block and wait (to do otherwise would imperil the overseer).
-      do {
-        if (getCollectionList(this.parsedAliases).contains(candidateCollectionName)) {
-          return candidateCollectionName;
-        } else {
-          // this could time out in which case we simply let it throw an error
-          MaintainCategoryRoutedAliasCmd.remoteInvoke(collectionsHandler, getAliasName(), candidateCollectionName);
-          // It's possible no collection was created because of a race and that's okay... we'll retry.
-
-          // Ensure our view of the aliases has updated. If we didn't do this, our zkStateReader might
-          //  not yet know about the new alias (thus won't see the newly added collection to it), and we might think
-          //  we failed.
-          collectionsHandler.getCoreContainer().getZkController().getZkStateReader().aliasesManager.update();
-
-          // we should see some sort of update to our aliases
-          if (!updateParsedCollectionAliases(coreContainer.getZkController())) { // thus we didn't make progress...
-            // this is not expected, even in known failure cases, but we check just in case
-            throw new SolrException(ErrorCode.SERVER_ERROR,
-                "We need to create a new category routed collection but for unknown reasons were unable to do so.");
-          }
-        }
-      } while (true);
-    } catch (SolrException e) {
-      throw e;
-    } catch (Exception e) {
-      throw new SolrException(ErrorCode.SERVER_ERROR, e);
-    }
-  }
 
   private Integer parseMaxCardinality(String maxCardinality) {
     try {
@@ -239,13 +192,16 @@ public class CategoryRoutedAlias implements RoutedAlias {
     }
   }
 
-  private List<String> getCollectionList(Aliases p) {
-    return p.getCollectionAliasListMap().get(this.aliasName);
-  }
-
   @Override
   public String computeInitialCollectionName() {
     return buildCollectionNameFromValue(UNINITIALIZED);
+  }
+
+  @Override
+  String[] formattedRouteValues(SolrInputDocument doc) {
+    String routeField = getRouteField();
+    String fieldValue = (String) doc.getFieldValue(routeField);
+    return new String[] {safeKeyValue(fieldValue)};
   }
 
   @Override
@@ -262,4 +218,44 @@ public class CategoryRoutedAlias implements RoutedAlias {
   public Set<String> getOptionalParams() {
     return OPTIONAL_ROUTER_PARAMS;
   }
+
+  @Override
+  public CandidateCollection findCandidateGivenValue(AddUpdateCommand cmd) {
+    Object value = cmd.getSolrInputDocument().getFieldValue(getRouteField());
+    String targetColName = buildCollectionNameFromValue(String.valueOf(value));
+    ZkStateReader zkStateReader = cmd.getReq().getCore().getCoreContainer().getZkController().zkStateReader;
+    updateParsedCollectionAliases(zkStateReader, true);
+    List<String> collectionList = getCollectionList(this.aliases);
+    if (collectionList.contains(targetColName)) {
+      return new CandidateCollection(CreationType.NONE, targetColName);
+    } else {
+      return new CandidateCollection(CreationType.SYNCHRONOUS, targetColName);
+    }
+  }
+
+  @Override
+  protected String getHeadCollectionIfOrdered(AddUpdateCommand cmd) {
+    return buildCollectionNameFromValue(String.valueOf(cmd.getSolrInputDocument().getFieldValue(getRouteField())));
+  }
+
+  @Override
+  protected List<Action> calculateActions(String targetCol) {
+    List<String> collectionList = getCollectionList(aliases);
+    if (!collectionList.contains(targetCol)) {
+      ArrayList<Action> actionList = new ArrayList<>();
+      actionList.add(new Action(this,ActionType.ENSURE_EXISTS, targetCol));
+      for (String s : collectionList) {
+        // can't remove the uninitialized on the first pass otherwise there is a risk of momentarily having
+        // an empty alias if thread scheduling plays tricks on us.
+        if (s.contains(UNINITIALIZED) && collectionList.size() > 1) {
+          actionList.add(new Action(this,ActionType.ENSURE_REMOVED, s));
+        }
+      }
+      return  actionList;
+    } else {
+      return Collections.emptyList();
+    }
+  }
+
+
 }

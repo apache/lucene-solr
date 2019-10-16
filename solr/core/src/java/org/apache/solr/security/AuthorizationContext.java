@@ -33,6 +33,11 @@ public abstract class AuthorizationContext {
     public CollectionRequest(String collectionName) {
       this.collectionName = collectionName;
     }
+
+    @Override
+    public String toString() {
+      return getClass().getSimpleName()+ "(" + collectionName + ")";
+    }
   }
   
   public abstract SolrParams getParams() ;

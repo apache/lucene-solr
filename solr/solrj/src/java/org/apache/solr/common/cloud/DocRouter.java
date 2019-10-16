@@ -221,6 +221,14 @@ public abstract class DocRouter {
    **/
   public abstract Collection<Slice> getSearchSlicesSingle(String shardKey, SolrParams params, DocCollection collection);
 
+  /** This method is consulted to determine what search range (the part of the hash ring) should be queried for a request when
+   *  an explicit shards parameter was not used.
+   *  This method only accepts a single shard key (or null).
+   */
+  public Range getSearchRangeSingle(String shardKey, SolrParams params, DocCollection collection) {
+    throw new UnsupportedOperationException();
+  }
+
   public abstract boolean isTargetSlice(String id, SolrInputDocument sdoc, SolrParams params, String shardId, DocCollection collection);
 
   public abstract String getName();

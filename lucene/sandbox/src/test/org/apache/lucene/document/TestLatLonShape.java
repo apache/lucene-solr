@@ -17,7 +17,8 @@
 package org.apache.lucene.document;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
-import org.apache.lucene.document.LatLonShape.QueryRelation;
+import org.apache.lucene.document.ShapeField.QueryRelation;
+import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Line2D;
@@ -235,13 +236,14 @@ public class TestLatLonShape extends LuceneTestCase {
 
     Tessellator.Triangle t = Tessellator.tessellate(poly).get(0);
 
-    byte[] encoded = new byte[7 * LatLonShape.BYTES];
-    LatLonShape.encodeTriangle(encoded, encodeLatitude(t.getLat(0)), encodeLongitude(t.getLon(0)),
-        encodeLatitude(t.getLat(1)), encodeLongitude(t.getLon(1)), encodeLatitude(t.getLat(2)), encodeLongitude(t.getLon(2)));
-    int[] decoded = new int[6];
-    LatLonShape.decodeTriangle(encoded, decoded);
+    byte[] encoded = new byte[7 * ShapeField.BYTES];
+    ShapeField.encodeTriangle(encoded, encodeLatitude(t.getY(0)), encodeLongitude(t.getX(0)), t.isEdgefromPolygon(0),
+                                       encodeLatitude(t.getY(1)), encodeLongitude(t.getX(1)), t.isEdgefromPolygon(1),
+                                       encodeLatitude(t.getY(2)), encodeLongitude(t.getX(2)), t.isEdgefromPolygon(2));
+    ShapeField.DecodedTriangle decoded = new ShapeField.DecodedTriangle();
+    ShapeField.decodeTriangle(encoded, decoded);
 
-    int expected =rectangle2D.intersectsTriangle(decoded[1], decoded[0], decoded[3], decoded[2], decoded[5], decoded[4]) ? 0 : 1;
+    int expected =rectangle2D.intersectsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) ? 0 : 1;
 
     Document document = new Document();
     addPolygonsToDoc(FIELDNAME, document, poly);
@@ -341,7 +343,7 @@ public class TestLatLonShape extends LuceneTestCase {
     double blon = -52.67048754768767;
     Polygon polygon = new Polygon(new double[] {-14.448264200949083, 0, 0, -14.448264200949083, -14.448264200949083},
         new double[] {0.9999999403953552, 0.9999999403953552, 124.50086371762484, 124.50086371762484, 0.9999999403953552});
-    Polygon2D polygon2D = Polygon2D.create(polygon);
+    Component2D polygon2D = Polygon2D.create(polygon);
     PointValues.Relation rel = polygon2D.relateTriangle(
         quantizeLon(alon), quantizeLat(blat),
         quantizeLon(blon), quantizeLat(blat),
@@ -359,7 +361,7 @@ public class TestLatLonShape extends LuceneTestCase {
 
   public void testTriangleTouchingEdges() {
     Polygon p = new Polygon(new double[] {0, 0, 1, 1, 0}, new double[] {0, 1, 1, 0, 0});
-    Polygon2D polygon2D = Polygon2D.create(p);
+    Component2D polygon2D = Polygon2D.create(p);
     //3 shared points
     PointValues.Relation rel = polygon2D.relateTriangle(
         quantizeLon(0.5), quantizeLat(0),
@@ -459,7 +461,7 @@ public class TestLatLonShape extends LuceneTestCase {
 
   public void testTriangleCrossingPolygonVertices() {
     Polygon p = new Polygon(new double[] {0, 0, -5, -10, -5, 0}, new double[] {-1, 1, 5, 0, -5, -1});
-    Polygon2D polygon2D = Polygon2D.create(p);
+    Component2D polygon2D = Polygon2D.create(p);
     PointValues.Relation rel = polygon2D.relateTriangle(
         quantizeLon(-5), quantizeLat(0),
         quantizeLon(10), quantizeLat(0),
@@ -469,7 +471,7 @@ public class TestLatLonShape extends LuceneTestCase {
 
   public void testLineCrossingPolygonVertices() {
     Polygon p = new Polygon(new double[] {0, -1, 0, 1, 0}, new double[] {-1, 0, 1, 0, -1});
-    Polygon2D polygon2D = Polygon2D.create(p);
+    Component2D polygon2D = Polygon2D.create(p);
     PointValues.Relation rel = polygon2D.relateTriangle(
         quantizeLon(-1.5), quantizeLat(0),
         quantizeLon(1.5), quantizeLat(0),
@@ -479,7 +481,7 @@ public class TestLatLonShape extends LuceneTestCase {
 
   public void testLineSharedLine() {
     Line l = new Line(new double[] {0, 0, 0, 0}, new double[] {-2, -1, 0, 1});
-    Line2D l2d = Line2D.create(l);
+    Component2D l2d = Line2D.create(l);
     PointValues.Relation r = l2d.relateTriangle(
         quantizeLon(-5), quantizeLat(0),
         quantizeLon(5), quantizeLat(0),

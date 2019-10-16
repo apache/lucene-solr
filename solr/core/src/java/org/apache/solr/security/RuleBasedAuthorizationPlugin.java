@@ -84,16 +84,24 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
   @Override
   public AuthorizationResponse authorize(AuthorizationContext context) {
     List<AuthorizationContext.CollectionRequest> collectionRequests = context.getCollectionRequests();
+    log.debug("Attempting to authorize request to [{}] of type: [{}], associated with collections [{}]",
+        context.getResource(), context.getRequestType(), collectionRequests);
+
     if (context.getRequestType() == AuthorizationContext.RequestType.ADMIN) {
+      log.debug("Authorizing an ADMIN request, checking admin permissions");
       MatchStatus flag = checkCollPerm(mapping.get(null), context);
       return flag.rsp;
     }
 
     for (AuthorizationContext.CollectionRequest collreq : collectionRequests) {
       //check permissions for each collection
+      log.debug("Authorizing collection-aware request, checking perms applicable to specific collection [{}]",
+          collreq.collectionName);
       MatchStatus flag = checkCollPerm(mapping.get(collreq.collectionName), context);
       if (flag != MatchStatus.NO_PERMISSIONS_FOUND) return flag.rsp;
     }
+
+    log.debug("Authorizing collection-aware request, checking perms applicable to all (*) collections");
     //check wildcard (all=*) permissions.
     MatchStatus flag = checkCollPerm(mapping.get("*"), context);
     return flag.rsp;
@@ -103,6 +111,14 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
                                     AuthorizationContext context) {
     if (pathVsPerms == null) return MatchStatus.NO_PERMISSIONS_FOUND;
 
+    if (log.isTraceEnabled()) {
+      log.trace("Following perms are associated with collection");
+      for (String pathKey : pathVsPerms.keySet()) {
+        final List<Permission> permsAssociatedWithPath = pathVsPerms.get(pathKey);
+        log.trace("Path: [{}], Perms: [{}]", pathKey, permsAssociatedWithPath);
+      }
+    }
+
     String path = context.getResource();
     MatchStatus flag = checkPathPerm(pathVsPerms.get(path), context);
     if (flag != MatchStatus.NO_PERMISSIONS_FOUND) return flag;
@@ -110,14 +126,18 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
   }
 
   private MatchStatus checkPathPerm(List<Permission> permissions, AuthorizationContext context) {
-    if (permissions == null || permissions.isEmpty()) return MatchStatus.NO_PERMISSIONS_FOUND;
-    Principal principal = context.getUserPrincipal();
-
-    final Permission governingPermission = findFirstGoverningPermission(permissions, context);
-    if (governingPermission == null) {
-      log.debug("No permissions configured for the resource {} . So allowed to access", context.getResource());
+    if (permissions == null || permissions.isEmpty()) {
       return MatchStatus.NO_PERMISSIONS_FOUND;
     }
+    Principal principal = context.getUserPrincipal();
+
+    log.trace("Following perms are associated with this collection and path: [{}]", permissions);
+    final Permission governingPermission = findFirstGoverningPermission(permissions, context);
+    if (governingPermission == null) {
+      log.debug("No perms configured for the resource {} . So allowed to access", context.getResource());
+      return MatchStatus.NO_PERMISSIONS_FOUND;
+    }
+    log.debug("Found perm [{}] to govern resource [{}]", governingPermission, context.getResource());
 
     return determineIfPermissionPermitsPrincipal(principal, governingPermission);
   }
@@ -132,6 +152,7 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
   }
 
   private boolean permissionAppliesToRequest(Permission permission, AuthorizationContext context) {
+    log.trace("Testing whether permission [{}] applies to request [{}]", permission, context.getResource());
     if (PermissionNameProvider.values.containsKey(permission.name)) {
       return predefinedPermissionAppliesToRequest(permission, context);
     } else {
@@ -140,53 +161,87 @@ public class RuleBasedAuthorizationPlugin implements AuthorizationPlugin, Config
   }
 
   private boolean predefinedPermissionAppliesToRequest(Permission predefinedPermission, AuthorizationContext context) {
+    log.trace("Permission [{}] is a predefined perm", predefinedPermission);
     if (predefinedPermission.wellknownName == PermissionNameProvider.Name.ALL) {
+      log.trace("'ALL' perm applies to all requests; perm applies.");
       return true; //'ALL' applies to everything!
     } else if (! (context.getHandler() instanceof PermissionNameProvider)) {
+      log.trace("Request handler [{}] is not a PermissionNameProvider, perm doesnt apply", context.getHandler());
       return false; // We're not 'ALL', and the handler isn't associated with any other predefined permissions
     } else {
       PermissionNameProvider handler = (PermissionNameProvider) context.getHandler();
       PermissionNameProvider.Name permissionName = handler.getPermissionName(context);
 
-      return permissionName != null && predefinedPermission.name.equals(permissionName.name);
+      boolean applies = permissionName != null && predefinedPermission.name.equals(permissionName.name);
+      log.trace("Request handler [{}] is associated with predefined perm [{}]? {}",
+          handler, predefinedPermission.name, applies);
+      return applies;
     }
   }
 
   private boolean customPermissionAppliesToRequest(Permission customPermission, AuthorizationContext context) {
+    log.trace("Permission [{}] is a custom permission", customPermission);
     if (customPermission.method != null && !customPermission.method.contains(context.getHttpMethod())) {
+      log.trace("Custom permission requires method [{}] but request had method [{}]; permission doesn't apply",
+          customPermission.method, context.getHttpMethod());
       //this permissions HTTP method does not match this rule. try other rules
       return false;
     }
     if (customPermission.params != null) {
       for (Map.Entry<String, Function<String[], Boolean>> e : customPermission.params.entrySet()) {
         String[] paramVal = context.getParams().getParams(e.getKey());
-        if(!e.getValue().apply(paramVal)) return false;
+        if(!e.getValue().apply(paramVal)) {
+          log.trace("Request has param [{}] which is incompatible with custom perm [{}]; perm doesnt apply",
+              e.getKey(), customPermission);
+          return false;
+        }
       }
     }
 
+    log.trace("Perm [{}] matches method and params for request; permission applies", customPermission);
     return true;
   }
 
   private MatchStatus determineIfPermissionPermitsPrincipal(Principal principal, Permission governingPermission) {
     if (governingPermission.role == null) {
-      //no role is assigned permission.That means everybody is allowed to access
+      log.debug("Governing permission [{}] has no role; permitting access", governingPermission);
       return MatchStatus.PERMITTED;
     }
     if (principal == null) {
-      log.info("request has come without principal. failed permission {} ", governingPermission);
-      //this resource needs a principal but the request has come without
-      //any credential.
+      log.debug("Governing permission [{}] has role, but request principal cannot be identified; forbidding access", governingPermission);
       return MatchStatus.USER_REQUIRED;
     } else if (governingPermission.role.contains("*")) {
+      log.debug("Governing permission [{}] allows all roles; permitting access", governingPermission);
       return MatchStatus.PERMITTED;
     }
 
+    Set<String> userRoles = usersVsRoles.get(principal.getName());
     for (String role : governingPermission.role) {
-      Set<String> userRoles = usersVsRoles.get(principal.getName());
-      if (userRoles != null && userRoles.contains(role)) return MatchStatus.PERMITTED;
+      if (userRoles != null && userRoles.contains(role)) {
+        log.debug("Governing permission [{}] allows access to role [{}]; permitting access", governingPermission, role);
+        return MatchStatus.PERMITTED;
+      }
     }
     log.info("This resource is configured to have a permission {}, The principal {} does not have the right role ", governingPermission, principal);
     return MatchStatus.FORBIDDEN;
+  }
+
+  public boolean doesUserHavePermission(String user, PermissionNameProvider.Name permission) {
+    Set<String> roles = usersVsRoles.get(user);
+    if (roles != null) {
+      for (String role: roles) {
+        if (mapping.get(null) == null) continue;
+        List<Permission> permissions = mapping.get(null).get(null);
+        if (permissions != null) {
+          for (Permission p: permissions) {
+            if (permission.equals(p.wellknownName) && p.role.contains(role)) {
+              return true;
+            }
+          }
+        }
+      }
+    }
+    return false;
   }
 
   @Override

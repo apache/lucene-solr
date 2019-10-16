@@ -24,6 +24,10 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.IOUtils;
@@ -37,15 +41,17 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
+import org.apache.solr.common.util.Base64;
 import org.apache.solr.common.util.Pair;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.TimeOut;
 import org.jose4j.jwk.PublicJsonWebKey;
 import org.jose4j.jwk.RsaJsonWebKey;
 import org.jose4j.jwk.RsaJwkGenerator;
 import org.jose4j.jws.AlgorithmIdentifiers;
 import org.jose4j.jws.JsonWebSignature;
 import org.jose4j.jwt.JwtClaims;
-import org.jose4j.lang.JoseException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -124,6 +130,20 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
   @Test(expected = IOException.class)
   public void infoRequestWithoutToken() throws Exception {
     get(baseUrl + "/admin/info/system", null);
+  }
+
+  @Test
+  public void infoRequestValidateXSolrAuthHeaders() throws IOException {
+    Map<String, String> headers = getHeaders(baseUrl + "/admin/info/system", null);
+    assertEquals("401", headers.get("code"));
+    assertEquals("HTTP/1.1 401 Require authentication", headers.get(null));
+    assertEquals("Bearer realm=\"my-solr-jwt\"", headers.get("WWW-Authenticate"));
+    String authData = new String(Base64.base64ToByteArray(headers.get("X-Solr-AuthData")), UTF_8);
+    assertEquals("{\n" +
+        "  \"scope\":\"solr:admin\",\n" +
+        "  \"redirect_uris\":[],\n" +
+        "  \"authorizationEndpoint\":\"http://acmepaymentscorp/oauth/auz/authorize\",\n" +
+        "  \"client_id\":\"solr-cluster\"}", authData);
   }
 
   @Test
@@ -211,6 +231,20 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     return new Pair<>(result, code);
   }
 
+  private Map<String,String> getHeaders(String url, String token) throws IOException {
+    URL createUrl = new URL(url);
+    HttpURLConnection conn = (HttpURLConnection) createUrl.openConnection();
+    if (token != null)
+      conn.setRequestProperty("Authorization", "Bearer " + token);
+    conn.connect();
+    int code = conn.getResponseCode();
+    Map<String, String> result = new HashMap<>();
+    conn.getHeaderFields().forEach((k,v) -> result.put(k, v.get(0)));
+    result.put("code", String.valueOf(code));
+    conn.disconnect();
+    return result;
+  }
+
   private Pair<String, Integer> post(String url, String json, String token) throws IOException {
     URL createUrl = new URL(url);
     HttpURLConnection con = (HttpURLConnection) createUrl.openConnection();
@@ -238,7 +272,17 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     cluster.waitForActiveCollection(collectionName, 2, 2);
   }
 
-  private void executeCommand(String url, HttpClient cl, String payload, JsonWebSignature jws) throws IOException, JoseException {
+  private void executeCommand(String url, HttpClient cl, String payload, JsonWebSignature jws)
+    throws Exception {
+    
+    // HACK: work around for SOLR-13464...
+    //
+    // note the authz/authn objects in use on each node before executing the command,
+    // then wait until we see new objects on every node *after* executing the command
+    // before returning...
+    final Set<Map.Entry<String,Object>> initialPlugins
+      = getAuthPluginsInUseForCluster(url).entrySet();
+    
     HttpPost httpPost;
     HttpResponse r;
     httpPost = new HttpPost(url);
@@ -251,5 +295,16 @@ public class JWTAuthPluginIntegrationTest extends SolrCloudAuthTestCase {
     assertEquals("Non-200 response code. Response was " + response, 200, r.getStatusLine().getStatusCode());
     assertFalse("Response contained errors: " + response, response.contains("errorMessages"));
     Utils.consumeFully(r.getEntity());
+
+    // HACK (continued)...
+    final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    timeout.waitFor("core containers never fully updated their auth plugins",
+                    () -> {
+                      final Set<Map.Entry<String,Object>> tmpSet
+                        = getAuthPluginsInUseForCluster(url).entrySet();
+                      tmpSet.retainAll(initialPlugins);
+                      return tmpSet.isEmpty();
+                    });
+    
   }
 }

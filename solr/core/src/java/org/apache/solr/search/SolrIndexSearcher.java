@@ -48,7 +48,6 @@ import org.apache.lucene.index.MultiPostingsEnum;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.*;
@@ -67,6 +66,7 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
+import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.request.LocalSolrQueryRequest;
@@ -76,6 +76,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.facet.UnInvertedField;
+import org.apache.solr.search.stats.StatsCache;
 import org.apache.solr.search.stats.StatsSource;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.update.IndexFingerprint;
@@ -135,6 +136,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   private final String path;
   private boolean releaseDirectory;
+
+  private final StatsCache statsCache;
 
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private SolrMetricManager metricManager;
@@ -237,6 +240,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     this.rawReader = r;
     this.leafReader = SlowCompositeReaderWrapper.wrap(this.reader);
     this.core = core;
+    this.statsCache = core.createStatsCache();
     this.schema = schema;
     this.name = "Searcher@" + Integer.toHexString(hashCode()) + "[" + core.getName() + "]"
         + (name != null ? " " + name : "");
@@ -316,6 +320,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return super.leafContexts;
   }
 
+  public StatsCache getStatsCache() {
+    return statsCache;
+  }
+
   public FieldInfos getFieldInfos() {
     return leafReader.getFieldInfos();
   }
@@ -324,15 +332,15 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
      * Override these two methods to provide a way to use global collection stats.
      */
   @Override
-  public TermStatistics termStatistics(Term term, TermStates context) throws IOException {
+  public TermStatistics termStatistics(Term term, int docFreq, long totalTermFreq) throws IOException {
     final SolrRequestInfo reqInfo = SolrRequestInfo.getRequestInfo();
     if (reqInfo != null) {
       final StatsSource statsSrc = (StatsSource) reqInfo.getReq().getContext().get(STATS_SOURCE);
       if (statsSrc != null) {
-        return statsSrc.termStatistics(this, term, context);
+        return statsSrc.termStatistics(this, term, docFreq, totalTermFreq);
       }
     }
-    return localTermStatistics(term, context);
+    return localTermStatistics(term, docFreq, totalTermFreq);
   }
 
   @Override
@@ -347,8 +355,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return localCollectionStatistics(field);
   }
 
-  public TermStatistics localTermStatistics(Term term, TermStates context) throws IOException {
-    return super.termStatistics(term, context);
+  public TermStatistics localTermStatistics(Term term, int docFreq, long totalTermFreq) throws IOException {
+    return super.termStatistics(term, docFreq, totalTermFreq);
   }
 
   public CollectionStatistics localCollectionStatistics(String field) throws IOException {
@@ -2295,7 +2303,13 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         return -1;
       }
     }, tag, true, "indexCommitSize", Category.SEARCHER.toString(), scope);
-
+    // statsCache metrics
+    manager.registerGauge(this, registry,
+        new MetricsMap((detailed, map) -> {
+          statsCache.getCacheMetrics().getSnapshot(map::put);
+          map.put("statsCacheImpl", statsCache.getClass().getSimpleName());
+        }),
+        tag, true, "statsCache", Category.CACHE.toString(), scope);
   }
 
   @Override

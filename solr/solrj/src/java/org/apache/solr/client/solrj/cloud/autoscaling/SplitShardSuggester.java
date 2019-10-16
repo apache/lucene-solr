@@ -56,6 +56,10 @@ class SplitShardSuggester extends Suggester {
     if (splitMethod != null) {
       req.setSplitMethod(splitMethod);
     }
+    Boolean splitByPrefix = (Boolean)params.get(CommonAdminParams.SPLIT_BY_PREFIX);
+    if (splitByPrefix != null) {
+      req.setSplitByPrefix(splitByPrefix);
+    }
     return req;
   }
 }

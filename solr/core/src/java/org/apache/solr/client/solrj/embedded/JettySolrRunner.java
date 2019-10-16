@@ -59,6 +59,8 @@ import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
+import org.eclipse.jetty.rewrite.handler.RewriteHandler;
+import org.eclipse.jetty.rewrite.handler.RewritePatternRule;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -369,14 +371,12 @@ public class JettySolrRunner {
 
         debugFilter = root.addFilter(DebugFilter.class, "*", EnumSet.of(DispatcherType.REQUEST) );
         extraFilters = new LinkedList<>();
-        for (Class<? extends Filter> filterClass : config.extraFilters.keySet()) {
-          extraFilters.add(root.addFilter(filterClass, config.extraFilters.get(filterClass),
-              EnumSet.of(DispatcherType.REQUEST)));
+        for (Map.Entry<Class<? extends Filter>, String> entry : config.extraFilters.entrySet()) {
+          extraFilters.add(root.addFilter(entry.getKey(), entry.getValue(), EnumSet.of(DispatcherType.REQUEST)));
         }
 
-        for (ServletHolder servletHolder : config.extraServlets.keySet()) {
-          String pathSpec = config.extraServlets.get(servletHolder);
-          root.addServlet(servletHolder, pathSpec);
+        for (Map.Entry<ServletHolder, String> entry : config.extraServlets.entrySet()) {
+          root.addServlet(entry.getKey(), entry.getValue());
         }
         dispatchFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
         dispatchFilter.setHeldClass(SolrDispatchFilter.class);
@@ -401,6 +401,15 @@ public class JettySolrRunner {
 
     chain = injectJettyHandlers(chain);
 
+    if(config.enableV2) {
+      RewriteHandler rwh = new RewriteHandler();
+      rwh.setHandler(chain);
+      rwh.setRewriteRequestURI(true);
+      rwh.setRewritePathInfo(false);
+      rwh.setOriginalPathAttribute("requestedPath");
+      rwh.addRule(new RewritePatternRule("/api/*", "/solr/____v2"));
+      chain = rwh;
+    }
     GzipHandler gzipHandler = new GzipHandler();
     gzipHandler.setHandler(chain);
 
@@ -479,10 +488,10 @@ public class JettySolrRunner {
     Map<String, String> prevContext = MDC.getCopyOfContextMap();
     MDC.clear();
 
-    log.info("Start Jetty (original configured port={})", this.config.port);
-
     try {
       int port = reusePort && jettyPort != -1 ? jettyPort : this.config.port;
+      log.info("Start Jetty (configured port={}, binding port={})", this.config.port, port);
+
 
       // if started before, make a new server
       if (startedBefore) {

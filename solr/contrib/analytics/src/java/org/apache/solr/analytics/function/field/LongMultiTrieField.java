@@ -43,7 +43,7 @@ public class LongMultiTrieField extends AnalyticsField implements CastingLongVal
     count = 0;
     values = new long[initialArrayLength];
   }
-  
+
   @Override
   public void doSetNextReader(LeafReaderContext context) throws IOException {
     docValues = DocValues.getSortedSet(context.reader(), fieldName);
@@ -61,7 +61,7 @@ public class LongMultiTrieField extends AnalyticsField implements CastingLongVal
       }
     }
   }
-  
+
   private void resizeValues() {
     long[] newValues = new long[values.length*2];
     for (int i = 0; i < count; ++i) {
@@ -69,7 +69,7 @@ public class LongMultiTrieField extends AnalyticsField implements CastingLongVal
     }
     values = newValues;
   }
-  
+
   @Override
   public void streamLongs(LongConsumer cons) {
     for (int i = 0; i < count; ++i) {

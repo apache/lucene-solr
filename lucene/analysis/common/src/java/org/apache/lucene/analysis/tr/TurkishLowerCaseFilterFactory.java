@@ -37,7 +37,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 public class TurkishLowerCaseFilterFactory extends TokenFilterFactory {
 
   /** SPI name */
-  public static final String NAME = "turkishLowerCase";
+  public static final String NAME = "turkishLowercase";
   
   /** Creates a new TurkishLowerCaseFilterFactory */
   public TurkishLowerCaseFilterFactory(Map<String,String> args) {

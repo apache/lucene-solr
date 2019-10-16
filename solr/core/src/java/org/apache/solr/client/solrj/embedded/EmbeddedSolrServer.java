@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
+import static org.apache.solr.common.params.CommonParams.PATH;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,8 +26,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.Supplier;
 
-import com.google.common.base.Strings;
 import org.apache.commons.io.output.ByteArrayOutputStream;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -57,8 +59,6 @@ import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.SolrRequestParsers;
 
-import static org.apache.solr.common.params.CommonParams.PATH;
-
 /**
  * SolrClient that connects directly to a CoreContainer.
  *
@@ -69,12 +69,27 @@ public class EmbeddedSolrServer extends SolrClient {
   protected final CoreContainer coreContainer;
   protected final String coreName;
   private final SolrRequestParsers _parser;
+  private final RequestWriterSupplier supplier;
+
+  public enum RequestWriterSupplier {
+    JavaBin(() -> new BinaryRequestWriter()), XML(() -> new RequestWriter());
+
+    private Supplier<RequestWriter> supplier;
+
+    private RequestWriterSupplier(final Supplier<RequestWriter> supplier) {
+      this.supplier = supplier;
+    }
+
+    public RequestWriter newRequestWriter() {
+      return supplier.get();
+    }
+  }
 
   /**
    * Create an EmbeddedSolrServer using a given solr home directory
    *
    * @param solrHome        the solr home directory
-   * @param defaultCoreName the core to route requests to by default
+   * @param defaultCoreName the core to route requests to by default (optional)
    */
   public EmbeddedSolrServer(Path solrHome, String defaultCoreName) {
     this(load(new CoreContainer(SolrXmlConfig.fromSolrHome(solrHome))), defaultCoreName);
@@ -84,7 +99,7 @@ public class EmbeddedSolrServer extends SolrClient {
    * Create an EmbeddedSolrServer using a NodeConfig
    *
    * @param nodeConfig      the configuration
-   * @param defaultCoreName the core to route requests to by default
+   * @param defaultCoreName the core to route requests to by default (optional)
    */
   public EmbeddedSolrServer(NodeConfig nodeConfig, String defaultCoreName) {
     this(load(new CoreContainer(nodeConfig)), defaultCoreName);
@@ -109,17 +124,33 @@ public class EmbeddedSolrServer extends SolrClient {
    * {@link #close()} is called.
    *
    * @param coreContainer the core container
-   * @param coreName      the core to route requests to by default
+   * @param coreName      the core to route requests to by default (optional)
    */
   public EmbeddedSolrServer(CoreContainer coreContainer, String coreName) {
+    this(coreContainer, coreName, RequestWriterSupplier.JavaBin);
+  }
+
+  /**
+   * Create an EmbeddedSolrServer wrapping a CoreContainer.
+   * <p>
+   * Note that EmbeddedSolrServer will shutdown the wrapped CoreContainer when {@link #close()} is called.
+   *
+   * @param coreContainer
+   *          the core container
+   * @param coreName
+   *          the core to route requests to by default
+   * @param supplier
+   *          the supplier used to create a {@link RequestWriter}
+   */
+  public EmbeddedSolrServer(CoreContainer coreContainer, String coreName,
+      RequestWriterSupplier supplier) {
     if (coreContainer == null) {
       throw new NullPointerException("CoreContainer instance required");
     }
-    if (Strings.isNullOrEmpty(coreName))
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Core name cannot be empty");
     this.coreContainer = coreContainer;
     this.coreName = coreName;
     _parser = new SolrRequestParsers(null);
+    this.supplier = supplier;
   }
 
   // TODO-- this implementation sends the response to XML and then parses it.
@@ -150,8 +181,13 @@ public class EmbeddedSolrServer extends SolrClient {
       }
     }
 
-    if (coreName == null)
+    if (coreName == null) {
       coreName = this.coreName;
+      if (coreName == null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "No core specified on request and no default core has been set.");
+      }
+    }
 
     // Check for cores action
     SolrQueryRequest req = null;
@@ -240,32 +276,41 @@ public class EmbeddedSolrServer extends SolrClient {
   private Set<ContentStream> getContentStreams(SolrRequest request) throws IOException {
     if (request.getMethod() == SolrRequest.METHOD.GET) return null;
     if (request instanceof ContentStreamUpdateRequest) {
-      ContentStreamUpdateRequest csur = (ContentStreamUpdateRequest) request;
-      Collection<ContentStream> cs = csur.getContentStreams();
+      final ContentStreamUpdateRequest csur = (ContentStreamUpdateRequest) request;
+      final Collection<ContentStream> cs = csur.getContentStreams();
       if (cs != null) return new HashSet<>(cs);
     }
-    RequestWriter.ContentWriter contentWriter = request.getContentWriter(CommonParams.JAVABIN_MIME);
-    final String cType = contentWriter == null ? CommonParams.JAVABIN_MIME : contentWriter.getContentType();
 
-    return Collections.singleton(new ContentStreamBase() {
+    final RequestWriter.ContentWriter contentWriter = request.getContentWriter(null);
 
-      @Override
-      public InputStream getStream() throws IOException {
-        BAOS baos = new BAOS();
-        if (contentWriter != null) {
-          contentWriter.write(baos);
-        } else {
-          new BinaryRequestWriter().write(request, baos);
+    String cType;
+    final BAOS baos = new BAOS();
+    if (contentWriter != null) {
+      contentWriter.write(baos);
+      cType = contentWriter.getContentType();
+    } else {
+      final RequestWriter rw = supplier.newRequestWriter();
+      cType = rw.getUpdateContentType();
+      rw.write(request, baos);
+    }
+
+    final byte[] buf = baos.toByteArray();
+    if (buf.length > 0) {
+      return Collections.singleton(new ContentStreamBase() {
+
+        @Override
+        public InputStream getStream() throws IOException {
+          return new ByteArrayInputStream(buf);
         }
-        return new ByteArrayInputStream(baos.toByteArray());
-      }
 
-      @Override
-      public String getContentType() {
-        return cType;
+        @Override
+        public String getContentType() {
+          return cType;
+        }
+      });
+    }
 
-      }
-    });
+    return null;
   }
 
   private JavaBinCodec createJavaBinCodec(final StreamingResponseCallback callback, final BinaryResponseWriter.Resolver resolver) {

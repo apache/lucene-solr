@@ -321,6 +321,10 @@ final class SegmentTermsEnum extends BaseTermsEnum {
       throw new IllegalStateException("terms index was not loaded");
     }
 
+    if (fr.size() > 0 && (target.compareTo(fr.getMin()) < 0 || target.compareTo(fr.getMax()) > 0)) {
+        return false;
+    }
+
     term.grow(1 + target.length);
 
     assert clearEOF();
@@ -351,7 +355,7 @@ final class SegmentTermsEnum extends BaseTermsEnum {
 
       arc = arcs[0];
       assert arc.isFinal();
-      output = arc.output;
+      output = arc.output();
       targetUpto = 0;
           
       SegmentTermsEnumFrame lastFrame = stack[0];
@@ -374,9 +378,9 @@ final class SegmentTermsEnum extends BaseTermsEnum {
           break;
         }
         arc = arcs[1+targetUpto];
-        assert arc.label == (target.bytes[target.offset + targetUpto] & 0xFF): "arc.label=" + (char) arc.label + " targetLabel=" + (char) (target.bytes[target.offset + targetUpto] & 0xFF);
-        if (arc.output != BlockTreeTermsReader.NO_OUTPUT) {
-          output = BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.output);
+        assert arc.label() == (target.bytes[target.offset + targetUpto] & 0xFF): "arc.label=" + (char) arc.label() + " targetLabel=" + (char) (target.bytes[target.offset + targetUpto] & 0xFF);
+        if (arc.output() != BlockTreeTermsReader.NO_OUTPUT) {
+          output = BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.output());
         }
         if (arc.isFinal()) {
           lastFrame = stack[1+lastFrame.ord];
@@ -454,19 +458,19 @@ final class SegmentTermsEnum extends BaseTermsEnum {
 
       // Empty string prefix must have an output (block) in the index!
       assert arc.isFinal();
-      assert arc.output != null;
+      assert arc.output() != null;
 
       // if (DEBUG) {
       //   System.out.println("    no seek state; push root frame");
       // }
 
-      output = arc.output;
+      output = arc.output();
 
       currentFrame = staticFrame;
 
       //term.length = 0;
       targetUpto = 0;
-      currentFrame = pushFrame(arc, BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.nextFinalOutput), 0);
+      currentFrame = pushFrame(arc, BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.nextFinalOutput()), 0);
     }
 
     // if (DEBUG) {
@@ -521,9 +525,9 @@ final class SegmentTermsEnum extends BaseTermsEnum {
         arc = nextArc;
         term.setByteAt(targetUpto, (byte) targetLabel);
         // Aggregate output as we go:
-        assert arc.output != null;
-        if (arc.output != BlockTreeTermsReader.NO_OUTPUT) {
-          output = BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.output);
+        assert arc.output() != null;
+        if (arc.output() != BlockTreeTermsReader.NO_OUTPUT) {
+          output = BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.output());
         }
 
         // if (DEBUG) {
@@ -533,7 +537,7 @@ final class SegmentTermsEnum extends BaseTermsEnum {
 
         if (arc.isFinal()) {
           //if (DEBUG) System.out.println("    arc is final!");
-          currentFrame = pushFrame(arc, BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.nextFinalOutput), targetUpto);
+          currentFrame = pushFrame(arc, BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.nextFinalOutput()), targetUpto);
           //if (DEBUG) System.out.println("    curFrame.ord=" + currentFrame.ord + " hasTerms=" + currentFrame.hasTerms);
         }
       }
@@ -608,7 +612,7 @@ final class SegmentTermsEnum extends BaseTermsEnum {
 
       arc = arcs[0];
       assert arc.isFinal();
-      output = arc.output;
+      output = arc.output();
       targetUpto = 0;
           
       SegmentTermsEnumFrame lastFrame = stack[0];
@@ -631,14 +635,14 @@ final class SegmentTermsEnum extends BaseTermsEnum {
           break;
         }
         arc = arcs[1+targetUpto];
-        assert arc.label == (target.bytes[target.offset + targetUpto] & 0xFF): "arc.label=" + (char) arc.label + " targetLabel=" + (char) (target.bytes[target.offset + targetUpto] & 0xFF);
+        assert arc.label() == (target.bytes[target.offset + targetUpto] & 0xFF): "arc.label=" + (char) arc.label() + " targetLabel=" + (char) (target.bytes[target.offset + targetUpto] & 0xFF);
         // TODO: we could save the outputs in local
         // byte[][] instead of making new objs ever
         // seek; but, often the FST doesn't have any
         // shared bytes (but this could change if we
         // reverse vLong byte order)
-        if (arc.output != BlockTreeTermsReader.NO_OUTPUT) {
-          output = BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.output);
+        if (arc.output() != BlockTreeTermsReader.NO_OUTPUT) {
+          output = BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.output());
         }
         if (arc.isFinal()) {
           lastFrame = stack[1+lastFrame.ord];
@@ -711,19 +715,19 @@ final class SegmentTermsEnum extends BaseTermsEnum {
 
       // Empty string prefix must have an output (block) in the index!
       assert arc.isFinal();
-      assert arc.output != null;
+      assert arc.output() != null;
 
       //if (DEBUG) {
       //System.out.println("    no seek state; push root frame");
       //}
 
-      output = arc.output;
+      output = arc.output();
 
       currentFrame = staticFrame;
 
       //term.length = 0;
       targetUpto = 0;
-      currentFrame = pushFrame(arc, BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.nextFinalOutput), 0);
+      currentFrame = pushFrame(arc, BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.nextFinalOutput()), 0);
     }
 
     //if (DEBUG) {
@@ -779,9 +783,9 @@ final class SegmentTermsEnum extends BaseTermsEnum {
         term.setByteAt(targetUpto, (byte) targetLabel);
         arc = nextArc;
         // Aggregate output as we go:
-        assert arc.output != null;
-        if (arc.output != BlockTreeTermsReader.NO_OUTPUT) {
-          output = BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.output);
+        assert arc.output() != null;
+        if (arc.output() != BlockTreeTermsReader.NO_OUTPUT) {
+          output = BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.output());
         }
 
         //if (DEBUG) {
@@ -791,7 +795,7 @@ final class SegmentTermsEnum extends BaseTermsEnum {
 
         if (arc.isFinal()) {
           //if (DEBUG) System.out.println("    arc is final!");
-          currentFrame = pushFrame(arc, BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.nextFinalOutput), targetUpto);
+          currentFrame = pushFrame(arc, BlockTreeTermsReader.FST_OUTPUTS.add(output, arc.nextFinalOutput()), targetUpto);
           //if (DEBUG) System.out.println("    curFrame.ord=" + currentFrame.ord + " hasTerms=" + currentFrame.hasTerms);
         }
       }
@@ -844,8 +848,8 @@ final class SegmentTermsEnum extends BaseTermsEnum {
         }
         if (fr.index != null) {
           assert !isSeekFrame || f.arc != null: "isSeekFrame=" + isSeekFrame + " f.arc=" + f.arc;
-          if (f.prefix > 0 && isSeekFrame && f.arc.label != (term.byteAt(f.prefix-1)&0xFF)) {
-            out.println("      broken seek state: arc.label=" + (char) f.arc.label + " vs term byte=" + (char) (term.byteAt(f.prefix-1)&0xFF));
+          if (f.prefix > 0 && isSeekFrame && f.arc.label() != (term.byteAt(f.prefix-1)&0xFF)) {
+            out.println("      broken seek state: arc.label=" + (char) f.arc.label() + " vs term byte=" + (char) (term.byteAt(f.prefix-1)&0xFF));
             throw new RuntimeException("seek state is broken");
           }
           BytesRef output = Util.get(fr.index, prefix);

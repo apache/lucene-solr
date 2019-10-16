@@ -44,10 +44,10 @@ public class BlockCacheTest extends SolrTestCase {
   public void testBlockCache() {
     int blocksInTest = 2000000;
     int blockSize = 1024;
-    
+
     int slabSize = blockSize * 4096;
     long totalMemory = 2 * slabSize;
-    
+
     BlockCache blockCache = new BlockCache(new Metrics(), true, totalMemory, slabSize, blockSize);
     byte[] buffer = new byte[1024];
     Random random = random();
@@ -82,7 +82,7 @@ public class BlockCacheTest extends SolrTestCase {
       long t3 = System.nanoTime();
       if (blockCache.fetch(blockCacheKey, buffer)) {
         fetchTime += (System.nanoTime() - t3);
-        assertTrue(Arrays.equals(testData, buffer));
+        assertTrue("buffer content differs", Arrays.equals(testData, buffer));
       }
     }
     System.out.println("Cache Hits    = " + hitsInCache.get());
@@ -101,7 +101,7 @@ public class BlockCacheTest extends SolrTestCase {
   // always returns the same thing so we don't actually have to store the bytes redundantly to check them.
   private static byte getByte(long pos) {
     // knuth multiplicative hash method, then take top 8 bits
-    return (byte) ((((int)pos) * (int)(2654435761L)) >> 24);
+    return (byte) ((((int) pos) * (int) (2654435761L)) >> 24);
 
     // just the lower bits of the block number, to aid in debugging...
     // return (byte)(pos>>10);
@@ -117,17 +117,17 @@ public class BlockCacheTest extends SolrTestCase {
     final long totalMemory = 2 * slabSize;  // 2 slabs of memory, so only half of what is needed for all blocks
 
     /***
-    final int blocksInTest = 16384;  // pick something bigger than 256, since that would lead to a slab size of 64 blocks and the bitset locks would consist of a single word.
-    final int blockSize = 1024;
-    final int slabSize = blocksInTest * blockSize / 4;
-    final long totalMemory = 2 * slabSize;  // 2 slabs of memory, so only half of what is needed for all blocks
-    ***/
+     final int blocksInTest = 16384;  // pick something bigger than 256, since that would lead to a slab size of 64 blocks and the bitset locks would consist of a single word.
+     final int blockSize = 1024;
+     final int slabSize = blocksInTest * blockSize / 4;
+     final long totalMemory = 2 * slabSize;  // 2 slabs of memory, so only half of what is needed for all blocks
+     ***/
 
-    final int nThreads=64;
-    final int nReads=1000000;
-    final int readsPerThread=nReads/nThreads;
-    final int readLastBlockOdds=10; // odds (1 in N) of the next block operation being on the same block as the previous operation... helps flush concurrency issues
-    final int showErrors=50; // show first 50 validation failures
+    final int nThreads = 64;
+    final int nReads = 1000000;
+    final int readsPerThread = nReads / nThreads;
+    final int readLastBlockOdds = 10; // odds (1 in N) of the next block operation being on the same block as the previous operation... helps flush concurrency issues
+    final int showErrors = 50; // show first 50 validation failures
 
     final BlockCache blockCache = new BlockCache(new Metrics(), true, totalMemory, slabSize, blockSize);
 
@@ -142,7 +142,7 @@ public class BlockCacheTest extends SolrTestCase {
 
 
     Thread[] threads = new Thread[nThreads];
-    for (int i=0; i<threads.length; i++) {
+    for (int i = 0; i < threads.length; i++) {
       final int threadnum = i;
       final long seed = rnd.nextLong();
 
@@ -168,14 +168,15 @@ public class BlockCacheTest extends SolrTestCase {
         }
 
         public void test(int iter) {
-          for (int i=0; i<iter; i++) {
+          for (int i = 0; i < iter; i++) {
             test();
           }
         }
 
         public void test() {
           long block = r.nextInt(blocksInTest);
-          if (r.nextInt(readLastBlockOdds) == 0) block = lastBlock.get();  // some percent of the time, try to read the last block another thread was just reading/writing
+          if (r.nextInt(readLastBlockOdds) == 0)
+            block = lastBlock.get();  // some percent of the time, try to read the last block another thread was just reading/writing
           lastBlock.set(block);
 
 
@@ -192,7 +193,8 @@ public class BlockCacheTest extends SolrTestCase {
               long globalPos = globalOffset + i;
               if (buffer[i] != getByte(globalPos)) {
                 failed.set(true);
-                if (validateFails.incrementAndGet() <= showErrors) System.out.println("ERROR: read was " + "block=" + block + " blockOffset=" + blockOffset + " len=" + len + " globalPos=" + globalPos + " localReadOffset=" + i + " got=" + buffer[i] + " expected=" + getByte(globalPos));
+                if (validateFails.incrementAndGet() <= showErrors)
+                  System.out.println("ERROR: read was " + "block=" + block + " blockOffset=" + blockOffset + " len=" + len + " globalPos=" + globalPos + " localReadOffset=" + i + " got=" + buffer[i] + " expected=" + getByte(globalPos));
                 break;
               }
             }
@@ -229,7 +231,7 @@ public class BlockCacheTest extends SolrTestCase {
     System.out.println("Cache Store Fails = " + storeFails.get());
     System.out.println("Blocks with Errors = " + validateFails.get());
 
-    assertFalse( failed.get() );
+    assertFalse("cached bytes differ from expected", failed.get());
   }
 
 
@@ -245,12 +247,12 @@ public class BlockCacheTest extends SolrTestCase {
 
     // TODO: introduce more randomness in cache size, hit rate, etc
     final int blocksInTest = 400;
-    final int maxEntries = blocksInTest/2;
+    final int maxEntries = blocksInTest / 2;
 
-    final int nThreads=64;
-    final int nReads=1000000;
-    final int readsPerThread=nReads/nThreads;
-    final int readLastBlockOdds=10; // odds (1 in N) of the next block operation being on the same block as the previous operation... helps flush concurrency issues
+    final int nThreads = 64;
+    final int nReads = 1000000;
+    final int readsPerThread = nReads / nThreads;
+    final int readLastBlockOdds = 10; // odds (1 in N) of the next block operation being on the same block as the previous operation... helps flush concurrency issues
     final int updateAnywayOdds = 3; // sometimes insert a new entry for the key even if one was found
     final int invalidateOdds = 20; // sometimes invalidate an entry
 
@@ -258,17 +260,24 @@ public class BlockCacheTest extends SolrTestCase {
     final AtomicLong removals = new AtomicLong();
     final AtomicLong inserts = new AtomicLong();
 
-    RemovalListener<Long,Val> listener = (k, v, removalCause) -> {
-      assert v.key == k;
+    RemovalListener<Long, Val> listener = (k, v, removalCause) -> {
+      removals.incrementAndGet();
+      if (v == null) {
+        if (removalCause != RemovalCause.COLLECTED) {
+          throw new RuntimeException("Null value for key " + k + ", removalCause=" + removalCause);
+        } else {
+          return;
+        }
+      }
+      assertEquals("cache key differs from value's key", (Long) k, (Long) v.key);
       if (!v.live.compareAndSet(true, false)) {
         throw new RuntimeException("listener called more than once! k=" + k + " v=" + v + " removalCause=" + removalCause);
         // return;  // use this variant if listeners may be called more than once
       }
-      removals.incrementAndGet();
     };
 
 
-    com.github.benmanes.caffeine.cache.Cache<Long,Val> cache = Caffeine.newBuilder()
+    com.github.benmanes.caffeine.cache.Cache<Long, Val> cache = Caffeine.newBuilder()
         .removalListener(listener)
         .maximumSize(maxEntries)
         .executor(Runnable::run)
@@ -279,11 +288,12 @@ public class BlockCacheTest extends SolrTestCase {
     final AtomicLong maxObservedSize = new AtomicLong();
 
     Thread[] threads = new Thread[nThreads];
-    for (int i=0; i<threads.length; i++) {
+    for (int i = 0; i < threads.length; i++) {
       final long seed = rnd.nextLong();
 
       threads[i] = new Thread() {
         Random r;
+
         @Override
         public void run() {
           try {
@@ -296,13 +306,13 @@ public class BlockCacheTest extends SolrTestCase {
         }
 
         public void test(int iter) {
-          for (int i=0; i<iter; i++) {
+          for (int i = 0; i < iter; i++) {
             test();
           }
         }
 
         boolean odds(int odds) {
-          return odds > 0 && r.nextInt(odds)==0;
+          return odds > 0 && r.nextInt(odds) == 0;
         }
 
         long getBlock() {
@@ -329,7 +339,7 @@ public class BlockCacheTest extends SolrTestCase {
           Val v = cache.getIfPresent(k);
           if (v != null) {
             hits.incrementAndGet();
-            assert k.equals(v.key);
+            assertEquals("cache key differs from value's key", (Long) k, (Long) v.key);
           }
 
           if (v == null || odds(updateAnywayOdds)) {
@@ -358,13 +368,10 @@ public class BlockCacheTest extends SolrTestCase {
 
     // Thread.sleep(1000); // need to wait if executor is used for listener?
     long cacheSize = cache.estimatedSize();
-    System.out.println("Done! # of Elements = " + cacheSize + " inserts=" + inserts.get() + " removals=" + removals.get() + " hits=" + hits.get() +  " maxObservedSize=" + maxObservedSize);
-    assert inserts.get() - removals.get() == cacheSize;
-    assertFalse( failed.get() );
+    System.out.println("Done! # of Elements = " + cacheSize + " inserts=" + inserts.get() + " removals=" + removals.get() + " hits=" + hits.get() + " maxObservedSize=" + maxObservedSize);
+    assertEquals("cache size different from (inserts - removal)", cacheSize,  inserts.get() - removals.get());
+    assertFalse(failed.get());
   }
-
-
-
 
 
 }

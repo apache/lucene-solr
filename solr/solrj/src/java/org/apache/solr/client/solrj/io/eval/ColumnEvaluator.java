@@ -53,7 +53,7 @@ public class ColumnEvaluator extends RecursiveEvaluator {
       
       Object firstLevel = containedEvaluators.get(0).evaluate(tuple);
       
-      if(!(firstLevel instanceof List<?>) || 0 != ((List<?>)firstLevel).stream().filter(value -> !(value instanceof Tuple)).count()){
+      if(!(firstLevel instanceof List<?>) || ((List<?>) firstLevel).stream().anyMatch(value -> !(value instanceof Tuple))){
         throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting a list of tuples but found %s", toExpression(constructingFactory), firstLevel.getClass().getSimpleName()));
       }
 

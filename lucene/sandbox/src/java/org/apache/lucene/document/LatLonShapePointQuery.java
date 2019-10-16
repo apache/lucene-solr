@@ -34,22 +34,22 @@ import static org.apache.lucene.geo.GeoUtils.orient;
  *
  *  @lucene.experimental
  **/
-final class LatLonShapePointQuery extends LatLonShapeQuery {
+final class LatLonShapePointQuery extends ShapeQuery {
   final double lat;
   final double lon;
   final int latEnc;
   final int lonEnc;
   final byte[] point;
 
-  public LatLonShapePointQuery(String field, LatLonShape.QueryRelation queryRelation, double lat, double lon) {
+  public LatLonShapePointQuery(String field, ShapeField.QueryRelation queryRelation, double lat, double lon) {
     super(field, queryRelation);
     this.lat = lat;
     this.lon = lon;
-    this.point = new byte[2 * LatLonShape.BYTES];
+    this.point = new byte[2 * ShapeField.BYTES];
     this.lonEnc = GeoEncodingUtils.encodeLongitude(lon);
     this.latEnc = GeoEncodingUtils.encodeLatitude(lat);
     NumericUtils.intToSortableBytes(latEnc, this.point, 0);
-    NumericUtils.intToSortableBytes(lonEnc, this.point, LatLonShape.BYTES);
+    NumericUtils.intToSortableBytes(lonEnc, this.point, ShapeField.BYTES);
   }
 
   @Override
@@ -66,19 +66,17 @@ final class LatLonShapePointQuery extends LatLonShapeQuery {
 
   /** returns true if the query matches the encoded triangle */
   @Override
-  protected boolean queryMatches(byte[] t, int[] scratchTriangle, LatLonShape.QueryRelation queryRelation) {
+  protected boolean queryMatches(byte[] t, ShapeField.DecodedTriangle scratchTriangle, ShapeField.QueryRelation queryRelation) {
+    ShapeField.decodeTriangle(t, scratchTriangle);
 
-    // decode indexed triangle
-    LatLonShape.decodeTriangle(t, scratchTriangle);
+    int aY = scratchTriangle.aY;
+    int aX = scratchTriangle.aX;
+    int bY = scratchTriangle.bY;
+    int bX = scratchTriangle.bX;
+    int cY = scratchTriangle.cY;
+    int cX = scratchTriangle.cX;
 
-    int aY = scratchTriangle[0];
-    int aX = scratchTriangle[1];
-    int bY = scratchTriangle[2];
-    int bX = scratchTriangle[3];
-    int cY = scratchTriangle[4];
-    int cX = scratchTriangle[5];
-
-    if (queryRelation == LatLonShape.QueryRelation.WITHIN) {
+    if (queryRelation == ShapeField.QueryRelation.WITHIN) {
        if (aY == bY && cY == aY && aX == bX && cX == aX) {
          return lonEnc == aX && latEnc == aY;
        }

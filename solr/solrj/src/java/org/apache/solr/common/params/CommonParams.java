@@ -16,9 +16,6 @@
  */
 package org.apache.solr.common.params;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
 
@@ -196,7 +193,7 @@ public interface CommonParams {
   String OK = "OK";
   String FAILURE = "FAILURE";
 
-  Set<String> ADMIN_PATHS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
+  Set<String> ADMIN_PATHS = Set.of(
       CORES_HANDLER_PATH,
       COLLECTIONS_HANDLER_PATH,
       HEALTH_CHECK_HANDLER_PATH,
@@ -209,7 +206,7 @@ public interface CommonParams {
       AUTOSCALING_PATH,
       AUTOSCALING_HISTORY_PATH,
       AUTOSCALING_DIAGNOSTICS_PATH,
-      AUTOSCALING_SUGGESTIONS_PATH)));
+      AUTOSCALING_SUGGESTIONS_PATH);
   String APISPEC_LOCATION = "apispec/";
   String INTROSPECT = "/_introspect";
 
@@ -234,7 +231,7 @@ public interface CommonParams {
       }
       return null;
     }
-  };
+  }
 
   /** which parameters to log (if not supplied all parameters will be logged) **/
   String LOG_PARAMS_LIST = "logParamsList";
@@ -295,6 +292,11 @@ public interface CommonParams {
   String JSON_MIME = "application/json";
 
   String JAVABIN_MIME = "application/javabin";
+
+  String FILE = "file";
+  String FILES = "files";
+
+  String CHILDDOC = "_childDocuments_";
 
 }
 

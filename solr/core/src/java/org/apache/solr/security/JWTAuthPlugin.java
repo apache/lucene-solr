@@ -22,13 +22,8 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletRequestWrapper;
 import javax.servlet.http.HttpServletResponse;
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.time.Instant;
@@ -39,6 +34,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.regex.Pattern;
@@ -61,17 +58,12 @@ import org.apache.solr.security.JWTAuthPlugin.JWTAuthenticationResponse.AuthCode
 import org.eclipse.jetty.client.api.Request;
 import org.jose4j.jwa.AlgorithmConstraints;
 import org.jose4j.jwk.HttpsJwks;
-import org.jose4j.jwk.JsonWebKey;
-import org.jose4j.jwk.JsonWebKeySet;
 import org.jose4j.jwt.JwtClaims;
 import org.jose4j.jwt.MalformedClaimException;
 import org.jose4j.jwt.consumer.InvalidJwtException;
 import org.jose4j.jwt.consumer.InvalidJwtSignatureException;
 import org.jose4j.jwt.consumer.JwtConsumer;
 import org.jose4j.jwt.consumer.JwtConsumerBuilder;
-import org.jose4j.keys.resolvers.HttpsJwksVerificationKeyResolver;
-import org.jose4j.keys.resolvers.JwksVerificationKeyResolver;
-import org.jose4j.keys.resolvers.VerificationKeyResolver;
 import org.jose4j.lang.JoseException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,11 +74,8 @@ import org.slf4j.LoggerFactory;
 public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider, ConfigEditablePlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String PARAM_BLOCK_UNKNOWN = "blockUnknown";
-  private static final String PARAM_JWK_URL = "jwkUrl";
-  private static final String PARAM_JWK = "jwk";
-  private static final String PARAM_ISSUER = "iss";
-  private static final String PARAM_AUDIENCE = "aud";
   private static final String PARAM_REQUIRE_SUBJECT = "requireSub";
+  private static final String PARAM_REQUIRE_ISSUER = "requireIss";
   private static final String PARAM_PRINCIPAL_CLAIM = "principalClaim";
   private static final String PARAM_REQUIRE_EXPIRATIONTIME = "requireExp";
   private static final String PARAM_ALG_WHITELIST = "algWhitelist";
@@ -95,41 +84,39 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   private static final String PARAM_SCOPE = "scope";
   private static final String PARAM_ADMINUI_SCOPE = "adminUiScope";
   private static final String PARAM_REDIRECT_URIS = "redirectUris";
-  private static final String PARAM_CLIENT_ID = "clientId";
-  private static final String PARAM_WELL_KNOWN_URL = "wellKnownUrl";
-  private static final String PARAM_AUTHORIZATION_ENDPOINT = "authorizationEndpoint";
+  private static final String PARAM_ISSUERS = "issuers";
+  private static final String PARAM_REALM = "realm";
 
-  private static final String AUTH_REALM = "solr-jwt";
+  private static final String DEFAULT_AUTH_REALM = "solr-jwt";
   private static final String CLAIM_SCOPE = "scope";
   private static final long RETRY_INIT_DELAY_SECONDS = 30;
+  private static final long DEFAULT_REFRESH_REPRIEVE_THRESHOLD = 5000;
+  static final String PRIMARY_ISSUER = "PRIMARY";
 
-  private static final Set<String> PROPS = ImmutableSet.of(PARAM_BLOCK_UNKNOWN, PARAM_JWK_URL, PARAM_JWK, PARAM_ISSUER,
-      PARAM_AUDIENCE, PARAM_REQUIRE_SUBJECT, PARAM_PRINCIPAL_CLAIM, PARAM_REQUIRE_EXPIRATIONTIME, PARAM_ALG_WHITELIST,
-      PARAM_JWK_CACHE_DURATION, PARAM_CLAIMS_MATCH, PARAM_SCOPE, PARAM_CLIENT_ID, PARAM_WELL_KNOWN_URL, 
-      PARAM_AUTHORIZATION_ENDPOINT, PARAM_ADMINUI_SCOPE, PARAM_REDIRECT_URIS);
+  private static final Set<String> PROPS = ImmutableSet.of(PARAM_BLOCK_UNKNOWN,
+      PARAM_REQUIRE_SUBJECT, PARAM_PRINCIPAL_CLAIM, PARAM_REQUIRE_EXPIRATIONTIME, PARAM_ALG_WHITELIST,
+      PARAM_JWK_CACHE_DURATION, PARAM_CLAIMS_MATCH, PARAM_SCOPE, PARAM_REALM,
+      PARAM_ADMINUI_SCOPE, PARAM_REDIRECT_URIS, PARAM_REQUIRE_ISSUER, PARAM_ISSUERS,
+      // These keys are supported for now to enable PRIMARY issuer config through top-level keys
+      JWTIssuerConfig.PARAM_JWK_URL, JWTIssuerConfig.PARAM_JWKS_URL, JWTIssuerConfig.PARAM_JWK, JWTIssuerConfig.PARAM_ISSUER,
+      JWTIssuerConfig.PARAM_CLIENT_ID, JWTIssuerConfig.PARAM_WELL_KNOWN_URL, JWTIssuerConfig.PARAM_AUDIENCE,
+      JWTIssuerConfig.PARAM_AUTHORIZATION_ENDPOINT);
 
   private JwtConsumer jwtConsumer;
-  private String iss;
-  private String aud;
-  private boolean requireSubject;
   private boolean requireExpirationTime;
   private List<String> algWhitelist;
-  VerificationKeyResolver verificationKeyResolver;
   private String principalClaim;
   private HashMap<String, Pattern> claimsMatchCompiled;
   private boolean blockUnknown;
   private List<String> requiredScopes = new ArrayList<>();
-  private String clientId;
-  private long jwkCacheDuration;
-  private WellKnownDiscoveryConfig oidcDiscoveryConfig;
-  private String confIdpConfigUrl;
   private Map<String, Object> pluginConfig;
   private Instant lastInitTime = Instant.now();
-  private String authorizationEndpoint;
   private String adminUiScope;
   private List<String> redirectUris;
-  private HttpsJwks httpsJkws;
-
+  private List<JWTIssuerConfig> issuerConfigs;
+  private boolean requireIssuer;
+  private JWTVerificationkeyResolver verificationKeyResolver;
+  String realm;
 
   /**
    * Initialize plugin
@@ -139,6 +126,8 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   @SuppressWarnings("unchecked")
   @Override
   public void init(Map<String, Object> pluginConfig) {
+    this.pluginConfig = pluginConfig;
+    this.issuerConfigs = null;
     List<String> unknownKeys = pluginConfig.keySet().stream().filter(k -> !PROPS.contains(k)).collect(Collectors.toList());
     unknownKeys.remove("class");
     unknownKeys.remove("");
@@ -147,69 +136,16 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     }
 
     blockUnknown = Boolean.parseBoolean(String.valueOf(pluginConfig.getOrDefault(PARAM_BLOCK_UNKNOWN, false)));
-    clientId = (String) pluginConfig.get(PARAM_CLIENT_ID);
-    requireSubject = Boolean.parseBoolean(String.valueOf(pluginConfig.getOrDefault(PARAM_REQUIRE_SUBJECT, "true")));
+    requireIssuer = Boolean.parseBoolean(String.valueOf(pluginConfig.getOrDefault(PARAM_REQUIRE_ISSUER, "true")));
     requireExpirationTime = Boolean.parseBoolean(String.valueOf(pluginConfig.getOrDefault(PARAM_REQUIRE_EXPIRATIONTIME, "true")));
+    if (pluginConfig.get(PARAM_REQUIRE_SUBJECT) != null) {
+      log.warn("Parameter {} is no longer used and may generate error in a later version. A subject claim is now always required",
+          PARAM_REQUIRE_SUBJECT);
+    }
     principalClaim = (String) pluginConfig.getOrDefault(PARAM_PRINCIPAL_CLAIM, "sub");
-    confIdpConfigUrl = (String) pluginConfig.get(PARAM_WELL_KNOWN_URL);
-    Object redirectUrisObj = pluginConfig.get(PARAM_REDIRECT_URIS);
-    redirectUris = Collections.emptyList();
-    if (redirectUrisObj != null) {
-      if (redirectUrisObj instanceof String) {
-        redirectUris = Collections.singletonList((String) redirectUrisObj);
-      } else if (redirectUrisObj instanceof List) {
-        redirectUris = (List<String>) redirectUrisObj;
-      }
-    } 
-    
-    if (confIdpConfigUrl != null) {
-      log.debug("Initializing well-known oidc config from {}", confIdpConfigUrl);
-      oidcDiscoveryConfig = WellKnownDiscoveryConfig.parse(confIdpConfigUrl);
-      iss = oidcDiscoveryConfig.getIssuer();
-      authorizationEndpoint = oidcDiscoveryConfig.getAuthorizationEndpoint();
-    }
-    
-    if (pluginConfig.containsKey(PARAM_ISSUER)) {
-      if (iss != null) {
-        log.debug("Explicitly setting required issuer instead of using issuer from well-known config");
-      }
-      iss = (String) pluginConfig.get(PARAM_ISSUER);
-    }
-
-    if (pluginConfig.containsKey(PARAM_AUTHORIZATION_ENDPOINT)) {
-      if (authorizationEndpoint != null) {
-        log.debug("Explicitly setting authorizationEndpoint instead of using issuer from well-known config");
-      }
-      authorizationEndpoint = (String) pluginConfig.get(PARAM_AUTHORIZATION_ENDPOINT);
-    }
-    
-    if (pluginConfig.containsKey(PARAM_AUDIENCE)) {
-      if (clientId != null) {
-        log.debug("Explicitly setting required audience instead of using configured clientId");
-      }
-      aud = (String) pluginConfig.get(PARAM_AUDIENCE);
-    } else {
-      aud = clientId;
-    }
-    
     algWhitelist = (List<String>) pluginConfig.get(PARAM_ALG_WHITELIST);
+    realm = (String) pluginConfig.getOrDefault(PARAM_REALM, DEFAULT_AUTH_REALM);
 
-    String requiredScopesStr = (String) pluginConfig.get(PARAM_SCOPE);
-    if (!StringUtils.isEmpty(requiredScopesStr)) {
-      requiredScopes = Arrays.asList(requiredScopesStr.split("\\s+"));
-    }
-    
-    adminUiScope = (String) pluginConfig.get(PARAM_ADMINUI_SCOPE);
-    if (adminUiScope == null && requiredScopes.size() > 0) {
-      adminUiScope = requiredScopes.get(0);
-      log.warn("No adminUiScope given, using first scope in 'scope' list as required scope for accessing Admin UI");
-    }
-    
-    if (adminUiScope == null) {
-      adminUiScope = "solr";
-      log.warn("Warning: No adminUiScope provided, fallback to 'solr' as required scope. If this is not correct, the Admin UI login may not work");
-    }
-    
     Map<String, String> claimsMatch = (Map<String, String>) pluginConfig.get(PARAM_CLAIMS_MATCH);
     claimsMatchCompiled = new HashMap<>();
     if (claimsMatch != null) {
@@ -218,75 +154,118 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
       }
     }
 
-    initJwk(pluginConfig);
+    String requiredScopesStr = (String) pluginConfig.get(PARAM_SCOPE);
+    if (!StringUtils.isEmpty(requiredScopesStr)) {
+      requiredScopes = Arrays.asList(requiredScopesStr.split("\\s+"));
+    }
+
+    long jwkCacheDuration = Long.parseLong((String) pluginConfig.getOrDefault(PARAM_JWK_CACHE_DURATION, "3600"));
+    JWTIssuerConfig.setHttpsJwksFactory(new JWTIssuerConfig.HttpsJwksFactory(jwkCacheDuration, DEFAULT_REFRESH_REPRIEVE_THRESHOLD));
+
+    issuerConfigs = new ArrayList<>();
+
+    // Try to parse an issuer from top level config, and add first (primary issuer)
+    Optional<JWTIssuerConfig> topLevelIssuer = parseIssuerFromTopLevelConfig(pluginConfig);
+    topLevelIssuer.ifPresent(ic -> {
+      issuerConfigs.add(ic);
+      log.warn("JWTAuthPlugin issuer is configured using top-level configuration keys. Please consider using the 'issuers' array instead.");
+    });
+
+    // Add issuers from 'issuers' key
+    issuerConfigs.addAll(parseIssuers(pluginConfig));
+    verificationKeyResolver = new JWTVerificationkeyResolver(issuerConfigs, requireIssuer);
+
+    if (issuerConfigs.size() > 0 && getPrimaryIssuer().getAuthorizationEndpoint() != null) {
+      adminUiScope = (String) pluginConfig.get(PARAM_ADMINUI_SCOPE);
+      if (adminUiScope == null && requiredScopes.size() > 0) {
+        adminUiScope = requiredScopes.get(0);
+        log.warn("No adminUiScope given, using first scope in 'scope' list as required scope for accessing Admin UI");
+      }
+
+      if (adminUiScope == null) {
+        adminUiScope = "solr";
+        log.info("No adminUiScope provided, fallback to 'solr' as required scope for Admin UI login may not work");
+      }
+
+      Object redirectUrisObj = pluginConfig.get(PARAM_REDIRECT_URIS);
+      redirectUris = Collections.emptyList();
+      if (redirectUrisObj != null) {
+        if (redirectUrisObj instanceof String) {
+          redirectUris = Collections.singletonList((String) redirectUrisObj);
+        } else if (redirectUrisObj instanceof List) {
+          redirectUris = (List<String>) redirectUrisObj;
+        }
+      }
+    }
+
+    initConsumer();
 
     lastInitTime = Instant.now();
   }
 
   @SuppressWarnings("unchecked")
-  private void initJwk(Map<String, Object> pluginConfig) {
-    this.pluginConfig = pluginConfig;
-    String confJwkUrl = (String) pluginConfig.get(PARAM_JWK_URL);
-    Map<String, Object> confJwk = (Map<String, Object>) pluginConfig.get(PARAM_JWK);
-    jwkCacheDuration = Long.parseLong((String) pluginConfig.getOrDefault(PARAM_JWK_CACHE_DURATION, "3600"));
-
-    jwtConsumer = null;
-    int jwkConfigured = confIdpConfigUrl != null ? 1 : 0;
-    jwkConfigured += confJwkUrl != null ? 1 : 0;
-    jwkConfigured += confJwk != null ? 1 : 0;
-    if (jwkConfigured > 1) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "JWTAuthPlugin needs to configure exactly one of " +
-          PARAM_WELL_KNOWN_URL + ", " + PARAM_JWK_URL + " and " + PARAM_JWK);
-    }
-    if (jwkConfigured == 0) {
-      log.warn("Initialized JWTAuthPlugin without any JWK config. Requests with jwk header will fail.");
-    }
-    if (oidcDiscoveryConfig != null) {
-      String jwkUrl = oidcDiscoveryConfig.getJwksUrl();
-      setupJwkUrl(jwkUrl);
-    } else if (confJwkUrl != null) {
-      setupJwkUrl(confJwkUrl);
-    } else if (confJwk != null) {
-      try {
-        JsonWebKeySet jwks = parseJwkSet(confJwk);
-        verificationKeyResolver = new JwksVerificationKeyResolver(jwks.getJsonWebKeys());
-        httpsJkws = null;
-      } catch (JoseException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Invalid JWTAuthPlugin configuration, " + PARAM_JWK + " parse error", e);
-      }
-    }
-    initConsumer();
-    log.debug("JWK configured");
-  }
-
-  void setupJwkUrl(String url) {
-    // The HttpsJwks retrieves and caches keys from a the given HTTPS JWKS endpoint.
+  private Optional<JWTIssuerConfig> parseIssuerFromTopLevelConfig(Map<String, Object> conf) {
     try {
-      URL jwkUrl = new URL(url);
-      if (!"https".equalsIgnoreCase(jwkUrl.getProtocol())) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, PARAM_JWK_URL + " must be an HTTPS url");
+      if (conf.get(JWTIssuerConfig.PARAM_JWK_URL) != null) {
+        log.warn("Configuration uses deprecated key {}. Please use {} instead", JWTIssuerConfig.PARAM_JWK_URL, JWTIssuerConfig.PARAM_JWKS_URL);
       }
-    } catch (MalformedURLException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, PARAM_JWK_URL + " must be a valid URL");
+      JWTIssuerConfig primary = new JWTIssuerConfig(PRIMARY_ISSUER)
+          .setIss((String) conf.get(JWTIssuerConfig.PARAM_ISSUER))
+          .setAud((String) conf.get(JWTIssuerConfig.PARAM_AUDIENCE))
+          .setJwksUrl(conf.get(JWTIssuerConfig.PARAM_JWKS_URL) != null ? conf.get(JWTIssuerConfig.PARAM_JWKS_URL) : conf.get(JWTIssuerConfig.PARAM_JWK_URL))
+          .setAuthorizationEndpoint((String) conf.get(JWTIssuerConfig.PARAM_AUTHORIZATION_ENDPOINT))
+          .setClientId((String) conf.get(JWTIssuerConfig.PARAM_CLIENT_ID))
+          .setWellKnownUrl((String) conf.get(JWTIssuerConfig.PARAM_WELL_KNOWN_URL));
+      if (conf.get(JWTIssuerConfig.PARAM_JWK) != null) {
+        primary.setJsonWebKeySet(JWTIssuerConfig.parseJwkSet((Map<String, Object>) conf.get(JWTIssuerConfig.PARAM_JWK)));
+      }
+      if (primary.isValid()) {
+        log.debug("Found issuer in top level config");
+        primary.init();
+        return Optional.of(primary);
+      } else {
+        log.debug("No issuer configured in top level config");
+        return Optional.empty();
+      }
+    } catch (JoseException je) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed parsing issuer from top level config", je);
     }
-    httpsJkws = new HttpsJwks(url);
-    httpsJkws.setDefaultCacheDuration(jwkCacheDuration);
-    httpsJkws.setRefreshReprieveThreshold(5000);
-    verificationKeyResolver = new HttpsJwksVerificationKeyResolver(httpsJkws);
   }
 
-  @SuppressWarnings("unchecked")
-  JsonWebKeySet parseJwkSet(Map<String, Object> jwkObj) throws JoseException {
-    JsonWebKeySet webKeySet = new JsonWebKeySet();
-    if (jwkObj.containsKey("keys")) {
-      List<Object> jwkList = (List<Object>) jwkObj.get("keys");
-      for (Object jwkO : jwkList) {
-        webKeySet.addJsonWebKey(JsonWebKey.Factory.newJwk((Map<String, Object>) jwkO));
-      }
-    } else {
-      webKeySet = new JsonWebKeySet(JsonWebKey.Factory.newJwk(jwkObj));
+  /**
+   * Fetch the primary issuer to be used for Admin UI authentication. Callers of this method must ensure that at least
+   * one issuer is configured. The primary issuer is defined as the first issuer configured in the list.
+   * @return JWTIssuerConfig object for the primary issuer
+   */
+  JWTIssuerConfig getPrimaryIssuer() {
+    if (issuerConfigs.size() == 0) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "No issuers configured");
     }
-    return webKeySet;
+    return issuerConfigs.get(0);
+  }
+
+  /**
+   * Initialize optional additional issuers configured in 'issuers' config map
+   * @param pluginConfig the main config object
+   * @return a list of parsed {@link JWTIssuerConfig} objects
+   */
+  @SuppressWarnings("unchecked")
+  List<JWTIssuerConfig> parseIssuers(Map<String, Object> pluginConfig) {
+    List<JWTIssuerConfig> configs = new ArrayList<>();
+    try {
+      List<Map<String, Object>> issuers = (List<Map<String, Object>>) pluginConfig.get(PARAM_ISSUERS);
+      if (issuers != null) {
+        issuers.forEach(issuerConf -> {
+          JWTIssuerConfig ic = new JWTIssuerConfig(issuerConf);
+          ic.init();
+          configs.add(ic);
+          log.debug("Found issuer with name {} and issuerId {}", ic.getName(), ic.getIss());
+        });
+      }
+      return configs;
+    } catch(ClassCastException cce) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parameter " + PARAM_ISSUERS + " has wrong format.", cce);
+    }
   }
 
   /**
@@ -302,8 +281,8 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     if (jwtConsumer == null) {
       if (header == null && !blockUnknown) {
         log.info("JWTAuth not configured, but allowing anonymous access since {}==false", PARAM_BLOCK_UNKNOWN);
-        filterChain.doFilter(request, response);
         numPassThrough.inc();
+        filterChain.doFilter(request, response);
         return true;
       }
       // Retry config
@@ -319,13 +298,22 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     }
 
     JWTAuthenticationResponse authResponse = authenticate(header);
-    if (AuthCode.SIGNATURE_INVALID.equals(authResponse.getAuthCode()) && httpsJkws != null) {
-      log.warn("Signature validation failed. Refreshing JWKs from IdP before trying again: {}",
-          authResponse.getJwtException() == null ? "" : authResponse.getJwtException().getMessage());
-      httpsJkws.refresh();
-      authResponse = authenticate(header);
-    }
     String exceptionMessage = authResponse.getJwtException() != null ? authResponse.getJwtException().getMessage() : "";
+    if (AuthCode.SIGNATURE_INVALID.equals(authResponse.getAuthCode())) {
+      String issuer = jwtConsumer.processToClaims(header).getIssuer();
+      if (issuer != null) {
+        Optional<JWTIssuerConfig> issuerConfig = issuerConfigs.stream().filter(ic -> issuer.equals(ic.getIss())).findFirst();
+        if (issuerConfig.isPresent() && issuerConfig.get().usesHttpsJwk()) {
+          log.info("Signature validation failed for issuer {}. Refreshing JWKs from IdP before trying again: {}",
+              issuer, exceptionMessage);
+          for (HttpsJwks httpsJwks : issuerConfig.get().getHttpsJwks()) {
+            httpsJwks.refresh();
+          }
+          authResponse = authenticate(header); // Retry
+          exceptionMessage = authResponse.getJwtException() != null ? authResponse.getJwtException().getMessage() : "";
+        }
+      }
+    }
 
     switch (authResponse.getAuthCode()) {
       case AUTHENTICATED:
@@ -342,22 +330,22 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
         }
         if (log.isDebugEnabled())
           log.debug("Authentication SUCCESS");
-        filterChain.doFilter(wrapper, response);
         numAuthenticated.inc();
+        filterChain.doFilter(wrapper, response);
         return true;
 
       case PASS_THROUGH:
         if (log.isDebugEnabled())
           log.debug("Unknown user, but allow due to {}=false", PARAM_BLOCK_UNKNOWN);
-        filterChain.doFilter(request, response);
         numPassThrough.inc();
+        filterChain.doFilter(request, response);
         return true;
 
       case AUTZ_HEADER_PROBLEM:
       case JWT_PARSE_ERROR:
         log.warn("Authentication failed. {}, {}", authResponse.getAuthCode(), authResponse.getAuthCode().getMsg());
-        authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_BAD_REQUEST, BearerWwwAuthErrorCode.invalid_request);
         numErrors.mark();
+        authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_BAD_REQUEST, BearerWwwAuthErrorCode.invalid_request);
         return false;
 
       case CLAIM_MISMATCH:
@@ -365,25 +353,25 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
       case JWT_VALIDATION_EXCEPTION:
       case PRINCIPAL_MISSING:
         log.warn("Authentication failed. {}, {}", authResponse.getAuthCode(), exceptionMessage);
-        authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.invalid_token);
         numWrongCredentials.inc();
+        authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.invalid_token);
         return false;
 
       case SIGNATURE_INVALID:
         log.warn("Signature validation failed: {}", exceptionMessage);
-        authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.invalid_token);
         numWrongCredentials.inc();
+        authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.invalid_token);
         return false;
 
       case SCOPE_MISSING:
-        authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.insufficient_scope);
         numWrongCredentials.inc();
+        authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, BearerWwwAuthErrorCode.insufficient_scope);
         return false;
 
       case NO_AUTZ_HEADER:
       default:
-        authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, null);
         numMissingCredentials.inc();
+        authenticationFailure(response, authResponse.getAuthCode().getMsg(), HttpServletResponse.SC_UNAUTHORIZED, null);
         return false;
     }
   }
@@ -396,74 +384,68 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
    */
   protected JWTAuthenticationResponse authenticate(String authorizationHeader) {
     if (authorizationHeader != null) {
-      StringTokenizer st = new StringTokenizer(authorizationHeader);
-      if (st.hasMoreTokens()) {
-        String bearer = st.nextToken();
-        if (bearer.equalsIgnoreCase("Bearer") && st.hasMoreTokens()) {
+      String jwtCompact = parseAuthorizationHeader(authorizationHeader);
+      if (jwtCompact != null) {
+        try {
           try {
-            String jwtCompact = st.nextToken();
-            try {
-              JwtClaims jwtClaims = jwtConsumer.processToClaims(jwtCompact);
-              String principal = jwtClaims.getStringClaimValue(principalClaim);
-              if (principal == null || principal.isEmpty()) {
-                return new JWTAuthenticationResponse(AuthCode.PRINCIPAL_MISSING, "Cannot identify principal from JWT. Required claim " + principalClaim + " missing. Cannot authenticate");
-              }
-              if (claimsMatchCompiled != null) {
-                for (Map.Entry<String, Pattern> entry : claimsMatchCompiled.entrySet()) {
-                  String claim = entry.getKey();
-                  if (jwtClaims.hasClaim(claim)) {
-                    if (!entry.getValue().matcher(jwtClaims.getStringClaimValue(claim)).matches()) {
-                      return new JWTAuthenticationResponse(AuthCode.CLAIM_MISMATCH,
-                          "Claim " + claim + "=" + jwtClaims.getStringClaimValue(claim)
-                              + " does not match required regular expression " + entry.getValue().pattern());
-                    }
-                  } else {
-                    return new JWTAuthenticationResponse(AuthCode.CLAIM_MISMATCH, "Claim " + claim + " is required but does not exist in JWT");
-                  }
-                }
-              }
-              if (!requiredScopes.isEmpty() && !jwtClaims.hasClaim(CLAIM_SCOPE)) {
-                // Fail if we require scopes but they don't exist
-                return new JWTAuthenticationResponse(AuthCode.CLAIM_MISMATCH, "Claim " + CLAIM_SCOPE + " is required but does not exist in JWT");
-              }
-              Set<String> scopes = Collections.emptySet();
-              Object scopesObj = jwtClaims.getClaimValue(CLAIM_SCOPE);
-              if (scopesObj != null) {
-                if (scopesObj instanceof String) {
-                  scopes = new HashSet<>(Arrays.asList(((String) scopesObj).split("\\s+")));
-                } else if (scopesObj instanceof List) {
-                  scopes = new HashSet<>(jwtClaims.getStringListClaimValue(CLAIM_SCOPE));
-                }
-                // Validate that at least one of the required scopes are present in the scope claim 
-                if (!requiredScopes.isEmpty()) {
-                  if (scopes.stream().noneMatch(requiredScopes::contains)) {
-                    return new JWTAuthenticationResponse(AuthCode.SCOPE_MISSING, "Claim " + CLAIM_SCOPE + " does not contain any of the required scopes: " + requiredScopes);
-                  }
-                }
-                final Set<String> finalScopes = new HashSet<>(scopes);
-                finalScopes.remove("openid"); // Remove standard scope
-                // Pass scopes with principal to signal to any Authorization plugins that user has some verified role claims
-                return new JWTAuthenticationResponse(AuthCode.AUTHENTICATED, new JWTPrincipalWithUserRoles(principal, jwtCompact, jwtClaims.getClaimsMap(), finalScopes));
-              } else {
-                return new JWTAuthenticationResponse(AuthCode.AUTHENTICATED, new JWTPrincipal(principal, jwtCompact, jwtClaims.getClaimsMap()));
-              }
-            } catch (InvalidJwtSignatureException ise) {
-              return new JWTAuthenticationResponse(AuthCode.SIGNATURE_INVALID, ise);
-            } catch (InvalidJwtException e) {
-              // Whether or not the JWT has expired being one common reason for invalidity
-              if (e.hasExpired()) {
-                return new JWTAuthenticationResponse(AuthCode.JWT_EXPIRED, "Authentication failed due to expired JWT token. Expired at " + e.getJwtContext().getJwtClaims().getExpirationTime());
-              }
-              if (e.getCause() != null && e.getCause() instanceof JoseException && e.getCause().getMessage().contains("Invalid JOSE Compact Serialization")) {
-                return new JWTAuthenticationResponse(AuthCode.JWT_PARSE_ERROR, e.getCause().getMessage());
-              }
-              return new JWTAuthenticationResponse(AuthCode.JWT_VALIDATION_EXCEPTION, e);
+            JwtClaims jwtClaims = jwtConsumer.processToClaims(jwtCompact);
+            String principal = jwtClaims.getStringClaimValue(principalClaim);
+            if (principal == null || principal.isEmpty()) {
+              return new JWTAuthenticationResponse(AuthCode.PRINCIPAL_MISSING, "Cannot identify principal from JWT. Required claim " + principalClaim + " missing. Cannot authenticate");
             }
-          } catch (MalformedClaimException e) {
-            return new JWTAuthenticationResponse(AuthCode.JWT_PARSE_ERROR, "Malformed claim, error was: " + e.getMessage());
+            if (claimsMatchCompiled != null) {
+              for (Map.Entry<String, Pattern> entry : claimsMatchCompiled.entrySet()) {
+                String claim = entry.getKey();
+                if (jwtClaims.hasClaim(claim)) {
+                  if (!entry.getValue().matcher(jwtClaims.getStringClaimValue(claim)).matches()) {
+                    return new JWTAuthenticationResponse(AuthCode.CLAIM_MISMATCH,
+                        "Claim " + claim + "=" + jwtClaims.getStringClaimValue(claim)
+                            + " does not match required regular expression " + entry.getValue().pattern());
+                  }
+                } else {
+                  return new JWTAuthenticationResponse(AuthCode.CLAIM_MISMATCH, "Claim " + claim + " is required but does not exist in JWT");
+                }
+              }
+            }
+            if (!requiredScopes.isEmpty() && !jwtClaims.hasClaim(CLAIM_SCOPE)) {
+              // Fail if we require scopes but they don't exist
+              return new JWTAuthenticationResponse(AuthCode.CLAIM_MISMATCH, "Claim " + CLAIM_SCOPE + " is required but does not exist in JWT");
+            }
+            Set<String> scopes = Collections.emptySet();
+            Object scopesObj = jwtClaims.getClaimValue(CLAIM_SCOPE);
+            if (scopesObj != null) {
+              if (scopesObj instanceof String) {
+                scopes = new HashSet<>(Arrays.asList(((String) scopesObj).split("\\s+")));
+              } else if (scopesObj instanceof List) {
+                scopes = new HashSet<>(jwtClaims.getStringListClaimValue(CLAIM_SCOPE));
+              }
+              // Validate that at least one of the required scopes are present in the scope claim
+              if (!requiredScopes.isEmpty()) {
+                if (scopes.stream().noneMatch(requiredScopes::contains)) {
+                  return new JWTAuthenticationResponse(AuthCode.SCOPE_MISSING, "Claim " + CLAIM_SCOPE + " does not contain any of the required scopes: " + requiredScopes);
+                }
+              }
+              final Set<String> finalScopes = new HashSet<>(scopes);
+              finalScopes.remove("openid"); // Remove standard scope
+              // Pass scopes with principal to signal to any Authorization plugins that user has some verified role claims
+              return new JWTAuthenticationResponse(AuthCode.AUTHENTICATED, new JWTPrincipalWithUserRoles(principal, jwtCompact, jwtClaims.getClaimsMap(), finalScopes));
+            } else {
+              return new JWTAuthenticationResponse(AuthCode.AUTHENTICATED, new JWTPrincipal(principal, jwtCompact, jwtClaims.getClaimsMap()));
+            }
+          } catch (InvalidJwtSignatureException ise) {
+            return new JWTAuthenticationResponse(AuthCode.SIGNATURE_INVALID, ise);
+          } catch (InvalidJwtException e) {
+            // Whether or not the JWT has expired being one common reason for invalidity
+            if (e.hasExpired()) {
+              return new JWTAuthenticationResponse(AuthCode.JWT_EXPIRED, "Authentication failed due to expired JWT token. Expired at " + e.getJwtContext().getJwtClaims().getExpirationTime());
+            }
+            if (e.getCause() != null && e.getCause() instanceof JoseException && e.getCause().getMessage().contains("Invalid JOSE Compact Serialization")) {
+              return new JWTAuthenticationResponse(AuthCode.JWT_PARSE_ERROR, e.getCause().getMessage());
+            }
+            return new JWTAuthenticationResponse(AuthCode.JWT_VALIDATION_EXCEPTION, e);
           }
-        } else {
-          return new JWTAuthenticationResponse(AuthCode.AUTZ_HEADER_PROBLEM, "Authorization header is not in correct format");
+        } catch (MalformedClaimException e) {
+          return new JWTAuthenticationResponse(AuthCode.JWT_PARSE_ERROR, "Malformed claim, error was: " + e.getMessage());
         }
       } else {
         return new JWTAuthenticationResponse(AuthCode.AUTZ_HEADER_PROBLEM, "Authorization header is not in correct format");
@@ -479,18 +461,31 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     }
   }
 
+  private String parseAuthorizationHeader(String authorizationHeader) {
+    StringTokenizer st = new StringTokenizer(authorizationHeader);
+    if (st.hasMoreTokens()) {
+      String bearer = st.nextToken();
+      if (bearer.equalsIgnoreCase("Bearer") && st.hasMoreTokens()) {
+        return st.nextToken();
+      }
+    }
+    return null;
+  }
+
   private void initConsumer() {
     JwtConsumerBuilder jwtConsumerBuilder = new JwtConsumerBuilder()
         .setAllowedClockSkewInSeconds(30); // allow some leeway in validating time based claims to account for clock skew
-    if (iss != null)
-      jwtConsumerBuilder.setExpectedIssuer(iss); // whom the JWT needs to have been issued by
-    if (aud != null) {
-      jwtConsumerBuilder.setExpectedAudience(aud); // to whom the JWT is intended for
+    String[] issuers = issuerConfigs.stream().map(JWTIssuerConfig::getIss).filter(Objects::nonNull).toArray(String[]::new);
+    if (issuers.length > 0) {
+      jwtConsumerBuilder.setExpectedIssuers(requireIssuer, issuers); // whom the JWT needs to have been issued by
+    }
+    String[] audiences = issuerConfigs.stream().map(JWTIssuerConfig::getAud).filter(Objects::nonNull).toArray(String[]::new);
+    if (audiences.length > 0) {
+      jwtConsumerBuilder.setExpectedAudience(audiences); // to whom the JWT is intended for
     } else {
       jwtConsumerBuilder.setSkipDefaultAudienceValidation();
     }
-    if (requireSubject)
-      jwtConsumerBuilder.setRequireSubject();
+    jwtConsumerBuilder.setRequireSubject();
     if (requireExpirationTime)
       jwtConsumerBuilder.setRequireExpirationTime();
     if (algWhitelist != null)
@@ -542,7 +537,7 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
 
   private void authenticationFailure(HttpServletResponse response, String message, int httpCode, BearerWwwAuthErrorCode responseError) throws IOException {
     List<String> wwwAuthParams = new ArrayList<>();
-    wwwAuthParams.add("Bearer realm=\"" + AUTH_REALM + "\"");
+    wwwAuthParams.add("Bearer realm=\"" + realm + "\"");
     if (responseError != null) {
       wwwAuthParams.add("error=\"" + responseError + "\"");
       wwwAuthParams.add("error_description=\"" + message + "\"");
@@ -554,15 +549,15 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
   }
 
   protected String generateAuthDataHeader() {
+    JWTIssuerConfig primaryIssuer = getPrimaryIssuer();
     Map<String,Object> data = new HashMap<>();
-    data.put(PARAM_AUTHORIZATION_ENDPOINT, authorizationEndpoint);
-    data.put("client_id", clientId);
+    data.put(JWTIssuerConfig.PARAM_AUTHORIZATION_ENDPOINT, primaryIssuer.getAuthorizationEndpoint());
+    data.put("client_id", primaryIssuer.getClientId());
     data.put("scope", adminUiScope);
     data.put("redirect_uris", redirectUris);
     String headerJson = Utils.toJSONString(data);
     return Base64.byteArrayToBase64(headerJson.getBytes(StandardCharsets.UTF_8));
   }
-
 
   /**
    * Response for authentication attempt
@@ -641,73 +636,6 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
     }
   }
 
-  /**
-   * Config object for a OpenId Connect well-known config
-   * Typically exposed through /.well-known/openid-configuration endpoint 
-   */
-  public static class WellKnownDiscoveryConfig {
-    private static Map<String, Object> securityConf;
-  
-    WellKnownDiscoveryConfig(Map<String, Object> securityConf) {
-      WellKnownDiscoveryConfig.securityConf = securityConf;
-    }
-  
-    public static WellKnownDiscoveryConfig parse(String urlString) {
-      try {
-        URL url = new URL(urlString);
-        if (!Arrays.asList("https", "file").contains(url.getProtocol())) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Well-known config URL must be HTTPS or file");
-        }
-        return parse(url.openStream());
-      } catch (MalformedURLException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Well-known config URL " + urlString + " is malformed", e);
-      } catch (IOException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Well-known config could not be read from url " + urlString, e);
-      }
-    }
-  
-    public static WellKnownDiscoveryConfig parse(String json, Charset charset) {
-      return parse(new ByteArrayInputStream(json.getBytes(charset)));
-    }
-  
-    @SuppressWarnings("unchecked")
-    public static WellKnownDiscoveryConfig parse(InputStream configStream) {
-      securityConf = (Map<String, Object>) Utils.fromJSON(configStream);
-      return new WellKnownDiscoveryConfig(securityConf);
-    }
-  
-    
-    public String getJwksUrl() {
-      return (String) securityConf.get("jwks_uri");
-    }
-  
-    public String getIssuer() {
-      return (String) securityConf.get("issuer");
-    }
-  
-    public String getAuthorizationEndpoint() {
-      return (String) securityConf.get("authorization_endpoint");
-    }
-    
-    public String getUserInfoEndpoint() {
-      return (String) securityConf.get("userinfo_endpoint");
-    }
-
-    public String getTokenEndpoint() {
-      return (String) securityConf.get("token_endpoint");
-    }
-
-    @SuppressWarnings("unchecked")
-    public List<String> getScopesSupported() {
-      return (List<String>) securityConf.get("scopes_supported");
-    }
-
-    @SuppressWarnings("unchecked")
-    public List<String> getResponseTypesSupported() {
-      return (List<String>) securityConf.get("response_types_supported");
-    }
-  }
-
   @Override
   protected boolean interceptInternodeRequest(HttpRequest httpRequest, HttpContext httpContext) {
     if (httpContext instanceof HttpClientContext) {
@@ -730,5 +658,18 @@ public class JWTAuthPlugin extends AuthenticationPlugin implements SpecProvider,
       return true;
     }
     return false;
+  }
+
+  public List<JWTIssuerConfig> getIssuerConfigs() {
+    return issuerConfigs;
+  }
+
+  /**
+   * Lookup issuer config by its name
+   * @param name name property of config
+   * @return issuer config object or null if not found
+   */
+  public JWTIssuerConfig getIssuerConfigByName(String name) {
+    return issuerConfigs.stream().filter(ic -> name.equals(ic.getName())).findAny().orElse(null);
   }
 }

@@ -42,8 +42,19 @@ public class TestV2Request extends SolrCloudTestCase {
   @Before
   public void setupCluster() throws Exception {
     configureCluster(4)
+        .withJettyConfig(jettyCfg -> jettyCfg.enableV2(true))
         .addConfig("config", getFile("solrj/solr/collection1/conf").toPath())
         .configure();
+  }
+
+  public void testApiPathAvailability() throws Exception {
+    V2Response rsp = new V2Request.Builder("/cluster/nodes")
+        .forceV2(true)
+        .withMethod(SolrRequest.METHOD.GET).build()
+        .process(cluster.getSolrClient());
+    List l = (List) rsp._get("nodes",null);
+    assertNotNull(l);
+    assertFalse(l.isEmpty());
   }
   
   @After

@@ -28,6 +28,7 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -78,6 +79,23 @@ public class SimNodeStateProvider implements NodeStateProvider {
       return null;
     }
     return values.get(key);
+  }
+
+  /**
+   * Atomically update a node value.
+   * @param node node id
+   * @param key property name
+   * @param updater updater function
+   * @return previous property value or null if property or node didn't exist.
+   */
+  public Object simUpdateNodeValue(String node, String key, Function<Object, Object> updater) throws InterruptedException {
+    lock.lockInterruptibly();
+    try {
+      Map<String, Object> values = nodeValues.computeIfAbsent(node, n -> new ConcurrentHashMap<>());
+      return values.put(key, updater.apply(values.get(key)));
+    } finally {
+      lock.unlock();
+    }
   }
 
   /**
@@ -295,9 +313,8 @@ public class SimNodeStateProvider implements NodeStateProvider {
     if (tags.isEmpty()) {
       return new HashMap<>();
     }
-    Map<String, Object> result = new HashMap<>();
     Map<String, Object> metrics = getReplicaMetricsValues(node, tags.stream().filter(s -> s.startsWith("metrics:solr.core.")).collect(Collectors.toList()));
-    result.putAll(metrics);
+    Map<String, Object> result = new HashMap<>(metrics);
     Map<String, Object> values = nodeValues.get(node);
     if (values == null) {
       return result;

@@ -62,7 +62,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
   private AuthenticationProvider authenticationProvider;
   private final static ThreadLocal<Header> authHeader = new ThreadLocal<>();
   private static final String X_REQUESTED_WITH_HEADER = "X-Requested-With";
-  private boolean blockUnknown = false;
+  private boolean blockUnknown = true;
   private boolean forwardCredentials = false;
 
   public boolean authenticate(String username, String pwd) {
@@ -140,7 +140,7 @@ public class BasicAuthPlugin extends AuthenticationPlugin implements ConfigEdita
         if (basic.equalsIgnoreCase("Basic")) {
           if (st.hasMoreTokens()) {
             try {
-              String credentials = new String(Base64.decodeBase64(st.nextToken()), "UTF-8");
+              String credentials = new String(Base64.decodeBase64(st.nextToken()), StandardCharsets.UTF_8);
               int p = credentials.indexOf(":");
               if (p != -1) {
                 final String username = credentials.substring(0, p).trim();

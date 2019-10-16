@@ -57,7 +57,7 @@ public class TestLang extends SolrTestCase {
       "triangularDistribution", "precision", "minMaxScale", "markovChain", "grandSum",
       "scalarAdd", "scalarSubtract", "scalarMultiply", "scalarDivide", "sumRows",
       "sumColumns", "diff", "corrPValues", "normalizeSum", "geometricDistribution", "olsRegress",
-      "derivative", "spline", "ttest", "pairedTtest", "multiVariateNormalDistribution", "integrate",
+      "derivative", "spline", "ttest", "pairedTtest", "multiVariateNormalDistribution", "integral",
       "density", "mannWhitney", "sumSq", "akima", "lerp", "chiSquareDataSet", "gtestDataSet",
       "termVectors", "getColumnLabels", "getRowLabels", "getAttribute", "kmeans", "getCentroids",
       "getCluster", "topFeatures", "featureSelect", "rowAt", "colAt", "setColumnLabels",
@@ -76,7 +76,8 @@ public class TestLang extends SolrTestCase {
       "getAmplitude", "getPhase", "getAngularFrequency", "enclosingDisk", "getCenter", "getRadius",
       "getSupportPoints", "pairSort", "log10", "plist", "recip", "pivot", "ltrim", "rtrim", "export",
       "zplot", "natural", "repeat", "movingMAD", "hashRollup", "noop", "var", "stddev", "recNum", "isNull",
-      "notNull", "matches", "projectToBorder"};
+      "notNull", "matches", "projectToBorder", "double", "long", "parseCSV", "parseTSV", "dateTime",
+       "split", "upper", "trim", "lower", "trunc", "cosine"};
 
   @Test
   public void testLang() {

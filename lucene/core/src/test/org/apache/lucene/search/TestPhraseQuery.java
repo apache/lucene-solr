@@ -23,6 +23,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CannedTokenStream;
@@ -34,18 +36,24 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.TextField;
 import org.apache.lucene.document.Field.Store;
+import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.Impact;
+import org.apache.lucene.index.Impacts;
+import org.apache.lucene.index.ImpactsEnum;
+import org.apache.lucene.index.ImpactsSource;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.junit.AfterClass;
@@ -760,5 +768,318 @@ public class TestPhraseQuery extends LuceneTestCase {
     }
     r.close();
     dir.close();
+  }
+
+  public void testMergeImpacts() throws IOException {
+    DummyImpactsEnum impacts1 = new DummyImpactsEnum(1000);
+    DummyImpactsEnum impacts2 = new DummyImpactsEnum(2000);
+    ImpactsSource mergedImpacts = ExactPhraseMatcher.mergeImpacts(new ImpactsEnum[] { impacts1, impacts2 });
+
+    impacts1.reset(
+        new Impact[][] {
+          new Impact[] { new Impact(3, 10), new Impact(5, 12), new Impact(8, 13) },
+          new Impact[] { new Impact(3, 10), new Impact(5, 11), new Impact(8, 13),  new Impact(12, 14) }
+        },
+        new int[] {
+            110,
+            945
+        });
+
+    // Merge with empty impacts
+    impacts2.reset(
+        new Impact[0][],
+        new int[0]);
+    assertEquals(
+        new Impact[][] {
+          new Impact[] { new Impact(3, 10), new Impact(5, 12), new Impact(8, 13) },
+          new Impact[] { new Impact(3, 10), new Impact(5, 11), new Impact(8, 13),  new Impact(12, 14) }
+        },
+        new int[] {
+            110,
+            945
+        },
+        mergedImpacts.getImpacts());
+
+    // Merge with dummy impacts
+    impacts2.reset(
+        new Impact[][] {
+          new Impact[] { new Impact(Integer.MAX_VALUE, 1) }
+        },
+        new int[] {
+            5000
+        });
+    assertEquals(
+        new Impact[][] {
+          new Impact[] { new Impact(3, 10), new Impact(5, 12), new Impact(8, 13) },
+          new Impact[] { new Impact(3, 10), new Impact(5, 11), new Impact(8, 13),  new Impact(12, 14) }
+        },
+        new int[] {
+            110,
+            945
+        },
+        mergedImpacts.getImpacts());
+
+    // Merge with dummy impacts that we don't special case
+    impacts2.reset(
+        new Impact[][] {
+          new Impact[] { new Impact(Integer.MAX_VALUE, 2) }
+        },
+        new int[] {
+            5000
+        });
+    assertEquals(
+        new Impact[][] {
+          new Impact[] { new Impact(3, 10), new Impact(5, 12), new Impact(8, 13) },
+          new Impact[] { new Impact(3, 10), new Impact(5, 11), new Impact(8, 13),  new Impact(12, 14) }
+        },
+        new int[] {
+            110,
+            945
+        },
+        mergedImpacts.getImpacts());
+
+    // First level of impacts2 doesn't cover the first level of impacts1
+    impacts2.reset(
+        new Impact[][] {
+          new Impact[] { new Impact(2, 10), new Impact(6, 13) },
+          new Impact[] { new Impact(3, 9), new Impact(5, 11), new Impact(7, 13) }
+        },
+        new int[] {
+            90,
+            1000
+        }); 
+    assertEquals(
+        new Impact[][] {
+          new Impact[] { new Impact(3, 10), new Impact(5, 12), new Impact(7, 13) },
+          new Impact[] { new Impact(3, 10), new Impact(5, 11), new Impact(7, 13) }
+        },
+        new int[] {
+            110,
+            945
+        },
+        mergedImpacts.getImpacts());
+
+    // Second level of impacts2 doesn't cover the first level of impacts1
+    impacts2.reset(
+        new Impact[][] {
+          new Impact[] { new Impact(2, 10), new Impact(6, 11) },
+          new Impact[] { new Impact(3, 9), new Impact(5, 11), new Impact(7, 13) }
+        },
+        new int[] {
+            150,
+            900
+        });
+    assertEquals(
+        new Impact[][] {
+          new Impact[] { new Impact(2, 10), new Impact(3, 11), new Impact(5, 12), new Impact(6, 13) },
+          new Impact[] { new Impact(3, 10), new Impact(5, 11), new Impact(8, 13),  new Impact(12, 14) } // same as impacts1
+        },
+        new int[] {
+            110,
+            945
+        },
+        mergedImpacts.getImpacts());
+
+    impacts2.reset(
+        new Impact[][] {
+          new Impact[] { new Impact(4, 10), new Impact(9, 13) },
+          new Impact[] { new Impact(1, 1), new Impact(4, 10), new Impact(5, 11), new Impact(8, 13), new Impact(12, 14), new Impact(13, 15) }
+        },
+        new int[] {
+            113,
+            950
+        });
+    assertEquals(
+        new Impact[][] {
+          new Impact[] { new Impact(3, 10), new Impact(4, 12), new Impact(8, 13) },
+          new Impact[] { new Impact(3, 10), new Impact(5, 11), new Impact(8, 13), new Impact(12, 14) }
+        },
+        new int[] {
+            110,
+            945
+        },
+        mergedImpacts.getImpacts());
+
+    // Make sure negative norms are treated as unsigned
+    impacts1.reset(
+        new Impact[][] {
+          new Impact[] { new Impact(3, 10), new Impact(5, -10), new Impact(8, -5) },
+          new Impact[] { new Impact(3, 10), new Impact(5, -15), new Impact(8, -5),  new Impact(12, -3) }
+        },
+        new int[] {
+            110,
+            945
+        });
+    impacts2.reset(
+        new Impact[][] {
+          new Impact[] { new Impact(2, 10), new Impact(12, -4) },
+          new Impact[] { new Impact(3, 9), new Impact(12, -4), new Impact(20, -1) }
+        },
+        new int[] {
+            150,
+            960
+        });
+    assertEquals(
+        new Impact[][] {
+          new Impact[] { new Impact(2, 10), new Impact(8, -4) },
+          new Impact[] { new Impact(3, 10), new Impact(8, -4), new Impact(12, -3) }
+        },
+        new int[] {
+            110,
+            945
+        },
+        mergedImpacts.getImpacts());
+  }
+
+  private static void assertEquals(Impact[][] impacts, int[] docIdUpTo, Impacts actual) {
+    assertEquals(impacts.length, actual.numLevels());
+    for (int i = 0; i < impacts.length; ++i) {
+      assertEquals(docIdUpTo[i], actual.getDocIdUpTo(i));
+      assertEquals(Arrays.asList(impacts[i]), actual.getImpacts(i));
+    }
+  }
+
+  private static class DummyImpactsEnum extends ImpactsEnum {
+
+    private final long cost;
+    private Impact[][] impacts;
+    private int[] docIdUpTo;
+
+    DummyImpactsEnum(long cost) {
+      this.cost = cost;
+    }
+
+    void reset(Impact[][] impacts, int[] docIdUpTo) {
+      this.impacts = impacts;
+      this.docIdUpTo = docIdUpTo;
+    }
+
+    @Override
+    public void advanceShallow(int target) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public Impacts getImpacts() throws IOException {
+      return new Impacts() {
+
+        @Override
+        public int numLevels() {
+          return impacts.length;
+        }
+
+        @Override
+        public int getDocIdUpTo(int level) {
+          return docIdUpTo[level];
+        }
+
+        @Override
+        public List<Impact> getImpacts(int level) {
+          return Arrays.asList(impacts[level]);
+        }
+
+      };
+    }
+
+    @Override
+    public int freq() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int nextPosition() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int startOffset() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int endOffset() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public BytesRef getPayload() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int docID() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int nextDoc() throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int advance(int target) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public long cost() {
+      return cost;
+    }
+
+  }
+
+  public void testRandomTopDocs() throws IOException {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
+    int numDocs = atLeast(128 * 8 * 8 * 3); // make sure some terms have skip data
+    for (int i = 0; i < numDocs; ++i) {
+      Document doc = new Document();
+      int numTerms = random().nextInt(1 << random().nextInt(5));
+      String text = IntStream.range(0, numTerms)
+          .mapToObj(index -> random().nextBoolean() ? "a" : random().nextBoolean() ? "b" : "c")
+          .collect(Collectors.joining(" "));
+      doc.add(new TextField("foo", text, Store.NO));
+      w.addDocument(doc);
+    }
+    IndexReader reader = DirectoryReader.open(w);
+    w.close();
+    IndexSearcher searcher = newSearcher(reader);
+
+    for (String firstTerm : new String[] {"a", "b", "c"}) {
+      for (String secondTerm : new String[] {"a", "b", "c"}) {
+        Query query = new PhraseQuery("foo", new BytesRef(firstTerm), new BytesRef(secondTerm));
+
+        TopScoreDocCollector collector1 = TopScoreDocCollector.create(10, null, Integer.MAX_VALUE); // COMPLETE
+        TopScoreDocCollector collector2 = TopScoreDocCollector.create(10, null, 10); // TOP_SCORES
+
+        searcher.search(query, collector1);
+        searcher.search(query, collector2);
+        CheckHits.checkEqual(query, collector1.topDocs().scoreDocs, collector2.topDocs().scoreDocs);
+
+        Query filteredQuery = new BooleanQuery.Builder()
+            .add(query, Occur.MUST)
+            .add(new TermQuery(new Term("foo", "b")), Occur.FILTER)
+            .build();
+
+        collector1 = TopScoreDocCollector.create(10, null, Integer.MAX_VALUE); // COMPLETE
+        collector2 = TopScoreDocCollector.create(10, null, 10); // TOP_SCORES
+        searcher.search(filteredQuery, collector1);
+        searcher.search(filteredQuery, collector2);
+        CheckHits.checkEqual(query, collector1.topDocs().scoreDocs, collector2.topDocs().scoreDocs);
+      }
+    }
+    reader.close();
+    dir.close();
+  }
+
+  public void testNullTerm() {
+    NullPointerException e = expectThrows(NullPointerException.class, () -> new PhraseQuery.Builder().add(null));
+    assertEquals("Cannot add a null term to PhraseQuery", e.getMessage());
+
+    e = expectThrows(NullPointerException.class, () -> new PhraseQuery("field", (BytesRef)null));
+    assertEquals("Cannot add a null term to PhraseQuery", e.getMessage());
+
+    e = expectThrows(NullPointerException.class, () -> new PhraseQuery("field", (String)null));
+    assertEquals("Cannot add a null term to PhraseQuery", e.getMessage());
   }
 }

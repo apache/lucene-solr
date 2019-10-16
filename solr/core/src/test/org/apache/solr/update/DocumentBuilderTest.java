@@ -30,6 +30,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.util.ByteArrayUtf8CharSequence;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.FieldType;
 import org.junit.After;
@@ -60,25 +61,18 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testBuildDocument() throws Exception 
-  {
+  public void testBuildDocument() throws Exception {
     SolrCore core = h.getCore();
-    
     // undefined field
-    try {
-      SolrInputDocument doc = new SolrInputDocument();
-      doc.setField( "unknown field", 12345 );
-      DocumentBuilder.toDocument( doc, core.getLatestSchema() );
-      fail( "should throw an error" );
-    }
-    catch( SolrException ex ) {
-      assertEquals( "should be bad request", 400, ex.code() );
-    }
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.setField( "unknown field", 12345 );
+
+    SolrException ex = expectThrows(SolrException.class, () -> DocumentBuilder.toDocument( doc, core.getLatestSchema() ));
+    assertEquals("should be bad request", 400, ex.code());
   }
 
   @Test
-  public void testNullField() 
-  {
+  public void testNullField() {
     SolrCore core = h.getCore();
     
     // make sure a null value is not indexed
@@ -89,34 +83,23 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testExceptions() 
-  {
+  public void testExceptions() {
     SolrCore core = h.getCore();
     
     // make sure a null value is not indexed
     SolrInputDocument doc = new SolrInputDocument();
     doc.addField( "id", "123" );
     doc.addField( "unknown", "something" );
-    try {
-      DocumentBuilder.toDocument( doc, core.getLatestSchema() );
-      fail( "added an unknown field" );
-    }
-    catch( Exception ex ) {
-      assertTrue( "should have document ID", ex.getMessage().indexOf( "doc=123" ) > 0 );
-    }
+    Exception ex = expectThrows(Exception.class, () -> DocumentBuilder.toDocument( doc, core.getLatestSchema() ));
+    assertTrue( "should have document ID", ex.getMessage().indexOf( "doc=123" ) > 0 );
     doc.remove( "unknown" );
     
 
     doc.addField( "weight", "not a number" );
-    try {
-      DocumentBuilder.toDocument( doc, core.getLatestSchema() );
-      fail( "invalid 'float' field value" );
-    }
-    catch( Exception ex ) {
-      assertTrue( "should have document ID", ex.getMessage().indexOf( "doc=123" ) > 0 );
-      assertTrue( "cause is number format", ex.getCause() instanceof NumberFormatException );
-    }
-    
+    ex = expectThrows(Exception.class, () -> DocumentBuilder.toDocument( doc, core.getLatestSchema()));
+    assertTrue( "should have document ID", ex.getMessage().indexOf( "doc=123" ) > 0 );
+    assertTrue( "cause is number format", ex.getCause() instanceof NumberFormatException );
+
     // now make sure it is OK
     doc.setField( "weight", "1.34" );
     DocumentBuilder.toDocument( doc, core.getLatestSchema() );
@@ -290,6 +273,30 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     field = fieldIterator.next();
     assertEquals(CAT_FLD, field.name());
     assertTrue(field.stringValue().startsWith("STORED V3|"));
+  }
+
+  @Test
+  public void testCopyFieldMaxChars() {
+    SolrCore core = h.getCore();
+
+    String testValue = "this is more than 10 characters";
+    String truncatedValue = "this is mo";
+
+    //maxChars with a string value
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField( "title", testValue);
+
+    Document out = DocumentBuilder.toDocument(doc, core.getLatestSchema());
+    assertEquals(testValue, out.get("title"));
+    assertEquals(truncatedValue, out.get("max_chars"));
+
+    //maxChars with a ByteArrayUtf8CharSequence
+    doc = new SolrInputDocument();
+    doc.addField( "title", new ByteArrayUtf8CharSequence(testValue));
+
+    out = DocumentBuilder.toDocument(doc, core.getLatestSchema());
+    assertEquals(testValue, out.get("title"));
+    assertEquals(truncatedValue, out.get("max_chars"));
   }
 
 }
