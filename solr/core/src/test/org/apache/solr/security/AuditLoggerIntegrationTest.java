@@ -183,7 +183,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
       CollectionAdminRequest.Create createRequest = CollectionAdminRequest.createCollection("test", 1, 1);
       createRequest.setBasicAuthCredentials("solr", "wrongPW");
       client.request(createRequest);       
-      fail("Call should fail with 403");
+      fail("Call should fail with 401");
     } catch (SolrException ex) {
       waitForAuditEventCallbacks(1);
       CallbackReceiver receiver = testHarness.get().receiver;

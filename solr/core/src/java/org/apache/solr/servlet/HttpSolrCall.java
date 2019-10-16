@@ -489,21 +489,21 @@ public class HttpSolrCall {
       }
       return RETURN;
     }
-    if (statusCode >= 500) {
-      log.warn("ERROR {} during authentication: {}", statusCode, authResponse.getMessage());
-      sendError(statusCode,
-          "ERROR during authorization, Response code: " + statusCode);
-      if (shouldAudit(EventType.ERROR)) {
-        cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.ERROR, req, context));
-      }
-      return RETURN;
-    }
-    if (!(statusCode == HttpStatus.SC_ACCEPTED) && !(statusCode == HttpStatus.SC_OK)) {
+    if (statusCode == AuthorizationResponse.FORBIDDEN.statusCode) {
       log.debug("UNAUTHORIZED auth header {} context : {}, msg: {}", req.getHeader("Authorization"), context, authResponse.getMessage());
       sendError(statusCode,
           "Unauthorized request, Response code: " + statusCode);
       if (shouldAudit(EventType.UNAUTHORIZED)) {
         cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.UNAUTHORIZED, req, context));
+      }
+      return RETURN;
+    }
+    if (!(statusCode == HttpStatus.SC_ACCEPTED) && !(statusCode == HttpStatus.SC_OK)) {
+      log.warn("ERROR {} during authentication: {}", statusCode, authResponse.getMessage());
+      sendError(statusCode,
+          "ERROR during authorization, Response code: " + statusCode);
+      if (shouldAudit(EventType.ERROR)) {
+        cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.ERROR, req, context));
       }
       return RETURN;
     }
