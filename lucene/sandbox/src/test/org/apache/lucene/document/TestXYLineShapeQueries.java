@@ -76,20 +76,8 @@ public class TestXYLineShapeQueries extends BaseXYShapeTestCase {
 
     @Override
     public boolean testBBoxQuery(double minY, double maxY, double minX, double maxX, Object shape) {
-      XYLine line = (XYLine)shape;
       XYRectangle2D rectangle2D = XYRectangle2D.create(new XYRectangle(minX, maxX, minY, maxY));
-      for (int i = 0, j = 1; j < line.numPoints(); ++i, ++j) {
-        double[] qTriangle = encoder.quantizeTriangle(line.getX(i), line.getY(i), true, line.getX(j), line.getY(j), true, line.getX(i), line.getY(i), true);
-        Relation r = rectangle2D.relateTriangle((float)qTriangle[1], (float)qTriangle[0], (float)qTriangle[3], (float)qTriangle[2], (float)qTriangle[5], (float)qTriangle[4]);
-        if (queryRelation == QueryRelation.DISJOINT) {
-          if (r != Relation.CELL_OUTSIDE_QUERY) return false;
-        } else if (queryRelation == QueryRelation.WITHIN) {
-          if (r != Relation.CELL_INSIDE_QUERY) return false;
-        } else {
-          if (r != Relation.CELL_OUTSIDE_QUERY) return true;
-        }
-      }
-      return queryRelation != QueryRelation.INTERSECTS;
+      return testComponentQuery(rectangle2D, shape);
     }
 
     @Override

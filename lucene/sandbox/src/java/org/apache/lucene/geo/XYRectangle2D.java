@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.geo;
 
+import java.beans.ConstructorProperties;
 import java.util.Objects;
 
 import org.apache.lucene.index.PointValues;
@@ -27,60 +28,79 @@ import static org.apache.lucene.geo.GeoUtils.orient;
  *
  * @lucene.internal
  */
-public class XYRectangle2D  {
+public class XYRectangle2D implements Component2D {
 
-  private final float minX;
-  private final float maxX;
-  private final float minY;
-  private final float maxY;
+  private final double minX;
+  private final double maxX;
+  private final double minY;
+  private final double maxY;
 
-  protected XYRectangle2D(float minX, float maxX, float minY, float maxY) {
+  protected XYRectangle2D(double minX, double maxX, double minY, double maxY) {
     this.minX =  minX;
     this.maxX =  maxX;
     this.minY =  minY;
     this.maxY =  maxY;
   }
 
-  public boolean contains(float x, float y) {
-    return x >= this.minX && x <= this.maxX && y >= this.minY && y <= this.maxY;
+  @Override
+  public double getMinX() {
+    return minX;
   }
 
-  public PointValues.Relation relate(float minX, float maxX, float minY, float maxY) {
-    if (this.minX > maxX || this.maxX < minX || this.minY > maxY || this.maxY < minY) {
+  @Override
+  public double getMaxX() {
+    return maxX;
+  }
+
+  @Override
+  public double getMinY() {
+    return minY;
+  }
+
+  @Override
+  public double getMaxY() {
+    return maxY;
+  }
+
+  @Override
+  public boolean contains(double x, double y) {
+    return Component2D.containsPoint(x, y, this.minX, this.maxX, this.minY, this.maxY);
+  }
+
+  @Override
+  public PointValues.Relation relate(double minX, double maxX, double minY, double maxY) {
+    if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return PointValues.Relation.CELL_OUTSIDE_QUERY;
     }
-    if (minX >= this.minX && maxX <= this.maxX && minY >= this.minY && maxY <= this.maxY) {
-      return PointValues.Relation.CELL_INSIDE_QUERY;
+    if (Component2D.within(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
+      return PointValues.Relation.CELL_CROSSES_QUERY;
     }
     return PointValues.Relation.CELL_CROSSES_QUERY;
   }
 
-  public PointValues.Relation relateTriangle(float aX, float aY, float bX, float bY, float cX, float cY) {
-    // compute bounding box of triangle
-    float tMinX = StrictMath.min(StrictMath.min(aX, bX), cX);
-    float tMaxX = StrictMath.max(StrictMath.max(aX, bX), cX);
-    float tMinY = StrictMath.min(StrictMath.min(aY, bY), cY);
-    float tMaxY = StrictMath.max(StrictMath.max(aY, bY), cY);
+  @Override
+  public PointValues.Relation relateTriangle(double minX, double maxX, double minY, double maxY,
+                                             double ax, double ay, double bx, double by, double cx, double cy) {
 
-    if (tMaxX < minX || tMinX > maxX || tMinY > maxY || tMaxY < minY) {
+
+    if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return PointValues.Relation.CELL_OUTSIDE_QUERY;
     }
-
-    int edgesContain = numberOfCorners(aX, aY, bX, bY, cX, cY);
+    int edgesContain = numberOfCorners(ax, ay, bx, by, cx, cy);
     if (edgesContain == 3) {
       return PointValues.Relation.CELL_INSIDE_QUERY;
     } else if (edgesContain != 0) {
       return PointValues.Relation.CELL_CROSSES_QUERY;
-    } else if (Tessellator.pointInTriangle(minX, minY, aX, aY, bX, bY, cX, cY)
-               || edgesIntersect(aX, aY, bX, bY)
-               || edgesIntersect(bX, bY, cX, cY)
-               || edgesIntersect(cX, cY, aX, aY)) {
+    } else if (Component2D.pointInTriangle(minX, maxX, minY, maxY, this.minX, this.minY,ax, ay, bx, by, cx, cy)
+               || edgesIntersect(ax, ay, bx, by)
+               || edgesIntersect(bx, by, cx, cy)
+               || edgesIntersect(cx, cy, ax, ay)) {
       return PointValues.Relation.CELL_CROSSES_QUERY;
     }
     return PointValues.Relation.CELL_OUTSIDE_QUERY;
   }
 
-  private  boolean edgesIntersect(float ax, float ay, float bx, float by) {
+  private  boolean edgesIntersect(double ax, double ay, double bx, double by) {
     // shortcut: if edge is a point (occurs w/ Line shapes); simply check bbox w/ point
     if (ax == bx && ay == by) {
       return false;
@@ -117,7 +137,7 @@ public class XYRectangle2D  {
     return false;
   }
 
-  private int numberOfCorners(float ax, float ay, float bx, float by, float cx, float cy) {
+  private int numberOfCorners(double ax, double ay, double bx, double by, double cx, double cy) {
     int containsCount = 0;
     if (contains(ax, ay)) {
       containsCount++;
@@ -165,6 +185,9 @@ public class XYRectangle2D  {
 
   /** Builds a Rectangle2D from rectangle */
   public static XYRectangle2D create(XYRectangle rectangle) {
-    return new XYRectangle2D((float)rectangle.minX, (float)rectangle.maxX, (float)rectangle.minY, (float)rectangle.maxY);
+    return new XYRectangle2D(XYEncodingUtils.decode(XYEncodingUtils.encode(rectangle.minX)),
+                             XYEncodingUtils.decode(XYEncodingUtils.encode(rectangle.maxX)),
+                             XYEncodingUtils.decode(XYEncodingUtils.encode(rectangle.minY)),
+                             XYEncodingUtils.decode(XYEncodingUtils.encode(rectangle.maxY)));
   }
 }

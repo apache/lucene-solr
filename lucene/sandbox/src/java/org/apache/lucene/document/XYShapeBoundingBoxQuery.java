@@ -34,11 +34,13 @@ import static org.apache.lucene.geo.XYEncodingUtils.decode;
  **/
 public class XYShapeBoundingBoxQuery extends ShapeQuery {
   final XYRectangle2D rectangle2D;
+  final private XYRectangle rectangle;
+
 
   public XYShapeBoundingBoxQuery(String field, QueryRelation queryRelation, double minX, double maxX, double minY, double maxY) {
     super(field, queryRelation);
-    XYRectangle rectangle = new XYRectangle(minX, maxX, minY, maxY);
-    this.rectangle2D = XYRectangle2D.create(rectangle);
+    this.rectangle = new XYRectangle(minX, maxX, minY, maxY);
+    this.rectangle2D = XYRectangle2D.create(this.rectangle);
   }
 
   @Override
@@ -101,13 +103,13 @@ public class XYShapeBoundingBoxQuery extends ShapeQuery {
 
   @Override
   protected boolean equalsTo(Object o) {
-    return super.equalsTo(o) && rectangle2D.equals(((XYShapeBoundingBoxQuery)o).rectangle2D);
+    return super.equalsTo(o) && rectangle.equals(((XYShapeBoundingBoxQuery)o).rectangle);
   }
 
   @Override
   public int hashCode() {
     int hash = super.hashCode();
-    hash = 31 * hash + rectangle2D.hashCode();
+    hash = 31 * hash + rectangle.hashCode();
     return hash;
   }
 
@@ -121,7 +123,7 @@ public class XYShapeBoundingBoxQuery extends ShapeQuery {
       sb.append(this.field);
       sb.append(':');
     }
-    sb.append(rectangle2D.toString());
+    sb.append(rectangle.toString());
     return sb.toString();
   }
 }
