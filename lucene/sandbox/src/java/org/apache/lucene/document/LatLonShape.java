@@ -94,7 +94,7 @@ public class LatLonShape {
   /** create a query to find all indexed geo shapes that intersect a defined bounding box **/
   public static Query newBoxQuery(String field, QueryRelation queryRelation, double minLatitude, double maxLatitude, double minLongitude, double maxLongitude) {
     if (minLatitude == maxLatitude && minLongitude == maxLongitude) {
-      return newPointQuery(field, queryRelation, minLatitude, minLongitude);
+      return newPointQuery(field, queryRelation, new double[] {minLatitude, minLongitude});
     }
     return new LatLonShapeBoundingBoxQuery(field, queryRelation, minLatitude, maxLatitude, minLongitude, maxLongitude);
   }
@@ -115,7 +115,7 @@ public class LatLonShape {
 
   /** create a query to find all indexed shapes that comply the {@link QueryRelation} with the provided point
    **/
-  public static Query newPointQuery(String field, QueryRelation queryRelation, double lat, double lon) {
-    return new LatLonShapePointQuery(field, queryRelation, lat, lon);
+  public static Query newPointQuery(String field, QueryRelation queryRelation, double[]... points) {
+    return new LatLonShapePointQuery(field, queryRelation, points);
   }
 }

@@ -100,4 +100,10 @@ public class XYShape {
   public static Query newPolygonQuery(String field, QueryRelation queryRelation, XYPolygon... polygons) {
     return new XYShapePolygonQuery(field, queryRelation, polygons);
   }
+
+  /** create a query to find all indexed shapes that comply the {@link QueryRelation} with the provided point
+   **/
+  public static Query newPointQuery(String field, QueryRelation queryRelation, float[]... points) {
+    return new XYShapePointQuery(field, queryRelation, points);
+  }
 }
