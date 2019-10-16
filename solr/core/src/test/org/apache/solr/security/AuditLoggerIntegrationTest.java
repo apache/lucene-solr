@@ -60,7 +60,6 @@ import static org.apache.solr.client.solrj.request.CollectionAdminRequest.getOve
 import static org.apache.solr.security.AuditEvent.EventType.COMPLETED;
 import static org.apache.solr.security.AuditEvent.EventType.ERROR;
 import static org.apache.solr.security.AuditEvent.EventType.REJECTED;
-import static org.apache.solr.security.AuditEvent.EventType.UNAUTHORIZED;
 import static org.apache.solr.security.AuditEvent.RequestType.ADMIN;
 import static org.apache.solr.security.AuditEvent.RequestType.SEARCH;
 
@@ -184,11 +183,11 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
       CollectionAdminRequest.Create createRequest = CollectionAdminRequest.createCollection("test", 1, 1);
       createRequest.setBasicAuthCredentials("solr", "wrongPW");
       client.request(createRequest);       
-      fail("Call should fail with 403");
+      fail("Call should fail with 401");
     } catch (SolrException ex) {
       waitForAuditEventCallbacks(1);
       CallbackReceiver receiver = testHarness.get().receiver;
-      assertAuditEvent(receiver.popEvent(), UNAUTHORIZED, "/admin/collections", ADMIN, null,403);
+      assertAuditEvent(receiver.popEvent(), REJECTED, "/admin/collections", ADMIN, null, 401);
     }
   }
 
