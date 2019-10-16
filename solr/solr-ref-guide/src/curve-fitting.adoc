@@ -44,10 +44,22 @@ are the predicted curve.
 
 image::images/math-expressions/polyfit.png[]
 
-In the example above the `polyfit` function returns a model that can be used
-by the `predict` function in the same manner as linear regression.
-In this example the predictions are generated for the original x-axis points
-of the observation.
+In the example above a random sample containing two fields, *filesize_d*
+and *response_d*, is drawn from the *logs* collection.
+The two fields are vectorized and set to the variables *x* and *y*.
+
+Then the `polyfit` function is used to fit a non-linear model to the data using a 5 degree
+polynomial. The `polyfit` function returns a model that is then directly plotted
+by `zplot` along with the original observations.
+
+The fitted model can also be used
+by the `predict` function in the same manner as linear regression. The example below
+uses the fitted model to predict a response time for a files size of 42000.
+
+
+image::images/math-expressions/polyfit-predict.png[]
+
+If an array of predictor values is provided an array of predictions will be returned.
 
 The `polyfit` model performs both *interpolation* and *extrapolation*,
 which means that it can predict results both within the bounds of the data set
@@ -57,12 +69,11 @@ and beyond the bounds.
 
 The residuals can be calculated and visualized in the same manner as linear
 regression as well. In the example below the `ebeSubtract` function is used
-to subtract the observed *y* values from the predicted *y* values, to
-calculate a vector of residuals. The residuals are then plotted.
-
+to subtract the fitted model from the observed values, to
+calculate a vector of residuals. The residuals are then plotted in a *residual plot*
+with the predictions along the *x* axis and the model error on the *y* axis.
 
 image::images/math-expressions/polyfit-resid.png[]
-
 
 
 == Gaussian Curve Fitting
@@ -101,10 +112,6 @@ image::images/math-expressions/gaussfit.png[]
 The second plot shows the two curves overlaid with an area chart:
 
 image::images/math-expressions/gaussfit2.png[]
-
-
-
-
 
 
 == Harmonic Curve Fitting
