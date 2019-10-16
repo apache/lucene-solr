@@ -1,0 +1,12 @@
+github:
+  description: "Apache Lucene and Solr open-source search software"
+  homepage: https://lucene.apache.org/
+  labels:
+    - lucene
+    - solr
+    - search
+    - sql
+    - nosql
+    - java
+    - backend
+    - search-engine
