@@ -768,11 +768,12 @@ public class RestManager {
     }      
     
     int numAttached = 0;
-    for (String resourceId : managed.keySet()) {
+    for (Map.Entry<String, ManagedResource> entry : managed.entrySet()) {
+      String resourceId = entry.getKey();
       if (resourceId.startsWith(routerPath)) {
         // the way restlet works is you attach a path w/o the routerPath
         String path = resourceId.substring(routerPath.length());
-        attachManagedResource(managed.get(resourceId), path, router);
+        attachManagedResource(entry.getValue(), path, router);
         ++numAttached;
       }
     }
