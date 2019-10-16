@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.geo;
 
-import java.beans.ConstructorProperties;
 import java.util.Objects;
 
 import org.apache.lucene.index.PointValues;
@@ -183,11 +182,15 @@ public class XYRectangle2D implements Component2D {
     return sb.toString();
   }
 
-  /** Builds a Rectangle2D from rectangle */
-  public static XYRectangle2D create(XYRectangle rectangle) {
-    return new XYRectangle2D(XYEncodingUtils.decode(XYEncodingUtils.encode(rectangle.minX)),
-                             XYEncodingUtils.decode(XYEncodingUtils.encode(rectangle.maxX)),
-                             XYEncodingUtils.decode(XYEncodingUtils.encode(rectangle.minY)),
-                             XYEncodingUtils.decode(XYEncodingUtils.encode(rectangle.maxY)));
+  /** create a component2D from provided array of rectangles */
+  public static Component2D create(XYRectangle... rectangles) {
+    XYRectangle2D[] components = new XYRectangle2D[rectangles.length];
+    for (int i = 0; i < components.length; ++i) {
+      components[i] = new XYRectangle2D(XYEncodingUtils.decode(XYEncodingUtils.encode(rectangles[i].minX)),
+                                        XYEncodingUtils.decode(XYEncodingUtils.encode(rectangles[i].maxX)),
+                                        XYEncodingUtils.decode(XYEncodingUtils.encode(rectangles[i].minY)),
+                                        XYEncodingUtils.decode(XYEncodingUtils.encode(rectangles[i].maxY)));
+    }
+    return ComponentTree.create(components);
   }
 }

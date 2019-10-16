@@ -17,6 +17,7 @@
 package org.apache.lucene.document;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
+import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.XYRectangle;
 import org.apache.lucene.geo.XYRectangle2D;
 import org.apache.lucene.index.PointValues;
@@ -33,7 +34,7 @@ import static org.apache.lucene.geo.XYEncodingUtils.decode;
  *  @lucene.experimental
  **/
 public class XYShapeBoundingBoxQuery extends ShapeQuery {
-  final XYRectangle2D rectangle2D;
+  final Component2D rectangle2D;
   final private XYRectangle rectangle;
 
 

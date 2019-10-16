@@ -25,7 +25,7 @@ public class TestXYRectangle2D extends LuceneTestCase {
 
   public void testTriangleDisjoint() {
     XYRectangle rectangle = new XYRectangle(0d, 1d, 0d, 1d);
-    XYRectangle2D rectangle2D = XYRectangle2D.create(rectangle);
+    Component2D rectangle2D = XYRectangle2D.create(rectangle);
     float ax = 4f;
     float ay = 4f;
     float bx = 5f;
@@ -37,7 +37,7 @@ public class TestXYRectangle2D extends LuceneTestCase {
 
   public void testTriangleIntersects() {
     XYRectangle rectangle = new XYRectangle(0d, 1d, 0d, 1d);
-    XYRectangle2D rectangle2D =  XYRectangle2D.create(rectangle);
+    Component2D rectangle2D =  XYRectangle2D.create(rectangle);
     float ax = 0.5f;
     float ay = 0.5f;
     float bx = 2f;
@@ -49,7 +49,7 @@ public class TestXYRectangle2D extends LuceneTestCase {
 
   public void testTriangleContains() {
     XYRectangle rectangle = new XYRectangle(0, 1, 0, 1);
-    XYRectangle2D rectangle2D =  XYRectangle2D.create(rectangle);
+    Component2D rectangle2D =  XYRectangle2D.create(rectangle);
     float ax = 0.25f;
     float ay = 0.25f;
     float bx = 0.5f;
@@ -61,7 +61,7 @@ public class TestXYRectangle2D extends LuceneTestCase {
 
   public void testRandomTriangles() {
     XYRectangle rectangle = ShapeTestUtil.nextBox();
-    XYRectangle2D rectangle2D = XYRectangle2D.create(rectangle);
+    Component2D rectangle2D = XYRectangle2D.create(rectangle);
     for (int i =0; i < 100; i++) {
       float ax = (float) ShapeTestUtil.nextDouble();
       float ay = (float) ShapeTestUtil.nextDouble();
