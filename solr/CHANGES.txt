@@ -229,6 +229,25 @@ Other Changes
 
 * SOLR-13658: Precommit fail Java "var" until 9x. Fail "var...<>" constructs entirely (Erick Erickson)
 
+<<<<<<< HEAD
+=======
+* SOLR-13767: Upgrade jackson to 2.9.9 (janhoy)
+
+* SOLR-11492: Clean up /solr/cloud-dev scripts and provide a single well documented script (Gus Heck, Robert Bunch)
+
+* SOLR-13747: New TestSSLTestConfig.testFailIfUserRunsTestsWithJVMThatHasKnownSSLBugs() to give people running
+  tests more visibility if/when they use a known-buggy JVM causing most SSL tests to silently SKIP. (hossman)
+
+* SOLR-13791: Remove remaining Commons BeanUtils references. (Andras Salamon, Christine Poerschke)
+
+* SOLR-13812: Add javadocs, uneven rejection and basic test coverage for the SolrTestCaseJ4.params method.
+  (Diego Ceccarelli, Christine Poerschke, Munendra S N)
+
+* SOLR-13787: An annotation based system to write v2 APIs (noble)
+
+* SOLR-12786: Update Ref Guide build tool versions (Cassandra)
+
+>>>>>>> 621461fd1a5... SOLR-12786: Update Ref Guide build tool versions & fix section links for new format requirements
 ==================  8.2.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
