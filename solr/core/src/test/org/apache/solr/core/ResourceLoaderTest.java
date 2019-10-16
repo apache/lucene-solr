@@ -34,6 +34,7 @@ import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
 import org.apache.lucene.analysis.ngram.NGramFilterFactory;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.admin.LukeRequestHandler;
@@ -42,6 +43,7 @@ import org.apache.solr.response.JSONResponseWriter;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
 import static org.apache.solr.core.SolrResourceLoader.assertAwareCompatibility;
+import static org.apache.solr.core.SolrResourceLoader.clearCache;
 import static org.hamcrest.core.Is.is;
 
 public class ResourceLoaderTest extends SolrTestCaseJ4 {
@@ -205,5 +207,22 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
         new Class[] { Map.class }, new Object[] { new HashMap<String,String>() });
     // TODO: How to check that a warning was printed to log file?
     loader.close();    
+  }
+
+  public void testCacheWrongType() {
+    clearCache();
+
+    SolrResourceLoader loader = new SolrResourceLoader();
+    Class[] params = { Map.class };
+    Map<String,String> args = Map.of("minGramSize", "1", "maxGramSize", "2");
+    final String className = "solr.NGramTokenizerFactory";
+
+    // We could fail here since the class name and expected type don't match, but instead we try to infer what the user actually meant
+    TokenFilterFactory tff = loader.newInstance(className, TokenFilterFactory.class, new String[0], params, new Object[]{new HashMap<>(args)});
+    assertNotNull("Did not load TokenFilter when asking for corresponding Tokenizer", tff);
+
+    // This should work, but won't if earlier call succeeding corrupting the cache
+    TokenizerFactory tf = loader.newInstance(className, TokenizerFactory.class, new String[0], params, new Object[]{new HashMap<>(args)});
+    assertNotNull("Did not load Tokenizer after bad call earlier", tf);
   }
 }

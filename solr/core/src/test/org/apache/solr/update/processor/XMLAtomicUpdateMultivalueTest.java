@@ -14,22 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.update.processor;
 
-package runtimecode;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer.RequestWriterSupplier;
 
-import org.apache.lucene.document.Document;
-import org.apache.lucene.document.StoredField;
-import org.apache.solr.search.LRUCache;
+public class XMLAtomicUpdateMultivalueTest extends AbstractAtomicUpdatesMultivalueTestBase {
 
-public  class MyDocCache<K,V> extends LRUCache<K,V> {
-
-  static String fld_name= "my_synthetic_fld_s";
   @Override
-  public V put(K key, V value) {
-    if(value instanceof Document){
-      Document d = (Document) value;
-      d.add(new StoredField(fld_name, "version_2"));
-    }
-    return super.put(key, value);
+  RequestWriterSupplier getRequestWriterSupplier() {
+    return RequestWriterSupplier.XML;
   }
+
 }

@@ -41,7 +41,10 @@ public interface ShardParams {
   
   /** The requested URL for this shard */
   String SHARD_URL = "shard.url";
-  
+
+  /** The requested shard name */
+  String SHARD_NAME = "shard.name";
+
   /** The Request Handler for shard requests */
   String SHARDS_QT = "shards.qt";
   

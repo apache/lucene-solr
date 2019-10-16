@@ -22,12 +22,14 @@ import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
@@ -54,6 +56,11 @@ import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_P
 public class OverseerTriggerThread implements Runnable, SolrCloseable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  public static final String MARKER_STATE = "state";
+  public static final String MARKER_ACTIVE = "active";
+  public static final String MARKER_INACTIVE = "inactive";
+
 
   private final SolrCloudManager cloudManager;
 
@@ -252,20 +259,31 @@ public class OverseerTriggerThread implements Runnable, SolrCloseable {
           throw new IllegalStateException("Caught AlreadyClosedException from ScheduledTriggers, but we're not closed yet!", e);
         }
       }
-      log.debug("-- cleaning old nodeLost / nodeAdded markers");
-      removeMarkers(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH);
-      removeMarkers(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH);
+      log.debug("-- deactivating old nodeLost / nodeAdded markers");
+      deactivateMarkers(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH);
+      deactivateMarkers(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH);
       processedZnodeVersion = znodeVersion;
     }
   }
 
-  private void removeMarkers(String path) {
+  private void deactivateMarkers(String path) {
+    DistribStateManager stateManager = cloudManager.getDistribStateManager();
     try {
-      cloudManager.getDistribStateManager().removeRecursively(path, true, false);
+      List<String> markers = stateManager.listData(path);
+      for (String marker : markers) {
+        String markerPath = path + "/" + marker;
+        try {
+          Map<String, Object> markerMap = new HashMap<>(Utils.getJson(stateManager, markerPath));
+          markerMap.put(MARKER_STATE, MARKER_INACTIVE);
+          stateManager.setData(markerPath, Utils.toJSON(markerMap), -1);
+        } catch (NoSuchElementException e) {
+          // ignore - already deleted
+        }
+      }
     } catch (NoSuchElementException e) {
       // ignore
     } catch (Exception e) {
-      log.warn("Error removing old markers", e);
+      log.warn("Error deactivating old markers", e);
     }
   }
 

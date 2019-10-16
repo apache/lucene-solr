@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.document;
 
+import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Polygon;
@@ -60,7 +61,7 @@ public class TestLatLonShapeEncoding extends BaseShapeEncodingTestCase {
   }
 
   @Override
-  protected Polygon2D createPolygon2D(Object polygon) {
+  protected Component2D createPolygon2D(Object polygon) {
     return Polygon2D.create((Polygon)polygon);
   }
 }

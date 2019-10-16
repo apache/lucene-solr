@@ -541,9 +541,9 @@ public class AtomicUpdateDocumentMerger {
   private Collection<Pattern> preparePatterns(Object fieldVal) {
     final Collection<Pattern> patterns = new LinkedHashSet<>(1);
     if (fieldVal instanceof Collection) {
-      Collection<String> patternVals = (Collection<String>) fieldVal;
-      for (String patternVal : patternVals) {
-        patterns.add(Pattern.compile(patternVal));
+      Collection<Object> patternVals = (Collection<Object>) fieldVal;
+      for (Object patternVal : patternVals) {
+        patterns.add(Pattern.compile(patternVal.toString()));
       }
     } else {
       patterns.add(Pattern.compile(fieldVal.toString()));

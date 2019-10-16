@@ -49,6 +49,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
@@ -949,6 +950,18 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     }
     assertTrue("No responses", shardAddresses.size() > 0);
     log.info("Shards giving the response: " + Arrays.toString(shardAddresses.toArray()));
+  }
+
+  @Test
+  public void testPing() throws Exception {
+    final String testCollection = "ping_test";
+    CollectionAdminRequest.createCollection(testCollection, "conf", 2, 1).process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(testCollection, 2, 2);
+    final SolrClient clientUnderTest = getRandomClient();
+
+    final SolrPingResponse response = clientUnderTest.ping(testCollection);
+
+    assertEquals("This should be OK", 0, response.getStatus());
   }
 
 }

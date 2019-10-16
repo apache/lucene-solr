@@ -900,12 +900,12 @@ public class SolrPluginUtils {
         Alias a = aliases.get(field);
 
         List<Query> disjuncts = new ArrayList<>();
-        for (String f : a.fields.keySet()) {
+        for (Map.Entry<String, Float> entry : a.fields.entrySet()) {
 
-          Query sub = getFieldQuery(f,queryText,quoted, false);
+          Query sub = getFieldQuery(entry.getKey(),queryText,quoted, false);
           if (null != sub) {
-            if (null != a.fields.get(f)) {
-              sub = new BoostQuery(sub, a.fields.get(f));
+            if (null != entry.getValue()) {
+              sub = new BoostQuery(sub, entry.getValue());
             }
             disjuncts.add(sub);
           }

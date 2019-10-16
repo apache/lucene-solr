@@ -1270,7 +1270,16 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return d;
   }
 
+  /**
+   * Generates the correct SolrParams from an even list of strings.
+   * A string in an even position will represent the name of a parameter, while the following string
+   * at position (i+1) will be the assigned value.
+   *
+   * @param params an even list of strings
+   * @return the ModifiableSolrParams generated from the given list of strings.
+   */
   public static ModifiableSolrParams params(String... params) {
+    if (params.length % 2 != 0) throw new RuntimeException("Params length should be even");
     ModifiableSolrParams msp = new ModifiableSolrParams();
     for (int i=0; i<params.length; i+=2) {
       msp.add(params[i], params[i+1]);
