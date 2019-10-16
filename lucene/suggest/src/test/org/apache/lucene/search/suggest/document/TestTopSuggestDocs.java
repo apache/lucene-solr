@@ -20,14 +20,12 @@ import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.search.suggest.document.TopSuggestDocs.SuggestScoreDoc;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
-import org.junit.Test;
 
 public class TestTopSuggestDocs extends LuceneTestCase {
 
-  @Test
   public void testMerge() throws Exception {
     TopSuggestDocs[] toMerge = new TopSuggestDocs[3];
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < toMerge.length; i++) {
       SuggestScoreDoc[] scoreDocs = new SuggestScoreDoc[5];
       for (int sd = 0; sd < 5; sd++) {
         scoreDocs[sd] = new SuggestScoreDoc(i * 5 + sd, "key_" + sd, "context", 5 - sd);
@@ -45,7 +43,7 @@ public class TestTopSuggestDocs extends LuceneTestCase {
     assertEquals(4f, merged.scoreLookupDocs()[4].score, Float.MIN_VALUE);
     
     // setting one of the inputs to incomplete should render the result incomplete
-    int indexToChange = TestUtil.nextInt(random(), 0, 4);
+    int indexToChange = TestUtil.nextInt(random(), 0, toMerge.length - 1);
     toMerge[indexToChange] = new TopSuggestDocs(new TotalHits(5, TotalHits.Relation.EQUAL_TO),
         toMerge[indexToChange].scoreLookupDocs(), false);
     merged = TopSuggestDocs.merge(5, toMerge);

@@ -253,7 +253,7 @@ public final class NRTSuggester implements Accountable {
     // we do not use it, instead collect at acceptResult
     TopResults<Pair<Long,BytesRef>> results = searcher.search();
     if (results.isComplete == false) {
-      collector.notComplete();
+      collector.setNotComplete();
     }
     return;
     // search admissibility is not guaranteed

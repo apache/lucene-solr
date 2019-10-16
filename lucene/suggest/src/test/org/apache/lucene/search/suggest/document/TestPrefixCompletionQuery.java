@@ -267,7 +267,9 @@ public class TestPrefixCompletionQuery extends LuceneTestCase {
    * Test that the correct amount of documents are collected if using a collector that also rejects documents.
    */
   public void testCollectorThatRejects() throws Exception {
-    // use synonym analyzer to have multiple paths to same suggested document. This mock adds "dog" as synonym for "dogs"
+
+    // Use synonym analyzer to have multiple paths to same suggested document. This mock adds "dog" as synonym for "dogs"
+    // This will lead to two calls to the collector later for each document
     Analyzer analyzer = new MockSynonymAnalyzer();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     List<Entry> expectedResults = new ArrayList<Entry>();
@@ -290,7 +292,9 @@ public class TestPrefixCompletionQuery extends LuceneTestCase {
     PrefixCompletionQuery query = new PrefixCompletionQuery(analyzer, new Term("suggest_field", "ab"));
     int topN = 5;
 
-    // use a TopSuggestDocsCollector that rejects results with duplicate docIds
+    // use a TopSuggestDocsCollector that rejects results with duplicate docID
+    // due to the adding synonym "dog" for "dogs" earlier, the collector will be called twice
+    // for each docID, which we want to de-duplicate by rejecting the document the second time
     TopSuggestDocsCollector collector = new TopSuggestDocsCollector(topN, false) {
 
       private Set<Integer> seenDocIds = new HashSet<>();

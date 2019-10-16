@@ -43,6 +43,8 @@ import static org.apache.lucene.search.suggest.document.TopSuggestDocs.SuggestSc
  * <p>
  * Subclasses should only override
  * {@link TopSuggestDocsCollector#collect(int, CharSequence, CharSequence, float)}.
+ * Overwriting subclasses can opt to reject documents, in which case
+ * they should return <tt>false</tt> to signal this back to the caller.
  * <p>
  * NOTE: {@link #setScorer(org.apache.lucene.search.Scorable)} and
  * {@link #collect(int)} is not used
@@ -114,6 +116,10 @@ public class TopSuggestDocsCollector extends SimpleCollector {
    * Called for every matched completion,
    * similar to {@link org.apache.lucene.search.LeafCollector#collect(int)}
    * but for completions.
+   *
+   * This implementation always returns <tt>true</tt> because it collects all documents, but
+   * subclasses overwriting this can choose to reject documents in which case they should
+   * return <tt>false</tt> to signal this back to the caller.
    *
    * NOTE: collection at the leaf level is guaranteed to be in
    * descending order of score
@@ -217,7 +223,7 @@ public class TopSuggestDocsCollector extends SimpleCollector {
    * call to signal that during collection at least one segment might have returned incomplete results, e.g. because
    * of too many rejections
    */
-  void notComplete() {
+  void setNotComplete() {
     this.isComplete = false;
   }
 
