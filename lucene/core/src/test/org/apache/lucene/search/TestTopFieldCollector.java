@@ -543,7 +543,7 @@ public class TestTopFieldCollector extends LuceneTestCase {
     assertTrue(collector.minScoreAcc == collector2.minScoreAcc);
     MaxScoreAccumulator minValueChecker = collector.minScoreAcc;
     // force the check of the global minimum score on every round
-    minValueChecker.modInterval = 1;
+    minValueChecker.modInterval = 0;
 
     ScoreAndDoc scorer = new ScoreAndDoc();
     ScoreAndDoc scorer2 = new ScoreAndDoc();

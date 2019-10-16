@@ -23,7 +23,8 @@ import java.util.concurrent.atomic.LongAccumulator;
  * Maintains the maximum score and its corresponding document id concurrently
  */
 final class MaxScoreAccumulator {
-  static final int DEFAULT_INTERVAL = 1 << 10;
+  // we use 2^10-1 to check the remainder with a bitwise operation
+  static final int DEFAULT_INTERVAL = 0x3ff;
 
   // scores are always positive
   final LongAccumulator acc = new LongAccumulator(Long::max, Long.MIN_VALUE);
