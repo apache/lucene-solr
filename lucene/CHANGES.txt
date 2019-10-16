@@ -118,6 +118,12 @@ Bug Fixes
 * LUCENE-8755: spatial-extras quad and packed quad prefix trees could throw a
   NullPointerException for certain cell edge coordinates (Chongchen Chen, David Smiley)
 
+* LUCENE-9005: BooleanQuery.visit() would pull subVisitors from its parent visitor, rather
+  than from a visitor for its own specific query.  This could cause problems when BQ was
+  nested under another BQ. Instead, we now pull a MUST subvisitor, pass it to any MUST
+  subclauses, and then pull SHOULD, MUST_NOT and FILTER visitors from it rather than from
+  the parent.  (Alan Woodward)
+
 Other
 
 * LUCENE-8778 LUCENE-8911 LUCENE-8957: Define analyzer SPI names as static final fields and document the names in Javadocs.
