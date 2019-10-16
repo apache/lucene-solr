@@ -241,7 +241,7 @@ Setting the hostname of the Solr server is recommended, especially when running 
 
 === Environment banner in Admin UI
 
-To guard against accidentally doing changes to the wrong cluster, you may configure a visual indication in the Admin UI of whether you currently work with a production environment or not. To do this, edit your `solr.in.sh` or `solr.in.cmd` file with a `-Dsolr.environment=prod` setting, or set the cluster property named `environment`. To specify label and/or color, use a comma delimited format as below. The `+` character can be used instead of space to avoid quoting. Colors may be valid CSS colors or numeric e.g. `#ff0000` for bright red. Examples of valid environment configs:
+To guard against accidentally doing changes to the wrong cluster, you may configure a visual indication in the Admin UI of whether you currently work with a production environment or not. To do this, edit your `solr.in.sh` or `solr.in.cmd` file with a `-Dsolr.environment=prod` setting, or set the cluster property named `environment`. To specify label and/or color, use a comma delimited format as below. The `+` character can be used instead of space to avoid quoting. Colors may be valid CSS colors or numeric, e.g., `#ff0000` for bright red. Examples of valid environment configs:
 
 * `prod`
 * `test,label=Functional+test`
@@ -273,26 +273,33 @@ The `bin/solr` script simply passes options starting with `-D` on to the JVM dur
 SOLR_OPTS="$SOLR_OPTS -Dsolr.autoSoftCommit.maxTime=10000"
 ----
 
-=== File Handles and Processes (ulimit settings)
+=== Ulimit Settings (*nix Operating Systems)
 
-Two common settings that result in errors on *nix systems are file handles and user processes.
-
-It is common for the default limits for number of processes and file handles to default to values that are too low for a large Solr installation. The required number of each of these will increase based on a combination of the number of replicas hosted per node and the number of segments in the index for each replica.
-
-The usual recommendation is to make processes and file handles at least 65,000 each, unlimited if possible. On most *nix systems, this command will show the currently-defined limits:
+There are several settings that should be monitored and set as high as possible, "unlimited" by preference. On most "*nix" operating systems, you can see the current values by typing the following at a command prompt.
 
 [source,bash]
 ----
 ulimit -a
 ----
 
-It is strongly recommended that file handle and process limits be permanently raised as above. The exact form of the command will vary per operating system, and some systems require editing configuration files and restarting your server. Consult your system administrators for guidance in your particular environment.
+These four settings in particular are important to have set very high, unlimited if possible.
+
+* max processes (`ulimit -u`): 65,000 is the recommended _minimum_.
+* file handles (`ulimit -n`): 65,000 is the recommended _minimum_. All the files used by all replicas have their file handles open at once so this can grow quite large.
+* virtual memory (`ulimit -v`): Set to unlimited. This is used to by MMapping the indexes.
+* max memory size (`ulimit -m`): Also used by MMap, set to unlimited.
+* If your system supports it, `sysctl vm.max_map_count`, should be set to unlimited as well.
+
+We strongly recommend that these settings be permanently raised. The exact process to permanently raise them will vary per operating system. Some systems require editing configuration files and restarting your server. Consult your system administrators for guidance in your particular environment.
+
+[WARNING]
+====
+Check these limits every time you upgrade your kernel or operating system. These operations can reset these to their defaults.
+====
 
 [WARNING]
 ====
 If these limits are exceeded, the problems reported by Solr vary depending on the specific operation responsible for exceeding the limit. Errors such as "too many open files", "connection error", and "max processes exceeded" have been reported, as well as SolrCloud recovery failures.
-
-Since exceeding these limits can result in such varied symptoms it is _strongly_ recommended that these limits be permanently raised as recommended above.
 ====
 
 == Running Multiple Solr Nodes per Host

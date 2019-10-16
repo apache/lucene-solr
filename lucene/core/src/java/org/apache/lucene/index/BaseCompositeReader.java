@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /** Base class for implementing {@link CompositeReader}s based on an array
  * of sub-readers. The implementing class has to add code for
@@ -50,7 +51,7 @@ public abstract class BaseCompositeReader<R extends IndexReader> extends Composi
   private final R[] subReaders;
   private final int[] starts;       // 1st docno for each reader
   private final int maxDoc;
-  private final int numDocs;
+  private AtomicInteger numDocs = new AtomicInteger(-1); // computed lazily
 
   /** List view solely for {@link #getSequentialSubReaders()},
    * for effectiveness the array is used internally. */
@@ -68,12 +69,11 @@ public abstract class BaseCompositeReader<R extends IndexReader> extends Composi
     this.subReaders = subReaders;
     this.subReadersList = Collections.unmodifiableList(Arrays.asList(subReaders));
     starts = new int[subReaders.length + 1];    // build starts array
-    long maxDoc = 0, numDocs = 0;
+    long maxDoc = 0;
     for (int i = 0; i < subReaders.length; i++) {
       starts[i] = (int) maxDoc;
       final IndexReader r = subReaders[i];
       maxDoc += r.maxDoc();      // compute maxDocs
-      numDocs += r.numDocs();    // compute numDocs
       r.registerParentReader(this);
     }
 
@@ -89,7 +89,6 @@ public abstract class BaseCompositeReader<R extends IndexReader> extends Composi
 
     this.maxDoc = Math.toIntExact(maxDoc);
     starts[subReaders.length] = this.maxDoc;
-    this.numDocs = Math.toIntExact(numDocs);
   }
 
   @Override
@@ -102,6 +101,23 @@ public abstract class BaseCompositeReader<R extends IndexReader> extends Composi
   @Override
   public final int numDocs() {
     // Don't call ensureOpen() here (it could affect performance)
+    // We want to compute numDocs() lazily so that creating a wrapper that hides
+    // some documents isn't slow at wrapping time, but on the first time that
+    // numDocs() is called. This can help as there are lots of use-cases of a
+    // reader that don't involve calling numDocs().
+    // However it's not crucial to make sure that we don't call numDocs() more
+    // than once on the sub readers, since they likely cache numDocs() anyway,
+    // hence the opaque read.
+    // http://gee.cs.oswego.edu/dl/html/j9mm.html#opaquesec.
+    int numDocs = this.numDocs.getOpaque();
+    if (numDocs == -1) {
+      numDocs = 0;
+      for (IndexReader r : subReaders) {
+        numDocs += r.numDocs();
+      }
+      assert numDocs >= 0;
+      this.numDocs.set(numDocs);
+    }
     return numDocs;
   }
 

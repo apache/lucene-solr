@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
-import org.apache.lucene.geo.Line2D;
+import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Tessellator;
 
@@ -119,43 +119,31 @@ public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase 
           return true;
         } else if (b == true && queryRelation == QueryRelation.CONTAINS) {
           return true;
-        } else if (b == false && queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS) {
+        } else if (b == false && queryRelation == QueryRelation.DISJOINT) {
+          return false;
+        } else if (b == false && queryRelation == QueryRelation.WITHIN) {
           return false;
         }
       }
-      return (queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS);
+      return queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS;
     }
 
     @Override
-    public boolean testLineQuery(Line2D query, Object shape) {
+    public boolean testComponentQuery(Component2D query, Object shape) {
       Polygon[] polygons = (Polygon[])shape;
       for (Polygon p : polygons) {
-        boolean b = POLYGONVALIDATOR.testLineQuery(query, p);
+        boolean b = POLYGONVALIDATOR.testComponentQuery(query, p);
         if (b == true && queryRelation == QueryRelation.INTERSECTS) {
           return true;
         } else if (b == true && queryRelation == QueryRelation.CONTAINS) {
           return true;
-        } else if (b == false && queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS) {
+        } else if (b == false && queryRelation == QueryRelation.DISJOINT) {
+          return false;
+        } else if (b == false && queryRelation == QueryRelation.WITHIN) {
           return false;
         }
       }
-      return (queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS);
-    }
-
-    @Override
-    public boolean testPolygonQuery(Object query, Object shape) {
-      Polygon[] polygons = (Polygon[])shape;
-      for (Polygon p : polygons) {
-        boolean b = POLYGONVALIDATOR.testPolygonQuery(query, p);
-        if (b == true && queryRelation == QueryRelation.INTERSECTS) {
-          return true;
-        } else if (b == true && queryRelation == QueryRelation.CONTAINS) {
-          return true;
-        } else if (b == false && queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS) {
-          return false;
-        }
-      }
-      return (queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS);
+      return queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS;
     }
   }
 
@@ -164,11 +152,5 @@ public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase 
   @Override
   public void testRandomBig() throws Exception {
     doTestRandom(10000);
-  }
-
-  @Slow
-  @Override
-  public void testRandomMedium() throws Exception {
-    doTestRandom(500);
   }
 }

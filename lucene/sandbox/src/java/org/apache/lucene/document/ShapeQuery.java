@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.Objects;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
+import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.EdgeTree;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReader;
@@ -90,7 +91,7 @@ abstract class ShapeQuery extends Query {
   protected abstract boolean queryMatches(byte[] triangle, ShapeField.DecodedTriangle scratchTriangle, ShapeField.QueryRelation queryRelation);
 
   /** Return the within relationship between the query and the indexed shape.*/
-  protected abstract EdgeTree.WithinRelation queryWithin(byte[] triangle, ShapeField.DecodedTriangle scratchTriangle);
+  protected abstract Component2D.WithinRelation queryWithin(byte[] triangle, ShapeField.DecodedTriangle scratchTriangle);
 
   /** relates a range of triangles (internal node) to the query */
   protected Relation relateRangeToQuery(byte[] minTriangle, byte[] maxTriangle, QueryRelation queryRelation) {
@@ -301,7 +302,7 @@ abstract class ShapeQuery extends Query {
     public long cost() {
       if (cost == -1) {
         // Computing the cost may be expensive, so only do it if necessary
-        cost = values.estimatePointCount(getEstimateVisitor(query));
+        cost = values.estimateDocCount(getEstimateVisitor(query));
         assert cost >= 0;
       }
       return cost;
@@ -420,24 +421,24 @@ abstract class ShapeQuery extends Query {
 
       @Override
       public void visit(int docID, byte[] t) {
-        EdgeTree.WithinRelation within = query.queryWithin(t, scratchTriangle);
-        if (within == EdgeTree.WithinRelation.CANDIDATE) {
+        Component2D.WithinRelation within = query.queryWithin(t, scratchTriangle);
+        if (within == Component2D.WithinRelation.CANDIDATE) {
           cost[0]++;
           result.set(docID);
-        } else if (within == EdgeTree.WithinRelation.NOTWITHIN) {
+        } else if (within == Component2D.WithinRelation.NOTWITHIN) {
           excluded.set(docID);
         }
       }
 
       @Override
       public void visit(DocIdSetIterator iterator, byte[] t) throws IOException {
-        EdgeTree.WithinRelation within = query.queryWithin(t, scratchTriangle);
+        Component2D.WithinRelation within = query.queryWithin(t, scratchTriangle);
         int docID;
         while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
-          if (within == EdgeTree.WithinRelation.CANDIDATE) {
+          if (within == Component2D.WithinRelation.CANDIDATE) {
             cost[0]++;
             result.set(docID);
-          } else if (within == EdgeTree.WithinRelation.NOTWITHIN) {
+          } else if (within == Component2D.WithinRelation.NOTWITHIN) {
             excluded.set(docID);
           }
         }

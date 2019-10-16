@@ -36,7 +36,7 @@ public class TestRectangle2D extends LuceneTestCase {
     int cy = GeoEncodingUtils.encodeLatitude(4);
     assertFalse(rectangle2D.intersectsTriangle(ax, ay, bx, by , cx, cy));
     assertFalse(rectangle2D.containsTriangle(ax, ay, bx, by , cx, cy));
-    assertEquals(EdgeTree.WithinRelation.DISJOINT, rectangle2D.withinTriangle(ax, ay, true, bx, by , true, cx, cy, true));
+    assertEquals(Component2D.WithinRelation.DISJOINT, rectangle2D.withinTriangle(ax, ay, true, bx, by , true, cx, cy, true));
   }
 
   public void testTriangleIntersects() {
@@ -50,7 +50,7 @@ public class TestRectangle2D extends LuceneTestCase {
     int cy = GeoEncodingUtils.encodeLatitude(2);
     assertTrue(rectangle2D.intersectsTriangle(ax, ay, bx, by , cx, cy));
     assertFalse(rectangle2D.containsTriangle(ax, ay, bx, by , cx, cy));
-    assertEquals(EdgeTree.WithinRelation.NOTWITHIN, rectangle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
+    assertEquals(Component2D.WithinRelation.NOTWITHIN, rectangle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
   }
 
   public void testTriangleContains() {
@@ -64,7 +64,7 @@ public class TestRectangle2D extends LuceneTestCase {
     int cy = GeoEncodingUtils.encodeLatitude(0.25);
     assertTrue(rectangle2D.intersectsTriangle(ax, ay, bx, by , cx, cy));
     assertTrue(rectangle2D.containsTriangle(ax, ay, bx, by , cx, cy));
-    assertEquals(EdgeTree.WithinRelation.NOTWITHIN, rectangle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
+    assertEquals(Component2D.WithinRelation.NOTWITHIN, rectangle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
   }
 
   public void testTriangleContainsEdgeCase() {
@@ -78,7 +78,7 @@ public class TestRectangle2D extends LuceneTestCase {
     int cy = GeoEncodingUtils.encodeLatitude(0.25);
     assertTrue(rectangle2D.intersectsTriangle(ax, ay, bx, by , cx, cy));
     assertTrue(rectangle2D.containsTriangle(ax, ay, bx, by , cx, cy));
-    assertEquals(EdgeTree.WithinRelation.NOTWITHIN, rectangle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
+    assertEquals(Component2D.WithinRelation.NOTWITHIN, rectangle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
   }
 
   public void testTriangleWithin() {
@@ -92,7 +92,7 @@ public class TestRectangle2D extends LuceneTestCase {
     int cy = GeoEncodingUtils.encodeLatitude(20);
     assertTrue(rectangle2D.intersectsTriangle(ax, ay, bx, by , cx, cy));
     assertFalse(rectangle2D.containsTriangle(ax, ay, bx, by , cx, cy));
-    assertEquals(EdgeTree.WithinRelation.CANDIDATE, rectangle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
+    assertEquals(Component2D.WithinRelation.CANDIDATE, rectangle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
   }
 
   public void testTriangleWithinCrossingDateLine() {
@@ -137,18 +137,74 @@ public class TestRectangle2D extends LuceneTestCase {
       NumericUtils.intToSortableBytes(tMaxY, triangle, 2 * BYTES);
       NumericUtils.intToSortableBytes(tMaxX, triangle, 3 * BYTES);
 
-      PointValues.Relation r = rectangle2D.relateRangeBBox(BYTES, 0, triangle, 3 * BYTES, 2 * BYTES, triangle);
+      PointValues.Relation r;
+      if (random().nextBoolean()) {
+        r = rectangle2D.relateRangeBBox(BYTES, 0, triangle, 3 * BYTES, 2 * BYTES, triangle);
+      } else {
+        r = rectangle2D.intersectRangeBBox(BYTES, 0, triangle, 3 * BYTES, 2 * BYTES, triangle);
+      }
+
       if (r == PointValues.Relation.CELL_OUTSIDE_QUERY) {
         assertFalse(rectangle2D.intersectsTriangle(ax, ay, bx, by , cx, cy));
         assertFalse(rectangle2D.containsTriangle(ax, ay, bx, by , cx, cy));
-        assertEquals(EdgeTree.WithinRelation.DISJOINT, rectangle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
+        assertEquals(Component2D.WithinRelation.DISJOINT, rectangle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
       } else if (rectangle2D.containsTriangle(ax, ay, bx, by , cx, cy)) {
         assertTrue(rectangle2D.intersectsTriangle(ax, ay, bx, by , cx, cy));
-        assertTrue(rectangle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true) !=  EdgeTree.WithinRelation.CANDIDATE);
-      } else if (rectangle2D.withinTriangle(ax, ay, true, bx, by , true, cx, cy, true) ==  EdgeTree.WithinRelation.CANDIDATE) {
+        assertTrue(rectangle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true) !=  Component2D.WithinRelation.CANDIDATE);
+      } else if (rectangle2D.withinTriangle(ax, ay, true, bx, by , true, cx, cy, true) ==  Component2D.WithinRelation.CANDIDATE) {
         assertTrue(rectangle2D.intersectsTriangle(ax, ay, bx, by , cx, cy));
         assertFalse(rectangle2D.containsTriangle(ax, ay, bx, by , cx, cy));
       }
     }
+  }
+
+  public void testIntersectOptimization() {
+    byte[] minTriangle = box(0, 0, 10, 5);
+    byte[] maxTriangle = box(20, 10, 30, 15);
+
+    Rectangle2D rectangle2D = Rectangle2D.create(new Rectangle(-0.1, 30.1, -0.1, 15.1));
+    assertEquals(PointValues.Relation.CELL_INSIDE_QUERY,
+        rectangle2D.intersectRangeBBox(BYTES, 0, minTriangle, 3 * BYTES, 2 * BYTES, maxTriangle));
+    assertEquals(PointValues.Relation.CELL_INSIDE_QUERY,
+        rectangle2D.relateRangeBBox(BYTES, 0, minTriangle, 3 * BYTES, 2 * BYTES, maxTriangle));
+
+    rectangle2D = Rectangle2D.create(new Rectangle(-0.1, 30.1, -0.1, 10.1));
+    assertEquals(PointValues.Relation.CELL_INSIDE_QUERY,
+        rectangle2D.intersectRangeBBox(BYTES, 0, minTriangle, 3 * BYTES, 2 * BYTES, maxTriangle));
+    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY,
+        rectangle2D.relateRangeBBox(BYTES, 0, minTriangle, 3 * BYTES, 2 * BYTES, maxTriangle));
+
+    rectangle2D = Rectangle2D.create(new Rectangle(-0.1, 30.1, 4.9, 15.1));
+    assertEquals(PointValues.Relation.CELL_INSIDE_QUERY,
+        rectangle2D.intersectRangeBBox(BYTES, 0, minTriangle, 3 * BYTES, 2 * BYTES, maxTriangle));
+    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY,
+        rectangle2D.relateRangeBBox(BYTES, 0, minTriangle, 3 * BYTES, 2 * BYTES, maxTriangle));
+
+    rectangle2D = Rectangle2D.create(new Rectangle(-0.1, 20.1, -0.1, 15.1));
+    assertEquals(PointValues.Relation.CELL_INSIDE_QUERY,
+        rectangle2D.intersectRangeBBox(BYTES, 0, minTriangle, 3 * BYTES, 2 * BYTES, maxTriangle));
+    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY,
+        rectangle2D.relateRangeBBox(BYTES, 0, minTriangle, 3 * BYTES, 2 * BYTES, maxTriangle));
+
+    rectangle2D = Rectangle2D.create(new Rectangle(9.9, 30.1, -0.1, 15.1));
+    assertEquals(PointValues.Relation.CELL_INSIDE_QUERY,
+        rectangle2D.intersectRangeBBox(BYTES, 0, minTriangle, 3 * BYTES, 2 * BYTES, maxTriangle));
+    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY,
+        rectangle2D.relateRangeBBox(BYTES, 0, minTriangle, 3 * BYTES, 2 * BYTES, maxTriangle));
+
+    rectangle2D = Rectangle2D.create(new Rectangle(5, 25, 3, 13));
+    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY,
+        rectangle2D.intersectRangeBBox(BYTES, 0, minTriangle, 3 * BYTES, 2 * BYTES, maxTriangle));
+    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY,
+        rectangle2D.relateRangeBBox(BYTES, 0, minTriangle, 3 * BYTES, 2 * BYTES, maxTriangle));
+  }
+
+  private byte[] box(int minY, int minX, int maxY, int maxX) {
+    byte[] bytes = new byte[4 * BYTES];
+    NumericUtils.intToSortableBytes(GeoEncodingUtils.encodeLatitude(minY), bytes, 0); // min y
+    NumericUtils.intToSortableBytes(GeoEncodingUtils.encodeLongitude(minX), bytes, BYTES); // min x
+    NumericUtils.intToSortableBytes(GeoEncodingUtils.encodeLatitude(maxY), bytes, 2 * BYTES); // max y
+    NumericUtils.intToSortableBytes(GeoEncodingUtils.encodeLongitude(maxX), bytes, 3 * BYTES); // max x
+    return bytes;
   }
 }

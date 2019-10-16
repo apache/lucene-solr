@@ -320,11 +320,11 @@ The suggested `operation` is an API call that can be invoked to remedy the curre
 
 The types of suggestions available are
 
-* `violation` : Fixes a violation to one or more policy rules
-* `repair` : Add missing replicas
-* `improvement` : move replicas around so that the load is more evenly balanced according to the autoscaling preferences
+* `violation`: Fixes a violation to one or more policy rules
+* `repair`: Add missing replicas
+* `improvement`: move replicas around so that the load is more evenly balanced according to the autoscaling preferences
 
-By default, the suggestions API return all of the above , in that order. However it is possible to fetch only certain types by adding a request parameter `type`. e.g: `type=violation&type=repair`
+By default, the suggestions API returns all of the above, in that order. However it is possible to fetch only certain types by adding a request parameter `type`. e.g: `type=violation&type=repair`
 
 === Inline Policy Configuration
 

@@ -690,13 +690,13 @@ public class SolrMetricManager {
     }
   }
 
-    /**
-     * This is a wrapper for {@link Gauge} metrics, which are usually implemented as
-     * lambdas that often keep a reference to their parent instance. In order to make sure that
-     * all such metrics are removed when their parent instance is removed / closed the
-     * metric is associated with an instance tag, which can be used then to remove
-     * wrappers with the matching tag using {@link #unregisterGauges(String, String)}.
-     */
+  /**
+   * This is a wrapper for {@link Gauge} metrics, which are usually implemented as
+   * lambdas that often keep a reference to their parent instance. In order to make sure that
+   * all such metrics are removed when their parent instance is removed / closed the
+   * metric is associated with an instance tag, which can be used then to remove
+   * wrappers with the matching tag using {@link #unregisterGauges(String, String)}.
+   */
   public static class GaugeWrapper<T> implements Gauge<T> {
     private final Gauge<T> gauge;
     private final String tag;
@@ -736,7 +736,7 @@ public class SolrMetricManager {
         removed.incrementAndGet();
         return true;
       } else {
-      return false;
+        return false;
       }
     });
     return removed.get();
@@ -774,7 +774,6 @@ public class SolrMetricManager {
       sb.append(name);
       return sb.toString();
     }
-
   }
 
   /**

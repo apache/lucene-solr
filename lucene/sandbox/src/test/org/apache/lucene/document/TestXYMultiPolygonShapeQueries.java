@@ -20,9 +20,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
-import org.apache.lucene.geo.Line2D;
+import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.geo.XYPolygon;
+import org.apache.lucene.geo.XYRectangle;
+import org.apache.lucene.geo.XYRectangle2D;
 
 /** random cartesian bounding box, line, and polygon query tests for random indexed arrays of cartesian {@link XYPolygon} types */
 public class TestXYMultiPolygonShapeQueries extends BaseXYShapeTestCase {
@@ -110,51 +112,27 @@ public class TestXYMultiPolygonShapeQueries extends BaseXYShapeTestCase {
     }
 
     @Override
-    public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
-      XYPolygon[] polygons = (XYPolygon[])shape;
-      for (XYPolygon p : polygons) {
-        boolean b = POLYGONVALIDATOR.testBBoxQuery(minLat, maxLat, minLon, maxLon, p);
-        if (b == true && queryRelation == QueryRelation.INTERSECTS) {
-          return true;
-        } else if (b == true && queryRelation == QueryRelation.CONTAINS) {
-          return true;
-        } else if (b == false && queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS) {
-          return false;
-        }
-      }
-      return (queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS);
+    public boolean testBBoxQuery(double minY, double maxY, double minX, double maxX, Object shape) {
+      Component2D rectangle2D = XYRectangle2D.create(new XYRectangle(minX, maxX, minY, maxY));
+      return testComponentQuery(rectangle2D, shape);
     }
 
     @Override
-    public boolean testLineQuery(Line2D query, Object shape) {
+    public boolean testComponentQuery(Component2D query, Object shape) {
       XYPolygon[] polygons = (XYPolygon[])shape;
       for (XYPolygon p : polygons) {
-        boolean b = POLYGONVALIDATOR.testLineQuery(query, p);
+        boolean b = POLYGONVALIDATOR.testComponentQuery(query, p);
         if (b == true && queryRelation == QueryRelation.INTERSECTS) {
           return true;
         } else if (b == true && queryRelation == QueryRelation.CONTAINS) {
           return true;
-        } else if (b == false && queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS) {
+        } else if (b == false && queryRelation == QueryRelation.DISJOINT) {
+          return false;
+        } else if (b == false && queryRelation == QueryRelation.WITHIN) {
           return false;
         }
       }
-      return (queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS);
-    }
-
-    @Override
-    public boolean testPolygonQuery(Object query, Object shape) {
-      XYPolygon[] polygons = (XYPolygon[])shape;
-      for (XYPolygon p : polygons) {
-        boolean b = POLYGONVALIDATOR.testPolygonQuery(query, p);
-        if (b == true && queryRelation == QueryRelation.INTERSECTS) {
-          return true;
-        } else if (b == true && queryRelation == QueryRelation.CONTAINS) {
-          return true;
-        } else if (b == false && queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS) {
-          return false;
-        }
-      }
-      return (queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS);
+      return queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS;
     }
   }
 
@@ -163,11 +141,5 @@ public class TestXYMultiPolygonShapeQueries extends BaseXYShapeTestCase {
   @Override
   public void testRandomBig() throws Exception {
     doTestRandom(10000);
-  }
-
-  @Slow
-  @Override
-  public void testRandomMedium() throws Exception {
-    doTestRandom(500);
   }
 }

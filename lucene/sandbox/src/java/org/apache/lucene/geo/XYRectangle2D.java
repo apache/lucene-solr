@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.geo;
 
+import java.util.Objects;
+
 import org.apache.lucene.index.PointValues;
 
 import static org.apache.lucene.geo.GeoUtils.orient;
@@ -25,114 +27,132 @@ import static org.apache.lucene.geo.GeoUtils.orient;
  *
  * @lucene.internal
  */
-public class XYRectangle2D  {
+public class XYRectangle2D implements Component2D {
 
-  private final float minX;
-  private final float maxX;
-  private final float minY;
-  private final float maxY;
+  private final double minX;
+  private final double maxX;
+  private final double minY;
+  private final double maxY;
 
-  protected XYRectangle2D(float minX, float maxX, float minY, float maxY) {
+  protected XYRectangle2D(double minX, double maxX, double minY, double maxY) {
     this.minX =  minX;
     this.maxX =  maxX;
     this.minY =  minY;
     this.maxY =  maxY;
   }
 
-  public boolean contains(float x, float y) {
-    return x >= this.minX && x <= this.maxX && y >= this.minY && y <= this.maxY;
+  @Override
+  public double getMinX() {
+    return minX;
   }
 
-  public PointValues.Relation relate(float minX, float maxX, float minY, float maxY) {
-    if (this.minX > maxX || this.maxX < minX || this.minY > maxY || this.maxY < minY) {
+  @Override
+  public double getMaxX() {
+    return maxX;
+  }
+
+  @Override
+  public double getMinY() {
+    return minY;
+  }
+
+  @Override
+  public double getMaxY() {
+    return maxY;
+  }
+
+  @Override
+  public boolean contains(double x, double y) {
+    return Component2D.containsPoint(x, y, this.minX, this.maxX, this.minY, this.maxY);
+  }
+
+  @Override
+  public PointValues.Relation relate(double minX, double maxX, double minY, double maxY) {
+    if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return PointValues.Relation.CELL_OUTSIDE_QUERY;
     }
-    if (minX >= this.minX && maxX <= this.maxX && minY >= this.minY && maxY <= this.maxY) {
-      return PointValues.Relation.CELL_INSIDE_QUERY;
+    if (Component2D.within(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
+      return PointValues.Relation.CELL_CROSSES_QUERY;
     }
     return PointValues.Relation.CELL_CROSSES_QUERY;
   }
 
-  public PointValues.Relation relateTriangle(float aX, float aY, float bX, float bY, float cX, float cY) {
-    // compute bounding box of triangle
-    float tMinX = StrictMath.min(StrictMath.min(aX, bX), cX);
-    float tMaxX = StrictMath.max(StrictMath.max(aX, bX), cX);
-    float tMinY = StrictMath.min(StrictMath.min(aY, bY), cY);
-    float tMaxY = StrictMath.max(StrictMath.max(aY, bY), cY);
+  @Override
+  public PointValues.Relation relateTriangle(double minX, double maxX, double minY, double maxY,
+                                             double ax, double ay, double bx, double by, double cx, double cy) {
 
-    if (tMaxX < minX || tMinX > maxX || tMinY > maxY || tMaxY < minY) {
+
+    if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return PointValues.Relation.CELL_OUTSIDE_QUERY;
     }
-
-    int edgesContain = numberOfCorners(aX, aY, bX, bY, cX, cY);
+    int edgesContain = numberOfCorners(ax, ay, bx, by, cx, cy);
     if (edgesContain == 3) {
       return PointValues.Relation.CELL_INSIDE_QUERY;
     } else if (edgesContain != 0) {
       return PointValues.Relation.CELL_CROSSES_QUERY;
-    } else if (Tessellator.pointInTriangle(minX, minY, aX, aY, bX, bY, cX, cY)
-               || edgesIntersect(aX, aY, bX, bY)
-               || edgesIntersect(bX, bY, cX, cY)
-               || edgesIntersect(cX, cY, aX, aY)) {
+    } else if (Component2D.pointInTriangle(minX, maxX, minY, maxY, this.minX, this.minY,ax, ay, bx, by, cx, cy)
+        || edgesIntersect(ax, ay, bx, by)
+        || edgesIntersect(bx, by, cx, cy)
+        || edgesIntersect(cx, cy, ax, ay)) {
       return PointValues.Relation.CELL_CROSSES_QUERY;
     }
     return PointValues.Relation.CELL_OUTSIDE_QUERY;
   }
 
-  public EdgeTree.WithinRelation withinTriangle(float ax, float ay, boolean ab, float bx, float by, boolean bc, float cx, float cy, boolean ca) {
+  @Override
+  public WithinRelation withinTriangle(double minX, double maxX, double minY, double maxY,
+                                       double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
     // Short cut, lines and points cannot contain a bbox
     if ((ax == bx && ay == by) || (ax == cx && ay == cy) || (bx == cx && by == cy)) {
-      return EdgeTree.WithinRelation.DISJOINT;
+      return WithinRelation.DISJOINT;
     }
-    // Compute bounding box of triangle
-    float tMinX = StrictMath.min(StrictMath.min(ax, bx), cx);
-    float tMaxX = StrictMath.max(StrictMath.max(ax, bx), cx);
-    float tMinY = StrictMath.min(StrictMath.min(ay, by), cy);
-    float tMaxY = StrictMath.max(StrictMath.max(ay, by), cy);
+
     // Bounding boxes disjoint?
-    if (tMaxX < minX || tMinX > maxX || tMinY > maxY || tMaxY < minY) {
-      return EdgeTree.WithinRelation.DISJOINT;
+    if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
+      return WithinRelation.DISJOINT;
     }
+
     // Points belong to the shape so if points are inside the rectangle then it cannot be within.
     if (contains(ax, ay) || contains(bx, by) || contains(cx, cy)) {
-      return EdgeTree.WithinRelation.NOTWITHIN;
+      return WithinRelation.NOTWITHIN;
     }
     // If any of the edges intersects an edge belonging to the shape then it cannot be within.
-    EdgeTree.WithinRelation relation = EdgeTree.WithinRelation.DISJOINT;
+    WithinRelation relation = WithinRelation.DISJOINT;
     if (edgesIntersect(ax, ay, bx, by) == true) {
       if (ab == true) {
-        return EdgeTree.WithinRelation.NOTWITHIN;
+        return WithinRelation.NOTWITHIN;
       } else {
-        relation = EdgeTree.WithinRelation.CANDIDATE;
+        relation = WithinRelation.CANDIDATE;
       }
     }
     if (edgesIntersect(bx, by, cx, cy) == true) {
       if (bc == true) {
-        return EdgeTree.WithinRelation.NOTWITHIN;
+        return WithinRelation.NOTWITHIN;
       } else {
-        relation = EdgeTree.WithinRelation.CANDIDATE;
+        relation = WithinRelation.CANDIDATE;
       }
     }
 
     if (edgesIntersect(cx, cy, ax, ay) == true) {
       if (ca == true) {
-        return EdgeTree.WithinRelation.NOTWITHIN;
+        return WithinRelation.NOTWITHIN;
       } else {
-        relation = EdgeTree.WithinRelation.CANDIDATE;
+        relation = WithinRelation.CANDIDATE;
       }
     }
     // If any of the rectangle edges crosses a triangle edge that does not belong to the shape
     // then it is a candidate for within
-    if (relation == EdgeTree.WithinRelation.CANDIDATE) {
-      return EdgeTree. WithinRelation.CANDIDATE;
+    if (relation == WithinRelation.CANDIDATE) {
+      return WithinRelation.CANDIDATE;
     }
     // Check if shape is within the triangle
-    if (Tessellator.pointInTriangle(minX, minY, ax, ay, bx, by, cx, cy)) {
-      return EdgeTree.WithinRelation.CANDIDATE;
+    if (Component2D.pointInTriangle(minX, maxX, minY, maxY, minX, minY, ax, ay, bx, by, cx, cy)) {
+      return WithinRelation.CANDIDATE;
     }
     return relation;
   }
 
-  private  boolean edgesIntersect(float ax, float ay, float bx, float by) {
+  private  boolean edgesIntersect(double ax, double ay, double bx, double by) {
     // shortcut: if edge is a point (occurs w/ Line shapes); simply check bbox w/ point
     if (ax == bx && ay == by) {
       return false;
@@ -169,7 +189,7 @@ public class XYRectangle2D  {
     return false;
   }
 
-  private int numberOfCorners(float ax, float ay, float bx, float by, float cx, float cy) {
+  private int numberOfCorners(double ax, double ay, double bx, double by, double cx, double cy) {
     int containsCount = 0;
     if (contains(ax, ay)) {
       containsCount++;
@@ -181,6 +201,23 @@ public class XYRectangle2D  {
       containsCount++;
     }
     return containsCount;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) return true;
+    if (!(o instanceof XYRectangle2D)) return false;
+    XYRectangle2D that = (XYRectangle2D) o;
+    return minX == that.minX &&
+        maxX == that.maxX &&
+        minY == that.minY &&
+        maxY == that.maxY;
+  }
+
+  @Override
+  public int hashCode() {
+    int result = Objects.hash(minX, maxX, minY, maxY);
+    return result;
   }
 
   @Override
@@ -198,8 +235,15 @@ public class XYRectangle2D  {
     return sb.toString();
   }
 
-  /** Builds a Rectangle2D from rectangle */
-  public static XYRectangle2D create(XYRectangle rectangle) {
-    return new XYRectangle2D((float)rectangle.minX, (float)rectangle.maxX, (float)rectangle.minY, (float)rectangle.maxY);
+  /** create a component2D from provided array of rectangles */
+  public static Component2D create(XYRectangle... rectangles) {
+    XYRectangle2D[] components = new XYRectangle2D[rectangles.length];
+    for (int i = 0; i < components.length; ++i) {
+      components[i] = new XYRectangle2D(XYEncodingUtils.decode(XYEncodingUtils.encode(rectangles[i].minX)),
+          XYEncodingUtils.decode(XYEncodingUtils.encode(rectangles[i].maxX)),
+          XYEncodingUtils.decode(XYEncodingUtils.encode(rectangles[i].minY)),
+          XYEncodingUtils.decode(XYEncodingUtils.encode(rectangles[i].maxY)));
+    }
+    return ComponentTree.create(components);
   }
 }

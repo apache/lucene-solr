@@ -20,8 +20,10 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
-import org.apache.lucene.geo.Line2D;
+import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.XYLine;
+import org.apache.lucene.geo.XYRectangle;
+import org.apache.lucene.geo.XYRectangle2D;
 
 /** random cartesian bounding box, line, and polygon query tests for random indexed arrays of cartesian {@link XYLine} types */
 public class TestXYMultiLineShapeQueries extends BaseXYShapeTestCase {
@@ -73,51 +75,27 @@ public class TestXYMultiLineShapeQueries extends BaseXYShapeTestCase {
     }
 
     @Override
-    public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
-      XYLine[] lines = (XYLine[])shape;
-      for (XYLine l : lines) {
-        boolean b = LINEVALIDATOR.testBBoxQuery(minLat, maxLat, minLon, maxLon, l);
-        if (b == true && queryRelation == ShapeField.QueryRelation.INTERSECTS) {
-          return true;
-        } else if (b == true && queryRelation == QueryRelation.CONTAINS) {
-          return true;
-        } else if (b == false && queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS) {
-          return false;
-        }
-      }
-      return (queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS);
+    public boolean testBBoxQuery(double minY, double maxY, double minX, double maxX, Object shape) {
+      Component2D rectangle2D = XYRectangle2D.create(new XYRectangle(minX, maxX, minY, maxY));
+      return testComponentQuery(rectangle2D, shape);
     }
 
     @Override
-    public boolean testLineQuery(Line2D query, Object shape) {
+    public boolean testComponentQuery(Component2D query, Object shape) {
       XYLine[] lines = (XYLine[])shape;
       for (XYLine l : lines) {
-        boolean b = LINEVALIDATOR.testLineQuery(query, l);
+        boolean b = LINEVALIDATOR.testComponentQuery(query, l);
         if (b == true && queryRelation == ShapeField.QueryRelation.INTERSECTS) {
           return true;
         } else if (b == true && queryRelation == QueryRelation.CONTAINS) {
           return true;
-        } else if (b == false && queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS) {
+        } else if (b == false && queryRelation == ShapeField.QueryRelation.DISJOINT) {
+          return false;
+        } else if (b == false && queryRelation == ShapeField.QueryRelation.WITHIN) {
           return false;
         }
       }
-      return (queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS);
-    }
-
-    @Override
-    public boolean testPolygonQuery(Object query, Object shape) {
-      XYLine[] lines = (XYLine[])shape;
-      for (XYLine l : lines) {
-        boolean b = LINEVALIDATOR.testPolygonQuery(query, l);
-        if (b == true && queryRelation == ShapeField.QueryRelation.INTERSECTS) {
-          return true;
-        } else if (b == true && queryRelation == QueryRelation.CONTAINS) {
-          return true;
-        } else if (b == false && queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS) {
-          return false;
-        }
-      }
-      return (queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS);
+      return queryRelation != ShapeField.QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS;
     }
   }
 

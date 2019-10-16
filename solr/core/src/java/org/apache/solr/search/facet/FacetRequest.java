@@ -21,8 +21,9 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Objects;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.SolrException;
@@ -94,6 +95,20 @@ public abstract class FacetRequest {
     private final int multiplier;
     private SortDirection(int multiplier) {
       this.multiplier = multiplier;
+    }
+
+    public static SortDirection fromObj(Object direction) {
+      if (direction == null) {
+        // should we just default either to desc/asc??
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing Sort direction");
+      }
+
+      switch (direction.toString()) {
+        case "asc": return asc;
+        case "desc": return desc;
+        default:
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown Sort direction '" + direction + "'");
+      }
     }
 
     // asc==-1, desc==1
@@ -367,12 +382,12 @@ public abstract class FacetRequest {
   @Override
   public String toString() {
     Map<String, Object> descr = getFacetDescription();
-    String s = "facet request: { ";
-    for (String key : descr.keySet()) {
-      s += key + ":" + descr.get(key) + ",";
+    StringBuilder s = new StringBuilder("facet request: { ");
+    for (Map.Entry<String, Object> entry : descr.entrySet()) {
+      s.append(entry.getKey()).append(':').append(entry.getValue()).append(',');
     }
-    s += "}";
-    return s;
+    s.append('}');
+    return s.toString();
   }
 
   /**
@@ -986,11 +1001,10 @@ class FacetFieldParser extends FacetParser<FacetField> {
       Object o = m.get("facet");
       parseSubs(o);
 
-      // TODO: SOLR-13022 ... validate the sortVariabls against the subs.
-      facet.sort = parseSort( m.get(SORT) );
-      facet.prelim_sort = parseSort( m.get("prelim_sort") );
+      facet.sort = parseAndValidateSort(facet, m, SORT);
+      facet.prelim_sort = parseAndValidateSort(facet, m, "prelim_sort");
     } else if (arg != null) {
-      // something lke json.facet.facet.field=2
+      // something like json.facet.facet.field=2
       throw err("Expected string/map for facet field, received " + arg.getClass().getSimpleName() + "=" + arg);
     }
 
@@ -1001,42 +1015,69 @@ class FacetFieldParser extends FacetParser<FacetField> {
     return facet;
   }
 
-
-  // Sort specification is currently
-  // sort : 'mystat desc'
-  // OR
-  // sort : { mystat : 'desc' }
-  private static FacetRequest.FacetSort parseSort(Object sort) {
+  /**
+   * Parses, validates and returns the {@link FacetRequest.FacetSort} for given sortParam
+   * and facet field
+   * <p>
+   *   Currently, supported sort specifications are 'mystat desc' OR {mystat: 'desc'}
+   *   index - This is equivalent to 'index asc'
+   *   count - This is equivalent to 'count desc'
+   * </p>
+   *
+   * @param facet {@link FacetField} for which sort needs to be parsed and validated
+   * @param args map containing the sortVal for given sortParam
+   * @param sortParam parameter for which sort needs to parsed and validated
+   * @return parsed facet sort
+   */
+  private static FacetRequest.FacetSort parseAndValidateSort(FacetField facet, Map<String, Object> args, String sortParam) {
+    Object sort = args.get(sortParam);
     if (sort == null) {
       return null;
-    } else if (sort instanceof String) {
+    }
+
+    FacetRequest.FacetSort facetSort = null;
+
+    if (sort instanceof String) {
       String sortStr = (String)sort;
       if (sortStr.endsWith(" asc")) {
-        return new FacetRequest.FacetSort(sortStr.substring(0, sortStr.length()-" asc".length()),
-                                          FacetRequest.SortDirection.asc);
+        facetSort =  new FacetRequest.FacetSort(sortStr.substring(0, sortStr.length()-" asc".length()),
+            FacetRequest.SortDirection.asc);
       } else if (sortStr.endsWith(" desc")) {
-        return new FacetRequest.FacetSort(sortStr.substring(0, sortStr.length()-" desc".length()),
-                                          FacetRequest.SortDirection.desc);
+        facetSort =  new FacetRequest.FacetSort(sortStr.substring(0, sortStr.length()-" desc".length()),
+            FacetRequest.SortDirection.desc);
       } else {
-        return new FacetRequest.FacetSort(sortStr,
-                                          // default direction for "index" is ascending
-                                          ("index".equals(sortStr)
-                                           ? FacetRequest.SortDirection.asc
-                                           : FacetRequest.SortDirection.desc));
+        facetSort =  new FacetRequest.FacetSort(sortStr,
+            // default direction for "index" is ascending
+            ("index".equals(sortStr)
+                ? FacetRequest.SortDirection.asc
+                : FacetRequest.SortDirection.desc));
       }
     } else if (sort instanceof Map) {
-     // sort : { myvar : 'desc' }
-      Map<String,Object> map = (Map<String,Object>)sort;
-      // TODO: validate
-      Map.Entry<String,Object> entry = map.entrySet().iterator().next();
-      String k = entry.getKey();
-      Object v = entry.getValue();
-      return new FacetRequest.FacetSort(k, FacetRequest.SortDirection.valueOf(v.toString()));
+      // { myvar : 'desc' }
+      Optional<Map.Entry<String,Object>> optional = ((Map<String,Object>)sort).entrySet().stream().findFirst();
+      if (optional.isPresent()) {
+        Map.Entry<String, Object> entry = optional.get();
+        facetSort = new FacetRequest.FacetSort(entry.getKey(), FacetRequest.SortDirection.fromObj(entry.getValue()));
+      }
     } else {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Expected string/map for 'sort', received "+ sort.getClass().getSimpleName() + "=" + sort);
+          "Expected string/map for '" + sortParam +"', received "+ sort.getClass().getSimpleName() + "=" + sort);
     }
+
+    Map<String, AggValueSource> facetStats = facet.facetStats;
+    // validate facet sort
+    boolean isValidSort = facetSort == null ||
+        "index".equals(facetSort.sortVariable) ||
+        "count".equals(facetSort.sortVariable) ||
+        (facetStats != null && facetStats.containsKey(facetSort.sortVariable));
+
+    if (!isValidSort) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Invalid " + sortParam + " option '" + sort + "' for field '" + facet.field + "'");
+    }
+    return facetSort;
   }
+
 }
 
 
@@ -1057,10 +1098,12 @@ class FacetRangeParser extends FacetParser<FacetRange> {
     Map<String, Object> m = (Map<String, Object>) arg;
 
     facet.field = getString(m, "field", null);
+    facet.ranges = getVal(m, "ranges", false);
 
-    facet.start = getVal(m, "start", true);
-    facet.end = getVal(m, "end", true);
-    facet.gap = getVal(m, "gap", true);
+    boolean required = facet.ranges == null;
+    facet.start = getVal(m, "start", required);
+    facet.end = getVal(m, "end", required);
+    facet.gap = getVal(m, "gap", required);
     facet.hardend = getBoolean(m, "hardend", facet.hardend);
     facet.mincount = getLong(m, "mincount", 0);
 
@@ -1069,7 +1112,7 @@ class FacetRangeParser extends FacetParser<FacetRange> {
     List<String> list = getStringList(m, "include", false);
     String[] includeList = null;
     if (list != null) {
-      includeList = (String[])list.toArray(new String[list.size()]);
+      includeList = list.toArray(new String[list.size()]);
     }
     facet.include = FacetParams.FacetRangeInclude.parseParam( includeList );
     facet.others = EnumSet.noneOf(FacetParams.FacetRangeOther.class);

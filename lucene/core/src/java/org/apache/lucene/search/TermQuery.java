@@ -60,7 +60,7 @@ public class TermQuery extends Query {
       final TermStatistics termStats;
       if (scoreMode.needsScores()) {
         collectionStats = searcher.collectionStatistics(term.field());
-        termStats = searcher.termStatistics(term, termStates);
+        termStats = termStates.docFreq() > 0 ? searcher.termStatistics(term, termStates.docFreq(), termStates.totalTermFreq()) : null;
       } else {
         // we do not need the actual stats, use fake stats with docFreq=maxDoc=ttf=1
         collectionStats = new CollectionStatistics(term.field(), 1, 1, 1, 1);
