@@ -52,6 +52,15 @@
     <dependency org="org.eclipse.jetty" name="jetty-alpn-java-client" rev="${/org.eclipse.jetty/jetty-alpn-java-client}" conf="compile"/>
     <dependency org="org.eclipse.jetty" name="jetty-alpn-client" rev="${/org.eclipse.jetty/jetty-alpn-client}" conf="compile"/>
 
+    <dependency org="io.netty" name="netty-common" rev="${/io.netty/netty-common}" conf="compile"/>
+    <dependency org="io.netty" name="netty-resolver" rev="${/io.netty/netty-resolver}" conf="compile"/>
+    <dependency org="io.netty" name="netty-buffer" rev="${/io.netty/netty-buffer}" conf="compile"/>
+    <dependency org="io.netty" name="netty-codec" rev="${/io.netty/netty-codec}" conf="compile"/>
+    <dependency org="io.netty" name="netty-handler" rev="${/io.netty/netty-handler}" conf="compile"/>
+    <dependency org="io.netty" name="netty-transport" rev="${/io.netty/netty-transport}" conf="compile"/>
+    <dependency org="io.netty" name="netty-transport-native-epoll" rev="${/io.netty/netty-transport-native-epoll}" conf="compile"/>
+    <dependency org="io.netty" name="netty-transport-native-unix-common" rev="${/io.netty/netty-transport-native-unix-common}" conf="compile"/>
+
     <dependency org="org.apache.logging.log4j" name="log4j-slf4j-impl" rev="${/org.apache.logging.log4j/log4j-slf4j-impl}" conf="test"/>
 
     <dependency org="org.mockito" name="mockito-core" rev="${/org.mockito/mockito-core}" conf="test"/>

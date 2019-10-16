@@ -33,7 +33,8 @@ Solr caches are associated with a specific instance of an Index Searcher, a spec
 
 When a new searcher is opened, the current searcher continues servicing requests while the new one auto-warms its cache. The new searcher uses the current searcher's cache to pre-populate its own. When the new searcher is ready, it is registered as the current searcher and begins handling all new search requests. The old searcher will be closed once it has finished servicing all its requests.
 
-=== Cache implementations
+=== Cache Implementations
+
 In Solr, the following cache implementations are available: recommended `solr.search.CaffeineCache`, and legacy implementations: `solr.search.LRUCache`, `solr.search.FastLRUCache,` and `solr.search.LFUCache`.
 
 The `CaffeineCache` is an implementation backed by the https://github.com/ben-manes/caffeine[Caffeine caching library]. By default it uses a Window TinyLFU (W-TinyLFU) eviction policy, which allows the eviction based on both frequency and recency of use in O(1) time with a small footprint. Generally this cache implementation is recommended over other legacy caches as it usually offers lower memory footprint, higher hit ratio and better multi-threaded performance over legacy caches.

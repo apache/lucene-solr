@@ -254,7 +254,7 @@ field during indexing is impractical, or the TRA behavior is desired across mult
 Dimensional Routed aliases may be used. This feature has been designed to handle an arbitrary number
 and combination of category and time dimensions in any order, but users are cautioned to carefully
 consider the total number of collections that will result from such configurations. Collection counts
-in the high hundreds or low 1000's begin to pose significant challenges with zookeeper.
+in the high hundreds or low 1000's begin to pose significant challenges with ZooKeeper.
 
 NOTE: DRA's are a new feature and presently only 2 dimensions are supported. More dimensions will
 be supported in the future (see https://issues.apache.org/jira/browse/SOLR-13628 for progress)
@@ -270,9 +270,9 @@ with 30 minute intervals):
 
 Note that the initial collection will be a throw away place holder for any DRA containing a category based dimension.
 Name generation for each sub-part of a collection name is identical to the corresponding potion of the component
-dimension type. (e.g. a category value generating __CRA__ or __TRA__ would still produce an error)
+dimension type. (e.g., a category value generating __CRA__ or __TRA__ would still produce an error)
 
-WARNING: The prior warning about reindexing documents with different route value applies to every dimensio of
+WARNING: The prior warning about reindexing documents with different route value applies to every dimension of
 a DRA. DRA's are inappropriate for documents where categories or timestamps used in routing will change (this of
 course applies to other route values in future RA types too).
 

@@ -126,7 +126,6 @@ examples
 [source,json]
 { "replica" : "<2", "node":"#ANY"}
 
-
 [source,json]
 //place 3 replicas in the group of nodes node-name1, node-name2
 {  "replica" : "3",  "nodeset":["node-name1","node-name2"]}
@@ -134,7 +133,7 @@ examples
 [source,json]
 { "nodeset":{"<property-name>":"<property-value>"}}
 
-The property names can be one of  `node` , `host` , `sysprop.*` , `freedisk` , `ip_*` , `nodeRole` , `heapUsage` , `metrics.*`
+The property names can be one of: `node`, `host`, `sysprop.*`, `freedisk`, `ip_*`, `nodeRole`, `heapUsage`, `metrics.*`.
 
 when using the `nodeset` attribute, an optional attribute `put` can be used to specify how to distribute the replicas in that node set.
 

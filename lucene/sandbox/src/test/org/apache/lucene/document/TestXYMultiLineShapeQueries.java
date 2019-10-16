@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
-import org.apache.lucene.geo.Line2D;
+import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.XYLine;
 
 /** random cartesian bounding box, line, and polygon query tests for random indexed arrays of cartesian {@link XYLine} types */
@@ -89,26 +89,10 @@ public class TestXYMultiLineShapeQueries extends BaseXYShapeTestCase {
     }
 
     @Override
-    public boolean testLineQuery(Line2D query, Object shape) {
+    public boolean testComponentQuery(Component2D query, Object shape) {
       XYLine[] lines = (XYLine[])shape;
       for (XYLine l : lines) {
-        boolean b = LINEVALIDATOR.testLineQuery(query, l);
-        if (b == true && queryRelation == ShapeField.QueryRelation.INTERSECTS) {
-          return true;
-        } else if (b == false && queryRelation == ShapeField.QueryRelation.DISJOINT) {
-          return false;
-        } else if (b == false && queryRelation == ShapeField.QueryRelation.WITHIN) {
-          return false;
-        }
-      }
-      return queryRelation != ShapeField.QueryRelation.INTERSECTS;
-    }
-
-    @Override
-    public boolean testPolygonQuery(Object query, Object shape) {
-      XYLine[] lines = (XYLine[])shape;
-      for (XYLine l : lines) {
-        boolean b = LINEVALIDATOR.testPolygonQuery(query, l);
+        boolean b = LINEVALIDATOR.testComponentQuery(query, l);
         if (b == true && queryRelation == ShapeField.QueryRelation.INTERSECTS) {
           return true;
         } else if (b == false && queryRelation == ShapeField.QueryRelation.DISJOINT) {
