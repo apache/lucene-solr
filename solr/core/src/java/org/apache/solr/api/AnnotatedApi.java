@@ -239,10 +239,13 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
 
 
       } catch (SolrException se) {
+        log.error("Error executing command  ", se);
         throw se;
       } catch (InvocationTargetException ite) {
+        log.error("Error executing command ", ite);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, ite.getCause());
       } catch (Exception e) {
+        log.error("Error executing command : ", e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
 

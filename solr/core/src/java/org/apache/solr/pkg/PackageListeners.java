@@ -17,27 +17,33 @@
 
 package org.apache.solr.pkg;
 
-import java.lang.ref.WeakReference;
+import java.lang.invoke.MethodHandles;
+import java.lang.ref.Reference;
+import java.lang.ref.SoftReference;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
 import org.apache.solr.core.PluginInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PackageListeners {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   // this registry only keeps a weak reference because it does not want to
   // cause a memory leak if the listener forgets to unregister itself
-  private List<WeakReference<Listener>> listeners = new ArrayList<>();
+  private List<Reference<Listener>> listeners = new ArrayList<>();
 
   public synchronized void addListener(Listener listener) {
-    listeners.add(new WeakReference<>(listener));
+    listeners.add(new SoftReference<>(listener));
 
   }
 
   public synchronized void removeListener(Listener listener) {
-    Iterator<WeakReference<Listener>> it = listeners.iterator();
+    Iterator<Reference<Listener>> it = listeners.iterator();
     while (it.hasNext()) {
-      WeakReference<Listener> ref = it.next();
+      Reference<Listener> ref = it.next();
       Listener pkgListener = ref.get();
       if(pkgListener == null || pkgListener == listener){
         it.remove();
@@ -54,7 +60,7 @@ public class PackageListeners {
   }
 
   private synchronized void invokeListeners(PackageLoader.Package pkg) {
-    for (WeakReference<Listener> ref : listeners) {
+    for (Reference<Listener> ref : listeners) {
       Listener listener = ref.get();
       if (listener != null && listener.packageName().equals(pkg.name())) {
         listener.changed(pkg);
@@ -64,12 +70,11 @@ public class PackageListeners {
 
   public List<Listener> getListeners(){
     List<Listener> result = new ArrayList<>();
-    for (WeakReference<Listener> ref : listeners) {
+    for (Reference<Listener> ref : listeners) {
       Listener l = ref.get();
       if(l != null){
         result.add(l);
       }
-
     }
     return result;
   }

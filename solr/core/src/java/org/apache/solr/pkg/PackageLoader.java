@@ -76,6 +76,7 @@ public class PackageLoader {
 
     List<Package> updated = new ArrayList<>();
     Map<String, List<PackageAPI.PkgVersion>> modified = getModified(myCopy, packageAPI.pkgs);
+
     for (Map.Entry<String, List<PackageAPI.PkgVersion>> e : modified.entrySet()) {
       if (e.getValue() != null) {
         Package p = packageClassLoaders.get(e.getKey());
@@ -95,7 +96,6 @@ public class PackageLoader {
     }
     for (SolrCore core : coreContainer.getCores()) {
       core.getPackageListeners().packagesUpdated(updated);
-
     }
   }
 
@@ -105,25 +105,24 @@ public class PackageLoader {
       List<PackageAPI.PkgVersion> versions = old.packages.get(e.getKey());
       if (versions != null) {
         if (!Objects.equals(e.getValue(), versions)) {
+          log.info("Package {} is modified ",e.getKey());
           changed.put(e.getKey(), e.getValue());
         }
       } else {
+        log.info("A new package: {} introduced", e.getKey());
         changed.put(e.getKey(), e.getValue());
       }
     }
     //some packages are deleted altogether
     for (String s : old.packages.keySet()) {
       if (!newPkgs.packages.keySet().contains(s)) {
+        log.info("Package: {} is removed althogether", s);
         changed.put(s, null);
       }
     }
 
     return changed;
 
-  }
-
-  public SolrResourceLoader getResourceLoader(String pkg, String version) {
-    return null;
   }
 
 
@@ -148,6 +147,7 @@ public class PackageLoader {
       for (PackageAPI.PkgVersion v : modified) {
         Version version = myVersions.get(v.version);
         if (version == null) {
+          log.info("A new version: {} added for package: {} with artifacts {}", v.version,  this.name, v.files);
           myVersions.put(v.version, new Version(this, v));
           sortedVersions.add(v.version);
         }
@@ -159,6 +159,7 @@ public class PackageLoader {
       }
       for (String s : new HashSet<>(myVersions.keySet())) {
         if (!newVersions.contains(s)) {
+          log.info("version: {} is removed from package: {}", s,  this.name);
           sortedVersions.remove(s);
           myVersions.remove(s);
         }
@@ -166,8 +167,13 @@ public class PackageLoader {
 
       sortedVersions.sort(String::compareTo);
       if (sortedVersions.size() > 0) {
-        latest = sortedVersions.get(sortedVersions.size() - 1);
+        String latest = sortedVersions.get(sortedVersions.size() - 1);
+        if(!latest.equals(this.latest)){
+          log.info("version: {} is the new latest in package: {}", latest,  this.name);
+        }
+        this.latest = latest;
       } else {
+        log.error("latest version:  null");
         latest = null;
       }
 
@@ -225,7 +231,7 @@ public class PackageLoader {
 
         try {
           loader = new SolrResourceLoader(
-              "PACKAGE_LOADER:"+ parent.name()+ ":"+ version,
+              "PACKAGE_LOADER: "+ parent.name()+ ":"+ version,
               paths,
               coreContainer.getResourceLoader().getInstancePath(),
               coreContainer.getResourceLoader().getClassLoader());
@@ -244,11 +250,7 @@ public class PackageLoader {
 
       public SolrResourceLoader getLoader() {
         return loader;
-
       }
-
     }
   }
-
-
 }

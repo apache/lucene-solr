@@ -68,11 +68,19 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
 
 
   private synchronized void reload(PackageLoader.Package pkg) {
-    if(pkgVersion != null && aPackage.getLatest() == pkgVersion ) return;
+    if (pkgVersion != null && pkg.getLatest() == pkgVersion) {
+      //I'm already using the latest classloder in the package. nothing to do
+      return;
+    }
 
-    if (inst != null) log.info("reloading plugin {} ", pluginInfo.name);
     PackageLoader.Package.Version newest = pkg.getLatest();
-    if(newest == null) return;
+    if (newest == null){
+      log.error("No latest version available for package : {}", pkg.name());
+      return;
+    }
+    log.info("loading plugin: {} -> {} using  package {}:{}",
+        pluginInfo.type, pluginInfo.name, pkg.name(), newest.getVersion());
+
     Object instance = SolrCore.createInstance(pluginInfo.className,
         pluginMeta.clazz, pluginMeta.getCleanTag(), core, newest.getLoader());
     PluginBag.initInstance(instance, pluginInfo);
