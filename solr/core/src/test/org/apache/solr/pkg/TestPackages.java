@@ -68,6 +68,7 @@ public class TestPackages extends SolrCloudTestCase {
     try {
       String FILE1 = "/mypkg/runtimelibs.jar";
       String FILE2 = "/mypkg/runtimelibs_v2.jar";
+      String FILE3 = "/mypkg/runtimelibs_v3.jar";
       String COLLECTION_NAME = "testPluginLoadingColl";
       byte[] derFile = readFile("cryptokeys/pub_key512.der");
       cluster.getZkClient().makePath("/keys/exe", true);
@@ -149,7 +150,6 @@ public class TestPackages extends SolrCloudTestCase {
 
       //add the version using package API
       add.version = "1.1";
-      add.pkg = "mypkg";
       add.files = Arrays.asList(new String[]{FILE2});
       req.process(cluster.getSolrClient());
 
@@ -165,34 +165,77 @@ public class TestPackages extends SolrCloudTestCase {
           COLLECTION_NAME, "requestHandler", "/runtime",
           "mypkg", "1.1" );
 
-      /*executeReq( "/" + COLLECTION_NAME + "/get?wt=json", cluster.getRandomJetty(random()),
+      executeReq( "/" + COLLECTION_NAME + "/get?wt=json", cluster.getRandomJetty(random()),
           Utils.JSONCONSUMER,
-          Utils.makeMap("class", "org.apache.solr.core.RuntimeLibSearchComponent",
-              "Version","2"));
+          Utils.makeMap(  "Version","2"));
 
-      PackageAPI.DelVersion delVersion = new PackageAPI.DelVersion();
-      delVersion.pkg = "mypkg";
-      delVersion.version = "1.1";
-      new V2Request.Builder("/cluster/package")
-          .withMethod(SolrRequest.METHOD.POST)
-          .forceV2(true)
-          .withPayload(delVersion)
-          .build()
-          .process(cluster.getSolrClient());
 
+      //now upload the third jar
+      postFileAndWait(cluster, "runtimecode/runtimelibs_v3.jar.bin", FILE3,
+          "a400n4T7FT+2gM0SC6+MfSOExjud8MkhTSFylhvwNjtWwUgKdPFn434Wv7Qc4QEqDVLhQoL3WqYtQmLPti0G4Q==");
+
+      add.version = "2.1";
+      add.files = Arrays.asList(new String[]{FILE3});
+      req.process(cluster.getSolrClient());
+
+      //now let's verify that the classes are updated
       verifyCmponent(cluster.getSolrClient(),
           COLLECTION_NAME, "queryResponseWriter", "json1",
-          "mypkg", "1.0" );
+          "mypkg", "2.1" );
 
       verifyCmponent(cluster.getSolrClient(),
           COLLECTION_NAME, "searchComponent", "get",
-          "mypkg", "1.0" );
+          "mypkg", "2.1" );
 
       verifyCmponent(cluster.getSolrClient(),
           COLLECTION_NAME, "requestHandler", "/runtime",
-          "mypkg", "1.0" );
+          "mypkg", "2.1" );
 
-*/
+      executeReq( "/" + COLLECTION_NAME + "/runtime?wt=json", cluster.getRandomJetty(random()),
+          Utils.JSONCONSUMER,
+          Utils.makeMap("Version","2"));
+
+
+      PackageAPI.DelVersion delVersion = new PackageAPI.DelVersion();
+      delVersion.pkg = "mypkg";
+      delVersion.version = "1.0";
+      V2Request delete = new V2Request.Builder("/cluster/package")
+          .withMethod(SolrRequest.METHOD.POST)
+          .forceV2(true)
+          .withPayload(Collections.singletonMap("delete", delVersion))
+          .build();
+      delete.process(cluster.getSolrClient());
+
+      verifyCmponent(cluster.getSolrClient(),
+          COLLECTION_NAME, "queryResponseWriter", "json1",
+          "mypkg", "2.1" );
+
+      verifyCmponent(cluster.getSolrClient(),
+          COLLECTION_NAME, "searchComponent", "get",
+          "mypkg", "2.1" );
+
+      verifyCmponent(cluster.getSolrClient(),
+          COLLECTION_NAME, "requestHandler", "/runtime",
+          "mypkg", "2.1" );
+
+      delVersion.version = "2.1";
+      delete.process(cluster.getSolrClient());
+
+      verifyCmponent(cluster.getSolrClient(),
+          COLLECTION_NAME, "queryResponseWriter", "json1",
+          "mypkg", "1.1" );
+
+      verifyCmponent(cluster.getSolrClient(),
+          COLLECTION_NAME, "searchComponent", "get",
+          "mypkg", "1.1" );
+
+      verifyCmponent(cluster.getSolrClient(),
+          COLLECTION_NAME, "requestHandler", "/runtime",
+          "mypkg", "1.1" );
+
+
+
+
     } finally {
       cluster.shutdown();
     }

@@ -287,7 +287,8 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       return resourceLoader;
     }
     PackageLoader.Package aPackage = coreContainer.getPackageLoader().getPackage(pkg);
-    return aPackage.getLatest().getLoader();
+    PackageLoader.Package.Version latest = aPackage.getLatest();
+    return latest.getLoader();
   }
 
   /**
