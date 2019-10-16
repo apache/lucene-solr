@@ -18,6 +18,7 @@ package org.apache.lucene.queryparser.flexible.standard.builders;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.TreeMap;
 
 import org.apache.lucene.index.Term;
@@ -67,12 +68,9 @@ public class MultiPhraseQueryNodeBuilder implements StandardQueryBuilder {
 
       }
 
-      for (int positionIncrement : positionTermMap.keySet()) {
-        List<Term> termList = positionTermMap.get(positionIncrement);
-
-        phraseQueryBuilder.add(termList.toArray(new Term[termList.size()]),
-            positionIncrement);
-
+      for (Map.Entry<Integer, List<Term>> entry : positionTermMap.entrySet()) {
+        List<Term> termList = entry.getValue();
+        phraseQueryBuilder.add(termList.toArray(new Term[termList.size()]), entry.getKey());
       }
 
     }

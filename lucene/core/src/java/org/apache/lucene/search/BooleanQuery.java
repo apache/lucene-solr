@@ -506,10 +506,13 @@ public class BooleanQuery extends Query implements Iterable<BooleanClause> {
 
   @Override
   public void visit(QueryVisitor visitor) {
-    for (BooleanClause.Occur occur : clauseSets.keySet()) {
-      if (clauseSets.get(occur).size() > 0) {
-        QueryVisitor v = visitor.getSubVisitor(occur, this);
-        for (Query q : clauseSets.get(occur)) {
+    for (Map.Entry<Occur, Collection<Query>> entry : clauseSets.entrySet()) {
+      Occur clauseOccur = entry.getKey();
+      Collection<Query> clauseQueries = entry.getValue();
+
+      if (clauseQueries.size() > 0) {
+        QueryVisitor v = visitor.getSubVisitor(clauseOccur, this);
+        for (Query q : clauseQueries) {
           q.visit(v);
         }
       }

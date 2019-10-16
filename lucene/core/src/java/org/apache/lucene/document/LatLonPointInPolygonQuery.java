@@ -19,10 +19,10 @@ package org.apache.lucene.document;
 import java.io.IOException;
 import java.util.Arrays;
 
+import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Polygon2D;
-import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -84,7 +84,7 @@ final class LatLonPointInPolygonQuery extends Query {
     }
   }
 
-  private IntersectVisitor getIntersectVisitor(DocIdSetBuilder result, Polygon2D tree, GeoEncodingUtils.PolygonPredicate polygonPredicate,
+  private IntersectVisitor getIntersectVisitor(DocIdSetBuilder result, Component2D tree, GeoEncodingUtils.PolygonPredicate polygonPredicate,
                                                byte[] minLat, byte[] maxLat, byte[] minLon, byte[] maxLon) {
     return new IntersectVisitor() {
           DocIdSetBuilder.BulkAdder adder;
@@ -133,7 +133,7 @@ final class LatLonPointInPolygonQuery extends Query {
             double cellMaxLat = decodeLatitude(maxPackedValue, 0);
             double cellMaxLon = decodeLongitude(maxPackedValue, Integer.BYTES);
 
-            return tree.relate(cellMinLat, cellMaxLat, cellMinLon, cellMaxLon);
+            return tree.relate(cellMinLon, cellMaxLon, cellMinLat, cellMaxLat);
           }
         };
   }
@@ -141,20 +141,17 @@ final class LatLonPointInPolygonQuery extends Query {
   @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
 
+    final Component2D tree = Polygon2D.create(polygons);
+    final GeoEncodingUtils.PolygonPredicate polygonPredicate = GeoEncodingUtils.createComponentPredicate(tree);
     // bounding box over all polygons, this can speed up tree intersection/cheaply improve approximation for complex multi-polygons
-    // these are pre-encoded with LatLonPoint's encoding
-    final Rectangle box = Rectangle.fromPolygon(polygons);
     final byte minLat[] = new byte[Integer.BYTES];
     final byte maxLat[] = new byte[Integer.BYTES];
     final byte minLon[] = new byte[Integer.BYTES];
     final byte maxLon[] = new byte[Integer.BYTES];
-    NumericUtils.intToSortableBytes(encodeLatitude(box.minLat), minLat, 0);
-    NumericUtils.intToSortableBytes(encodeLatitude(box.maxLat), maxLat, 0);
-    NumericUtils.intToSortableBytes(encodeLongitude(box.minLon), minLon, 0);
-    NumericUtils.intToSortableBytes(encodeLongitude(box.maxLon), maxLon, 0);
-
-    final Polygon2D tree = Polygon2D.create(polygons);
-    final GeoEncodingUtils.PolygonPredicate polygonPredicate = GeoEncodingUtils.createPolygonPredicate(polygons, tree);
+    NumericUtils.intToSortableBytes(encodeLatitude(tree.getMinY()), minLat, 0);
+    NumericUtils.intToSortableBytes(encodeLatitude(tree.getMaxY()), maxLat, 0);
+    NumericUtils.intToSortableBytes(encodeLongitude(tree.getMinX()), minLon, 0);
+    NumericUtils.intToSortableBytes(encodeLongitude(tree.getMaxX()), maxLon, 0);
 
     return new ConstantScoreWeight(this, boost) {
 

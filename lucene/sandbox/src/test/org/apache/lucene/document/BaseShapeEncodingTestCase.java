@@ -16,8 +16,8 @@
  */
 package org.apache.lucene.document;
 
+import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoUtils;
-import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
@@ -36,7 +36,7 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
   protected abstract double nextY();
 
   protected abstract Object nextPolygon();
-  protected abstract Polygon2D createPolygon2D(Object polygon);
+  protected abstract Component2D createPolygon2D(Object polygon);
 
   //One shared point with MBR -> MinY, MinX
   public void testPolygonEncodingMinLatMinLon() {
@@ -552,7 +552,7 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
           decodeX(original[5])};
     }
     for (int i =0; i < 100; i ++) {
-      Polygon2D polygon2D = createPolygon2D(nextPolygon());
+      Component2D polygon2D = createPolygon2D(nextPolygon());
       PointValues.Relation originalRelation = polygon2D.relateTriangle(originalQuantize[1], originalQuantize[0], originalQuantize[3], originalQuantize[2], originalQuantize[5], originalQuantize[4]);
       PointValues.Relation encodedRelation = polygon2D.relateTriangle(encodedQuantize[1], encodedQuantize[0], encodedQuantize[3], encodedQuantize[2], encodedQuantize[5], encodedQuantize[4]);
       assertEquals(originalRelation, encodedRelation);

@@ -80,6 +80,44 @@ Other Changes
 
 * SOLR-13797: SolrResourceLoader no longer caches bad results when asked for wrong type (Mike Drob)
 
+==================  8.4.0 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.19.1
+Carrot2 3.16.0
+Velocity 2.0 and Velocity Tools 3.0
+Apache ZooKeeper 3.5.5
+Jetty 9.4.19.v20190610
+
+Upgrade Notes
+---------------------
+(No changes)
+
+New Features
+---------------------
+(No changes)
+
+Improvements
+---------------------
+
+*SOLR-13731: javabin must support a 1:1 mapping of the JSON update format (noble)
+
+
+Optimizations
+---------------------
+(No changes)
+
+Bug Fixes
+---------------------
+(No changes)
+
+Other Changes
+---------------------
+(No changes)
+
 ==================  8.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -115,10 +153,6 @@ New Features
   when using compositeIds.  Document distribution is calculated using the "id_prefix" field (if it exists) containing
   just the compositeId prefixes, or directly from the indexed "id" field otherwise. (yonik, Megan Carey)
 
-* SOLR-13565: Node level runtime libs loaded from remote urls  (noble)
-
-* SOLR-13553: Node level custom RequestHandlers (noble)
-
 * SOLR-13622: Add cat() stream source to create tuples from lines in local files (Jason Gerlowski and Joel Bernstein)
 
 * SOLR-11866: QueryElevationComponent can have query rules configured with match="subset" wherein the words need only
@@ -126,15 +160,8 @@ New Features
 
 * SOLR-13682: command line option to export documents to a file (noble)
 
-* SOLR-13650: Solr now can define and add "packages" with plugins. Each plugin can choose to
-  load from one of those packages & updating packages can reload those plugins independently (noble)
-
 * SOLR-13257: Support deterministic replica routing preferences for better cache usage (Michael Gibney
   via Christine Poerschke, Tomás Fernández Löbbe)
-
-* SOLR-13707: API to expose the currently used package name, details for each plugin (noble)
-
-* SOLR-13710: Persist package jars locally & expose them over http at /api/node/blob  (noble)
 
 * SOLR-13122: Ability to query aliases in Solr Admin UI (janhoy)
 
@@ -154,6 +181,10 @@ New Features
 
 * SOLR-8241: Add CaffeineCache, an efficient implementation of SolrCache.(Ben Manes, Shawn Heisey, David Smiley, Andrzej Bialecki)
 
+* SOLR-13821: A Package store to store and load package artefacts (noble, Ishan Chattopadhyaya)
+
+* SOLR-13298: Allow zplot to plot matrices (Joel Bernstein)
+
 Improvements
 ----------------------
 
@@ -163,8 +194,6 @@ Improvements
 * SOLR-13558, SOLR-13693: Allow dynamic resizing of SolrCache-s. (ab)
 
 * SOLR-6305: Ability to set the replication factor for index files created by HDFSDirectoryFactory (Boris Pasko via Kevin Risden)
-
-* SOLR-13677: All Metrics Gauges should be unregistered by the objects that registered them (noble)
 
 * SOLR-13702: Some components register twice their metric names (janhoy)
 
@@ -199,6 +228,8 @@ Improvements
 
 * SOLR-13795: Managed schema operations should do a core reload in Solr standalone mode.
   (Thomas Wöckinger via David Smiley)
+
+* SOLR-13719: Introducing SolrClient.ping(collection) in SolrJ (Geza Nagy via Mikhail Khludnev)
 
 Bug Fixes
 ----------------------
@@ -269,6 +300,35 @@ Bug Fixes
 * SOLR-13802: Managed schema manipulations were not persisting the optional luceneMatchVersion that can be set
   on an Analyzer. (Thomas Wöckinger)
 
+* SOLR-13539: Fix for class-cast issues during atomic-update 'removeregex' operations. This also incorporated some
+  tests Tim wrote as a part of SOLR-9505. (Tim Owen via Jason Gerlowski)
+
+* SOLR-13790: LRUStatsCache size explosion and ineffective caching. (ab)
+
+* SOLR-13376: Multi-node race condition to create/remove nodeLost markers. (hoss, ab)
+
+* SOLR-13293: ConcurrentUpdateHttp2SolrClient always log AsynchronousCloseException exception error on indexing.
+  (Cao Manh Dat)
+
+* SOLR-13828: Improve ExecutePlanAction error handling. (ab)
+
+* SOLR-13760: Fix regression in support for Date math in TRA start date that was introduced by SOLR-13375
+
+* SOLR-13829: RecursiveEvaluator casts Continuous numbers to Discrete Numbers, causing mismatch (Trey Grainger, Joel Bernstein)
+
+* SOLR-13815: Live shard split (where updates actively continue during the split) can lose updates due to cluster
+  state happening to change between checking if the current shard is active and later checking if there are any
+  sub-shard leaders to forward the update to. (yonik)
+
+* SOLR-13665: Added missing netty dependencies to solrJ and upgraded netty to v 4.1.29.Final (Jörn Franke, janhoy)
+
+* SOLR-13793: HttpSolrCall now maintains internal request count (_forwardedCount) for remote queries and limits them to
+  the number of replicas. This avoids making too many cascading calls to remote servers, which, if not restricted, can
+  bring down nodes containing the said collection (Kesharee Nandan Vishwakarma, Ishan Chattopadhyaya)
+
+* SOLR-13834: ZkController#getSolrCloudManager() created a new instance of ZkStateReader, thereby causing mismatch in the
+  visibility of the cluster state and, as a result, undesired race conditions (Clay Goddard via Ishan Chattopadhyaya)
+
 Other Changes
 ----------------------
 
@@ -283,8 +343,6 @@ Other Changes
 * SOLR-13629: Clean trailing whitespace from 'analytics' contrib (Neal Sidhwaney via Jason Gerlowski)
 
 * SOLR-13643: Add Getters/Setters in ResponseBuilder for analytics response handling (Neal Sidhwaney via Munendra S N)
-
-* SOLR-13659: Refactor CacheConfig to lazily load the the implementation class (noble)
 
 * SOLR-13680: Use try-with-resource to close the closeable resource (Furkan KAMACI, Munendra S N)
 
@@ -303,6 +361,8 @@ Other Changes
 
 * SOLR-13812: Add javadocs, uneven rejection and basic test coverage for the SolrTestCaseJ4.params method.
   (Diego Ceccarelli, Christine Poerschke, Munendra S N)
+
+* SOLR-13787: An annotation based system to write v2 APIs (noble)
 
 ==================  8.2.0 ==================
 
@@ -363,8 +423,6 @@ New Features
 * SOLR-13550: Allow zplot to automatically create the x axis (Joel Bernstein)
 
 * SOLR-13552: Add recNum Stream Evaluator (Joel Bernstein)
-
-* SOLR-13534: Dynamic loading to support loading jars from a URL (noble)
 
 * SOLR-13560: Add isNull and notNull Stream Evaluators (Joel Bernstein)
 

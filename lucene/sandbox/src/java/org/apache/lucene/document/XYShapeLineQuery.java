@@ -19,6 +19,7 @@ package org.apache.lucene.document;
 import java.util.Arrays;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
+import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.XYLine;
 import org.apache.lucene.index.PointValues.Relation;
@@ -45,7 +46,7 @@ import static org.apache.lucene.geo.XYEncodingUtils.decode;
  **/
 final class XYShapeLineQuery extends ShapeQuery {
   final XYLine[] lines;
-  final private Line2D line2D;
+  final private Component2D line2D;
 
   public XYShapeLineQuery(String field, QueryRelation queryRelation, XYLine... lines) {
     super(field, queryRelation);
@@ -76,13 +77,13 @@ final class XYShapeLineQuery extends ShapeQuery {
   @Override
   protected Relation relateRangeBBoxToQuery(int minXOffset, int minYOffset, byte[] minTriangle,
                                             int maxXOffset, int maxYOffset, byte[] maxTriangle) {
-    double minLat = decode(NumericUtils.sortableBytesToInt(minTriangle, minYOffset));
-    double minLon = decode(NumericUtils.sortableBytesToInt(minTriangle, minXOffset));
-    double maxLat = decode(NumericUtils.sortableBytesToInt(maxTriangle, maxYOffset));
-    double maxLon = decode(NumericUtils.sortableBytesToInt(maxTriangle, maxXOffset));
+    double minY = decode(NumericUtils.sortableBytesToInt(minTriangle, minYOffset));
+    double minX = decode(NumericUtils.sortableBytesToInt(minTriangle, minXOffset));
+    double maxY = decode(NumericUtils.sortableBytesToInt(maxTriangle, maxYOffset));
+    double maxX = decode(NumericUtils.sortableBytesToInt(maxTriangle, maxXOffset));
 
     // check internal node against query
-    return line2D.relate(minLat, maxLat, minLon, maxLon);
+    return line2D.relate(minX, maxX, minY, maxY);
   }
 
   @Override

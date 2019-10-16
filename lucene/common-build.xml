@@ -136,7 +136,7 @@
   <property name="tests.policy" location="${common.dir}/tools/junit4/tests.policy"/>
 
   <condition property="tests.asserts.bug.jdk8205399" value="-da:java.util.HashMap" else="">
-    <!-- LUCENE-8991 / JDK-8205399: HashMap assertion bug in Java 10 and 11-->
+    <!-- LUCENE-8991 / JDK-8205399: HashMap assertion bug until java12-->
     <and>
       <or>
         <contains string="${java.vm.name}" substring="hotspot" casesensitive="false"/>
@@ -144,6 +144,8 @@
         <contains string="${java.vm.name}" substring="jrockit" casesensitive="false"/>
       </or>
       <or>
+        <equals arg1="${java.specification.version}" arg2="1.8"/>
+        <equals arg1="${java.specification.version}" arg2="9"/>
         <equals arg1="${java.specification.version}" arg2="10"/>
         <equals arg1="${java.specification.version}" arg2="11"/>
       </or>
@@ -2325,7 +2327,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
 
   <!-- GROOVY scripting engine for ANT tasks -->
   <target name="resolve-groovy" unless="groovy.loaded" depends="ivy-availability-check,ivy-configure">
-    <ivy:cachepath organisation="org.codehaus.groovy" module="groovy-all" revision="2.4.16"
+    <ivy:cachepath organisation="org.codehaus.groovy" module="groovy-all" revision="2.4.17"
       inline="true" conf="default" type="jar" transitive="true" pathid="groovy.classpath"/>
     <taskdef name="groovy"
       classname="org.codehaus.groovy.ant.Groovy"
@@ -2339,7 +2341,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   <property name="forbidden-sysout-excludes" value=""/>
   
   <target name="-install-forbidden-apis" unless="forbidden-apis.loaded" depends="ivy-availability-check,ivy-configure">
-    <ivy:cachepath organisation="de.thetaphi" module="forbiddenapis" revision="2.6"
+    <ivy:cachepath organisation="de.thetaphi" module="forbiddenapis" revision="2.7"
       inline="true" conf="default" transitive="true" pathid="forbidden-apis.classpath"/>
     <taskdef name="forbidden-apis" classname="de.thetaphi.forbiddenapis.ant.AntTask" classpathref="forbidden-apis.classpath"/>
     <property name="forbidden-apis.loaded" value="true"/>

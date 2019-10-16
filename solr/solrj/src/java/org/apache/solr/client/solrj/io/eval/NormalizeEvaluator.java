@@ -53,7 +53,10 @@ public class NormalizeEvaluator extends RecursiveObjectEvaluator implements OneV
         double[] row = data[i];
         standardized[i] = StatUtils.normalize(row);
       }
-      return new Matrix(standardized);
+      Matrix m = new Matrix(standardized);
+      m.setRowLabels(matrix.getRowLabels());
+      m.setColumnLabels(matrix.getColumnLabels());
+      return m;
     } else {
       return doWork(Arrays.asList((BigDecimal)value));
     }

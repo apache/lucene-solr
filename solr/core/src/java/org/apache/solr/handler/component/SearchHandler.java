@@ -116,9 +116,8 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
   public void inform(SolrCore core)
   {
     this.core = core;
-    Set<String> missing = new HashSet<>();
     List<String> c = (List<String>) initArgs.get(INIT_COMPONENTS);
-    missing.addAll(core.getSearchComponents().checkContains(c));
+    Set<String> missing = new HashSet<>(core.getSearchComponents().checkContains(c));
     List<String> first = (List<String>) initArgs.get(INIT_FIRST_COMPONENTS);
     missing.addAll(core.getSearchComponents().checkContains(first));
     List<String> last = (List<String>) initArgs.get(INIT_LAST_COMPONENTS);

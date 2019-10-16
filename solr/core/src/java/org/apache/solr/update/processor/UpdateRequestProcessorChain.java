@@ -328,7 +328,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
   public static class LazyUpdateProcessorFactoryHolder extends PluginBag.PluginHolder<UpdateRequestProcessorFactory> {
     private volatile UpdateRequestProcessorFactory lazyFactory;
 
-    public LazyUpdateProcessorFactoryHolder(final PluginBag.PluginHolder<UpdateRequestProcessorFactory> holder) {
+    public LazyUpdateProcessorFactoryHolder(final PluginBag.LazyPluginHolder holder) {
       super(holder.getPluginInfo());
       lazyFactory = new LazyUpdateRequestProcessorFactory(holder);
     }
@@ -340,20 +340,26 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
     }
 
     public class LazyUpdateRequestProcessorFactory extends UpdateRequestProcessorFactory {
-      private final PluginBag.PluginHolder<UpdateRequestProcessorFactory> holder;
+      private final PluginBag.LazyPluginHolder holder;
+      UpdateRequestProcessorFactory delegate;
 
-      public LazyUpdateRequestProcessorFactory(PluginBag.PluginHolder holder) {
+      public LazyUpdateRequestProcessorFactory(PluginBag.LazyPluginHolder holder) {
         this.holder = holder;
       }
 
       public UpdateRequestProcessorFactory getDelegate() {
-        return holder.get();
+        return delegate;
       }
 
       @Override
       public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
-        return holder.get().getInstance(req, rsp, next);
+        if (delegate != null) return delegate.getInstance(req, rsp, next);
 
+        synchronized (this) {
+          if (delegate == null)
+            delegate = (UpdateRequestProcessorFactory) holder.get();
+        }
+        return delegate.getInstance(req, rsp, next);
       }
     }
   }
