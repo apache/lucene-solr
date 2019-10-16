@@ -19,6 +19,10 @@
 
 This section of the math expressions user guide covers computational geometry functions.
 
+<<Convex Hull, Convex Hull>> -
+<<Visualization, Visualization>> -
+<<Enclosing Disk, Enclosing Disk>>
+
 == Convex Hull
 
 A convex hull is the smallest convex set of points that encloses a data set. Math expressions has support for computing
@@ -32,8 +36,8 @@ set of 2D points. Border visualizations can be useful for understanding where da
 in relation to the border.
 
 In the examples below the `convexHull` function is used
-to visualize a border for a set of latitude and longitude points of rat sightings in the NYC311
-complaints database. An investigation of the border around the rat sightings can be done
+to visualize a boarder for a set of latitude and longitude points of rat sightings in the nyc311
+complaints database. An investigation of the boarder around the rat sightings can be done
 to better understand how rats may be entering or exiting the specific region.
 
 ==== Scatter Plot

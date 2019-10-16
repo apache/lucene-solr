@@ -18,6 +18,11 @@
 
 The math expressions library supports simple and multivariate linear regression.
 
+<<Simple Linear Regression, Simple Linear Regression>> -
+<<Regression Plot, Regression Plot>> -
+<<Residual Plot, Residual Plot>> -
+<<Multivariate Linear Regression, Multivariate Linear Regression>>
+
 == Simple Linear Regression
 
 The `regress` function is used to build a linear regression model
@@ -131,7 +136,7 @@ let(a=random(logs, q="*:*", rows="5000", fl="filesize_d, response_d"),
 
 When this expression is sent to the `/stream` handler it responds with:
 
-[source,json]
+[source,text]
 ----
 {
   "result-set": {
@@ -192,7 +197,7 @@ let(a=random(logs, q="*:*", rows="500", fl="filesize_d, response_d"),
 
 When this expression is sent to the `/stream` handler it responds with:
 
-[source,json]
+[source,text]
 ----
 {
   "result-set": {
@@ -376,7 +381,7 @@ let(a=random(logs, q="*:*", rows="5000", fl="filesize_d, load_d, response_d"),
 
 When this expression is sent to the `/stream` handler it responds with:
 
-[source,json]
+[source,text]
 ----
 {
   "result-set": {
@@ -428,7 +433,7 @@ let(a=random(logs, q="*:*", rows="5000", fl="filesize_d, load_d, response_d"),
 
 When this expression is sent to the `/stream` handler it responds with:
 
-[source,json]
+[source,text]
 ----
 {
   "result-set": {

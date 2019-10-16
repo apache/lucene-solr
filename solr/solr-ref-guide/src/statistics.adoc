@@ -19,6 +19,13 @@
 This section of the user guide covers the core statistical functions
 available in math expressions.
 
+
+<<descriptive-statistics, Descriptive Statistics>> - <<Histograms and Frequency Tables, Histograms>> -
+<<Frequency Tables, Frequency Tables>> - <<Percentiles, Percentiles>> - <<Quantile Plots, Quantile Plots>> -
+<<Correlation and Covariance, Correlation and Covariance>> - <<Statistical Inference Tests, Inference Tests>> -
+<<Transformations, Transformations>> - <<Z-scores, Z-scores>>
+
+
 == Descriptive Statistics
 
 The `describe` function returns descriptive statistics for a

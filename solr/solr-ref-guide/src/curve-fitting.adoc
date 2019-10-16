@@ -23,7 +23,7 @@ These functions support constructing a curve through bivariate non-linear data.
 The `polyfit` function is a general purpose curve fitter used to model
 the non-linear relationship between two random variables.
 
-The `polyfit` function is passed x- and y-axes and fits a smooth curve to the data.
+The `polyfit` function is passed *x* and *y* axes and fits a smooth curve to the data.
 If only a single array is provided it is treated as the y-axis and a sequence is generated
 for the x-axis. A third parameter can be added that specifies the degree of the polynomial. If the degree is
 not provided a 3 degree polynomial is used by default. The higher
