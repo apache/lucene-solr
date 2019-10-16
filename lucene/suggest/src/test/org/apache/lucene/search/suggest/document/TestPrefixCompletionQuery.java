@@ -295,35 +295,50 @@ public class TestPrefixCompletionQuery extends LuceneTestCase {
     // use a TopSuggestDocsCollector that rejects results with duplicate docID
     // due to the adding synonym "dog" for "dogs" earlier, the collector will be called twice
     // for each docID, which we want to de-duplicate by rejecting the document the second time
-    TopSuggestDocsCollector collector = new TopSuggestDocsCollector(topN, false) {
-
-      private Set<Integer> seenDocIds = new HashSet<>();
-
-      @Override
-      public boolean collect(int docID, CharSequence key, CharSequence context, float score) throws IOException {
-          int globalDocId = docID + docBase;
-          boolean collected = false;
-          if (seenDocIds.contains(globalDocId) == false) {
-              super.collect(docID, key, context, score);
-              seenDocIds.add(globalDocId);
-              collected = true;
-          }
-          return collected;
-      }
-
-      @Override
-      protected boolean canReject() {
-        return true;
-      }
-    };
+    TopSuggestDocsCollector collector = new DocIDDeduplicatingCollector(topN, false);
 
     indexSearcher.suggest(query, collector);
     TopSuggestDocs suggestions = collector.get();
     assertSuggestions(suggestions, expectedResults.subList(0, topN).toArray(new Entry[0]));
     assertTrue(suggestions.isComplete());
 
+    // repeat but try to collect the top 8 docs. This returns the expected results but isComplete is false
+    // since the queue size estimation in NRTSuggester is too small for the rejections we're seeing
+    topN = 10;
+    collector = new DocIDDeduplicatingCollector(topN, false);
+    indexSearcher.suggest(query, collector);
+    suggestions = collector.get();
+    assertSuggestions(suggestions, expectedResults.subList(0, topN).toArray(new Entry[0]));
+    assertFalse(suggestions.isComplete());
+
     reader.close();
     iw.close();
+  }
+
+  private class DocIDDeduplicatingCollector extends TopSuggestDocsCollector {
+
+    private Set<Integer> seenDocIds = new HashSet<>();
+
+    public DocIDDeduplicatingCollector(int num, boolean skipDuplicates) {
+      super(num, skipDuplicates);
+    }
+
+    @Override
+    public boolean collect(int docID, CharSequence key, CharSequence context, float score) throws IOException {
+        int globalDocId = docID + docBase;
+        boolean collected = false;
+        if (seenDocIds.contains(globalDocId) == false) {
+            super.collect(docID, key, context, score);
+            seenDocIds.add(globalDocId);
+            collected = true;
+        }
+        return collected;
+    }
+
+    @Override
+    protected boolean canReject() {
+      return true;
+    }
   }
 
   /**
