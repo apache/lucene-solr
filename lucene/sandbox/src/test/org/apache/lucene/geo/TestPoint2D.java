@@ -17,7 +17,6 @@
 
 package org.apache.lucene.geo;
 
-import org.apache.lucene.document.TestLatLonLineShapeQueries;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.LuceneTestCase;
 
