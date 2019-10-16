@@ -302,6 +302,8 @@ Other Changes
 
 * SOLR-13787: An annotation based system to write v2 APIs (noble)
 
+* SOLR-12786: Update Ref Guide build tool versions (Cassandra)
+
 ==================  8.2.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
