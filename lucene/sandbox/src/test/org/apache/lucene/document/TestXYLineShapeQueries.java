@@ -18,11 +18,9 @@ package org.apache.lucene.document;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.document.ShapeField.QueryRelation;
-import org.apache.lucene.geo.EdgeTree;
-import org.apache.lucene.geo.Line2D;
+import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.ShapeTestUtil;
 import org.apache.lucene.geo.XYLine;
-import org.apache.lucene.geo.XYPolygon2D;
 import org.apache.lucene.geo.XYRectangle;
 import org.apache.lucene.geo.XYRectangle2D;
 import org.apache.lucene.index.PointValues.Relation;
@@ -95,20 +93,11 @@ public class TestXYLineShapeQueries extends BaseXYShapeTestCase {
     }
 
     @Override
-    public boolean testLineQuery(Line2D line2d, Object shape) {
-      return testLine(line2d, (XYLine) shape);
-    }
-
-    @Override
-    public boolean testPolygonQuery(Object poly2d, Object shape) {
-      return testLine((XYPolygon2D)poly2d, (XYLine) shape);
-    }
-
-    private boolean testLine(EdgeTree queryPoly, XYLine line) {
-
+    public boolean testComponentQuery(Component2D query, Object shape) {
+      XYLine line = (XYLine) shape;
       for (int i = 0, j = 1; j < line.numPoints(); ++i, ++j) {
         double[] qTriangle = encoder.quantizeTriangle(line.getX(i), line.getY(i), true, line.getX(j), line.getY(j), true, line.getX(i), line.getY(i), true);
-        Relation r = queryPoly.relateTriangle(qTriangle[1], qTriangle[0], qTriangle[3], qTriangle[2], qTriangle[5], qTriangle[4]);
+        Relation r = query.relateTriangle(qTriangle[1], qTriangle[0], qTriangle[3], qTriangle[2], qTriangle[5], qTriangle[4]);
         if (queryRelation == QueryRelation.DISJOINT) {
           if (r != Relation.CELL_OUTSIDE_QUERY) return false;
         } else if (queryRelation == QueryRelation.WITHIN) {

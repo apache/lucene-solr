@@ -20,6 +20,7 @@ import java.util.Arrays;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.document.ShapeField.QueryRelation;
+import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.ShapeTestUtil;
 import org.apache.lucene.geo.XYLine;
@@ -59,12 +60,12 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
   }
 
   @Override
-  protected Line2D toLine2D(Object... lines) {
+  protected Component2D toLine2D(Object... lines) {
     return Line2D.create(Arrays.stream(lines).toArray(XYLine[]::new));
   }
 
   @Override
-  protected XYPolygon2D toPolygon2D(Object... polygons) {
+  protected Component2D toPolygon2D(Object... polygons) {
     return XYPolygon2D.create(Arrays.stream(polygons).toArray(XYPolygon[]::new));
   }
 

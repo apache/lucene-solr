@@ -28,19 +28,23 @@ import org.apache.solr.search.SolrIndexSearcher;
  * local statistics.
  */
 public final class LocalStatsSource extends StatsSource {
+  private final StatsCache.StatsCacheMetrics metrics;
   
-  public LocalStatsSource() {
+  public LocalStatsSource(StatsCache.StatsCacheMetrics metrics) {
+    this.metrics = metrics;
   }
   
   @Override
   public TermStatistics termStatistics(SolrIndexSearcher localSearcher, Term term, int docFreq, long totalTermFreq)
       throws IOException {
+    metrics.missingGlobalTermStats.increment();
     return localSearcher.localTermStatistics(term, docFreq, totalTermFreq);
   }
   
   @Override
   public CollectionStatistics collectionStatistics(SolrIndexSearcher localSearcher, String field)
       throws IOException {
+    metrics.missingGlobalFieldStats.increment();
     return localSearcher.localCollectionStatistics(field);
   }
 }

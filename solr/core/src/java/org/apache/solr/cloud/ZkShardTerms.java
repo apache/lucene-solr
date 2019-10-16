@@ -482,9 +482,10 @@ public class ZkShardTerms implements AutoCloseable{
 
       HashMap<String, Long> newValues = new HashMap<>(values);
       long leaderTerm = newValues.get(leader);
-      for (String key : newValues.keySet()) {
+      for (Map.Entry<String, Long> entry : newValues.entrySet()) {
+        String key = entry.getKey();
         if (replicasNeedingRecovery.contains(key)) foundReplicasInLowerTerms = true;
-        if (Objects.equals(newValues.get(key), leaderTerm)) {
+        if (Objects.equals(entry.getValue(), leaderTerm)) {
           if(skipIncreaseTermOf(key, replicasNeedingRecovery)) {
             changed = true;
           } else {

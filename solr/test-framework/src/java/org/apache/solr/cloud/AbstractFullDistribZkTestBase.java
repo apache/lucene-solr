@@ -16,6 +16,8 @@
  */
 package org.apache.solr.cloud;
 
+import static org.apache.solr.common.util.Utils.makeMap;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -105,8 +107,6 @@ import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.util.Utils.makeMap;
 
 /**
  * TODO: we should still test this works as a custom update chain as well as
@@ -2158,8 +2158,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     log.info("Took {} ms to see all replicas become active.", timer.getTime());
 
-    List<Replica> replicas = new ArrayList<>();
-    replicas.addAll(notLeaders.values());
+    List<Replica> replicas = new ArrayList<>(notLeaders.values());
     return replicas;
   }
 
