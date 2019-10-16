@@ -19,7 +19,6 @@ package org.apache.lucene.document;
 import java.util.Arrays;
 
 import org.apache.lucene.geo.Component2D;
-import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.Point2D;
 import org.apache.lucene.geo.XYEncodingUtils;
 import org.apache.lucene.index.PointValues.Relation;
@@ -31,7 +30,7 @@ import static org.apache.lucene.geo.XYEncodingUtils.decode;
  * Finds all previously indexed shapes that intersect the specified bounding box.
  *
  * <p>The field must be indexed using
- * {@link LatLonShape#createIndexableFields} added per document.
+ * {@link XYShape#createIndexableFields} added per document.
  *
  *  @lucene.experimental
  **/

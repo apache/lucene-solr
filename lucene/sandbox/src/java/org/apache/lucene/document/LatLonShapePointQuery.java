@@ -21,12 +21,8 @@ import java.util.Arrays;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.Point2D;
-import org.apache.lucene.index.PointValues;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.NumericUtils;
-
-import static java.lang.Integer.BYTES;
-import static org.apache.lucene.geo.GeoUtils.orient;
 
 /**
  * Finds all previously indexed shapes that intersect the specified bounding box.
