@@ -38,7 +38,7 @@ The `polyfit` function can be visualized in a similar manner to linear regressio
 Zeppelin-Solr.
 
 The example below uses the `polyfit` function to fit a non-linear curve to a random sample scatter
-plot. The blue points are the original observations scatter plot and the red points
+plot. The blue points are the scatter plot of the original observations and the red points
 are the predicted curve.
 
 image::images/math-expressions/polyfit.png[]
