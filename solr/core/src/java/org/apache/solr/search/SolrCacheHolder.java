@@ -141,8 +141,8 @@ public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext info) {
-    delegate.initializeMetrics(info);
+  public void initializeMetrics(SolrMetricsContext context, String scope) {
+    delegate.initializeMetrics(context, scope);
   }
 
 }

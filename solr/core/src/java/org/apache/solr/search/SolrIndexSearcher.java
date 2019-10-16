@@ -70,6 +70,7 @@ import org.apache.solr.index.SlowCompositeReaderWrapper;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
@@ -141,8 +142,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private final StatsCache statsCache;
 
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
-  private SolrMetricManager metricManager;
-  private String registryName;
+  private SolrMetricsContext solrMetricsContext;
 
   private static DirectoryReader getReader(SolrCore core, SolrIndexConfig config, DirectoryFactory directoryFactory,
                                            String path) throws IOException {
@@ -432,12 +432,13 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       cache.setState(SolrCache.State.LIVE);
       infoRegistry.put(cache.name(), cache);
     }
-    metricManager = core.getCoreContainer().getMetricManager();
-    registryName = core.getCoreMetricManager().getRegistryName();
+    this.solrMetricsContext = core.getSolrMetricsContext().getChildContext(this);
     for (SolrCache cache : cacheList) {
-      cache.initializeMetrics(metricManager, registryName, core.getMetricTag(), SolrMetricManager.mkName(cache.name(), STATISTICS_KEY));
+      // XXX use the deprecated method for back-compat. remove in 9.0
+      cache.initializeMetrics(solrMetricsContext.metricManager,
+          solrMetricsContext.registry, solrMetricsContext.tag, SolrMetricManager.mkName(cache.name(), STATISTICS_KEY));
     }
-    initializeMetrics(metricManager, registryName, core.getMetricTag(), STATISTICS_KEY);
+    initializeMetrics(solrMetricsContext, STATISTICS_KEY);
     registerTime = new Date();
   }
 
@@ -2280,23 +2281,26 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
-    this.registryName = registry;
-    this.metricManager = manager;
-    manager.registerGauge(this, registry, () -> name, tag, true, "searcherName", Category.SEARCHER.toString(), scope);
-    manager.registerGauge(this, registry, () -> cachingEnabled, tag, true, "caching", Category.SEARCHER.toString(), scope);
-    manager.registerGauge(this, registry, () -> openTime, tag, true, "openedAt", Category.SEARCHER.toString(), scope);
-    manager.registerGauge(this, registry, () -> warmupTime, tag, true, "warmupTime", Category.SEARCHER.toString(), scope);
-    manager.registerGauge(this, registry, () -> registerTime, tag, true, "registeredAt", Category.SEARCHER.toString(), scope);
+  public SolrMetricsContext getSolrMetricsContext() {
+    return solrMetricsContext;
+  }
+
+  @Override
+  public void initializeMetrics(SolrMetricsContext solrMetricsContext, String scope) {
+    solrMetricsContext.gauge(this, () -> name, true, "searcherName", Category.SEARCHER.toString(), scope);
+    solrMetricsContext.gauge(this, () -> cachingEnabled, true, "caching", Category.SEARCHER.toString(), scope);
+    solrMetricsContext.gauge(this, () -> openTime, true, "openedAt", Category.SEARCHER.toString(), scope);
+    solrMetricsContext.gauge(this, () -> warmupTime, true, "warmupTime", Category.SEARCHER.toString(), scope);
+    solrMetricsContext.gauge(this, () -> registerTime, true, "registeredAt", Category.SEARCHER.toString(), scope);
     // reader stats
-    manager.registerGauge(this, registry, () -> reader.numDocs(), tag, true, "numDocs", Category.SEARCHER.toString(), scope);
-    manager.registerGauge(this, registry, () -> reader.maxDoc(), tag, true, "maxDoc", Category.SEARCHER.toString(), scope);
-    manager.registerGauge(this, registry, () -> reader.maxDoc() - reader.numDocs(), tag, true, "deletedDocs", Category.SEARCHER.toString(), scope);
-    manager.registerGauge(this, registry, () -> reader.toString(), tag, true, "reader", Category.SEARCHER.toString(), scope);
-    manager.registerGauge(this, registry, () -> reader.directory().toString(), tag, true, "readerDir", Category.SEARCHER.toString(), scope);
-    manager.registerGauge(this, registry, () -> reader.getVersion(), tag, true, "indexVersion", Category.SEARCHER.toString(), scope);
+    solrMetricsContext.gauge(this, () -> reader.numDocs(), true, "numDocs", Category.SEARCHER.toString(), scope);
+    solrMetricsContext.gauge(this, () -> reader.maxDoc(), true, "maxDoc", Category.SEARCHER.toString(), scope);
+    solrMetricsContext.gauge(this, () -> reader.maxDoc() - reader.numDocs(), true, "deletedDocs", Category.SEARCHER.toString(), scope);
+    solrMetricsContext.gauge(this, () -> reader.toString(), true, "reader", Category.SEARCHER.toString(), scope);
+    solrMetricsContext.gauge(this, () -> reader.directory().toString(), true, "readerDir", Category.SEARCHER.toString(), scope);
+    solrMetricsContext.gauge(this, () -> reader.getVersion(), true, "indexVersion", Category.SEARCHER.toString(), scope);
     // size of the currently opened commit
-    manager.registerGauge(this, registry, () -> {
+    solrMetricsContext.gauge(this, () -> {
       try {
         Collection<String> files = reader.getIndexCommit().getFileNames();
         long total = 0;
@@ -2307,14 +2311,13 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       } catch (Exception e) {
         return -1;
       }
-    }, tag, true, "indexCommitSize", Category.SEARCHER.toString(), scope);
+    }, true, "indexCommitSize", Category.SEARCHER.toString(), scope);
     // statsCache metrics
-    manager.registerGauge(this, registry,
+    solrMetricsContext.gauge(this,
         new MetricsMap((detailed, map) -> {
           statsCache.getCacheMetrics().getSnapshot(map::put);
           map.put("statsCacheImpl", statsCache.getClass().getSimpleName());
-        }),
-        tag, true, "statsCache", Category.CACHE.toString(), scope);
+        }), true, "statsCache", Category.CACHE.toString(), scope);
   }
 
   @Override

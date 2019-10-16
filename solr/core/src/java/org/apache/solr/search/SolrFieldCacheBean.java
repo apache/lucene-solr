@@ -24,6 +24,7 @@ import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.uninverting.UninvertingReader;
 
 /**
@@ -35,7 +36,7 @@ public class SolrFieldCacheBean implements SolrInfoBean, SolrMetricProducer {
   private boolean disableEntryList = Boolean.getBoolean("disableSolrFieldCacheMBeanEntryList");
   private boolean disableJmxEntryList = Boolean.getBoolean("disableSolrFieldCacheMBeanEntryListJmx");
 
-  private MetricRegistry registry;
+  private SolrMetricsContext solrMetricsContext;
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
 
   @Override
@@ -52,12 +53,17 @@ public class SolrFieldCacheBean implements SolrInfoBean, SolrMetricProducer {
   }
   @Override
   public MetricRegistry getMetricRegistry() {
-    return registry;
+    return solrMetricsContext != null ? solrMetricsContext.getMetricRegistry() : null;
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
-    registry = manager.registry(registryName);
+  public SolrMetricsContext getSolrMetricsContext() {
+    return solrMetricsContext;
+  }
+
+  @Override
+  public void initializeMetrics(SolrMetricsContext m, String scope) {
+    this.solrMetricsContext = m;
     MetricsMap metricsMap = new MetricsMap((detailed, map) -> {
       if (detailed && !disableEntryList && !disableJmxEntryList) {
         UninvertingReader.FieldCacheStats fieldCacheStats = UninvertingReader.getUninvertedStats();
@@ -72,6 +78,6 @@ public class SolrFieldCacheBean implements SolrInfoBean, SolrMetricProducer {
         map.put("entries_count", UninvertingReader.getUninvertedStatsSize());
       }
     });
-    manager.registerGauge(this, registryName, metricsMap, tag, true, "fieldCache", Category.CACHE.toString(), scope);
+    solrMetricsContext.gauge(this, metricsMap, true, "fieldCache", Category.CACHE.toString(), scope);
   }
 }

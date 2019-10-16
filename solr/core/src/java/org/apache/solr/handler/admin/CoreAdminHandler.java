@@ -121,10 +121,10 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext m) {
-    super.initializeMetrics(m);
-    parallelExecutor = MetricUtils.instrumentedExecutorService(parallelExecutor, this, solrMetricsContext.getRegistry(),
-        SolrMetricManager.mkName("parallelCoreAdminExecutor", getCategory().name(), solrMetricsContext.scope, "threadPool"));
+  public void initializeMetrics(SolrMetricsContext m, String scope) {
+    super.initializeMetrics(m, scope);
+    parallelExecutor = MetricUtils.instrumentedExecutorService(parallelExecutor, this, solrMetricsContext.getMetricRegistry(),
+        SolrMetricManager.mkName("parallelCoreAdminExecutor", getCategory().name(), scope, "threadPool"));
   }
   @Override
   public Boolean registerV2() {

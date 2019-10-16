@@ -77,6 +77,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
   private String description="LRU Cache";
   private MetricsMap cacheMap;
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
+  private SolrMetricsContext solrMetricsContext;
   private int maxSize;
   private int initialSize;
 
@@ -395,16 +396,14 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
     return metricNames;
   }
 
-  SolrMetricsContext solrMetricsContext;
-
   @Override
   public SolrMetricsContext getSolrMetricsContext() {
     return solrMetricsContext;
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext m) {
-    solrMetricsContext = m.getChildInfo(this);
+  public void initializeMetrics(SolrMetricsContext m, String scope) {
+    solrMetricsContext = m.getChildContext(this);
     cacheMap = new MetricsMap((detailed, res) -> {
       synchronized (map) {
         res.put(LOOKUPS_PARAM, lookups);
@@ -433,7 +432,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
       res.put("cumulative_evictionsRamUsage", stats.evictionsRamUsage.longValue());
       res.put("cumulative_evictionsIdleTime", stats.evictionsIdleTime.longValue());
     });
-    solrMetricsContext.metricManager.registerGauge(this, solrMetricsContext.registry, cacheMap, solrMetricsContext.tag, true, solrMetricsContext.scope, getCategory().toString());
+    solrMetricsContext.gauge(this, cacheMap, true, scope, getCategory().toString());
   }
 
   // for unit tests only
@@ -443,7 +442,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
 
   @Override
   public MetricRegistry getMetricRegistry() {
-    return solrMetricsContext ==null ?null: solrMetricsContext.getRegistry();
+    return solrMetricsContext ==null ?null: solrMetricsContext.getMetricRegistry();
   }
 
   @Override

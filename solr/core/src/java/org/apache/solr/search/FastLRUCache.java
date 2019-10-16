@@ -29,7 +29,6 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.util.ConcurrentLRUCache;
 import org.slf4j.Logger;
@@ -75,6 +74,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
 
   private MetricsMap cacheMap;
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
+  private SolrMetricsContext solrMetricsContext;
 
   @Override
   public Object init(Map args, Object persistence, CacheRegenerator regenerator) {
@@ -310,17 +310,15 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
   }
 
 
-  SolrMetricsContext metricsInfo;
-
   @Override
   public SolrMetricsContext getSolrMetricsContext() {
-    return metricsInfo;
+    return solrMetricsContext;
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext metricsInfo) {
-    this.metricsInfo = metricsInfo;
-    metricsInfo.metricManager.registerGauge(this, metricsInfo.registry, cacheMap, metricsInfo.tag, true, metricsInfo.scope, getCategory().toString());
+  public void initializeMetrics(SolrMetricsContext m, String scope) {
+    this.solrMetricsContext = m.getChildContext(this);
+    this.solrMetricsContext.gauge(this, cacheMap, true, scope, getCategory().toString());
   }
 
   // for unit tests only
@@ -330,7 +328,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
 
   @Override
   public MetricRegistry getMetricRegistry() {
-    return metricsInfo == null ? null : metricsInfo.getRegistry();
+    return solrMetricsContext == null ? null : solrMetricsContext.getMetricRegistry();
   }
 
   @Override

@@ -79,6 +79,8 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
   private int maxIdleTimeSec;
   private MetricsMap cacheMap;
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
+  private SolrMetricsContext solrMetricsContext;
+
 
   private int maxSize;
   private int minSizeLimit;
@@ -262,17 +264,14 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
     return "0." + hundredths;
   }
 
-
-  private SolrMetricsContext solrMetricsContext;
-
   @Override
   public SolrMetricsContext getSolrMetricsContext() {
     return solrMetricsContext;
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext info) {
-    solrMetricsContext = info.getChildInfo(this);
+  public void initializeMetrics(SolrMetricsContext m, String scope) {
+    solrMetricsContext = m.getChildContext(this);
     cacheMap = new MetricsMap((detailed, map) -> {
       if (cache != null) {
         ConcurrentLFUCache.Stats stats = cache.getStats();
@@ -338,7 +337,7 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
 
       }
     });
-    solrMetricsContext.metricManager.registerGauge(this, solrMetricsContext.registry, cacheMap, solrMetricsContext.getTag(), true, solrMetricsContext.scope, getCategory().toString());
+    solrMetricsContext.gauge(this, cacheMap, true, scope, getCategory().toString());
   }
 
   // for unit tests only
@@ -353,7 +352,7 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
 
   @Override
   public MetricRegistry getMetricRegistry() {
-    return solrMetricsContext == null ? null : solrMetricsContext.getRegistry();
+    return solrMetricsContext == null ? null : solrMetricsContext.getMetricRegistry();
 
   }
 

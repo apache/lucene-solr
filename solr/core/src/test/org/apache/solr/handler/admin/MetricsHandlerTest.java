@@ -416,7 +416,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     void reset(DumpRequestHandler rh) throws Exception {
         this.rh = rh;
         if(metricsInfo != null)
-        this.rh.initializeMetrics(metricsInfo);
+        this.rh.initializeMetrics(metricsInfo, "/dumphandler");
     }
 
 
@@ -441,11 +441,11 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    public void initializeMetrics(SolrMetricsContext m) {
-      super.initializeMetrics(m);
+    public void initializeMetrics(SolrMetricsContext m, String scope) {
+      super.initializeMetrics(m, scope);
       MetricsMap metrics = new MetricsMap((detailed, map) -> map.putAll(gaugevals));
       solrMetricsContext.gauge(this,
-           metrics,  true, "dumphandlergauge", getCategory().toString());
+           metrics,  true, "dumphandlergauge", getCategory().toString(), scope);
 
     }
 

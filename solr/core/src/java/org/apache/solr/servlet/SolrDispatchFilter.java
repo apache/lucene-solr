@@ -108,7 +108,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   
   private boolean isV2Enabled = !"true".equals(System.getProperty("disable.v2.api", "false"));
 
-  private final String metricTag = Integer.toHexString(hashCode());
+  private final String metricTag = getClass().getSimpleName() + "@" + Integer.toHexString(hashCode());
   private SolrMetricManager metricManager;
   private String registryName;
   private volatile boolean closeOnDestroy = true;

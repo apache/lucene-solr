@@ -275,8 +275,8 @@ public class DataImportHandler extends RequestHandlerBase implements
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext m) {
-    super.initializeMetrics(m);
+  public void initializeMetrics(SolrMetricsContext m, String scope) {
+    super.initializeMetrics(m, scope);
     metrics = new MetricsMap((detailed, map) -> {
       if (importer != null) {
         DocBuilder.Statistics cumulative = importer.cumulativeStatistics;
@@ -299,7 +299,7 @@ public class DataImportHandler extends RequestHandlerBase implements
         map.put(DataImporter.MSG.TOTAL_DOCS_SKIPPED, cumulative.skipDocCount);
       }
     });
-    solrMetricsContext.gauge(this, metrics, true, "importer", getCategory().toString());
+    solrMetricsContext.gauge(this, metrics, true, "importer", getCategory().toString(), scope);
   }
 
   // //////////////////////SolrInfoMBeans methods //////////////////////

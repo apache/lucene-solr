@@ -40,6 +40,7 @@ import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
@@ -179,11 +180,11 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
-    registry = manager.registry(registryName);
+  public void initializeMetrics(SolrMetricsContext m, String scope) {
+    registry = m.getMetricRegistry();
     String expandedScope = SolrMetricManager.mkName(scope, getCategory().name());
-    updateHttpListenerFactory.initializeMetrics(manager, registryName, tag, expandedScope);
-    defaultConnectionManager.initializeMetrics(manager, registryName, tag, expandedScope);
+    updateHttpListenerFactory.initializeMetrics(m, expandedScope);
+    defaultConnectionManager.initializeMetrics(m, expandedScope);
     updateExecutor = MetricUtils.instrumentedExecutorService(updateExecutor, this, registry,
         SolrMetricManager.mkName("updateOnlyExecutor", expandedScope, "threadPool"));
     recoveryExecutor = MetricUtils.instrumentedExecutorService(recoveryExecutor, this, registry,

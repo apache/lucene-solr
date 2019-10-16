@@ -863,20 +863,20 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext m) {
-    super.initializeMetrics(m);
+  public void initializeMetrics(SolrMetricsContext m, String scope) {
+    super.initializeMetrics(m, scope);
     solrMetricsContext.gauge(this,  () -> (core != null && !core.isClosed() ? NumberUtils.readableSize(core.getIndexSize()) : ""),
-        true, "indexSize", getCategory().toString());
+        true, "indexSize", getCategory().toString(), scope);
     solrMetricsContext.gauge(this, () -> (core != null && !core.isClosed() ? getIndexVersion().toString() : ""),
-         true, "indexVersion", getCategory().toString());
+         true, "indexVersion", getCategory().toString(), scope);
     solrMetricsContext.gauge(this, () -> (core != null && !core.isClosed() ? getIndexVersion().generation : 0),
-        true, GENERATION, getCategory().toString());
+        true, GENERATION, getCategory().toString(), scope);
     solrMetricsContext.gauge(this, () -> (core != null && !core.isClosed() ? core.getIndexDir() : ""),
-        true, "indexPath", getCategory().toString());
+        true, "indexPath", getCategory().toString(), scope);
     solrMetricsContext.gauge(this, () -> isMaster,
-         true, "isMaster", getCategory().toString());
+         true, "isMaster", getCategory().toString(), scope);
     solrMetricsContext.gauge(this, () -> isSlave,
-         true, "isSlave", getCategory().toString());
+         true, "isSlave", getCategory().toString(), scope);
     final MetricsMap fetcherMap = new MetricsMap((detailed, map) -> {
       IndexFetcher fetcher = currentIndexFetcher;
       if (fetcher != null) {
@@ -905,13 +905,13 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         addVal(map, IndexFetcher.CONF_FILES_REPLICATED, props, String.class);
       }
     });
-    solrMetricsContext.gauge(this , fetcherMap, true, "fetcher", getCategory().toString());
+    solrMetricsContext.gauge(this , fetcherMap, true, "fetcher", getCategory().toString(), scope);
     solrMetricsContext.gauge(this, () -> isMaster && includeConfFiles != null ? includeConfFiles : "",
-         true, "confFilesToReplicate", getCategory().toString());
+         true, "confFilesToReplicate", getCategory().toString(), scope);
     solrMetricsContext.gauge(this, () -> isMaster ? getReplicateAfterStrings() : Collections.<String>emptyList(),
-        true, REPLICATE_AFTER, getCategory().toString());
+        true, REPLICATE_AFTER, getCategory().toString(), scope);
     solrMetricsContext.gauge(this,  () -> isMaster && replicationEnabled.get(),
-        true, "replicationEnabled", getCategory().toString());
+        true, "replicationEnabled", getCategory().toString(), scope);
   }
 
   //TODO Should a failure retrieving any piece of info mark the overall request as a failure?  Is there a core set of values that are required to make a response here useful?

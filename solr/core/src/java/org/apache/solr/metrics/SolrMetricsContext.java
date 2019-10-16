@@ -33,13 +33,11 @@ public class SolrMetricsContext {
   public final String registry;
   public final SolrMetricManager metricManager;
   public final String tag;
-  public final String scope;
 
-  public SolrMetricsContext(SolrMetricManager metricManager, String registry, String tag, String scope) {
+  public SolrMetricsContext(SolrMetricManager metricManager, String registry, String tag) {
     this.registry = registry;
     this.metricManager = metricManager;
     this.tag = tag;
-    this.scope = scope;
   }
 
   public String getTag() {
@@ -50,40 +48,30 @@ public class SolrMetricsContext {
     metricManager.unregisterGauges(registry, tag);
   }
 
-  public SolrMetricsContext getChildInfo(SolrMetricProducer producer) {
-    SolrMetricsContext metricsInfo = new SolrMetricsContext(metricManager, registry, producer.getUniqueMetricTag(tag), scope);
-    return metricsInfo;
+  public SolrMetricsContext getChildContext(Object child) {
+    SolrMetricsContext childContext = new SolrMetricsContext(metricManager, registry, SolrMetricProducer.getUniqueMetricTag(child, tag));
+    return childContext;
   }
 
   public Meter meter(SolrInfoBean info, String metricName, String... metricpath) {
-    return metricManager.meter(info, registry, createName(metricName, metricpath));
-  }
-
-  // adds the scope
-  private String createName(String metricName, String... metricpath) {
-    ArrayList<String> l = new ArrayList<>();
-    if(metricpath != null ) {
-      Collections.addAll(l, metricpath);
-    }
-    l.add(scope);
-    return makeName(l, metricName);
+    return metricManager.meter(info, registry, metricName, metricpath);
   }
 
   public Counter counter(SolrInfoBean info, String metricName, String... metricpath) {
-    return metricManager.counter(info, registry, createName(metricName, metricpath));
+    return metricManager.counter(info, registry, metricName, metricpath);
 
   }
 
   public void gauge(SolrInfoBean info, Gauge<?> gauge, boolean force, String metricName, String... metricpath) {
-    metricManager.registerGauge(info, registry, gauge, tag, force, createName(metricName, metricpath));
+    metricManager.registerGauge(info, registry, gauge, tag, force, metricName, metricpath);
   }
 
   public Timer timer(SolrInfoBean info, String metricName, String... metricpath) {
-    return metricManager.timer(info, registry, createName(metricName, metricpath));
+    return metricManager.timer(info, registry, metricName, metricpath);
 
   }
 
-  public MetricRegistry getRegistry() {
+  public MetricRegistry getMetricRegistry() {
     return metricManager.registry(registry);
   }
 }

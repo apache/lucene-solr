@@ -355,8 +355,8 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext metricsContext) {
-    this.metricsContext = metricsContext.getChildInfo(this);
+  public void initializeMetrics(SolrMetricsContext metricsContext, String scope) {
+    this.metricsContext = metricsContext.getChildContext(this);
 
     this.metricsContext.gauge(this, () -> ramBytesUsed(), true, "totalSizeInBytes", getCategory().toString());
     MetricsMap suggestersMap = new MetricsMap((detailed, map) -> {
@@ -365,7 +365,7 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
         map.put(entry.getKey(), suggester.toString());
       }
     });
-    this.metricsContext.gauge(this, suggestersMap, true, "suggesters", getCategory().toString());
+    this.metricsContext.gauge(this, suggestersMap, true, "suggesters", getCategory().toString(), scope);
   }
 
   @Override

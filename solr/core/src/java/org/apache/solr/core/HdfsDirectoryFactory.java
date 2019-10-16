@@ -55,6 +55,7 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.store.blockcache.BlockCache;
 import org.apache.solr.store.blockcache.BlockDirectory;
 import org.apache.solr.store.blockcache.BlockDirectoryCache;
@@ -141,6 +142,13 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
     }
     tmpFsCache.invalidateAll();
     tmpFsCache.cleanUp();
+    try {
+      SolrMetricProducer.super.close();
+      MetricsHolder.metrics.close();
+      LocalityHolder.reporter.close();
+    } catch (Exception e) {
+      throw new IOException(e);
+    }
   }
 
   private final static class LocalityHolder {
@@ -497,9 +505,9 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
-    MetricsHolder.metrics.initializeMetrics(manager, registry, tag, scope);
-    LocalityHolder.reporter.initializeMetrics(manager, registry, tag, scope);
+  public void initializeMetrics(SolrMetricsContext solrMetricsContext, String scope) {
+    MetricsHolder.metrics.initializeMetrics(solrMetricsContext, scope);
+    LocalityHolder.reporter.initializeMetrics(solrMetricsContext, scope);
   }
 
   @Override

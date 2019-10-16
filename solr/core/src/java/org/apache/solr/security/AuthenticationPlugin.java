@@ -146,19 +146,17 @@ public abstract class AuthenticationPlugin implements SolrInfoBean, SolrMetricPr
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext metrics) {
-    this.metrics = metrics.getChildInfo(this);
+  public void initializeMetrics(SolrMetricsContext metrics, String scope) {
+    this.metrics = metrics.getChildContext(this);
     // Metrics
-    numErrors = this.metrics.meter(this, "errors", getCategory().toString());
-    requests = this.metrics.counter(this, "requests", getCategory().toString());
-    numAuthenticated = this.metrics.counter(this, "authenticated",getCategory().toString());
-    numPassThrough = this.metrics.counter(this, "passThrough",  getCategory().toString());
-    numWrongCredentials = this.metrics.counter(this, "failWrongCredentials",getCategory().toString());
-    numMissingCredentials = this.metrics.counter(this,  "failMissingCredentials",getCategory().toString());
-    requestTimes = this.metrics.timer(this,"requestTimes", getCategory().toString());
-    totalTime = this.metrics.counter(this,"totalTime", getCategory().toString());
-    metricNames.addAll(Arrays.asList("errors", "requests", "authenticated", "passThrough",
-        "failWrongCredentials", "failMissingCredentials", "requestTimes", "totalTime"));
+    numErrors = this.metrics.meter(this, "errors", getCategory().toString(), scope);
+    requests = this.metrics.counter(this, "requests", getCategory().toString(), scope);
+    numAuthenticated = this.metrics.counter(this, "authenticated",getCategory().toString(), scope);
+    numPassThrough = this.metrics.counter(this, "passThrough",  getCategory().toString(), scope);
+    numWrongCredentials = this.metrics.counter(this, "failWrongCredentials",getCategory().toString(), scope);
+    numMissingCredentials = this.metrics.counter(this,  "failMissingCredentials",getCategory().toString(), scope);
+    requestTimes = this.metrics.timer(this,"requestTimes", getCategory().toString(), scope);
+    totalTime = this.metrics.counter(this,"totalTime", getCategory().toString(), scope);
   }
 
   @Override
@@ -183,7 +181,7 @@ public abstract class AuthenticationPlugin implements SolrInfoBean, SolrMetricPr
 
   @Override
   public MetricRegistry getMetricRegistry() {
-    return metrics == null ? null : metrics.getRegistry();
+    return metrics == null ? null : metrics.getMetricRegistry();
   }
 
 }

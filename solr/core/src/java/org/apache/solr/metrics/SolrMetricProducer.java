@@ -27,9 +27,11 @@ public interface SolrMetricProducer extends AutoCloseable {
    * A is the parent of B is the parent of C and so on.
    * If object "B" is unregistered C also must get unregistered.
    * If object "A" is unregistered B and C also must get unregistered.
+   * @param o object to create a tag for
+   * @param parentName parent object name, or null if no parent
    */
-  default String getUniqueMetricTag(String parentName) {
-    String name = getClass().getSimpleName() + "@" + Integer.toHexString(hashCode());
+  static String getUniqueMetricTag(Object o, String parentName) {
+    String name = o.getClass().getSimpleName() + "@" + Integer.toHexString(o.hashCode());
     if (parentName != null && parentName.contains(name)) {
       throw new RuntimeException("Parent already includes this component? parent=" + parentName + ", this=" + name);
     }
@@ -50,15 +52,22 @@ public interface SolrMetricProducer extends AutoCloseable {
    *                 {@link #initializeMetrics(SolrMetricManager, String, String, String)} is called.
    * @param scope    scope of the metrics (eg. handler name) to separate metrics of components with
    *                 the same implementation but different scope
-   * @deprecated use {@link #initializeMetrics(SolrMetricsContext)} instead
+   * @deprecated use {@link #initializeMetrics(SolrMetricsContext, String)} instead
    */
+  @Deprecated
   default void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
-    initializeMetrics(new SolrMetricsContext(manager, registry, tag, scope));
+    initializeMetrics(new SolrMetricsContext(manager, registry, tag), scope);
 
   }
 
-  default void initializeMetrics(SolrMetricsContext context) {
-    throw new RuntimeException("You must implement either initializeMetrics(SolrMetricsContext) or " +
+  /**
+   * Initialize metrics specific to this producer.
+   * @param context
+   * @param scope
+   */
+  default void initializeMetrics(SolrMetricsContext context, String scope) {
+    throw new RuntimeException("In class " + getClass().getName() +
+        " you must implement either initializeMetrics(SolrMetricsContext, String) or " +
         "initializeMetrics(SolrMetricManager, String, String, String)");
 
   }
@@ -69,9 +78,13 @@ public interface SolrMetricProducer extends AutoCloseable {
 
   @Override
   default void close() throws Exception {
-    SolrMetricsContext info = getSolrMetricsContext();
-    if (info == null || info.tag.indexOf(':') == -1) return;//this will end up unregistering the root itself
-    info.unregister();
+    SolrMetricsContext context = getSolrMetricsContext();
+    if (context == null) {
+      return;
+    } else {
+      context.unregister();
+    }
+    // ??? (ab) no idea what this was supposed to avoid
+    //if (info == null || info.tag.indexOf(':') == -1) return;//this will end up unregistering the root itself
   }
-
 }

@@ -34,6 +34,7 @@ import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,9 +52,7 @@ public class HdfsLocalityReporter implements SolrInfoBean, SolrMetricProducer {
   private final ConcurrentMap<HdfsDirectory,ConcurrentMap<FileStatus,BlockLocation[]>> cache;
 
   private final Set<String> metricNames = ConcurrentHashMap.newKeySet();
-  private MetricRegistry registry;
-  private SolrMetricManager metricManager;
-  private String registryName;
+  private SolrMetricsContext solrMetricsContext;
 
   public HdfsLocalityReporter() {
     cache = new ConcurrentHashMap<>();
@@ -89,17 +88,20 @@ public class HdfsLocalityReporter implements SolrInfoBean, SolrMetricProducer {
 
   @Override
   public MetricRegistry getMetricRegistry() {
-    return registry;
+    return solrMetricsContext != null ? solrMetricsContext.getMetricRegistry() : null;
+  }
+
+  @Override
+  public SolrMetricsContext getSolrMetricsContext() {
+    return solrMetricsContext;
   }
 
   /**
    * Provide statistics on HDFS block locality, both in terms of bytes and block counts.
    */
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
-    this.metricManager = manager;
-    this.registryName = registryName;
-    registry = manager.registry(registryName);
+  public void initializeMetrics(SolrMetricsContext m, String scope) {
+    solrMetricsContext = m.getChildContext(this);
     MetricsMap metricsMap = new MetricsMap((detailed, map) -> {
       long totalBytes = 0;
       long localBytes = 0;
@@ -149,7 +151,7 @@ public class HdfsLocalityReporter implements SolrInfoBean, SolrMetricProducer {
         map.put(LOCALITY_BLOCKS_RATIO, localCount / (double) totalCount);
       }
     });
-    manager.registerGauge(this, registryName, metricsMap, tag, true, "hdfsLocality", getCategory().toString(), scope);
+    solrMetricsContext.gauge(this, metricsMap, true, "hdfsLocality", getCategory().toString(), scope);
   }
 
   /**

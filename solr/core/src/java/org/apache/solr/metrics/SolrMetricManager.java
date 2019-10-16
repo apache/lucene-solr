@@ -735,7 +735,9 @@ public class SolrMetricManager {
       if (metric instanceof GaugeWrapper) {
         GaugeWrapper wrapper = (GaugeWrapper) metric;
         boolean toRemove = wrapper.getTag().contains(tagSegment);
-        if (toRemove) removed.incrementAndGet();
+        if (toRemove) {
+          removed.incrementAndGet();
+        }
         return toRemove;
       }
       return false;

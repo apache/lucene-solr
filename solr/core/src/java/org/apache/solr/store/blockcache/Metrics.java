@@ -25,6 +25,7 @@ import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.search.SolrCacheBase;
 
 /**
@@ -54,17 +55,13 @@ public class Metrics extends SolrCacheBase implements SolrInfoBean, SolrMetricPr
   public AtomicLong shardBuffercacheLost = new AtomicLong(0);
 
   private MetricsMap metricsMap;
-  private MetricRegistry registry;
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
-  private SolrMetricManager metricManager;
-  private String registryName;
+  private SolrMetricsContext solrMetricsContext;
   private long previous = System.nanoTime();
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
-    this.metricManager = manager;
-    this.registryName = registryName;
-    registry = manager.registry(registryName);
+  public void initializeMetrics(SolrMetricsContext m, String scope) {
+    solrMetricsContext = m.getChildContext(this);
     metricsMap = new MetricsMap((detailed, map) -> {
       long now = System.nanoTime();
       long delta = Math.max(now - previous, 1);
@@ -108,7 +105,7 @@ public class Metrics extends SolrCacheBase implements SolrInfoBean, SolrMetricPr
       previous = now;
 
     });
-    manager.registerGauge(this, registryName, metricsMap, tag, true, getName(), getCategory().toString(), scope);
+    solrMetricsContext.gauge(this, metricsMap, true, getName(), getCategory().toString(), scope);
   }
 
   private float getPerSecond(long value, double seconds) {
@@ -134,7 +131,11 @@ public class Metrics extends SolrCacheBase implements SolrInfoBean, SolrMetricPr
 
   @Override
   public MetricRegistry getMetricRegistry() {
-    return registry;
+    return solrMetricsContext != null ? solrMetricsContext.getMetricRegistry() : null;
   }
 
+  @Override
+  public SolrMetricsContext getSolrMetricsContext() {
+    return solrMetricsContext;
+  }
 }
