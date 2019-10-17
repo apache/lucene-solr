@@ -82,6 +82,7 @@ public interface Component2D {
     return withinTriangle(minX, maxX, minY, maxY, aX, aY, ab, bX, bY, bc, cX, cY, ca);
   }
 
+  /** Compute the within relation of this component2D with a triangle **/
   WithinRelation withinTriangle(double minX, double maxX, double minY, double maxY,
                                 double aX, double aY, boolean ab, double bX, double bY, boolean bc, double cX, double cY, boolean ca);
 
