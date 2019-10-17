@@ -21,6 +21,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 
 /**
  * Base IndexInput implementation that uses an array
@@ -102,6 +103,20 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
         curAvail = curBuf.remaining();
       }
       guard.getBytes(curBuf, b, offset, len);
+    } catch (NullPointerException npe) {
+      throw new AlreadyClosedException("Already closed: " + this);
+    }
+  }
+
+  @Override
+  public final void readLongs(ByteOrder byteOrder, long[] dst, int offset, int length) throws IOException {
+    try {
+      ByteBuffer leBuf = curBuf.duplicate().order(byteOrder);
+      guard.getLongs(leBuf.asLongBuffer(), dst, offset, length);
+      // If the above call succeeded then we know position+length*8 doesn't overflow.
+      curBuf.position(curBuf.position() + (length << 3));
+    } catch (BufferUnderflowException e) {
+      super.readLongs(byteOrder, dst, offset, length);
     } catch (NullPointerException npe) {
       throw new AlreadyClosedException("Already closed: " + this);
     }

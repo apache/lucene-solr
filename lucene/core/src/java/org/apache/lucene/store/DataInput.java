@@ -18,11 +18,13 @@ package org.apache.lucene.store;
 
 
 import java.io.IOException;
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -155,6 +157,20 @@ public abstract class DataInput implements Cloneable {
    */
   public long readLong() throws IOException {
     return (((long)readInt()) << 32) | (readInt() & 0xFFFFFFFFL);
+  }
+
+  /**
+   * Read a specified number of longs with the given byte order.
+   */
+  public void readLongs(ByteOrder byteOrder, long[] dst, int offset, int length) throws IOException {
+    Objects.checkFromIndexSize(offset, length, dst.length);
+    for (int i = 0; i < length; ++i) {
+      long l = readLong();
+      if (byteOrder != ByteOrder.BIG_ENDIAN) {
+        l = Long.reverseBytes(l);
+      }
+      dst[offset + i] = l;
+    }
   }
 
   /** Reads a long stored in variable-length format.  Reads between one and

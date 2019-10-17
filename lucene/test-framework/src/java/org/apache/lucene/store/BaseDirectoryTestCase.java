@@ -20,6 +20,7 @@ import java.io.EOFException;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.nio.ByteOrder;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Files;
@@ -180,6 +181,78 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
       assertEquals(8, input.length());
       assertEquals(-5000L, input.readLong());
       input.close();
+    }
+  }
+
+  public void testAlignedLittleEndianLongs() throws Exception {
+    try (Directory dir = getDirectory(createTempDir("testAlignedLittleEndianLongs"))) {
+      try (IndexOutput out = dir.createOutput("littleEndianLongs", newIOContext(random()))) {
+        out.writeLong(Long.reverseBytes(3L));
+        out.writeLong(Long.reverseBytes(Long.MAX_VALUE));
+        out.writeLong(Long.reverseBytes(-3L));
+      }
+      try (IndexInput input = dir.openInput("littleEndianLongs", newIOContext(random()))) {
+        assertEquals(24, input.length());
+        long[] l = new long[4];
+        input.readLongs(ByteOrder.LITTLE_ENDIAN, l, 1, 3);
+        assertArrayEquals(new long[] {0L, 3L, Long.MAX_VALUE, -3L}, l);
+        assertEquals(24, input.getFilePointer());
+      }
+    }
+  }
+
+  public void testUnalignedLittleEndianLongs() throws Exception {
+    try (Directory dir = getDirectory(createTempDir("testUnalignedLittleEndianLongs"))) {
+      try (IndexOutput out = dir.createOutput("littleEndianLongs", newIOContext(random()))) {
+        out.writeByte((byte) 2);
+        out.writeLong(Long.reverseBytes(3L));
+        out.writeLong(Long.reverseBytes(Long.MAX_VALUE));
+        out.writeLong(Long.reverseBytes(-3L));
+      }
+      try (IndexInput input = dir.openInput("littleEndianLongs", newIOContext(random()))) {
+        assertEquals(25, input.length());
+        assertEquals(2, input.readByte());
+        long[] l = new long[4];
+        input.readLongs(ByteOrder.LITTLE_ENDIAN, l, 1, 3);
+        assertArrayEquals(new long[] {0L, 3L, Long.MAX_VALUE, -3L}, l);
+        assertEquals(25, input.getFilePointer());
+      }
+    }
+  }
+
+  public void testAlignedBigEndianLongs() throws Exception {
+    try (Directory dir = getDirectory(createTempDir("testAlignedBigEndianLongs"))) {
+      try (IndexOutput out = dir.createOutput("bigEndianLongs", newIOContext(random()))) {
+        out.writeLong(3L);
+        out.writeLong(Long.MAX_VALUE);
+        out.writeLong(-3L);
+      }
+      try (IndexInput input = dir.openInput("bigEndianLongs", newIOContext(random()))) {
+        assertEquals(24, input.length());
+        long[] l = new long[4];
+        input.readLongs(ByteOrder.BIG_ENDIAN, l, 1, 3);
+        assertArrayEquals(new long[] {0L, 3L, Long.MAX_VALUE, -3L}, l);
+        assertEquals(24, input.getFilePointer());
+      }
+    }
+  }
+
+  public void testUnalignedBigEndianLongs() throws Exception {
+    try (Directory dir = getDirectory(createTempDir("testUnalignedBigEndianLongs"))) {
+      try (IndexOutput out = dir.createOutput("bigEndianLongs", newIOContext(random()))) {
+        out.writeByte((byte) 2);
+        out.writeLong(3L);
+        out.writeLong(Long.MAX_VALUE);
+        out.writeLong(-3L);
+      }
+      try (IndexInput input = dir.openInput("bigEndianLongs", newIOContext(random()))) {
+        assertEquals(25, input.length());
+        assertEquals(2, input.readByte());
+        long[] l = new long[4];
+        input.readLongs(ByteOrder.BIG_ENDIAN, l, 1, 3);
+        assertArrayEquals(new long[] {0L, 3L, Long.MAX_VALUE, -3L}, l);
+        assertEquals(25, input.getFilePointer());
+      }
     }
   }
 
