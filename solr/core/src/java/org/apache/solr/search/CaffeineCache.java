@@ -31,7 +31,6 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 
-import com.codahale.metrics.MetricRegistry;
 import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.RemovalListener;
 import org.apache.lucene.util.Accountable;
@@ -320,11 +319,6 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
   @VisibleForTesting
   MetricsMap getMetricsMap() {
     return cacheMap;
-  }
-
-  @Override
-  public MetricRegistry getMetricRegistry() {
-    return solrMetricsContext != null ? solrMetricsContext.getMetricRegistry() : null;
   }
 
   @Override

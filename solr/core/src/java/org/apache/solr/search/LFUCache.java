@@ -351,12 +351,6 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
   }
 
   @Override
-  public MetricRegistry getMetricRegistry() {
-    return solrMetricsContext == null ? null : solrMetricsContext.getMetricRegistry();
-
-  }
-
-  @Override
   public String toString() {
     return name + (cacheMap != null ? cacheMap.getValue().toString() : "");
   }

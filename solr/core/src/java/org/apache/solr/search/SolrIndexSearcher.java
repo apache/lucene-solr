@@ -2319,11 +2319,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
         }), true, "statsCache", Category.CACHE.toString(), scope);
   }
 
-  @Override
-  public MetricRegistry getMetricRegistry() {
-    return core.getMetricRegistry();
-  }
-
   private static class FilterImpl extends Filter {
     private final Filter topFilter;
     private final List<Weight> weights;

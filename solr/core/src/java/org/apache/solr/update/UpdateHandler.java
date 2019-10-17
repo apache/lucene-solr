@@ -57,7 +57,6 @@ public abstract class UpdateHandler implements SolrInfoBean {
   protected final UpdateLog ulog;
 
   protected Set<String> metricNames = ConcurrentHashMap.newKeySet();
-  protected MetricRegistry registry;
 
   private void parseEventListeners() {
     final Class<SolrEventListener> clazz = SolrEventListener.class;
@@ -210,9 +209,5 @@ public abstract class UpdateHandler implements SolrInfoBean {
   @Override
   public Set<String> getMetricNames() {
     return metricNames;
-  }
-  @Override
-  public MetricRegistry getMetricRegistry() {
-    return registry;
   }
 }

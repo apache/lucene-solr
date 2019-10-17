@@ -327,11 +327,6 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
   }
 
   @Override
-  public MetricRegistry getMetricRegistry() {
-    return solrMetricsContext == null ? null : solrMetricsContext.getMetricRegistry();
-  }
-
-  @Override
   public String toString() {
     return name() + (cacheMap != null ? cacheMap.getValue().toString() : "");
   }

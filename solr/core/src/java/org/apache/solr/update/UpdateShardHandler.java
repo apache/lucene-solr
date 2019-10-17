@@ -91,7 +91,7 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
 
 
   private final Set<String> metricNames = ConcurrentHashMap.newKeySet();
-  private MetricRegistry registry;
+  private SolrMetricsContext solrMetricsContext;
 
   private int socketTimeout = HttpClientUtil.DEFAULT_SO_TIMEOUT;
   private int connectionTimeout = HttpClientUtil.DEFAULT_CONNECT_TIMEOUT;
@@ -181,13 +181,13 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
 
   @Override
   public void initializeMetrics(SolrMetricsContext m, String scope) {
-    registry = m.getMetricRegistry();
+    solrMetricsContext = m.getChildContext(this);
     String expandedScope = SolrMetricManager.mkName(scope, getCategory().name());
-    updateHttpListenerFactory.initializeMetrics(m, expandedScope);
-    defaultConnectionManager.initializeMetrics(m, expandedScope);
-    updateExecutor = MetricUtils.instrumentedExecutorService(updateExecutor, this, registry,
+    updateHttpListenerFactory.initializeMetrics(solrMetricsContext, expandedScope);
+    defaultConnectionManager.initializeMetrics(solrMetricsContext, expandedScope);
+    updateExecutor = MetricUtils.instrumentedExecutorService(updateExecutor, this, solrMetricsContext.getMetricRegistry(),
         SolrMetricManager.mkName("updateOnlyExecutor", expandedScope, "threadPool"));
-    recoveryExecutor = MetricUtils.instrumentedExecutorService(recoveryExecutor, this, registry,
+    recoveryExecutor = MetricUtils.instrumentedExecutorService(recoveryExecutor, this, solrMetricsContext.getMetricRegistry(),
         SolrMetricManager.mkName("recoveryExecutor", expandedScope, "threadPool"));
   }
 
@@ -207,8 +207,8 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
   }
 
   @Override
-  public MetricRegistry getMetricRegistry() {
-    return registry;
+  public SolrMetricsContext getSolrMetricsContext() {
+    return solrMetricsContext;
   }
 
   // if you are looking for a client to use, it's probably this one.
@@ -260,6 +260,11 @@ public class UpdateShardHandler implements SolrMetricProducer, SolrInfoBean {
     } catch (Exception e) {
       throw new RuntimeException(e);
     } finally {
+      try {
+        SolrMetricProducer.super.close();
+      } catch (Exception e) {
+        // do nothing
+      }
       IOUtils.closeQuietly(updateOnlyClient);
       HttpClientUtil.close(recoveryOnlyClient);
       HttpClientUtil.close(defaultClient);

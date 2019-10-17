@@ -24,7 +24,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
-import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.google.common.collect.ImmutableList;
 import org.apache.solr.api.Api;
@@ -79,6 +78,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   private PluginInfo pluginInfo;
 
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
+  protected SolrMetricsContext solrMetricsContext;
 
 
   @SuppressForbidden(reason = "Need currentTimeMillis, used only for stats output")
@@ -139,8 +139,6 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
     }
 
   }
-
-  protected SolrMetricsContext solrMetricsContext;
 
   @Override
   public SolrMetricsContext getSolrMetricsContext() {
@@ -272,11 +270,6 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   @Override
   public Set<String> getMetricNames() {
     return metricNames;
-  }
-
-  @Override
-  public MetricRegistry getMetricRegistry() {
-    return solrMetricsContext != null ? solrMetricsContext.getMetricRegistry() : null;
   }
 
   @Override
