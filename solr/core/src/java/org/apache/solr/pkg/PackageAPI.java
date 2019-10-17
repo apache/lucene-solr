@@ -75,7 +75,7 @@ public class PackageAPI {
     try {
       registerListener(zkClient);
     } catch (KeeperException | InterruptedException e) {
-      e.printStackTrace();
+      SolrZkClient.checkInterrupted(e);
     }
   }
 
