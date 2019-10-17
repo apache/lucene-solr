@@ -463,10 +463,10 @@ public final class WordDelimiterGraphFilter extends TokenFilter {
         return cmp;
       }
 
-      // longest char length
-      int iLen = bufferedParts[4*i + 3] - bufferedParts[4*i + 2];
-      int jLen = bufferedParts[4*j + 3] - bufferedParts[4*j + 2];
-      return Integer.compare(jLen, iLen);
+      // smaller start offset
+      int iOff = bufferedParts[4*i + 2];
+      int jOff = bufferedParts[4*j + 2];
+      return Integer.compare(iOff, jOff);
     }
 
     @Override

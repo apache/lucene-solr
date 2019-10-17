@@ -417,7 +417,7 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
         new String[] { "8-other", "8other", "other" }, new int[]{0, 0, 2}, new int[]{7, 7, 7});
 
     boolean useCharFilter = true;
-    boolean graphOffsetsAreCorrect = false; //nocommit could solve via incrementing wordPos on the '8'; should we?
+    boolean graphOffsetsAreCorrect = false; // note: could solve via always incrementing wordPos on first word ('8')
     checkAnalysisConsistency(random(), a, useCharFilter, "8-other", graphOffsetsAreCorrect); // nocommit re-order params; maybe "text" after analyzer.
 
     verify("8-other", flags); // uses getAnalyzer which uses adjustInternalOffsets=false which works
