@@ -298,7 +298,7 @@ Once the configuration is complete, you can start Solr with the `bin/solr` scrip
 bin/solr -c -z server1:2181,server2:2181,server3:2181/solr
 ----
 
-NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<setting-up-an-external-zookeeper-ensemble#updating-solr-s-include-files,instructions>>) you can omit `-z <zk host string>` from the above command.
+NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<setting-up-an-external-zookeeper-ensemble#updating-solr-include-files,instructions>>) you can omit `-z <zk host string>` from the above command.
 
 === Test the Configuration
 
