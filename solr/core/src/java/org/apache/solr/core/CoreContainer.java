@@ -211,7 +211,7 @@ public class CoreContainer {
 
   protected volatile SolrMetricManager metricManager;
 
-  protected volatile String metricTag = getClass().getSimpleName() + "@" + Integer.toHexString(hashCode());
+  protected volatile String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
 
   protected volatile SolrMetricsContext solrMetricsContext;
 
@@ -643,7 +643,9 @@ public class CoreContainer {
     if (isZooKeeperAware()) {
       pkiAuthenticationPlugin = new PKIAuthenticationPlugin(this, zkSys.getZkController().getNodeName(),
           (PublicKeyHandler) containerHandlers.get(PublicKeyHandler.PATH));
-      pkiAuthenticationPlugin.initializeMetrics(solrMetricsContext, "/authentication/pki");
+      // use deprecated API for back-compat, remove in 9.0
+      pkiAuthenticationPlugin.initializeMetrics(
+          solrMetricsContext.metricManager, solrMetricsContext.registry, solrMetricsContext.tag, "/authentication/pki");
       TracerConfigurator.loadTracer(loader, cfg.getTracerConfiguratorPluginInfo(), getZkController().getZkStateReader());
     }
 

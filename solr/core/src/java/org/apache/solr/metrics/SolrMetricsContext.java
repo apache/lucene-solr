@@ -17,17 +17,12 @@
 
 package org.apache.solr.metrics;
 
-import java.util.ArrayList;
-import java.util.Collections;
-
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import org.apache.solr.core.SolrInfoBean;
-
-import static org.apache.solr.metrics.SolrMetricManager.makeName;
 
 public class SolrMetricsContext {
   public final String registry;

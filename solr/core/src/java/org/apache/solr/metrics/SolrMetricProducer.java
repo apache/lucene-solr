@@ -62,8 +62,8 @@ public interface SolrMetricProducer extends AutoCloseable {
 
   /**
    * Initialize metrics specific to this producer.
-   * @param context
-   * @param scope
+   * @param context metrics context
+   * @param scope component scope
    */
   default void initializeMetrics(SolrMetricsContext context, String scope) {
     throw new RuntimeException("In class " + getClass().getName() +

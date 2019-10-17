@@ -405,7 +405,6 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
 
     void closeHandler() throws Exception {
       this.metricsInfo = rh.getSolrMetricsContext();
-      // nocommit
 //      if(metricsInfo.tag.contains(String.valueOf(rh.hashCode()))){
 //        //this created a new child metrics
 //        metricsInfo = metricsInfo.getParent();
