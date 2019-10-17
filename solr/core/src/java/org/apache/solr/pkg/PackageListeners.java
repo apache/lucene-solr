@@ -25,11 +25,20 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrCore;
+import org.apache.solr.logging.MDCLoggingContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class PackageListeners {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
+  public static final String PACKAGE_VERSIONS = "PKG_VERSIONS";
+  private SolrCore core;
+
+  public PackageListeners(SolrCore core) {
+    this.core = core;
+  }
 
   // this registry only keeps a weak reference because it does not want to
   // cause a memory leak if the listener forgets to unregister itself
@@ -45,7 +54,7 @@ public class PackageListeners {
     while (it.hasNext()) {
       Reference<Listener> ref = it.next();
       Listener pkgListener = ref.get();
-      if(pkgListener == null || pkgListener == listener){
+      if (pkgListener == null || pkgListener == listener) {
         it.remove();
       }
 
@@ -53,9 +62,15 @@ public class PackageListeners {
 
   }
 
-  synchronized void packagesUpdated(List<PackageLoader.Package> pkgs){
-    for (PackageLoader.Package pkgInfo : pkgs) {
-      invokeListeners(pkgInfo);
+  synchronized void packagesUpdated(List<PackageLoader.Package> pkgs) {
+    if(core != null) MDCLoggingContext.setCore(core);
+    try {
+      for (PackageLoader.Package pkgInfo : pkgs) {
+        invokeListeners(pkgInfo);
+      }
+    } finally {
+      if(core != null) MDCLoggingContext.clear();
+
     }
   }
 
@@ -68,17 +83,16 @@ public class PackageListeners {
     }
   }
 
-  public List<Listener> getListeners(){
+  public List<Listener> getListeners() {
     List<Listener> result = new ArrayList<>();
     for (Reference<Listener> ref : listeners) {
       Listener l = ref.get();
-      if(l != null){
+      if (l != null) {
         result.add(l);
       }
     }
     return result;
   }
-
 
 
   public interface Listener {
