@@ -73,7 +73,7 @@ public interface Component2D {
     DISJOINT
   }
 
-  /** relates this component2D with a triangle **/
+  /** Compute the within relation of this component2D with a triangle **/
   default WithinRelation withinTriangle(double aX, double aY, boolean ab, double bX, double bY, boolean bc, double cX, double cY, boolean ca) {
     double minY = StrictMath.min(StrictMath.min(aY, bY), cY);
     double minX = StrictMath.min(StrictMath.min(aX, bX), cX);
