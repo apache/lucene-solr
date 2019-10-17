@@ -71,8 +71,8 @@ public class XYRectangle2D implements Component2D {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return PointValues.Relation.CELL_OUTSIDE_QUERY;
     }
-    if (Component2D.within(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
-      return PointValues.Relation.CELL_CROSSES_QUERY;
+    if (Component2D.within(minX, maxX, minY, maxY, this.minX, this.maxX, this.minY, this.maxY)) {
+      return PointValues.Relation.CELL_INSIDE_QUERY;
     }
     return PointValues.Relation.CELL_CROSSES_QUERY;
   }
