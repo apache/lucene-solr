@@ -21,29 +21,29 @@ package org.apache.solr.packagemanager.pf4j;
  *
  * @author Decebal Suiu
  */
-public class PluginException extends Exception {
+public class PackageManagerException extends RuntimeException {
 
-	public PluginException() {
+	public PackageManagerException() {
         super();
     }
 
-    public PluginException(String message) {
+    public PackageManagerException(String message) {
         super(message);
     }
 
-    public PluginException(Throwable cause) {
+    public PackageManagerException(Throwable cause) {
         super(cause);
     }
 
-    public PluginException(String message, Throwable cause) {
+    public PackageManagerException(String message, Throwable cause) {
         super(message, cause);
     }
 
-    public PluginException(Throwable cause, String message, Object... args) {
+    public PackageManagerException(Throwable cause, String message, Object... args) {
         super(StringUtils.format(message, args), cause);
     }
 
-    public PluginException(String message, Object... args) {
+    public PackageManagerException(String message, Object... args) {
         super(StringUtils.format(message, args));
     }
 

@@ -18,7 +18,7 @@ package org.apache.solr.packagemanager.pf4j;
 /**
  * Marker exception for plugin verification failure
  */
-public class VerifyException extends PluginException {
+public class VerifyException extends PackageManagerException {
     public VerifyException(String message) {
         super(message);
     }

@@ -42,7 +42,7 @@ import org.apache.solr.packagemanager.SolrPackageInstance;
 import org.apache.solr.packagemanager.SolrPackageManager;
 import org.apache.solr.packagemanager.SolrPackageRepository;
 import org.apache.solr.packagemanager.SolrUpdateManager;
-import org.apache.solr.packagemanager.pf4j.PluginException;
+import org.apache.solr.packagemanager.pf4j.PackageManagerException;
 import org.apache.solr.util.SolrCLI.StatusTool;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -60,7 +60,7 @@ public class PackageTool extends SolrCLI.ToolBase {
 
   public SolrPackageManager packageManager;
   public SolrUpdateManager updateManager;
-  
+
   @Override
   protected void runImpl(CommandLine cli) throws Exception {
     // Need a logging free, clean output going through to the user.
@@ -71,76 +71,82 @@ public class PackageTool extends SolrCLI.ToolBase {
     System.out.println("solr url: "+solrUrl+", solr base url: "+solrBaseUrl);
 
     String zkHost = getZkHost(cli);
-    
+
     System.out.println("ZK: "+zkHost);
     String cmd = cli.getArgs()[0];
 
-    if (cmd != null) {
-      packageManager = new SolrPackageManager(new File("./plugins"), solrBaseUrl);
-      updateManager = new SolrUpdateManager(packageManager,
-          getRepositoriesJson(new SolrZkClient(zkHost, 30000)), solrBaseUrl);
+    try (SolrZkClient zkclient = new SolrZkClient(zkHost, 30000)) {
+      if (cmd != null) {
+        packageManager = new SolrPackageManager(new File("./plugins"), solrBaseUrl, zkHost); 
+        try {
+          updateManager = new SolrUpdateManager(packageManager,
+              getRepositoriesJson(zkclient), solrBaseUrl);
 
-      switch (cmd) {
-        case "add-repo":
-          addRepo(zkHost, cli.getArgs()[1], cli.getArgs()[2]);
-          break;
-        case "list":
-          list(cli.getArgList().subList(1, cli.getArgList().size()));
-          break;
-        case "list-available":
-          try {
-            available(cli.getArgList().subList(1, cli.getArgList().size()));
-          } catch (PluginException ex) {
-            ex.printStackTrace();
-          }
-          break;
-        case "install":
-          install(cli.getArgList().subList(1, cli.getArgList().size()));
-          break;
-        case "deploy":
-          String colls[] = cli.getOptionValues("collections");
-          String params[] = cli.getOptionValues("param");
-          System.out.println("coll: "+Arrays.toString(colls)+", params: "+Arrays.toString(params));
-          deploy(cli.getArgList().get(1).toString(), colls, params);
-          break;
-        case "redeploy":
-          redeploy(cli.getArgList().subList(1, cli.getArgList().size()));
-          break;
-        case "update":
-          if (cli.getArgList().size()==1) {
-            update();
-          } else {
-            updatePackage(zkHost, cli.getArgs()[1], cli.getArgList().subList(2, cli.getArgList().size()));
-          }
-          break;
-        default:
-          throw new RuntimeException("Unrecognized command: "+cmd);
-      };
+          switch (cmd) {
+            case "add-repo":
+              addRepo(zkHost, cli.getArgs()[1], cli.getArgs()[2]);
+              break;
+            case "list":
+              list(cli.getArgList().subList(1, cli.getArgList().size()));
+              break;
+            case "list-available":
+              try {
+                available(cli.getArgList().subList(1, cli.getArgList().size()));
+              } catch (PackageManagerException ex) {
+                ex.printStackTrace();
+              }
+              break;
+            case "install":
+              install(cli.getArgList().subList(1, cli.getArgList().size()));
+              break;
+            case "deploy":
+              String colls[] = cli.getOptionValues("collections");
+              String params[] = cli.getOptionValues("param");
+              System.out.println("coll: "+Arrays.toString(colls)+", params: "+Arrays.toString(params));
+              deploy(cli.getArgList().get(1).toString(), colls, params);
+              break;
+            case "redeploy":
+              redeploy(cli.getArgList().subList(1, cli.getArgList().size()));
+              break;
+            case "update":
+              if (cli.getArgList().size()==1) {
+                update();
+              } else {
+                updatePackage(zkHost, cli.getArgs()[1], cli.getArgList().subList(2, cli.getArgList().size()));
+              }
+              break;
+            default:
+              throw new RuntimeException("Unrecognized command: "+cmd);
+          };
+        } finally {
+          packageManager.close();
+        }
+      }
     }
     System.out.println("khatam"); // nocommit
   }
 
   protected void addRepo(String zkHost, String name, String uri) throws KeeperException, InterruptedException, MalformedURLException, IOException {
-    SolrZkClient zkClient = new SolrZkClient(zkHost, 30000);
+    try (SolrZkClient zkClient = new SolrZkClient(zkHost, 30000)) {
+      String existingRepositoriesJson = getRepositoriesJson(zkClient);
+      System.out.println(existingRepositoriesJson);
 
-    String existingRepositoriesJson = getRepositoriesJson(zkClient);
-    System.out.println(existingRepositoriesJson);
+      List repos = new ObjectMapper().readValue(existingRepositoriesJson, List.class);
+      repos.add(new SolrPackageRepository(name, uri));
+      if (zkClient.exists("/repositories.json", true) == false) {
+        zkClient.create("/repositories.json", new ObjectMapper().writeValueAsString(repos).getBytes(), CreateMode.PERSISTENT, true);
+      } else {
+        zkClient.setData("/repositories.json", new ObjectMapper().writeValueAsString(repos).getBytes(), true);
+      }
 
-    List repos = new ObjectMapper().readValue(existingRepositoriesJson, List.class);
-    repos.add(new SolrPackageRepository(name, uri));
-    if (zkClient.exists("/repositories.json", true) == false) {
-      zkClient.create("/repositories.json", new ObjectMapper().writeValueAsString(repos).getBytes(), CreateMode.PERSISTENT, true);
-    } else {
-      zkClient.setData("/repositories.json", new ObjectMapper().writeValueAsString(repos).getBytes(), true);
+      if (zkClient.exists("/keys", true)==false) zkClient.create("/keys", new byte[0], CreateMode.PERSISTENT, true);
+      if (zkClient.exists("/keys/exe", true)==false) zkClient.create("/keys/exe", new byte[0], CreateMode.PERSISTENT, true);
+      if (zkClient.exists("/keys/exe/"+"pub_key.der", true)==false) zkClient.create("/keys/exe/"+"pub_key.der", new byte[0], CreateMode.PERSISTENT, true);
+      zkClient.setData("/keys/exe/"+"pub_key.der", IOUtils.toByteArray(new URL(uri+"/publickey.der").openStream()), true);
+
+      System.out.println("Added repository: "+name);
+      System.out.println(getRepositoriesJson(zkClient));
     }
-    
-    if (zkClient.exists("/keys", true)==false) zkClient.create("/keys", new byte[0], CreateMode.PERSISTENT, true);
-    if (zkClient.exists("/keys/exe", true)==false) zkClient.create("/keys/exe", new byte[0], CreateMode.PERSISTENT, true);
-    if (zkClient.exists("/keys/exe/"+"pub_key.der", true)==false) zkClient.create("/keys/exe/"+"pub_key.der", new byte[0], CreateMode.PERSISTENT, true);
-    zkClient.setData("/keys/exe/"+"pub_key.der", IOUtils.toByteArray(new URL(uri+"/publickey.der").openStream()), true);
-    
-    System.out.println("Added repository: "+name);
-    System.out.println(getRepositoriesJson(zkClient));
   }
 
   protected String getRepositoriesJson(SolrZkClient zkClient) throws UnsupportedEncodingException, KeeperException, InterruptedException {
@@ -155,7 +161,7 @@ public class PackageTool extends SolrCLI.ToolBase {
       System.out.println(pkg.getPluginId()+" ("+pkg.getVersion()+")");
     }
   }
-  protected void available(List args) throws PluginException {
+  protected void available(List args) throws PackageManagerException {
     System.out.println("Available packages:\n-----");
     for (SolrPackage i: updateManager.getPackages()) {
       SolrPackage plugin = (SolrPackage)i;
@@ -165,20 +171,20 @@ public class PackageTool extends SolrCLI.ToolBase {
       }
     }
   }
-  protected void install(List args) throws PluginException {
+  protected void install(List args) throws PackageManagerException {
     updateManager.installPackage(args.get(0).toString(), args.get(1).toString());
     System.out.println(args.get(0).toString() + " installed.");
   }
   protected void deploy(String packageName,
-      String collections[], String parameters[]) throws PluginException {
+      String collections[], String parameters[]) throws PackageManagerException {
     System.out.println(packageManager.deployInstallPackage(packageName, Arrays.asList(collections), parameters));
   }
 
-  protected void redeploy(List args) throws PluginException {
+  protected void redeploy(List args) throws PackageManagerException {
     System.out.println(packageManager.deployUpdatePackage(args.get(0).toString(), args.subList(1, args.size())));
   }
 
-  protected void update() throws PluginException {
+  protected void update() throws PackageManagerException {
     if (updateManager.hasUpdates()) {
       System.out.println("Available updates:\n-----");
 
@@ -194,16 +200,16 @@ public class PackageTool extends SolrCLI.ToolBase {
     }
   }
 
-  protected void updatePackage(String zkHost, String packageName, List args) throws PluginException {
+  protected void updatePackage(String zkHost, String packageName, List args) throws PackageManagerException {
     if (updateManager.hasUpdates()) {
       String latestVersion = updateManager.getLastPackageRelease(packageName).version;
       SolrPackageInstance installedPackage = packageManager.getPackage(packageName);
       System.out.println("Updating ["+packageName+"] from " + installedPackage.getVersion() + " to version "+latestVersion);
-      
+
       List<String> collectionsDeployedIn = getDeployedCollections(zkHost, packageManager, installedPackage);
       System.out.println("Already deployed on collections: "+collectionsDeployedIn);
       updateManager.updatePackage(packageName, latestVersion);
-      
+
       SolrPackageInstance updatedPackage = packageManager.getPackage(packageName);
       System.out.println("Verifying version "+updatedPackage.getVersion()+" on "+collectionsDeployedIn
           +", result: "+packageManager.verify(updatedPackage, collectionsDeployedIn));
@@ -213,7 +219,7 @@ public class PackageTool extends SolrCLI.ToolBase {
   }
 
   private List<String> getDeployedCollections(String zkHost, SolrPackageManager packageManager, SolrPackageInstance pkg) {
-    
+
     List<String> allCollections;
     try (SolrZkClient zkClient = new SolrZkClient(zkHost, 30000)) {
       allCollections = zkClient.getChildren("/collections", null, true);
@@ -229,7 +235,7 @@ public class PackageTool extends SolrCLI.ToolBase {
     }
     return deployed;
   }
-  
+
   @SuppressWarnings("static-access")
   public Option[] getOptions() {
     return new Option[] {
@@ -239,7 +245,7 @@ public class PackageTool extends SolrCLI.ToolBase {
         .isRequired(true)
         .withDescription("Address of the Solr Web application, defaults to: "+SolrCLI.DEFAULT_SOLR_URL)
         .create("solrUrl"),
-        
+
         OptionBuilder
         .withArgName("COLLECTIONS")
         .hasArgs()

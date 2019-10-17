@@ -1,11 +1,11 @@
 package org.apache.solr.packagemanager;
 
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StringWriter;
 import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -19,59 +19,76 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.packagemanager.SolrPackage.Command;
 import org.apache.solr.packagemanager.SolrPackage.Metadata;
 import org.apache.solr.packagemanager.SolrPackage.Plugin;
 import org.apache.solr.packagemanager.pf4j.DefaultVersionManager;
+import org.apache.solr.packagemanager.pf4j.PackageManagerException;
+import org.apache.zookeeper.KeeperException;
 
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
 
-public class SolrPackageManager {
+public class SolrPackageManager implements Closeable {
 
   final DefaultVersionManager versionManager;
 
   final String solrBaseUrl;
   
-  public SolrPackageManager(File repo, String solrBaseUrl) {
+  final SolrZkClient zkClient;
+  public SolrPackageManager(File repo, String solrBaseUrl, String zkHost) {
     versionManager = new DefaultVersionManager();
     this.solrBaseUrl = solrBaseUrl;
+    this.zkClient = new SolrZkClient(zkHost, 30000);
+    System.out.println("Done initializing a zkClient instance...");
   }
 
   Map<String, SolrPackageInstance> packages = null;
 
   Metadata fetchMetadata(String blobSha256) throws MalformedURLException, IOException {
-    String metadataJson = 
-        IOUtils.toString(new URL(solrBaseUrl + "/api/node/blob"+"/"+blobSha256).openStream(), "UTF-8");
+    String metadataJson = getStringFromStream(solrBaseUrl + "/api/node/blob"+"/"+blobSha256);
     System.out.println("Fetched metadata blob: "+metadataJson);
     Metadata metadata = new ObjectMapper().readValue(metadataJson, Metadata.class);
     System.out.println("Now metadata: "+metadata);
     return metadata;
   }
 
-  public List<SolrPackageInstance> getPackages() {
+  public List<SolrPackageInstance> getPackages() throws PackageManagerException {
     System.out.println("Getting packages from clusterprops...");
     List<SolrPackageInstance> ret = new ArrayList<SolrPackageInstance>();
     packages = new HashMap<String, SolrPackageInstance>();
     try {
-      String clusterPropsZnode = IOUtils.toString(new URL(solrBaseUrl + "/solr/admin/zookeeper?detail=true&path=/clusterprops.json&wt=json").openStream(), "UTF-8");
+      /*String clusterPropsZnode = IOUtils.toString(new URL(solrBaseUrl + "/solr/admin/zookeeper?detail=true&path=/clusterprops.json&wt=json").openStream(), "UTF-8");
       String clusterPropsJson = ((Map)new ObjectMapper().readValue(clusterPropsZnode, Map.class).get("znode")).get("data").toString();
-      Map packagesJson = (Map)new ObjectMapper().readValue(clusterPropsJson, Map.class).get("packages");
-
-      System.out.println("clusterprops are: "+clusterPropsJson);
-      for (Object packageName: packagesJson.keySet()) {
-        Map pkg = (Map)packagesJson.get(packageName);
-        Metadata metadata = fetchMetadata(pkg.get("metadata").toString());
-        List<Plugin> solrplugins = metadata.plugins;
-        SolrPackageInstance pkgInstance = new SolrPackageInstance(pkg.get("name").toString(), null, 
-            pkg.get("version").toString(), solrplugins, metadata.parameterDefaults);
-        packages.put(packageName.toString(), pkgInstance);
-        ret.add(pkgInstance);
+      Map packagesJson = (Map)new ObjectMapper().readValue(clusterPropsJson, Map.class).get("packages");*/
+      
+      String clusterPropsJson = null;
+      Map packagesJson = null;
+      
+      if (zkClient.exists("/clusterprops.json", true) == true) {
+        clusterPropsJson = new String(zkClient.getData("/clusterprops.json", null, null, true), "UTF-8");
+        System.out.println("clusterprops are: "+clusterPropsJson);
+        packagesJson = (Map)new ObjectMapper().
+            configure(JsonParser.Feature.ALLOW_SINGLE_QUOTES, true).readValue(clusterPropsJson, Map.class).get("packages");
       }
-    } catch (IOException e) {
+
+      if (packagesJson != null) {
+        for (Object packageName: packagesJson.keySet()) {
+          Map pkg = (Map)packagesJson.get(packageName);
+          Metadata metadata = fetchMetadata(pkg.get("metadata").toString());
+          List<Plugin> solrplugins = metadata.plugins;
+          SolrPackageInstance pkgInstance = new SolrPackageInstance(pkg.get("name").toString(), null, 
+              pkg.get("version").toString(), solrplugins, metadata.parameterDefaults);
+          packages.put(packageName.toString(), pkgInstance);
+          ret.add(pkgInstance);
+        }
+      }
+    } catch (IOException | KeeperException | InterruptedException e) {
       e.printStackTrace();
       if (packages == null) packages = Collections.emptyMap(); // nocommit can't happen
+      throw new PackageManagerException(e);
     }
     return ret;
   }
@@ -191,9 +208,12 @@ public class SolrPackageManager {
     return true;
   }
 
+  String getStringFromStream(String url) {
+    return get(url);
+  }
 
   private String get(String url) {
-    try (CloseableHttpClient client = HttpClients.createDefault();) {
+    try (CloseableHttpClient client = SolrUpdateManager.createTrustAllHttpClientBuilder()) {
       HttpGet httpGet = new HttpGet(url);
       httpGet.setHeader("Content-type", "application/json");
 
@@ -212,7 +232,7 @@ public class SolrPackageManager {
       } catch (IOException e) {
         e.printStackTrace();
       }
-    } catch (IOException e1) {
+    } catch (Exception e1) {
       throw new RuntimeException(e1);
     }
     return null;
@@ -220,7 +240,7 @@ public class SolrPackageManager {
 
   private void postJson(String url, String postBody) {
     System.out.println("Posting to "+url+": "+postBody);
-    try (CloseableHttpClient client = HttpClients.createDefault();) {
+    try (CloseableHttpClient client = SolrUpdateManager.createTrustAllHttpClientBuilder();) {
       HttpPost httpPost = new HttpPost(url);
       StringEntity entity = new StringEntity(postBody);
       httpPost.setEntity(entity);
@@ -240,8 +260,9 @@ public class SolrPackageManager {
         }
       } catch (IOException e) {
         e.printStackTrace();
+        throw new RuntimeException(e);
       }
-    } catch (IOException e1) {
+    } catch (Exception e1) {
       throw new RuntimeException(e1);
     }
   }
@@ -249,5 +270,12 @@ public class SolrPackageManager {
   public SolrPackageInstance getPackage(String pluginId) {
     getPackages();
     return packages.get(pluginId);
+  }
+
+  @Override
+  public void close() throws IOException {
+    if (zkClient != null) {
+      zkClient.close();
+    }
   }
 }

@@ -19,6 +19,9 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.conn.ssl.SSLContextBuilder;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.entity.mime.MultipartEntity;
 import org.apache.http.entity.mime.content.FileBody;
@@ -30,7 +33,7 @@ import org.apache.solr.packagemanager.pf4j.CompoundVerifier;
 import org.apache.solr.packagemanager.pf4j.DefaultVersionManager;
 import org.apache.solr.packagemanager.pf4j.FileDownloader;
 import org.apache.solr.packagemanager.pf4j.FileVerifier;
-import org.apache.solr.packagemanager.pf4j.PluginException;
+import org.apache.solr.packagemanager.pf4j.PackageManagerException;
 import org.apache.solr.packagemanager.pf4j.SimpleFileDownloader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -77,11 +80,11 @@ public class SolrUpdateManager {
   }
 
 
-  public synchronized boolean installPackage(String id, String version) throws PluginException {
+  public synchronized boolean installPackage(String id, String version) throws PackageManagerException {
     return updateOrInstallPackage(Operation.INSTALL, id, version);
   }
 
-  public synchronized boolean updatePackage(String id, String version) throws PluginException {
+  public synchronized boolean updatePackage(String id, String version) throws PackageManagerException {
     return updateOrInstallPackage(Operation.UPDATE, id, version);
   }
   
@@ -107,12 +110,12 @@ public class SolrUpdateManager {
     return repositories;
   }
 
-  private boolean updateOrInstallPackage(Operation op, String id, String version) throws PluginException {
+  private boolean updateOrInstallPackage(Operation op, String id, String version) throws PackageManagerException {
     Path downloaded = downloadPackage(id, version);
 
     SolrPackageInstance existingPlugin = packageManager.getPackage(id);
     if (existingPlugin != null && version.equals(existingPlugin.getVersion())) {
-      throw new PluginException("Plugin already installed.");
+      throw new PackageManagerException("Plugin already installed.");
     }
 
     SolrPackageRelease release = null;
@@ -130,7 +133,7 @@ public class SolrUpdateManager {
     }
 
     if (release == null) {
-      throw new PluginException("Couldn't find the release..");
+      throw new PackageManagerException("Couldn't find the release..");
     }
 
     String sha256 = uploadToBlobHandler(downloaded);
@@ -138,7 +141,7 @@ public class SolrUpdateManager {
     try {
       metadataSha256 = uploadToBlobHandler(new ObjectMapper().writeValueAsString(release.metadata));
     } catch (IOException e) {
-      throw new PluginException(e);
+      throw new PackageManagerException(e);
     }
 
     addOrUpdatePackage(op, id, version, sha256, repository, release.sig, metadataSha256, release.metadata);
@@ -169,16 +172,14 @@ public class SolrUpdateManager {
         + "}}";
 
     System.out.println("Posting package: "+json);
-    try (CloseableHttpClient client = HttpClients.createDefault();) {
+    try (CloseableHttpClient client = createTrustAllHttpClientBuilder()) {
       HttpPost httpPost = new HttpPost(solrBaseUrl + "/api/cluster/package");
       StringEntity entity = new StringEntity(json);
       httpPost.setEntity(entity);
       httpPost.setHeader("Accept", "application/json");
       httpPost.setHeader("Content-type", "application/json");
 
-      CloseableHttpResponse response = client.execute(httpPost);
-
-      try {
+      try (CloseableHttpResponse response = client.execute(httpPost)) {
         HttpEntity rspEntity = response.getEntity();
         if (rspEntity != null) {
           InputStream is = rspEntity.getContent();
@@ -190,18 +191,24 @@ public class SolrUpdateManager {
       } catch (IOException e) {
         e.printStackTrace();
       }
-
-
-    } catch (IOException e) {
+    } catch (Exception e) {
       e.printStackTrace();
     }
     return true;
   }
 
-  private String uploadToBlobHandler(Path downloaded) {
+  public static CloseableHttpClient createTrustAllHttpClientBuilder() throws Exception {
+    SSLContextBuilder builder = new SSLContextBuilder();
+    builder.loadTrustMaterial(null, (chain, authType) -> true);           
+    SSLConnectionSocketFactory sslsf = new 
+    SSLConnectionSocketFactory(builder.build(), NoopHostnameVerifier.INSTANCE);
+    return HttpClients.custom().setSSLSocketFactory(sslsf).build();
+  }
+  
+  private String uploadToBlobHandler(Path downloaded) throws PackageManagerException {
     String url = solrBaseUrl + "/api/cluster/blob";
     File file = downloaded.toFile();
-    try (CloseableHttpClient client = HttpClients.createDefault();) {
+    try (CloseableHttpClient client = createTrustAllHttpClientBuilder()) { //HttpClients.createDefault();) {
       HttpPost post = new HttpPost(url);
 
       MultipartEntity entity = new MultipartEntity();
@@ -224,17 +231,17 @@ public class SolrUpdateManager {
         }
       } catch (IOException e) {
         // TODO Auto-generated catch block
-        e.printStackTrace();
+        throw e;
       }
-    } catch (IOException e1) {
+    } catch (Exception e1) {
       // TODO Auto-generated catch block
       e1.printStackTrace();
+      throw new PackageManagerException(e1);
     }
     return null;
   }
   
-  private String uploadToBlobHandler(String json) throws IOException {
-    
+  private String uploadToBlobHandler(String json) throws IOException, PackageManagerException {
     System.out.println("Trying to upload the blob: "+json);
     FileUtils.writeStringToFile(new File("tmp-metadata"), json);
     return uploadToBlobHandler(new File("tmp-metadata").toPath());
@@ -247,9 +254,9 @@ public class SolrUpdateManager {
    * @param id of plugin
    * @param version of plugin or null to download latest
    * @return Path to file which will reside in a temporary folder in the system default temp area
-   * @throws PluginException if download failed
+   * @throws PackageManagerException if download failed
    */
-  protected Path downloadPackage(String id, String version) throws PluginException {
+  protected Path downloadPackage(String id, String version) throws PackageManagerException {
       try {
           SolrPackageRelease release = findReleaseForPlugin(id, version);
           Path downloaded = getFileDownloader(id).downloadFile(new URL(release.url));
@@ -257,7 +264,7 @@ public class SolrUpdateManager {
           //nocommit verify this download
           return downloaded;
       } catch (IOException e) {
-          throw new PluginException(e, "Error during download of plugin {}", id);
+          throw new PackageManagerException(e, "Error during download of plugin {}", id);
       }
   }
 
@@ -300,13 +307,13 @@ public class SolrUpdateManager {
    * @param id of plugin
    * @param version of plugin or null to locate latest version
    * @return PluginRelease for downloading
-   * @throws PluginException if id or version does not exist
+   * @throws PackageManagerException if id or version does not exist
    */
-  protected SolrPackageRelease findReleaseForPlugin(String id, String version) throws PluginException {
+  protected SolrPackageRelease findReleaseForPlugin(String id, String version) throws PackageManagerException {
       SolrPackage pluginInfo = getPackagesMap().get(id);
       if (pluginInfo == null) {
           log.info("Plugin with id {} does not exist in any repository", id);
-          throw new PluginException("Plugin with id {} not found in any repository", id);
+          throw new PackageManagerException("Plugin with id {} not found in any repository", id);
       }
 
       if (version == null) {
@@ -319,7 +326,7 @@ public class SolrUpdateManager {
           }
       }
 
-      throw new PluginException("Plugin {} with version @{} does not exist in the repository", id, version);
+      throw new PackageManagerException("Plugin {} with version @{} does not exist in the repository", id, version);
   }
   
   /**
