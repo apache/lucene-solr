@@ -33,13 +33,16 @@ import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
+import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.ConfigRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.MapWriterMap;
 import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.filestore.TestDistribPackageStore;
@@ -218,6 +221,7 @@ public class TestPackages extends SolrCloudTestCase {
           COLLECTION_NAME, "requestHandler", "/runtime",
           "mypkg", "2.1" );
 
+      // now remove the hughest version. So, it will roll back to the next highest one
       delVersion.version = "2.1";
       delete.process(cluster.getSolrClient());
 
@@ -233,6 +237,32 @@ public class TestPackages extends SolrCloudTestCase {
           COLLECTION_NAME, "requestHandler", "/runtime",
           "mypkg", "1.1" );
 
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.add("collection", COLLECTION_NAME);
+      new GenericSolrRequest(SolrRequest.METHOD.POST, "/config/params", params ){
+        @Override
+        public RequestWriter.ContentWriter getContentWriter(String expectedType) {
+          return new RequestWriter.StringPayloadContentWriter("{set:{PKG_VERSIONS:{mypkg : '1.1'}}}",
+              ClientUtils.TEXT_JSON);
+        }
+      }
+          .process(cluster.getSolrClient()) ;
+
+      add.version = "2.1";
+      add.files = Arrays.asList(new String[]{FILE3});
+      req.process(cluster.getSolrClient());
+
+      verifyCmponent(cluster.getSolrClient(),
+          COLLECTION_NAME, "queryResponseWriter", "json1",
+          "mypkg", "1.1" );
+
+      verifyCmponent(cluster.getSolrClient(),
+          COLLECTION_NAME, "searchComponent", "get",
+          "mypkg", "1.1" );
+
+      verifyCmponent(cluster.getSolrClient(),
+          COLLECTION_NAME, "requestHandler", "/runtime",
+          "mypkg", "1.1" );
 
 
 

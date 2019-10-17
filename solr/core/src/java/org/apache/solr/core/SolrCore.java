@@ -239,7 +239,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   public volatile boolean indexEnabled = true;
   public volatile boolean readOnly = false;
 
-  private PackageListeners packageListeners = new PackageListeners();
+  private PackageListeners packageListeners = new PackageListeners(this);
 
   public Set<String> getMetricNames() {
     return metricNames;

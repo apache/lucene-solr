@@ -41,6 +41,9 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * The class that holds a mapping of various packages and classloaders
+ */
 public class PackageLoader {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -105,7 +108,7 @@ public class PackageLoader {
       List<PackageAPI.PkgVersion> versions = old.packages.get(e.getKey());
       if (versions != null) {
         if (!Objects.equals(e.getValue(), versions)) {
-          log.info("Package {} is modified ",e.getKey());
+          log.info("Package {} is modified ", e.getKey());
           changed.put(e.getKey(), e.getValue());
         }
       } else {
@@ -125,7 +128,9 @@ public class PackageLoader {
 
   }
 
-
+  /**
+   * represents a package definition in the packages.json
+   */
   public class Package {
     final String name;
     final Map<String, Version> myVersions = new ConcurrentHashMap<>();
@@ -134,7 +139,7 @@ public class PackageLoader {
     private boolean deleted;
 
 
-    public Package(String name) {
+    Package(String name) {
       this.name = name;
     }
 
@@ -147,7 +152,7 @@ public class PackageLoader {
       for (PackageAPI.PkgVersion v : modified) {
         Version version = myVersions.get(v.version);
         if (version == null) {
-          log.info("A new version: {} added for package: {} with artifacts {}", v.version,  this.name, v.files);
+          log.info("A new version: {} added for package: {} with artifacts {}", v.version, this.name, v.files);
           myVersions.put(v.version, new Version(this, v));
           sortedVersions.add(v.version);
         }
@@ -159,7 +164,7 @@ public class PackageLoader {
       }
       for (String s : new HashSet<>(myVersions.keySet())) {
         if (!newVersions.contains(s)) {
-          log.info("version: {} is removed from package: {}", s,  this.name);
+          log.info("version: {} is removed from package: {}", s, this.name);
           sortedVersions.remove(s);
           myVersions.remove(s);
         }
@@ -168,8 +173,8 @@ public class PackageLoader {
       sortedVersions.sort(String::compareTo);
       if (sortedVersions.size() > 0) {
         String latest = sortedVersions.get(sortedVersions.size() - 1);
-        if(!latest.equals(this.latest)){
-          log.info("version: {} is the new latest in package: {}", latest,  this.name);
+        if (!latest.equals(this.latest)) {
+          log.info("version: {} is the new latest in package: {}", latest, this.name);
         }
         this.latest = latest;
       } else {
@@ -185,15 +190,10 @@ public class PackageLoader {
     }
 
     public Version getLatest(String lessThan) {
-      String latest = null;
-      for (String v : (ArrayList<String>) new ArrayList(sortedVersions)) {
-        if (v.compareTo(lessThan) < 1) {
-          latest = v;
-        } else break;
-
+      if (lessThan == null) {
+        return getLatest();
       }
-
-
+      String latest = findBiggest(lessThan, new ArrayList(sortedVersions));
       return latest == null ? null : myVersions.get(latest);
     }
 
@@ -221,7 +221,7 @@ public class PackageLoader {
         version.writeMap(ew);
       }
 
-      public Version(Package parent, PackageAPI.PkgVersion v) {
+      Version(Package parent, PackageAPI.PkgVersion v) {
         this.parent = parent;
         this.version = v;
         List<Path> paths = new ArrayList<>();
@@ -231,7 +231,7 @@ public class PackageLoader {
 
         try {
           loader = new SolrResourceLoader(
-              "PACKAGE_LOADER: "+ parent.name()+ ":"+ version,
+              "PACKAGE_LOADER: " + parent.name() + ":" + version,
               paths,
               coreContainer.getResourceLoader().getInstancePath(),
               coreContainer.getResourceLoader().getClassLoader());
@@ -252,5 +252,15 @@ public class PackageLoader {
         return loader;
       }
     }
+  }
+
+  private static String findBiggest(String lessThan, List<String> sortedList) {
+    String latest = null;
+    for (String v : sortedList) {
+      if (v.compareTo(lessThan) < 1) {
+        latest = v;
+      } else break;
+    }
+    return latest;
   }
 }
