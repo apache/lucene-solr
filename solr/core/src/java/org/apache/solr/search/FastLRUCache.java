@@ -316,8 +316,8 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext m, String scope) {
-    this.solrMetricsContext = m.getChildContext(this);
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    this.solrMetricsContext = parentContext.getChildContext(this);
     this.solrMetricsContext.gauge(this, cacheMap, true, scope, getCategory().toString());
   }
 

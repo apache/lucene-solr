@@ -28,18 +28,17 @@ public interface SolrMetricProducer extends AutoCloseable {
    * If object "B" is unregistered C also must get unregistered.
    * If object "A" is unregistered B and C also must get unregistered.
    * @param o object to create a tag for
-   * @param parentName parent object name, or null if no parent
+   * @param parentName parent object name, or null if no parent exists
    */
   static String getUniqueMetricTag(Object o, String parentName) {
     String name = o.getClass().getSimpleName() + "@" + Integer.toHexString(o.hashCode());
     if (parentName != null && parentName.contains(name)) {
-      throw new RuntimeException("Parent already includes this component? parent=" + parentName + ", this=" + name);
+      throw new RuntimeException("Parent already includes this component! parent=" + parentName + ", this=" + name);
     }
     return parentName == null ?
         name :
         parentName + ":" + name;
   }
-
 
   /**
    * Initializes metrics specific to this producer
@@ -48,10 +47,9 @@ public interface SolrMetricProducer extends AutoCloseable {
    * @param registry registry name where metrics are registered
    * @param tag      a symbolic tag that represents this instance of the producer,
    *                 or a group of related instances that have the same life-cycle. This tag is
-   *                 used when managing life-cycle of some metrics and is set when
-   *                 {@link #initializeMetrics(SolrMetricManager, String, String, String)} is called.
+   *                 used when managing life-cycle of some metrics.
    * @param scope    scope of the metrics (eg. handler name) to separate metrics of components with
-   *                 the same implementation but different scope
+   *                 the same implementation but different scope.
    * @deprecated use {@link #initializeMetrics(SolrMetricsContext, String)} instead
    */
   @Deprecated
@@ -62,20 +60,33 @@ public interface SolrMetricProducer extends AutoCloseable {
 
   /**
    * Initialize metrics specific to this producer.
-   * @param context metrics context
+   * @param parentContext parent metrics context. If this component has the same life-cycle as the parent
+   *                it can simply use the parent context, otherwise it should obtain a child context
+   *                using {@link SolrMetricsContext#getChildContext(Object)} passing <code>this</code>
+   *                as the child.
    * @param scope component scope
    */
-  default void initializeMetrics(SolrMetricsContext context, String scope) {
+  default void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     throw new RuntimeException("In class " + getClass().getName() +
         " you must implement either initializeMetrics(SolrMetricsContext, String) or " +
         "initializeMetrics(SolrMetricManager, String, String, String)");
 
   }
 
+  /**
+   * Implementing classes should override this method to provide the context obtained in
+   * {@link #initializeMetrics(SolrMetricsContext, String)} to ensure proper cleanup of metrics
+   * at the end of the life-cycle of this component.
+   */
   default SolrMetricsContext getSolrMetricsContext() {
     return null;
   }
 
+  /**
+   * Implementations should always call <code>SolrMetricProducer.super.close()</code> to ensure that
+   * metrics with the same life-cycle as this component are properly unregistered. This prevents
+   * obscure memory leaks.
+   */
   @Override
   default void close() throws Exception {
     SolrMetricsContext context = getSolrMetricsContext();

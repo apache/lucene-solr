@@ -59,8 +59,8 @@ public class Metrics extends SolrCacheBase implements SolrInfoBean, SolrMetricPr
   private long previous = System.nanoTime();
 
   @Override
-  public void initializeMetrics(SolrMetricsContext m, String scope) {
-    solrMetricsContext = m.getChildContext(this);
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    solrMetricsContext = parentContext.getChildContext(this);
     metricsMap = new MetricsMap((detailed, map) -> {
       long now = System.nanoTime();
       long delta = Math.max(now - previous, 1);

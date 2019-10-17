@@ -146,8 +146,8 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext m, String scope) {
-    this.solrMetricsContext = m.getChildContext(this);
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    this.solrMetricsContext = parentContext.getChildContext(this);
     numErrors = solrMetricsContext.meter(this, "errors", getCategory().toString(), scope);
     numServerErrors = solrMetricsContext.meter(this, "serverErrors", getCategory().toString(), scope);
     numClientErrors = solrMetricsContext.meter(this, "clientErrors", getCategory().toString(), scope);

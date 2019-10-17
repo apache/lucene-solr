@@ -275,8 +275,8 @@ public class DataImportHandler extends RequestHandlerBase implements
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext m, String scope) {
-    super.initializeMetrics(m, scope);
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    super.initializeMetrics(parentContext, scope);
     metrics = new MetricsMap((detailed, map) -> {
       if (importer != null) {
         DocBuilder.Statistics cumulative = importer.cumulativeStatistics;

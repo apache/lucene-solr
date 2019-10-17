@@ -101,8 +101,8 @@ public class InstrumentedHttpListenerFactory implements SolrMetricProducer, Http
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext solrMetricsContext, String scope) {
-    this.solrMetricsContext = solrMetricsContext;
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    this.solrMetricsContext = parentContext;
     this.scope = scope;
   }
 }

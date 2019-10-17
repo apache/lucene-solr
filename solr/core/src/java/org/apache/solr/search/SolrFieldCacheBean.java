@@ -56,8 +56,8 @@ public class SolrFieldCacheBean implements SolrInfoBean, SolrMetricProducer {
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext m, String scope) {
-    this.solrMetricsContext = m;
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    this.solrMetricsContext = parentContext;
     MetricsMap metricsMap = new MetricsMap((detailed, map) -> {
       if (detailed && !disableEntryList && !disableJmxEntryList) {
         UninvertingReader.FieldCacheStats fieldCacheStats = UninvertingReader.getUninvertedStats();

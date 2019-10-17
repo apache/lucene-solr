@@ -99,8 +99,8 @@ public class HdfsLocalityReporter implements SolrInfoBean, SolrMetricProducer {
    * Provide statistics on HDFS block locality, both in terms of bytes and block counts.
    */
   @Override
-  public void initializeMetrics(SolrMetricsContext m, String scope) {
-    solrMetricsContext = m.getChildContext(this);
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    solrMetricsContext = parentContext.getChildContext(this);
     MetricsMap metricsMap = new MetricsMap((detailed, map) -> {
       long totalBytes = 0;
       long localBytes = 0;

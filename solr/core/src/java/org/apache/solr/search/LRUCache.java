@@ -402,8 +402,8 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext m, String scope) {
-    solrMetricsContext = m.getChildContext(this);
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    solrMetricsContext = parentContext.getChildContext(this);
     cacheMap = new MetricsMap((detailed, res) -> {
       synchronized (map) {
         res.put(LOOKUPS_PARAM, lookups);

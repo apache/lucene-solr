@@ -504,9 +504,9 @@ public class HdfsDirectoryFactory extends CachingDirectoryFactory implements Sol
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext solrMetricsContext, String scope) {
-    MetricsHolder.metrics.initializeMetrics(solrMetricsContext, scope);
-    LocalityHolder.reporter.initializeMetrics(solrMetricsContext, scope);
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    MetricsHolder.metrics.initializeMetrics(parentContext, scope);
+    LocalityHolder.reporter.initializeMetrics(parentContext, scope);
   }
 
   @Override

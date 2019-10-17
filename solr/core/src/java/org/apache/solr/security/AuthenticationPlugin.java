@@ -144,8 +144,8 @@ public abstract class AuthenticationPlugin implements SolrInfoBean, SolrMetricPr
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext m, String scope) {
-    this.solrMetricsContext = m.getChildContext(this);
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    this.solrMetricsContext = parentContext.getChildContext(this);
     // Metrics
     numErrors = this.solrMetricsContext.meter(this, "errors", getCategory().toString(), scope);
     requests = this.solrMetricsContext.counter(this, "requests", getCategory().toString(), scope);

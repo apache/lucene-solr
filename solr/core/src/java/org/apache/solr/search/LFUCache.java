@@ -270,8 +270,8 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext m, String scope) {
-    solrMetricsContext = m.getChildContext(this);
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    solrMetricsContext = parentContext.getChildContext(this);
     cacheMap = new MetricsMap((detailed, map) -> {
       if (cache != null) {
         ConcurrentLFUCache.Stats stats = cache.getStats();

@@ -1164,25 +1164,25 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   }
 
   @Override
-  public void initializeMetrics(SolrMetricsContext m, String scope) {
-    newSearcherCounter = m.counter(this, "new", Category.SEARCHER.toString());
-    newSearcherTimer = m.timer(this, "time", Category.SEARCHER.toString(), "new");
-    newSearcherWarmupTimer = m.timer(this, "warmup", Category.SEARCHER.toString(), "new");
-    newSearcherMaxReachedCounter = m.counter(this, "maxReached", Category.SEARCHER.toString(), "new");
-    newSearcherOtherErrorsCounter = m.counter(this, "errors", Category.SEARCHER.toString(), "new");
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    newSearcherCounter = parentContext.counter(this, "new", Category.SEARCHER.toString());
+    newSearcherTimer = parentContext.timer(this, "time", Category.SEARCHER.toString(), "new");
+    newSearcherWarmupTimer = parentContext.timer(this, "warmup", Category.SEARCHER.toString(), "new");
+    newSearcherMaxReachedCounter = parentContext.counter(this, "maxReached", Category.SEARCHER.toString(), "new");
+    newSearcherOtherErrorsCounter = parentContext.counter(this, "errors", Category.SEARCHER.toString(), "new");
 
-    m.gauge(this, () -> name == null ? "(null)" : name, true, "coreName", Category.CORE.toString());
-    m.gauge(this, () -> startTime, true, "startTime", Category.CORE.toString());
-    m.gauge(this, () -> getOpenCount(), true, "refCount", Category.CORE.toString());
-    m.gauge(this, () -> resourceLoader.getInstancePath().toString(), true, "instanceDir", Category.CORE.toString());
-    m.gauge(this, () -> isClosed() ? "(closed)" : getIndexDir(), true, "indexDir", Category.CORE.toString());
-    m.gauge(this, () -> isClosed() ? 0 : getIndexSize(), true, "sizeInBytes", Category.INDEX.toString());
-    m.gauge(this, () -> isClosed() ? "(closed)" : NumberUtils.readableSize(getIndexSize()), true, "size", Category.INDEX.toString());
+    parentContext.gauge(this, () -> name == null ? "(null)" : name, true, "coreName", Category.CORE.toString());
+    parentContext.gauge(this, () -> startTime, true, "startTime", Category.CORE.toString());
+    parentContext.gauge(this, () -> getOpenCount(), true, "refCount", Category.CORE.toString());
+    parentContext.gauge(this, () -> resourceLoader.getInstancePath().toString(), true, "instanceDir", Category.CORE.toString());
+    parentContext.gauge(this, () -> isClosed() ? "(closed)" : getIndexDir(), true, "indexDir", Category.CORE.toString());
+    parentContext.gauge(this, () -> isClosed() ? 0 : getIndexSize(), true, "sizeInBytes", Category.INDEX.toString());
+    parentContext.gauge(this, () -> isClosed() ? "(closed)" : NumberUtils.readableSize(getIndexSize()), true, "size", Category.INDEX.toString());
     if (coreContainer != null) {
-      m.gauge(this, () -> coreContainer.getNamesForCore(this), true, "aliases", Category.CORE.toString());
+      parentContext.gauge(this, () -> coreContainer.getNamesForCore(this), true, "aliases", Category.CORE.toString());
       final CloudDescriptor cd = getCoreDescriptor().getCloudDescriptor();
       if (cd != null) {
-        m.gauge(this, () -> {
+        parentContext.gauge(this, () -> {
           if (cd.getCollectionName() != null) {
             return cd.getCollectionName();
           } else {
@@ -1190,7 +1190,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
           }
         }, true, "collection", Category.CORE.toString());
 
-        m.gauge(this, () -> {
+        parentContext.gauge(this, () -> {
           if (cd.getShardId() != null) {
             return cd.getShardId();
           } else {
@@ -1202,10 +1202,10 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     // initialize disk total / free metrics
     Path dataDirPath = Paths.get(dataDir);
     File dataDirFile = dataDirPath.toFile();
-    m.gauge(this, () -> dataDirFile.getTotalSpace(), true, "totalSpace", Category.CORE.toString(), "fs");
-    m.gauge(this, () -> dataDirFile.getUsableSpace(), true, "usableSpace", Category.CORE.toString(), "fs");
-    m.gauge(this, () -> dataDirPath.toAbsolutePath().toString(), true, "path", Category.CORE.toString(), "fs");
-    m.gauge(this, () -> {
+    parentContext.gauge(this, () -> dataDirFile.getTotalSpace(), true, "totalSpace", Category.CORE.toString(), "fs");
+    parentContext.gauge(this, () -> dataDirFile.getUsableSpace(), true, "usableSpace", Category.CORE.toString(), "fs");
+    parentContext.gauge(this, () -> dataDirPath.toAbsolutePath().toString(), true, "path", Category.CORE.toString(), "fs");
+    parentContext.gauge(this, () -> {
       try {
         return org.apache.lucene.util.IOUtils.spins(dataDirPath.toAbsolutePath());
       } catch (IOException e) {
