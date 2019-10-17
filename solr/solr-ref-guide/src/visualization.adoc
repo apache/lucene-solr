@@ -97,7 +97,7 @@ image::images/math-expressions/centroidplot.png[]
 
 === Convex Hulls
 
-image::images/math-expressions/convex1.png[]
+image::images/math-expressions/convex2.png[]
 
 === Significant Terms
 
