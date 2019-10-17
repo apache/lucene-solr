@@ -87,6 +87,10 @@ image::images/math-expressions/randomwalk5.png[]
 
 image::images/math-expressions/randomwalk6.png[]
 
+=== Distance Matrices
+
+image::images/math-expressions/distance.png[]
+
 === Clustering
 
 image::images/math-expressions/2DCluster1.png[]
