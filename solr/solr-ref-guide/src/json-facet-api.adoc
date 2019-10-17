@@ -131,7 +131,6 @@ include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-metrics-face
 
 The response to the facet request above will start with documents matching the root domain (docs containing "memory" with inStock:true) followed by the requested statistics in a `facets` block:
 
-[...]
 [source,java]
 ----
  "facets" : {

@@ -45,7 +45,7 @@ buildscript {
     }
 
     dependencies {
-        classpath "org.asciidoctor:asciidoctorj:1.6.0-alpha.5"
+        classpath "org.asciidoctor:asciidoctorj:1.6.2"
         classpath "org.asciidoctor:asciidoctorj-pdf:1.5.0-alpha.16"
     }
 }
@@ -88,8 +88,7 @@ dependencies {
 
     // jekyll dependencies
     jrubyExec 'rubygems:jekyll:3.5.2'
-    jrubyExec 'rubygems:jekyll-asciidoc:2.1.1'
-    jrubyExec 'rubygems:pygments.rb:1.1.2'
+    jrubyExec 'rubygems:jekyll-asciidoc:3.0.0'
 
     // don't know why we have to explicitly add these deps but it doesn't resolve them
     // automatically.
@@ -246,7 +245,7 @@ task buildInit(type: Sync) {
     })
 
     doFirst {
-        props.each { k, v -> 
+        props.each { k, v ->
           dummyAntProject.setProperty(k, v)
           println("# " + k + " " + v)
         }
