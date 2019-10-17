@@ -39,26 +39,26 @@ import static org.apache.lucene.geo.GeoUtils.orient;
  * @lucene.internal
  */
 public  class EdgeTree {
-  // lat-lon pair (in original order) of the two vertices
-  final double y1, y2;
-  final double x1, x2;
-  /** min of this edge */
-  final double low;
-  /** max latitude of this edge or any children */
-  double max;
-  /** left child edge, or null */
-  EdgeTree left;
-  /** right child edge, or null */
-  EdgeTree right;
+    // lat-lon pair (in original order) of the two vertices
+    final double y1, y2;
+    final double x1, x2;
+    /** min of this edge */
+    final double low;
+    /** max latitude of this edge or any children */
+    double max;
+    /** left child edge, or null */
+    EdgeTree left;
+    /** right child edge, or null */
+    EdgeTree right;
 
   EdgeTree(double x1, double y1, double x2, double y2, double low, double max) {
-    this.y1 = y1;
-    this.x1 = x1;
-    this.y2 = y2;
-    this.x2 = x2;
-    this.low = low;
-    this.max = max;
-  }
+      this.y1 = y1;
+      this.x1 = x1;
+      this.y2 = y2;
+      this.x2 = x2;
+      this.low = low;
+      this.max = max;
+    }
 
   /**
    * Returns true if the point crosses this edge subtree an odd number of times
@@ -143,38 +143,38 @@ public  class EdgeTree {
 
   /** Returns true if the triangle crosses any edge in this edge subtree */
   protected boolean crossesTriangle(double minX, double maxX, double minY, double maxY,
-                                    double ax, double ay, double bx, double by, double cx, double cy) {
-    if (minY <= max) {
-      double dy = y1;
-      double ey = y2;
-      double dx = x1;
-      double ex = x2;
+                          double ax, double ay, double bx, double by, double cx, double cy) {
+      if (minY <= max) {
+        double dy = y1;
+        double ey = y2;
+        double dx = x1;
+        double ex = x2;
 
-      // optimization: see if the rectangle is outside of the "bounding box" of the polyline at all
-      // if not, don't waste our time trying more complicated stuff
-      boolean outside = (dy < minY && ey < minY) ||
-          (dy > maxY && ey > maxY) ||
-          (dx < minX && ex < minX) ||
-          (dx > maxX && ex > maxX);
+        // optimization: see if the rectangle is outside of the "bounding box" of the polyline at all
+        // if not, don't waste our time trying more complicated stuff
+        boolean outside = (dy < minY && ey < minY) ||
+            (dy > maxY && ey > maxY) ||
+            (dx < minX && ex < minX) ||
+            (dx > maxX && ex > maxX);
 
-      if (outside == false) {
-        if (lineCrossesLine(dx, dy, ex, ey, ax, ay, bx, by) ||
-            lineCrossesLine(dx, dy, ex, ey, bx, by, cx, cy) ||
-            lineCrossesLine(dx, dy, ex, ey, cx, cy, ax, ay)) {
+        if (outside == false) {
+          if (lineCrossesLine(dx, dy, ex, ey, ax, ay, bx, by) ||
+              lineCrossesLine(dx, dy, ex, ey, bx, by, cx, cy) ||
+              lineCrossesLine(dx, dy, ex, ey, cx, cy, ax, ay)) {
+            return true;
+          }
+        }
+
+        if (left != null && left.crossesTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy)) {
+          return true;
+        }
+
+        if (right != null && maxY >= low && right.crossesTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy)) {
           return true;
         }
       }
-
-      if (left != null && left.crossesTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy)) {
-        return true;
-      }
-
-      if (right != null && maxY >= low && right.crossesTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy)) {
-        return true;
-      }
+      return false;
     }
-    return false;
-  }
 
   /** Returns true if the box crosses any edge in this edge subtree */
   protected boolean crossesBox(double minX, double maxX, double minY, double maxY, boolean includeBoundary) {
