@@ -281,5 +281,6 @@ public class TestCaffeineCache extends SolrTestCase {
     }
     assertTrue("total ram bytes should be greater than 0", total > 0);
     assertTrue("total ram bytes exceeded limit", total < 1024 * 1024);
+    cache.close();
   }
 }
