@@ -402,17 +402,8 @@ public class TestTlogReplica extends SolrCloudTestCase {
     docCollection = assertNumberOfReplicas(0, 1, 0, true, true);
 
     // Wait until a new leader is elected
-    TimeOut t = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (!t.hasTimedOut()) {
-      docCollection = getCollectionState(collectionName);
-      Replica leader = docCollection.getSlice("shard1").getLeader();
-      if (leader != null && leader.isActive(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes())) {
-        break;
-      }
-      Thread.sleep(500);
-    }
-    assertFalse("Timeout waiting for a new leader to be elected", t.hasTimedOut());
-
+    waitForLeaderChange(leaderJetty, "shard1");
+    
     // There is a new leader, I should be able to add and commit
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "2", "foo", "zoo"));
     cluster.getSolrClient().commit(collectionName);
@@ -441,6 +432,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     JettySolrRunner pullReplicaJetty = cluster.getReplicaJetty(docCollection.getSlice("shard1").getReplicas(EnumSet.of(Replica.Type.TLOG)).get(0));
     pullReplicaJetty.stop();
     waitForState("Replica not removed", collectionName, activeReplicaCount(0, 1, 0));
+    waitForLeaderChange(pullReplicaJetty, "shard1");
 //    // Also wait for the replica to be placed in state="down"
 //    waitForState("Didn't update state", collectionName, clusterStateReflectsActiveAndDownReplicas());
 
@@ -549,7 +541,6 @@ public class TestTlogReplica extends SolrCloudTestCase {
     for (int i = 0; i < 3; i++) {
       UpdateRequest ureq = new UpdateRequest().add(sdoc("id", "7"));
       ureq.setParam("collection", collectionName);
-      ureq.setParam(UpdateRequest.MIN_REPFACT, "2");
       NamedList<Object> response = cloudClient.request(ureq);
       if ((Integer)((NamedList<Object>)response.get("responseHeader")).get(UpdateRequest.REPFACT) >= 2) {
         break;
@@ -587,7 +578,6 @@ public class TestTlogReplica extends SolrCloudTestCase {
     for (int i = 0; i < 3; i++) {
       UpdateRequest ureq = new UpdateRequest().add(sdoc("id", "8"));
       ureq.setParam("collection", collectionName);
-      ureq.setParam(UpdateRequest.MIN_REPFACT, "2");
       NamedList<Object> response = cloudClient.request(ureq);
       if ((Integer)((NamedList<Object>)response.get("responseHeader")).get(UpdateRequest.REPFACT) >= 2) {
         break;
@@ -652,15 +642,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     waitForState("Replica not removed", collectionName, activeReplicaCount(0, 1, 0));
 
     // Even after the replica is gone, a leader may not be elected yet. Wait for it. 
-    waitForState("Expect new leader", collectionName,
-        (liveNodes, collectionState) -> {
-          Replica leader = collectionState.getLeader("shard1");
-          if (leader == null) {
-            return false;
-          }
-          return !leader.getNodeName().equals(oldLeaderJetty.getNodeName());
-        }
-    );
+    waitForLeaderChange(oldLeaderJetty, "shard1");
     
     new UpdateRequest()   
         .add(sdoc("id", "3"))
@@ -672,6 +654,18 @@ public class TestTlogReplica extends SolrCloudTestCase {
     new UpdateRequest()
         .commit(cloudClient, collectionName);
     waitForNumDocsInAllActiveReplicas(4, 0);
+  }
+
+  private void waitForLeaderChange(JettySolrRunner oldLeaderJetty, String shardName) {
+    waitForState("Expect new leader", collectionName,
+        (liveNodes, collectionState) -> {
+          Replica leader = collectionState.getLeader(shardName);
+          if (leader == null || !leader.isActive(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes())) {
+            return false;
+          }
+          return oldLeaderJetty == null || !leader.getNodeName().equals(oldLeaderJetty.getNodeName());
+        }
+    );
   }
 
   public void testOutOfOrderDBQWithInPlaceUpdates() throws Exception {
@@ -691,16 +685,9 @@ public class TestTlogReplica extends SolrCloudTestCase {
       }
     }
     JettySolrRunner oldLeaderJetty = getSolrRunner(true).get(0);
-    String oldLeaderNodeName = oldLeaderJetty.getNodeName();
     oldLeaderJetty.stop();
     waitForState("Replica not removed", collectionName, activeReplicaCount(0, 1, 0));
-    waitForState("Expect new leader", collectionName,
-        (liveNodes, collectionState) -> {
-          Replica leader = collectionState.getLeader("shard1");
-          if (leader == null) return false;
-          return !leader.getNodeName().equals(oldLeaderNodeName);
-        }
-    );
+    waitForLeaderChange(oldLeaderJetty, "shard1");
     oldLeaderJetty.start();
     waitForState("Replica not added", collectionName, activeReplicaCount(0, 2, 0));
     checkRTG(1,1, cluster.getJettySolrRunners());
