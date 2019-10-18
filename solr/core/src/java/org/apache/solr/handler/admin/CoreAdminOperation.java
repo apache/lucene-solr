@@ -55,6 +55,7 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CoreAdminParams.COLLECTION;
 import static org.apache.solr.common.params.CoreAdminParams.CoreAdminAction.*;
 import static org.apache.solr.common.params.CoreAdminParams.REPLICA;
+import static org.apache.solr.common.params.CoreAdminParams.REPLICA_TYPE;
 import static org.apache.solr.common.params.CoreAdminParams.SHARD;
 import static org.apache.solr.handler.admin.CoreAdminHandler.COMPLETED;
 import static org.apache.solr.handler.admin.CoreAdminHandler.CallInfo;
@@ -333,6 +334,7 @@ enum CoreAdminOperation implements CoreAdminOp {
               cloudInfo.add(COLLECTION, core.getCoreDescriptor().getCloudDescriptor().getCollectionName());
               cloudInfo.add(SHARD, core.getCoreDescriptor().getCloudDescriptor().getShardId());
               cloudInfo.add(REPLICA, core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName());
+              cloudInfo.add(REPLICA_TYPE, core.getCoreDescriptor().getCloudDescriptor().getReplicaType().name());
               info.add("cloud", cloudInfo);
             }
             if (isIndexInfoNeeded) {

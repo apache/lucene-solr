@@ -218,7 +218,9 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         WAIT_FOR_FINAL_STATE, String.valueOf(waitForFinalState),
         SKIP_CREATE_REPLICA_IN_CLUSTER_STATE, skipCreateReplicaInClusterState,
         CoreAdminParams.ULOG_DIR, ulogDir.substring(0, ulogDir.lastIndexOf(UpdateLog.TLOG_NAME)),
-        CoreAdminParams.DATA_DIR, dataDir);
+        CoreAdminParams.DATA_DIR, dataDir,
+        ZkStateReader.REPLICA_TYPE, replica.getType().name());
+
     if(async!=null) addReplicasProps.getProperties().put(ASYNC, async);
     NamedList addResult = new NamedList();
     try {
@@ -272,7 +274,9 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         COLLECTION_PROP, coll.getName(),
         SHARD_ID_PROP, slice.getName(),
         CoreAdminParams.NODE, targetNode,
-        CoreAdminParams.NAME, newCoreName);
+        CoreAdminParams.NAME, newCoreName,
+        ZkStateReader.REPLICA_TYPE, replica.getType().name());
+
     if (async != null) addReplicasProps.getProperties().put(ASYNC, async);
     NamedList addResult = new NamedList();
     SolrCloseableLatch countDownLatch = new SolrCloseableLatch(1, ocmh);
