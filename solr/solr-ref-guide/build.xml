@@ -248,36 +248,6 @@
   </macrodef>
 
 
-  <!-- ====== PDF Build ======= -->
-  <target name="build-pdf" depends="bare-bones-html-validation,-build-pdf-and-reduce-pdf"
-          description="Builds the PDF (after building &amp; validating a bare-bones html version)" />
-  <target name="-build-pdf-and-reduce-pdf" depends="-build-raw-pdf,-reduce-pdf-size">
-    <!-- NOTE: this does everything realted to building the PDF, but skips the bare-bones-html validation -->
-    <echo>Finished Building ${build.dir}/${pdf-filename}</echo>
-  </target>
-  <target name="-build-raw-pdf"
-          depends="build-nav-data-files,resolve">
-    <mkdir dir="${build.dir}/pdf-tmp"/>
-    <asciidoctor-convert sourceDirectory="${build.content.dir}/pdf"
-                         sourceDocumentName="SolrRefGuide-all.adoc"
-                         outputDirectory="${build.dir}/pdf-tmp"
-                         backend="pdf"
-                         />
-    <move file="${build.dir}/pdf-tmp/SolrRefGuide-all.pdf" tofile="${build.dir}/pdf-tmp/RAW-${pdf-filename}" />
-  </target>
-
-  <target name="-reduce-pdf-size" depends="build-init,build-tools-jar">
-    <java classname="ReducePDFSize"
-          failonerror="true"
-          fork="true">
-      <classpath refid="tools-run-classpath"/>
-      <arg value="${build.dir}/pdf-tmp/RAW-${pdf-filename}"/>
-      <arg value="${build.dir}/${pdf-filename}"/>
-    </java>
-  </target>
-
-
-
   <!-- ======= HTML Site Build =======
        Builds site with Jekyll.
        This (for now) assumes that Jekyll (http://jekyllrb.com) is installed locally. -->
@@ -297,7 +267,7 @@
           depends="build-init,build-nav-data-files" >
     <echo>Running Jekyll...</echo>
     <exec executable="jekyll" dir="${build.content.dir}" failonerror="true">
-      <arg value="build"/>
+      <arg value="build --verbose"/>
     </exec>
   </target>
 
@@ -334,10 +304,9 @@
 
   <target name="default"
           description="Builds both a PDF and HTML versions of the ref guide"
-          depends="-build-pdf-and-reduce-pdf,build-site">
+          depends="build-site">
     <!-- NOTE: we don't depend on build-pdf because then we'd also get the bare-bones HTML and do
          link validation twice -->
-    <echo>PDF: ${build.dir}/${pdf-filename}</echo>
     <echo>SITE: ${build.dir}/html-site/${main-page}.html</echo>
   </target>
 
