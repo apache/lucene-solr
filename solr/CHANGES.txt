@@ -115,6 +115,8 @@ Bug Fixes
 
 * SOLR-13827: Fail on unknown operation in Request Parameters API (Munendra S N, noble)
 
+* SOLR-13403: Fix NPE in TermsComponent for DatePointField (yonik, Munendra S N)
+
 Other Changes
 ---------------------
 

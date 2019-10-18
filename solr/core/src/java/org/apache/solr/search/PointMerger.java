@@ -80,6 +80,7 @@ public class PointMerger {
             seg = new DoubleSeg(pv, capacity);
             break;
           case DATE:
+            seg = new DateSeg(pv, capacity);
             break;
         }
         int count = seg.setNextValue();
