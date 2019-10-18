@@ -195,7 +195,7 @@ public class PluginBag<T> implements AutoCloseable {
     return old == null ? null : old.get();
   }
 
-  PluginHolder<T> put(String name, PluginHolder<T> plugin) {
+  public PluginHolder<T> put(String name, PluginHolder<T> plugin) {
     Boolean registerApi = null;
     Boolean disableHandler = null;
     if (plugin.pluginInfo != null) {
@@ -231,11 +231,15 @@ public class PluginBag<T> implements AutoCloseable {
           apiBag.registerLazy((PluginHolder<SolrRequestHandler>) plugin, plugin.pluginInfo);
       }
     }
-    if(disableHandler == null) disableHandler = Boolean.FALSE;
+    if (disableHandler == null) disableHandler = Boolean.FALSE;
     PluginHolder<T> old = null;
-    if(!disableHandler) old = registry.put(name, plugin);
+    if (!disableHandler) old = registry.put(name, plugin);
     if (plugin.pluginInfo != null && plugin.pluginInfo.isDefault()) setDefault(name);
     if (plugin.isLoaded()) registerMBean(plugin.get(), core, name);
+    // old instance has been replaced - close it to prevent mem leaks
+    if (old != null && old != plugin) {
+      closeQuietly(old);
+    }
     return old;
   }
 
@@ -321,6 +325,14 @@ public class PluginBag<T> implements AutoCloseable {
       } catch (Exception exp) {
         log.error("Error closing plugin " + e.getKey() + " of type : " + meta.getCleanTag(), exp);
       }
+    }
+  }
+
+  public static void closeQuietly(Object inst)  {
+    try {
+      if (inst != null && inst instanceof AutoCloseable) ((AutoCloseable) inst).close();
+    } catch (Exception e) {
+      log.error("Error closing "+ inst , e);
     }
   }
 
