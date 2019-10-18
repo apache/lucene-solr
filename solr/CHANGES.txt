@@ -227,6 +227,8 @@ Bug Fixes
 
 * SOLR-13835: HttpSolrCall produces incorrect extra AuditEvent on AuthorizationResponse.PROMPT (janhoy, hossman)
 
+* SOLR-13843: The MOVEREPLICA API ignores replica type and always adds 'nrt' replicas (Amrit Sarkar via shalin)
+
 Other Changes
 ----------------------
 
