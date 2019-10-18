@@ -582,4 +582,28 @@ public class TermsComponentTest extends SolrTestCaseJ4 {
   private static String createShardQueryParamsString(ModifiableSolrParams params) {
     return TermsComponent.createShardQuery(params).params.toString();
   }
+
+  @Test
+  public void testDatePointField() throws Exception {
+    String[] dates = new String[]{"2015-01-03T14:30:00Z", "2014-03-15T12:00:00Z"};
+    for (int i = 0; i < 100; i++) {
+      assertU(adoc("id", Integer.toString(100000+i), "foo_pdt", dates[i % 2]) );
+      if (random().nextInt(10) == 0) assertU(commit());  // make multiple segments
+    }
+    assertU(commit());
+    assertU(adoc("id", Integer.toString(100102), "foo_pdt", dates[1]));
+    assertU(commit());
+
+    try {
+      assertQ(req("indent","true", "qt","/terms", "terms","true",
+          "terms.fl","foo_pdt", "terms.sort","count"),
+          "count(//lst[@name='foo_pdt']/*)=2",
+          "//lst[@name='foo_pdt']/int[1][@name='" + dates[1] + "'][.='51']",
+          "//lst[@name='foo_pdt']/int[2][@name='" + dates[0] + "'][.='50']"
+      );
+    } finally {
+      assertU(delQ("foo_pdt:[* TO *]"));
+      assertU(commit());
+    }
+  }
 }
