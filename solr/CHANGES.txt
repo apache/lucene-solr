@@ -48,7 +48,7 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+* SOLR-13827: Fail on unknown operation in Request Parameters API (Munendra S N, noble)
 
 Other Changes
 ---------------------
