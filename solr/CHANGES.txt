@@ -112,11 +112,13 @@ Optimizations
 
 Bug Fixes
 ---------------------
+
 * SOLR-13827: Fail on unknown operation in Request Parameters API (Munendra S N, noble)
 
 Other Changes
 ---------------------
-(No changes)
+
+* SOLR-12769: Fix incorrect documentation for 'delete' op in Request parameters API (Alexandre Rafalovitch, Munendra S N)
 
 ==================  8.3.0 ==================
 
