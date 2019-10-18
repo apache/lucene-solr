@@ -21,6 +21,8 @@ import java.util.Set;
 
 import com.codahale.metrics.MetricRegistry;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.util.stats.MetricUtils;
 
 /**
@@ -77,6 +79,10 @@ public interface SolrInfoBean {
    * (default is null, which means no registry).
    */
   default MetricRegistry getMetricRegistry() {
+    if (this instanceof SolrMetricProducer) {
+      SolrMetricsContext context = ((SolrMetricProducer)this).getSolrMetricsContext();
+      return context != null ? context.getMetricRegistry() : null;
+    }
     return null;
   }
 

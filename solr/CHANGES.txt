@@ -273,6 +273,8 @@ Bug Fixes
 
 * SOLR-13843: The MOVEREPLICA API ignores replica type and always adds 'nrt' replicas (Amrit Sarkar via shalin)
 
+* SOLR-13677: All Metrics Gauges should be unregistered by components that registered them. (noble, ab)
+
 Other Changes
 ----------------------
 
