@@ -35,7 +35,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.Iterables;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
