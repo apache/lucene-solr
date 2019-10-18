@@ -129,10 +129,10 @@ image::images/math-expressions/integral.png[]
 
 === Autocorrelation
 
-image::images/math-expressions/autocorr.png[]
+image::images/math-expressions/noise-autocorrelation.png[]
 
 === Fourier Transform
 
-image::images/math-expressions/fft.png[]
+image::images/math-expressions/signal-fft.png[]
 
 
