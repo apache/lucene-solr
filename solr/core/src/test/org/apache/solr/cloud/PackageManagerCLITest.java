@@ -66,6 +66,10 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
 
     res = run(tool, new String[] {"-solrUrl", solrUrl, "deploy", "question-answer", "-collections", "abc", "-p", "RH-HANDLER-PATH=/mypath2"});
     assertEquals("tool should have returned 0 for success ", 0, res);
+    
+    res = run(tool, new String[] {"-solrUrl", solrUrl, "update", "question-answer"});
+    assertEquals("tool should have returned 0 for success ", 0, res);
+
   }
 
   private int run(PackageTool tool, String[] args) throws Exception {

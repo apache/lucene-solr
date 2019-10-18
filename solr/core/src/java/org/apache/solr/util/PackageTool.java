@@ -211,8 +211,10 @@ public class PackageTool extends SolrCLI.ToolBase {
       updateManager.updatePackage(packageName, latestVersion);
 
       SolrPackageInstance updatedPackage = packageManager.getPackage(packageName);
+      boolean res = packageManager.verify(updatedPackage, collectionsDeployedIn);
       System.out.println("Verifying version "+updatedPackage.getVersion()+" on "+collectionsDeployedIn
-          +", result: "+packageManager.verify(updatedPackage, collectionsDeployedIn));
+          +", result: "+res);
+      if (!res) throw new PackageManagerException("Failed verification after deployment");
     } else {
       System.out.println("Package "+packageName+" is already up to date.");
     }
