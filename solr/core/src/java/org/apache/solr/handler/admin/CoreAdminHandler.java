@@ -46,6 +46,7 @@ import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
@@ -120,10 +121,10 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
-    super.initializeMetrics(manager, registryName, tag, scope);
-    parallelExecutor = MetricUtils.instrumentedExecutorService(parallelExecutor, this, manager.registry(registryName),
-        SolrMetricManager.mkName("parallelCoreAdminExecutor", getCategory().name(),scope, "threadPool"));
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    super.initializeMetrics(parentContext, scope);
+    parallelExecutor = MetricUtils.instrumentedExecutorService(parallelExecutor, this, solrMetricsContext.getMetricRegistry(),
+        SolrMetricManager.mkName("parallelCoreAdminExecutor", getCategory().name(), scope, "threadPool"));
   }
   @Override
   public Boolean registerV2() {
@@ -242,10 +243,10 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     Map<String, String> coreParams = new HashMap<>();
 
     // standard core create parameters
-    for (String param : paramToProp.keySet()) {
-      String value = params.get(param, null);
+    for (Map.Entry<String, String> entry : paramToProp.entrySet()) {
+      String value = params.get(entry.getKey(), null);
       if (StringUtils.isNotEmpty(value)) {
-        coreParams.put(paramToProp.get(param), value);
+        coreParams.put(entry.getValue(), value);
       }
     }
 

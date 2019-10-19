@@ -112,11 +112,15 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+
+* SOLR-13827: Fail on unknown operation in Request Parameters API (Munendra S N, noble)
+
+* SOLR-13403: Fix NPE in TermsComponent for DatePointField (yonik, Munendra S N)
 
 Other Changes
 ---------------------
-(No changes)
+
+* SOLR-12769: Fix incorrect documentation for 'delete' op in Request parameters API (Alexandre Rafalovitch, Munendra S N)
 
 ==================  8.3.0 ==================
 
@@ -320,6 +324,21 @@ Bug Fixes
   state happening to change between checking if the current shard is active and later checking if there are any
   sub-shard leaders to forward the update to. (yonik)
 
+* SOLR-13665: Added missing netty dependencies to solrJ and upgraded netty to v 4.1.29.Final (Jörn Franke, janhoy)
+
+* SOLR-13793: HttpSolrCall now maintains internal request count (_forwardedCount) for remote queries and limits them to
+  the number of replicas. This avoids making too many cascading calls to remote servers, which, if not restricted, can
+  bring down nodes containing the said collection (Kesharee Nandan Vishwakarma, Ishan Chattopadhyaya)
+
+* SOLR-13834: ZkController#getSolrCloudManager() created a new instance of ZkStateReader, thereby causing mismatch in the
+  visibility of the cluster state and, as a result, undesired race conditions (Clay Goddard via Ishan Chattopadhyaya)
+
+* SOLR-13835: HttpSolrCall produces incorrect extra AuditEvent on AuthorizationResponse.PROMPT (janhoy, hossman)
+
+* SOLR-13843: The MOVEREPLICA API ignores replica type and always adds 'nrt' replicas (Amrit Sarkar via shalin)
+
+* SOLR-13677: All Metrics Gauges should be unregistered by components that registered them. (noble, ab)
+
 Other Changes
 ----------------------
 
@@ -354,6 +373,8 @@ Other Changes
   (Diego Ceccarelli, Christine Poerschke, Munendra S N)
 
 * SOLR-13787: An annotation based system to write v2 APIs (noble)
+
+* SOLR-12786: Update Ref Guide build tool versions (Cassandra)
 
 ==================  8.2.0 ==================
 

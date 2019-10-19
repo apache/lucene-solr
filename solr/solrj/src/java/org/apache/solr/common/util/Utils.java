@@ -23,7 +23,6 @@ import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.StringReader;
-import java.io.UnsupportedEncodingException;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.net.URL;
@@ -36,12 +35,14 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -323,6 +324,13 @@ public class Utils {
       throw new RuntimeException(e);
     }
   };
+
+  /**
+   * Util function to convert {@link Object} to {@link String}
+   * Specially handles {@link Date} to string conversion
+   */
+  public static final Function<Object, String> OBJECT_TO_STRING =
+      obj -> ((obj instanceof Date) ? Objects.toString(((Date) obj).toInstant()) : Objects.toString(obj));
 
   public static Object fromJSON(InputStream is, Function<JSONParser, ObjectBuilder> objBuilderProvider) {
     try {
@@ -646,7 +654,6 @@ public class Utils {
    * @param input the json with new values
    * @return whether there was any change made to sink or not.
    */
-
   public static boolean mergeJson(Map<String, Object> sink, Map<String, Object> input) {
     boolean isModified = false;
     for (Map.Entry<String, Object> e : input.entrySet()) {
@@ -686,12 +693,8 @@ public class Utils {
       throw new IllegalArgumentException("nodeName does not contain expected '_' separator: " + nodeName);
     }
     final String hostAndPort = nodeName.substring(0, _offset);
-    try {
-      final String path = URLDecoder.decode(nodeName.substring(1 + _offset), "UTF-8");
-      return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + path));
-    } catch (UnsupportedEncodingException e) {
-      throw new IllegalStateException("JVM Does not seem to support UTF-8", e);
-    }
+    final String path = URLDecoder.decode(nodeName.substring(1 + _offset), UTF_8);
+    return urlScheme + "://" + hostAndPort + (path.isEmpty() ? "" : ("/" + path));
   }
 
   public static long time(TimeSource timeSource, TimeUnit unit) {
@@ -728,7 +731,7 @@ public class Utils {
   }
 
   public static final InputStreamConsumer<?> JAVABINCONSUMER = is -> new JavaBinCodec().unmarshal(is);
-  public static final InputStreamConsumer<?> JSONCONSUMER = is -> Utils.fromJSON(is);
+  public static final InputStreamConsumer<?> JSONCONSUMER = Utils::fromJSON;
 
   public static InputStreamConsumer<ByteBuffer> newBytesConsumer(int maxSize) {
     return is -> {

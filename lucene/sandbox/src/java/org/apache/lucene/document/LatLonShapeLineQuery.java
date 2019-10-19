@@ -19,6 +19,7 @@ package org.apache.lucene.document;
 import java.util.Arrays;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
+import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Line2D;
@@ -45,7 +46,7 @@ import org.apache.lucene.util.NumericUtils;
  **/
 final class LatLonShapeLineQuery extends ShapeQuery {
   final Line[] lines;
-  final private Line2D line2D;
+  final private Component2D line2D;
 
   public LatLonShapeLineQuery(String field, QueryRelation queryRelation, Line... lines) {
     super(field, queryRelation);
@@ -80,7 +81,7 @@ final class LatLonShapeLineQuery extends ShapeQuery {
     double maxLon = GeoEncodingUtils.decodeLongitude(NumericUtils.sortableBytesToInt(maxTriangle, maxXOffset));
 
     // check internal node against query
-    return line2D.relate(minLat, maxLat, minLon, maxLon);
+    return line2D.relate(minLon, maxLon, minLat, maxLat);
   }
 
   @Override

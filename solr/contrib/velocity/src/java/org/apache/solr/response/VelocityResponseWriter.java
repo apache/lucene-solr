@@ -235,8 +235,9 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
         </queryResponseWriter>
 */
     // Custom tools can override any of the built-in tools provided above, by registering one with the same name
-    for(String name : customTools.keySet()) {
-      Object customTool = SolrCore.createInstance(customTools.get(name), Object.class, "VrW custom tool: " + name, request.getCore(), request.getCore().getResourceLoader());
+    for(Map.Entry<String, String> entry : customTools.entrySet()) {
+      String name = entry.getKey();
+      Object customTool = SolrCore.createInstance(entry.getValue(), Object.class, "VrW custom tool: " + name, request.getCore(), request.getCore().getResourceLoader());
       if (customTool instanceof LocaleConfig) {
         ((LocaleConfig)customTool).configure(toolConfig);
       }

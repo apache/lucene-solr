@@ -310,11 +310,8 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
         ocmh.overseer.offerStateUpdate(Utils.toJSON(new ZkNodeProps(propMap)));
 
-        // wait until we are able to see the new shard in cluster state
-        ocmh.waitForNewShard(collectionName, subSlice);
-
-        // refresh cluster state
-        clusterState = zkStateReader.getClusterState();
+        // wait until we are able to see the new shard in cluster state and refresh the local view of the cluster state
+        clusterState = ocmh.waitForNewShard(collectionName, subSlice);
 
         log.debug("Adding first replica " + subShardName + " as part of slice " + subSlice + " of collection " + collectionName
             + " on " + nodeName);

@@ -179,9 +179,9 @@ public class AnalyticsRequestManager {
     ungroupedReductionManager.exportData();
 
     output.writeInt(groupingManagers.size());
-    for (String groupingName : groupingManagers.keySet()) {
-      output.writeUTF(groupingName);
-      groupingManagers.get(groupingName).exportShardData(output);
+    for (Map.Entry<String, AnalyticsGroupingManager> entry : groupingManagers.entrySet()) {
+      output.writeUTF(entry.getKey());
+      entry.getValue().exportShardData(output);
     }
   }
 
