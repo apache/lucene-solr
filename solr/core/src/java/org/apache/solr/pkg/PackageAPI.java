@@ -169,12 +169,20 @@ public class PackageAPI {
     @JsonProperty
     public List<String> files;
 
+    @JsonProperty
+    public String manifest;
+
+    @JsonProperty
+    public String manifestSHA512;
+
     public PkgVersion() {
     }
 
     public PkgVersion(AddVersion addVersion) {
       this.version = addVersion.version;
       this.files = addVersion.files;
+      this.manifest = addVersion.manifest;
+      this.manifestSHA512 = addVersion.manifestSHA512; // nocommit: compute and populate here
     }
 
 
@@ -344,7 +352,10 @@ public class PackageAPI {
     public String version;
     @JsonProperty(required = true)
     public List<String> files;
-
+    @JsonProperty(required = false)
+    public String manifestSHA512;
+    @JsonProperty(required = false)
+    public String manifest;
   }
 
   public static class DelVersion implements ReflectMapWriter {
