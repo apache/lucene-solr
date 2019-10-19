@@ -103,7 +103,7 @@ New Features
 Improvements
 ---------------------
 
-*SOLR-13731: javabin must support a 1:1 mapping of the JSON update format (noble)
+* SOLR-13731: 'javabin' must support a 1:1 mapping of the JSON update format (noble)
 
 
 Optimizations
@@ -121,6 +121,8 @@ Other Changes
 ---------------------
 
 * SOLR-12769: Fix incorrect documentation for 'delete' op in Request parameters API (Alexandre Rafalovitch, Munendra S N)
+
+* SOLR-13841: Add jackson databind annotations to SolrJ classpath (noble)
 
 ==================  8.3.0 ==================
 
