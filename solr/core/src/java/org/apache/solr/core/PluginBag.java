@@ -46,6 +46,7 @@ import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.pkg.PackagePluginHolder;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
+import org.apache.solr.update.processor.UpdateRequestProcessorChain.LazyUpdateProcessorFactoryHolder;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.CryptoKeys;
 import org.apache.solr.util.SimplePostTool;
@@ -140,7 +141,7 @@ public class PluginBag<T> implements AutoCloseable {
       return new LazyPluginHolder<T>(meta, info, core, core.getResourceLoader(), false);
     } else {
       if (info.pkgName != null) {
-        return new PackagePluginHolder<>(info, core, meta);
+        return getPackagePluginHolder(info);
       } else {
         T inst = core.createInstance(info.className, (Class<T>) meta.clazz, meta.getCleanTag(), null, core.getResourceLoader(info.pkgName));
         initInstance(inst, info);
@@ -149,8 +150,17 @@ public class PluginBag<T> implements AutoCloseable {
     }
   }
 
-  /** make a plugin available in an alternate name. This is an internal API and not for public use
-   * @param src key in which the plugin is already registered
+  private PluginHolder<T> getPackagePluginHolder(PluginInfo info) {
+    PackagePluginHolder<T> holder = new PackagePluginHolder<>(info, core, meta);
+    return meta.clazz == UpdateRequestProcessorFactory.class ?
+        new PluginHolder(info, new LazyUpdateProcessorFactoryHolder(holder)) :
+        holder;
+  }
+
+  /**
+   * make a plugin available in an alternate name. This is an internal API and not for public use
+   *
+   * @param src    key in which the plugin is already registered
    * @param target the new key in which the plugin should be aliased to. If target exists already, the alias fails
    * @return flag if the operation is successful or not
    */
