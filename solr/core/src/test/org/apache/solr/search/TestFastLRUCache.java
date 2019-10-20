@@ -16,6 +16,16 @@
  */
 package org.apache.solr.search;
 
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Random;
+import java.util.TreeMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.WildcardQuery;
@@ -28,14 +38,6 @@ import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.util.ConcurrentLRUCache;
 import org.apache.solr.util.RTimer;
-
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Random;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
@@ -52,14 +54,14 @@ public class TestFastLRUCache extends SolrTestCase {
 
   public void testPercentageAutowarm() throws IOException {
     FastLRUCache<Object, Object> fastCache = new FastLRUCache<>();
-    fastCache.initializeMetrics(metricManager, registry, "foo", scope);
-    MetricsMap metrics = fastCache.getMetricsMap();
     Map<String, String> params = new HashMap<>();
     params.put("size", "100");
     params.put("initialSize", "10");
     params.put("autowarmCount", "100%");
     CacheRegenerator cr = new NoOpRegenerator();
     Object o = fastCache.init(params, null, cr);
+    fastCache.initializeMetrics(metricManager, registry, "foo", scope);
+    MetricsMap metrics = fastCache.getMetricsMap();
     fastCache.setState(SolrCache.State.LIVE);
     for (int i = 0; i < 101; i++) {
       fastCache.put(i + 1, "" + (i + 1));
@@ -72,9 +74,9 @@ public class TestFastLRUCache extends SolrTestCase {
     assertEquals(101L, nl.get("inserts"));
     assertEquals(null, fastCache.get(1));  // first item put in should be the first out
     FastLRUCache<Object, Object> fastCacheNew = new FastLRUCache<>();
+    fastCacheNew.init(params, o, cr);
     fastCacheNew.initializeMetrics(metricManager, registry, "foo", scope);
     metrics = fastCacheNew.getMetricsMap();
-    fastCacheNew.init(params, o, cr);
     fastCacheNew.warm(null, fastCache);
     fastCacheNew.setState(SolrCache.State.LIVE);
     fastCache.close();
@@ -102,21 +104,21 @@ public class TestFastLRUCache extends SolrTestCase {
   
   private void doTestPercentageAutowarm(int limit, int percentage, int[] hits, int[]misses) {
     FastLRUCache<Object, Object> fastCache = new FastLRUCache<>();
-    fastCache.initializeMetrics(metricManager, registry, "foo", scope);
     Map<String, String> params = new HashMap<>();
     params.put("size", String.valueOf(limit));
     params.put("initialSize", "10");
     params.put("autowarmCount", percentage + "%");
     CacheRegenerator cr = new NoOpRegenerator();
     Object o = fastCache.init(params, null, cr);
+    fastCache.initializeMetrics(metricManager, registry, "foo", scope);
     fastCache.setState(SolrCache.State.LIVE);
     for (int i = 1; i <= limit; i++) {
       fastCache.put(i, "" + i);//adds numbers from 1 to 100
     }
 
     FastLRUCache<Object, Object> fastCacheNew = new FastLRUCache<>();
-    fastCacheNew.initializeMetrics(metricManager, registry, "foo", scope);
     fastCacheNew.init(params, o, cr);
+    fastCacheNew.initializeMetrics(metricManager, registry, "foo", scope);
     fastCacheNew.warm(null, fastCache);
     fastCacheNew.setState(SolrCache.State.LIVE);
     fastCache.close();
@@ -136,12 +138,12 @@ public class TestFastLRUCache extends SolrTestCase {
   
   public void testNoAutowarm() throws IOException {
     FastLRUCache<Object, Object> fastCache = new FastLRUCache<>();
-    fastCache.initializeMetrics(metricManager, registry, "foo", scope);
     Map<String, String> params = new HashMap<>();
     params.put("size", "100");
     params.put("initialSize", "10");
     CacheRegenerator cr = new NoOpRegenerator();
     Object o = fastCache.init(params, null, cr);
+    fastCache.initializeMetrics(metricManager, registry, "foo", scope);
     fastCache.setState(SolrCache.State.LIVE);
     for (int i = 0; i < 101; i++) {
       fastCache.put(i + 1, "" + (i + 1));
@@ -196,13 +198,13 @@ public class TestFastLRUCache extends SolrTestCase {
   
   public void testSimple() throws IOException {
     FastLRUCache sc = new FastLRUCache();
-    sc.initializeMetrics(metricManager, registry, "foo", scope);
     Map l = new HashMap();
     l.put("size", "100");
     l.put("initialSize", "10");
     l.put("autowarmCount", "25");
     CacheRegenerator cr = new NoOpRegenerator();
     Object o = sc.init(l, null, cr);
+    sc.initializeMetrics(metricManager, registry, "foo", scope);
     sc.setState(SolrCache.State.LIVE);
     for (int i = 0; i < 101; i++) {
       sc.put(i + 1, "" + (i + 1));
@@ -219,8 +221,8 @@ public class TestFastLRUCache extends SolrTestCase {
 
 
     FastLRUCache scNew = new FastLRUCache();
-    scNew.initializeMetrics(metricManager, registry, "foo", scope);
     scNew.init(l, o, cr);
+    scNew.initializeMetrics(metricManager, registry, "foo", scope);
     scNew.warm(null, sc);
     scNew.setState(SolrCache.State.LIVE);
     sc.close();
@@ -305,13 +307,13 @@ public class TestFastLRUCache extends SolrTestCase {
   public void testAccountable() {
     FastLRUCache<Query, DocSet> sc = new FastLRUCache<>();
     try {
-      sc.initializeMetrics(metricManager, registry, "foo", scope);
       Map l = new HashMap();
       l.put("size", "100");
       l.put("initialSize", "10");
       l.put("autowarmCount", "25");
       CacheRegenerator cr = new NoOpRegenerator();
       Object o = sc.init(l, null, cr);
+      sc.initializeMetrics(metricManager, registry, "foo", scope);
       sc.setState(SolrCache.State.LIVE);
       long initialBytes = sc.ramBytesUsed();
       WildcardQuery q = new WildcardQuery(new Term("foo", "bar"));
@@ -332,12 +334,12 @@ public class TestFastLRUCache extends SolrTestCase {
 
   public void testSetLimits() throws Exception {
     FastLRUCache<String, Accountable> cache = new FastLRUCache<>();
-    cache.initializeMetrics(metricManager, registry, "foo", scope);
     Map<String, String> params = new HashMap<>();
     params.put("size", "6");
     params.put("maxRamMB", "8");
     CacheRegenerator cr = new NoOpRegenerator();
     Object o = cache.init(params, null, cr);
+    cache.initializeMetrics(metricManager, registry, "foo", scope);
     for (int i = 0; i < 6; i++) {
       cache.put("" + i, new Accountable() {
         @Override
@@ -471,7 +473,7 @@ public class TestFastLRUCache extends SolrTestCase {
   }
 
 
-  void cachePerfTest(final SolrCache sc, final int nThreads, final int numGets, int cacheSize, final int maxKey) {
+  double[] cachePerfTest(final SolrCache sc, final int nThreads, final int numGets, int cacheSize, final int maxKey) {
     Map l = new HashMap();
     l.put("size", ""+cacheSize);
     l.put("initialSize", ""+cacheSize);
@@ -512,37 +514,73 @@ public class TestFastLRUCache extends SolrTestCase {
       }
     }
 
-    System.out.println("time=" + timer.getTime() + " impl=" +sc.getClass().getSimpleName()
-                       +" nThreads= " + nThreads + " size="+cacheSize+" maxKey="+maxKey+" gets="+numGets
-                       +" hitRatio="+(1-(((double)puts.get())/numGets)));
+    double time = timer.getTime();
+    double hitRatio = (1-(((double)puts.get())/numGets));
+//    System.out.println("time=" + time + " impl=" +sc.getClass().getSimpleName()
+//                       +" nThreads= " + nThreads + " size="+cacheSize+" maxKey="+maxKey+" gets="+numGets
+//                       +" hitRatio="+(1-(((double)puts.get())/numGets)));
+    return new double[]{time, hitRatio};
   }
 
-  void perfTestBoth(int nThreads, int numGets, int cacheSize, int maxKey) {
-    cachePerfTest(new LRUCache(), nThreads, numGets, cacheSize, maxKey);
-    cachePerfTest(new FastLRUCache(), nThreads, numGets, cacheSize, maxKey);
+  private int NUM_RUNS = 5;
+  void perfTestBoth(int maxThreads, int numGets, int cacheSize, int maxKey,
+                    Map<String, Map<String, SummaryStatistics>> timeStats,
+                    Map<String, Map<String, SummaryStatistics>> hitStats) {
+    for (int nThreads = 1 ; nThreads <= maxThreads; nThreads++) {
+      String testKey = "threads=" + nThreads + ",gets=" + numGets + ",size=" + cacheSize + ",maxKey=" + maxKey;
+      System.err.println(testKey);
+      for (int i = 0; i < NUM_RUNS; i++) {
+        double[] data = cachePerfTest(new LRUCache(), nThreads, numGets, cacheSize, maxKey);
+        timeStats.computeIfAbsent(testKey, k -> new TreeMap<>())
+            .computeIfAbsent("LRUCache", k -> new SummaryStatistics())
+            .addValue(data[0]);
+        hitStats.computeIfAbsent(testKey, k -> new TreeMap<>())
+            .computeIfAbsent("LRUCache", k -> new SummaryStatistics())
+            .addValue(data[1]);
+        data = cachePerfTest(new CaffeineCache(), nThreads, numGets, cacheSize, maxKey);
+        timeStats.computeIfAbsent(testKey, k -> new TreeMap<>())
+            .computeIfAbsent("CaffeineCache", k -> new SummaryStatistics())
+            .addValue(data[0]);
+        hitStats.computeIfAbsent(testKey, k -> new TreeMap<>())
+            .computeIfAbsent("CaffeineCache", k -> new SummaryStatistics())
+            .addValue(data[1]);
+        data = cachePerfTest(new FastLRUCache(), nThreads, numGets, cacheSize, maxKey);
+        timeStats.computeIfAbsent(testKey, k -> new TreeMap<>())
+            .computeIfAbsent("FastLRUCache", k -> new SummaryStatistics())
+            .addValue(data[0]);
+        hitStats.computeIfAbsent(testKey, k -> new TreeMap<>())
+            .computeIfAbsent("FastLRUCache", k -> new SummaryStatistics())
+            .addValue(data[1]);
+      }
+    }
   }
 
+  int NUM_THREADS = 4;
   /***
       public void testCachePerf() {
+        Map<String, Map<String, SummaryStatistics>> timeStats = new TreeMap<>();
+        Map<String, Map<String, SummaryStatistics>> hitStats = new TreeMap<>();
       // warmup
-      perfTestBoth(2, 100000, 100000, 120000);
-      perfTestBoth(1, 2000000, 100000, 100000); // big cache, 100% hit ratio
-      perfTestBoth(2, 2000000, 100000, 100000); // big cache, 100% hit ratio
-      perfTestBoth(1, 2000000, 100000, 120000); // big cache, bigger hit ratio
-      perfTestBoth(2, 2000000, 100000, 120000); // big cache, bigger hit ratio
-      perfTestBoth(1, 2000000, 100000, 200000); // big cache, ~50% hit ratio
-      perfTestBoth(2, 2000000, 100000, 200000); // big cache, ~50% hit ratio
-      perfTestBoth(1, 2000000, 100000, 1000000); // big cache, ~10% hit ratio
-      perfTestBoth(2, 2000000, 100000, 1000000); // big cache, ~10% hit ratio
+      perfTestBoth(NUM_THREADS, 100000, 100000, 120000, new HashMap<>(), new HashMap());
 
-      perfTestBoth(1, 2000000, 1000, 1000); // small cache, ~100% hit ratio
-      perfTestBoth(2, 2000000, 1000, 1000); // small cache, ~100% hit ratio
-      perfTestBoth(1, 2000000, 1000, 1200); // small cache, bigger hit ratio
-      perfTestBoth(2, 2000000, 1000, 1200); // small cache, bigger hit ratio
-      perfTestBoth(1, 2000000, 1000, 2000); // small cache, ~50% hit ratio
-      perfTestBoth(2, 2000000, 1000, 2000); // small cache, ~50% hit ratio
-      perfTestBoth(1, 2000000, 1000, 10000); // small cache, ~10% hit ratio
-      perfTestBoth(2, 2000000, 1000, 10000); // small cache, ~10% hit ratio
+      perfTestBoth(NUM_THREADS, 2000000, 100000, 100000, timeStats, hitStats); // big cache, 100% hit ratio
+      perfTestBoth(NUM_THREADS, 2000000, 100000, 120000, timeStats, hitStats); // big cache, bigger hit ratio
+      perfTestBoth(NUM_THREADS, 2000000, 100000, 200000, timeStats, hitStats); // big cache, ~50% hit ratio
+      perfTestBoth(NUM_THREADS, 2000000, 100000, 1000000, timeStats, hitStats); // big cache, ~10% hit ratio
+
+      perfTestBoth(NUM_THREADS, 2000000, 1000, 1000, timeStats, hitStats); // small cache, ~100% hit ratio
+      perfTestBoth(NUM_THREADS, 2000000, 1000, 1200, timeStats, hitStats); // small cache, bigger hit ratio
+      perfTestBoth(NUM_THREADS, 2000000, 1000, 2000, timeStats, hitStats); // small cache, ~50% hit ratio
+      perfTestBoth(NUM_THREADS, 2000000, 1000, 10000, timeStats, hitStats); // small cache, ~10% hit ratio
+
+        System.out.println("\n=====================\n");
+        timeStats.forEach((testKey, map) -> {
+          Map<String, SummaryStatistics> hits = hitStats.get(testKey);
+          System.out.println("* " + testKey);
+          map.forEach((type, summary) -> {
+            System.out.println("\t" + String.format("%14s", type) + "\ttime " + summary.getMean() + "\thitRatio " + hits.get(type).getMean());
+          });
+        });
       }
   ***/
 

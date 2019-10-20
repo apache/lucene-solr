@@ -20,14 +20,13 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.ModuloEvaluator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
-
-import junit.framework.Assert;
 
 public class ModuloEvaluatorTest extends SolrTestCase {
 
@@ -51,21 +50,18 @@ public class ModuloEvaluatorTest extends SolrTestCase {
     values.put("a", 1);
     values.put("b", 2);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(Long.valueOf(1 % 2), result);
+    Assert.assertEquals(1 % 2, ((Number)result).doubleValue(), 0.0);
     
     values.clear();
     values.put("a", 1.1);
     values.put("b", 2);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Double);
     Assert.assertEquals(1.1 % 2, result);
     
     values.clear();
     values.put("a", 1.1);
     values.put("b", 2.1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Double);
     Assert.assertEquals(1.1 % 2.1, result);
   }
 
@@ -135,8 +131,7 @@ public class ModuloEvaluatorTest extends SolrTestCase {
     values.put("b", 2);
     values.put("c", 9);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(Long.valueOf(1 % (2 % 9)), result);
+    Assert.assertEquals(1 % (2 % 9), ((Number)result).doubleValue(), 0.0);
   }
   
   @Test(expected = IOException.class)
@@ -158,7 +153,6 @@ public class ModuloEvaluatorTest extends SolrTestCase {
     values.put("a", 0);
     values.put("b", 2);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(0L, result);
+    Assert.assertEquals(0D, result);
   }
 }

@@ -19,14 +19,13 @@ package org.apache.solr.client.solrj.io.stream.eval;
 import java.util.HashMap;
 import java.util.Map;
 
+import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.AddEvaluator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
-
-import junit.framework.Assert;
 
 public class AddEvaluatorTest extends SolrTestCase {
 
@@ -50,8 +49,7 @@ public class AddEvaluatorTest extends SolrTestCase {
     values.put("a", 1);
     values.put("b", 2);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(3L, result);
+    Assert.assertEquals(3D, result);
     
     values.clear();
     values.put("a", 1.1);
@@ -134,8 +132,7 @@ public class AddEvaluatorTest extends SolrTestCase {
     values.put("c", 3);
     values.put("d", 4);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(10L, result);
+    Assert.assertEquals(10D, result);
     
     values.clear();
     values.put("a", 1.1);
@@ -167,8 +164,7 @@ public class AddEvaluatorTest extends SolrTestCase {
     values.put("c", 3);
     values.put("d", 4);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(10L, result);
+    Assert.assertEquals(10D, result);
     
     values.clear();
     values.put("a", 1.1);
@@ -203,8 +199,7 @@ public class AddEvaluatorTest extends SolrTestCase {
     values.put("c", 123456789123456789L);
     values.put("d", 123456789123456789L);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(4 * 123456789123456789L, result);
+    Assert.assertEquals(4 * 123456789123456789D, result);
   }
   
   @Test
@@ -218,8 +213,7 @@ public class AddEvaluatorTest extends SolrTestCase {
     values.put("c", 3);
     values.put("d", 4);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(14L, result);
+    Assert.assertEquals(14D, result);
     
     values.clear();
     values.put("a", 1.1);
@@ -254,8 +248,7 @@ public class AddEvaluatorTest extends SolrTestCase {
     values.put("c", 123456789123456789L);
     values.put("d", 123456789123456789L);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(6 * 123456789123456789L, result);
+    Assert.assertEquals(6 * 123456789123456789D, result);
     
     values.clear();
     values.put("a", 4.12345678);
@@ -278,8 +271,7 @@ public class AddEvaluatorTest extends SolrTestCase {
     values.put("c", 3);
     values.put("d", 4);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(10L, result);
+    Assert.assertEquals(10D, result);
     
     values.clear();
     values.put("a", 1.1);
@@ -314,8 +306,7 @@ public class AddEvaluatorTest extends SolrTestCase {
     values.put("c", 123456789123456789L);
     values.put("d", 123456789123456789L);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(4 * 123456789123456789L, result);
+    Assert.assertEquals(4 * 123456789123456789D, result);
     
     values.clear();
     values.put("a", -4.12345678);

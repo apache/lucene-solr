@@ -19,6 +19,7 @@ package org.apache.solr.client.solrj.io.stream.eval;
 import java.util.HashMap;
 import java.util.Map;
 
+import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.AddEvaluator;
@@ -31,8 +32,6 @@ import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.eval.SubtractEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
-
-import junit.framework.Assert;
 
 public class RecursiveEvaluatorTest extends SolrTestCase {
 
@@ -67,8 +66,7 @@ public class RecursiveEvaluatorTest extends SolrTestCase {
     values.put("f", 2);
     values.put("g", 5);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(-16L, result);
+    Assert.assertEquals(-16D, result);
     
     values.clear();
     values.put("a", .1);

@@ -62,7 +62,7 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
 
   }
 
-  public boolean isForceV2(){
+  public boolean isForceV2() {
     return forceV2;
   }
 
@@ -81,12 +81,12 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
     return new RequestWriter.ContentWriter() {
       @Override
       public void write(OutputStream os) throws IOException {
-        if(payload instanceof ByteBuffer){
+        if (payload instanceof ByteBuffer) {
           ByteBuffer b = (ByteBuffer) payload;
           os.write(b.array(), b.arrayOffset(), b.limit());
           return;
         }
-        if(payload instanceof InputStream){
+        if (payload instanceof InputStream) {
           IOUtils.copy((InputStream) payload, os);
           return;
         }
@@ -99,7 +99,7 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
 
       @Override
       public String getContentType() {
-        if(mimeType != null) return mimeType;
+        if (mimeType != null) return mimeType;
         return useBinary ? JAVABIN_MIME : JSON_MIME;
       }
     };
@@ -129,7 +129,7 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
 
   @Override
   public ResponseParser getResponseParser() {
-    if(parser != null) return parser;
+    if (parser != null) return parser;
     return super.getResponseParser();
   }
 
@@ -197,12 +197,12 @@ public class V2Request extends SolrRequest<V2Response> implements MapWriter {
       return this;
     }
 
-    public Builder withResponseParser(ResponseParser parser){
+    public Builder withResponseParser(ResponseParser parser) {
       this.parser = parser;
       return this;
     }
 
-    public Builder withMimeType(String mimeType){
+    public Builder withMimeType(String mimeType) {
       this.mimeType = mimeType;
       return this;
 

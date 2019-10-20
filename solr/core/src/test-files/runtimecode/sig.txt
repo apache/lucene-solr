@@ -36,7 +36,6 @@ openssl dgst -sha1 -sign ../cryptokeys/priv_key512.pem runtimelibs.jar.bin | ope
 
 L3q/qIGs4NaF6JiO0ZkMUFa88j0OmYc+I6O7BOdNuMct/xoZ4h73aZHZGc0+nmI1
 f/U3bOlMPINlSOM6LK3JpQ==
-L3q/qIGs4NaF6JiO0ZkMUFa88j0OmYc+I6O7BOdNuMct/xoZ4h73aZHZGc0+nmI1f/U3bOlMPINlSOM6LK3JpQ==
 
 openssl dgst -sha1 -sign ../cryptokeys/priv_key512.pem runtimelibs_v2.jar.bin | openssl enc -base64
 

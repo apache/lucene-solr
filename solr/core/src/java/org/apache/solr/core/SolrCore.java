@@ -110,6 +110,8 @@ import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.pkg.PackageListeners;
+import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.BinaryResponseWriter;
@@ -193,8 +195,6 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
   private boolean isReloaded = false;
 
-  private StatsCache statsCache;
-
   private final SolrConfig solrConfig;
   private final SolrResourceLoader resourceLoader;
   private volatile IndexSchema schema;
@@ -239,13 +239,11 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   public volatile boolean indexEnabled = true;
   public volatile boolean readOnly = false;
 
-  private final PackageListeners listenerRegistry = new PackageListeners() ;
-
+  private PackageListeners packageListeners = new PackageListeners(this);
 
   public Set<String> getMetricNames() {
     return metricNames;
   }
-
 
   public Date getStartTimeStamp() {
     return startTime;
@@ -267,13 +265,13 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     return restManager;
   }
 
+  public PackageListeners getPackageListeners() {
+    return packageListeners;
+  }
+
   static int boolean_query_max_clause_count = Integer.MIN_VALUE;
 
   private ExecutorService coreAsyncTaskExecutor = ExecutorUtil.newMDCAwareCachedThreadPool("Core Async Task");
-
-  public PackageListeners getListenerRegistry(){
-    return listenerRegistry;
-  }
 
   /**
    * The SolrResourceLoader used to load all resources for this core.
@@ -282,6 +280,15 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
    */
   public SolrResourceLoader getResourceLoader() {
     return resourceLoader;
+  }
+
+  public SolrResourceLoader getResourceLoader(String pkg) {
+    if (pkg == null) {
+      return resourceLoader;
+    }
+    PackageLoader.Package aPackage = coreContainer.getPackageLoader().getPackage(pkg);
+    PackageLoader.Package.Version latest = aPackage.getLatest();
+    return latest.getLoader();
   }
 
   /**
@@ -846,7 +853,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       for (Constructor<?> con : cons) {
         Class<?>[] types = con.getParameterTypes();
         if (types.length == 2 && types[0] == SolrCore.class && types[1] == UpdateHandler.class) {
-          return (UpdateHandler) con.newInstance(this, updateHandler);
+          return UpdateHandler.class.cast(con.newInstance(this, updateHandler));
         }
       }
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error Instantiating " + msg + ", " + className + " could not find proper constructor for " + UpdateHandler.class.getName());
@@ -866,12 +873,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
   public <T extends Object> T createInitInstance(PluginInfo info, Class<T> cast, String msg, String defClassName) {
     if (info == null) return null;
-    String pkg = info.attributes.get(CommonParams.PACKAGE);
-    ResourceLoader resourceLoader = pkg != null?
-        coreContainer.getPackageBag().getResourceLoader(pkg):
-        getResourceLoader();
-
-    T o = createInstance(info.className == null ? defClassName : info.className, cast, msg, this, resourceLoader);
+    T o = createInstance(info.className == null ? defClassName : info.className, cast, msg, this, getResourceLoader(info.pkgName));
     if (o instanceof PluginInfoInitialized) {
       ((PluginInfoInitialized) o).init(info);
     } else if (o instanceof NamedListInitializedPlugin) {
@@ -979,7 +981,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       this.codec = initCodec(solrConfig, this.schema);
 
       memClassLoader = new MemClassLoader(
-          RuntimeLib.getLibObjects(this, solrConfig.getPluginInfos(RuntimeLib.class.getName())),
+          PluginBag.RuntimeLib.getLibObjects(this, solrConfig.getPluginInfos(PluginBag.RuntimeLib.class.getName())),
           getResourceLoader());
       initIndex(prev != null, reload);
 
@@ -994,8 +996,6 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       updateProcessorChains = loadUpdateProcessorChains();
       reqHandlers = new RequestHandlers(this);
       reqHandlers.initHandlersFromConfig(solrConfig);
-
-      statsCache = initStatsCache();
 
       // cause the executor to stall so firstSearcher events won't fire
       // until after inform() has been called for all components.
@@ -1430,7 +1430,10 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     return factory.getCodec();
   }
 
-  private StatsCache initStatsCache() {
+  /**
+   * Create an instance of {@link StatsCache} using configured parameters.
+   */
+  public StatsCache createStatsCache() {
     final StatsCache cache;
     PluginInfo pluginInfo = solrConfig.getPluginInfo(StatsCache.class.getName());
     if (pluginInfo != null && pluginInfo.className != null && pluginInfo.className.length() > 0) {
@@ -1442,13 +1445,6 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       cache = new LocalStatsCache();
     }
     return cache;
-  }
-
-  /**
-   * Get the StatsCache.
-   */
-  public StatsCache getStatsCache() {
-    return statsCache;
   }
 
   /**
@@ -2418,6 +2414,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
       if (!success) {
         newSearcherOtherErrorsCounter.inc();
+        ;
         synchronized (searcherLock) {
           onDeckSearchers--;
 
@@ -3120,7 +3117,8 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     try {
       Stat stat = zkClient.exists(zkPath, null, true);
       if (stat == null) {
-        return currentVersion > -1;
+        if (currentVersion > -1) return true;
+        return false;
       }
       if (stat.getVersion() > currentVersion) {
         log.debug("{} is stale will need an update from {} to {}", zkPath, currentVersion, stat.getVersion());

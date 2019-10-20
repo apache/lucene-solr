@@ -20,6 +20,8 @@ package org.apache.solr.update.processor;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.time.Instant;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
 import java.util.Collections;
@@ -50,7 +52,12 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.update.UpdateCommand;
+import org.apache.solr.util.DateMathParser;
 import org.apache.solr.util.LogLevel;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.Watcher;
+import org.apache.zookeeper.data.Stat;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -59,6 +66,7 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.client.solrj.RoutedAliasTypes.TIME;
 import static org.apache.solr.cloud.api.collections.RoutedAlias.ROUTED_ALIAS_NAME_CORE_PROP;
+import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.ROUTER_START;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTIONS_ZKNODE;
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROPS_ZKNODE;
 
@@ -704,6 +712,68 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
       TimeRoutedAlias.parseInstantFromCollectionName(alias, alias + TRA + "2017-10-02_03"));
     assertEquals(Instant.parse("2017-10-02T00:00:00Z"),
       TimeRoutedAlias.parseInstantFromCollectionName(alias, alias + TRA + "2017-10-02"));
+  }
+
+  @Test
+  public void testDateMathInStart() throws Exception {
+    ClusterStateProvider clusterStateProvider = solrClient.getClusterStateProvider();
+    Class<? extends ClusterStateProvider> aClass = clusterStateProvider.getClass();
+    System.out.println("CSPROVIDER:" + aClass);
+
+    // This test prevents recurrence of SOLR-13760
+
+    String configName = getSaferTestName();
+    createConfigSet(configName);
+    CountDownLatch aliasUpdate = new CountDownLatch(1);
+    monitorAlias(aliasUpdate);
+
+    // each collection has 4 shards with 3 replicas for 12 possible destinations
+    // 4 of which are leaders, and 8 of which should fail this test.
+    final int numShards = 1 + random().nextInt(4);
+    final int numReplicas = 1 + random().nextInt(3);
+    CollectionAdminRequest.createTimeRoutedAlias(alias, "2019-09-14T03:00:00Z/DAY", "+1DAY", getTimeField(),
+        CollectionAdminRequest.createCollection("_unused_", configName, numShards, numReplicas)
+            .setMaxShardsPerNode(numReplicas))
+        .process(solrClient);
+
+    aliasUpdate.await();
+    if (BaseHttpClusterStateProvider.class.isAssignableFrom(aClass)) {
+      ((BaseHttpClusterStateProvider)clusterStateProvider).resolveAlias(getAlias(), true);
+    }
+    aliasUpdate = new CountDownLatch(1);
+    monitorAlias(aliasUpdate);
+
+    ModifiableSolrParams params = params();
+    String nowDay = DateTimeFormatter.ISO_INSTANT.format(DateMathParser.parseMath(new Date(), "2019-09-14T01:00:00Z").toInstant());
+    assertUpdateResponse(add(alias, Arrays.asList(
+        sdoc("id", "1", "timestamp_dt", nowDay)), // should not cause preemptive creation of 10-28 now
+        params));
+
+    // this process should have lead to the modification of the start time for the alias, converting it into
+    // a parsable date, removing the DateMath
+
+    // what we test next happens in a separate thread, so we have to give it some time to happen
+    aliasUpdate.await();
+    if (BaseHttpClusterStateProvider.class.isAssignableFrom(aClass)) {
+      ((BaseHttpClusterStateProvider)clusterStateProvider).resolveAlias(getAlias(), true);
+    }
+
+    String hopeFullyModified = clusterStateProvider.getAliasProperties(getAlias()).get(ROUTER_START);
+    try {
+      Instant.parse(hopeFullyModified);
+    } catch (DateTimeParseException e) {
+      fail(ROUTER_START + " should not have any date math by this point and parse as an instant. Using "+ aClass +" Found:" + hopeFullyModified);
+    }
+  }
+
+  private void monitorAlias(CountDownLatch aliasUpdate) throws KeeperException, InterruptedException {
+    Stat stat = new Stat();
+    zkClient().getData("/aliases.json", new Watcher() {
+      @Override
+      public void process(WatchedEvent watchedEvent) {
+        aliasUpdate.countDown();
+      }
+    }, stat, true);
   }
 
   /**

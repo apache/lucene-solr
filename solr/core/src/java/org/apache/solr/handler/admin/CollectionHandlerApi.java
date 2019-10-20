@@ -18,45 +18,39 @@
 package org.apache.solr.handler.admin;
 
 import java.lang.invoke.MethodHandles;
+import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.solr.api.Api;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.CollectionApiMapping;
 import org.apache.solr.client.solrj.request.CollectionApiMapping.CommandMeta;
 import org.apache.solr.client.solrj.request.CollectionApiMapping.Meta;
 import org.apache.solr.client.solrj.request.CollectionApiMapping.V2EndPoint;
+import org.apache.solr.common.Callable;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ClusterProperties;
+import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.handler.admin.CollectionsHandler.CollectionOperation;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.Arrays.asList;
-
 public class CollectionHandlerApi extends BaseHandlerApiSupport {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   final CollectionsHandler handler;
-  final Collection<ApiCommand> apiCommands;
+  static Collection<ApiCommand> apiCommands = createCollMapping();
 
-  public CollectionHandlerApi(CollectionsHandler handler) {
-    this.handler = handler;
-    apiCommands = createApiMapping();
-  }
-
-  private Collection<ApiCommand> createApiMapping() {
-
-    //there
-    Map<CommandMeta, ApiCommand> apiMapping = new HashMap<>();
+  private static Collection<ApiCommand> createCollMapping() {
+    Map<Meta, ApiCommand> result = new EnumMap<>(Meta.class);
 
     for (Meta meta : Meta.values()) {
       for (CollectionOperation op : CollectionOperation.values()) {
         if (op.action == meta.action) {
-          apiMapping.put(meta, new ApiCommand() {
+          result.put(meta, new ApiCommand() {
             @Override
             public CommandMeta meta() {
               return meta;
@@ -70,16 +64,57 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
         }
       }
     }
+    //The following APIs have only V2 implementations
+    addApi(result, Meta.GET_NODES, params -> params.rsp.add("nodes", ((CollectionHandlerApi) params.apiHandler).handler.coreContainer.getZkController().getClusterState().getLiveNodes()));
+    addApi(result, Meta.SET_CLUSTER_PROPERTY_OBJ, params -> {
+      List<CommandOperation> commands = params.req.getCommands(true);
+      if (commands == null || commands.isEmpty()) throw new RuntimeException("Empty commands");
+      ClusterProperties clusterProperties = new ClusterProperties(((CollectionHandlerApi) params.apiHandler).handler.coreContainer.getZkController().getZkClient());
 
-    return apiMapping.values();
+      try {
+        clusterProperties.setClusterProperties(commands.get(0).getDataMap());
+      } catch (Exception e) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error in API", e);
+      }
+    });
+
+    for (Meta meta : Meta.values()) {
+      if (result.get(meta) == null) {
+        log.error("ERROR_INIT. No corresponding API implementation for : " + meta.commandName);
+      }
+    }
+
+    return result.values();
   }
 
+  private static void addApi(Map<Meta, ApiCommand> result, Meta metaInfo, Callable<ApiParams> fun) {
+    result.put(metaInfo, new ApiCommand() {
+      @Override
+      public CommandMeta meta() {
+        return metaInfo;
+      }
 
+      @Override
+      public void invoke(SolrQueryRequest req, SolrQueryResponse rsp, BaseHandlerApiSupport apiHandler) throws Exception {
+        fun.call(new ApiParams(req, rsp, apiHandler));
+      }
+    });
+  }
 
+  static class ApiParams {
+    final SolrQueryRequest req;
+    final SolrQueryResponse rsp;
+    final BaseHandlerApiSupport apiHandler;
 
-  @Override
-  protected List<V2EndPoint> getEndPoints() {
-    return asList(CollectionApiMapping.EndPoint.values());
+    ApiParams(SolrQueryRequest req, SolrQueryResponse rsp, BaseHandlerApiSupport apiHandler) {
+      this.req = req;
+      this.rsp = rsp;
+      this.apiHandler = apiHandler;
+    }
+  }
+
+  public CollectionHandlerApi(CollectionsHandler handler) {
+    this.handler = handler;
   }
 
   @Override
@@ -87,23 +122,9 @@ public class CollectionHandlerApi extends BaseHandlerApiSupport {
     return apiCommands;
   }
 
-  //the commands at /cluster are mixed ,V2Only and mixed. So, if a command is not found in the V2Only
-  // set it should use a fallack
-  Api clusterPathAPI;
-
   @Override
-  protected Api getApi(Map<SolrRequest.METHOD, Map<V2EndPoint, List<ApiCommand>>> commandsMapping, V2EndPoint op) {
-    Api api = super.getApi(commandsMapping, op);
-    if (op.getSpecName().equals(CollectionApiMapping.EndPoint.CLUSTER_CMD.getSpecName())) {
-
-      this.clusterPathAPI = api;
-    }
-    return api;
-  }
-
-  @Override
-  protected Collection<Api> getV2OnlyApis() {
-    return new ClusterAPI(handler.getCoreContainer()).getAllApis(this);
+  protected List<V2EndPoint> getEndPoints() {
+    return Arrays.asList(CollectionApiMapping.EndPoint.values());
   }
 
 }

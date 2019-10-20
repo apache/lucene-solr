@@ -19,14 +19,13 @@ package org.apache.solr.client.solrj.io.stream.eval;
 import java.util.HashMap;
 import java.util.Map;
 
+import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.MultiplyEvaluator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
-
-import junit.framework.Assert;
 
 public class MultiplyEvaluatorTest extends SolrTestCase {
 
@@ -50,8 +49,7 @@ public class MultiplyEvaluatorTest extends SolrTestCase {
     values.put("a", 1);
     values.put("b", 2);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(2L, result);
+    Assert.assertEquals(2D, result);
     
     values.clear();
     values.put("a", 1.1);
@@ -76,8 +74,7 @@ public class MultiplyEvaluatorTest extends SolrTestCase {
     values.clear();
     values.put("a", 6);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(6L, result);
+    Assert.assertEquals(6D, result);
     
     values.clear();
     values.put("a", 6.5);
@@ -152,8 +149,7 @@ public class MultiplyEvaluatorTest extends SolrTestCase {
     values.put("c", 3);
     values.put("d", 4);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(24L, result);
+    Assert.assertEquals(24D, result);
     
     values.clear();
     values.put("a", 1.1);
@@ -185,7 +181,6 @@ public class MultiplyEvaluatorTest extends SolrTestCase {
     values.put("c", 3);
     values.put("d", 4);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(24L, result);
+    Assert.assertEquals(24D, result);
   }
 }

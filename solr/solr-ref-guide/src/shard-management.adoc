@@ -93,6 +93,35 @@ If `true` then each stage of processing will be timed and a `timing` section wil
 `async`::
 Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>
 
+`splitByPrefix`::
+If `true`, the split point will be selected by taking into account the distribution of compositeId values in the shard.
+A compositeId has the form `<prefix>!<suffix>`, where all documents with the same prefix are colocated on in the hash space.
+If there are multiple prefixes in the shard being split, then the split point will be selected to divide up the prefixes into as equal sized shards as possible without splitting any prefix.
+If there is only a single prefix in a shard, the range of the prefix will be divided in half.
++
+The id field is usually scanned to determine the number of documents with each prefix.
+As an optimization, if an optional field called `id_prefix` exists and has the document prefix indexed (including the !) for each document,
+then that will be used to generate the counts.
++
+One simple way to populate `id_prefix` is a copyField in the schema:
+[source,xml]
+----
+  <!-- OPTIONAL, for optimization used by splitByPrefix if it exists -->
+  <field name="id_prefix" type="composite_id_prefix" indexed="true" stored="false"/>
+  <copyField source="id" dest="id_prefix"/>
+  <fieldtype name="composite_id_prefix" class="solr.TextField">
+    <analyzer>
+      <tokenizer class="solr.PatternTokenizerFactory" pattern=".*!" group="0"/>
+    </analyzer>
+  </fieldtype>
+----
+
+Current implementation details and limitations:
+
+* Prefix size is calculated using number of documents with the prefix.
+* Only two level compositeIds are supported.
+* The shard can only be split into two.
+
 === SPLITSHARD Response
 
 The output will include the status of the request and the new shard names, which will use the original shard as their basis, adding an underscore and a number. For example, "shard1" will become "shard1_0" and "shard1_1". If the status is anything other than "success", an error message will explain why the request failed.

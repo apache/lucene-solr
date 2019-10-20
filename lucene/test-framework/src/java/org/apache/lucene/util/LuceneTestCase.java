@@ -67,11 +67,37 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import com.carrotsearch.randomizedtesting.JUnit4MethodProvider;
+import com.carrotsearch.randomizedtesting.LifecycleScope;
+import com.carrotsearch.randomizedtesting.MixWithSuiteName;
+import com.carrotsearch.randomizedtesting.RandomizedContext;
+import com.carrotsearch.randomizedtesting.RandomizedRunner;
+import com.carrotsearch.randomizedtesting.RandomizedTest;
+import com.carrotsearch.randomizedtesting.annotations.Listeners;
+import com.carrotsearch.randomizedtesting.annotations.SeedDecorators;
+import com.carrotsearch.randomizedtesting.annotations.TestGroup;
+import com.carrotsearch.randomizedtesting.annotations.TestMethodProviders;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction.Action;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakGroup;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakGroup.Group;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies.Consequence;
+import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
+import com.carrotsearch.randomizedtesting.rules.NoClassHooksShadowingRule;
+import com.carrotsearch.randomizedtesting.rules.NoInstanceHooksOverridesRule;
+import com.carrotsearch.randomizedtesting.rules.StaticFieldsInvariantRule;
+import junit.framework.AssertionFailedError;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.document.TextField;
@@ -97,8 +123,8 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.LockFactory;
 import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.MergeInfo;
-import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
 import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.MockDirectoryWrapper.Throttling;
 import org.apache.lucene.store.NRTCachingDirectory;
 import org.apache.lucene.store.RawDirectoryWrapper;
 import org.apache.lucene.util.automaton.AutomatonTestUtil;
@@ -112,37 +138,10 @@ import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.internal.AssumptionViolatedException;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TestRule;
 import org.junit.runner.RunWith;
-
-import com.carrotsearch.randomizedtesting.JUnit4MethodProvider;
-import com.carrotsearch.randomizedtesting.LifecycleScope;
-import com.carrotsearch.randomizedtesting.MixWithSuiteName;
-import com.carrotsearch.randomizedtesting.RandomizedContext;
-import com.carrotsearch.randomizedtesting.RandomizedRunner;
-import com.carrotsearch.randomizedtesting.RandomizedTest;
-import com.carrotsearch.randomizedtesting.annotations.Listeners;
-import com.carrotsearch.randomizedtesting.annotations.SeedDecorators;
-import com.carrotsearch.randomizedtesting.annotations.TestGroup;
-import com.carrotsearch.randomizedtesting.annotations.TestMethodProviders;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction.Action;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakAction;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakGroup.Group;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakGroup;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope.Scope;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakScope;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies.Consequence;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakZombies;
-import com.carrotsearch.randomizedtesting.annotations.TimeoutSuite;
-import com.carrotsearch.randomizedtesting.generators.RandomPicks;
-import com.carrotsearch.randomizedtesting.rules.NoClassHooksShadowingRule;
-import com.carrotsearch.randomizedtesting.rules.NoInstanceHooksOverridesRule;
-import com.carrotsearch.randomizedtesting.rules.StaticFieldsInvariantRule;
-
-import junit.framework.AssertionFailedError;
 
 import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsBoolean;
 import static com.carrotsearch.randomizedtesting.RandomizedTest.systemPropertyAsInt;
@@ -2720,17 +2719,16 @@ public abstract class LuceneTestCase extends Assert {
 
   /** Checks a specific exception class is thrown by the given runnable, and returns it. */
   public static <T extends Throwable> T expectThrows(Class<T> expectedType, String noExceptionMessage, ThrowingRunnable runnable) {
-    try {
-      runnable.run();
-    } catch (Throwable e) {
-      if (expectedType.isInstance(e)) {
-        return expectedType.cast(e);
-      }
-      AssertionFailedError assertion = new AssertionFailedError("Unexpected exception type, expected " + expectedType.getSimpleName() + " but got " + e);
-      assertion.initCause(e);
-      throw assertion;
+    final Throwable thrown = _expectThrows(Collections.singletonList(expectedType), runnable);
+    if (expectedType.isInstance(thrown)) {
+      return expectedType.cast(thrown);
     }
-    throw new AssertionFailedError(noExceptionMessage);
+    if (null == thrown) {
+      throw new AssertionFailedError(noExceptionMessage);
+    }
+    AssertionFailedError assertion = new AssertionFailedError("Unexpected exception type, expected " + expectedType.getSimpleName() + " but got " + thrown);
+    assertion.initCause(thrown);
+    throw assertion;
   }
 
   /** Checks a specific exception class is thrown by the given runnable, and returns it. */
@@ -2739,16 +2737,13 @@ public abstract class LuceneTestCase extends Assert {
       throw new AssertionError("At least one expected exception type is required?");
     }
 
-    Throwable thrown = null;
-    try {
-      runnable.run();
-    } catch (Throwable e) {
+    final Throwable thrown = _expectThrows(expectedTypes, runnable);
+    if (null != thrown) {
       for (Class<? extends T> expectedType : expectedTypes) {
-        if (expectedType.isInstance(e)) {
-          return expectedType.cast(e);
+        if (expectedType.isInstance(thrown)) {
+          return expectedType.cast(thrown);
         }
       }
-      thrown = e;
     }
 
     List<String> exceptionTypes = expectedTypes.stream().map(c -> c.getSimpleName()).collect(Collectors.toList());
@@ -2771,29 +2766,28 @@ public abstract class LuceneTestCase extends Assert {
    */
   public static <TO extends Throwable, TW extends Throwable> TW expectThrows
   (Class<TO> expectedOuterType, Class<TW> expectedWrappedType, ThrowingRunnable runnable) {
-    try {
-      runnable.run();
-    } catch (Throwable e) {
-      if (expectedOuterType.isInstance(e)) {
-        Throwable cause = e.getCause();
-        if (expectedWrappedType.isInstance(cause)) {
-          return expectedWrappedType.cast(cause);
-        } else {
-          AssertionFailedError assertion = new AssertionFailedError
-              ("Unexpected wrapped exception type, expected " + expectedWrappedType.getSimpleName() 
-                  + " but got: " + cause);
-          assertion.initCause(e);
-          throw assertion;
-        }
-      }
-      AssertionFailedError assertion = new AssertionFailedError
-          ("Unexpected outer exception type, expected " + expectedOuterType.getSimpleName()
-           + " but got: " + e);
-      assertion.initCause(e);
-      throw assertion;
+    final Throwable thrown = _expectThrows(Collections.singletonList(expectedOuterType), runnable);
+    if (null == thrown) {
+      throw new AssertionFailedError("Expected outer exception " + expectedOuterType.getSimpleName()
+                                     + " but no exception was thrown.");
     }
-    throw new AssertionFailedError("Expected outer exception " + expectedOuterType.getSimpleName()
-        + " but no exception was thrown.");
+    if (expectedOuterType.isInstance(thrown)) {
+      Throwable cause = thrown.getCause();
+      if (expectedWrappedType.isInstance(cause)) {
+        return expectedWrappedType.cast(cause);
+      } else {
+        AssertionFailedError assertion = new AssertionFailedError
+          ("Unexpected wrapped exception type, expected " + expectedWrappedType.getSimpleName() 
+           + " but got: " + cause);
+        assertion.initCause(thrown);
+        throw assertion;
+      }
+    }
+    AssertionFailedError assertion = new AssertionFailedError
+      ("Unexpected outer exception type, expected " + expectedOuterType.getSimpleName()
+       + " but got: " + thrown);
+    assertion.initCause(thrown);
+    throw assertion;
   }
 
   /**
@@ -2805,41 +2799,65 @@ public abstract class LuceneTestCase extends Assert {
    */
   public static <TO extends Throwable, TW extends Throwable> TO expectThrowsAnyOf
   (LinkedHashMap<Class<? extends TO>,List<Class<? extends TW>>> expectedOuterToWrappedTypes, ThrowingRunnable runnable) {
-    try {
-      runnable.run();
-    } catch (Throwable e) {
-      for (Map.Entry<Class<? extends TO>, List<Class<? extends TW>>> entry : expectedOuterToWrappedTypes.entrySet()) {
-        Class<? extends TO> expectedOuterType = entry.getKey();
-        List<Class<? extends TW>> expectedWrappedTypes = entry.getValue();
-        Throwable cause = e.getCause();
-        if (expectedOuterType.isInstance(e)) {
-          if (expectedWrappedTypes.isEmpty()) {
-            return null; // no wrapped exception
-          } else {
-            for (Class<? extends TW> expectedWrappedType : expectedWrappedTypes) {
-              if (expectedWrappedType.isInstance(cause)) {
-                return expectedOuterType.cast(e);
-              }
+    final List<Class<? extends TO>> outerClasses = expectedOuterToWrappedTypes.keySet().stream().collect(Collectors.toList());
+    final Throwable thrown = _expectThrows(outerClasses, runnable);
+    
+    if (null == thrown) {
+      List<String> outerTypes = outerClasses.stream().map(Class::getSimpleName).collect(Collectors.toList());
+      throw new AssertionFailedError("Expected any of the following outer exception types: " + outerTypes
+                                     + " but no exception was thrown.");
+    }
+    for (Map.Entry<Class<? extends TO>, List<Class<? extends TW>>> entry : expectedOuterToWrappedTypes.entrySet()) {
+      Class<? extends TO> expectedOuterType = entry.getKey();
+      List<Class<? extends TW>> expectedWrappedTypes = entry.getValue();
+      Throwable cause = thrown.getCause();
+      if (expectedOuterType.isInstance(thrown)) {
+        if (expectedWrappedTypes.isEmpty()) {
+          return null; // no wrapped exception
+        } else {
+          for (Class<? extends TW> expectedWrappedType : expectedWrappedTypes) {
+            if (expectedWrappedType.isInstance(cause)) {
+              return expectedOuterType.cast(thrown);
             }
-            List<String> wrappedTypes = expectedWrappedTypes.stream().map(Class::getSimpleName).collect(Collectors.toList());
-            AssertionFailedError assertion = new AssertionFailedError
-                ("Unexpected wrapped exception type, expected one of " + wrappedTypes + " but got: " + cause);
-            assertion.initCause(e);
-            throw assertion;
           }
+          List<String> wrappedTypes = expectedWrappedTypes.stream().map(Class::getSimpleName).collect(Collectors.toList());
+          AssertionFailedError assertion = new AssertionFailedError
+            ("Unexpected wrapped exception type, expected one of " + wrappedTypes + " but got: " + cause);
+          assertion.initCause(thrown);
+          throw assertion;
         }
       }
-      List<String> outerTypes = expectedOuterToWrappedTypes.keySet().stream().map(Class::getSimpleName).collect(Collectors.toList());
-      AssertionFailedError assertion = new AssertionFailedError
-          ("Unexpected outer exception type, expected one of " + outerTypes + " but got: " + e);
-      assertion.initCause(e);
-      throw assertion;
     }
-    List<String> outerTypes = expectedOuterToWrappedTypes.keySet().stream().map(Class::getSimpleName).collect(Collectors.toList());
-    throw new AssertionFailedError("Expected any of the following outer exception types: " + outerTypes
-        + " but no exception was thrown.");
+    List<String> outerTypes = outerClasses.stream().map(Class::getSimpleName).collect(Collectors.toList());
+    AssertionFailedError assertion = new AssertionFailedError
+      ("Unexpected outer exception type, expected one of " + outerTypes + " but got: " + thrown);
+    assertion.initCause(thrown);
+    throw assertion;
   }
 
+  /**
+   * Helper method for {@link #expectThrows} and {@link #expectThrowsAnyOf} that takes care of propagating
+   * any {@link AssertionError} or {@link AssumptionViolatedException} instances thrown if and only if they 
+   * are super classes of the <code>expectedTypes</code>.  Otherwise simply returns any {@link Throwable} 
+   * thrown, regardless of type, or null if the <code>runnable</code> completed w/o error.
+   */
+  private static Throwable _expectThrows(List<? extends Class<?>> expectedTypes, ThrowingRunnable runnable) {
+                                         
+    try {
+      runnable.run();
+    } catch (AssertionError | AssumptionViolatedException ae) {
+      for (Class<?> expectedType : expectedTypes) {
+        if (expectedType.isInstance(ae)) { // user is expecting this type explicitly
+          return ae;
+        }
+      }
+      throw ae;
+    } catch (Throwable e) {
+      return e;
+    }
+    return null;
+  }
+  
   /** Returns true if the file exists (can be opened), false
    *  if it cannot be opened, and (unlike Java's
    *  File.exists) throws IOException if there's some

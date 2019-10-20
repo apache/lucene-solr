@@ -29,10 +29,10 @@ import java.util.Map;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ContentStreamUpdateRequest;
-import org.apache.solr.client.solrj.response.json.BucketJsonFacet;
-import org.apache.solr.client.solrj.response.json.NestableJsonFacet;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.client.solrj.response.json.BucketJsonFacet;
+import org.apache.solr.client.solrj.response.json.NestableJsonFacet;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrDocumentList;
@@ -571,8 +571,8 @@ public class JsonQueryRequestFacetingIntegrationTest extends SolrCloudTestCase {
 
   private void assertHasStatFacetWithValue(NestableJsonFacet response, String expectedFacetName, Double expectedStatValue) {
     assertTrue("Expected response to have stat facet named '" + expectedFacetName + "'",
-        response.getStatFacetValue(expectedFacetName) != null);
-    assertEquals(expectedStatValue, response.getStatFacetValue(expectedFacetName));
+        response.getStatValue(expectedFacetName) != null);
+    assertEquals(expectedStatValue, response.getStatValue(expectedFacetName));
   }
 
   private void assertExpectedDocumentsFoundAndReturned(QueryResponse response, int expectedNumFound, int expectedReturned) {

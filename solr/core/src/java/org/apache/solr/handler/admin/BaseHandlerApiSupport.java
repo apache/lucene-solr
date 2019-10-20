@@ -17,7 +17,6 @@
 
 package org.apache.solr.handler.admin;
 
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -39,8 +38,6 @@ import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static org.apache.solr.client.solrj.SolrRequest.METHOD.POST;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
@@ -52,36 +49,28 @@ import static org.apache.solr.common.util.StrUtils.splitSmart;
  * to actions and old parameter names to new parameter names
  */
 public abstract class BaseHandlerApiSupport implements ApiSupport {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  protected final Map<SolrRequest.METHOD, Map<V2EndPoint, List<ApiCommand>>> commandsMapping;
 
-  List<Api> apis;
+  protected BaseHandlerApiSupport() {
+    commandsMapping = new HashMap<>();
+    for (ApiCommand cmd : getCommands()) {
+      Map<V2EndPoint, List<ApiCommand>> m = commandsMapping.get(cmd.meta().getHttpMethod());
+      if (m == null) commandsMapping.put(cmd.meta().getHttpMethod(), m = new HashMap<>());
+      List<ApiCommand> list = m.get(cmd.meta().getEndPoint());
+      if (list == null) m.put(cmd.meta().getEndPoint(), list = new ArrayList<>());
+      list.add(cmd);
+    }
+  }
 
   @Override
   public synchronized Collection<Api> getApis() {
-    if (apis == null) {
-      Map<SolrRequest.METHOD, Map<V2EndPoint, List<ApiCommand>>> commandsMapping = new HashMap<>();
-      for (ApiCommand cmd : getCommands()) {
-        Map<V2EndPoint, List<ApiCommand>> m = commandsMapping.get(cmd.meta().getHttpMethod());
-        if (m == null) commandsMapping.put(cmd.meta().getHttpMethod(), m = new HashMap<>());
-        List<ApiCommand> list = m.get(cmd.meta().getEndPoint());
-        if (list == null) m.put(cmd.meta().getEndPoint(), list = new ArrayList<>());
-        list.add(cmd);
-      }
-      ImmutableList.Builder<Api> l = ImmutableList.builder();
-      for (V2EndPoint op : getEndPoints()) l.add(getApi(commandsMapping, op));
-      l.addAll(getV2OnlyApis());
-      apis = l.build();
-    }
-    return apis;
-
-  }
-
-  protected Collection<Api> getV2OnlyApis() {
-    return Collections.EMPTY_LIST;
+    ImmutableList.Builder<Api> l = ImmutableList.builder();
+    for (V2EndPoint op : getEndPoints()) l.add(getApi(op));
+    return l.build();
   }
 
 
-  protected Api getApi(Map<SolrRequest.METHOD, Map<V2EndPoint, List<ApiCommand>>> commandsMapping, final V2EndPoint op) {
+  private Api getApi(final V2EndPoint op) {
     final BaseHandlerApiSupport apiHandler = this;
     return new Api(Utils.getSpec(op.getSpecName())) {
       @Override
@@ -90,10 +79,6 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
         SolrRequest.METHOD method = SolrRequest.METHOD.valueOf(req.getHttpMethod());
         List<ApiCommand> commands = commandsMapping.get(method).get(op);
         try {
-          if (commands != null && commands.size() == 1 && commands.get(0).isRaw()) {
-            commands.get(0).invoke(req, rsp, apiHandler);
-            return;
-          }
           if (method == POST) {
             List<CommandOperation> cmds = req.getCommands(true);
             if (cmds.size() > 1)
@@ -132,10 +117,8 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
           }
 
         } catch (SolrException e) {
-          log.error("error running command", e);
           throw e;
         } catch (Exception e) {
-          log.error("error running command", e);
           throw new SolrException(BAD_REQUEST, e); //TODO BAD_REQUEST is a wild guess; should we flip the default?  fail here to investigate how this happens in tests
         } finally {
           req.setParams(params);
@@ -197,7 +180,7 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
 
           @Override
           public Map toMap(Map<String, Object> suppliedMap) {
-            for (Iterator<String> it = getParameterNamesIterator(); it.hasNext(); ) {
+            for(Iterator<String> it=getParameterNamesIterator(); it.hasNext(); ) {
               final String param = it.next();
               String key = cmd.meta().getParamSubstitute(param);
               Object o = key.indexOf('.') > 0 ?
@@ -212,10 +195,10 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
                   Number.class.isAssignableFrom(oClass) ||
                   Character.class.isAssignableFrom(oClass) ||
                   Boolean.class.isAssignableFrom(oClass)) {
-                suppliedMap.put(param, String.valueOf(o));
-              } else if (List.class.isAssignableFrom(oClass) && ((List) o).get(0) instanceof String) {
+                suppliedMap.put(param,String.valueOf(o));
+              } else if (List.class.isAssignableFrom(oClass) && ((List)o).get(0) instanceof String ) {
                 List<String> l = (List<String>) o;
-                suppliedMap.put(param, l.toArray(new String[0]));
+                suppliedMap.put( param, l.toArray(new String[0]));
               } else {
                 // Lists pass through but will require special handling downstream
                 // if they contain non-string elements.
@@ -233,18 +216,8 @@ public abstract class BaseHandlerApiSupport implements ApiSupport {
   protected abstract Collection<V2EndPoint> getEndPoints();
 
 
-  public interface ApiCommand {
-
+  public interface ApiCommand  {
     CommandMeta meta();
-
-
-    /**
-     * If true, do not do anything with the payload. The command implementation will do everything
-     */
-
-    default boolean isRaw() {
-      return false;
-    }
 
     void invoke(SolrQueryRequest req, SolrQueryResponse rsp, BaseHandlerApiSupport apiHandler) throws Exception;
   }

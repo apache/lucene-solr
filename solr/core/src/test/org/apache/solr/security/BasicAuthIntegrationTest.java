@@ -58,8 +58,8 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.SolrCLI;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
@@ -138,9 +138,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
 
       final SolrRequest genericReq;
       if (isUseV2Api) {
-        genericReq = new V2Request.Builder("/cluster/security/authentication")
-            .withPayload(command)
-            .withMethod(SolrRequest.METHOD.POST).build();
+        genericReq = new V2Request.Builder("/cluster/security/authentication").withMethod(SolrRequest.METHOD.POST).build();
       } else {
         genericReq = new GenericSolrRequest(SolrRequest.METHOD.POST, authcPrefix, new ModifiableSolrParams());
         ((GenericSolrRequest)genericReq).setContentWriter(new StringPayloadContentWriter(command, CommonParams.JSON_MIME));

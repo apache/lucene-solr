@@ -19,14 +19,13 @@ package org.apache.solr.client.solrj.io.stream.eval;
 import java.util.HashMap;
 import java.util.Map;
 
+import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.CoalesceEvaluator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
-
-import junit.framework.Assert;
 
 public class CoalesceEvaluatorTest extends SolrTestCase {
 
@@ -107,6 +106,6 @@ public class CoalesceEvaluatorTest extends SolrTestCase {
     values.put("c", null);
     values.put("d", 4);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertEquals(1L, result);
+    Assert.assertEquals(1D, result);
   }
 }

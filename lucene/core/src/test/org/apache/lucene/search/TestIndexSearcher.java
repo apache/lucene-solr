@@ -34,8 +34,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
@@ -273,8 +273,6 @@ public class TestIndexSearcher extends LuceneTestCase {
   }
 
   public void testRejectedExecution() throws IOException {
-    List<LeafReaderContext> leaves = reader.leaves();
-    AtomicInteger numExecutions = new AtomicInteger(0);
     ExecutorService service = new RejectingMockExecutor();
 
     IndexSearcher searcher = new IndexSearcher(reader, service) {
@@ -290,12 +288,8 @@ public class TestIndexSearcher extends LuceneTestCase {
 
     // To ensure that failing ExecutorService still allows query to run
     // successfully
-    searcher.search(new MatchAllDocsQuery(), 10);
-    if (leaves.size() <= 1) {
-      assertEquals(0, numExecutions.get());
-    } else {
-      assertEquals(leaves.size() - 1, numExecutions.get());
-    }
+    TopDocs topDocs = searcher.search(new MatchAllDocsQuery(), 10);
+    assert topDocs.scoreDocs.length == 10;
 
     service.shutdown();
   }

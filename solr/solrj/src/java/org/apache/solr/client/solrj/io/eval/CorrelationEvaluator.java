@@ -17,15 +17,16 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
 import org.apache.commons.math3.linear.Array2DRowRealMatrix;
 import org.apache.commons.math3.linear.RealMatrix;
-import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.apache.commons.math3.stat.correlation.KendallsCorrelation;
+import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
 import org.apache.commons.math3.stat.correlation.SpearmansCorrelation;
-
+import org.apache.solr.client.solrj.io.stream.ZplotStream;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -109,6 +110,9 @@ public class CorrelationEvaluator extends RecursiveObjectEvaluator implements Ma
           double[][] corrMatrixData = corrMatrix.getData();
           Matrix realMatrix = new Matrix(corrMatrixData);
           realMatrix.setAttribute("corr", pearsonsCorrelation);
+          List<String> labels = getColumnLabels(matrix.getColumnLabels(), corrMatrixData.length);
+          realMatrix.setColumnLabels(labels);
+          realMatrix.setRowLabels(labels);
           return realMatrix;
         } else if (type.equals(CorrelationType.kendalls)) {
           KendallsCorrelation kendallsCorrelation = new KendallsCorrelation(data);
@@ -116,6 +120,9 @@ public class CorrelationEvaluator extends RecursiveObjectEvaluator implements Ma
           double[][] corrMatrixData = corrMatrix.getData();
           Matrix realMatrix =  new Matrix(corrMatrixData);
           realMatrix.setAttribute("corr", kendallsCorrelation);
+          List<String> labels = getColumnLabels(matrix.getColumnLabels(), corrMatrixData.length);
+          realMatrix.setColumnLabels(labels);
+          realMatrix.setRowLabels(labels);
           return realMatrix;
         } else if (type.equals(CorrelationType.spearmans)) {
           SpearmansCorrelation spearmansCorrelation = new SpearmansCorrelation(new Array2DRowRealMatrix(data, false));
@@ -123,6 +130,9 @@ public class CorrelationEvaluator extends RecursiveObjectEvaluator implements Ma
           double[][] corrMatrixData = corrMatrix.getData();
           Matrix realMatrix =  new Matrix(corrMatrixData);
           realMatrix.setAttribute("corr", spearmansCorrelation.getRankCorrelation());
+          List<String> labels = getColumnLabels(matrix.getColumnLabels(), corrMatrixData.length);
+          realMatrix.setColumnLabels(labels);
+          realMatrix.setRowLabels(labels);
           return realMatrix;
         } else {
           return null;
@@ -132,6 +142,20 @@ public class CorrelationEvaluator extends RecursiveObjectEvaluator implements Ma
       }
     } else {
       throw new IOException("corr function operates on either two numeric arrays or a single matrix as parameters.");
+    }
+  }
+
+  public static List<String> getColumnLabels(List<String> labels, int length) {
+    if(labels != null) {
+      return labels;
+    } else {
+      List<String> l = new ArrayList();
+      for(int i=0; i<length; i++) {
+        String label = "col"+ ZplotStream.pad(Integer.toString(i), length);
+        l.add(label);
+      }
+
+      return l;
     }
   }
 }

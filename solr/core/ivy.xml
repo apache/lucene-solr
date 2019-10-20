@@ -80,7 +80,6 @@
 
     <dependency org="org.apache.commons" name="commons-configuration2" rev="${/org.apache.commons/commons-configuration2}" conf="compile.hadoop"/>
     <dependency org="commons-collections" name="commons-collections" rev="${/commons-collections/commons-collections}" conf="compile.hadoop"/>
-    <dependency org="commons-beanutils" name="commons-beanutils" rev="${/commons-beanutils/commons-beanutils}" conf="compile.hadoop"/>
     <dependency org="com.github.ben-manes.caffeine" name="caffeine" rev="${/com.github.ben-manes.caffeine/caffeine}" conf="compile.hadoop"/>
     <dependency org="com.google.re2j" name="re2j" rev="${/com.google.re2j/re2j}" conf="compile"/>
     <dependency org="org.apache.commons" name="commons-lang3" rev="${/org.apache.commons/commons-lang3}" conf="compile.hadoop"/>

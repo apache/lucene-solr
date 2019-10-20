@@ -59,11 +59,11 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
@@ -72,7 +72,6 @@ import com.carrotsearch.randomizedtesting.TraceFormatting;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.logging.log4j.Level;
@@ -121,6 +120,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.common.util.SuppressForbidden;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.core.CoreContainer;
@@ -152,6 +152,7 @@ import org.apache.solr.util.SSLTestConfig;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.TestHarness;
 import org.apache.solr.util.TestInjection;
+import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -1268,7 +1269,16 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return d;
   }
 
+  /**
+   * Generates the correct SolrParams from an even list of strings.
+   * A string in an even position will represent the name of a parameter, while the following string
+   * at position (i+1) will be the assigned value.
+   *
+   * @param params an even list of strings
+   * @return the ModifiableSolrParams generated from the given list of strings.
+   */
   public static ModifiableSolrParams params(String... params) {
+    if (params.length % 2 != 0) throw new RuntimeException("Params length should be even");
     ModifiableSolrParams msp = new ModifiableSolrParams();
     for (int i=0; i<params.length; i+=2) {
       msp.add(params[i], params[i+1]);
@@ -3116,7 +3126,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     QueryResponse rsp = client.query(collection, solrQuery);
     long found = rsp.getResults().getNumFound();
 
-    if (rsp.getResults().getNumFound() == expectedDocCount) {
+    if (found == expectedDocCount) {
       return;
     }
 
@@ -3131,9 +3141,17 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     // Add the bogus doc
     new UpdateRequest().add(bogus).commit(client, collection);
 
+    // Let's spin until we find the doc.
+    checkUniqueDoc(client, collection, idField, bogusID, true);
+
     // Then remove it, we should be OK now since new searchers have been opened.
     new UpdateRequest().deleteById(bogusID).commit(client, collection);
-    // Let's check again to see if we succeeded
+
+    // Now spin until the doc is gone.
+    checkUniqueDoc(client, collection, idField, bogusID, false);
+
+    // At this point we're absolutely, totally, positive that a new searcher has been opened, so go ahead and check
+    // the actual condition.
     rsp = client.query(collection, solrQuery);
     found = rsp.getResults().getNumFound();
 
@@ -3145,6 +3163,31 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     } else if (failAnyway) {
       fail("Solr11035BandAid failAnyway == true, would have successfully repaired the collection: '" + collection
           + "' extra info: '" + tag + "'");
+    } else {
+      log.warn("Solr11035BandAid, repair successful");
     }
+  }
+  // Helper for bandaid
+  private static void checkUniqueDoc(SolrClient client, String collection, String idField, String id, boolean shouldBeThere) throws IOException, SolrServerException {
+    TimeOut timeOut = new TimeOut(100, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    final SolrQuery solrQuery = new SolrQuery(idField + ":" + id);
+
+    while (!timeOut.hasTimedOut()) {
+      QueryResponse rsp = client.query(collection, solrQuery);
+      long found = rsp.getResults().getNumFound();
+      if (shouldBeThere && found == 1) {
+        return;
+      }
+      if (shouldBeThere == false && found == 0) {
+        return;
+      }
+      log.warn("Solr11035BandAid should have succeeded in checkUniqueDoc, shouldBeThere == {}, numFound = {}. Will try again after 250 ms sleep", shouldBeThere, found);
+      try {
+        Thread.sleep(250);
+      } catch (InterruptedException e) {
+        return; // just bail
+      }
+    }
+
   }
 }

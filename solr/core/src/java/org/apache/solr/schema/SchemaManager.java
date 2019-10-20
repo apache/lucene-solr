@@ -30,13 +30,13 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.rest.BaseSolrResource;
-import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -138,6 +138,7 @@ public class SchemaManager {
             //only for non cloud stuff
             managedIndexSchema.persistManagedSchema(false);
             core.setLatestSchema(managedIndexSchema);
+            core.getCoreContainer().reload(core.getName());
           } catch (SolrException e) {
             log.warn(errorMsg);
             errors = singletonList(errorMsg + e.getMessage());

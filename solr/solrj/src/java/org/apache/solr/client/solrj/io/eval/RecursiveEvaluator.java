@@ -23,9 +23,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -126,27 +126,16 @@ public abstract class RecursiveEvaluator implements StreamEvaluator, ValueWorker
       return value;
     } else if(value instanceof BigDecimal){
       BigDecimal bd = (BigDecimal)value;
-      if(bd.signum() == 0 || bd.scale() <= 0 || bd.stripTrailingZeros().scale() <= 0){
-        try{
-          return bd.longValueExact();
-        }
-        catch(ArithmeticException e){
-          // value was too big for a long, so use a double which can handle scientific notation
-        }
-      }
-      
       return bd.doubleValue();
     }
+    else if(value instanceof Long || value instanceof Integer) {
+      return ((Number) value).longValue();
+    }
     else if(value instanceof Double){
-      if(Double.isNaN((Double)value)){
-        return value;
-      }
-      
-      // could be a long so recurse back in as a BigDecimal
-      return normalizeOutputType(new BigDecimal((Double)value));
+      return value;
     }
     else if(value instanceof Number){
-      return normalizeOutputType(new BigDecimal(((Number)value).toString()));
+      return ((Number) value).doubleValue();
     }
     else if(value instanceof List){
       // normalize each value in the list

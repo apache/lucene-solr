@@ -14,21 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.update.processor;
 
-package org.apache.solr.api;
+import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer.RequestWriterSupplier;
 
-import org.apache.solr.common.util.CommandOperation;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
+public class JavaBinAtomicUpdateMultivalueTest extends AbstractAtomicUpdatesMultivalueTestBase {
 
-public class CallInfo {
-  public final SolrQueryRequest req;
-  public final SolrQueryResponse rsp;
-  public final CommandOperation command;
-
-  public CallInfo(SolrQueryRequest req, SolrQueryResponse rsp,  CommandOperation command) {
-    this.req = req;
-    this.rsp = rsp;
-    this.command = command;
+  @Override
+  RequestWriterSupplier getRequestWriterSupplier() {
+    return RequestWriterSupplier.JavaBin;
   }
+
 }

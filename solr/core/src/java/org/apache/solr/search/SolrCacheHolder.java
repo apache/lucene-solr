@@ -22,11 +22,8 @@ import java.util.Map;
 import java.util.Set;
 
 import com.codahale.metrics.MetricRegistry;
-import org.apache.solr.core.PackageBag.PackageInfo;
-import org.apache.solr.core.PackageListeners;
-import org.apache.solr.core.PluginInfo;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricProducer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,53 +31,12 @@ public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 
-  private CacheConfig.CacheInfo info;
+  private final CacheConfig factory;
   protected volatile SolrCache<K, V> delegate;
 
-
-
-  public SolrCacheHolder(CacheConfig.CacheInfo cacheInfo) {
-    this.info = cacheInfo;
-    this.delegate = cacheInfo.cache;
-
-    if (info.pkg != null) {
-      info.core.getListenerRegistry().addListener(new PackageListeners.Listener() {
-        @Override
-        public String packageName() {
-          return info.pkg;
-        }
-
-        @Override
-        public PluginInfo pluginInfo() {
-          return info.cfg.args;
-        }
-
-        @Override
-        public PackageInfo packageInfo() {
-          return info.packageInfo;
-        }
-
-        @Override
-        public void changed(PackageInfo pkgInfo) {
-          reloadCache(pkgInfo);
-        }
-      });
-    }
-  }
-
-  private void reloadCache(PackageInfo packageInfo) {
-    int znodeVersion = info.packageInfo == null ? -1 : info.packageInfo.znodeVersion;
-    if (packageInfo.znodeVersion > znodeVersion) {
-      log.info("Cache {} being reloaded, package: {} version: {} ", delegate.getClass().getSimpleName(), packageInfo.name, packageInfo.version);
-      info = new CacheConfig.CacheInfo(info.cfg, info.core);
-      info.packageInfo = packageInfo;
-      delegate.close();
-      delegate = info.cache;
-      if(metricsInfo != null){
-        metricsInfo.init(delegate);
-
-      }
-    }
+  public SolrCacheHolder(SolrCache<K, V> delegate, CacheConfig factory) {
+    this.delegate = delegate;
+    this.factory = factory;
   }
 
   public int size() {
@@ -185,31 +141,12 @@ public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
     return delegate.getCategory();
   }
 
-
-  private MetricsInfo metricsInfo;
-
-  public static class MetricsInfo {
-    final SolrMetricManager manager;
-    final String registry;
-    final String tag;
-    final String scope;
-
-    MetricsInfo(SolrMetricManager manager, String registry, String tag, String scope) {
-      this.manager = manager;
-      this.registry = registry;
-      this.tag = tag;
-      this.scope = scope;
-    }
-
-    public void init(SolrMetricProducer metricProducer) {
-      metricProducer.initializeMetrics(manager,registry,tag,scope);
-    }
-  }
-
   @Override
   public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
-    this.metricsInfo = new MetricsInfo(manager, registry, tag, scope);
-    delegate.initializeMetrics(manager, registry, tag, scope);
+    log.debug("Going to register cachemetrics " + Utils.toJSONString(factory));
+
+    delegate.initializeMetrics(manager, registry, tag,scope);
 
   }
+
 }

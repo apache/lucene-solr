@@ -17,14 +17,13 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
+import java.util.TreeSet;
 
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.TreeSet;
 
 public class TopFeaturesEvaluator extends RecursiveObjectEvaluator implements TwoValueWorker {
   protected static final long serialVersionUID = 1L;
@@ -73,9 +72,11 @@ public class TopFeaturesEvaluator extends RecursiveObjectEvaluator implements Tw
   private List<Integer> getMaxIndexes(double[] values, int k) {
     TreeSet<Pair> set = new TreeSet();
     for(int i=0; i<values.length; i++) {
-      set.add(new Pair(i, values[i]));
-      if(set.size() > k) {
-        set.pollFirst();
+      if(values[i] > 0){
+        set.add(new Pair(i, values[i]));
+        if (set.size() > k) {
+          set.pollFirst();
+        }
       }
     }
 
@@ -89,16 +90,22 @@ public class TopFeaturesEvaluator extends RecursiveObjectEvaluator implements Tw
 
   public static class Pair implements Comparable<Pair> {
 
-    private int index;
+    private Integer index;
     private Double value;
 
-    public Pair(int index, Number value) {
-      this.index = index;
+    public Pair(int _index, Number value) {
+      this.index = _index;
       this.value = value.doubleValue();
     }
 
     public int compareTo(Pair pair) {
-      return value.compareTo(pair.value);
+
+      int c = value.compareTo(pair.value);
+      if(c==0) {
+        return index.compareTo(pair.index);
+      } else {
+        return c;
+      }
     }
 
     public int getIndex() {

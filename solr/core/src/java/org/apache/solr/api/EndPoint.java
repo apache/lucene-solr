@@ -22,17 +22,15 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.security.PermissionNameProvider;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.TYPE})
 public @interface EndPoint {
-  /**name of the API spec file without the '.json' suffix
-   */
-  String spec();
+  SolrRequest.METHOD[] method();
 
+  String[] path();
 
-  /**The well known persmission name if any
-   */
   PermissionNameProvider.Name permission();
 }

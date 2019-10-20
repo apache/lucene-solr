@@ -20,14 +20,13 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import junit.framework.Assert;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.CeilingEvaluator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
-
-import junit.framework.Assert;
 
 public class CeilingEvaluatorTest extends SolrTestCase {
 
@@ -50,20 +49,17 @@ public class CeilingEvaluatorTest extends SolrTestCase {
     values.clear();
     values.put("a", 1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(1L, result);
+    Assert.assertEquals(1D, result);
     
     values.clear();
     values.put("a", 1.1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(2L, result);
+    Assert.assertEquals(2D, result);
     
     values.clear();
     values.put("a", -1.1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(-1L, result);
+    Assert.assertEquals(-1D, result);
   }
 
   @Test(expected = IOException.class)

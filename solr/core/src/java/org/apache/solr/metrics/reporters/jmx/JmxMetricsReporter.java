@@ -28,7 +28,6 @@ import javax.management.Query;
 import javax.management.QueryExp;
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
-import java.lang.management.ManagementFactory;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -37,7 +36,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
 import com.codahale.metrics.Counter;
-import com.codahale.metrics.jmx.DefaultObjectNameFactory;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.Meter;
@@ -46,9 +44,10 @@ import com.codahale.metrics.Metric;
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.MetricRegistryListener;
-import com.codahale.metrics.jmx.ObjectNameFactory;
 import com.codahale.metrics.Reporter;
 import com.codahale.metrics.Timer;
+import com.codahale.metrics.jmx.DefaultObjectNameFactory;
+import com.codahale.metrics.jmx.ObjectNameFactory;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.slf4j.Logger;
@@ -157,9 +156,6 @@ public class JmxMetricsReporter implements Reporter, Closeable {
     }
 
     public JmxMetricsReporter build() {
-      if (mBeanServer == null) {
-        mBeanServer = ManagementFactory.getPlatformMBeanServer();
-      }
       if (tag == null) {
         tag = Integer.toHexString(this.hashCode());
       }

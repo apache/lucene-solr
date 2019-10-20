@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import javax.servlet.Filter;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
@@ -43,8 +44,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import javax.servlet.Filter;
-
+import com.codahale.metrics.MetricRegistry;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
@@ -76,8 +76,6 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.codahale.metrics.MetricRegistry;
 
 /**
  * "Mini" SolrCloud cluster to be used for testing
@@ -792,7 +790,7 @@ public class MiniSolrCloudCluster {
   }
 
   public void waitForJettyToStop(JettySolrRunner runner) throws TimeoutException {
-    log.info("waitForJettyToStop: {}", runner.getNodeName());
+    log.info("waitForJettyToStop: {}", runner.getLocalPort());
     TimeOut timeout = new TimeOut(15, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while(!timeout.hasTimedOut()) {
       if (runner.isStopped()) {

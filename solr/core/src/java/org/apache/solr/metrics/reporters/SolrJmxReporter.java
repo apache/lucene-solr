@@ -17,13 +17,11 @@
 package org.apache.solr.metrics.reporters;
 
 import javax.management.MBeanServer;
-
 import java.lang.invoke.MethodHandles;
 import java.util.Locale;
 
 import com.codahale.metrics.MetricFilter;
 import com.codahale.metrics.MetricRegistry;
-
 import org.apache.solr.metrics.FilteringSolrMetricReporter;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricReporter;
@@ -70,7 +68,7 @@ public class SolrJmxReporter extends FilteringSolrMetricReporter {
   protected synchronized void doInit() {
     if (serviceUrl != null && agentId != null) {
       mBeanServer = JmxUtil.findFirstMBeanServer();
-      log.warn("No more than one of serviceUrl({}) and agentId({}) should be configured, using first MBeanServer instead of configuration.",
+      log.warn("No more than one of serviceUrl({}) and agentId({}) should be configured, using first MBeanServer {} instead of configuration.",
           serviceUrl, agentId, mBeanServer);
     } else if (serviceUrl != null) {
       // reuse existing services

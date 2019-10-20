@@ -17,14 +17,13 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 
 import org.apache.commons.math3.util.MathArrays;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import java.util.List;
-import java.util.ArrayList;
 
 public class NormalizeSumEvaluator extends RecursiveObjectEvaluator implements ManyValueWorker {
   protected static final long serialVersionUID = 1L;
@@ -62,7 +61,10 @@ public class NormalizeSumEvaluator extends RecursiveObjectEvaluator implements M
         unitData[i] = unitRow;
       }
 
-      return new Matrix(unitData);
+      Matrix m = new Matrix(unitData);
+      m.setRowLabels(matrix.getRowLabels());
+      m.setColumnLabels(matrix.getColumnLabels());
+      return m;
     } else if(value instanceof List) {
       List<Number> vals = (List<Number>)value;
       double[] doubles = new double[vals.size()];

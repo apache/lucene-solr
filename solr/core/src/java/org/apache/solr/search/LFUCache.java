@@ -116,14 +116,14 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
     str = (String) args.get(AUTOWARM_COUNT_PARAM);
     autowarmCount = str == null ? 0 : Integer.parseInt(str);
     str = (String) args.get(CLEANUP_THREAD_PARAM);
-    cleanupThread = str != null && Boolean.parseBoolean(str);
+    cleanupThread = str == null ? false : Boolean.parseBoolean(str);
 
     str = (String) args.get(SHOW_ITEMS_PARAM);
     showItems = str == null ? 0 : Integer.parseInt(str);
 
     // Don't make this "efficient" by removing the test, default is true and omitting the param will make it false.
     str = (String) args.get(TIME_DECAY_PARAM);
-    timeDecay = (str == null) || Boolean.parseBoolean(str);
+    timeDecay = (str == null) ? true : Boolean.parseBoolean(str);
 
     str = (String) args.get(MAX_IDLE_TIME_PARAM);
     if (str == null) {

@@ -77,6 +77,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.BackupRepositoryFactory;
+import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SnapShooter;
 import org.apache.solr.handler.admin.AutoscalingHistoryHandler;
@@ -99,6 +100,7 @@ import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.search.SolrFieldCacheBean;
@@ -193,10 +195,6 @@ public class CoreContainer {
 
   private final BlobRepository blobRepository = new BlobRepository(this);
 
-  private final DistribFileStore fileStore = new DistribFileStore(this);
-
-  final ContainerRequestHandlers containerRequestHandlers = new ContainerRequestHandlers(this);
-
   private volatile PluginBag<SolrRequestHandler> containerHandlers = new PluginBag<>(SolrRequestHandler.class, null);
 
   private volatile boolean asyncSolrCoreLoad;
@@ -223,7 +221,8 @@ public class CoreContainer {
 
   protected volatile AutoscalingHistoryHandler autoscalingHistoryHandler;
 
-  private final PackageBag packageBag = new PackageBag(this);
+  private PackageStoreAPI packageStoreAPI;
+  private PackageLoader packageLoader;
 
 
   // Bits for the state variable.
@@ -583,6 +582,13 @@ public class CoreContainer {
     return replayUpdatesExecutor;
   }
 
+  public PackageLoader getPackageLoader() {
+    return packageLoader;
+  }
+
+  public PackageStoreAPI getPackageStoreAPI() {
+    return packageStoreAPI;
+  }
   //-------------------------------------------------------------------
   // Initialization / Cleanup
   //-------------------------------------------------------------------
@@ -606,6 +612,10 @@ public class CoreContainer {
         }
       }
     }
+
+    packageStoreAPI = new PackageStoreAPI(this);
+    containerHandlers.getApiBag().register(new AnnotatedApi(packageStoreAPI.readAPI), Collections.EMPTY_MAP);
+    containerHandlers.getApiBag().register(new AnnotatedApi(packageStoreAPI.writeAPI), Collections.EMPTY_MAP);
 
     metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig());
 
@@ -632,7 +642,6 @@ public class CoreContainer {
 
     zkSys.initZooKeeper(this, solrHome, cfg.getCloudConfig());
     if (isZooKeeperAware()) {
-      getZkController().getZkStateReader().registerClusterPropertiesListener(packageBag);
       pkiAuthenticationPlugin = new PKIAuthenticationPlugin(this, zkSys.getZkController().getNodeName(),
           (PublicKeyHandler) containerHandlers.get(PublicKeyHandler.PATH));
       pkiAuthenticationPlugin.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, "/authentication/pki");
@@ -645,8 +654,6 @@ public class CoreContainer {
     reloadSecurityProperties();
     this.backupRepoFactory = new BackupRepositoryFactory(cfg.getBackupRepositoryPlugins());
 
-    containerHandlers.put(new AnnotatedApi(containerRequestHandlers));
-    containerHandlers.put(new AnnotatedApi(fileStore.fileStoreRead));
     createHandler(ZK_PATH, ZookeeperInfoHandler.class.getName(), ZookeeperInfoHandler.class);
     createHandler(ZK_STATUS_PATH, ZookeeperStatusHandler.class.getName(), ZookeeperStatusHandler.class);
     collectionsHandler = createHandler(COLLECTIONS_HANDLER_PATH, cfg.getCollectionsHandlerClass(), CollectionsHandler.class);
@@ -733,6 +740,10 @@ public class CoreContainer {
     if (isZooKeeperAware()) {
       metricManager.loadClusterReporters(metricReporters, this);
     }
+    packageLoader = new PackageLoader(this);
+    containerHandlers.getApiBag().register(new AnnotatedApi(packageLoader.getPackageAPI().editAPI), Collections.EMPTY_MAP);
+    containerHandlers.getApiBag().register(new AnnotatedApi(packageLoader.getPackageAPI().readAPI), Collections.EMPTY_MAP);
+
 
     // setup executor to load cores in parallel
     ExecutorService coreLoadExecutor = MetricUtils.instrumentedExecutorService(
@@ -1547,7 +1558,7 @@ public class CoreContainer {
       } catch (SolrCoreState.CoreIsClosedException e) {
         throw e;
       } catch (Exception e) {
-        coreInitFailures.put(cd.getName(), new CoreLoadFailure(cd, e));
+        coreInitFailures.put(cd.getName(), new CoreLoadFailure(cd, (Exception) e));
         throw new SolrException(ErrorCode.SERVER_ERROR, "Unable to reload core [" + cd.getName() + "]", e);
       } finally {
         if (!success && newCore != null && newCore.getOpenCount() > 0) {
@@ -1765,10 +1776,6 @@ public class CoreContainer {
     return blobRepository;
   }
 
-  public DistribFileStore getFileStore(){
-    return fileStore;
-  }
-
   /**
    * If using asyncSolrCoreLoad=true, calling this after {@link #load()} will
    * not return until all cores have finished loading.
@@ -1794,14 +1801,6 @@ public class CoreContainer {
       ((SolrMetricProducer) handler).initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, path);
     }
     return handler;
-  }
-
-  public PluginBag<SolrRequestHandler> getContainerHandlers() {
-    return containerHandlers;
-  }
-
-  public PackageBag getPackageBag(){
-    return packageBag;
   }
 
   public CoreAdminHandler getMultiCoreHandler() {
@@ -1915,10 +1914,6 @@ public class CoreContainer {
 
   public AuditLoggerPlugin getAuditLoggerPlugin() {
     return auditloggerPlugin == null ? null : auditloggerPlugin.plugin;
-  }
-
-  public ContainerRequestHandlers getContainerRequestHandlers(){
-    return containerRequestHandlers;
   }
 
   public NodeConfig getNodeConfig() {
