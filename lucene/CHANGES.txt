@@ -55,6 +55,10 @@ Improvements
   
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
 
+* LUCENE-8949: Allow LeafFieldComparators to publish Feature Values (Atri Sharma)
+
+* LUCENE-8988: Introduce Global Feature Based Early Termination For Sorted Fields (Atri Sharma)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 

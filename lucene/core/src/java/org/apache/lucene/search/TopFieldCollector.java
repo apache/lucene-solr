@@ -101,8 +101,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     final FieldValueHitQueue<Entry> queue;
 
     public SimpleFieldCollector(Sort sort, FieldValueHitQueue<Entry> queue, int numHits,
-                                HitsThresholdChecker hitsThresholdChecker) {
-      super(queue, numHits, hitsThresholdChecker, sort.needsScores());
+                                HitsThresholdChecker hitsThresholdChecker, FieldValueChecker fieldValueChecker) {
+      super(queue, numHits, hitsThresholdChecker, fieldValueChecker, sort.needsScores());
       this.sort = sort;
       this.queue = queue;
     }
@@ -130,8 +130,25 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
         public void collect(int doc) throws IOException {
           ++totalHits;
           hitsThresholdChecker.incrementHitCount();
-          if (queueFull) {
-            if (collectedAllCompetitiveHits || reverseMul * comparator.compareBottom(doc) <= 0) {
+
+          Object currentValue = null;
+
+          if (fieldValueChecker != null) {
+            try {
+              currentValue = comparator.getDocValue(doc);
+            } catch (UnsupportedOperationException e) {
+              fieldValueChecker.disableGlobalHitCheck();
+            }
+          }
+
+          boolean isHitGloballyCompetitive = isHitGloballyCompetitive(currentValue, doc);
+
+          // There is a potential race condition here -- the hit may no longer be competitive between the
+          // two checks. However, the tradeoff is performing the global check twice -- which is expensive.
+          // Hence, the worst we can end up is an extra non competitive hit
+          if (queueFull || (isHitGloballyCompetitive == false)) {
+            if (collectedAllCompetitiveHits || (isHitGloballyCompetitive == false ||
+                reverseMul * comparator.compareBottom(doc) <= 0)) {
               // since docs are visited in doc Id order, if compare is 0, it means
               // this document is largest than anything else in the queue, and
               // therefore not competitive.
@@ -146,25 +163,48 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
                 // we just reached totalHitsThreshold, we can start setting the min
                 // competitive score now
                 updateMinCompetitiveScore(scorer);
+                if (fieldValueChecker != null) {
+                  fieldValueChecker.checkAndUpdateBottomValue(bottom.value, (bottom.doc + docBase));
+                }
               }
               return;
             }
 
             // This hit is competitive - replace bottom element in queue & adjustTop
             comparator.copy(bottom.slot, doc);
-            updateBottom(doc);
+
+            if (fieldValueChecker != null) {
+              updateBottom(doc, currentValue);
+            } else {
+              updateBottom(doc);
+            }
+
             comparator.setBottom(bottom.slot);
+            if (fieldValueChecker != null) {
+              fieldValueChecker.checkAndUpdateBottomValue(bottom.value, (bottom.doc + docBase));
+            }
             updateMinCompetitiveScore(scorer);
           } else {
+            ++collectedHits;
             // Startup transient: queue hasn't gathered numHits yet
-            final int slot = totalHits - 1;
+            final int slot = collectedHits - 1;
 
             // Copy hit into queue
             comparator.copy(slot, doc);
-            add(slot, doc);
+
+            if (fieldValueChecker != null) {
+              //TODO: Use comparator's internal PQ directly
+              add(slot, doc, currentValue);
+            } else {
+              add(slot, doc);
+            }
+
             if (queueFull) {
               comparator.setBottom(bottom.slot);
               updateMinCompetitiveScore(scorer);
+              if (fieldValueChecker != null) {
+                fieldValueChecker.checkAndUpdateBottomValue(bottom.value, bottom.doc + docBase);
+              }
             }
           }
         }
@@ -180,13 +220,12 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   private final static class PagingFieldCollector extends TopFieldCollector {
 
     final Sort sort;
-    int collectedHits;
     final FieldValueHitQueue<Entry> queue;
     final FieldDoc after;
 
     public PagingFieldCollector(Sort sort, FieldValueHitQueue<Entry> queue, FieldDoc after, int numHits,
-                                HitsThresholdChecker hitsThresholdChecker) {
-      super(queue, numHits, hitsThresholdChecker, sort.needsScores());
+                                HitsThresholdChecker hitsThresholdChecker, FieldValueChecker fieldValueChecker) {
+      super(queue, numHits, hitsThresholdChecker, fieldValueChecker, sort.needsScores());
       this.sort = sort;
       this.queue = queue;
       this.after = after;
@@ -223,10 +262,26 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
           totalHits++;
           hitsThresholdChecker.incrementHitCount();
 
-          if (queueFull) {
+          Object currentValue = null;
+
+          if (fieldValueChecker != null) {
+            try {
+              currentValue = comparator.getDocValue(doc);
+            } catch (UnsupportedOperationException e) {
+              fieldValueChecker.disableGlobalHitCheck();
+            }
+          }
+
+          boolean isHitGloballyCompetitive = isHitGloballyCompetitive(currentValue, doc);
+
+          // There is a potential race condition here -- the hit may no longer be competitive between the
+          // two checks. However, the tradeoff is performing the global check twice -- which is expensive.
+          // Hence, the worst we can end up is an extra non competitive hit
+          if (queueFull || isHitGloballyCompetitive == false) {
             // Fastmatch: return if this hit is no better than
             // the worst hit currently in the queue:
-            if (collectedAllCompetitiveHits || reverseMul * comparator.compareBottom(doc) <= 0) {
+            if (collectedAllCompetitiveHits || (isHitGloballyCompetitive == false ||
+                reverseMul * comparator.compareBottom(doc) <= 0)) {
               // since docs are visited in doc Id order, if compare is 0, it means
               // this document is largest than anything else in the queue, and
               // therefore not competitive.
@@ -254,9 +309,17 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
             // This hit is competitive - replace bottom element in queue & adjustTop
             comparator.copy(bottom.slot, doc);
 
-            updateBottom(doc);
+            if (fieldValueChecker != null) {
+              updateBottom(doc, currentValue);
+            } else {
+              updateBottom(doc);
+            }
 
             comparator.setBottom(bottom.slot);
+
+            if (fieldValueChecker != null) {
+              fieldValueChecker.checkAndUpdateBottomValue(bottom.value, bottom.doc + docBase);
+            }
             updateMinCompetitiveScore(scorer);
           } else {
             collectedHits++;
@@ -267,11 +330,20 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
             // Copy hit into queue
             comparator.copy(slot, doc);
 
-            bottom = pq.add(new Entry(slot, docBase + doc));
+            if (fieldValueChecker != null) {
+              //TODO: Use comparator's PQ directly
+              bottom = pq.add(new Entry(slot, docBase + doc, currentValue));
+            } else {
+              bottom = pq.add(new Entry(slot, docBase + doc));
+            }
+
             queueFull = collectedHits == numHits;
             if (queueFull) {
               comparator.setBottom(bottom.slot);
               updateMinCompetitiveScore(scorer);
+              if (fieldValueChecker != null) {
+                fieldValueChecker.checkAndUpdateBottomValue(bottom.value, bottom.doc + docBase);
+              }
             }
           }
         }
@@ -280,10 +352,21 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
 
   }
 
+  /** Check if hit is globally competitive **/
+  boolean isHitGloballyCompetitive(Object currentValue, int doc) {
+    if (fieldValueChecker == null || fieldValueChecker.isBottomValuePresent() == false) {
+      // Return true to make this check ineffective
+      return true;
+    }
+
+    return fieldValueChecker.isValueCompetitive(currentValue, (doc + docBase));
+  }
+
   private static final ScoreDoc[] EMPTY_SCOREDOCS = new ScoreDoc[0];
 
   final int numHits;
   final HitsThresholdChecker hitsThresholdChecker;
+  final FieldValueChecker fieldValueChecker;
   final FieldComparator.RelevanceComparator firstComparator;
   final boolean canSetMinScore;
   final int numComparators;
@@ -299,7 +382,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
   // visibility, then anyone will be able to extend the class, which is not what
   // we want.
   private TopFieldCollector(FieldValueHitQueue<Entry> pq, int numHits,
-                            HitsThresholdChecker hitsThresholdChecker, boolean needsScores) {
+                            HitsThresholdChecker hitsThresholdChecker, FieldValueChecker fieldValueChecker,
+                            boolean needsScores) {
     super(pq);
     this.needsScores = needsScores;
     this.numHits = numHits;
@@ -318,6 +402,8 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       scoreMode = needsScores ? ScoreMode.COMPLETE : ScoreMode.COMPLETE_NO_SCORES;
       canSetMinScore = false;
     }
+
+    this.fieldValueChecker = fieldValueChecker;
   }
 
   @Override
@@ -389,14 +475,15 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
       throw new IllegalArgumentException("totalHitsThreshold must be >= 0, got " + totalHitsThreshold);
     }
 
-    return create(sort, numHits, after, HitsThresholdChecker.create(totalHitsThreshold));
+    return create(sort, numHits, after, HitsThresholdChecker.create(totalHitsThreshold), null /* fieldValueChecker */);
   }
 
   /**
    * Same as above with an additional parameter to allow passing in the threshold checker
    */
   static TopFieldCollector create(Sort sort, int numHits, FieldDoc after,
-                                         HitsThresholdChecker hitsThresholdChecker) {
+                                         HitsThresholdChecker hitsThresholdChecker,
+                                          FieldValueChecker fieldValueChecker) {
 
     if (sort.fields.length == 0) {
       throw new IllegalArgumentException("Sort must contain at least one field");
@@ -413,7 +500,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     FieldValueHitQueue<Entry> queue = FieldValueHitQueue.create(sort.fields, numHits);
 
     if (after == null) {
-      return new SimpleFieldCollector(sort, queue, numHits, hitsThresholdChecker);
+      return new SimpleFieldCollector(sort, queue, numHits, hitsThresholdChecker, fieldValueChecker);
     } else {
       if (after.fields == null) {
         throw new IllegalArgumentException("after.fields wasn't set; you must pass fillFields=true for the previous search");
@@ -423,7 +510,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
         throw new IllegalArgumentException("after.fields has " + after.fields.length + " values but sort has " + sort.getSort().length);
       }
 
-      return new PagingFieldCollector(sort, queue, after, numHits, hitsThresholdChecker);
+      return new PagingFieldCollector(sort, queue, after, numHits, hitsThresholdChecker, fieldValueChecker);
     }
   }
 
@@ -435,10 +522,11 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     return new CollectorManager<>() {
 
       private final HitsThresholdChecker hitsThresholdChecker = HitsThresholdChecker.createShared(totalHitsThreshold);
+      private final FieldValueChecker fieldValueChecker = FieldValueChecker.createFieldValueChecker(sort, numHits);
 
       @Override
       public TopFieldCollector newCollector() throws IOException {
-        return create(sort, numHits, after, hitsThresholdChecker);
+        return create(sort, numHits, after, hitsThresholdChecker, fieldValueChecker);
       }
 
       @Override
@@ -497,9 +585,21 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
     queueFull = totalHits == numHits;
   }
 
+  final void add(int slot, int doc, Object object) {
+    bottom = pq.add(new Entry(slot, docBase + doc, object));
+    queueFull = collectedHits == numHits;
+  }
+
   final void updateBottom(int doc) {
     // bottom.score is already set to Float.NaN in add().
     bottom.doc = docBase + doc;
+    bottom = pq.updateTop();
+  }
+
+  final void updateBottom(int doc, Object value) {
+    // bottom.score is already set to Float.NaN in add().
+    bottom.doc = docBase + doc;
+    bottom.value = value;
     bottom = pq.updateTop();
   }
 
