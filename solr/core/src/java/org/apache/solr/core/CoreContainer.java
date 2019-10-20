@@ -456,7 +456,7 @@ public class CoreContainer {
       authenticationPlugin.plugin.init(authenticationConfig);
       setupHttpClientForAuthPlugin(authenticationPlugin.plugin);
       authenticationPlugin.plugin.initializeMetrics
-        (metricManager, SolrInfoBean.Group.node.toString(), metricTag, "/authentication");
+          (metricManager, SolrInfoBean.Group.node.toString(), metricTag, "/authentication");
     }
     this.authenticationPlugin = authenticationPlugin;
     try {
@@ -739,10 +739,10 @@ public class CoreContainer {
 
     if (isZooKeeperAware()) {
       metricManager.loadClusterReporters(metricReporters, this);
+      packageLoader = new PackageLoader(this);
+      containerHandlers.getApiBag().register(new AnnotatedApi(packageLoader.getPackageAPI().editAPI), Collections.EMPTY_MAP);
+      containerHandlers.getApiBag().register(new AnnotatedApi(packageLoader.getPackageAPI().readAPI), Collections.EMPTY_MAP);
     }
-    packageLoader = new PackageLoader(this);
-    containerHandlers.getApiBag().register(new AnnotatedApi(packageLoader.getPackageAPI().editAPI), Collections.EMPTY_MAP);
-    containerHandlers.getApiBag().register(new AnnotatedApi(packageLoader.getPackageAPI().readAPI), Collections.EMPTY_MAP);
 
 
     // setup executor to load cores in parallel
@@ -1217,15 +1217,15 @@ public class CoreContainer {
    *                     that calls solrCores.waitAddPendingCoreOps(...) and solrCores.removeFromPendingOps(...)
    *
    *                     <pre>
-   *                                           <code>
-   *                                           try {
-   *                                              solrCores.waitAddPendingCoreOps(dcore.getName());
-   *                                              createFromDescriptor(...);
-   *                                           } finally {
-   *                                              solrCores.removeFromPendingOps(dcore.getName());
-   *                                           }
-   *                                           </code>
-   *                                         </pre>
+   *                                                               <code>
+   *                                                               try {
+   *                                                                  solrCores.waitAddPendingCoreOps(dcore.getName());
+   *                                                                  createFromDescriptor(...);
+   *                                                               } finally {
+   *                                                                  solrCores.removeFromPendingOps(dcore.getName());
+   *                                                               }
+   *                                                               </code>
+   *                                                             </pre>
    *                     <p>
    *                     Trying to put the waitAddPending... in this method results in Bad Things Happening due to race conditions.
    *                     getCore() depends on getting the core returned _if_ it's in the pending list due to some other thread opening it.
