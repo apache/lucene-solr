@@ -57,8 +57,8 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
   String s1dv = "a_s_dvo";
   String b1dv = "a_b_dvo";
   String tlong = "other_tl1";
-  String tdate_a = "a_n_tdt";
-  String tdate_b = "b_n_tdt";
+  String tdate_a = "a_n_tdt1"; // use single-valued date field
+  String tdate_b = "b_n_tdt1";
   String oddField="oddField_s1";
 
   @Test
@@ -247,6 +247,9 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
         "group", "true",
         "group.query", t1 + ":kings OR " + t1 + ":eggs", "rows", "13", "start", "2",
         "fl", "id", "group.main", "true", "sort", i1 + " asc, id asc");
+
+    // SOLR-9802
+    query("q", "*:*", "group", "true", "group.field", tdate_a, "sort", i1 + " asc, id asc", "fl", "id");
 
     // SOLR-3109
     query("q", t1 + ":eggs", "rows", 100, "fl", "id," + i1, "group", "true", "group.field", i1, "group.limit", 10, "sort", tlong + " asc, id asc");
