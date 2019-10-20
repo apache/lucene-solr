@@ -226,7 +226,8 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
             o = mapper.readValue(Utils.toJSONString(o), c);
           }
           if (isWrappedInPayloadObj) {
-            PayloadObj<Object> payloadObj = new PayloadObj<>(cmd.name, cmd.getCommandData(), o);
+            PayloadObj<Object> payloadObj =  new PayloadObj<>(cmd.name, cmd.getCommandData(), o);
+            cmd = payloadObj;
             method.invoke(obj, req, rsp, payloadObj);
           } else {
             method.invoke(obj, req, rsp, o);
