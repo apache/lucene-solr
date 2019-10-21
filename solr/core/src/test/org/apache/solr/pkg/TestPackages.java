@@ -246,12 +246,14 @@ public class TestPackages extends SolrCloudTestCase {
           return new RequestWriter.StringPayloadContentWriter("{set:{PKG_VERSIONS:{mypkg : '1.1'}}}",
               ClientUtils.TEXT_JSON);
         }
-      }
-          .process(cluster.getSolrClient()) ;
+      }.process(cluster.getSolrClient()) ;
 
       add.version = "2.1";
       add.files = Arrays.asList(new String[]{FILE3});
       req.process(cluster.getSolrClient());
+
+      //the collections mypkg is set to use version 1.1
+      //so no upgrade
 
       verifyCmponent(cluster.getSolrClient(),
           COLLECTION_NAME, "queryResponseWriter", "json1",
@@ -265,7 +267,35 @@ public class TestPackages extends SolrCloudTestCase {
           COLLECTION_NAME, "requestHandler", "/runtime",
           "mypkg", "1.1" );
 
+      new GenericSolrRequest(SolrRequest.METHOD.POST, "/config/params", params ){
+        @Override
+        public RequestWriter.ContentWriter getContentWriter(String expectedType) {
+          return new RequestWriter.StringPayloadContentWriter("{set:{PKG_VERSIONS:{mypkg : '2.1'}}}",
+              ClientUtils.TEXT_JSON);
+        }
+      }.process(cluster.getSolrClient()) ;
 
+      //now, let's force every collection using 'mypkg' to refresh
+      //so that it uses version 2.1
+      new V2Request.Builder("/cluster/package")
+          .withMethod(SolrRequest.METHOD.POST)
+          .withPayload("{refresh : mypkg}")
+          .forceV2(true)
+          .build()
+          .process(cluster.getSolrClient());
+
+
+      verifyCmponent(cluster.getSolrClient(),
+          COLLECTION_NAME, "queryResponseWriter", "json1",
+          "mypkg", "2.1" );
+
+      verifyCmponent(cluster.getSolrClient(),
+          COLLECTION_NAME, "searchComponent", "get",
+          "mypkg", "2.1" );
+
+      verifyCmponent(cluster.getSolrClient(),
+          COLLECTION_NAME, "requestHandler", "/runtime",
+          "mypkg", "2.1" );
 
     } finally {
       cluster.shutdown();
