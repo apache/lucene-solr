@@ -197,6 +197,29 @@ public class PackageAPI {
       permission = PACKAGE_EDIT_PERM)
   public class Edit {
 
+    @Command(name = "refresh")
+    public void refresh(SolrQueryRequest req, SolrQueryResponse rsp, PayloadObj<String> payload) {
+      String p = payload.get();
+      if (p == null) {
+        payload.addError("Package null");
+        return;
+      }
+      PackageLoader.Package pkg = coreContainer.getPackageLoader().getPackage(p);
+      if (pkg == null) {
+        payload.addError("No such package: " + p);
+        return;
+      }
+
+      for (String s : coreContainer.getPackageStoreAPI().shuffledNodes()) {
+        Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
+            coreContainer.getZkController().zkStateReader.getBaseUrlForNodeName(s).replace("/solr", "/api") + "/cluster/package?wt=javabin&omitHeader=true&refreshPackage=" + p,
+            Utils.JAVABINCONSUMER);
+      }
+
+
+    }
+
+
     @Command(name = "add")
     public void add(SolrQueryRequest req, SolrQueryResponse rsp, PayloadObj<Package.AddVersion> payload) {
       if (!checkEnabled(payload)) return;
@@ -298,6 +321,12 @@ public class PackageAPI {
   public class Read {
     @Command()
     public void get(SolrQueryRequest req, SolrQueryResponse rsp) {
+      String refresh = req.getParams().get("refreshPackage");
+      if (refresh != null) {
+        packageLoader.notifyListeners(refresh);
+        return;
+      }
+
       int expectedVersion = req.getParams().getInt("expectedVersion", -1);
       if (expectedVersion != -1) {
         syncToVersion(expectedVersion);
@@ -315,7 +344,7 @@ public class PackageAPI {
       for (int i = 0; i < 10; i++) {
         log.debug("my version is {} , and expected version {}", pkgs.znodeVersion, expectedVersion);
         if (pkgs.znodeVersion >= expectedVersion) {
-          if(origVersion < pkgs.znodeVersion){
+          if (origVersion < pkgs.znodeVersion) {
             packageLoader.refreshPackageConf();
           }
           return;
