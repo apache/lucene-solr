@@ -84,7 +84,15 @@ public class SolrCloudSharedStoreTestCase extends SolrCloudTestCase {
     SharedStoreManager manager = solrRunner.getCoreContainer().getSharedStoreManager();
     manager.initBlobProcessUtil(testBlobProcessUtil);
   }
-  
+
+  /**
+   * Configures the Solr process with the given {@link SharedCoreConcurrencyController}
+   */
+  protected static void setupTestSharedConcurrencyControllerForNode(SharedCoreConcurrencyController concurrencyController, JettySolrRunner solrRunner) {
+    SharedStoreManager manager = solrRunner.getCoreContainer().getSharedStoreManager();
+    manager.initConcurrencyController(concurrencyController);
+  }
+
   /**
    * Return a new CoreStorageClient that writes to the specified sharedStoreRootPath and blobDirectoryName
    * The sharedStoreRootPath should already exist when passed to this method

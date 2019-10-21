@@ -16,25 +16,20 @@
  */
 package org.apache.solr.store.shared.metadata;
 
-import java.util.Arrays;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.concurrent.ConcurrentHashMap;
 
-import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
-import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Utils;
-import org.apache.zookeeper.CreateMode;
+import org.apache.solr.store.shared.metadata.SharedShardMetadataController.SharedShardVersionMetadata;
 import org.apache.zookeeper.data.Stat;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 /**
  * Tests for {@link SharedShardMetadataController}
@@ -152,18 +147,17 @@ public class SharedShardMetadataControllerTest extends SolrCloudTestCase {
     // try a conditional update that should pass and return a VersionedData instance with
     // the right written value and incremented version
     testMetadataValue = "testValue2";
-    VersionedData versionedData = shardMetadataController.updateMetadataValueWithVersion(TEST_COLLECTION_NAME, TEST_SHARD_NAME, 
+    SharedShardVersionMetadata shardMetadata = shardMetadataController.updateMetadataValueWithVersion(TEST_COLLECTION_NAME, TEST_SHARD_NAME, 
         testMetadataValue, version);
     
     
     // the version monotonically increases, increments on updates. We should expect only one update
-    readData = (Map<String, Object>) Utils.fromJSON(versionedData.getData());
-    assertEquals(testMetadataValue, readData.get(SharedShardMetadataController.SUFFIX_NODE_NAME));
-    assertEquals(version + 1, versionedData.getVersion());
+    assertEquals(testMetadataValue, shardMetadata.getMetadataSuffix());
+    assertEquals(version + 1, shardMetadata.getVersion());
     
     // try a conditional update that fails with the wrong version number
     try {
-      versionedData = shardMetadataController.updateMetadataValueWithVersion(TEST_COLLECTION_NAME, TEST_SHARD_NAME, 
+      shardMetadataController.updateMetadataValueWithVersion(TEST_COLLECTION_NAME, TEST_SHARD_NAME,
           testMetadataValue, 100);
       fail();
     } catch (SolrException ex) {
@@ -187,10 +181,9 @@ public class SharedShardMetadataControllerTest extends SolrCloudTestCase {
     shardMetadataController.updateMetadataValueWithVersion(TEST_COLLECTION_NAME, TEST_SHARD_NAME, 
         testMetadataValue, -1);
     
-    VersionedData versionedData = shardMetadataController.readMetadataValue(TEST_COLLECTION_NAME, TEST_SHARD_NAME);
+    SharedShardVersionMetadata shardMetadata = shardMetadataController.readMetadataValue(TEST_COLLECTION_NAME, TEST_SHARD_NAME);
     
-    Map<String, Object> readData = (Map<String, Object>) Utils.fromJSON(versionedData.getData());
-    assertEquals(testMetadataValue, readData.get(SharedShardMetadataController.SUFFIX_NODE_NAME));
+    assertEquals(testMetadataValue, shardMetadata.getMetadataSuffix());
   }
   
   /**
@@ -217,143 +210,5 @@ public class SharedShardMetadataControllerTest extends SolrCloudTestCase {
       Throwable t = ex.getCause();
       assertTrue(t instanceof NoSuchElementException);
     }
-  }
-  
-  /**
-   * Test that successful conditional updates caches in VersionedData in memory
-   */
-  @Test
-  public void testSuccessfulUpdateCaches() throws Exception {
-    // reset cache 
-    shardMetadataController.getVersionedDataCache().clear();
-    
-    shardMetadataController.ensureMetadataNodeExists(TEST_COLLECTION_NAME, TEST_SHARD_NAME);
-    assertTrue(cluster.getZkClient().exists(metadataNodePath, false));
-    
-    String testMetadataValue = "testValue1";
-    
-    // setup with an initial value by writing
-    VersionedData newData = shardMetadataController.updateMetadataValueWithVersion(TEST_COLLECTION_NAME, TEST_SHARD_NAME, 
-        testMetadataValue, -1);
-    String cacheKey = shardMetadataController.getCacheKey(TEST_COLLECTION_NAME, TEST_SHARD_NAME);
-    VersionedData cachedData = shardMetadataController.getVersionedDataCache().get(cacheKey);
-    // verify the VersionedData returned is the same as the one cached
-    assertNotNull(cachedData);
-    assertEquals(newData.getVersion(), cachedData.getVersion());
-    assertTrue(Arrays.equals(newData.getData(), cachedData.getData()));
-  }
-  
-  /**
-   * Test that if an entry a VersionedData exists for a given collection and shard, and a conditional
-   * update fails, we remove the existing cached entry
-   */
-  @Test
-  public void testUnsuccessfulUpdateRemovesCacheEntry() throws Exception {
-    // reset cache 
-    shardMetadataController.getVersionedDataCache().clear();
-    
-    shardMetadataController.ensureMetadataNodeExists(TEST_COLLECTION_NAME, TEST_SHARD_NAME);
-    assertTrue(cluster.getZkClient().exists(metadataNodePath, false));
-    
-    String testMetadataValue = "testValue1";
-    
-    // setup with an initial value by writing
-    shardMetadataController.updateMetadataValueWithVersion(TEST_COLLECTION_NAME, TEST_SHARD_NAME, 
-        testMetadataValue, -1);
-    String cacheKey = shardMetadataController.getCacheKey(TEST_COLLECTION_NAME, TEST_SHARD_NAME);
-    // verify our entry is cached now
-    VersionedData cachedData = shardMetadataController.getVersionedDataCache().get(cacheKey);
-    assertNotNull(cachedData);
-    
-    // write a value that should fail with a bad version value
-    try {
-      shardMetadataController.updateMetadataValueWithVersion(TEST_COLLECTION_NAME, TEST_SHARD_NAME, 
-          testMetadataValue, 100);
-      fail("Updating metadata value with the wrong version should have failed");
-    } catch (Exception ex) {
-      
-    }
-    
-    // verify the cached value was removed
-    cachedData = shardMetadataController.getVersionedDataCache().get(cacheKey);
-    assertNull(cachedData);
-  }
-  
-  /**
-   * Test that if an entry a VersionedData exists for a given collection and shard, it is returned
-   * on read if specified so.
-   */
-  @Test
-  public void testReadReturnsCachedEntry() throws Exception {
-    // set up mocks to verify we read from the cache
-    ConcurrentHashMap<String, VersionedData> cacheSpy = Mockito.spy(new ConcurrentHashMap<String, VersionedData>());
-    SolrCloudManager cloudManagerMock = Mockito.mock(SolrCloudManager.class);
-    DistribStateManager distribStateManagerMock = Mockito.mock(DistribStateManager.class);
-    Mockito.when(cloudManagerMock.getDistribStateManager()).thenReturn(distribStateManagerMock);
-    
-    SharedShardMetadataController shardMetadataControllerWithMock = 
-        new SharedShardMetadataController(cloudManagerMock, cacheSpy); 
-    
-    // set up some fake data
-    String cacheKey = shardMetadataControllerWithMock.getCacheKey(TEST_COLLECTION_NAME, TEST_SHARD_NAME);
-    VersionedData mockData = new VersionedData(1, new byte[] {}, CreateMode.EPHEMERAL, "test");
-    shardMetadataControllerWithMock.getVersionedDataCache().put(cacheKey, mockData);
-    
-    // read and verify we pull from the cache if the value exists
-    shardMetadataControllerWithMock.readMetadataValue(TEST_COLLECTION_NAME, TEST_SHARD_NAME, true);
-    
-    // verify we pull from cache and not zookeeper
-    Mockito.verify(cacheSpy).get(shardMetadataControllerWithMock.getCacheKey(TEST_COLLECTION_NAME, TEST_SHARD_NAME));
-    Mockito.verifyZeroInteractions(distribStateManagerMock);
-  }
-  
-  /**
-   * Test that if readFromCache is specified when reading the metadata node and an entry in the
-   * cache for the given collection and shard doesn't exist, we read directly from zookeeper
-   */
-  @Test
-  public void testReadRetrievesFromZooKeeper() throws Exception {
-    ConcurrentHashMap<String, VersionedData> cacheSpy = Mockito.spy(new ConcurrentHashMap<String, VersionedData>());
-    SolrCloudManager cloudManagerMock = Mockito.mock(SolrCloudManager.class);
-    DistribStateManager distribStateManagerMock = Mockito.mock(DistribStateManager.class);
-    
-    Mockito.when(cloudManagerMock.getDistribStateManager()).thenReturn(distribStateManagerMock);
-    Mockito.when(distribStateManagerMock.getData(Mockito.any(), Mockito.any())).thenReturn(null);
-    
-    SharedShardMetadataController shardMetadataControllerWithMock = 
-        new SharedShardMetadataController(cloudManagerMock, cacheSpy); 
-    
-    // read and verify we pull from the cache if the value exists
-    shardMetadataControllerWithMock.readMetadataValue(TEST_COLLECTION_NAME, TEST_SHARD_NAME, true);
-    
-    // verify we're reading from zookeeper and not cache (even though there's no real data there)
-    Mockito.verify(distribStateManagerMock, Mockito.times(1)).getData(Mockito.any(), Mockito.any());
-  }
-  
-  /**
-   * Verify we can clear the cached version for some collection and shard
-   */
-  public void testClearCachedVersion() throws Exception {
-    // set up mocks to verify we read from the cache
-    ConcurrentHashMap<String, VersionedData> cacheSpy = Mockito.spy(new ConcurrentHashMap<String, VersionedData>());
-    SolrCloudManager cloudManagerMock = Mockito.mock(SolrCloudManager.class);
-    DistribStateManager distribStateManagerMock = Mockito.mock(DistribStateManager.class);
-    
-    Mockito.when(cloudManagerMock.getDistribStateManager()).thenReturn(distribStateManagerMock);
-    Mockito.when(distribStateManagerMock.getData(Mockito.any(), Mockito.any())).thenReturn(null);
-    
-    SharedShardMetadataController shardMetadataControllerWithMock = 
-        new SharedShardMetadataController(cloudManagerMock, cacheSpy);
-    
-    // set up some fake data
-    String cacheKey = shardMetadataControllerWithMock.getCacheKey(TEST_COLLECTION_NAME, TEST_SHARD_NAME);
-    VersionedData mockData = new VersionedData(1, new byte[] {}, CreateMode.EPHEMERAL, "test");
-    shardMetadataControllerWithMock.getVersionedDataCache().put(cacheKey, mockData);
-    
-    assertEquals(1, shardMetadataControllerWithMock.getVersionedDataCache().size());
-    // try to clean and verify 
-    shardMetadataControllerWithMock.clearCachedVersion(TEST_COLLECTION_NAME, TEST_SHARD_NAME);
-    Mockito.verify(cacheSpy).remove(Mockito.any());
-    assertEquals(0, shardMetadataControllerWithMock.getVersionedDataCache().size());
   }
 }

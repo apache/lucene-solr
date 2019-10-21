@@ -23,6 +23,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Throwables;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -30,6 +32,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.store.blob.client.BlobCoreMetadata;
+import org.apache.solr.store.blob.client.BlobCoreMetadataBuilder;
 import org.apache.solr.store.blob.client.CoreStorageClient;
 import org.apache.solr.store.blob.metadata.CorePushPull;
 import org.apache.solr.store.blob.metadata.ServerSideMetadata;
@@ -39,11 +42,13 @@ import org.apache.solr.store.blob.process.CorePullerFeeder.PullCoreInfo;
 import org.apache.solr.store.blob.provider.BlobStorageProvider;
 import org.apache.solr.store.blob.util.BlobStoreUtils;
 import org.apache.solr.store.blob.util.DeduplicatingList;
+import org.apache.solr.store.shared.SharedCoreConcurrencyController;
+import org.apache.solr.store.shared.SharedCoreConcurrencyController.SharedCoreStage;
+import org.apache.solr.store.shared.SharedCoreConcurrencyController.SharedCoreVersionMetadata;
+import org.apache.solr.store.shared.metadata.SharedShardMetadataController;
+import org.apache.solr.store.shared.metadata.SharedShardMetadataController.SharedShardVersionMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Throwables;
 
 /**
  * Code for pulling updates on a specific core to the Blob store. see {@CorePushTask} for the push version of this.
@@ -63,12 +68,10 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
   private final PullCoreInfo pullCoreInfo;
   
   /**
-   * Data structures injected as dependencies that track the core pulls occurring
-   * in flight and the cores that have been created and not pulled. These should
-   * be passed in via a constructor from CorePullerFeeder where they are defined
+   * Data structure injected as dependencies that track the cores that have been created and not pulled. 
+   * This should be passed in via a constructor from CorePullerFeeder where it is defined
    * and are unique per CorePullerFeeder (itself a singleton).
    */
-  private final HashMap<String, Long> pullsInFlight;
   private final Set<String> coresCreatedNotPulledYet;
   
   private final long queuedTimeMs;
@@ -76,23 +79,20 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
   private long lastAttemptTimestamp;
   private final PullCoreCallback callback;
 
-  CorePullTask(CoreContainer coreContainer, PullCoreInfo pullCoreInfo, PullCoreCallback callback,
-      HashMap<String, Long> pullsInFlight, Set<String> coresCreatedNotPulledYet) {
+  CorePullTask(CoreContainer coreContainer, PullCoreInfo pullCoreInfo, PullCoreCallback callback, Set<String> coresCreatedNotPulledYet) {
     this(coreContainer, pullCoreInfo, System.currentTimeMillis(), 0, 0L, 
-        callback, pullsInFlight, coresCreatedNotPulledYet);
+        callback, coresCreatedNotPulledYet);
   }
 
   @VisibleForTesting
   CorePullTask(CoreContainer coreContainer, PullCoreInfo pullCoreInfo, long queuedTimeMs, int attempts,
-      long lastAttemptTimestamp, PullCoreCallback callback, HashMap<String, Long> pullsInFlight, 
-      Set<String> coresCreatedNotPulledYet) {
+      long lastAttemptTimestamp, PullCoreCallback callback, Set<String> coresCreatedNotPulledYet) {
     this.coreContainer = coreContainer;
     this.pullCoreInfo = pullCoreInfo;
     this.queuedTimeMs = queuedTimeMs;
     this.attempts = attempts;
     this.lastAttemptTimestamp = lastAttemptTimestamp;
     this.callback = callback;
-    this.pullsInFlight = pullsInFlight;
     this.coresCreatedNotPulledYet = coresCreatedNotPulledYet;
   }
   
@@ -101,7 +101,7 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
    */
   @Override
   public String getDedupeKey() {
-    return this.pullCoreInfo.getSharedStoreName();
+    return this.pullCoreInfo.getCoreName();
   }
 
   /**
@@ -153,7 +153,7 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
       // We merge the tasks.
       return new CorePullTask(task1.coreContainer, mergedPullCoreInfo,
           Math.min(task1.queuedTimeMs, task2.queuedTimeMs), mergedAttempts, mergedLatAttemptsTimestamp,
-          task1.callback, task1.pullsInFlight, task1.coresCreatedNotPulledYet);
+          task1.callback, task1.coresCreatedNotPulledYet);
     }
   }
 
@@ -185,35 +185,22 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
     return this.queuedTimeMs;
   }
 
+  public CoreContainer getCoreContainer() {
+    return coreContainer;
+  }
+
   /**
    * Pulls the local core updates from the Blob store then calls the task callback to notify the
    * {@link CorePullerFeeder} of success or failure of the operation, give an indication of the reason the periodic
    * puller can decide to retry or not.
    */
-  void pullCoreFromBlob() throws InterruptedException {
+  void pullCoreFromBlob(boolean isLeaderPulling) throws InterruptedException {
     BlobCoreMetadata blobMetadata = null;
     if (coreContainer.isShutDown()) {
       this.callback.finishedPull(this, blobMetadata, CoreSyncStatus.SHUTTING_DOWN, null);
       // TODO could throw InterruptedException here or interrupt ourselves if we wanted to signal to
       // CorePullerThread to stop everything.
       return;
-    }
-
-    synchronized (pullsInFlight) {
-      Long pullInFlightTimestamp = pullsInFlight.get(pullCoreInfo.getSharedStoreName());
-      if (pullInFlightTimestamp != null) {
-        // Another pull is in progress, we'll retry later.
-        // Note we can't just cancel this pull, because the other pull might be working on a previous commit
-        // point.
-        long prevPullMs = System.currentTimeMillis() - pullInFlightTimestamp;
-        this.callback.finishedPull(this, blobMetadata, CoreSyncStatus.CONCURRENT_SYNC,
-            "Skipping core pull for " + pullCoreInfo.getSharedStoreName()
-            + " because another thread is currently pulling it (started " + prevPullMs
-            + " ms ago).");
-        return;
-      } else {
-        pullsInFlight.put(pullCoreInfo.getSharedStoreName(), System.currentTimeMillis());
-      }
     }
 
     // Copying the non final variables so we're clean wrt the Java memory model and values do not change as we go
@@ -228,6 +215,7 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
       }
     }
 
+    SharedCoreConcurrencyController concurrencyController = coreContainer.getSharedStoreManager().getSharedCoreConcurrencyController();
     CoreSyncStatus syncStatus = CoreSyncStatus.FAILURE;
     // Auxiliary information related to pull outcome. It can be metadata resolver message which can be null or exception detail in case of failure 
     String message = null;
@@ -236,8 +224,30 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
       BlobStorageProvider blobProvider = coreContainer.getSharedStoreManager().getBlobStorageProvider(); 
       CoreStorageClient blobClient = blobProvider.getClient();
 
+      SharedCoreVersionMetadata coreVersionMetadata = concurrencyController.getCoreVersionMetadata(pullCoreInfo.getCollectionName(),
+          pullCoreInfo.getShardName(),
+          pullCoreInfo.getCoreName());
+
+      SharedShardMetadataController metadataController = coreContainer.getSharedStoreManager().getSharedShardMetadataController();
+      SharedShardVersionMetadata shardVersionMetadata =  metadataController.readMetadataValue(pullCoreInfo.getCollectionName(), pullCoreInfo.getShardName());
+      
+      if(concurrencyController.areVersionsEqual(coreVersionMetadata, shardVersionMetadata)) {
+        // already in sync
+        this.callback.finishedPull(this, coreVersionMetadata.getBlobCoreMetadata(), CoreSyncStatus.SUCCESS_EQUIVALENT, null);
+        return;
+      } 
+      if (SharedShardMetadataController.METADATA_NODE_DEFAULT_VALUE.equals(shardVersionMetadata.getMetadataSuffix())) {
+        // no-op pull
+        BlobCoreMetadata emptyBlobCoreMetadata = BlobCoreMetadataBuilder.buildEmptyCoreMetadata(pullCoreInfo.getSharedStoreName());
+        concurrencyController.updateCoreVersionMetadata(pullCoreInfo.getCollectionName(), pullCoreInfo.getShardName(), pullCoreInfo.getCoreName(), 
+            shardVersionMetadata, emptyBlobCoreMetadata, isLeaderPulling);
+        this.callback.finishedPull(this, emptyBlobCoreMetadata, CoreSyncStatus.SUCCESS_EQUIVALENT, null);
+        return;
+      }
+
+      concurrencyController.recordState(pullCoreInfo.getCollectionName(), pullCoreInfo.getShardName(), pullCoreInfo.getCoreName(), SharedCoreStage.BlobPullStarted);
       // Get blob metadata
-      String blobCoreMetadataName = BlobStoreUtils.buildBlobStoreMetadataName(pullCoreInfo.getLastReadMetadataSuffix());
+      String blobCoreMetadataName = BlobStoreUtils.buildBlobStoreMetadataName(shardVersionMetadata.getMetadataSuffix());
       blobMetadata = blobClient.pullCoreMetadata(pullCoreInfo.getSharedStoreName(), blobCoreMetadataName);
       
       // Handle callback
@@ -264,10 +274,8 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
           // If we get to this point, we're setting the "created not pulled yet" status of the core here (only place
           // in the code where this happens) and we're clearing it in the finally below.
           // We're not leaking entries in coresCreatedNotPulledYet that might stay there forever...
-          synchronized (pullsInFlight) {
-            synchronized (coresCreatedNotPulledYet) {
-              coresCreatedNotPulledYet.add(pullCoreInfo.getSharedStoreName());
-            }
+          synchronized (coresCreatedNotPulledYet) {
+            coresCreatedNotPulledYet.add(pullCoreInfo.getSharedStoreName());
           }
           createCore(pullCoreInfo);
         } else {
@@ -288,9 +296,14 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
       if (resolutionResult.getFilesToPull().size() > 0) {
         BlobDeleteManager deleteManager = coreContainer.getSharedStoreManager().getBlobDeleteManager();
         CorePushPull cp = new CorePushPull(blobClient, deleteManager, pullCoreInfo, resolutionResult, serverMetadata, blobMetadata);
+        // TODO: we are computing/tracking attempts but we are not passing it along
         cp.pullUpdateFromBlob(/* waitForSearcher */ true);
+        concurrencyController.updateCoreVersionMetadata(pullCoreInfo.getCollectionName(), pullCoreInfo.getShardName(), pullCoreInfo.getCoreName(), 
+            shardVersionMetadata, blobMetadata, isLeaderPulling);
         syncStatus = CoreSyncStatus.SUCCESS;
       } else {
+        log.warn(String.format("Why there are no files to pull even when we do not match with the version in zk? collection=%s shard=%s core=%s",
+            pullCoreInfo.getCollectionName(), pullCoreInfo.getShardName(), pullCoreInfo.getCoreName()));
         syncStatus = CoreSyncStatus.SUCCESS_EQUIVALENT;
       }
 
@@ -308,43 +321,43 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
       message = Throwables.getStackTraceAsString(e);
       log.warn("Failed (attempt=" + attemptsCopy + ") to pull core " + pullCoreInfo.getSharedStoreName(), e);
     } finally {
-      // Remove ourselves from the in flight set before calling the callback method (just in case it takes
-      // forever)
-      synchronized (pullsInFlight) {
-        // No matter how the pull ends (success or any kind of error), we don't want to consider the core as awaiting pull,
-        // since it doesn't anymore (code is inline here rather than in a method or in notifyEndOfPull() to make
-        // it clear how coresCreatedNotPulledYet is managed).
-        synchronized (coresCreatedNotPulledYet) {
-          // TODO: Can we move this business of core creation and deletion outside of this task so that
-          //       we may not sub-optimally repeatedly create/delete core in case of reattempt of a transient pull error?
-          //       or get whether a reattempt will be made or not, and if there is a guaranteed reattempt then do not delete it
-          if (coresCreatedNotPulledYet.remove(pullCoreInfo.getSharedStoreName())) {
-            if (!syncStatus.isSuccess()) {
-              // If we created the core and we could not pull successfully then we should cleanup after ourselves by deleting it
-              // otherwise queries can incorrectly return 0 results from that core.
-              if(coreExists(pullCoreInfo.getCoreName())) {
-                try {
-                  // try to delete core within 3 minutes. In future when we time box our pull task then we 
-                  // need to make sure this value is within that bound. 
-                  // CoreDeleter.deleteCoreByName(coreContainer, pullCoreInfo.coreName, 3, TimeUnit.MINUTES);
-                  // TODO: need to migrate deleter
-                } catch (Exception ex) {
-                  // TODO: should we gack?
-                  //       can we do anything more here since we are unable to delete and we are leaving an empty core behind
-                  //       when we should not. Should we keep the core in coresCreatedNotPulledYet and try few more times
-                  //       but at some point we would have to let it go
-                  //       So may be, few more attempts here and then gack
-                  log.warn("CorePullTask successfully created local core but failed to pull it" +
-                      " and now is unable to delete that local core " + pullCoreInfo.getCoreName(), ex);
-                }
+      // No matter how the pull ends (success or any kind of error), we don't want to consider the core as awaiting pull,
+      // since it doesn't anymore (code is inline here rather than in a method or in notifyEndOfPull() to make
+      // it clear how coresCreatedNotPulledYet is managed).
+      synchronized (coresCreatedNotPulledYet) {
+        // TODO: Can we move this business of core creation and deletion outside of this task so that
+        //       we may not sub-optimally repeatedly create/delete core in case of reattempt of a transient pull error?
+        //       or get whether a reattempt will be made or not, and if there is a guaranteed reattempt then do not delete it
+        if (coresCreatedNotPulledYet.remove(pullCoreInfo.getSharedStoreName())) {
+          if (!syncStatus.isSuccess()) {
+            // If we created the core and we could not pull successfully then we should cleanup after ourselves by deleting it
+            // otherwise queries can incorrectly return 0 results from that core.
+            if (coreExists(pullCoreInfo.getCoreName())) {
+              try {
+                // try to delete core within 3 minutes. In future when we time box our pull task then we 
+                // need to make sure this value is within that bound. 
+                // CoreDeleter.deleteCoreByName(coreContainer, pullCoreInfo.coreName, 3, TimeUnit.MINUTES);
+                // TODO: need to migrate deleter
+              } catch (Exception ex) {
+                // TODO: should we gack?
+                //       can we do anything more here since we are unable to delete and we are leaving an empty core behind
+                //       when we should not. Should we keep the core in coresCreatedNotPulledYet and try few more times
+                //       but at some point we would have to let it go
+                //       So may be, few more attempts here and then gack
+                log.warn("CorePullTask successfully created local core but failed to pull it" +
+                    " and now is unable to delete that local core " + pullCoreInfo.getCoreName(), ex);
               }
             }
           }
         }
-        pullsInFlight.remove(pullCoreInfo.getSharedStoreName());
       }
     }
     this.callback.finishedPull(this, blobMetadata, syncStatus, message);
+    concurrencyController.recordState(pullCoreInfo.getCollectionName(), pullCoreInfo.getShardName(), pullCoreInfo.getCoreName(), SharedCoreStage.BlobPullFinished);
+  }
+
+  void finishedPull(BlobCoreMetadata blobCoreMetadata, CoreSyncStatus syncStatus, String message) throws InterruptedException {
+    this.callback.finishedPull(this, blobCoreMetadata, syncStatus, message);
   }
 
   /**

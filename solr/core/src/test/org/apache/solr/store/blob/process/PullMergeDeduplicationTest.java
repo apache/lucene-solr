@@ -16,10 +16,7 @@
  */
 package org.apache.solr.store.blob.process;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
-
+import com.google.common.collect.Sets;
 import org.apache.solr.store.blob.client.BlobCoreMetadata;
 import org.apache.solr.store.blob.process.CorePullTask.PullCoreCallback;
 import org.apache.solr.store.blob.process.CorePullTask.PullTaskMerger;
@@ -28,17 +25,14 @@ import org.apache.solr.store.blob.process.CorePullerFeeder.PullCoreInfoMerger;
 import org.apache.solr.store.blob.util.DeduplicatingList;
 import org.junit.Test;
 
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 /**
  * Tests for {@link DeduplicatingList} using {@link PullTaskMerger} and
  * {@link PullCoreInfoMerger}.
  */
 public class PullMergeDeduplicationTest {
-  
-  // not relevant in pulls but value required
-  private static final String NEW_METADATA_SUFFIX = "undefined";
   
   private final String COLLECTION_NAME_1 = "collection1";
   private final String COLLECTION_NAME_2 = "collection2";
@@ -55,69 +49,28 @@ public class PullMergeDeduplicationTest {
     PullCoreInfoMerger merger = new CorePullerFeeder.PullCoreInfoMerger();
     
     // merging two exactly the same PCI should return exactly the same
-    String lastReadMetadataSuffix = "randomString";
-    PullCoreInfo pullCoreInfo1 = getTestPullCoreInfo(COLLECTION_NAME_1, 
-        lastReadMetadataSuffix, NEW_METADATA_SUFFIX, 5, true, true);
-    PullCoreInfo pullCoreInfo2 = getTestPullCoreInfo(COLLECTION_NAME_1, 
-        lastReadMetadataSuffix, NEW_METADATA_SUFFIX, 5, true, true);
+    PullCoreInfo pullCoreInfo1 = getTestPullCoreInfo(COLLECTION_NAME_1, true, true);
+    PullCoreInfo pullCoreInfo2 = getTestPullCoreInfo(COLLECTION_NAME_1, true, true);
     
     PullCoreInfo mergedPullCoreInfo = merger.merge(pullCoreInfo1, pullCoreInfo2);
     assertPullCoreInfo(mergedPullCoreInfo, pullCoreInfo2); 
     
     // boolean flags on merge flip
-    pullCoreInfo1 = getTestPullCoreInfo(COLLECTION_NAME_1, 
-        lastReadMetadataSuffix, NEW_METADATA_SUFFIX, 5, false, true);
-    pullCoreInfo2 = getTestPullCoreInfo(COLLECTION_NAME_1, 
-        lastReadMetadataSuffix, NEW_METADATA_SUFFIX, 5, true, false);
+    pullCoreInfo1 = getTestPullCoreInfo(COLLECTION_NAME_1, false, true);
+    pullCoreInfo2 = getTestPullCoreInfo(COLLECTION_NAME_1, true, false);
     
     mergedPullCoreInfo = merger.merge(pullCoreInfo1, pullCoreInfo2);
     assertPullCoreInfo(
-        getTestPullCoreInfo(COLLECTION_NAME_1, lastReadMetadataSuffix, NEW_METADATA_SUFFIX, 5, true, true), 
+        getTestPullCoreInfo(COLLECTION_NAME_1, true, true), 
         mergedPullCoreInfo);
     
     // boolean flags on merge flip
-    pullCoreInfo1 = getTestPullCoreInfo(COLLECTION_NAME_1, 
-        lastReadMetadataSuffix, NEW_METADATA_SUFFIX, 5, true, false);
-    pullCoreInfo2 = getTestPullCoreInfo(COLLECTION_NAME_1, 
-        lastReadMetadataSuffix, NEW_METADATA_SUFFIX, 5, false, true);
+    pullCoreInfo1 = getTestPullCoreInfo(COLLECTION_NAME_1, true, false);
+    pullCoreInfo2 = getTestPullCoreInfo(COLLECTION_NAME_1, false, true);
     
     mergedPullCoreInfo = merger.merge(pullCoreInfo1, pullCoreInfo2);
     assertPullCoreInfo(
-        getTestPullCoreInfo(COLLECTION_NAME_1, lastReadMetadataSuffix, NEW_METADATA_SUFFIX, 5, true, true), 
-        mergedPullCoreInfo);
-    
-    // ensure the booleans are merged correctly when versions are equivalent 
-    pullCoreInfo1 = getTestPullCoreInfo(COLLECTION_NAME_1, 
-        lastReadMetadataSuffix, NEW_METADATA_SUFFIX, 5, true, false);
-    pullCoreInfo2 = getTestPullCoreInfo(COLLECTION_NAME_1, 
-        lastReadMetadataSuffix, NEW_METADATA_SUFFIX, 5, true, false);
-    mergedPullCoreInfo = merger.merge(pullCoreInfo1, pullCoreInfo2);
-    assertPullCoreInfo(
-        getTestPullCoreInfo(COLLECTION_NAME_1, lastReadMetadataSuffix, NEW_METADATA_SUFFIX, 5, true, false), 
-        mergedPullCoreInfo);
-    
-    // somehow if the versions are the same but lastReadMetadataSuffix are not, we fail 
-    // due to programming error
-    pullCoreInfo1 = getTestPullCoreInfo(COLLECTION_NAME_1, 
-        "notRandomString", NEW_METADATA_SUFFIX, 5, false, false);
-    pullCoreInfo2 = getTestPullCoreInfo(COLLECTION_NAME_1, 
-        lastReadMetadataSuffix, NEW_METADATA_SUFFIX, 5, false, false );
-    try {
-      merger.merge(pullCoreInfo1, pullCoreInfo2);
-      fail();
-    } catch (Throwable e) {
-      // success
-    }
-    
-    // higher version wins 
-    pullCoreInfo1 = getTestPullCoreInfo(COLLECTION_NAME_1, 
-        "differentSuffix", NEW_METADATA_SUFFIX, 6, true, true);
-    pullCoreInfo2 = getTestPullCoreInfo(COLLECTION_NAME_1, 
-        lastReadMetadataSuffix, NEW_METADATA_SUFFIX, 5, false, false);
-    
-    mergedPullCoreInfo = merger.merge(pullCoreInfo1, pullCoreInfo2);
-    assertPullCoreInfo(
-        getTestPullCoreInfo(COLLECTION_NAME_1, "differentSuffix", NEW_METADATA_SUFFIX, 6, true, true), 
+        getTestPullCoreInfo(COLLECTION_NAME_1, true, true), 
         mergedPullCoreInfo);
   }
   
@@ -130,9 +83,7 @@ public class PullMergeDeduplicationTest {
     DeduplicatingList<String, PullCoreInfo> dedupList = 
         new DeduplicatingList<>(10, new CorePullerFeeder.PullCoreInfoMerger());
     
-    String lastReadMetadataSuffix = "randomString";
-    PullCoreInfo pullCoreInfo = getTestPullCoreInfo(COLLECTION_NAME_1, 
-        lastReadMetadataSuffix, NEW_METADATA_SUFFIX, 5, true, true);
+    PullCoreInfo pullCoreInfo = getTestPullCoreInfo(COLLECTION_NAME_1, true, true);
     dedupList.addDeduplicated(pullCoreInfo, false);
     assertEquals(1, dedupList.size());
     
@@ -141,31 +92,29 @@ public class PullMergeDeduplicationTest {
     assertEquals(1, dedupList.size());
     
     assertPullCoreInfo(
-        getTestPullCoreInfo(COLLECTION_NAME_1, lastReadMetadataSuffix, NEW_METADATA_SUFFIX, 5, true, true), 
+        getTestPullCoreInfo(COLLECTION_NAME_1, true, true), 
         dedupList.removeFirst());
     
     // add a different PCI that should still be merged
     dedupList.addDeduplicated(pullCoreInfo, false);
     
-    pullCoreInfo = getTestPullCoreInfo(COLLECTION_NAME_1, 
-        "differentString", NEW_METADATA_SUFFIX, 6, false, false);
+    pullCoreInfo = getTestPullCoreInfo(COLLECTION_NAME_1, false, false);
     dedupList.addDeduplicated(pullCoreInfo, false);
     
     assertEquals(1, dedupList.size());
     assertPullCoreInfo(
-        getTestPullCoreInfo(COLLECTION_NAME_1, "differentString", NEW_METADATA_SUFFIX, 6, false, false), 
+        getTestPullCoreInfo(COLLECTION_NAME_1, true, true), 
         dedupList.removeFirst());
     
     dedupList.addDeduplicated(pullCoreInfo, false);
-    pullCoreInfo = getTestPullCoreInfo(COLLECTION_NAME_2, 
-        "differentString", NEW_METADATA_SUFFIX, 6, false, false);
+    pullCoreInfo = getTestPullCoreInfo(COLLECTION_NAME_2, false, false);
     // add a different PCI that should not be merged
     dedupList.addDeduplicated(pullCoreInfo, false);
     assertEquals(2, dedupList.size());
     
     // check the integrity of the first 
     assertPullCoreInfo(
-        getTestPullCoreInfo(COLLECTION_NAME_1, "differentString", NEW_METADATA_SUFFIX, 6, false, false), 
+        getTestPullCoreInfo(COLLECTION_NAME_1, false, false), 
         dedupList.removeFirst());
   }
   
@@ -240,21 +189,18 @@ public class PullMergeDeduplicationTest {
   private CorePullTask getTestCorePullTask(String dedupKey, long queuedTimeMs, int attempts, long lastAttemptTimestamp, PullCoreCallback callback) {
     // assume PullCoreInfo merging works correctly, just create the same static one per CorePullTask
     // with the given dedup key
-    PullCoreInfo pullCoreInfo = getTestPullCoreInfo(dedupKey, 
-        "randomString", NEW_METADATA_SUFFIX, 5, true, true);
+    PullCoreInfo pullCoreInfo = getTestPullCoreInfo(dedupKey, true, true);
     
     CorePullTask pullTask = new CorePullTask(/* coreContainer */ null, pullCoreInfo, queuedTimeMs,
-        attempts, lastAttemptTimestamp, /* callback */ callback, Maps.newHashMap(), Sets.newHashSet());
+        attempts, lastAttemptTimestamp, /* callback */ callback, Sets.newHashSet());
     return pullTask;
   }
   
-  private PullCoreInfo getTestPullCoreInfo(String collectionName, String lastReadMetadataSuffix,
-      String newMetadataSuffix, int version, boolean createCoreIfAbsent, boolean waitForSearcher) {
+  private PullCoreInfo getTestPullCoreInfo(String collectionName, boolean createCoreIfAbsent, boolean waitForSearcher) {
     return new PullCoreInfo(collectionName, 
         collectionName + SHARD_NAME,
         collectionName + CORE_NAME,
         collectionName + SHARED_NAME,
-        lastReadMetadataSuffix, newMetadataSuffix, version, 
         createCoreIfAbsent, waitForSearcher);
   }
   
@@ -271,8 +217,6 @@ public class PullMergeDeduplicationTest {
     assertEquals("PullCoreInfos core names do not match", expected.getCoreName(), actual.getCoreName());
     assertEquals("PullCoreInfos shard names do not match", expected.getShardName(), actual.getShardName());
     assertEquals("PullCoreInfos sharedStore names do not match", expected.getSharedStoreName(), actual.getSharedStoreName());
-    assertEquals("PullCoreInfos lastReadMetadataSuffix do not match", expected.getLastReadMetadataSuffix(), actual.getLastReadMetadataSuffix());
-    assertEquals("PullCoreInfos zkVersions do not match", expected.getZkVersion(), actual.getZkVersion());
     assertEquals("PullCoreInfos shouldCreateCoreifAbsent flag do not match", expected.shouldCreateCoreIfAbsent(), actual.shouldCreateCoreIfAbsent());
     assertEquals("PullCoreInfos shouldWaitForSearcher flag do not match", expected.shouldWaitForSearcher(), actual.shouldWaitForSearcher());
   }

@@ -17,16 +17,22 @@
 
 package org.apache.solr.handler.admin;
 
+import java.io.IOException;
 import java.util.concurrent.Future;
 
 import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.store.blob.client.BlobCoreMetadataBuilder;
 import org.apache.solr.store.blob.process.CoreUpdateTracker;
+import org.apache.solr.store.shared.SharedCoreConcurrencyController;
+import org.apache.solr.store.shared.metadata.SharedShardMetadataController;
+import org.apache.solr.store.shared.metadata.SharedShardMetadataController.SharedShardVersionMetadata;
 import org.apache.solr.update.UpdateLog;
 
 class RequestApplyUpdatesOp implements CoreAdminHandler.CoreAdminOp {
@@ -76,18 +82,39 @@ class RequestApplyUpdatesOp implements CoreAdminHandler.CoreAdminOp {
   }
 
 
-  private void pushToSharedStore(SolrCore core) {
+  private void pushToSharedStore(SolrCore core) throws IOException {
     // Push the index to blob storage before we set our state to ACTIVE
     CloudDescriptor cloudDesc = core.getCoreDescriptor().getCloudDescriptor();
     if (cloudDesc.getReplicaType().equals(Replica.Type.SHARED)) {
       CoreContainer cc = core.getCoreContainer();
       CoreUpdateTracker sharedCoreTracker = new CoreUpdateTracker(cc);
 
+      String collectionName = cloudDesc.getCollectionName();
+      String shardName = cloudDesc.getShardId();
+      String coreName = core.getName();
+      SharedShardMetadataController metadataController = cc.getSharedStoreManager().getSharedShardMetadataController();
+      // creates the metadata node
+      metadataController.ensureMetadataNodeExists(collectionName, shardName);
+      SharedShardVersionMetadata shardVersionMetadata = metadataController.readMetadataValue(collectionName, shardName);
+      // TODO: We should just be initialized to a default value since this is a new shard.  
+      //       As of now we are only taking care of basic happy path. We still need to evaluate what will happen
+      //       if a split is abandoned because of failure(e.g. long GC pause) and is re-tried?
+      //       How to make sure our re-attempt wins even when the ghost of previous attempt resumes and intervenes?
+      if (!SharedShardMetadataController.METADATA_NODE_DEFAULT_VALUE.equals(shardVersionMetadata.getMetadataSuffix())) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "New sub shard has zk information that is not default");
+      }
+
+      // sync local cache with zk's default information i.e. equivalent of no-op pull 
+      SharedCoreConcurrencyController concurrencyController = cc.getSharedStoreManager().getSharedCoreConcurrencyController();
+      String sharedBlobName = Assign.buildSharedShardName(collectionName, shardName);
+      concurrencyController.updateCoreVersionMetadata(collectionName, shardName, coreName,
+          shardVersionMetadata, BlobCoreMetadataBuilder.buildEmptyCoreMetadata(sharedBlobName));
+
       sharedCoreTracker.persistShardIndexToSharedStore(
           cc.getZkController().zkStateReader.getClusterState(),
-          cloudDesc.getCollectionName(),
-          cloudDesc.getShardId(),
-          core.getName());
+          collectionName,
+          shardName,
+          coreName);
     }
   }
 }

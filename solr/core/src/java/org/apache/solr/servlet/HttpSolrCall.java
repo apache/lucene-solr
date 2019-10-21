@@ -71,6 +71,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.JsonSchemaValidator;
@@ -349,14 +350,19 @@ public class HttpSolrCall {
           solrReq = parser.parse(core, path, req);
         }
 
-        // don't enqueue a pull on updates as those will already trigger their own synchronous pulls
-        if (cores.isZooKeeperAware() && !doesPathContainUpdate()) {
+        if (cores.isZooKeeperAware()) {
           String collectionName = core.getCoreDescriptor().getCloudDescriptor().getCollectionName();
           DocCollection collection = getCollection(collectionName);
           boolean belongsToSharedCollection =
               (collection != null) ? collection.getSharedIndex() : false;
           if (belongsToSharedCollection) {
-            enqueuePullFromSharedStore(core);
+            if (doesPathContainUpdate()) {
+              // Shared collection only supports hard commits therefore we always ensure one 
+              addCommitIfAbsent();
+              // don't enqueue a pull on updates as those will already trigger their own synchronous pulls
+            } else {
+              enqueuePullFromSharedStore(core);
+            }
           }
         }
 
@@ -371,6 +377,15 @@ public class HttpSolrCall {
     log.debug("no handler or core retrieved for " + path + ", follow through...");
 
     action = PASSTHROUGH;
+  }
+
+  private void addCommitIfAbsent() {
+    Boolean currentValue = solrReq.getParams().getBool(UpdateParams.COMMIT);
+    if (currentValue == null || currentValue == false) {
+      ModifiableSolrParams params = new ModifiableSolrParams(solrReq.getParams());
+      params.set(UpdateParams.COMMIT, "true");
+      solrReq.setParams(params);
+    }
   }
 
   /**

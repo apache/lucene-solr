@@ -17,10 +17,6 @@
 
 package org.apache.solr.store.blob.util;
 
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-
 import java.nio.file.Path;
 import java.util.UUID;
 
@@ -38,10 +34,15 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.store.blob.client.CoreStorageClient;
 import org.apache.solr.store.shared.SolrCloudSharedStoreTestCase;
 import org.apache.solr.store.shared.metadata.SharedShardMetadataController;
+import org.apache.solr.store.shared.metadata.SharedShardMetadataController.SharedShardVersionMetadata;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
+
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 
 /**
  * Unit tests for {@link BlobStoreUtils}
@@ -91,7 +92,8 @@ public class BlobStoreUtilsTest extends SolrCloudSharedStoreTestCase {
     
     CoreStorageClient blobClientSpy = Mockito.spy(storageClient);    
     try {
-      BlobStoreUtils.syncLocalCoreWithSharedStore(collectionName, newReplica.getCoreName(), shardName, cc);
+      SharedShardVersionMetadata shardVersionMetadata = new SharedShardVersionMetadata(0, SharedShardMetadataController.METADATA_NODE_DEFAULT_VALUE);
+      BlobStoreUtils.syncLocalCoreWithSharedStore(collectionName, newReplica.getCoreName(), shardName, cc, shardVersionMetadata, true);
       verify(blobClientSpy, never()).pullCoreMetadata(anyString(), anyString());
     } catch (Exception ex){
       fail("syncLocalCoreWithSharedStore failed with exception: " + ex.getMessage());
@@ -116,11 +118,9 @@ public class BlobStoreUtilsTest extends SolrCloudSharedStoreTestCase {
     newReplica = collection.getReplicas().get(0);
     cc = getCoreContainer(newReplica.getNodeName());
     
-    SharedShardMetadataController sharedMetadataController = cc.getSharedStoreManager().getSharedShardMetadataController();
-    sharedMetadataController.ensureMetadataNodeExists(collectionName, shardName);
-    sharedMetadataController.updateMetadataValueWithVersion(collectionName, shardName, UUID.randomUUID().toString(), -1);
     try {
-      BlobStoreUtils.syncLocalCoreWithSharedStore(collectionName, newReplica.getCoreName(), shardName, cc);
+      SharedShardVersionMetadata shardVersionMetadata = new SharedShardVersionMetadata(0, UUID.randomUUID().toString());
+      BlobStoreUtils.syncLocalCoreWithSharedStore(collectionName, newReplica.getCoreName(), shardName, cc, shardVersionMetadata, true);
       fail("syncLocalCoreWithSharedStore should throw exception if shared store doesn't have the core.metadata file.");
     } catch (Exception ex){
       String expectedException = "cannot get core.metadata file from shared store";
@@ -156,8 +156,10 @@ public class BlobStoreUtilsTest extends SolrCloudSharedStoreTestCase {
     req.add(doc);
     req.commit(cloudClient, collectionName);
     try {
+      SharedShardMetadataController metadataController = cc.getSharedStoreManager().getSharedShardMetadataController();
+      SharedShardVersionMetadata shardVersionMetadata = metadataController.readMetadataValue(collectionName, shardName);
       // we push and already have the latest updates so we should not pull here
-      BlobStoreUtils.syncLocalCoreWithSharedStore(collectionName, newReplica.getCoreName(), shardName, cc);
+      BlobStoreUtils.syncLocalCoreWithSharedStore(collectionName, newReplica.getCoreName(), shardName, cc, shardVersionMetadata, true);
       verify(blobClientSpy, never()).pullCoreMetadata(anyString(), anyString());
     } catch (Exception ex) { 
       fail("syncLocalCoreWithSharedStore failed with exception: " + ex.getMessage());
@@ -209,8 +211,10 @@ public class BlobStoreUtilsTest extends SolrCloudSharedStoreTestCase {
     assertEquals(1, core.getDeletionPolicy().getLatestCommit().getFileNames().size());
     
     try {
+      SharedShardMetadataController metadataController = cc.getSharedStoreManager().getSharedShardMetadataController();
+      SharedShardVersionMetadata shardVersionMetadata = metadataController.readMetadataValue(collectionName, shardName);
       // we pushed on the leader, try sync on the follower
-      BlobStoreUtils.syncLocalCoreWithSharedStore(collectionName, follower.getCoreName(), shardName, cc);
+      BlobStoreUtils.syncLocalCoreWithSharedStore(collectionName, follower.getCoreName(), shardName, cc, shardVersionMetadata, true);
       
       // did we pull?
       assertTrue(core.getDeletionPolicy().getLatestCommit().getFileNames().size() > 1);

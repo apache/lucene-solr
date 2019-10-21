@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.Directory;
@@ -31,10 +32,9 @@ import org.apache.solr.store.blob.metadata.ServerSideMetadata.CoreFileData;
 import org.apache.solr.store.blob.metadata.SharedStoreResolutionUtil.SharedMetadataResolutionResult;
 import org.apache.solr.store.blob.process.BlobDeleteManager;
 import org.apache.solr.store.blob.util.BlobStoreUtils;
+import org.apache.solr.store.shared.metadata.SharedShardMetadataController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.annotations.VisibleForTesting;
 
 /**
  * Class pushing updates from the local core to the Blob Store and pulling updates from Blob store to local core.
@@ -80,13 +80,6 @@ public class CorePushPull {
     }
 
     /**
-     * Calls {@link #pushToBlobStore(long, int)}  with current epoch time and attempt no 0.  
-     */
-    public BlobCoreMetadata pushToBlobStore() throws Exception {
-       return pushToBlobStore(System.currentTimeMillis(), 0);
-    }
-    
-    /**
      * Writes to the Blob store all the files that should be written to it, then updates and writes the {@link BlobCoreMetadata}.
      * After that call, the Blob store is fully updated for the core.<p>
      * In case of exception, it means that the new {@link BlobCoreMetadata} has not been written which means that the old
@@ -96,12 +89,12 @@ public class CorePushPull {
      * This method (need to verify this is indeed the case!) can be used either to push small updates from the local core
      * to Blob or to completely overwrite the Blob content for the core with the local content.
      * 
-     * @param requestQueuedTimeMs epoch time in milliseconds when the push request was queued(meaningful in case of async pushing)
-     *                            only used for logging purposes
-     * @param attempt 0 based attempt number (meaningful in case of pushing with retry mechanism)
-     *                only used for logging purposes 
+     * @param currentMetadataSuffix suffix of the core.metadata file corresponding to {@link CorePushPull#blobMetadata}
+     *                              TODO: there is an existing todo with delete logic where this parameter is consumed  
+     *                                    with that add a metadataSuffix field to {@link BlobCoreMetadata} 
+     * @param newMetadataSuffix suffix of the new core.metadata file to be created as part of this push
      */
-    public BlobCoreMetadata pushToBlobStore(long requestQueuedTimeMs, int attempt) throws Exception {
+    public BlobCoreMetadata pushToBlobStore(String currentMetadataSuffix, String newMetadataSuffix) throws Exception {
       long startTimeMs = System.currentTimeMillis();
       try {
         SolrCore solrCore = container.getCore(pushPullData.getCoreName());
@@ -113,39 +106,9 @@ public class CorePushPull {
           // Creating the new BlobCoreMetadata as a modified clone of the existing one
           BlobCoreMetadataBuilder bcmBuilder = new BlobCoreMetadataBuilder(blobMetadata, solrServerMetadata.getGeneration());
 
-          // First copy index files over to a temp directory and then push to blob store from there. 
-          // This is to avoid holding a lock over index directory involving network operation.
-          //
-          // Ideally, we don't need to lock source index directory to make temp copy because...:
-          // -all index files are write-once (http://mail-archives.apache.org/mod_mbox/lucene-java-user/201509.mbox/%3C00c001d0ed85$ee839b20$cb8ad160$@thetaphi.de%3E)
-          // -there is a possibility of a missing segment file because of merge but that could have happened even before reaching this point.
-          //  Whatever the timing maybe that will result in a failure (exception) when copying to temp and that will abort the push
-          // -segment file deletion(because of merge) and copying to temp happening concurrently should be ok as well since delete will wait 
-          //  for copy to finish (https://stackoverflow.com/questions/2028874/what-happens-to-an-open-file-handle-on-linux-if-the-pointed-file-gets-moved-del)
-          // ...But SfdcFSDirectoryFactory, that is based off CachingDirectoryFactory, can return a cached instance of Directory and
-          // that cache is only based off path and is rawLockType agnostic. Therefore passing "none" as rawLockType will not be honored if same path
-          // was accessed before with some other rawLockType until CachingDirectoryFactory#doneWithDirectory is called. 
-          // There is an overload that takes forceNew boolean and supposed to be returning new instance but CachingDirectoryFactory does not seem to honor that. 
-          // It is not worth fighting that therefore we lock the source index directory before copying to temp directory. If this much locking turns out
-          // to be problematic we can revisit this.
-          // 
-          // And without source locking we really don't need temp directory, one reason to still might have it is to avoid starting a push to blob store 
-          // that can potentially be stopped in the middle because of a concurrent merge deleting the segment files being pushed. 
-
-          // create a temp directory (within the core local folder).
-          String tempIndexDirPath = solrCore.getDataDir() + "index.push." + System.nanoTime();
-          Directory tempIndexDir = solrCore.getDirectoryFactory().get(tempIndexDirPath, DirectoryFactory.DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
+          Directory snapshotIndexDir = solrCore.getDirectoryFactory().get(solrServerMetadata.getSnapshotDirPath(), DirectoryFactory.DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
           try {
-            Directory indexDir = solrCore.getDirectoryFactory().get(solrCore.getIndexDir(), DirectoryFactory.DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
-            try {
-              // copy index files to the temp directory
-              for (CoreFileData cfd : resolvedMetadataResult.getFilesToPush()) {
-                copyFileToDirectory(indexDir, cfd.getFileName(), tempIndexDir);
-              }
-            } finally {
-              solrCore.getDirectoryFactory().release(indexDir);
-            }
-            
+
             /*
              * Removing from the core metadata the files that should no longer be there.
              * 
@@ -162,20 +125,21 @@ public class CorePushPull {
              * 
              * The deletion logic will move out of this class in the future and make this less confusing. 
              */
-            for (BlobCoreMetadata.BlobFile d : resolvedMetadataResult.getFilesToPull()) {
+            for (BlobCoreMetadata.BlobFile d : resolvedMetadataResult.getFilesToDelete()) {
                 bcmBuilder.removeFile(d);
                 BlobCoreMetadata.BlobFileToDelete bftd = new BlobCoreMetadata.BlobFileToDelete(d, System.currentTimeMillis());
                 bcmBuilder.addFileToDelete(bftd);
             }
             
             // add the old core.metadata file to delete
-            if (!pushPullData.getLastReadMetadataSuffix().equals("-1")) {
+            if (!currentMetadataSuffix.equals(SharedShardMetadataController.METADATA_NODE_DEFAULT_VALUE)) {
               // TODO This may be inefficient but we'll likely remove this when CorePushPull is refactored to have deletion elsewhere
+              //      could be added to resolvedMetadataResult#getFilesToDelete()
               ToFromJson<BlobCoreMetadata> converter = new ToFromJson<>();
               String json = converter.toJson(blobMetadata);
               int bcmSize = json.getBytes().length;
               
-              String blobCoreMetadataName = BlobStoreUtils.buildBlobStoreMetadataName(pushPullData.getLastReadMetadataSuffix());
+              String blobCoreMetadataName = BlobStoreUtils.buildBlobStoreMetadataName(currentMetadataSuffix);
               String coreMetadataPath = blobMetadata.getSharedBlobName() + "/" + blobCoreMetadataName;
               // so far checksum is not used for metadata file
               BlobCoreMetadata.BlobFileToDelete bftd = new BlobCoreMetadata.BlobFileToDelete("", coreMetadataPath, bcmSize, BlobCoreMetadataBuilder.UNDEFINED_VALUE, System.currentTimeMillis());
@@ -186,21 +150,13 @@ public class CorePushPull {
             // But this is untrue/totally false/misleading. SnapPuller has File all over.
             for (CoreFileData cfd : resolvedMetadataResult.getFilesToPush()) {
               // Sanity check that we're talking about the same file (just sanity, Solr doesn't update files so should never be different)
-              assert cfd.getFileSize() == tempIndexDir.fileLength(cfd.getFileName());
+              assert cfd.getFileSize() == snapshotIndexDir.fileLength(cfd.getFileName());
 
-              String blobPath = pushFileToBlobStore(coreStorageClient, tempIndexDir, cfd.getFileName(), cfd.getFileSize());
+              String blobPath = pushFileToBlobStore(coreStorageClient, snapshotIndexDir, cfd.getFileName(), cfd.getFileSize());
               bcmBuilder.addFile(new BlobCoreMetadata.BlobFile(cfd.getFileName(), blobPath, cfd.getFileSize(), cfd.getChecksum()));
             }
           } finally {
-            try {
-              // Remove temp directory
-              solrCore.getDirectoryFactory().doneWithDirectory(tempIndexDir);
-              solrCore.getDirectoryFactory().remove(tempIndexDir);
-            } catch (Exception e) {
-              log.warn("Cannot remove temp directory " + tempIndexDirPath, e);
-            } finally {
-              solrCore.getDirectoryFactory().release(tempIndexDir);
-            }
+            solrCore.getDirectoryFactory().release(snapshotIndexDir);
           }
           
           // delete what we need
@@ -208,7 +164,7 @@ public class CorePushPull {
           
           BlobCoreMetadata newBcm = bcmBuilder.build();
 
-          String blobCoreMetadataName = BlobStoreUtils.buildBlobStoreMetadataName(pushPullData.getNewMetadataSuffix());          
+          String blobCoreMetadataName = BlobStoreUtils.buildBlobStoreMetadataName(newMetadataSuffix);          
           coreStorageClient.pushCoreMetadata(blobMetadata.getSharedBlobName(), blobCoreMetadataName, newBcm);
           return newBcm;
         } finally {
@@ -219,7 +175,7 @@ public class CorePushPull {
         long bytesTransferred = resolvedMetadataResult.getFilesToPush().stream().mapToLong(cfd -> cfd.getFileSize()).sum();
         
         // todo correctness stuff
-        logBlobAction("PUSH", filesAffected, bytesTransferred, requestQueuedTimeMs, attempt, startTimeMs);
+        logBlobAction("PUSH", filesAffected, bytesTransferred, startTimeMs, 0, startTimeMs);
       }
     }
 
@@ -444,18 +400,6 @@ public class CorePushPull {
         return blobPath;
     }
 
-    private void removeTempDirectory(SolrCore solrCore, String tempDirPath, Directory tempDir) throws IOException {
-        try {
-            // Remove temp directory
-            solrCore.getDirectoryFactory().doneWithDirectory(tempDir);
-            solrCore.getDirectoryFactory().remove(tempDir);
-        } catch (Exception e) {
-            log.warn("Cannot remove temp directory " + tempDirPath, e);
-        } finally {
-            solrCore.getDirectoryFactory().release(tempDir);
-        }
-    }
-    
     /**
      * Logs soblb line for push or pull action 
      * TODO: This is for callers of this method.

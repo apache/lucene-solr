@@ -16,11 +16,21 @@
  */
 package org.apache.solr.store.blob.process;
 
-import org.apache.solr.store.blob.util.DeduplicatingList;
+import java.lang.invoke.MethodHandles;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import com.google.common.base.Throwables;
+import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.store.blob.util.DeduplicatingList;
+import org.apache.solr.store.shared.SharedCoreConcurrencyController;
+import org.apache.solr.store.shared.SharedCoreConcurrencyController.SharedCoreVersionMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.lang.invoke.MethodHandles;
 
 /**
  * A thread (there are a few of these created in {@link CorePullerFeeder#run}) that dequeues {@link CorePullTask} from a
@@ -47,9 +57,47 @@ public class CorePullerThread implements Runnable {
       try {
         // This call blocks if work queue is empty
         task = workQueue.removeFirst();
-        // TODO: we should timebox this request in case we are stuck for long time
-        task.pullCoreFromBlob();
 
+        CorePullerFeeder.PullCoreInfo info = task.getPullCoreInfo();
+        String collectionName = info.getCollectionName();
+        String shardName = info.getShardName();
+        String coreName = info.getCoreName();
+        SharedCoreConcurrencyController concurrencyController = task.getCoreContainer().getSharedStoreManager().getSharedCoreConcurrencyController();
+
+        SharedCoreVersionMetadata coreVersionMetadata = concurrencyController.getCoreVersionMetadata(collectionName, shardName, coreName);
+        // TODO: On leaders we can rely on soft guarantee of equality since indexing can correct them if they are wrong
+        //       There is a work item to make use of that knowledge and not enqueue pulls on leaders when soft guarantee of equality
+        //       is available. But until that work item is done this a stop gap measure to dismiss those unnecessary pulls.
+        //       The reason it is important to add this:
+        //       - is to prevent those unnecessary pulls to contend on pull write lock and cause any trouble to indexing which needs read lock.
+        //       The reason it is considered a stop gap measure:
+        //       - we need not to enqueue pull requests to begin with
+        //       - this isLeader computation is not complete, it does not handle cases when core is absent
+        //       - this isLeader computation might not be performant and efficient. I don't know if caching is involved here or not.
+        boolean isLeaderPulling = isLeader(task.getCoreContainer(), coreName);
+        if (coreVersionMetadata.isSoftGuaranteeOfEquality() && isLeaderPulling) {
+          // already in sync
+          task.finishedPull(coreVersionMetadata.getBlobCoreMetadata(), CoreSyncStatus.SUCCESS_EQUIVALENT, null);
+          // move to next task
+          continue;
+        }
+
+        ReentrantReadWriteLock corePullLock = concurrencyController.getCorePullLock(info.getCollectionName(), info.getShardName(), info.getCoreName());
+        // Try to acquire write lock, if possible. otherwise, we don't want to hold this background thread
+        // because it can be used for other cores in the mean time
+        // Avoiding the barging overload #tryLock() to let default fairness scheme play out, although, the way
+        // we are using this lock barging overload would not disrupt things that much 
+        if (corePullLock.writeLock().tryLock(0, TimeUnit.MILLISECONDS)) {
+          try {
+            // TODO: we should timebox this request in case we are stuck for long time
+            task.pullCoreFromBlob(isLeaderPulling);
+          } finally {
+            corePullLock.writeLock().unlock();
+          }
+        } else {
+          log.info(String.format("Could not acquire pull write lock, going back to task queue, pullCoreInfo=%s", task.getPullCoreInfo().toString()));
+          workQueue.addDeduplicated(task, true);
+        }
       } catch (InterruptedException ie) {
         log.info("Puller thread " + Thread.currentThread().getName()
             + " got interrupted. Shutting down Blob CorePullerFeeder if not already.");
@@ -60,9 +108,42 @@ public class CorePullerThread implements Runnable {
         break;
       } catch (Exception e) {
         // Exceptions other than InterruptedException should not stop the business
-        String taskInfo = task == null ? "" : String.format("Attempt=%s to pull core %s ", task.getAttempts(), task.getPullCoreInfo().getSharedStoreName()) ;
+        String taskInfo = "";
+        if (task != null) {
+          try {
+            taskInfo = String.format("Attempt=%s to pull core %s ", task.getAttempts(), task.getPullCoreInfo().getCoreName());
+            task.finishedPull(null, CoreSyncStatus.FAILURE, Throwables.getStackTraceAsString(e));
+          } catch (Exception fpe) {
+            log.warn("Cleaning up of pull task encountered a failure.", fpe);
+          }
+        }
         log.warn("CorePullerThread encountered a failure. " + taskInfo, e);
       }
     }
+  }
+
+  // TODO: This is temporary, see detailed note where it is consumed above.
+  private boolean isLeader(CoreContainer coreContainer, String coreName) throws InterruptedException {
+    if (!coreContainer.isZooKeeperAware()) {
+      // not solr cloud
+      return false;
+    }
+    CoreDescriptor coreDescriptor = coreContainer.getCoreDescriptor(coreName);
+    if (coreDescriptor == null) {
+      // core does not exist
+      return false;
+    }
+    CloudDescriptor cd = coreDescriptor.getCloudDescriptor();
+    if (cd == null || cd.getReplicaType() != Replica.Type.SHARED) {
+      // not a shared replica
+      return false;
+    }
+    ZkController zkController = coreContainer.getZkController();
+    Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(cd.getCollectionName(), cd.getShardId());
+    if (leaderReplica == null || !cd.getCoreNodeName().equals(leaderReplica.getName())) {
+      // not a leader replica
+      return false;
+    }
+    return true;
   }
 }

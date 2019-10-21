@@ -30,6 +30,8 @@ public class SharedStoreResolutionUtil {
     private final Collection<CoreFileData> filesToPush;
     // blob files needed to be pulled
     private final Collection<BlobFile> filesToPull;
+    // blob files needed to be deleted
+    private final Collection<BlobFile> filesToDelete;
     // Whether the local index contents conflict with contents to be pulled from blob. If they do we will move the
     // core to new index dir when pulling blob contents
     // Two cases:
@@ -39,7 +41,7 @@ public class SharedStoreResolutionUtil {
     
     
     public SharedMetadataResolutionResult(Collection<CoreFileData> filesToPush, 
-        Collection<BlobFile> filesToPull, boolean localConflictingWithBlob) {
+        Collection<BlobFile> filesToPull, Collection<BlobFile> filesToDelete, boolean localConflictingWithBlob) {
       if (filesToPush == null) {
         this.filesToPush = Collections.emptySet();
       } else {
@@ -52,6 +54,12 @@ public class SharedStoreResolutionUtil {
         this.filesToPull = filesToPull;
       }
 
+      if (filesToDelete == null) {
+        this.filesToDelete = Collections.emptySet();
+      } else {
+        this.filesToDelete = filesToDelete;
+      }
+
       this.localConflictingWithBlob = localConflictingWithBlob;
     }
     
@@ -62,7 +70,11 @@ public class SharedStoreResolutionUtil {
     public Collection<BlobFile> getFilesToPull() {
       return filesToPull;
     }
-    
+
+    public Collection<BlobFile> getFilesToDelete() {
+      return filesToDelete;
+    }
+
     public boolean isLocalConflictingWithBlob(){
       return localConflictingWithBlob;
     }
@@ -108,7 +120,7 @@ public class SharedStoreResolutionUtil {
         || distant.getBlobFiles().length == 0) {
       // The shard index data does not exist on the shared store. All we can do is push. 
       // We've computed localFilesMissingOnBlob above, and blobFilesMissingLocally is empty as it should be.
-      return new SharedMetadataResolutionResult(localFilesMissingOnBlob.values(), blobFilesMissingLocally.values(), false);
+      return new SharedMetadataResolutionResult(localFilesMissingOnBlob.values(), blobFilesMissingLocally.values(), blobFilesMissingLocally.values(), false);
     }
     
     // Verify we find one and only one segments_N file to download from Blob.
@@ -136,7 +148,7 @@ public class SharedStoreResolutionUtil {
     if (local == null) {
       // The shard index data does not exist locally. All we can do is pull.  
       // We've computed blobFilesMissingLocally and localFilesMissingOnBlob is empty as it should be.
-      return new SharedMetadataResolutionResult(localFilesMissingOnBlob.values(), blobFilesMissingLocally.values(), false);
+      return new SharedMetadataResolutionResult(localFilesMissingOnBlob.values(), blobFilesMissingLocally.values(), blobFilesMissingLocally.values(), false);
     }
 
     boolean localConflictingWithBlob = false;
@@ -170,7 +182,7 @@ public class SharedStoreResolutionUtil {
     // resolver to produce list of files to be pulled from blob and list of files to be pulled(read copied) from local index directory.
     // But that would have unnecessarily convoluted the design of this resolver.
     Collection<BlobFile> filesToPull = localConflictingWithBlob ? Arrays.asList(distant.getBlobFiles()) : blobFilesMissingLocally.values();
-    return new SharedMetadataResolutionResult(localFilesMissingOnBlob.values(), filesToPull, localConflictingWithBlob);
+    return new SharedMetadataResolutionResult(localFilesMissingOnBlob.values(), filesToPull, blobFilesMissingLocally.values(), localConflictingWithBlob);
   }
   
   /** Identify the segments_N file in Blob files. */

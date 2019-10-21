@@ -1,18 +1,14 @@
 package org.apache.solr.store.blob.process;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Map;
 
-import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.store.blob.metadata.PushPullData;
-import org.apache.solr.store.blob.util.BlobStoreUtils;
 import org.apache.solr.store.shared.metadata.SharedShardMetadataController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,19 +58,6 @@ public class CoreUpdateTracker {
           log.warn("Performing a push for shard " + shardName + " that is inactive!");
         }
         log.info("Initiating push for collection=" + collectionName + " shard=" + shardName + " coreName=" + coreName);
-        // creates the metadata node if it doesn't exist
-        shardSharedMetadataController.ensureMetadataNodeExists(collectionName, shardName);
-
-        /*
-         * Get the metadataSuffix value from ZooKeeper or from a cache if an entry exists for the 
-         * given collection and shardName. If the leader has already changed, the conditional update
-         * later will fail and invalidate the cache entry if it exists. 
-         */
-        VersionedData data = shardSharedMetadataController.readMetadataValue(collectionName, shardName, 
-            /* readFromCache */ true);
-
-        Map<String, String> nodeUserData = (Map<String, String>) Utils.fromJSON(data.getData());
-        String metadataSuffix = nodeUserData.get(SharedShardMetadataController.SUFFIX_NODE_NAME);
 
         String sharedShardName = (String) shard.get(ZkStateReader.SHARED_SHARD_NAME);
 
@@ -83,9 +66,6 @@ public class CoreUpdateTracker {
             .setShardName(shardName)
             .setCoreName(coreName)
             .setSharedStoreName(sharedShardName)
-            .setLastReadMetadataSuffix(metadataSuffix)
-            .setNewMetadataSuffix(BlobStoreUtils.generateMetadataSuffix())
-            .setZkVersion(data.getVersion())
             .build();
         CorePusher pusher = new CorePusher(coreContainer);
         pusher.pushCoreToBlob(pushPullData);

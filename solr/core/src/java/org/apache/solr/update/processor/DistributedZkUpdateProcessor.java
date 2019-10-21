@@ -17,8 +17,6 @@
 
 package org.apache.solr.update.processor;
 
-import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -32,7 +30,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.Overseer;
@@ -60,8 +60,15 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.store.blob.metadata.PushPullData;
+import org.apache.solr.store.blob.process.CorePusher;
 import org.apache.solr.store.blob.process.CoreUpdateTracker;
 import org.apache.solr.store.blob.util.BlobStoreUtils;
+import org.apache.solr.store.shared.SharedCoreConcurrencyController;
+import org.apache.solr.store.shared.SharedCoreConcurrencyController.SharedCoreStage;
+import org.apache.solr.store.shared.SharedCoreConcurrencyController.SharedCoreVersionMetadata;
+import org.apache.solr.store.shared.metadata.SharedShardMetadataController;
+import org.apache.solr.store.shared.metadata.SharedShardMetadataController.SharedShardVersionMetadata;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.DeleteUpdateCommand;
@@ -75,7 +82,7 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.annotations.VisibleForTesting;
+import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
@@ -87,6 +94,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   private final String collection;
   private boolean readOnlyCollection = false;
   private CoreUpdateTracker sharedCoreTracker;
+  private ReentrantReadWriteLock corePullLock;
 
   // The cached immutable clusterState for the update... usually refreshed for each individual update.
   // Different parts of this class used to request current clusterState views, which lead to subtle bugs and race conditions
@@ -209,9 +217,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     } else {
       // zk
       ModifiableSolrParams params = new ModifiableSolrParams(filterParams(req.getParams()));
-      if (replicaType.equals(Replica.Type.SHARED)) {
-        readFromSharedStoreIfNecessary();
-      }
 
       List<SolrCmdDistributor.Node> useNodes = null;
       if (req.getParams().get(COMMIT_END_POINT) == null) {
@@ -1055,6 +1060,10 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
   @Override
   protected void doClose() {
+    if (corePullLock != null) {
+      // release read lock
+      corePullLock.readLock().unlock();
+    }
     if (cmdDistrib != null) {
       cmdDistrib.close();
     }
@@ -1081,30 +1090,131 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     super.processRollback(cmd);
   }
 
-  private void writeToShareStore() throws SolrException {
-    log.info("Attempting to initiate index update write to shared store for collection=" + cloudDesc.getCollectionName() +
-        " and shard=" + cloudDesc.getShardId() + " using core=" + req.getCore().getName());
+
+  private void writeToSharedStore() {
+    String collectionName = cloudDesc.getCollectionName();
+    String shardName = cloudDesc.getShardId();
+    String coreName = req.getCore().getName();
+    SharedCoreConcurrencyController concurrencyController = req.getCore().getCoreContainer().getSharedStoreManager().getSharedCoreConcurrencyController();
+    concurrencyController.recordState(collectionName, shardName, coreName, SharedCoreStage.LocalIndexingFinished);
+
+    log.info("Attempting to initiate index update write to shared store for collection=" + collectionName +
+        " and shard=" + shardName + " using core=" + coreName);
 
     sharedCoreTracker.persistShardIndexToSharedStore(zkController.zkStateReader.getClusterState(),
-        cloudDesc.getCollectionName(),
-        cloudDesc.getShardId(),
-        req.getCore().getName());
+        collectionName,
+        shardName,
+        coreName);
   }
 
-  private void readFromSharedStoreIfNecessary() throws SolrException {
-    String coreName = req.getCore().getName();
-    String shardName = cloudDesc.getShardId();
+  private void readFromSharedStoreIfNecessary() {
     String collectionName = cloudDesc.getCollectionName();
+    String shardName = cloudDesc.getShardId();
+    String coreName = req.getCore().getName();
     assert Replica.Type.SHARED.equals(replicaType);
     // Peers and subShardLeaders should only forward the update request to leader replica,
     // hence not need to sync with the blob store at this point.
     if (!isLeader || isSubShardLeader) {
       return;
     }
-    BlobStoreUtils.syncLocalCoreWithSharedStore(collectionName,coreName,shardName,req.getCore().getCoreContainer());
+
+    // this lock acquire/release logic is built on the assumption that one particular instance of this processor
+    // will solely be consumed by a single thread.
+    // Following pull logic should only run once before the first document of indexing batch(add/delete) is processed by this processor
+    if (corePullLock != null) {
+      // we already have a lock i.e. we have already read from the shared store (if needed)
+      return;
+    }
+
+    CoreContainer coreContainer = req.getCore().getCoreContainer();
+    SharedCoreConcurrencyController concurrencyController = coreContainer.getSharedStoreManager().getSharedCoreConcurrencyController();
+    concurrencyController.recordState(collectionName, shardName, coreName, SharedCoreStage.IndexingBatchReceived);
+    corePullLock = concurrencyController.getCorePullLock(collectionName, shardName, coreName);
+    // acquire lock for the whole duration of update
+    // it will be release in close method
+    corePullLock.readLock().lock();
+    // from this point on wards we should always exit this method with read lock (no matter failure or what)
+
+    SharedCoreVersionMetadata coreVersionMetadata = concurrencyController.getCoreVersionMetadata(collectionName, shardName, coreName);
+    /**
+     * we only need to sync if there is no soft guarantee of being in sync.
+     * if there is one we will rely on that, and if we turned out to be wrong indexing will fail at push time
+     * and will remove this guarantee in {@link CorePusher#pushCoreToBlob(PushPullData)}
+     */
+    if (!coreVersionMetadata.isSoftGuaranteeOfEquality()) {
+      SharedShardMetadataController metadataController = coreContainer.getSharedStoreManager().getSharedShardMetadataController();
+      SharedShardVersionMetadata shardVersionMetadata = metadataController.readMetadataValue(collectionName, shardName);
+      if (!concurrencyController.areVersionsEqual(coreVersionMetadata, shardVersionMetadata)) {
+        // we need to pull before indexing therefore we need to upgrade to write lock
+        // we have to release read lock before we can acquire write lock
+        corePullLock.readLock().unlock();
+        boolean reacquireReadLock = true;
+        try {
+          // There is a likelihood that many indexing requests came at once and realized we are out of sync.
+          // They all would try to acquire write lock. One of them makes progress to pull from shared store.
+          // After that regular indexing will see soft guarantee of equality and moves straight to indexing
+          // under read lock. Now it is possible that new indexing keeps coming in and read lock is never free.
+          // In that case the poor guys that came in earlier and wanted to pull will still be struggling(starving) to
+          // acquire write lock. Since we know that write lock is only needed by one to do the work, we will
+          // try time boxed acquisition and in case of failed acquisition we will see if some one else has already completed the pull.
+          // We will make few attempts before we bail out. Ideally bail out scenario should never happen.
+          // If it does then either we are too slow in pulling and can tune following parameters or something else is wrong.
+          int attempt = 1;
+          while (true) {
+            try {
+              // try acquiring write lock
+              if (corePullLock.writeLock().tryLock(SharedCoreConcurrencyController.SECONDS_TO_WAIT_INDEXING_PULL_WRITE_LOCK, TimeUnit.SECONDS)) {
+                try {
+                  // in between upgrading locks things might have updated, should reestablish if pull is still needed
+                  coreVersionMetadata = concurrencyController.getCoreVersionMetadata(collectionName, shardName, coreName);
+                  if (!coreVersionMetadata.isSoftGuaranteeOfEquality()) {
+                    shardVersionMetadata = metadataController.readMetadataValue(collectionName, shardName);
+                    if (!concurrencyController.areVersionsEqual(coreVersionMetadata, shardVersionMetadata)) {
+                      BlobStoreUtils.syncLocalCoreWithSharedStore(collectionName, coreName, shardName, coreContainer, shardVersionMetadata, /* isLeaderSyncing */true);
+                    }
+                  }
+                  // reacquire read lock for the remainder of indexing before releasing write lock that was acquired for pull part
+                  corePullLock.readLock().lock();
+                  reacquireReadLock = false;
+                } finally {
+                  corePullLock.writeLock().unlock();
+                }
+                // write lock acquisition was successful and we are in sync with shared store
+                break;
+              } else {
+                // we could not acquire write lock but see if some other thread has already done the pulling
+                coreVersionMetadata = concurrencyController.getCoreVersionMetadata(collectionName, shardName, coreName);
+                if (coreVersionMetadata.isSoftGuaranteeOfEquality()) {
+                  log.info(String.format("Indexing thread waited to acquire to write lock and could not. " +
+                          "But someone else has done the pulling so we are good. attempt=%s collection=%s shard=%s core=%s",
+                      attempt, collectionName, shardName, coreName));
+                  break;
+                }
+                // no one else has pulled yet either, lets make another attempt ourselves
+                attempt++;
+                if (attempt > SharedCoreConcurrencyController.MAX_ATTEMPTS_INDEXING_PULL_WRITE_LOCK) {
+                  throw new SolrException(ErrorCode.SERVER_ERROR, String.format("Indexing thread failed to acquire write lock for pull in %s seconds. " +
+                          "And no one else either has done the pull during that time. collection=%s shard=%s core=%s",
+                      Integer.toString(SharedCoreConcurrencyController.SECONDS_TO_WAIT_INDEXING_PULL_WRITE_LOCK * SharedCoreConcurrencyController.MAX_ATTEMPTS_INDEXING_PULL_WRITE_LOCK),
+                      collectionName, shardName, coreName));
+                }
+              }
+            } catch (InterruptedException ie) {
+              Thread.currentThread().interrupt();
+              throw new SolrException(ErrorCode.SERVER_ERROR, String.format("Indexing thread interrupted while trying to acquire pull write lock." +
+                  " collection=%s shard=%s core=%s", collectionName, shardName, coreName), ie);
+            }
+          }
+        } finally {
+          // we should always leave with read lock acquired(failure or success), since it is the job of close method to release it
+          if (reacquireReadLock) {
+            corePullLock.readLock().lock();
+          }
+        }
+      }
+    }
+    concurrencyController.recordState(collectionName, shardName, coreName, SharedCoreStage.LocalIndexingStarted);
   }
-
-
 
   // TODO: optionally fail if n replicas are not reached...
   protected void doDistribFinish() {
@@ -1138,7 +1248,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
        * what the DUP is concerned about so we may want to consider moving this code somewhere more appropriate
        * in the future (deeper in the stack)
        */
-      writeToShareStore();
+      writeToSharedStore();
     }
 
     // TODO: if not a forward and replication req is not specified, we could

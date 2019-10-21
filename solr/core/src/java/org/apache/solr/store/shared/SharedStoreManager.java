@@ -16,6 +16,7 @@
  */
 package org.apache.solr.store.shared;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.store.blob.metadata.BlobCoreSyncer;
 import org.apache.solr.store.blob.process.BlobDeleteManager;
@@ -23,8 +24,6 @@ import org.apache.solr.store.blob.process.BlobProcessUtil;
 import org.apache.solr.store.blob.process.CorePullTracker;
 import org.apache.solr.store.blob.provider.BlobStorageProvider;
 import org.apache.solr.store.shared.metadata.SharedShardMetadataController;
-
-import com.google.common.annotations.VisibleForTesting;
 
 /**
  * Provides access to Shared Store processes. Note that this class is meant to be 
@@ -40,12 +39,14 @@ public class SharedStoreManager {
   private BlobProcessUtil blobProcessUtil;
   private CorePullTracker corePullTracker;
   private BlobCoreSyncer blobCoreSyncer;
-  
+  private SharedCoreConcurrencyController sharedCoreConcurrencyController;
+
   public SharedStoreManager(ZkController controller) {
     zkController = controller;
     // initialize BlobProcessUtil with the SharedStoreManager for background processes to be ready
     blobProcessUtil = new BlobProcessUtil(zkController.getCoreContainer());
     blobCoreSyncer = new BlobCoreSyncer();
+    sharedCoreConcurrencyController = new SharedCoreConcurrencyController(zkController.getCoreContainer());
   }
   
   @VisibleForTesting
@@ -113,4 +114,14 @@ public class SharedStoreManager {
   public BlobCoreSyncer getBlobCoreSyncer() {
     return blobCoreSyncer;
   }
+
+  public SharedCoreConcurrencyController getSharedCoreConcurrencyController() {
+    return sharedCoreConcurrencyController;
+  }
+
+  @VisibleForTesting
+  public void initConcurrencyController(SharedCoreConcurrencyController concurrencyController) {
+    this.sharedCoreConcurrencyController = concurrencyController;
+  }
+
 }

@@ -16,15 +16,13 @@
  */
 package org.apache.solr.store.blob.metadata;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.store.blob.client.BlobCoreMetadata;
@@ -35,7 +33,8 @@ import org.apache.solr.store.blob.metadata.SharedStoreResolutionUtil.SharedMetad
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableSet;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link SharedStoreResolutionUtil}.
@@ -71,7 +70,7 @@ public class SharedStoreResolutionUtilTest extends SolrTestCaseJ4 {
       
     // expected resolution
     SharedMetadataResolutionResult expectedResult = new 
-        SharedMetadataResolutionResult(Collections.emptySet(), Collections.emptySet(), false);
+        SharedMetadataResolutionResult(Collections.emptySet(), Collections.emptySet(), Collections.emptySet(), false);
     
     // do resolution
     SharedMetadataResolutionResult actual = SharedStoreResolutionUtil.resolveMetadata(null, blobMetadata);
@@ -94,7 +93,7 @@ public class SharedStoreResolutionUtilTest extends SolrTestCaseJ4 {
       
     // expected resolution
     SharedMetadataResolutionResult expectedResult = new 
-        SharedMetadataResolutionResult(serverMetadata.getLatestCommitFiles(), Collections.emptySet(), false);
+        SharedMetadataResolutionResult(serverMetadata.getLatestCommitFiles(), Collections.emptySet(), Collections.emptySet(), false);
     
     // do resolution
     SharedMetadataResolutionResult actual = SharedStoreResolutionUtil.resolveMetadata(serverMetadata, null);
@@ -117,7 +116,7 @@ public class SharedStoreResolutionUtilTest extends SolrTestCaseJ4 {
 
     // expected resolution
     SharedMetadataResolutionResult expectedResult = new 
-        SharedMetadataResolutionResult(Collections.emptySet(), Arrays.asList(blobMetadata.getBlobFiles()), false);
+        SharedMetadataResolutionResult(Collections.emptySet(), Arrays.asList(blobMetadata.getBlobFiles()), Collections.emptySet(), false);
     
     // do resolution
     SharedMetadataResolutionResult actual = SharedStoreResolutionUtil.resolveMetadata(null, blobMetadata);
@@ -182,7 +181,7 @@ public class SharedStoreResolutionUtilTest extends SolrTestCaseJ4 {
     
     // expected resolution
     SharedMetadataResolutionResult expectedResult = new 
-        SharedMetadataResolutionResult(Arrays.asList(expectedFileToPush), Collections.emptySet(), false);
+        SharedMetadataResolutionResult(Arrays.asList(expectedFileToPush), Collections.emptySet(), Collections.emptySet(), false);
     
     // do resolution
     SharedMetadataResolutionResult actual = SharedStoreResolutionUtil.resolveMetadata(serverMetadata, blobMetadata);
@@ -212,7 +211,7 @@ public class SharedStoreResolutionUtilTest extends SolrTestCaseJ4 {
     
     // expected resolution
     SharedMetadataResolutionResult expectedResult = new 
-        SharedMetadataResolutionResult(Collections.emptySet(), Arrays.asList(expectedFileToPull), false);
+        SharedMetadataResolutionResult(Collections.emptySet(), Arrays.asList(expectedFileToPull), Collections.emptySet(), false);
     
     // do resolution
     SharedMetadataResolutionResult actual = SharedStoreResolutionUtil.resolveMetadata(serverMetadata, blobMetadata);
@@ -245,7 +244,7 @@ public class SharedStoreResolutionUtilTest extends SolrTestCaseJ4 {
     
     // expected resolution
     SharedMetadataResolutionResult expectedResult = new 
-        SharedMetadataResolutionResult(Arrays.asList(expectedFileToPush), Arrays.asList(expectedFileToPull), false);
+        SharedMetadataResolutionResult(Arrays.asList(expectedFileToPush), Arrays.asList(expectedFileToPull), Collections.emptySet(), false);
     
     // do resolution
     SharedMetadataResolutionResult actual = SharedStoreResolutionUtil.resolveMetadata(serverMetadata, blobMetadata);
@@ -276,7 +275,7 @@ public class SharedStoreResolutionUtilTest extends SolrTestCaseJ4 {
 
     // expected resolution
     SharedMetadataResolutionResult expectedResult = new
-        SharedMetadataResolutionResult(Arrays.asList(expectedFileToPush), Arrays.asList(blobMetadata.getBlobFiles()), true);
+        SharedMetadataResolutionResult(Arrays.asList(expectedFileToPush), Arrays.asList(blobMetadata.getBlobFiles()), Collections.emptySet(), true);
 
     // do resolution
     SharedMetadataResolutionResult actual = SharedStoreResolutionUtil.resolveMetadata(serverMetadata, blobMetadata);
@@ -303,7 +302,7 @@ public class SharedStoreResolutionUtilTest extends SolrTestCaseJ4 {
 
     // expected resolution
     SharedMetadataResolutionResult expectedResult = new
-        SharedMetadataResolutionResult(Collections.emptySet(), Arrays.asList(blobMetadata.getBlobFiles()), true);
+        SharedMetadataResolutionResult(Collections.emptySet(), Arrays.asList(blobMetadata.getBlobFiles()), Collections.emptySet(), true);
 
     // do resolution
     SharedMetadataResolutionResult actual = SharedStoreResolutionUtil.resolveMetadata(serverMetadata, blobMetadata);
@@ -335,7 +334,7 @@ public class SharedStoreResolutionUtilTest extends SolrTestCaseJ4 {
 
     // expected resolution
     SharedMetadataResolutionResult expectedResult = new
-        SharedMetadataResolutionResult(Arrays.asList(expectedFileToPush), Arrays.asList(blobMetadata.getBlobFiles()), true);
+        SharedMetadataResolutionResult(Arrays.asList(expectedFileToPush), Arrays.asList(blobMetadata.getBlobFiles()), Collections.emptySet(), true);
 
     // do resolution
     SharedMetadataResolutionResult actual = SharedStoreResolutionUtil.resolveMetadata(serverMetadata, blobMetadata);

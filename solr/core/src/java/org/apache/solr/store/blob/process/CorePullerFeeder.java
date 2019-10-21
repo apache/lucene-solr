@@ -17,9 +17,9 @@
 package org.apache.solr.store.blob.process;
 
 import java.lang.invoke.MethodHandles;
-import java.util.HashMap;
 import java.util.Set;
 
+import com.google.common.collect.Sets;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.store.blob.client.BlobCoreMetadata;
 import org.apache.solr.store.blob.metadata.BlobCoreSyncer;
@@ -27,9 +27,6 @@ import org.apache.solr.store.blob.metadata.PushPullData;
 import org.apache.solr.store.blob.util.DeduplicatingList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 
 /**
  * A pull version of {@link CoreSyncFeeder} then will continually ({@link #feedTheMonsters()}) to load up a work queue (
@@ -49,22 +46,10 @@ public class CorePullerFeeder extends CoreSyncFeeder {
 
   protected final DeduplicatingList<String, CorePullTask> pullTaskQueue;
 
-  /**
-   * Cores currently being pulled and timestamp of pull start (to identify stuck ones in logs)
-   *
-   * Note, it is the client's responsibility to synchronize accesses
-   */
-  private final HashMap<String, Long> pullsInFlight = Maps.newHashMap();
-
   /** Cores unknown locally that got created as part of the pull process but for which no data has been pulled yet
    * from Blob store. If we ignore this transitory state, these cores can be accessed locally and simply look empty.
    * We'd rather treat threads attempting to access such cores like threads attempting to access an unknown core and
    * do a pull (or more likely wait for an ongoing pull to finish).<p>
-   *
-   * When this lock has to be taken as well as {@link #pullsInFlight}, then {@link #pullsInFlight} has to be taken first.
-   * Reading this set implies acquiring the monitor of the set (as if @GuardedBy("itself")), but writing to the set
-   * additionally implies holding the {@link #pullsInFlight}. This guarantees that while {@link #pullsInFlight}
-   * is held, no element in the set is changing.
    *
    * Note, it is the client's responsibility to synchronize accesses
    */
@@ -102,16 +87,17 @@ public class CorePullerFeeder extends CoreSyncFeeder {
     return callback;
   }
 
-  protected HashMap<String, Long> getPullsInFlight() {
-    return pullsInFlight;
-  }
-
   protected Set<String> getCoresCreatedNotPulledYet() {
     return coresCreatedNotPulledYet;
   }
 
   @Override
   void feedTheMonsters() throws InterruptedException {
+    while (cores.getSharedStoreManager() == null) {
+      // todo: Fix cyclic initialization sequence
+      // if thread starts early it will be killed since the initialization of sharedStoreManager has triggered the
+      // creation of this thread and following line will throw NPE.
+    }
     CorePullTracker tracker = cores.getSharedStoreManager().getCorePullTracker();
     final long minMsBetweenLogs = 15000;
     long lastLoggedTimestamp = 0L;
@@ -121,7 +107,7 @@ public class CorePullerFeeder extends CoreSyncFeeder {
       PullCoreInfo pci = tracker.getCoreToPull();
 
       // Add the core to the list consumed by the thread doing the actual work
-      CorePullTask pt = new CorePullTask(cores, pci, getCorePullTaskCallback(), pullsInFlight, coresCreatedNotPulledYet);
+      CorePullTask pt = new CorePullTask(cores, pci, getCorePullTaskCallback(), coresCreatedNotPulledYet);
       pullTaskQueue.addDeduplicated(pt, /* isReenqueue */ false);
       syncsEnqueuedSinceLastLog++;
 
@@ -149,24 +135,21 @@ public class CorePullerFeeder extends CoreSyncFeeder {
     private final boolean createCoreIfAbsent;
 
     PullCoreInfo(PushPullData data, boolean createCoreIfAbsent, boolean waitForSearcher) {
-      super(data.getCollectionName(), data.getShardName(), data.getCoreName(), data.getSharedStoreName(), 
-          data.getLastReadMetadataSuffix(), data.getNewMetadataSuffix(), data.getZkVersion());
+      super(data.getCollectionName(), data.getShardName(), data.getCoreName(), data.getSharedStoreName());
       this.waitForSearcher = waitForSearcher;
       this.createCoreIfAbsent = createCoreIfAbsent;
     }
 
     PullCoreInfo(String collectionName, String shardName, String coreName, String sharedStoreName,
-        String lastReadMetadataSuffix, String newMetadataSuffix, int zkVersion,
-        boolean createCoreIfAbsent, boolean waitForSearcher) {
-      super(collectionName, shardName, coreName, sharedStoreName, lastReadMetadataSuffix,
-          newMetadataSuffix, zkVersion);
+                 boolean createCoreIfAbsent, boolean waitForSearcher) {
+      super(collectionName, shardName, coreName, sharedStoreName);
       this.waitForSearcher = waitForSearcher;
       this.createCoreIfAbsent = createCoreIfAbsent;
     }
 
     @Override
     public String getDedupeKey() {
-      return sharedStoreName;
+      return coreName;
     }
 
     public boolean shouldWaitForSearcher() {
@@ -192,7 +175,7 @@ public class CorePullerFeeder extends CoreSyncFeeder {
       assert v1.getSharedStoreName().equals(v2.getSharedStoreName());
       assert v1.getDedupeKey().equals(v2.getDedupeKey());
       assert v1.getCoreName().equals(v2.getCoreName());
-      
+
       // Merging the version number here implies an ordering on the pull operation
       // enqueued as we want higher version-ed operations to be what the pulling
       // mechanisms pull off of due to presence of metadataSuffix information
@@ -201,46 +184,13 @@ public class CorePullerFeeder extends CoreSyncFeeder {
       boolean waitForSearcher = false;
       boolean createCoreIfAbsent = false;
 
-      // TODO newMetadataSuffix isn't used in the pull pipeline but the argument is nevertheless
-      // required when enqueuing a new pull and propagated downward. We should refactor 
-      // PullCoreInfo and PushPullData to make these concerns only relevant where they are needed
-      String newMetadataSuffix = null;
-      String lastReadMetadataSuffix = null;
-      int version = -1;
-      
-      // if the versions are the same then the last read metadata suffix should be the same
-      if (v1.getZkVersion() == v2.getZkVersion()) {
-        assert v1.getLastReadMetadataSuffix().equals(v2.getLastReadMetadataSuffix());
-        lastReadMetadataSuffix = v1.getLastReadMetadataSuffix();
-        // this doesn't matter which structure it comes from
-        newMetadataSuffix = v1.getNewMetadataSuffix();
-        version = v1.getZkVersion();
-        
-        // if one needs to wait then merged will have to wait as well
-        waitForSearcher = v1.waitForSearcher || v2.waitForSearcher;
-        // if one wants to create core if absent then merged will have to create as well
-        createCoreIfAbsent = v1.createCoreIfAbsent || v2.createCoreIfAbsent;
-      } else if (v1.getZkVersion() > v2.getZkVersion()) {
-        // version number increments on updates so the higher version will result in a pull
-        // from the most up-to-date state on blob
-        lastReadMetadataSuffix = v1.getLastReadMetadataSuffix();
-        newMetadataSuffix = v1.getNewMetadataSuffix();
-        version = v1.getZkVersion();
-        
-        waitForSearcher = v1.waitForSearcher;
-        createCoreIfAbsent = v1.createCoreIfAbsent;
-      } else {
-        lastReadMetadataSuffix = v2.getLastReadMetadataSuffix();
-        newMetadataSuffix = v2.getNewMetadataSuffix();
-        version = v2.getZkVersion();
-        
-        waitForSearcher = v2.waitForSearcher;
-        createCoreIfAbsent = v2.createCoreIfAbsent;
-      }
-      
-      return new PullCoreInfo(v1.getCollectionName(), v1.getShardName(), v1.getCoreName(), 
-          v1.getSharedStoreName(), lastReadMetadataSuffix, newMetadataSuffix, version, 
-          createCoreIfAbsent, waitForSearcher); 
+      // if one needs to wait then merged will have to wait as well
+      waitForSearcher = v1.waitForSearcher || v2.waitForSearcher;
+      // if one wants to create core if absent then merged will have to create as well
+      createCoreIfAbsent = v1.createCoreIfAbsent || v2.createCoreIfAbsent;
+
+      return new PullCoreInfo(v1.getCollectionName(), v1.getShardName(), v1.getCoreName(),
+          v1.getSharedStoreName(), createCoreIfAbsent, waitForSearcher);
     }
   }
 

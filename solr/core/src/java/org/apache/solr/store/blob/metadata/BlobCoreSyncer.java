@@ -16,29 +16,29 @@
  */
 package org.apache.solr.store.blob.metadata;
 
-import java.util.*;
-import java.util.concurrent.*;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import com.amazonaws.annotation.GuardedBy;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
-
-import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
-//import net.jcip.annotations.GuardedBy;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.store.blob.client.BlobCoreMetadata;
 import org.apache.solr.store.blob.PullInProgressException;
-import org.apache.solr.store.blob.process.*;
-import org.apache.solr.store.blob.util.BlobStoreUtils;
+import org.apache.solr.store.blob.client.BlobCoreMetadata;
+import org.apache.solr.store.blob.process.CorePullTracker;
+import org.apache.solr.store.blob.process.CorePullerFeeder;
+import org.apache.solr.store.blob.process.CoreSyncStatus;
 import org.apache.solr.store.shared.metadata.SharedShardMetadataController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.lang.invoke.MethodHandles;
 
 /**
  * Class to sync between local and blob copies of a core using
@@ -133,18 +133,6 @@ public class BlobCoreSyncer {
           log.warn("Pulling shard " + shardName + " that is inactive!");
         }
         log.info("Pulling for collection=" + collectionName + " shard=" + shardName + " coreName=" + coreName);
-        // creates the metadata node if it doesn't exist
-        sharedShardMetadataController.ensureMetadataNodeExists(collectionName, shardName);
-
-        /*
-         * Get the metadataSuffix value from ZooKeeper or from a cache if an entry exists for the
-         * given collection and shardName. If the leader has already changed, the conditional update
-         * later will fail and invalidate the cache entry if it exists.
-         */
-        VersionedData data = sharedShardMetadataController.readMetadataValue(collectionName, shardName,
-            /* readFromCache */ false);
-        Map<String, String> nodeUserData = (Map<String, String>) Utils.fromJSON(data.getData());
-        String metadataSuffix = nodeUserData.get(SharedShardMetadataController.SUFFIX_NODE_NAME);
 
         String sharedShardName = (String) shard.get(ZkStateReader.SHARED_SHARD_NAME);
 
@@ -153,9 +141,6 @@ public class BlobCoreSyncer {
           .setShardName(shardName)
           .setCoreName(coreName)
           .setSharedStoreName(sharedShardName)
-          .setLastReadMetadataSuffix(metadataSuffix)
-          .setNewMetadataSuffix(BlobStoreUtils.generateMetadataSuffix())
-          .setZkVersion(data.getVersion())
           .build();
         pull(pushPullData, waitForSearcher, emptyCoreAwaitingPull, cores);
       } catch (Exception ex) {

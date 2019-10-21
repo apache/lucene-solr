@@ -21,7 +21,6 @@ import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -29,13 +28,13 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.store.blob.client.BlobCoreMetadata;
 import org.apache.solr.store.blob.client.CoreStorageClient;
 import org.apache.solr.store.blob.util.BlobStoreUtils;
 import org.apache.solr.store.shared.metadata.SharedShardMetadataController;
+import org.apache.solr.store.shared.metadata.SharedShardMetadataController.SharedShardVersionMetadata;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -100,13 +99,11 @@ public class SimpleSharedStoreEndToEndPushTest extends SolrCloudSharedStoreTestC
     CoreContainer leaderCC = getCoreContainer(shardLeaderReplica.getNodeName());
     SharedShardMetadataController metadataController = leaderCC.getSharedStoreManager().getSharedShardMetadataController();
     try (SolrCore leaderCore = leaderCC.getCore(shardLeaderReplica.getCoreName())) {
-      VersionedData data = metadataController.readMetadataValue(collectionName, "shard1", false);
-      Map<String, Object> readData = (Map<String, Object>) Utils.fromJSON(data.getData());
-      String metadataSuffix = (String) readData.get(SharedShardMetadataController.SUFFIX_NODE_NAME);
+      SharedShardVersionMetadata shardMetadata = metadataController.readMetadataValue(collectionName, "shard1");
       Map<String, Object> props = collection.getSlice("shard1").getProperties();
       
       String sharedShardName = (String) props.get(ZkStateReader.SHARED_SHARD_NAME);
-      String blobCoreMetadataName = BlobStoreUtils.buildBlobStoreMetadataName(metadataSuffix);
+      String blobCoreMetadataName = BlobStoreUtils.buildBlobStoreMetadataName(shardMetadata.getMetadataSuffix());
       
       // verify that we pushed the core to blob
       assertTrue(storageClient.coreMetadataExists(sharedShardName, blobCoreMetadataName));

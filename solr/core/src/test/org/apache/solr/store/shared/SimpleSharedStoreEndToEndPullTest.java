@@ -169,21 +169,23 @@ public class SimpleSharedStoreEndToEndPullTest extends SolrCloudSharedStoreTestC
   
   private Map<String, CountDownLatch> configureTestBlobProcessForNode(JettySolrRunner runner) {
     Map<String, CountDownLatch> asyncPullTracker = new HashMap<>();
-    
-    CorePullerFeeder cpf = new CorePullerFeeder(runner.getCoreContainer()) {  
+
+    CorePullerFeeder cpf = new CorePullerFeeder(runner.getCoreContainer()) {
       @Override
       protected CorePullTask.PullCoreCallback getCorePullTaskCallback() {
         return new PullCoreCallback() {
           @Override
           public void finishedPull(CorePullTask pullTask, BlobCoreMetadata blobMetadata, CoreSyncStatus status,
-              String message) throws InterruptedException {
+                                   String message) throws InterruptedException {
             CountDownLatch latch = asyncPullTracker.get(pullTask.getPullCoreInfo().getCoreName());
-            latch.countDown();
+            if (latch != null) {
+              latch.countDown();
+            }
           }
         };
       }
     };
-    
+
     BlobProcessUtil testUtil = new BlobProcessUtil(runner.getCoreContainer(), cpf);
     setupTestBlobProcessUtilForNode(testUtil, runner);
     return asyncPullTracker;

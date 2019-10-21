@@ -50,8 +50,6 @@ public enum CoreSyncStatus {
   BLOB_DELETED_FOR_PULL(false, false),
   /** Core was not pushed because Blob version more up to date */
   BLOB_FRESHER(true, false),
-  /** No attempt to push/pull the core was made because another task was working on it */
-  CONCURRENT_SYNC(false, true),
   /** No attempt to push/pull the core was made as system was shutting down */
   SHUTTING_DOWN(false, false),
   /** The task was merged with another duplicate task in the queue (deduplicated) */

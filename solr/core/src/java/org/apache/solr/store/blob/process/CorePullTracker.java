@@ -16,28 +16,24 @@
  */
 package org.apache.solr.store.blob.process;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 
-import javax.servlet.http.HttpServletRequest;
-
-import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.servlet.SolrRequestParsers;
 import org.apache.solr.store.blob.metadata.PushPullData;
 import org.apache.solr.store.blob.process.CorePullerFeeder.PullCoreInfo;
-import org.apache.solr.store.blob.util.BlobStoreUtils;
 import org.apache.solr.store.blob.util.DeduplicatingList;
-import org.apache.solr.store.shared.metadata.SharedShardMetadataController;
-
-import com.google.common.annotations.VisibleForTesting;
+import org.apache.solr.store.shared.SharedCoreConcurrencyController;
+import org.apache.solr.store.shared.SharedCoreConcurrencyController.SharedCoreVersionMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,15 +66,21 @@ public class CorePullTracker {
   /**
    * If the local core is stale, enqueues it to be pulled in from blob
    * TODO: add stricter checks so that we don't pull on every request
+   *       one suggestion: 
+   *       For leaders we only need to do this once when they become leader so that 
+   *       they can pull without waiting for indexing to refresh a stale core
+   *       In other words, we should make use of 
+   *       {@link SharedCoreVersionMetadata#isSoftGuaranteeOfEquality()}
+   *       {@link SharedCoreConcurrencyController#updateCoreVersionMetadata(String, String, String, boolean)}
+   *       and knowledge of leader/follower and when they change.
+   *       
    */
   public void enqueueForPullIfNecessary(String requestPath, SolrCore core, String collectionName,
-      CoreContainer cores) throws IOException, SolrException {
+      CoreContainer cores) throws SolrException {
     // Initialize variables
     String coreName = core.getName();
     String shardName = core.getCoreDescriptor().getCloudDescriptor().getShardId();
-    SharedShardMetadataController sharedShardMetadataController = cores.getSharedStoreManager().getSharedShardMetadataController();
     DocCollection collection = cores.getZkController().getClusterState().getCollection(collectionName);
-
     Slice shard = collection.getSlicesMap().get(shardName);
     if (shard != null) {
       try {
@@ -87,18 +89,6 @@ public class CorePullTracker {
           log.warn("Enqueueing a pull for shard " + shardName + " that is inactive!");
         }
         log.info("Enqueue a pull for collection=" + collectionName + " shard=" + shardName + " coreName=" + coreName);
-        // creates the metadata node if it doesn't exist
-        sharedShardMetadataController.ensureMetadataNodeExists(collectionName, shardName);
-
-        /*
-         * Get the metadataSuffix value from ZooKeeper or from a cache if an entry exists for the 
-         * given collection and shardName. If the leader has already changed, the conditional update
-         * later will fail and invalidate the cache entry if it exists. 
-         */
-        VersionedData data = sharedShardMetadataController.readMetadataValue(collectionName, shardName, 
-            /* readFromCache */ true);
-        Map<String, String> nodeUserData = (Map<String, String>) Utils.fromJSON(data.getData());
-        String metadataSuffix = nodeUserData.get(SharedShardMetadataController.SUFFIX_NODE_NAME);
 
         String sharedShardName = (String) shard.get(ZkStateReader.SHARED_SHARD_NAME);
 
@@ -107,12 +97,9 @@ public class CorePullTracker {
             .setShardName(shardName)
             .setCoreName(coreName)
             .setSharedStoreName(sharedShardName)
-            .setLastReadMetadataSuffix(metadataSuffix)
-            .setNewMetadataSuffix(BlobStoreUtils.generateMetadataSuffix())
-            .setZkVersion(data.getVersion())
             .build();
 
-        enqueueForPullIfNecessary(requestPath, pushPullData, cores);
+        enqueueForPullIfNecessary(requestPath, pushPullData);
 
       } catch (Exception ex) {
         // wrap every thrown exception in a solr exception
@@ -125,8 +112,7 @@ public class CorePullTracker {
    * If the local core is stale, enqueues it to be pulled in from blob Note : If there is no coreName available in the
    * requestPath we simply ignore the request.
    */
-  public void enqueueForPullIfNecessary(String requestPath, PushPullData pushPullData, 
-      CoreContainer cores) throws IOException {
+  public void enqueueForPullIfNecessary(String requestPath, PushPullData pushPullData) {
     // TODO: do we need isBackgroundPullEnabled in addition to isBlobEnabled? If not we should remove this.
     // TODO: always pull for this hack - want to check if local core is up to date
     if (isBackgroundPullEnabled && pushPullData.getSharedStoreName() != null && shouldPullStale(requestPath)) {

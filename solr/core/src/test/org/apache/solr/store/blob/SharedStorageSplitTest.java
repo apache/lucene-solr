@@ -147,7 +147,7 @@ public class SharedStorageSplitTest extends SolrCloudSharedStoreTestCase  {
           // ensure we count down for all replicas per slice.
           String sharedShardName = (String) slice.getProperties().get(ZkStateReader.SHARED_SHARD_NAME);
           solrProcessesTaskTracker.get(replica.getNodeName())
-            .put(sharedShardName, cdl);
+            .put(replica.getCoreName(), cdl);
           SolrClient replicaClient = getHttpSolrClient(replica.getBaseUrl() + "/" + replica.getCoreName());
           try {
             replicaClient.query(params("q", "*:* priming pull", "distrib", "false"));

@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.cloud.api.collections.Assign;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.store.blob.client.BlobCoreMetadata;
@@ -33,6 +34,10 @@ import org.apache.solr.store.blob.client.LocalStorageClient;
 import org.apache.solr.store.blob.metadata.SharedStoreResolutionUtil.SharedMetadataResolutionResult;
 import org.apache.solr.store.blob.process.BlobDeleteManager;
 import org.apache.solr.store.blob.util.BlobStoreUtils;
+import org.apache.solr.store.shared.SharedCoreConcurrencyController;
+import org.apache.solr.store.shared.SharedCoreConcurrencyController.SharedCoreVersionMetadata;
+import org.apache.solr.store.shared.metadata.SharedShardMetadataController;
+import org.apache.solr.store.shared.metadata.SharedShardMetadataController.SharedShardVersionMetadata;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -95,7 +100,7 @@ public class CorePushPullTest extends SolrTestCaseJ4 {
     
     // verify an exception is thrown
     try {
-      pushPull.pushToBlobStore();
+      pushPull.pushToBlobStore(null, null);
       fail("pushToBlobStore should have thrown an exception");
     } catch (Exception ex) {
       // core missing from core container should throw exception
@@ -262,8 +267,20 @@ public class CorePushPullTest extends SolrTestCaseJ4 {
   }
 
   private BlobCoreMetadata doPush(SolrCore core) throws Exception {
+    String sharedBlobName = Assign.buildSharedShardName(collectionName, shardName);
+    // initialize metadata info to match initial zk version
+    SharedCoreConcurrencyController concurrencyController =  new SharedCoreConcurrencyController(null){
+      @Override
+      protected void ensureShardVersionMetadataNodeExists(String collectionName, String shardName) {
+        
+      }
+    };
+    concurrencyController.updateCoreVersionMetadata(collectionName, shardName, core.getName(), 
+        new SharedShardVersionMetadata(0, SharedShardMetadataController.METADATA_NODE_DEFAULT_VALUE),
+        BlobCoreMetadataBuilder.buildEmptyCoreMetadata(sharedBlobName));
+
     // build the require metadata
-    ServerSideMetadata solrServerMetadata = new ServerSideMetadata(core.getName(), h.getCoreContainer());
+    ServerSideMetadata solrServerMetadata = new ServerSideMetadata(core.getName(), h.getCoreContainer(), /* takeSnapshot */ true);
     
     // empty bcm means we should push everything we have locally 
     BlobCoreMetadata bcm = BlobCoreMetadataBuilder.buildEmptyCoreMetadata(sharedBlobName);
@@ -274,9 +291,6 @@ public class CorePushPullTest extends SolrTestCaseJ4 {
         .setShardName(shardName)
         .setCoreName(core.getName())
         .setSharedStoreName(sharedBlobName)
-        .setLastReadMetadataSuffix(metadataSuffix)
-        .setNewMetadataSuffix(randomSuffix)
-        .setZkVersion(1)
         .build();
     SharedMetadataResolutionResult resResult = SharedStoreResolutionUtil.resolveMetadata(solrServerMetadata, bcm);
     
@@ -288,22 +302,19 @@ public class CorePushPullTest extends SolrTestCaseJ4 {
         return;
       }
     };
-    return pushPull.pushToBlobStore();
+    SharedCoreVersionMetadata coreVersionMetadata = concurrencyController.getCoreVersionMetadata(collectionName, shardName, core.getName());
+    return pushPull.pushToBlobStore(coreVersionMetadata.getMetadataSuffix(), randomSuffix);
   }
   
   private SharedMetadataResolutionResult doPull(SolrCore core, BlobCoreMetadata bcm) throws Exception {
     // build the require metadata
     ServerSideMetadata solrServerMetadata = new ServerSideMetadata(core.getName(), h.getCoreContainer());
     
-    String randomSuffix = BlobStoreUtils.generateMetadataSuffix();
     PushPullData ppd = new PushPullData.Builder()
         .setCollectionName(collectionName)
         .setShardName(shardName)
         .setCoreName(core.getName())
         .setSharedStoreName(sharedBlobName)
-        .setLastReadMetadataSuffix(metadataSuffix)
-        .setNewMetadataSuffix(randomSuffix)
-        .setZkVersion(1)
         .build();
     SharedMetadataResolutionResult resResult = SharedStoreResolutionUtil.resolveMetadata(solrServerMetadata, bcm);
     
