@@ -17,6 +17,9 @@
 package org.apache.lucene.util;
 
 import java.util.Arrays;
+import java.util.Random;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class TestIntroSelector extends LuceneTestCase {
 
@@ -29,6 +32,50 @@ public class TestIntroSelector extends LuceneTestCase {
   public void testSlowSelect() {
     for (int iter = 0; iter < 100; ++iter) {
       doTestSelect(true);
+    }
+  }
+
+  public static String format(Integer[] arr) {
+    return Stream.of(arr)
+        .map(String::valueOf)
+        .collect(Collectors.joining(", "));
+  }
+  public void testSpecialSlowSelect() {
+
+    int testCount = 10000;
+    for (int counter = 0; counter < testCount; counter++) {
+      int len = 400; //new Random().nextInt(25);
+      Integer[] toSort = new Integer[len];
+
+      for (int i = 0; i < len; i++) {
+        toSort[i] = new Random().nextInt(len);
+      }
+
+      Integer[] sorted = toSort.clone();
+      Arrays.sort(sorted);
+
+      IntroSelector selector = new IntroSelector() {
+        Integer pivot;
+        @Override
+        protected void swap(int i, int j) {
+          ArrayUtil.swap(toSort, i, j);
+        }
+        @Override
+        protected void setPivot(int i) {
+          pivot = toSort[i];
+        }
+        @Override
+        protected int comparePivot(int j) {
+          return pivot.compareTo(toSort[j]);
+        }
+      };
+
+      int k = new Random().nextInt(len);
+
+      selector.slowSelect(0, len-1, k);
+      int actual = toSort[k];
+      int expected = sorted[k];
+      assertEquals(actual, expected);
     }
   }
 
@@ -65,6 +112,7 @@ public class TestIntroSelector extends LuceneTestCase {
         return pivot.compareTo(actual[j]);
       }
     };
+
     if (slow) {
       selector.slowSelect(from, to, k);
     } else {
@@ -72,6 +120,7 @@ public class TestIntroSelector extends LuceneTestCase {
     }
 
     assertEquals(expected[k], actual[k]);
+
     for (int i = 0; i < actual.length; ++i) {
       if (i < from || i >= to) {
         assertSame(arr[i], actual[i]);

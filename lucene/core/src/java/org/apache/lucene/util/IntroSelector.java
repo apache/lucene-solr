@@ -33,26 +33,83 @@ public abstract class IntroSelector extends Selector {
     quickSelect(from, to, k, maxDepth);
   }
 
-  // heap sort
-  // TODO: use median of median instead to have linear worst-case rather than
-  // n*log(n)
-  void slowSelect(int from, int to, int k) {
-    new Sorter() {
-
-      @Override
-      protected void swap(int i, int j) {
-        IntroSelector.this.swap(i, j);
+  int slowSelect(int from, int to, int k) {
+    int pivotIndex = 0;
+    do {
+      if (from == to) {
+        return from;
       }
-
-      @Override
-      protected int compare(int i, int j) {
-        return IntroSelector.this.compare(i, j);
+      pivotIndex = pivot(from, to);
+      setPivot(pivotIndex);
+      pivotIndex = partition(from, to, k, pivotIndex);
+      setPivot(pivotIndex);
+      if (k == pivotIndex) {
+        return k;
+      } else if (k < pivotIndex) {
+        to = pivotIndex-1;
+      } else {
+        from = pivotIndex+1;
       }
+    } while (from != to);
+    setPivot(pivotIndex);
+    return pivotIndex;
+  }
 
-      public void sort(int from, int to) {
-        heapSort(from, to);
+  private int partition(int left, int right, int n, int pivotIndex) {
+    swap(pivotIndex, right);
+    int storeIndex = left;
+    for (int i = left; i < right; i++) {
+      if (comparePivot(i) > 0) {
+        swap(storeIndex, i);
+        storeIndex++;
       }
-    }.sort(from, to);
+    }
+    int storeIndexEq = storeIndex;
+    for (int i = storeIndex; i < right; i++) {
+      if (comparePivot(i) == 0) {
+        swap(storeIndexEq, i);
+        storeIndexEq++;
+      }
+    }
+    swap(right, storeIndexEq);
+    if (n < storeIndex) {
+      return storeIndex;
+    } else if (n <= storeIndexEq) {
+      return n;
+    }
+    return storeIndexEq;
+  }
+
+  private int pivot(int left, int right) {
+    if (right - left < 5) {
+      int pivotIndex = partition5(left, right);
+      return pivotIndex;
+    }
+
+    for (int i = left; i <= right; i=i+5) {
+      int subRight = i + 4;
+      if (subRight > right) {
+        subRight = right;
+      }
+      int median5 = partition5(i, subRight);
+      swap(median5, left + ((i-left)/5));
+    }
+    int mid = ((right - left) / 10) + left + 1;
+    int to = left + ((right - left)/5);
+    return slowSelect(left, to, mid);
+  }
+
+  private int partition5(int left, int right) {
+    int i = left + 1;
+    while( i <= right) {
+      int j = i;
+      while (j > left && compare(j-1,j)>0) {
+        swap(j-1, j);
+        j--;
+      }
+      i++;
+    }
+    return (left + right) / 2;
   }
 
   private void quickSelect(int from, int to, int k, int maxDepth) {
