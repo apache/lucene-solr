@@ -19,11 +19,14 @@ package org.apache.solr.handler.component;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.search.CollapsingQParserPlugin;
+import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.util.RefCounted;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -313,6 +316,18 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
         "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/str[@name='id'][.='5']",
         "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/str[@name='id'][.='8']"
     );
+
+
+    RefCounted<SolrIndexSearcher> registeredSearcher = h.getCore().getRegisteredSearcher();
+
+    try {
+      Map<String, Object> metricsSnapshot = registeredSearcher.get().getFilterCache().getMetricsSnapshot();
+
+      // We use 2 filters. Only these two filters should be present in the filter cache.
+      assertEquals(2L, metricsSnapshot.get("CACHE.searcher.filterCache.cumulative_inserts"));
+    } finally {
+      registeredSearcher.decref();
+    }
   }
 
   @Test
