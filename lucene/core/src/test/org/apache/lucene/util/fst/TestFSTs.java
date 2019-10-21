@@ -303,7 +303,7 @@ public class TestFSTs extends LuceneTestCase {
   public void testBigSet() throws IOException {
     testRandomWords(TestUtil.nextInt(random(), 50000, 60000), 1);
   }
-  
+
   // Build FST for all unique terms in the test line docs
   // file, up until a doc limit
   public void testRealTerms() throws Exception {
@@ -1078,10 +1078,10 @@ public class TestFSTs extends LuceneTestCase {
             int children = verifyStateAndBelow(fst, new FST.Arc<>().copyFrom(arc), depth + 1);
 
             assertEquals(
-                expanded,
                 (depth <= FST.FIXED_ARRAY_SHALLOW_DISTANCE &&
                     children >= FST.FIXED_ARRAY_NUM_ARCS_SHALLOW) ||
-                 children >= FST.FIXED_ARRAY_NUM_ARCS_DEEP);
+                 children >= FST.FIXED_ARRAY_NUM_ARCS_DEEP || (FST.ALWAYS_FIXED_ARRAY && arc.flags() != 11),
+                expanded);
             if (arc.isLast()) break;
           }
 

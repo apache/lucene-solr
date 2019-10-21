@@ -161,7 +161,15 @@ abstract class FSTEnum<T> {
     int arcOffset = targetLabel - firstLabel;
     if (arcOffset >= arc.numArcs()) {
       // target is beyond the last arc
-      fst.readArcAtPosition(arc, in, arc.posArcsStart() - (arc.numArcs() - 1) * arc.bytesPerArc());
+      int numArcs;
+      if (FST.OPTIM_DA && fst.inputType == FST.INPUT_TYPE.BYTE1) {
+        assert FST.checkPresenceBytesAreValid(arc);
+        numArcs = FST.countBits(arc.bitTable());
+        assert numArcs <= arc.numArcs();
+      } else {
+        numArcs = arc.numArcs();
+      }
+      fst.readArcAtPosition(arc, in, arc.posArcsStart() - (numArcs - 1) * arc.bytesPerArc());
       assert arc.isLast();
       // Dead end (target is after the last arc);
       // rollback to last fork then push
@@ -183,7 +191,14 @@ abstract class FSTEnum<T> {
       // TODO: if firstLabel == targetLabel
       long pos;
       if (arcOffset >= 0) {
-        pos = arc.posArcsStart() - (arc.bytesPerArc() * arcOffset);
+        if (FST.OPTIM_DA && fst.inputType == FST.INPUT_TYPE.BYTE1) {
+          assert FST.checkPresenceBytesAreValid(arc);
+          int presenceIndex = FST.countBitsUpTo(arc.bitTable(), arcOffset);
+          assert presenceIndex < arc.numArcs();
+          pos = arc.posArcsStart() - (arc.bytesPerArc() * presenceIndex);
+        } else {
+          pos = arc.posArcsStart() - (arc.bytesPerArc() * arcOffset);
+        }
       } else {
         pos = arc.posArcsStart();
       }
@@ -362,13 +377,29 @@ abstract class FSTEnum<T> {
       }
     } else {
       if (targetOffset >= arc.numArcs()) {
-        fst.readArcAtPosition(arc, in, arc.posArcsStart() - arc.bytesPerArc() * (arc.numArcs() - 1));
+        int numArcs;
+        if (FST.OPTIM_DA && fst.inputType == FST.INPUT_TYPE.BYTE1) {
+          assert FST.checkPresenceBytesAreValid(arc);
+          numArcs = FST.countBits(arc.bitTable());
+          assert numArcs <= arc.numArcs();
+        } else {
+          numArcs = arc.numArcs();
+        }
+        fst.readArcAtPosition(arc, in, arc.posArcsStart() - arc.bytesPerArc() * (numArcs - 1));
         assert arc.isLast();
         assert arc.label() < targetLabel: "arc.label=" + arc.label() + " vs targetLabel=" + targetLabel;
         pushLast();
         return null;
       }
-      fst.readArcAtPosition(arc, in, arc.posArcsStart() - arc.bytesPerArc() * targetOffset);
+      int arcIndex;
+      if (FST.OPTIM_DA && fst.inputType == FST.INPUT_TYPE.BYTE1) {
+        assert FST.checkPresenceBytesAreValid(arc);
+        arcIndex = FST.countBitsUpTo(arc.bitTable(), targetOffset);
+        assert arcIndex < arc.numArcs();
+      } else {
+        arcIndex = targetOffset;
+      }
+      fst.readArcAtPosition(arc, in, arc.posArcsStart() - arc.bytesPerArc() * arcIndex);
       if (arc.label() == targetLabel) {
         // found -- copy pasta from below
         output[upto] = fst.outputs.add(output[upto-1], arc.output());
@@ -380,7 +411,14 @@ abstract class FSTEnum<T> {
         return fst.readFirstTargetArc(arc, getArc(upto), fstReader);
       }
       // Scan backwards to find a floor arc that is not missing
-      for (long arcOffset = arc.posArcsStart() - targetOffset * arc.bytesPerArc(); arcOffset <= arc.posArcsStart(); arcOffset += arc.bytesPerArc()) {
+      if (FST.OPTIM_DA && fst.inputType == FST.INPUT_TYPE.BYTE1) {
+        assert FST.checkPresenceBytesAreValid(arc);
+        arcIndex = FST.countBitsUpTo(arc.bitTable(), targetOffset);
+        assert arcIndex < arc.numArcs();
+      } else {
+        arcIndex = targetOffset;
+      }
+      for (long arcOffset = arc.posArcsStart() - arcIndex * arc.bytesPerArc(); arcOffset <= arc.posArcsStart(); arcOffset += arc.bytesPerArc()) {
         // TODO: we can do better here by skipping missing arcs
         fst.readArcAtPosition(arc, in, arcOffset);
         if (arc.label() < targetLabel) {
