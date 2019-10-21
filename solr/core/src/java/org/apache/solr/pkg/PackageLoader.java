@@ -128,6 +128,16 @@ public class PackageLoader {
 
   }
 
+  public void notifyListeners(String pkg) {
+    Package p = packageClassLoaders.get(pkg);
+    if(p != null){
+      List<Package> l = Collections.singletonList(p);
+      for (SolrCore core : coreContainer.getCores()) {
+        core.getPackageListeners().packagesUpdated(l);
+      }
+    }
+  }
+
   /**
    * represents a package definition in the packages.json
    */
