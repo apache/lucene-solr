@@ -527,7 +527,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
       }
     }
     checkRTG(120,150, cluster.getJettySolrRunners());
-    waitForReplicasCatchUp(20);
+    waitForReplicasCatchUp(4 * REPLICATION_TIMEOUT_SECS);
   }
 
   @SuppressWarnings("unchecked")
