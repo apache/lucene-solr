@@ -413,13 +413,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     waitForNumDocsInAllReplicas(2, docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)), REPLICATION_TIMEOUT_SECS);
     // Start back the node
     if (removeReplica) {
-      for (int i = 0; i < 3 ; i++) {
-        CollectionAdminResponse respone = CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.TLOG).process(cluster.getSolrClient());
-        // This is an unfortunate hack. There are cases where the ADDREPLICA fails, will create a Jira to address that separately. for now, we'll retry
-        if (respone.isSuccess()) {
-          break;
-        }
-      }
+      addReplicaWithRetries();
       
     } else {
       leaderJetty.start();
@@ -427,6 +421,22 @@ public class TestTlogReplica extends SolrCloudTestCase {
     waitForState("Expected collection to be 1x2", collectionName, clusterShape(1, 2));
     // added replica should replicate from the leader
     waitForNumDocsInAllReplicas(2, docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)), REPLICATION_TIMEOUT_SECS);
+  }
+
+  private void addReplicaWithRetries() throws SolrServerException, IOException {
+    int maxAttempts = 3;
+    for (int i = 0; i < maxAttempts ; i++) {
+      try {
+        CollectionAdminResponse respone = CollectionAdminRequest.addReplicaToShard(collectionName, "shard1", Replica.Type.TLOG).process(cluster.getSolrClient());
+        // This is an unfortunate hack. There are cases where the ADDREPLICA fails, will create a Jira to address that separately. for now, we'll retry
+        if (respone.isSuccess()) {
+          break;
+        }
+        log.error("Unsuccessful atempt to add replica. Attempt: %d/%d", i, maxAttempts);
+      } catch (SolrException e) {
+        log.error("Exception while adding replica. Attempt: " + i + "/" +  maxAttempts, e);
+      }
+    }
   }
 
   public void testKillTlogReplica() throws Exception {
