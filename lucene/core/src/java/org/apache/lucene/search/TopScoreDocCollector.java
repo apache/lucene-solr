@@ -147,7 +147,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
           totalHits++;
           hitsThresholdChecker.incrementHitCount();
 
-          if (minScoreAcc != null && totalHits % minScoreAcc.modInterval == 0) {
+          if (minScoreAcc != null && (totalHits & minScoreAcc.modInterval) == 0) {
             updateGlobalMinCompetitiveScore(scorer);
           }
 
