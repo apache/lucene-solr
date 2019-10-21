@@ -77,7 +77,8 @@ public class PackageListeners {
   private synchronized void invokeListeners(PackageLoader.Package pkg) {
     for (Reference<Listener> ref : listeners) {
       Listener listener = ref.get();
-      if (listener != null && listener.packageName().equals(pkg.name())) {
+      if(listener == null) continue;
+      if (listener.packageName() == null || listener.packageName().equals(pkg.name())) {
         listener.changed(pkg);
       }
     }
@@ -96,6 +97,8 @@ public class PackageListeners {
 
 
   public interface Listener {
+    /**Name of the package or null to loisten to all package changes
+     */
     String packageName();
 
     PluginInfo pluginInfo();
