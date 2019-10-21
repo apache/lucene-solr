@@ -55,6 +55,9 @@ Improvements
   
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
 
+* LUCENE-8992: TopFieldCollector and TopScoreDocCollector can now share minimum scores across leaves
+  concurrently. (Atri Sharma, Jim Ferenczi)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
