@@ -569,20 +569,20 @@ final class Lucene80DocValuesProducer extends DocValuesProducer implements Close
             }
           };
         } else if (entry.gcd != 1) {
-          final long gcd = entry.gcd;
-          final long minValue = entry.minValue;
+          final long mul = entry.gcd;
+          final long delta = entry.minValue;
           return new LongValues() {
             @Override
             public long get(long index) {
-              return values.get(index) * gcd + minValue;
+              return values.get(index) * mul + delta;
             }
           };
         } else if (entry.minValue != 0) {
-          final long minValue = entry.minValue;
+          final long delta = entry.minValue;
           return new LongValues() {
             @Override
             public long get(long index) {
-              return values.get(index) + minValue;
+              return values.get(index) + delta;
             }
           };
         } else {
