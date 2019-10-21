@@ -238,7 +238,7 @@ public abstract class TopFieldCollector extends TopDocsCollector<Entry> {
           totalHits++;
           hitsThresholdChecker.incrementHitCount();
 
-          if (minScoreAcc != null && totalHits % minScoreAcc.modInterval == 0) {
+          if (minScoreAcc != null && (totalHits & minScoreAcc.modInterval) == 0) {
             updateGlobalMinCompetitiveScore(scorer);
           }
 
