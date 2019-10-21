@@ -129,7 +129,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
       IndexSearcher searcher = new IndexSearcher(indexReader, service);
 
       CollectorManager collectorManager = TopScoreDocCollector.createSharedManager(numResults,
-          null, threshold, indexReader.maxDoc());
+          null, threshold);
 
       return (TopDocs) searcher.search(q, collectorManager);
     } finally {
@@ -417,7 +417,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
     w.close();
 
     CollectorManager<TopScoreDocCollector, TopDocs> manager =
-        TopScoreDocCollector.createSharedManager(2, null, 0, reader.maxDoc());
+        TopScoreDocCollector.createSharedManager(2, null, 0);
     TopScoreDocCollector collector = manager.newCollector();
     TopScoreDocCollector collector2 = manager.newCollector();
     assertTrue(collector.minScoreAcc == collector2.minScoreAcc);

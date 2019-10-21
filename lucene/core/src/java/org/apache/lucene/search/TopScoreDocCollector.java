@@ -243,7 +243,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
    * and a shared {@link MaxScoreAccumulator} to propagate the minimum score accross segments
    */
   public static CollectorManager<TopScoreDocCollector, TopDocs> createSharedManager(int numHits, FieldDoc after,
-                                                                                      int totalHitsThreshold, int maxDocs) {
+                                                                                      int totalHitsThreshold) {
     return new CollectorManager<>() {
 
       private final HitsThresholdChecker hitsThresholdChecker = HitsThresholdChecker.createShared(totalHitsThreshold);
@@ -305,9 +305,9 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
     DocAndScore maxMinScore = minScoreAcc.get();
     if (maxMinScore != null) {
       // since we tie-break on doc id and collect in doc id order we can require
-      // the next float if the global minimum score is set on a document that is
-      // greater than the ids in the current leaf
-      float score = maxMinScore.docID > docBase ? Math.nextUp(maxMinScore.score) : maxMinScore.score;
+      // the next float if the global minimum score is set on a document id that is
+      // smaller than the ids in the current leaf
+      float score = docBase > maxMinScore.docID ? Math.nextUp(maxMinScore.score) : maxMinScore.score;
       if (score > minCompetitiveScore) {
         assert hitsThresholdChecker.isThresholdReached();
         scorer.setMinCompetitiveScore(score);
@@ -328,7 +328,7 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
         scorer.setMinCompetitiveScore(localMinScore);
         totalHitsRelation = TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO;
         minCompetitiveScore = localMinScore;
-        if (minScoreAcc!= null) {
+        if (minScoreAcc != null) {
           // we don't use the next float but we register the document
           // id so that other leaves can require it if they are after
           // the current maximum
