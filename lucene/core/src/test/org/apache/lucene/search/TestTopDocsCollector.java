@@ -477,7 +477,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
     scorer.score = 10;
     leafCollector.collect(2);
     assertEquals(minValueChecker.get().score, 7f, 0f);
-    assertEquals(Math.nextUp(7f), scorer.minCompetitiveScore, 0f);
+    assertEquals(7f, scorer.minCompetitiveScore, 0f);
     assertEquals(Math.nextUp(7f), scorer2.minCompetitiveScore, 0f);
 
     scorer.doc = 3;
@@ -491,13 +491,13 @@ public class TestTopDocsCollector extends LuceneTestCase {
     LeafCollector leafCollector3 = collector3.getLeafCollector(reader.leaves().get(2));
     ScoreAndDoc scorer3 = new ScoreAndDoc();
     leafCollector3.setScorer(scorer3);
-    assertEquals(10f, scorer3.minCompetitiveScore, 0f);
+    assertEquals(Math.nextUp(10f), scorer3.minCompetitiveScore, 0f);
 
     scorer3.doc = 0;
     scorer3.score = 1f;
     leafCollector3.collect(0);
     assertEquals(10f, minValueChecker.get().score, 0f);
-    assertEquals(10f, scorer3.minCompetitiveScore, 0f);
+    assertEquals(Math.nextUp(10f), scorer3.minCompetitiveScore, 0f);
 
     scorer.doc = 4;
     scorer.score = 11;
@@ -505,7 +505,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
     assertEquals(11f, minValueChecker.get().score, 0f);
     assertEquals(Math.nextUp(11f), scorer.minCompetitiveScore, 0f);
     assertEquals(Math.nextUp(7f), scorer2.minCompetitiveScore, 0f);
-    assertEquals(10f, scorer3.minCompetitiveScore, 0f);
+    assertEquals(Math.nextUp(10f), scorer3.minCompetitiveScore, 0f);
 
     scorer3.doc = 1;
     scorer3.score = 2f;
@@ -513,7 +513,7 @@ public class TestTopDocsCollector extends LuceneTestCase {
     assertEquals(minValueChecker.get().score, 11f, 0f);
     assertEquals(Math.nextUp(11f), scorer.minCompetitiveScore, 0f);
     assertEquals(Math.nextUp(7f), scorer2.minCompetitiveScore, 0f);
-    assertEquals(11f, scorer3.minCompetitiveScore, 0f);
+    assertEquals(Math.nextUp(11f), scorer3.minCompetitiveScore, 0f);
 
 
     TopDocs topDocs = manager.reduce(Arrays.asList(collector, collector2, collector3));
