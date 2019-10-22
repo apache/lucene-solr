@@ -385,7 +385,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertEquals("v1.1", resp.getValues()._getStr(Arrays.asList("metrics", "solr.core.collection1:QUERY./dumphandler.dumphandlergauge","d_k1"), null));
     assertEquals("v2.1", resp.getValues()._getStr(Arrays.asList("metrics","solr.core.collection1:QUERY./dumphandler.dumphandlergauge","d_k2"), null));
 
-
+    handler.close();
   }
 
   static class RefreshablePluginHolder extends PluginBag.PluginHolder<SolrRequestHandler> {

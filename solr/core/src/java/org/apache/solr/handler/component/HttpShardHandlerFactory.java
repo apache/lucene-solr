@@ -73,6 +73,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.update.UpdateShardHandlerConfig;
@@ -115,6 +116,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   float permittedLoadBalancerRequestsMaximumFraction = 1.0f;
   boolean accessPolicy = false;
   private WhitelistHostChecker whitelistHostChecker = null;
+  private SolrMetricsContext solrMetricsContext;
 
   private String scheme = null;
 
@@ -358,6 +360,16 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
         }
       }
     }
+    try {
+      SolrMetricProducer.super.close();
+    } catch (Exception e) {
+      log.warn("Exception closing.", e);
+    }
+  }
+
+  @Override
+  public SolrMetricsContext getSolrMetricsContext() {
+    return solrMetricsContext;
   }
 
   /**
@@ -696,11 +708,12 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    solrMetricsContext = parentContext.getChildContext(this);
     String expandedScope = SolrMetricManager.mkName(scope, SolrInfoBean.Category.QUERY.name());
-    httpListenerFactory.initializeMetrics(manager, registry, tag, expandedScope);
+    httpListenerFactory.initializeMetrics(solrMetricsContext, expandedScope);
     commExecutor = MetricUtils.instrumentedExecutorService(commExecutor, null,
-        manager.registry(registry),
+        solrMetricsContext.getMetricRegistry(),
         SolrMetricManager.mkName("httpShardExecutor", expandedScope, "threadPool"));
   }
   

@@ -41,42 +41,20 @@ public interface SolrMetricProducer extends AutoCloseable {
   }
 
   /**
-   * Initializes metrics specific to this producer
-   *
-   * @param manager  an instance of {@link SolrMetricManager}
-   * @param registry registry name where metrics are registered
-   * @param tag      a symbolic tag that represents this instance of the producer,
-   *                 or a group of related instances that have the same life-cycle. This tag is
-   *                 used when managing life-cycle of some metrics.
-   * @param scope    scope of the metrics (eg. handler name) to separate metrics of components with
-   *                 the same implementation but different scope.
-   * @deprecated use {@link #initializeMetrics(SolrMetricsContext, String)} instead
-   */
-  @Deprecated
-  default void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
-    initializeMetrics(new SolrMetricsContext(manager, registry, tag), scope);
-
-  }
-
-  /**
    * Initialize metrics specific to this producer.
    * @param parentContext parent metrics context. If this component has the same life-cycle as the parent
    *                it can simply use the parent context, otherwise it should obtain a child context
    *                using {@link SolrMetricsContext#getChildContext(Object)} passing <code>this</code>
-   *                as the child.
+   *                as the child object.
    * @param scope component scope
    */
-  default void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    throw new RuntimeException("In class " + getClass().getName() +
-        " you must implement either initializeMetrics(SolrMetricsContext, String) or " +
-        "initializeMetrics(SolrMetricManager, String, String, String)");
-
-  }
+  void initializeMetrics(SolrMetricsContext parentContext, String scope);
 
   /**
-   * Implementing classes should override this method to provide the context obtained in
+   * Implementations should override this method to return the context used in
    * {@link #initializeMetrics(SolrMetricsContext, String)} to ensure proper cleanup of metrics
-   * at the end of the life-cycle of this component.
+   * at the end of the life-cycle of this component. This should be the child context if one was created.
+   * <p>The default implementation returns null, which disables unregistration of metrics on {@link #close()}.</p>
    */
   default SolrMetricsContext getSolrMetricsContext() {
     return null;
@@ -95,7 +73,5 @@ public interface SolrMetricProducer extends AutoCloseable {
     } else {
       context.unregister();
     }
-    // ??? (ab) no idea what this was supposed to avoid
-    //if (info == null || info.tag.indexOf(':') == -1) return;//this will end up unregistering the root itself
   }
 }

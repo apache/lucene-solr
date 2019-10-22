@@ -32,8 +32,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Responsible for collecting metrics from {@link SolrMetricProducer}'s
- * and exposing metrics to {@link SolrMetricReporter}'s.
+ * Helper class for managing registration of {@link SolrMetricProducer}'s
+ * and {@link SolrMetricReporter}'s specific to a {@link SolrCore} instance.
  */
 public class SolrCoreMetricManager implements Closeable {
 
@@ -128,7 +128,7 @@ public class SolrCoreMetricManager implements Closeable {
           "scope = " + scope + ", producer = " + producer);
     }
     // use deprecated method for back-compat, remove in 9.0
-    producer.initializeMetrics(solrMetricsContext.metricManager, solrMetricsContext.registry, solrMetricsContext.tag, scope);
+    producer.initializeMetrics(solrMetricsContext, scope);
   }
 
   /**

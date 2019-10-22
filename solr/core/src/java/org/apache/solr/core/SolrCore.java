@@ -1015,9 +1015,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
       // Allow the directory factory to report metrics
       if (directoryFactory instanceof SolrMetricProducer) {
-        // XXX use deprecated method for back-compat, remove in 9.0
-        ((SolrMetricProducer) directoryFactory).initializeMetrics(
-            solrMetricsContext.metricManager, solrMetricsContext.registry, solrMetricsContext.tag, "directoryFactory");
+        ((SolrMetricProducer) directoryFactory).initializeMetrics(solrMetricsContext, "directoryFactory");
       }
 
       // seed version buckets with max from index during core initialization ... requires a searcher!

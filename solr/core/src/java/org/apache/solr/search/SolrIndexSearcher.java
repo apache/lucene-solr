@@ -432,9 +432,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
     this.solrMetricsContext = core.getSolrMetricsContext().getChildContext(this);
     for (SolrCache cache : cacheList) {
-      // XXX use the deprecated method for back-compat. remove in 9.0
-      cache.initializeMetrics(solrMetricsContext.metricManager,
-          solrMetricsContext.registry, solrMetricsContext.tag, SolrMetricManager.mkName(cache.name(), STATISTICS_KEY));
+      cache.initializeMetrics(solrMetricsContext, SolrMetricManager.mkName(cache.name(), STATISTICS_KEY));
     }
     initializeMetrics(solrMetricsContext, STATISTICS_KEY);
     registerTime = new Date();
@@ -488,6 +486,12 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     if (releaseDirectory) {
       directoryFactory.release(getIndexReader().directory());
+    }
+
+    try {
+      SolrMetricProducer.super.close();
+    } catch (Exception e) {
+      log.warn("Exception closing", e);
     }
 
     // do this at the end so it only gets done if there are no exceptions
