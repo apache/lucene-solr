@@ -34,7 +34,11 @@ public abstract class IntroSelector extends Selector {
   }
 
   int slowSelect(int from, int to, int k) {
-    int pivotIndex = 0;
+    return medianOfMediansSelect(from, to-1, k);
+  }
+
+  int medianOfMediansSelect(int from, int to, int k) {
+    int pivotIndex;
     do {
       if (from == to) {
         return from;
@@ -96,7 +100,7 @@ public abstract class IntroSelector extends Selector {
     }
     int mid = ((right - left) / 10) + left + 1;
     int to = left + ((right - left)/5);
-    return slowSelect(left, to, mid);
+    return medianOfMediansSelect(left, to, mid);
   }
 
   private int partition5(int left, int right) {
