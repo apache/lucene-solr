@@ -186,6 +186,8 @@ Other
 * LUCENE-8999: LuceneTestCase.expectThrows now propogates assert/assumption failures up to the test
   w/o wrapping in a new assertion failure unless the caller has explicitly expected them (hossman)
 
+* LUCENE-8062: GlobalOrdinalsWithScoreQuery is no longer eligible for query caching. (Jim Ferenczi)
+
 
 ======================= Lucene 8.2.0 =======================
 
