@@ -19,6 +19,7 @@ package org.apache.lucene.document;
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.ShapeTestUtil;
 import org.apache.lucene.geo.Tessellator;
+import org.apache.lucene.geo.XYEncodingUtils;
 import org.apache.lucene.geo.XYLine;
 import org.apache.lucene.geo.XYPolygon;
 import org.apache.lucene.geo.XYRectangle;
@@ -50,7 +51,11 @@ public class TestXYShape extends LuceneTestCase {
   }
 
   protected Query newRectQuery(String field, double minX, double maxX, double minY, double maxY) {
-    return XYShape.newBoxQuery(field, QueryRelation.INTERSECTS, (float)minX, (float)maxX, (float)minY, (float)maxY);
+    return newRectQuery(field, QueryRelation.INTERSECTS, minX, maxX, minY, maxY);
+  }
+
+  protected Query newRectQuery(String field, QueryRelation queryRelation, double minX, double maxX, double minY, double maxY) {
+    return XYShape.newBoxQuery(field, queryRelation, (float)minX, (float)maxX, (float)minY, (float)maxY);
   }
 
   /** test we can search for a point with a standard number of vertices*/
@@ -111,14 +116,16 @@ public class TestXYShape extends LuceneTestCase {
     IOUtils.close(reader, dir);
   }
 
+  // This test proves that if we work in the encoding space (integer space), we will lose
+  // the spatial properties of our original shapes
   public void testBoundingBoxQueries() throws Exception {
     XYRectangle r1 = ShapeTestUtil.nextBox();
     XYRectangle r2 = ShapeTestUtil.nextBox();
     XYPolygon p;
-    //find two boxes so that r1 contains r2
+    // find two boxes so that r1 contains r2
     while (true) {
       // TODO: Should XYRectangle hold values as float?
-      if (areBoxDisjoint(r1, r2)) {
+      if (contains(r1, r2)) {
         p = toPolygon(r2);
         try {
           Tessellator.tessellate(p);
@@ -150,14 +157,18 @@ public class TestXYShape extends LuceneTestCase {
     q = newRectQuery(FIELDNAME, r1.minX, r1.maxX, r1.minY, r1.maxY);
     assertEquals(1, searcher.count(q));
     // r1 contains r2, WITHIN should match
-    q = XYShape.newBoxQuery(FIELDNAME, QueryRelation.WITHIN, (float) r1.minX, (float) r1.maxX, (float) r1.minY, (float) r1.maxY);
+    q = newRectQuery(FIELDNAME, QueryRelation.WITHIN, r1.minX, r1.maxX, r1.minY, r1.maxY);
     assertEquals(1, searcher.count(q));
 
     IOUtils.close(reader, dir);
   }
 
-  private static boolean areBoxDisjoint(XYRectangle r1, XYRectangle r2) {
-    return ((float) r1.minX <= (float) r2.minX && (float) r1.minY <= (float) r2.minY && (float) r1.maxX >= (float) r2.maxX && (float) r1.maxY >= (float) r2.maxY);
+  // r1 contains r2 on the quantize space
+  private static boolean contains(XYRectangle r1, XYRectangle r2) {
+    return (XYEncodingUtils.decode(XYEncodingUtils.encode(r1.minX)) <= XYEncodingUtils.decode(XYEncodingUtils.encode(r2.minX)) &&
+        XYEncodingUtils.decode(XYEncodingUtils.encode(r1.minY)) <= XYEncodingUtils.decode(XYEncodingUtils.encode(r2.minY)) &&
+        XYEncodingUtils.decode(XYEncodingUtils.encode(r1.maxX)) >= XYEncodingUtils.decode(XYEncodingUtils.encode(r2.maxX)) &&
+        XYEncodingUtils.decode(XYEncodingUtils.encode(r1.maxY)) >= XYEncodingUtils.decode(XYEncodingUtils.encode(r2.maxY)));
   }
 
   private static XYPolygon toPolygon(XYRectangle r) {
