@@ -640,7 +640,6 @@ public class TestJoinUtil extends LuceneTestCase {
       }
       assertEquals(expectedCount, collector.getTotalHits());
     }
-
     searcher.getIndexReader().close();
     dir.close();
   }
@@ -657,8 +656,19 @@ public class TestJoinUtil extends LuceneTestCase {
     IndexReader reader = w.getReader();
     IndexSearcher searcher = newSearcher(reader);
     OrdinalMap ordMap = OrdinalMap.build(null, new SortedDocValues[0], 0f);
-    Query joinQuery = JoinUtil.createJoinQuery("join_field", new MatchNoDocsQuery(), new MatchNoDocsQuery(), searcher, RandomPicks.randomFrom(random(), ScoreMode.values()), ordMap, 0, Integer.MAX_VALUE);
-    searcher.search(joinQuery, 1); // no exception due to missing rewrites
+    {
+      Query joinQuery = JoinUtil.createJoinQuery("join_field", new MatchNoDocsQuery(),
+          new MatchNoDocsQuery(), searcher, RandomPicks.randomFrom(random(), ScoreMode.values()), ordMap, 0, Integer.MAX_VALUE);
+      searcher.search(joinQuery, 1); // no exception due to missing rewrites
+    }
+    {
+      Query joinQuery = JoinUtil.createJoinQuery("join_field", new MatchNoDocsQuery(),
+          new MatchNoDocsQuery(), searcher, ScoreMode.None, ordMap, 1, Integer.MAX_VALUE);
+      Query rewritten = searcher.rewrite(joinQuery);
+      // should simplify to GlobalOrdinalsQuery since min is set to 1
+      assertTrue(rewritten instanceof GlobalOrdinalsQuery);
+      searcher.search(joinQuery, 1); // no exception due to missing rewrites
+    }
     reader.close();
     w.close();
     dir.close();

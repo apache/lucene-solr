@@ -496,7 +496,7 @@ public final class JoinUtil {
         globalOrdinalsWithScoreCollector = new GlobalOrdinalsWithScoreCollector.Avg(joinField, ordinalMap, valueCount, min, max);
         break;
       case None:
-        if (min <= 0 && max == Integer.MAX_VALUE) {
+        if (min <= 1 && max == Integer.MAX_VALUE) {
           GlobalOrdinalsCollector globalOrdinalsCollector = new GlobalOrdinalsCollector(joinField, ordinalMap, valueCount);
           searcher.search(rewrittenFromQuery, globalOrdinalsCollector);
           return new GlobalOrdinalsQuery(globalOrdinalsCollector.getCollectorOrdinals(), joinField, ordinalMap, rewrittenToQuery,

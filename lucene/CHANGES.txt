@@ -52,6 +52,8 @@ Improvements
 
 * LUCENE-8937: Avoid agressive stemming on numbers in the FrenchMinimalStemmer.
   (Adrien Gallou via Tomoko Uchida)
+
+* LUCENE-9023: GlobalOrdinalsWithScore should not compute occurrences when the provided min is 1
   
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
 
