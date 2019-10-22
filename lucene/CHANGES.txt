@@ -64,6 +64,8 @@ Other
 
 * LUCENE-8768: Fix Javadocs build in Java 11. (Namgyu Kim)
 
+* LUCENE-8062: GlobalOrdinalsWithScoreQuery is no longer eligible for query caching. (Jim Ferenczi)
+
 ======================= Lucene 8.4.0 =======================
 
 API Changes
