@@ -26,6 +26,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.store.blob.util.DeduplicatingList;
 import org.apache.solr.store.shared.SharedCoreConcurrencyController;
 import org.apache.solr.store.shared.SharedCoreConcurrencyController.SharedCoreVersionMetadata;
@@ -74,7 +75,7 @@ public class CorePullerThread implements Runnable {
         //       - we need not to enqueue pull requests to begin with
         //       - this isLeader computation is not complete, it does not handle cases when core is absent
         //       - this isLeader computation might not be performant and efficient. I don't know if caching is involved here or not.
-        boolean isLeaderPulling = isLeader(task.getCoreContainer(), coreName);
+        boolean isLeaderPulling = isLeader(task.getCoreContainer(), collectionName, shardName, coreName);
         if (coreVersionMetadata.isSoftGuaranteeOfEquality() && isLeaderPulling) {
           // already in sync
           task.finishedPull(coreVersionMetadata.getBlobCoreMetadata(), CoreSyncStatus.SUCCESS_EQUIVALENT, null);
@@ -123,27 +124,48 @@ public class CorePullerThread implements Runnable {
   }
 
   // TODO: This is temporary, see detailed note where it is consumed above.
-  private boolean isLeader(CoreContainer coreContainer, String coreName) throws InterruptedException {
-    if (!coreContainer.isZooKeeperAware()) {
-      // not solr cloud
-      return false;
+  private boolean isLeader(CoreContainer coreContainer, String collectionName, String shardName, String coreName) throws InterruptedException {
+    try {
+      if (!coreContainer.isZooKeeperAware()) {
+        // not solr cloud
+        return false;
+      }
+
+      CoreDescriptor coreDescriptor = coreContainer.getCoreDescriptor(coreName);
+      if (coreDescriptor == null) {
+        // core descriptor does not exist
+        return false;
+      }
+
+      SolrCore core = coreContainer.getCore(coreName);
+      if (core != null) {
+        core.close();
+      } else {
+        // core does not exist
+        return false;
+      }
+
+      CloudDescriptor cd = coreDescriptor.getCloudDescriptor();
+      if (cd == null || cd.getReplicaType() != Replica.Type.SHARED) {
+        // not a shared replica
+        return false;
+      }
+
+      ZkController zkController = coreContainer.getZkController();
+      Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(cd.getCollectionName(), cd.getShardId());
+      if (leaderReplica == null || !cd.getCoreNodeName().equals(leaderReplica.getName())) {
+        // not a leader replica
+        return false;
+      }
+
+      return true;
+    } catch (InterruptedException ie) {
+      throw ie;
+    } catch (Exception ex) {
+      log.warn(String.format("Could not establish if current replica is leader for the given core, collection=%s shard=%s core=%s",
+          collectionName, shardName, coreName), ex);
+      // we will proceed further as we are not a leader
     }
-    CoreDescriptor coreDescriptor = coreContainer.getCoreDescriptor(coreName);
-    if (coreDescriptor == null) {
-      // core does not exist
-      return false;
-    }
-    CloudDescriptor cd = coreDescriptor.getCloudDescriptor();
-    if (cd == null || cd.getReplicaType() != Replica.Type.SHARED) {
-      // not a shared replica
-      return false;
-    }
-    ZkController zkController = coreContainer.getZkController();
-    Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(cd.getCollectionName(), cd.getShardId());
-    if (leaderReplica == null || !cd.getCoreNodeName().equals(leaderReplica.getName())) {
-      // not a leader replica
-      return false;
-    }
-    return true;
+    return false;
   }
 }
