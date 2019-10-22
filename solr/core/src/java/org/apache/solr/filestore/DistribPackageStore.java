@@ -361,19 +361,14 @@ public class DistribPackageStore implements PackageStore {
         i++;
       }
     } finally {
-      new Thread(() -> {
+      coreContainer.getUpdateShardHandler().getUpdateExecutor().submit(() -> {
         try {
-          // keep the jar in memory for 10 secs , so that
-          //every node can download it from memory without the file system
           Thread.sleep(10 * 1000);
-        } catch (Exception e) {
-          //don't care
         } finally {
           tmpFiles.remove(entry.getPath());
         }
-      }).start();
-
-
+        return null;
+      });
     }
 
   }
