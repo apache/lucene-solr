@@ -17,7 +17,8 @@
 // under the License.
 
 
-This section of the userguid desc
+This section of the user guide describes how to assign and visualize
+variables with math expressions.
 
 <<The Let Expression, Let>> -
 <<Echoing Variables, Echo>> -
