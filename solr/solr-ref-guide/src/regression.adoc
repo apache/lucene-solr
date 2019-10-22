@@ -32,7 +32,7 @@ the second array is the dependent variable.
 
 In the example below the `random` function selects 50000 random samples each containing
 the fields `filesize_d` and `response_d`. The two fields are vectorized
-and stored in variables *`b`* and *`c`*. Then the `regress` function performs a regression
+and stored in variables *`x`* and *`y`*. Then the `regress` function performs a regression
 analysis on the two numeric arrays.
 
 The `regress` function returns a single tuple with the results of the regression
