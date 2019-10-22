@@ -354,7 +354,7 @@ public class DistribPackageStore implements PackageStore {
           Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(), url, null);
         } catch (Exception e) {
           log.info("Node: " + node +
-              " failed to respond for blob notification", e);
+              " failed to respond for file fetch notification", e);
           //ignore the exception
           // some nodes may be down or not responding
         }
