@@ -354,7 +354,7 @@ Notice there are two scatter plots that intersect at 500 which is the mean
 of both distributions. But the red scatter plot, which has the
 higher standard deviation,
 has a steeper slope. The higher standard deviation creates a steeper slope
-because the percentile values are are dispersed farther from the mean.
+because the percentile values are dispersed farther from the mean.
 
 
 == Correlation and Covariance
