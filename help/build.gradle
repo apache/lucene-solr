@@ -15,17 +15,31 @@
  * limitations under the License.
  */
 
-apply plugin: 'java-library'
-apply plugin: 'maven-publish'
-apply plugin: org.apache.lucene.gradle.dist.PartOfDist
+sourceSets {
+  ide {
+    resources.srcDirs = ['help-text']
+    java.srcDirs = []
+  }
+}
 
-dependencies {
-  
-  implementation project(':lucene:lucene-core')
-  implementation project(':lucene:lucene-codecs')
-  implementation project(':lucene:lucene-analyzers:lucene-analyzers-common')
-  
-  api ("junit:junit")
-  api ('org.hamcrest:hamcrest-core')
-  api ("com.carrotsearch.randomizedtesting:randomizedtesting-runner")  
+task tests {
+  group = 'Help (Build Documentation)'
+  description = "How to run Lucene and Solr tests and the options that are available to you."
+
+  doLast {
+    println file("${rootDir}/buildSrc/common/help-text/testHelp.txt").text
+  }
+}
+
+task deps {
+  group = 'Help (Build Documentation)'
+  description = "How dependencies are managed and what you need to know to change them."
+  doLast {
+    println file("${rootDir}/buildSrc/common/help-text/buildDependenciesHelp.txt").text
+  }
+}
+
+task testBuild {
+  group = 'Help (Build Documentation)'
+  description = "Information on using Docker to test that your build changes are not too disruptive."
 }

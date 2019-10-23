@@ -15,43 +15,89 @@
  * limitations under the License.
  */
 
+ 
+ 
+task cleanSettingsDir {
+  doLast { delete(file('.settings')) }
+}
+cleanEclipse.dependsOn cleanSettingsDir
+
+if (project.name == 'buildSrc') {
+  project.tasks.eclipse.dependsOn { project.tasks.pluginUnderTestMetadata }
+}
+
+task createSettingsDir {
+  doLast {
+    file('.settings').mkdirs()
+    def uiPrefFile = mfile(project.rootProject.projectDir, "buildSrc/ide/resources/org.eclipse.jdt.ui.prefs")
+    def resourcePrefFile = mfile(project.rootProject.projectDir, "buildSrc/ide/resources/org.eclipse.core.resources.prefs")
+    def corePrefFile = mfile(project.rootProject.projectDir, "buildSrc/ide/resources/org.eclipse.jdt.core.prefs")
+    copy {
+      from {
+        [
+          uiPrefFile,
+          resourcePrefFile,
+          corePrefFile
+        ]
+      }
+      into file('.settings')
+    }
+
+    // Jetty mod files make eclipse sad
+    file('.settings/org.eclipse.wst.validation.prefs').text = """
+eclipse.preferences.version=1
+override=true
+suspend=true
+vf.version=3
+"""
+  }
+}
+
+project.tasks.eclipse.dependsOn createSettingsDir
+
 eclipse {
   project {
-    if (project.name.equals('lucene-benchmark')) {
-      resourceFilter {
-        appliesTo = 'FOLDERS'
-        type = 'EXCLUDE_ALL'
-        matcher {
-          id = 'org.eclipse.ui.ide.multiFilter'
-          arguments = '1.0-projectRelativePath-matches-true-true-work|temp'
-        }
+    // ignore common folders we don't want the ide busy looking at
+    resourceFilter {
+      appliesTo = 'FOLDERS'
+      type = 'EXCLUDE_ALL'
+      matcher {
+        id = 'org.eclipse.ui.ide.multiFilter'
+        arguments = '1.0-projectRelativePath-matches-true-true-work|temp|build'
       }
     }
+    linkedResource name: 'build-eclipse', type: '2', location: mfile(rootProject.projectDir, "build-eclipse/${project.name}").getAbsolutePath()
   }
-  
+
   classpath {
 
-    defaultOutputDir = file('eclipse-build/default')
-    
+
+    String outputDir = 'build-eclipse'
+
+    defaultOutputDir = mfile(outputDir, "${project.name}")
+
     downloadSources = true
     downloadJavadoc = true
-    
+
     file.beforeMerged { classpath ->
+
       // some projects might have a tools src set, so add the tools configuration if it exists
       def extraConfs = ['tools', 'refGuide']
-      configurations.all.findAll { c -> extraConfs.contains(c.name) }.each { plusConfigurations += [ it ]}
+      configurations.all.findAll { c -> extraConfs.contains(c.name) }.each { plusConfigurations += [it]}
+
     }
 
     file.whenMerged { classpath ->
       Set<String> entries = new HashSet<>()
 
-      
-      classpath.entries.each { entry ->
 
+      classpath.entries.each { entry ->
         if ( entry.kind == 'src' && entry.hasProperty('output')) {
-          // use default Output for all source-folders
-          // entry.output = null
-          entry.output = entry.output.replaceAll('bin/', 'eclipse-build/')
+          def out = entry.output
+
+          if (out != null) {
+            entry.output = out.replaceAll('bin/', 'build-eclipse' + '/')
+          }
         }
         if ( entry.kind == 'src' && entry.hasProperty('path')) {
 
@@ -61,14 +107,14 @@ eclipse {
           }
         }
       }
-      
+
       // add JRE_CONTAINER
       classpath.entries.removeAll { entry -> entry.kind == 'con' && entry.path.startsWith('org.eclipse.jdt.launching.JRE_CONTAINER') }
       def jreContainer = new org.gradle.plugins.ide.eclipse.model.Container('org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-11')
       jreContainer.getEntryAttributes().put("module", "true")
-      
+
       classpath.entries.add(jreContainer)
-      
+
       classpath.entries.each { entry ->
         if ( entry.kind == 'lib') {
           entry.exported = true
@@ -77,36 +123,16 @@ eclipse {
           entry.exported = false
         }
       }
-      
+
       // hack to get src for gradle
       String gradleHome = gradle.getGradleHomeDir().absolutePath.replace(File.separator, '/')
       String gradleSrc = "${gradleHome}/src"
       classpath.entries.each { entry ->
-          if ((entry in org.gradle.plugins.ide.eclipse.model.AbstractLibrary) && (entry.library.path.contains('generated-gradle-jars'))) {
-            entry.sourcePath = new org.gradle.plugins.ide.eclipse.model.internal.FileReferenceFactory().fromPath(gradleSrc)
-          }
+        if ((entry in org.gradle.plugins.ide.eclipse.model.AbstractLibrary) && (entry.library.path.contains('generated-gradle-jars'))) {
+          entry.sourcePath = new org.gradle.plugins.ide.eclipse.model.internal.FileReferenceFactory().fromPath(gradleSrc)
+        }
       }
 
-      def uiPrefFile = mfile(project(":buildSrc").projectDir, "ide/resources/org.eclipse.jdt.ui.prefs")
-      def resourcePrefFile = mfile(project(":buildSrc").projectDir, "ide/resources/org.eclipse.core.resources.prefs")
-      def corePrefFile = mfile(project(":buildSrc").projectDir, "ide/resources/org.eclipse.jdt.core.prefs")
-      copy {
-         from { [uiPrefFile, resourcePrefFile, corePrefFile] }
-         into file('.settings')
-       }
-
-      if (project.name == 'buildSrc') {
-        project.tasks.pluginUnderTestMetadata
-      }
-
-      // Jetty mod files make eclipse sad
-      file('.settings').mkdirs()
-      file('.settings/org.eclipse.wst.validation.prefs').text = """
-eclipse.preferences.version=1
-override=true
-suspend=true
-vf.version=3
-"""
     }
   }
 }

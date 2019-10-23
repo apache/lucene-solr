@@ -22,9 +22,9 @@ apply plugin: org.apache.lucene.gradle.dist.PartOfDist
 dependencies {
   implementation project(':solr:solr-core')
   implementation project(':solr:solr-solrj')
-  implementation project(':solr:contrib:solr-contrib-dataimporthandler')
-  implementation project(':lucene:analysis:lucene-analyzers-common')
-  implementation project(':solr:contrib:solr-contrib-extraction')
+  implementation project(':solr:solr-contrib:solr-contrib-dataimporthandler')
+  implementation project(':lucene:lucene-analyzers:lucene-analyzers-common')
+  implementation project(':solr:solr-contrib:solr-contrib-extraction')
   
   implementation ('org.slf4j:slf4j-api')
   implementation ('javax.activation:activation')
@@ -36,7 +36,7 @@ dependencies {
   implementation ('org.apache.tika:tika-core') { transitive = false }
   implementation ('org.apache.tika:tika-parsers') { transitive = false }
   
-  testImplementation project(path: ':solr:contrib:solr-contrib-dataimporthandler', configuration: 'testOutput')
+  testImplementation project(path: ':solr:solr-contrib:solr-contrib-dataimporthandler', configuration: 'testOutput')
   testImplementation project(':lucene:lucene-test-framework')
   testImplementation project(':solr:solr-test-framework')
 }
@@ -46,5 +46,5 @@ unusedDeps {
 }
 
 missingDeps {
-  addExclusionsFrom(project(':solr:contrib:solr-contrib-extraction'))
+  addExclusionsFrom(project(':solr:solr-contrib:solr-contrib-extraction'))
 }

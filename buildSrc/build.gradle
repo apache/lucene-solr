@@ -19,7 +19,7 @@ apply plugin: 'groovy'
 apply plugin: 'java'
 apply plugin: 'java-gradle-plugin'
 
-buildDir = file('build')
+buildDir = file("../build/${project.name}")
 
 group = 'org.apache.lucene.gradle'
 
@@ -70,7 +70,7 @@ sourceSets {
     }
 
     java.srcDir 'src/buildTest/java'
-    resources.srcDirs = ['src/buildTest/resources', 'build-wdocker-test']
+    java.srcDir 'src/buildTest/scripts'
   }
   all {
     java {
@@ -118,10 +118,4 @@ task buildTest(type: Test) {
 clean.doLast {
   // hack for eclipse issue
   file("$buildDir/pluginUnderTestMetadata").mkdirs()
-}
-
-if (project.rootProject != project) {
-  forbiddenApis {
-    signatures -= ['java.io.File']
-  }
 }

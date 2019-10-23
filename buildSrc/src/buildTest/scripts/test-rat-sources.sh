@@ -17,13 +17,19 @@
 command -v docker >/dev/null 2>&1 || { echo "docker must be installed to run this test"; exit 1; }
 
 # make any non 0 exit fail script
-. "build-wdocker-test/setup-script-for-test.sh" || { echo "Could not source setup-script-for-test.sh"; exit 1; }
+. "src/buildTest/scripts/setup-script-for-test.sh" || { echo "Could not source setup-script-for-test.sh"; exit 1; }
 
 OPTIND=1  # Reset in case getopts has been used previously in the shell.
 
-while getopts ":" opt; do
+results="undefined"
+
+
+while getopts ":r:" opt; do
     case "$opt" in
-    *)  
+    r)
+      results="${OPTARG}"
+      ;;
+    *)
       echo -e "\n-----> Invalid arg: $OPTARG  If it is a valid option, does it take an argument?"
       usage
       exit 1
@@ -43,46 +49,40 @@ exec() {
   docker exec --user ${UID} $2 -t ${CONTAINER_NAME} bash -c "$1"
 }
 
+writeResult() {
+  echo "$1" > ${results}
+}
+
 set -x
 
 exec_args=""
-gradle_args="--console=plain -x verifyLocks"
+gradle_args="--console=plain"
 
 # NOTE: we don't clean right now, as it would wipe out buildSrc/build on us for the host, but buildTest dependsOn clean
 
-# build without unit tests
-cmd="cd /home/lucene/project;./gradlew ${gradle_args} build -x test"
+
+echo "\n\nTestChecks#testRatSources"
+
+
+echo "${HOME}"
+
+# first check that rat passes
+cmd="cd /home/lucene/project;./gradlew ${gradle_args} ratSources"
+exec "${cmd}" "${exec_args}" || { writeResult "The ratSources task did not pass when it should have"; exit 1; }
+
+# create an xml file with no license in lucene
+cmd="touch /home/lucene/project/lucene/core/src/java/org/no_license_test_file.xml"
 exec "${cmd}" "${exec_args}" || { exit 1; }
 
-# test regenerate task
-cmd="cd /home/lucene/project;./gradlew ${gradle_args} regenerate"
-exec "${cmd}" "${exec_args}" || { exit 1; }
+# test that rat fails on our test file
+cmd="cd /home/lucene/project;./gradlew ${gradle_args} ratSources"
+if exec "${cmd}" "${exec_args}"; then
+  echo "The ratSources task passed when it should not have!"
+  writeResult "The ratSources task passed when it should not have!";
+  exit 1 # rat should fail!
+fi
 
-# test forbiddenApis task
-cmd="cd /home/lucene/project;./gradlew ${gradle_args} forbiddenApis"
+# clean test file - also done by the java test parent in case of failure
+cmd="rm /home/lucene/project/lucene/core/src/java/org/no_license_test_file.xml"
 exec "${cmd}" "${exec_args}" || { exit 1; }
-
-# test eclipse tasks
-cmd="cd /home/lucene/project;./gradlew ${gradle_args} cleanEclipse"
-exec "${cmd}" "${exec_args}" || { exit 1; }
-
-cmd="cd /home/lucene/project;./gradlew ${gradle_args} eclipse"
-exec "${cmd}" "${exec_args}" || { exit 1; }
-
-# test unusedDependencies task
-cmd="cd /home/lucene/project;./gradlew ${gradle_args} solr:solr-core:unusedDependencies"
-exec "${cmd}" "${exec_args}" || { exit 1; }
-
-# try deeper structure
-cmd="cd /home/lucene/project;./gradlew ${gradle_args} solr:contrib:solr-contrib-clustering:unusedDependencies"
-exec "${cmd}" "${exec_args}" || { exit 1; }
-
-# test missingDependencies task
-cmd="cd /home/lucene/project;./gradlew ${gradle_args} solr:solr-core:missingDependencies"
-exec "${cmd}" "${exec_args}" || { exit 1; }
-
-# we should still be able to build now
-cmd="cd /home/lucene/project;./gradlew ${gradle_args} build -x test -x verifyLocks"
-exec "${cmd}" "${exec_args}" || { exit 1; }
-
 

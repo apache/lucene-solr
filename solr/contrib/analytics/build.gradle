@@ -82,7 +82,7 @@ dependencies {
   testRuntimeOnly ('commons-io:commons-io')
   testRuntimeOnly ('org.slf4j:jcl-over-slf4j')
   
-  testRuntimeOnly project(':lucene:analysis:lucene-analyzers-common')
+  testRuntimeOnly project(':lucene:lucene-analyzers:lucene-analyzers-common')
   testRuntimeOnly project(':lucene:lucene-codecs')
   testRuntimeOnly project(':lucene:lucene-join')
   testRuntimeOnly project(':lucene:lucene-highlighter')

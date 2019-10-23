@@ -21,7 +21,7 @@ apply plugin: org.apache.lucene.gradle.dist.PartOfDist
 
 dependencies {
   implementation project(':lucene:lucene-core')
-  implementation project(':lucene:analysis:lucene-analyzers-common')
+  implementation project(':lucene:lucene-analyzers:lucene-analyzers-common')
   implementation project(':lucene:lucene-queryparser')
   implementation project(':lucene:lucene-memory')
   

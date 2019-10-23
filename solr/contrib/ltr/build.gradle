@@ -24,13 +24,14 @@ dependencies {
   implementation project(':solr:solr-core')
   implementation project(':solr:solr-solrj')
   implementation project(':lucene:lucene-core')
-  implementation project(':lucene:analysis:lucene-analyzers-common')
+  implementation project(':lucene:lucene-analyzers:lucene-analyzers-common')
   
   implementation ('org.slf4j:slf4j-api')
   implementation ('org.restlet.jee:org.restlet')
   implementation ('commons-io:commons-io')
   implementation ('com.google.guava:guava')
   implementation ('commons-codec:commons-codec')
+  implementation ('org.eclipse.jetty:jetty-servlet')
   
   testRuntimeOnly ("org.slf4j:jcl-over-slf4j")
   

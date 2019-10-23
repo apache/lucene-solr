@@ -23,7 +23,7 @@ dependencies {
   implementation project(':solr:solr-core')
   implementation project(':solr:solr-solrj')
   implementation project(':lucene:lucene-core')
-  implementation project(':lucene:analysis:lucene-analyzers-common')
+  implementation project(':lucene:lucene-analyzers:lucene-analyzers-common')
   
   implementation 'com.cybozu.labs:langdetect'
   implementation 'net.arnx:jsonic'
@@ -40,5 +40,5 @@ dependencies {
 
 missingDeps {
   addExclusionsFrom(project(':solr:solr-core')) // add solr-core exclusions
-  addExclusionsFrom(project(':lucene:analysis:lucene-analyzers-opennlp'))
+  addExclusionsFrom(project(':lucene:lucene-analyzers:lucene-analyzers-opennlp'))
 }

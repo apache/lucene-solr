@@ -16,7 +16,7 @@
 
 script_dir=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
-. "build-wdocker-test/setup-script-for-test.sh" || { echo "Could not source setup-script-for-test.sh"; exit 1; }
+. "src/buildTest/scripts/setup-script-for-test.sh" || { echo "Could not source setup-script-for-test.sh"; exit 1; }
 
 skip_build_image=""
 
@@ -60,8 +60,8 @@ fi
 
 echo "Starting the container ..."
 
-# we don't currently use :cached or :delegated for osx perf, or copy or map in .gradle for caching becuase of issues getting things to work on linux and osx - ideally we use linux because osx will likely be very slow
+# we don't currently use :cached or :delegated for osx perf becuase of issues getting things to work on linux and osx - ideally we use linux because osx will likely be very slow
 # this will also likley download a lot on first run
 
-docker run -itd --user ${UID} --name=${CONTAINER_NAME} -v "${script_dir}/../..":/home/lucene/project -h ${CONTAINER_NAME} ${CONTAINER_NAME} || { exit 1; }
+docker run -itd --user ${UID} --name=${CONTAINER_NAME} -v "${script_dir}/../..":/home/lucene/project -v ~/.gradle/caches/modules-2/files-2.1:/root/.gradle/caches/modules-2/files-2.1 -v ~/.gradle/wrapper:/root/.gradle/wrapper -h ${CONTAINER_NAME} ${CONTAINER_NAME} || { exit 1; }
 

@@ -38,7 +38,7 @@ class RatSources extends DefaultTask {
   List<String> excludes = new ArrayList<>()
   
   public RatSources() {
-    dependsOn project.rootProject.project(':buildSrc').tasks.setupAntPaths
+    dependsOn { project.rootProject.project(':buildSrc').tasks.setupAntPaths }
   }
   
   @Optional
@@ -151,5 +151,4 @@ class RatSources extends DefaultTask {
     
   }
 }
-
 

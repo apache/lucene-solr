@@ -25,12 +25,12 @@ archivesBaseName = 'solr-core'
 
 dependencies {
   
-  runtimeOnly project(':lucene:analysis:lucene-analyzers-phonetic')
+  runtimeOnly project(':lucene:lucene-analyzers:lucene-analyzers-phonetic')
   implementation project(':lucene:lucene-core')
   implementation project(':lucene:lucene-codecs')
-  implementation project(':lucene:analysis:lucene-analyzers-common')
-  implementation project(':lucene:analysis:lucene-analyzers-kuromoji')
-  implementation project(':lucene:analysis:lucene-analyzers-nori')
+  implementation project(':lucene:lucene-analyzers:lucene-analyzers-common')
+  implementation project(':lucene:lucene-analyzers:lucene-analyzers-kuromoji')
+  implementation project(':lucene:lucene-analyzers:lucene-analyzers-nori')
   implementation project(':lucene:lucene-suggest')
   implementation project(':lucene:lucene-queries')
   implementation project(':lucene:lucene-highlighter')
@@ -43,7 +43,11 @@ dependencies {
   implementation project(':lucene:lucene-misc')
   implementation project(':lucene:lucene-join')
   implementation project(':solr:solr-solrj')
-  implementation project(':solr:solr-server')
+  implementation ('org.eclipse.jetty:jetty-servlet')
+  implementation ('org.eclipse.jetty.http2:http2-server')
+  implementation ('org.eclipse.jetty.http2:http2-common')
+  implementation ('org.eclipse.jetty:jetty-rewrite')
+  implementation ('org.eclipse.jetty:jetty-alpn-server')
   
   // used for log4j2 async support
   runtimeOnly ('com.lmax:disruptor')
@@ -179,8 +183,8 @@ dependencies {
   testImplementation project(path: ':lucene:lucene-queryparser', configuration: 'testOutput')
   testImplementation project(':lucene:lucene-test-framework')
   testImplementation project(':solr:solr-test-framework')
-  testImplementation project(':lucene:analysis:lucene-analyzers-icu')
-  testImplementation project(':solr:contrib:solr-contrib-analysis-extras')
+  testImplementation project(':lucene:lucene-analyzers:lucene-analyzers-icu')
+  testImplementation project(':solr:solr-contrib:solr-contrib-analysis-extras')
   
 }
 

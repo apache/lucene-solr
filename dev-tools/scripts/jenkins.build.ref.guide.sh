@@ -51,7 +51,7 @@ function echoRun() {
     $cmd
 }
 
-echoRun "source $RVM_PATH/scripts/rvm"   # Load RVM into a shell session *as a Bash function*
+echoRun "source $RVM_PATH/src/buildTest/scripts/rvm"   # Load RVM into a shell session *as a Bash function*
 echoRun "rvm cleanup all"                # Remove old stuff
 echoRun "rvm autolibs disable"           # Enable single-user mode
 echoRun "rvm install $RUBY_VERSION"      # Install Ruby

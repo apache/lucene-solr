@@ -17,6 +17,7 @@
 
 import org.gradle.internal.logging.text.StyledTextOutput;
 import org.gradle.internal.logging.text.StyledTextOutputFactory;
+import org.gradle.api.Project;
 import static org.gradle.internal.logging.text.StyledTextOutput.Style;
 
 def initialRandomSeed = {
@@ -36,33 +37,39 @@ allprojects {
   ext.filePath = { path -> file(path).getAbsolutePath() }
   // sugar multi part File
   ext.mfile = { file1, file2 -> new File(file(file1), file2.toString()) }
-  
-  ext.getTopLvlProject = { proj ->
-    def topLvlProject
-    if (proj.group ==~ /.*?\.lucene(?:\.\w+)?/) {
-      topLvlProject = project.project(":lucene")
-    } else if (proj.group ==~ /.*?\.solr(?:\.\w+)?/) {
-      topLvlProject = project.project(":solr")
+
+  ext.getTopLvlProject = { Project proj ->
+    Project projectIt
+    if (proj == null) {
+      projectIt = project
+    } else {
+      projectIt = proj
     }
-    return topLvlProject
+    if (projectIt.getParent() == null) {
+      return projectI
+    }
+    while(projectIt.getParent() != projectIt.rootProject) {
+      projectIt = projectIt.getParent()
+    }
+    return projectIt
   }
 
   // keep the random seed constant for each subproject.
   ext.randomSeed = initialRandomSeed
 
   ext.printResults = {results ->
-    
+
     def allResults = new ArrayList()
     results.collect { allResults.add(it.getProjectAndTask() + ' ' + it.getSummary()) }
-    
-    // max line length 
+
+    // max line length
     def maxLength = allResults*.readLines().flatten().collect { it.length() }.max()
-    
+
     def out = services.get(StyledTextOutputFactory).create("out")
     def borderStyle
     def headerStyle
     def topBorderStyle
-    
+
     for (def i = 0; i < results.size(); i++) {
       def result = results.get(i)
       if (result.getSuccess()) {
@@ -74,27 +81,25 @@ allprojects {
         headerStyle = Style.FailureHeader
         topBorderStyle = Style.Failure
       }
-      
+
       out.style(topBorderStyle).println("┌${"${"─" * maxLength}"}┐")
 
       result.collect {
-        String projectAndTask = it.getProjectAndTask()
-        String summary = it.getSummary()
-        boolean success = it.getSuccess()
-        int line = 0
-        summary.readLines().collect {
-          line++
-          if (line == 1) {
-            out.style(borderStyle).text('│').style(headerStyle).text(projectAndTask).style(Style.Normal).text(' ' + it + ' ' * (maxLength - (projectAndTask.length() + 1 + it.length()))).style(borderStyle).println('│')
-          } else {
-            out.style(borderStyle).text('│').style(Style.Normal).text(it + ' ' * (maxLength - it.length())).style(borderStyle).println('│')
-          }
-        }.join("\n")
-      }.join("\n├${"${"─" * maxLength}"}┤\n") // Add separator between entries
-      println "└${"${"─" * maxLength}"}┘" // bottom border
-    }
-
-  
-  }
-  
+      String projectAndTask = it.getProjectAndTask()
+      String summary = it.getSummary()
+      boolean success = it.getSuccess()
+      int line = 0
+      summary.readLines().collect {
+        line++
+        if (line == 1) {
+          out.style(borderStyle).text('│').style(headerStyle).text(projectAndTask).style(Style.Normal).text(' ' + it + ' ' * (maxLength - (projectAndTask.length() + 1 + it.length()))).style(borderStyle).println('│')
+        } else {
+          out.style(borderStyle).text('│').style(Style.Normal).text(it + ' ' * (maxLength - it.length())).style(borderStyle).println('│')
+        }
+      }.join("\n")
+    }.join("\n├${"${"─" * maxLength}"}┤\n") // Add separator between entries
+    println "└${"${"─" * maxLength}"}┘" // bottom border
+   }
+ }
+ 
 }

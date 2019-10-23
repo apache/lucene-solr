@@ -3,6 +3,7 @@ eclipse-build
 /maven-build
 /classes
 build
+build-eclipse
 /idea-build
 dist
 lib
@@ -23,7 +24,6 @@ lucene/**/*.iml
 .caches
 .out
 /prj.el
-bin
 /bin.*
 pom.xml
 /nbproject
@@ -34,3 +34,4 @@ __pycache__
 .DS_Store
 .gradle
 derby.log
+user.properties

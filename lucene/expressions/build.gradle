@@ -20,11 +20,11 @@ apply plugin: 'maven-publish'
 apply plugin: org.apache.lucene.gradle.dist.PartOfDist
 
 dependencies {
-  
+  implementation project(':lucene:lucene-codecs')
   implementation project(':lucene:lucene-core')
-  
-  testImplementation project(':lucene:lucene-test-framework')
   
   implementation 'org.antlr:antlr4-runtime'
   implementation 'org.ow2.asm:asm-commons'
+
+  testImplementation project(':lucene:lucene-test-framework')
 }

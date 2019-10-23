@@ -31,7 +31,7 @@ function errexit() {
   set +x
 
   if [ ! "${EXP_EXIT}" = "q" ]; then
-    echo "${ERR_LN} Error in ${BASH_SOURCE[1]}:${BASH_LINENO[0]}. '${last_cmd}' exited with code ${err}"
+    echo -w "\n\n\n${ERR_LN} Error in ${BASH_SOURCE[1]}:${BASH_LINENO[0]}. '${last_cmd}' exited with code ${err}"
   fi
   # print stack trace
   if [ ${#FUNCNAME[@]} -gt 2 ]; then
@@ -47,7 +47,7 @@ function errexit() {
   elif [ "${EXP_EXIT}" = "q" ]; then
     exit 0;
   else
-    echo "${ERR_LN} Exiting with code ${code}"
+    echo -e"${ERR_LN} Exiting with code ${code}\n\n\n"
     exit "${code}"
   fi
   

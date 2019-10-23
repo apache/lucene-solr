@@ -59,8 +59,8 @@ dependencies {
   testImplementation project(':lucene:lucene-core')
   testImplementation project(':solr:solr-test-framework')
   testImplementation project(':lucene:lucene-test-framework')
-  testImplementation project(':lucene:analysis:lucene-analyzers-common')
-  testImplementation project(':solr:example:solr-example-DIH')
+  testImplementation project(':lucene:lucene-analyzers:lucene-analyzers-common')
+  testImplementation project(':solr:solr-example:solr-example-DIH')
 }
 
 missingDeps {

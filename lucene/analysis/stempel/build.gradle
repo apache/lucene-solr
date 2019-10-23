@@ -24,7 +24,7 @@ archivesBaseName = 'lucene-analyzers-stempel'
 dependencies {
   
   implementation project(':lucene:lucene-core')
-  implementation project(':lucene:analysis:lucene-analyzers-common')
+  implementation project(':lucene:lucene-analyzers:lucene-analyzers-common')
   
   testImplementation project(':lucene:lucene-test-framework')
 }

@@ -44,9 +44,12 @@ class CheckSourcePatterns extends DefaultTask {
   
   @TaskAction
   void check() {
+    
+    println 'check sources under: ' + baseDir
     ant.lifecycleLogLevel = "INFO"
     def scanner = ant.fileScanner{
       fileset(dir: baseDir) {
+        
         exts.each{
           include(name: '**/*.' + it)
         }
@@ -56,7 +59,6 @@ class CheckSourcePatterns extends DefaultTask {
         include(name: '*/*.txt')
         // excludes:
         exclude(name: '**/build/**')
-        exclude(name: '**/bin/**')
         exclude(name: '**/dist/**')
         exclude(name: '**/.out/**')
         exclude(name: '**/.settings/**')
@@ -64,7 +66,9 @@ class CheckSourcePatterns extends DefaultTask {
         exclude(name: '**/temp/**')
         exclude(name: '**/CheckLoggingConfiguration.java')
         exclude(name: '**/CheckSourcePatterns.groovy') // ourselves :-)
+        exclude(name: '**/check-source-patterns.groovy') // ourselves, the old ant version
         exclude(name: '**/src/test/org/apache/hadoop/**')
+
       }
     }
     
@@ -74,7 +78,7 @@ class CheckSourcePatterns extends DefaultTask {
     Stream.of(files.toArray())
     .parallel()
     .forEach({ f ->
-      log.info ('Scanning file: ' + f)
+      log.info('Scanning file: ' + f)
       def text = f.getText('UTF-8')
       invalidPatterns.each{ pattern,name ->
         if (!f.name.endsWith(".txt") && pattern.matcher(text).find()) {

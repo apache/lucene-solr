@@ -28,7 +28,7 @@ class TopHints extends DefaultTask {
   
   
   public TopHints() {
-    dependsOn project.rootProject.project(':buildSrc').tasks.setupAntPaths
+    dependsOn { project(':buildSrc').tasks.setupAntPaths }
   }
   
   @TaskAction

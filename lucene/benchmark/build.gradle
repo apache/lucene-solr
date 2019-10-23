@@ -24,7 +24,7 @@ def workingDir = file("work")
 dependencies {
   
   implementation project(':lucene:lucene-core')
-  implementation project(':lucene:analysis:lucene-analyzers-common')
+  implementation project(':lucene:lucene-analyzers:lucene-analyzers-common')
   implementation project(':lucene:lucene-facet')
   implementation project(':lucene:lucene-highlighter')
   implementation project(':lucene:lucene-queries')

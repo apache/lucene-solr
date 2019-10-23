@@ -25,18 +25,18 @@ dependencies {
   implementation project(':solr:solr-core')
   implementation project(':lucene:lucene-core')
   implementation project(':lucene:lucene-codecs')
-  implementation project(':lucene:analysis:lucene-analyzers-icu')
-  implementation project(':lucene:analysis:lucene-analyzers-smartcn')
-  implementation project(':lucene:analysis:lucene-analyzers-morfologik')
-  implementation project(':lucene:analysis:lucene-analyzers-opennlp')
+  implementation project(':lucene:lucene-analyzers:lucene-analyzers-icu')
+  implementation project(':lucene:lucene-analyzers:lucene-analyzers-smartcn')
+  implementation project(':lucene:lucene-analyzers:lucene-analyzers-morfologik')
+  implementation project(':lucene:lucene-analyzers:lucene-analyzers-opennlp')
   
   implementation ('org.slf4j:slf4j-api')
   implementation ('commons-io:commons-io')
   implementation ('com.google.guava:guava')
   implementation ('commons-codec:commons-codec')
   
-  testImplementation project(path: ':lucene:analysis:lucene-analyzers-common', configuration: 'testOutput')
-  testImplementation project(path: ':solr:contrib:solr-contrib-dataimporthandler', configuration: 'testOutput')
+  testImplementation project(path: ':lucene:lucene-analyzers:lucene-analyzers-common', configuration: 'testOutput')
+  testImplementation project(path: ':solr:solr-contrib:solr-contrib-dataimporthandler', configuration: 'testOutput')
   testImplementation project(':lucene:lucene-test-framework')
   testImplementation project(':solr:solr-test-framework')
 
@@ -44,5 +44,5 @@ dependencies {
 
 missingDeps {
   addExclusionsFrom(project(':solr:solr-core')) // add solr-core exclusions
-  addExclusionsFrom(project(':lucene:analysis:lucene-analyzers-opennlp'))
+  addExclusionsFrom(project(':lucene:lucene-analyzers:lucene-analyzers-opennlp'))
 }

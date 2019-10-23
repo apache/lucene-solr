@@ -14,11 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+import java.nio.file.Files;
+import java.nio.file.LinkOption;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 public class TestChecks extends BaseTestClass {
+  
+
+  
+  private Path tempDirWithPrefix;
+  
+  private String resultFile = "/tmp/buildTestResult.txt";
   
   public TestChecks() {
 
@@ -26,6 +38,9 @@ public class TestChecks extends BaseTestClass {
   
   @Before
   public void setUp() throws Exception {
+    tempDirWithPrefix = Files.createTempDirectory("LuceneSolrBuildTest");
+    resultFile = Paths.get(tempDirWithPrefix.toString(), "testResult.txt").toString();
+    
     cleanTestFiles();
   }
   
@@ -35,30 +50,49 @@ public class TestChecks extends BaseTestClass {
   }
 
   private void cleanTestFiles() throws Exception {
-    String[] cmd = new String[]{"bash", "-c", "docker exec --user ${UID} -t ${CONTAINER_NAME} bash -c \"rm /home/lucene/project/solr/core/src/test/org/no_license_test_file.java\""};
+    String[] cmd = new String[]{"bash", "-c", "docker exec --user ${UID} -t ${CONTAINER_NAME} bash -c \"rm /home/lucene/project/solr/core/src/test/org/no_license_test_file.java 2>/dev/null \""};
     runCmd(cmd, env, false, false);
     
-    cmd = new String[]{"bash", "-c", "docker exec --user ${UID} -t ${CONTAINER_NAME} bash -c \"rm /home/lucene/project/lucene/core/src/java/org/no_license_test_file.xml\""};
+    cmd = new String[]{"bash", "-c", "docker exec --user ${UID} -t ${CONTAINER_NAME} bash -c \"rm /home/lucene/project/lucene/core/src/java/org/no_license_test_file.xml 2>/dev/null \""};
     runCmd(cmd, env, false, false);
     
     
-    cmd = new String[]{"bash", "-c", "docker exec --user ${UID} -t ${CONTAINER_NAME} bash -c \"rm /home/lucene/project/solr/contrib/clustering/src/java/org/tab_file.xml\""};
+    cmd = new String[]{"bash", "-c", "docker exec --user ${UID} -t ${CONTAINER_NAME} bash -c \"rm /home/lucene/project/solr/contrib/clustering/src/java/org/tab_file.xml 2>/dev/null \""};
     runCmd(cmd, env, false, false);
+    try {
+      Files.delete(tempDirWithPrefix);
+    } catch (NoSuchFileException e) {
+      // fine
+    }
   }
   
   @Test
   public void testRatSources() throws Exception {
     System.out.println("Start test-rat-sources.sh test in Docker container (" + env + ") ...");
-    String[] cmd = new String[]{"bash", "build-wdocker-test/test-rat-sources.sh"};
+    String[] cmd = new String[]{"bash", "scripts/test-rat-sources.sh", "-r", resultFile  };
     PbResult result = runCmd(cmd, env, false, false, false);
-    assertEquals("Testing test-rat-sources.sh failed", 0, result.returnCode);
+    
+    String msg = "";
+    
+    if (Files.exists(Paths.get(resultFile), LinkOption.NOFOLLOW_LINKS)) {
+      msg =  Files.readString(Paths.get(resultFile));
+    }
+    
+    assertEquals("Testing test-rat-sources.sh failed: " + msg, 0, result.returnCode);
   }
 
   @Test
   public void testCheckSources() throws Exception {
     System.out.println("Start test-check-sources.sh test in Docker container (" + env + ") ...");
-    String[] cmd = new String[]{"bash", "build-wdocker-test/test-check-sources.sh"};
+    String[] cmd = new String[]{"bash", "scripts/test-check-sources.sh", "-r", resultFile  };
     PbResult result = runCmd(cmd, env, false, false, false);
-    assertEquals("Testing test-check-sources.sh failed", 0, result.returnCode);
+    
+    String msg = "";
+    
+    if (Files.exists(Paths.get(resultFile), LinkOption.NOFOLLOW_LINKS)) {
+      msg =  Files.readString(Paths.get(resultFile));
+    }
+    
+    assertEquals("Testing test-check-sources.sh failed: " + msg, 0, result.returnCode);
   }
 }

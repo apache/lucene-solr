@@ -15,10 +15,11 @@
  * limitations under the License.
  */
 
- import org.gradle.api.tasks.testing.logging.TestExceptionFormat
- import org.gradle.api.tasks.testing.logging.TestLogEvent
- import groovy.time.TimeCategory
- import org.apache.lucene.gradle.TestResultObj
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import org.gradle.api.tasks.testing.logging.TestLogEvent
+import groovy.time.TimeCategory
+import org.apache.lucene.gradle.TestResultObj
+import org.apache.tools.ant.Project
 
 test {
   group = 'Tests'
@@ -74,32 +75,26 @@ test {
     }
   }
 
-  minHeapSize = "128m"
+  minHeapSize = "256m"
   maxHeapSize = "512m"
 
   jvmArgs +=  "-XX:+UseG1GC"
-  jvmArgs +=  "-XX:MaxGCPauseMillis=500" 
+  jvmArgs +=  "-XX:MaxGCPauseMillis=500"
   jvmArgs +=  "-XX:+UnlockExperimentalVMOptions"
   jvmArgs +=  "-XX:G1MaxNewSizePercent=30"
   jvmArgs +=  "-XX:G1NewSizePercent=5"
   jvmArgs +=  "-XX:G1HeapRegionSize=32M"
   jvmArgs +=  "-XX:InitiatingHeapOccupancyPercent=70"
 
-  // TODO: move this to a property in subprojects{} configuration under each respective lucene/ solr/ build.
-  // OR REMOVE IT ENTIRELY (we don't seem to need it anywhere in tests!)
-  def commonDir
-  if (project.ext.getTopLvlProject(project).equals(rootProject.project(":lucene"))) {
-    commonDir = rootProject.project(":lucene").projectDir
-  } else {
-    commonDir = rootProject.project(":solr").projectDir
-  }
+  // this allows tests to read classes and resources form other projects with the security manager
+  def commonDir = "${rootDir}/build"
+
   systemProperty 'common.dir', "${commonDir}"
 
-  def workingDir = file("${projectDir}/build/tests")
-  def tmpDir = file("${workingDir}/build/tests")
+  workingDir = buildDir
+  def tmpDir = file("${workingDir}/tests")
 
   doFirst {
-    workingDir.mkdirs()
     tmpDir.mkdirs()
   }
 
@@ -107,6 +102,7 @@ test {
   // to point at user.dir.
   systemProperty 'tests.src.home', System.getenv('user.dir')
 
+  systemProperty 'common.dir', "${commonDir}"
   systemProperty 'build.dir', project.buildDir
   systemProperty 'tempDir', tmpDir
   systemProperty 'java.io.tmpdir', tmpDir
@@ -114,7 +110,6 @@ test {
   systemProperty 'jetty.testMode', '1'
   systemProperty 'jetty.insecurerandom', '1'
   systemProperty 'jdk.map.althashing.threshold', '0'
-  systemProperty 'solr.directoryFactory', 'org.apache.solr.core.MockDirectoryFactory'
 
   systemProperty 'tests.seed', randomSeed
 
@@ -148,21 +143,25 @@ test {
   // Enable assertions depending on tests.asserts.
   enableAssertions Boolean.parseBoolean(systemProperties['tests.asserts'])
 
-  // replaces default random source to the nonblocking variant 
+  // replaces default random source to the nonblocking variant
   systemProperty 'java.security.egd', 'file:/dev/./urandom'
-  systemProperty 'java.security.manager', 'org.apache.lucene.util.TestSecurityManager'
-  systemProperty 'java.security.policy', file("${rootDir}/${testsPolicy}")
+  
+  if (project.hasProperty('testsPolicy')) {
+    systemProperty 'java.security.manager', 'org.apache.lucene.util.TestSecurityManager'
+    systemProperty 'java.security.policy', "${testsPolicy}"
+  }
 
-  if (project.ext.properties.containsKey('tests_jvms')) {
-    def testsJvms = project.ext.properties.tests_jvms
+  if (project.hasProperty('tests_jvms')) {
+    def testsJvms = tests_jvms
     maxParallelForks = Integer.parseInt(testsJvms)
   } else {
     maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
   }
 
-  def testsFailFast = project.ext.properties.tests_failfast
-  if (testsFailFast) {
-    failFast = true
+  if (project.hasProperty('tests_failfast')) {
+    if (Boolean.parseBoolean(tests_failfast)) {
+      failFast = true
+    }
   }
 }
 

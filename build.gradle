@@ -36,69 +36,289 @@ plugins {
 }
 
 // TOC
-// -> defs and all project ext config
-// -> lucene-solr all module config
-// -> lucene-solr sub module config
-// -> lucene-solr root project config
-// -> all projects config
-// ->   lucene-solr IDE config
-// ->   dependencies
-// -> other config
+// -> Definitions
+// -> Root project config
+// -> All projects config
+// -> Subprojects config
+// -> Other config
 
 
-// *** defs and all project ext config
+// ### -> defs and all project ext config
 
 buildDir = file("build")
 
-// define lucene-solr project lists
-def luceneSolrProjects = allprojects
-def luceneSolrSubProjects = subprojects
+File userHomeConfigFile = new File(System.getProperty("user.home") + '/user.properties')
+if (userHomeConfigFile.exists()) {
+  println 'Found user home user.gradle, loading ...'
+  Properties props = new Properties()
+  userHomeConfigFile.withInputStream { props.load(it) }
 
-def rootProjectDir = project.rootProject.projectDir;
-
-// we add some custom ext methods here, including mfile
-apply from: file("${rootProjectDir}/buildSrc/common/configure-ext.gradle")
-
-// build help tasks
-apply from: mfile(rootProjectDir, 'buildSrc/common/build-help.gradle')
-
-
-// *** lucene-solr all module config - configure all lucene-solr projects, including root project
-configure(luceneSolrProjects) {
-    buildDir = file("build")
-    
-    // setup repositories
-    apply from: mfile(rootProjectDir, 'buildSrc/common/configure-repositories.gradle')
-
-    project.plugins.apply(ForbiddenApisPluginWrapper)
+  for (java.util.Map$Entry<Map<String,String>> entry : props.entrySet()) {
+    ext.set(entry.getKey(), entry.getValue())
+  }
+} else {
+  println 'not user home user.gradle ' + userHomeConfigFile
 }
 
-configure(luceneSolrProjects) {
-  project.evaluationDependsOn(':buildSrc')
-  
-  task ratSources(type: RatSources) {
-      group = 'Verification'
-      description = "Checks source files for proper license headers."
-      excludes = [
-        '**/TODO',
-        '**/*.txt,',
-        '**/*.iml'
-      ]
-      // TODO: even if we don't have a check task, we want to run RAT - on our root files for example
-      if (project.hasProperty('check')) {
-        check.dependsOn ratSources
-      }
+
+// we add some custom ext methods here, including mfile
+apply from: file("${rootDir}/buildSrc/common/configure-ext.gradle")
+
+// build help tasks
+apply from: mfile(rootDir, 'buildSrc/common/build-help.gradle')
+
+// setup repositories
+apply from: mfile(rootDir, 'buildSrc/common/configure-repositories.gradle')
+
+
+// ### -> lucene-solr root project config
+
+// TODO: enable the modified files checking only for jenkins runs! sysprop?
+tasks.create('checkWorkingCopy', CheckWorkingCopy, false)
+
+
+task testTimes(type: TopHints) {
+  group = 'Tests'
+  description = "Show the slowest tests (averages)."
+}
+
+task pristineClean(type: PristineClean) {}
+
+task defaultUserConfig(type: SetDefaultUserConfig) {
+  group = 'Build Setup'
+  description = "Sets recommended starting build property values in ~/.gradle/gradle.properties. Use --agressive for better build performance. WARNING! This WILL modify your gradle.properties file."
+}
+
+ext.testsResults = [] // test result summaries
+gradle.buildFinished {
+  def allResults = ext.testsResults
+
+  if (!allResults.isEmpty()) {
+    printResults allResults
   }
 }
 
-// *** lucene-solr sub module config - configure all lucene-solr modules (excludes the root project)
-configure(luceneSolrSubProjects) {
+// ### -> All project config
+configure(allprojects) {
+//  File userProjectConfigFile = project.rootProject.file('user.gradle')
+//  if (userProjectConfigFile.exists()) {
+//    println 'Found user project user.gradle, applying ...'
+//    project.apply from: userProjectConfigFile
+//  } else {
+//    
+//  }
+//  
+//  File userHomeConfigFile = new File(System.getProperty("user.home") + '/user.gradle')
+//  if (userHomeConfigFile.exists()) {
+//    println 'Found user home user.gradle, applying ...'
+//    project.apply from: userHomeConfigFile
+//  } else {
+//    println 'not user home user.gradle ' + userHomeConfigFile
+//  }
 
-// TODO: prob wont go here    
+  
+  
+  // we apply eclipse to all projects - we want our formatting if you edit build.gradle in a non java project
+  // as well as the ability to configure other things for all projects
+  apply plugin: 'eclipse'
+  project.afterEvaluate{
+    project.apply from: mfile(rootDir, 'buildSrc/ide/eclipse.gradle')
+  }
+}
+
+// ### -> Subprojects config
+configure(subprojects) {
+
+  buildDir = rootProject.mfile('build/' + getTopLvlProject().name, project.name)
+
+  // setup repositories
+  apply from: mfile(rootDir, 'buildSrc/common/configure-repositories.gradle')
+
+  apply plugin: 'idea'
+
+  plugins.withType(JavaPlugin) {
+    project.apply from: mfile(rootDir, 'buildSrc/ide/idea.gradle')
+  }
+
+  task ratSources(type: RatSources) {
+    group = 'Verification'
+    description = "Checks source files for proper license headers."
+    excludes = [
+      '**/TODO',
+      '**/*.txt,',
+      '**/*.iml'
+    ]
+    // TODO: even if we don't have a check task, we want to run RAT - on our root files for example
+    if (project.hasProperty('check')) {
+      check.dependsOn ratSources
+    }
+  }
+  
+  task checkSourcePatterns(type: CheckSourcePatterns) {
+    group = 'Verification'
+    description = "Checks source files for project violations."
+    baseDir = projectDir
+    check.dependsOn checkSourcePatterns
+  }
+
+  plugins.apply(ForbiddenApisPluginWrapper)
+
+  task depInsight(type: DepInsightReportTask) {
+    group = 'Help'
+    description = "An alternate to dependencyInsight that works across projects so that you can run it from the root directory or aggregate projects eg lucene, solr, solr-contrib"
+  }
+
+  configurations {
+    sourceJarOutput
+  }
+  
+  
+  File jdepsReportDir = mfile(project.buildDir, 'jdepsreport')
+
+  task jdepsReport(type: JdepsReport) {
+    target = jdepsReportDir
+  }
+
+  task listDependencies(type: ListDeps) {
+    group = 'Help'
+    description = "List sorted dependencies and counts for a module."
+  }
+
+  task unusedDependencies {
+    group = 'Help'
+    description = "Lists dependencies that may be unused for a module."
+    task unusedDeps(type: UnusedDeps) {
+      inputDirectory jdepsReportDir
+    }
+    unusedDeps.dependsOn jdepsReport
+    dependsOn unusedDeps
+  }
+
+  project(':buildSrc').tasks.unusedDeps.enabled = false
+
+  task missingDependencies {
+    group = 'Help'
+    description = "Lists classes from this module with missing runtime dependencies (we ignore scanning some root deps (ie hadoop) and some violations (ie annotations)."
+    task missingDeps(type: MissingDeps) {
+      inputDirectory jdepsReportDir
+    }
+    missingDeps.dependsOn jdepsReport
+    dependsOn missingDeps
+  }
+
+  project(':buildSrc').tasks.missingDeps.enabled = false
+  
+  // configure maven
+  project.getPlugins().withType(MavenPublishPlugin) {
+
+    // you can add the following above the apply maven-publish plugin to allow overriding in subprojects: project.ext.set("publishOverride", true)
+    if (!project.hasProperty('publishOverride') || !project.publishOverride) {
+      publishing {
+        publications {
+          mavenJava(MavenPublication) {
+            from components.java
+            artifact(tasks.sourceJar)
+            artifact(tasks.packageJavadoc)
+          }
+        }
+      }
+    }
+  }
+
+  // dependencies block that applies to all projects
+  dependencies {
+    configurations.all {
+      resolutionStrategy {
+        force 'org.codehaus.woodstox:stax2-api:3.1.4' // clustering has old simple-xml dep that requires < 4.X
+      }
+
+      // stax-api classes are in Java 11
+      exclude group: 'javax.xml.stream', module: 'stax-api'
+      exclude group: 'stax', module: 'stax-api'
+      exclude group: 'stax', module: 'stax'
+
+      // logging jars we don't want, we use slf4j
+      exclude group: 'log4j', module: 'log4j'
+      exclude group: 'commons-logging', module: 'commons-logging'
+
+      // exclude annotation jars that come with guava
+      exclude group: 'com.google.code.findbugs', module: 'jsr305'
+      exclude group: 'org.checkerframework', module: 'checker-qual'
+      exclude group: 'com.google.errorprone', module: 'error_prone_annotations'
+      exclude group: 'com.google.j2objc', module: 'j2objc-annotations'
+      exclude group: 'org.codehaus.mojo', module: 'animal-sniffer-annotations'
+
+      exclude group: 'org.slf4j', module: 'slf4j-log4j12' // zk and perhaps others can bring in log4j12 binding
+
+      exclude group: 'xml-apis', module: 'xml-apis' // somehow can be inconsistenly brought in by xerces:xercesImpl - exlude it
+    }
+
+    modules {
+      module("commons-logging:commons-logging") { replacedBy("org.slf4j:jcl-over-slf4j") }
+      module("log4j:log4j") { replacedBy("org.slf4j:log4j-over-slf4j") }
+    }
+  }
+
+
+
+  plugins.withType(JavaPlugin) {
+    
+    sourceCompatibility = "11"
+    targetCompatibility = "11"
+
+    // Use UTF-8, don't rely on local platform encoding.
+    compileJava.options.encoding = "UTF-8"
+    compileTestJava.options.encoding = "UTF-8"
+
+    // project.compileJava.options.compilerArgs << '-Xlint:deprecation' << '-Xlint:unchecked'
+    // project.compileTestJava.options.compilerArgs << '-Xlint:deprecation' << '-Xlint:unchecked'
+
+    // fail on basic compiler warnings
+    compileJava.options.compilerArgs << "-Werror"
+    compileTestJava.options.compilerArgs << "-Werror"
+
+
+    sourceSets {
+      main.java.srcDirs = ['src/java']
+      main.resources.srcDirs = ['src/resources']
+      test.java.srcDirs = ['src/test']
+      test.resources.srcDirs = ['src/test-files']
+    }
+
+    project.apply from: mfile(rootDir, 'buildSrc/common/configure-test.gradle')
+    
+    task sourceJar(type: Jar) {
+      classifier 'sources'
+      from sourceSets.main.allJava
+    }
+    jar.dependsOn sourceJar
+
+    javadoc {
+      options.encoding = 'UTF-8'
+    }
+
+    task packageJavadoc(type: Jar) {
+      classifier = 'javadoc'
+      from javadoc
+    }
+
+    configurations {
+      sourceJarOutput
+    }
+    artifacts {
+      sourceJarOutput sourceJar
+    }
+  }
+
+
+}
+
+
+// TODO: prob wont go here
 //  task checkMissingJavaDocs {
 //    group = 'Verification'
 //    description = "Checks for missing JavaDocs."
-//    
+//
 //    doLast {
 //      project.exec {
 //        workingDir project.projectDir.getAbsolutePath()
@@ -112,224 +332,31 @@ configure(luceneSolrSubProjects) {
 //      }
 //    }
 //  }
-  
-  // TODO: check.dependsOn checkMissingJavaDocs
-  
-  task depInsight(type: DepInsightReportTask) {
-    group = 'Help'
-    description = "An alternate to dependencyInsight that works across projects so that you can run it from the root directory or aggregate projects eg lucene, solr, solr-contrib"
-  }
-  
-  configurations {
-    sourceJarOutput
-  }
-    
-  plugins.withType(JavaPlugin) {
 
-    task checkSourcePatterns(type: CheckSourcePatterns) {
-      group = 'Verification'
-      description = "Checks source files for project violations."
-      baseDir = projectDir
-      check.dependsOn checkSourcePatterns
-    }
+// TODO: check.dependsOn checkMissingJavaDocs
 
-    sourceCompatibility = "11"
-    targetCompatibility = "11"
-    
-    // Use UTF-8, don't rely on local platform encoding.
-    project.compileJava.options.encoding = "UTF-8"
-    project.compileTestJava.options.encoding = "UTF-8"
-    
-    // project.compileJava.options.compilerArgs << '-Xlint:deprecation' << '-Xlint:unchecked'
-    // project.compileTestJava.options.compilerArgs << '-Xlint:deprecation' << '-Xlint:unchecked'
-    
-    // fail on basic compiler warnings
-    project.compileJava.options.compilerArgs << "-Werror"
-    project.compileTestJava.options.compilerArgs << "-Werror"
-    
-    
-    project.sourceSets {
-      main.java.srcDirs = ['src/java']
-      main.resources.srcDirs = ['src/resources']
-      test.java.srcDirs = ['src/test']
-      test.resources.srcDirs = ['src/test-files']
-    }
-    
-    // configure tests
-    
-    if (ext.getTopLvlProject(project).equals(rootProject.project(":lucene"))) {
-      project.ext.testsPolicy = 'lucene/tools/junit4/tests.policy'
-    } else {
-      project.ext.testsPolicy = 'lucene/tools/junit4/solr-tests.policy'
-    }
 
-    project.apply from: mfile(rootProjectDir, 'buildSrc/common/configure-test.gradle')
 
-    task sourceJar(type: Jar) {
-      classifier 'sources'
-      from sourceSets.main.allJava
-    }
-    jar.dependsOn sourceJar
-    
-    javadoc {
-      options.encoding = 'UTF-8'
-    }
-    
-    task packageJavadoc(type: Jar) {
-      classifier = 'javadoc'
-      from javadoc
-    }
-    
-    configurations {
-      sourceJarOutput
-    }
-    artifacts {
-      sourceJarOutput sourceJar
-    }
-    
-    // configure maven
-    project.getPlugins().withType(MavenPublishPlugin) {
 
-      // you can add the following above the apply maven-publish plugin to allow overriding in subprojects: project.ext.set("publishOverride", true)
-      if (!project.hasProperty('publishOverride') || !project.publishOverride) {
-        publishing {
-          publications {
-            mavenJava(MavenPublication) {
-              from components.java
-              artifact(tasks.sourceJar)
-              artifact(tasks.packageJavadoc)
-            }
-          }
-        }
-      }
-    }
-  }
-}
+// ### -> Other config
 
-// *** lucene-solr root project config - configure the root project
-configure(rootProject) {
-  
-  // root project config
-  
-  // TODO: enable the modified files checking only for jenkins runs! sysprop?
-  tasks.create('checkWorkingCopy', CheckWorkingCopy, false)
-  
-  
-  task testTimes(type: TopHints) {
-    group = 'Tests'
-    description = "Show the slowest tests (averages)."
-  }
-  
-  task pristineClean(type: PristineClean) {}
-  
-  task defaultUserConfig(type: SetDefaultUserConfig) {
-    group = 'Build Setup'
-    description = "Sets recommended starting build property values in ~/.gradle/gradle.properties. Use --agressive for better build performance. WARNING! This WILL modify your gradle.properties file."
-  }
-  
-  ext.testsResults = [] // test result summaries
-  
-  gradle.buildFinished {
-      def allResults = ext.testsResults
-  
-      if (!allResults.isEmpty()) {
-          printResults allResults
-      }
-  }
-}
 
-// *** all projects config
-configure(allprojects) {
-  
-  // -> lucene-solr IDE config - setup eclipse and idea
-  
-  apply plugin: 'eclipse'
-  apply plugin: 'idea'
-  
-  plugins.withType(JavaPlugin) {
-    project.apply from: mfile(rootProjectDir, 'buildSrc/ide/eclipse.gradle')
-    project.apply from: mfile(rootProjectDir, 'buildSrc/ide/idea.gradle')
-  }
-  
-  // dependencies block that applies to all projects
-  dependencies {
-    configurations.all {
-      resolutionStrategy {
-        force 'org.codehaus.woodstox:stax2-api:3.1.4' // clustering has old simple-xml dep that requires < 4.X
-      }
-
-      // stax-api classes are in Java 11
-      exclude group: 'javax.xml.stream', module: 'stax-api'
-      exclude group: 'stax', module: 'stax-api'
-      exclude group: 'stax', module: 'stax'
-      
-      // logging jars we don't want, we use slf4j
-      exclude group: 'log4j', module: 'log4j'
-      exclude group: 'commons-logging', module: 'commons-logging'
-      
-      // exclude annotation jars that come with guava
-      exclude group: 'com.google.code.findbugs', module: 'jsr305'
-      exclude group: 'org.checkerframework', module: 'checker-qual'
-      exclude group: 'com.google.errorprone', module: 'error_prone_annotations'
-      exclude group: 'com.google.j2objc', module: 'j2objc-annotations'
-      exclude group: 'org.codehaus.mojo', module: 'animal-sniffer-annotations'
-      
-      exclude group: 'org.slf4j', module: 'slf4j-log4j12' // zk and perhaps others can bring in log4j12 binding
-      
-      exclude group: 'xml-apis', module: 'xml-apis' // somehow can be inconsistenly brought in by xerces:xercesImpl - exlude it
-    }
-    
-    modules {
-      module("commons-logging:commons-logging") { replacedBy("org.slf4j:jcl-over-slf4j") }
-      module("log4j:log4j") { replacedBy("org.slf4j:log4j-over-slf4j") }
-    }
-  }
-  
-  File jdepsReportDir = mfile(project.buildDir, 'jdepsreport')
-  
-  plugins.withType(JavaPlugin) {
-    
-    task jdepsReport(type: JdepsReport) {
-      target = jdepsReportDir
-    }
-    
-    task listDependencies(type: ListDeps) {
-      group = 'Help'
-      description = "List sorted dependencies and counts for a module."
-    }
-    
-    task unusedDependencies {
-      group = 'Help'
-      description = "Lists dependencies that may be unused for a module."
-      task unusedDeps(type: UnusedDeps) {
-        inputDirectory jdepsReportDir
-      }
-      unusedDeps.dependsOn jdepsReport
-      dependsOn unusedDeps
-    }
-    
-    project(':buildSrc').tasks.unusedDeps.enabled = false
-    
-    task missingDependencies {
-      group = 'Help'
-      description = "Lists classes from this module with missing runtime dependencies (we ignore scanning some root deps (ie hadoop) and some violations (ie annotations)."
-      task missingDeps(type: MissingDeps) {
-        inputDirectory jdepsReportDir
-      }
-      missingDeps.dependsOn jdepsReport
-      dependsOn missingDeps
-    }
-    
-    project(':buildSrc').tasks.missingDeps.enabled = false
-  }
-}
-
-// *** other config
-
+// TODO: prob does not go here
 
 // Single JavaDocs for all modules
 
-def noJavaDocModules = ["buildSrc", "dev-tools","lucene", "solr", "solr-ref-guide", "lucene-analysis", "lucene-backward-codecs", "solr-contrib", "solr-example", "solr-example-DIH"]
+def noJavaDocModules = [
+  "buildSrc",
+  "dev-tools",
+  "lucene",
+  "solr",
+  "solr-ref-guide",
+  "lucene-analysis",
+  "lucene-backward-codecs",
+  "solr-contrib",
+  "solr-example",
+  "solr-example-DIH"
+]
 def javaDocProjects = subprojects.findAll { project -> !noJavaDocModules.contains(project.name)}
 
 // project.afterEvaluate{

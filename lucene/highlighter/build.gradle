@@ -26,7 +26,7 @@ dependencies {
   implementation project(':lucene:lucene-memory')
   
   testImplementation project(':lucene:lucene-test-framework')
-  testImplementation project(':lucene:analysis:lucene-analyzers-common')
+  testImplementation project(':lucene:lucene-analyzers:lucene-analyzers-common')
 }
 
 ratSources {

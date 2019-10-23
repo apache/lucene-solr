@@ -24,6 +24,8 @@ subprojects {
 
 def distDir = 'dist'
 
+ext.testsPolicy = "${rootDir}/lucene/tools/junit4/tests.policy"
+
 tasks.create('checkLicenses', LicenseCheckTask, file('licenses'))
 
 tasks.create('jarChecksums', JarChecksum, file('.'), file('licenses'))

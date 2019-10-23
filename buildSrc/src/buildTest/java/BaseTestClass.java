@@ -48,7 +48,7 @@ public abstract class BaseTestClass extends Assert {
     System.out.println("Exit:" + exitVal);
     assumeTrue(exitVal == 0);
     
-    cmd = new String[]{"bash", "build-wdocker-test/start.sh"};
+    cmd = new String[]{"bash", "src/buildTest/scripts/start.sh"};
     exitVal = runCmd(cmd, env, false, false).returnCode;
     if (exitVal > 0) {
       fail("Failed starting docker containers!");

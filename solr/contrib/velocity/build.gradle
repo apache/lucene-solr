@@ -21,7 +21,7 @@ apply plugin: org.apache.lucene.gradle.dist.PartOfDist
 
 dependencies {
   
-  implementation project(':lucene:analysis:lucene-analyzers-common')
+  implementation project(':lucene:lucene-analyzers:lucene-analyzers-common')
   implementation project(':solr:solr-core')
   implementation project(':solr:solr-solrj')
   

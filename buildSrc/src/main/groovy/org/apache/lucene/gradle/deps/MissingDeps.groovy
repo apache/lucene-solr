@@ -79,7 +79,7 @@ class MissingDeps extends DefaultTask {
     // make sure ant task logging shows up by default
     ant.lifecycleLogLevel = "INFO"
     
-    def topLvlProject = getTopLvlProject(project)
+    def topLvlProject = project.getTopLvlProject()
     
     File dotFile = project.mfile(inputDirectory, 'jdepsDir/' + topLvlProject.name +  "/" + "${project.name}-${project.version}/${project.name}-${project.version}.jar.dot")
     
@@ -246,18 +246,6 @@ class MissingDeps extends DefaultTask {
       depExcludes.add(pattern)
     }
     return this
-  }
-  
-  protected Project getTopLvlProject(Project proj) {
-    def topLvlProject
-    if (proj.group ==~ /.*?\.lucene(?:\.\w+)?/) {
-      topLvlProject = project.project(":lucene")
-    } else if (proj.group ==~ /.*?\.solr(?:\.\w+)?/) {
-      topLvlProject = project.project(":solr")
-    } else {
-      throw new GradleException("Could not determine top level project for " + proj)
-    }
-    return topLvlProject
   }
   
   public void addExclusionsFrom(Project fromProject) {

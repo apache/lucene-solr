@@ -24,6 +24,8 @@ subprojects {
 
 def distDir = "dist"
 
+ext.testsPolicy = "${rootDir}/lucene/tools/junit4/solr-tests.policy"
+
 tasks.create("checkLicenses", LicenseCheckTask, file("licenses"))
 
 tasks.create("jarChecksums", JarChecksum, file('solr'), file('licenses'))
@@ -35,5 +37,5 @@ task packageDist(type: org.apache.lucene.gradle.dist.PackageLuceneSolrDist) {
   // additional includes for solr-server
   includeArtifacts '**/server/solr/**', '**/server/resources/**', '**/server/etc/**', '**/server/modules/**', '**/server/scripts/**', '**/server/contexts/**', '**/server/start.jar'
   
-  dependsOn project("solr-server").getStartJar
+  dependsOn { project(":solr:solr-server").getStartJar }
 }

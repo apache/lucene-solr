@@ -24,7 +24,7 @@ archivesBaseName = 'lucene-analyzers-morfologik'
 dependencies {
 
   implementation project(':lucene:lucene-core')
-  implementation project(':lucene:analysis:lucene-analyzers-common')
+  implementation project(':lucene:lucene-analyzers:lucene-analyzers-common')
   
   implementation ('org.carrot2:morfologik-polish')
   implementation ('org.carrot2:morfologik-fsa')

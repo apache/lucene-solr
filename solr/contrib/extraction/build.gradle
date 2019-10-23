@@ -25,7 +25,7 @@ dependencies {
   implementation project(':lucene:lucene-core')
   implementation project(':solr:solr-core')
   implementation project(':solr:solr-solrj')
-  implementation project(':lucene:analysis:lucene-analyzers-common')
+  implementation project(':lucene:lucene-analyzers:lucene-analyzers-common')
   
   implementation ('org.slf4j:slf4j-api')
   api ('org.apache.tika:tika-core') { transitive = false }

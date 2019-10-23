@@ -17,7 +17,7 @@
 command -v docker >/dev/null 2>&1 || { echo "docker must be installed to run this test"; exit 1; }
 
 # make any non 0 exit fail script
-. "build-wdocker-test/setup-script-for-test.sh" || { echo "Could not source setup-script-for-test.sh"; exit 1; }
+. "src/buildTest/scripts/setup-script-for-test.sh" || { echo "Could not source setup-script-for-test.sh"; exit 1; }
 
 OPTIND=1  # Reset in case getopts has been used previously in the shell.
 
@@ -50,22 +50,39 @@ gradle_args="--console=plain -x verifyLocks"
 
 # NOTE: we don't clean right now, as it would wipe out buildSrc/build on us for the host, but buildTest dependsOn clean
 
-# first check that rat passes
-cmd="cd /home/lucene/project;./gradlew ${gradle_args} ratSources"
+# build without unit tests
+cmd="cd /home/lucene/project;./gradlew ${gradle_args} build -x test"
 exec "${cmd}" "${exec_args}" || { exit 1; }
 
-# create an xml file with no license in lucene
-cmd="touch /home/lucene/project/lucene/core/src/java/org/no_license_test_file.xml"
+# test regenerate task
+cmd="cd /home/lucene/project;./gradlew ${gradle_args} regenerate"
 exec "${cmd}" "${exec_args}" || { exit 1; }
 
-# test that rat fails on our test file
-cmd="cd /home/lucene/project;./gradlew ${gradle_args} ratSources"
-if exec "${cmd}" "${exec_args}"; then
-  echo "rat should fail!"
-  exit 1 # rat should fail!
-fi
-
-# clean test file
-cmd="rm /home/lucene/project/lucene/core/src/java/org/no_license_test_file.xml"
+# test forbiddenApis task
+cmd="cd /home/lucene/project;./gradlew ${gradle_args} forbiddenApis"
 exec "${cmd}" "${exec_args}" || { exit 1; }
+
+# test eclipse tasks
+cmd="cd /home/lucene/project;./gradlew ${gradle_args} cleanEclipse"
+exec "${cmd}" "${exec_args}" || { exit 1; }
+
+cmd="cd /home/lucene/project;./gradlew ${gradle_args} eclipse"
+exec "${cmd}" "${exec_args}" || { exit 1; }
+
+# test unusedDependencies task
+cmd="cd /home/lucene/project;./gradlew ${gradle_args} solr:solr-core:unusedDependencies"
+exec "${cmd}" "${exec_args}" || { exit 1; }
+
+# try deeper structure
+cmd="cd /home/lucene/project;./gradlew ${gradle_args} solr:contrib:solr-contrib-clustering:unusedDependencies"
+exec "${cmd}" "${exec_args}" || { exit 1; }
+
+# test missingDependencies task
+cmd="cd /home/lucene/project;./gradlew ${gradle_args} solr:solr-core:missingDependencies"
+exec "${cmd}" "${exec_args}" || { exit 1; }
+
+# we should still be able to build now
+cmd="cd /home/lucene/project;./gradlew ${gradle_args} build -x test -x verifyLocks"
+exec "${cmd}" "${exec_args}" || { exit 1; }
+
 

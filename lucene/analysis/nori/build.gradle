@@ -19,15 +19,13 @@ apply plugin: 'java-library'
 apply plugin: 'maven-publish'
 apply plugin: org.apache.lucene.gradle.dist.PartOfDist
 
-archivesBaseName = 'lucene-analyzers-nori'
-
 configurations {
   tools
 }
 
 dependencies {
   implementation project(':lucene:lucene-core')
-  implementation project(':lucene:analysis:lucene-analyzers-common')
+  implementation project(':lucene:lucene-analyzers:lucene-analyzers-common')
   
   tools ('com.ibm.icu:icu4j')
   

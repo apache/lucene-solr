@@ -30,11 +30,13 @@ dependencies {
   api project(':lucene:lucene-core')
   api project(':lucene:lucene-codecs')
   api project(':lucene:lucene-queries')
-  api project(':lucene:analysis:lucene-analyzers-common')
+  api project(':lucene:lucene-analyzers:lucene-analyzers-common')
   api project(':lucene:lucene-test-framework')
   
   api ('junit:junit')
   api ('io.opentracing:opentracing-mock')
+
+  implementation ('org.eclipse.jetty:jetty-servlet')
   implementation ('commons-cli:commons-cli')
   implementation ('org.apache.httpcomponents:httpclient')
   implementation ('org.apache.httpcomponents:httpcore')

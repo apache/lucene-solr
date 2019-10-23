@@ -31,6 +31,9 @@ dependencies {
   runtimeOnly ('org.slf4j:jul-to-slf4j')
   runtimeOnly ('org.slf4j:slf4j-api')
   
+  runtimeOnly ('org.eclipse.jetty:jetty-alpn-java-server')
+  runtimeOnly ('org.eclipse.jetty:jetty-alpn-java-client')
+  
   implementation ('org.apache.logging.log4j:log4j-1.2-api')
   implementation ('org.apache.logging.log4j:log4j-api')
   implementation ('org.apache.logging.log4j:log4j-core')
@@ -41,28 +44,26 @@ dependencies {
   implementation ('io.dropwizard.metrics:metrics-jetty9')
   implementation ('io.dropwizard.metrics:metrics-jvm')
   
-  api ('org.eclipse.jetty:jetty-continuation')
-  api ('org.eclipse.jetty:jetty-deploy')
-  api ('org.eclipse.jetty:jetty-http')
-  api ('org.eclipse.jetty:jetty-io')
-  api ('org.eclipse.jetty:jetty-jmx')
-  api ('org.eclipse.jetty:jetty-rewrite')
-  api ('org.eclipse.jetty:jetty-security')
-  api ('org.eclipse.jetty:jetty-server')
-  api ('org.eclipse.jetty:jetty-servlet')
-  api ('org.eclipse.jetty:jetty-servlets')
-  api ('org.eclipse.jetty:jetty-util')
-  api ('org.eclipse.jetty:jetty-webapp')
-  api ('org.eclipse.jetty:jetty-xml')
-  runtimeOnly ('org.eclipse.jetty:jetty-alpn-java-server')
-  runtimeOnly ('org.eclipse.jetty:jetty-alpn-java-client')
-  api 'org.eclipse.jetty:jetty-alpn-server'
-  api 'org.eclipse.jetty:jetty-alpn-client'
+  implementation ('org.eclipse.jetty:jetty-continuation')
+  implementation ('org.eclipse.jetty:jetty-deploy')
+  implementation ('org.eclipse.jetty:jetty-http')
+  implementation ('org.eclipse.jetty:jetty-io')
+  implementation ('org.eclipse.jetty:jetty-jmx')
+  implementation ('org.eclipse.jetty:jetty-rewrite')
+  implementation ('org.eclipse.jetty:jetty-security')
+  implementation ('org.eclipse.jetty:jetty-server')
+  implementation ('org.eclipse.jetty:jetty-servlet')
+  implementation ('org.eclipse.jetty:jetty-servlets')
+  implementation ('org.eclipse.jetty:jetty-util')
+  implementation ('org.eclipse.jetty:jetty-webapp')
+  implementation ('org.eclipse.jetty:jetty-xml')
+  implementation 'org.eclipse.jetty:jetty-alpn-server'
+  implementation 'org.eclipse.jetty:jetty-alpn-client'
   
-  api ('org.eclipse.jetty.http2:http2-server')
-  api ('org.eclipse.jetty.http2:http2-common')
-  api ('org.eclipse.jetty.http2:http2-hpack')
-  api ('org.eclipse.jetty.http2:http2-http-client-transport')
+  implementation ('org.eclipse.jetty.http2:http2-server')
+  implementation ('org.eclipse.jetty.http2:http2-common')
+  implementation ('org.eclipse.jetty.http2:http2-hpack')
+  implementation ('org.eclipse.jetty.http2:http2-http-client-transport')
   
   implementation ('javax.servlet:javax.servlet-api')
   

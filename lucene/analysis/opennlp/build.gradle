@@ -23,7 +23,7 @@ archivesBaseName = 'lucene-analyzers-opennlp'
 
 dependencies {
   implementation project(':lucene:lucene-core')
-  implementation project(':lucene:analysis:lucene-analyzers-common')
+  implementation project(':lucene:lucene-analyzers:lucene-analyzers-common')
   
   api ('org.apache.opennlp:opennlp-tools')
   
