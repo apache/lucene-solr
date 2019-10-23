@@ -100,7 +100,11 @@ Upgrade Notes
 
 New Features
 ---------------------
-(No changes)
+* SOLR-13821: A Package store to store and load package artifacts (noble, Ishan Chattopadhyaya)
+
+* SOLR-13822: A Package management system with the following features. A packages.json in ZK to store
+  the configuration, APIs to read/edit them and isolated classloaders to load the classes from
+  hose packages if the 'class' attribute is prefixed with `<package-name>:` (noble, Ishan Chattopadhyaya)
 
 Improvements
 ---------------------
@@ -193,8 +197,6 @@ New Features
 * SOLR-13625: Add CsvStream, TsvStream Streaming Expressions and supporting Stream Evaluators (Joel bernstein)
 
 * SOLR-8241: Add CaffeineCache, an efficient implementation of SolrCache.(Ben Manes, Shawn Heisey, David Smiley, Andrzej Bialecki)
-
-* SOLR-13821: A Package store to store and load package artefacts (noble, Ishan Chattopadhyaya)
 
 * SOLR-13298: Allow zplot to plot matrices (Joel Bernstein)
 

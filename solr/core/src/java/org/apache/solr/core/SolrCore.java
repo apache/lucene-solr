@@ -110,6 +110,8 @@ import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.pkg.PackageListeners;
+import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.BinaryResponseWriter;
@@ -238,6 +240,8 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   public volatile boolean indexEnabled = true;
   public volatile boolean readOnly = false;
 
+  private PackageListeners packageListeners = new PackageListeners(this);
+
   public Set<String> getMetricNames() {
     return metricNames;
   }
@@ -262,6 +266,10 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     return restManager;
   }
 
+  public PackageListeners getPackageListeners() {
+    return packageListeners;
+  }
+
   static int boolean_query_max_clause_count = Integer.MIN_VALUE;
 
   private ExecutorService coreAsyncTaskExecutor = ExecutorUtil.newMDCAwareCachedThreadPool("Core Async Task");
@@ -273,6 +281,18 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
    */
   public SolrResourceLoader getResourceLoader() {
     return resourceLoader;
+  }
+
+  /** Gets the SolrResourceLoader for a given package
+   * @param pkg The package name
+   */
+  public SolrResourceLoader getResourceLoader(String pkg) {
+    if (pkg == null) {
+      return resourceLoader;
+    }
+    PackageLoader.Package aPackage = coreContainer.getPackageLoader().getPackage(pkg);
+    PackageLoader.Package.Version latest = aPackage.getLatest();
+    return latest.getLoader();
   }
 
   /**
@@ -857,7 +877,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
   public <T extends Object> T createInitInstance(PluginInfo info, Class<T> cast, String msg, String defClassName) {
     if (info == null) return null;
-    T o = createInstance(info.className == null ? defClassName : info.className, cast, msg, this, getResourceLoader());
+    T o = createInstance(info.className == null ? defClassName : info.className, cast, msg, this, getResourceLoader(info.pkgName));
     if (o instanceof PluginInfoInitialized) {
       ((PluginInfoInitialized) o).init(info);
     } else if (o instanceof NamedListInitializedPlugin) {
