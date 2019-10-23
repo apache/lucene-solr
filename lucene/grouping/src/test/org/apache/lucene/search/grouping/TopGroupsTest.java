@@ -21,12 +21,16 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.util.LuceneTestCase;
 
+import org.junit.Ignore;
+
 public class TopGroupsTest extends LuceneTestCase {
 
+  @Ignore // https://issues.apache.org/jira/browse/LUCENE-8996
   public void testAllGroupsEmptyInSecondPass() {
     narrativeMergeTestImplementation(false, false, false, false);
   }
 
+  @Ignore // https://issues.apache.org/jira/browse/LUCENE-8996
   public void testSomeGroupsEmptyInSecondPass() {
     narrativeMergeTestImplementation(false, false, false, true);
     narrativeMergeTestImplementation(false, false, true, false);
