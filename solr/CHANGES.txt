@@ -119,19 +119,10 @@ Bug Fixes
 
 * SOLR-13403: Fix NPE in TermsComponent for DatePointField (yonik, Munendra S N)
 
-
-Other Changes
----------------------
-
-* SOLR-12769: Fix incorrect documentation for 'delete' op in Request parameters API (Alexandre Rafalovitch, Munendra S N)
-
-* SOLR-13841: Add jackson databind annotations to SolrJ classpath (noble)
-
 * SOLR-9802: Fix grouping failure for date field in solrcloud (Erick Erickson, Munendra S N, Vitaly Lavrov)
 
 Other Changes
 ---------------------
-
 
 * SOLR-12769: Fix incorrect documentation for 'delete' op in Request parameters API (Alexandre Rafalovitch, Munendra S N)
 
