@@ -41,6 +41,8 @@ Improvements
 
 *SOLR-13731: javabin must support a 1:1 mapping of the JSON update format (noble)
 
+* SOLR-13831: Support defining arbitrary autoscaling simulation scenarios. (ab)
+
 
 Optimizations
 ---------------------

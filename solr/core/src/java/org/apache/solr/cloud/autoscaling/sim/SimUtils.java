@@ -134,17 +134,20 @@ public class SimUtils {
     }
     allReplicaInfos.keySet().forEach(collection -> {
       Set<String> infosCores = allReplicaInfos.getOrDefault(collection, Collections.emptyMap()).keySet();
-      Set<String> csCores = allReplicas.getOrDefault(collection, Collections.emptyMap()).keySet();
+      Map<String, Replica> replicas = allReplicas.getOrDefault(collection, Collections.emptyMap());
+      Set<String> csCores = replicas.keySet();
       if (!infosCores.equals(csCores)) {
         Set<String> notInClusterState = infosCores.stream()
             .filter(k -> !csCores.contains(k))
             .collect(Collectors.toSet());
         Set<String> notInNodeProvider = csCores.stream()
-            .filter(k -> !infosCores.contains(k))
+            .filter(k -> !infosCores.contains(k) && replicas.get(k).isActive(solrCloudManager.getClusterStateProvider().getLiveNodes()))
             .collect(Collectors.toSet());
-        throw new RuntimeException("Mismatched replica data between ClusterState and NodeStateProvider:\n\t" +
-            "replica not in ClusterState: " + notInClusterState + "\n\t" +
-            "replica not in NodeStateProvider: " + notInNodeProvider);
+        if (!notInClusterState.isEmpty() || !notInNodeProvider.isEmpty()) {
+          throw new RuntimeException("Mismatched replica data for collection " + collection + " between ClusterState and NodeStateProvider:\n\t" +
+              "replica in NodeStateProvider but not in ClusterState: " + notInClusterState + "\n\t" +
+              "replica in ClusterState but not in NodeStateProvider: " + notInNodeProvider);
+        }
       }
     });
     // verify all replicas have size info
@@ -349,6 +352,9 @@ public class SimUtils {
     }
     String a = cmd.keySet().iterator().next();
     ModifiableSolrParams params = new ModifiableSolrParams();
+    if (req.getParams() != null) {
+      params.add(req.getParams());
+    }
     params.add(CollectionAdminParams.COLLECTION, path.substring(3));
     if (req.getParams() != null) {
       params.add(req.getParams());
