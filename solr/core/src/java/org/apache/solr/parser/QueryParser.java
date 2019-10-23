@@ -56,7 +56,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
                                 SynonymQueryStyle synonymQueryStyle)
       throws SyntaxError {
     setAutoGenerateMultiTermSynonymsPhraseQuery(fieldAutoGenPhraseQueries || getAutoGeneratePhraseQueries());
-    // Don't auto-quote graph-aware field queries 
+    // Don't auto-quote graph-aware field queries
     boolean treatAsQuoted = getSplitOnWhitespace()
         ? (quoted || fieldAutoGenPhraseQueries || getAutoGeneratePhraseQueries()) : quoted;
     return super.newFieldQuery(analyzer, field, queryText, treatAsQuoted, false, fieldEnableGraphQueries, synonymQueryStyle);
@@ -616,11 +616,6 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
     finally { jj_save(2, xla); }
   }
 
-  private boolean jj_3R_7() {
-    if (jj_scan_token(TERM)) return true;
-    return false;
-  }
-
   private boolean jj_3R_4() {
     if (jj_scan_token(TERM)) return true;
     if (jj_scan_token(COLON)) return true;
@@ -669,6 +664,11 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
   private boolean jj_3R_5() {
     if (jj_scan_token(STAR)) return true;
     if (jj_scan_token(COLON)) return true;
+    return false;
+  }
+
+  private boolean jj_3R_7() {
+    if (jj_scan_token(TERM)) return true;
     return false;
   }
 
@@ -817,7 +817,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
       return (jj_ntk = jj_nt.kind);
   }
 
-  private java.util.List<int[]> jj_expentries = new java.util.ArrayList<int[]>();
+  private java.util.List jj_expentries = new java.util.ArrayList();
   private int[] jj_expentry;
   private int jj_kind = -1;
   private int[] jj_lasttokens = new int[100];
@@ -832,7 +832,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
       for (int i = 0; i < jj_endpos; i++) {
         jj_expentry[i] = jj_lasttokens[i];
       }
-      jj_entries_loop: for (java.util.Iterator<?> it = jj_expentries.iterator(); it.hasNext();) {
+      jj_entries_loop: for (java.util.Iterator it = jj_expentries.iterator(); it.hasNext();) {
         int[] oldentry = (int[])(it.next());
         if (oldentry.length == jj_expentry.length) {
           for (int i = 0; i < jj_expentry.length; i++) {
@@ -880,7 +880,7 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
     jj_add_error_token(0, 0);
     int[][] exptokseq = new int[jj_expentries.size()][];
     for (int i = 0; i < jj_expentries.size(); i++) {
-      exptokseq[i] = jj_expentries.get(i);
+      exptokseq[i] = (int[])jj_expentries.get(i);
     }
     return new ParseException(token, exptokseq, tokenImage);
   }

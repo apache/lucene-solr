@@ -27,6 +27,8 @@ interface CharStream {
    */
   char readChar() throws java.io.IOException;
 
+// Required Edit to Generated code: Remove deprecated methods (fails precommit, unused)
+
   /**
    * Returns the column number of the last character for current token (being
    * matched after the last call to BeginTOken).
@@ -96,4 +98,4 @@ interface CharStream {
   void Done();
 
 }
-/* JavaCC - OriginalChecksum=48b70e7c01825c8f301c7362bf1028d8 (do not edit this line) */
+/* JavaCC - OriginalChecksum=50168aa5b52b7160aae449954d5f03ca (do not edit this line) */
