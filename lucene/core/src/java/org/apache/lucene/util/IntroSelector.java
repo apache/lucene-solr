@@ -20,9 +20,8 @@ import java.util.Comparator;
 
 /** Implementation of the quick select algorithm.
  *  <p>It uses the median of the first, middle and last values as a pivot and
- *  falls back to a heap sort when the number of recursion levels exceeds
- *  {@code 2 lg(n)}, as a consequence it runs in linear time on average and in
- *  {@code n log(n)} time in the worst case.</p>
+ *  falls back to a median of medians when the number of recursion levels exceeds
+ *  {@code 2 lg(n)}, as a consequence it runs in linear time on average.</p>
  *  @lucene.internal */
 public abstract class IntroSelector extends Selector {
 
