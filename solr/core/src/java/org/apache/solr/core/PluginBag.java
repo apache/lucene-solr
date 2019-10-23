@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -141,20 +142,16 @@ public class PluginBag<T> implements AutoCloseable {
       return new LazyPluginHolder<T>(meta, info, core, core.getResourceLoader(), false);
     } else {
       if (info.pkgName != null) {
-        return getPackagePluginHolder(info);
+        PackagePluginHolder<T> holder = new PackagePluginHolder<>(info, core, meta);
+        return meta.clazz == UpdateRequestProcessorFactory.class ?
+            new PluginHolder(info, new LazyUpdateProcessorFactoryHolder(holder)) :
+            holder;
       } else {
         T inst = core.createInstance(info.className, (Class<T>) meta.clazz, meta.getCleanTag(), null, core.getResourceLoader(info.pkgName));
         initInstance(inst, info);
         return new PluginHolder<>(info, inst);
       }
     }
-  }
-
-  private PluginHolder<T> getPackagePluginHolder(PluginInfo info) {
-    PackagePluginHolder<T> holder = new PackagePluginHolder<>(info, core, meta);
-    return meta.clazz == UpdateRequestProcessorFactory.class ?
-        new PluginHolder(info, new LazyUpdateProcessorFactoryHolder(holder)) :
-        holder;
   }
 
   /**
@@ -355,7 +352,7 @@ public class PluginBag<T> implements AutoCloseable {
    * An indirect reference to a plugin. It just wraps a plugin instance.
    * subclasses may choose to lazily load the plugin
    */
-  public static class PluginHolder<T> implements AutoCloseable {
+  public static class PluginHolder<T> implements Supplier<T>,  AutoCloseable {
     protected T inst;
     protected final PluginInfo pluginInfo;
     boolean registerAPI = false;

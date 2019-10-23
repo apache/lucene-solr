@@ -283,6 +283,9 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     return resourceLoader;
   }
 
+  /** Gets the SolrResourceLoader for a given package
+   * @param pkg The package name
+   */
   public SolrResourceLoader getResourceLoader(String pkg) {
     if (pkg == null) {
       return resourceLoader;

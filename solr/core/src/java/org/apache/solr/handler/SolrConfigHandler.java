@@ -249,6 +249,8 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
                 Object o = map.get(componentName);
                 val.put(parts.get(1), makeMap(componentName, o));
                 if (req.getParams().getBool("meta", false)) {
+                  // meta=true is asking for the package info of the plugin
+                  // We go through all the listeners and see if there is one registered for this plugin
                   List<PackageListeners.Listener> listeners = req.getCore().getPackageListeners().getListeners();
                   for (PackageListeners.Listener listener :
                       listeners) {
