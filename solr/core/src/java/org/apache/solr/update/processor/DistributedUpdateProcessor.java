@@ -1093,21 +1093,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
     assert ! finished : "lifecycle sanity check";
     finished = true;
 
-    boolean dropCmd = doDistribFinish();
-    //nocommit
-//    if (dropCmd) {
-//      return;
-//    }
+    doDistribFinish();
 
     super.finish();
   }
 
-  /**
-   * @return true if the command should be "dropped" (don't propagate).
-   */
-  protected boolean doDistribFinish() throws IOException {
+  protected void doDistribFinish() throws IOException {
     // no-op for derived classes to implement
-    return false;
   }
 
   /**

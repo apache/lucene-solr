@@ -1046,7 +1046,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   }
 
   // TODO: optionally fail if n replicas are not reached...
-  protected boolean doDistribFinish() {
+  protected void doDistribFinish() {
     clusterState = zkController.getClusterState();
 
     boolean shouldUpdateTerms = isLeader && isIndexChanged;
@@ -1189,11 +1189,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       throw new DistributedUpdatesAsyncException(errorsForClient);
     }
 
-    if (nodes == null) {
-      return false; // do not drop, therefore propagate finish()
-    } else {
-      return true; // drop this command since we've distributed it
-    }
   }
 
   /**
