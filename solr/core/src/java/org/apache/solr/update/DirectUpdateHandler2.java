@@ -1014,5 +1014,10 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   public CommitTracker getSoftCommitTracker() {
     return softCommitTracker;
   }
+  
+  @Override
+  public SolrMetricsContext getSolrMetricsContext() {
+    return solrMetricsContext;
+  }
 
 }
