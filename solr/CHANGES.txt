@@ -32,6 +32,8 @@ Jetty 9.4.14.v20181114
 Upgrade Notes
 ----------------------
 
+* SOLR-13863: Added spayload query function to read and sort string payload field (delimited_payloads_string)
+
 * SOLR-13234: The Prometheus Metric Exporter now collects metrics from Solr at a fixed schedule that is controlled
   by the exporter itself. The default interval is 60s but it can be changed by specifying the --scrape-interval
   command line parameter to the tool. The collected metrics are cached and returned for any requests coming in before
