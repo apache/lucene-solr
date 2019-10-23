@@ -124,9 +124,6 @@ Bug Fixes
   subclauses, and then pull SHOULD, MUST_NOT and FILTER visitors from it rather than from
   the parent.  (Alan Woodward)
 
-* LUCENE-8996: maxScore was sometimes missing from distributed grouped responses.
-  (Julien Massenet, Diego Ceccarelli, Christine Poerschke)
-
 Other
 
 * LUCENE-8778 LUCENE-8911 LUCENE-8957: Define analyzer SPI names as static final fields and document the names in Javadocs.

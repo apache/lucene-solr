@@ -80,19 +80,6 @@ public class TopGroups<T> {
     Avg,
   }
 
-  /**
-   * If either value is NaN then return the other value, otherwise
-   * return the greater of the two values by calling Math.max.
-   * @param a - one value
-   * @param b - another value
-   * @return ignoring any NaN return the greater of a and b
-   */
-  private static float nonNANmax(float a, float b) {
-    if (Float.isNaN(a)) return b;
-    if (Float.isNaN(b)) return a;
-    return Math.max(a, b);
-  }
-
   /** Merges an array of TopGroups, for example obtained
    *  from the second-pass collector across multiple
    *  shards.  Each TopGroups must have been sorted by the
@@ -182,7 +169,7 @@ public class TopGroups<T> {
               shardGroupDocs.scoreDocs,
               docSort.getSort());
         }
-        maxScore =  nonNANmax(maxScore, shardGroupDocs.maxScore);
+        maxScore = Math.max(maxScore, shardGroupDocs.maxScore);
         assert shardGroupDocs.totalHits.relation == Relation.EQUAL_TO;
         totalHits += shardGroupDocs.totalHits.value;
         scoreSum += shardGroupDocs.score;
@@ -236,7 +223,7 @@ public class TopGroups<T> {
                                                    mergedScoreDocs,
                                                    groupValue,
                                                    shardGroups[0].groups[groupIDX].groupSortValues);
-      totalMaxScore = nonNANmax(totalMaxScore, maxScore);
+      totalMaxScore = Math.max(totalMaxScore, maxScore);
     }
 
     if (totalGroupCount != null) {
