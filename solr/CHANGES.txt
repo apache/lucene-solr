@@ -102,9 +102,9 @@ New Features
 ---------------------
 * SOLR-13821: A Package store to store and load package artifacts (noble, Ishan Chattopadhyaya)
 
-* SOLR-13822: A Package management system with the following features. A packages.json to store
+* SOLR-13822: A Package management system with the following features. A packages.json in ZK to store
   the configuration, APIs to read/edit them and isolated classloaders to load the classes from
-  those packages if the 'class' attribute is prefixed with the '<package-name>:'. (noble, Ishan Chattopadhyaya)
+  hose packages if the 'class' attribute is prefixed with `<package-name>:` (noble, Ishan Chattopadhyaya)
 
 Improvements
 ---------------------
