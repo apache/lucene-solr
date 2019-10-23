@@ -283,6 +283,10 @@ Bug Fixes
 
 * SOLR-13677: All Metrics Gauges should be unregistered by components that registered them. (noble, ab)
 
+* SOLR-13855: DistributedZkUpdateProcessor should have been propagating URP.finish() lifecycle like it used to before
+  8.1 (a regression).  Impacts integrity since Run URP's finish() propagates this to the updateLog to fsync.
+  (David Smiley)
+
 Other Changes
 ----------------------
 
