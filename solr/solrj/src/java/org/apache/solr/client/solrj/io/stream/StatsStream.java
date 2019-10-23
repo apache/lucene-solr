@@ -305,16 +305,16 @@ public class StatsStream extends TupleStream implements Expressible  {
       }
     }
 
-    for(String field : m.keySet()) {
+    for(Entry<String, List<String>> entry : m.entrySet()) {
       StringBuilder buf = new StringBuilder();
-      List<String> stats = m.get(field);
+      List<String> stats = entry.getValue();
       buf.append("{!");
 
       for(String stat : stats) {
         buf.append(stat).append("=").append("true ");
       }
 
-      buf.append("}").append(field);
+      buf.append("}").append(entry.getKey());
       params.add("stats.field", buf.toString());
     }
   }

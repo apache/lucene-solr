@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.index.IndexReaderContext;
@@ -49,6 +50,7 @@ import org.apache.solr.common.params.TermsParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.component.HttpShardHandlerFactory.WhitelistHostChecker;
 import org.apache.solr.request.SimpleFacets.CountPair;
 import org.apache.solr.schema.FieldType;
@@ -200,7 +202,7 @@ public class TermsComponent extends SearchComponent {
         SchemaField sf = rb.req.getSchema().getFieldOrNull(field);
         if (sf != null && sf.getType().isPointField()) {
           // FIXME: terms.ttf=true is not supported for pointFields
-          if (lowerStr!=null || upperStr!=null || prefix!=null || regexp!=null) {
+          if (lowerStr != null || upperStr != null || prefix != null || regexp != null) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                 String.format(Locale.ROOT, "The terms component does not support Points-based fields with sorting or with parameters %s,%s,%s,%s ", TermsParams.TERMS_LOWER, TermsParams.TERMS_UPPER, TermsParams.TERMS_PREFIX_STR, TermsParams.TERMS_REGEXP_STR));
           }
@@ -220,7 +222,7 @@ public class TermsComponent extends SearchComponent {
             }
 
             for (CountPair<MutableValue, Integer> item : queue) {
-              fieldTerms.add(item.key.toString(), item.val);
+              fieldTerms.add(Utils.OBJECT_TO_STRING.apply(item.key.toObject()), item.val);
             }
             continue;
           } else {
@@ -236,7 +238,7 @@ public class TermsComponent extends SearchComponent {
                 if (count < 0) break;
                 if (count < freqmin || count > freqmax) continue;
                 if (++num > limit) break;
-                ew.put(mv.toString(), (int)count); // match the numeric type of terms
+                ew.put(Utils.OBJECT_TO_STRING.apply(mv.toObject()), (int)count); // match the numeric type of terms
               }
             });
              ***/
@@ -249,7 +251,7 @@ public class TermsComponent extends SearchComponent {
               if (count < 0) break;
               if (count < freqmin || count > freqmax) continue;
               if (++num > limit) break;
-              fieldTerms.add(mv.toString(), (int)count); // match the numeric type of terms
+              fieldTerms.add(Utils.OBJECT_TO_STRING.apply(mv.toObject()), (int)count); // match the numeric type of terms
             }
             continue;
           }
@@ -504,14 +506,15 @@ public class TermsComponent extends SearchComponent {
       TermsResponse termsResponse = new TermsResponse(terms);
 
       // loop though each field and add each term+freq to map
-      for (String key : fieldmap.keySet()) {
-        HashMap<String, TermsResponse.Term> termmap = fieldmap.get(key);
-        List<TermsResponse.Term> termlist = termsResponse.getTerms(key);
+      for (Map.Entry<String, HashMap<String, TermsResponse.Term>> entry : fieldmap.entrySet()) {
+        List<TermsResponse.Term> termlist = termsResponse.getTerms(entry.getKey());
 
         // skip this field if there are no terms
         if (termlist == null) {
           continue;
         }
+
+        HashMap<String, TermsResponse.Term> termmap = entry.getValue();
 
         // loop though each term
         for (TermsResponse.Term tc : termlist) {
@@ -552,13 +555,13 @@ public class TermsComponent extends SearchComponent {
       }
 
       // loop through each field we want terms from
-      for (String key : fieldmap.keySet()) {
+      for (Map.Entry<String, HashMap<String, TermsResponse.Term>> entry : fieldmap.entrySet()) {
         NamedList<Object> fieldTerms = new NamedList<>();
         TermsResponse.Term[] data = null;
         if (sort) {
-          data = getCountSorted(fieldmap.get(key));
+          data = getCountSorted(entry.getValue());
         } else {
-          data = getLexSorted(fieldmap.get(key));
+          data = getLexSorted(entry.getValue());
         }
 
         boolean includeTotalTermFreq = params.getBool(TermsParams.TERMS_TTF, false);
@@ -575,7 +578,7 @@ public class TermsComponent extends SearchComponent {
           }
         }
 
-        response.add(key, fieldTerms);
+        response.add(entry.getKey(), fieldTerms);
       }
 
       return response;

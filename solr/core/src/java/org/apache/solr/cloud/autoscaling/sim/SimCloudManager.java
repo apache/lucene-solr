@@ -98,6 +98,7 @@ import org.apache.solr.metrics.AltBufferPoolMetricSet;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.OperatingSystemMetricSet;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.util.DefaultSolrThreadFactory;
@@ -482,7 +483,8 @@ public class SimCloudManager implements SolrCloudManager {
     if (metricsHistoryHandler == null && liveNodesSet.size() == 1) {
       metricsHandler = new MetricsHandler(metricManager);
       metricsHistoryHandler = new MetricsHistoryHandler(nodeId, metricsHandler, solrClient, this, new HashMap<>());
-      metricsHistoryHandler.initializeMetrics(metricManager, SolrMetricManager.getRegistryName(SolrInfoBean.Group.node), metricTag, CommonParams.METRICS_HISTORY_PATH);
+      SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, SolrMetricManager.getRegistryName(SolrInfoBean.Group.node), metricTag);
+      metricsHistoryHandler.initializeMetrics(solrMetricsContext, CommonParams.METRICS_HISTORY_PATH);
     }
     return nodeId;
   }

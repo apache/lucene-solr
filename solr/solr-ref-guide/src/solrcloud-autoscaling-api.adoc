@@ -320,11 +320,11 @@ The suggested `operation` is an API call that can be invoked to remedy the curre
 
 The types of suggestions available are
 
-* `violation` : Fixes a violation to one or more policy rules
-* `repair` : Add missing replicas
-* `improvement` : move replicas around so that the load is more evenly balanced according to the autoscaling preferences
+* `violation`: Fixes a violation to one or more policy rules
+* `repair`: Add missing replicas
+* `improvement`: move replicas around so that the load is more evenly balanced according to the autoscaling preferences
 
-By default, the suggestions API return all of the above , in that order. However it is possible to fetch only certain types by adding a request parameter `type`. e.g: `type=violation&type=repair`
+By default, the suggestions API returns all of the above, in that order. However it is possible to fetch only certain types by adding a request parameter `type`. e.g: `type=violation&type=repair`
 
 === Inline Policy Configuration
 
@@ -676,7 +676,7 @@ The `remove-policy` command accepts a policy name to be removed from Solr. The p
 
 If you attempt to remove a policy that is being used by a collection, this command will fail to delete the policy until the collection itself is deleted.
 
-=== Create/Update Trigger
+=== Create or Update a Trigger
 
 The `set-trigger` command can be used to create a new trigger or overwrite an existing one.
 
@@ -732,7 +732,7 @@ The `remove-trigger` command can be used to remove a trigger. It accepts a singl
 }
 ----
 
-=== Create/Update Trigger Listener
+=== Create or Update a Trigger Listener
 
 The `set-listener` command can be used to create or modify a listener for a trigger.
 

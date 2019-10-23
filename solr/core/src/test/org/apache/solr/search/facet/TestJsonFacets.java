@@ -201,7 +201,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     // straight query facets
     client.testJQ(params(p, "q", "*:*", "rows","0", "fq","+${make_s}:honda +cost_f:[${price_low} TO ${price_high}]"
-            , "json.facet", "{makes:{terms:{field:${make_s}, facet:{models:{terms:{field:${model_s}, limit:2, mincount:0}}}}}}}"
+            , "json.facet", "{makes:{terms:{field:${make_s}, facet:{models:{terms:{field:${model_s}, limit:2, mincount:0}}}}"
+                + "}}"
             , "facet","true", "facet.pivot","make_s,model_s", "facet.limit", "2"
         )
         , "facets=={count:" + nHonda + ", makes:{buckets:[{val:honda, count:" + nHonda + ", models:{buckets:["
@@ -1405,7 +1406,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     // terms facet with nested query facet
     client.testJQ(params(p, "q", "*:*"
-            , "json.facet", "{cat:{terms:{${terms} field:'${cat_s}', facet:{nj:{query:'${where_s}:NJ'}}    }   }} }"
+            , "json.facet", "{cat:{terms:{${terms} field:'${cat_s}', facet:{nj:{query:'${where_s}:NJ'}}    }   }}"
         )
         , "facets=={ 'count':6, " +
             "'cat':{ 'buckets':[{ 'val':'B', 'count':3, 'nj':{ 'count':2}}, { 'val':'A', 'count':2, 'nj':{ 'count':1}}]} }"
@@ -1413,7 +1414,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     // terms facet with nested query facet on subset
     client.testJQ(params(p, "q", "id:(2 5 4)"
-            , "json.facet", "{cat:{terms:{${terms} field:'${cat_s}', facet:{nj:{query:'${where_s}:NJ'}}    }   }} }"
+            , "json.facet", "{cat:{terms:{${terms} field:'${cat_s}', facet:{nj:{query:'${where_s}:NJ'}}    }   }}"
         )
         , "facets=={ 'count':3, " +
             "'cat':{ 'buckets':[{ 'val':'B', 'count':2, 'nj':{ 'count':2}}, { 'val':'A', 'count':1, 'nj':{ 'count':1}}]} }"
@@ -1753,7 +1754,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     //
 
     client.testJQ(params(p, "q", "*:*"
-            , "json.facet", "{cat:{terms:{${terms} field:'${multi_ss}', facet:{nj:{query:'${where_s}:NJ'}}    }   }} }"
+            , "json.facet", "{cat:{terms:{${terms} field:'${multi_ss}', facet:{nj:{query:'${where_s}:NJ'}}    }   }}"
         )
         , "facets=={ 'count':6, " +
             "'cat':{ 'buckets':[{ 'val':'a', 'count':3, 'nj':{ 'count':2}}, { 'val':'b', 'count':3, 'nj':{ 'count':2}}]} }"

@@ -170,8 +170,7 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
       }
     }
     SimpleOrderedMap<Object> segmentInfo = null;
-    List<SegmentCommitInfo> sortable = new ArrayList<>();
-    sortable.addAll(infos.asList());
+    List<SegmentCommitInfo> sortable = new ArrayList<>(infos.asList());
     // Order by the number of live docs. The display is logarithmic so it is a little jumbled visually
     sortable.sort((s1, s2) ->
       (s2.info.maxDoc() - s2.getDelCount()) - (s1.info.maxDoc() - s1.getDelCount())

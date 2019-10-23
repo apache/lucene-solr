@@ -3,7 +3,7 @@
     "class": "solr.CallbackAuditLoggerPlugin",
     "callbackPort": "_PORT_",
     "async": _ASYNC_,
-    "delay": "_DELAY_",
+    "semaphore": _SEMAPHORE_,
     "muteRules": _MUTERULES_
   },_AUTH_
 }

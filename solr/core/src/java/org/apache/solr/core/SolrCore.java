@@ -108,7 +108,6 @@ import org.apache.solr.handler.component.HighlightComponent;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrCoreMetricManager;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.pkg.PackageLoader;
@@ -233,7 +232,8 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   private final CoreContainer coreContainer;
 
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
-  private String metricTag = Integer.toHexString(hashCode());
+  private final String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
+  private final SolrMetricsContext solrMetricsContext;
 
   public volatile boolean searchEnabled = true;
   public volatile boolean indexEnabled = true;
@@ -936,6 +936,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       this.configSetProperties = configSetProperties;
       // Initialize the metrics manager
       this.coreMetricManager = initCoreMetricManager(config);
+      solrMetricsContext = coreMetricManager.getSolrMetricsContext();
       this.coreMetricManager.loadReporters();
 
       if (updateHandler == null) {
@@ -957,15 +958,13 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
       checkVersionFieldExistsInSchema(schema, coreDescriptor);
 
-      SolrMetricManager metricManager = coreContainer.getMetricManager();
-
       // initialize searcher-related metrics
-      initializeMetrics(metricManager, coreMetricManager.getRegistryName(), metricTag, null);
+      initializeMetrics(solrMetricsContext, null);
 
       SolrFieldCacheBean solrFieldCacheBean = new SolrFieldCacheBean();
       // this is registered at the CONTAINER level because it's not core-specific - for now we
       // also register it here for back-compat
-      solrFieldCacheBean.initializeMetrics(metricManager, coreMetricManager.getRegistryName(), metricTag, "core");
+      solrFieldCacheBean.initializeMetrics(solrMetricsContext, "core");
       infoRegistry.put("fieldCache", solrFieldCacheBean);
 
       initSchema(config, schema);
@@ -1032,8 +1031,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
       // Allow the directory factory to report metrics
       if (directoryFactory instanceof SolrMetricProducer) {
-        ((SolrMetricProducer) directoryFactory).initializeMetrics(metricManager, coreMetricManager.getRegistryName(),
-            metricTag, "directoryFactory");
+        ((SolrMetricProducer) directoryFactory).initializeMetrics(solrMetricsContext, "directoryFactory");
       }
 
       // seed version buckets with max from index during core initialization ... requires a searcher!
@@ -1180,59 +1178,64 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
-    newSearcherCounter = manager.counter(this, registry, "new", Category.SEARCHER.toString());
-    newSearcherTimer = manager.timer(this, registry, "time", Category.SEARCHER.toString(), "new");
-    newSearcherWarmupTimer = manager.timer(this, registry, "warmup", Category.SEARCHER.toString(), "new");
-    newSearcherMaxReachedCounter = manager.counter(this, registry, "maxReached", Category.SEARCHER.toString(), "new");
-    newSearcherOtherErrorsCounter = manager.counter(this, registry, "errors", Category.SEARCHER.toString(), "new");
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    newSearcherCounter = parentContext.counter(this, "new", Category.SEARCHER.toString());
+    newSearcherTimer = parentContext.timer(this, "time", Category.SEARCHER.toString(), "new");
+    newSearcherWarmupTimer = parentContext.timer(this, "warmup", Category.SEARCHER.toString(), "new");
+    newSearcherMaxReachedCounter = parentContext.counter(this, "maxReached", Category.SEARCHER.toString(), "new");
+    newSearcherOtherErrorsCounter = parentContext.counter(this, "errors", Category.SEARCHER.toString(), "new");
 
-    manager.registerGauge(this, registry, () -> name == null ? "(null)" : name, getMetricTag(), true, "coreName", Category.CORE.toString());
-    manager.registerGauge(this, registry, () -> startTime, getMetricTag(), true, "startTime", Category.CORE.toString());
-    manager.registerGauge(this, registry, () -> getOpenCount(), getMetricTag(), true, "refCount", Category.CORE.toString());
-    manager.registerGauge(this, registry, () -> resourceLoader.getInstancePath().toString(), getMetricTag(), true, "instanceDir", Category.CORE.toString());
-    manager.registerGauge(this, registry, () -> isClosed() ? "(closed)" : getIndexDir(), getMetricTag(), true, "indexDir", Category.CORE.toString());
-    manager.registerGauge(this, registry, () -> isClosed() ? 0 : getIndexSize(), getMetricTag(), true, "sizeInBytes", Category.INDEX.toString());
-    manager.registerGauge(this, registry, () -> isClosed() ? "(closed)" : NumberUtils.readableSize(getIndexSize()), getMetricTag(), true, "size", Category.INDEX.toString());
+    parentContext.gauge(this, () -> name == null ? "(null)" : name, true, "coreName", Category.CORE.toString());
+    parentContext.gauge(this, () -> startTime, true, "startTime", Category.CORE.toString());
+    parentContext.gauge(this, () -> getOpenCount(), true, "refCount", Category.CORE.toString());
+    parentContext.gauge(this, () -> resourceLoader.getInstancePath().toString(), true, "instanceDir", Category.CORE.toString());
+    parentContext.gauge(this, () -> isClosed() ? "(closed)" : getIndexDir(), true, "indexDir", Category.CORE.toString());
+    parentContext.gauge(this, () -> isClosed() ? 0 : getIndexSize(), true, "sizeInBytes", Category.INDEX.toString());
+    parentContext.gauge(this, () -> isClosed() ? "(closed)" : NumberUtils.readableSize(getIndexSize()), true, "size", Category.INDEX.toString());
     if (coreContainer != null) {
-      manager.registerGauge(this, registry, () -> coreContainer.getNamesForCore(this), getMetricTag(), true, "aliases", Category.CORE.toString());
+      parentContext.gauge(this, () -> coreContainer.getNamesForCore(this), true, "aliases", Category.CORE.toString());
       final CloudDescriptor cd = getCoreDescriptor().getCloudDescriptor();
       if (cd != null) {
-        manager.registerGauge(this, registry, () -> {
+        parentContext.gauge(this, () -> {
           if (cd.getCollectionName() != null) {
             return cd.getCollectionName();
           } else {
             return "_notset_";
           }
-        }, getMetricTag(), true, "collection", Category.CORE.toString());
+        }, true, "collection", Category.CORE.toString());
 
-        manager.registerGauge(this, registry, () -> {
+        parentContext.gauge(this, () -> {
           if (cd.getShardId() != null) {
             return cd.getShardId();
           } else {
             return "_auto_";
           }
-        }, getMetricTag(), true, "shard", Category.CORE.toString());
+        }, true, "shard", Category.CORE.toString());
       }
     }
     // initialize disk total / free metrics
     Path dataDirPath = Paths.get(dataDir);
     File dataDirFile = dataDirPath.toFile();
-    manager.registerGauge(this, registry, () -> dataDirFile.getTotalSpace(), getMetricTag(), true, "totalSpace", Category.CORE.toString(), "fs");
-    manager.registerGauge(this, registry, () -> dataDirFile.getUsableSpace(), getMetricTag(), true, "usableSpace", Category.CORE.toString(), "fs");
-    manager.registerGauge(this, registry, () -> dataDirPath.toAbsolutePath().toString(), getMetricTag(), true, "path", Category.CORE.toString(), "fs");
-    manager.registerGauge(this, registry, () -> {
+    parentContext.gauge(this, () -> dataDirFile.getTotalSpace(), true, "totalSpace", Category.CORE.toString(), "fs");
+    parentContext.gauge(this, () -> dataDirFile.getUsableSpace(), true, "usableSpace", Category.CORE.toString(), "fs");
+    parentContext.gauge(this, () -> dataDirPath.toAbsolutePath().toString(), true, "path", Category.CORE.toString(), "fs");
+    parentContext.gauge(this, () -> {
       try {
         return org.apache.lucene.util.IOUtils.spins(dataDirPath.toAbsolutePath());
       } catch (IOException e) {
         // default to spinning
         return true;
       }
-    }, getMetricTag(), true, "spins", Category.CORE.toString(), "fs");
+    }, true, "spins", Category.CORE.toString(), "fs");
   }
 
   public String getMetricTag() {
     return metricTag;
+  }
+
+  @Override
+  public SolrMetricsContext getSolrMetricsContext() {
+    return solrMetricsContext;
   }
 
   private void checkVersionFieldExistsInSchema(IndexSchema schema, CoreDescriptor coreDescriptor) {
