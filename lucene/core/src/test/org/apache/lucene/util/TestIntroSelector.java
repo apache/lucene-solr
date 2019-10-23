@@ -17,8 +17,6 @@
 package org.apache.lucene.util;
 
 import java.util.Arrays;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 public class TestIntroSelector extends LuceneTestCase {
 
@@ -33,13 +31,6 @@ public class TestIntroSelector extends LuceneTestCase {
       doTestSelect(true);
     }
   }
-
-  public static String format(Integer[] arr) {
-    return Stream.of(arr)
-        .map(String::valueOf)
-        .collect(Collectors.joining(", "));
-  }
-
 
   private void doTestSelect(boolean slow) {
     final int from = random().nextInt(5);
@@ -56,28 +47,31 @@ public class TestIntroSelector extends LuceneTestCase {
 
     Integer[] actual = arr.clone();
     IntroSelector selector = new IntroSelector() {
+
       Integer pivot;
+
       @Override
       protected void swap(int i, int j) {
         ArrayUtil.swap(actual, i, j);
       }
+
       @Override
       protected void setPivot(int i) {
         pivot = actual[i];
       }
+
       @Override
       protected int comparePivot(int j) {
         return pivot.compareTo(actual[j]);
       }
     };
-
     if (slow) {
       selector.slowSelect(from, to, k);
     } else {
       selector.select(from, to, k);
     }
-    assertEquals(expected[k], actual[k]);
 
+    assertEquals(expected[k], actual[k]);
     for (int i = 0; i < actual.length; ++i) {
       if (i < from || i >= to) {
         assertSame(arr[i], actual[i]);
@@ -87,7 +81,6 @@ public class TestIntroSelector extends LuceneTestCase {
         assertTrue(actual[i].intValue() >= actual[k].intValue());
       }
     }
-
   }
 
 }
