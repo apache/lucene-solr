@@ -844,11 +844,14 @@ public class SimCloudManager implements SolrCloudManager {
     String a = params != null ? params.get(CoreAdminParams.ACTION) : null;
     SolrResponse rsp = new SolrResponseBase();
     rsp.setResponse(new NamedList<>());
+    String path = params != null ? params.get("path") : null;
     if (!(req instanceof CollectionAdminRequest)) {
       // maybe a V2Request?
       if (req instanceof V2Request) {
         params = SimUtils.v2AdminRequestToV1Params((V2Request)req);
         a = params.get(CoreAdminParams.ACTION);
+      } else if (path != null && (path.startsWith("/admin/") || path.startsWith("/cluster/"))) {
+        // pass it through, it's likely a generic request containing admin params
       } else {
         throw new UnsupportedOperationException("Only some CollectionAdminRequest-s are supported: " + req.getClass().getName() + ": " + req.getPath() + " " + req.getParams());
       }
