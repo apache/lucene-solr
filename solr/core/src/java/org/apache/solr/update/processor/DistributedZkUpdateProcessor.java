@@ -1045,17 +1045,10 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     super.processRollback(cmd);
   }
 
-  @Override
-  public void finish() throws IOException {
+  // TODO: optionally fail if n replicas are not reached...
+  protected boolean doDistribFinish() {
     clusterState = zkController.getClusterState();
 
-    assertNotFinished();
-
-    doFinish();
-  }
-
-  // TODO: optionally fail if n replicas are not reached...
-  private void doFinish() {
     boolean shouldUpdateTerms = isLeader && isIndexChanged;
     if (shouldUpdateTerms) {
       ZkShardTerms zkShardTerms = zkController.getShardTerms(cloudDesc.getCollectionName(), cloudDesc.getShardId());
@@ -1194,6 +1187,12 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     handleReplicationFactor();
     if (0 < errorsForClient.size()) {
       throw new DistributedUpdatesAsyncException(errorsForClient);
+    }
+
+    if (nodes == null) {
+      return false; // do not drop, therefore propagate finish()
+    } else {
+      return true; // drop this command since we've distributed it
     }
   }
 
