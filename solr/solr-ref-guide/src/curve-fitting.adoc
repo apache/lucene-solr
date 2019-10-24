@@ -34,7 +34,7 @@ for the x-axis. A third parameter can be added that specifies the degree of the 
 not provided a 3 degree polynomial is used by default. The higher
 the degree the more curves that can be modeled.
 
-The `polyfit` function can be visualized in a similar manner to linear regression with the
+The `polyfit` function can be visualized in a similar manner to linear regression with
 Zeppelin-Solr.
 
 The example below uses the `polyfit` function to fit a non-linear curve to a scatter
