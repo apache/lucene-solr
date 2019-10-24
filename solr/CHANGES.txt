@@ -127,9 +127,6 @@ Bug Fixes
 
 * SOLR-9802: Fix grouping failure for date field in solrcloud (Erick Erickson, Munendra S N, Vitaly Lavrov)
 
-* SOLR-13866: Fix bug introduced by SOLR-13677 that caused DirectUpdateHandler2 stats to not be available via /admin/plugins
-  handler (Tomás Fernández Löbbe)
-
 * SOLR-12393: Compute score if requested even when expanded docs not sorted by score in ExpandComponent.
   (David Smiley, Munendra S N)
 
