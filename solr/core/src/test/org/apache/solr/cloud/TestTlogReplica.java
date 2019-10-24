@@ -102,6 +102,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
   @AfterClass
   public static void tearDownCluster() {
     TestInjection.reset();
+    System.clearProperty("solr.waitToSeeReplicasInStateTimeoutSeconds");
   }
 
   @Override

@@ -169,9 +169,6 @@ public class IndexFetcher {
 
   private boolean downloadTlogFiles = false;
 
-  //nocommit: remove
-  private boolean skipCommitOnMasterVersionZero = true;
-
   private boolean clearLocalIndexFirst = false;
 
   private static final String INTERRUPT_RESPONSE_MESSAGE = "Interrupted while waiting for modify lock";
@@ -237,9 +234,8 @@ public class IndexFetcher {
     if (fetchFromLeader != null && fetchFromLeader instanceof Boolean) {
       this.fetchFromLeader = (boolean) fetchFromLeader;
     }
-    Object skipCommitOnMasterVersionZero = initArgs.get(SKIP_COMMIT_ON_MASTER_VERSION_ZERO);
-    if (skipCommitOnMasterVersionZero != null && skipCommitOnMasterVersionZero instanceof Boolean) {
-      this.skipCommitOnMasterVersionZero = (boolean) skipCommitOnMasterVersionZero;
+    if (initArgs.get(SKIP_COMMIT_ON_MASTER_VERSION_ZERO) != null) {
+      log.info("{} property is no longer needed. In case of TLOG/PULL replicas, index is never replicated when the leader has version 0", SKIP_COMMIT_ON_MASTER_VERSION_ZERO);
     }
     String masterUrl = (String) initArgs.get(MASTER_URL);
     if (masterUrl == null && !this.fetchFromLeader)
@@ -418,17 +414,16 @@ public class IndexFetcher {
             log.warn("Master at: " + masterUrl + " is not available. Index fetch failed by exception: " + errorMsg);
             return new IndexFetchResult(IndexFetchResult.FAILED_BY_EXCEPTION_MESSAGE, false, e);
         }
-    }
+      }
 
-      long latestVersion = (Long) response.get(CMD_INDEX_VERSION);
-      long latestGeneration = (Long) response.get(GENERATION);
+      long masterVersion = (Long) response.get(CMD_INDEX_VERSION);
+      long masterGeneration = (Long) response.get(GENERATION);
 
-      log.info("Master's generation: " + latestGeneration);
-      log.info("Master's version: " + latestVersion);
+      log.info("Master's generation: " + masterGeneration);
+      log.info("Master's version: " + masterVersion);
 
-      // TODO: make sure that getLatestCommit only returns commit points for the main index (i.e. no side-car indexes)
-      IndexCommit commit = solrCore.getDeletionPolicy().getLatestCommit();
-      if (commit == null) {
+      IndexCommit localCommit = solrCore.getDeletionPolicy().getLatestCommit();
+      if (localCommit == null) {
         // Presumably the IndexWriter hasn't been opened yet, and hence the deletion policy hasn't been updated with commit points
         RefCounted<SolrIndexSearcher> searcherRefCounted = null;
         try {
@@ -437,18 +432,18 @@ public class IndexFetcher {
             log.warn("No open searcher found - fetch aborted");
             return IndexFetchResult.NO_INDEX_COMMIT_EXIST;
           }
-          commit = searcherRefCounted.get().getIndexReader().getIndexCommit();
+          localCommit = searcherRefCounted.get().getIndexReader().getIndexCommit();
         } finally {
           if (searcherRefCounted != null)
             searcherRefCounted.decref();
         }
       }
 
-      log.info("Slave's generation: " + commit.getGeneration());
-      log.info("Slave's version: " + IndexDeletionPolicyWrapper.getCommitTimestamp(commit));
+      log.info("Slave's generation: " + localCommit.getGeneration());
+      log.info("Slave's version: " + IndexDeletionPolicyWrapper.getCommitTimestamp(localCommit));
 
-      if (latestVersion == 0L) {
-        if (commit.getGeneration() != 0 && !fetchFromLeader) {
+      if (masterVersion == 0L) {
+        if (localCommit.getGeneration() != 0 && !fetchFromLeader) {
           // since we won't get the files for an empty index,
           // we just clear ours and commit.
           log.info("New index in Master. Deleting mine...");
@@ -470,7 +465,7 @@ public class IndexFetcher {
       }
 
       // TODO: Should we be comparing timestamps (across machines) here?
-      if (!forceReplication && IndexDeletionPolicyWrapper.getCommitTimestamp(commit) == latestVersion) {
+      if (!forceReplication && IndexDeletionPolicyWrapper.getCommitTimestamp(localCommit) == masterVersion) {
         //master and slave are already in sync just return
         log.info("Slave in sync with master.");
         successfulInstall = true;
@@ -478,7 +473,7 @@ public class IndexFetcher {
       }
       log.info("Starting replication process");
       // get the list of files first
-      fetchFileList(latestGeneration);
+      fetchFileList(masterGeneration);
       // this can happen if the commit point is deleted before we fetch the file list.
       if (filesToDownload.isEmpty()) {
         return IndexFetchResult.PEER_INDEX_COMMIT_DELETED;
@@ -495,8 +490,8 @@ public class IndexFetcher {
       // if the generation of master is older than that of the slave , it means they are not compatible to be copied
       // then a new index directory to be created and all the files need to be copied
       boolean isFullCopyNeeded = IndexDeletionPolicyWrapper
-          .getCommitTimestamp(commit) >= latestVersion
-          || commit.getGeneration() >= latestGeneration || forceReplication;
+          .getCommitTimestamp(localCommit) >= masterVersion
+          || localCommit.getGeneration() >= masterGeneration || forceReplication;
 
       String timestamp = new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT).format(new Date());
       String tmpIdxDirName = "index." + timestamp;
@@ -539,7 +534,7 @@ public class IndexFetcher {
             IndexWriter indexWriter = writer.get();
             int c = 0;
             indexWriter.deleteUnusedFiles();
-            while (hasUnusedFiles(indexDir, commit)) {
+            while (hasUnusedFiles(indexDir, localCommit)) {
               indexWriter.deleteUnusedFiles();
               log.info("Sleeping for 1000ms to wait for unused lucene index files to be delete-able");
               Thread.sleep(1000);
@@ -569,9 +564,9 @@ public class IndexFetcher {
           successfulInstall = false;
 
           long bytesDownloaded = downloadIndexFiles(isFullCopyNeeded, indexDir,
-              tmpIndexDir, indexDirPath, tmpIndexDirPath, latestGeneration);
+              tmpIndexDir, indexDirPath, tmpIndexDirPath, masterGeneration);
           if (tlogFilesToDownload != null) {
-            bytesDownloaded += downloadTlogFiles(tmpTlogDir, latestGeneration);
+            bytesDownloaded += downloadTlogFiles(tmpTlogDir, masterGeneration);
             reloadCore = true; // reload update log
           }
           final long timeTakenSeconds = getReplicationTimeElapsed();
@@ -582,7 +577,7 @@ public class IndexFetcher {
           Collection<Map<String,Object>> modifiedConfFiles = getModifiedConfFiles(confFilesToDownload);
           if (!modifiedConfFiles.isEmpty()) {
             reloadCore = true;
-            downloadConfFiles(confFilesToDownload, latestGeneration);
+            downloadConfFiles(confFilesToDownload, masterGeneration);
             if (isFullCopyNeeded) {
               successfulInstall = solrCore.modifyIndexProps(tmpIdxDirName);
               if (successfulInstall) deleteTmpIdxDir = false;

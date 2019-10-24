@@ -1752,6 +1752,10 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
 
   // in case of TLOG replica, if masterVersion = zero, don't do commit
   // otherwise updates from current tlog won't copied over properly to the new tlog, leading to data loss
+  /**
+   * @Deprecated This is no longer needed, TLOG/PULL replicas will never replicate when the leader version is 0  
+   */
+  @Deprecated
   public static final String SKIP_COMMIT_ON_MASTER_VERSION_ZERO = "skipCommitOnMasterVersionZero";
 
   public static final String STATUS = "status";
