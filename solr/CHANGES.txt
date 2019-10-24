@@ -57,6 +57,9 @@ Bug Fixes
 
 * SOLR-9802: Fix grouping failure for date field in solrcloud (Erick Erickson, Munendra S N, Vitaly Lavrov)
 
+* SOLR-12393: Compute score if requested even when expanded docs not sorted by score in ExpandComponent.
+  (David Smiley, Munendra S N)
+
 Other Changes
 ---------------------
 
@@ -135,7 +138,7 @@ Improvements
 ----------------------
 
 * SOLR-12368: Support InPlace DV updates for a field that does not yet exist in any documents
-(hossman, Simon Willnauer, Adrien Grand, Munendra S N)
+  (hossman, Simon Willnauer, Adrien Grand, Munendra S N)
 
 * SOLR-13558, SOLR-13693: Allow dynamic resizing of SolrCache-s. (ab)
 
