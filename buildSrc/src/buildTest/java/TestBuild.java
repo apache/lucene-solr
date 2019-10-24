@@ -21,12 +21,11 @@ import org.junit.Test;
 public class TestBuild extends BaseTestClass {
   
   public TestBuild() {
-
+    super();
   }
   
   @Before
   public void setUp() throws Exception {
-
   }
   
   @After
@@ -37,7 +36,7 @@ public class TestBuild extends BaseTestClass {
   @Test
   public void testBuild() throws Exception {
     System.out.println("Start test-build.sh test in Docker container (" + env + ") ...");
-    String[] cmd = new String[]{"bash", "scripts/test-build.sh"};
+    String[] cmd = new String[]{"bash", "src/buildTest/scripts/test-build.sh", "-r", resultFile};
     PbResult result = runCmd(cmd, env, false, false, false);
     assertEquals("Testing test-build.sh failed", 0, result.returnCode);
   }

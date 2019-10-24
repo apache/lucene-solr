@@ -57,22 +57,22 @@ task createLevAutomaton {
     exec {
       workingDir 'src/java/org/apache/lucene/util/automaton'
       executable "${python_exe}"
-      args = ['-B', 'createLevAutomata.py', '1', 'True']
+      args = ['-B', 'createLevAutomata.py', '1', 'True', filePath("${buildDir}/moman/finenight/python")]
     }
     exec {
       workingDir 'src/java/org/apache/lucene/util/automaton'
       executable "${python_exe}"
-      args = ['-B', 'createLevAutomata.py', '1', 'False']
+      args = ['-B', 'createLevAutomata.py', '1', 'False', filePath("${buildDir}/moman/finenight/python")]
     }
     exec {
       workingDir 'src/java/org/apache/lucene/util/automaton'
       executable "${python_exe}"
-      args = ['-B', 'createLevAutomata.py', '2', 'True']
+      args = ['-B', 'createLevAutomata.py', '2', 'True', filePath("${buildDir}/moman/finenight/python")]
     }
     exec {
       workingDir 'src/java/org/apache/lucene/util/automaton'
       executable "${python_exe}"
-      args = ['-B', 'createLevAutomata.py', '2', 'False']
+      args = ['-B', 'createLevAutomata.py', '2', 'False', filePath("${buildDir}/moman/finenight/python")]
     }
   }
   

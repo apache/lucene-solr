@@ -16,7 +16,7 @@
 
 script_dir=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
-. "src/buildTest/scripts/setup-script-for-test.sh" || { echo "Could not source setup-script-for-test.sh"; exit 1; }
+. "${script_dir}/setup-script-for-test.sh" || { echo "Could not source setup-script-for-test.sh"; exit 1; }
 
 skip_build_image=""
 
@@ -58,10 +58,10 @@ if [ ! "${skip_build_image}" = "true" ]; then
 fi
 
 
-echo "Starting the container ..."
+echo "Starting the container ... binding project from ${script_dir}/../../.."
 
 # we don't currently use :cached or :delegated for osx perf becuase of issues getting things to work on linux and osx - ideally we use linux because osx will likely be very slow
 # this will also likley download a lot on first run
 
-docker run -itd --user ${UID} --name=${CONTAINER_NAME} -v "${script_dir}/../..":/home/lucene/project -v ~/.gradle/caches/modules-2/files-2.1:/root/.gradle/caches/modules-2/files-2.1 -v ~/.gradle/wrapper:/root/.gradle/wrapper -h ${CONTAINER_NAME} ${CONTAINER_NAME} || { exit 1; }
+docker run -itd --user ${UID} --name=${CONTAINER_NAME} -v "${script_dir}/../../../../":/home/lucene/project -v ~/.gradle/caches/modules-2/files-2.1:/root/.gradle/caches/modules-2/files-2.1 -h ${CONTAINER_NAME} ${CONTAINER_NAME} || { exit 1; }
 

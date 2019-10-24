@@ -43,6 +43,8 @@ dependencies {
   implementation project(':lucene:lucene-misc')
   implementation project(':lucene:lucene-join')
   implementation project(':solr:solr-solrj')
+  
+  
   implementation ('org.eclipse.jetty:jetty-servlet')
   implementation ('org.eclipse.jetty.http2:http2-server')
   implementation ('org.eclipse.jetty.http2:http2-common')
@@ -119,6 +121,7 @@ dependencies {
   implementation ('org.apache.curator:curator-framework') { transitive = false } // brings in a lot we don't use
   implementation ('org.apache.curator:curator-client') { transitive = false } // brings in a lot we don't use
   implementation ('com.tdunning:t-digest')  // StatsComponents percentiles 
+  implementation ('com.github.ben-manes.caffeine:caffeine')
   
   // hdfs
   implementation ('org.apache.hadoop:hadoop-auth') { transitive = false } // brings in a lot we don't use

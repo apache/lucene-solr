@@ -22,8 +22,10 @@ import math
 import os
 import sys
 # sys.path.insert(0, 'moman/finenight/python')
-sys.path.insert(0, '../../../../../../../../build/core/moman/finenight/python') # gradle
+if len(sys.argv) > 3:
+  sys.path.insert(0, sys.argv[3]) # gradle
 sys.path.insert(0, '../../../../../../../../core/build/moman/finenight/python') # ant
+
 try:
   from possibleStates import genTransitions
 except ImportError:
@@ -97,7 +99,7 @@ def charVarNumber(charVar):
 
 def main():
 
-  if len(sys.argv) != 3:
+  if len(sys.argv) > 4:
     print
     print ('Usage: python -u %s N <True/False>' % sys.argv[0])
     print

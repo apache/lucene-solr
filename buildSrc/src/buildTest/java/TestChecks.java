@@ -26,21 +26,12 @@ import org.junit.Test;
 
 public class TestChecks extends BaseTestClass {
   
-
-  
-  private Path tempDirWithPrefix;
-  
-  private String resultFile = "/tmp/buildTestResult.txt";
-  
   public TestChecks() {
 
   }
   
   @Before
   public void setUp() throws Exception {
-    tempDirWithPrefix = Files.createTempDirectory("LuceneSolrBuildTest");
-    resultFile = Paths.get(tempDirWithPrefix.toString(), "testResult.txt").toString();
-    
     cleanTestFiles();
   }
   
@@ -59,17 +50,12 @@ public class TestChecks extends BaseTestClass {
     
     cmd = new String[]{"bash", "-c", "docker exec --user ${UID} -t ${CONTAINER_NAME} bash -c \"rm /home/lucene/project/solr/contrib/clustering/src/java/org/tab_file.xml 2>/dev/null \""};
     runCmd(cmd, env, false, false);
-    try {
-      Files.delete(tempDirWithPrefix);
-    } catch (NoSuchFileException e) {
-      // fine
-    }
   }
   
   @Test
   public void testRatSources() throws Exception {
     System.out.println("Start test-rat-sources.sh test in Docker container (" + env + ") ...");
-    String[] cmd = new String[]{"bash", "scripts/test-rat-sources.sh", "-r", resultFile  };
+    String[] cmd = new String[]{"bash", "src/buildTest/scripts/test-rat-sources.sh", "-r", resultFile};
     PbResult result = runCmd(cmd, env, false, false, false);
     
     String msg = "";
@@ -84,7 +70,7 @@ public class TestChecks extends BaseTestClass {
   @Test
   public void testCheckSources() throws Exception {
     System.out.println("Start test-check-sources.sh test in Docker container (" + env + ") ...");
-    String[] cmd = new String[]{"bash", "scripts/test-check-sources.sh", "-r", resultFile  };
+    String[] cmd = new String[]{"bash", "src/buildTest/scripts/test-check-sources.sh", "-r", resultFile};
     PbResult result = runCmd(cmd, env, false, false, false);
     
     String msg = "";

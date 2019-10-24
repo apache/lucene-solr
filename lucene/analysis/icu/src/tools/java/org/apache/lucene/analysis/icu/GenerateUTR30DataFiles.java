@@ -62,7 +62,7 @@ import java.util.regex.Pattern;
  */
 public class GenerateUTR30DataFiles {
   private static final String ICU_SVN_TAG_URL
-      = "http://source.icu-project.org/repos/icu/tags";
+      = "https://raw.githubusercontent.com/unicode-org/icu";
   private static final String ICU_RELEASE_TAG = "release-62-1";
   private static final String ICU_DATA_NORM2_PATH = "icu4c/source/data/unidata/norm2";
   private static final String NFC_TXT = "nfc.txt";
@@ -177,6 +177,7 @@ public class GenerateUTR30DataFiles {
     System.err.println("done.");
 
     System.err.print("Downloading " + NFKC_CF_TXT + " and making diacritic rules one-way ... ");
+    System.out.println("URL:" + new URL(norm2url, NFC_TXT));
     URLConnection connection = openConnection(new URL(norm2url, NFC_TXT));
     BufferedReader reader = new BufferedReader
         (new InputStreamReader(connection.getInputStream(), StandardCharsets.UTF_8));

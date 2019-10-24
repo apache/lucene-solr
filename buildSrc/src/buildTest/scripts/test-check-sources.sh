@@ -21,11 +21,13 @@ command -v docker >/dev/null 2>&1 || { echo "docker must be installed to run thi
 
 OPTIND=1  # Reset in case getopts has been used previously in the shell.
 
-while getopts ":" opt; do
+while getopts ":r:" opt; do
     case "$opt" in
+    r)
+      results="${OPTARG}"
+      ;; 
     *)  
       echo -e "\n-----> Invalid arg: $OPTARG  If it is a valid option, does it take an argument?"
-      usage
       exit 1
       ;;
     esac
@@ -45,6 +47,10 @@ exec() {
 
 set -x
 
+writeResult() {
+  echo "$1" > ${results}
+}
+
 exec_args=""
 gradle_args="--console=plain -x verifyLocks"
 
@@ -52,19 +58,20 @@ gradle_args="--console=plain -x verifyLocks"
 
 # first check that checkSourcePatterns passes
 cmd="cd /home/lucene/project;./gradlew ${gradle_args} checkSourcePatterns"
-exec "${cmd}" "${exec_args}" || { exit 1; }
+exec "${cmd}" "${exec_args}" || { writeResult "The checkSourcePatterns failed when it should pass!"; exit 1; }
 
 # create an xml file with no license in lucene
 cmd="ls /home/lucene/project;echo -e '\t' >> /home/lucene/project/solr/contrib/clustering/src/java/org/tab_file.xml"
-exec "${cmd}" "${exec_args}" || { exit 1; }
+exec "${cmd}" "${exec_args}" || { writeResult "Failed creating tab test file!"; exit 1; }
 
 # test that checkSourcePatterns fails on our test file
 cmd="cd /home/lucene/project;./gradlew ${gradle_args} checkSourcePatterns"
 if exec "${cmd}" "${exec_args}"; then
   echo "checkSourcePatterns should fail!"
+  writeResult "The checkSourcePatterns task should fail due to tab!";
   exit 1
 fi
 
 # clean test file
 cmd="rm /home/lucene/project/solr/contrib/clustering/src/java/org/tab_file.xml"
-exec "${cmd}" "${exec_args}" || { exit 1; }
+exec "${cmd}" "${exec_args}" || { writeResult "The ratSources task did not pass when it should have"; exit 1; }

@@ -31,7 +31,6 @@ while getopts ":r:" opt; do
       ;;
     *)
       echo -e "\n-----> Invalid arg: $OPTARG  If it is a valid option, does it take an argument?"
-      usage
       exit 1
       ;;
     esac

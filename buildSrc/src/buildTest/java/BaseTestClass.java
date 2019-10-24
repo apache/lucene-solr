@@ -19,6 +19,10 @@ import static org.junit.Assume.assumeTrue;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -36,9 +40,20 @@ public abstract class BaseTestClass extends Assert {
   static {
     env.put("CONTAINER_NAME", "lucenesolr-build-test");
   }
+ 
+  private Path tempDirWithPrefix;
+  
+  protected String resultFile;
   
   public BaseTestClass() {
-
+    try {
+      tempDirWithPrefix = Files.createTempDirectory("LuceneSolrBaseTestClass" + System.nanoTime());
+      resultFile = Paths.get(tempDirWithPrefix.toString(), "testResult.txt").toString();
+      Files.createDirectory(tempDirWithPrefix);
+    } catch (IOException e) {
+      System.out.println("RESULTS" + resultFile);
+     // throw new RuntimeException(e);
+    } 
   }
   
   @BeforeClass
@@ -65,7 +80,7 @@ public abstract class BaseTestClass extends Assert {
   @AfterClass
   public static void tearDownAfterClass() throws Exception { 
     String[] cmd = new String[] {"bash",
-        "build-wdocker-test/stop.sh"};
+        "src/buildTest/scripts/stop.sh"};
     int exitVal = runCmd(cmd, env, false, false).returnCode;
     if (exitVal > 0) {
       fail("Failed stopping docker containers!");
@@ -79,7 +94,11 @@ public abstract class BaseTestClass extends Assert {
   
   @After
   public void tearDown() throws Exception {
-
+    try {
+      Files.delete(tempDirWithPrefix);
+    } catch (NoSuchFileException e) {
+      // fine
+    }
   }
   
   public static PbResult runCmd(String[] cmd, boolean cmdIsNoop, boolean trace)
