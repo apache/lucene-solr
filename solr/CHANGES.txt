@@ -130,6 +130,9 @@ Bug Fixes
 * SOLR-13866: Fix bug introduced by SOLR-13677 that caused DirectUpdateHandler2 stats to not be available via /admin/plugins
   handler (Tomás Fernández Löbbe)
 
+* SOLR-12393: Compute score if requested even when expanded docs not sorted by score in ExpandComponent.
+  (David Smiley, Munendra S N)
+
 Other Changes
 ---------------------
 
@@ -138,6 +141,7 @@ Other Changes
 * SOLR-13841: Add jackson databind annotations to SolrJ classpath (noble)
 
 * SOLR-13824: Strictly reject anything after JSON in most APIs (Mikhail Khludnev, Munendra S N)
+
 ==================  8.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -207,7 +211,7 @@ Improvements
 ----------------------
 
 * SOLR-12368: Support InPlace DV updates for a field that does not yet exist in any documents
-(hossman, Simon Willnauer, Adrien Grand, Munendra S N)
+  (hossman, Simon Willnauer, Adrien Grand, Munendra S N)
 
 * SOLR-13558, SOLR-13693: Allow dynamic resizing of SolrCache-s. (ab)
 
