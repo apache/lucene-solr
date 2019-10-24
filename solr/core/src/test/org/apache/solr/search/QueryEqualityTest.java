@@ -1269,6 +1269,18 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     );
   }
 
+  public void testXCJFQuery() throws Exception {
+    assertQueryEquals("xcjf",
+        "{!xcjf collection=abc from=x_id to=x_id}*:*",
+        "{!xcjf collection=abc from=x_id to=x_id v='*:*'}");
+  }
+
+  public void testHashRangeQuery() throws Exception {
+    assertQueryEquals("hash_range",
+        "{!hash_range f=x_id l=107347968 u=214695935}",
+        "{!hash_range l='107347968' u='214695935' f='x_id'}");
+  }
+
   // Override req to add df param
   public static SolrQueryRequest req(String... q) {
     return SolrTestCaseJ4.req(q, "df", "text");
