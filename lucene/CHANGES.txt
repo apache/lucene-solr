@@ -93,6 +93,9 @@ Optimizations
 * LUCENE-8992: TopFieldCollector and TopScoreDocCollector can now share minimum scores across leaves
   concurrently. (Adrien Grand, Atri Sharma, Jim Ferenczi)
 
+* LUCENE-8932: BKDReader's index is now stored off-heap when the IndexInput is
+  an instance of ByteBufferIndexInput. (Jack Conradson via Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-9001: Fix race condition in SetOnce. (Przemko Robakowski)
