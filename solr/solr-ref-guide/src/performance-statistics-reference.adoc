@@ -193,7 +193,7 @@ The following statistics are available for each of the caches mentioned above:
 |inserts |Number of inserts into the cache.
 |lookups |Number of lookups against the cache.
 |size |Number of entries in the cache at that particular instance.
-|warmupTime |Warm-up time for the registered index searcher. This time is taken in account for the “auto-warming” of caches.
+|warmupTime |Warm-up time for the registered index searcher in milliseconds. This time is taken in account for the “auto-warming” of caches.
 |===
 
 When eviction by heap usage is enabled, the following additional statistics are available for the Query Result Cache:
