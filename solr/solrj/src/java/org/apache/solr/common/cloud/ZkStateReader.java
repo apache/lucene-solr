@@ -118,6 +118,7 @@ public class ZkStateReader implements SolrCloseable {
   public static final String SOLR_AUTOSCALING_TRIGGER_STATE_PATH = "/autoscaling/triggerState";
   public static final String SOLR_AUTOSCALING_NODE_ADDED_PATH = "/autoscaling/nodeAdded";
   public static final String SOLR_AUTOSCALING_NODE_LOST_PATH = "/autoscaling/nodeLost";
+  public static final String SOLR_PKGS_PATH = "/packages.json";
 
   public static final String DEFAULT_SHARD_PREFERENCES = "defaultShardPreferences";
   public static final String REPLICATION_FACTOR = "replicationFactor";

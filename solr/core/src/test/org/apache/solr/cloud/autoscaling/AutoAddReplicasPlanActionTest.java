@@ -65,7 +65,7 @@ public class AutoAddReplicasPlanActionTest extends SolrCloudTestCase{
 
     new V2Request.Builder("/cluster")
         .withMethod(SolrRequest.METHOD.POST)
-        .withPayload("{set-obj-property:{defaults : {cluster: {useLegacyReplicaAssignment:true}}}}}")
+        .withPayload("{set-obj-property:{defaults : {cluster: {useLegacyReplicaAssignment:true}}}}")
         .build()
         .process(cluster.getSolrClient());
   }

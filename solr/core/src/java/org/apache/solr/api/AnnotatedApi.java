@@ -227,6 +227,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
           }
           if (isWrappedInPayloadObj) {
             PayloadObj<Object> payloadObj = new PayloadObj<>(cmd.name, cmd.getCommandData(), o);
+            cmd = payloadObj;
             method.invoke(obj, req, rsp, payloadObj);
           } else {
             method.invoke(obj, req, rsp, o);
@@ -239,10 +240,13 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
 
 
       } catch (SolrException se) {
+        log.error("Error executing command  ", se);
         throw se;
       } catch (InvocationTargetException ite) {
+        log.error("Error executing command ", ite);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, ite.getCause());
       } catch (Exception e) {
+        log.error("Error executing command : ", e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
 

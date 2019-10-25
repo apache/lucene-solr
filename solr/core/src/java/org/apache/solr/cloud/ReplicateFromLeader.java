@@ -133,7 +133,7 @@ public class ReplicateFromLeader {
 
   public void stopReplication() {
     if (replicationProcess != null) {
-      replicationProcess.close();
+      replicationProcess.shutdown();
     }
   }
 }

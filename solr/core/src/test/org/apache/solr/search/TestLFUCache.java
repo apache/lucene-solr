@@ -37,6 +37,7 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.util.ConcurrentLFUCache;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.junit.BeforeClass;
@@ -134,7 +135,7 @@ public class TestLFUCache extends SolrTestCaseJ4 {
 
 
   @Test
-  public void testSimple() throws IOException {
+  public void testSimple() throws Exception {
     SolrMetricManager metricManager = new SolrMetricManager();
     Random r = random();
     String registry = TestUtil.randomSimpleString(r, 2, 10);
@@ -142,9 +143,10 @@ public class TestLFUCache extends SolrTestCaseJ4 {
     LFUCache lfuCache = new LFUCache();
     LFUCache newLFUCache = new LFUCache();
     LFUCache noWarmLFUCache = new LFUCache();
-    lfuCache.initializeMetrics(metricManager, registry, "foo", scope + ".lfuCache");
-    newLFUCache.initializeMetrics(metricManager, registry, "foo", scope + ".newLFUCache");
-    noWarmLFUCache.initializeMetrics(metricManager, registry, "foo", scope + ".noWarmLFUCache");
+    SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
+    lfuCache.initializeMetrics(solrMetricsContext, scope + ".lfuCache");
+    newLFUCache.initializeMetrics(solrMetricsContext, scope + ".newLFUCache");
+    noWarmLFUCache.initializeMetrics(solrMetricsContext, scope + ".noWarmLFUCache");
     try {
       Map params = new HashMap();
       params.put("size", "100");
@@ -419,7 +421,8 @@ public class TestLFUCache extends SolrTestCaseJ4 {
     String registry = TestUtil.randomSimpleString(r, 2, 10);
     String scope = TestUtil.randomSimpleString(r, 2, 10);
     LFUCache lfuCache = new LFUCache();
-    lfuCache.initializeMetrics(metricManager, registry, "foo", scope + ".lfuCache");
+    SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
+    lfuCache.initializeMetrics(solrMetricsContext, scope + ".lfuCache");
     try {
       Map params = new HashMap();
       params.put("size", "100");
@@ -463,7 +466,8 @@ public class TestLFUCache extends SolrTestCaseJ4 {
     String registry = TestUtil.randomSimpleString(r, 2, 10);
     String scope = TestUtil.randomSimpleString(r, 2, 10);
     LFUCache<String, String> cache = new LFUCache<>();
-    cache.initializeMetrics(metricManager, registry, "foo", scope + ".lfuCache");
+    SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
+    cache.initializeMetrics(solrMetricsContext, scope + ".lfuCache");
 
     Map<String, String> params = new HashMap<>();
     params.put("size", "6");

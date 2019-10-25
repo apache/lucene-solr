@@ -66,6 +66,8 @@ Upgrade Notes
 
 * SOLR-13593 SOLR-13690 SOLR-13691: Allow to look up analyzer components by their SPI names in field type configuration. (Tomoko Uchida)
 
+* SOLR-13854: SolrMetricProducer API has changed and user components that implement this API need to be updated. (ab)
+
 Improvements
 ----------------------
 
@@ -98,12 +100,18 @@ Upgrade Notes
 
 New Features
 ---------------------
-(No changes)
+* SOLR-13821: A Package store to store and load package artifacts (noble, Ishan Chattopadhyaya)
+
+* SOLR-13822: A Package management system with the following features. A packages.json in ZK to store
+  the configuration, APIs to read/edit them and isolated classloaders to load the classes from
+  hose packages if the 'class' attribute is prefixed with `<package-name>:` (noble, Ishan Chattopadhyaya)
 
 Improvements
 ---------------------
 
-*SOLR-13731: javabin must support a 1:1 mapping of the JSON update format (noble)
+* SOLR-13731: 'javabin' must support a 1:1 mapping of the JSON update format (noble)
+
+* SOLR-13831: Support defining arbitrary autoscaling simulation scenarios. (ab)
 
 
 Optimizations
@@ -112,11 +120,24 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+
+* SOLR-13827: Fail on unknown operation in Request Parameters API (Munendra S N, noble)
+
+* SOLR-13403: Fix NPE in TermsComponent for DatePointField (yonik, Munendra S N)
+
+* SOLR-9802: Fix grouping failure for date field in solrcloud (Erick Erickson, Munendra S N, Vitaly Lavrov)
+
+* SOLR-12393: Compute score if requested even when expanded docs not sorted by score in ExpandComponent.
+  (David Smiley, Munendra S N)
 
 Other Changes
 ---------------------
-(No changes)
+
+* SOLR-12769: Fix incorrect documentation for 'delete' op in Request parameters API (Alexandre Rafalovitch, Munendra S N)
+
+* SOLR-13841: Add jackson databind annotations to SolrJ classpath (noble)
+
+* SOLR-13824: Strictly reject anything after JSON in most APIs (Mikhail Khludnev, Munendra S N)
 
 ==================  8.3.0 ==================
 
@@ -181,15 +202,13 @@ New Features
 
 * SOLR-8241: Add CaffeineCache, an efficient implementation of SolrCache.(Ben Manes, Shawn Heisey, David Smiley, Andrzej Bialecki)
 
-* SOLR-13821: A Package store to store and load package artefacts (noble, Ishan Chattopadhyaya)
-
 * SOLR-13298: Allow zplot to plot matrices (Joel Bernstein)
 
 Improvements
 ----------------------
 
 * SOLR-12368: Support InPlace DV updates for a field that does not yet exist in any documents
-(hossman, Simon Willnauer, Adrien Grand, Munendra S N)
+  (hossman, Simon Willnauer, Adrien Grand, Munendra S N)
 
 * SOLR-13558, SOLR-13693: Allow dynamic resizing of SolrCache-s. (ab)
 
@@ -328,6 +347,16 @@ Bug Fixes
 
 * SOLR-13834: ZkController#getSolrCloudManager() created a new instance of ZkStateReader, thereby causing mismatch in the
   visibility of the cluster state and, as a result, undesired race conditions (Clay Goddard via Ishan Chattopadhyaya)
+
+* SOLR-13835: HttpSolrCall produces incorrect extra AuditEvent on AuthorizationResponse.PROMPT (janhoy, hossman)
+
+* SOLR-13843: The MOVEREPLICA API ignores replica type and always adds 'nrt' replicas (Amrit Sarkar via shalin)
+
+* SOLR-13677: All Metrics Gauges should be unregistered by components that registered them. (noble, ab)
+
+* SOLR-13855: DistributedZkUpdateProcessor should have been propagating URP.finish() lifecycle like it used to before
+  8.1 (a regression).  Impacts integrity since Run URP's finish() propagates this to the updateLog to fsync.
+  (David Smiley)
 
 Other Changes
 ----------------------

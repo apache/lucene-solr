@@ -724,20 +724,24 @@ public class SolrMetricManager {
     registerMetric(info, registry, new GaugeWrapper(gauge, tag), force, metricName, metricPath);
   }
 
-  public int unregisterGauges(String registryName, String tag) {
-    if (tag == null) {
+  public int unregisterGauges(String registryName, String tagSegment) {
+    if (tagSegment == null) {
       return 0;
     }
     MetricRegistry registry = registry(registryName);
+    if (registry == null) return 0;
     AtomicInteger removed = new AtomicInteger();
     registry.removeMatching((name, metric) -> {
-      if (metric instanceof GaugeWrapper &&
-          tag.equals(((GaugeWrapper) metric).getTag())) {
-        removed.incrementAndGet();
-        return true;
-      } else {
-        return false;
+      if (metric instanceof GaugeWrapper) {
+        GaugeWrapper wrapper = (GaugeWrapper) metric;
+        boolean toRemove = wrapper.getTag().contains(tagSegment);
+        if (toRemove) {
+          removed.incrementAndGet();
+        }
+        return toRemove;
       }
+      return false;
+
     });
     return removed.get();
   }
@@ -752,10 +756,16 @@ public class SolrMetricManager {
    * segments prepended to the name.
    */
   public static String mkName(String name, String... path) {
+    return makeName(path == null || path.length == 0 ? Collections.emptyList() : Arrays.asList(path),
+        name);
+
+  }
+
+  public static String makeName(List<String> path, String name) {
     if (name == null || name.isEmpty()) {
       throw new IllegalArgumentException("name must not be empty");
     }
-    if (path == null || path.length == 0) {
+    if (path == null || path.size() == 0) {
       return name;
     } else {
       StringBuilder sb = new StringBuilder();

@@ -373,26 +373,26 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
   }
   
   public static void assertAnalyzesTo(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[]) throws IOException {
+    assertTokenStreamContents(a.tokenStream("dummy", input), output, startOffsets, endOffsets, types, posIncrements, null, input.length());
     checkResetException(a, input);
     checkAnalysisConsistency(random(), a, true, input);
-    assertTokenStreamContents(a.tokenStream("dummy", input), output, startOffsets, endOffsets, types, posIncrements, null, input.length());
   }
   
   public static void assertAnalyzesTo(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[], int posLengths[]) throws IOException {
+    assertTokenStreamContents(a.tokenStream("dummy", input), output, startOffsets, endOffsets, types, posIncrements, posLengths, input.length());
     checkResetException(a, input);
     checkAnalysisConsistency(random(), a, true, input);
-    assertTokenStreamContents(a.tokenStream("dummy", input), output, startOffsets, endOffsets, types, posIncrements, posLengths, input.length());
   }
 
   public static void assertAnalyzesTo(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[], int posLengths[], boolean graphOffsetsAreCorrect) throws IOException {
+    assertTokenStreamContents(a.tokenStream("dummy", input), output, startOffsets, endOffsets, types, posIncrements, posLengths, input.length(), graphOffsetsAreCorrect);
     checkResetException(a, input);
     checkAnalysisConsistency(random(), a, true, input, graphOffsetsAreCorrect);
-    assertTokenStreamContents(a.tokenStream("dummy", input), output, startOffsets, endOffsets, types, posIncrements, posLengths, input.length(), graphOffsetsAreCorrect);
   }
 
   public static void assertAnalyzesTo(Analyzer a, String input, String[] output, int startOffsets[], int endOffsets[], String types[], int posIncrements[], int posLengths[], boolean graphOffsetsAreCorrect, byte[][] payloads) throws IOException {
-    checkResetException(a, input);
     assertTokenStreamContents(a.tokenStream("dummy", input), output, startOffsets, endOffsets, types, posIncrements, posLengths, input.length(), null, null, graphOffsetsAreCorrect, payloads);
+    checkResetException(a, input);
   }
 
   public static void assertAnalyzesTo(Analyzer a, String input, String[] output) throws IOException {
@@ -948,13 +948,8 @@ public abstract class BaseTokenStreamTestCase extends LuceneTestCase {
     w.close();
   }
   
-  static int[] toIntArray(List<Integer> list) {
-    int ret[] = new int[list.size()];
-    int offset = 0;
-    for (Integer i : list) {
-      ret[offset++] = i;
-    }
-    return ret;
+  private static int[] toIntArray(List<Integer> list) {
+    return list.stream().mapToInt(Integer::intValue).toArray();
   }
 
   protected static MockTokenizer whitespaceMockTokenizer(Reader input) throws IOException {
