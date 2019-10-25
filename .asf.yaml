@@ -1,3 +1,5 @@
+# https://cwiki.apache.org/confluence/display/INFRA/.asf.yaml+features+for+git+repositories
+
 github:
   description: "Apache Lucene and Solr open-source search software"
   homepage: https://lucene.apache.org/
