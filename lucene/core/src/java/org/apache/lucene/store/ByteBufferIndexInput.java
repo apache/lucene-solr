@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.LongBuffer;
+import java.util.Arrays;
 
 /**
  * Base IndexInput implementation that uses an array
@@ -35,6 +37,8 @@ import java.nio.ByteOrder;
  * are a power-of-two (<code>chunkSizePower</code>).
  */
 public abstract class ByteBufferIndexInput extends IndexInput implements RandomAccessInput {
+  private static final LongBuffer EMPTY = LongBuffer.allocate(0);
+
   protected final long length;
   protected final long chunkSizeMask;
   protected final int chunkSizePower;
@@ -43,6 +47,7 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
   protected ByteBuffer[] buffers;
   protected int curBufIndex = -1;
   protected ByteBuffer curBuf; // redundant for speed: buffers[curBufIndex]
+  private final LongBuffer[] curLongBufferViews = new LongBuffer[Long.BYTES];
 
   protected boolean isClone = false;
   
@@ -64,7 +69,16 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
     assert chunkSizePower >= 0 && chunkSizePower <= 30;   
     assert (length >>> chunkSizePower) < Integer.MAX_VALUE;
   }
-  
+
+  protected void setCurBuf(ByteBuffer curBuf) {
+    this.curBuf = curBuf;
+    Arrays.fill(curLongBufferViews, EMPTY);
+    for (int i = 0; i < Math.min(Long.BYTES, curBuf.limit()); ++i) {
+      // Compute a view for each possible alignment in the native byte order
+      curLongBufferViews[i] = curBuf.duplicate().position(i).order(ByteOrder.nativeOrder()).asLongBuffer();
+    }
+  }
+
   @Override
   public final byte readByte() throws IOException {
     try {
@@ -75,7 +89,7 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
         if (curBufIndex >= buffers.length) {
           throw new EOFException("read past EOF: " + this);
         }
-        curBuf = buffers[curBufIndex];
+        setCurBuf(buffers[curBufIndex]);
         curBuf.position(0);
       } while (!curBuf.hasRemaining());
       return guard.getByte(curBuf);
@@ -98,7 +112,7 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
         if (curBufIndex >= buffers.length) {
           throw new EOFException("read past EOF: " + this);
         }
-        curBuf = buffers[curBufIndex];
+        setCurBuf(buffers[curBufIndex]);
         curBuf.position(0);
         curAvail = curBuf.remaining();
       }
@@ -109,12 +123,16 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
   }
 
   @Override
-  public final void readLongs(ByteOrder byteOrder, long[] dst, int offset, int length) throws IOException {
+  public void readLongs(ByteOrder byteOrder, long[] dst, int offset, int length) throws IOException {
     try {
-      ByteBuffer leBuf = curBuf.duplicate().order(byteOrder);
-      guard.getLongs(leBuf.asLongBuffer(), dst, offset, length);
-      // If the above call succeeded then we know position+length*8 doesn't overflow.
-      curBuf.position(curBuf.position() + (length << 3));
+      final int position = curBuf.position();
+      guard.getLongs(curLongBufferViews[position & 0x07].position(position >>> 3), dst, offset, length);
+      if (byteOrder != ByteOrder.nativeOrder()) {
+        for (int i = offset, end = offset + length; i < end; ++i) {
+          dst[i] = Long.reverseBytes(dst[i]);
+        }
+      }
+      curBuf.position(position + (length << 3));
     } catch (BufferUnderflowException e) {
       super.readLongs(byteOrder, dst, offset, length);
     } catch (NullPointerException npe) {
@@ -177,7 +195,7 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
         b.position((int) (pos & chunkSizeMask));
         // write values, on exception all is unchanged
         this.curBufIndex = bi;
-        this.curBuf = b;
+        setCurBuf(b);
       }
     } catch (ArrayIndexOutOfBoundsException | IllegalArgumentException e) {
       throw new EOFException("seek past EOF: " + this);
@@ -204,7 +222,7 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
       final ByteBuffer b = buffers[bi];
       b.position((int) (pos & chunkSizeMask));
       this.curBufIndex = bi;
-      this.curBuf = b;
+      setCurBuf(b);
     } catch (ArrayIndexOutOfBoundsException | IllegalArgumentException aioobe) {
       throw new EOFException("seek past EOF: " + this);
     } catch (NullPointerException npe) {
@@ -356,6 +374,7 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
     buffers = null;
     curBuf = null;
     curBufIndex = 0;
+    Arrays.fill(curLongBufferViews, null);
   }
   
   /** Optimization of ByteBufferIndexInput for when there is only one buffer */
@@ -364,7 +383,7 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
     SingleBufferImpl(String resourceDescription, ByteBuffer buffer, long length, int chunkSizePower, ByteBufferGuard guard) {
       super(resourceDescription, new ByteBuffer[] { buffer }, length, chunkSizePower, guard);
       this.curBufIndex = 0;
-      this.curBuf = buffer;
+      setCurBuf(buffer);
       buffer.position(0);
     }
     
@@ -453,6 +472,7 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
         throw new AlreadyClosedException("Already closed: " + this);
       }
     }
+
   }
   
   /** This class adds offset support to ByteBufferIndexInput, which is needed for slices. */
