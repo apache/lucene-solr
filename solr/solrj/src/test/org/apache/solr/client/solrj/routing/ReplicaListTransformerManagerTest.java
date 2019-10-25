@@ -18,7 +18,6 @@
 package org.apache.solr.client.solrj.routing;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import org.apache.solr.SolrTestCaseJ4;
@@ -26,12 +25,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
-import org.apache.solr.common.util.NamedList;
-import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.component.HttpShardHandlerFactory;
-import org.apache.solr.request.SolrQueryRequestBase;
-import org.junit.Test;
 
 public class ReplicaListTransformerManagerTest extends SolrTestCaseJ4 {
 

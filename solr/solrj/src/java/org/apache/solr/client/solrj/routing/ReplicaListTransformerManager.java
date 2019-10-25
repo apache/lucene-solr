@@ -28,7 +28,6 @@ import org.apache.solr.common.cloud.NodesSysPropsCacher;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -96,26 +95,6 @@ public class ReplicaListTransformerManager {
     }
 
     return defaultRltFactory.getInstance(null, requestParams, RANDOM_RLTF);
-  }
-
-  private static NamedList<?> getNamedList(Object val) {
-    if (val instanceof NamedList) {
-      return (NamedList<?>)val;
-    } else {
-      throw new IllegalArgumentException("Invalid config for replicaRouting; expected NamedList, but got " + val);
-    }
-  }
-
-  private static String checkDefaultReplicaListTransformer(NamedList<?> c, String setTo, String extantDefaultRouting) {
-    if (!Boolean.TRUE.equals(c.getBooleanArg("default"))) {
-      return null;
-    } else {
-      if (extantDefaultRouting == null) {
-        return setTo;
-      } else {
-        throw new IllegalArgumentException("more than one routing scheme marked as default");
-      }
-    }
   }
 
   /**
