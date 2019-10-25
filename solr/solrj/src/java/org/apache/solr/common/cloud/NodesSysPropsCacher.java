@@ -33,6 +33,7 @@ import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.routing.PreferenceRule;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.util.CommonTestInjection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,8 +53,7 @@ public class NodesSysPropsCacher implements SolrCloseable {
 
   private final AtomicBoolean isRunning = new AtomicBoolean(false);
   private final NodeStateProvider nodeStateProvider;
-  private static Map<String, String> injectedAdditionalProps = null;
-  private Map<String, String> additionalProps = injectedAdditionalProps;
+  private Map<String, String> additionalProps = CommonTestInjection.injectAdditionalProps();
   private final String currentNode;
   private final ConcurrentHashMap<String, Map<String, Object>> cache = new ConcurrentHashMap<>();
   private final AtomicInteger fetchCounting = new AtomicInteger(0);
@@ -196,12 +196,5 @@ public class NodesSysPropsCacher implements SolrCloseable {
   public void close() {
     isClosed = true;
     pause();
-  }
-
-  /**
-   * For testing only
-   */
-  public static void setAdditionalProps(Map<String, String> additionalProps) {
-    NodesSysPropsCacher.injectedAdditionalProps = additionalProps;
   }
 }
