@@ -10,3 +10,8 @@ github:
     - java
     - backend
     - search-engine
+
+  enabled_merge_buttons:
+    squash: true
+    merge:  false
+    rebase: false
