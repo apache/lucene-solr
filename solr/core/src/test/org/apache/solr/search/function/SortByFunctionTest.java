@@ -36,6 +36,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.search.stats.ExactStatsCache;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 
@@ -68,6 +69,8 @@ public class SortByFunctionTest extends SolrCloudTestCase {
    
     final String configName = DEBUG_LABEL + "_config-set";
     final Path configDir = Paths.get(TEST_HOME(), "collection1", "conf");
+    System.setProperty("solr.statsCache", ExactStatsCache.class.getName()); // for distributed sort stability
+    System.setProperty("solr.numericIdCopyFrom", "disabled_i");
     
     configureCluster(numNodes).addConfig(configName, configDir).configure();
     
@@ -132,13 +135,13 @@ public class SortByFunctionTest extends SolrCloudTestCase {
   
   public void test() throws Exception {
     assertAdd(sdoc("id", "1", "x_td1", "0", "y_td1", "2", "w_td1", "25", "z_td1", "5", "f_t", "ipod"));
-    assertAdd(sdoc("id", "2", "x_td1", "2", "y_td1", "2", "w_td1", "15", "z_td1", "5", "f_t", "ipod ipod ipod ipod ipod"));
-    assertAdd(sdoc("id", "3", "x_td1", "3", "y_td1", "2", "w_td1", "55", "z_td1", "5", "f_t", "ipod ipod ipod ipod ipod ipod ipod ipod ipod"));
-    assertAdd(sdoc("id", "4", "x_td1", "4", "y_td1", "2", "w_td1", "45", "z_td1", "5", "f_t", "ipod ipod ipod ipod ipod ipod ipod"));
+    assertAdd(sdoc("id", "2", "x_td1", "2", "y_td1", "2", "w_td1", "15", "z_td1", "5", "f_t", "ipod other other other other"));
+    assertAdd(sdoc("id", "3", "x_td1", "3", "y_td1", "2", "w_td1", "55", "z_td1", "5", "f_t", "ipod other other other other other other other other"));
+    assertAdd(sdoc("id", "4", "x_td1", "4", "y_td1", "2", "w_td1", "45", "z_td1", "5", "f_t", "ipod other other other other other other"));
     assertCommit();
 
     assertSortedResults(params("fl", "id,score", "q", "f_t:ipod", "sort", "score desc"),
-                        "1", "2", "3", "4");
+                        "1", "2", "4", "3");
 
     assertSortedResults(params("fl", "*,score", "q", "*:*", "sort", "sum(x_td1, y_td1) desc"),
                         "4", "3", "2", "1");
@@ -154,21 +157,21 @@ public class SortByFunctionTest extends SolrCloudTestCase {
   
   public void testSortJoinDocFreq() throws Exception
   {
-    assertAdd(sdoc("id", "4", "id_s1", "D", "links_mfacet", "A", "links_mfacet", "B", "links_mfacet", "C" ) );
-    assertAdd(sdoc("id", "3", "id_s1", "C", "links_mfacet", "A", "links_mfacet", "B" ) );
+    assertAdd(sdoc("id", "1!4", "id_s1", "D", "links_mfacet", "A", "links_mfacet", "B", "links_mfacet", "C" ) );
+    assertAdd(sdoc("id", "1!3", "id_s1", "C", "links_mfacet", "A", "links_mfacet", "B" ) );
     assertCommit(); // Make sure it uses two readers
-    assertAdd(sdoc("id", "2", "id_s1", "B", "links_mfacet", "A" ) );
-    assertAdd(sdoc("id", "1", "id_s1", "A"  ) );
+    assertAdd(sdoc("id", "1!2", "id_s1", "B", "links_mfacet", "A" ) );
+    assertAdd(sdoc("id", "1!1", "id_s1", "A"  ) );
     assertCommit();
 
     assertSortedResults(params("q", "links_mfacet:B", "fl", "id", "sort", "id asc"),
-                        "3", "4");
+                        "1!3", "1!4");
     
     assertSortedResults(params("q", "*:*", "fl", "id", "sort", "joindf(id_s1, links_mfacet) desc"),
-                        "1", "2", "3", "4");
+                        "1!1", "1!2", "1!3", "1!4");
 
     assertSortedResults(params("q", "*:*", "fl", "id", "sort", "joindf(id_s1, links_mfacet) asc"),
-                        "4", "3", "2", "1");
+                        "1!4", "1!3", "1!2", "1!1");
   }
 
   // nocommit: test explicit "sort=field(multivalued_str_field,min|max) asc|desc"
