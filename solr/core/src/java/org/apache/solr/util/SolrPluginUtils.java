@@ -678,7 +678,17 @@ public class SolrPluginUtils {
       spec = spaceAroundLessThanPattern.matcher(spec).replaceAll("<");
       for (String s : spacePattern.split(spec)) {
         String[] parts = lessThanPattern.split(s,0);
-        int upperBound = Integer.parseInt(parts[0]);
+        if (parts.length == 0) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+              "Operator < must be followed by a number");
+        }
+        int upperBound;
+        try {
+          upperBound = Integer.parseInt(parts[0]);
+        } catch (NumberFormatException e) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+              "Operator < must be followed by a number", e);
+        }
         if (optionalClauseCount <= upperBound) {
           return result;
         } else {

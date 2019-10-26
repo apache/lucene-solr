@@ -33,6 +33,7 @@ import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QParser;
 import org.apache.solr.util.SolrPluginUtils.DisjunctionMaxQueryParser;
@@ -296,6 +297,16 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
     assertEquals(3, calcMSM(3, "3<25%"));
     assertEquals(1, calcMSM(4, "\n 3 < \n25%\n "));
     assertEquals(1, calcMSM(5, "3<25%"));
+
+    /* malformed conditionals */
+    try {
+      calcMSM(1, "1<");
+      fail("Query '1<' should have thrown SolrException");
+    } catch (SolrException expected) {}
+    try {
+      calcMSM(1, "1<x");
+      fail("Query '1<x' should have thrown SolrException");
+    } catch (SolrException expected) {}
 
     /* multiple conditionals */
     assertEquals(1, calcMSM(1, "\n3 < -25% 10 < -3 \n"));
