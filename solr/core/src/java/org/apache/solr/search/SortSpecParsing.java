@@ -21,6 +21,9 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.lucene.queries.function.FunctionQuery;
+import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.queries.function.valuesource.FieldCacheSource;
+import org.apache.lucene.queries.function.valuesource.JoinDocFreqValueSource;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
@@ -146,12 +149,31 @@ public class SortSpecParsing {
             Boolean top = sp.getSortDirection();
             if (null != top) {
               // we have a Query and a valid direction
+              SchemaField sf = null;
               if (q instanceof FunctionQuery) {
-                sorts.add(((FunctionQuery)q).getValueSource().getSortField(top));
+                ValueSource vs = ((FunctionQuery)q).getValueSource();
+                SortField sortField = vs.getSortField(top);
+                if (vs instanceof FieldCacheSource) {
+                  // The values for this field must use fieldType-specific sort value (un/)marshaling
+                  if (vs instanceof JoinDocFreqValueSource) {
+                    // this is a special case where the value type returned (int docFreq) is unrelated to the values
+                    // in the associated field. Value is always a directly calculated int, so there is never a need to marshal
+                    // sort value from docValues (BytesRef); also, "docFreq" is never "missing", so no "missingValue" necessary
+                  } else {
+                    sf = schema.getFieldOrNull(((FieldCacheSource)vs).getField());
+                    if (sortField.getMissingValue() == null && sf != null) {
+                      Object sfMissingVal = sf.getSortField(top).getMissingValue();
+                      if (sfMissingVal != null) {
+                        sortField.setMissingValue(sfMissingVal);
+                      }
+                    }
+                  }
+                }
+                sorts.add(sortField);
               } else {
                 sorts.add((new QueryValueSource(q, 0.0f)).getSortField(top));
               }
-              fields.add(null);
+              fields.add(sf);
               continue;
             }
           } catch (Exception e) {
