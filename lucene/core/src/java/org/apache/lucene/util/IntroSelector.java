@@ -36,29 +36,30 @@ public abstract class IntroSelector extends Selector {
     return medianOfMediansSelect(from, to-1, k);
   }
 
-  int medianOfMediansSelect(int from, int to, int k) {
+  int medianOfMediansSelect(int left, int right, int k) {
     int pivotIndex;
     do {
-      if (from == to) {
-        return from;
+      // Defensive check, this is also checked in the calling
+      // method. Including here so this method can be used
+      // as a self contained quickSelect implementation.
+      if (left == right) {
+        return left;
       }
-      pivotIndex = pivot(from, to);
-      setPivot(pivotIndex);
-      pivotIndex = partition(from, to, k, pivotIndex);
-      setPivot(pivotIndex);
+      pivotIndex = pivot(left, right);
+      pivotIndex = partition(left, right, k, pivotIndex);
       if (k == pivotIndex) {
         return k;
       } else if (k < pivotIndex) {
-        to = pivotIndex-1;
+        right = pivotIndex-1;
       } else {
-        from = pivotIndex+1;
+        left = pivotIndex+1;
       }
-    } while (from != to);
-    setPivot(pivotIndex);
+    } while (left != right);
     return pivotIndex;
   }
 
-  private int partition(int left, int right, int n, int pivotIndex) {
+  private int partition(int left, int right, int k, int pivotIndex) {
+    setPivot(pivotIndex);
     swap(pivotIndex, right);
     int storeIndex = left;
     for (int i = left; i < right; i++) {
@@ -75,10 +76,10 @@ public abstract class IntroSelector extends Selector {
       }
     }
     swap(right, storeIndexEq);
-    if (n < storeIndex) {
+    if (k < storeIndex) {
       return storeIndex;
-    } else if (n <= storeIndexEq) {
-      return n;
+    } else if (k <= storeIndexEq) {
+      return k;
     }
     return storeIndexEq;
   }
@@ -102,6 +103,9 @@ public abstract class IntroSelector extends Selector {
     return medianOfMediansSelect(left, to, mid);
   }
 
+  // selects the median of a group of at most five elements,
+  // implemented using insertion sort. Efficient due to
+  // bounded nature of data set.
   private int partition5(int left, int right) {
     int i = left + 1;
     while( i <= right) {
@@ -112,7 +116,7 @@ public abstract class IntroSelector extends Selector {
       }
       i++;
     }
-    return (left + right) / 2;
+    return (left + right) >>> 1;
   }
 
   private void quickSelect(int from, int to, int k, int maxDepth) {
