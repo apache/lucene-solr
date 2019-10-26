@@ -37,7 +37,6 @@ public abstract class IntroSelector extends Selector {
   }
 
   int medianOfMediansSelect(int left, int right, int k) {
-    int pivotIndex;
     do {
       // Defensive check, this is also checked in the calling
       // method. Including here so this method can be used
@@ -45,7 +44,7 @@ public abstract class IntroSelector extends Selector {
       if (left == right) {
         return left;
       }
-      pivotIndex = pivot(left, right);
+      int pivotIndex = pivot(left, right);
       pivotIndex = partition(left, right, k, pivotIndex);
       if (k == pivotIndex) {
         return k;
@@ -55,7 +54,7 @@ public abstract class IntroSelector extends Selector {
         left = pivotIndex+1;
       }
     } while (left != right);
-    return pivotIndex;
+    return left;
   }
 
   private int partition(int left, int right, int k, int pivotIndex) {
