@@ -114,6 +114,27 @@ public class TrieField extends NumericFieldType {
   }
 
   @Override
+  public Object marshalSortValue(Object value) {
+    if (value instanceof Number) {
+      return value;
+    } else if (value instanceof BytesRef) {
+      // e.g., from docValues
+      return marshalBase64SortValue(value);
+    } else {
+      throw new IllegalArgumentException("unexpected type: "+value.getClass().getName()+":"+value);
+    }
+  }
+
+  @Override
+  public Object unmarshalSortValue(Object value) {
+    if (value instanceof Number) {
+      return value;
+    } else {
+      return unmarshalBase64SortValue(value);
+    }
+  }
+
+  @Override
   public Object toObject(IndexableField f) {
     final Number val = f.numericValue();
     if (val != null) {
