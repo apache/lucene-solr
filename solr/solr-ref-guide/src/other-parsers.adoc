@@ -188,7 +188,7 @@ A list of queries that *must not* appear in matching documents.
 A list of queries *should* appear in matching documents. For a BooleanQuery with no `must` queries, one or more `should` queries must match a document for the BooleanQuery to match.
 
 `filter`::
-A list of queries that *must* appear in matching documents. However, unlike `must`, the score of filter queries is ignored.
+A list of queries that *must* appear in matching documents. However, unlike `must`, the score of filter queries is ignored. Also, these queries are cached in filter cache. To avoid caching add either `cache=false` as local parameter, or `"cache":"false"` property to underneath Query DLS Object.  
 
 *Examples*
 
