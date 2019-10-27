@@ -63,9 +63,19 @@ import org.apache.lucene.util.RamUsageEstimator;
  */
 public final class FST<T> implements Accountable {
 
+  //nocommit
   static final boolean ALWAYS_FIXED_ARRAY = false;
+  static final boolean NEVER_FIXED_ARRAY = false;
   static final boolean ALWAYS_DIRECT_ADDRESSING = false;
-  static final boolean OPTIM_DA = true;
+  static final boolean NEVER_DIRECT_ADDRESSING = false;
+  static final boolean OPTIM_DA = false;
+  {
+    if (ALWAYS_FIXED_ARRAY) System.out.println("ALWAYS_FIXED_ARRAY");
+    if (NEVER_FIXED_ARRAY) System.out.println("NEVER_FIXED_ARRAY");
+    if (ALWAYS_DIRECT_ADDRESSING) System.out.println("ALWAYS_DIRECT_ADDRESSING");
+    if (NEVER_DIRECT_ADDRESSING) System.out.println("NEVER_DIRECT_ADDRESSING");
+    if (OPTIM_DA) System.out.println("OPTIM_DA");
+  }
 
   /** Specifies allowed range of each int input label for
    *  this FST. */
@@ -589,7 +599,7 @@ public final class FST<T> implements Accountable {
     final long startAddress = builder.bytes.getPosition();
     //System.out.println("  startAddr=" + startAddress);
 
-    final boolean doFixedArray = ALWAYS_FIXED_ARRAY || shouldExpand(builder, nodeIn);
+    final boolean doFixedArray = !NEVER_FIXED_ARRAY && (ALWAYS_FIXED_ARRAY || shouldExpand(builder, nodeIn));
     if (doFixedArray) {
       //System.out.println("  fixedArray");
       if (builder.reusedBytesPerArc.length < nodeIn.numArcs) {
@@ -699,7 +709,7 @@ public final class FST<T> implements Accountable {
       // array that may have holes in it so that we can address the arcs directly by label without
       // binary search
       int labelRange = nodeIn.arcs[nodeIn.numArcs - 1].label - nodeIn.arcs[0].label + 1;
-      boolean writeDirectly = ALWAYS_DIRECT_ADDRESSING || (labelRange > 0 && labelRange < Builder.DIRECT_ARC_LOAD_FACTOR * nodeIn.numArcs);
+      boolean writeDirectly = !NEVER_DIRECT_ADDRESSING && (ALWAYS_DIRECT_ADDRESSING || (labelRange > 0 && labelRange < Builder.DIRECT_ARC_LOAD_FACTOR * nodeIn.numArcs));
 
       // create the header
       // TODO: clean this up: or just rewind+reuse and deal with it

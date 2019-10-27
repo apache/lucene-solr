@@ -1635,4 +1635,32 @@ public class TestFSTs extends LuceneTestCase {
       // expected
     }
   }
+
+  //nocommit
+  public void testWorstCaseForDirectAddressing() throws Exception {
+    final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
+    final Builder<Long> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs, true, 15);
+
+    System.out.println("Generating words");
+    Set<BytesRef> wordSet = new HashSet<>();
+    for (int i = 0; i < 1000000; ++i) {
+      byte[] b = new byte[5];
+      random().nextBytes(b);
+      for (int j = 0; j < b.length; ++j) {
+        b[j] &= 0xfc; // make this byte a multiple of 4
+      }
+      wordSet.add(new BytesRef(b));
+    }
+    System.out.println("Sorting words");
+    List<BytesRef> wordList = new ArrayList<>(wordSet);
+    Collections.sort(wordList);
+    System.out.println("Adding words");
+    IntsRefBuilder intsRefBuilder = new IntsRefBuilder();
+    for (BytesRef word : wordList) {
+      builder.add(Util.toIntsRef(word, intsRefBuilder), outputs.getNoOutput());
+    }
+    System.out.println("Building FST");
+    long ramBytesUsed = builder.finish().ramBytesUsed();
+    System.out.println("ramBytesUsed=" + ramBytesUsed + " B");
+  }
 }
