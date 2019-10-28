@@ -22,11 +22,6 @@ import java.util.Map;
 /**
  * Allows random faults to be injected in running code during test runs across all solr packages.
  *
- * Set static strings to "true" or "false" or "true:60" for true 60% of the time.
- *
- * All methods are No-Ops unless <code>LuceneTestCase</code> is loadable via the ClassLoader used
- * to load this class.  <code>LuceneTestCase.random()</code> is used as the source of all entropy.
- *
  * @lucene.internal
  */
 public class CommonTestInjection {

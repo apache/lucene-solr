@@ -30,9 +30,7 @@ import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 
 /**
-   * A distributed request is made to the first live server in the URL list.
-   * This means it is just as likely to choose current host as any of the other hosts.
-   * This function makes sure that the cores are sorted according to the given list of preferences.
+   * This comparator makes sure that the given replicas are sorted according to the given list of preferences.
    * E.g. If all nodes prefer local cores then a bad/heavily-loaded node will receive less requests from
    * healthy nodes. This will help prevent a distributed deadlock or timeouts in all the healthy nodes due
    * to one bad node.
