@@ -78,7 +78,7 @@ public final class SolrMetricTestUtils {
   public static SolrMetricProducer getProducerOf(SolrMetricManager metricManager, SolrInfoBean.Category category, String scope, Map<String, Counter> metrics) {
     return new SolrMetricProducer() {
       @Override
-      public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
+      public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
         if (category == null) {
           throw new IllegalArgumentException("null category");
         }
@@ -86,7 +86,7 @@ public final class SolrMetricTestUtils {
           return;
         }
         for (Map.Entry<String, Counter> entry : metrics.entrySet()) {
-          manager.counter(null, registry, entry.getKey(), category.toString(), scope);
+          parentContext.counter(null, entry.getKey(), category.toString(), scope);
         }
       }
 

@@ -107,15 +107,21 @@ public final class Line2D implements Component2D {
       if (tree.isPointOnLine(ax, ay)) {
         return Relation.CELL_INSIDE_QUERY;
       }
-    } else if ((ax == cx && ay == cy) || (bx == cx && by == cy)) {
+    } else if (ax == cx && ay == cy) {
       // indexed "triangle" is a line:
       if (tree.crossesLine(minX, maxX, minY, maxY, ax, ay, bx, by)) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_OUTSIDE_QUERY;
-    } else if ((ax == bx && ay == by)) {
+    } else if (ax == bx && ay == by) {
       // indexed "triangle" is a line:
-      if (tree.crossesLine(minX, maxX, minY, maxY, ax, ay, cx, cy)) {
+      if (tree.crossesLine(minX, maxX, minY, maxY, bx, by, cx, cy)) {
+        return Relation.CELL_CROSSES_QUERY;
+      }
+      return Relation.CELL_OUTSIDE_QUERY;
+    } else if (bx == cx && by == cy) {
+      // indexed "triangle" is a line:
+      if (tree.crossesLine(minX, maxX, minY, maxY, cx, cy, ax, ay)) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_OUTSIDE_QUERY;

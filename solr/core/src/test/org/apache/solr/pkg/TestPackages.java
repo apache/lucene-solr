@@ -35,6 +35,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.request.beans.Package;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.ConfigRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -58,6 +59,7 @@ import static org.apache.solr.core.TestDynamicLoading.getFileContent;
 import static org.apache.solr.filestore.TestDistribPackageStore.readFile;
 
 @LogLevel("org.apache.solr.pkg.PackageLoader=DEBUG;org.apache.solr.pkg.PackageAPI=DEBUG")
+//@org.apache.lucene.util.LuceneTestCase.AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13822") // leaks files
 public class TestPackages extends SolrCloudTestCase {
 
   @Test
@@ -79,7 +81,7 @@ public class TestPackages extends SolrCloudTestCase {
       postFileAndWait(cluster, "runtimecode/runtimelibs.jar.bin", FILE1,
           "L3q/qIGs4NaF6JiO0ZkMUFa88j0OmYc+I6O7BOdNuMct/xoZ4h73aZHZGc0+nmI1f/U3bOlMPINlSOM6LK3JpQ==");
 
-      PackageAPI.AddVersion add = new PackageAPI.AddVersion();
+      Package.AddVersion add = new Package.AddVersion();
       add.version = "1.0";
       add.pkg = "mypkg";
       add.files = Arrays.asList(new String[]{FILE1});
@@ -199,7 +201,7 @@ public class TestPackages extends SolrCloudTestCase {
           Utils.makeMap("Version","2"));
 
 
-      PackageAPI.DelVersion delVersion = new PackageAPI.DelVersion();
+      Package.DelVersion delVersion = new Package.DelVersion();
       delVersion.pkg = "mypkg";
       delVersion.version = "1.0";
       V2Request delete = new V2Request.Builder("/cluster/package")
@@ -348,7 +350,7 @@ public class TestPackages extends SolrCloudTestCase {
       String FILE2 = "/mypkg/v.0.12/jar_b.jar";
       String FILE3 = "/mypkg/v.0.13/jar_a.jar";
 
-      PackageAPI.AddVersion add = new PackageAPI.AddVersion();
+      Package.AddVersion add = new Package.AddVersion();
       add.version = "0.12";
       add.pkg = "test_pkg";
       add.files = Arrays.asList(new String[]{FILE1, FILE2});
@@ -421,7 +423,7 @@ public class TestPackages extends SolrCloudTestCase {
           ));
 
       //Now we will just delete one version
-      PackageAPI.DelVersion delVersion = new PackageAPI.DelVersion();
+      Package.DelVersion delVersion = new Package.DelVersion();
       delVersion.version = "0.1";//this version does not exist
       delVersion.pkg = "test_pkg";
       req = new V2Request.Builder("/cluster/package")

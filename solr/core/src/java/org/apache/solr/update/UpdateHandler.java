@@ -22,7 +22,6 @@ import java.util.Set;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.codahale.metrics.MetricRegistry;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.HdfsDirectoryFactory;
 import org.apache.solr.core.PluginInfo;
@@ -57,7 +56,6 @@ public abstract class UpdateHandler implements SolrInfoBean {
   protected final UpdateLog ulog;
 
   protected Set<String> metricNames = ConcurrentHashMap.newKeySet();
-  protected MetricRegistry registry;
 
   private void parseEventListeners() {
     final Class<SolrEventListener> clazz = SolrEventListener.class;
@@ -210,9 +208,5 @@ public abstract class UpdateHandler implements SolrInfoBean {
   @Override
   public Set<String> getMetricNames() {
     return metricNames;
-  }
-  @Override
-  public MetricRegistry getMetricRegistry() {
-    return registry;
   }
 }

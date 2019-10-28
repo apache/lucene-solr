@@ -78,6 +78,7 @@ import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortSpecParsing;
 import org.apache.solr.search.SyntaxError;
@@ -406,15 +407,15 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       collector = groupExpandCollector;
     }
 
-    if (pfilter.filter == null) {
-      searcher.search(query, collector);
-    } else {
-      Query q = new BooleanQuery.Builder()
+    if (pfilter.filter != null) {
+      query = new BooleanQuery.Builder()
           .add(query, Occur.MUST)
           .add(pfilter.filter, Occur.FILTER)
           .build();
-      searcher.search(q, collector);
     }
+    searcher.search(query, collector);
+
+    ReturnFields returnFields = rb.rsp.getReturnFields();
     LongObjectMap<Collector> groups = ((GroupCollector) groupExpandCollector).getGroups();
     NamedList outMap = new SimpleOrderedMap();
     CharsRefBuilder charsRef = new CharsRefBuilder();
@@ -424,6 +425,9 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       TopDocs topDocs = topDocsCollector.topDocs();
       ScoreDoc[] scoreDocs = topDocs.scoreDocs;
       if (scoreDocs.length > 0) {
+        if (returnFields.wantsScore() && sort != null) {
+          TopFieldCollector.populateScores(scoreDocs, searcher, query);
+        }
         int[] docs = new int[scoreDocs.length];
         float[] scores = new float[scoreDocs.length];
         for (int i = 0; i < docs.length; i++) {

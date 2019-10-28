@@ -50,6 +50,7 @@ import org.apache.solr.common.params.TermsParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.handler.component.HttpShardHandlerFactory.WhitelistHostChecker;
 import org.apache.solr.request.SimpleFacets.CountPair;
 import org.apache.solr.schema.FieldType;
@@ -201,14 +202,14 @@ public class TermsComponent extends SearchComponent {
         SchemaField sf = rb.req.getSchema().getFieldOrNull(field);
         if (sf != null && sf.getType().isPointField()) {
           // FIXME: terms.ttf=true is not supported for pointFields
-          if (lowerStr!=null || upperStr!=null || prefix!=null || regexp!=null) {
+          if (lowerStr != null || upperStr != null || prefix != null || regexp != null) {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                 String.format(Locale.ROOT, "The terms component does not support Points-based fields with sorting or with parameters %s,%s,%s,%s ", TermsParams.TERMS_LOWER, TermsParams.TERMS_UPPER, TermsParams.TERMS_PREFIX_STR, TermsParams.TERMS_REGEXP_STR));
           }
 
+          PointMerger.ValueIterator valueIterator = new PointMerger.ValueIterator(sf, rb.req.getSearcher().getRawReader().leaves());
+          MutableValue mv = valueIterator.getMutableValue();
           if (sort) {
-            PointMerger.ValueIterator valueIterator = new PointMerger.ValueIterator(sf, rb.req.getSearcher().getRawReader().leaves());
-            MutableValue mv = valueIterator.getMutableValue();
             BoundedTreeSet<CountPair<MutableValue, Integer>> queue = new BoundedTreeSet<>(limit);
 
             for (; ; ) {
@@ -221,7 +222,7 @@ public class TermsComponent extends SearchComponent {
             }
 
             for (CountPair<MutableValue, Integer> item : queue) {
-              fieldTerms.add(item.key.toString(), item.val);
+              fieldTerms.add(Utils.OBJECT_TO_STRING.apply(item.key.toObject()), item.val);
             }
             continue;
           } else {
@@ -229,28 +230,24 @@ public class TermsComponent extends SearchComponent {
             // streaming solution that is deferred until writing the response
             // TODO: we can't use the streaming solution until XML writer supports PushWriter!
             termsResult.add(field, (MapWriter) ew -> {
-              PointMerger.ValueIterator valueIterator = new PointMerger.ValueIterator(sf, rb.req.getSearcher().getRawReader().leaves());
-              MutableValue mv = valueIterator.getMutableValue();
               int num = 0;
               for(;;) {
                 long count = valueIterator.getNextCount();
                 if (count < 0) break;
                 if (count < freqmin || count > freqmax) continue;
                 if (++num > limit) break;
-                ew.put(mv.toString(), (int)count); // match the numeric type of terms
+                ew.put(Utils.OBJECT_TO_STRING.apply(mv.toObject()), (int)count); // match the numeric type of terms
               }
             });
              ***/
 
-            PointMerger.ValueIterator valueIterator = new PointMerger.ValueIterator(sf, rb.req.getSearcher().getRawReader().leaves());
-            MutableValue mv = valueIterator.getMutableValue();
             int num = 0;
             for(;;) {
               long count = valueIterator.getNextCount();
               if (count < 0) break;
               if (count < freqmin || count > freqmax) continue;
               if (++num > limit) break;
-              fieldTerms.add(mv.toString(), (int)count); // match the numeric type of terms
+              fieldTerms.add(Utils.OBJECT_TO_STRING.apply(mv.toObject()), (int)count); // match the numeric type of terms
             }
             continue;
           }

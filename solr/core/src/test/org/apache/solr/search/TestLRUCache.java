@@ -16,7 +16,6 @@
  */
 package org.apache.solr.search;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -27,6 +26,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.junit.Test;
 
 /**
@@ -38,7 +38,7 @@ public class TestLRUCache extends SolrTestCase {
   String registry = TestUtil.randomSimpleString(random(), 2, 10);
   String scope = TestUtil.randomSimpleString(random(), 2, 10);
 
-  public void testFullAutowarm() throws IOException {
+  public void testFullAutowarm() throws Exception {
     LRUCache<Object, Object> lruCache = new LRUCache<>();
     Map<String, String> params = new HashMap<>();
     params.put("size", "100");
@@ -64,14 +64,14 @@ public class TestLRUCache extends SolrTestCase {
     lruCacheNew.close();
   }
   
-  public void testPercentageAutowarm() throws IOException {
+  public void testPercentageAutowarm() throws Exception {
       doTestPercentageAutowarm(100, 50, new int[]{51, 55, 60, 70, 80, 99, 100}, new int[]{1, 2, 3, 5, 10, 20, 30, 40, 50});
       doTestPercentageAutowarm(100, 25, new int[]{76, 80, 99, 100}, new int[]{1, 2, 3, 5, 10, 20, 30, 40, 50, 51, 55, 60, 70});
       doTestPercentageAutowarm(1000, 10, new int[]{901, 930, 950, 999, 1000}, new int[]{1, 5, 100, 200, 300, 400, 800, 899, 900});
       doTestPercentageAutowarm(10, 10, new int[]{10}, new int[]{1, 5, 9, 100, 200, 300, 400, 800, 899, 900});
   }
   
-  private void doTestPercentageAutowarm(int limit, int percentage, int[] hits, int[]misses) {
+  private void doTestPercentageAutowarm(int limit, int percentage, int[] hits, int[]misses) throws Exception {
     LRUCache<Object, Object> lruCache = new LRUCache<>();
     Map<String, String> params = new HashMap<>();
     params.put("size", String.valueOf(limit));
@@ -101,9 +101,10 @@ public class TestLRUCache extends SolrTestCase {
   }
   
   @SuppressWarnings("unchecked")
-  public void testNoAutowarm() throws IOException {
+  public void testNoAutowarm() throws Exception {
     LRUCache<Object, Object> lruCache = new LRUCache<>();
-    lruCache.initializeMetrics(metricManager, registry, "foo", scope);
+    SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
+    lruCache.initializeMetrics(solrMetricsContext, scope);
     Map<String, String> params = new HashMap<>();
     params.put("size", "100");
     params.put("initialSize", "10");
@@ -133,7 +134,8 @@ public class TestLRUCache extends SolrTestCase {
 
   public void testMaxRamSize() throws Exception {
     LRUCache<String, Accountable> accountableLRUCache = new LRUCache<>();
-    accountableLRUCache.initializeMetrics(metricManager, registry, "foo", scope);
+    SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
+    accountableLRUCache.initializeMetrics(solrMetricsContext, scope);
     Map<String, String> params = new HashMap<>();
     params.put("size", "5");
     params.put("maxRamMB", "1");
@@ -194,7 +196,8 @@ public class TestLRUCache extends SolrTestCase {
 
   public void testSetLimits() throws Exception {
     LRUCache<String, Accountable> cache = new LRUCache<>();
-    cache.initializeMetrics(metricManager, registry, "foo", scope);
+    SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
+    cache.initializeMetrics(solrMetricsContext, scope);
     Map<String, String> params = new HashMap<>();
     params.put("size", "6");
     params.put("maxRamMB", "8");
@@ -265,7 +268,8 @@ public class TestLRUCache extends SolrTestCase {
     int IDLE_TIME_SEC = 600;
     long IDLE_TIME_NS = TimeUnit.NANOSECONDS.convert(IDLE_TIME_SEC, TimeUnit.SECONDS);
     LRUCache<String, Accountable> cache = new LRUCache<>();
-    cache.initializeMetrics(metricManager, registry, "foo", scope);
+    SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
+    cache.initializeMetrics(solrMetricsContext, scope);
     Map<String, String> params = new HashMap<>();
     params.put("size", "6");
     params.put("maxIdleTime", "" + IDLE_TIME_SEC);

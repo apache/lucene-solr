@@ -116,6 +116,7 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.autoscaling.sim.NoopDistributedQueueFactory;
 import org.apache.solr.cloud.autoscaling.sim.SimCloudManager;
+import org.apache.solr.cloud.autoscaling.sim.SimScenario;
 import org.apache.solr.cloud.autoscaling.sim.SimUtils;
 import org.apache.solr.cloud.autoscaling.sim.SnapshotCloudManager;
 import org.apache.solr.common.MapWriter;
@@ -932,11 +933,16 @@ public class SolrCLI implements CLIO {
               .withLongOpt("iterations")
               .create("i"),
           OptionBuilder
-              .withDescription("Save autoscaling shapshots at each step of simulated execution.")
+              .withDescription("Save autoscaling snapshots at each step of simulated execution.")
               .withArgName("DIR")
               .withLongOpt("saveSimulated")
               .hasArg()
               .create("ss"),
+          OptionBuilder
+              .withDescription("Execute a scenario from a file (and ignore all other options).")
+              .withArgName("FILE")
+              .hasArg()
+              .create("scenario"),
           OptionBuilder
               .withDescription("Turn on all options to get all available information.")
               .create("all")
@@ -951,6 +957,15 @@ public class SolrCLI implements CLIO {
 
     protected void runImpl(CommandLine cli) throws Exception {
       raiseLogLevelUnlessVerbose(cli);
+      if (cli.hasOption("scenario")) {
+        String data = IOUtils.toString(new FileInputStream(cli.getOptionValue("scenario")), "UTF-8");
+        try (SimScenario scenario = SimScenario.load(data)) {
+          scenario.verbose = verbose;
+          scenario.console = CLIO.getOutStream();
+          scenario.run();
+        }
+        return;
+      }
       SnapshotCloudManager cloudManager;
       AutoScalingConfig config = null;
       String configFile = cli.getOptionValue("a");

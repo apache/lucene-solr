@@ -38,8 +38,8 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,10 +90,10 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
   public static final String METRIC_SCOPE = "peerSync";
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
-    syncTime = manager.timer(null, registry, "time", scope, METRIC_SCOPE);
-    syncErrors = manager.counter(null, registry, "errors", scope, METRIC_SCOPE);
-    syncSkipped = manager.counter(null, registry, "skipped", scope, METRIC_SCOPE);
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    syncTime = parentContext.timer(null, "time", scope, METRIC_SCOPE);
+    syncErrors = parentContext.counter(null, "errors", scope, METRIC_SCOPE);
+    syncSkipped = parentContext.counter(null, "skipped", scope, METRIC_SCOPE);
   }
 
   // start of peersync related debug messages.  includes the core name for correlation.

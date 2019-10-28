@@ -93,4 +93,4 @@ If you for example would like to keep your `solr.xml` in ZooKeeper to avoid havi
 bin/solr zk cp file:local/file/path/to/solr.xml zk:/solr.xml -z localhost:2181
 ----
 
-NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<setting-up-an-external-zookeeper-ensemble#updating-solr-s-include-files,instructions>>) you can omit `-z <zk host string>` from the above command.
+NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<setting-up-an-external-zookeeper-ensemble#updating-solr-include-files,instructions>>) you can omit `-z <zk host string>` from the above command.

@@ -32,17 +32,18 @@ import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.request.beans.Package;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.util.ReflectMapWriter;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -175,14 +176,19 @@ public class PackageAPI {
     @JsonProperty
     public String manifestSHA512;
 
-    public PkgVersion() {
-    }
-
     public PkgVersion(AddVersion addVersion) {
       this.version = addVersion.version;
       this.files = addVersion.files;
       this.manifest = addVersion.manifest;
       this.manifestSHA512 = addVersion.manifestSHA512; // nocommit: compute and populate here
+    }
+
+    public PkgVersion() {
+    }
+
+    public PkgVersion(Package.AddVersion addVersion) {
+      this.version = addVersion.version;
+      this.files = addVersion.files;
     }
 
 
@@ -228,9 +234,9 @@ public class PackageAPI {
 
 
     @Command(name = "add")
-    public void add(SolrQueryRequest req, SolrQueryResponse rsp, PayloadObj<AddVersion> payload) {
+    public void add(SolrQueryRequest req, SolrQueryResponse rsp, PayloadObj<Package.AddVersion> payload) {
       if (!checkEnabled(payload)) return;
-      AddVersion add = payload.get();
+      Package.AddVersion add = payload.get();
       if (add.files.isEmpty()) {
         payload.addError("No files specified");
         return;
@@ -268,9 +274,9 @@ public class PackageAPI {
     }
 
     @Command(name = "delete")
-    public void del(SolrQueryRequest req, SolrQueryResponse rsp, PayloadObj<DelVersion> payload) {
+    public void del(SolrQueryRequest req, SolrQueryResponse rsp, PayloadObj<Package.DelVersion> payload) {
       if (!checkEnabled(payload)) return;
-      DelVersion delVersion = payload.get();
+      Package.DelVersion delVersion = payload.get();
       try {
         coreContainer.getZkController().getZkClient().atomicUpdate(SOLR_PKGS_PATH, (stat, bytes) -> {
           Packages packages = null;
