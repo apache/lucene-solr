@@ -56,13 +56,10 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
-import org.apache.zookeeper.CreateMode;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.cloud.ZkConfigManager.CONFIGS_ZKNODE;
 
 /**
  * Base class for SolrCloud tests
@@ -91,12 +88,9 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   private static class Config {
     final String name;
     final Path path;
-    final Map<String, byte[]> extraConfig;
-
-    private Config(String name, Path path, Map<String, byte[]> extraConfig) {
+    private Config(String name, Path path) {
       this.name = name;
       this.path = path;
-      this.extraConfig = extraConfig;
     }
   }
 
@@ -188,12 +182,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
      * @param configPath the path to the config files
      */
     public Builder addConfig(String configName, Path configPath) {
-      this.configs.add(new Config(configName, configPath, null));
-      return this;
-    }
-
-    public Builder addConfig(String configName, Path configPath, Map<String, byte[]> extraConfig) {
-      this.configs.add(new Config(configName, configPath, extraConfig));
+      this.configs.add(new Config(configName, configPath));
       return this;
     }
 
@@ -233,15 +222,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
           null, securityJson, trackJettyMetrics);
       CloudSolrClient client = cluster.getSolrClient();
       for (Config config : configs) {
-        ((ZkClientClusterStateProvider) client.getClusterStateProvider()).uploadConfig(config.path, config.name);
-        if (config.extraConfig != null) {
-          for (Map.Entry<String, byte[]> e : config.extraConfig.entrySet()) {
-            ((ZkClientClusterStateProvider) client.getClusterStateProvider()).getZkStateReader().getZkClient()
-                .create(CONFIGS_ZKNODE + "/" + config.name + "/" + e.getKey(), e.getValue(), CreateMode.PERSISTENT, true);
-
-          }
-
-        }
+        ((ZkClientClusterStateProvider)client.getClusterStateProvider()).uploadConfig(config.path, config.name);
       }
 
       if (clusterProperties.size() > 0) {
@@ -509,7 +490,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     }
     cluster.waitForAllNodes(timeoutSeconds);
   }
-  
+
   /**
    * Gets core container by node name. From here, core can be accessed to make updates, etc.
    * @param nodeName String

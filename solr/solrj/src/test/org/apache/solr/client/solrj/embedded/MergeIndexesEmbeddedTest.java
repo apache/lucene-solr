@@ -52,7 +52,7 @@ public class MergeIndexesEmbeddedTest extends MergeIndexesExampleTestBase {
 
   @Override
   protected SolrClient getSolrAdmin() {
-    return new EmbeddedSolrServer(cores, "core0");
+    return new EmbeddedSolrServer(cores, null);
   }
 
   @Override

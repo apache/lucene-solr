@@ -70,7 +70,7 @@ public class SolrJmxReporter extends FilteringSolrMetricReporter {
   protected synchronized void doInit() {
     if (serviceUrl != null && agentId != null) {
       mBeanServer = JmxUtil.findFirstMBeanServer();
-      log.warn("No more than one of serviceUrl({}) and agentId({}) should be configured, using first MBeanServer instead of configuration.",
+      log.warn("No more than one of serviceUrl({}) and agentId({}) should be configured, using first MBeanServer {} instead of configuration.",
           serviceUrl, agentId, mBeanServer);
     } else if (serviceUrl != null) {
       // reuse existing services

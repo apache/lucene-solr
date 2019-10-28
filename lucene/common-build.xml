@@ -135,7 +135,25 @@
   <property name="tests.asserts" value="true" />
   <property name="tests.policy" location="${common.dir}/tools/junit4/tests.policy"/>
 
-  <condition property="tests.asserts.args" value="-ea -esa" else="">
+  <condition property="tests.asserts.bug.jdk8205399" value="-da:java.util.HashMap" else="">
+    <!-- LUCENE-8991 / JDK-8205399: HashMap assertion bug until java12-->
+    <and>
+      <or>
+        <contains string="${java.vm.name}" substring="hotspot" casesensitive="false"/>
+        <contains string="${java.vm.name}" substring="openjdk" casesensitive="false"/>
+        <contains string="${java.vm.name}" substring="jrockit" casesensitive="false"/>
+      </or>
+      <or>
+        <equals arg1="${java.specification.version}" arg2="1.8"/>
+        <equals arg1="${java.specification.version}" arg2="9"/>
+        <equals arg1="${java.specification.version}" arg2="10"/>
+        <equals arg1="${java.specification.version}" arg2="11"/>
+      </or>
+      <isfalse value="${tests.asserts.hashmap}" />
+    </and>
+  </condition>
+  
+  <condition property="tests.asserts.args" value="-ea -esa ${tests.asserts.bug.jdk8205399}" else="">
     <istrue value="${tests.asserts}"/>
   </condition>
 

@@ -233,10 +233,9 @@ public final class FieldTypePluginLoader
           schema.getDefaultLuceneMatchVersion() :
           SolrConfig.parseLuceneVersionString(matchVersionStr);
         if (luceneMatchVersion == null) {
-          throw new SolrException
-            ( SolrException.ErrorCode.SERVER_ERROR,
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
               "Configuration Error: Analyzer '" + clazz.getName() +
-              "' needs a 'luceneMatchVersion' parameter");
+                  "' needs a '" + IndexSchema.LUCENE_MATCH_VERSION_PARAM + "' parameter");
         }
         analyzer.setVersion(luceneMatchVersion);
         return analyzer;

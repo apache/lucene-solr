@@ -18,23 +18,22 @@ package org.apache.solr.search;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 
 import com.codahale.metrics.MetricRegistry;
-import com.google.common.collect.ImmutableList;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -58,6 +57,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
     LongAdder inserts = new LongAdder();
     LongAdder evictions = new LongAdder();
     LongAdder evictionsRamUsage = new LongAdder();
+    LongAdder evictionsIdleTime = new LongAdder();
   }
 
   private CumulativeStats stats;
@@ -69,20 +69,47 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
   private long inserts;
   private long evictions;
   private long evictionsRamUsage;
+  private long evictionsIdleTime;
 
   private long warmupTime = 0;
 
-  private Map<K,V> map;
+  private Map<K, CacheValue<V>> map;
   private String description="LRU Cache";
   private MetricsMap cacheMap;
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
+  private MetricRegistry registry;
   private int maxSize;
   private int initialSize;
 
   private long maxRamBytes = Long.MAX_VALUE;
+  private long maxIdleTimeNs;
+  private final TimeSource timeSource = TimeSource.NANO_TIME;
+  private long oldestEntry = 0L;
+  // for unit testing
+  private boolean syntheticEntries = false;
+
   // The synchronization used for the map will be used to update this,
   // hence not an AtomicLong
-  private long ramBytesUsed = 0;
+  private long ramBytesUsed = 0L;
+
+  public static final class CacheValue<V> implements Accountable {
+    public static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(CacheValue.class);
+    final long ramBytesUsed;
+    public final long createTime;
+    public final V value;
+
+    public CacheValue(V value, long createTime) {
+      this.value = value;
+      this.createTime = createTime;
+      ramBytesUsed = BASE_RAM_BYTES_USED +
+          RamUsageEstimator.sizeOfObject(value, QUERY_DEFAULT_RAM_BYTES_USED);
+    }
+
+    @Override
+    public long ramBytesUsed() {
+      return ramBytesUsed;
+    }
+  }
 
   @Override
   public Object init(Map args, Object persistence, CacheRegenerator regenerator) {
@@ -93,15 +120,63 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
     initialSize = Math.min(str==null ? 1024 : Integer.parseInt(str), maxSize);
     str = (String) args.get(MAX_RAM_MB_PARAM);
     this.maxRamBytes = str == null ? Long.MAX_VALUE : (long) (Double.parseDouble(str) * 1024L * 1024L);
+    str = (String) args.get(MAX_IDLE_TIME_PARAM);
+    if (str == null) {
+      maxIdleTimeNs = Long.MAX_VALUE;
+    } else {
+      int maxIdleTime = Integer.parseInt(str);
+      if (maxIdleTime > 0) {
+        maxIdleTimeNs = TimeUnit.NANOSECONDS.convert(Integer.parseInt(str), TimeUnit.SECONDS);
+      } else {
+        maxIdleTimeNs = Long.MAX_VALUE;
+      }
+    }
     description = generateDescription();
 
-    map = new LinkedHashMap<K,V>(initialSize, 0.75f, true) {
+    map = new LinkedHashMap<K, CacheValue<V>>(initialSize, 0.75f, true) {
         @Override
         protected boolean removeEldestEntry(Map.Entry eldest) {
+          // remove items older than maxIdleTimeNs
+          if (maxIdleTimeNs != Long.MAX_VALUE) {
+            long idleCutoff = timeSource.getEpochTimeNs() - maxIdleTimeNs;
+            if (oldestEntry < idleCutoff) {
+              long currentOldestEntry = Long.MAX_VALUE;
+              Iterator<Map.Entry<K, CacheValue<V>>> iterator = entrySet().iterator();
+              while (iterator.hasNext()) {
+                Map.Entry<K, CacheValue<V>> entry = iterator.next();
+                if (entry.getValue().createTime < idleCutoff) {
+                  long bytesToDecrement = RamUsageEstimator.sizeOfObject(entry.getKey(), QUERY_DEFAULT_RAM_BYTES_USED);
+                  bytesToDecrement += RamUsageEstimator.sizeOfObject(entry.getValue(), QUERY_DEFAULT_RAM_BYTES_USED);
+                  bytesToDecrement += LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY;
+                  ramBytesUsed -= bytesToDecrement;
+                  iterator.remove();
+                  evictions++;
+                  evictionsIdleTime++;
+                  stats.evictionsIdleTime.increment();
+                  stats.evictions.increment();
+                } else {
+                  if (syntheticEntries) {
+                    // no guarantee on the actual create time - make a full sweep
+                    if (currentOldestEntry > entry.getValue().createTime) {
+                      currentOldestEntry = entry.getValue().createTime;
+                    }
+                  } else {
+                    // iterator is sorted by insertion order (and time)
+                    // so we can quickly terminate the sweep
+                    currentOldestEntry = entry.getValue().createTime;
+                    break;
+                  }
+                }
+              }
+              if (currentOldestEntry != Long.MAX_VALUE) {
+                oldestEntry = currentOldestEntry;
+              }
+            }
+          }
           if (ramBytesUsed > getMaxRamBytes()) {
-            Iterator<Map.Entry<K, V>> iterator = entrySet().iterator();
+            Iterator<Map.Entry<K, CacheValue<V>>> iterator = entrySet().iterator();
             do {
-              Map.Entry<K, V> entry = iterator.next();
+              Map.Entry<K, CacheValue<V>> entry = iterator.next();
               long bytesToDecrement = RamUsageEstimator.sizeOfObject(entry.getKey(), QUERY_DEFAULT_RAM_BYTES_USED);
               bytesToDecrement += RamUsageEstimator.sizeOfObject(entry.getValue(), QUERY_DEFAULT_RAM_BYTES_USED);
               bytesToDecrement += LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY;
@@ -112,13 +187,10 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
               stats.evictions.increment();
               stats.evictionsRamUsage.increment();
             } while (iterator.hasNext() && ramBytesUsed > getMaxRamBytes());
-            // must return false according to javadocs of removeEldestEntry if we're modifying
-            // the map ourselves
-            return false;
           } else if (size() > getMaxSize()) {
-            Iterator<Map.Entry<K, V>> iterator = entrySet().iterator();
+            Iterator<Map.Entry<K, CacheValue<V>>> iterator = entrySet().iterator();
             do {
-              Map.Entry<K, V> entry = iterator.next();
+              Map.Entry<K, CacheValue<V>> entry = iterator.next();
               long bytesToDecrement = RamUsageEstimator.sizeOfObject(entry.getKey(), QUERY_DEFAULT_RAM_BYTES_USED);
               bytesToDecrement += RamUsageEstimator.sizeOfObject(entry.getValue(), QUERY_DEFAULT_RAM_BYTES_USED);
               bytesToDecrement += LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY;
@@ -130,11 +202,9 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
               evictions++;
               stats.evictions.increment();
             } while (iterator.hasNext() && size() > getMaxSize());
-            // must return false according to javadocs of removeEldestEntry if we're modifying
-            // the map ourselves
-            return false;
           }
-          // neither size nor RAM exceeded - ok to keep the entry
+          // must return false according to javadocs of removeEldestEntry if we're modifying
+          // the map ourselves
           return false;
         }
       };
@@ -149,13 +219,23 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
     return persistence;
   }
 
+  /**
+   * Visible for testing. This flag tells the eviction code that (unlike with real entries)
+   * there's no guarantee on the order of entries being inserted with monotonically ascending creation
+   * time. Setting this to true causes a full sweep when looking for entries to evict.
+   * @lucene.internal
+   */
+  public void setSyntheticEntries(boolean syntheticEntries) {
+    this.syntheticEntries = syntheticEntries;
+  }
+
   public long getMaxRamBytes() {
     return maxRamBytes;
   }
 
   /**
-   *
-   * @return Returns the description of this cache.
+   * 
+   * @return Returns the description of this cache. 
    */
   private String generateDescription() {
     String description = "LRU Cache(maxSize=" + getMaxSize() + ", initialSize=" + initialSize;
@@ -164,6 +244,9 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
     }
     if (getMaxRamBytes() != Long.MAX_VALUE)  {
       description += ", maxRamMB=" + (getMaxRamBytes() / 1024L / 1024L);
+    }
+    if (maxIdleTimeNs != Long.MAX_VALUE) {
+      description += ", " + MAX_IDLE_TIME_PARAM + "=" + TimeUnit.SECONDS.convert(maxIdleTimeNs, TimeUnit.NANOSECONDS);
     }
     description += ')';
     return description;
@@ -181,9 +264,24 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
     if (maxSize == Integer.MAX_VALUE && maxRamBytes == Long.MAX_VALUE) {
       throw new IllegalStateException("Cache: " + getName() + " has neither size nor RAM limit!");
     }
+    CacheValue<V> cacheValue = new CacheValue<>(value, timeSource.getEpochTimeNs());
+    return putCacheValue(key, cacheValue);
+  }
+
+  /**
+   * Visible for testing to create synthetic cache entries.
+   * @lucene.internal
+   */
+  public V putCacheValue(K key, CacheValue<V> cacheValue) {
     synchronized (map) {
       if (getState() == State.LIVE) {
         stats.inserts.increment();
+      }
+
+      if (syntheticEntries) {
+        if (cacheValue.createTime < oldestEntry) {
+          oldestEntry = cacheValue.createTime;
+        }
       }
 
       // increment local inserts regardless of state???
@@ -192,9 +290,9 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
 
       // important to calc and add new ram bytes first so that removeEldestEntry can compare correctly
       long keySize = RamUsageEstimator.sizeOfObject(key, QUERY_DEFAULT_RAM_BYTES_USED);
-      long valueSize = RamUsageEstimator.sizeOfObject(value, QUERY_DEFAULT_RAM_BYTES_USED);
+      long valueSize = RamUsageEstimator.sizeOfObject(cacheValue, QUERY_DEFAULT_RAM_BYTES_USED);
       ramBytesUsed += keySize + valueSize + LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY;
-      V old = map.put(key, value);
+      CacheValue<V> old = map.put(key, cacheValue);
       if (old != null) {
         long bytesToDecrement = RamUsageEstimator.sizeOfObject(old, QUERY_DEFAULT_RAM_BYTES_USED);
         // the key existed in the map but we added its size before the put, so let's back out
@@ -202,14 +300,14 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
         bytesToDecrement += RamUsageEstimator.sizeOfObject(key, QUERY_DEFAULT_RAM_BYTES_USED);
         ramBytesUsed -= bytesToDecrement;
       }
-      return old;
+      return old == null ? null : old.value;
     }
   }
 
   @Override
   public V get(K key) {
     synchronized (map) {
-      V val = map.get(key);
+      CacheValue<V> val = map.get(key);
       if (getState() == State.LIVE) {
         // only increment lookups and hits if we are live.
         lookups++;
@@ -219,7 +317,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
           stats.hits.increment();
         }
       }
-      return val;
+      return val == null ? null : val.value;
     }
   }
 
@@ -243,13 +341,13 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
 
       // Don't do the autowarming in the synchronized block, just pull out the keys and values.
       synchronized (other.map) {
-
+        
         int sz = autowarm.getWarmCount(other.map.size());
-
+        
         keys = new Object[sz];
         vals = new Object[sz];
 
-        Iterator<Map.Entry<K, V>> iter = other.map.entrySet().iterator();
+        Iterator<Map.Entry<K, CacheValue<V>>> iter = other.map.entrySet().iterator();
 
         // iteration goes from oldest (least recently used) to most recently used,
         // so we need to skip over the oldest entries.
@@ -258,9 +356,9 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
 
 
         for (int i=0; i<sz; i++) {
-          Map.Entry<K,V> entry = iter.next();
+          Map.Entry<K, CacheValue<V>> entry = iter.next();
           keys[i]=entry.getKey();
-          vals[i]=entry.getValue();
+          vals[i]=entry.getValue().value;
         }
       }
 
@@ -282,8 +380,9 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
 
   @Override
   public void close() {
-    if(solrMetrics != null) solrMetrics.unregister();
+
   }
+
 
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
@@ -303,16 +402,9 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
     return metricNames;
   }
 
-  SolrMetrics solrMetrics;
-
   @Override
-  public SolrMetrics getMetrics() {
-    return solrMetrics;
-  }
-
-  @Override
-  public void initializeMetrics(SolrMetrics m) {
-    solrMetrics = m.getChildInfo(this);
+  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
+    registry = manager.registry(registryName);
     cacheMap = new MetricsMap((detailed, res) -> {
       synchronized (map) {
         res.put(LOOKUPS_PARAM, lookups);
@@ -324,7 +416,10 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
         res.put(RAM_BYTES_USED_PARAM, ramBytesUsed());
         res.put(MAX_RAM_MB_PARAM, getMaxRamMB());
         res.put(MAX_SIZE_PARAM, maxSize);
+        res.put(MAX_IDLE_TIME_PARAM, maxIdleTimeNs != Long.MAX_VALUE ?
+            TimeUnit.SECONDS.convert(maxIdleTimeNs, TimeUnit.NANOSECONDS) : -1);
         res.put("evictionsRamUsage", evictionsRamUsage);
+        res.put("evictionsIdleTime", evictionsIdleTime);
       }
       res.put("warmupTime", warmupTime);
 
@@ -336,9 +431,9 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
       res.put("cumulative_inserts", stats.inserts.longValue());
       res.put("cumulative_evictions", stats.evictions.longValue());
       res.put("cumulative_evictionsRamUsage", stats.evictionsRamUsage.longValue());
+      res.put("cumulative_evictionsIdleTime", stats.evictionsIdleTime.longValue());
     });
-    String metricName = SolrMetricManager.makeName(ImmutableList.of(getCategory().toString()), solrMetrics.scope);
-    solrMetrics.gauge(this, cacheMap, true, metricName);
+    manager.registerGauge(this, registryName, cacheMap, tag, true, scope, getCategory().toString());
   }
 
   // for unit tests only
@@ -348,7 +443,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
 
   @Override
   public MetricRegistry getMetricRegistry() {
-    return solrMetrics ==null ?null: solrMetrics.getRegistry();
+    return registry;
   }
 
   @Override

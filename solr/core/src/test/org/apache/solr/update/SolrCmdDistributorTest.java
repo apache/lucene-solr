@@ -16,6 +16,7 @@
  */
 package org.apache.solr.update;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.net.SocketException;
@@ -23,6 +24,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.xml.parsers.ParserConfigurationException;
 import org.apache.solr.BaseDistributedSearchTestCase;
@@ -353,6 +355,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     testDeletes(false, false);
     testDeletes(true, true);
     testDeletes(true, false);
+    getRfFromResponseShouldNotCloseTheInputStream();
   }
   
   private void testDeletes(boolean dbq, boolean withFailures) throws Exception {
@@ -530,6 +533,22 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     dbqReq.deleteByQuery("*:*");
     SolrCmdDistributor.Req req = new SolrCmdDistributor.Req(null, new StdNode(null, "collection1", "shard1", 1), dbqReq, true);
     assertFalse(req.shouldRetry(err));
+  }
+
+  public void getRfFromResponseShouldNotCloseTheInputStream() {
+    UpdateRequest dbqReq = new UpdateRequest();
+    dbqReq.deleteByQuery("*:*");
+    SolrCmdDistributor.Req req = new SolrCmdDistributor.Req(null, new StdNode(null, "collection1", "shard1", 1), dbqReq, true);
+    AtomicBoolean isClosed = new AtomicBoolean(false);
+    ByteArrayInputStream is = new ByteArrayInputStream(new byte[100]) {
+      @Override
+      public void close() throws IOException {
+        isClosed.set(true);
+        super.close();
+      }
+    };
+    req.trackRequestResult(null, is, true);
+    assertFalse("Underlying stream should not be closed!", isClosed.get());
   }
   
   private void testReqShouldRetryMaxRetries() {

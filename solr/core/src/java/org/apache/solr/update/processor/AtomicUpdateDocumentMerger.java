@@ -195,8 +195,9 @@ public class AtomicUpdateDocumentMerger {
       }
       // else it's a atomic update map...
       Map<String, Object> fieldValueMap = (Map<String, Object>)fieldValue;
-      for (String op : fieldValueMap.keySet()) {
-        Object obj = fieldValueMap.get(op);
+      for (Entry<String, Object> entry : fieldValueMap.entrySet()) {
+        String op = entry.getKey();
+        Object obj = entry.getValue();
         if (!op.equals("set") && !op.equals("inc")) {
           // not a supported in-place update op
           return Collections.emptySet();
@@ -540,9 +541,9 @@ public class AtomicUpdateDocumentMerger {
   private Collection<Pattern> preparePatterns(Object fieldVal) {
     final Collection<Pattern> patterns = new LinkedHashSet<>(1);
     if (fieldVal instanceof Collection) {
-      Collection<String> patternVals = (Collection<String>) fieldVal;
-      for (String patternVal : patternVals) {
-        patterns.add(Pattern.compile(patternVal));
+      Collection<Object> patternVals = (Collection<Object>) fieldVal;
+      for (Object patternVal : patternVals) {
+        patterns.add(Pattern.compile(patternVal.toString()));
       }
     } else {
       patterns.add(Pattern.compile(fieldVal.toString()));

@@ -195,7 +195,7 @@ public class TestCryptoKeys extends AbstractFullDistribZkTestBase {
   }
 
 
-  public static byte[] readFile(String fname) throws IOException {
+  private byte[] readFile(String fname) throws IOException {
     byte[] buf = null;
     try (FileInputStream fis = new FileInputStream(getFile(fname))) {
       buf = new byte[fis.available()];

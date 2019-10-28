@@ -234,9 +234,10 @@ public final class SynonymQuery extends Query {
       long totalTermFreq = 0;
       termStates = new TermStates[terms.length];
       for (int i = 0; i < termStates.length; i++) {
-        termStates[i] = TermStates.build(searcher.getTopReaderContext(), terms[i].term, true);
-        TermStatistics termStats = searcher.termStatistics(terms[i].term, termStates[i]);
-        if (termStats != null) {
+        TermStates ts =  TermStates.build(searcher.getTopReaderContext(), terms[i].term, true);
+        termStates[i] = ts;
+        if (ts.docFreq() > 0) {
+          TermStatistics termStats = searcher.termStatistics(terms[i].term, ts.docFreq(), ts.totalTermFreq());
           docFreq = Math.max(termStats.docFreq(), docFreq);
           totalTermFreq += termStats.totalTermFreq();
         }

@@ -24,6 +24,7 @@ import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
+import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
 import java.util.AbstractMap;
@@ -32,6 +33,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -49,6 +51,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.RequiredSolrParams;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.RoutedAliasUpdateProcessor;
 import org.apache.solr.util.DateMathParser;
@@ -357,7 +360,31 @@ public class TimeRoutedAlias extends RoutedAlias {
     // Although this is also checked later, we need to check it here too to handle the case in Dimensional Routed
     // aliases where one can legally have zero collections for a newly encountered category and thus the loop later
     // can't catch this.
-    Instant startTime = parseRouteKey(start);
+
+    // SOLR-13760 - we need to fix the date math to a specific instant when the first document arrives.
+    // If we don't do this DRA's with a time dimension have variable start times across the other dimensions
+    // and logic gets much to complicated, and depends too much on queries to zookeeper. This keeps life simpler.
+    // I have to admit I'm not terribly fond of the mutation during a validate method however.
+    Instant startTime;
+    try {
+      startTime = Instant.parse(start);
+    } catch (DateTimeParseException e) {
+      startTime = DateMathParser.parseMath(new Date(), start).toInstant();
+      SolrCore core = cmd.getReq().getCore();
+      ZkStateReader zkStateReader = core.getCoreContainer().getZkController().zkStateReader;
+      Aliases aliases = zkStateReader.getAliases();
+      Map<String, String> props = new HashMap<>(aliases.getCollectionAliasProperties(aliasName));
+      start = DateTimeFormatter.ISO_INSTANT.format(startTime);
+      props.put(ROUTER_START, start);
+
+      // This could race, but it only occurs when the alias is first used and the values produced
+      // should all be identical and who wins won't matter (baring cases of Date Math involving seconds,
+      // which is pretty far fetched). Putting this in a separate thread to ensure that any failed
+      // races don't cause documents to get rejected.
+      core.runAsync(() -> zkStateReader.aliasesManager.applyModificationAndExportToZk(
+          (a) -> aliases.cloneWithCollectionAliasProperties(aliasName, props)));
+
+    }
     if (docTimestamp.isBefore(startTime)) {
       throw new SolrException(BAD_REQUEST, "The document couldn't be routed because " + docTimestamp +
           " is before the start time for this alias " +start+")");

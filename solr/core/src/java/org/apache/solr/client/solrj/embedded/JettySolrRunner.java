@@ -490,10 +490,10 @@ public class JettySolrRunner {
     Map<String, String> prevContext = MDC.getCopyOfContextMap();
     MDC.clear();
 
-    log.info("Start Jetty (original configured port={})", this.config.port);
-
     try {
       int port = reusePort && jettyPort != -1 ? jettyPort : this.config.port;
+      log.info("Start Jetty (configured port={}, binding port={})", this.config.port, port);
+
 
       // if started before, make a new server
       if (startedBefore) {

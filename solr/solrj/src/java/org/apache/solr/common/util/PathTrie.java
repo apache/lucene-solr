@@ -26,24 +26,25 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.Collections.emptyList;
 
-/**A utility class to efficiently parse/store/lookup hierarchical paths which are templatized
+/**
+ * A utility class to efficiently parse/store/lookup hierarchical paths which are templatized
  * like /collections/{collection}/shards/{shard}/{replica}
  */
 public class PathTrie<T> {
   private final Set<String> reserved = new HashSet<>();
   Node root = new Node(emptyList(), null);
 
-  public PathTrie() { }
+  public PathTrie() {
+  }
 
   public PathTrie(Set<String> reserved) {
     this.reserved.addAll(reserved);
   }
 
 
-
   public void insert(String path, Map<String, String> replacements, T o) {
     List<String> parts = getPathSegments(path);
-    insert(parts,replacements, o);
+    insert(parts, replacements, o);
   }
 
   public void insert(List<String> parts, Map<String, String> replacements, T o) {
@@ -122,6 +123,9 @@ public class PathTrie<T> {
     private synchronized void insert(List<String> path, T o) {
       String part = path.get(0);
       Node matchedChild = null;
+      if ("*".equals(name)) {
+        return;
+      }
       if (children == null) children = new ConcurrentHashMap<>();
 
       String varName = templateName(part);
@@ -169,9 +173,8 @@ public class PathTrie<T> {
     }
 
     /**
-     *
-     * @param pathSegments pieces in the url /a/b/c has pieces as 'a' , 'b' , 'c'
-     * @param index current index of the pieces that we are looking at in /a/b/c 0='a' and 1='b'
+     * @param pathSegments      pieces in the url /a/b/c has pieces as 'a' , 'b' , 'c'
+     * @param index             current index of the pieces that we are looking at in /a/b/c 0='a' and 1='b'
      * @param templateVariables The mapping of template variable to its value
      * @param availableSubPaths If not null , available sub paths will be returned in this set
      */
@@ -179,13 +182,36 @@ public class PathTrie<T> {
       if (templateName != null) templateVariables.put(templateName, pathSegments.get(index - 1));
       if (pathSegments.size() < index + 1) {
         findAvailableChildren("", availableSubPaths);
+        if (obj == null) {//this is not a leaf node
+          Node n = children.get("*");
+          if (n != null) {
+            return n.obj;
+          }
+
+        }
         return obj;
       }
       String piece = pathSegments.get(index);
-      if (children == null) return null;
+      if (children == null) {
+        return null;
+      }
       Node n = children.get(piece);
       if (n == null && !reserved.contains(piece)) n = children.get("");
-      if (n == null) return null;
+      if (n == null) {
+        n = children.get("*");
+        if (n != null) {
+          StringBuffer sb = new StringBuffer();
+          for (int i = index; i < pathSegments.size(); i++) {
+            sb.append("/").append(pathSegments.get(i));
+          }
+          templateVariables.put("*", sb.toString());
+          return n.obj;
+
+        }
+      }
+      if (n == null) {
+        return null;
+      }
       return n.lookup(pathSegments, index + 1, templateVariables, availableSubPaths);
     }
   }

@@ -18,6 +18,7 @@ package org.apache.lucene.search;
 
 
 import java.io.IOException;
+import java.util.Collection;
 
 import org.apache.lucene.index.LeafReaderContext;
 
@@ -48,8 +49,8 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
 
   private static class SimpleTopScoreDocCollector extends TopScoreDocCollector {
 
-    SimpleTopScoreDocCollector(int numHits, int totalHitsThreshold) {
-      super(numHits, totalHitsThreshold);
+    SimpleTopScoreDocCollector(int numHits, HitsThresholdChecker hitsThresholdChecker) {
+      super(numHits, hitsThresholdChecker);
     }
 
     @Override
@@ -71,8 +72,10 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
           assert score >= 0; // NOTE: false for NaN
 
           totalHits++;
+          hitsThresholdChecker.incrementHitCount();
+
           if (score <= pqTop.score) {
-            if (totalHitsRelation == TotalHits.Relation.EQUAL_TO && totalHits > totalHitsThreshold) {
+            if (totalHitsRelation == TotalHits.Relation.EQUAL_TO && hitsThresholdChecker.isThresholdReached()) {
               // we just reached totalHitsThreshold, we can start setting the min
               // competitive score now
               updateMinCompetitiveScore(scorer);
@@ -97,8 +100,8 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
     private final ScoreDoc after;
     private int collectedHits;
 
-    PagingTopScoreDocCollector(int numHits, ScoreDoc after, int totalHitsThreshold) {
-      super(numHits, totalHitsThreshold);
+    PagingTopScoreDocCollector(int numHits, ScoreDoc after, HitsThresholdChecker hitsThresholdChecker) {
+      super(numHits, hitsThresholdChecker);
       this.after = after;
       this.collectedHits = 0;
     }
@@ -130,10 +133,11 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
           assert score >= 0; // NOTE: false for NaN
 
           totalHits++;
+          hitsThresholdChecker.incrementHitCount();
 
           if (score > after.score || (score == after.score && doc <= afterDoc)) {
             // hit was collected on a previous page
-            if (totalHitsRelation == TotalHits.Relation.EQUAL_TO && totalHits > totalHitsThreshold) {
+            if (totalHitsRelation == TotalHits.Relation.EQUAL_TO && hitsThresholdChecker.isThresholdReached()) {
               // we just reached totalHitsThreshold, we can start setting the min
               // competitive score now
               updateMinCompetitiveScore(scorer);
@@ -191,32 +195,65 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
    * objects.
    */
   public static TopScoreDocCollector create(int numHits, ScoreDoc after, int totalHitsThreshold) {
+    return create(numHits, after, HitsThresholdChecker.create(totalHitsThreshold));
+  }
+
+  static TopScoreDocCollector create(int numHits, ScoreDoc after, HitsThresholdChecker hitsThresholdChecker) {
 
     if (numHits <= 0) {
       throw new IllegalArgumentException("numHits must be > 0; please use TotalHitCountCollector if you just need the total hit count");
     }
 
-    if (totalHitsThreshold < 0) {
-      throw new IllegalArgumentException("totalHitsThreshold must be >= 0, got " + totalHitsThreshold);
+    if (hitsThresholdChecker == null) {
+      throw new IllegalArgumentException("hitsThresholdChecker must be non null");
     }
 
     if (after == null) {
-      return new SimpleTopScoreDocCollector(numHits, totalHitsThreshold);
+      return new SimpleTopScoreDocCollector(numHits, hitsThresholdChecker);
     } else {
-      return new PagingTopScoreDocCollector(numHits, after, totalHitsThreshold);
+      return new PagingTopScoreDocCollector(numHits, after, hitsThresholdChecker);
     }
   }
 
-  final int totalHitsThreshold;
+  /**
+   * Create a CollectorManager which uses a shared hit counter to maintain number of hits
+   */
+  public static CollectorManager<TopScoreDocCollector, TopDocs> createSharedManager(int numHits, FieldDoc after,
+                                                                                      int totalHitsThreshold) {
+    return new CollectorManager<TopScoreDocCollector, TopDocs>() {
+
+      private final HitsThresholdChecker hitsThresholdChecker = HitsThresholdChecker.createShared(totalHitsThreshold);
+
+      @Override
+      public TopScoreDocCollector newCollector() throws IOException {
+        return TopScoreDocCollector.create(numHits, after, hitsThresholdChecker);
+      }
+
+      @Override
+      public TopDocs reduce(Collection<TopScoreDocCollector> collectors) throws IOException {
+        final TopDocs[] topDocs = new TopDocs[collectors.size()];
+        int i = 0;
+        for (TopScoreDocCollector collector : collectors) {
+          topDocs[i++] = collector.topDocs();
+        }
+        return TopDocs.merge(numHits, topDocs);
+      }
+
+    };
+  }
+
   ScoreDoc pqTop;
+  final HitsThresholdChecker hitsThresholdChecker;
 
   // prevents instantiation
-  TopScoreDocCollector(int numHits, int totalHitsThreshold) {
+  TopScoreDocCollector(int numHits, HitsThresholdChecker hitsThresholdChecker) {
     super(new HitQueue(numHits, true));
-    this.totalHitsThreshold = totalHitsThreshold;
+    assert hitsThresholdChecker != null;
+
     // HitQueue implements getSentinelObject to return a ScoreDoc, so we know
     // that at this point top() is already initialized.
     pqTop = pq.top();
+    this.hitsThresholdChecker = hitsThresholdChecker;
   }
 
   @Override
@@ -230,11 +267,11 @@ public abstract class TopScoreDocCollector extends TopDocsCollector<ScoreDoc> {
 
   @Override
   public ScoreMode scoreMode() {
-    return totalHitsThreshold == Integer.MAX_VALUE ? ScoreMode.COMPLETE : ScoreMode.TOP_SCORES;
+    return hitsThresholdChecker.scoreMode();
   }
 
   protected void updateMinCompetitiveScore(Scorable scorer) throws IOException {
-    if (totalHits > totalHitsThreshold
+    if (hitsThresholdChecker.isThresholdReached()
           && pqTop != null
           && pqTop.score != Float.NEGATIVE_INFINITY) { // -Infinity is the score of sentinels
       // since we tie-break on doc id and collect in doc id order, we can require

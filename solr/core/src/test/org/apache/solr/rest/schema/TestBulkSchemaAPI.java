@@ -20,6 +20,7 @@ import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -32,9 +33,12 @@ import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.DFISimilarity;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SimilarityFactory;
 import org.apache.solr.search.similarities.SchemaSimilarityFactory;
 import org.apache.solr.util.RESTfulServerProvider;
@@ -42,6 +46,7 @@ import org.apache.solr.util.RestTestBase;
 import org.apache.solr.util.RestTestHarness;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -188,7 +193,7 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertNotNull(map);
     Map analyzer = (Map)map.get("analyzer");
     assertEquals("org.apache.lucene.analysis.core.WhitespaceAnalyzer", String.valueOf(analyzer.get("class")));
-    assertEquals("5.0.0", String.valueOf(analyzer.get("luceneMatchVersion")));
+    assertEquals("5.0.0", String.valueOf(analyzer.get(IndexSchema.LUCENE_MATCH_VERSION_PARAM)));
   }
 
   public void testAddFieldMatchingExistingDynamicField() throws Exception {
@@ -896,6 +901,24 @@ public class TestBulkSchemaAPI extends RestTestBase {
       assertEquals("1", docs.get(2).getFieldValue("id"));
     }
     
+  }
+  
+  @Test
+  public void testAddNewFieldAndQuery() throws Exception {
+    getSolrClient().add(Arrays.asList(
+        sdoc("id", "1", "term_s", "tux")));
+
+    getSolrClient().commit(true, true);
+    Map<String,Object> attrs = new HashMap<>();
+    attrs.put("name", "newstringtestfield");
+    attrs.put("type", "string");
+
+    new SchemaRequest.AddField(attrs).process(getSolrClient());
+
+    SolrQuery query = new SolrQuery("*:*");
+    query.addFacetField("newstringtestfield");
+    int size = getSolrClient().query(query).getResults().size();
+    assertEquals(1, size);
   }
   
   public void testSimilarityParser() throws Exception {

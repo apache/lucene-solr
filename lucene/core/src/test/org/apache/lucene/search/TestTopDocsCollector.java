@@ -19,6 +19,10 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
@@ -29,6 +33,7 @@ import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.NamedThreadFactory;
 
 public class TestTopDocsCollector extends LuceneTestCase {
 
@@ -94,6 +99,31 @@ public class TestTopDocsCollector extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(reader);
     TopDocsCollector<ScoreDoc> tdc = new MyTopsDocCollector(numResults);
     searcher.search(q, tdc);
+    return tdc;
+  }
+
+  private TopDocsCollector<ScoreDoc> doSearchWithThreshold(int numResults, int thresHold) throws IOException {
+    Query q = new MatchAllDocsQuery();
+    IndexSearcher searcher = newSearcher(reader);
+    TopDocsCollector<ScoreDoc> tdc = TopScoreDocCollector.create(numResults, thresHold);
+    searcher.search(q, tdc);
+    return tdc;
+  }
+
+  private TopDocs doConcurrentSearchWithThreshold(int numResults, int thresHold) throws IOException {
+    Query q = new MatchAllDocsQuery();
+    ExecutorService service = new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS,
+        new LinkedBlockingQueue<Runnable>(),
+        new NamedThreadFactory("TestTopDocsCollector"));
+    IndexSearcher searcher = new IndexSearcher(reader, service);
+
+    CollectorManager collectorManager = TopScoreDocCollector.createSharedManager(numResults,
+        null, Integer.MAX_VALUE);
+
+    TopDocs tdc = (TopDocs) searcher.search(q, collectorManager);
+
+    service.shutdown();
+
     return tdc;
   }
   
@@ -269,6 +299,29 @@ public class TestTopDocsCollector extends LuceneTestCase {
     scorer.score = 3;
     leafCollector.collect(1);
     assertEquals(Math.nextUp(3f), scorer.minCompetitiveScore, 0f);
+
+    reader.close();
+    dir.close();
+  }
+
+  public void testSharedCountCollectorManager() throws Exception {
+    Query q = new MatchAllDocsQuery();
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE));
+    Document doc = new Document();
+    w.addDocuments(Arrays.asList(doc, doc, doc, doc));
+    w.flush();
+    w.addDocuments(Arrays.asList(doc, doc));
+    w.flush();
+    IndexReader reader = DirectoryReader.open(w);
+    assertEquals(2, reader.leaves().size());
+    w.close();
+
+    TopDocsCollector collector = doSearchWithThreshold(5, 10);
+    TopDocs tdc = doConcurrentSearchWithThreshold(5, 10);
+    TopDocs tdc2 = collector.topDocs();
+
+    CheckHits.checkEqual(q, tdc.scoreDocs, tdc2.scoreDocs);
 
     reader.close();
     dir.close();

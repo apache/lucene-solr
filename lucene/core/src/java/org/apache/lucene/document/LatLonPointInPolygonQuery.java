@@ -191,7 +191,7 @@ final class LatLonPointInPolygonQuery extends Query {
           public long cost() {
             if (cost == -1) {
                // Computing the cost may be expensive, so only do it if necessary
-              cost = values.estimatePointCount(visitor);
+              cost = values.estimateDocCount(visitor);
               assert cost >= 0;
             }
             return cost;

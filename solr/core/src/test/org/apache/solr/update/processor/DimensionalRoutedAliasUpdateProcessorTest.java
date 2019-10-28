@@ -686,7 +686,8 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
       final Object errors = resp.getResponseHeader().get("errors"); // Tolerant URP
       assertTrue(errors != null && errors.toString().contains(errorMsg));
     } catch (SolrException e) {
-      assertTrue(e.getMessage().contains(errorMsg));
+      String message = e.getMessage();
+      assertTrue("expected message to contain" + errorMsg + " but message was " + message , message.contains(errorMsg));
     }
     numDocsDeletedOrFailed++;
   }
