@@ -59,6 +59,7 @@ public class PackageTool extends SolrCLI.ToolBase {
   }
 
   public static String solrUrl = null;
+  public static String solrBaseUrl = null;
 
   public SolrPackageManager packageManager;
   public SolrUpdateManager updateManager;
@@ -69,7 +70,7 @@ public class PackageTool extends SolrCLI.ToolBase {
     Configurator.setRootLevel(Level.INFO);
 
     solrUrl = cli.getOptionValues("solrUrl")[cli.getOptionValues("solrUrl").length-1];
-    String solrBaseUrl = solrUrl.replaceAll("\\/solr$", ""); // strip out ending "/solr"
+    solrBaseUrl = solrUrl.replaceAll("\\/solr$", ""); // strip out ending "/solr"
     System.out.println("solr url: "+solrUrl+", solr base url: "+solrBaseUrl);
 
     String zkHost = getZkHost(cli);
@@ -241,7 +242,7 @@ public class PackageTool extends SolrCLI.ToolBase {
     for (String collection: allCollections) {
       // Check package version installed
       // http://localhost:8983/api/collections/abc/config/params/PKG_VERSIONS?omitHeader=true
-      String paramsJson = SolrPackageManager.get("http://localhost:8983/api/collections/"+collection+"/config/params/PKG_VERSIONS?omitHeader=true");
+      String paramsJson = SolrPackageManager.get(solrBaseUrl+"/api/collections/"+collection+"/config/params/PKG_VERSIONS?omitHeader=true");
       String version = null;
       try {
         version = JsonPath.parse(paramsJson).read("$['response'].['params'].['PKG_VERSIONS'].['"+pkg.id+"'])");
