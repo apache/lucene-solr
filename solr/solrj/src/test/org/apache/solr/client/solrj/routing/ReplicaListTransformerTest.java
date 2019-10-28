@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.handler.component;
+package org.apache.solr.client.solrj.routing;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -28,6 +28,7 @@ import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.handler.component.HttpShardHandlerFactory;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.Test;

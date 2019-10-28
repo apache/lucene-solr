@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.handler.component;
+package org.apache.solr.client.solrj.routing;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -24,14 +24,13 @@ import java.util.ListIterator;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Hash;
-import org.apache.solr.request.SolrQueryRequest;
 
 /**
  * Allows better caching by establishing deterministic evenly-distributed replica routing preferences according to
  * either explicitly configured hash routing parameter, or the hash of a query parameter (configurable, usually related
  * to the main query).
  */
-class AffinityReplicaListTransformer implements ReplicaListTransformer {
+public class AffinityReplicaListTransformer implements ReplicaListTransformer {
 
   private final int routingDividend;
 
@@ -47,17 +46,16 @@ class AffinityReplicaListTransformer implements ReplicaListTransformer {
    *
    * @param dividendParam int param to be used directly for mod-based routing
    * @param hashParam String param to be hashed into an int for mod-based routing
-   * @param req the request from which param values will be drawn
+   * @param requestParams the parameters of the Solr request
    * @return null if specified routing vals are not able to be parsed properly
    */
-  public static ReplicaListTransformer getInstance(String dividendParam, String hashParam, SolrQueryRequest req) {
-    SolrParams params = req.getOriginalParams();
+  public static ReplicaListTransformer getInstance(String dividendParam, String hashParam, SolrParams requestParams) {
     Integer dividendVal;
-    if (dividendParam != null && (dividendVal = params.getInt(dividendParam)) != null) {
+    if (dividendParam != null && (dividendVal = requestParams.getInt(dividendParam)) != null) {
       return new AffinityReplicaListTransformer(dividendVal);
     }
     String hashVal;
-    if (hashParam != null && (hashVal = params.get(hashParam)) != null && !hashVal.isEmpty()) {
+    if (hashParam != null && (hashVal = requestParams.get(hashParam)) != null && !hashVal.isEmpty()) {
       return new AffinityReplicaListTransformer(hashVal);
     } else {
       return null;

@@ -75,6 +75,7 @@ import org.apache.solr.common.cloud.DefaultZkCredentialsProvider;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocCollectionWatcher;
 import org.apache.solr.common.cloud.LiveNodesListener;
+import org.apache.solr.common.cloud.NodesSysPropsCacher;
 import org.apache.solr.common.cloud.OnReconnect;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.Type;
