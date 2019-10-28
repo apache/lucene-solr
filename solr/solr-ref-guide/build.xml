@@ -167,7 +167,7 @@
 
   <target name="build-nav-data-files" depends="build-init,build-tools-jar" description="creates nav based data files">
     <mkdir dir="${build.content.dir}/_data"/>
-    <java classname="BuildNavAndPDFBody"
+    <java classname="BuildNavDataFiles"
           failonerror="true"
           fork="true">
       <classpath refid="tools-run-classpath"/>
