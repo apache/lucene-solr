@@ -73,6 +73,10 @@ Improvements
 
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
 
+Bug Fixes
+---------------------
+* SOLR-11431: Leader candidate cannot become leader if replica responds 500 to PeerSync (Peter Somogyi)
+
 Other Changes
 ----------------------
 
