@@ -59,6 +59,7 @@ import static org.apache.solr.core.TestDynamicLoading.getFileContent;
 import static org.apache.solr.filestore.TestDistribPackageStore.readFile;
 
 @LogLevel("org.apache.solr.pkg.PackageLoader=DEBUG;org.apache.solr.pkg.PackageAPI=DEBUG")
+//@org.apache.lucene.util.LuceneTestCase.AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13822") // leaks files
 public class TestPackages extends SolrCloudTestCase {
 
   @Test
