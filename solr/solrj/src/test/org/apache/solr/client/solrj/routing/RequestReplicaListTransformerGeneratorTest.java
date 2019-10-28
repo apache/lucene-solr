@@ -25,14 +25,12 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
-import org.apache.solr.core.SolrCore;
+import org.junit.Test;
 
 public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
 
-
-  @SuppressWarnings("unchecked")
-  public void testNodePreferenceRulesBase() throws Exception {
-    SolrCore testCore = null;
+  @Test
+  public void testNodePreferenceRulesBase() {
     RequestReplicaListTransformerGenerator generator = new RequestReplicaListTransformerGenerator();
     ModifiableSolrParams params = new ModifiableSolrParams();
     List<Replica> replicas = getBasicReplicaList();
@@ -68,6 +66,14 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
     assertEquals("node1", replicas.get(0).getNodeName());
     assertEquals("node2", replicas.get(1).getNodeName());
     assertEquals("node3", replicas.get(2).getNodeName());
+  }
+
+  @SuppressWarnings("unchecked")
+  @Test
+  public void replicaTypeAndReplicaBase() {
+    RequestReplicaListTransformerGenerator generator = new RequestReplicaListTransformerGenerator();
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    List<Replica> replicas = getBasicReplicaList();
 
     // Add a replica so that sorting by replicaType:TLOG can cause a tie
     replicas.add(
@@ -83,13 +89,13 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
     );
 
     // replicaType and replicaBase combined rule param
-    rulesParam = ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":NRT," +
+    String rulesParam = ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":NRT," +
         ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":TLOG," +
         ShardParams.SHARDS_PREFERENCE_REPLICA_BASE + ":stable:dividend:routingPreference";
 
-    params.set("routingPreference", "0");
-    params.set(ShardParams.SHARDS_PREFERENCE, rulesParam);
-    rlt = generator.getReplicaListTransformer(params);
+    params.add("routingPreference", "0");
+    params.add(ShardParams.SHARDS_PREFERENCE, rulesParam);
+    ReplicaListTransformer rlt = generator.getReplicaListTransformer(params);
     rlt.transform(replicas);
     assertEquals("node1", replicas.get(0).getNodeName());
     assertEquals("node2", replicas.get(1).getNodeName());

@@ -29,33 +29,43 @@ import org.junit.Test;
 public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
 
   @Test
-  public void testNodePreferenceRulesComparator() throws Exception {
+  public void replicaLocationTest() {
     List<Replica> replicas = getBasicReplicaList();
 
-    // Simple replica type rule
+    // replicaLocation rule
+    List<PreferenceRule> rules = PreferenceRule.from(ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION + ":http://host2:8983");
+    NodePreferenceRulesComparator comparator = new NodePreferenceRulesComparator(rules, null);
+    replicas.sort(comparator);
+    assertEquals("node2", replicas.get(0).getNodeName());
+    assertEquals("node1", replicas.get(1).getNodeName());
+
+  }
+
+  public void replicaTypeTest() {
+    List<Replica> replicas = getBasicReplicaList();
+
     List<PreferenceRule> rules = PreferenceRule.from(ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":NRT," +
         ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":TLOG");
-    NodePreferenceRulesComparator comparator =
-        new NodePreferenceRulesComparator(rules, null);
+    NodePreferenceRulesComparator comparator = new NodePreferenceRulesComparator(rules, null);
+
     replicas.sort(comparator);
     assertEquals("node1", replicas.get(0).getNodeName());
     assertEquals("node2", replicas.get(1).getNodeName());
 
-    // Another simple replica type rule
+    // reversed rule
     rules = PreferenceRule.from(ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":TLOG," +
         ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":NRT");
     comparator = new NodePreferenceRulesComparator(rules, null);
+
     replicas.sort(comparator);
     assertEquals("node2", replicas.get(0).getNodeName());
     assertEquals("node1", replicas.get(1).getNodeName());
+  }
 
-    // replicaLocation rule
-    rules = PreferenceRule.from(ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION + ":http://host2:8983");
-    comparator = new NodePreferenceRulesComparator(rules, null);
-    replicas.sort(comparator);
-    assertEquals("node2", replicas.get(0).getNodeName());
-    assertEquals("node1", replicas.get(1).getNodeName());
-
+  @SuppressWarnings("unchecked")
+  @Test
+  public void replicaTypeAndReplicaLocationTest() {
+    List<Replica> replicas = getBasicReplicaList();
     // Add a replica so that sorting by replicaType:TLOG can cause a tie
     replicas.add(
         new Replica(
@@ -69,39 +79,40 @@ public class NodePreferenceRulesComparatorTest extends SolrTestCaseJ4 {
         )
     );
 
-    // replicaType and replicaLocation combined rule
-    rules = PreferenceRule.from(
+    List<PreferenceRule> rules = PreferenceRule.from(
         ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":NRT," +
             ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":TLOG," +
             ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION + ":http://host2_2");
-    comparator = new NodePreferenceRulesComparator(rules, null);
+    NodePreferenceRulesComparator comparator = new NodePreferenceRulesComparator(rules, null);
+
     replicas.sort(comparator);
     assertEquals("node1", replicas.get(0).getNodeName());
     assertEquals("node4", replicas.get(1).getNodeName());
     assertEquals("node2", replicas.get(2).getNodeName());
     assertEquals("node3", replicas.get(3).getNodeName());
+  }
 
-    // Bad rule
-
+  @Test(expected = IllegalArgumentException.class)
+  public void badRuleTest() {
     try {
-      rules = PreferenceRule.from(ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE);
-      fail();
+      PreferenceRule.from(ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE);
     } catch (IllegalArgumentException e) {
       assertEquals("Invalid shards.preference rule: " + ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE, e.getMessage());
-    }
-
-    // Unknown rule
-    rules = PreferenceRule.from("badRule:test");
-    try {
-      comparator = new NodePreferenceRulesComparator(rules, null);
-      replicas.sort(comparator);
-      fail();
-    } catch (IllegalArgumentException e) {
-      assertEquals("Invalid shards.preference type: badRule", e.getMessage());
+      throw e;
     }
   }
 
-
+  @Test(expected = IllegalArgumentException.class)
+  public void unknownRuleTest() {
+    List<Replica> replicas = getBasicReplicaList();
+    List<PreferenceRule> rules = PreferenceRule.from("badRule:test");
+    try {
+      replicas.sort(new NodePreferenceRulesComparator(rules, null));
+    } catch (IllegalArgumentException e) {
+      assertEquals("Invalid shards.preference type: badRule", e.getMessage());
+      throw e;
+    }
+  }
 
   @SuppressWarnings("unchecked")
   private static List<Replica> getBasicReplicaList() {
