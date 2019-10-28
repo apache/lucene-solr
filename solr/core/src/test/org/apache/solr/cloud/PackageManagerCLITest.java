@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud;
 
+import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
 
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -24,8 +25,12 @@ import org.apache.solr.util.PackageTool;
 import org.apache.solr.util.SolrCLI;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class PackageManagerCLITest extends SolrCloudTestCase {
+
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @BeforeClass
   public static void setupCluster() throws Exception {
@@ -65,16 +70,42 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
     assertEquals("tool should have returned 0 for success ", 0, res);
 
     CollectionAdminRequest
-      .createCollection("abc", "conf1", 2, 1)
+      .createCollection("abc", "conf1", 1, 1)
       .setMaxShardsPerNode(100)
       .process(cluster.getSolrClient());
+
+    CollectionAdminRequest
+    .createCollection("def", "conf1", 1, 1)
+    .setMaxShardsPerNode(100)
+    .process(cluster.getSolrClient());
 
     res = run(tool, new String[] {"-solrUrl", solrUrl, "deploy", "question-answer", "-collections", "abc", "-p", "RH-HANDLER-PATH=/mypath2"});
     assertEquals("tool should have returned 0 for success ", 0, res);
     
-    res = run(tool, new String[] {"-solrUrl", solrUrl, "update", "question-answer"});
-    assertEquals("tool should have returned 0 for success ", 0, res);
+    // Should we test the "auto-update to latest" functionality or the default explicit deploy functionality
+    boolean autoUpdateToLatest = random().nextBoolean();
+    
+    if (autoUpdateToLatest) {
+      log.info("Testing auto-update to latest installed");
+      // This command pegs the version to the latest available
+      res = run(tool, new String[] {"-solrUrl", solrUrl, "deploy", "question-answer:latest", "-collections", "abc"});
+      assertEquals("tool should have returned 0 for success ", 0, res);
+      
+      res = run(tool, new String[] {"-solrUrl", solrUrl, "update", "question-answer"});
+      assertEquals("tool should have returned 0 for success ", 0, res);
+    } else {
+      log.info("Testing explicit deployment to a different/newer version");
 
+      res = run(tool, new String[] {"-solrUrl", solrUrl, "update", "question-answer"});
+      assertEquals("tool should have returned 0 for success ", 0, res);
+
+      if (random().nextBoolean()) {
+        res = run(tool, new String[] {"-solrUrl", solrUrl, "deploy", "--update", "question-answer", "-collections", "abc", "-p", "RH-HANDLER-PATH=/mypath2"});
+      } else {
+        res = run(tool, new String[] {"-solrUrl", solrUrl, "deploy", "--update", "question-answer", "-collections", "abc"});
+      }
+      assertEquals("tool should have returned 0 for success ", 0, res);      
+    }
   }
 
   private int run(PackageTool tool, String[] args) throws Exception {

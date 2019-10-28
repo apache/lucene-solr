@@ -98,23 +98,36 @@ public class SolrPackageManager implements Closeable {
     return ret;
   }
 
-  public boolean deployInstallPackage(String packageName, String version, List<String> collections, String overrides[]) {
+  Map<String, String> getPackageParams(String packageName, String collection) {
+    try {
+      return (Map<String, String>)((Map)((Map)((Map)new ObjectMapper().readValue
+          (get(solrBaseUrl + "/api/collections/"+collection+"/config/params/packages"), Map.class).get("response")).get("params")).get("packages")).get(packageName);
+    } catch (IOException e) {
+      throw new PackageManagerException(e);
+    }
+
+  }
+  
+  public boolean deployInstallPackage(String packageName, String version, boolean isUpdate, List<String> collections, String overrides[]) {
+    boolean pegToLatest = "latest".equals(version); // User wants to peg this package's version to the latest installed (for auto-update, i.e. no explicit deploy step)
     SolrPackageInstance pkg = getPackage(packageName, version);
+    if (version == null) {
+      version = pkg.getVersion();
+    }
 
     for (String collection: collections) {
-      Map<String, String> collectionParameterOverrides = new HashMap<String,String>();
+      Map<String, String> collectionParameterOverrides = isUpdate? getPackageParams(packageName, collection): new HashMap<String,String>();
       if (overrides != null) {
         for (String override: overrides) {
           collectionParameterOverrides.put(override.split("=")[0], override.split("=")[1]);
         }
       }
+      
+      // Get package params
       try {
-        // nocommit: it overwrites params of other packages (use set or update)
-        
         boolean packageParamsExist = ((Map)((Map)new ObjectMapper().readValue(
             get(solrBaseUrl + "/api/collections/abc/config/params/packages"), Map.class)
             ).get("response")).containsKey("params");
-        
         postJson(solrBaseUrl + "/api/collections/"+collection+"/config/params",
             new ObjectMapper().writeValueAsString(
                 Map.of(packageParamsExist? "update": "set", 
@@ -123,20 +136,33 @@ public class SolrPackageManager implements Closeable {
         throw new RuntimeException(e);
       }
 
+      // Set the package version in the collection's parameters
+      postJson(solrBaseUrl+"/api/collections/abc/config/params", "{set:{PKG_VERSIONS:{"+packageName+" : '"+(pegToLatest? "$LATEST": version)+"'}}}");
+
+      // If updating, refresh the package version for this to take effect
+      if (isUpdate || pegToLatest) {
+        postJson(solrBaseUrl+"/api/cluster/package", "{\"refresh\" : \""+packageName+"\"}");
+      }
+      
+      // Setup/update all the plugins in the package
       for (Plugin p: pkg.getPlugins()) {
-        System.out.println(p.setupCommand);
+        System.out.println(isUpdate? p.updateCommand: p.setupCommand);
 
         Map<String, String> systemParams = new HashMap<String,String>();
         systemParams.put("collection", collection);
         systemParams.put("package-name", pkg.id);
         systemParams.put("package-version", pkg.version);
 
-        String cmd = resolve(p.setupCommand, pkg.parameterDefaults, collectionParameterOverrides, systemParams);
-        System.out.println("Executing " + cmd + " for collection:" + collection);
-        postJson(solrBaseUrl + "/solr/"+collection+"/config", cmd);
+        String cmd = resolve(isUpdate? p.updateCommand: p.setupCommand, pkg.parameterDefaults, collectionParameterOverrides, systemParams);
+        if (cmd != null && !"".equals(cmd.trim())) {
+          System.out.println("Executing " + cmd + " for collection:" + collection);
+          postJson(solrBaseUrl + "/solr/"+collection+"/config", cmd);
+        }
       }
+
     }
 
+    // Verify that package was successfully deployed
     boolean success = verify(pkg, collections);
     if (success) {
       System.out.println("Deployed and verified package: "+pkg.id+", version: "+pkg.version);
@@ -145,6 +171,7 @@ public class SolrPackageManager implements Closeable {
   }
 
   private String resolve(String str, Map<String, String> defaults, Map<String, String> overrides, Map<String, String> systemParams) {
+    if (str == null) return null;
     for (String param: defaults.keySet()) {
       str = str.replaceAll("\\$\\{"+param+"\\}", overrides.containsKey(param)? overrides.get(param): defaults.get(param));
     }
@@ -164,13 +191,7 @@ public class SolrPackageManager implements Closeable {
       System.out.println(p.verifyCommand);
       for (String collection: collections) {
         System.out.println("Executing " + p.verifyCommand + " for collection:" + collection);
-        Map<String, String> collectionParameterOverrides;
-        try {
-          collectionParameterOverrides = (Map<String, String>)((Map)((Map)((Map)new ObjectMapper().readValue
-              (get(solrBaseUrl + "/api/collections/abc/config/params/packages"), Map.class).get("response")).get("params")).get("packages")).get(pkg.id);
-        } catch (IOException e) {
-          throw new RuntimeException(e);
-        }
+        Map<String, String> collectionParameterOverrides = getPackageParams(pkg.id, collection);
         
         Command cmd = p.verifyCommand;
 
@@ -217,7 +238,7 @@ public class SolrPackageManager implements Closeable {
     return get(url);
   }
 
-  private String get(String url) {
+  public static String get(String url) {
     try (CloseableHttpClient client = SolrUpdateManager.createTrustAllHttpClientBuilder()) {
       HttpGet httpGet = new HttpGet(url);
       httpGet.setHeader("Content-type", "application/json");

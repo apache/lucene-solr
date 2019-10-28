@@ -48,6 +48,8 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.PathNotFoundException;
 
 
 public class PackageTool extends SolrCLI.ToolBase {
@@ -64,7 +66,7 @@ public class PackageTool extends SolrCLI.ToolBase {
   @Override
   protected void runImpl(CommandLine cli) throws Exception {
     // Need a logging free, clean output going through to the user.
-    Configurator.setRootLevel(Level.OFF);
+    Configurator.setRootLevel(Level.INFO);
 
     solrUrl = cli.getOptionValues("solrUrl")[cli.getOptionValues("solrUrl").length-1];
     String solrBaseUrl = solrUrl.replaceAll("\\/solr$", ""); // strip out ending "/solr"
@@ -103,7 +105,10 @@ public class PackageTool extends SolrCLI.ToolBase {
               String colls[] = cli.getOptionValues("collections");
               String params[] = cli.getOptionValues("param");
               System.out.println("coll: "+Arrays.toString(colls)+", params: "+Arrays.toString(params));
-              deploy(cli.getArgList().get(1).toString(), colls, params);
+              String packageName = cli.getArgList().get(1).toString().split(":")[0];
+              String version = cli.getArgList().get(1).toString().contains(":")? 
+                  cli.getArgList().get(1).toString().split(":")[1]: null;
+              deploy(packageName, version, cli.hasOption("update"), colls, params);
               break;
             case "redeploy":
               redeploy(cli.getArgList().subList(1, cli.getArgList().size()));
@@ -175,10 +180,10 @@ public class PackageTool extends SolrCLI.ToolBase {
     updateManager.installPackage(args.get(0).toString(), args.get(1).toString());
     System.out.println(args.get(0).toString() + " installed.");
   }
-  protected void deploy(String packageName,
+  protected void deploy(String packageName, String version, boolean isUpdate,
       String collections[], String parameters[]) throws PackageManagerException {
     
-    System.out.println(packageManager.deployInstallPackage(packageName.split(":")[0], packageName.split(":").length==2? packageName.split(":")[1]: "latest",
+    System.out.println(packageManager.deployInstallPackage(packageName, version, isUpdate,
         Arrays.asList(collections), parameters));
   }
 
@@ -234,8 +239,19 @@ public class PackageTool extends SolrCLI.ToolBase {
     System.out.println("Need to verify if these collections have the plugin installed? "+ allCollections);
     List<String> deployed = new ArrayList<String>();
     for (String collection: allCollections) {
-      if (packageManager.verify(pkg, Collections.singletonList(collection))) {
+      // Check package version installed
+      // http://localhost:8983/api/collections/abc/config/params/PKG_VERSIONS?omitHeader=true
+      String paramsJson = SolrPackageManager.get("http://localhost:8983/api/collections/"+collection+"/config/params/PKG_VERSIONS?omitHeader=true");
+      String version = null;
+      try {
+        version = JsonPath.parse(paramsJson).read("$['response'].['params'].['PKG_VERSIONS'].['"+pkg.id+"'])");
+      } catch (PathNotFoundException ex) {
+        // Don't worry if PKG_VERSION wasn't found. It just means this collection was never touched by the package manager.
+      }
+      if ("$LATEST".equals(version) && packageManager.verify(pkg, Collections.singletonList(collection))) {
         deployed.add(collection);
+      } else {
+        System.out.println("Skipping collection: "+collection+", version: "+version);
       }
     }
     return deployed;
@@ -266,6 +282,18 @@ public class PackageTool extends SolrCLI.ToolBase {
         .withLongOpt("param")
         .create("p"),
 
+        OptionBuilder
+        .isRequired(false)
+        .withDescription("Solr URL scheme: http or https, defaults to http if not specified")
+        .withLongOpt("update")
+        .create("u"),
+
+        OptionBuilder
+        .isRequired(false)
+        .withDescription("Solr URL scheme: http or https, defaults to http if not specified")
+        .withLongOpt("auto-update")
+        .create(),
+        
     };
   }
 
