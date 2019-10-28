@@ -113,6 +113,8 @@ Improvements
 
 * SOLR-13831: Support defining arbitrary autoscaling simulation scenarios. (ab)
 
+* SOLR-13865: Move replica routing code to SolrJ. (Houston Putman via Tomas Fernandez-Lobbe)
+
 
 Optimizations
 ---------------------
