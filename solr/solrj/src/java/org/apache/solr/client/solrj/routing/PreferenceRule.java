@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.impl;
+package org.apache.solr.client.solrj.routing;
 
 import java.util.ArrayList;
 import java.util.List;
