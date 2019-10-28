@@ -65,7 +65,7 @@ public class NodePreferenceRulesComparator implements Comparator<Object> {
     final PreferenceRule lastRule = preferenceRules.get(maxIdx);
     if (!ShardParams.SHARDS_PREFERENCE_REPLICA_BASE.equals(lastRule.name)) {
       this.sortRules = preferenceRules;
-      this.baseReplicaListTransformer = defaultRltFactory.getInstance(null, requestParams, ReplicaListTransformerManager.RANDOM_RLTF);
+      this.baseReplicaListTransformer = defaultRltFactory.getInstance(null, requestParams, RequestReplicaListTransformerGenerator.RANDOM_RLTF);
     } else {
       if (maxIdx == 0) {
         this.sortRules = null;
@@ -75,10 +75,10 @@ public class NodePreferenceRulesComparator implements Comparator<Object> {
       String[] parts = lastRule.value.split(":", 2);
       switch (parts[0]) {
         case ShardParams.REPLICA_RANDOM:
-          this.baseReplicaListTransformer = ReplicaListTransformerManager.RANDOM_RLTF.getInstance(parts.length == 1 ? null : parts[1], requestParams, null);
+          this.baseReplicaListTransformer = RequestReplicaListTransformerGenerator.RANDOM_RLTF.getInstance(parts.length == 1 ? null : parts[1], requestParams, null);
           break;
         case ShardParams.REPLICA_STABLE:
-          this.baseReplicaListTransformer = stableRltFactory.getInstance(parts.length == 1 ? null : parts[1], requestParams, ReplicaListTransformerManager.RANDOM_RLTF);
+          this.baseReplicaListTransformer = stableRltFactory.getInstance(parts.length == 1 ? null : parts[1], requestParams, RequestReplicaListTransformerGenerator.RANDOM_RLTF);
           break;
         default:
           throw new IllegalArgumentException("Invalid base replica order spec");

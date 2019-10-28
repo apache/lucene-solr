@@ -49,7 +49,7 @@ import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.routing.AffinityReplicaListTransformerFactory;
 import org.apache.solr.client.solrj.routing.ReplicaListTransformer;
 import org.apache.solr.client.solrj.routing.ReplicaListTransformerFactory;
-import org.apache.solr.client.solrj.routing.ReplicaListTransformerManager;
+import org.apache.solr.client.solrj.routing.RequestReplicaListTransformerGenerator;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
@@ -121,7 +121,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 
   protected final Random r = new Random();
 
-  private ReplicaListTransformerManager replicaListTransformerManager = new ReplicaListTransformerManager();
+  private RequestReplicaListTransformerGenerator requestReplicaListTransformerGenerator = new RequestReplicaListTransformerGenerator();
 
   // URL scheme to be used in distributed search.
   static final String INIT_URL_SCHEME = "urlScheme";
@@ -252,9 +252,9 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     if (ShardParams.REPLICA_STABLE.equals(defaultRouting)) {
       defaultRltFactory = stableRltFactory;
     } else {
-      defaultRltFactory = ReplicaListTransformerManager.RANDOM_RLTF;
+      defaultRltFactory = RequestReplicaListTransformerGenerator.RANDOM_RLTF;
     }
-    this.replicaListTransformerManager = new ReplicaListTransformerManager(defaultRltFactory, stableRltFactory);
+    this.requestReplicaListTransformerGenerator = new RequestReplicaListTransformerGenerator(defaultRltFactory, stableRltFactory);
   }
 
   @Override
@@ -414,7 +414,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
     final SolrCore core = req.getCore(); // explicit check for null core (temporary?, for tests)
     ZkController zkController = core == null ? null : core.getCoreContainer().getZkController();
     if (zkController != null) {
-      return replicaListTransformerManager.getReplicaListTransformer(
+      return requestReplicaListTransformerGenerator.getReplicaListTransformer(
           params,
           zkController.getZkStateReader().getClusterProperties()
               .getOrDefault(ZkStateReader.DEFAULT_SHARD_PREFERENCES, "")
@@ -424,7 +424,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
           zkController.getSysPropsCacher()
       );
     } else {
-      return replicaListTransformerManager.getReplicaListTransformer(params);
+      return requestReplicaListTransformerGenerator.getReplicaListTransformer(params);
     }
   }
 

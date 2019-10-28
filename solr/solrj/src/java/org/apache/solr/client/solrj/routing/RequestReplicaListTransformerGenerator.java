@@ -31,7 +31,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class ReplicaListTransformerManager {
+public class RequestReplicaListTransformerGenerator {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final Random r = new Random();
@@ -42,15 +42,15 @@ public class ReplicaListTransformerManager {
   private final ReplicaListTransformerFactory stableRltFactory;
   private final ReplicaListTransformerFactory defaultRltFactory;
 
-  public ReplicaListTransformerManager() {
+  public RequestReplicaListTransformerGenerator() {
     this(RANDOM_RLTF);
   }
 
-  public ReplicaListTransformerManager(ReplicaListTransformerFactory defaultRltFactory) {
+  public RequestReplicaListTransformerGenerator(ReplicaListTransformerFactory defaultRltFactory) {
     this(defaultRltFactory, null);
   }
 
-  public ReplicaListTransformerManager(ReplicaListTransformerFactory defaultRltFactory, ReplicaListTransformerFactory stableRltFactory) {
+  public RequestReplicaListTransformerGenerator(ReplicaListTransformerFactory defaultRltFactory, ReplicaListTransformerFactory stableRltFactory) {
     this.defaultRltFactory = defaultRltFactory;
     if (stableRltFactory == null) {
       this.stableRltFactory = new AffinityReplicaListTransformerFactory();

@@ -27,13 +27,13 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.core.SolrCore;
 
-public class ReplicaListTransformerManagerTest extends SolrTestCaseJ4 {
+public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
 
 
   @SuppressWarnings("unchecked")
   public void testNodePreferenceRulesBase() throws Exception {
     SolrCore testCore = null;
-    ReplicaListTransformerManager mgr = new ReplicaListTransformerManager();
+    RequestReplicaListTransformerGenerator generator = new RequestReplicaListTransformerGenerator();
     ModifiableSolrParams params = new ModifiableSolrParams();
     List<Replica> replicas = getBasicReplicaList();
 
@@ -42,28 +42,28 @@ public class ReplicaListTransformerManagerTest extends SolrTestCaseJ4 {
     params.add("routingPreference", "0");
     params.add(ShardParams.SHARDS_PREFERENCE, rulesParam);
 
-    ReplicaListTransformer rlt = mgr.getReplicaListTransformer(params);
+    ReplicaListTransformer rlt = generator.getReplicaListTransformer(params);
     rlt.transform(replicas);
     assertEquals("node1", replicas.get(0).getNodeName());
     assertEquals("node2", replicas.get(1).getNodeName());
     assertEquals("node3", replicas.get(2).getNodeName());
 
     params.set("routingPreference", "1");
-    rlt = mgr.getReplicaListTransformer(params);
+    rlt = generator.getReplicaListTransformer(params);
     rlt.transform(replicas);
     assertEquals("node2", replicas.get(0).getNodeName());
     assertEquals("node3", replicas.get(1).getNodeName());
     assertEquals("node1", replicas.get(2).getNodeName());
 
     params.set("routingPreference", "2");
-    rlt = mgr.getReplicaListTransformer(params);
+    rlt = generator.getReplicaListTransformer(params);
     rlt.transform(replicas);
     assertEquals("node3", replicas.get(0).getNodeName());
     assertEquals("node1", replicas.get(1).getNodeName());
     assertEquals("node2", replicas.get(2).getNodeName());
 
     params.set("routingPreference", "3");
-    rlt = mgr.getReplicaListTransformer(params);
+    rlt = generator.getReplicaListTransformer(params);
     rlt.transform(replicas);
     assertEquals("node1", replicas.get(0).getNodeName());
     assertEquals("node2", replicas.get(1).getNodeName());
@@ -89,7 +89,7 @@ public class ReplicaListTransformerManagerTest extends SolrTestCaseJ4 {
 
     params.set("routingPreference", "0");
     params.set(ShardParams.SHARDS_PREFERENCE, rulesParam);
-    rlt = mgr.getReplicaListTransformer(params);
+    rlt = generator.getReplicaListTransformer(params);
     rlt.transform(replicas);
     assertEquals("node1", replicas.get(0).getNodeName());
     assertEquals("node2", replicas.get(1).getNodeName());
@@ -97,7 +97,7 @@ public class ReplicaListTransformerManagerTest extends SolrTestCaseJ4 {
     assertEquals("node3", replicas.get(3).getNodeName());
 
     params.set("routingPreference", "1");
-    rlt = mgr.getReplicaListTransformer(params);
+    rlt = generator.getReplicaListTransformer(params);
     rlt.transform(replicas);
     assertEquals("node1", replicas.get(0).getNodeName());
     assertEquals("node4", replicas.get(1).getNodeName());
