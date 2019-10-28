@@ -33,6 +33,10 @@ public class Package {
     public String version;
     @JsonProperty(required = true)
     public List<String> files;
+    @JsonProperty
+    public String manifest;
+    @JsonProperty
+    public String manifestSHA512;
 
   }
 

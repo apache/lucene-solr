@@ -32,6 +32,7 @@ import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.request.beans.Package;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -42,7 +43,6 @@ import org.apache.solr.packagemanager.pf4j.FileDownloader;
 import org.apache.solr.packagemanager.pf4j.FileVerifier;
 import org.apache.solr.packagemanager.pf4j.PackageManagerException;
 import org.apache.solr.packagemanager.pf4j.SimpleFileDownloader;
-import org.apache.solr.pkg.PackageAPI;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -272,7 +272,7 @@ public class SolrUpdateManager {
       e.printStackTrace();
     }*/
     
-    PackageAPI.AddVersion add = new PackageAPI.AddVersion();
+    Package.AddVersion add = new Package.AddVersion();
     add.version = version;
     add.pkg = id;
     add.files = Arrays.asList(files);
