@@ -137,8 +137,11 @@ public class SolrPackageManager implements Closeable {
       }
 
       // Set the package version in the collection's parameters
-      postJson(solrBaseUrl+"/api/collections/abc/config/params", "{set:{PKG_VERSIONS:{"+packageName+" : '"+(pegToLatest? "$LATEST": version)+"'}}}");
+      postJson(solrBaseUrl+"/api/collections/"+collection+"/config/params", "{set:{PKG_VERSIONS:{"+packageName+" : '"+(pegToLatest? "$LATEST": version)+"'}}}");
 
+      String paramsJson = SolrPackageManager.get("http://localhost:8983/api/collections/"+collection+"/config/params?omitHeader=true");
+      System.out.println("Posted param: "+paramsJson);
+      
       // If updating, refresh the package version for this to take effect
       if (isUpdate || pegToLatest) {
         postJson(solrBaseUrl+"/api/cluster/package", "{\"refresh\" : \""+packageName+"\"}");
@@ -159,6 +162,11 @@ public class SolrPackageManager implements Closeable {
           postJson(solrBaseUrl + "/solr/"+collection+"/config", cmd);
         }
       }
+
+      // Set the package version in the collection's parameters
+      postJson(solrBaseUrl+"/api/collections/"+collection+"/config/params", "{update:{PKG_VERSIONS:{'"+packageName+"' : '"+(pegToLatest? "$LATEST": version)+"'}}}");
+      paramsJson = SolrPackageManager.get("http://localhost:8983/api/collections/"+collection+"/config/params?omitHeader=true");
+      System.out.println("Posted param: "+paramsJson);
 
     }
 

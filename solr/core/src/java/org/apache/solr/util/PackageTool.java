@@ -214,7 +214,7 @@ public class PackageTool extends SolrCLI.ToolBase {
       SolrPackageInstance installedPackage = packageManager.getPackage(packageName, "latest");
       System.out.println("Updating ["+packageName+"] from " + installedPackage.getVersion() + " to version "+latestVersion);
 
-      List<String> collectionsDeployedIn = getDeployedCollections(zkHost, packageManager, installedPackage);
+      List<String> collectionsDeployedIn = getDeployedCollections(zkHost, packageManager, installedPackage, true);
       System.out.println("Already deployed on collections: "+collectionsDeployedIn);
       updateManager.updatePackage(packageName, latestVersion);
 
@@ -228,7 +228,7 @@ public class PackageTool extends SolrCLI.ToolBase {
     }
   }
 
-  private List<String> getDeployedCollections(String zkHost, SolrPackageManager packageManager, SolrPackageInstance pkg) {
+  private List<String> getDeployedCollections(String zkHost, SolrPackageManager packageManager, SolrPackageInstance pkg, boolean onlyLatest) {
 
     List<String> allCollections;
     try (SolrZkClient zkClient = new SolrZkClient(zkHost, 30000)) {
@@ -248,10 +248,16 @@ public class PackageTool extends SolrCLI.ToolBase {
       } catch (PathNotFoundException ex) {
         // Don't worry if PKG_VERSION wasn't found. It just means this collection was never touched by the package manager.
       }
-      if ("$LATEST".equals(version) && packageManager.verify(pkg, Collections.singletonList(collection))) {
-        deployed.add(collection);
+      if (onlyLatest) {
+        if ("$LATEST".equals(version) && packageManager.verify(pkg, Collections.singletonList(collection))) {
+          deployed.add(collection);
+        } else {
+          System.out.println("Skipping collection: "+collection+", version: "+version);
+        }
       } else {
-        System.out.println("Skipping collection: "+collection+", version: "+version);
+        if (packageManager.verify(pkg, Collections.singletonList(collection))) {
+          deployed.add(collection);
+        }
       }
     }
     return deployed;
