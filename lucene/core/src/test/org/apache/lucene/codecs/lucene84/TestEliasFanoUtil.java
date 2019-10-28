@@ -32,7 +32,7 @@ import org.apache.lucene.util.packed.PackedInts;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 
-public class TestForUtil extends LuceneTestCase {
+public class TestEliasFanoUtil extends LuceneTestCase {
 
   public void testEncodeDecodeLE() throws IOException {
     doTestEncodeDecode(ByteOrder.LITTLE_ENDIAN);
@@ -47,11 +47,12 @@ public class TestForUtil extends LuceneTestCase {
     final int[] values = new int[iterations * ForUtil.BLOCK_SIZE];
 
     for (int i = 0; i < iterations; ++i) {
-      final int bpv = TestUtil.nextInt(random(), 1, 31);
+      final int bpv = TestUtil.nextInt(random(), 0, 31);
       for (int j = 0; j < ForUtil.BLOCK_SIZE; ++j) {
         values[i * ForUtil.BLOCK_SIZE + j] = RandomNumbers.randomIntBetween(random(),
             0, (int) PackedInts.maxValue(bpv));
       }
+      Arrays.sort(values, i * ForUtil.BLOCK_SIZE, (i + 1) * ForUtil.BLOCK_SIZE);
     }
 
     final Directory d = new ByteBuffersDirectory();
@@ -60,18 +61,14 @@ public class TestForUtil extends LuceneTestCase {
     {
       // encode
       IndexOutput out = d.createOutput("test.bin", IOContext.DEFAULT);
-      final ForUtil forUtil = new ForUtil(byteOrder);
+      final EliasFanoUtil efUtil = new EliasFanoUtil(new ForUtil(byteOrder));
 
       for (int i = 0; i < iterations; ++i) {
         long[] source = new long[ForUtil.BLOCK_SIZE];
-        long or = 0;
         for (int j = 0; j < ForUtil.BLOCK_SIZE; ++j) {
           source[j] = values[i*ForUtil.BLOCK_SIZE+j];
-          or |= source[j];
         }
-        final int bpv = PackedInts.bitsRequired(or);
-        out.writeByte((byte) bpv);
-        forUtil.encode(source, bpv, out);
+        efUtil.encode(source, out);
       }
       endPointer = out.getFilePointer();
       out.close();
@@ -80,25 +77,30 @@ public class TestForUtil extends LuceneTestCase {
     {
       // decode
       IndexInput in = d.openInput("test.bin", IOContext.READONCE);
-      final ForUtil forUtil = new ForUtil(byteOrder);
+      EliasFanoSequence sequence = new EliasFanoSequence();
+      final EliasFanoUtil efUtil = new EliasFanoUtil(new ForUtil(byteOrder));
       for (int i = 0; i < iterations; ++i) {
-        final int bitsPerValue = in.readByte();
-        final long currentFilePointer = in.getFilePointer();
-        final long[] restored = new long[ForUtil.BLOCK_SIZE];
-        forUtil.decode(bitsPerValue, in, restored);
+        if (random().nextInt(5) == 0) {
+          efUtil.skip(in);
+          continue;
+        }
+        efUtil.decode(in, sequence);
         int[] ints = new int[ForUtil.BLOCK_SIZE];
         for (int j = 0; j < ForUtil.BLOCK_SIZE; ++j) {
-          ints[j] = Math.toIntExact(restored[j]);
+          ints[j] = Math.toIntExact(sequence.next());
         }
         assertArrayEquals(Arrays.toString(ints),
             ArrayUtil.copyOfSubArray(values, i*ForUtil.BLOCK_SIZE, (i+1)*ForUtil.BLOCK_SIZE),
             ints);
-        assertEquals(forUtil.numBytes(bitsPerValue), in.getFilePointer() - currentFilePointer);
       }
       assertEquals(endPointer, in.getFilePointer());
       in.close();
     }
 
     d.close();
+  }
+
+  public void testAdvance() {
+    
   }
 }

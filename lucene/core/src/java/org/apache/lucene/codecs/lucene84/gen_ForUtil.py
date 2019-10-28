@@ -48,7 +48,6 @@ import java.util.function.IntToLongFunction;
 
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
-import org.apache.lucene.util.packed.PackedInts;
 
 // Inspired from https://fulmicoton.com/posts/bitpacking/
 // Encodes multiple integers in a long to get SIMD-like speedups.
@@ -59,23 +58,6 @@ final class ForUtil {
 
   static final int BLOCK_SIZE = 128;
   private static final int BLOCK_SIZE_LOG2 = 7;
-
-  private static int numBitsPerValue(long[] longs) {
-    long or = 0;
-    for (long l : longs) {
-      or |= l;
-    }
-    return PackedInts.bitsRequired(or);
-  }
-
-  private static boolean allEqual(long[] longs) {
-    for (long l : longs) {
-      if (l != longs[0]) {
-        return false;
-      }
-    }
-    return true;
-  }
 
   private static long expandMask32(long mask32) {
     return mask32 | (mask32 << 32);
@@ -161,16 +143,7 @@ final class ForUtil {
   /**
    * Encode 128 8-bits integers from {@code data} into {@code out}.
    */
-  void encode(long[] longs, DataOutput out) throws IOException {
-    if (allEqual(longs)) {
-      out.writeByte((byte) 0);
-      out.writeVLong(longs[0]);
-      return;
-    }
-
-    final int bitsPerValue = numBitsPerValue(longs);
-    out.writeByte((byte) bitsPerValue);
-
+  void encode(long[] longs, int bitsPerValue, DataOutput out) throws IOException {
     final int nextPrimitive;
     final int numLongs;
     final IntToLongFunction maskFunction;
@@ -228,12 +201,10 @@ final class ForUtil {
   }
 
   /**
-   * Skip 128 integers.
+   * Number of bytes required to encode 128 integers of {@code bitsPerValue}.
    */
-  void skip(DataInput in) throws IOException {
-    final int bitsPerValue = in.readByte();
-    final int numBytes = bitsPerValue << (BLOCK_SIZE_LOG2 - 3);
-    in.skipBytes(numBytes);
+  int numBytes(int bitsPerValue) throws IOException {
+    return bitsPerValue << (BLOCK_SIZE_LOG2 - 3);
   }
 
   private static void decodeSlow(int bitsPerValue, DataInput in, ByteOrder byteOrder, long[] tmp, long[] longs) throws IOException {
@@ -267,10 +238,6 @@ final class ForUtil {
     }
 
     expand32(longs);
-  }
-
-  private static void decode0(DataInput in, long[] longs) throws IOException {
-    Arrays.fill(longs, 0, BLOCK_SIZE, in.readVLong());
   }
 
   /**
@@ -354,12 +321,8 @@ if __name__ == '__main__':
   /**
    * Decode 128 integers into {@code ints}.
    */
-  void decode(DataInput in, long[] longs) throws IOException {
-    final int bitsPerValue = in.readByte();
+  void decode(int bitsPerValue, DataInput in, long[] longs) throws IOException {
     switch (bitsPerValue) {
-      case 0:
-        decode0(in, longs);
-        break;
 """)
   for i in range(1, MAX_SPECIALIZED_BITS_PER_VALUE+1):
     f.write('    case %d:\n' %i)
