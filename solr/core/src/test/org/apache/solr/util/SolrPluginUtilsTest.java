@@ -298,16 +298,6 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
     assertEquals(1, calcMSM(4, "\n 3 < \n25%\n "));
     assertEquals(1, calcMSM(5, "3<25%"));
 
-    /* malformed conditionals */
-    try {
-      calcMSM(1, "1<");
-      fail("Query '1<' should have thrown SolrException");
-    } catch (SolrException expected) {}
-    try {
-      calcMSM(1, "1<x");
-      fail("Query '1<x' should have thrown SolrException");
-    } catch (SolrException expected) {}
-
     /* multiple conditionals */
     assertEquals(1, calcMSM(1, "\n3 < -25% 10 < -3 \n"));
     assertEquals(2, calcMSM(2, " 3 < -25% 10 < -3\n"));
@@ -347,6 +337,18 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
     SolrPluginUtils.setMinShouldMatch(q, "50%");
     assertEquals(2, q.build().getMinimumNumberShouldMatch());
         
+  }
+
+  @Test
+  public void testMinShouldMatchBadQueries() {
+    try {
+      calcMSM(1, "1<");
+      fail("Query '1<' should have thrown SolrException");
+    } catch (SolrException expected) {}
+    try {
+      calcMSM(1, "1<x");
+      fail("Query '1<x' should have thrown SolrException");
+    } catch (SolrException expected) {}
   }
 
   @Test
