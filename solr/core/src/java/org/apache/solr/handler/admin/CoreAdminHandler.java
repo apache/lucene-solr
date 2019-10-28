@@ -242,10 +242,10 @@ public class CoreAdminHandler extends RequestHandlerBase implements PermissionNa
     Map<String, String> coreParams = new HashMap<>();
 
     // standard core create parameters
-    for (String param : paramToProp.keySet()) {
-      String value = params.get(param, null);
+    for (Map.Entry<String, String> entry : paramToProp.entrySet()) {
+      String value = params.get(entry.getKey(), null);
       if (StringUtils.isNotEmpty(value)) {
-        coreParams.put(paramToProp.get(param), value);
+        coreParams.put(entry.getValue(), value);
       }
     }
 

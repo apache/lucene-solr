@@ -313,9 +313,8 @@ public class SimNodeStateProvider implements NodeStateProvider {
     if (tags.isEmpty()) {
       return new HashMap<>();
     }
-    Map<String, Object> result = new HashMap<>();
     Map<String, Object> metrics = getReplicaMetricsValues(node, tags.stream().filter(s -> s.startsWith("metrics:solr.core.")).collect(Collectors.toList()));
-    result.putAll(metrics);
+    Map<String, Object> result = new HashMap<>(metrics);
     Map<String, Object> values = nodeValues.get(node);
     if (values == null) {
       return result;

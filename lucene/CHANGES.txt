@@ -79,19 +79,32 @@ Improvements
 (No changes)
 
 Optimizations
----------------------
 
 * LUCENE-8928: When building a kd-tree for dimensions n > 2, compute exact bounds for an inner node every N splits
   to improve the quality of the tree. N is defined by SPLITS_BEFORE_EXACT_BOUNDS which is set to 4.
   (Ignacio Vera, Adrien Grand)
 
+* BaseDirectoryReader no longer sums up the `LeafReader#numDocs` of its leaves
+  eagerly. This especially helps when creating views of readers that hide
+  documents, since computing the number of live documents is an expensive
+  operation. (Adrien Grand)
+
 Bug Fixes
----------------------
-(No changes)
+
+* LUCENE-9001: Fix race condition in SetOnce. (Przemko Robakowski)
 
 Other
----------------------
-(No changes)
+
+* LUCENE-8979: Code Cleanup: Use entryset for map iteration wherever possible. - Part 2 (Koen De Groote)
+
+* LUCENE-8994: Code Cleanup - Pass values to list constructor instead of empty constructor followed by addAll(). (Koen De Groote)
+
+* LUCENE-8746: Refactor EdgeTree - Introduce a Component tree that represents the tree of components (e.g polygons).
+  Edge tree is now just a tree of edges. (Ignacio Vera)
+
+Build
+
+* Upgrade forbiddenapis to version 2.7; upgrade Groovy to 2.4.17.  (Uwe Schindler)
 
 ======================= Lucene 8.3.0 =======================
 
@@ -211,7 +224,7 @@ Other
 
 * LUCENE-8758: QuadPrefixTree: removed levelS and levelN fields which weren't used. (Amish Shah)
 
-* LUCENE-8975: Code Cleanup: Use entryset for map iteration wherever possible.
+* LUCENE-8975: Code Cleanup: Use entryset for map iteration wherever possible. (Koen De Groote)
 
 * LUCENE-8993, LUCENE-8807: Changed all repository and download references in build files
   to HTTPS. (Uwe Schindler)
@@ -220,6 +233,7 @@ Other
 
 * LUCENE-8999: LuceneTestCase.expectThrows now propogates assert/assumption failures up to the test
   w/o wrapping in a new assertion failure unless the caller has explicitly expected them (hossman)
+
 
 ======================= Lucene 8.2.0 =======================
 

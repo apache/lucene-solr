@@ -102,7 +102,9 @@ New Features
 
 Improvements
 ---------------------
-(No changes)
+
+*SOLR-13731: javabin must support a 1:1 mapping of the JSON update format (noble)
+
 
 Optimizations
 ---------------------
@@ -317,6 +319,15 @@ Bug Fixes
 * SOLR-13815: Live shard split (where updates actively continue during the split) can lose updates due to cluster
   state happening to change between checking if the current shard is active and later checking if there are any
   sub-shard leaders to forward the update to. (yonik)
+
+* SOLR-13665: Added missing netty dependencies to solrJ and upgraded netty to v 4.1.29.Final (Jörn Franke, janhoy)
+
+* SOLR-13793: HttpSolrCall now maintains internal request count (_forwardedCount) for remote queries and limits them to
+  the number of replicas. This avoids making too many cascading calls to remote servers, which, if not restricted, can
+  bring down nodes containing the said collection (Kesharee Nandan Vishwakarma, Ishan Chattopadhyaya)
+
+* SOLR-13834: ZkController#getSolrCloudManager() created a new instance of ZkStateReader, thereby causing mismatch in the
+  visibility of the cluster state and, as a result, undesired race conditions (Clay Goddard via Ishan Chattopadhyaya)
 
 Other Changes
 ----------------------

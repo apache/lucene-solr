@@ -709,9 +709,9 @@ public class SimplePostTool {
    * @return true if this is a supported content type
    */
   protected boolean typeSupported(String type) {
-    for(String key : mimeMap.keySet()) {
-      if(mimeMap.get(key).equals(type)) {
-        if(fileTypes.contains(key))
+    for(Map.Entry<String, String> entry : mimeMap.entrySet()) {
+      if(entry.getValue().equals(type)) {
+        if(fileTypes.contains(entry.getKey()))
           return true;
       }
     }
