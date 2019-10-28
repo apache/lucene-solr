@@ -32,7 +32,7 @@ Upgrade Notes
 ----------------------
 
 * SOLR-13207: Queries that use the < operator not followed by a number will now return an HTTP 400 error rather than 500,
-  and the error message will explain that < must be followed by a number.
+  and the error message will explain that < must be followed by a number. (Chris Hennick)
 
 * LUCENE-8738: Move to Java 11 as minimum Java version.
   (Adrien Grand, Uwe Schindler)
