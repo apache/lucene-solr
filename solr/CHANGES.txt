@@ -136,6 +136,8 @@ Bug Fixes
 * SOLR-12393: Compute score if requested even when expanded docs not sorted by score in ExpandComponent.
   (David Smiley, Munendra S N)
 
+* SOLR-13877: Fix NPE in expand component when matched docs have fewer unique values. (Munendra S N)
+
 Other Changes
 ---------------------
 
