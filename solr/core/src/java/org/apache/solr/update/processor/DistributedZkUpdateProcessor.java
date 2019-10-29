@@ -114,7 +114,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
                                       SolrQueryResponse rsp, UpdateRequestProcessor next) {
     this(req,rsp,next, new CoreUpdateTracker(req.getCore().getCoreContainer()));
   }
-  
+
   @VisibleForTesting
   protected DistributedZkUpdateProcessor(SolrQueryRequest req,
       SolrQueryResponse rsp, UpdateRequestProcessor next, CoreUpdateTracker sharedCoreTracker) {
@@ -231,7 +231,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         params.set(DISTRIB_UPDATE_PARAM, DistribPhase.FROMLEADER.toString());
 
         params.set(COMMIT_END_POINT, "replicas");
-        
+
 
         useNodes = getReplicaNodesForLeader(cloudDesc.getShardId(), leaderReplica);
 
@@ -1068,7 +1068,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     if (isReadOnly()) {
       throw new SolrException(ErrorCode.FORBIDDEN, "Collection " + collection + " is read-only.");
     }
-   
+
     super.processMergeIndexes(cmd);
   }
 
@@ -1082,25 +1082,16 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     super.processRollback(cmd);
   }
 
-  @Override
-  public void finish() throws IOException {
-    clusterState = zkController.getClusterState();
-
-    assertNotFinished();
-
-    doFinish();
-  }
-  
   private void writeToShareStore() throws SolrException {
-    log.info("Attempting to initiate index update write to shared store for collection=" + cloudDesc.getCollectionName() + 
+    log.info("Attempting to initiate index update write to shared store for collection=" + cloudDesc.getCollectionName() +
         " and shard=" + cloudDesc.getShardId() + " using core=" + req.getCore().getName());
-    
-    sharedCoreTracker.persistShardIndexToSharedStore(zkController.zkStateReader.getClusterState(), 
-        cloudDesc.getCollectionName(), 
-        cloudDesc.getShardId(), 
+
+    sharedCoreTracker.persistShardIndexToSharedStore(zkController.zkStateReader.getClusterState(),
+        cloudDesc.getCollectionName(),
+        cloudDesc.getShardId(),
         req.getCore().getName());
   }
-  
+
   private void readFromSharedStoreIfNecessary() throws SolrException {
     String coreName = req.getCore().getName();
     String shardName = cloudDesc.getShardId();
@@ -1113,11 +1104,13 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     }
     BlobStoreUtils.syncLocalCoreWithSharedStore(collectionName,coreName,shardName,req.getCore().getCoreContainer());
   }
-  
-  
+
+
 
   // TODO: optionally fail if n replicas are not reached...
-  private void doFinish() {
+  protected void doDistribFinish() {
+    clusterState = zkController.getClusterState();
+
     boolean shouldUpdateTerms = isLeader && isIndexChanged;
     if (shouldUpdateTerms) {
       ZkShardTerms zkShardTerms = zkController.getShardTerms(cloudDesc.getCollectionName(), cloudDesc.getShardId());
@@ -1126,34 +1119,34 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       }
       zkController.getShardTerms(collection, cloudDesc.getShardId()).ensureHighestTermsAreNotZero();
     }
-    
+
     /**
-     *  Track the updated core for push to Blob store. 
-     *  
-     *  Only, the leader node pushes the updates to blob store but the leader can be change mid update, 
+     *  Track the updated core for push to Blob store.
+     *
+     *  Only, the leader node pushes the updates to blob store but the leader can be change mid update,
      *  so we don't stop peers from pushing updates to the blob store.
-     *  
-     *  We also need to check for isLeader here because a peer can also receive commit message if the request was directly send to the peer.     
+     *
+     *  We also need to check for isLeader here because a peer can also receive commit message if the request was directly send to the peer.
      */
     if ( updateCommand != null &&
-        updateCommand.getClass() == CommitUpdateCommand.class && 
+        updateCommand.getClass() == CommitUpdateCommand.class &&
         isLeader && replicaType.equals(Replica.Type.SHARED)
         && !((CommitUpdateCommand) updateCommand).softCommit) {
       /*
-       * TODO SPLITSHARD triggers soft commits.  
+       * TODO SPLITSHARD triggers soft commits.
        * We don't persist on softCommit because there is nothing to so we should ignore those kinds of commits.
        * Configuring behavior based on soft/hard commit seems like we're getting into an abstraction deeper then
        * what the DUP is concerned about so we may want to consider moving this code somewhere more appropriate
-       * in the future (deeper in the stack) 
+       * in the future (deeper in the stack)
        */
       writeToShareStore();
     }
-    
+
     // TODO: if not a forward and replication req is not specified, we could
     // send in a background thread
 
     cmdDistrib.finish();
-    
+
     List<SolrCmdDistributor.Error> errors = cmdDistrib.getErrors();
     // TODO - we may need to tell about more than one error...
 
@@ -1281,6 +1274,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     if (0 < errorsForClient.size()) {
       throw new DistributedUpdatesAsyncException(errorsForClient);
     }
+
   }
 
   /**

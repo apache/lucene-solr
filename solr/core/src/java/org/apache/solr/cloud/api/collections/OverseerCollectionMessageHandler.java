@@ -575,12 +575,14 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     throw new SolrException(ErrorCode.SERVER_ERROR, "Could not find coreNodeName");
   }
 
-  void waitForNewShard(String collectionName, String sliceName) throws KeeperException, InterruptedException {
+  ClusterState waitForNewShard(String collectionName, String sliceName) throws KeeperException, InterruptedException {
     log.debug("Waiting for slice {} of collection {} to be available", sliceName, collectionName);
     RTimer timer = new RTimer();
     int retryCount = 320;
     while (retryCount-- > 0) {
-      DocCollection collection = zkStateReader.getClusterState().getCollection(collectionName);
+      ClusterState clusterState = zkStateReader.getClusterState();
+      DocCollection collection = clusterState.getCollection(collectionName);
+
       if (collection == null) {
         throw new SolrException(ErrorCode.SERVER_ERROR,
             "Unable to find collection: " + collectionName + " in clusterstate");
@@ -589,7 +591,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       if (slice != null) {
         log.debug("Waited for {}ms for slice {} of collection {} to be available",
             timer.getTime(), sliceName, collectionName);
-        return;
+        return clusterState;
       }
       Thread.sleep(1000);
     }

@@ -46,7 +46,7 @@ CAUTION: By default, ZooKeeper's file size limit is 1MB. If your files are large
 
 Under standalone Solr, when looking up a plugin or resource to be loaded, Solr's resource loader will first look under the `<instanceDir>/conf/` directory.  If the plugin or resource is not found, the configured plugin and resource file paths are searched - see the section <<Lib Directives in SolrConfig>> below.
 
-On core load, Solr's resource loader constructs a list of paths (subdirectories and jars), first under <<solr_home-lib,`solr_home/lib`>>, and then under directories pointed to by <<Lib Directives in SolrConfig,`<lib/>` directives in SolrConfig>>.
+On core load, Solr's resource loader constructs a list of paths (subdirectories and jars), first under <<solr_homelib,`solr_home/lib`>>, and then under directories pointed to by <<Lib Directives in SolrConfig,`<lib/>` directives in SolrConfig>>.
 
 When looking up a resource or plugin to be loaded, the paths on the list are searched in the order they were added.
 

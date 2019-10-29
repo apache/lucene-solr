@@ -160,7 +160,7 @@ Step 5: Add the jar to your collection `gettingstarted`
     }'
 ----
 
-Step  6 : Create a new request handler '/test' for the collection 'gettingstarted' from the jar we just added
+Step 6: Create a new request handler '/test' for the collection 'gettingstarted' from the jar we just added
 
 [source,bash]
 ----
@@ -193,13 +193,13 @@ output:
   "loader":"org.apache.solr.core.MemClassLoader"}
 ----
 
-=== Updating remote jars
+=== Updating Remote Jars
 
 Example:
 
-* Host the new jar to a new url. eg:  http://localhost:8000/runtimelibs_v2.jar
-* get the `sha512` hash of the new jar
-* run the update-runtime lib command
+* Host the new jar to a new url, e.g., http://localhost:8000/runtimelibs_v2.jar
+* Get the `sha512` hash of the new jar.
+* Run the `update-runtimelib` command.
 
 [source,bash]
 ----
@@ -209,7 +209,8 @@ Example:
     "sha512" : "<replace-the-new-sha512-digest-here>"}
     }'
 ----
-NOTE: Always upload your jar to a new url as the Solr cluster is still referring to the old jar. If the existing jar is modified it can cause errors as the hash may not match
+
+NOTE: Always upload your jar to a new url as the Solr cluster is still referring to the old jar. If the existing jar is modified it can cause errors as the hash may not match.
 
 == Securing Runtime Libraries
 
