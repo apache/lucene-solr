@@ -276,7 +276,7 @@ public class PackageLoader implements AutoCloseable {
       @Override
       public void close() throws Exception {
         if (loader != null) {
-          loader.close();
+          org.apache.lucene.util.IOUtils.closeWhileHandlingException(loader);
         }
       }
     }
