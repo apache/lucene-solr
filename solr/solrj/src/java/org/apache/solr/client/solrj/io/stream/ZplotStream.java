@@ -35,8 +35,8 @@ import org.apache.commons.math3.util.Precision;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.eval.KmeansEvaluator;
-import org.apache.solr.client.solrj.io.eval.Matrix;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
+import org.apache.solr.client.solrj.io.eval.Matrix;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
@@ -197,9 +197,9 @@ public class ZplotStream extends TupleStream implements Expressible {
       //Handle the vectors
       for (int i = 0; i < numTuples; i++) {
         Tuple tuple = new Tuple(new HashMap());
-        for (String key : evaluated.keySet()) {
-          List l = (List) evaluated.get(key);
-          tuple.put(key, l.get(i));
+        for (Map.Entry<String, Object> entry : evaluated.entrySet()) {
+          List l = (List) entry.getValue();
+          tuple.put(entry.getKey(), l.get(i));
         }
 
         outTuples.add(tuple);

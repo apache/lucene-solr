@@ -139,7 +139,7 @@ public class TestSolrConfigHandler extends RestTestBase {
     assertEquals("10", m._getStr("config/updateHandler/autoCommit/maxTime",null));
     assertEquals("true", m._getStr("config/requestDispatcher/requestParsers/addHttpRequestToContext",null));
     payload = "{\n" +
-        " 'unset-property' :  'updateHandler.autoCommit.maxDocs'} \n" +
+        " 'unset-property' :  'updateHandler.autoCommit.maxDocs' \n" +
         " }";
     runConfigCommand(harness, "/config", payload);
 

@@ -35,7 +35,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
-import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
@@ -74,6 +73,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.util.concurrent.AtomicDouble;
 
 import static org.apache.solr.cloud.autoscaling.OverseerTriggerThread.MARKER_ACTIVE;
 import static org.apache.solr.cloud.autoscaling.OverseerTriggerThread.MARKER_INACTIVE;

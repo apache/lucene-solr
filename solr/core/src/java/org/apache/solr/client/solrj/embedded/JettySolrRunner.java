@@ -16,16 +16,6 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
-import javax.servlet.DispatcherType;
-import javax.servlet.Filter;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.BindException;
@@ -43,6 +33,17 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+
+import javax.servlet.DispatcherType;
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrClient;
@@ -370,14 +371,12 @@ public class JettySolrRunner {
 
         debugFilter = root.addFilter(DebugFilter.class, "*", EnumSet.of(DispatcherType.REQUEST) );
         extraFilters = new LinkedList<>();
-        for (Class<? extends Filter> filterClass : config.extraFilters.keySet()) {
-          extraFilters.add(root.addFilter(filterClass, config.extraFilters.get(filterClass),
-              EnumSet.of(DispatcherType.REQUEST)));
+        for (Map.Entry<Class<? extends Filter>, String> entry : config.extraFilters.entrySet()) {
+          extraFilters.add(root.addFilter(entry.getKey(), entry.getValue(), EnumSet.of(DispatcherType.REQUEST)));
         }
 
-        for (ServletHolder servletHolder : config.extraServlets.keySet()) {
-          String pathSpec = config.extraServlets.get(servletHolder);
-          root.addServlet(servletHolder, pathSpec);
+        for (Map.Entry<ServletHolder, String> entry : config.extraServlets.entrySet()) {
+          root.addServlet(entry.getKey(), entry.getValue());
         }
         dispatchFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
         dispatchFilter.setHeldClass(SolrDispatchFilter.class);

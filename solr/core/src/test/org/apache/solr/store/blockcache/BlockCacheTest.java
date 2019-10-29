@@ -23,12 +23,14 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.RemovalCause;
-import com.github.benmanes.caffeine.cache.RemovalListener;
+
+import com.github.benmanes.caffeine.cache.*;
+
 import org.apache.lucene.util.QuickPatchThreadsFilter;
+
 import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCase;
+
 import org.junit.Test;
 
 @ThreadLeakFilters(defaultFilters = true, filters = {

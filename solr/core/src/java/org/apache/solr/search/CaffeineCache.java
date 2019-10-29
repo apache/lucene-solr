@@ -31,21 +31,21 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 
-import com.codahale.metrics.MetricRegistry;
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
-import com.github.benmanes.caffeine.cache.Policy.Eviction;
 import com.github.benmanes.caffeine.cache.RemovalCause;
 import com.github.benmanes.caffeine.cache.RemovalListener;
-import com.github.benmanes.caffeine.cache.stats.CacheStats;
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.Policy.Eviction;
+import com.github.benmanes.caffeine.cache.stats.CacheStats;
+import com.google.common.annotations.VisibleForTesting;
 
 /**
  * A SolrCache backed by the Caffeine caching library [1]. By default it uses the Window TinyLFU (W-TinyLFU)
@@ -87,7 +87,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
 
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private MetricsMap cacheMap;
-  private MetricRegistry registry;
+  private SolrMetricsContext solrMetricsContext;
 
   private long initialRamBytes = 0;
   private final LongAdder ramBytes = new LongAdder();
@@ -201,7 +201,8 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
   }
 
   @Override
-  public void close() {
+  public void close() throws Exception {
+    SolrCache.super.close();
     cache.invalidateAll();
     cache.cleanUp();
     if (executor instanceof ExecutorService) {
@@ -321,8 +322,8 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
   }
 
   @Override
-  public MetricRegistry getMetricRegistry() {
-    return registry;
+  public SolrMetricsContext getSolrMetricsContext() {
+    return solrMetricsContext;
   }
 
   @Override
@@ -336,8 +337,8 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
-    registry = manager.registry(registryName);
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    solrMetricsContext = parentContext.getChildContext(this);
     cacheMap = new MetricsMap((detailed, map) -> {
       if (cache != null) {
         CacheStats stats = cache.stats();
@@ -361,6 +362,6 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
         map.put("cumulative_evictions", cumulativeStats.evictionCount());
       }
     });
-    manager.registerGauge(this, registryName, cacheMap, tag, true, scope, getCategory().toString());
+    solrMetricsContext.gauge(this, cacheMap, true, scope, getCategory().toString());
   }
 }

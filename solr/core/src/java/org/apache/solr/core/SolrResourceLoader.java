@@ -86,7 +86,6 @@ import org.slf4j.LoggerFactory;
 public class SolrResourceLoader implements ResourceLoader, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private String name = "";
   static final String project = "solr";
   static final String base = "org.apache" + "." + project;
   static final String[] packages = {
@@ -97,7 +96,10 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   };
   private static final java.lang.String SOLR_CORE_NAME = "solr.core.name";
   private static Set<String> loggedOnce = new ConcurrentSkipListSet<>();
+  private static final Charset UTF_8 = StandardCharsets.UTF_8;
 
+
+  private String name = "";
   protected URLClassLoader classLoader;
   private final Path instanceDir;
   private String dataDir;
@@ -105,7 +107,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   private final List<SolrCoreAware> waitingForCore = Collections.synchronizedList(new ArrayList<SolrCoreAware>());
   private final List<SolrInfoBean> infoMBeans = Collections.synchronizedList(new ArrayList<SolrInfoBean>());
   private final List<ResourceLoaderAware> waitingForResources = Collections.synchronizedList(new ArrayList<ResourceLoaderAware>());
-  private static final Charset UTF_8 = StandardCharsets.UTF_8;
 
   private final Properties coreProperties;
 

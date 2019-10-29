@@ -60,6 +60,11 @@ public class PluginInfo implements MapSerializable {
     this.children = children == null ? Collections.<PluginInfo>emptyList(): unmodifiableList(children);
     isFromSolrConfig = false;
   }
+
+  /** class names can be prefixed with package name e.g: my_package:my.pkg.Class
+   * This checks if it is a package name prefixed classname.
+   * the return value has first = package name & second = class name
+   */
   static Pair<String,String > parseClassName(String name) {
     String pkgName = null;
     String className = name;

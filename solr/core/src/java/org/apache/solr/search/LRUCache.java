@@ -26,14 +26,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
 
-import com.codahale.metrics.MetricRegistry;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,7 +76,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
   private String description="LRU Cache";
   private MetricsMap cacheMap;
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
-  private MetricRegistry registry;
+  private SolrMetricsContext solrMetricsContext;
   private int maxSize;
   private int initialSize;
 
@@ -234,8 +233,8 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
   }
 
   /**
-   * 
-   * @return Returns the description of this cache. 
+   *
+   * @return Returns the description of this cache.
    */
   private String generateDescription() {
     String description = "LRU Cache(maxSize=" + getMaxSize() + ", initialSize=" + initialSize;
@@ -341,9 +340,9 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
 
       // Don't do the autowarming in the synchronized block, just pull out the keys and values.
       synchronized (other.map) {
-        
+
         int sz = autowarm.getWarmCount(other.map.size());
-        
+
         keys = new Object[sz];
         vals = new Object[sz];
 
@@ -378,12 +377,6 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
     warmupTime = TimeUnit.MILLISECONDS.convert(System.nanoTime() - warmingStartTime, TimeUnit.NANOSECONDS);
   }
 
-  @Override
-  public void close() {
-
-  }
-
-
   //////////////////////// SolrInfoMBeans methods //////////////////////
 
 
@@ -403,8 +396,13 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
-    registry = manager.registry(registryName);
+  public SolrMetricsContext getSolrMetricsContext() {
+    return solrMetricsContext;
+  }
+
+  @Override
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    solrMetricsContext = parentContext.getChildContext(this);
     cacheMap = new MetricsMap((detailed, res) -> {
       synchronized (map) {
         res.put(LOOKUPS_PARAM, lookups);
@@ -433,17 +431,12 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
       res.put("cumulative_evictionsRamUsage", stats.evictionsRamUsage.longValue());
       res.put("cumulative_evictionsIdleTime", stats.evictionsIdleTime.longValue());
     });
-    manager.registerGauge(this, registryName, cacheMap, tag, true, scope, getCategory().toString());
+    solrMetricsContext.gauge(this, cacheMap, true, scope, getCategory().toString());
   }
 
   // for unit tests only
   MetricsMap getMetricsMap() {
     return cacheMap;
-  }
-
-  @Override
-  public MetricRegistry getMetricRegistry() {
-    return registry;
   }
 
   @Override

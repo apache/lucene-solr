@@ -18,6 +18,16 @@
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.CLUSTER_PREFERENCES;
+import static org.apache.solr.client.solrj.cloud.autoscaling.TestPolicy2.loadFromResource;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.CORES;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.FREEDISK;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.REPLICA;
+import static org.apache.solr.common.cloud.ZkStateReader.CLUSTER_STATE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOVEREPLICA;
+
 import java.io.IOException;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
@@ -35,8 +45,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -75,15 +83,8 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.CLUSTER_PREFERENCES;
-import static org.apache.solr.client.solrj.cloud.autoscaling.TestPolicy2.loadFromResource;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.CORES;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.FREEDISK;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.REPLICA;
-import static org.apache.solr.common.cloud.ZkStateReader.CLUSTER_STATE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOVEREPLICA;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 public class TestPolicy extends SolrTestCaseJ4 {
   boolean useNodeset ;
@@ -1843,7 +1844,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "            'freedisk':918005641216}," +
         "      '127.0.0.1:60089_solr':{" +
         "        'cores':2," +
-        "            'freedisk':918005641216}}}");
+        "            'freedisk':918005641216}}");
 
     Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(autoscaleJson));
     Policy.Session session = policy.createSession(new DelegatingCloudManager(null) {
@@ -2780,11 +2781,15 @@ public class TestPolicy extends SolrTestCaseJ4 {
     StringWriter writer = new StringWriter();
     NamedList<Object> val = new NamedList<>();
     val.add("violations", violations);
-    new SolrJSONWriter(writer)
-        .writeObj(val)
-        .close();
-    JSONWriter.write(writer, true, JsonTextWriter.JSON_NL_MAP, val);
-
+    
+    if (random().nextBoolean()) {
+      new SolrJSONWriter(writer)
+          .writeObj(val)
+          .close();
+    } else {
+      JSONWriter.write(writer, true, JsonTextWriter.JSON_NL_MAP, val);
+    }
+    
     Object root = Utils.fromJSONString(writer.toString());
     assertEquals(2l,
         Utils.getObjectByPath(root, true, "violations[0]/violation/replica/NRT"));

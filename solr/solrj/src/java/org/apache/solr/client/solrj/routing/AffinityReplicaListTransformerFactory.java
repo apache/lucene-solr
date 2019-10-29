@@ -14,12 +14,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.handler.component;
+package org.apache.solr.client.solrj.routing;
 
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ShardParams;
+import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.request.SolrQueryRequest;
 
 /**
  * Factory for constructing an {@link AffinityReplicaListTransformer} that reorders replica routing
@@ -27,12 +27,12 @@ import org.apache.solr.request.SolrQueryRequest;
  *
  * Default names of params that contain the values by which routing is determined may be configured
  * at the time of {@link AffinityReplicaListTransformerFactory} construction, and may be
- * overridden by the config spec passed to {@link #getInstance(String, SolrQueryRequest, ReplicaListTransformerFactory)}
+ * overridden by the config spec passed to {@link #getInstance(String, SolrParams, ReplicaListTransformerFactory)}
  *
  * If no defaultHashParam name is specified at time of factory construction, the routing dividend will
  * be derived by hashing the {@link String} value of the {@link CommonParams#Q} param.
  */
-class AffinityReplicaListTransformerFactory implements ReplicaListTransformerFactory {
+public class AffinityReplicaListTransformerFactory implements ReplicaListTransformerFactory {
   private final String defaultDividendParam;
   private final String defaultHashParam;
 
@@ -68,24 +68,24 @@ class AffinityReplicaListTransformerFactory implements ReplicaListTransformerFac
   }
 
   @Override
-  public ReplicaListTransformer getInstance(String configSpec, SolrQueryRequest request, ReplicaListTransformerFactory fallback) {
+  public ReplicaListTransformer getInstance(String configSpec, SolrParams requestParams, ReplicaListTransformerFactory fallback) {
     ReplicaListTransformer rlt;
     if (configSpec == null) {
-      rlt = AffinityReplicaListTransformer.getInstance(defaultDividendParam, defaultHashParam, request);
+      rlt = AffinityReplicaListTransformer.getInstance(defaultDividendParam, defaultHashParam, requestParams);
     } else {
       String[] parts = configSpec.split(":", 2);
       switch (parts[0]) {
         case ShardParams.ROUTING_DIVIDEND:
-          rlt = AffinityReplicaListTransformer.getInstance(parts.length == 1 ? defaultDividendParam : parts[1], defaultHashParam, request);
+          rlt = AffinityReplicaListTransformer.getInstance(parts.length == 1 ? defaultDividendParam : parts[1], defaultHashParam, requestParams);
           break;
         case ShardParams.ROUTING_HASH:
-          rlt = AffinityReplicaListTransformer.getInstance(null, parts.length == 1 ? defaultHashParam : parts[1], request);
+          rlt = AffinityReplicaListTransformer.getInstance(null, parts.length == 1 ? defaultHashParam : parts[1], requestParams);
           break;
         default:
           throw new IllegalArgumentException("Invalid routing spec: \"" + configSpec + '"');
       }
     }
-    return rlt != null ? rlt : fallback.getInstance(null, request, null);
+    return rlt != null ? rlt : fallback.getInstance(null, requestParams, null);
   }
 
 }

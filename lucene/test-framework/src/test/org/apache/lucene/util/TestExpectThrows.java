@@ -16,8 +16,8 @@
  */
 package org.apache.lucene.util;
 
-import java.io.IOException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.io.IOException;
 
 import org.junit.internal.AssumptionViolatedException;
   

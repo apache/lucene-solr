@@ -194,8 +194,7 @@ public class Tuple implements Cloneable, MapWriter {
   }
 
   public Tuple clone() {
-    HashMap m = new HashMap();
-    m.putAll(fields);
+    HashMap m = new HashMap(fields);
     Tuple clone = new Tuple(m);
     return clone;
   }

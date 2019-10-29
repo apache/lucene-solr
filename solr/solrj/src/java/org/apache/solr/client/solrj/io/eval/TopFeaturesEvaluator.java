@@ -17,13 +17,14 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+
 import java.util.Locale;
-import java.util.TreeSet;
 
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.TreeSet;
 
 public class TopFeaturesEvaluator extends RecursiveObjectEvaluator implements TwoValueWorker {
   protected static final long serialVersionUID = 1L;

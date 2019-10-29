@@ -16,6 +16,9 @@
  */
 package org.apache.solr.update.processor;
 
+import static org.hamcrest.CoreMatchers.hasItems;
+import static org.hamcrest.CoreMatchers.not;
+
 import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
@@ -26,7 +29,6 @@ import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.ImmutableMap;
 import org.apache.curator.shaded.com.google.common.collect.Lists;
 import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -37,8 +39,7 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import static org.hamcrest.CoreMatchers.hasItems;
-import static org.hamcrest.CoreMatchers.not;
+import com.google.common.collect.ImmutableMap;
 
 public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSolrServerTestBase {
 

@@ -328,6 +328,24 @@ public class TestQueryVisitor extends LuceneTestCase {
     minimumTermSet.clear();
     extractor.collectTerms(minimumTermSet);
     assertThat(minimumTermSet, equalTo(expected2));
+
+    BooleanQuery bq = new BooleanQuery.Builder()
+        .add(new BooleanQuery.Builder()
+            .add(new TermQuery(new Term("f", "1")), BooleanClause.Occur.MUST)
+            .add(new TermQuery(new Term("f", "61")), BooleanClause.Occur.MUST)
+            .add(new TermQuery(new Term("f", "211")), BooleanClause.Occur.FILTER)
+            .add(new TermQuery(new Term("f", "5")), BooleanClause.Occur.SHOULD)
+            .build(), BooleanClause.Occur.SHOULD)
+        .add(new PhraseQuery("f", "3333", "44444"), BooleanClause.Occur.SHOULD)
+        .build();
+    QueryNode ex2 = new ConjunctionNode();
+    bq.visit(ex2);
+    Set<Term> expected3 = new HashSet<>(Arrays.asList(new Term("f", "1"), new Term("f", "3333")));
+    minimumTermSet.clear();
+    ex2.collectTerms(minimumTermSet);
+    assertThat(minimumTermSet, equalTo(expected3));
+    ex2.getWeight(); // force sort order
+    assertThat(ex2.toString(), equalTo("AND(AND(OR(AND(TERM(f:3333),TERM(f:44444)),AND(TERM(f:1),TERM(f:61),AND(TERM(f:211))))))"));
   }
 
 }

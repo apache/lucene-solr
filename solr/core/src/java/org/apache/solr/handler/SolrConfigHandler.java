@@ -153,7 +153,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     NamedList configSetProperties = core.getConfigSetProperties();
     if (configSetProperties == null) return false;
     Object immutable = configSetProperties.get(IMMUTABLE_CONFIGSET_ARG);
-    return immutable != null ? Boolean.parseBoolean(immutable.toString()) : false;
+    return immutable != null && Boolean.parseBoolean(immutable.toString());
   }
 
 
@@ -249,6 +249,8 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
                 Object o = map.get(componentName);
                 val.put(parts.get(1), makeMap(componentName, o));
                 if (req.getParams().getBool("meta", false)) {
+                  // meta=true is asking for the package info of the plugin
+                  // We go through all the listeners and see if there is one registered for this plugin
                   List<PackageListeners.Listener> listeners = req.getCore().getPackageListeners().getListeners();
                   for (PackageListeners.Listener listener :
                       listeners) {
@@ -307,13 +309,13 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
         pluginInfo = ((PluginInfo) plugin).toMap(new LinkedHashMap<>());
       }
       String useParams = (String) pluginInfo.get(USEPARAM);
-      String useparamsInReq = req.getOriginalParams().get(USEPARAM);
-      if (useParams != null || useparamsInReq != null) {
+      String useParamsInReq = req.getOriginalParams().get(USEPARAM);
+      if (useParams != null || useParamsInReq != null) {
         Map m = new LinkedHashMap<>();
         pluginInfo.put("_useParamsExpanded_", m);
         List<String> params = new ArrayList<>();
         if (useParams != null) params.addAll(StrUtils.splitSmart(useParams, ','));
-        if (useparamsInReq != null) params.addAll(StrUtils.splitSmart(useparamsInReq, ','));
+        if (useParamsInReq != null) params.addAll(StrUtils.splitSmart(useParamsInReq, ','));
         for (String param : params) {
           RequestParams.ParamSet p = this.req.getCore().getSolrConfig().getRequestParams().getParams(param);
           if (p != null) {
@@ -429,10 +431,14 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             if (op.hasError()) break;
             for (String s : name) {
               if (params.getParams(s) == null) {
-                op.addError(formatString("can't delete . No such params ''{0}'' exist", s));
+                op.addError(formatString("Could not delete. No such params ''{0}'' exist", s));
               }
               params = params.setParams(s, null);
             }
+            break;
+          }
+          default: {
+            op.unknownOperation();
           }
         }
       }
@@ -519,7 +525,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       } else {
         SolrResourceLoader.persistConfLocally(loader, ConfigOverlay.RESOURCE_NAME, overlay.toByteArray());
         req.getCore().getCoreContainer().reload(req.getCore().getName());
-        log.debug("Executed config commands successfully and persited to File System {}", ops);
+        log.info("Executed config commands successfully and persisted to File System {}", ops);
       }
 
     }
@@ -786,7 +792,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
         if (!success) {
           String coreUrl = concurrentTasks.get(f).coreUrl;
-          log.warn("Core " + coreUrl + "could not get the expected version " + expectedVersion);
+          log.warn("Core " + coreUrl + " could not get the expected version " + expectedVersion);
           if (failedList == null) failedList = new ArrayList<>();
           failedList.add(coreUrl);
         }

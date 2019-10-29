@@ -17,6 +17,7 @@
 package org.apache.solr.search.stats;
 
 import java.lang.invoke.MethodHandles;
+
 import java.util.List;
 
 import org.apache.solr.handler.component.ResponseBuilder;

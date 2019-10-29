@@ -27,14 +27,16 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.github.benmanes.caffeine.cache.Cache;
-import com.github.benmanes.caffeine.cache.Caffeine;
 import com.github.benmanes.caffeine.cache.RemovalCause;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.junit.Test;
+
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 
 /**
  * Test for {@link CaffeineCache}.
@@ -48,10 +50,11 @@ public class TestCaffeineCache extends SolrTestCase {
   @Test
   public void testSimple() throws IOException {
     CaffeineCache<Integer, String> lfuCache = new CaffeineCache<>();
-    lfuCache.initializeMetrics(metricManager, registry, "foo", scope + "-1");
+    SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, registry, "foo");
+    lfuCache.initializeMetrics(solrMetricsContext, scope + "-1");
 
     CaffeineCache<Integer, String> newLFUCache = new CaffeineCache<>();
-    newLFUCache.initializeMetrics(metricManager, registry, "foo2", scope + "-2");
+    newLFUCache.initializeMetrics(solrMetricsContext, scope + "-2");
 
     Map<String, String> params = new HashMap<>();
     params.put("size", "100");
@@ -280,5 +283,6 @@ public class TestCaffeineCache extends SolrTestCase {
     }
     assertTrue("total ram bytes should be greater than 0", total > 0);
     assertTrue("total ram bytes exceeded limit", total < 1024 * 1024);
+    cache.close();
   }
 }

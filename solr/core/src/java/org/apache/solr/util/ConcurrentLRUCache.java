@@ -15,8 +15,12 @@
  * limitations under the License.
  */
 package org.apache.solr.util;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.PriorityQueue;
+import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.solr.common.util.Cache;
+import org.apache.solr.common.util.TimeSource;
 
-import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -28,20 +32,14 @@ import java.util.Map;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+//import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantLock;
-
-import org.apache.lucene.util.Accountable;
-import org.apache.lucene.util.PriorityQueue;
-import org.apache.lucene.util.RamUsageEstimator;
-import org.apache.solr.common.util.Cache;
-import org.apache.solr.common.util.TimeSource;
+import java.lang.ref.WeakReference;
 
 import static org.apache.lucene.util.RamUsageEstimator.HASHTABLE_RAM_BYTES_PER_ENTRY;
 import static org.apache.lucene.util.RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED;
-
-//import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * A LRU cache implementation based upon ConcurrentHashMap and other techniques to reduce

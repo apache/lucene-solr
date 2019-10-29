@@ -14,26 +14,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.handler.component;
+ 
+/** 
+ * Classes to handle query routing preferences
+ */
+package org.apache.solr.client.solrj.routing;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Random;
 
-class ShufflingReplicaListTransformer implements ReplicaListTransformer {
-
-  private final Random r;
-
-  public ShufflingReplicaListTransformer(Random r)
-  {
-    this.r = r;
-  }
-
-  public void transform(List<?> choices)
-  {
-    if (choices.size() > 1) {
-      Collections.shuffle(choices, r);
-    }
-  }
-
-}

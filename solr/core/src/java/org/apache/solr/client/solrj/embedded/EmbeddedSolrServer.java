@@ -16,6 +16,8 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
+import static org.apache.solr.common.params.CommonParams.PATH;
+
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -56,8 +58,6 @@ import org.apache.solr.response.BinaryResponseWriter;
 import org.apache.solr.response.ResultContext;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.SolrRequestParsers;
-
-import static org.apache.solr.common.params.CommonParams.PATH;
 
 /**
  * SolrClient that connects directly to a CoreContainer.

@@ -16,10 +16,10 @@
  */
 package org.apache.solr.search;
 
-import java.util.Map;
-
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricProducer;
+
+import java.util.Map;
 
 
 /**
@@ -137,7 +137,9 @@ public interface SolrCache<K,V> extends SolrInfoBean, SolrMetricProducer {
 
 
   /** Frees any non-memory resources */
-  public void close();
+  default void close() throws Exception {
+    SolrMetricProducer.super.close();
+  }
 
   /** Returns maximum size limit (number of items) if set and supported, -1 otherwise. */
   int getMaxSize();
