@@ -30,7 +30,9 @@ Jetty 9.4.19.v20190610
 
 Upgrade Notes
 ---------------------
-(No changes)
+
+* org.apache.solr.search.grouping.distributed.command.QueryCommand.Builder has new method 'setMainQuery' which is used
+  to set top-level query. build() would fail if called without setting mainQuery
 
 New Features
 ---------------------
@@ -63,6 +65,9 @@ Bug Fixes
   (David Smiley, Munendra S N)
 
 * SOLR-13877: Fix NPE in expand component when matched docs have fewer unique values. (Munendra S N)
+
+* SOLR-13823: Fix ClassCastEx when score is requested with group.query. This also fixes score not being generated
+  for distributed group.query case. (Uwe Jäger, Munendra S N)
 
 Other Changes
 ---------------------
