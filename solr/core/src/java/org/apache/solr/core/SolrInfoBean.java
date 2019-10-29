@@ -20,7 +20,8 @@ import java.util.Map;
 import java.util.Set;
 
 import com.codahale.metrics.MetricRegistry;
-import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.util.stats.MetricUtils;
 
 /**
@@ -77,13 +78,17 @@ public interface SolrInfoBean {
    * (default is null, which means no registry).
    */
   default MetricRegistry getMetricRegistry() {
+    if (this instanceof SolrMetricProducer) {
+      SolrMetricsContext context = ((SolrMetricProducer)this).getSolrMetricsContext();
+      return context != null ? context.getMetricRegistry() : null;
+    }
     return null;
   }
 
   /** Register a metric name that this component reports. This method is called by various
    * metric registration methods in {@link org.apache.solr.metrics.SolrMetricManager} in order
    * to capture what metric names are reported from this component (which in turn is called
-   * from {@link org.apache.solr.metrics.SolrMetricProducer#initializeMetrics(SolrMetricManager, String, String, String)}).
+   * from {@link org.apache.solr.metrics.SolrMetricProducer#initializeMetrics(SolrMetricsContext, String)}).
    * <p>Default implementation registers all metrics added by a component. Implementations may
    * override this to avoid reporting some or all metrics returned by {@link #getMetricsSnapshot()}</p>
    */

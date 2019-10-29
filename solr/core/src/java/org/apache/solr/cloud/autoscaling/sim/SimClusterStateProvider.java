@@ -700,6 +700,19 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     cloudManager.getTimeSource().sleep(delays.get(op));
   }
 
+  public void simSetOpDelays(String collection, Map<String, Long> delays) {
+    Map<String, Long> currentDelays = opDelays.getOrDefault(collection, Collections.emptyMap());
+    Map<String, Long> newDelays = new HashMap<>(currentDelays);
+    delays.forEach((k, v) -> {
+      if (v == null) {
+        newDelays.remove(k);
+      } else {
+        newDelays.put(k, v);
+      }
+    });
+    opDelays.put(collection, newDelays);
+  }
+
   /**
    * Simulate running a shard leader election. This operation is a no-op if a leader already exists.
    * If a new leader is elected the cluster state is saved.

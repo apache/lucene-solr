@@ -115,7 +115,7 @@ public class DistribPackageStore implements PackageStore {
         if (!parent.exists()) {
           parent.mkdirs();
         }
-        Map m = (Map) Utils.fromJSON(meta.array());
+        Map m = (Map) Utils.fromJSON(meta.array(), meta.arrayOffset(), meta.limit());
         if (m == null || m.isEmpty()) {
           throw new SolrException(SERVER_ERROR, "invalid metadata , discarding : " + path);
         }
@@ -187,7 +187,7 @@ public class DistribPackageStore implements PackageStore {
         metadata = Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
             baseUrl + "/node/files" + getMetaPath(),
             Utils.newBytesConsumer((int) MAX_PKG_SIZE));
-        m = (Map) Utils.fromJSON(metadata.array());
+        m = (Map) Utils.fromJSON(metadata.array(), metadata.arrayOffset(), metadata.limit());
       } catch (SolrException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error fetching metadata", e);
       }
@@ -354,26 +354,21 @@ public class DistribPackageStore implements PackageStore {
           Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(), url, null);
         } catch (Exception e) {
           log.info("Node: " + node +
-              " failed to respond for blob notification", e);
+              " failed to respond for file fetch notification", e);
           //ignore the exception
           // some nodes may be down or not responding
         }
         i++;
       }
     } finally {
-      new Thread(() -> {
+      coreContainer.getUpdateShardHandler().getUpdateExecutor().submit(() -> {
         try {
-          // keep the jar in memory for 10 secs , so that
-          //every node can download it from memory without the file system
           Thread.sleep(10 * 1000);
-        } catch (Exception e) {
-          //don't care
         } finally {
           tmpFiles.remove(entry.getPath());
         }
-      }).start();
-
-
+        return null;
+      });
     }
 
   }

@@ -14,22 +14,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.handler.component;
+
+package org.apache.solr.client.solrj.request.beans;
 
 import java.util.List;
 
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.params.ShardParams;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import org.apache.solr.common.util.ReflectMapWriter;
 
-public interface ReplicaListTransformer {
+/**Just a container class for POJOs used in Package APIs
+ *
+ */
+public class Package {
+  public static class AddVersion implements ReflectMapWriter {
+    @JsonProperty(value = "package", required = true)
+    public String pkg;
+    @JsonProperty(required = true)
+    public String version;
+    @JsonProperty(required = true)
+    public List<String> files;
 
-  /**
-   * Transforms the passed in list of choices. Transformations can include (but are not limited to)
-   * reordering of elements (e.g. via shuffling) and removal of elements (i.e. filtering).
-   *
-   * @param choices - a list of choices to transform, typically the choices are {@link Replica} objects but choices
-   * can also be {@link String} objects such as URLs passed in via the {@link ShardParams#SHARDS} parameter.
-   */
-  public void transform(List<?> choices);
+  }
 
+  public static class DelVersion implements ReflectMapWriter {
+    @JsonProperty(value = "package", required = true)
+    public String pkg;
+    @JsonProperty(required = true)
+    public String version;
+
+  }
 }

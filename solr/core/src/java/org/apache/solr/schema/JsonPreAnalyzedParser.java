@@ -81,7 +81,7 @@ public class JsonPreAnalyzedParser implements PreAnalyzedParser {
     if (val.length() == 0) {
       return res;
     }
-    Object o = ObjectBuilder.fromJSON(val);
+    Object o = ObjectBuilder.fromJSONStrict(val);
     if (!(o instanceof Map)) {
       throw new IOException("Invalid JSON type " + o.getClass().getName() + ", expected Map");
     }

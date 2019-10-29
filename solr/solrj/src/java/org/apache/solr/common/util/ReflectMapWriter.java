@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-package org.apache.solr.util;
+package org.apache.solr.common.util;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -23,7 +23,7 @@ import java.lang.reflect.Modifier;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.solr.common.MapWriter;
-
+// An implementation of MapWriter which is annotated with Jackson annotations
 public interface ReflectMapWriter extends MapWriter {
 
   @Override
