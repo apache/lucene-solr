@@ -68,7 +68,7 @@ public final class FST<T> implements Accountable {
   static final boolean NEVER_FIXED_ARRAY = false;
   static final boolean ALWAYS_DIRECT_ADDRESSING = false;
   static final boolean NEVER_DIRECT_ADDRESSING = false;
-  static final boolean OPTIM_DA = false;
+  static final boolean OPTIM_DA = true;
   {
     if (ALWAYS_FIXED_ARRAY) System.out.println("ALWAYS_FIXED_ARRAY");
     if (NEVER_FIXED_ARRAY) System.out.println("NEVER_FIXED_ARRAY");
@@ -817,7 +817,7 @@ public final class FST<T> implements Accountable {
 
   /** Gets the number of bytes required to flag the presence of each arc in the given label range, one bit per arc. */
   private static int getNumPresenceBytes(int labelRange) {
-    return (labelRange + 7) >>> 3;
+    return (labelRange + 7) / Byte.SIZE;
   }
 
   private void writeArrayWithGaps(Builder<T> builder, Builder.UnCompiledNode<T> nodeIn, long fixedArrayStart, int maxBytesPerArc, int labelRange) {
@@ -1017,15 +1017,9 @@ public final class FST<T> implements Accountable {
    */
   private int readPresenceBytes(Arc<T> arc, BytesReader in) throws IOException {
     int numPresenceBytes = getNumPresenceBytes(arc.numArcs());
-    long[] presenceBits = new long[numPresenceBytes + 7 >>> 3];
-    int longIndex = 0;
-    int byteIndex = 0;
+    long[] presenceBits = new long[(numPresenceBytes + 7) / Long.BYTES];
     for (int i = 0; i < numPresenceBytes; i++) {
-      presenceBits[longIndex] |= (long) (in.readByte() & 0xFF) << (i << 3);
-      if (++byteIndex == 8) {
-        byteIndex = 0;
-        longIndex++;
-      }
+      presenceBits[i / Long.BYTES] |= (in.readByte() & 0xFFL) << (i * Byte.SIZE);
     }
     arc.bitTable = presenceBits;
     assert checkPresenceBytesAreValid(arc);
@@ -1035,7 +1029,7 @@ public final class FST<T> implements Accountable {
   static boolean checkPresenceBytesAreValid(Arc arc) {
     assert (arc.bitTable()[0] & 1L) != 0; // First bit must be set.
     assert (arc.bitTable()[arc.bitTable().length - 1] & (1L << (arc.numArcs() - 1))) != 0; // Last bit must be set.
-    assert countBits(arc.bitTable()) <= arc.numArcs(); // Total bit set must be <= label range.
+    assert countBits(arc.bitTable()) <= arc.numArcs(); // Total bit set (real num arcs) must be <= label range (stored in arc.numArcs()).
     return true;
   }
 
@@ -1054,7 +1048,7 @@ public final class FST<T> implements Accountable {
    * Returns whether the bit at given index is set.
    */
   static boolean isBitSet(long[] bits, int bitIndex) {
-    return (bits[bitIndex >> 6] & (1L << (bitIndex & 63))) != 0;
+    return (bits[bitIndex / Long.SIZE] & (1L << bitIndex)) != 0; // Shifts are mod 64.
   }
 
   /**
@@ -1062,15 +1056,12 @@ public final class FST<T> implements Accountable {
    */
   static int countBitsUpTo(long[] bits, int bitIndex) {
     int bitCount = 0;
-    int lastLong = bitIndex >>> 6; // index / 64
+    int lastLong = bitIndex / Long.SIZE;
     for (int i = 0; i < lastLong; i++) {
       bitCount += Long.bitCount(bits[i]);
     }
-    int indexInLastLong = bitIndex & 63; // index % 64
-    if (indexInLastLong != 0) {
-      long mask = 0xFFFFFFFFFFFFFFFFL >>> (Long.SIZE - indexInLastLong);
-      bitCount += Long.bitCount(bits[lastLong] & mask);
-    }
+    long mask = (1L << bitIndex) - 1L; // Shifts are mod 64.
+    bitCount += Long.bitCount(bits[lastLong] & mask);
     return bitCount;
   }
 
@@ -1118,13 +1109,13 @@ public final class FST<T> implements Accountable {
       final byte flags = in.readByte();
       if (flags == ARCS_AS_ARRAY_PACKED || flags == ARCS_AS_ARRAY_WITH_GAPS) {
         //System.out.println("    nextArc fixed array");
-        in.readVInt();
+        int numArcs = in.readVInt();
 
         // Skip bytesPerArc:
         in.readVInt();
 
         if (flags == ARCS_AS_ARRAY_WITH_GAPS && OPTIM_DA && inputType == INPUT_TYPE.BYTE1) {
-          in.skipBytes(getNumPresenceBytes(arc.numArcs()));
+          in.skipBytes(getNumPresenceBytes(numArcs));
         }
       } else {
         in.setPosition(pos);
