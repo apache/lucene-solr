@@ -362,92 +362,97 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         
         replicaType = core.getCoreDescriptor().getCloudDescriptor().getReplicaType();
         coreNodeName = core.getCoreDescriptor().getCloudDescriptor().getCoreNodeName();
-        // should I be leader?
-        ZkShardTerms zkShardTerms = zkController.getShardTerms(collection, shardId);
-        if (zkShardTerms.registered(coreNodeName) && !zkShardTerms.canBecomeLeader(coreNodeName)) {
-          if (!waitForEligibleBecomeLeaderAfterTimeout(zkShardTerms, coreNodeName, leaderVoteWait)) {
-            rejoinLeaderElection(core);
+        
+        // if SHARED replica, skip sync and recovery stages. a SHARED replica that is not up-to-date can
+        // still become leader; it will sync the latest from blobstore with the next request.
+        if (replicaType != Replica.Type.SHARED) {
+          // should I be leader?
+          ZkShardTerms zkShardTerms = zkController.getShardTerms(collection, shardId);
+          if (zkShardTerms.registered(coreNodeName) && !zkShardTerms.canBecomeLeader(coreNodeName)) {
+            if (!waitForEligibleBecomeLeaderAfterTimeout(zkShardTerms, coreNodeName, leaderVoteWait)) {
+              rejoinLeaderElection(core);
+              return;
+            } else {
+              // only log an error if this replica win the election
+              setTermToMax = true;
+            }
+          }
+  
+          if (isClosed) {
             return;
-          } else {
-            // only log an error if this replica win the election
-            setTermToMax = true;
           }
-        }
-
-        if (isClosed) {
-          return;
-        }
-        
-        log.info("I may be the new leader - try and sync");
-        
-        // we are going to attempt to be the leader
-        // first cancel any current recovery
-        core.getUpdateHandler().getSolrCoreState().cancelRecovery();
-        
-        if (weAreReplacement) {
-          // wait a moment for any floating updates to finish
+          
+          log.info("I may be the new leader - try and sync");
+          
+          // we are going to attempt to be the leader
+          // first cancel any current recovery
+          core.getUpdateHandler().getSolrCoreState().cancelRecovery();
+          
+          if (weAreReplacement) {
+            // wait a moment for any floating updates to finish
+            try {
+              Thread.sleep(2500);
+            } catch (InterruptedException e) {
+              Thread.currentThread().interrupt();
+              throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, e);
+            }
+          }
+  
+          PeerSync.PeerSyncResult result = null;
+          boolean success = false;
           try {
-            Thread.sleep(2500);
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, e);
+            result = syncStrategy.sync(zkController, core, leaderProps, weAreReplacement);
+            success = result.isSuccess();
+          } catch (Exception e) {
+            SolrException.log(log, "Exception while trying to sync", e);
+            result = PeerSync.PeerSyncResult.failure();
           }
-        }
-
-        PeerSync.PeerSyncResult result = null;
-        boolean success = false;
-        try {
-          result = syncStrategy.sync(zkController, core, leaderProps, weAreReplacement);
-          success = result.isSuccess();
-        } catch (Exception e) {
-          SolrException.log(log, "Exception while trying to sync", e);
-          result = PeerSync.PeerSyncResult.failure();
-        }
-        
-        UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
-        
-        if (!success) {
-          boolean hasRecentUpdates = false;
-          if (ulog != null) {
-            // TODO: we could optimize this if necessary
-            try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
-              hasRecentUpdates = !recentUpdates.getVersions(1).isEmpty();
+          
+          UpdateLog ulog = core.getUpdateHandler().getUpdateLog();
+          
+          if (!success) {
+            boolean hasRecentUpdates = false;
+            if (ulog != null) {
+              // TODO: we could optimize this if necessary
+              try (UpdateLog.RecentUpdates recentUpdates = ulog.getRecentUpdates()) {
+                hasRecentUpdates = !recentUpdates.getVersions(1).isEmpty();
+              }
+            }
+            
+            if (!hasRecentUpdates) {
+              // we failed sync, but we have no versions - we can't sync in that case
+              // - we were active
+              // before, so become leader anyway if no one else has any versions either
+              if (result.getOtherHasVersions().orElse(false))  {
+                log.info("We failed sync, but we have no versions - we can't sync in that case. But others have some versions, so we should not become leader");
+                success = false;
+              } else  {
+                log.info(
+                    "We failed sync, but we have no versions - we can't sync in that case - we were active before, so become leader anyway");
+                success = true;
+              }
             }
           }
           
-          if (!hasRecentUpdates) {
-            // we failed sync, but we have no versions - we can't sync in that case
-            // - we were active
-            // before, so become leader anyway if no one else has any versions either
-            if (result.getOtherHasVersions().orElse(false))  {
-              log.info("We failed sync, but we have no versions - we can't sync in that case. But others have some versions, so we should not become leader");
-              success = false;
-            } else  {
-              log.info(
-                  "We failed sync, but we have no versions - we can't sync in that case - we were active before, so become leader anyway");
-              success = true;
-            }
-          }
-        }
-        
-        // solrcloud_debug
-        if (log.isDebugEnabled()) {
-          try {
-            RefCounted<SolrIndexSearcher> searchHolder = core.getNewestSearcher(false);
-            SolrIndexSearcher searcher = searchHolder.get();
+          // solrcloud_debug
+          if (log.isDebugEnabled()) {
             try {
-              log.debug(core.getCoreContainer().getZkController().getNodeName() + " synched "
-                  + searcher.count(new MatchAllDocsQuery()));
-            } finally {
-              searchHolder.decref();
+              RefCounted<SolrIndexSearcher> searchHolder = core.getNewestSearcher(false);
+              SolrIndexSearcher searcher = searchHolder.get();
+              try {
+                log.debug(core.getCoreContainer().getZkController().getNodeName() + " synched "
+                    + searcher.count(new MatchAllDocsQuery()));
+              } finally {
+                searchHolder.decref();
+              }
+            } catch (Exception e) {
+              log.error("Error in solrcloud_debug block", e);
             }
-          } catch (Exception e) {
-            log.error("Error in solrcloud_debug block", e);
           }
-        }
-        if (!success) {
-          rejoinLeaderElection(core);
-          return;
+          if (!success) {
+            rejoinLeaderElection(core);
+            return;
+          }
         }
         
       }
