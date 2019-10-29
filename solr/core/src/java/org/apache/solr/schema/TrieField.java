@@ -113,13 +113,17 @@ public class TrieField extends NumericFieldType {
     }
   }
 
+  private static final String BYTES_REF_PREFIX = "[]";
+
   @Override
   public Object marshalSortValue(Object value) {
-    if (value instanceof Number) {
+    if (value == null) {
+      return null;
+    } else if (value instanceof Number) {
       return value;
     } else if (value instanceof BytesRef) {
       // e.g., from docValues
-      return marshalBase64SortValue(value);
+      return value == null ? null : BYTES_REF_PREFIX.concat((String)marshalBase64SortValue(value));
     } else {
       throw new IllegalArgumentException("unexpected type: "+value.getClass().getName()+":"+value);
     }
@@ -127,10 +131,16 @@ public class TrieField extends NumericFieldType {
 
   @Override
   public Object unmarshalSortValue(Object value) {
-    if (value instanceof Number) {
-      return value;
+    final String stringVal;
+    if (value == null) {
+      return null;
+    } else if (value instanceof Number) {
+      return value; // a common case
+    } else if (value instanceof String && (stringVal = (String)value).startsWith(BYTES_REF_PREFIX)) {
+      return unmarshalBase64SortValue(stringVal.substring(BYTES_REF_PREFIX.length()));
     } else {
-      return unmarshalBase64SortValue(value);
+      // sending side did not marshal sort value as expected for this field type (see SOLR-9448)
+      return value;
     }
   }
 
