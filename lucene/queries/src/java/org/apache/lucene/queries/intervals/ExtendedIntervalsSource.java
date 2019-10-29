@@ -55,7 +55,7 @@ class ExtendedIntervalsSource extends IntervalsSource {
       return null;
     }
     IntervalIterator wrapped = new ExtendedIntervalIterator(IntervalMatches.wrapMatches(in, doc), before, after);
-    return IntervalMatches.asMatches(wrapped, in, doc);
+    return IntervalMatches.asMatches(wrapped, in, doc, field, this);
   }
 
   @Override

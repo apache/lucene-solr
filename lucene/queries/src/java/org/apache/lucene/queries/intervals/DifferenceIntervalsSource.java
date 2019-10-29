@@ -58,7 +58,7 @@ abstract class DifferenceIntervalsSource extends IntervalsSource {
       return minIt;
     }
     IntervalIterator difference = combine(IntervalMatches.wrapMatches(minIt, doc), IntervalMatches.wrapMatches(subIt, doc));
-    return IntervalMatches.asMatches(difference, minIt, doc);
+    return IntervalMatches.asMatches(difference, minIt, doc, field, this);
   }
 
   @Override

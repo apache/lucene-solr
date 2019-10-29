@@ -141,7 +141,7 @@ class OffsetIntervalsSource extends IntervalsSource {
     if (mi == null) {
       return null;
     }
-    return IntervalMatches.asMatches(offset(IntervalMatches.wrapMatches(mi, doc)), mi, doc);
+    return IntervalMatches.asMatches(offset(IntervalMatches.wrapMatches(mi, doc)), mi, doc, field, this);
   }
 
   @Override

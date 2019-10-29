@@ -19,7 +19,9 @@ package org.apache.lucene.search.uhighlight;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
+import org.apache.lucene.queries.intervals.IntervalQuery;
 import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.FuzzyQuery;
@@ -79,7 +81,7 @@ final class MultiTermHighlighting {
 
     @Override
     public QueryVisitor getSubVisitor(BooleanClause.Occur occur, Query parent) {
-      if (lookInSpan == false && parent instanceof SpanQuery) {
+      if (lookInSpan == false && (parent instanceof SpanQuery || parent instanceof IntervalQuery)) {
         return QueryVisitor.EMPTY_VISITOR;
       }
       return super.getSubVisitor(occur, parent);
@@ -91,12 +93,7 @@ final class MultiTermHighlighting {
         AutomatonQuery aq = (AutomatonQuery) query;
         if (aq.isAutomatonBinary() == false) {
           // WildcardQuery, RegexpQuery
-          runAutomata.add(new CharacterRunAutomaton(aq.getAutomaton()) {
-            @Override
-            public String toString() {
-              return query.toString();
-            }
-          });
+          addCharAutomaton(aq, aq.getAutomaton());
         }
         else {
           runAutomata.add(binaryToCharRunAutomaton(aq.getAutomaton(), query.toString()));
@@ -115,7 +112,19 @@ final class MultiTermHighlighting {
             }
           });
         }
+      } else if (query instanceof Supplier<?>) {
+        final Automaton automaton = (Automaton) ((Supplier<?>)query).get();
+        addCharAutomaton(query, automaton);
       }
+    }
+
+    private void addCharAutomaton(Query query, Automaton automaton2) {
+      runAutomata.add(new CharacterRunAutomaton(automaton2) {
+        @Override
+        public String toString() {
+          return query.toString();
+        }
+      });
     }
 
   }

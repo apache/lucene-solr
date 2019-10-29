@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Terms;
@@ -30,18 +31,55 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.MatchesUtils;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 class MultiTermIntervalsSource extends IntervalsSource {
 
-  private final CompiledAutomaton automaton;
+  private final class HighlightingWrapper extends Query implements Supplier<Automaton>{
+    private final String field;
+
+    private HighlightingWrapper(String field) {
+      this.field = field;
+    }
+
+    @Override
+    public String toString(String f) {
+      return field+":"+pattern;
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+      
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      return false;
+    }
+
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+
+    @Override
+    public Automaton get() {
+      return automaton;
+    }
+  }
+
+  private final CompiledAutomaton compiled;
+  private final Automaton automaton;
   private final int maxExpansions;
   private final String pattern;
 
-  MultiTermIntervalsSource(CompiledAutomaton automaton, int maxExpansions, String pattern) {
+  MultiTermIntervalsSource(Automaton automaton, int maxExpansions, String pattern) {
     this.automaton = automaton;
+    this.compiled = new CompiledAutomaton(automaton);
     if (maxExpansions > IndexSearcher.getMaxClauseCount()) {
       throw new IllegalArgumentException("maxExpansions [" + maxExpansions
           + "] cannot be greater than BooleanQuery.getMaxClauseCount [" + IndexSearcher.getMaxClauseCount() + "]");
@@ -57,7 +95,7 @@ class MultiTermIntervalsSource extends IntervalsSource {
       return null;
     }
     List<IntervalIterator> subSources = new ArrayList<>();
-    TermsEnum te = automaton.getTermsEnum(terms);
+    TermsEnum te = compiled.getTermsEnum(terms);
     BytesRef term;
     int count = 0;
     while ((term = te.next()) != null) {
@@ -79,11 +117,12 @@ class MultiTermIntervalsSource extends IntervalsSource {
       return null;
     }
     List<MatchesIterator> subMatches = new ArrayList<>();
-    TermsEnum te = automaton.getTermsEnum(terms);
+    TermsEnum te = compiled.getTermsEnum(terms);
     BytesRef term;
     int count = 0;
+    final IntervalQuery query = new IntervalQuery(field,this) ;
     while ((term = te.next()) != null) {
-      MatchesIterator mi = TermIntervalsSource.matches(te, doc);
+      MatchesIterator mi = TermIntervalsSource.matches(te, doc, query);
       if (mi != null) {
         subMatches.add(mi);
         if (count++ > maxExpansions) {
@@ -96,7 +135,9 @@ class MultiTermIntervalsSource extends IntervalsSource {
 
   @Override
   public void visit(String field, QueryVisitor visitor) {
-
+    if (visitor.acceptField(field)) {
+      visitor.visitLeaf(new HighlightingWrapper(field));
+    }
   }
 
   @Override

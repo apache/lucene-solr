@@ -38,6 +38,8 @@ import org.apache.lucene.document.FieldType;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queries.intervals.IntervalQuery;
+import org.apache.lucene.queries.intervals.Intervals;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
@@ -598,14 +600,19 @@ public class TestUnifiedHighlighterMTQ extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(ir);
     UnifiedHighlighter highlighter = randomUnifiedHighlighter(searcher, indexAnalyzer);
     SpanQuery childQuery = new SpanMultiTermQueryWrapper<>(new WildcardQuery(new Term("body", "te*")));
-    Query query = new SpanNearQuery(new SpanQuery[]{childQuery, childQuery}, 0, false);
+    Query spanQuery = new SpanNearQuery(new SpanQuery[]{childQuery, childQuery}, 0, false);
+    for (Query query: Arrays.asList(spanQuery,
+        new IntervalQuery("body", Intervals.prefix(new BytesRef("te"))),
+        new IntervalQuery("body", Intervals.or(Intervals.wildcard(new BytesRef("t??t")),
+            Intervals.wildcard(new BytesRef("t??t"))))
+        ) ) {
     TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
     assertEquals(2, topDocs.totalHits.value);
     String snippets[] = highlighter.highlight("body", query, topDocs);
     assertEquals(2, snippets.length);
     assertEquals("This is a <b>test</b>.", snippets[0]);
     assertEquals("<b>Test</b> a one sentence document.", snippets[1]);
-
+    }
     ir.close();
   }
 

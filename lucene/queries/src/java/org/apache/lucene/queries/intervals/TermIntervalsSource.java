@@ -34,6 +34,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.util.BytesRef;
 
@@ -149,10 +150,17 @@ class TermIntervalsSource extends IntervalsSource {
     if (te.seekExact(term) == false) {
       return null;
     }
-    return matches(te, doc);
+    final TermQuery query;
+    final TermQuery cached = matchingQuery;
+    if (cached==null || !field.equals(cached.getTerm().field())) {
+      matchingQuery = query = new TermQuery(new Term(field, term));
+    } else {
+      query = cached;
+    }
+    return matches(te, doc, query);
   }
 
-  static MatchesIterator matches(TermsEnum te, int doc) throws IOException {
+  static MatchesIterator matches(TermsEnum te, int doc, final Query query ) throws IOException {
     PostingsEnum pe = te.postings(null, PostingsEnum.OFFSETS);
     if (pe.advance(doc) != doc) {
       return null;
@@ -200,7 +208,7 @@ class TermIntervalsSource extends IntervalsSource {
 
       @Override
       public Query getQuery() {
-        throw new UnsupportedOperationException();
+        return query;
       }
     };
   }
@@ -257,6 +265,8 @@ class TermIntervalsSource extends IntervalsSource {
    *  when no seek or buffer refill is done.
    */
   private static final int TERM_OPS_PER_POS = 7;
+
+  private TermQuery matchingQuery;
 
   /** Returns an expected cost in simple operations
    *  of processing the occurrences of a term

@@ -24,7 +24,7 @@ import org.apache.lucene.search.Query;
 
 final class IntervalMatches {
 
-  static MatchesIterator asMatches(IntervalIterator iterator, MatchesIterator source, int doc) throws IOException {
+  static MatchesIterator asMatches(IntervalIterator iterator, MatchesIterator source, int doc, String field, IntervalsSource intervalsSource) throws IOException {
     if (source == null) {
       return null;
     }
@@ -37,6 +37,7 @@ final class IntervalMatches {
     return new MatchesIterator() {
 
       boolean cached = true;
+      private IntervalQuery query;
 
       @Override
       public boolean next() throws IOException {
@@ -74,7 +75,7 @@ final class IntervalMatches {
 
       @Override
       public Query getQuery() {
-        throw new UnsupportedOperationException();
+        return query==null ? query = new IntervalQuery(field, intervalsSource) : query;
       }
     };
   }

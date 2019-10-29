@@ -26,7 +26,6 @@ import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.Automaton;
-import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 /**
  * Constructor functions for {@link IntervalsSource} types
@@ -163,8 +162,8 @@ public final class Intervals {
    * @throws IllegalStateException if the prefix expands to more than {@code maxExpansions} terms
    */
   public static IntervalsSource prefix(BytesRef prefix, int maxExpansions) {
-    CompiledAutomaton ca = new CompiledAutomaton(PrefixQuery.toAutomaton(prefix));
-    return new MultiTermIntervalsSource(ca, maxExpansions, prefix.utf8ToString() + "*");
+    final Automaton automaton = PrefixQuery.toAutomaton(prefix);
+    return new MultiTermIntervalsSource(automaton, maxExpansions, prefix.utf8ToString() + "*");
   }
 
   /**
@@ -192,8 +191,8 @@ public final class Intervals {
    * @see WildcardQuery for glob format
    */
   public static IntervalsSource wildcard(BytesRef wildcard, int maxExpansions) {
-    CompiledAutomaton ca = new CompiledAutomaton(WildcardQuery.toAutomaton(new Term("", wildcard)));
-    return new MultiTermIntervalsSource(ca, maxExpansions, wildcard.utf8ToString());
+    final Automaton automaton = WildcardQuery.toAutomaton(new Term("", wildcard));
+    return new MultiTermIntervalsSource(automaton, maxExpansions, wildcard.utf8ToString());
   }
 
   /**
@@ -221,8 +220,7 @@ public final class Intervals {
    * @throws IllegalStateException if the automaton accepts more than {@code maxExpansions} terms
    */
   public static IntervalsSource multiterm(Automaton automaton, int maxExpansions, String pattern) {
-    CompiledAutomaton ca = new CompiledAutomaton(automaton);
-    return new MultiTermIntervalsSource(ca, maxExpansions, pattern);
+    return new MultiTermIntervalsSource(automaton, maxExpansions, pattern);
   }
   
   /**

@@ -119,7 +119,7 @@ public abstract class FilteredIntervalsSource extends IntervalsSource {
         return FilteredIntervalsSource.this.accept(in);
       }
     };
-    return IntervalMatches.asMatches(filtered, mi, doc);
+    return IntervalMatches.asMatches(filtered, mi, doc, field, this);
   }
 
   @Override
