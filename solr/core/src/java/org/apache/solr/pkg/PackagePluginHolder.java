@@ -80,7 +80,7 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
   }
 
 
-  private synchronized void reload(PackageLoader.Package pkg) {
+  protected synchronized void reload(PackageLoader.Package pkg) {
     String lessThan = maxVersion();
     PackageLoader.Package.Version newest = pkg.getLatest(lessThan);
     if (newest == null) {

@@ -22,20 +22,35 @@ import java.util.Map;
 import java.util.Set;
 
 import com.codahale.metrics.MetricRegistry;
+import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrConfig;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.pkg.PackageLoader;
+import org.apache.solr.pkg.PackagePluginHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
+public class SolrCacheHolder<K, V> implements SolrCache<K, V> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 
-  private final CacheConfig factory;
   protected volatile SolrCache<K, V> delegate;
+  private final PackagePluginHolder holder;
+  SolrMetricsContext context;
+  String metricsScope;
 
-  public SolrCacheHolder(SolrCache<K, V> delegate, CacheConfig factory) {
-    this.delegate = delegate;
-    this.factory = factory;
+  public SolrCacheHolder(CacheConfig factory, SolrCore core) {
+    holder = new PackagePluginHolder<SolrCache>(new PluginInfo("cache", (Map) factory.args), core,
+        SolrConfig.classVsSolrPluginInfo.get(SolrCache.class.getName())) {
+      @Override
+      protected void reload(PackageLoader.Package pkg) {
+        super.reload(pkg);
+        delegate = (SolrCache) get();
+        delegate.initializeMetrics(context, metricsScope);
+      }
+    };
+    delegate = (SolrCache<K, V>) holder.get();
   }
 
   public int size() {
@@ -142,7 +157,9 @@ public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    delegate.initializeMetrics(parentContext, scope);
+    this.context = parentContext.getChildContext(this);
+    this.metricsScope = scope;
+    delegate.initializeMetrics(this.context, scope);
   }
 
 }

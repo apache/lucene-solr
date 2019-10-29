@@ -271,7 +271,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
       args.put("size", "10000");
       args.put("initialSize", "10");
       args.put("showItems", "-1");
-      conf = new CacheConfig(FastLRUCache.class, args, null);
+      conf = new CacheConfig(FastLRUCache.class.getName(), args, null);
     }
     fieldValueCacheConfig = conf;
     useColdSearcher = getBool("query/useColdSearcher", false);

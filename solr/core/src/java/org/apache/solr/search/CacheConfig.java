@@ -25,10 +25,15 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.MapSerializable;
+import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrConfig;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.pkg.PackageLoader;
+import org.apache.solr.pkg.PackagePluginHolder;
 import org.apache.solr.util.DOMUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,16 +46,13 @@ import static org.apache.solr.common.params.CommonParams.NAME;
  * Contains the knowledge of how cache config is
  * stored in the solrconfig.xml file, and implements a
  * factory to create caches.
- *
- *
  */
-public class CacheConfig implements MapSerializable{
+public class CacheConfig implements MapSerializable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  
+
   private String nodeName;
 
-  private Class<? extends SolrCache> clazz;
-  private Map<String,String> args;
+  Map<String, String> args;
   private CacheRegenerator regenerator;
 
   private String cacheImpl;
@@ -59,10 +61,11 @@ public class CacheConfig implements MapSerializable{
 
   private String regenImpl;
 
-  public CacheConfig() {}
+  public CacheConfig() {
+  }
 
-  public CacheConfig(Class<? extends SolrCache> clazz, Map<String,String> args, CacheRegenerator regenerator) {
-    this.clazz = clazz;
+  public CacheConfig(String clazz, Map<String, String> args, CacheRegenerator regenerator) {
+    this.cacheImpl = clazz;
     this.args = args;
     this.regenerator = regenerator;
   }
@@ -89,17 +92,17 @@ public class CacheConfig implements MapSerializable{
 
   public static CacheConfig getConfig(SolrConfig solrConfig, String xpath) {
     Node node = solrConfig.getNode(xpath, false);
-    if(node == null || !"true".equals(DOMUtil.getAttrOrDefault(node, "enabled", "true"))) {
+    if (node == null || !"true".equals(DOMUtil.getAttrOrDefault(node, "enabled", "true"))) {
       Map<String, String> m = solrConfig.getOverlay().getEditableSubProperties(xpath);
-      if(m==null) return null;
+      if (m == null) return null;
       List<String> parts = StrUtils.splitSmart(xpath, '/');
-      return getConfig(solrConfig,parts.get(parts.size()-1) , Collections.EMPTY_MAP,xpath);
+      return getConfig(solrConfig, parts.get(parts.size() - 1), Collections.EMPTY_MAP, xpath);
     }
-    return getConfig(solrConfig, node.getNodeName(),DOMUtil.toMap(node.getAttributes()), xpath);
+    return getConfig(solrConfig, node.getNodeName(), DOMUtil.toMap(node.getAttributes()), xpath);
   }
 
 
-  public static CacheConfig getConfig(SolrConfig solrConfig, String nodeName, Map<String,String> attrs, String xpath) {
+  public static CacheConfig getConfig(SolrConfig solrConfig, String nodeName, Map<String, String> attrs, String xpath) {
     CacheConfig config = new CacheConfig();
     config.nodeName = nodeName;
     Map attrsCopy = new LinkedHashMap<>(attrs.size());
@@ -110,37 +113,43 @@ public class CacheConfig implements MapSerializable{
     config.args = attrs;
 
     Map<String, String> map = xpath == null ? null : solrConfig.getOverlay().getEditableSubProperties(xpath);
-    if(map != null){
+    if (map != null) {
       HashMap<String, String> mapCopy = new HashMap<>(config.args);
       for (Map.Entry<String, String> e : map.entrySet()) {
-        mapCopy.put(e.getKey(),String.valueOf(e.getValue()));
+        mapCopy.put(e.getKey(), String.valueOf(e.getValue()));
       }
       config.args = mapCopy;
     }
     String nameAttr = config.args.get(NAME);  // OPTIONAL
-    if (nameAttr==null) {
+    if (nameAttr == null) {
       config.args.put(NAME, config.nodeName);
     }
 
     SolrResourceLoader loader = solrConfig.getResourceLoader();
     config.cacheImpl = config.args.get("class");
-    if(config.cacheImpl == null) config.cacheImpl = "solr.LRUCache";
+    if (config.cacheImpl == null) config.cacheImpl = "solr.LRUCache";
     config.regenImpl = config.args.get("regenerator");
-    config.clazz = loader.findClass(config.cacheImpl, SolrCache.class);
+//    config.clazz = loader.findClass(config.cacheImpl, SolrCache.class);
     if (config.regenImpl != null) {
       config.regenerator = loader.newInstance(config.regenImpl, CacheRegenerator.class);
     }
-    
+
     return config;
   }
 
-  public SolrCache newInstance() {
+  public SolrCache newInstance(SolrCore core) {
+    Pair<String, String> p = PluginInfo.parseClassName(cacheImpl);
+    if (p.first() != null) {//loaded from a package
+      return new SolrCacheHolder(this, core);
+    }
+
+    Class<? extends SolrCache> clazz = core.getResourceLoader().findClass(cacheImpl, SolrCache.class);
     try {
       SolrCache cache = clazz.getConstructor().newInstance();
       persistence[0] = cache.init(args, persistence[0], regenerator);
       return cache;
     } catch (Exception e) {
-      SolrException.log(log,"Error instantiating cache",e);
+      SolrException.log(log, "Error instantiating cache", e);
       // we can carry on without a cache... but should we?
       // in some cases (like an OOM) we probably should try to continue.
       return null;
