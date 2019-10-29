@@ -35,6 +35,10 @@ Optimizations
 * LUCENE-8932: BKDReader's index is now stored off-heap when the IndexInput is
   an instance of ByteBufferIndexInput. (Jack Conradson via Adrien Grand)
 
+* LUCENE-9024: IntroSelector now falls back to the median of medians algorithm
+  instead of sorting when the maximum recursion level is exceeded, providing
+  better worst-case runtime. (Paul Sanwald via Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-9001: Fix race condition in SetOnce. (Przemko Robakowski)
