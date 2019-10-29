@@ -36,6 +36,7 @@ import org.apache.solr.store.blob.client.CoreStorageClient;
 import org.apache.solr.store.shared.SolrCloudSharedStoreTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -235,6 +236,7 @@ public class SharedStorageSplitTest extends SolrCloudSharedStoreTestCase  {
   }
 
   @Test
+  @Ignore // need future fixes for this
   public void testLiveSplit() throws Exception {
     doLiveSplitShard("livesplit1", true, 1);
   }
