@@ -345,6 +345,7 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
     expectThrows(SolrException.class, () -> calcMSM(1, "1<x"));
     expectThrows(SolrException.class, () -> calcMSM(1, "x%"));
     expectThrows(SolrException.class, () -> calcMSM(1, "%%"));
+    expectThrows(SolrException.class, () -> calcMSM(1, "x"));
   }
 
   @Test

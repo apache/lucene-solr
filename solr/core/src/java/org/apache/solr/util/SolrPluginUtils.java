@@ -682,13 +682,7 @@ public class SolrPluginUtils {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
               "Operator < must be followed by a number");
         }
-        int upperBound;
-        try {
-          upperBound = Integer.parseInt(parts[0]);
-        } catch (NumberFormatException e) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "Operator < must be followed by a number", e);
-        }
+        int upperBound = checkedParseInt(parts[0], "Operator < must be followed by a number");
         if (optionalClauseCount <= upperBound) {
           return result;
         } else {
@@ -704,23 +698,37 @@ public class SolrPluginUtils {
     if (-1 < spec.indexOf('%')) {
       /* percentage - assume the % was the last char.  If not, let Integer.parseInt fail. */
       spec = spec.substring(0,spec.length()-1);
-      int percent;
-      try {
-        percent = Integer.parseInt(spec);
-      } catch (NumberFormatException e) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "% must be preceded by a number and not combined with other operators", e);
-      }
+      int percent = checkedParseInt(spec,
+          "% must be preceded by a number and not combined with other operators");
       float calc = (result * percent) * (1/100f);
       result = calc < 0 ? result + (int)calc : (int)calc;
     } else {
-      int calc = Integer.parseInt(spec);
+      int calc = checkedParseInt(spec, "Input should be a number");
       result = calc < 0 ? result + calc : calc;
     }
 
     return (optionalClauseCount < result ?
             optionalClauseCount : (result < 0 ? 0 : result));
 
+  }
+
+  /**
+   * Wrapper of {@link Integer#parseInt(String)} that wraps any {@link NumberFormatException} in a
+   * {@link SolrException} with HTTP 400 Bad Request status.
+   *
+   * @param input the string to parse
+   * @param errorMessage the error message for any SolrException
+   * @return the integer value of {@code input}
+   * @throws SolrException when parseInt throws NumberFormatException
+   */
+  private static int checkedParseInt(String input, String errorMessage) {
+    int percent;
+    try {
+      percent = Integer.parseInt(input);
+    } catch (NumberFormatException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, errorMessage, e);
+    }
+    return percent;
   }
 
 
