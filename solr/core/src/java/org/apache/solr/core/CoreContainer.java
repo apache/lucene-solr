@@ -1061,7 +1061,7 @@ public class CoreContainer {
     }
 
     if(packageLoader != null){
-      org.apache.lucene.util.IOUtils.closeWhileHandlingException((Closeable) packageLoader);
+      org.apache.lucene.util.IOUtils.closeWhileHandlingException(packageLoader);
     }
     org.apache.lucene.util.IOUtils.closeWhileHandlingException(loader); // best effort
   }
