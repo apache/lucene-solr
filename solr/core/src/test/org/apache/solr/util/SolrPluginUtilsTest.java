@@ -341,14 +341,8 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testMinShouldMatchBadQueries() {
-    try {
-      calcMSM(1, "1<");
-      fail("Query '1<' should have thrown SolrException");
-    } catch (SolrException expected) {}
-    try {
-      calcMSM(1, "1<x");
-      fail("Query '1<x' should have thrown SolrException");
-    } catch (SolrException expected) {}
+    expectThrows(SolrException.class, () -> calcMSM(1, "1<"));
+    expectThrows(SolrException.class, () -> calcMSM(1, "1<x"));
   }
 
   @Test
