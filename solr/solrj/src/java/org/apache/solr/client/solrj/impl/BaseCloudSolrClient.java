@@ -55,6 +55,8 @@ import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.routing.ReplicaListTransformer;
+import org.apache.solr.client.solrj.routing.RequestReplicaListTransformerGenerator;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -100,6 +102,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
   private final boolean updatesToLeaders;
   private final boolean directUpdatesToLeadersOnly;
+  private final RequestReplicaListTransformerGenerator requestRLTGenerator;
   boolean parallelUpdates; //TODO final
   private ExecutorService threadPool = ExecutorUtil
       .newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory(
@@ -221,6 +224,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     this.updatesToLeaders = updatesToLeaders;
     this.parallelUpdates = parallelUpdates;
     this.directUpdatesToLeadersOnly = directUpdatesToLeadersOnly;
+    this.requestRLTGenerator = new RequestReplicaListTransformerGenerator();
   }
 
   /** Sets the cache ttl for DocCollection Objects cached  . This is only applicable for collections which are persisted outside of clusterstate.json
@@ -467,6 +471,8 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       for(String param : NON_ROUTABLE_PARAMS) {
         routableParams.remove(param);
       }
+    } else {
+      params = new ModifiableSolrParams();
     }
 
     if (collection == null) {
@@ -492,10 +498,12 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       return null;
     }
 
+    ReplicaListTransformer replicaListTransformer = requestRLTGenerator.getReplicaListTransformer(params);
+
     //Create the URL map, which is keyed on slice name.
     //The value is a list of URLs for each replica in the slice.
     //The first value in the list is the leader for the slice.
-    final Map<String,List<String>> urlMap = buildUrlMap(col);
+    final Map<String,List<String>> urlMap = buildUrlMap(col, replicaListTransformer);
     final Map<String, ? extends LBSolrClient.Req> routes = createRoutes(updateRequest, routableParams, col, router, urlMap, idField);
     if (routes == null) {
       if (directUpdatesToLeadersOnly && hasInfoToFindLeaders(updateRequest, idField)) {
@@ -616,7 +624,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     return urlMap == null ? null : updateRequest.getRoutesToCollection(router, col, urlMap, routableParams, idField);
   }
 
-  private Map<String,List<String>> buildUrlMap(DocCollection col) {
+  private Map<String,List<String>> buildUrlMap(DocCollection col, ReplicaListTransformer replicaListTransformer) {
     Map<String, List<String>> urlMap = new HashMap<>();
     Slice[] slices = col.getActiveSlicesArr();
     for (Slice slice : slices) {
@@ -639,8 +647,8 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         return null;
       }
       ZkCoreNodeProps zkProps = new ZkCoreNodeProps(leader);
-      String url = zkProps.getCoreUrl();
-      urls.add(url);
+      String leaderUrl = zkProps.getCoreUrl();
+
       if (!directUpdatesToLeadersOnly) {
         for (Replica replica : slice.getReplicas()) {
           if (!replica.getNodeName().equals(leader.getNodeName()) &&
@@ -651,6 +659,13 @@ public abstract class BaseCloudSolrClient extends SolrClient {
           }
         }
       }
+
+      // Sort the non-leader replicas according to the request parameters
+      replicaListTransformer.transform(urls);
+
+      // put the leaderUrl first.
+      urls.add(0, leaderUrl);
+
       urlMap.put(name, urls);
     }
     return urlMap;
@@ -1046,6 +1061,8 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       reqParams = new ModifiableSolrParams();
     }
 
+    ReplicaListTransformer replicaListTransformer = requestRLTGenerator.getReplicaListTransformer(reqParams);
+
     final Set<String> liveNodes = getClusterStateProvider().getLiveNodes();
 
     final List<String> theUrlList = new ArrayList<>(); // we populate this as follows...
@@ -1087,7 +1104,6 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       }
 
       // Gather URLs, grouped by leader or replica
-      // TODO: allow filtering by group, role, etc
       Set<String> seenNodes = new HashSet<>();
       List<String> replicas = new ArrayList<>();
       String joinedInputCollections = StrUtils.join(inputCollections, ',');
@@ -1109,11 +1125,12 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         }
       }
 
-      // Shuffle the leaders, if any    (none if !sendToLeaders)
+      // Sort the leader replicas, if any, according to the request preferences    (none if !sendToLeaders)
+      replicaListTransformer.transform(replicas);
       Collections.shuffle(theUrlList, rand);
 
-      // Shuffle the replicas, if any, and append to our list
-      Collections.shuffle(replicas, rand);
+      // Sort the replicas, if any, according to the request preferences and append to our list
+      replicaListTransformer.transform(replicas);
       theUrlList.addAll(replicas);
 
       if (theUrlList.isEmpty()) {

@@ -241,7 +241,6 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
   }
 
   private List<Future<NamedList>> callShards(List<String> baseUrls) throws IOException {
-
     List<Future<NamedList>> futures = new ArrayList<>();
     for (String baseUrl : baseUrls) {
       SignificantTermsCall lc = new SignificantTermsCall(baseUrl,
@@ -282,6 +281,7 @@ public class SignificantTermsStream extends TupleStream implements Expressible{
   }
 
   public Tuple read() throws IOException {
+
     try {
       if (tupleIterator == null) {
         Map<String, int[]> mergeFreqs = new HashMap<>();
