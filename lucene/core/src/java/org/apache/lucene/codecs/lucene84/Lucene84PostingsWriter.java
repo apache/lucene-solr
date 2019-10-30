@@ -92,7 +92,6 @@ public final class Lucene84PostingsWriter extends PushPostingsWriterBase {
   private int docCount;
 
   private final PForUtil pforUtil;
-  private final EliasFanoUtil efUtil;
   private final Lucene84SkipWriter skipWriter;
 
   private boolean fieldHasNorms;
@@ -118,9 +117,7 @@ public final class Lucene84PostingsWriter extends PushPostingsWriterBase {
       } else {
         throw new Error();
       }
-      final ForUtil forUtil = new ForUtil(byteOrder);
-      pforUtil = new PForUtil(forUtil);
-      efUtil = new EliasFanoUtil(forUtil);
+      pforUtil = new PForUtil(new ForUtil(byteOrder));
       if (state.fieldInfos.hasProx()) {
         posDeltaBuffer = new long[BLOCK_SIZE];
         String posFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, Lucene84PostingsFormat.POS_EXTENSION);
@@ -233,9 +230,9 @@ public final class Lucene84PostingsWriter extends PushPostingsWriterBase {
       competitiveFreqNormAccumulator.clear();
     }
 
-    final int docDelta = docID - lastBlockDocID;
+    final int docDelta = docID - lastDocID;
 
-    if (docID < 0 || (docCount > 0 && docID <= lastDocID)) {
+    if (docID < 0 || (docCount > 0 && docDelta <= 0)) {
       throw new CorruptIndexException("docs out of order (" + docID + " <= " + lastDocID + " )", docOut);
     }
 
@@ -248,7 +245,7 @@ public final class Lucene84PostingsWriter extends PushPostingsWriterBase {
     docCount++;
 
     if (docBufferUpto == BLOCK_SIZE) {
-      efUtil.encode(docDeltaBuffer, docOut);
+      pforUtil.encode(docDeltaBuffer, docOut);
       if (writeFreqs) {
         pforUtil.encode(freqBuffer, docOut);
       }
@@ -364,12 +361,12 @@ public final class Lucene84PostingsWriter extends PushPostingsWriterBase {
     final int singletonDocID;
     if (state.docFreq == 1) {
       // pulse the singleton docid into the term dictionary, freq is implicitly totalTermFreq
-      singletonDocID = (int) (docDeltaBuffer[0] - 1);
+      singletonDocID = (int) docDeltaBuffer[0];
     } else {
       singletonDocID = -1;
       // vInt encode the remaining doc deltas and freqs:
       for(int i=0;i<docBufferUpto;i++) {
-        final int docDelta = (int) (docDeltaBuffer[i] - (i == 0 ? 0 : docDeltaBuffer[i-1]));
+        final int docDelta = (int) docDeltaBuffer[i];
         final int freq = (int) freqBuffer[i];
         if (!writeFreqs) {
           docOut.writeVInt(docDelta);
