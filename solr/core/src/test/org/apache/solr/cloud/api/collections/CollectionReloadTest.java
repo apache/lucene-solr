@@ -16,18 +16,21 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-import java.lang.invoke.MethodHandles;
-import java.util.concurrent.TimeUnit;
-
+import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.RetryUtil;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.lang.invoke.MethodHandles;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Verifies cluster state remains consistent after collection reload.
@@ -81,5 +84,36 @@ public class CollectionReloadTest extends SolrCloudTestCase {
     });
 
     log.info("testReloadedLeaderStateAfterZkSessionLoss succeeded ... shutting down now!");
+  }
+  
+  @Repeat(iterations=5)
+  public void testCreateReloadDelete() throws Exception {
+    String collectionName = "testCreateReloadDelete";
+    assertSuccessfulAdminRequest(
+        CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2, 0, 0)
+          .setMaxShardsPerNode(100)
+          .process(cluster.getSolrClient()));
+    boolean reloaded = false;
+    while (true) {
+      DocCollection docCollection = getCollectionState(collectionName);
+      assertNotNull(docCollection);
+      assertEquals("Expecting 2 relpicas per shard",
+          4, docCollection.getReplicas().size());
+      if (reloaded) {
+        break;
+      } else {
+        // reload
+        assertSuccessfulAdminRequest(
+            CollectionAdminRequest.reloadCollection(collectionName).process(cluster.getSolrClient()));
+        reloaded = true;
+      }
+    }
+    assertSuccessfulAdminRequest(
+        CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient()));
+  }
+
+  private void assertSuccessfulAdminRequest(CollectionAdminResponse response) {
+    assertEquals("Unexpected response status", 0, response.getStatus());
+    assertTrue("Unsuccessful response: " + response, response.isSuccess());
   }
 }
