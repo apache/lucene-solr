@@ -42,7 +42,7 @@ import org.apache.lucene.search.SortedSetSelector;
 public class NumericSortedSetSortField extends SortField {
 
   private final SortedSetSelector.Type selector;
-  private final SortField.Type numericType;
+  private final NumberType numberType;
 
   /**
    * Creates a sort, by the minimum value in the set
@@ -50,7 +50,7 @@ public class NumericSortedSetSortField extends SortField {
    * @param field Name of field to sort by.  Must not be null.
    * @param type Type of values
    */
-  public NumericSortedSetSortField(String field, SortField.Type type) {
+  public NumericSortedSetSortField(String field, NumberType type) {
     this(field, type, false);
   }
 
@@ -61,7 +61,7 @@ public class NumericSortedSetSortField extends SortField {
    * @param type Type of values
    * @param reverse True if natural order should be reversed.
    */
-  public NumericSortedSetSortField(String field, SortField.Type type, boolean reverse) {
+  public NumericSortedSetSortField(String field, NumberType type, boolean reverse) {
     this(field, type, reverse, SortedSetSelector.Type.MIN);
   }
 
@@ -73,7 +73,7 @@ public class NumericSortedSetSortField extends SortField {
    * @param reverse True if natural order should be reversed.
    * @param selector custom selector type for choosing the sort value from the set.
    */
-  public NumericSortedSetSortField(String field, SortField.Type numericType, boolean reverse, SortedSetSelector.Type selector) {
+  public NumericSortedSetSortField(String field, NumberType numericType, boolean reverse, SortedSetSelector.Type selector) {
     super(field, SortField.Type.CUSTOM, reverse);
     if (selector == null) {
       throw new NullPointerException();
@@ -82,17 +82,7 @@ public class NumericSortedSetSortField extends SortField {
       throw new NullPointerException();
     }
     this.selector = selector;
-    this.numericType = numericType;
-  }
-
-  /** Returns the numeric type in use for this sort */
-  public SortField.Type getNumericType() {
-    return numericType;
-  }
-
-  /** Returns the selector in use for this sort */
-  public SortedSetSelector.Type getSelector() {
-    return selector;
+    this.numberType = numericType;
   }
 
   @Override
@@ -100,7 +90,7 @@ public class NumericSortedSetSortField extends SortField {
     final int prime = 31;
     int result = super.hashCode();
     result = prime * result + selector.hashCode();
-    result = prime * result + numericType.hashCode();
+    result = prime * result + numberType.hashCode();
     return result;
   }
 
@@ -111,7 +101,7 @@ public class NumericSortedSetSortField extends SortField {
     if (getClass() != obj.getClass()) return false;
     NumericSortedSetSortField other = (NumericSortedSetSortField) obj;
     if (selector != other.selector) return false;
-    if (numericType != other.numericType) return false;
+    if (numberType != other.numberType) return false;
     return true;
   }
 
@@ -127,45 +117,51 @@ public class NumericSortedSetSortField extends SortField {
     buffer.append(" selector=");
     buffer.append(selector);
     buffer.append(" type=");
-    buffer.append(numericType);
+    buffer.append(numberType);
 
     return buffer.toString();
   }
 
   @Override
   public void setMissingValue(Object missingValue) {
-    this.missingValue = missingValue;
+    if (missingValue == SortField.STRING_FIRST) {
+      this.missingValue = numberType.sortMissingLow;
+    } else if (missingValue == SortField.STRING_LAST) {
+      this.missingValue = numberType.sortMissingHigh;
+    } else {
+      this.missingValue = missingValue;
+    }
   }
 
   @Override
   public FieldComparator<?> getComparator(int numHits, int sortPos) {
-    switch(numericType) {
-      case INT:
+    switch(numberType) {
+      case INTEGER:
         return new FieldComparator.IntComparator(numHits, getField(), (Integer) missingValue) {
           @Override
           protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
-            return NumericSortedSetFieldSource.sortedSetAsNumericDocValues(context.reader(), field, selector, numericType);
+            return NumericSortedSetFieldSource.sortedSetAsNumericDocValues(context.reader(), field, selector, numberType.sortType);
           }
         };
       case FLOAT:
         return new FieldComparator.FloatComparator(numHits, getField(), (Float) missingValue) {
           @Override
           protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
-            return NumericSortedSetFieldSource.sortedSetAsNumericDocValues(context.reader(), field, selector, numericType);
+            return NumericSortedSetFieldSource.sortedSetAsNumericDocValues(context.reader(), field, selector, numberType.sortType);
           }
         };
       case LONG:
         return new FieldComparator.LongComparator(numHits, getField(), (Long) missingValue) {
           @Override
           protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
-            return NumericSortedSetFieldSource.sortedSetAsNumericDocValues(context.reader(), field, selector, numericType);
+            return NumericSortedSetFieldSource.sortedSetAsNumericDocValues(context.reader(), field, selector, numberType.sortType);
           }
         };
       case DOUBLE:
         return new FieldComparator.DoubleComparator(numHits, getField(), (Double) missingValue) {
           @Override
           protected NumericDocValues getNumericDocValues(LeafReaderContext context, String field) throws IOException {
-            return NumericSortedSetFieldSource.sortedSetAsNumericDocValues(context.reader(), field, selector, numericType);
+            return NumericSortedSetFieldSource.sortedSetAsNumericDocValues(context.reader(), field, selector, numberType.sortType);
           }
         };
       default:

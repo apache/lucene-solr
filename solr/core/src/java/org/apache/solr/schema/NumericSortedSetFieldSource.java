@@ -36,23 +36,26 @@ import org.apache.solr.legacy.LegacyNumericUtils;
 
 public class NumericSortedSetFieldSource extends SortedSetFieldSource {
 
-  private final SortField.Type numericType;
+  private final NumberType numberType;
+  private final SchemaField sf;
 
-  public NumericSortedSetFieldSource(String field, Type selector, SortField.Type numericType) {
-    super(field, selector);
-    this.numericType = validateType(numericType);
+  public NumericSortedSetFieldSource(SchemaField sf, Type selector, NumberType numberType) {
+    super(sf.name, selector);
+    this.numberType = validateType(numberType);
+    this.sf = sf;
   }
 
-  public NumericSortedSetFieldSource(String field, SortField.Type numericType) {
-    super(field);
-    this.numericType = validateType(numericType);
+  public NumericSortedSetFieldSource(SchemaField sf, NumberType numericType) {
+    super(sf.name);
+    this.numberType = validateType(numericType);
+    this.sf = sf;
   }
 
-  private static SortField.Type validateType(SortField.Type type) {
+  private static NumberType validateType(NumberType type) {
     switch (type) {
       // whitelisted types
       case LONG:
-      case INT:
+      case INTEGER:
       case DOUBLE:
       case FLOAT:
         return type;
@@ -63,7 +66,9 @@ public class NumericSortedSetFieldSource extends SortedSetFieldSource {
 
   @Override
   public SortField getSortField(boolean reverse) {
-    return new NumericSortedSetSortField(field, numericType, reverse, selector);
+    SortField ret = new NumericSortedSetSortField(field, numberType, reverse, selector);
+    FieldType.applySetMissingValue(sf, ret, numberType.sortMissingLow, numberType.sortMissingHigh);
+    return ret;
   }
 
   public static NumericDocValues sortedSetAsNumericDocValues(LeafReader reader, String field, SortedSetSelector.Type selector, SortField.Type numericType) throws IOException {

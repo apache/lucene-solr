@@ -29,7 +29,6 @@ import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
 import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
 import org.apache.solr.schema.NumericSortedSetFieldSource;
-import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedSetSelector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
@@ -70,7 +69,7 @@ public class TrieFloatField extends TrieField implements FloatValueFieldType {
   @Override
   protected ValueSource getSingleValueSource(SortedSetSelector.Type choice, SchemaField f) {
     
-    return new NumericSortedSetFieldSource(f.getName(), choice, SortField.Type.FLOAT) {
+    return new NumericSortedSetFieldSource(f, choice, NumberType.FLOAT) {
       @Override
       public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
         SortedSetFieldSource thisAsSortedSetFieldSource = this; // needed for nested anon class ref
