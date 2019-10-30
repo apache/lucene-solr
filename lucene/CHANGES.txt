@@ -79,6 +79,8 @@ Improvements
 * LUCENE-9006: WordDelimiterGraphFilter's catenateAll token is now ordered before any token parts, like WDF did.
   (David Smiley)
 
+* LUCENE-9028: introducing Intervals.multiterm() (Mikhail Khludnev)
+
 Optimizations
 
 * LUCENE-8928: When building a kd-tree for dimensions n > 2, compute exact bounds for an inner node every N splits
