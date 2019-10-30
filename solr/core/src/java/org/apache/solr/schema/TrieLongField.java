@@ -28,6 +28,8 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.LongDocValues;
 import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
+import org.apache.solr.schema.NumericSortedSetFieldSource;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedSetSelector;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.mutable.MutableValue;
@@ -66,7 +68,7 @@ public class TrieLongField extends TrieField implements LongValueFieldType {
   @Override
   protected ValueSource getSingleValueSource(SortedSetSelector.Type choice, SchemaField f) {
     
-    return new SortedSetFieldSource(f.getName(), choice) {
+    return new NumericSortedSetFieldSource(f.getName(), choice, SortField.Type.LONG) {
       @Override
       public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
         SortedSetFieldSource thisAsSortedSetFieldSource = this; // needed for nested anon class ref
