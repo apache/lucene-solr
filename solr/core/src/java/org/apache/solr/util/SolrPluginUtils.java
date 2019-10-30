@@ -704,7 +704,13 @@ public class SolrPluginUtils {
     if (-1 < spec.indexOf('%')) {
       /* percentage - assume the % was the last char.  If not, let Integer.parseInt fail. */
       spec = spec.substring(0,spec.length()-1);
-      int percent = Integer.parseInt(spec);
+      int percent;
+      try {
+        percent = Integer.parseInt(spec);
+      } catch (NumberFormatException e) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "% must be preceded by a number and not combined with other operators", e);
+      }
       float calc = (result * percent) * (1/100f);
       result = calc < 0 ? result + (int)calc : (int)calc;
     } else {

@@ -343,6 +343,8 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
   public void testMinShouldMatchBadQueries() {
     expectThrows(SolrException.class, () -> calcMSM(1, "1<"));
     expectThrows(SolrException.class, () -> calcMSM(1, "1<x"));
+    expectThrows(SolrException.class, () -> calcMSM(1, "x%"));
+    expectThrows(SolrException.class, () -> calcMSM(1, "%%"));
   }
 
   @Test
