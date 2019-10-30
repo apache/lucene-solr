@@ -14,21 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.handler.component;
+package org.apache.solr.client.solrj.routing;
 
-import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.common.params.SolrParams;
 
 public interface ReplicaListTransformerFactory {
 
   /**
    * 
    * @param configSpec spec for dynamic configuration of ReplicaListTransformer
-   * @param request the request for which the ReplicaListTransformer is being generated
+   * @param requestParams the request parameters for which the ReplicaListTransformer is being generated
    * @param fallback used to generate fallback value; the getInstance() method of the specified fallback must not
    * return null; The fallback value itself may be null if this implementation is known to never return null (i.e., if
    * fallback will never be needed)
    * @return ReplicaListTransformer to be used for routing this request
    */
-  ReplicaListTransformer getInstance(String configSpec, SolrQueryRequest request, ReplicaListTransformerFactory fallback);
+  ReplicaListTransformer getInstance(String configSpec, SolrParams requestParams, ReplicaListTransformerFactory fallback);
 
 }

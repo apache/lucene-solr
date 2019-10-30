@@ -7,11 +7,11 @@ github:
     - lucene
     - solr
     - search
-    - sql
     - nosql
     - java
     - backend
     - search-engine
+    - information-retrieval
 
   enabled_merge_buttons:
     squash: true

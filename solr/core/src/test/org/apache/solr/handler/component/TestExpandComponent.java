@@ -91,17 +91,7 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
         {"id","7", "term_s", "YYYY", group, "1"+floatAppend, "test_i", "1", "test_l", "100000", "test_f", "2000", "type_s", "child"},
         {"id","8", "term_s","YYYY", group, "2"+floatAppend, "test_i", "2", "test_l",  "100000", "test_f", "200", "type_s", "child"}
     };
-    // randomize addition of docs into bunch of segments
-    // TODO there ought to be a test utility to do this; even add in batches
-    Collections.shuffle(Arrays.asList(docs), random());
-    for (String[] doc : docs) {
-      assertU(adoc(doc));
-      if (random().nextBoolean()) {
-        assertU(commit());
-      }
-    }
-
-    assertU(commit());
+    createIndex(docs);
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("q", "*:*");
@@ -165,7 +155,6 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
 
 
     //Test override expand.q
-
     params = new ModifiableSolrParams();
     params.add("q", "type_s:parent");
     params.add("defType", "edismax");
@@ -186,7 +175,6 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
 
 
     //Test override expand.fq
-
     params = new ModifiableSolrParams();
     params.add("q", "*:*");
     params.add("fq", "type_s:parent");
@@ -207,7 +195,6 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     );
 
     //Test override expand.fq and expand.q
-
     params = new ModifiableSolrParams();
     params.add("q", "*:*");
     params.add("fq", "type_s:parent");
@@ -229,7 +216,6 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     );
 
     //Test expand.rows
-
     params = new ModifiableSolrParams();
     params.add("q", "*:*");
     params.add("fq", "{!collapse field="+group+hint+"}");
@@ -250,7 +236,6 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
 
 
     //Test no group results
-
     params = new ModifiableSolrParams();
     params.add("q", "test_i:5");
     params.add("fq", "{!collapse field="+group+hint+"}");
@@ -264,7 +249,6 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     );
 
     //Test zero results
-
     params = new ModifiableSolrParams();
     params.add("q", "test_i:5532535");
     params.add("fq", "{!collapse field="+group+hint+"}");
@@ -278,7 +262,6 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     );
 
     //Test key-only fl
-
     params = new ModifiableSolrParams();
     params.add("q", "*:*");
     params.add("fq", "{!collapse field="+group+hint+"}");
@@ -299,7 +282,6 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     );
 
     //Test key-only fl with score but no sorting
-
     assertQ(req(params, "fl", "id,score"), "*[count(/response/result/doc)=2]",
         "*[count(/response/lst[@name='expanded']/result)=2]",
         "/response/result/doc[1]/str[@name='id'][.='2']",
@@ -326,7 +308,6 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     );
 
     //Test fl with score, sort by non-score
-
     assertQ(req(params, "expand.sort", "test_l desc", "fl", "id,test_i,score"),
         "*[count(/response/result/doc)=2]",
         "count(/response/lst[@name='expanded']/result)=2",
@@ -342,7 +323,6 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     );
 
     //Test fl with score with multi-sort
-
     assertQ(req(params, "expand.sort", "test_l desc, score asc", "fl", "id,test_i,score"),
         "*[count(/response/result/doc)=2]",
         "count(/response/lst[@name='expanded']/result)=2",
@@ -355,6 +335,22 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
         "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/str[@name='id'][.='5']",
         "count(//*[@name='score' and .='NaN'])=0",
         "count(/response/lst[@name='expanded']/result/doc[number(*/@name='score')!=number(*/@name='test_i')])=0"
+    );
+
+    // Test for expand with collapse
+    // when matched docs have fewer unique values
+    params = params("q", "*:*", "sort", "id asc", "fl", "id", "rows", "6", "expand", "true", "expand.sort", "id asc");
+    assertQ(req(params, "expand.field", "term_s"),
+        "*[count(/response/result/doc)=6]",
+        "/response/lst[@name='expanded']/result[@name='YYYY']/doc[1]/str[@name='id'][.='7']",
+        "/response/lst[@name='expanded']/result[@name='YYYY']/doc[2]/str[@name='id'][.='8']",
+        "count(//*[@name='score'])=0"
+    );
+    assertQ(req(params, "expand.field", "test_f"),
+        "*[count(/response/result/doc)=6]",
+        "/response/lst[@name='expanded']/result[@name='200.0']/doc[1]/str[@name='id'][.='8']",
+        "/response/lst[@name='expanded']/result[@name='2000.0']/doc[1]/str[@name='id'][.='7']",
+        "count(//*[@name='score'])=0"
     );
   }
 
@@ -415,5 +411,20 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     assertEquals("Expand not supported for fieldType:'text'", e.getMessage());
 
     resetExceptionIgnores();
+  }
+
+  /**
+   * randomize addition of docs into bunch of segments
+   * TODO: there ought to be a test utility to do this; even add in batches
+   */
+  private void createIndex(String[][] docs) {
+    Collections.shuffle(Arrays.asList(docs), random());
+    for (String[] doc : docs) {
+      assertU(adoc(doc));
+      if (random().nextBoolean()) {
+        assertU(commit());
+      }
+    }
+    assertU(commit());
   }
 }

@@ -14,22 +14,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.handler.component;
+package org.apache.solr.client.solrj.routing;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.params.ShardParams;
+public class ShufflingReplicaListTransformer implements ReplicaListTransformer {
 
-public interface ReplicaListTransformer {
+  private final Random r;
 
-  /**
-   * Transforms the passed in list of choices. Transformations can include (but are not limited to)
-   * reordering of elements (e.g. via shuffling) and removal of elements (i.e. filtering).
-   *
-   * @param choices - a list of choices to transform, typically the choices are {@link Replica} objects but choices
-   * can also be {@link String} objects such as URLs passed in via the {@link ShardParams#SHARDS} parameter.
-   */
-  public void transform(List<?> choices);
+  public ShufflingReplicaListTransformer(Random r)
+  {
+    this.r = r;
+  }
+
+  public void transform(List<?> choices)
+  {
+    if (choices.size() > 1) {
+      Collections.shuffle(choices, r);
+    }
+  }
 
 }

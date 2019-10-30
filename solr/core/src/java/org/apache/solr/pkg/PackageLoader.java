@@ -17,6 +17,7 @@
 
 package org.apache.solr.pkg;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
@@ -35,6 +36,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
@@ -44,7 +46,7 @@ import org.slf4j.LoggerFactory;
 /**
  * The class that holds a mapping of various packages and classloaders
  */
-public class PackageLoader {
+public class PackageLoader implements AutoCloseable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final CoreContainer coreContainer;
@@ -94,6 +96,7 @@ public class PackageLoader {
           //other classes are holding to a reference to this objecec
           // they should know that this is removed
           p.markDeleted();
+          IOUtils.closeQuietly((Closeable) p);
         }
       }
     }
@@ -130,7 +133,7 @@ public class PackageLoader {
 
   public void notifyListeners(String pkg) {
     Package p = packageClassLoaders.get(pkg);
-    if(p != null){
+    if (p != null) {
       List<Package> l = Collections.singletonList(p);
       for (SolrCore core : coreContainer.getCores()) {
         core.getPackageListeners().packagesUpdated(l);
@@ -141,7 +144,7 @@ public class PackageLoader {
   /**
    * represents a package definition in the packages.json
    */
-  public class Package {
+  public class Package implements AutoCloseable {
     final String name;
     final Map<String, Version> myVersions = new ConcurrentHashMap<>();
     private List<String> sortedVersions = new CopyOnWriteArrayList<>();
@@ -176,7 +179,10 @@ public class PackageLoader {
         if (!newVersions.contains(s)) {
           log.info("version: {} is removed from package: {}", s, this.name);
           sortedVersions.remove(s);
-          myVersions.remove(s);
+          Version removed = myVersions.remove(s);
+          if (removed != null) {
+            IOUtils.closeQuietly((Closeable) removed);
+          }
         }
       }
 
@@ -219,7 +225,12 @@ public class PackageLoader {
 
     }
 
-    public class Version implements MapWriter {
+    @Override
+    public void close() throws Exception {
+      for (Version v : myVersions.values()) v.close();
+    }
+
+    public class Version implements MapWriter, AutoCloseable {
       private final Package parent;
       private SolrResourceLoader loader;
 
@@ -261,6 +272,13 @@ public class PackageLoader {
       public SolrResourceLoader getLoader() {
         return loader;
       }
+
+      @Override
+      public void close() throws Exception {
+        if (loader != null) {
+          loader.close();
+        }
+      }
     }
   }
 
@@ -272,5 +290,10 @@ public class PackageLoader {
       } else break;
     }
     return latest;
+  }
+
+  @Override
+  public void close() throws Exception {
+    for (Package p : packageClassLoaders.values()) p.close();
   }
 }

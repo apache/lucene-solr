@@ -324,6 +324,19 @@ public class TestDistributedGrouping extends BaseDistributedSearchTestCase {
     query("q", "{!func}id_i1", "rows", 100, "fl", "score,id," + i1, "group", "true", "group.field", i1, "group.limit", -1, "sort", "score desc, _docid_ asc, id asc");
     query("q", "{!func}id_i1", "rows", 100, "fl", "score,id," + i1, "group", "true", "group.field", i1, "group.limit", -1);
 
+    query("q", "*:*",
+        "group", "true",
+        "group.query", t1 + ":kings OR " + t1 + ":eggs", "group.limit", "3",
+        "fl", "id,score", "sort", i1 + " asc, id asc");
+    query("q", "*:*",
+        "group", "true",
+        "group.query", t1 + ":kings OR " + t1 + ":eggs", "group.limit", "3",
+        "fl", "id,score", "group.format", "simple", "sort", i1 + " asc, id asc");
+    query("q", "*:*",
+        "group", "true",
+        "group.query", t1 + ":kings OR " + t1 + ":eggs", "group.limit", "3",
+        "fl", "id,score", "group.main", "true", "sort", i1 + " asc, id asc");
+
     // grouping shouldn't care if there are multiple fl params, or what order the fl field names are in
     variantQuery(params("q", "*:*",
                         "group", "true", "group.field", i1dv, "group.limit", "10",

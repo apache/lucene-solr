@@ -327,11 +327,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       }
 
       if(count > 0 && count < 200) {
-        try {
-          groupQuery = getGroupQuery(field, count, ordBytes);
-        } catch(Exception e) {
-          throw new IOException(e);
-        }
+        groupQuery = getGroupQuery(field, count, ordBytes);
       }
     } else {
       groupSet = new LongHashSet(docList.size());
@@ -689,16 +685,15 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
                            int size,
                            LongHashSet groupSet) {
 
-    BytesRef[] bytesRefs = new BytesRef[size];
+    List<BytesRef> bytesRefs = new ArrayList<>(size);
     BytesRefBuilder term = new BytesRefBuilder();
     Iterator<LongCursor> it = groupSet.iterator();
-    int index = -1;
 
     while (it.hasNext()) {
       LongCursor cursor = it.next();
       String stringVal = numericToString(ft, cursor.value);
       ft.readableToIndexed(stringVal, term);
-      bytesRefs[++index] = term.toBytesRef();
+      bytesRefs.add(term.toBytesRef());
     }
 
     return new TermInSetQuery(fname, bytesRefs);
@@ -738,13 +733,12 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
 
   private Query getGroupQuery(String fname,
                               int size,
-                              IntObjectHashMap<BytesRef> ordBytes) throws Exception {
-    BytesRef[] bytesRefs = new BytesRef[size];
-    int index = -1;
+                              IntObjectHashMap<BytesRef> ordBytes) {
+    List<BytesRef> bytesRefs = new ArrayList<>(size);
     Iterator<IntObjectCursor<BytesRef>>it = ordBytes.iterator();
     while (it.hasNext()) {
       IntObjectCursor<BytesRef> cursor = it.next();
-      bytesRefs[++index] = cursor.value;
+      bytesRefs.add(cursor.value);
     }
     return new TermInSetQuery(fname, bytesRefs);
   }
