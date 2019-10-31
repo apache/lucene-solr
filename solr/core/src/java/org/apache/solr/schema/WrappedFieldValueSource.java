@@ -27,6 +27,12 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LongValuesSource;
 import org.apache.lucene.search.SortField;
 
+/**
+ * Wraps a ValueSource that derives values directly from a particular SchemaField.
+ * This allows a relatively clean way to set missingValue on ValueSource.getSortField,
+ * and also clearly marks SortFields that are directly associated with a SchemaField
+ * (e.g., for purposes of marshaling/unmarshaling sort values).
+ */
 public class WrappedFieldValueSource extends ValueSource {
 
   private final SchemaField f;
@@ -63,8 +69,9 @@ public class WrappedFieldValueSource extends ValueSource {
   @Override
   public SortField getSortField(boolean reverse) {
     SortField ret = backing.getSortField(reverse);
-    if (ret.getMissingValue() == null) {
-      ret.setMissingValue(f.getSortField(reverse).getMissingValue());
+    Object missingValue;
+    if (ret.getMissingValue() == null && (missingValue = f.getSortField(reverse).getMissingValue()) != null) {
+      ret.setMissingValue(missingValue);
     }
     return ret;
   }
