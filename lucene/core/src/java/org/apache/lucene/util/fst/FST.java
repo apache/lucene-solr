@@ -63,20 +63,6 @@ import org.apache.lucene.util.RamUsageEstimator;
  */
 public final class FST<T> implements Accountable {
 
-  //nocommit
-  static final boolean ALWAYS_FIXED_ARRAY = false;
-  static final boolean NEVER_FIXED_ARRAY = false;
-  static final boolean ALWAYS_DIRECT_ADDRESSING = false;
-  static final boolean NEVER_DIRECT_ADDRESSING = false;
-  static final boolean OPTIM_DA = true;
-  {
-    if (ALWAYS_FIXED_ARRAY) System.out.println("ALWAYS_FIXED_ARRAY");
-    if (NEVER_FIXED_ARRAY) System.out.println("NEVER_FIXED_ARRAY");
-    if (ALWAYS_DIRECT_ADDRESSING) System.out.println("ALWAYS_DIRECT_ADDRESSING");
-    if (NEVER_DIRECT_ADDRESSING) System.out.println("NEVER_DIRECT_ADDRESSING");
-    if (OPTIM_DA) System.out.println("OPTIM_DA");
-  }
-
   /** Specifies allowed range of each int input label for
    *  this FST. */
   public enum INPUT_TYPE {BYTE1, BYTE2, BYTE4}
@@ -96,30 +82,36 @@ public final class FST<T> implements Accountable {
 
   private static final int BIT_ARC_HAS_FINAL_OUTPUT = 1 << 5;
 
-  // We use this as a marker (because this one flag is
-  // illegal by itself ...):
+  // We use this as a marker (because this one flag is illegal by itself ...):
   private static final byte ARCS_AS_ARRAY_PACKED = BIT_ARC_HAS_FINAL_OUTPUT;
 
-  // this means either of these things in different contexts
-  // in the midst of a direct array:
-  private static final byte BIT_MISSING_ARC = 1 << 6;
-  // at the start of a direct array:
-  private static final byte ARCS_AS_ARRAY_WITH_GAPS = BIT_MISSING_ARC;
+  private static final byte ARCS_AS_ARRAY_DIRECT_ADDRESSING = 1 << 6;
 
   /**
-   * @see #shouldExpand(Builder, Builder.UnCompiledNode)
+   * @see #shouldExpandNodeWithFixedArray(Builder, Builder.UnCompiledNode)
    */
   static final int FIXED_ARRAY_SHALLOW_DISTANCE = 3; // 0 => only root node.
 
   /**
-   * @see #shouldExpand(Builder, Builder.UnCompiledNode)
+   * @see #shouldExpandNodeWithFixedArray(Builder, Builder.UnCompiledNode)
    */
   static final int FIXED_ARRAY_NUM_ARCS_SHALLOW = 5;
 
   /**
-   * @see #shouldExpand(Builder, Builder.UnCompiledNode)
+   * @see #shouldExpandNodeWithFixedArray(Builder, Builder.UnCompiledNode)
    */
   static final int FIXED_ARRAY_NUM_ARCS_DEEP = 10;
+
+  /**
+   * The maximum oversizing of fixed array allowed to enable direct addressing of arcs instead of binary search.
+   * <p>
+   * The current heuristic value should control the FST size increase around 20%, to have nearly 50% of the
+   * fixed array nodes with direct addressing for performance.
+   *
+   * @see #shouldExpandNodeWithDirectAddressing(Builder.UnCompiledNode, int, int)
+   */
+  // A value of 2.5 would increase the FST size by 34% to have 70% of fixed array nodes with direct addressing.
+  static final float DIRECT_ADDRESSING_MAX_OVERSIZING_FACTOR = 2.3f;
 
   // Increment version to change it
   private static final String FILE_FORMAT_NAME = "FST";
@@ -158,6 +150,11 @@ public final class FST<T> implements Accountable {
   public final Outputs<T> outputs;
 
   private Arc<T>[] cachedRootArcs;
+
+  /**
+   * Reusable buffer for building the header of a fixed array node.
+   */
+  private final byte[] fixedArrayHeader = new byte[11]; // header(byte) + numArcs(vint) + numBytes(vint)
 
   /** Represents a single arc. */
   public static final class Arc<T> {
@@ -599,7 +596,7 @@ public final class FST<T> implements Accountable {
     final long startAddress = builder.bytes.getPosition();
     //System.out.println("  startAddr=" + startAddress);
 
-    final boolean doFixedArray = !NEVER_FIXED_ARRAY && (ALWAYS_FIXED_ARRAY || shouldExpand(builder, nodeIn));
+    final boolean doFixedArray = shouldExpandNodeWithFixedArray(builder, nodeIn);
     if (doFixedArray) {
       //System.out.println("  fixedArray");
       if (builder.reusedBytesPerArc.length < nodeIn.numArcs) {
@@ -701,7 +698,6 @@ public final class FST<T> implements Accountable {
     */
 
     if (doFixedArray) {
-      final int MAX_HEADER_SIZE = 11; // header(byte) + numArcs(vint) + numBytes(vint)
       assert maxBytesPerArc > 0;
       // 2nd pass just "expands" all arcs to take up a fixed byte size
 
@@ -709,15 +705,14 @@ public final class FST<T> implements Accountable {
       // array that may have holes in it so that we can address the arcs directly by label without
       // binary search
       int labelRange = nodeIn.arcs[nodeIn.numArcs - 1].label - nodeIn.arcs[0].label + 1;
-      boolean writeDirectly = !NEVER_DIRECT_ADDRESSING && (ALWAYS_DIRECT_ADDRESSING || (labelRange > 0 && labelRange < Builder.DIRECT_ARC_LOAD_FACTOR * nodeIn.numArcs));
+      assert labelRange > 0;
+      boolean doDirectAddressing = shouldExpandNodeWithDirectAddressing(nodeIn, maxBytesPerArc, labelRange);
 
       // create the header
-      // TODO: clean this up: or just rewind+reuse and deal with it
-      byte[] header = new byte[MAX_HEADER_SIZE];
-      ByteArrayDataOutput bad = new ByteArrayDataOutput(header);
+      ByteArrayDataOutput bad = new ByteArrayDataOutput(fixedArrayHeader);
       // write a "false" first arc:
-      if (writeDirectly) {
-        bad.writeByte(ARCS_AS_ARRAY_WITH_GAPS);
+      if (doDirectAddressing) {
+        bad.writeByte(ARCS_AS_ARRAY_DIRECT_ADDRESSING);
         bad.writeVInt(labelRange);
       } else {
         bad.writeByte(ARCS_AS_ARRAY_PACKED);
@@ -727,19 +722,14 @@ public final class FST<T> implements Accountable {
       int headerLen = bad.getPosition();
       
       final long fixedArrayStart = startAddress + headerLen;
-
-      if (writeDirectly) {
-        if (OPTIM_DA && inputType == INPUT_TYPE.BYTE1) {
-          writeArrayWithGapsOptim(builder, nodeIn, fixedArrayStart, maxBytesPerArc, labelRange);
-        } else {
-          writeArrayWithGaps(builder, nodeIn, fixedArrayStart, maxBytesPerArc, labelRange);
-        }
+      if (doDirectAddressing) {
+        writeArrayDirectAddressing(builder, nodeIn, fixedArrayStart, maxBytesPerArc, labelRange);
       } else {
         writeArrayPacked(builder, nodeIn, fixedArrayStart, maxBytesPerArc);
       }
       
       // now write the header
-      builder.bytes.writeBytes(startAddress, header, 0, headerLen);
+      builder.bytes.writeBytes(startAddress, fixedArrayHeader, 0, headerLen);
     }
 
     final long thisNodeAddress = builder.bytes.getPosition()-1;
@@ -770,7 +760,7 @@ public final class FST<T> implements Accountable {
     }
   }
 
-  private void writeArrayWithGapsOptim(Builder<T> builder, Builder.UnCompiledNode<T> nodeIn, long fixedArrayStart, int maxBytesPerArc, int labelRange) {
+  private void writeArrayDirectAddressing(Builder<T> builder, Builder.UnCompiledNode<T> nodeIn, long fixedArrayStart, int maxBytesPerArc, int labelRange) {
     int numPresenceBytes = getNumPresenceBytes(labelRange);
     // expand the arcs in place, backwards
     long srcPos = builder.bytes.getPosition();
@@ -820,43 +810,6 @@ public final class FST<T> implements Accountable {
     return (labelRange + 7) / Byte.SIZE;
   }
 
-  private void writeArrayWithGaps(Builder<T> builder, Builder.UnCompiledNode<T> nodeIn, long fixedArrayStart, int maxBytesPerArc, int labelRange) {
-    // expand the arcs in place, backwards
-    long srcPos = builder.bytes.getPosition();
-    long destPos = fixedArrayStart + labelRange * maxBytesPerArc;
-    // if destPos == srcPos it means all the arcs were the same length, and the array of them is *already* direct
-    assert destPos >= srcPos;
-    if (destPos > srcPos) {
-      builder.bytes.skipBytes((int) (destPos - srcPos));
-      int arcIdx = nodeIn.numArcs - 1;
-      int firstLabel = nodeIn.arcs[0].label;
-      int nextLabel = nodeIn.arcs[arcIdx].label;
-      for (int directArcIdx = labelRange - 1; directArcIdx >= 0; directArcIdx--) {
-        destPos -= maxBytesPerArc;
-        if (directArcIdx == nextLabel - firstLabel) {
-          int arcLen = builder.reusedBytesPerArc[arcIdx];
-          srcPos -= arcLen;
-          //System.out.println("  direct pack idx=" + directArcIdx + " arcIdx=" + arcIdx + " srcPos=" + srcPos + " destPos=" + destPos + " label=" + nextLabel);
-          if (srcPos != destPos) {
-            //System.out.println("  copy len=" + builder.reusedBytesPerArc[arcIdx]);
-            assert destPos > srcPos: "destPos=" + destPos + " srcPos=" + srcPos + " arcIdx=" + arcIdx + " maxBytesPerArc=" + maxBytesPerArc + " reusedBytesPerArc[arcIdx]=" + builder.reusedBytesPerArc[arcIdx] + " nodeIn.numArcs=" + nodeIn.numArcs;
-            builder.bytes.copyBytes(srcPos, destPos, arcLen);
-            if (arcIdx == 0) {
-              break;
-            }
-          }
-          --arcIdx;
-          nextLabel = nodeIn.arcs[arcIdx].label;
-        } else {
-          assert directArcIdx > arcIdx;
-          // mark this as a missing arc
-          //System.out.println("  direct pack idx=" + directArcIdx + " no arc");
-          builder.bytes.writeByte(destPos, BIT_MISSING_ARC);
-        }
-      }
-    }
-  }
-
   /** Fills virtual 'start' arc, ie, an empty incoming arc to the FST's start node */
   public Arc<T> getFirstArc(Arc<T> arc) {
     T NO_OUTPUT = outputs.getNoOutput();
@@ -898,22 +851,17 @@ public final class FST<T> implements Accountable {
     } else {
       in.setPosition(follow.target());
       final byte b = in.readByte();
-      if (b == ARCS_AS_ARRAY_PACKED || b == ARCS_AS_ARRAY_WITH_GAPS) {
+      if (b == ARCS_AS_ARRAY_PACKED || b == ARCS_AS_ARRAY_DIRECT_ADDRESSING) {
         // array: jump straight to end
         arc.numArcs = in.readVInt();
         arc.bytesPerArc = in.readVInt();
         //System.out.println("  array numArcs=" + arc.numArcs + " bpa=" + arc.bytesPerArc);
         long posArcsStart = in.getPosition();
-        if (b == ARCS_AS_ARRAY_WITH_GAPS) {
+        if (b == ARCS_AS_ARRAY_DIRECT_ADDRESSING) {
           arc.arcIdx = Integer.MIN_VALUE;
-          int numArcs;
-          if (OPTIM_DA && inputType == INPUT_TYPE.BYTE1) {
-            int numPresenceBytes = readPresenceBytes(arc, in);
-            posArcsStart -= numPresenceBytes;
-            numArcs = countBits(arc.bitTable());
-          } else {
-            numArcs = arc.numArcs();
-          }
+          int numPresenceBytes = readPresenceBytes(arc, in);
+          posArcsStart -= numPresenceBytes;
+          int numArcs = countBits(arc.bitTable());
           arc.nextArc = posArcsStart - (numArcs - 1) * arc.bytesPerArc();
         } else {
           arc.arcIdx = arc.numArcs() - 2;
@@ -988,7 +936,7 @@ public final class FST<T> implements Accountable {
     //System.out.println("   flags=" + arc.flags);
 
     byte flags = in.readByte();
-    if (flags == ARCS_AS_ARRAY_PACKED || flags == ARCS_AS_ARRAY_WITH_GAPS) {
+    if (flags == ARCS_AS_ARRAY_PACKED || flags == ARCS_AS_ARRAY_DIRECT_ADDRESSING) {
       //System.out.println("  fixedArray");
       // this is first arc in a fixed-array
       arc.numArcs = in.readVInt();
@@ -997,9 +945,7 @@ public final class FST<T> implements Accountable {
         arc.arcIdx = -1;
       } else {
         arc.arcIdx = Integer.MIN_VALUE;
-        if (OPTIM_DA && inputType == INPUT_TYPE.BYTE1) {
-          readPresenceBytes(arc, in);
-        }
+        readPresenceBytes(arc, in);
       }
       arc.nextArc = arc.posArcsStart = in.getPosition();
       //System.out.println("  bytesPer=" + arc.bytesPerArc + " numArcs=" + arc.numArcs + " arcsStart=" + pos);
@@ -1077,7 +1023,7 @@ public final class FST<T> implements Accountable {
     } else {
       in.setPosition(follow.target());
       byte flags = in.readByte();
-      return flags == ARCS_AS_ARRAY_PACKED || flags == ARCS_AS_ARRAY_WITH_GAPS;
+      return flags == ARCS_AS_ARRAY_PACKED || flags == ARCS_AS_ARRAY_DIRECT_ADDRESSING;
     }
   }
 
@@ -1107,14 +1053,14 @@ public final class FST<T> implements Accountable {
       in.setPosition(pos);
 
       final byte flags = in.readByte();
-      if (flags == ARCS_AS_ARRAY_PACKED || flags == ARCS_AS_ARRAY_WITH_GAPS) {
+      if (flags == ARCS_AS_ARRAY_PACKED || flags == ARCS_AS_ARRAY_DIRECT_ADDRESSING) {
         //System.out.println("    nextArc fixed array");
         int numArcs = in.readVInt();
 
         // Skip bytesPerArc:
         in.readVInt();
 
-        if (flags == ARCS_AS_ARRAY_WITH_GAPS && OPTIM_DA && inputType == INPUT_TYPE.BYTE1) {
+        if (flags == ARCS_AS_ARRAY_DIRECT_ADDRESSING) {
           in.skipBytes(getNumPresenceBytes(numArcs));
         }
       } else {
@@ -1131,13 +1077,10 @@ public final class FST<T> implements Accountable {
           // point at next arc, -1 to skip flags
           in.skipBytes((1 + arc.arcIdx()) * arc.bytesPerArc() + 1);
         } else {
+          // arcs with direct addressing
           in.setPosition(arc.nextArc());
-          byte flags = in.readByte();
-          // skip missing arcs
-          while (flag(flags, BIT_MISSING_ARC)) {
-            in.skipBytes(arc.bytesPerArc() - 1);
-            flags = in.readByte();
-          }
+          // skip flags
+          in.readByte();
         }
       } else {
         // arcs are packed
@@ -1153,12 +1096,6 @@ public final class FST<T> implements Accountable {
     in.setPosition(pos);
     arc.flags = in.readByte();
     arc.nextArc = pos;
-    while (flag(arc.flags(), BIT_MISSING_ARC)) {
-      // skip empty arcs
-      arc.nextArc -= arc.bytesPerArc();
-      in.skipBytes(arc.bytesPerArc() - 1);
-      arc.flags = in.readByte();
-    }
     return readArc(arc, in);
   }
 
@@ -1186,20 +1123,9 @@ public final class FST<T> implements Accountable {
         in.setPosition(arc.posArcsStart() - arc.arcIdx() * arc.bytesPerArc());
         arc.flags = in.readByte();
       } else {
-        if (OPTIM_DA && inputType == INPUT_TYPE.BYTE1) {
-          assert arc.nextArc() <= arc.posArcsStart() && arc.nextArc() >= arc.posArcsStart() - (countBits(arc.bitTable()) - 1) * arc.bytesPerArc();
-        } else {
-          assert arc.nextArc() <= arc.posArcsStart() && arc.nextArc() >= arc.posArcsStart() - (arc.numArcs() - 1) * arc.bytesPerArc();
-        }
+        assert arc.nextArc() <= arc.posArcsStart() && arc.nextArc() >= arc.posArcsStart() - (countBits(arc.bitTable()) - 1) * arc.bytesPerArc();
         in.setPosition(arc.nextArc());
         arc.flags = in.readByte();
-        while (flag(arc.flags(), BIT_MISSING_ARC)) {
-          assert !(OPTIM_DA && inputType == INPUT_TYPE.BYTE1);
-          // skip empty arcs
-          arc.nextArc = arc.nextArc() - arc.bytesPerArc();
-          in.skipBytes(arc.bytesPerArc() - 1);
-          arc.flags = in.readByte();
-        }
       }
     } else {
       // arcs are packed
@@ -1364,54 +1290,28 @@ public final class FST<T> implements Accountable {
     // System.out.println("fta label=" + (char) labelToMatch);
 
     byte flags = in.readByte();
-    if (flags == ARCS_AS_ARRAY_WITH_GAPS) {
+    if (flags == ARCS_AS_ARRAY_DIRECT_ADDRESSING) {
       arc.numArcs = in.readVInt(); // This is in fact the label range.
       arc.bytesPerArc = in.readVInt();
+      readPresenceBytes(arc, in);
+      arc.posArcsStart = in.getPosition();
 
-      if (OPTIM_DA && inputType == INPUT_TYPE.BYTE1) {
-        readPresenceBytes(arc, in);
-        arc.posArcsStart = in.getPosition();
-        in.skipBytes(1); // Skip first arc flag.
-        int firstLabel = readLabel(in);
-        int arcPos = labelToMatch - firstLabel;
-        if (arcPos < 0) {
-          return null; // Before label range.
-        } else if (arcPos == 0) {
-          arc.nextArc = arc.posArcsStart();
-        } else if (arcPos >= arc.numArcs()) {
-          return null; // After label range.
-        } else {
-          if (!isBitSet(arc.bitTable(), arcPos)) {
-            return null; // Missing arc.
-          }
-          int presenceIndex = countBitsUpTo(arc.bitTable(), arcPos);
-          assert presenceIndex < arc.numArcs();
-          arc.nextArc = arc.posArcsStart() - arc.bytesPerArc() * presenceIndex;
-        }
+      in.skipBytes(1); // Skip first arc flag.
+      int firstLabel = readLabel(in);
+      int arcPos = labelToMatch - firstLabel;
+      if (arcPos < 0) {
+        return null; // Before label range.
+      } else if (arcPos == 0) {
+        arc.nextArc = arc.posArcsStart();
+      } else if (arcPos >= arc.numArcs()) {
+        return null; // After label range.
       } else {
-
-        arc.posArcsStart = in.getPosition();
-
-        // Array is direct; address by label
-        in.skipBytes(1);
-        int firstLabel = readLabel(in);
-        int arcPos = labelToMatch - firstLabel;
-        if (arcPos == 0) {
-          arc.nextArc = arc.posArcsStart();
-        } else if (arcPos > 0) {
-          if (arcPos >= arc.numArcs()) {
-            return null;
-          }
-          in.setPosition(arc.posArcsStart() - arc.bytesPerArc() * arcPos);
-          flags = in.readByte();
-          if (flag(flags, BIT_MISSING_ARC)) {
-            return null;
-          }
-          // point to flags that we just read
-          arc.nextArc = in.getPosition() + 1;
-        } else {
-          return null;
+        if (!isBitSet(arc.bitTable(), arcPos)) {
+          return null; // Missing arc.
         }
+        int presenceIndex = countBitsUpTo(arc.bitTable(), arcPos);
+        assert presenceIndex < arc.numArcs();
+        arc.nextArc = arc.posArcsStart() - arc.bytesPerArc() * presenceIndex;
       }
       arc.arcIdx = Integer.MIN_VALUE;
       return readNextRealArc(arc, in);
@@ -1491,23 +1391,31 @@ public final class FST<T> implements Accountable {
 
   /**
    * Nodes will be expanded if their depth (distance from the root node) is
-   * &lt;= this value and their number of arcs is &gt;=
-   * {@link #FIXED_ARRAY_NUM_ARCS_SHALLOW}.
-   * 
+   * &lt;= this value and their number of arcs is &gt;= {@link #FIXED_ARRAY_NUM_ARCS_SHALLOW}.
    * <p>
-   * Fixed array consumes more RAM but enables binary search on the arcs
-   * (instead of a linear scan) on lookup by arc label.
+   * Fixed array consumes more RAM, because it encodes all arcs with a fixed number of bytes,
+   * but it enables either binary search or direct addressing on the arcs (instead of a linear scan)
+   * on lookup by arc label.
    * 
-   * @return <code>true</code> if <code>node</code> should be stored in an
-   *         expanded (array) form.
+   * @return <code>true</code> if <code>node</code> should be stored in an expanded (array) form.
    * 
    * @see #FIXED_ARRAY_NUM_ARCS_DEEP
    * @see Builder.UnCompiledNode#depth
    */
-  private boolean shouldExpand(Builder<T> builder, Builder.UnCompiledNode<T> node) {
+  private boolean shouldExpandNodeWithFixedArray(Builder<T> builder, Builder.UnCompiledNode<T> node) {
     return builder.allowArrayArcs &&
       ((node.depth <= FIXED_ARRAY_SHALLOW_DISTANCE && node.numArcs >= FIXED_ARRAY_NUM_ARCS_SHALLOW) || 
        node.numArcs >= FIXED_ARRAY_NUM_ARCS_DEEP);
+  }
+
+  /**
+   * Returns whether the given node should be expanded with direct addressing (more memory but faster)
+   * instead of binary search (less memory, slower, but still faster than variable length compact list).
+   */
+  private boolean shouldExpandNodeWithDirectAddressing(Builder.UnCompiledNode<T> nodeIn, int numBytesPerArc, int labelRange) {
+    int sizeWithFixedArray = numBytesPerArc * nodeIn.numArcs;
+    int sizeWithDirectAddressing = sizeWithFixedArray + getNumPresenceBytes(labelRange);
+    return sizeWithDirectAddressing <= sizeWithFixedArray * DIRECT_ADDRESSING_MAX_OVERSIZING_FACTOR;
   }
   
   /** Returns a {@link BytesReader} for this FST, positioned at
