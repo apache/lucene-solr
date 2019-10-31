@@ -104,7 +104,7 @@ public class StrField extends PrimitiveFieldType {
   @Override
   public ValueSource getValueSource(SchemaField field, QParser parser) {
     field.checkFieldCacheSource();
-    return new StrFieldSource(field.getName());
+    return new StrFieldSource(field);
   }
 
   @Override
