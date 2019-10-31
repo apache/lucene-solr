@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.schema;
+package org.apache.lucene.queries.function;
 
 import java.io.IOException;
 import java.util.Map;
@@ -33,22 +33,16 @@ import org.apache.lucene.search.SortField;
  * and also clearly marks SortFields that are directly associated with a SchemaField
  * (e.g., for purposes of marshaling/unmarshaling sort values).
  */
-public class WrappedFieldValueSource extends ValueSource {
+public class WrappedValueSource extends ValueSource {
 
-  private final SchemaField f;
   private final ValueSource backing;
 
-  public WrappedFieldValueSource(SchemaField f, ValueSource backing) {
-    this.f = f;
+  public WrappedValueSource(ValueSource backing) {
     this.backing = backing;
   }
 
   public ValueSource unwrap() {
     return backing;
-  }
-
-  public SchemaField getSchemaField() {
-    return f;
   }
 
   @Override
@@ -68,12 +62,7 @@ public class WrappedFieldValueSource extends ValueSource {
 
   @Override
   public SortField getSortField(boolean reverse) {
-    SortField ret = backing.getSortField(reverse);
-    Object missingValue;
-    if (ret.getMissingValue() == null && (missingValue = f.getSortField(reverse).getMissingValue()) != null) {
-      ret.setMissingValue(missingValue);
-    }
-    return ret;
+    return backing.getSortField(reverse);
   }
 
   @Override
@@ -85,21 +74,30 @@ public class WrappedFieldValueSource extends ValueSource {
   public boolean equals(Object o) {
     if (o == null) {
       return false;
-    } else if (!(o instanceof WrappedFieldValueSource)) {
+    } else if (!(o instanceof ValueSource)) {
       return false;
     } else {
-      WrappedFieldValueSource other = (WrappedFieldValueSource)o;
-      return other.backing.equals(this.backing) && other.f.equals(this.f);
+      return backing.equals(unwrap((ValueSource)o));
     }
   }
 
   @Override
   public int hashCode() {
-    return backing.hashCode() ^ f.hashCode();
+    return backing.hashCode();
   }
 
   @Override
   public String description() {
-    return "<wrapped "+backing.description()+", schemaField="+f+">";
+    return "<wrapped "+backing.description()+">";
+  }
+
+  public static ValueSource unwrap(ValueSource vs) {
+    if (vs == null) {
+      return null;
+    } else if (vs instanceof WrappedValueSource) {
+      return ((WrappedValueSource)vs).unwrap();
+    } else {
+      return vs;
+    }
   }
 }
