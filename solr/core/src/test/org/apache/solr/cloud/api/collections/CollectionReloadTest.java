@@ -17,11 +17,15 @@
 package org.apache.solr.cloud.api.collections;
 
 import com.carrotsearch.randomizedtesting.annotations.Repeat;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
+import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.RetryUtil;
 import org.junit.BeforeClass;
@@ -29,7 +33,9 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -87,18 +93,26 @@ public class CollectionReloadTest extends SolrCloudTestCase {
   }
   
   @Repeat(iterations=5)
-  public void testCreateReloadDelete() throws Exception {
-    String collectionName = "testCreateReloadDelete";
-    assertSuccessfulAdminRequest(
-        CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2, 0, 0)
-          .setMaxShardsPerNode(100)
-          .process(cluster.getSolrClient()));
+  public void testCreateReloadDeleteAllNrt() throws Exception {
+    testCreateReloadDelete("testCreateReloadDeleteAllNrt", 3, 0, 0);
+  }
+  
+  @Repeat(iterations=5)
+  public void testCreateReloadDeleteAllTlog() throws Exception {
+    testCreateReloadDelete("testCreateReloadDeleteAllTlog", 0, 3, 0);
+  }
+  
+  @Repeat(iterations=5)
+  public void testCreateReloadDeletePull() throws Exception {
+    testCreateReloadDelete("testCreateReloadDeletePull", 0, 1, 2);
+  }
+  
+  private void testCreateReloadDelete(String collectionName, int nrtReplicas, int tlogReplicas, int pullReplicas) throws Exception {
+    int numShards = 3;
+    createCollection(numShards,  nrtReplicas, tlogReplicas, pullReplicas, collectionName);
     boolean reloaded = false;
     while (true) {
-      DocCollection docCollection = getCollectionState(collectionName);
-      assertNotNull(docCollection);
-      assertEquals("Expecting 2 relpicas per shard",
-          4, docCollection.getReplicas().size());
+      waitForState("Timeout waiting for collection " + collectionName, collectionName, clusterShape(numShards, numShards * (nrtReplicas + tlogReplicas + pullReplicas)));
       if (reloaded) {
         break;
       } else {
@@ -115,5 +129,49 @@ public class CollectionReloadTest extends SolrCloudTestCase {
   private void assertSuccessfulAdminRequest(CollectionAdminResponse response) {
     assertEquals("Unexpected response status", 0, response.getStatus());
     assertTrue("Unsuccessful response: " + response, response.isSuccess());
+  }
+  
+  private void createCollection(int numShards,  int nrtReplicas, int tlogReplicas, int pullReplicas, String collectionName) throws SolrServerException, IOException {
+    switch (random().nextInt(3)) {
+      case 0:
+        log.info("Creating collection with SolrJ");
+        // Sometimes use SolrJ
+        assertSuccessfulAdminRequest(
+            CollectionAdminRequest.createCollection(collectionName, "conf", numShards, nrtReplicas, tlogReplicas, pullReplicas)
+              .setMaxShardsPerNode(100)
+              .process(cluster.getSolrClient()));
+        break;
+      case 1:
+        log.info("Creating collection with V1 API");
+        // Sometimes use v1 API
+        String url = String.format(Locale.ROOT, "%s/admin/collections?action=CREATE&name=%s&collection.configName=%s&numShards=%s&maxShardsPerNode=%s&nrtReplicas=%s&tlogReplicas=%s&pullReplicas=%s",
+            cluster.getRandomJetty(random()).getBaseUrl(),
+            collectionName, "conf",
+            numShards,
+            100,          // maxShardsPerNode
+            nrtReplicas, 
+            tlogReplicas,
+            pullReplicas); 
+        HttpGet createCollectionGet = new HttpGet(url);
+        cluster.getSolrClient().getHttpClient().execute(createCollectionGet);
+        break;
+      case 2:
+        log.info("Creating collection with V2 API");
+        // Sometimes use V2 API
+        url = cluster.getRandomJetty(random()).getBaseUrl().toString() + "/____v2/c";
+        String requestBody = String.format(Locale.ROOT, "{create:{name:%s, config:%s, numShards:%s, maxShardsPerNode:%s, nrtReplicas:%s, tlogReplicas:%s, pullReplicas:%s}}",
+            collectionName, "conf",
+            numShards,    // numShards
+            100, // maxShardsPerNode
+            nrtReplicas,
+            tlogReplicas,
+            pullReplicas);
+        HttpPost createCollectionPost = new HttpPost(url);
+        createCollectionPost.setHeader("Content-type", "application/json");
+        createCollectionPost.setEntity(new StringEntity(requestBody));
+        HttpResponse httpResponse = cluster.getSolrClient().getHttpClient().execute(createCollectionPost);
+        assertEquals(200, httpResponse.getStatusLine().getStatusCode());
+        break;
+    }
   }
 }
