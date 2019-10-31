@@ -1126,8 +1126,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       }
 
       // Sort the leader replicas, if any, according to the request preferences    (none if !sendToLeaders)
-      replicaListTransformer.transform(replicas);
-      Collections.shuffle(theUrlList, rand);
+      replicaListTransformer.transform(theUrlList);
 
       // Sort the replicas, if any, according to the request preferences and append to our list
       replicaListTransformer.transform(replicas);
