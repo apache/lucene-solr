@@ -106,6 +106,7 @@ ways.  For an exhaustive discussion of the options available, run:
 Please review the [Contributing to Solr
 Guide](https://cwiki.apache.org/confluence/display/solr/HowToContribute) for information on
 contributing.
+Please refer to [PULL Request guidelines](https://github.com/apache/lucene-solr/blob/master/.github/PULL_REQUEST_TEMPLATE.md) also, before submitting pull request.
 
 ## Discussion and Support
 
