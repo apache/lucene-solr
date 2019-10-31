@@ -24,7 +24,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.ByteArrayDataOutput;
@@ -195,7 +194,7 @@ public final class FST<T> implements Accountable {
         posArcsStart = other.posArcsStart();
         arcIdx = other.arcIdx();
         numArcs = other.numArcs();
-        bitTable = other.bitTable == null ? null : Arrays.copyOf(other.bitTable, other.bitTable.length);
+        bitTable = other.bitTable == null ? null : ArrayUtil.copyOfSubArray(other.bitTable, 0, other.bitTable.length);
       }
       return this;
     }
@@ -797,6 +796,7 @@ public final class FST<T> implements Accountable {
         presenceBits = 0;
         presenceIndex -= 8;
       }
+      // Set the bit at presenceIndex to flag that the corresponding arc is present.
       presenceBits |= 1 << presenceIndex;
       previousLabel = label;
     }
@@ -959,12 +959,14 @@ public final class FST<T> implements Accountable {
   }
 
   /**
-   * Reads the presence bits of a direct-addressing node, store them in the provided arc {@link Arc#bitTable()} and returns the number of presence bytes.
+   * Reads the presence bits of a direct-addressing node, store them in the provided arc {@link Arc#bitTable()}
+   * and returns the number of presence bytes.
    */
   private int readPresenceBytes(Arc<T> arc, BytesReader in) throws IOException {
     int numPresenceBytes = getNumPresenceBytes(arc.numArcs());
     long[] presenceBits = new long[(numPresenceBytes + 7) / Long.BYTES];
     for (int i = 0; i < numPresenceBytes; i++) {
+      // Read the next unsigned byte, shift it to the left, and appends it to the current long.
       presenceBits[i / Long.BYTES] |= (in.readByte() & 0xFFL) << (i * Byte.SIZE);
     }
     arc.bitTable = presenceBits;
@@ -1004,9 +1006,12 @@ public final class FST<T> implements Accountable {
     int bitCount = 0;
     int lastLong = bitIndex / Long.SIZE;
     for (int i = 0; i < lastLong; i++) {
+      // Count the bits set for all plain longs.
       bitCount += Long.bitCount(bits[i]);
     }
+    // Prepare a mask with 1s on the right up to bitIndex exclusive.
     long mask = (1L << bitIndex) - 1L; // Shifts are mod 64.
+    // Count the bits set only within the mask part, so up to bitIndex exclusive.
     bitCount += Long.bitCount(bits[lastLong] & mask);
     return bitCount;
   }
