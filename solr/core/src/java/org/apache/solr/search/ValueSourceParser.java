@@ -435,10 +435,10 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                                     "Multi-Valued field selector '"+s+"' not supported");
           }
-          return f.getType().getSingleValueSource(selector, f, fp);
+          return FieldType.wrapFieldValueSource(f, f.getType().getSingleValueSource(selector, f, fp));
         }
         // simple field ValueSource
-        return f.getType().getValueSource(f, fp);
+        return FieldType.wrapFieldValueSource(f, f.getType().getValueSource(f, fp));
       }
     });
     addParser("currency", new ValueSourceParser() {
