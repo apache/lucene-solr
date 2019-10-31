@@ -105,7 +105,6 @@ import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.servlet.SolrDispatchFilter.Action;
 import org.apache.solr.servlet.cache.HttpCacheHeaderUtil;
 import org.apache.solr.servlet.cache.Method;
-import org.apache.solr.store.blob.metadata.BlobCoreSyncer;
 import org.apache.solr.store.blob.process.CorePullTracker;
 import org.apache.solr.update.processor.DistributingUpdateProcessorFactory;
 import org.apache.solr.util.RTimerTree;
@@ -294,37 +293,15 @@ public class HttpSolrCall {
             path = path.substring(idx);
           }
         } else {
-
-          // At this point both collectionName may be null, and origCorename may reference either a core, 
-          // collection, or be null. So check if we can get a collection from either variable.
-          // TODO we don't support lists of collections yet and need to explore how this feature works...
-          DocCollection collection = getCollection(collectionName);
-          collection = (collection != null) ? collection : getCollection(origCorename);
-
-          // the core is missing locally but we check if its present in our cluster state, if it is then
-          // we trigger a missing core pull
-          if (collection != null && collection.getSharedIndex()) {
-            Replica replica = getReplicaFromCurrentNode(collection);
-            String coreName = replica.getCoreName();
-            String shardName = collection.getShardId(replica.getNodeName(), coreName);
-            BlobCoreSyncer syncer = cores.getSharedStoreManager().getBlobCoreSyncer();
-            syncer.pull(coreName, shardName, collectionName, cores, true, false);
-            core = cores.getCore(coreName);
-            if (idx > 0) {
+          // if we couldn't find it locally, look on other nodes
+          if (idx > 0) {
+            extractRemotePath(collectionName, origCorename);
+            if (action == REMOTEQUERY) {
               path = path.substring(idx);
+              return;
             }
-          } else {
-            // if we couldn't find it locally, look on other nodes
-            if (idx > 0) {
-              extractRemotePath(collectionName, origCorename);
-              if (action == REMOTEQUERY) {
-                path = path.substring(idx);
-                return;
-              }
-            }
-            // core is not available locally or remotely
           }
-
+          // core is not available locally or remotely
           autoCreateSystemColl(collectionName);
           if (action != null) return;
         }
@@ -396,27 +373,6 @@ public class HttpSolrCall {
     CorePullTracker pull = cores.getSharedStoreManager().getCorePullTracker();
     String collectionName = core.getCoreDescriptor().getCollectionName();
     pull.enqueueForPullIfNecessary(path, core, collectionName, cores);
-  }
-
-  /**
-   * Given a collection using SHARED replicas, checks if the given collection
-   * contains a Replica that should live on the current node
-   */
-  protected Replica getReplicaFromCurrentNode(DocCollection collection) {
-    ZkStateReader zkStateReader = cores.getZkController().getZkStateReader();
-    ClusterState clusterState = zkStateReader.getClusterState();
-    Set<String> liveNodes = clusterState.getLiveNodes();
-    List<Replica> replicas = collection.getReplicas(cores.getZkController().getNodeName());
-    if (replicas != null) {
-      RandomIterator<Replica> it = new RandomIterator<>(random, replicas);
-      while (it.hasNext()) {
-        Replica replica = it.next();
-        if (liveNodes.contains(replica.getNodeName())) {
-          return replica;
-        }
-      }
-    }
-    return null;
   }
 
   protected boolean doesPathContainUpdate() {

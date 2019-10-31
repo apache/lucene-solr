@@ -30,6 +30,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
@@ -49,7 +50,7 @@ import org.junit.Test;
  * refers to case in which shard index exists on the source-of-truth for shared
  * collections, the shared store, but is missing locally on the solr node. The
  * metadata for the index shard exists on ZK which indicates Solr Cloud is aware
- * of the shard and requests trigger it being pulled 
+ * of the shard. 
  */
 public class SimpleSharedStoreMissingCorePullTest extends SolrCloudSharedStoreTestCase {
   
@@ -73,7 +74,7 @@ public class SimpleSharedStoreMissingCorePullTest extends SolrCloudSharedStoreTe
   /**
    * Tests that if a core is missing locally on a solr node, the replica is known to 
    * Solr Cloud (present in ZK), and the index data is present on the shared store,
-   * then we pull the core from the shared store.
+   * then we discover and create that core on startup and able to pull the index from the shared store.
    */
   @Test
   public void testMissingCorePullSucceeds() throws Exception {
@@ -129,28 +130,26 @@ public class SimpleSharedStoreMissingCorePullTest extends SolrCloudSharedStoreTe
       collection = cloudClient.getZkStateReader().getClusterState().getCollection(collectionName);
       shardLeaderReplica = collection.getLeader("shard1");
       
-      // verify we don't find the core on the node
+      // at core container load time we will discover that we have a replica for this node on ZK but no corresponding core
+      // thus, we will create one at load time
       cc = getCoreContainer(shardLeaderReplica.getNodeName());
       core = cc.getCore(shardLeaderReplica.getCoreName());
-      
-      assertNull(core);
+      try {
+        assertNotNull("core not found", core);
+      } finally {
+        core.close();
+      }
 
-      // do a query to trigger missing core pulls - this client request will wait for 5 seconds
-      // before the request fails with pull in progress. This is okay as the syncer is meant
-      // to support this.
-      // We want to wait until the pull completes so set up a count down latch for the follower's
-      // core that we'll wait until pull finishes before verifying
+      // after restart it takes some time for downed replica to be marked active
+      final Replica r = shardLeaderReplica;
+      waitForState("Timeout occurred while waiting for replica to become active ", collectionName,
+          (liveNodes, collectionState) -> collectionState.getReplica(r.getName()).getState() == State.ACTIVE);
+
+      // do a query to trigger core pull 
       CountDownLatch latch = new CountDownLatch(1);
       asyncPullLatches.put(shardLeaderReplica.getCoreName(), latch);
 
-      try {
-        resp = cloudClient.query(collectionName, params);
-        assertEquals(1, resp.getResults().getNumFound());
-        assertEquals("1", (String) resp.getResults().get(0).getFieldValue("id"));
-      } catch (Exception ex) {
-        // the query may fail if it waits longer than PULL_WAITING_MS which is 5 seconds 
-        // so we can accept that in this test
-      }
+      cloudClient.query(collectionName, params);
       
       // wait until pull is finished
       assertTrue(latch.await(120, TimeUnit.SECONDS));

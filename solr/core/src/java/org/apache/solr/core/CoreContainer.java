@@ -43,6 +43,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -78,6 +79,7 @@ import org.apache.solr.cloud.autoscaling.AutoScalingHandler;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
@@ -745,6 +747,17 @@ public class CoreContainer {
     try {
       List<CoreDescriptor> cds = coresLocator.discover(this);
       if (isZooKeeperAware()) {
+        // We can start on a clean node and might be missing cores of SHARED replicas that belong to this node.
+        // We will make sure we create those missing core descriptors(if any) and add to the list of discovered core descriptors.
+        // Later in this method the cores will be created for those additional core descriptors because isLoadOnStartup
+        // is set to true for them
+        // TODO: should this go behind some config?
+        List<CoreDescriptor> additionalCoreDescriptors = discoverAdditionalCoreDescriptorsForSharedReplicas(cds);
+        if (!additionalCoreDescriptors.isEmpty()) {
+          // enhance the list of discovered cores with the additional ones we just discovered/created
+          cds = new ArrayList<>(cds);
+          cds.addAll(additionalCoreDescriptors);
+        }
         //sort the cores if it is in SolrCloud. In standalone node the order does not matter
         CoreSorter coreComparator = new CoreSorter().init(this);
         cds = new ArrayList<>(cds);//make a copy
@@ -821,6 +834,64 @@ public class CoreContainer {
     }
     // This is a bit redundant but these are two distinct concepts for all they're accomplished at the same time.
     status |= LOAD_COMPLETE | INITIAL_CORE_LOAD_COMPLETE;
+  }
+
+  /**
+   * This method goes over all the {@link Replica.Type#SHARED} replicas that belong to this node and ensures that
+   * there are local core descriptors corresponding to all of them. If missing, it will create them.
+   *
+   * @param locallyDiscoveredCoreDescriptors list of the core descriptors that already exist locally
+   * @return list of the core descriptors of {@link Replica.Type#SHARED} replicas that were missing locally
+   */
+  private List<CoreDescriptor> discoverAdditionalCoreDescriptorsForSharedReplicas(List<CoreDescriptor> locallyDiscoveredCoreDescriptors) {
+    List<CoreDescriptor> additionalCoreDescriptors = new ArrayList<>();
+    HashSet<String> localCoreDescriptorSet = new HashSet<>(locallyDiscoveredCoreDescriptors.size());
+    for (CoreDescriptor cd : locallyDiscoveredCoreDescriptors) {
+      localCoreDescriptorSet.add(cd.getName());
+    }
+
+    ClusterState clusterState = this.getZkController().getClusterState();
+    for (DocCollection collection : clusterState.getCollectionsMap().values()) {
+      if (!collection.getSharedIndex()) {
+        // skip non-shared collections
+        continue;
+      }
+
+      // TODO: if shard activation(including post split) can guarantee core existence locally we can skip inactive shards
+      // go over collection's replicas belonging to this node
+      for (Replica replica : collection.getReplicas(getZkController().getNodeName())) { 
+        if (!localCoreDescriptorSet.contains(replica.getCoreName())) {
+          String coreName = replica.getCoreName();
+          // no corresponding core present locally
+          log.info(String.format("Found a replica with missing core, collection=%s replica=%s core=%s",
+              collection.getName(), replica.getName(), coreName));
+
+          Map<String, String> params = new HashMap<>();
+          // TODO: Borrowed this setting from CorePullTask#createCore
+          //       This should come from Zk (ZkStateReader#readConfigName(String)?)
+          params.put(CoreDescriptor.CORE_CONFIGSET, "coreset");
+          params.put(CoreDescriptor.CORE_TRANSIENT, "false");
+          // it is important to set it to true so that at load time core is created
+          params.put(CoreDescriptor.CORE_LOADONSTARTUP, "true");
+          params.put(CoreDescriptor.CORE_COLLECTION, collection.getName());
+          params.put(CoreDescriptor.CORE_NODE_NAME, replica.getName());
+          params.put(CoreDescriptor.CORE_SHARD, collection.getShardId(replica.getNodeName(), coreName));
+
+          // create the missing core descriptor
+          CoreDescriptor cd = new CoreDescriptor(coreName,
+              getCoreRootDirectory().resolve(coreName),
+              params,
+              getContainerProperties(),
+              isZooKeeperAware());
+          // add to list of additional core descriptors
+          additionalCoreDescriptors.add(cd);
+
+          // also add to local core descriptor set, so if we encounter it again(ideally we should not) we might not recreate it
+          localCoreDescriptorSet.add(coreName);
+        }
+      }
+    }
+    return additionalCoreDescriptors;
   }
 
   // MetricsHistoryHandler supports both cloud and standalone configs
