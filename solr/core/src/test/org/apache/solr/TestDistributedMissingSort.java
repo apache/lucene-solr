@@ -284,13 +284,13 @@ public class TestDistributedMissingSort extends BaseDistributedSearchTestCase {
     // sint1_ml asc sort pos:   7     6     4     3    11     2     8    12     5    13     1    10     9
     // sint1_ml desc sort pos:  7     8    10    11     3    12     6     2     9     1    13     4     5
 
-    QueryResponse rsp = query("q","*:*", "sort", sint1_ml + " desc", "rows", "13");
+    QueryResponse rsp = query("q","*:*", "sort", "field(" + sint1_ml + ") desc", "rows", "13");
     assertFieldValues(rsp.getResults(), "id_i", 10, 8, 5, 12, 13, 7, 1, 2, 9, 3, 4, 6, 11);
 
-    rsp = query("q","*:*", "sort", sint1_ml + " asc", "rows", "13");
+    rsp = query("q","*:*", "sort", "field(" + sint1_ml + ") asc", "rows", "13");
     assertFieldValues(rsp.getResults(), "id_i", 11, 6, 4, 3, 9, 2, 1, 7, 13, 12, 5, 8, 10);
 
-    rsp = query("q","*:*", "sort", sint1_ml + " desc, id_i asc", "rows", "200");
+    rsp = query("q","*:*", "sort", "field(" + sint1_ml + ") desc, id_i asc", "rows", "200");
     assertFieldValues(rsp.getResults(), "id_i",
         10, 8, 5, 12, 13, 7, 1, 2, 9, 3, 4, 6, 11,
         14, 15, 16, 17,
@@ -300,7 +300,7 @@ public class TestDistributedMissingSort extends BaseDistributedSearchTestCase {
         130, 131, 132, 133, 134, 135, 136, 137, 138, 139,
         140, 141, 142, 143, 144, 145, 146, 147, 148, 149);
 
-    rsp = query("q","*:*", "sort", sint1_ml + " asc, id_i desc", "rows", "200");
+    rsp = query("q","*:*", "sort", "field(" + sint1_ml + ") asc, id_i desc", "rows", "200");
     assertFieldValues(rsp.getResults(), "id_i",
         11, 6, 4, 3, 9, 2, 1, 7, 13, 12, 5, 8, 10,
         149, 148, 147, 146, 145, 144, 143, 142, 141, 140,
@@ -315,13 +315,13 @@ public class TestDistributedMissingSort extends BaseDistributedSearchTestCase {
     // long1_ml asc sort pos:   7     6     4     3    11     2     8    12     5    13     1    10     9
     // long1_ml desc sort pos:  7     8    10    11     3    12     6     2     9     1    13     4     5
 
-    rsp = query("q","*:*", "sort", long1_ml + " desc", "rows", "13");
+    rsp = query("q","*:*", "sort", "field(" + long1_ml + ") desc", "rows", "13");
     assertFieldValues(rsp.getResults(), "id_i", 10, 8, 5, 12, 13, 7, 1, 2, 9, 3, 4, 6, 11);
 
-    rsp = query("q","*:*", "sort", long1_ml + " asc", "rows", "13");
+    rsp = query("q","*:*", "sort", "field(" + long1_ml + ") asc", "rows", "13");
     assertFieldValues(rsp.getResults(), "id_i", 11, 6, 4, 3, 9, 2, 1, 7, 13, 12, 5, 8, 10);
 
-    rsp = query("q","*:*", "sort", long1_ml + " desc, id_i asc", "rows", "200");
+    rsp = query("q","*:*", "sort", "field(" + long1_ml + ") desc, id_i asc", "rows", "200");
     assertFieldValues(rsp.getResults(), "id_i",
         10, 8, 5, 12, 13, 7, 1, 2, 9, 3, 4, 6, 11,
         14, 15, 16, 17,
@@ -331,7 +331,7 @@ public class TestDistributedMissingSort extends BaseDistributedSearchTestCase {
         130, 131, 132, 133, 134, 135, 136, 137, 138, 139,
         140, 141, 142, 143, 144, 145, 146, 147, 148, 149);
 
-    rsp = query("q","*:*", "sort", long1_ml + " asc, id_i desc", "rows", "200");
+    rsp = query("q","*:*", "sort", "field(" + long1_ml + ") asc, id_i desc", "rows", "200");
     assertFieldValues(rsp.getResults(), "id_i",
         11, 6, 4, 3, 9, 2, 1, 7, 13, 12, 5, 8, 10,
         149, 148, 147, 146, 145, 144, 143, 142, 141, 140,
@@ -347,13 +347,13 @@ public class TestDistributedMissingSort extends BaseDistributedSearchTestCase {
     // string1_ml asc sort pos:   2     1     4     5    13    11     6     9     8     7    12    10     3
     // string1_ml desc sort pos: 12    13    10     9     1     3     8     5     6     7     2     4    11
 
-    rsp = query("q","*:*", "sort", string1_ml + " desc", "rows", "13");
+    rsp = query("q","*:*", "sort", "field(" + string1_ml + ") desc", "rows", "13");
     assertFieldValues(rsp.getResults(), "id_i", 5, 11, 6, 12, 8, 9, 10, 7, 4, 3, 13, 1, 2);
 
-    rsp = query("q","*:*", "sort", string1_ml + " asc", "rows", "13");
+    rsp = query("q","*:*", "sort", "field(" + string1_ml + ") asc", "rows", "13");
     assertFieldValues(rsp.getResults(), "id_i", 2, 1, 13, 3, 4, 7, 10, 9, 8, 12, 6, 11, 5);
 
-    rsp = query("q","*:*", "sort", string1_ml + " desc, id_i asc", "rows", "200");
+    rsp = query("q","*:*", "sort", "field(" + string1_ml + ") desc, id_i asc", "rows", "200");
     assertFieldValues(rsp.getResults(), "id_i",
         5, 11, 6, 12, 8, 9, 10, 7, 4, 3, 13, 1, 2,
         // missing field string1_ml="a_s1", ascending id sort
@@ -364,7 +364,7 @@ public class TestDistributedMissingSort extends BaseDistributedSearchTestCase {
         130, 131, 132, 133, 134, 135, 136, 137, 138, 139,
         140, 141, 142, 143, 144, 145, 146, 147, 148, 149);
 
-    rsp = query("q","*:*", "sort", string1_ml + " asc, id_i desc", "rows", "200");
+    rsp = query("q","*:*", "sort", "field(" + string1_ml + ") asc, id_i desc", "rows", "200");
     assertFieldValues(rsp.getResults(), "id_i",
         2, 1, 13, 3, 4, 7, 10, 9, 8, 12, 6, 11, 5,
         // missing field string1_ml="a_s1", descending id sort
@@ -382,7 +382,7 @@ public class TestDistributedMissingSort extends BaseDistributedSearchTestCase {
     // sint1_mf asc sort pos:   7     6     4     3    11     2     8    12     5    13     1    10     9
     // sint1_mf desc sort pos:  7     8    10    11     3    12     6     2     9     1    13     4     5
 
-    QueryResponse rsp = query("q","*:*", "sort", sint1_mf + " desc, id_i asc", "rows", "200");
+    QueryResponse rsp = query("q","*:*", "sort", "field(" + sint1_mf + ") desc, id_i asc", "rows", "200");
     assertFieldValues(rsp.getResults(), "id_i",
         14, 15, 16, 17,
         100, 101, 102, 103, 104, 105, 106, 107, 108, 109,
@@ -392,7 +392,7 @@ public class TestDistributedMissingSort extends BaseDistributedSearchTestCase {
         140, 141, 142, 143, 144, 145, 146, 147, 148, 149,
         10, 8, 5, 12, 13, 7, 1, 2, 9, 3, 4, 6, 11);
 
-    rsp = query("q","*:*", "sort", sint1_mf + " asc, id_i desc", "rows", "200");
+    rsp = query("q","*:*", "sort", "field(" + sint1_mf + ") asc, id_i desc", "rows", "200");
     assertFieldValues(rsp.getResults(), "id_i",
         149, 148, 147, 146, 145, 144, 143, 142, 141, 140,
         139, 138, 137, 136, 135, 134, 133, 132, 131, 130,
@@ -408,7 +408,7 @@ public class TestDistributedMissingSort extends BaseDistributedSearchTestCase {
     // long1_mf asc sort pos:   7     6     4     3    11     2     8    12     5    13     1    10     9
     // long1_mf desc sort pos:  7     8    10    11     3    12     6     2     9     1    13     4     5
 
-    rsp = query("q","*:*", "sort", long1_mf + " desc, id_i asc", "rows", "200");
+    rsp = query("q","*:*", "sort", "field(" + long1_mf + ") desc, id_i asc", "rows", "200");
     assertFieldValues(rsp.getResults(), "id_i",
         14, 15, 16, 17,
         100, 101, 102, 103, 104, 105, 106, 107, 108, 109,
@@ -418,7 +418,7 @@ public class TestDistributedMissingSort extends BaseDistributedSearchTestCase {
         140, 141, 142, 143, 144, 145, 146, 147, 148, 149,
         10, 8, 5, 12, 13, 7, 1, 2, 9, 3, 4, 6, 11);
 
-    rsp = query("q","*:*", "sort", long1_mf + " asc, id_i desc", "rows", "200");
+    rsp = query("q","*:*", "sort", "field(" + long1_mf + ") asc, id_i desc", "rows", "200");
     assertFieldValues(rsp.getResults(), "id_i",
         149, 148, 147, 146, 145, 144, 143, 142, 141, 140,
         139, 138, 137, 136, 135, 134, 133, 132, 131, 130,
@@ -434,7 +434,7 @@ public class TestDistributedMissingSort extends BaseDistributedSearchTestCase {
     // string1_mf asc sort pos:   2     1     4     5    13    11     6     9     8     7    12    10     3
     // string1_mf desc sort pos: 12    13    10     9     1     3     8     5     6     7     2     4    11
 
-    rsp = query("q","*:*", "sort", string1_mf + " desc, id_i asc", "rows", "200");
+    rsp = query("q","*:*", "sort", "field(" + string1_mf + ") desc, id_i asc", "rows", "200");
     assertFieldValues(rsp.getResults(), "id_i",
         // missing field string1_mf="a_s1_mf", ascending id sort
         14, 15, 16, 17,
@@ -445,7 +445,7 @@ public class TestDistributedMissingSort extends BaseDistributedSearchTestCase {
         140, 141, 142, 143, 144, 145, 146, 147, 148, 149,
         5, 11, 6, 12, 8, 9, 10, 7, 4, 3, 13, 1, 2);
 
-    rsp = query("q","*:*", "sort", string1_mf + " asc, id_i desc", "rows", "200");
+    rsp = query("q","*:*", "sort", "field(" + string1_mf + ") asc, id_i desc", "rows", "200");
     assertFieldValues(rsp.getResults(), "id_i",
         // missing field string1_mf="a_s1_mf", descending id sort
         149, 148, 147, 146, 145, 144, 143, 142, 141, 140,
