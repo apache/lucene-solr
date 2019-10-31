@@ -33,12 +33,14 @@ import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.cloud.CloudTestUtils;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
@@ -60,10 +62,13 @@ public class ConcurrentCreateCollectionTest extends SolrCloudTestCase {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  static int NODES = 2;
+
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(2)
-        .addConfig("conf", configset("cloud-minimal"))
+    configureCluster(NODES)
+        // .addConfig("conf", configset("cloud-minimal"))
+        .addConfig("conf", configset("_default"))
         .configure();
   }
 
@@ -86,12 +91,34 @@ public class ConcurrentCreateCollectionTest extends SolrCloudTestCase {
     final int nThreads = 20;
     final int createsPerThread = 1;
     final int repFactor = 1;
+    final boolean useClusterPolicy = true;
+    final boolean useCollectionPolicy = false;
 
     final CloudSolrClient client = cluster.getSolrClient();
 
+
+    if (useClusterPolicy) {
+      String setClusterPolicyCommand = "{" +
+          " 'set-cluster-policy': [" +
+          // "      {'cores':'<100', 'node':'#ANY'}," +
+          "      {'replica':'<2', 'shard': '#EACH', 'node': '#ANY'}," +
+          "    ]" +
+          "}";
+
+      SolrRequest req = CloudTestUtils.AutoScalingRequest.create(SolrRequest.METHOD.POST, setClusterPolicyCommand);
+      client.request(req);
+    }
+
+    if (useCollectionPolicy) {
+      // NOTE: the meer act of setting this named policy prevents LegacyAssignStrategy from being used, even if the policy is
+      // not used during collection creation.
+      String commands =  "{set-policy :{policy1 : [{replica:'<2' , node:'#ANY'}]}}";
+      client.request(CloudTestUtils.AutoScalingRequest.create(SolrRequest.METHOD.POST, commands));
+    }
+
+
     final AtomicInteger collectionNum = new AtomicInteger();
     Thread[] indexThreads = new Thread[nThreads];
-
 
     for (int i=0; i<nThreads; i++) {
       indexThreads[i] = new Thread(() -> {
@@ -99,12 +126,17 @@ public class ConcurrentCreateCollectionTest extends SolrCloudTestCase {
           for (int j=0; j<createsPerThread; j++) {
             int num = collectionNum.incrementAndGet();
             String collectionName = "collection" + num;
-            CollectionAdminRequest
-                .createCollection("collection" + num, "conf", 1, repFactor)
-                .setMaxShardsPerNode(1)
-                .process(client);
-            cluster.waitForActiveCollection(collectionName, 1, repFactor);
-            // Thread.sleep(5000);
+            CollectionAdminRequest.Create createReq = CollectionAdminRequest
+                .createCollection(collectionName, "conf", 1, repFactor)
+                .setMaxShardsPerNode(1);
+            createReq.setWaitForFinalState(false);
+            if (useCollectionPolicy) {
+              createReq.setPolicy("policy1");
+            }
+
+            createReq.process(client);
+            // cluster.waitForActiveCollection(collectionName, 1, repFactor);
+            // Thread.sleep(10000);
           }
         } catch (Exception e) {
           fail(e.getMessage());
@@ -120,31 +152,39 @@ public class ConcurrentCreateCollectionTest extends SolrCloudTestCase {
       thread.join();
     }
 
-    Map<String,List<Replica>> map = new HashMap<>();
+    int expectedTotalReplicas = nThreads * createsPerThread * repFactor;
+    int expectedPerNode = expectedTotalReplicas / NODES;
+
+    Map<String,List<Replica>> replicaMap = new HashMap<>();
     ClusterState cstate = client.getZkStateReader().getClusterState();
     for (DocCollection collection : cstate.getCollectionsMap().values()) {
       for (Replica replica : collection.getReplicas()) {
         String url = replica.getBaseUrl();
-        List<Replica> replicas = map.get(url);
+        List<Replica> replicas = replicaMap.get(url);
         if (replicas == null) {
           replicas = new ArrayList<>();
-          map.put(url, replicas);
+          replicaMap.put(url, replicas);
         }
         replicas.add(replica);
       }
     }
 
     // check if nodes are balanced
-    List<Replica> prev = null;
-    for (List<Replica> replicas : map.values()) {
-      if (prev != null && prev.size() != replicas.size()) {
-        log.error("UNBALANCED CLUSTER: prev node replica count=" + prev.size() + " current=" + replicas.size() + "\n" + cstate.getCollectionsMap());
-        log.error("Replica lists per node: " + map);
-        assertEquals(prev.size(), replicas.size());
+    boolean failed = false;
+    for (List<Replica> replicas : replicaMap.values()) {
+      if (replicas.size() != expectedPerNode ) {
+        failed = true;
+        log.error("UNBALANCED CLUSTER: expected replicas per node " + expectedPerNode +  " but got " + replicas.size());
       }
-      prev = replicas;
     }
 
+    if (failed) {
+      log.error("Cluster state " + cstate.getCollectionsMap());
+    }
+
+    assertEquals(replicaMap.size(),  NODES);  // make sure something was created
+
+    assertTrue(!failed);
   }
 
 
