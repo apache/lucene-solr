@@ -21,12 +21,16 @@ import java.util.Map;
 import java.util.Set;
 
 import junit.framework.AssertionFailedError;
+
+import org.apache.lucene.queries.function.FunctionQuery;
+import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.schema.WrappedFieldValueSource;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -1127,7 +1131,8 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
       SolrQueryResponse rsp = new SolrQueryResponse();
       SolrRequestInfo.setRequestInfo(new SolrRequestInfo(req,rsp));
       for (int i = 0; i < inputs.length; i++) {
-        queries[i] = QParser.getParser(inputs[i], defType, true, req).getQuery();
+        Query q = QParser.getParser(inputs[i], defType, true, req).getQuery();
+        queries[i] = q instanceof FunctionQuery ? unwrapFQValueSource((FunctionQuery)q) : q;
       }
     } finally {
       SolrRequestInfo.clearRequestInfo();
@@ -1141,6 +1146,15 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
       for (int j = 0; j < queries.length; j++) {
         QueryUtils.checkEqual(queries[i], queries[j]);
       }
+    }
+  }
+
+  private static FunctionQuery unwrapFQValueSource(FunctionQuery q) {
+    ValueSource vs = q.getValueSource();
+    if (vs instanceof WrappedFieldValueSource) {
+      return new FunctionQuery(((WrappedFieldValueSource)vs).unwrap());
+    } else {
+      return q;
     }
   }
 
