@@ -45,6 +45,7 @@ public class ICUTransformCharFilterFactory extends CharFilterFactory {
 
   private final Transliterator transliterator;
   private final int maxRollbackBufferCapacity;
+  private final boolean failOnRollbackBufferOverflow;
 
   // TODO: add support for custom rules
   /** Creates a new ICUTransformFilterFactory */
@@ -55,6 +56,7 @@ public class ICUTransformCharFilterFactory extends CharFilterFactory {
     int dir = "forward".equals(direction) ? Transliterator.FORWARD : Transliterator.REVERSE;
     int tmpCapacityHint = getInt(args, "maxRollbackBufferCapacity", ICUTransformCharFilter.DEFAULT_MAX_ROLLBACK_BUFFER_CAPACITY);
     this.maxRollbackBufferCapacity = tmpCapacityHint == -1 ? Integer.MAX_VALUE : tmpCapacityHint;
+    this.failOnRollbackBufferOverflow = getBoolean(args, "failOnRollbackBufferOverflow", ICUTransformCharFilter.DEFAULT_FAIL_ON_ROLLBACK_BUFFER_OVERFLOW);
     boolean assumeExternalUnicodeNormalization = getBoolean(args, "assumeExternalUnicodeNormalization", false);
     Transliterator stockTransliterator = Transliterator.getInstance(id, dir);
     final String modifiedRules;
@@ -72,7 +74,7 @@ public class ICUTransformCharFilterFactory extends CharFilterFactory {
 
   @Override
   public Reader create(Reader input) {
-    return new ICUTransformCharFilter(input, transliterator, maxRollbackBufferCapacity);
+    return new ICUTransformCharFilter(input, transliterator, maxRollbackBufferCapacity, failOnRollbackBufferOverflow);
   }
 
   private static final char ID_DELIM = ';';

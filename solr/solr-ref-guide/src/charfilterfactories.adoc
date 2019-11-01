@@ -205,6 +205,8 @@ Arguments:
 
 `maxRollbackBufferCapacity`:: In order to support streaming operation over compound transliterators, this filter implements rollback functionality, after the pattern established in http://www.icu-project.org/apiref/icu4j/com/ibm/icu/text/Transliterator.html[Transliterator] source code. This argument may be used to adjust the maximum allowed rollback buffer capacity. Specifying a negative value allows the rollback buffer to grow indefinitely (equivalent to specifying `Integer.MAX_VALUE`). Specifying `0` (or `1`, in practice) disables rollback. Larger values can in some cases yield more accurate transliteration, at the cost of performance and resolution/accuracy of offset correction. This cap is intended primarily as a failsafe, with a relatively large default value of `8192` that should be appropriate for most use cases. Note that the enforced cap will actually be "the greatest power of 2 (excluding `1`) less than or equal to the specified value".
 
+`failOnRollbackBufferOverflow`:: In the event that incremental transliteration is not possible within the rollback window supported by the configured `maxRollbackBufferCapacity`, by default transliteration will fail with an Exception. Setting `failOnRollbackBufferOverflow` to `false` will force the transliterator to advance, yielding possibly inconsistent/incompatible results.
+
 Example:
 
 [source,xml]

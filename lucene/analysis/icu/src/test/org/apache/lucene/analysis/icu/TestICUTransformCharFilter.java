@@ -54,14 +54,21 @@ public class TestICUTransformCharFilter extends BaseTokenStreamTestCase {
   public void testRollbackBuffer() throws Exception {
     checkToken(Transliterator.getInstance("Cyrillic-Latin"),
         "яяяяя", "âââââ"); // final NFC transform applied
-    checkToken(Transliterator.getInstance("Cyrillic-Latin"), 0,
+    checkToken(Transliterator.getInstance("Cyrillic-Latin"), 0, false,
         "яяяяя", "a\u0302a\u0302a\u0302a\u0302a\u0302"); // final NFC transform never applied
-    checkToken(Transliterator.getInstance("Cyrillic-Latin"), 2,
+    checkToken(Transliterator.getInstance("Cyrillic-Latin"), 2, false,
         "яяяяя", "ââa\u0302a\u0302a\u0302");
-    checkToken(Transliterator.getInstance("Cyrillic-Latin"), 4,
+    checkToken(Transliterator.getInstance("Cyrillic-Latin"), 4, false,
         "яяяяяяяяяя", "ââa\u0302a\u0302a\u0302a\u0302a\u0302a\u0302a\u0302a\u0302");
-    checkToken(Transliterator.getInstance("Cyrillic-Latin"), 8,
+    checkToken(Transliterator.getInstance("Cyrillic-Latin"), 8, false,
         "яяяяяяяяяяяяяяяяяяяя", "ââââââa\u0302ââââa\u0302ââââa\u0302âââ");
+    try {
+      checkToken(Transliterator.getInstance("Cyrillic-Latin"), 8, true,
+          "яяяяяяяяяяяяяяяяяяяя", "ââââââa\u0302ââââa\u0302ââââa\u0302âââ");
+      fail("with failOnRollbackBufferOverflow=true, we expect to throw a RuntimeException");
+    } catch (RuntimeException ex) {
+      // this is expected.
+    }
   }
 
   public void testCustomFunctionality() throws Exception {
@@ -96,12 +103,12 @@ public class TestICUTransformCharFilter extends BaseTokenStreamTestCase {
   }
 
   private void checkToken(Transliterator transform, String input, String expected) throws IOException {
-    checkToken(transform, ICUTransformCharFilter.DEFAULT_MAX_ROLLBACK_BUFFER_CAPACITY, input, expected);
+    checkToken(transform, ICUTransformCharFilter.DEFAULT_MAX_ROLLBACK_BUFFER_CAPACITY, false, input, expected);
   }
 
-  private void checkToken(Transliterator transform, int maxRollbackBufferCapacity, String input, String expected) throws IOException {
+  private void checkToken(Transliterator transform, int maxRollbackBufferCapacity, boolean failOnRollbackBufferOverflow, String input, String expected) throws IOException {
     final KeywordTokenizer input1 = new KeywordTokenizer();
-    input1.setReader(new ICUTransformCharFilter(new StringReader(input), transform, maxRollbackBufferCapacity));
+    input1.setReader(new ICUTransformCharFilter(new StringReader(input), transform, maxRollbackBufferCapacity, failOnRollbackBufferOverflow));
     assertTokenStreamContents(input1, new String[] { expected });
   }
   

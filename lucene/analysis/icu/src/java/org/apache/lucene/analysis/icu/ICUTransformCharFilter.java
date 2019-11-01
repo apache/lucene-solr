@@ -85,8 +85,11 @@ public final class ICUTransformCharFilter extends BaseCharFilter {
   private char[] rollbackBuffer;
   private int rollbackBufferSize = 0;
 
+  static final boolean DEFAULT_FAIL_ON_ROLLBACK_BUFFER_OVERFLOW = true;
+  private final boolean failOnRollbackBufferOverflow;
+
   ICUTransformCharFilter(Reader in, Transliterator transform) {
-    this(in, transform, DEFAULT_MAX_ROLLBACK_BUFFER_CAPACITY);
+    this(in, transform, DEFAULT_MAX_ROLLBACK_BUFFER_CAPACITY, DEFAULT_FAIL_ON_ROLLBACK_BUFFER_OVERFLOW);
   }
 
   /**
@@ -106,9 +109,10 @@ public final class ICUTransformCharFilter extends BaseCharFilter {
    * See comments "To understand the need for rollback" in private method:
    * {@link Transliterator#filteredTransliterate(com.ibm.icu.text.Replaceable, Position, boolean, boolean)}
    */
-  ICUTransformCharFilter(Reader in, Transliterator transform, int maxRollbackBufferCapacityHint) {
+  ICUTransformCharFilter(Reader in, Transliterator transform, int maxRollbackBufferCapacityHint, boolean failOnRollbackBufferOverflow) {
     super(in);
     this.transform = ICUTransformFilter.optimizeForCommonCase(transform);
+    this.failOnRollbackBufferOverflow = failOnRollbackBufferOverflow;
     if (maxRollbackBufferCapacityHint < 0) {
       throw new IllegalArgumentException("It is illegal to request negative rollback buffer max capacity");
     } else if (maxRollbackBufferCapacityHint >= HARD_MAX_ROLLBACK_BUFFER_CAPACITY) {
@@ -206,6 +210,11 @@ public final class ICUTransformCharFilter extends BaseCharFilter {
         rollbackBuffer = ArrayUtil.growExact(rollbackBuffer, rollbackBuffer.length << 1);
       } else {
         // hit threshold; not going to increase the buffer size
+        if (failOnRollbackBufferOverflow) {
+          throw new RuntimeException("input could not be transliterated without overflowing maxRollbackBufferCapacity ("
+              + maxRollbackBufferCapacity + "); " +
+              "try increasing maxRollbackBufferCapacity, or setting failOnRollbackBufferOverflow=false");
+        }
         return false;
       }
     }
