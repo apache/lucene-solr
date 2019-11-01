@@ -341,11 +341,21 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
 
   @Test
   public void testMinShouldMatchBadQueries() {
-    expectThrows(SolrException.class, () -> calcMSM(1, "1<"));
-    expectThrows(SolrException.class, () -> calcMSM(1, "1<x"));
-    expectThrows(SolrException.class, () -> calcMSM(1, "x%"));
-    expectThrows(SolrException.class, () -> calcMSM(1, "%%"));
-    expectThrows(SolrException.class, () -> calcMSM(1, "x"));
+    Exception e = expectThrows(SolrException.class, () -> calcMSM(2, "1<"));
+    assertEquals("Invalid 'mm' spec: '1<'. Expecting values before and after '<'" , e.getMessage());
+    e = expectThrows(SolrException.class, () -> calcMSM(2, "1<x"));
+    assertEquals("Invalid 'mm' spec. Expecting an integer.", e.getMessage());
+    e = expectThrows(SolrException.class, () -> calcMSM(1, "x%"));
+    assertEquals("Invalid 'mm' spec. Expecting an integer.", e.getMessage());
+    e = expectThrows(SolrException.class, () -> calcMSM(1, "%%"));
+    assertEquals("Invalid 'mm' spec. Expecting an integer.", e.getMessage());
+    e = expectThrows(SolrException.class, () -> calcMSM(1, "x"));
+    assertEquals("Invalid 'mm' spec. Expecting an integer.", e.getMessage());
+    
+    e = expectThrows(SolrException.class, () -> calcMSM(10, "2<-25% 9<X"));
+    assertEquals("Invalid 'mm' spec. Expecting an integer." , e.getMessage());
+    e = expectThrows(SolrException.class, () -> calcMSM(10, "2<-25% 9<"));
+    assertEquals("Invalid 'mm' spec: '9<'. Expecting values before and after '<'" , e.getMessage());
   }
 
   @Test
