@@ -105,9 +105,18 @@ public class TestICUTransformCharFilter extends BaseTokenStreamTestCase {
     assertTokenStreamContents(input1, new String[] { expected });
   }
   
+  public void testRandomStringsLatinToKatakana() throws Exception {
+    // this Transliterator often decreases character length wrt input
+    testRandomStrings(Transliterator.getInstance("Latin-Katakana"));
+  }
+
+  public void testRandomStringsAnyToLatin() throws Exception {
+    // this Transliterator often increases character length wrt input
+    testRandomStrings(Transliterator.getInstance("Any-Latin"));
+  }
+
   /** blast some random strings through the analyzer */
-  public void testRandomStrings() throws Exception {
-    final Transliterator transform = Transliterator.getInstance("Any-Latin");
+  private void testRandomStrings(final Transliterator transform) throws Exception {
     Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
