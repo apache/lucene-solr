@@ -74,6 +74,8 @@ Bug Fixes
 * SOLR-13207: In dismax and edismax "minimum should match" queries, the < operator not followed by a number will now return
   an HTTP 400 error rather than 500, and the error message will explain that < must be followed by a number. (Chris Hennick)
 
+* SOLR-13762: Fix BinaryField support for non-binary wt's (Thomas Woeckinger via Jason Gerlowski)
+
 Other Changes
 ---------------------
 
