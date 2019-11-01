@@ -33,6 +33,7 @@ import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.QParser;
 import org.apache.solr.util.SolrPluginUtils.DisjunctionMaxQueryParser;
@@ -336,6 +337,15 @@ public class SolrPluginUtilsTest extends SolrTestCaseJ4 {
     SolrPluginUtils.setMinShouldMatch(q, "50%");
     assertEquals(2, q.build().getMinimumNumberShouldMatch());
         
+  }
+
+  @Test
+  public void testMinShouldMatchBadQueries() {
+    expectThrows(SolrException.class, () -> calcMSM(1, "1<"));
+    expectThrows(SolrException.class, () -> calcMSM(1, "1<x"));
+    expectThrows(SolrException.class, () -> calcMSM(1, "x%"));
+    expectThrows(SolrException.class, () -> calcMSM(1, "%%"));
+    expectThrows(SolrException.class, () -> calcMSM(1, "x"));
   }
 
   @Test

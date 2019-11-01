@@ -69,6 +69,9 @@ Bug Fixes
 * SOLR-13823: Fix ClassCastEx when score is requested with group.query. This also fixes score not being generated
   for distributed group.query case. (Uwe Jäger, Munendra S N)
 
+* SOLR-13207: In dismax and edismax "minimum should match" queries, the < operator not followed by a number will now return
+  an HTTP 400 error rather than 500, and the error message will explain that < must be followed by a number. (Chris Hennick)
+
 Other Changes
 ---------------------
 
