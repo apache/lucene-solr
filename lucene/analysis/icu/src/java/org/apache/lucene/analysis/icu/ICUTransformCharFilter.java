@@ -147,18 +147,13 @@ public final class ICUTransformCharFilter extends BaseCharFilter {
    */
   @Override
   public int read(char[] cbuf, int off, int len) throws IOException {
-    if (off < 0) throw new IndexOutOfBoundsException("specified negative array offset");
-    if (off >= cbuf.length) throw new IndexOutOfBoundsException("specified offset exceeds buffer length");
-    if (len <= 0) throw new IndexOutOfBoundsException("non-positive length specified");
-    if (len > cbuf.length - off) throw new IndexOutOfBoundsException("requested end array index exceeds buffer length");
-
-    // !inputFinished || output remains to be flushed
     while (!inputFinished || position.start > outputCursor) {
+      // (expecting more input) || (output remains that has not been flushed)
       if (position.start > outputCursor) {
         return outputFromResultBuffer(cbuf, off, len);
       }
 
-      int resLen = readFromIoNormalizeUptoBoundary();
+      int resLen = transliterateBufferContents();
       if (resLen > 0) {
         return outputFromResultBuffer(cbuf, off, len);
       }
@@ -167,21 +162,18 @@ public final class ICUTransformCharFilter extends BaseCharFilter {
         final int preStart = position.start;
         final int preLimit;
         final int bufferLength = buffer.length();
-        cursorUpdate:
-        {
-          if (preStart < bufferLength) {
-            // if last char is a lead surrogate, transform won't handle it properly anyway
-            preLimit = UTF16.isLeadSurrogate(buffer.charAt(bufferLength - 1)) ? bufferLength - 1 : bufferLength;
-            position.contextLimit = preLimit;
-            position.limit = preLimit;
-            transform.finishTransliteration(replaceable, position);
-          } else if (offsetDiffAdjust == 0) {
-            break cursorUpdate;
-          } else {
-            preLimit = bufferLength;
-          }
-          cursorAdvanced(preStart, preLimit);
+        if (preStart < bufferLength) {
+          // if last char is a lead surrogate, transform won't handle it properly anyway
+          preLimit = UTF16.isLeadSurrogate(buffer.charAt(bufferLength - 1)) ? bufferLength - 1 : bufferLength;
+          position.contextLimit = preLimit;
+          position.limit = preLimit;
+          transform.finishTransliteration(replaceable, position);
+        } else if (offsetDiffAdjust == 0) {
+          break;
+        } else {
+          preLimit = bufferLength;
         }
+        cursorAdvanced(preStart, preLimit);
       }
     }
 
@@ -252,7 +244,11 @@ public final class ICUTransformCharFilter extends BaseCharFilter {
     }
   }
 
-  private int readFromIoNormalizeUptoBoundary() {
+  /**
+   * Transliterate as much of the contents of {@link #buffer} as possible.
+   * @return number of output characters transliterated (possibly 0)
+   */
+  private int transliterateBufferContents() {
     int nextCharLength = pushRollbackBuffer(position.limit, buffer.length());
     if (nextCharLength == 0) {
       return 0;
