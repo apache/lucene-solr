@@ -148,6 +148,8 @@ Bug Fixes
 * SOLR-13207: In dismax and edismax "minimum should match" queries, the < operator not followed by a number will now return
   an HTTP 400 error rather than 500, and the error message will explain that < must be followed by a number. (Chris Hennick)
 
+* SOLR-13887: Use default instead of idleTimeouts of 0 for HTTP2 requests. (Houston Putman)
+
 Other Changes
 ---------------------
 

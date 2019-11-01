@@ -40,8 +40,8 @@ You can find `solr.xml` in your `$SOLR_HOME` directory (usually `server/solr`) i
 
   <shardHandlerFactory name="shardHandlerFactory"
     class="HttpShardHandlerFactory">
-    <int name="socketTimeout">${socketTimeout:0}</int>
-    <int name="connTimeout">${connTimeout:0}</int>
+    <int name="socketTimeout">${socketTimeout:600000}</int>
+    <int name="connTimeout">${connTimeout:600000}</int>
   </shardHandlerFactory>
 
 </solr>
@@ -230,15 +230,15 @@ Solr supports variable substitution of JVM system property values in `solr.xml`,
 
 Any JVM system properties usually specified using the `-D` flag when starting the JVM, can be used as variables in the `solr.xml` file.
 
-For example, in the `solr.xml` file shown below, the `socketTimeout` and `connTimeout` values are each set to "0". However, if you start Solr using `bin/solr -DsocketTimeout=1000`, the `socketTimeout` option of the `HttpShardHandlerFactory` to be overridden using a value of 1000ms, while the `connTimeout` option will continue to use the default property value of "0".
+For example, in the `solr.xml` file shown below, the `socketTimeout` and `connTimeout` values are each set to "60000". However, if you start Solr using `bin/solr -DsocketTimeout=1000`, the `socketTimeout` option of the `HttpShardHandlerFactory` to be overridden using a value of 1000ms, while the `connTimeout` option will continue to use the default property value of "60000".
 
 [source,xml]
 ----
 <solr>
   <shardHandlerFactory name="shardHandlerFactory"
                        class="HttpShardHandlerFactory">
-    <int name="socketTimeout">${socketTimeout:0}</int>
-    <int name="connTimeout">${connTimeout:0}</int>
+    <int name="socketTimeout">${socketTimeout:60000}</int>
+    <int name="connTimeout">${connTimeout:60000}</int>
   </shardHandlerFactory>
 </solr>
 ----
