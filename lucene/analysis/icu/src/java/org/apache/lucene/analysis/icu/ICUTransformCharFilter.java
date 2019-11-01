@@ -163,8 +163,13 @@ public final class ICUTransformCharFilter extends BaseCharFilter {
         final int preLimit;
         final int bufferLength = buffer.length();
         if (preStart < bufferLength) {
-          // if last char is a lead surrogate, transform won't handle it properly anyway
-          preLimit = UTF16.isLeadSurrogate(buffer.charAt(bufferLength - 1)) ? bufferLength - 1 : bufferLength;
+          if (UTF16.isLeadSurrogate(buffer.charAt(bufferLength - 1))) {
+            // if last char is a lead surrogate, transform won't handle it properly
+            //preLimit = bufferLength - 1; // could simply pass the malformed input along
+            throw new RuntimeException("malformed input; final UTF16 character is a lead surrogate");
+          } else {
+            preLimit = bufferLength;
+          }
           position.contextLimit = preLimit;
           position.limit = preLimit;
           transform.finishTransliteration(replaceable, position);
