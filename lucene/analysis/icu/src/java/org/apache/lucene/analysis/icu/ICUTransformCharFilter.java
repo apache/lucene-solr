@@ -339,6 +339,9 @@ public final class ICUTransformCharFilter extends BaseCharFilter {
       charCount += outputLength;
     } else {
       // limit change indicates change in length of replacement text; correct offsets accordingly
+      // we correct offsets as frequently as possible, for every incremental change. This will
+      // sometimes be for a range of characters, but that's the best we can do as far as the level
+      // of granularity that's available to us via the Transliterator API.
       recordOffsetDiff(diff, outputLength);
     }
   }
@@ -346,10 +349,12 @@ public final class ICUTransformCharFilter extends BaseCharFilter {
   private void recordOffsetDiff(int diff, int outputLength) {
     final int cumuDiff = getLastCumulativeDiff();
     if (diff < 0) {
+      // positive diff indicates an increase in character count wrt input
       for (int i = 1; i <= -diff; ++i) {
         addOffCorrectMap(charCount + i, cumuDiff - i);
       }
     } else {
+      // positive diff indicates an decrease in character count wrt input
       addOffCorrectMap(charCount + outputLength, cumuDiff + diff);
     }
     charCount += outputLength;
