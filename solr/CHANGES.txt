@@ -213,6 +213,8 @@ Other Changes
 
 * SOLR-12193: Move some log messages to TRACE level (gezapeti, janhoy)
 
+* SOLR-13885: Typos in the documentation. It's vs its.
+
 ==================  8.3.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

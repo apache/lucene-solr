@@ -124,7 +124,7 @@ RAUP first reads TRA configuration from the alias properties when it is initiali
   within the target collection.
 
 * If it belongs in the current collection (which is usually the case if processing events as they occur), the document
-  passes through to DUP. DUP does it's normal collection-level processing that may involve routing the document
+  passes through to DUP. DUP does its normal collection-level processing that may involve routing the document
   to another shard & replica.
 
 * If the timestamp on the document is more recent than the most recent TRA segment, then a new collection needs to be
