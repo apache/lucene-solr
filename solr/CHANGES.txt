@@ -47,6 +47,8 @@ Improvements
 
 * SOLR-13865: Move replica routing code to SolrJ. (Houston Putman via Tomas Fernandez-Lobbe)
 
+* SOLR-13844: Remove replica recovery terms with the replica term (Houston Putman via Cao Manh Dat)
+
 
 Optimizations
 ---------------------
