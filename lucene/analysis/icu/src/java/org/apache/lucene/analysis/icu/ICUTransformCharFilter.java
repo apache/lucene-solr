@@ -108,6 +108,8 @@ public final class ICUTransformCharFilter extends BaseCharFilter {
    * This is intended primarily as a failsafe, with a relatively large default value of {@value ICUTransformCharFilter#DEFAULT_MAX_ROLLBACK_BUFFER_CAPACITY}.
    * See comments "To understand the need for rollback" in private method:
    * {@link Transliterator#filteredTransliterate(com.ibm.icu.text.Replaceable, Position, boolean, boolean)}
+   * @param failOnRollbackBufferOverflow if true, transliteration failing to complete within the specified rollbackBuffer
+   * window will fail with an exception. If false, transliteration forges ahead with possibly-inconsistent results.
    */
   ICUTransformCharFilter(Reader in, Transliterator transform, int maxRollbackBufferCapacityHint, boolean failOnRollbackBufferOverflow) {
     super(in);
