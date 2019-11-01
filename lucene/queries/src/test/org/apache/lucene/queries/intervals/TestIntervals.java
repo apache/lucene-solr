@@ -18,7 +18,7 @@
 package org.apache.lucene.queries.intervals;
 
 import java.io.IOException;
-import java.util.List;
+import java.util.Arrays;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
@@ -740,7 +740,7 @@ public class TestIntervals extends LuceneTestCase {
   }
 
   public void testPrefix() throws IOException {
-    for (IntervalsSource source : List.of(Intervals.prefix(new BytesRef("p")),
+    for (IntervalsSource source : Arrays.asList(Intervals.prefix(new BytesRef("p")),
         Intervals.multiterm(PrefixQuery.toAutomaton(new BytesRef("p")), "p*" ) )) {
       checkIntervals(source, "field1", 5, new int[][]{
           {},
@@ -756,12 +756,12 @@ public class TestIntervals extends LuceneTestCase {
       assertMatch(mi, 1, 1, 6, 14);
     }
 
-    for (IntervalsSource noSuch : List.of(Intervals.prefix(new BytesRef("qqq")),
+    for (IntervalsSource noSuch : Arrays.asList(Intervals.prefix(new BytesRef("qqq")),
         Intervals.multiterm(PrefixQuery.toAutomaton(new BytesRef("qqq")), "qqq*" ))) {
       checkIntervals(noSuch, "field1", 0, new int[][]{});
     }
 
-    for (IntervalsSource source : List.of(Intervals.prefix(new BytesRef("p"), 1), 
+    for (IntervalsSource source : Arrays.asList(Intervals.prefix(new BytesRef("p"), 1), 
         Intervals.multiterm(PrefixQuery.toAutomaton(new BytesRef("p")), 1, "p*")) ) {
       IllegalStateException e = expectThrows(IllegalStateException.class, () -> {
         for (LeafReaderContext ctx : searcher.getIndexReader().leaves()) {
