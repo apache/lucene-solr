@@ -21,8 +21,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.module.jsonSchema.JsonSchema;
-import com.fasterxml.jackson.module.jsonSchema.factories.SchemaFactoryWrapper;
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.annotation.Property;
 import org.apache.solr.common.util.JsonSchemaCreator;
@@ -70,12 +68,6 @@ public class TestSolrJacksonAnnotation extends SolrTestCase {
     assertTrue(errs.get(0).contains("Value is not valid"));
   }
 
-  public String getSchema(ObjectMapper mapper, Class c)  throws Exception{
-    SchemaFactoryWrapper visitor = new SchemaFactoryWrapper();
-    mapper.acceptJsonFormatVisitor(mapper.constructType(c), visitor);
-    JsonSchema jsonSchema = visitor.finalSchema();
-    return mapper.writerWithDefaultPrettyPrinter().writeValueAsString(jsonSchema);
-  }
 
 
 
