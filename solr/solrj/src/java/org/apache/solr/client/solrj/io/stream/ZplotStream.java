@@ -28,12 +28,14 @@ import java.util.Set;
 import org.apache.commons.math3.distribution.IntegerDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.ml.clustering.CentroidCluster;
+import org.apache.commons.math3.ml.clustering.Cluster;
 import org.apache.commons.math3.random.EmpiricalDistribution;
 import org.apache.commons.math3.stat.Frequency;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.commons.math3.util.Precision;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
+import org.apache.solr.client.solrj.io.eval.DbscanEvaluator;
 import org.apache.solr.client.solrj.io.eval.KmeansEvaluator;
 import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.eval.Matrix;
@@ -214,18 +216,35 @@ public class ZplotStream extends TupleStream implements Expressible {
       }
     } else if(clusters) {
       Object o = evaluated.get("clusters");
-      KmeansEvaluator.ClusterTuple ct = (KmeansEvaluator.ClusterTuple)o;
-      List<CentroidCluster<KmeansEvaluator.ClusterPoint>> cs = ct.getClusters();
-      int clusterNum = 0;
-      for(CentroidCluster<KmeansEvaluator.ClusterPoint> c : cs) {
-        clusterNum++;
-        List<KmeansEvaluator.ClusterPoint> points = c.getPoints();
-        for(KmeansEvaluator.ClusterPoint p : points) {
-          Tuple tuple = new Tuple(new HashMap());
-          tuple.put("x", p.getPoint()[0]);
-          tuple.put("y", p.getPoint()[1]);
-          tuple.put("cluster", "cluster"+clusterNum);
-          outTuples.add(tuple);
+      if(o instanceof  KmeansEvaluator.ClusterTuple) {
+        KmeansEvaluator.ClusterTuple ct = (KmeansEvaluator.ClusterTuple) o;
+        List<CentroidCluster<KmeansEvaluator.ClusterPoint>> cs = ct.getClusters();
+        int clusterNum = 0;
+        for (CentroidCluster<KmeansEvaluator.ClusterPoint> c : cs) {
+          clusterNum++;
+          List<KmeansEvaluator.ClusterPoint> points = c.getPoints();
+          for (KmeansEvaluator.ClusterPoint p : points) {
+            Tuple tuple = new Tuple(new HashMap());
+            tuple.put("x", p.getPoint()[0]);
+            tuple.put("y", p.getPoint()[1]);
+            tuple.put("cluster", "cluster" + clusterNum);
+            outTuples.add(tuple);
+          }
+        }
+      } else if(o instanceof DbscanEvaluator.ClusterTuple) {
+        DbscanEvaluator.ClusterTuple ct = (DbscanEvaluator.ClusterTuple) o;
+        List<Cluster<DbscanEvaluator.ClusterPoint>> cs = ct.getClusters();
+        int clusterNum = 0;
+        for (Cluster<DbscanEvaluator.ClusterPoint> c : cs) {
+          clusterNum++;
+          List<DbscanEvaluator.ClusterPoint> points = c.getPoints();
+          for (DbscanEvaluator.ClusterPoint p : points) {
+            Tuple tuple = new Tuple(new HashMap());
+            tuple.put("x", p.getPoint()[0]);
+            tuple.put("y", p.getPoint()[1]);
+            tuple.put("cluster", "cluster" + clusterNum);
+            outTuples.add(tuple);
+          }
         }
       }
     } else if(distribution) {
