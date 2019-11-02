@@ -22,14 +22,17 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+/**Provides a 1:1 mapping from jackson's annotation. This was created to avoid direct dependency on jackson in SolrJ
+ *
+ */
 @Target({ElementType.FIELD, ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Property {
+public @interface JsonProperty {
 
   String value() default "";
 
   boolean required() default false;
-
+// not implemented
 //  int index() default -1;
 
   String defaultValue() default "";

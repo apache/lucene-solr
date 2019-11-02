@@ -44,7 +44,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
-import org.apache.solr.util.SolrPropertyAnnotationInspector;
+import org.apache.solr.util.SolrJacksonAnnotationInspector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -178,7 +178,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
 
 
     Cmd(Command command, Object obj, Method method) {
-      mapper.setAnnotationIntrospector(SolrPropertyAnnotationInspector.INSTANCE);
+      mapper.setAnnotationIntrospector(SolrJacksonAnnotationInspector.INSTANCE);
       if (Modifier.isPublic(method.getModifiers())) {
         this.command = command;
         this.obj = obj;

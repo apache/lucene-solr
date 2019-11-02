@@ -22,7 +22,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 
 import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.annotation.Property;
+import org.apache.solr.common.annotation.JsonProperty;
 
 // An implementation of MapWriter which is annotated with Jackson annotations
 public interface ReflectMapWriter extends MapWriter {
@@ -30,7 +30,7 @@ public interface ReflectMapWriter extends MapWriter {
   @Override
   default void writeMap(EntryWriter ew) throws IOException {
     for (Field field : this.getClass().getDeclaredFields()) {
-      Property prop = field.getAnnotation(Property.class);
+      JsonProperty prop = field.getAnnotation(JsonProperty.class);
       if (prop == null) continue;
       int modifiers = field.getModifiers();
       if (Modifier.isPublic(modifiers) && !Modifier.isStatic(modifiers)) {

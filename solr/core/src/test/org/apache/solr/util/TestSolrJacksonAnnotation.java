@@ -22,7 +22,7 @@ import java.util.Map;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.common.annotation.Property;
+import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.JsonSchemaCreator;
 import org.apache.solr.common.util.JsonSchemaValidator;
 import org.apache.solr.common.util.Utils;
@@ -31,7 +31,7 @@ public class TestSolrJacksonAnnotation extends SolrTestCase {
 
   public void testSerDe() throws Exception {
     ObjectMapper mapper = new ObjectMapper();
-    mapper.setAnnotationIntrospector(new SolrPropertyAnnotationInspector());
+    mapper.setAnnotationIntrospector(new SolrJacksonAnnotationInspector());
 
     TestObj o = new TestObj();
     o.field = "v1";
@@ -72,11 +72,11 @@ public class TestSolrJacksonAnnotation extends SolrTestCase {
 
 
   public static class TestObj {
-    @Property()
+    @JsonProperty()
     public String field;
-    @Property(value = "friendlyName" ,required = true)
+    @JsonProperty(value = "friendlyName" ,required = true)
     public String f2;
-    @Property("friendlyIntFld")
+    @JsonProperty("friendlyIntFld")
     public int ifld;
   }
 }

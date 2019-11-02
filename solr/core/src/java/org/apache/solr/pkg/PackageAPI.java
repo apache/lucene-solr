@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
@@ -34,7 +33,7 @@ import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.beans.Package;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.common.annotation.Property;
+import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
@@ -45,7 +44,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.util.SolrPropertyAnnotationInspector;
+import org.apache.solr.util.SolrJacksonAnnotationInspector;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -57,6 +56,9 @@ import static org.apache.solr.common.cloud.ZkStateReader.SOLR_PKGS_PATH;
 import static org.apache.solr.security.PermissionNameProvider.Name.PACKAGE_EDIT_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.PACKAGE_READ_PERM;
 
+/**This implements the public end points (/api/cluster/package) of package API.
+ *
+ */
 public class PackageAPI {
   public static final String PACKAGES = "packages";
   public final boolean enablePackages = Boolean.parseBoolean(System.getProperty("enable.packages", "false"));
@@ -73,7 +75,7 @@ public class PackageAPI {
   public PackageAPI(CoreContainer coreContainer, PackageLoader loader) {
     this.coreContainer = coreContainer;
     this.packageLoader = loader;
-    mapper.setAnnotationIntrospector(SolrPropertyAnnotationInspector.INSTANCE);
+    mapper.setAnnotationIntrospector(SolrJacksonAnnotationInspector.INSTANCE);
     pkgs = new Packages();
     SolrZkClient zkClient = coreContainer.getZkController().getZkClient();
     try {
@@ -148,10 +150,10 @@ public class PackageAPI {
 
 
   public static class Packages implements ReflectMapWriter {
-    @Property
+    @JsonProperty
     public int znodeVersion = -1;
 
-    @Property
+    @JsonProperty
     public Map<String, List<PkgVersion>> packages = new LinkedHashMap<>();
 
 
@@ -167,10 +169,10 @@ public class PackageAPI {
 
   public static class PkgVersion implements ReflectMapWriter {
 
-    @Property
+    @JsonProperty
     public String version;
 
-    @Property
+    @JsonProperty
     public List<String> files;
 
     public PkgVersion() {

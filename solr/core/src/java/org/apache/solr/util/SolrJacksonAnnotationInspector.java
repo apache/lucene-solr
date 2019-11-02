@@ -25,12 +25,13 @@ import com.fasterxml.jackson.databind.introspect.AnnotatedField;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMember;
 import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
 import com.fasterxml.jackson.databind.util.BeanUtil;
-import org.apache.solr.common.annotation.Property;
-import org.apache.solr.search.SolrCache;
-//this class provides a maping between jackson's JsonProperty Annotation to Solr's Property annotation
-// see SOLR-13841 for more details
-public class SolrPropertyAnnotationInspector extends AnnotationIntrospector {
-  public static final SolrPropertyAnnotationInspector INSTANCE = new SolrPropertyAnnotationInspector();
+import org.apache.solr.common.annotation.JsonProperty;
+
+/**this class provides a mapping between jackson's JsonProperty Annotation to Solr's Property annotation
+ see SOLR-13841 for more details
+ **/
+public class SolrJacksonAnnotationInspector extends AnnotationIntrospector {
+  public static final SolrJacksonAnnotationInspector INSTANCE = new SolrJacksonAnnotationInspector();
 
   @Override
   public Version version() {
@@ -41,7 +42,7 @@ public class SolrPropertyAnnotationInspector extends AnnotationIntrospector {
   public PropertyName findNameForSerialization(Annotated a) {
     if (a instanceof AnnotatedMethod) {
       AnnotatedMethod am = (AnnotatedMethod) a;
-      Property prop = am.getAnnotation(Property.class);
+      JsonProperty prop = am.getAnnotation(JsonProperty.class);
       if (prop == null) return null;
       if (prop.value().isEmpty()) {
         return new PropertyName(BeanUtil.okNameForGetter(am, true));
@@ -52,7 +53,7 @@ public class SolrPropertyAnnotationInspector extends AnnotationIntrospector {
     }
     if (a instanceof AnnotatedField) {
       AnnotatedField af = (AnnotatedField) a;
-      Property prop = af.getAnnotation(Property.class);
+      JsonProperty prop = af.getAnnotation(JsonProperty.class);
       if (prop == null) return null;
       return prop.value().isEmpty() ?
           new PropertyName(af.getName()) :
@@ -63,14 +64,14 @@ public class SolrPropertyAnnotationInspector extends AnnotationIntrospector {
 
   @Override
   public Boolean hasRequiredMarker(AnnotatedMember m) {
-    Property prop = m.getAnnotation(Property.class);
+    JsonProperty prop = m.getAnnotation(JsonProperty.class);
     if (prop == null) return Boolean.FALSE;
     return prop.required();
   }
 
   @Override
   public String findPropertyDefaultValue(Annotated m) {
-    Property prop = m.getAnnotation(Property.class);
+    JsonProperty prop = m.getAnnotation(JsonProperty.class);
     if (prop == null) return "";
     return prop.defaultValue();
   }

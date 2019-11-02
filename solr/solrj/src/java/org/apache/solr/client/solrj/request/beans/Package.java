@@ -19,7 +19,7 @@ package org.apache.solr.client.solrj.request.beans;
 
 import java.util.List;
 
-import org.apache.solr.common.annotation.Property;
+import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 
 /**Just a container class for POJOs used in Package APIs
@@ -27,19 +27,19 @@ import org.apache.solr.common.util.ReflectMapWriter;
  */
 public class Package {
   public static class AddVersion implements ReflectMapWriter {
-    @Property(value = "package", required = true)
+    @JsonProperty(value = "package", required = true)
     public String pkg;
-    @Property(required = true)
+    @JsonProperty(required = true)
     public String version;
-    @Property(required = true)
+    @JsonProperty(required = true)
     public List<String> files;
 
   }
 
   public static class DelVersion implements ReflectMapWriter {
-    @Property(value = "package", required = true)
+    @JsonProperty(value = "package", required = true)
     public String pkg;
-    @Property(required = true)
+    @JsonProperty(required = true)
     public String version;
 
   }

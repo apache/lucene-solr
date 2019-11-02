@@ -28,7 +28,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.solr.common.annotation.Property;
+import org.apache.solr.common.annotation.JsonProperty;
+
+/**Creates a json schema from an annotated Java Object. This, by  no means, is an exhaustive impl
+ * of schema generation.We will expand tye scope as we use more types
+ *
+ */
 
 public class JsonSchemaCreator {
   public static final Map<Class, String> natives = new HashMap<>();
@@ -68,7 +73,7 @@ public class JsonSchemaCreator {
     map.put("properties", props);
     Set<String>  required = new HashSet<>();
     for (Field fld : klas.getDeclaredFields()) {
-      Property p = fld.getAnnotation(Property.class);
+      JsonProperty p = fld.getAnnotation(JsonProperty.class);
       if (p == null) continue;
       String name = p.value().isEmpty() ? fld.getName() : p.value();
       props.put(name, getSchema(fld.getGenericType()));
