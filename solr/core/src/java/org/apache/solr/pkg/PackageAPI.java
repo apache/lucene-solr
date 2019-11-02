@@ -34,6 +34,7 @@ import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.beans.Package;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.annotation.Property;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
@@ -44,6 +45,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.SolrPropertyAnnotationInspector;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -61,7 +63,7 @@ public class PackageAPI {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   final CoreContainer coreContainer;
-  private ObjectMapper mapper = new ObjectMapper();
+  private final ObjectMapper mapper = new ObjectMapper();
   private final PackageLoader packageLoader;
   Packages pkgs;
 
@@ -71,6 +73,7 @@ public class PackageAPI {
   public PackageAPI(CoreContainer coreContainer, PackageLoader loader) {
     this.coreContainer = coreContainer;
     this.packageLoader = loader;
+    mapper.setAnnotationIntrospector(SolrPropertyAnnotationInspector.INSTANCE);
     pkgs = new Packages();
     SolrZkClient zkClient = coreContainer.getZkController().getZkClient();
     try {
@@ -145,10 +148,10 @@ public class PackageAPI {
 
 
   public static class Packages implements ReflectMapWriter {
-    @JsonProperty
+    @Property
     public int znodeVersion = -1;
 
-    @JsonProperty
+    @Property
     public Map<String, List<PkgVersion>> packages = new LinkedHashMap<>();
 
 
@@ -164,10 +167,10 @@ public class PackageAPI {
 
   public static class PkgVersion implements ReflectMapWriter {
 
-    @JsonProperty
+    @Property
     public String version;
 
-    @JsonProperty
+    @Property
     public List<String> files;
 
     public PkgVersion() {
@@ -243,7 +246,7 @@ public class PackageAPI {
             packages = new Packages();
           }
           packages.packages.computeIfAbsent(add.pkg, Utils.NEW_ARRAYLIST_FUN).add(new PkgVersion(add));
-          packages.znodeVersion = stat.getVersion() + 1;
+          packages.znodeVersion = stat.getVersion() ;
           finalState[0] = packages;
           return Utils.toJSON(packages);
         });

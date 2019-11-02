@@ -21,15 +21,16 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.annotation.Property;
+
 // An implementation of MapWriter which is annotated with Jackson annotations
 public interface ReflectMapWriter extends MapWriter {
 
   @Override
   default void writeMap(EntryWriter ew) throws IOException {
     for (Field field : this.getClass().getDeclaredFields()) {
-      JsonProperty prop = field.getAnnotation(JsonProperty.class);
+      Property prop = field.getAnnotation(Property.class);
       if (prop == null) continue;
       int modifiers = field.getModifiers();
       if (Modifier.isPublic(modifiers) && !Modifier.isStatic(modifiers)) {

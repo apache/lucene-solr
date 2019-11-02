@@ -15,32 +15,22 @@
  * limitations under the License.
  */
 
-package org.apache.solr.client.solrj.request.beans;
+package org.apache.solr.common.annotation;
 
-import java.util.List;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
-import org.apache.solr.common.annotation.Property;
-import org.apache.solr.common.util.ReflectMapWriter;
+@Target({ElementType.FIELD, ElementType.METHOD})
+@Retention(RetentionPolicy.RUNTIME)
+public @interface Property {
 
-/**Just a container class for POJOs used in Package APIs
- *
- */
-public class Package {
-  public static class AddVersion implements ReflectMapWriter {
-    @Property(value = "package", required = true)
-    public String pkg;
-    @Property(required = true)
-    public String version;
-    @Property(required = true)
-    public List<String> files;
+  String value() default "";
 
-  }
+  boolean required() default false;
 
-  public static class DelVersion implements ReflectMapWriter {
-    @Property(value = "package", required = true)
-    public String pkg;
-    @Property(required = true)
-    public String version;
+//  int index() default -1;
 
-  }
+  String defaultValue() default "";
 }
