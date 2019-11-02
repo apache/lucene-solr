@@ -2976,6 +2976,9 @@ public class MathExpressionTest extends SolrCloudTestCase {
     assertEquals(row.get(2).doubleValue(), 18.0, 0.0);
   }
 
+
+
+
   @Test
   public void testKmeans() throws Exception {
     String cexpr = "let(echo=true," +
@@ -3053,6 +3056,90 @@ public class MathExpressionTest extends SolrCloudTestCase {
       assertEquals(centroids.get(1).get(4).doubleValue(), 0.0, 0.0);
       assertEquals(centroids.get(1).get(5).doubleValue(), 0.0, 0.0);
     }
+  }
+
+
+
+  @Test
+  public void testDbscanBasic() throws Exception {
+    String cexpr = "let(echo=true," +
+        "               a=array(5,4,5,1,1,1)," +
+        "               b=array(5,5,5,1,2,1)," +
+        "               f=dbscan(transpose(matrix(a,b)), 2, 2)," +
+        "               zplot(clusters=f))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 6);
+    Tuple tuple0 = tuples.get(0);
+    assertEquals(tuple0.getString("cluster"), "cluster1");
+    Tuple tuple1 = tuples.get(1);
+    assertEquals(tuple1.getString("cluster"), "cluster1");
+
+    Tuple tuple2 = tuples.get(2);
+    assertEquals(tuple2.getString("cluster"), "cluster1");
+    Tuple tuple3 = tuples.get(3);
+    assertEquals(tuple3.getString("cluster"), "cluster2");
+
+    Tuple tuple4 = tuples.get(4);
+    assertEquals(tuple4.getString("cluster"), "cluster2");
+    Tuple tuple5 = tuples.get(5);
+    assertEquals(tuple5.getString("cluster"), "cluster2");
+  }
+
+  @Test
+  public void testDbscanDistance() throws Exception {
+    String cexpr = "let(echo=true," +
+        "               a=array(5,4,5,1,1,1)," +
+        "               b=array(5,5,5,1,2,1)," +
+        "               f=dbscan(transpose(matrix(a,b)), 500000, 2, haversineMeters())," +
+        "               zplot(clusters=f))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 6);
+    Tuple tuple0 = tuples.get(0);
+    assertEquals(tuple0.getString("cluster"), "cluster1");
+    Tuple tuple1 = tuples.get(1);
+    assertEquals(tuple1.getString("cluster"), "cluster1");
+
+    Tuple tuple2 = tuples.get(2);
+    assertEquals(tuple2.getString("cluster"), "cluster1");
+    Tuple tuple3 = tuples.get(3);
+    assertEquals(tuple3.getString("cluster"), "cluster1");
+
+    Tuple tuple4 = tuples.get(4);
+    assertEquals(tuple4.getString("cluster"), "cluster1");
+    Tuple tuple5 = tuples.get(5);
+    assertEquals(tuple5.getString("cluster"), "cluster1");
+  }
+
+  @Test
+  public void testDbscanNoClusters() throws Exception {
+    String cexpr = "let(echo=true," +
+        "               a=array(5,4,5,1,1,1)," +
+        "               b=array(5,5,5,1,2,1)," +
+        "               f=dbscan(transpose(matrix(a,b)), 5000, 2, haversineMeters())," +
+        "               zplot(clusters=f))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 0);
   }
 
   @Test
