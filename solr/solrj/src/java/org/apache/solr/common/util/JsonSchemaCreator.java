@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.apache.solr.common.annotation.Property;
 
 public class JsonSchemaCreator {
