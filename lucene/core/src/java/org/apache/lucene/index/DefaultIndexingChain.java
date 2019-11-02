@@ -454,17 +454,15 @@ final class DefaultIndexingChain extends DocConsumer {
       if (fp == null) {
         fp = getOrAddField(fieldName, fieldType, false);
       }
-      if (fieldType.stored()) {
-        String value = field.stringValue();
-        if (value != null && value.length() > IndexWriter.MAX_STORED_STRING_LENGTH) {
-          throw new IllegalArgumentException("stored field \"" + field.name() + "\" is too large (" + value.length() + " characters) to store");
-        }
-        try {
-          storedFieldsConsumer.writeField(fp.fieldInfo, field);
-        } catch (Throwable th) {
-          docWriter.onAbortingException(th);
-          throw th;
-        }
+      String value = field.stringValue();
+      if (value != null && value.length() > IndexWriter.MAX_STORED_STRING_LENGTH) {
+        throw new IllegalArgumentException("stored field \"" + field.name() + "\" is too large (" + value.length() + " characters) to store");
+      }
+      try {
+        storedFieldsConsumer.writeField(fp.fieldInfo, field);
+      } catch (Throwable th) {
+        docWriter.onAbortingException(th);
+        throw th;
       }
     }
 
