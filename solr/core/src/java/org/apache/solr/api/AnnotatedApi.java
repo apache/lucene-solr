@@ -137,7 +137,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
       }
     }
 
-    List<CommandOperation> cmds = req.getCommands(false);
+    List<CommandOperation> cmds = req.getCommands(true);
     boolean allExists = true;
     for (CommandOperation cmd : cmds) {
       if (!commands.containsKey(cmd.name)) {

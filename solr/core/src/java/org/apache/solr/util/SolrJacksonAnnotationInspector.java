@@ -27,8 +27,13 @@ import com.fasterxml.jackson.databind.introspect.AnnotatedMethod;
 import com.fasterxml.jackson.databind.util.BeanUtil;
 import org.apache.solr.common.annotation.JsonProperty;
 
-/**this class provides a mapping between jackson's JsonProperty Annotation to Solr's Property annotation
+/**this class provides a mapping between Solr's {@link JsonProperty} annotation to a corresponding annotation
+ * in jackson
  see SOLR-13841 for more details
+ * <blockquote><pre>
+ ObjectMapper mapper = new ObjectMapper();
+ mapper.setAnnotationIntrospector(new SolrJacksonAnnotationInspector());
+ * </pre></blockquote>
  **/
 public class SolrJacksonAnnotationInspector extends AnnotationIntrospector {
   public static final SolrJacksonAnnotationInspector INSTANCE = new SolrJacksonAnnotationInspector();

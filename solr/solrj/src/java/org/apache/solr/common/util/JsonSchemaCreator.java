@@ -31,7 +31,7 @@ import java.util.Set;
 import org.apache.solr.common.annotation.JsonProperty;
 
 /**Creates a json schema from an annotated Java Object. This, by  no means, is an exhaustive impl
- * of schema generation.We will expand tye scope as we use more types
+ * of schema generation. We will expand the scope as we use more types
  *
  */
 
