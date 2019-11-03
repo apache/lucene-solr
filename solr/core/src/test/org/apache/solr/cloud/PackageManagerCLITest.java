@@ -18,9 +18,10 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
-import java.nio.file.Path;
+import java.util.Arrays;
 
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.core.TestSolrConfigHandler;
 import org.apache.solr.util.PackageTool;
 import org.apache.solr.util.SolrCLI;
 import org.junit.BeforeClass;
@@ -42,74 +43,78 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
   }
 
   @Test
-  public void testUpconfig() throws Exception {
-    // Use a full, explicit path for configset.
-
-    Path configSet = TEST_PATH().resolve("configsets");
-    Path srcPathCheck = configSet.resolve("cloud-subdirs").resolve("conf");
-    AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "upconfig1", cluster.getZkServer().getZkAddress());
-
-    // Now just use a name in the configsets directory, do we find it?
-    configSet = TEST_PATH().resolve("configsets");
-
+  public void testPackageManager() throws Exception {
     PackageTool tool = new PackageTool();
     String solrUrl = cluster.getJettySolrRunner(0).getBaseUrl().toString();
-    int res = run(tool, new String[] {"-solrUrl", solrUrl, "list"});
-    assertEquals("tool should have returned 0 for success ", 0, res);
+
+    run(tool, new String[] {"-solrUrl", solrUrl, "list"});
     
-    res = run(tool, new String[] {"-solrUrl", solrUrl, "add-repo", "fullstory",  "http://localhost:8081"});
-    assertEquals("tool should have returned 0 for success ", 0, res);
+    run(tool, new String[] {"-solrUrl", solrUrl, "add-repo", "fullstory",  "http://localhost:8081"});
 
-    res = run(tool, new String[] {"-solrUrl", solrUrl, "list-available"});
-    assertEquals("tool should have returned 0 for success ", 0, res);
+    run(tool, new String[] {"-solrUrl", solrUrl, "list-available"});
 
-    res = run(tool, new String[] {"-solrUrl", solrUrl, "install", "question-answer", "1.0.0"}); // no-commit (change to pkg:ver syntax)
-    assertEquals("tool should have returned 0 for success ", 0, res);
+    run(tool, new String[] {"-solrUrl", solrUrl, "install", "question-answer", "1.0.0"}); // no-commit (change to pkg:ver syntax)
     
-    res = run(tool, new String[] {"-solrUrl", solrUrl, "list"});
-    assertEquals("tool should have returned 0 for success ", 0, res);
+    run(tool, new String[] {"-solrUrl", solrUrl, "list"});
 
-    CollectionAdminRequest
-      .createCollection("abc", "conf1", 1, 1)
-      .setMaxShardsPerNode(100)
-      .process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("abc", "conf1", 1, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("def", "conf1", 1, 1).process(cluster.getSolrClient());
 
-    CollectionAdminRequest
-    .createCollection("def", "conf1", 1, 1)
-    .setMaxShardsPerNode(100)
-    .process(cluster.getSolrClient());
+    String rhPath = "/mypath2";
 
-    res = run(tool, new String[] {"-solrUrl", solrUrl, "deploy", "question-answer", "-collections", "abc", "-p", "RH-HANDLER-PATH=/mypath2"});
-    assertEquals("tool should have returned 0 for success ", 0, res);
+    run(tool, new String[] {"-solrUrl", solrUrl, "deploy", "question-answer", "-collections", "abc", "-p", "RH-HANDLER-PATH=" + rhPath});
+    assertPackageVersion("abc", "question-answer", "1.0.0", rhPath, "1.0.0");
     
     // Should we test the "auto-update to latest" functionality or the default explicit deploy functionality
     boolean autoUpdateToLatest = random().nextBoolean();
     
     if (autoUpdateToLatest) {
       log.info("Testing auto-update to latest installed");
-      // This command pegs the version to the latest available
-      res = run(tool, new String[] {"-solrUrl", solrUrl, "deploy", "question-answer:latest", "-collections", "abc"});
-      assertEquals("tool should have returned 0 for success ", 0, res);
       
-      res = run(tool, new String[] {"-solrUrl", solrUrl, "update", "question-answer"});
-      assertEquals("tool should have returned 0 for success ", 0, res);
+      // This command pegs the version to the latest available
+      run(tool, new String[] {"-solrUrl", solrUrl, "deploy", "question-answer:latest", "-collections", "abc"});
+      assertPackageVersion("abc", "question-answer", "$LATEST", rhPath, "1.0.0");
+
+      run(tool, new String[] {"-solrUrl", solrUrl, "update", "question-answer"});
+      assertPackageVersion("abc", "question-answer", "$LATEST", rhPath, "1.1.0");
     } else {
       log.info("Testing explicit deployment to a different/newer version");
 
-      res = run(tool, new String[] {"-solrUrl", solrUrl, "update", "question-answer"});
-      assertEquals("tool should have returned 0 for success ", 0, res);
+      run(tool, new String[] {"-solrUrl", solrUrl, "update", "question-answer"});
+      assertPackageVersion("abc", "question-answer", "1.0.0", rhPath, "1.0.0");
+
 
       if (random().nextBoolean()) {
-        res = run(tool, new String[] {"-solrUrl", solrUrl, "deploy", "--update", "question-answer", "-collections", "abc", "-p", "RH-HANDLER-PATH=/mypath2"});
+        run(tool, new String[] {"-solrUrl", solrUrl, "deploy", "--update", "question-answer", "-collections", "abc", "-p", "RH-HANDLER-PATH=" + rhPath});
       } else {
-        res = run(tool, new String[] {"-solrUrl", solrUrl, "deploy", "--update", "question-answer", "-collections", "abc"});
+        run(tool, new String[] {"-solrUrl", solrUrl, "deploy", "--update", "question-answer", "-collections", "abc"});
       }
-      assertEquals("tool should have returned 0 for success ", 0, res);      
+      assertPackageVersion("abc", "question-answer", "1.1.0", rhPath, "1.1.0");
     }
   }
 
-  private int run(PackageTool tool, String[] args) throws Exception {
+  void assertPackageVersion(String collection, String pkg, String version, String component, String componentVersion) throws Exception {
+    TestSolrConfigHandler.testForResponseElement(
+        null,
+        cluster.getJettySolrRunner(0).getBaseUrl().toString() + "/" + collection,
+        "/config/params?meta=true",
+        cluster.getSolrClient(),
+        Arrays.asList("response", "params", "PKG_VERSIONS", pkg),
+        version,
+        1);
+
+    TestSolrConfigHandler.testForResponseElement(
+        null,
+        cluster.getJettySolrRunner(0).getBaseUrl().toString() + "/" + collection,
+        "/config/requestHandler?componentName=" + component + "&meta=true",
+        cluster.getSolrClient(),
+        Arrays.asList("config", "requestHandler", component, "_packageinfo_", "version"),
+        componentVersion,
+        1);
+  }
+
+  private void run(PackageTool tool, String[] args) throws Exception {
     int res = tool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args));
-    return res;
+    assertEquals("Non-zero status returned for: " + Arrays.toString(args), 0, res);
   }
 }

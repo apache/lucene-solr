@@ -1,0 +1,18 @@
+{
+  "responseHeader":{
+    "status":0,
+    "QTime":0},
+  "config":{"requestHandler":{"/mypath2":{
+        "name":"/mypath2",
+        "class":"question-answer:fullstory.QARequestHandler",
+        "defaults":{
+          "x":"y",
+          "a":"b",
+          "rows":10},
+        "useParams":"x",
+        "_packageinfo_":{
+          "package":"question-answer",
+          "version":"1.0.0",
+          "files":["/package/question-answer/1.0.0/question-answer-request-handler-1.0.jar"],
+          "manifest":"/package/question-answer/1.0.0/solr-manifest.json",
+          "manifestSHA512":"MY_MANIFEST_SHA512"}}}}}
