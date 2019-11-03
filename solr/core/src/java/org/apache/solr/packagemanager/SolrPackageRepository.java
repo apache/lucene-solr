@@ -10,10 +10,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.solr.packagemanager.SolrPackage.SolrPackageRelease;
-import org.apache.solr.packagemanager.pf4j.CompoundVerifier;
-import org.apache.solr.packagemanager.pf4j.FileDownloader;
-import org.apache.solr.packagemanager.pf4j.FileVerifier;
-import org.apache.solr.packagemanager.pf4j.SimpleFileDownloader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,13 +38,8 @@ public class SolrPackageRepository {
   }
 
   @JsonIgnore
-  public FileDownloader getFileDownloader() {
+  public SimpleFileDownloader getFileDownloader() {
       return new SimpleFileDownloader();
-  }
-
-  @JsonIgnore
-  public FileVerifier getFileVerfier() {
-      return new CompoundVerifier();
   }
 
   @JsonIgnore

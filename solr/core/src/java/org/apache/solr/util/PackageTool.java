@@ -36,13 +36,13 @@ import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.packagemanager.PackageManagerException;
 import org.apache.solr.packagemanager.SolrPackage;
 import org.apache.solr.packagemanager.SolrPackage.SolrPackageRelease;
 import org.apache.solr.packagemanager.SolrPackageInstance;
 import org.apache.solr.packagemanager.SolrPackageManager;
 import org.apache.solr.packagemanager.SolrPackageRepository;
 import org.apache.solr.packagemanager.SolrUpdateManager;
-import org.apache.solr.packagemanager.pf4j.PackageManagerException;
 import org.apache.solr.util.SolrCLI.StatusTool;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -110,9 +110,6 @@ public class PackageTool extends SolrCLI.ToolBase {
               String version = cli.getArgList().get(1).toString().contains(":")? 
                   cli.getArgList().get(1).toString().split(":")[1]: null;
               deploy(packageName, version, cli.hasOption("update"), colls, params);
-              break;
-            case "redeploy":
-              redeploy(cli.getArgList().subList(1, cli.getArgList().size()));
               break;
             case "update":
               if (cli.getArgList().size()==1) {
@@ -186,11 +183,6 @@ public class PackageTool extends SolrCLI.ToolBase {
     
     System.out.println(packageManager.deployInstallPackage(packageName, version, isUpdate,
         Arrays.asList(collections), parameters));
-  }
-
-  protected void redeploy(List args) throws PackageManagerException {
-    throw new UnsupportedOperationException("redeploy not supported");
-    //System.out.println(packageManager.deployUpdatePackage(args.get(0).toString(), args.subList(1, args.size())));
   }
 
   protected void update() throws PackageManagerException {

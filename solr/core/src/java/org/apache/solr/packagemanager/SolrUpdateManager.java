@@ -3,8 +3,6 @@ package org.apache.solr.packagemanager;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.StringWriter;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
@@ -15,16 +13,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.methods.HttpPost;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLContextBuilder;
-import org.apache.http.entity.mime.MultipartEntity;
-import org.apache.http.entity.mime.content.FileBody;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.solr.client.solrj.SolrClient;
@@ -37,12 +28,6 @@ import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.packagemanager.SolrPackage.SolrPackageRelease;
-import org.apache.solr.packagemanager.pf4j.CompoundVerifier;
-import org.apache.solr.packagemanager.pf4j.DefaultVersionManager;
-import org.apache.solr.packagemanager.pf4j.FileDownloader;
-import org.apache.solr.packagemanager.pf4j.FileVerifier;
-import org.apache.solr.packagemanager.pf4j.PackageManagerException;
-import org.apache.solr.packagemanager.pf4j.SimpleFileDownloader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -119,48 +104,6 @@ public class SolrUpdateManager {
   }
 
   private boolean updateOrInstallPackage(Operation op, String id, String version) throws PackageManagerException {
-    /*Path downloaded = downloadPackage(id, version);
-
-    SolrPackageInstance existingPlugin = packageManager.getPackage(id);
-    if (existingPlugin != null && version.equals(existingPlugin.getVersion())) {
-      throw new PackageManagerException("Plugin already installed.");
-    }
-
-    SolrPackageRelease release = null;
-    String repository = null;
-    for (SolrPackage pkg: getPackages()) {
-      if (id.equals(pkg.id)) {
-        for (SolrPackageRelease r: pkg.versions) {
-          if (version.equals(r.version) ) {
-            release = r;
-            repository = pkg.getRepositoryId();
-            break;
-          }
-        }
-      }
-    }
-
-    if (release == null) {
-      throw new PackageManagerException("Couldn't find the release..");
-    }
-
-    String sha256 = uploadToBlobHandler(downloaded);
-    String metadataSha256;
-    try {
-      metadataSha256 = uploadToBlobHandler(new ObjectMapper().writeValueAsString(release.metadata));
-    } catch (IOException e) {
-      throw new PackageManagerException(e);
-    }
-
-    addOrUpdatePackage(op, id, version, sha256, repository, release.sig, metadataSha256, release.metadata);
-    
-    return true;*/
-    
-    //postFile(cluster.getSolrClient(), getFileContent("runtimecode/runtimelibs.jar.bin"),
-    //    "/package/mypkg/v1.0/runtimelibs.jar",
-    //    "j+Rflxi64tXdqosIhbusqi6GTwZq8znunC/dzwcWW0/dHlFGKDurOaE1Nz9FSPJuXbHkVLj638yZ0Lp1ssnoYA=="
-    //);
-
     SolrPackageInstance existingPlugin = packageManager.getPackage(id, version);
     if (existingPlugin != null && version.equals(existingPlugin.getVersion())) {
       throw new PackageManagerException("Plugin already installed.");
@@ -233,45 +176,6 @@ public class SolrUpdateManager {
   private boolean addOrUpdatePackage(Operation op, SolrClient solrClient, String id, String version, String files[], String repository, String sig,
       String manifest, String manifestSHA512) {
     
-    /*String json;
-    
-    if (op.equals(Operation.INSTALL)) {
-      json = "{add: ";
-    } else {
-      json = "{update: ";
-    }
-    json = json
-        + "{name: '"+id+"', "
-        + "version: '"+version+"', "
-        + "repository: '"+repository+"', "
-        + "blob: {sha256: '"+sha256+"', sig: '"+sig+"'}, "
-        + "metadata: '"+metadataSha256+"'"
-        + "}}";
-
-    System.out.println("Posting package: "+json);
-    try (CloseableHttpClient client = createTrustAllHttpClientBuilder()) {
-      HttpPost httpPost = new HttpPost(solrBaseUrl + "/api/cluster/package");
-      StringEntity entity = new StringEntity(json);
-      httpPost.setEntity(entity);
-      httpPost.setHeader("Accept", "application/json");
-      httpPost.setHeader("Content-type", "application/json");
-
-      try (CloseableHttpResponse response = client.execute(httpPost)) {
-        HttpEntity rspEntity = response.getEntity();
-        if (rspEntity != null) {
-          InputStream is = rspEntity.getContent();
-          StringWriter writer = new StringWriter();
-          IOUtils.copy(is, writer, "UTF-8");
-          String results = writer.toString();
-          System.out.println(results);
-        }
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-    } catch (Exception e) {
-      e.printStackTrace();
-    }*/
-    
     Package.AddVersion add = new Package.AddVersion();
     add.version = version;
     add.pkg = id;
@@ -303,57 +207,6 @@ public class SolrUpdateManager {
     return HttpClients.custom().setSSLSocketFactory(sslsf).build();
   }
   
-  private String uploadToBlobHandler(Path downloaded) throws PackageManagerException {
-    String url = solrBaseUrl + "/api/cluster/blob";
-    File file = downloaded.toFile();
-    try (CloseableHttpClient client = createTrustAllHttpClientBuilder()) { //HttpClients.createDefault();) {
-      HttpPost post = new HttpPost(url);
-
-      MultipartEntity entity = new MultipartEntity();
-      entity.addPart("file", new FileBody(file));
-      post.setEntity(entity);
-
-      try {
-        HttpResponse response = client.execute(post);
-
-        HttpEntity rspEntity = response.getEntity();
-        if (rspEntity != null) {
-          InputStream is = rspEntity.getContent();
-          StringWriter writer = new StringWriter();
-          IOUtils.copy(is, writer, "UTF-8");
-          String results = writer.toString();
-          System.out.println(results);
-          String sha = new ObjectMapper().readValue(results, Map.class).get("sha256").toString();
-          //System.out.println("SHA: "+sha);
-          return sha;
-        }
-      } catch (IOException e) {
-        // TODO Auto-generated catch block
-        throw e;
-      }
-    } catch (Exception e1) {
-      // TODO Auto-generated catch block
-      e1.printStackTrace();
-      throw new PackageManagerException(e1);
-    }
-    return null;
-  }
-  
-  private String uploadToBlobHandler(String json) throws IOException, PackageManagerException {
-    System.out.println("Trying to upload the blob: "+json);
-    FileUtils.writeStringToFile(new File("tmp-metadata"), json);
-    return uploadToBlobHandler(new File("tmp-metadata").toPath());
-  }
-
-  /**
-   * Downloads a plugin with given coordinates, runs all {@link FileVerifier}s
-   * and returns a path to the downloaded file.
-   *
-   * @param id of plugin
-   * @param version of plugin or null to download latest
-   * @return Path to file which will reside in a temporary folder in the system default temp area
-   * @throws PackageManagerException if download failed
-   */
   protected Path downloadPackage(String id, String version) throws PackageManagerException {
       try {
           SolrPackageRelease release = findReleaseForPlugin(id, version);
@@ -362,17 +215,11 @@ public class SolrUpdateManager {
           //nocommit verify this download
           return downloaded;
       } catch (IOException e) {
-          throw new PackageManagerException(e, "Error during download of plugin {}", id);
+          throw new PackageManagerException("Error during download of plugin " + id, e);
       }
   }
 
-  /**
-   * Finds the {@link FileDownloader} to use for this repository.
-   *
-   * @param pluginId the plugin we wish to download
-   * @return FileDownloader instance
-   */
-  protected FileDownloader getFileDownloader(String pluginId) {
+  protected SimpleFileDownloader getFileDownloader(String pluginId) {
       for (SolrPackageRepository ur : repositories) {
           if (ur.getPlugin(pluginId) != null && ur.getFileDownloader() != null) {
               return ur.getFileDownloader();
@@ -382,36 +229,11 @@ public class SolrUpdateManager {
       return new SimpleFileDownloader();
   }
 
-  /**
-   * Gets a file verifier to use for this plugin. First tries to use custom verifier
-   * configured for the repository, then fallback to the default CompoundVerifier
-   *
-   * @param pluginId the plugin we wish to download
-   * @return FileVerifier instance
-   */
-  protected FileVerifier getFileVerifier(String pluginId) {
-      for (SolrPackageRepository ur : repositories) {
-          if (ur.getPlugin(pluginId) != null && ur.getFileVerfier() != null) {
-              return ur.getFileVerfier();
-          }
-      }
-
-      return new CompoundVerifier();
-  }
-  
-  /**
-   * Resolves Release from id and version.
-   *
-   * @param id of plugin
-   * @param version of plugin or null to locate latest version
-   * @return PluginRelease for downloading
-   * @throws PackageManagerException if id or version does not exist
-   */
   public SolrPackageRelease findReleaseForPlugin(String id, String version) throws PackageManagerException {
       SolrPackage pluginInfo = getPackagesMap().get(id);
       if (pluginInfo == null) {
           log.info("Plugin with id {} does not exist in any repository", id);
-          throw new PackageManagerException("Plugin with id {} not found in any repository", id);
+          throw new PackageManagerException("Plugin with id "+id+" not found in any repository");
       }
 
       if (version == null) {
@@ -424,14 +246,9 @@ public class SolrUpdateManager {
           }
       }
 
-      throw new PackageManagerException("Plugin {} with version @{} does not exist in the repository", id, version);
+      throw new PackageManagerException("Plugin "+id+" with version @"+version+" does not exist in the repository");
   }
   
-  /**
-   * Returns the last release version of this plugin for given system version, regardless of release date.
-   *
-   * @return PluginRelease which has the highest version number
-   */
   public SolrPackageRelease getLastPackageRelease(String id) {
       SolrPackage pluginInfo = getPackagesMap().get(id);
       if (pluginInfo == null) {

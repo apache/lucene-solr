@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.packagemanager.pf4j;
+package org.apache.solr.packagemanager;
 
 import com.github.zafarkhaja.semver.Version;
 import com.github.zafarkhaja.semver.expr.Expression;
+import com.google.common.base.Strings;
 
 /**
  * This implementation uses jSemVer (a Java implementation of the SemVer Specification).
@@ -33,7 +34,7 @@ public class DefaultVersionManager {
      *
      */
     public boolean checkVersionConstraint(String version, String constraint) {
-        return StringUtils.isNullOrEmpty(constraint) || Version.valueOf(version).satisfies(constraint);
+        return Strings.isNullOrEmpty(constraint) || Version.valueOf(version).satisfies(constraint);
     }
 
     public int compareVersions(String v1, String v2) {

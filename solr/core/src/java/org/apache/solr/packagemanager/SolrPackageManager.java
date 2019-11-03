@@ -23,8 +23,6 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.packagemanager.SolrPackage.Command;
 import org.apache.solr.packagemanager.SolrPackage.Metadata;
 import org.apache.solr.packagemanager.SolrPackage.Plugin;
-import org.apache.solr.packagemanager.pf4j.DefaultVersionManager;
-import org.apache.solr.packagemanager.pf4j.PackageManagerException;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -59,10 +57,6 @@ public class SolrPackageManager implements Closeable {
     List<SolrPackageInstance> ret = new ArrayList<SolrPackageInstance>();
     packages = new HashMap<String, List<SolrPackageInstance>>();
     try {
-      /*String clusterPropsZnode = IOUtils.toString(new URL(solrBaseUrl + "/solr/admin/zookeeper?detail=true&path=/clusterprops.json&wt=json").openStream(), "UTF-8");
-      String clusterPropsJson = ((Map)new ObjectMapper().readValue(clusterPropsZnode, Map.class).get("znode")).get("data").toString();
-      Map packagesJson = (Map)new ObjectMapper().readValue(clusterPropsJson, Map.class).get("packages");*/
-      
       String clusterPropsJson = null;
       Map packagesJson = null;
       
@@ -226,23 +220,6 @@ public class SolrPackageManager implements Closeable {
       }
     }
     return success;
-  }
-
-  public boolean deployUpdatePackage(String pluginId, String version, List<String> collections) {
-    SolrPackageInstance pkg = getPackage(pluginId, version);
-    for (Plugin p: pkg.getPlugins()) {
-
-      System.out.println(p.updateCommand);
-      for (String collection: collections) {
-        System.out.println("Executing " + p.updateCommand + " for collection:" + collection);
-        postJson(solrBaseUrl + "/solr/"+collection+"/config", p.updateCommand);
-      }
-    }
-    boolean success = verify(pkg, collections);
-    if (success) {
-      System.out.println("Deployed and verified package: "+pkg.id+", version: "+pkg.version);
-    }
-    return true;
   }
 
   String getStringFromStream(String url) {

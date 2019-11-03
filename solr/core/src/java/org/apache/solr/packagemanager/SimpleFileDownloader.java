@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.packagemanager.pf4j;
+package org.apache.solr.packagemanager;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +37,7 @@ import java.nio.file.attribute.FileTime;
  *
  * @author Decebal Suiu
  */
-public class SimpleFileDownloader implements FileDownloader {
+public class SimpleFileDownloader {
 
     private static final Logger log = LoggerFactory.getLogger(SimpleFileDownloader.class);
 
@@ -59,7 +59,7 @@ public class SimpleFileDownloader implements FileDownloader {
             case "file":
                 return copyLocalFile(fileUrl);
             default:
-                throw new PackageManagerException("URL protocol {} not supported", fileUrl.getProtocol());
+                throw new PackageManagerException("URL protocol "+fileUrl.getProtocol()+" not supported");
         }
     }
 
