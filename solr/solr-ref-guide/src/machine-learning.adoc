@@ -373,7 +373,7 @@ to read in a table.
 == DBSCAN
 
 DBSCAN clustering is a powerful density based clustering algorithm which is particularly well
-suited for geo-spatial clustering. DBSCAN uses two parameters to filter result sets to
+suited for geospatial clustering. DBSCAN uses two parameters to filter result sets to
 clusters of specific density:
 
 * eps (Epsilon): Defines the distance between points to be considered as neighbors
@@ -403,12 +403,12 @@ point. The `dbscan` function is then used to cluster the latitude and longitude 
 
 * distance measure: An optional distance measure used to determine the
 distance between points. The default is Euclidean distance. The example uses *haversineMeters*
-which returns the distance in meters which is much more meaningful for geo-spatial use
+which returns the distance in meters which is much more meaningful for geospatial use
 cases.
 
 Finally, the `zplot` function
-is used to visualize the clusters as a scatter plot.
-The visualization below has been zoomed to a specific area of Brooklyn with a
+is used to visualize the clusters on map.
+The map below has been zoomed to a specific area of Brooklyn with a
 high density of rat sightings.
 
 image::images/math-expressions/dbscan1.png[]
