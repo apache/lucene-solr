@@ -1026,13 +1026,13 @@ XCJF parser works with both String and Point types of fields.  The fields that a
 
 === XCJF Query Parameters
 
-`collection`::	
+`collection`::
 The name of the external Solr collection to be queried to retrieve the set of join key values ( required )
 
-`zkHost`::	
+`zkHost`::  
 The connection string to be used to connect to Zookeeper.  zkHost and solrUrl are both optional parameters, and at most one of them should be specified.  If neither of zkHost or solrUrl are specified, the local Zookeeper cluster will be used. ( optional )
 
-`solrUrl`::	
+`solrUrl`::
 The URL of the external Solr node to be queried ( optional )
 
 `from`::
@@ -1043,7 +1043,7 @@ The join key field name in the local collection
 
 `v`::
 The query subsituted in as a local param.
-(See Notes) The query to be executed against the external Solr collection to retrieve the set of join key values.  Note:  The original query can be passed at the end of the string or as the "v" parameter.  It's recommended to use query parameter substitution with the "v" parameter to ensure no issues arise with the default query parsers.
+(See Notes) The query to be executed against the external Solr collection to retrieve the set of join key values. Note:  The original query can be passed at the end of the string or as the "v" parameter.  It's recommended to use query parameter substitution with the "v" parameter to ensure no issues arise with the default query parsers.
 `routed`::
 (See Notes) true / false.  If true, the XCJF query will use each shard's hash range to determine the set of join keys to retrieve for that shard.  This parameter improves the performance of the cross-collection join, but it depends on the local collection being routed by the toField.  If this parameter is not specified, the XCJF query will try to determine the correct value automatically.
 
