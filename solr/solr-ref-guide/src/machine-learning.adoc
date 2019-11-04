@@ -25,7 +25,7 @@ functions.
 <<K-Nearest Neighbor Regression, KNN Regression>> -
 <<knnSearch, knnSearch>> -
 <<DBSCAN, DBSCAN>> -
-<<K-Means Clustering, K-means Clustering>> -
+<<K-Means Clustering, K-means>> -
 <<Fuzzy K-Means Clustering, Fuzzy K-means>> -
 <<Feature Scaling, Feature Scaling>>
 
