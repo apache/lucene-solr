@@ -537,6 +537,29 @@ http://localhost:8983/solr/alt_graph/query?fl=id&q={!graph+from=id+to=out_edge+m
    { "id":"H" } ]
 }
 ----
+== Hash Range Query Parser
+
+The hash range query parser will return documents whos field contains a value that would be hashed to a particular range.  This is used by the XCJF query parser.  This query parser has a per segment cache for each field that this query parser will operate on.  
+
+When specifying a min/max hash range and a field name with the hash range query parser, only documents who contain a field value that hashes into that range will be returned.  If you want to query for a very large result set, you can query for various hash ranges to return a fraction of the documents with each range request.  In the XCJF case, the hash_range query parser is used to ensure that each shard only gets the set of join keys that would end up on that shard.
+
+=== Hash Range Parameters
+
+`f`::
+The field name to operate on.  This field should have docValues enabled and should be single-valued
+
+`l`::
+The lower bound of the hash range for the query
+
+`u`:: 
+The upper bound for the hash range for the query
+
+=== Hash Range Example
+
+[source,text]
+----
+{!hash_range f="join_field" l=0 u=12345}
+----
 
 == Join Query Parser
 
@@ -993,6 +1016,50 @@ The internal query-building implementation: `termsFilter`, `booleanQuery`, `auto
 ----
 {!terms f=categoryId method=booleanQuery separator=" "}8 6 7 5309
 ----
+
+== XCJF Query Parser
+The Cross Collection Join filter is a query parser plugin that will execute a query against a remote Solr collection to get back a set of join keys that will be used to as a filter query against the local Solr collection.  The XCJF query parser will create a XCJFQuery object.  The XCJFQuery will first query a remote solr collection and get back a streaming expression result of the join keys.  As the join keys are streamed to the node, a bitset of the matching documents in the local index is built up.  This avoids keeping the full set of join keys in memory at any given time.  This bitset is then inserted into the filter cache upon successful execution as with the normal behavior of the solr filter cache.  Additionally 
+
+If the local index is sharded according to the join key field, the XCJF query can leverage a secondary query parser called the "hash_range" query parser.  The hash_range query parser is responsible for returning only the documents that hash to a given range of values.  This allows the XCJFQuery to query the remote solr collection and return only the join keys that would match a specific shard in the local solr collection.  This has the benefit of making sure that network traffic doesn't increase as the number of shards increases and allows for much greater scalability.
+
+XCJF parser works with both String and Point types of fields.  The fields that are being used for the join key must be single value and have docValues enabled.  It's advised to shard the local collection by the join key as this allows for the optimization mentioned above to be utilized.  The XCJF should not be generally used as part of the "q", but rather it is designed to be used as a filter query  "fq" parameter to ensure proper caching.  The remote solr collection that is being queried should have a single value field for the join key with docValues enabled.  The remote solr collection does not have any specific sharding requirements.
+
+=== XCJF Query Parameters
+
+`collection`::	
+The name of the external Solr collection to be queried to retrieve the set of join key values ( required )
+
+`zkHost`::	
+The connection string to be used to connect to Zookeeper.  zkHost and solrUrl are both optional parameters, and at most one of them should be specified.  If neither of zkHost or solrUrl are specified, the local Zookeeper cluster will be used. ( optional )
+
+`solrUrl`::	
+The URL of the external Solr node to be queried ( optional )
+
+`from`::
+The join key field name in the external collection ( required )
+
+`to`::
+The join key field name in the local collection
+
+`v`::
+The query subsituted in as a local param.
+(See Notes) The query to be executed against the external Solr collection to retrieve the set of join key values.  Note:  The original query can be passed at the end of the string or as the "v" parameter.  It's recommended to use query parameter substitution with the "v" parameter to ensure no issues arise with the default query parsers.
+`routed`::
+(See Notes) true / false.  If true, the XCJF query will use each shard's hash range to determine the set of join keys to retrieve for that shard.  This parameter improves the performance of the cross-collection join, but it depends on the local collection being routed by the toField.  If this parameter is not specified, the XCJF query will try to determine the correct value automatically.
+
+`ttl`::
+The length of time that an XCJF query in the cache will be considered valid, in seconds.  Defaults to 3600 (one hour).  The XCJF query will not be aware of changes to the remote collection, so if the remote collection is updated, cached XCJF queries may give inaccurate results.  After the ttl period has expired, the XCJF query will re-execute the join against the remote collection.
+
+`All others`
+Any normal Solr parameter can also be specified/passed through as a local param.
+
+=== XCJF Query Examples
+
+[source,text]
+----
+http://localhost:8983/solr/localCollection/query?fl=id&q={!xcjf collection="otherCollection" from="fromField" to="toField" v="*:*"}
+----
+
 
 == XML Query Parser
 
