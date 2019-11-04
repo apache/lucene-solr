@@ -19,7 +19,7 @@ package org.apache.solr.client.solrj.request.beans;
 
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 
 /**Just a container class for POJOs used in Package APIs
