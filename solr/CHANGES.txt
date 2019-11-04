@@ -153,7 +153,7 @@ Other Changes
 
 * SOLR-12769: Fix incorrect documentation for 'delete' op in Request parameters API (Alexandre Rafalovitch, Munendra S N)
 
-* SOLR-13841: Add jackson databind annotations to SolrJ classpath (noble)
+* Provide mappings for jackson annotation @JsonProperty to use Jackson deserializer (noble)
 
 * SOLR-13824: Strictly reject anything after JSON in most APIs (Mikhail Khludnev, Munendra S N)
 
