@@ -175,12 +175,20 @@ public class PackageAPI {
     @JsonProperty
     public List<String> files;
 
+    @JsonProperty
+    public String manifest;
+
+    @JsonProperty
+    public String manifestSHA512;
+
     public PkgVersion() {
     }
 
     public PkgVersion(Package.AddVersion addVersion) {
       this.version = addVersion.version;
       this.files = addVersion.files;
+      this.manifest = addVersion.manifest;
+      this.manifestSHA512 = addVersion.manifestSHA512;
     }
 
 
