@@ -148,7 +148,7 @@ public class PackageStoreAPI {
         cryptoKeys = new CryptoKeys(keys);
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Error parsing public keyts in ZooKeeper");
+            "Error parsing public keys in ZooKeeper");
       }
       for (String sig : sigs) {
         if (cryptoKeys.verify(sig, buf) == null) {

@@ -28,6 +28,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Constructor;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.charset.CharacterCodingException;
@@ -52,6 +53,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.lucene.analysis.WordlistLoader;
 import org.apache.lucene.analysis.util.CharFilterFactory;
 import org.apache.lucene.analysis.util.ResourceLoader;
@@ -95,7 +97,10 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
   };
   private static final java.lang.String SOLR_CORE_NAME = "solr.core.name";
   private static Set<String> loggedOnce = new ConcurrentSkipListSet<>();
+  private static final Charset UTF_8 = StandardCharsets.UTF_8;
 
+
+  private String name = "";
   protected URLClassLoader classLoader;
   private final Path instanceDir;
   private String dataDir;
@@ -103,7 +108,6 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
   private final List<SolrCoreAware> waitingForCore = Collections.synchronizedList(new ArrayList<SolrCoreAware>());
   private final List<SolrInfoBean> infoMBeans = Collections.synchronizedList(new ArrayList<SolrInfoBean>());
   private final List<ResourceLoaderAware> waitingForResources = Collections.synchronizedList(new ArrayList<ResourceLoaderAware>());
-  private static final Charset UTF_8 = StandardCharsets.UTF_8;
 
   private final Properties coreProperties;
 
@@ -137,6 +141,16 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
   {
     this(instanceDir, parent, null);
   }
+
+  public SolrResourceLoader(String name, List<Path> classpath, Path instanceDir, ClassLoader parent) throws MalformedURLException {
+    this(instanceDir, parent);
+    this.name = name;
+    for (Path path : classpath) {
+      addToClassLoader(path.toUri().normalize().toURL());
+    }
+
+  }
+
 
   public SolrResourceLoader(Path instanceDir) {
     this(instanceDir, null, null);
@@ -502,15 +516,15 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
   public <T> Class<? extends T> findClass(String cname, Class<T> expectedType, String... subpackages) {
     if (subpackages == null || subpackages.length == 0 || subpackages == packages) {
       subpackages = packages;
-      String  c = classNameCache.get(cname);
-      if(c != null) {
+      String c = classNameCache.get(cname);
+      if (c != null) {
         try {
           return Class.forName(c, true, classLoader).asSubclass(expectedType);
-        } catch (ClassNotFoundException e) {
-          //this is unlikely
-          log.error("Unable to load cached class-name :  "+ c +" for shortname : "+cname + e);
+        } catch (ClassNotFoundException | ClassCastException e) {
+          // this can happen if the legacyAnalysisPattern below caches the wrong thing
+          log.warn( name + " Unable to load cached class, attempting lookup. name={} shortname={} reason={}", c, cname, e);
+          classNameCache.remove(cname);
         }
-
       }
     }
     
