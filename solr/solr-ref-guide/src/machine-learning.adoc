@@ -407,7 +407,7 @@ which returns the distance in meters which is much more meaningful for geospatia
 cases.
 
 Finally, the `zplot` function
-is used to visualize the clusters on map.
+is used to visualize the clusters on a map.
 The map below has been zoomed to a specific area of Brooklyn with a
 high density of rat sightings.
 
