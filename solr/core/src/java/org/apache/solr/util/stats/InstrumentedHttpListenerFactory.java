@@ -97,13 +97,18 @@ public class InstrumentedHttpListenerFactory implements SolrMetricProducer, Http
   }
 
   private Timer timer(Request request) {
-    return solrMetricsContext.timer(null, nameStrategy.getNameFor(scope, request));
+    return solrMetricsContext.timer(nameStrategy.getNameFor(scope, request));
   }
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     this.solrMetricsContext = parentContext;
     this.scope = scope;
+  }
+
+  @Override
+  public SolrMetricsContext getSolrMetricsContext() {
+    return solrMetricsContext;
   }
 }
 

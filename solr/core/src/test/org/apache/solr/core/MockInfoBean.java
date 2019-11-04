@@ -43,11 +43,6 @@ class MockInfoBean implements SolrInfoBean, SolrMetricProducer {
   }
 
   @Override
-  public Set<String> getMetricNames() {
-    return metricNames;
-  }
-
-  @Override
   public SolrMetricsContext getSolrMetricsContext() {
     return solrMetricsContext;
   }
@@ -65,6 +60,6 @@ class MockInfoBean implements SolrInfoBean, SolrMetricProducer {
       map.put("String","testing");
       map.put("Object", new Object());
     });
-    solrMetricsContext.gauge(this, metricsMap, true, getClass().getSimpleName(), getCategory().toString(), scope);
+    solrMetricsContext.gauge(metricsMap, true, getClass().getSimpleName(), getCategory().toString(), scope);
   }
 }

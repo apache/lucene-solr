@@ -336,17 +336,12 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
 
       }
     });
-    solrMetricsContext.gauge(this, cacheMap, true, scope, getCategory().toString());
+    solrMetricsContext.gauge(cacheMap, true, scope, getCategory().toString());
   }
 
   // for unit tests only
   MetricsMap getMetricsMap() {
     return cacheMap;
-  }
-
-  @Override
-  public Set<String> getMetricNames() {
-    return metricNames;
   }
 
   @Override

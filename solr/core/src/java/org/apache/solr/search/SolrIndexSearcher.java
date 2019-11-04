@@ -67,7 +67,6 @@ import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
@@ -89,7 +88,7 @@ import org.slf4j.LoggerFactory;
  *
  * @since solr 0.9
  */
-public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrInfoBean, SolrMetricProducer {
+public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrInfoBean {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -489,7 +488,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
 
     try {
-      SolrMetricProducer.super.close();
+      SolrInfoBean.super.close();
     } catch (Exception e) {
       log.warn("Exception closing", e);
     }
@@ -2278,31 +2277,26 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   @Override
-  public Set<String> getMetricNames() {
-    return metricNames;
-  }
-
-  @Override
   public SolrMetricsContext getSolrMetricsContext() {
     return solrMetricsContext;
   }
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    parentContext.gauge(this, () -> name, true, "searcherName", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(this, () -> cachingEnabled, true, "caching", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(this, () -> openTime, true, "openedAt", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(this, () -> warmupTime, true, "warmupTime", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(this, () -> registerTime, true, "registeredAt", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(() -> name, true, "searcherName", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(() -> cachingEnabled, true, "caching", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(() -> openTime, true, "openedAt", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(() -> warmupTime, true, "warmupTime", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(() -> registerTime, true, "registeredAt", Category.SEARCHER.toString(), scope);
     // reader stats
-    parentContext.gauge(this, () -> reader.numDocs(), true, "numDocs", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(this, () -> reader.maxDoc(), true, "maxDoc", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(this, () -> reader.maxDoc() - reader.numDocs(), true, "deletedDocs", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(this, () -> reader.toString(), true, "reader", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(this, () -> reader.directory().toString(), true, "readerDir", Category.SEARCHER.toString(), scope);
-    parentContext.gauge(this, () -> reader.getVersion(), true, "indexVersion", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(() -> reader.numDocs(), true, "numDocs", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(() -> reader.maxDoc(), true, "maxDoc", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(() -> reader.maxDoc() - reader.numDocs(), true, "deletedDocs", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(() -> reader.toString(), true, "reader", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(() -> reader.directory().toString(), true, "readerDir", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(() -> reader.getVersion(), true, "indexVersion", Category.SEARCHER.toString(), scope);
     // size of the currently opened commit
-    parentContext.gauge(this, () -> {
+    parentContext.gauge(() -> {
       try {
         Collection<String> files = reader.getIndexCommit().getFileNames();
         long total = 0;
@@ -2315,7 +2309,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       }
     }, true, "indexCommitSize", Category.SEARCHER.toString(), scope);
     // statsCache metrics
-    parentContext.gauge(this,
+    parentContext.gauge(
         new MetricsMap((detailed, map) -> {
           statsCache.getCacheMetrics().getSnapshot(map::put);
           map.put("statsCacheImpl", statsCache.getClass().getSimpleName());

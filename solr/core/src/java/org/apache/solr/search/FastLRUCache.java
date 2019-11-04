@@ -304,12 +304,6 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
   }
 
   @Override
-  public Set<String> getMetricNames() {
-    return metricNames;
-  }
-
-
-  @Override
   public SolrMetricsContext getSolrMetricsContext() {
     return solrMetricsContext;
   }
@@ -317,7 +311,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     this.solrMetricsContext = parentContext.getChildContext(this);
-    this.solrMetricsContext.gauge(this, cacheMap, true, scope, getCategory().toString());
+    this.solrMetricsContext.gauge(cacheMap, true, scope, getCategory().toString());
   }
 
   // for unit tests only

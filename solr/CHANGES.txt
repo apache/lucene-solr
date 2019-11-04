@@ -72,6 +72,9 @@ Upgrade Notes
   followed by a space (e.g. {shape=square, color=yellow} rather than {shape=square,color=yellow}) for consistency with
   other java.util.Map implementations based on AbstractMap (Chris Hennick).
 
+* SOLR-13858: SolrMetricProducer / SolrInfoBean API has changed, third-party components need to be
+  updated. (ab)
+
 Improvements
 ----------------------
 

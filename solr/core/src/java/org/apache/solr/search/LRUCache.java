@@ -391,11 +391,6 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
   }
 
   @Override
-  public Set<String> getMetricNames() {
-    return metricNames;
-  }
-
-  @Override
   public SolrMetricsContext getSolrMetricsContext() {
     return solrMetricsContext;
   }
@@ -431,7 +426,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
       res.put("cumulative_evictionsRamUsage", stats.evictionsRamUsage.longValue());
       res.put("cumulative_evictionsIdleTime", stats.evictionsIdleTime.longValue());
     });
-    solrMetricsContext.gauge(this, cacheMap, true, scope, getCategory().toString());
+    solrMetricsContext.gauge(cacheMap, true, scope, getCategory().toString());
   }
 
   // for unit tests only

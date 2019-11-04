@@ -96,6 +96,7 @@ public class PeerSync implements SolrMetricProducer {
   private Timer syncTime;
   private Counter syncErrors;
   private Counter syncSkipped;
+  private SolrMetricsContext solrMetricsContext;
 
   // comparator that sorts by absolute value, putting highest first
   public static Comparator<Long> absComparator = (l1, l2) -> Long.compare(Math.abs(l2), Math.abs(l1));
@@ -133,10 +134,16 @@ public class PeerSync implements SolrMetricProducer {
   public static final String METRIC_SCOPE = "peerSync";
 
   @Override
+  public SolrMetricsContext getSolrMetricsContext() {
+    return solrMetricsContext;
+  }
+
+  @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    syncTime = parentContext.timer(null, "time", scope, METRIC_SCOPE);
-    syncErrors = parentContext.counter(null, "errors", scope, METRIC_SCOPE);
-    syncSkipped = parentContext.counter(null, "skipped", scope, METRIC_SCOPE);
+    this.solrMetricsContext = parentContext.getChildContext(this);
+    syncTime = solrMetricsContext.timer("time", scope, METRIC_SCOPE);
+    syncErrors = solrMetricsContext.counter("errors", scope, METRIC_SCOPE);
+    syncSkipped = solrMetricsContext.counter("skipped", scope, METRIC_SCOPE);
   }
 
   public static long percentile(List<Long> arr, float frac) {

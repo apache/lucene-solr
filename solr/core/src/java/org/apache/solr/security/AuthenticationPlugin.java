@@ -29,7 +29,6 @@ import com.codahale.metrics.Timer;
 import org.apache.http.HttpRequest;
 import org.apache.http.protocol.HttpContext;
 import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.eclipse.jetty.client.api.Request;
 
@@ -37,7 +36,7 @@ import org.eclipse.jetty.client.api.Request;
  * 
  * @lucene.experimental
  */
-public abstract class AuthenticationPlugin implements SolrInfoBean, SolrMetricProducer {
+public abstract class AuthenticationPlugin implements SolrInfoBean {
 
   final public static String AUTHENTICATION_PLUGIN_PROP = "authenticationPlugin";
   final public static String HTTP_HEADER_X_SOLR_AUTHDATA = "X-Solr-AuthData";
@@ -147,14 +146,14 @@ public abstract class AuthenticationPlugin implements SolrInfoBean, SolrMetricPr
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     this.solrMetricsContext = parentContext.getChildContext(this);
     // Metrics
-    numErrors = this.solrMetricsContext.meter(this, "errors", getCategory().toString(), scope);
-    requests = this.solrMetricsContext.counter(this, "requests", getCategory().toString(), scope);
-    numAuthenticated = this.solrMetricsContext.counter(this, "authenticated",getCategory().toString(), scope);
-    numPassThrough = this.solrMetricsContext.counter(this, "passThrough",  getCategory().toString(), scope);
-    numWrongCredentials = this.solrMetricsContext.counter(this, "failWrongCredentials",getCategory().toString(), scope);
-    numMissingCredentials = this.solrMetricsContext.counter(this,  "failMissingCredentials",getCategory().toString(), scope);
-    requestTimes = this.solrMetricsContext.timer(this,"requestTimes", getCategory().toString(), scope);
-    totalTime = this.solrMetricsContext.counter(this,"totalTime", getCategory().toString(), scope);
+    numErrors = this.solrMetricsContext.meter("errors", getCategory().toString(), scope);
+    requests = this.solrMetricsContext.counter("requests", getCategory().toString(), scope);
+    numAuthenticated = this.solrMetricsContext.counter("authenticated",getCategory().toString(), scope);
+    numPassThrough = this.solrMetricsContext.counter("passThrough",  getCategory().toString(), scope);
+    numWrongCredentials = this.solrMetricsContext.counter("failWrongCredentials",getCategory().toString(), scope);
+    numMissingCredentials = this.solrMetricsContext.counter("failMissingCredentials",getCategory().toString(), scope);
+    requestTimes = this.solrMetricsContext.timer("requestTimes", getCategory().toString(), scope);
+    totalTime = this.solrMetricsContext.counter("totalTime", getCategory().toString(), scope);
   }
 
   @Override
@@ -170,10 +169,5 @@ public abstract class AuthenticationPlugin implements SolrInfoBean, SolrMetricPr
   @Override
   public Category getCategory() {
     return Category.SECURITY;
-  }
-  
-  @Override
-  public Set<String> getMetricNames() {
-    return metricNames;
   }
 }

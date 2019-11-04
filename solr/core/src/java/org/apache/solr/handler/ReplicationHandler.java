@@ -865,17 +865,17 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     super.initializeMetrics(parentContext, scope);
-    solrMetricsContext.gauge(this,  () -> (core != null && !core.isClosed() ? NumberUtils.readableSize(core.getIndexSize()) : ""),
+    solrMetricsContext.gauge(() -> (core != null && !core.isClosed() ? NumberUtils.readableSize(core.getIndexSize()) : ""),
         true, "indexSize", getCategory().toString(), scope);
-    solrMetricsContext.gauge(this, () -> (core != null && !core.isClosed() ? getIndexVersion().toString() : ""),
+    solrMetricsContext.gauge(() -> (core != null && !core.isClosed() ? getIndexVersion().toString() : ""),
          true, "indexVersion", getCategory().toString(), scope);
-    solrMetricsContext.gauge(this, () -> (core != null && !core.isClosed() ? getIndexVersion().generation : 0),
+    solrMetricsContext.gauge(() -> (core != null && !core.isClosed() ? getIndexVersion().generation : 0),
         true, GENERATION, getCategory().toString(), scope);
-    solrMetricsContext.gauge(this, () -> (core != null && !core.isClosed() ? core.getIndexDir() : ""),
+    solrMetricsContext.gauge(() -> (core != null && !core.isClosed() ? core.getIndexDir() : ""),
         true, "indexPath", getCategory().toString(), scope);
-    solrMetricsContext.gauge(this, () -> isMaster,
+    solrMetricsContext.gauge(() -> isMaster,
          true, "isMaster", getCategory().toString(), scope);
-    solrMetricsContext.gauge(this, () -> isSlave,
+    solrMetricsContext.gauge(() -> isSlave,
          true, "isSlave", getCategory().toString(), scope);
     final MetricsMap fetcherMap = new MetricsMap((detailed, map) -> {
       IndexFetcher fetcher = currentIndexFetcher;
@@ -905,12 +905,12 @@ public class ReplicationHandler extends RequestHandlerBase implements SolrCoreAw
         addVal(map, IndexFetcher.CONF_FILES_REPLICATED, props, String.class);
       }
     });
-    solrMetricsContext.gauge(this , fetcherMap, true, "fetcher", getCategory().toString(), scope);
-    solrMetricsContext.gauge(this, () -> isMaster && includeConfFiles != null ? includeConfFiles : "",
+    solrMetricsContext.gauge(fetcherMap, true, "fetcher", getCategory().toString(), scope);
+    solrMetricsContext.gauge(() -> isMaster && includeConfFiles != null ? includeConfFiles : "",
          true, "confFilesToReplicate", getCategory().toString(), scope);
-    solrMetricsContext.gauge(this, () -> isMaster ? getReplicateAfterStrings() : Collections.<String>emptyList(),
+    solrMetricsContext.gauge(() -> isMaster ? getReplicateAfterStrings() : Collections.<String>emptyList(),
         true, REPLICATE_AFTER, getCategory().toString(), scope);
-    solrMetricsContext.gauge(this,  () -> isMaster && replicationEnabled.get(),
+    solrMetricsContext.gauge( () -> isMaster && replicationEnabled.get(),
         true, "replicationEnabled", getCategory().toString(), scope);
   }
 
