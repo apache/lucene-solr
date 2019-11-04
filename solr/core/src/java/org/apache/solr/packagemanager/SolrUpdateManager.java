@@ -38,7 +38,7 @@ public class SolrUpdateManager {
   final private SolrPackageManager packageManager;
   final private String repositoriesJsonStr;
   protected List<SolrPackageRepository> repositories;
-  
+
   private DefaultVersionManager versionManager;
   private String systemVersion;
   private Map<String, SolrPackageRelease> lastPluginRelease = new HashMap<>();
@@ -80,7 +80,7 @@ public class SolrUpdateManager {
   public synchronized boolean updatePackage(String id, String version) throws PackageManagerException {
     return updateOrInstallPackage(Operation.UPDATE, id, version);
   }
-  
+
   // nocommit do we need this, when we have a map version of this?
   public List<SolrPackage> getPackages() {
     List<SolrPackage> list = new ArrayList<>(getPackagesMap().values());
@@ -88,7 +88,7 @@ public class SolrUpdateManager {
 
     return list;
   }
-  
+
   public Map<String, SolrPackage> getPackagesMap() {
     Map<String, SolrPackage> packagesMap = new HashMap<>();
     for (SolrPackageRepository repository : getRepositories()) {
@@ -97,7 +97,7 @@ public class SolrUpdateManager {
 
     return packagesMap;
   }
-  
+
   public List<SolrPackageRepository> getRepositories() {
     refresh();
     return repositories;
@@ -110,12 +110,12 @@ public class SolrUpdateManager {
     }
 
     SolrPackage pkg = getPackagesMap().get(id);
-    SolrPackageRelease release = findReleaseForPlugin(id, version);
+    SolrPackageRelease release = findReleaseForPackage(id, version);
     Path downloaded = downloadPackage(id, version);
     System.out.println("Yahaan file hai: "+downloaded);
     System.out.println("Signature: "+release.sig);
     System.out.println("Filename: "+downloaded.getFileName().toString());
-    
+
     try (HttpSolrClient solrClient = new HttpSolrClient.Builder(solrBaseUrl).build()) {
       // post the metadata
       System.out.println("Posting metadata");
@@ -128,8 +128,8 @@ public class SolrUpdateManager {
       postFile(solrClient, getFileContent(downloaded.toFile()),
           "/package/"+id+"/"+version+"/"+downloaded.getFileName().toString(),
           release.sig
-      );
-      
+          );
+
       addOrUpdatePackage(op, solrClient, id, version, new String[] {"/package/"+id+"/"+version+"/"+downloaded.getFileName().toString()}, 
           pkg.getRepositoryId(), release.sig, "/package/"+id+"/"+version+"/solr-manifest.json", null);
     } catch (SolrServerException | IOException e) {
@@ -137,7 +137,7 @@ public class SolrUpdateManager {
     }
     return false;
   }
-  
+
   public static ByteBuffer getFileContent(File file) throws IOException {
     ByteBuffer jar;
     try (FileInputStream fis = new FileInputStream(file)) {
@@ -172,10 +172,10 @@ public class SolrUpdateManager {
   public static enum Operation {
     INSTALL, UPDATE;
   }
-  
+
   private boolean addOrUpdatePackage(Operation op, SolrClient solrClient, String id, String version, String files[], String repository, String sig,
       String manifest, String manifestSHA512) {
-    
+
     Package.AddVersion add = new Package.AddVersion();
     add.version = version;
     add.pkg = id;
@@ -203,116 +203,99 @@ public class SolrUpdateManager {
     SSLContextBuilder builder = new SSLContextBuilder();
     builder.loadTrustMaterial(null, (chain, authType) -> true);           
     SSLConnectionSocketFactory sslsf = new 
-    SSLConnectionSocketFactory(builder.build(), NoopHostnameVerifier.INSTANCE);
+        SSLConnectionSocketFactory(builder.build(), NoopHostnameVerifier.INSTANCE);
     return HttpClients.custom().setSSLSocketFactory(sslsf).build();
   }
-  
+
   protected Path downloadPackage(String id, String version) throws PackageManagerException {
-      try {
-          SolrPackageRelease release = findReleaseForPlugin(id, version);
-          Path downloaded = getFileDownloader(id).downloadFile(new URL(release.url));
-          //getFileVerifier(id).verify(new FileVerifier.Context(id, release), downloaded);
-          //nocommit verify this download
-          return downloaded;
-      } catch (IOException e) {
-          throw new PackageManagerException("Error during download of plugin " + id, e);
-      }
+    try {
+      SolrPackageRelease release = findReleaseForPackage(id, version);
+      Path downloaded = getFileDownloader(id).downloadFile(new URL(release.url));
+      //getFileVerifier(id).verify(new FileVerifier.Context(id, release), downloaded);
+      //nocommit verify this download
+      return downloaded;
+    } catch (IOException e) {
+      throw new PackageManagerException("Error during download of plugin " + id, e);
+    }
   }
 
   protected SimpleFileDownloader getFileDownloader(String pluginId) {
-      for (SolrPackageRepository ur : repositories) {
-          if (ur.getPlugin(pluginId) != null && ur.getFileDownloader() != null) {
-              return ur.getFileDownloader();
-          }
+    for (SolrPackageRepository ur : repositories) {
+      if (ur.getPlugin(pluginId) != null && ur.getFileDownloader() != null) {
+        return ur.getFileDownloader();
       }
+    }
 
-      return new SimpleFileDownloader();
+    return new SimpleFileDownloader();
   }
 
-  public SolrPackageRelease findReleaseForPlugin(String id, String version) throws PackageManagerException {
-      SolrPackage pluginInfo = getPackagesMap().get(id);
-      if (pluginInfo == null) {
-          log.info("Plugin with id {} does not exist in any repository", id);
-          throw new PackageManagerException("Plugin with id "+id+" not found in any repository");
-      }
+  public SolrPackageRelease findReleaseForPackage(String id, String version) throws PackageManagerException {
+    SolrPackage pkg = getPackagesMap().get(id);
+    if (pkg == null) {
+      log.info("Plugin with id {} does not exist in any repository", id);
+      throw new PackageManagerException("Plugin with id "+id+" not found in any repository");
+    }
 
-      if (version == null) {
-          return getLastPackageRelease(id);
-      }
+    if (version == null) {
+      return getLastPackageRelease(id);
+    }
 
-      for (SolrPackageRelease release : pluginInfo.versions) {
-          if (versionManager.compareVersions(version, release.version) == 0 && release.url != null) {
-              return release;
-          }
+    for (SolrPackageRelease release : pkg.versions) {
+      if (versionManager.compareVersions(version, release.version) == 0 && release.url != null) {
+        return release;
       }
+    }
 
-      throw new PackageManagerException("Plugin "+id+" with version @"+version+" does not exist in the repository");
+    throw new PackageManagerException("Plugin "+id+" with version @"+version+" does not exist in the repository");
   }
-  
+
   public SolrPackageRelease getLastPackageRelease(String id) {
-      SolrPackage pluginInfo = getPackagesMap().get(id);
-      if (pluginInfo == null) {
-          return null;
-      }
+    SolrPackage pluginInfo = getPackagesMap().get(id);
+    if (pluginInfo == null) {
+      return null;
+    }
 
-      if (!lastPluginRelease.containsKey(id)) {
-          for (SolrPackageRelease release : pluginInfo.versions) {
-              if (systemVersion.equals("0.0.0") || versionManager.checkVersionConstraint(systemVersion, release.requires)) {
-                  if (lastPluginRelease.get(id) == null) {
-                      lastPluginRelease.put(id, release);
-                  } else if (versionManager.compareVersions(release.version, lastPluginRelease.get(id).version) > 0) {
-                      lastPluginRelease.put(id, release);
-                  }
-              }
+    if (!lastPluginRelease.containsKey(id)) {
+      for (SolrPackageRelease release : pluginInfo.versions) {
+        if (systemVersion.equals("0.0.0") || versionManager.checkVersionConstraint(systemVersion, release.requires)) {
+          if (lastPluginRelease.get(id) == null) {
+            lastPluginRelease.put(id, release);
+          } else if (versionManager.compareVersions(release.version, lastPluginRelease.get(id).version) > 0) {
+            lastPluginRelease.put(id, release);
           }
+        }
       }
+    }
 
-      return lastPluginRelease.get(id);
-  }
-  
-  /**
-   * Finds whether the newer version of the plugin.
-   *
-   * @return true if there is a newer version available which is compatible with system
-   */
-  public boolean hasPluginUpdate(String id) {
-      SolrPackage pluginInfo = getPackagesMap().get(id);
-      if (pluginInfo == null) {
-          return false;
-      }
-
-      String installedVersion = packageManager.getPackage(id, null).getVersion();
-      SolrPackageRelease last = getLastPackageRelease(id);
-
-      return last != null && versionManager.compareVersions(last.version, installedVersion) > 0;
+    return lastPluginRelease.get(id);
   }
 
-  
-  /**
-   * Return a list of plugins that are newer versions of already installed plugins.
-   *
-   * @return list of plugins that have updates
-   */
+  public boolean hasPackageUpdate(String id) {
+    SolrPackage pkg = getPackagesMap().get(id);
+    if (pkg == null) {
+      return false;
+    }
+
+    String installedVersion = packageManager.getPackage(id, null).getVersion();
+    SolrPackageRelease last = getLastPackageRelease(id);
+
+    return last != null && versionManager.compareVersions(last.version, installedVersion) > 0;
+  }
+
+
   public List<SolrPackage> getUpdates() {
-      List<SolrPackage> updates = new ArrayList<>();
-      for (SolrPackageInstance installed : packageManager.getPackages()) {
-          String pluginId = installed.getPluginId();
-          if (hasPluginUpdate(pluginId)) {
-              updates.add(getPackagesMap().get(pluginId));
-          }
+    List<SolrPackage> updates = new ArrayList<>();
+    for (SolrPackageInstance installed : packageManager.getPackages()) {
+      String pluginId = installed.getPluginId();
+      if (hasPackageUpdate(pluginId)) {
+        updates.add(getPackagesMap().get(pluginId));
       }
+    }
 
-      return updates;
+    return updates;
   }
 
-  /**
-   * Checks if Update Repositories has newer versions of some of the installed plugins.
-   *
-   * @return true if updates exist
-   */
   public boolean hasUpdates() {
-      return getUpdates().size() > 0;
+    return getUpdates().size() > 0;
   }
-
-
 }

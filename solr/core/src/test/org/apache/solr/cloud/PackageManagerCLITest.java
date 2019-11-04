@@ -24,6 +24,13 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.core.TestSolrConfigHandler;
 import org.apache.solr.util.PackageTool;
 import org.apache.solr.util.SolrCLI;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.DefaultHandler;
+import org.eclipse.jetty.server.handler.HandlerList;
+import org.eclipse.jetty.server.handler.ResourceHandler;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -33,13 +40,23 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  private static LocalWebServer repositoryServer;
+
   @BeforeClass
   public static void setupCluster() throws Exception {
     System.setProperty("enable.packages", "true");
 
     configureCluster(1)
-        .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
-        .configure();
+    .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+    .configure();
+
+    repositoryServer = new LocalWebServer(TEST_PATH().resolve("question-answer-repository").toString());
+    repositoryServer.start();
+  }
+
+  @AfterClass
+  public static void teardown() throws Exception {
+    repositoryServer.stop();
   }
 
   @Test
@@ -48,13 +65,13 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
     String solrUrl = cluster.getJettySolrRunner(0).getBaseUrl().toString();
 
     run(tool, new String[] {"-solrUrl", solrUrl, "list"});
-    
-    run(tool, new String[] {"-solrUrl", solrUrl, "add-repo", "fullstory",  "http://localhost:8081"});
+
+    run(tool, new String[] {"-solrUrl", solrUrl, "add-repo", "fullstory",  "http://localhost:"+repositoryServer.getPort()});
 
     run(tool, new String[] {"-solrUrl", solrUrl, "list-available"});
 
     run(tool, new String[] {"-solrUrl", solrUrl, "install", "question-answer", "1.0.0"}); // no-commit (change to pkg:ver syntax)
-    
+
     run(tool, new String[] {"-solrUrl", solrUrl, "list"});
 
     CollectionAdminRequest.createCollection("abc", "conf1", 1, 1).process(cluster.getSolrClient());
@@ -64,13 +81,13 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
 
     run(tool, new String[] {"-solrUrl", solrUrl, "deploy", "question-answer", "-collections", "abc", "-p", "RH-HANDLER-PATH=" + rhPath});
     assertPackageVersion("abc", "question-answer", "1.0.0", rhPath, "1.0.0");
-    
+
     // Should we test the "auto-update to latest" functionality or the default explicit deploy functionality
     boolean autoUpdateToLatest = random().nextBoolean();
-    
+
     if (autoUpdateToLatest) {
       log.info("Testing auto-update to latest installed");
-      
+
       // This command pegs the version to the latest available
       run(tool, new String[] {"-solrUrl", solrUrl, "deploy", "question-answer:latest", "-collections", "abc"});
       assertPackageVersion("abc", "question-answer", "$LATEST", rhPath, "1.0.0");
@@ -116,5 +133,53 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
   private void run(PackageTool tool, String[] args) throws Exception {
     int res = tool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args));
     assertEquals("Non-zero status returned for: " + Arrays.toString(args), 0, res);
+  }
+
+  static class LocalWebServer {
+    private int port = 0;
+    final private String resourceBase;
+
+    public LocalWebServer(String resourceDir) {
+      this.resourceBase = resourceDir;
+    }
+
+    public int getPort() {
+      return connector != null? connector.getLocalPort(): port;
+    }
+
+    public LocalWebServer setPort(int port) {
+      this.port = port;
+      return this;
+    }
+
+    public String getResourceBase() {
+      return resourceBase;
+    }
+
+    Server server;
+    ServerConnector connector;
+
+    public void start() throws Exception {
+      server = new Server();
+
+      connector = new ServerConnector(server);
+      connector.setPort(port);
+      server.addConnector(connector);
+      server.setStopAtShutdown(true);
+
+      ResourceHandler resourceHandler = new ResourceHandler();
+      resourceHandler.setResourceBase(resourceBase);
+      resourceHandler.setDirectoriesListed(true);
+
+      HandlerList handlers = new HandlerList();
+      handlers.setHandlers(new Handler[] { resourceHandler, new DefaultHandler() });
+      server.setHandler(handlers);
+
+      server.start();
+    }
+
+    public void stop() throws Exception {
+      server.stop();
+    }
   }
 }

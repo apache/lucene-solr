@@ -109,10 +109,10 @@ public class PackageTool extends SolrCLI.ToolBase {
               String packageName = cli.getArgList().get(1).toString().split(":")[0];
               String version = cli.getArgList().get(1).toString().contains(":")? 
                   cli.getArgList().get(1).toString().split(":")[1]: null;
-              deploy(packageName, version, cli.hasOption("update"), colls, params);
-              break;
+                  deploy(packageName, version, cli.hasOption("update"), colls, params);
+                  break;
             case "update":
-              if (cli.getArgList().size()==1) {
+              if (cli.getArgList().size() == 1) {
                 update();
               } else {
                 updatePackage(zkHost, cli.getArgs()[1], cli.getArgList().subList(2, cli.getArgList().size()));
@@ -180,7 +180,7 @@ public class PackageTool extends SolrCLI.ToolBase {
   }
   protected void deploy(String packageName, String version, boolean isUpdate,
       String collections[], String parameters[]) throws PackageManagerException {
-    
+
     System.out.println(packageManager.deployInstallPackage(packageName, version, isUpdate,
         Arrays.asList(collections), parameters));
   }
@@ -292,7 +292,7 @@ public class PackageTool extends SolrCLI.ToolBase {
         .withDescription("Solr URL scheme: http or https, defaults to http if not specified")
         .withLongOpt("auto-update")
         .create(),
-        
+
     };
   }
 
