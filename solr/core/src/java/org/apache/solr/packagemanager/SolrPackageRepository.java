@@ -1,14 +1,21 @@
 package org.apache.solr.packagemanager;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.MalformedURLException;
+import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.packagemanager.SolrPackage.SolrPackageRelease;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,11 +45,6 @@ public class SolrPackageRepository {
   }
 
   @JsonIgnore
-  public SimpleFileDownloader getFileDownloader() {
-      return new SimpleFileDownloader();
-  }
-
-  @JsonIgnore
   private Map<String, SolrPackage> packages;
 
   public Map<String, SolrPackage> getPackages() {
@@ -53,8 +55,38 @@ public class SolrPackageRepository {
     return packages;
   }
 
-  public SolrPackage getPlugin(String id) {
+  public SolrPackage getPackage(String id) {
     return getPackages().get(id);
+  }
+
+  public boolean hasPackage(String packageName) {
+    return getPackages().containsKey(packageName);
+  }
+
+  public Path download(URL url) throws SolrException, IOException {
+    Path tmpDirectory = Files.createTempDirectory("solr-packages");
+    tmpDirectory.toFile().deleteOnExit();
+    String fileName = url.getPath().substring(url.getPath().lastIndexOf('/') + 1);
+    Path destination = tmpDirectory.resolve(fileName);
+
+    switch (url.getProtocol()) {
+      case "http":
+      case "https":
+      case "ftp":
+        FileUtils.copyURLToFile(url, destination.toFile());
+        break;
+      case "file":
+        try {
+          FileUtils.copyFile(new File(url.toURI()), destination.toFile());
+        } catch (URISyntaxException e) {
+          throw new SolrException(ErrorCode.INVALID_STATE, e);
+        }
+        break;
+      default:
+        throw new SolrException(ErrorCode.BAD_REQUEST, "URL protocol " + url.getProtocol() + " not supported");
+    }
+    
+    return destination;
   }
 
   private void initPackages() {
@@ -90,7 +122,7 @@ public class SolrPackageRepository {
       }
       p.setRepositoryId(id);
       packages.put(p.id, p);
-      
+
       System.out.println("****\n"+p+"\n*******");
     }
     log.debug("Found {} plugins in repository '{}'", packages.size(), id);

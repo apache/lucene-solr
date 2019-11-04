@@ -64,15 +64,15 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
     PackageTool tool = new PackageTool();
     String solrUrl = cluster.getJettySolrRunner(0).getBaseUrl().toString();
 
-    run(tool, new String[] {"-solrUrl", solrUrl, "list"});
+    run(tool, new String[] {"-solrUrl", solrUrl, "list-installed"});
 
-    run(tool, new String[] {"-solrUrl", solrUrl, "add-repo", "fullstory",  "http://localhost:"+repositoryServer.getPort()});
+    run(tool, new String[] {"-solrUrl", solrUrl, "add-repo", "fullstory",  "http://localhost:" + repositoryServer.getPort()});
 
     run(tool, new String[] {"-solrUrl", solrUrl, "list-available"});
 
-    run(tool, new String[] {"-solrUrl", solrUrl, "install", "question-answer", "1.0.0"}); // no-commit (change to pkg:ver syntax)
+    run(tool, new String[] {"-solrUrl", solrUrl, "install", "question-answer:1.0.0"}); // no-commit (change to pkg:ver syntax)
 
-    run(tool, new String[] {"-solrUrl", solrUrl, "list"});
+    run(tool, new String[] {"-solrUrl", solrUrl, "list-installed"});
 
     CollectionAdminRequest.createCollection("abc", "conf1", 1, 1).process(cluster.getSolrClient());
     CollectionAdminRequest.createCollection("def", "conf1", 1, 1).process(cluster.getSolrClient());
@@ -101,7 +101,7 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
       assertPackageVersion("abc", "question-answer", "1.0.0", rhPath, "1.0.0");
 
 
-      if (random().nextBoolean()) {
+      if (random().nextBoolean()) { // even if parameters are not passed in, they should be picked up from previous deployment
         run(tool, new String[] {"-solrUrl", solrUrl, "deploy", "--update", "question-answer", "-collections", "abc", "-p", "RH-HANDLER-PATH=" + rhPath});
       } else {
         run(tool, new String[] {"-solrUrl", solrUrl, "deploy", "--update", "question-answer", "-collections", "abc"});
@@ -138,6 +138,8 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
   static class LocalWebServer {
     private int port = 0;
     final private String resourceBase;
+    Server server;
+    ServerConnector connector;
 
     public LocalWebServer(String resourceDir) {
       this.resourceBase = resourceDir;
@@ -155,9 +157,6 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
     public String getResourceBase() {
       return resourceBase;
     }
-
-    Server server;
-    ServerConnector connector;
 
     public void start() throws Exception {
       server = new Server();

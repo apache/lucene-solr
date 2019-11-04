@@ -23,7 +23,6 @@ public class SolrPackage implements Serializable, Comparable<SolrPackage> {
 
     public String version;
     public Date date;
-    public String requires;
     public String url;
 
     public String sha512sum;
@@ -35,7 +34,6 @@ public class SolrPackage implements Serializable, Comparable<SolrPackage> {
       return "SolrPackageRelease{" +
           "version='" + version + '\'' +
           ", date=" + date +
-          ", requires='" + requires + '\'' +
           ", url='" + url + '\'' +
           ", sig='" + sig + '\'' +
           ", min='" + metadata.minSolrVersion + '\'' +

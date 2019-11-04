@@ -10,7 +10,7 @@
         "sig": "C9UWKkucmY3UNzqn0VLneVMe9kCbJjw7Urc76vGenoRwp32xvNn5ZIGZ7G34xZP7cVjqn/ltDlLWBZ/C3eAtuw==",
         "metadata": {
           "min-solr-version": "8.0",
-          "max-solr-version": "8.99",
+          "max-solr-version": "9.99",
           "dependencies": [],
           "plugins": [
             {
@@ -38,7 +38,7 @@
         "sig": "VKfK8aAgH8Ys8vZ0Pym3vnWalhC8WpfcwADw3pvUHG9Kui0UMJ0L6hTNuH41tuo5FrfG7cu2roPGsYXg2WzV5g==",
         "metadata": {
           "min-solr-version": "8.0",
-          "max-solr-version": "8.99",
+          "max-solr-version": "9.99",
           "dependencies": [],
           "plugins": [
             {
