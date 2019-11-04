@@ -24,6 +24,7 @@ functions.
 <<K-Nearest Neighbor (KNN), KNN>> -
 <<K-Nearest Neighbor Regression, KNN Regression>> -
 <<knnSearch, knnSearch>> -
+<<DBSCAN, DBSCAN>> -
 <<K-Means Clustering, K-means Clustering>> -
 <<Fuzzy K-Means Clustering, Fuzzy K-means>> -
 <<Feature Scaling, Feature Scaling>>
@@ -369,18 +370,65 @@ NOTE: In this example the `select`
 function is used to truncate the review in the output to 220 characters to make it easier
 to read in a table.
 
+== DBSCAN
 
-== K-Means Clustering
+DBSCAN clustering is a powerful density based clustering algorithm which is particularly well
+suited for geo-spatial clustering. DBSCAN uses two parameters to filter result sets to
+clusters of specific density:
 
-The `kmeans` functions performs k-means clustering of the rows of a matrix.
-Once the clustering has been completed there are a number of useful functions available
-for examining the clusters and centroids.
+* eps (Epsilon): Defines the distance between points to be considered as neighbors
+
+* min points: The minimum number of points needed in a cluster for it to be returned.
 
 
 === 2D Cluster Visualization
 
 The `zplot` function has direct support for plotting 2D clusters by using the *clusters* named parameter.
-The example below demonstrates this capability by clustering and visualizing latitude and longitude points.
+
+The example below uses DBSCAN clustering and cluster visualization to find
+the *hot spots* on a map for rat sightings in the NYC 311 complaints database.
+
+In this example the `random` function draws a sample of records from the nyc311 collection where
+the complaint description matches "rat sighting" and latitude is populated in the record.
+The latitude and longitude fields
+are then vectorized and added as rows to a matrix. The matrix is transposed so each row contains a single latitude, longitude
+point. The `dbscan` function is then used to cluster the latitude and longitude points. Notice that the
+`dbscan` function in the example has four parameters.
+
+* obs : The observation matrix of lat/lon points
+
+* eps : The distance between points to be considered a cluster. 100 meters in the example.
+
+* min points: The min points in a cluster for the cluster to be returned by the function. 5 in the example.
+
+* distance measure: An optional distance measure used to determine the
+distance between points. The default is Euclidean distance. The example uses *haversineMeters*
+which returns the distance in meters which is much more meaningful for geo-spatial use
+cases.
+
+Finally, the `zplot` function
+is used to visualize the clusters as a scatter plot.
+The visualization below has been zoomed to a specific area of Brooklyn with a
+high density of rat sightings.
+
+image::images/math-expressions/dbscan1.png[]
+
+Notice in the visualization that only 1019 points were returned from the 5000 samples.
+This is the power of the DBSCAN algorithm to filter records that don't match the criteria
+of a cluster. The points that are plotted all belong to clearly defined clusters.
+
+The map visualization can be zoomed further to explore the locations of specific clusters.
+The example below shows a zoom into an area of dense clusters.
+
+image::images/math-expressions/dbscan2.png[]
+
+
+== K-Means Clustering
+
+The `kmeans` functions performs k-means clustering of the rows of a matrix.
+Once the clustering has been completed there are a number of useful functions available
+for examining and visualizing the clusters and centroids.
+
 
 ==== Clustered Scatter Plot
 
@@ -418,7 +466,6 @@ The map can then be zoomed to get a closer look at the centroids in the high den
 in the cluster scatter plot.
 
 image::images/math-expressions/centroidzoom.png[]
-
 
 
 === Phrase Extraction
