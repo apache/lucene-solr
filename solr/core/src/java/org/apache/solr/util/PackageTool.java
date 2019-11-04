@@ -257,7 +257,8 @@ public class PackageTool extends SolrCLI.ToolBase {
       String paramsJson = PackageUtils.get(solrBaseUrl+"/api/collections/"+collection+"/config/params/PKG_VERSIONS?omitHeader=true");
       String version = null;
       try {
-        version = JsonPath.parse(paramsJson).read("$['response'].['params'].['PKG_VERSIONS'].['"+pkg.name+"'])");
+        version = JsonPath.parse(paramsJson, PackageUtils.jsonPathConfiguration())
+            .read("$['response'].['params'].['PKG_VERSIONS'].['"+pkg.name+"'])");
       } catch (PathNotFoundException ex) {
         // Don't worry if PKG_VERSION wasn't found. It just means this collection was never touched by the package manager.
       }

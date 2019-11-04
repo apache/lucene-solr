@@ -44,9 +44,22 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 
 import com.github.zafarkhaja.semver.Version;
 import com.google.common.base.Strings;
+import com.jayway.jsonpath.Configuration;
+import com.jayway.jsonpath.spi.json.JacksonJsonProvider;
+import com.jayway.jsonpath.spi.json.JsonProvider;
+import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
+import com.jayway.jsonpath.spi.mapper.MappingProvider;
 
 public class PackageUtils {
-  static public ByteBuffer getFileContent(File file) throws IOException {
+  
+  public static Configuration jsonPathConfiguration() {
+    MappingProvider provider = new JacksonMappingProvider();
+    JsonProvider jsonProvider = new JacksonJsonProvider();
+    Configuration c = Configuration.builder().jsonProvider(jsonProvider).mappingProvider(provider).options(com.jayway.jsonpath.Option.REQUIRE_PROPERTIES).build();
+    return c;
+  }
+  
+  public static ByteBuffer getFileContent(File file) throws IOException {
     ByteBuffer jar;
     try (FileInputStream fis = new FileInputStream(file)) {
       byte[] buf = new byte[fis.available()];

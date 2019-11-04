@@ -211,7 +211,8 @@ public class SolrPackageManager implements Closeable {
         if ("GET".equalsIgnoreCase(cmd.method)) {
           String response = PackageUtils.get(url);
           System.out.println(response);
-          String actualValue = JsonPath.parse(response).read(resolve(cmd.condition, pkg.parameterDefaults, collectionParameterOverrides, systemParams));
+          String actualValue = JsonPath.parse(response, PackageUtils.jsonPathConfiguration())
+              .read(resolve(cmd.condition, pkg.parameterDefaults, collectionParameterOverrides, systemParams));
           String expectedValue = resolve(cmd.expected, pkg.parameterDefaults, collectionParameterOverrides, systemParams);
           System.out.println("Actual: "+actualValue+", expected: "+expectedValue);
           if (!expectedValue.equals(actualValue)) {
