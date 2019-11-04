@@ -9,12 +9,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.packagemanager.SolrPackage.Command;
 import org.apache.solr.packagemanager.SolrPackage.Metadata;
 import org.apache.solr.packagemanager.SolrPackage.Plugin;
+import org.apache.solr.util.SolrCLI;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,10 +26,12 @@ import com.jayway.jsonpath.JsonPath;
 public class SolrPackageManager implements Closeable {
 
   final String solrBaseUrl;
+  final SolrClient solrClient;
   
   final SolrZkClient zkClient;
   public SolrPackageManager(String solrBaseUrl, String zkHost) {
     this.solrBaseUrl = solrBaseUrl;
+    this.solrClient = new HttpSolrClient.Builder(solrBaseUrl).build();
     this.zkClient = new SolrZkClient(zkHost, 30000);
     System.out.println("Done initializing a zkClient instance...");
   }
@@ -103,26 +108,34 @@ public class SolrPackageManager implements Closeable {
         boolean packageParamsExist = ((Map)((Map)new ObjectMapper().readValue(
               PackageUtils.get(solrBaseUrl + "/api/collections/abc/config/params/packages"), Map.class)
             ).get("response")).containsKey("params");
-        PackageUtils.postJson(solrBaseUrl + "/api/collections/" + collection + "/config/params",
+        SolrCLI.postJsonToSolr(solrClient, "/api/collections/" + collection + "/config/params",
             new ObjectMapper().writeValueAsString(
                 Map.of(packageParamsExist? "update": "set", 
                     Map.of("packages", Map.of(packageInstance.name, collectionParameterOverrides)))));
-      } catch (IOException e) {
-        throw new RuntimeException(e);
+      } catch (Exception e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
       }
 
       String paramsJson = PackageUtils.get(solrBaseUrl+"/api/collections/"+collection+"/config/params?omitHeader=true");
       System.out.println("Before Posting param: "+paramsJson);
 
       // Set the package version in the collection's parameters
-      PackageUtils.postJson(solrBaseUrl+"/api/collections/"+collection+"/config/params", "{set:{PKG_VERSIONS:{"+packageInstance.name+" : '"+(pegToLatest? "$LATEST": packageInstance.version)+"'}}}");
+      try {
+        SolrCLI.postJsonToSolr(solrClient, "/api/collections/"+collection+"/config/params", "{set:{PKG_VERSIONS:{"+packageInstance.name+" : '"+(pegToLatest? "$LATEST": packageInstance.version)+"'}}}");
+      } catch (Exception ex) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, ex);
+      }
 
       paramsJson = PackageUtils.get(solrBaseUrl+"/api/collections/"+collection+"/config/params?omitHeader=true");
       System.out.println("Posted param: "+paramsJson);
       
       // If updating, refresh the package version for this to take effect
       if (isUpdate || pegToLatest) {
-        PackageUtils.postJson(solrBaseUrl+"/api/cluster/package", "{\"refresh\" : \""+packageInstance.name+"\"}");
+        try {
+          SolrCLI.postJsonToSolr(solrClient, "/api/cluster/package", "{\"refresh\" : \""+packageInstance.name+"\"}");
+        } catch (Exception ex) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, ex);
+        }
       }
       
       // Setup/update all the plugins in the package
@@ -136,15 +149,23 @@ public class SolrPackageManager implements Closeable {
 
         String cmd = resolve(isUpdate? p.updateCommand: p.setupCommand, packageInstance.parameterDefaults, collectionParameterOverrides, systemParams);
         if (cmd != null && !"".equals(cmd.trim())) {
-          System.out.println("Executing " + cmd + " for collection:" + collection);
-          PackageUtils.postJson(solrBaseUrl + "/solr/"+collection+"/config", cmd);
+          try {
+            System.out.println("Executing " + cmd + " for collection:" + collection);
+            SolrCLI.postJsonToSolr(solrClient, "/solr/"+collection+"/config", cmd);
+          } catch (Exception ex) {
+            throw new SolrException(ErrorCode.SERVER_ERROR, ex);
+          }
         }
       }
 
       // Set the package version in the collection's parameters
-      PackageUtils.postJson(solrBaseUrl+"/api/collections/"+collection+"/config/params", "{update:{PKG_VERSIONS:{'"+packageInstance.name+"' : '"+(pegToLatest? "$LATEST": packageInstance.version)+"'}}}");
-      paramsJson = PackageUtils.get(solrBaseUrl+"/api/collections/"+collection+"/config/params?omitHeader=true");
-      System.out.println("Posted param: "+paramsJson);
+      try {
+        SolrCLI.postJsonToSolr(solrClient, "/api/collections/"+collection+"/config/params", "{update:{PKG_VERSIONS:{'"+packageInstance.name+"' : '"+(pegToLatest? "$LATEST": packageInstance.version)+"'}}}");
+        paramsJson = PackageUtils.get(solrBaseUrl+"/api/collections/"+collection+"/config/params?omitHeader=true");
+        System.out.println("Posted param: "+paramsJson);
+      } catch (Exception ex) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, ex);
+      }
 
     }
 
@@ -229,6 +250,9 @@ public class SolrPackageManager implements Closeable {
   public void close() throws IOException {
     if (zkClient != null) {
       zkClient.close();
+    }
+    if (solrClient != null) {
+      solrClient.close();
     }
   }
 }

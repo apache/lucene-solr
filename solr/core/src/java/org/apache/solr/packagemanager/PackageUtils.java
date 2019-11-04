@@ -27,11 +27,9 @@ import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.SSLContextBuilder;
-import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.solr.client.solrj.SolrClient;
@@ -107,35 +105,6 @@ public class PackageUtils {
       throw new RuntimeException(e1);
     }
     return null;
-  }
-
-  public static void postJson(String url, String postBody) {
-    System.out.println("Posting to "+url+": "+postBody);
-    try (CloseableHttpClient client = PackageUtils.createTrustAllHttpClientBuilder();) {
-      HttpPost httpPost = new HttpPost(url);
-      StringEntity entity = new StringEntity(postBody);
-      httpPost.setEntity(entity);
-      httpPost.setHeader("Accept", "application/json");
-      httpPost.setHeader("Content-type", "application/json");
-
-      CloseableHttpResponse response = client.execute(httpPost);
-
-      try {
-        HttpEntity rspEntity = response.getEntity();
-        if (rspEntity != null) {
-          InputStream is = rspEntity.getContent();
-          StringWriter writer = new StringWriter();
-          IOUtils.copy(is, writer, "UTF-8");
-          String results = writer.toString();
-          System.out.println(results);
-        }
-      } catch (IOException e) {
-        e.printStackTrace();
-        throw new RuntimeException(e);
-      }
-    } catch (Exception e1) {
-      throw new RuntimeException(e1);
-    }
   }
 
   public static CloseableHttpClient createTrustAllHttpClientBuilder() throws Exception {
