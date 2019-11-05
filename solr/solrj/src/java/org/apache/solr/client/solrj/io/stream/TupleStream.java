@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -29,6 +28,7 @@ import java.util.UUID;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
@@ -40,7 +40,6 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -141,7 +140,8 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
       shards = shardsMap.get(collection);
     } else {
       //SolrCloud Sharding
-      CloudSolrClient cloudSolrClient = streamContext.getSolrClientCache().getCloudSolrClient(zkHost);
+      CloudSolrClient cloudSolrClient =
+          Optional.ofNullable(streamContext.getSolrClientCache()).orElseGet(SolrClientCache::new).getCloudSolrClient(zkHost);
       ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
       ClusterState clusterState = zkStateReader.getClusterState();
       Slice[] slices = CloudSolrStream.getSlices(collection, zkStateReader, true);
@@ -154,20 +154,20 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
       RequestReplicaListTransformerGenerator requestReplicaListTransformerGenerator =
           Optional.ofNullable(streamContext.getRequestReplicaListTransformerGenerator()).orElseGet(RequestReplicaListTransformerGenerator::new);
 
-      ReplicaListTransformer replicaListTransformer = requestReplicaListTransformerGenerator.getReplicaListTransformer(requestParams);
+      ReplicaListTransformer replicaListTransformer = requestReplicaListTransformerGenerator.getReplicaListTransformer(solrParams);
 
       for(Slice slice : slices) {
-        Collection<Replica> replicas = slice.getReplicas();
-        List<String> replicaUrls = new ArrayList<>();
-        for(Replica replica : replicas) {
+        List<Replica> sortedReplicas = new ArrayList<>();
+        for(Replica replica : slice.getReplicas()) {
           if(replica.getState() == Replica.State.ACTIVE && liveNodes.contains(replica.getNodeName())) {
-            ZkCoreNodeProps zkProps = new ZkCoreNodeProps(replica);
-            replicaUrls.add(zkProps.getCoreUrl());
+            sortedReplicas.add(replica);
           }
         }
 
-        replicaListTransformer.transform(replicaUrls);
-        shards.add(replicaUrls.get(0));
+        replicaListTransformer.transform(sortedReplicas);
+        if (sortedReplicas.size() > 0) {
+          shards.add(sortedReplicas.get(0).getCoreUrl());
+        }
       }
     }
     Object core = streamContext.get("core");
