@@ -153,6 +153,9 @@ Bug Fixes
 
 * SOLR-13762: Fix BinaryField support for non-binary wt's (Thomas Woeckinger via Jason Gerlowski)
 
+* SOLR-13882: Collections API COLSTATUS does not check live_nodes when reporting replica's status.
+  (Erick Erickson, Andrzej Białecki)
+
 Other Changes
 ---------------------
 
