@@ -38,6 +38,8 @@ New Features
 ---------------------
 (No changes)
 
+* SOLR-10786: Add DBSCAN clustering Streaming Evaluator (Joel Bernstein)
+
 Improvements
 ---------------------
 
