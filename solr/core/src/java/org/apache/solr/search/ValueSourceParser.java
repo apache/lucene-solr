@@ -758,6 +758,35 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       }
     });
 
+    addParser("spayload", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+        // spayload(field,value[,default])
+
+        TInfo tinfo = parseTerm(fp); // would have made this parser a new separate class and registered it, but this handy method is private :/
+
+        ValueSource defaultValueSource;
+        if (fp.hasMoreArguments()) {
+          defaultValueSource = fp.parseValueSource();
+        } else {
+          defaultValueSource = new LiteralValueSource("");
+        }
+
+        IndexSchema schema = fp.getReq().getCore().getLatestSchema();
+        final FieldType fieldType = schema.getFieldType(tinfo.field);
+
+        if (fieldType.getTypeName().equals("delimited_payloads_string")) {
+          return new StringPayloadValueSource(
+              tinfo.field,
+              tinfo.val,
+              tinfo.indexedField,
+              tinfo.indexedBytes.get(),
+              defaultValueSource);
+        }
+        return new LiteralValueSource("");
+      }
+    });
+
     addParser("true", new ValueSourceParser() {
       @Override
       public ValueSource parse(FunctionQParser fp) {

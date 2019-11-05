@@ -34,7 +34,8 @@ Upgrade Notes
 
 New Features
 ---------------------
-(No changes)
+
+* SOLR-13863: Added spayload query function to read and sort string payload field (delimited_payloads_string)
 
 Improvements
 ---------------------
