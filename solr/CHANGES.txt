@@ -115,6 +115,8 @@ New Features
   the configuration, APIs to read/edit them and isolated classloaders to load the classes from
   hose packages if the 'class' attribute is prefixed with `<package-name>:` (noble, Ishan Chattopadhyaya)
 
+* SOLR-10786: Add DBSCAN clustering Streaming Evaluator (Joel Bernstein)
+
 Improvements
 ---------------------
 
