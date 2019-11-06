@@ -35,13 +35,17 @@ import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.queries.intervals.IntervalQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Matches;
+import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.highlight.WeightedSpanTerm;
@@ -53,6 +57,7 @@ import org.apache.lucene.search.spans.SpanScorer;
 import org.apache.lucene.search.spans.Spans;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
+import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 /**
  * Helps the {@link FieldOffsetStrategy} with position sensitive queries (e.g. highlight phrases correctly).
@@ -73,6 +78,8 @@ public class PhraseHelper {
   private final boolean willRewrite;
   private final Predicate<String> fieldMatcher;
 
+  private final Set<Query> intervalQueryWrappers;
+
   /**
    * Constructor.
    * {@code rewriteQueryPred} is an extension hook to override the default choice of
@@ -92,7 +99,7 @@ public class PhraseHelper {
     // filter terms to those we want
     positionInsensitiveTerms = new HashSet<>();
     spanQueries = new HashSet<>();
-
+    intervalQueryWrappers = new HashSet<>();
     // TODO Have toSpanQuery(query) Function as an extension point for those with custom Query impls
 
     boolean[] mustRewriteHolder = {false}; // boolean wrapped in 1-ary array so it's mutable from inner class
@@ -169,6 +176,18 @@ public class PhraseHelper {
 
         spanQueries.add(spanQuery);
       }
+      
+      @Override
+      protected void extractWeightedSpanTerms(Map<String,WeightedSpanTerm> terms, IntervalQuery interval, float boost)
+          throws IOException {
+        // intervals are not rewriteable
+        if (fieldMatcher.test(interval.getField())) {
+          // if there's MTQ interval;
+          final CharacterRunAutomaton[] extractAutomata = MultiTermHighlighting.extractAutomata(query, fieldMatcher, true);
+          intervalQueryWrappers.add(query);
+          mustRewriteHolder[0] |= extractAutomata.length>0 && !ignoreQueriesNeedingRewrite;
+        }
+      }
 
       @Override
       protected boolean mustRewriteQuery(SpanQuery spanQuery) {
@@ -183,12 +202,23 @@ public class PhraseHelper {
   public Set<SpanQuery> getSpanQueries() {
     return spanQueries;
   }
+  
+  public Set<Query> getIntervalQueryWrappers() {
+    return intervalQueryWrappers;
+  }
+  
+  @Override
+  public String toString() {
+    return "PhraseHelper [fieldName=" + fieldName + ", positionInsensitiveTerms=" + positionInsensitiveTerms
+        + ", spanQueries=" + spanQueries + ", willRewrite=" + willRewrite + ", fieldMatcher=" + fieldMatcher
+        + ", intervalQueryWrappers=" + intervalQueryWrappers + "]";
+  }
 
   /**
    * If there is no position sensitivity then use of the instance of this class can be ignored.
    */
   public boolean hasPositionSensitivity() {
-    return spanQueries.isEmpty() == false;
+    return !spanQueries.isEmpty() || !intervalQueryWrappers.isEmpty();
   }
 
   /**
@@ -242,6 +272,141 @@ public class PhraseHelper {
         spansPriorityQueue.add(spans);
       }
     }
+    
+    for (Query query : intervalQueryWrappers) {
+      
+      IntervalQuery interval = (IntervalQuery) query; 
+      
+      Weight weight = searcher.createWeight(searcher.rewrite(query), ScoreMode.COMPLETE_NO_SCORES, 1);
+      final Matches matches = weight.matches(leafReader.getContext(), docId);
+      if (matches == null) {
+        continue;
+      }
+      final MatchesIterator matchesIter = matches.getMatches(interval.getField());
+      if (matchesIter == null) {
+        continue;
+      }
+      
+      if (matchesIter.next()) {
+        spansPriorityQueue.add(new Spans() {
+          
+          @Override
+          public int nextDoc() throws IOException {
+            throw new UnsupportedOperationException();
+          }
+          
+          @Override
+          public int docID() {
+            return docId;
+          }
+          
+          @Override
+          public long cost() {
+            throw new UnsupportedOperationException();
+          }
+          
+          @Override
+          public int advance(int target) throws IOException {
+            throw new UnsupportedOperationException();
+          }
+          
+          @Override
+          public int width() {
+            throw new UnsupportedOperationException();
+          }
+          
+          @Override
+          public int startPosition() {
+            return matchesIter.startPosition();
+          }
+          
+          @Override
+          public float positionsCost() {
+            throw new UnsupportedOperationException();
+          }
+          
+          @Override
+          public int nextStartPosition() throws IOException {
+            if (!matchesIter.next()) {
+              return NO_MORE_POSITIONS;
+            } else {
+              return startPosition(); 
+            }
+          }
+          
+          @Override
+          public int endPosition() {
+            return matchesIter.endPosition();
+          }
+          
+          @Override
+          public void collect(SpanCollector collector) throws IOException {
+            final MatchesIterator hit = matchesIter;
+            System.out.println(hit.getQuery());
+            final MatchesIterator subMatches = hit.getSubMatches();
+            final Query termQuery;
+            System.out.println(subMatches);
+            if (subMatches!=null) {
+              //if(subMatches.next()) {
+                termQuery = subMatches.getQuery();
+                System.out.print(termQuery);
+             //}
+            } else {
+              termQuery = null;
+            }
+            
+            
+            collector.collectLeaf(new PostingsEnum() {
+              
+              @Override
+              public int nextDoc() throws IOException {
+                throw new UnsupportedOperationException();
+              }
+              
+              @Override
+              public int docID() {
+                throw new UnsupportedOperationException();
+              }
+              
+              @Override
+              public long cost() {
+                throw new UnsupportedOperationException();
+              }
+              
+              @Override
+              public int advance(int target) throws IOException {
+                throw new UnsupportedOperationException();
+              }
+              
+              @Override
+              public int startOffset() throws IOException {
+                return hit.startOffset();
+              }
+              
+              @Override
+              public int nextPosition() throws IOException {
+                throw new UnsupportedOperationException();
+              }
+              
+              @Override
+              public BytesRef getPayload() throws IOException {
+                throw new UnsupportedOperationException();
+              }
+              
+              @Override
+              public int freq() throws IOException {
+                return 1;// what else ? 
+              }
+              
+              @Override
+              public int endOffset() throws IOException {
+                return hit.endOffset();
+              }
+            }, hit.startPosition(), ((TermQuery)termQuery).getTerm());
+          }
+        });
+      }
+    }
 
     // Iterate the Spans in the PriorityQueue, collecting as we go.  By using a PriorityQueue ordered by position,
     //   the underlying offsets in our collector will be mostly appended to the end of arrays (efficient).
@@ -253,6 +418,7 @@ public class PhraseHelper {
     OffsetSpanCollector spanCollector = new OffsetSpanCollector();
     while (spansPriorityQueue.size() > 0) {
       Spans spans = spansPriorityQueue.top();
+      System.out.print("popped: "+spans);
       //TODO limit to a capped endOffset length somehow so we can break this loop early
       spans.collect(spanCollector);
 
@@ -262,6 +428,7 @@ public class PhraseHelper {
         spansPriorityQueue.updateTop();
       }
     }
+    System.out.println(spanCollector.termToOffsetsEnums);
     results.addAll(spanCollector.termToOffsetsEnums.values());
   }
 
@@ -334,6 +501,7 @@ public class PhraseHelper {
         offsetsEnum = new SpanCollectedOffsetsEnum(term.bytes(), postings.freq());
         termToOffsetsEnums.put(term.bytes(), offsetsEnum);
       }
+      System.out.println(term.bytes().utf8ToString()+"->" +postings.startOffset() +" "+ postings.endOffset() );
       offsetsEnum.add(postings.startOffset(), postings.endOffset());
     }
 
@@ -412,6 +580,13 @@ public class PhraseHelper {
     public int endOffset() throws IOException {
       return endOffsets[enumIdx];
     }
+
+    @Override
+    public String toString() {
+      return "SpanCollectedOffsetsEnum [term=" + term + ", startOffsets=" + Arrays.toString(startOffsets)
+          + ", endOffsets=" + Arrays.toString(endOffsets) + ", numPairs=" + numPairs + ", enumIdx=" + enumIdx + "]";
+    }
+    
   }
 
 }

@@ -60,7 +60,11 @@ final class MultiTermHighlighting {
    * we can extract automata from.
    */
   public static boolean canExtractAutomataFromLeafQuery(Query query) {
-    return query instanceof AutomatonQuery || query instanceof FuzzyQuery;
+    final boolean oldMTQueries = query instanceof AutomatonQuery || query instanceof FuzzyQuery;
+    if (!oldMTQueries) {
+      
+    }
+    return oldMTQueries ;
   }
 
   private static class AutomataCollector extends QueryVisitor {

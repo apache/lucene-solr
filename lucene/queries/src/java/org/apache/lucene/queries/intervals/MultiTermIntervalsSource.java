@@ -26,8 +26,10 @@ import java.util.Objects;
 import java.util.function.Supplier;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.search.AutomatonQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.MatchesUtils;
@@ -53,9 +55,16 @@ class MultiTermIntervalsSource extends IntervalsSource {
 
     @Override
     public void visit(QueryVisitor visitor) {
-      
+      if (visitor.acceptField(field)) { 
+        // since MultiTermHighlighting visit wrapper the secondly 
+        visitor.visitLeaf(this);
+      }
     }
 
+    public String getField() {
+      return field;
+    }
+    
     @Override
     public boolean equals(Object obj) {
       return false;
@@ -136,7 +145,7 @@ class MultiTermIntervalsSource extends IntervalsSource {
   @Override
   public void visit(String field, QueryVisitor visitor) {
     if (visitor.acceptField(field)) {
-      visitor.visitLeaf(new HighlightingWrapper(field));
+      visitor.visitLeaf(new AutomatonQuery( new Term(field),automaton));
     }
   }
 

@@ -23,8 +23,6 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Objects;
 
-import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
-import com.carrotsearch.randomizedtesting.generators.RandomStrings;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
@@ -76,9 +74,15 @@ import org.apache.lucene.util.UnicodeUtil;
 import org.junit.After;
 import org.junit.Before;
 
+import com.carrotsearch.randomizedtesting.annotations.ParametersFactory;
+import com.carrotsearch.randomizedtesting.annotations.Repeat;
+import com.carrotsearch.randomizedtesting.generators.RandomStrings;
+
 /**
  * Some tests that highlight wildcard, fuzzy, etc queries.
  */
+//@Seed("A27E4C63FED2F19F") 
+@Repeat(iterations = 20)
 public class TestUnifiedHighlighterMTQ extends LuceneTestCase {
 
   final FieldType fieldType;
@@ -88,7 +92,7 @@ public class TestUnifiedHighlighterMTQ extends LuceneTestCase {
 
   @ParametersFactory
   public static Iterable<Object[]> parameters() {
-    return UHTestHelper.parametersFactoryList();
+    return Collections.singleton((UHTestHelper.parametersFactoryList()).iterator().next());
   }
 
   public TestUnifiedHighlighterMTQ(FieldType fieldType) {
@@ -582,6 +586,7 @@ public class TestUnifiedHighlighterMTQ extends LuceneTestCase {
     ir.close();
   }
 
+  //@Seed("75B4121D5B6137A5")
   public void testSpanNear() throws Exception {
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, indexAnalyzer);
 
@@ -595,25 +600,34 @@ public class TestUnifiedHighlighterMTQ extends LuceneTestCase {
     iw.addDocument(doc);
 
     IndexReader ir = iw.getReader();
-    iw.close();
+    try {
+      iw.close();
 
-    IndexSearcher searcher = newSearcher(ir);
-    UnifiedHighlighter highlighter = randomUnifiedHighlighter(searcher, indexAnalyzer);
-    SpanQuery childQuery = new SpanMultiTermQueryWrapper<>(new WildcardQuery(new Term("body", "te*")));
-    Query spanQuery = new SpanNearQuery(new SpanQuery[]{childQuery, childQuery}, 0, false);
-    for (Query query: Arrays.asList(spanQuery,
-        new IntervalQuery("body", Intervals.prefix(new BytesRef("te"))),
-        new IntervalQuery("body", Intervals.or(Intervals.wildcard(new BytesRef("t??t")),
-            Intervals.wildcard(new BytesRef("t??t"))))
-        ) ) {
-    TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
-    assertEquals(2, topDocs.totalHits.value);
-    String snippets[] = highlighter.highlight("body", query, topDocs);
-    assertEquals(2, snippets.length);
-    assertEquals("This is a <b>test</b>.", snippets[0]);
-    assertEquals("<b>Test</b> a one sentence document.", snippets[1]);
+      IndexSearcher searcher = newSearcher(ir);
+      UnifiedHighlighter highlighter = randomUnifiedHighlighter(searcher, indexAnalyzer);
+      SpanQuery childQuery = new SpanMultiTermQueryWrapper<>(new WildcardQuery(new Term("body", "te*")));
+      Query spanQuery = new SpanNearQuery(new SpanQuery[] {childQuery, childQuery}, 0, false);
+      highlighter.setHighlightPhrasesStrictly(false);
+      for (Query query : Arrays.asList( //spanQuery//,
+          new IntervalQuery("body", Intervals.or(Intervals.wildcard(new BytesRef("t??t")),Intervals.wildcard(new BytesRef("t??t"))))
+          
+          // Intervals.prefix(new BytesRef("te")))
+      // ,
+      // new IntervalQuery("body", Intervals.or(Intervals.wildcard(new BytesRef("t??t")),
+      // Intervals.wildcard(new BytesRef("t??t"))))
+      )) {
+        TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
+        assertEquals(2, topDocs.totalHits.value);
+        String snippets[] = highlighter.highlight("body", query, topDocs);
+        assertEquals("" + query, 2, snippets.length);
+        assertEquals("" + query, "This is a <b>test</b>.", snippets[0]);
+        assertEquals("" + query, "<b>Test</b> a one sentence document.", snippets[1]);
+      }
+    } finally {
+      if (ir != null) {
+        ir.close();
+      }
     }
-    ir.close();
   }
 
   public void testSpanNot() throws Exception {

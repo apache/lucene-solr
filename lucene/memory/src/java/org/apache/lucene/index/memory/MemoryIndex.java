@@ -583,7 +583,7 @@ public class MemoryIndex {
       stream.reset();
 
       while (stream.incrementToken()) {
-//        if (DEBUG) System.err.println("token='" + term + "'");
+/*/        if (DEBUG)*/ System.err.println("token='" + termAtt.getBytesRef() + "'");
         info.numTokens++;
         final int posIncr = posIncrAttribute.getPositionIncrement();
         if (posIncr == 0) {

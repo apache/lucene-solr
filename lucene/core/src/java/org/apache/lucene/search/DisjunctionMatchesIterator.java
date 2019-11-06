@@ -236,7 +236,7 @@ final class DisjunctionMatchesIterator implements MatchesIterator {
 
   @Override
   public MatchesIterator getSubMatches() throws IOException {
-    return queue.top().getSubMatches();
+    return queue.top();//.getSubMatches();
   }
 
   @Override

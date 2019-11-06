@@ -568,6 +568,7 @@ public class UnifiedHighlighter {
 
     // Init field highlighters (where most of the highlight logic lives, and on a per field basis)
     Set<Term> queryTerms = extractTerms(query);
+    System.out.println(queryTerms);
     FieldHighlighter[] fieldHighlighters = new FieldHighlighter[fields.length];
     int numTermVectors = 0;
     int numPostings = 0;
@@ -754,6 +755,7 @@ public class UnifiedHighlighter {
   protected FieldHighlighter getFieldHighlighter(String field, Query query, Set<Term> allTerms, int maxPassages) {
     UHComponents components = getHighlightComponents(field, query, allTerms);
     OffsetSource offsetSource = getOptimizedOffsetSource(components);
+    System.out.println("fixed offSrc: "+offsetSource);
     return new FieldHighlighter(field,
         getOffsetStrategy(offsetSource, components),
         new SplittingBreakIterator(getBreakIterator(field), UnifiedHighlighter.MULTIVAL_SEP_CHAR),
@@ -774,6 +776,7 @@ public class UnifiedHighlighter {
       terms = filterExtractedTerms(fieldMatcher, allTerms);
       automata = getAutomata(field, query, highlightFlags);
     } // otherwise don't need to extract
+    System.out.println(highlightFlags+ " "+phraseHelper+" terms:"+Arrays.toString(terms)+" automata:"+Arrays.toString(automata));
     return new UHComponents(field, fieldMatcher, query, terms, phraseHelper, automata, queryHasUnrecognizedPart, highlightFlags);
   }
 
@@ -802,7 +805,7 @@ public class UnifiedHighlighter {
     // Strip off the redundant field and sort the remaining terms
     SortedSet<BytesRef> filteredTerms = new TreeSet<>();
     for (Term term : queryTerms) {
-      if (fieldMatcher.test(term.field())) {
+      if (fieldMatcher.test(term.field()) && term.bytes().length>0) {
         filteredTerms.add(term.bytes());
       }
     }
@@ -858,6 +861,7 @@ public class UnifiedHighlighter {
     boolean mtqOrRewrite = components.getAutomata() == null || components.getAutomata().length > 0
         || components.getPhraseHelper().willRewrite() || components.hasUnrecognizedQueryPart();
 
+    System.out.println("intially: "+offsetSource+" mtrOrRW:"+mtqOrRewrite);
     // null terms means unknown, so assume something to highlight
     if (mtqOrRewrite == false && components.getTerms() != null && components.getTerms().length == 0) {
       return OffsetSource.NONE_NEEDED; //nothing to highlight

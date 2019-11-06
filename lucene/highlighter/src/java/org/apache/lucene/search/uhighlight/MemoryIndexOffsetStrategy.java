@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.FilteringTokenFilter;
@@ -28,7 +29,7 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.memory.MemoryIndex;
-import org.apache.lucene.search.spans.SpanQuery;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
@@ -67,11 +68,16 @@ public class MemoryIndexOffsetStrategy extends AnalysisOffsetStrategy {
       allAutomata.add(new CharacterRunAutomaton(Automata.makeStringUnion(Arrays.asList(components.getTerms()))));
     }
     Collections.addAll(allAutomata, components.getAutomata());
-    for (SpanQuery spanQuery : components.getPhraseHelper().getSpanQueries()) {
-      Collections.addAll(allAutomata,
-          MultiTermHighlighting.extractAutomata(spanQuery, components.getFieldMatcher(), true));//true==lookInSpan
+    
+    final List<Set<? extends Query>> listOfQueriesList = Arrays.asList(components.getPhraseHelper().getSpanQueries(),
+        components.getPhraseHelper().getIntervalQueryWrappers());
+    for (Set<? extends Query> queries : listOfQueriesList) {
+      for (Query q : queries) {
+        Collections.addAll(allAutomata,
+            MultiTermHighlighting.extractAutomata(q, components.getFieldMatcher(), true));//true==lookInSpan
+      }
     }
-
+    System.out.println("queries:"+listOfQueriesList+", automataz: "+allAutomata);
     if (allAutomata.size() == 1) {
       return allAutomata.get(0);
     }

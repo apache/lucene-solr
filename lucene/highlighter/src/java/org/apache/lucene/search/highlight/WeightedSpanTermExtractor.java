@@ -46,16 +46,21 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
+import org.apache.lucene.search.Matches;
+import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SynonymQuery;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.spans.FieldMaskingSpanQuery;
 import org.apache.lucene.search.spans.SpanFirstQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
@@ -233,11 +238,11 @@ public class WeightedSpanTermExtractor {
       //nothing
     } else if (query instanceof FunctionScoreQuery) {
       extract(((FunctionScoreQuery) query).getWrappedQuery(), boost, terms);
-    } else if (isQueryUnsupported(query.getClass())) {
-      // nothing
     } else if (query instanceof IntervalQuery) {
       IntervalQuery interval = (IntervalQuery) query;
-      //interval.
+      extractWeightedSpanTerms(terms, interval, boost);
+    } else if (isQueryUnsupported(query.getClass())) {
+      // nothing
     } else {
       if (query instanceof MultiTermQuery &&
           (!expandMultiTermQuery || !fieldNameComparator(((MultiTermQuery)query).getField()))) {
@@ -257,6 +262,104 @@ public class WeightedSpanTermExtractor {
         extract(rewritten, boost, terms);
       } else {
         extractUnknownQuery(query, terms);
+      }
+    }
+  }
+
+  protected void extractWeightedSpanTerms(Map<String,WeightedSpanTerm> terms, IntervalQuery interval, float boost) throws IOException {
+    Set<String> fieldNames;
+
+    if (fieldName == null) {
+      fieldNames = new HashSet<>();
+      interval.visit(new QueryVisitor() {
+        @Override
+        public void consumeTerms(Query query, Term... terms) {
+          for (Term t : terms) {
+            fieldNames.add(t.field());
+          }
+        }
+      });      //collectSpanQueryFields(spanQuery, fieldNames);
+    } else {
+      fieldNames = new HashSet<>(1);
+      fieldNames.add(fieldName);
+    }
+    // To support the use of the default field name
+    if (defaultField != null) {
+      fieldNames.add(defaultField);
+    }
+    
+    Map<String, SpanQuery> queries = new HashMap<>();
+ 
+    Set<Term> nonWeightedTerms = new HashSet<>();
+    final boolean mustRewriteQuery = false;//mustRewriteQuery(spanQuery);
+    final IndexSearcher searcher = new IndexSearcher(getLeafContext());
+    searcher.setQueryCache(null);
+    /*if (mustRewriteQuery) {
+      for (final String field : fieldNames) {
+        final SpanQuery rewrittenQuery = (SpanQuery) spanQuery.rewrite(getLeafContext().reader());
+        queries.put(field, rewrittenQuery);
+        rewrittenQuery.visit(QueryVisitor.termCollector(nonWeightedTerms));
+      }
+    } else*/ {
+      interval.visit(QueryVisitor.termCollector(nonWeightedTerms));
+    }
+
+    List<PositionSpan> spanPositions = new ArrayList<>();
+
+    final Query q;
+    /*if (mustRewriteQuery) {
+      q = queries.get(field);
+    } else {
+      q = spanQuery;
+    }*/
+    q = interval;
+    LeafReaderContext context = getLeafContext();
+    Weight w =  searcher.createWeight(searcher.rewrite(q), ScoreMode.COMPLETE_NO_SCORES, 1);
+    Bits acceptDocs = context.reader().getLiveDocs();
+    final Scorer scorer = w.scorer(context);
+    DocIdSetIterator iter;
+    if (scorer == null || (iter = scorer.iterator())==null) {
+      return;
+    }
+
+    // collect span positions
+    while (iter.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+      if (acceptDocs != null && acceptDocs.get(iter.docID()) == false) {
+        continue;
+      }
+      final Matches matches = w.matches(context, iter.docID());
+      for (final String field : fieldNames) {
+        for (MatchesIterator matchesIter = matches.getMatches(field); matchesIter != null && matchesIter.next();) {
+          spanPositions.add(new PositionSpan(matchesIter.startPosition(), matchesIter.endPosition() - 1));
+        }
+      }
+    }
+
+    if (spanPositions.size() == 0) {
+      // no spans found
+      return;
+    }
+
+    weightTerms(nonWeightedTerms, boost, spanPositions, terms);
+  }
+
+  private void weightTerms(Set<Term> termsToWeight, float boost, List<PositionSpan> spanPositions,
+      Map<String,WeightedSpanTerm> weightsByTermsTextToUpdate) {
+    for (final Term queryTerm :  termsToWeight) {
+
+      if (fieldNameComparator(queryTerm.field())) {
+        WeightedSpanTerm weightedSpanTerm = weightsByTermsTextToUpdate.get(queryTerm.text());
+
+        if (weightedSpanTerm == null) {
+          weightedSpanTerm = new WeightedSpanTerm(boost, queryTerm.text());
+          weightedSpanTerm.addPositionSpans(spanPositions);
+          weightedSpanTerm.positionSensitive = true;
+          weightsByTermsTextToUpdate.put(queryTerm.text(), weightedSpanTerm);
+        } else {
+          if (spanPositions.size() > 0) {
+            weightedSpanTerm.addPositionSpans(spanPositions);
+          }
+        }
       }
     }
   }
@@ -352,23 +455,7 @@ public class WeightedSpanTermExtractor {
       return;
     }
 
-    for (final Term queryTerm :  nonWeightedTerms) {
-
-      if (fieldNameComparator(queryTerm.field())) {
-        WeightedSpanTerm weightedSpanTerm = terms.get(queryTerm.text());
-
-        if (weightedSpanTerm == null) {
-          weightedSpanTerm = new WeightedSpanTerm(boost, queryTerm.text());
-          weightedSpanTerm.addPositionSpans(spanPositions);
-          weightedSpanTerm.positionSensitive = true;
-          terms.put(queryTerm.text(), weightedSpanTerm);
-        } else {
-          if (spanPositions.size() > 0) {
-            weightedSpanTerm.addPositionSpans(spanPositions);
-          }
-        }
-      }
-    }
+    weightTerms(nonWeightedTerms, boost, spanPositions, terms);
   }
 
   /**

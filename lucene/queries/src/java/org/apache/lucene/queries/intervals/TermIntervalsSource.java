@@ -208,7 +208,11 @@ class TermIntervalsSource extends IntervalsSource {
 
       @Override
       public Query getQuery() {
-        return query;
+        try {
+          return new TermQuery(new Term(((IntervalQuery)query).getField(),te.term()));
+        } catch (IOException e) {
+          throw new RuntimeException(e);
+        }
       }
     };
   }

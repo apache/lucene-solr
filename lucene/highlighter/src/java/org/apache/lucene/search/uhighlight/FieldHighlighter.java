@@ -47,6 +47,7 @@ public class FieldHighlighter {
                           PassageFormatter passageFormatter) {
     this.field = field;
     this.fieldOffsetStrategy = fieldOffsetStrategy;
+    System.out.print(field+" -> "+fieldOffsetStrategy);
     this.breakIterator = breakIterator;
     this.passageScorer = passageScorer;
     this.maxPassages = maxPassages;
