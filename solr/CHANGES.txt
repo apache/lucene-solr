@@ -37,12 +37,18 @@ Upgrade Notes
 New Features
 ---------------------
 
+* SOLR-13821: A Package store to store and load package artifacts (noble, Ishan Chattopadhyaya)
+
+* SOLR-13822: A Package management system with the following features. A packages.json in ZK to store
+  the configuration, APIs to read/edit them and isolated classloaders to load the classes from
+  hose packages if the 'class' attribute is prefixed with `<package-name>:` (noble, Ishan Chattopadhyaya)
+  
 * SOLR-10786: Add DBSCAN clustering Streaming Evaluator (Joel Bernstein)
 
 Improvements
 ---------------------
 
-*SOLR-13731: javabin must support a 1:1 mapping of the JSON update format (noble)
+* SOLR-13731: 'javabin' must support a 1:1 mapping of the JSON update format (noble)
 
 * SOLR-13831: Support defining arbitrary autoscaling simulation scenarios. (ab)
 
@@ -84,6 +90,8 @@ Other Changes
 ---------------------
 
 * SOLR-12769: Fix incorrect documentation for 'delete' op in Request parameters API (Alexandre Rafalovitch, Munendra S N)
+
+* SOLR-13841: Provide mappings for jackson annotation @JsonProperty to use Jackson deserializer (noble)
 
 * SOLR-13824: Strictly reject anything after JSON in most APIs (Mikhail Khludnev, Munendra S N)
 

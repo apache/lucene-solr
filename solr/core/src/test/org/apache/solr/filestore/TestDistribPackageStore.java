@@ -17,9 +17,6 @@
 
 package org.apache.solr.filestore;
 
-import static org.apache.solr.common.util.Utils.JAVABINCONSUMER;
-import static org.apache.solr.core.TestDynamicLoading.getFileContent;
-
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -30,6 +27,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.function.Predicate;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -50,9 +48,10 @@ import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.server.ByteBufferInputStream;
 
-import com.google.common.collect.ImmutableSet;
+import static org.apache.solr.common.util.Utils.JAVABINCONSUMER;
+import static org.apache.solr.core.TestDynamicLoading.getFileContent;
 
-@LogLevel("org.apache.solr.core.PackageStoreAPI=DEBUG;org.apache.solr.core.DistribPackageStore=DEBUG")
+@LogLevel("org.apache.solr.filestore.PackageStoreAPI=DEBUG;org.apache.solr.filestore.DistribPackageStore=DEBUG")
 public class TestDistribPackageStore extends SolrCloudTestCase {
 
   public void testPackageStoreManagement() throws Exception {
@@ -105,54 +104,26 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
           )
       );
 
-      class Fetcher implements Callable {
-        String url;
-        JettySolrRunner jetty;
-        Fetcher(String s, JettySolrRunner jettySolrRunner){
-          this.url = s;
-          this.jetty = jettySolrRunner;
-        }
-        @Override
-        public NavigableObject call() throws Exception {
-          try (HttpSolrClient solrClient = (HttpSolrClient) jetty.newClient()) {
-            return (NavigableObject) Utils.executeGET(solrClient.getHttpClient(), this.url, JAVABINCONSUMER);
-          }
-        }
-
-        @Override
-        public String toString() {
-          return url;
-        }
-
-      }
-
       Map expected = Utils.makeMap(
           ":files:/package/mypkg/v1.0/runtimelibs.jar:name", "runtimelibs.jar",
           ":files:/package/mypkg/v1.0[0]:sha512", "d01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420"
 
       );
-      for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
-        String baseUrl = jettySolrRunner.getBaseUrl().toString().replace("/solr", "/api");
-        String url = baseUrl + "/node/files/package/mypkg/v1.0/runtimelibs.jar?wt=javabin&meta=true";
+      waitForAllNodesHaveFile(cluster,"/package/mypkg/v1.0/runtimelibs.jar", expected, true);
 
-        assertResponseValues(10, new Fetcher(url, jettySolrRunner), expected);
-
-        try (HttpSolrClient solrClient = (HttpSolrClient) jettySolrRunner.newClient()) {
-          ByteBuffer buf = Utils.executeGET(solrClient.getHttpClient(), baseUrl + "/node/files/package/mypkg/v1.0/runtimelibs.jar",
-              Utils.newBytesConsumer(Integer.MAX_VALUE));
-          assertEquals(
-              "d01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420",
-              DigestUtils.sha512Hex(new ByteBufferInputStream(buf))
-          );
-
-        }
-
-      }
 
       postFile(cluster.getSolrClient(), getFileContent("runtimecode/runtimelibs_v2.jar.bin"),
           "/package/mypkg/v1.0/runtimelibs_v2.jar",
           null
       );
+      expected = Utils.makeMap(
+          ":files:/package/mypkg/v1.0/runtimelibs_v2.jar:name", "runtimelibs_v2.jar",
+          ":files:/package/mypkg/v1.0[0]:sha512",
+          "bc5ce45ad281b6a08fb7e529b1eb475040076834816570902acb6ebdd809410e31006efdeaa7f78a6c35574f3504963f5f7e4d92247d0eb4db3fc9abdda5d417"
+
+      );
+      waitForAllNodesHaveFile(cluster,"/package/mypkg/v1.0/runtimelibs_v2.jar", expected, false);
+
 
       expected = Utils.makeMap(
           ":files:/package/mypkg/v1.0", (Predicate<Object>) o -> {
@@ -179,6 +150,48 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
     } finally {
       cluster.shutdown();
     }
+  }
+
+  public static void waitForAllNodesHaveFile(MiniSolrCloudCluster cluster, String path, Map expected , boolean verifyContent) throws Exception {
+    for (JettySolrRunner jettySolrRunner : cluster.getJettySolrRunners()) {
+      String baseUrl = jettySolrRunner.getBaseUrl().toString().replace("/solr", "/api");
+      String url = baseUrl + "/node/files" + path + "?wt=javabin&meta=true";
+      assertResponseValues(10, new Fetcher(url, jettySolrRunner), expected);
+
+      if(verifyContent) {
+        try (HttpSolrClient solrClient = (HttpSolrClient) jettySolrRunner.newClient()) {
+          ByteBuffer buf = Utils.executeGET(solrClient.getHttpClient(), baseUrl + "/node/files" + path,
+              Utils.newBytesConsumer(Integer.MAX_VALUE));
+          assertEquals(
+              "d01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420",
+              DigestUtils.sha512Hex(new ByteBufferInputStream(buf))
+          );
+
+        }
+      }
+
+    }
+  }
+
+  static class Fetcher implements Callable {
+    String url;
+    JettySolrRunner jetty;
+    Fetcher(String s, JettySolrRunner jettySolrRunner){
+      this.url = s;
+      this.jetty = jettySolrRunner;
+    }
+    @Override
+    public NavigableObject call() throws Exception {
+      try (HttpSolrClient solrClient = (HttpSolrClient) jetty.newClient()) {
+        return (NavigableObject) Utils.executeGET(solrClient.getHttpClient(), this.url, JAVABINCONSUMER);
+      }
+    }
+
+    @Override
+    public String toString() {
+      return url;
+    }
+
   }
 
   public static NavigableObject assertResponseValues(int repeats, SolrClient client, SolrRequest req, Map vals) throws Exception {
@@ -224,7 +237,7 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
 
 
 
-  private void postFile(SolrClient client, ByteBuffer buffer, String name, String sig)
+  public static void postFile(SolrClient client, ByteBuffer buffer, String name, String sig)
       throws SolrServerException, IOException {
     String resource = "/cluster/files" + name;
     ModifiableSolrParams params = new ModifiableSolrParams();

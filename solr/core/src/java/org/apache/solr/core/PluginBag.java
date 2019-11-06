@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -43,8 +44,10 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.component.SearchComponent;
+import org.apache.solr.pkg.PackagePluginHolder;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
+import org.apache.solr.update.processor.UpdateRequestProcessorChain.LazyUpdateProcessorFactoryHolder;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.CryptoKeys;
 import org.apache.solr.util.SimplePostTool;
@@ -97,7 +100,7 @@ public class PluginBag<T> implements AutoCloseable {
     this(klass, core, false);
   }
 
-  static void initInstance(Object inst, PluginInfo info) {
+  public static void initInstance(Object inst, PluginInfo info) {
     if (inst instanceof PluginInfoInitialized) {
       ((PluginInfoInitialized) inst).init(info);
     } else if (inst instanceof NamedListInitializedPlugin) {
@@ -138,14 +141,23 @@ public class PluginBag<T> implements AutoCloseable {
       log.debug("{} : '{}' created with startup=lazy ", meta.getCleanTag(), info.name);
       return new LazyPluginHolder<T>(meta, info, core, core.getResourceLoader(), false);
     } else {
-      T inst = core.createInstance(info.className, (Class<T>) meta.clazz, meta.getCleanTag(), null, core.getResourceLoader());
-      initInstance(inst, info);
-      return new PluginHolder<>(info, inst);
+      if (info.pkgName != null) {
+        PackagePluginHolder<T> holder = new PackagePluginHolder<>(info, core, meta);
+        return meta.clazz == UpdateRequestProcessorFactory.class ?
+            new PluginHolder(info, new LazyUpdateProcessorFactoryHolder(holder)) :
+            holder;
+      } else {
+        T inst = core.createInstance(info.className, (Class<T>) meta.clazz, meta.getCleanTag(), null, core.getResourceLoader(info.pkgName));
+        initInstance(inst, info);
+        return new PluginHolder<>(info, inst);
+      }
     }
   }
 
-  /** make a plugin available in an alternate name. This is an internal API and not for public use
-   * @param src key in which the plugin is already registered
+  /**
+   * make a plugin available in an alternate name. This is an internal API and not for public use
+   *
+   * @param src    key in which the plugin is already registered
    * @param target the new key in which the plugin should be aliased to. If target exists already, the alias fails
    * @return flag if the operation is successful or not
    */
@@ -340,8 +352,8 @@ public class PluginBag<T> implements AutoCloseable {
    * An indirect reference to a plugin. It just wraps a plugin instance.
    * subclasses may choose to lazily load the plugin
    */
-  public static class PluginHolder<T> implements AutoCloseable {
-    private T inst;
+  public static class PluginHolder<T> implements Supplier<T>,  AutoCloseable {
+    protected T inst;
     protected final PluginInfo pluginInfo;
     boolean registerAPI = false;
 

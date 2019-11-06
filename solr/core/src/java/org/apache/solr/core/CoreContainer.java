@@ -101,6 +101,7 @@ import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.search.SolrFieldCacheBean;
@@ -224,6 +225,7 @@ public class CoreContainer {
   protected volatile AutoscalingHistoryHandler autoscalingHistoryHandler;
 
   private PackageStoreAPI packageStoreAPI;
+  private PackageLoader packageLoader;
 
 
   // Bits for the state variable.
@@ -583,6 +585,13 @@ public class CoreContainer {
     return replayUpdatesExecutor;
   }
 
+  public PackageLoader getPackageLoader() {
+    return packageLoader;
+  }
+
+  public PackageStoreAPI getPackageStoreAPI() {
+    return packageStoreAPI;
+  }
   //-------------------------------------------------------------------
   // Initialization / Cleanup
   //-------------------------------------------------------------------
@@ -735,7 +744,11 @@ public class CoreContainer {
 
     if (isZooKeeperAware()) {
       metricManager.loadClusterReporters(metricReporters, this);
+      packageLoader = new PackageLoader(this);
+      containerHandlers.getApiBag().register(new AnnotatedApi(packageLoader.getPackageAPI().editAPI), Collections.EMPTY_MAP);
+      containerHandlers.getApiBag().register(new AnnotatedApi(packageLoader.getPackageAPI().readAPI), Collections.EMPTY_MAP);
     }
+
 
     // setup executor to load cores in parallel
     ExecutorService coreLoadExecutor = MetricUtils.instrumentedExecutorService(
@@ -1049,6 +1062,9 @@ public class CoreContainer {
       log.warn("Exception while closing auditlogger plugin.", e);
     }
 
+    if(packageLoader != null){
+      org.apache.lucene.util.IOUtils.closeWhileHandlingException(packageLoader);
+    }
     org.apache.lucene.util.IOUtils.closeWhileHandlingException(loader); // best effort
   }
 

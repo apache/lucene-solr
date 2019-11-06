@@ -21,15 +21,22 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCase;
-import org.apache.solr.client.solrj.io.eval.*;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorDay;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorDayOfQuarter;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorDayOfYear;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorEpoch;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorHour;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorMinute;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorMonth;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorQuarter;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorSecond;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorWeek;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorYear;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-
-
 import org.junit.Test;
 
 @Slow

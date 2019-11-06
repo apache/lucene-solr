@@ -45,11 +45,11 @@ public interface PackageStore {
   /**
    * read file content from a given path
    */
-  void get(String path, Consumer<FileEntry> filecontent) throws IOException;
+  void get(String path, Consumer<FileEntry> filecontent, boolean getMissing) throws IOException;
 
   /**
    * Fetch a resource from another node
-   * internal
+   * internal API
    */
   boolean fetch(String path, String from);
 
@@ -63,7 +63,7 @@ public interface PackageStore {
   /**
    * The type of the resource
    */
-  FileType getType(String path);
+  FileType getType(String path, boolean fetchMissing);
 
   public class FileEntry {
     final ByteBuffer buf;
