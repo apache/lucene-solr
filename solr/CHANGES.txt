@@ -36,7 +36,8 @@ Upgrade Notes
 
 New Features
 ---------------------
-(No changes)
+
+* SOLR-10786: Add DBSCAN clustering Streaming Evaluator (Joel Bernstein)
 
 Improvements
 ---------------------
@@ -46,6 +47,8 @@ Improvements
 * SOLR-13831: Support defining arbitrary autoscaling simulation scenarios. (ab)
 
 * SOLR-13865: Move replica routing code to SolrJ. (Houston Putman via Tomas Fernandez-Lobbe)
+
+* SOLR-13844: Remove replica recovery terms with the replica term (Houston Putman via Cao Manh Dat)
 
 
 Optimizations
@@ -71,6 +74,11 @@ Bug Fixes
 
 * SOLR-13207: In dismax and edismax "minimum should match" queries, the < operator not followed by a number will now return
   an HTTP 400 error rather than 500, and the error message will explain that < must be followed by a number. (Chris Hennick)
+
+* SOLR-13762: Fix BinaryField support for non-binary wt's (Thomas Woeckinger via Jason Gerlowski)
+
+* SOLR-13882: Collections API COLSTATUS does not check live_nodes when reporting replica's status.
+  (Erick Erickson, Andrzej Białecki)
 
 Other Changes
 ---------------------

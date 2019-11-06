@@ -5200,14 +5200,10 @@ public class MathExpressionTest extends SolrCloudTestCase {
   // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 04-May-2018
   public void testGammaDistribution() throws Exception {
     String cexpr = "#comment\nlet(echo=true, " +
-        "a=describe(sample(gammaDistribution(1, 10),10000)), " +
-        "\n# commment\n"+
-        "b=describe(sample(gammaDistribution(3, 10),10000)), " +
-        "c=describe(sample(gammaDistribution(5, 10),10000))," +
-        "d=describe(sample(gammaDistribution(7, 10),10000))," +
-        "e=mean(sample(gammaDistribution(1, 10),10000))," +
-        "f=mean(sample(gammaDistribution(1, 20),10000))," +
-        "g=mean(sample(gammaDistribution(1, 30),10000)))";
+        "a=gammaDistribution(1, 10)," +
+        "b=sample(a, 10)," +
+        "c=cumulativeProbability(a, 5.10)," +
+        "d=probability(a, 5, 6))";
 
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
     paramsLoc.set("expr", cexpr);
@@ -5217,30 +5213,13 @@ public class MathExpressionTest extends SolrCloudTestCase {
     StreamContext context = new StreamContext();
     solrStream.setStreamContext(context);
     List<Tuple> tuples = getTuples(solrStream);
-    assertTrue(tuples.size() == 1);
-    Map a = (Map)tuples.get(0).get("a");
-    Map b = (Map)tuples.get(0).get("b");
-    Map c = (Map)tuples.get(0).get("c");
-    Map d = (Map)tuples.get(0).get("d");
-
-    Number sa = (Number)a.get("skewness");
-    Number sb = (Number)b.get("skewness");
-    Number sc = (Number)c.get("skewness");
-    Number sd = (Number)d.get("skewness");
-
-    //Test shape change
-    assertTrue(sa.doubleValue() + " " + sb.doubleValue(), sa.doubleValue() >= sb.doubleValue());
-    assertTrue(sb.doubleValue() + " " + sc.doubleValue(), sb.doubleValue() >= sc.doubleValue());
-    assertTrue(sc.doubleValue() + " " + sd.doubleValue(), sc.doubleValue() >= sd.doubleValue());
-
-    //Test scale change
-
-    Number e = (Number)tuples.get(0).get("e");
-    Number f = (Number)tuples.get(0).get("f");
-    Number g = (Number)tuples.get(0).get("g");
-
-    assertTrue(e.doubleValue() < f.doubleValue());
-    assertTrue(f.doubleValue() < g.doubleValue());
+    assertEquals(tuples.size(), 1);
+    List<Number> b = (List<Number>)tuples.get(0).get("b");
+    assertEquals(10, b.size());
+    Number c = (Number)tuples.get(0).get("c");
+    assertEquals(c.doubleValue(), 0.39950442118773394D, 0);
+    Number d = (Number)tuples.get(0).get("d");
+    assertEquals(d.doubleValue(), 0.05771902361860709D, 0);
   }
 
   @Test
