@@ -72,8 +72,7 @@ import org.jsoup.select.NodeVisitor;
  *
  * <p>
  * This tool parses the generated HTML site, looking for these situations in order to fail the build, since
- * (depending on the type of check) these situations will result in inconsistent/broken HTML, or equivalent
- * problems in the generated PDF.
+ * (depending on the type of check) these situations will result in inconsistent/broken HTML.
  * </p>
  * <p>
  * This tool supports 2 command line options:
@@ -173,7 +172,7 @@ public class CheckLinksAndAnchors { // TODO: rename this class now that it does 
 
       // use this for error reporting if an ID exists multiple times in a single document
       final Map<String,List<Element>> idsToNodes = new HashMap<>();
-      
+
       final String fileContents = readFile(file.getPath());
       final Document doc = Jsoup.parse(fileContents);
 
@@ -190,7 +189,6 @@ public class CheckLinksAndAnchors { // TODO: rename this class now that it does 
       if (bareBones) {
         // It's a pain in the ass to customize the HTML output structure asciidoctor's bare-bones html5 backend
         // so instead we "fake" that the body tag contains the attribute we use in jekyll
-        // (and what gets added explicitly to each top level section in the PDF)
         nodesWithIds.add(new Element(Tag.valueOf("body"), "").attr("id", file.getName().replaceAll("\\.html$","")));
       } else {
         // We have to add Jekyll's <body> to the nodesWithIds so we check the main section anchor as well
@@ -225,7 +223,7 @@ public class CheckLinksAndAnchors { // TODO: rename this class now that it does 
         idsInThisFile.add(id);
         totalIds++; // Note: we specifically don't count 'preamble'
       }
-      
+
       // check for (relative) links that don't include a fragment
       final Elements links = mainContent.select("a[href]");
       for (Element link : links) {
