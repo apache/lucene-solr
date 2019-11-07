@@ -26,7 +26,7 @@
 // through ant -- we could use gradle's expand when copying or at least use some more humane
 // property names.
 
-// TODO 3: task names currently roughly correspond to ant tasks. Simpler aliases (such as 'html', 'pdf')
+// TODO 3: task names currently roughly correspond to ant tasks. Simpler aliases (such as 'html')
 // would be much clearer.
 
 // TODO 4: currently buildscript dependencies are hardcoded (asciidoctor) because they can't be resolved
@@ -46,7 +46,6 @@ buildscript {
 
     dependencies {
         classpath "org.asciidoctor:asciidoctorj:1.6.0-alpha.5"
-        classpath "org.asciidoctor:asciidoctorj-pdf:1.5.0-alpha.16"
     }
 }
 
@@ -68,7 +67,6 @@ dependencies {
     tools('org.asciidoctor:asciidoctorj')
     tools('com.vaadin.external.google:android-json')
     tools('org.jsoup:jsoup')
-    tools('org.apache.pdfbox:pdfbox')
     tools('org.slf4j:jcl-over-slf4j')
     tools('org.slf4j:slf4j-api')
     tools('org.slf4j:slf4j-simple')
@@ -150,8 +148,6 @@ ext {
     buildTime = DateTimeFormatter.ofPattern("HH:mm:ss").format(tstamp)
     buildYear = DateTimeFormatter.ofPattern("yyyy").format(tstamp)
 
-    pdfFilename = file("${buildDir}/apache-solr-ref-guide-${solrGuideVersion}.pdf")
-
     // Some additional version properties are lazily computed
     // in setupProps (because they need to be computed after evalution is complete).
     props = [
@@ -177,9 +173,6 @@ ext {
                     'section-toc'       : '',
                     'icons'             : 'font',
                     'icon-set'          : 'fa',
-                    'pdf-stylesDir'     : './pdf/themes',
-                    'pdf-style'         : 'refguide',
-                    'pdf-fontsDir'      : './fonts',
                     'figure-caption!'   : '',
                     'idprefix'          : '',
                     'idseparator'       : '-',
@@ -188,8 +181,6 @@ ext {
             ],
             'html'  : [
                     'imagesdir': buildContentDir.toString()
-            ],
-            'pdf'   : [
             ]
     ]
 }
@@ -263,7 +254,7 @@ task buildToolsJar(type: Jar) {
 task buildNavDataFiles(type: JavaExec) {
     dependsOn buildInit, buildToolsJar
     classpath = sourceSets.tools.runtimeClasspath
-    main = 'BuildNavAndPDFBody'
+    main = 'BuildNavDataFiles'
     workingDir = buildContentDir
 
     args([
@@ -274,7 +265,6 @@ task buildNavDataFiles(type: JavaExec) {
     doFirst {
         // Remove previously generated files first.
         [
-                "pdf-main-body.adoc",
                 "scrollnav.json",
                 "sidebar.json"
         ].each { name ->
@@ -335,51 +325,6 @@ task bareBonesHtmlValidation(type: JavaExec) {
     if (project.hasProperty("local.javadocs")) {
         args += "-check-all-relative-links"
     }
-}
-
-task buildRawPdf {
-    dependsOn buildNavDataFiles
-
-    def pdfOut = file("${buildDir}/pdf-tmp")
-
-    inputs.dir(buildContentDir)
-    outputs.dir(pdfOut)
-
-    doFirst {
-        // Regenerate fully.
-        project.delete(pdfOut)
-        pdfOut.mkdirs()
-
-        // Convert each file separately so that folders are preserved.
-        def source = file("${buildContentDir}/pdf/SolrRefGuide-all.adoc")
-
-        def Asciidoctor adoc = Asciidoctor.Factory.create()
-        def opts = OptionsBuilder.options()
-                .backend('pdf')
-                .docType("book")
-                .headerFooter(true)
-                .safe(SafeMode.UNSAFE)
-                .baseDir(buildContentDir)
-                .toDir(pdfOut)
-                .destinationDir(pdfOut)
-                .mkDirs(true)
-                .attributes(asciiDocAttrs.common + asciiDocAttrs.pdf + props)
-
-        adoc.convertFile(source, opts)
-    }
-}
-
-task buildPdf(type: JavaExec) {
-    dependsOn buildRawPdf
-
-    classpath = sourceSets.tools.runtimeClasspath
-    main = 'ReducePDFSize'
-    workingDir = buildContentDir
-
-    args([
-            file("${buildDir}/pdf-tmp/SolrRefGuide-all.pdf"),
-            pdfFilename
-    ])
 }
 
 task buildSiteJekyll(type: com.github.jrubygradle.JRubyExec) {

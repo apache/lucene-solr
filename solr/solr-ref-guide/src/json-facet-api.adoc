@@ -186,8 +186,6 @@ include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-terms-facet-
 ====
 --
 
-// TODO: This table has cells that won't work with PDF: https://github.com/ctargett/refguide-asciidoc-poc/issues/13
-
 [width="100%",cols="20%,90%",options="header",]
 |===
 |Parameter |Description
@@ -376,8 +374,6 @@ The output from the range facet above would look a bit like:
 ==== Range Facet Parameters
 
 Range facet parameter names and semantics largely mirror facet.range query-parameter style faceting. For example "start" here corresponds to "facet.range.start" in a facet.range command.
-
-// TODO: This table has cells that won't work with PDF: https://github.com/ctargett/refguide-asciidoc-poc/issues/13
 
 [width="100%",cols="10%,90%",options="header",]
 |===
