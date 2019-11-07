@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -546,7 +547,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     }
     assertEquals("Shard addresses must be of size 1, since there is only 1 shard in the collection", 1, shardAddresses.size());
 
-    assertEquals("Make sure that the replica queried was the replicaType desired", typeToQuery.toString().toUpperCase(), replicaTypeToReplicas.get(shardAddresses.get(0)).toUpperCase());
+    assertEquals("Make sure that the replica queried was the replicaType desired", typeToQuery.toString().toUpperCase(Locale.ROOT), replicaTypeToReplicas.get(shardAddresses.get(0)).toUpperCase(Locale.ROOT));
   }
 
   private Long getNumRequests(String baseUrl, String collectionName) throws

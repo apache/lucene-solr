@@ -2605,7 +2605,7 @@ public void testParallelRankStream() throws Exception {
   public void testTupleStreamSorting(StreamContext streamContext, SolrParams solrParams, String replicaType, Map<String, String> replicaTypeMap) throws Exception {
     List<String> shards = TupleStream.getShards(cluster.getZkClient().getZkServerAddress(), MULTI_REPLICA_COLLECTIONORALIAS, streamContext, solrParams);
     for (String shard : shards) {
-      assertEquals(shard, replicaType.toUpperCase(), replicaTypeMap.getOrDefault(shard, "").toUpperCase());
+      assertEquals(shard, replicaType.toUpperCase(Locale.ROOT), replicaTypeMap.getOrDefault(shard, "").toUpperCase(Locale.ROOT));
     }
   }
 
