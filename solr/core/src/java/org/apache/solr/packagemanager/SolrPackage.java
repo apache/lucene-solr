@@ -17,7 +17,7 @@ public class SolrPackage implements Serializable, Comparable<SolrPackage> {
   public String description;
   public List<SolrPackageRelease> versions;
 
-  private String repositoryId;
+  private String repository;
 
   public static class SolrPackageRelease {
 
@@ -28,7 +28,7 @@ public class SolrPackage implements Serializable, Comparable<SolrPackage> {
     public String sha512sum;
     public String sig;
 
-    public Metadata metadata;
+    public Manifest manifest;
     @Override
     public String toString() {
       return "SolrPackageRelease{" +
@@ -36,17 +36,17 @@ public class SolrPackage implements Serializable, Comparable<SolrPackage> {
           ", date=" + date +
           ", url='" + url + '\'' +
           ", sig='" + sig + '\'' +
-          ", min='" + metadata.minSolrVersion + '\'' +
-          ", max='" + metadata.maxSolrVersion + '\'' +
-          ", dependencies='" + metadata.dependencies + '\'' +
-          ", plugins='" + metadata.plugins + '\'' +
-          ", paramDefaults='" + metadata.parameterDefaults + '\'' +
+          ", min='" + manifest.minSolrVersion + '\'' +
+          ", max='" + manifest.maxSolrVersion + '\'' +
+          ", dependencies='" + manifest.dependencies + '\'' +
+          ", plugins='" + manifest.plugins + '\'' +
+          ", paramDefaults='" + manifest.parameterDefaults + '\'' +
           ", sha512sum='" + sha512sum + '\'' +
           '}';
     }
   }
 
-  public static class Metadata {
+  public static class Manifest {
     @JsonProperty("min-solr-version")
     public String minSolrVersion;
     @JsonProperty("max-solr-version")
@@ -83,12 +83,12 @@ public class SolrPackage implements Serializable, Comparable<SolrPackage> {
     return id.compareTo(o.id);
   }
 
-  public String getRepositoryId() {
-    return repositoryId;
+  public String getRepository() {
+    return repository;
   }
 
-  public void setRepositoryId(String repositoryId) {
-    this.repositoryId = repositoryId;
+  public void setRepository(String repository) {
+    this.repository = repository;
   }
 
   public static class Command {

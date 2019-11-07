@@ -100,7 +100,6 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
       run(tool, new String[] {"-solrUrl", solrUrl, "update", "question-answer"});
       assertPackageVersion("abc", "question-answer", "1.0.0", rhPath, "1.0.0");
 
-
       if (random().nextBoolean()) { // even if parameters are not passed in, they should be picked up from previous deployment
         run(tool, new String[] {"-solrUrl", solrUrl, "deploy", "--update", "question-answer", "-collections", "abc", "-p", "RH-HANDLER-PATH=" + rhPath});
       } else {
@@ -137,25 +136,16 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
 
   static class LocalWebServer {
     private int port = 0;
-    final private String resourceBase;
+    final private String resourceDir;
     Server server;
     ServerConnector connector;
 
     public LocalWebServer(String resourceDir) {
-      this.resourceBase = resourceDir;
+      this.resourceDir = resourceDir;
     }
 
     public int getPort() {
       return connector != null? connector.getLocalPort(): port;
-    }
-
-    public LocalWebServer setPort(int port) {
-      this.port = port;
-      return this;
-    }
-
-    public String getResourceBase() {
-      return resourceBase;
     }
 
     public void start() throws Exception {
@@ -167,11 +157,11 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
       server.setStopAtShutdown(true);
 
       ResourceHandler resourceHandler = new ResourceHandler();
-      resourceHandler.setResourceBase(resourceBase);
+      resourceHandler.setResourceBase(resourceDir);
       resourceHandler.setDirectoriesListed(true);
 
       HandlerList handlers = new HandlerList();
-      handlers.setHandlers(new Handler[] { resourceHandler, new DefaultHandler() });
+      handlers.setHandlers(new Handler[] {resourceHandler, new DefaultHandler()});
       server.setHandler(handlers);
 
       server.start();

@@ -11,6 +11,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -34,14 +35,15 @@ public class SolrUpdateManager {
 
   public static final String systemVersion = Version.LATEST.toString();
 
-  final String solrBaseUrl;
+  //final String solrBaseUrl;
+  final HttpSolrClient solrClient;
 
   private static final Logger log = LoggerFactory.getLogger(SolrUpdateManager.class);
 
-  public SolrUpdateManager(SolrPackageManager packageManager, String repositoriesJsonStr, String solrBaseUrl) {
+  public SolrUpdateManager(HttpSolrClient solrClient, SolrPackageManager packageManager, String repositoriesJsonStr, String solrBaseUrl) {
     this.packageManager = packageManager;
     this.repositoriesJsonStr = repositoriesJsonStr;
-    this.solrBaseUrl = solrBaseUrl;
+    this.solrClient = solrClient;
   }
 
   protected synchronized void initRepositoriesFromJson() {
@@ -94,16 +96,17 @@ public class SolrUpdateManager {
     SolrPackageRelease release = findReleaseForPackage(packageName, version);
     Path downloaded = downloadPackage(packageName, version);
 
-    try (HttpSolrClient solrClient = new HttpSolrClient.Builder(solrBaseUrl).build()) {
+    //try (HttpSolrClient solrClient = new HttpSolrClient.Builder(solrBaseUrl).build()) {
+    try {
       // post the metadata
       System.out.println("Posting metadata");
-      PackageUtils.postFile(solrClient, ByteBuffer.wrap(new ObjectMapper().writeValueAsString(release.metadata).getBytes()),
+      PackageUtils.postFile(solrClient, ByteBuffer.wrap(new ObjectMapper().writeValueAsString(release.manifest).getBytes()),
           "/package/"+packageName+"/"+version+"/solr-manifest.json",
           null);
 
       // post the artifacts
       System.out.println("Posting artifacts");
-      PackageUtils.postFile(solrClient, PackageUtils.getFileContent(downloaded.toFile()),
+      PackageUtils.postFile(solrClient, ByteBuffer.wrap(FileUtils.readFileToByteArray(downloaded.toFile())),
           "/package/"+packageName+"/"+version+"/"+downloaded.getFileName().toString(),
           release.sig
           );
@@ -145,7 +148,7 @@ public class SolrUpdateManager {
         }
       }
     } catch (IOException e) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Error during download of plugin " + id, e);
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Error during download of package " + id, e);
     }
     throw new SolrException(ErrorCode.BAD_REQUEST, "Package not found in any repository.");
   }
@@ -203,7 +206,7 @@ public class SolrUpdateManager {
 
   public List<SolrPackage> getUpdates() {
     List<SolrPackage> updates = new ArrayList<>();
-    for (SolrPackageInstance installed : packageManager.getPackages()) {
+    for (SolrPackageInstance installed : packageManager.fetchPackages()) {
       String packageName = installed.getPackageName();
       if (hasPackageUpdate(packageName)) {
         updates.add(getPackagesMap().get(packageName));

@@ -18,6 +18,7 @@ package org.apache.solr.util;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
@@ -34,6 +35,7 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -47,6 +49,8 @@ import org.apache.solr.packagemanager.SolrUpdateManager;
 import org.apache.solr.util.SolrCLI.StatusTool;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
@@ -54,6 +58,9 @@ import com.jayway.jsonpath.PathNotFoundException;
 
 
 public class PackageTool extends SolrCLI.ToolBase {
+  
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   @Override
   public String getName() {
     return "package";
@@ -61,7 +68,7 @@ public class PackageTool extends SolrCLI.ToolBase {
 
   public static String solrUrl = null;
   public static String solrBaseUrl = null;
-
+  public static HttpSolrClient solrClient;
   public SolrPackageManager packageManager;
   public SolrUpdateManager updateManager;
 
@@ -72,18 +79,18 @@ public class PackageTool extends SolrCLI.ToolBase {
 
     solrUrl = cli.getOptionValues("solrUrl")[cli.getOptionValues("solrUrl").length-1];
     solrBaseUrl = solrUrl.replaceAll("\\/solr$", ""); // strip out ending "/solr"
-    System.out.println("solr url: "+solrUrl+", solr base url: "+solrBaseUrl);
-
+    log.info("Solr url: "+solrUrl+", solr base url: "+solrBaseUrl);
+    solrClient = new HttpSolrClient.Builder(solrBaseUrl).build(); // nocommit close this
     String zkHost = getZkHost(cli);
 
-    System.out.println("ZK: "+zkHost);
+    log.info("ZK: "+zkHost);
     String cmd = cli.getArgs()[0];
 
     try (SolrZkClient zkclient = new SolrZkClient(zkHost, 30000)) {
       if (cmd != null) {
-        packageManager = new SolrPackageManager(solrBaseUrl, zkHost); 
+        packageManager = new SolrPackageManager(solrClient, solrBaseUrl, zkHost); 
         try {
-          updateManager = new SolrUpdateManager(packageManager,
+          updateManager = new SolrUpdateManager(solrClient, packageManager,
               getRepositoriesJson(zkclient), solrBaseUrl);
 
           switch (cmd) {
@@ -91,11 +98,11 @@ public class PackageTool extends SolrCLI.ToolBase {
               addRepo(zkHost, cli.getArgs()[1], cli.getArgs()[2]);
               break;
             case "list-installed":
-              list(cli.getArgList().subList(1, cli.getArgList().size()));
+              listInstalled(cli.getArgList().subList(1, cli.getArgList().size()));
               break;
             case "list-available":
               try {
-                available(cli.getArgList().subList(1, cli.getArgList().size()));
+                listAvailable(cli.getArgList().subList(1, cli.getArgList().size()));
               } catch (SolrException ex) {
                 ex.printStackTrace();
               }
@@ -104,13 +111,10 @@ public class PackageTool extends SolrCLI.ToolBase {
               install(cli.getArgList().subList(1, cli.getArgList().size()));
               break;
             case "deploy":
-              String colls[] = cli.getOptionValues("collections");
-              String params[] = cli.getOptionValues("param");
-              System.out.println("coll: "+Arrays.toString(colls)+", params: "+Arrays.toString(params));
               String packageName = cli.getArgList().get(1).toString().split(":")[0];
-              String version = cli.getArgList().get(1).toString().contains(":")? 
+              String version = cli.getArgList().get(1).toString().contains(":")? // nocommit, fix
                   cli.getArgList().get(1).toString().split(":")[1]: null;
-                  deploy(packageName, version, cli.hasOption("update"), colls, params);
+                  deploy(packageName, version, cli.hasOption("update"), cli.getOptionValues("collections"), cli.getOptionValues("param"));
                   break;
             case "update":
               if (cli.getArgList().size() == 1) {
@@ -126,16 +130,19 @@ public class PackageTool extends SolrCLI.ToolBase {
           packageManager.close();
         }
       }
+    } finally {
+      solrClient.close();
     }
-    System.out.println("Finished: "+cmd); // nocommit
+    log.info("Finished: "+cmd); // nocommit
   }
 
   protected void addRepo(String zkHost, String name, String uri) throws KeeperException, InterruptedException, MalformedURLException, IOException {
-    try (SolrZkClient zkClient = new SolrZkClient(zkHost, 30000)) {
+    try (SolrZkClient zkClient = new SolrZkClient(zkHost, 30000)) { // nocommit why not a central zk client?
       String existingRepositoriesJson = getRepositoriesJson(zkClient);
-      System.out.println(existingRepositoriesJson);
+      log.info(existingRepositoriesJson);
 
       List repos = new ObjectMapper().readValue(existingRepositoriesJson, List.class);
+      System.out.println("SPR is: "+solrClient);
       repos.add(new SolrPackageRepository(name, uri));
       if (zkClient.exists("/repositories.json", true) == false) {
         zkClient.create("/repositories.json", new ObjectMapper().writeValueAsString(repos).getBytes(), CreateMode.PERSISTENT, true);
@@ -160,17 +167,16 @@ public class PackageTool extends SolrCLI.ToolBase {
     return "[]";
   }
 
-  protected void list(List args) {
-    for (SolrPackageInstance pkg: packageManager.getPackages()) {
+  protected void listInstalled(List args) {
+    for (SolrPackageInstance pkg: packageManager.fetchPackages()) {
       System.out.println(pkg.getPackageName()+" ("+pkg.getVersion()+")");
     }
   }
-  protected void available(List args) throws SolrException {
+  protected void listAvailable(List args) throws SolrException {
     System.out.println("Available packages:\n-----");
-    for (SolrPackage i: updateManager.getPackages()) {
-      SolrPackage plugin = (SolrPackage)i;
-      System.out.println(plugin.id + " \t\t"+plugin.description);
-      for (SolrPackageRelease version: plugin.versions) {
+    for (SolrPackage pkg: updateManager.getPackages()) {
+      System.out.println(pkg.id + " \t\t"+pkg.description);
+      for (SolrPackageRelease version: pkg.versions) {
         System.out.println("\tVersion: "+version.version);
       }
     }
@@ -194,10 +200,10 @@ public class PackageTool extends SolrCLI.ToolBase {
       System.out.println("Release not found for "+packageName+", version "+version);
       throw new SolrException(ErrorCode.BAD_REQUEST, "Release not found for "+packageName+", version "+version);
     }
-    if (PackageUtils.checkVersionConstraint(SolrUpdateManager.systemVersion, release.metadata.minSolrVersion, release.metadata.maxSolrVersion) == false) {
+    if (PackageUtils.checkVersionConstraint(SolrUpdateManager.systemVersion, release.manifest.minSolrVersion, release.manifest.maxSolrVersion) == false) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Version incompatible! Solr version: "
-          + SolrUpdateManager.systemVersion+", package minSolrVersion: " + release.metadata.minSolrVersion
-          + ", maxSolrVersion: "+release.metadata.maxSolrVersion);
+          + SolrUpdateManager.systemVersion+", package minSolrVersion: " + release.manifest.minSolrVersion
+          + ", maxSolrVersion: "+release.manifest.maxSolrVersion);
     }
 
     
@@ -253,8 +259,7 @@ public class PackageTool extends SolrCLI.ToolBase {
     List<String> deployed = new ArrayList<String>();
     for (String collection: allCollections) {
       // Check package version installed
-      // http://localhost:8983/api/collections/abc/config/params/PKG_VERSIONS?omitHeader=true
-      String paramsJson = PackageUtils.get(solrBaseUrl+"/api/collections/"+collection+"/config/params/PKG_VERSIONS?omitHeader=true");
+      String paramsJson = PackageUtils.getJson(solrClient.getHttpClient(), solrBaseUrl+"/api/collections/"+collection+"/config/params/PKG_VERSIONS?omitHeader=true");
       String version = null;
       try {
         version = JsonPath.parse(paramsJson, PackageUtils.jsonPathConfiguration())
@@ -266,7 +271,7 @@ public class PackageTool extends SolrCLI.ToolBase {
         if ("$LATEST".equals(version) && packageManager.verify(pkg, Collections.singletonList(collection))) {
           deployed.add(collection);
         } else {
-          System.out.println("Skipping collection: "+collection+", version: "+version);
+          log.info("Skipping collection: "+collection+", version: "+version);
         }
       } else {
         if (packageManager.verify(pkg, Collections.singletonList(collection))) {
