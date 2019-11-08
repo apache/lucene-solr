@@ -41,7 +41,7 @@ final class NodeHash<T> {
 
   private boolean nodesEqual(Builder.UnCompiledNode<T> node, long address) throws IOException {
     fst.readFirstRealTargetArc(address, scratchArc, in);
-    if (scratchArc.bytesPerArc() != 0 && node.numArcs != scratchArc.numArcs()) {
+    if (scratchArc.bytesPerArc() != 0 && scratchArc.nodeFlags() == FST.ARCS_FOR_BINARY_SEARCH && node.numArcs != scratchArc.numArcs()) {
       return false;
     }
     for(int arcUpto=0; arcUpto < node.numArcs; arcUpto++) {

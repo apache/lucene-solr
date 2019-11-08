@@ -211,11 +211,6 @@ public final class FST<T> implements Accountable {
       return flag(BIT_FINAL_ARC);
     }
 
-    @Deprecated
-    public boolean isPackedArray() {
-      return nodeFlags() == ARCS_FOR_BINARY_SEARCH || nodeFlags() == ARCS_FOR_DIRECT_ADDRESSING;
-    }
-
     @Override
     public String toString() {
       StringBuilder b = new StringBuilder();
