@@ -239,6 +239,27 @@ class BytesStore extends DataOutput implements Accountable {
     }
   }
 
+  /** Copies bytes from this store to a target byte array. */
+  public void copyBytes(long src, byte[] dest, int offset, int len) {
+    int blockIndex = (int) (src >> blockBits);
+    int upto = (int) (src & blockMask);
+    byte[] block = blocks.get(blockIndex);
+    while (len > 0) {
+      int chunk = blockSize - upto;
+      if (len <= chunk) {
+        System.arraycopy(block, upto, dest, offset, len);
+        break;
+      } else {
+        System.arraycopy(block, upto, dest, offset, chunk);
+        blockIndex++;
+        block = blocks.get(blockIndex);
+        upto = 0;
+        len -= chunk;
+        offset += chunk;
+      }
+    }
+  }
+
   /** Writes an int at the absolute position without
    *  changing the current pointer. */
   public void writeInt(long pos, int value) {

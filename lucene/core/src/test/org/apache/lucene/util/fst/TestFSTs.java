@@ -1078,9 +1078,9 @@ public class TestFSTs extends LuceneTestCase {
             int children = verifyStateAndBelow(fst, new FST.Arc<>().copyFrom(arc), depth + 1);
 
             assertEquals(
-                (depth <= FST.FIXED_ARRAY_SHALLOW_DISTANCE &&
-                    children >= FST.FIXED_ARRAY_NUM_ARCS_SHALLOW) ||
-                 children >= FST.FIXED_ARRAY_NUM_ARCS_DEEP,
+                (depth <= FST.FIXED_LENGTH_ARC_SHALLOW_DEPTH &&
+                    children >= FST.FIXED_LENGTH_ARC_SHALLOW_NUM_ARCS) ||
+                 children >= FST.FIXED_LENGTH_ARC_DEEP_NUM_ARCS,
                 expanded);
             if (arc.isLast()) break;
           }
@@ -1092,8 +1092,8 @@ public class TestFSTs extends LuceneTestCase {
     }
 
     // Sanity check.
-    assertTrue(FST.FIXED_ARRAY_NUM_ARCS_SHALLOW < FST.FIXED_ARRAY_NUM_ARCS_DEEP);
-    assertTrue(FST.FIXED_ARRAY_SHALLOW_DISTANCE >= 0);
+    assertTrue(FST.FIXED_LENGTH_ARC_SHALLOW_NUM_ARCS < FST.FIXED_LENGTH_ARC_DEEP_NUM_ARCS);
+    assertTrue(FST.FIXED_LENGTH_ARC_SHALLOW_DEPTH >= 0);
 
     SyntheticData s = new SyntheticData();
 
@@ -1634,5 +1634,87 @@ public class TestFSTs extends LuceneTestCase {
     } catch (AssertionError ae) {
       // expected
     }
+  }
+
+  public void testSimpleDepth() throws Exception {
+    PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
+    Builder<Long> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
+
+    BytesRef ab = new BytesRef("ab");
+    BytesRef ac = new BytesRef("ac");
+    BytesRef bd = new BytesRef("bd");
+
+    builder.add(Util.toIntsRef(ab, new IntsRefBuilder()), 3L);
+    builder.add(Util.toIntsRef(ac, new IntsRefBuilder()), 5L);
+    builder.add(Util.toIntsRef(bd, new IntsRefBuilder()), 7L);
+
+    FST<Long> fst = builder.finish();
+
+    assertEquals(3, (long) Util.get(fst, ab));
+    assertEquals(5, (long) Util.get(fst, ac));
+    assertEquals(7, (long) Util.get(fst, bd));
+  }
+
+  public void testWorstCaseForDirectAddressing() throws Exception {
+    final int NUM_WORDS = 1000000;
+    final double RAM_BYTES_USED_NO_DIRECT_ADDRESSING = 3.84d * 1024d * 1024d;
+    final double MEMORY_INCREASE_LIMIT_PERCENT = 12.5d;
+
+    PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
+    Builder<Long> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs, true, 15)
+        // Use this parameter to try & test a change.
+        // Set -1 to disable direct addressing and get the reference FST size without it.
+        //.setDirectAddressingMaxOversizingFactor(-1f);
+        .setDirectAddressingMaxOversizingFactor(Builder.DIRECT_ADDRESSING_MAX_OVERSIZING_FACTOR);
+
+    // Generate words with specially crafted bytes.
+    Set<BytesRef> wordSet = new HashSet<>();
+    for (int i = 0; i < NUM_WORDS; ++i) {
+      byte[] b = new byte[5];
+      random().nextBytes(b);
+      for (int j = 0; j < b.length; ++j) {
+        b[j] &= 0xfc; // Make this byte a multiple of 4.
+      }
+      wordSet.add(new BytesRef(b));
+    }
+
+    // Sort words.
+    List<BytesRef> wordList = new ArrayList<>(wordSet);
+    Collections.sort(wordList);
+
+    // Add words.
+    IntsRefBuilder intsRefBuilder = new IntsRefBuilder();
+    for (BytesRef word : wordList) {
+      builder.add(Util.toIntsRef(word, intsRefBuilder), outputs.getNoOutput());
+    }
+
+    // Build FST.
+    long ramBytesUsed = builder.finish().ramBytesUsed();
+    double directAddressingMemoryIncreasePercent = (ramBytesUsed / RAM_BYTES_USED_NO_DIRECT_ADDRESSING - 1) * 100;
+
+    // Print stats.
+//    System.out.println("directAddressingMaxOversizingFactor = " + builder.getDirectAddressingMaxOversizingFactor());
+//    System.out.println("ramBytesUsed = "
+//        + String.format(Locale.ENGLISH, "%.2f MB", ramBytesUsed / 1024d / 1024d)
+//        + String.format(Locale.ENGLISH, " (%.2f %% increase with direct addressing)", directAddressingMemoryIncreasePercent));
+//    System.out.println("num nodes = " + builder.nodeCount);
+//    long fixedLengthArcNodeCount = builder.directAddressingNodeCount + builder.binarySearchNodeCount;
+//    System.out.println("num fixed-length-arc nodes = " + fixedLengthArcNodeCount
+//        + String.format(Locale.ENGLISH, " (%.2f %% of all nodes)",
+//        ((double) fixedLengthArcNodeCount / builder.nodeCount * 100)));
+//    System.out.println("num binary-search nodes = " + (builder.binarySearchNodeCount)
+//        + String.format(Locale.ENGLISH, " (%.2f %% of fixed-length-arc nodes)",
+//        ((double) (builder.binarySearchNodeCount) / fixedLengthArcNodeCount * 100)));
+//    System.out.println("num direct-addressing nodes = " + (builder.directAddressingNodeCount)
+//        + String.format(Locale.ENGLISH, " (%.2f %% of fixed-length-arc nodes)",
+//        ((double) (builder.directAddressingNodeCount) / fixedLengthArcNodeCount * 100)));
+
+    // Verify the FST size does not exceed a limit.
+    // This limit is a reference. It could be modified if the FST encoding is expected to change.
+    // This limit is determined by running this test with Builder.DIRECT_ADDRESSING_MAX_OVERSIZING_FACTOR above.
+    assertTrue("FST size exceeds limit, size = " + ramBytesUsed
+            + ", increase = " + directAddressingMemoryIncreasePercent + " %"
+            + ", limit = " + MEMORY_INCREASE_LIMIT_PERCENT + " %",
+        directAddressingMemoryIncreasePercent < MEMORY_INCREASE_LIMIT_PERCENT);
   }
 }
