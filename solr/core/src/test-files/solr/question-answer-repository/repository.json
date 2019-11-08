@@ -1,6 +1,6 @@
 [
   {
-    "id": "question-answer",
+    "name": "question-answer",
     "description": "A natural language question answering plugin",
     "versions": [
       {
@@ -15,8 +15,16 @@
           "plugins": [
             {
               "id": "request-handler",
-              "setup-command": "{\"add-requesthandler\": {\"name\": \"${RH-HANDLER-PATH}\", \"class\": \"question-answer:fullstory.QARequestHandler\", \"defaults\":{ \"x\": \"y\" ,\"a\": \"b\", \"rows\":10 }, \"useParams\": \"x\"}}",
-              "update-command": "{\"update-requesthandler\": {\"name\": \"${RH-HANDLER-PATH}\", \"class\": \"question-answer:fullstory.QARequestHandler\", \"defaults\":{ \"x\": \"y\" ,\"a\": \"b\", \"rows\":10 }, \"useParams\": \"x\"}}",
+              "setup-command": {
+                "path": "/api/collections/${collection}/config",
+                "payload": {"add-requesthandler": {"name": "${RH-HANDLER-PATH}", "class": "question-answer:fullstory.QARequestHandler", "defaults":{ "x": "y" ,"a": "b", "rows":10 }, "useParams": "x"}},
+                "method": "POST"
+              },
+              "update-command": {
+                "path": "/api/collections/${collection}/config",
+                "payload": {"update-requesthandler": {"name": "${RH-HANDLER-PATH}", "class": "question-answer:fullstory.QARequestHandler", "defaults":{ "x": "y" ,"a": "b", "rows":10 }, "useParams": "x"}},
+                "method": "POST"
+              },
               "uninstall-command": null,
               "verify-command": {
                 "path": "/api/collections/${collection}/config/requestHandler?componentName=${RH-HANDLER-PATH}&meta=true",
@@ -35,29 +43,7 @@
         "version": "1.1.0",
         "date": "2019-01-01",
         "url": "question-answer-request-handler-1.1.jar",
-        "sig": "VKfK8aAgH8Ys8vZ0Pym3vnWalhC8WpfcwADw3pvUHG9Kui0UMJ0L6hTNuH41tuo5FrfG7cu2roPGsYXg2WzV5g==",
-        "manifest": {
-          "min-solr-version": "8.0",
-          "max-solr-version": "9.99",
-          "dependencies": [],
-          "plugins": [
-            {
-              "id": "request-handler",
-              "setup-command": "{\"add-requesthandler\": {\"name\": \"${RH-HANDLER-PATH}\", \"class\": \"question-answer:fullstory.QARequestHandler\", \"defaults\":{ \"x\": \"y\" ,\"a\": \"b\", \"rows\":10 }, \"useParams\": \"x\"}}",
-              "update-command": "{\"update-requesthandler\": {\"name\": \"${RH-HANDLER-PATH}\", \"class\": \"question-answer:fullstory.QARequestHandler\", \"defaults\":{ \"x\": \"y\" ,\"a\": \"b\", \"rows\":10 }, \"useParams\": \"x\"}}",
-              "uninstall-command": null,
-              "verify-command": {
-                "path": "/api/collections/${collection}/config/requestHandler?componentName=${RH-HANDLER-PATH}&meta=true",
-                "method": "GET",
-                "condition": "$['config'].['requestHandler'].['${RH-HANDLER-PATH}'].['_packageinfo_'].['version']",
-                "expected": "${package-version}"
-              }
-            }
-          ],
-          "parameter-defaults": {
-            "RH-HANDLER-PATH": "/mypath"
-          }
-        }
+        "sig": "LsxF+NbzRxCj1azNoluGWC5NidCTVyvvQdNgJJB3D7RDvRtzuaRUFnwbhhFsJOujZ5PcLVOOfmoti4YQegtqJA=="
       }
     ]
   }

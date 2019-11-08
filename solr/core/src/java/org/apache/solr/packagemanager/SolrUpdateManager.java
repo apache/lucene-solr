@@ -35,7 +35,6 @@ public class SolrUpdateManager {
 
   public static final String systemVersion = Version.LATEST.toString();
 
-  //final String solrBaseUrl;
   final HttpSolrClient solrClient;
 
   private static final Logger log = LoggerFactory.getLogger(SolrUpdateManager.class);
@@ -58,12 +57,11 @@ public class SolrUpdateManager {
 
   public synchronized void refresh() {
     initRepositoriesFromJson();
-    for (SolrPackageRepository updateRepository : repositories) {
+    for (SolrPackageRepository updateRepository: repositories) {
       updateRepository.refresh();
     }
   }
 
-  // nocommit do we need this, when we have a map version of this?
   public List<SolrPackage> getPackages() {
     List<SolrPackage> list = new ArrayList<>(getPackagesMap().values());
     Collections.sort(list);
@@ -92,17 +90,24 @@ public class SolrUpdateManager {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Plugin already installed.");
     }
 
-    SolrPackage pkg = getPackagesMap().get(packageName);
     SolrPackageRelease release = findReleaseForPackage(packageName, version);
     Path downloaded = downloadPackage(packageName, version);
+    // nocommit handle a failure in downloading
 
-    //try (HttpSolrClient solrClient = new HttpSolrClient.Builder(solrBaseUrl).build()) {
     try {
       // post the metadata
       System.out.println("Posting metadata");
+      
+      if (release.manifest == null) {
+        String manifestJson = PackageUtils.getFileFromJar(downloaded, "manifest.json");
+        if (manifestJson == null) {
+          throw new SolrException(ErrorCode.BAD_REQUEST, "No manifest found for package: " + packageName + ", version: " + version);
+        }
+        release.manifest = new ObjectMapper().readValue(manifestJson, SolrPackage.Manifest.class);
+      }
       PackageUtils.postFile(solrClient, ByteBuffer.wrap(new ObjectMapper().writeValueAsString(release.manifest).getBytes()),
-          "/package/"+packageName+"/"+version+"/solr-manifest.json",
-          null);
+            "/package/"+packageName+"/"+version+"/solr-manifest.json", null);
+      // nocommit calculate SHA512 after posting?
 
       // post the artifacts
       System.out.println("Posting artifacts");

@@ -1,7 +1,6 @@
 package org.apache.solr.packagemanager;
 
 
-import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -11,9 +10,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 /**
  * Describes a package (along with all released versions) as it appears in a repository.
  */
-public class SolrPackage implements Serializable, Comparable<SolrPackage> {
+public class SolrPackage implements Comparable<SolrPackage> {
 
-  public String id;
+  public String name;
   public String description;
   public List<SolrPackageRelease> versions;
 
@@ -61,13 +60,13 @@ public class SolrPackage implements Serializable, Comparable<SolrPackage> {
   public static class Plugin {
     public String id;
     @JsonProperty("setup-command")
-    public String setupCommand;
+    public Command setupCommand;
 
     @JsonProperty("update-command")
-    public String updateCommand;
+    public Command updateCommand;
 
     @JsonProperty("uninstall-command")
-    public String uninstallCommand;
+    public Command uninstallCommand;
 
     @JsonProperty("verify-command")
     public Command verifyCommand;
@@ -80,7 +79,7 @@ public class SolrPackage implements Serializable, Comparable<SolrPackage> {
 
   @Override
   public int compareTo(SolrPackage o) {
-    return id.compareTo(o.id);
+    return name.compareTo(o.name);
   }
 
   public String getRepository() {
@@ -94,7 +93,7 @@ public class SolrPackage implements Serializable, Comparable<SolrPackage> {
   public static class Command {
     public String path;
     public String method;
-    public Map payload;
+    public Map<String, Object> payload;
     public String condition;
     public String expected;
     

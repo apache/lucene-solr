@@ -5,10 +5,12 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.lucene.luke.app.desktop.util.StringUtils;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -66,7 +68,7 @@ public class SolrPackageManager implements Closeable {
             Manifest manifest = fetchManifest(pkgVersion.get("manifest").toString());
             List<Plugin> solrplugins = manifest.plugins;
             SolrPackageInstance pkgInstance = new SolrPackageInstance(packageName.toString(), null, 
-                pkgVersion.get("version").toString(), solrplugins, manifest.parameterDefaults);
+                pkgVersion.get("version").toString(), manifest, solrplugins, manifest.parameterDefaults);
             List<SolrPackageInstance> list = packages.containsKey(packageName)? packages.get(packageName): new ArrayList<SolrPackageInstance>();
             list.add(pkgInstance);
             packages.put(packageName.toString(), list);
@@ -101,20 +103,19 @@ public class SolrPackageManager implements Closeable {
 
       // Get package params
       try {
-        boolean packageParamsExist = ((Map)((Map)
-            PackageUtils.getJson(solrClient.getHttpClient(), solrBaseUrl + "/api/collections/abc/config/params/packages", Map.class)
-            ).get("response")).containsKey("params");
+        boolean packageParamsExist = ((Map)PackageUtils.getJson(solrClient.getHttpClient(), solrBaseUrl + "/api/collections/abc/config/params/packages", Map.class)
+            .getOrDefault("response", Collections.emptyMap())).containsKey("params");
         SolrCLI.postJsonToSolr(solrClient, "/api/collections/" + collection + "/config/params",
-            new ObjectMapper().writeValueAsString(
-                Map.of(packageParamsExist? "update": "set", 
-                    Map.of("packages", Map.of(packageInstance.name, collectionParameterOverrides)))));
+            new ObjectMapper().writeValueAsString(Collections.singletonMap(packageParamsExist? "update": "set",
+                    Collections.singletonMap("packages", Collections.singletonMap(packageInstance.name, collectionParameterOverrides)))));
       } catch (Exception e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, e);
       }
 
       // Set the package version in the collection's parameters
       try {
-        SolrCLI.postJsonToSolr(solrClient, "/api/collections/"+collection+"/config/params", "{set:{PKG_VERSIONS:{"+packageInstance.name+" : '"+(pegToLatest? "$LATEST": packageInstance.version)+"'}}}");
+        SolrCLI.postJsonToSolr(solrClient, "/api/collections/" + collection + "/config/params",
+            "{set:{PKG_VERSIONS:{" + packageInstance.name+": '" + (pegToLatest? "$LATEST": packageInstance.version)+"'}}}");
       } catch (Exception ex) {
         throw new SolrException(ErrorCode.SERVER_ERROR, ex);
       }
@@ -122,7 +123,7 @@ public class SolrPackageManager implements Closeable {
       // If updating, refresh the package version for this to take effect
       if (isUpdate || pegToLatest) {
         try {
-          SolrCLI.postJsonToSolr(solrClient, "/api/cluster/package", "{\"refresh\" : \""+packageInstance.name+"\"}");
+          SolrCLI.postJsonToSolr(solrClient, "/api/cluster/package", "{\"refresh\": \"" + packageInstance.name + "\"}");
         } catch (Exception ex) {
           throw new SolrException(ErrorCode.SERVER_ERROR, ex);
         }
@@ -130,18 +131,19 @@ public class SolrPackageManager implements Closeable {
 
       // Setup/update all the plugins in the package
       for (Plugin p: packageInstance.getPlugins()) {
-        System.out.println(isUpdate? p.updateCommand: p.setupCommand);
-
         Map<String, String> systemParams = new HashMap<String,String>();
         systemParams.put("collection", collection);
         systemParams.put("package-name", packageInstance.name);
         systemParams.put("package-version", packageInstance.version);
 
-        String cmd = resolve(isUpdate? p.updateCommand: p.setupCommand, packageInstance.parameterDefaults, collectionParameterOverrides, systemParams);
-        if (cmd != null && !"".equals(cmd.trim())) {
+        //String cmd = resolve(isUpdate? p.updateCommand: p.setupCommand, packageInstance.parameterDefaults, collectionParameterOverrides, systemParams);
+        Command cmd = isUpdate? p.updateCommand: p.setupCommand;
+        if (cmd != null && !StringUtils.isNullOrEmpty(cmd.method)) {
           try {
-            System.out.println("Executing " + cmd + " for collection:" + collection);
-            SolrCLI.postJsonToSolr(solrClient, "/solr/"+collection+"/config", cmd);
+            String payload = resolve(new ObjectMapper().writeValueAsString(cmd.payload), packageInstance.parameterDefaults, collectionParameterOverrides, systemParams);
+            String path = resolve(cmd.path, packageInstance.parameterDefaults, collectionParameterOverrides, systemParams);
+            System.out.println("Executing " + payload + " for collection:" + collection);
+            SolrCLI.postJsonToSolr(solrClient, path, payload);
           } catch (Exception ex) {
             throw new SolrException(ErrorCode.SERVER_ERROR, ex);
           }
@@ -150,7 +152,8 @@ public class SolrPackageManager implements Closeable {
 
       // Set the package version in the collection's parameters
       try {
-        SolrCLI.postJsonToSolr(solrClient, "/api/collections/"+collection+"/config/params", "{update:{PKG_VERSIONS:{'"+packageInstance.name+"' : '"+(pegToLatest? "$LATEST": packageInstance.version)+"'}}}");
+        SolrCLI.postJsonToSolr(solrClient, "/api/collections/" + collection + "/config/params",
+            "{update:{PKG_VERSIONS:{'"+packageInstance.name+"' : '"+(pegToLatest? "$LATEST": packageInstance.version)+"'}}}");
       } catch (Exception ex) {
         throw new SolrException(ErrorCode.SERVER_ERROR, ex);
       }

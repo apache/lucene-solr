@@ -70,7 +70,7 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
 
     run(tool, new String[] {"-solrUrl", solrUrl, "list-available"});
 
-    run(tool, new String[] {"-solrUrl", solrUrl, "install", "question-answer:1.0.0"}); // no-commit (change to pkg:ver syntax)
+    run(tool, new String[] {"-solrUrl", solrUrl, "install", "question-answer:1.0.0"});
 
     run(tool, new String[] {"-solrUrl", solrUrl, "list-installed"});
 

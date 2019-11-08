@@ -28,14 +28,14 @@ public class SolrPackageRepository {
   @JsonProperty("name")
   public String name;
   @JsonProperty("url")
-  public String url;
+  public String repositoryURL;
 
   public SolrPackageRepository() {
   }//nocommit wtf?
 
-  public SolrPackageRepository(String repositoryName, String url) {
+  public SolrPackageRepository(String repositoryName, String repositoryURL) {
     this.name = repositoryName;
-    this.url = url;
+    this.repositoryURL = repositoryURL;
   }
 
   public void refresh() {
@@ -89,22 +89,22 @@ public class SolrPackageRepository {
 
   private void initPackages() {
     try (CloseableHttpClient client = HttpClientBuilder.create().build()) {
-      SolrPackage[] items = PackageUtils.getJson(client, url + "/repository.json", SolrPackage[].class);
+      SolrPackage[] items = PackageUtils.getJson(client, repositoryURL + "/repository.json", SolrPackage[].class);
 
       packages = new HashMap<>(items.length);
-      for (SolrPackage p : items) {
-        for (SolrPackageRelease r : p.versions) {
+      for (SolrPackage pkg : items) {
+        for (SolrPackageRelease r : pkg.versions) {
           try {
-            r.url = new URL(new URL(url), r.url).toString();
+            r.url = new URL(new URL(repositoryURL), r.url).toString();
             if (r.date.getTime() == 0) {
-              log.warn("Illegal release date when parsing {}@{}, setting to epoch", p.id, r.version);
+              log.warn("Illegal release date when parsing {}@{}, setting to epoch", pkg.name, r.version);
             }
           } catch (MalformedURLException e) {
-            log.warn("Skipping release {} of plugin {} due to failure to build valid absolute URL. Url was {}{}", r.version, p.id, url, r.url);
+            log.warn("Skipping release {} of plugin {} due to failure to build valid absolute URL. Url was {}{}", r.version, pkg.name, repositoryURL, r.url);
           }
         }
-        p.setRepository(name);
-        packages.put(p.id, p);
+        pkg.setRepository(name);
+        packages.put(pkg.name, pkg);
       }
     } catch (IOException ex) {
       throw new SolrException(ErrorCode.INVALID_STATE, ex);

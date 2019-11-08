@@ -41,6 +41,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.packagemanager.PackageUtils;
 import org.apache.solr.packagemanager.SolrPackage;
+import org.apache.solr.packagemanager.SolrPackage.Manifest;
 import org.apache.solr.packagemanager.SolrPackage.SolrPackageRelease;
 import org.apache.solr.packagemanager.SolrPackageInstance;
 import org.apache.solr.packagemanager.SolrPackageManager;
@@ -175,7 +176,7 @@ public class PackageTool extends SolrCLI.ToolBase {
   protected void listAvailable(List args) throws SolrException {
     System.out.println("Available packages:\n-----");
     for (SolrPackage pkg: updateManager.getPackages()) {
-      System.out.println(pkg.id + " \t\t"+pkg.description);
+      System.out.println(pkg.name + " \t\t"+pkg.description);
       for (SolrPackageRelease version: pkg.versions) {
         System.out.println("\tVersion: "+version.version);
       }
@@ -195,15 +196,17 @@ public class PackageTool extends SolrCLI.ToolBase {
     // nocommit if not found, exception here
     if (version == null) version = packageInstance.getVersion();
     
-    SolrPackageRelease release = updateManager.findReleaseForPackage(packageName, version); // TODO: If we could store the min and max in ZK itself, we wouldn't have had to look up the repository for this info.
+    /*SolrPackageRelease release = updateManager.findReleaseForPackage(packageName, version); // TODO: If we could store the min and max in ZK itself, we wouldn't have had to look up the repository for this info.
     if (release == null) {
       System.out.println("Release not found for "+packageName+", version "+version);
       throw new SolrException(ErrorCode.BAD_REQUEST, "Release not found for "+packageName+", version "+version);
-    }
-    if (PackageUtils.checkVersionConstraint(SolrUpdateManager.systemVersion, release.manifest.minSolrVersion, release.manifest.maxSolrVersion) == false) {
+    }*/
+    
+    Manifest manifest = packageInstance.manifest;
+    if (PackageUtils.checkVersionConstraint(SolrUpdateManager.systemVersion, manifest.minSolrVersion, manifest.maxSolrVersion) == false) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Version incompatible! Solr version: "
-          + SolrUpdateManager.systemVersion+", package minSolrVersion: " + release.manifest.minSolrVersion
-          + ", maxSolrVersion: "+release.manifest.maxSolrVersion);
+          + SolrUpdateManager.systemVersion+", package minSolrVersion: " + manifest.minSolrVersion
+          + ", maxSolrVersion: "+manifest.maxSolrVersion);
     }
 
     
@@ -217,7 +220,7 @@ public class PackageTool extends SolrCLI.ToolBase {
 
       for (SolrPackage i: updateManager.getUpdates()) {
         SolrPackage plugin = (SolrPackage)i;
-        System.out.println(plugin.id + " \t\t"+plugin.description);
+        System.out.println(plugin.name + " \t\t"+plugin.description);
         for (SolrPackageRelease version: plugin.versions) {
           System.out.println("\tVersion: "+version.version);
         }
