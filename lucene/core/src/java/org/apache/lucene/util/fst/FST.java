@@ -907,17 +907,20 @@ public final class FST<T> implements Accountable {
     int previousLabel = nodeIn.arcs[0].label;
     for (int arcIdx = 1; arcIdx < nodeIn.numArcs; arcIdx++) {
       int label = nodeIn.arcs[arcIdx].label;
+      assert label > previousLabel;
       presenceIndex += label - previousLabel;
-      while (presenceIndex >= 8) {
+      while (presenceIndex >= Byte.SIZE) {
         builder.bytes.writeByte(bytePos++, presenceBits);
         presenceBits = 0;
-        presenceIndex -= 8;
+        presenceIndex -= Byte.SIZE;
       }
       // Set the bit at presenceIndex to flag that the corresponding arc is present.
       presenceBits |= 1 << presenceIndex;
       previousLabel = label;
     }
-    assert presenceBits != 0; // The last arc is always present.
+    assert presenceIndex == (nodeIn.arcs[nodeIn.numArcs - 1].label - nodeIn.arcs[0].label) % 8;
+    assert presenceBits != 0; // The last byte is not 0.
+    assert (presenceBits & (1 << presenceIndex)) != 0; // The last arc is always present.
     builder.bytes.writeByte(bytePos++, presenceBits);
     assert bytePos - dest == numPresenceBytes;
   }
@@ -954,6 +957,8 @@ public final class FST<T> implements Accountable {
     assert arc.bitTable().isBitSet(0);
     // Last bit must be set.
     assert arc.bitTable().isBitSet(arc.numArcs() - 1);
+    // No bit set after the last arc.
+    assert arc.bitTable().nextBitSet(arc.numArcs() - 1) == -1;
     // Total bit set (real num arcs) must be <= label range (stored in arc.numArcs()).
     assert getNumArcsDirectAddressing(arc) <= arc.numArcs();
     return true;
