@@ -539,9 +539,11 @@ http://localhost:8983/solr/alt_graph/query?fl=id&q={!graph+from=id+to=out_edge+m
 ----
 == Hash Range Query Parser
 
-The hash range query parser will return documents whos field contains a value that would be hashed to a particular range.  This is used by the XCJF query parser.  This query parser has a per segment cache for each field that this query parser will operate on.  
+The hash range query parser will return documents that have a field that contains a value that would be hashed to a particular range.  This is used by the XCJF query parser.  This query parser has a per segment cache for each field that this query parser will operate on.  
 
 When specifying a min/max hash range and a field name with the hash range query parser, only documents who contain a field value that hashes into that range will be returned.  If you want to query for a very large result set, you can query for various hash ranges to return a fraction of the documents with each range request.  In the XCJF case, the hash_range query parser is used to ensure that each shard only gets the set of join keys that would end up on that shard.
+
+This query parser uses the MurmurHash3_x86_32.  This is the same as the default hashing for the default composite ID router in Solr.
 
 === Hash Range Parameters
 
@@ -558,8 +560,22 @@ The upper bound for the hash range for the query
 
 [source,text]
 ----
-{!hash_range f="join_field" l=0 u=12345}
+{!hash_range f="field_name" l="0" u="12345"}
 ----
+
+=== Hash Range Cache Config
+
+The hash range query parser uses a special cache to improve the speedup of the queries.  The following should be added to the solrconfig.xml for the various fields that you want to perform the hash range query on.  Note the name of the cache should be the field name prefixed by "hash_".
+
+[source,xml]
+----
+<cache name="hash_field_name"
+       class="solr.LRUCache"
+       size="128"
+       initialSize="0"
+       regenerator="solr.NoOpRegenerator"/>
+----
+
 
 == Join Query Parser
 

@@ -36,12 +36,14 @@ The Analytics Handler should not be used by users to submit analytics requests.
 To configure Solr to use the Analytics Component, the first step is to add a `<lib/>` directive so Solr loads the Analytic Component classes (for more about the `<lib/>` directive, see <<resource-and-plugin-loading.adoc#lib-directives-in-solrconfig,Lib Directives in SolrConfig>>). In the section of `solrconfig.xml` where the default `<lib/>` directives are, add a line:
 
 [source,xml]
+----
 <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-analytics-\d.*\.jar" />
+----
 
 Next you need to enable the request handler and search component. Add the following lines to `solrconfig.xml`, near the defintions for other request handlers:
 
+solrconfig.xml
 [source,xml]
-.solrconfig.xml
 ----
 <!-- To handle user requests -->
 <searchComponent name="analytics" class="org.apache.solr.handler.component.AnalyticsComponent" />
