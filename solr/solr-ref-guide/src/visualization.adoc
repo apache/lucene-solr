@@ -91,7 +91,11 @@ image::images/math-expressions/randomwalk6.png[]
 
 image::images/math-expressions/distance.png[]
 
-=== Clustering
+=== DBSCAN Clustering
+
+image::images/math-expressions/dbscan1.png[]
+
+=== KMeans Clustering
 
 image::images/math-expressions/2DCluster1.png[]
 
