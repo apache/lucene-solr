@@ -14,53 +14,53 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Objects;
 
 /**
- * Delegates all methods to a wrapped {@link NumericDocValues}.
+ * Delegates all methods to a wrapped {@link SortedNumericDocValues}.
  */
-public abstract class FilterNumericDocValues extends NumericDocValues {
+public abstract class FilterSortedNumericDocValues extends SortedNumericDocValues {
 
   /** Wrapped values */
-  protected final NumericDocValues in;
-  
+  protected final SortedNumericDocValues in;
+
   /** Sole constructor */
-  protected FilterNumericDocValues(NumericDocValues in) {
+  public FilterSortedNumericDocValues(SortedNumericDocValues in) {
     Objects.requireNonNull(in);
     this.in = in;
   }
 
-  @Override
+  public boolean advanceExact(int target) throws IOException {
+    return in.advanceExact(target);
+  }
+
+  public long nextValue() throws IOException {
+    return in.nextValue();
+  }
+
+  public int docValueCount() {
+    return in.docValueCount();
+  }
+
   public int docID() {
     return in.docID();
   }
-  
-  @Override
+
   public int nextDoc() throws IOException {
     return in.nextDoc();
   }
 
-  @Override
   public int advance(int target) throws IOException {
     return in.advance(target);
   }
-  
-  @Override
-  public boolean advanceExact(int target) throws IOException {
-    return in.advanceExact(target);
-  }
-  
-  @Override
+
   public long cost() {
     return in.cost();
   }
 
-  @Override
-  public long longValue() throws IOException {
-    return in.longValue();
-  }
+  
+
 }
