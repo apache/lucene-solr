@@ -229,8 +229,9 @@ This value is only checked at the time of:
 
 . Query Expansion, and
 . Document collection
+. Doc Values reading
 
-As this check is periodically performed, the actual time for which a request can be processed before it is aborted would be marginally greater than or equal to the value of `timeAllowed`. If the request consumes more time in other stages, custom components, etc., this parameter is not expected to abort the request.
+As this check is periodically performed, the actual time for which a request can be processed before it is aborted would be marginally greater than or equal to the value of `timeAllowed`. If the request consumes more time in other stages, custom components, etc., this parameter is not expected to abort the request. Regular search, JSON Facet and Analytics handler abandon requests in according to this parameter. 
 
 == segmentTerminateEarly Parameter
 
