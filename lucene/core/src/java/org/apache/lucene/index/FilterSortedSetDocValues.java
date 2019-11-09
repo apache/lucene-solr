@@ -14,53 +14,71 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.lucene.index;
 
 import java.io.IOException;
 import java.util.Objects;
 
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.automaton.CompiledAutomaton;
+
 /**
- * Delegates all methods to a wrapped {@link NumericDocValues}.
+ * Delegates all methods to a wrapped {@link SortedSetDocValues}.
  */
-public abstract class FilterNumericDocValues extends NumericDocValues {
+public class FilterSortedSetDocValues extends SortedSetDocValues {
 
   /** Wrapped values */
-  protected final NumericDocValues in;
-  
-  /** Sole constructor */
-  protected FilterNumericDocValues(NumericDocValues in) {
+  protected final SortedSetDocValues in;
+
+  /** Initializes delegate */
+  public FilterSortedSetDocValues(SortedSetDocValues in) {
     Objects.requireNonNull(in);
     this.in = in;
   }
 
-  @Override
+  public boolean advanceExact(int target) throws IOException {
+    return in.advanceExact(target);
+  }
+
+  public long nextOrd() throws IOException {
+    return in.nextOrd();
+  }
+
+  public BytesRef lookupOrd(long ord) throws IOException {
+    return in.lookupOrd(ord);
+  }
+
+  public long getValueCount() {
+    return in.getValueCount();
+  }
+
+  public long lookupTerm(BytesRef key) throws IOException {
+    return in.lookupTerm(key);
+  }
+
+  public TermsEnum termsEnum() throws IOException {
+    return in.termsEnum();
+  }
+
+  public TermsEnum intersect(CompiledAutomaton automaton) throws IOException {
+    return in.intersect(automaton);
+  }
+
   public int docID() {
     return in.docID();
   }
-  
-  @Override
+
   public int nextDoc() throws IOException {
     return in.nextDoc();
   }
 
-  @Override
   public int advance(int target) throws IOException {
     return in.advance(target);
   }
-  
-  @Override
-  public boolean advanceExact(int target) throws IOException {
-    return in.advanceExact(target);
-  }
-  
-  @Override
+
   public long cost() {
     return in.cost();
   }
-
-  @Override
-  public long longValue() throws IOException {
-    return in.longValue();
-  }
+  
+    
 }
