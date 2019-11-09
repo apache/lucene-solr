@@ -49,6 +49,8 @@ Upgrade Notes
 * SOLR-14025: VelocityResponseWriter has been hardened - only trusted configsets can render configset provided
   templates and rendering templates from request parameters has been removed.
 
+* SOLR-13904: timeAllowed parameter is allowed to have 0 value (Houston Putman, Mikhail Khludnev)
+
 New Features
 ---------------------
 * SOLR-13821: A Package store to store and load package artifacts (noble, Ishan Chattopadhyaya)
@@ -69,7 +71,8 @@ New Features
 
 * SOLR-13912: Add 'countvals' aggregation in JSON FacetModule (hossman, Munendra S N)
 
-* SOLR-12217: Support shards.preference in SolrJ for single shard collections. The parameter is now used by the CloudSolrClient and Streaming Expressions. (Houston Putman, Tomas Fernandez-Lobbe)
+* SOLR-12217: Support shards.preference in SolrJ for single shard collections. The parameter 
+  is now used by the CloudSolrClient and Streaming Expressions. (Houston Putman, Tomas Fernandez-Lobbe)
 
 * SOLR-14043: Allow the precision Stream Evaluator to operate on matrices (Joel bernstein)
 
@@ -108,6 +111,9 @@ Improvements
 
 * SOLR-13957: Add sensible defaults for the facet, random, facet2D, timeseries, stats
   and update Streaming Expressions (Joel Bernstein)
+
+* SOLR-13904: Analytic component abandons requests exceedig a limit passed via timeAllowed parameter. 
+  (Houston Putman, Mikhail Khludnev).
 
 Optimizations
 ---------------------
