@@ -52,12 +52,28 @@ import org.apache.lucene.util.fst.FST.INPUT_TYPE; // javadoc
 public class Builder<T> {
 
   /**
-   * See {@link #setDirectAddressingMaxOversizingFactor}.
+   * Default oversizing factor used to decide whether to encode a node with direct addressing or binary search.
+   * Default is 1: ensure no oversizing on average.
+   * <p>
+   * This factor does not determine whether to encode a node with a list of variable length arcs or with
+   * fixed length arcs. It only determines the effective encoding of a node that is already known to be
+   * encoded with fixed length arcs.
+   * See {@code FST.shouldExpandNodeWithFixedLengthArcs()}
+   * and {@code FST.shouldExpandNodeWithDirectAddressing()}.
+   * <p>
+   * For English words we measured 217K nodes, only 3.27% nodes are encoded with fixed length arcs,
+   * and 99.99% of them with direct addressing. Overall FST memory reduced by 1.67%.
+   * <p>
+   * For worst case we measured 168K nodes, 50% of them are encoded with fixed length arcs,
+   * and 14% of them with direct encoding. Overall FST memory reduced by 0.8%.
+   * <p>
+   * Use {@code TestFstDirectAddressing.main()}
+   * and {@code TestFstDirectAddressing.testWorstCaseForDirectAddressing()}
+   * to evaluate a change.
+   *
+   * @see #setDirectAddressingMaxOversizingFactor
    */
-  // A value of 2.0 is expected to increase the FST size by 12% to have 48% of fixed array nodes with direct addressing.
-  // A value of 2.3 is expected to increase the FST size by 24% to have 74% of fixed array nodes with direct addressing.
-  // Use TestFSTs.testWorstCaseForDirectAddressing() to evaluate.
-  static final float DIRECT_ADDRESSING_MAX_OVERSIZING_FACTOR = 2.0f;
+  static final float DIRECT_ADDRESSING_MAX_OVERSIZING_FACTOR = 1.0f;
 
   private final NodeHash<T> dedupHash;
   final FST<T> fst;
@@ -103,6 +119,7 @@ public class Builder<T> {
 
   boolean allowFixedLengthArcs;
   float directAddressingMaxOversizingFactor = DIRECT_ADDRESSING_MAX_OVERSIZING_FACTOR;
+  long directAddressingExpansionCredit;
 
   BytesStore bytes;
 
@@ -188,14 +205,13 @@ public class Builder<T> {
   }
 
   /**
-   * Sets the maximum oversizing of fixed array allowed to enable direct addressing of arcs
-   * instead of binary search.
-   * <p>
-   * The current heuristic value controls the FST size increase below 10%, to have 55%
-   * of the fixed length arc nodes with direct addressing for performance.
+   * Overrides the default the maximum oversizing of fixed array allowed to enable direct addressing
+   * of arcs instead of binary search.
    * <p>
    * Setting this factor to a negative value (e.g. -1) effectively disables direct addressing,
    * only binary search nodes will be created.
+   *
+   * @see #DIRECT_ADDRESSING_MAX_OVERSIZING_FACTOR
    */
   public Builder<T> setDirectAddressingMaxOversizingFactor(float factor) {
     directAddressingMaxOversizingFactor = factor;

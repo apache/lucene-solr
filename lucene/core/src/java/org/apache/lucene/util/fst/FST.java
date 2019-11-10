@@ -91,19 +91,28 @@ public final class FST<T> implements Accountable {
   static final byte ARCS_FOR_DIRECT_ADDRESSING = 1 << 6;
 
   /**
-   * @see #shouldExpandNodeWithFixedLengthArcs(Builder, Builder.UnCompiledNode)
+   * @see #shouldExpandNodeWithFixedLengthArcs
    */
   static final int FIXED_LENGTH_ARC_SHALLOW_DEPTH = 3; // 0 => only root node.
 
   /**
-   * @see #shouldExpandNodeWithFixedLengthArcs(Builder, Builder.UnCompiledNode)
+   * @see #shouldExpandNodeWithFixedLengthArcs
    */
   static final int FIXED_LENGTH_ARC_SHALLOW_NUM_ARCS = 5;
 
   /**
-   * @see #shouldExpandNodeWithFixedLengthArcs(Builder, Builder.UnCompiledNode)
+   * @see #shouldExpandNodeWithFixedLengthArcs
    */
   static final int FIXED_LENGTH_ARC_DEEP_NUM_ARCS = 10;
+
+  /**
+   * Maximum oversizing factor allowed for direct addressing compared to binary search when expansion
+   * credits allow the oversizing. This factor prevents expansions that are obviously too costly even
+   * if there are sufficient credits.
+   *
+   * @see #shouldExpandNodeWithDirectAddressing
+   */
+  private static final float DIRECT_ADDRESSING_MAX_OVERSIZE_WITH_CREDIT_FACTOR = 1.66f;
 
   // Increment version to change it
   private static final String FILE_FORMAT_NAME = "FST";
@@ -804,6 +813,56 @@ public final class FST<T> implements Accountable {
     return thisNodeAddress;
   }
 
+  /**
+   * Returns whether the given node should be expanded with fixed length arcs.
+   * Nodes will be expanded depending on their depth (distance from the root node) and their number
+   * of arcs.
+   * <p>
+   * Nodes with fixed length arcs use more space, because they encode all arcs with a fixed number
+   * of bytes, but they allow either binary search or direct addressing on the arcs (instead of linear
+   * scan) on lookup by arc label.
+   */
+  private boolean shouldExpandNodeWithFixedLengthArcs(Builder<T> builder, Builder.UnCompiledNode<T> node) {
+    return builder.allowFixedLengthArcs &&
+        ((node.depth <= FIXED_LENGTH_ARC_SHALLOW_DEPTH && node.numArcs >= FIXED_LENGTH_ARC_SHALLOW_NUM_ARCS) ||
+            node.numArcs >= FIXED_LENGTH_ARC_DEEP_NUM_ARCS);
+  }
+
+  /**
+   * Returns whether the given node should be expanded with direct addressing instead of binary search.
+   * <p>
+   * Prefer direct addressing for performance if it does not oversize binary search byte size too much,
+   * so that the arcs can be directly addressed by label.
+   *
+   * @see Builder#getDirectAddressingMaxOversizingFactor()
+   */
+  private boolean shouldExpandNodeWithDirectAddressing(Builder<T> builder, Builder.UnCompiledNode<T> nodeIn,
+                                                       int numBytesPerArc, int maxBytesPerArcWithoutLabel, int labelRange) {
+    // Anticipate precisely the size of the encodings.
+    int sizeForBinarySearch = numBytesPerArc * nodeIn.numArcs;
+    int sizeForDirectAddressing = getNumPresenceBytes(labelRange) + builder.numLabelBytesPerArc[0]
+        + maxBytesPerArcWithoutLabel * nodeIn.numArcs;
+
+    // Determine the allowed oversize compared to binary search.
+    // This is defined by a parameter of FST Builder (default 1: no oversize).
+    int allowedOversize = (int) (sizeForBinarySearch * builder.getDirectAddressingMaxOversizingFactor());
+    int expansionCost = sizeForDirectAddressing - allowedOversize;
+
+    // Select direct addressing if either:
+    // - Direct addressing size is smaller than binary search.
+    //   In this case, increment the credit by the reduced size (to use it later).
+    // - Direct addressing size is larger than binary search, but the positive credit allows the oversizing.
+    //   In this case, decrement the credit by the oversize.
+    // In addition, do not try to oversize to a clearly too large node size
+    // (this is the DIRECT_ADDRESSING_MAX_OVERSIZE_WITH_CREDIT_FACTOR parameter).
+    if (expansionCost <= 0 || (builder.directAddressingExpansionCredit >= expansionCost
+        && sizeForDirectAddressing <= allowedOversize * DIRECT_ADDRESSING_MAX_OVERSIZE_WITH_CREDIT_FACTOR)) {
+      builder.directAddressingExpansionCredit -= expansionCost;
+      return true;
+    }
+    return false;
+  }
+
   private void writeNodeForBinarySearch(Builder<T> builder, Builder.UnCompiledNode<T> nodeIn, long startAddress, int maxBytesPerArc) {
     // Build the header in a buffer.
     // It is a false/special arc which is in fact a node header with node flags followed by node metadata.
@@ -1492,42 +1551,6 @@ public final class FST<T> implements Accountable {
     }
   }
 
-  /**
-   * Returns whether the given node should be expanded with fixed length arcs.
-   * Nodes will be expanded depending on their depth (distance from the root node) and their number
-   * of arcs.
-   * <p>
-   * Nodes with fixed length arcs consumes more RAM, because they encodes all arcs with a fixed number
-   * of bytes, but they allow either binary search or direct addressing on the arcs (instead of linear
-   * scan) on lookup by arc label.
-   *
-   * @see #FIXED_LENGTH_ARC_SHALLOW_DEPTH
-   * @see #FIXED_LENGTH_ARC_SHALLOW_NUM_ARCS
-   * @see #FIXED_LENGTH_ARC_DEEP_NUM_ARCS
-   * @see Builder.UnCompiledNode#depth
-   */
-  private boolean shouldExpandNodeWithFixedLengthArcs(Builder<T> builder, Builder.UnCompiledNode<T> node) {
-    return builder.allowFixedLengthArcs &&
-      ((node.depth <= FIXED_LENGTH_ARC_SHALLOW_DEPTH && node.numArcs >= FIXED_LENGTH_ARC_SHALLOW_NUM_ARCS) ||
-       node.numArcs >= FIXED_LENGTH_ARC_DEEP_NUM_ARCS);
-  }
-
-  /**
-   * Returns whether the given node should be expanded with direct addressing (maybe more memory but faster)
-   * instead of binary search.
-   * <p>
-   * Prefer direct addressing for performance if it does not oversize binary search too much, so that
-   * the arcs can be directly addressed by label.
-   *
-   * @see Builder#getDirectAddressingMaxOversizingFactor()
-   */
-  private boolean shouldExpandNodeWithDirectAddressing(Builder<T> builder, Builder.UnCompiledNode<T> nodeIn,
-                                                       int numBytesPerArc, int maxBytesPerArcWithoutLabel, int labelRange) {
-    int sizeForBinarySearch = numBytesPerArc * nodeIn.numArcs;
-    int sizeForDirectAddressing = getNumPresenceBytes(labelRange) + builder.numLabelBytesPerArc[0] + maxBytesPerArcWithoutLabel * nodeIn.numArcs;
-    return sizeForDirectAddressing <= sizeForBinarySearch * builder.getDirectAddressingMaxOversizingFactor();
-  }
-  
   /** Returns a {@link BytesReader} for this FST, positioned at
    *  position 0. */
   public BytesReader getBytesReader() {
