@@ -95,7 +95,6 @@ public class TestIndexWriterTermsHashOverflow extends LuceneTestCase {
    * @param tokensPerDoc a way to vary the size of each doc submitted for indexing
    * @param nbDocs how many docs to add (while throwing IOException on each one during addition)
    * @param identicalDocs <code>false</code> if docs should all contain different tokens, <code>true</code> if docs should be identical.
-   * @throws Exception
    */
   private void internalMultiDocsTest(int tokensPerDoc, int nbDocs, boolean identicalDocs) throws Exception {
     // Analyzer will throw IOException on the last token of the doc
