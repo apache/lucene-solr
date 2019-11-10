@@ -17,9 +17,7 @@
 package org.apache.lucene.util.fst;
 
 import java.io.BufferedReader;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -185,7 +183,7 @@ public class TestFstDirectAddressing extends LuceneTestCase {
 
     // Read real english words.
     List<BytesRef> wordList = new ArrayList<>();
-    try (BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(wordsFilePath), StandardCharsets.UTF_8))) {
+    try (BufferedReader reader = Files.newBufferedReader(Paths.get(wordsFilePath))) {
       while (wordList.size() < MAX_NUM_WORDS) {
         String word = reader.readLine();
         if (word == null) {
