@@ -436,9 +436,10 @@ final class DocumentsWriter implements Closeable, Accountable {
     boolean hasEvents = preUpdate();
 
     final ThreadState perThread = flushControl.obtainAndLock();
-    final DocumentsWriterPerThread flushingDWPT;
-    long seqNo;
 
+    DocumentsWriterPerThread flushingDWPT = null; // value unused but javac can't tell
+    long seqNo = 0; // value unused but javac can't tell
+    boolean aborting = true;
     try {
       // This must happen after we've pulled the ThreadState because IW.close
       // waits for all ThreadStates to be released:
@@ -450,27 +451,32 @@ final class DocumentsWriter implements Closeable, Accountable {
       try {
         seqNo = dwpt.updateDocuments(docs, analyzer, delNode, flushNotifications);
       } finally {
-        if (dwpt.isAborted()) {
-          flushControl.doOnAbort(perThread);
-        }
         // We don't know how many documents were actually
         // counted as indexed, so we must subtract here to
         // accumulate our separate counter:
         numDocsInRAM.addAndGet(dwpt.getNumDocsInRAM() - dwptNumDocs);
+
+        if (dwpt.isAborted()) {
+          flushControl.doOnAbort(perThread);
+        } else {
+          // Flush might be needed when dwpt.updateDocuments() succeeded or after non aborting exception
+          aborting = false;
+          final boolean isUpdate = delNode != null && delNode.isDelete();
+          flushingDWPT = flushControl.doAfterDocument(perThread, isUpdate);
+        }
       }
-      final boolean isUpdate = delNode != null && delNode.isDelete();
-      flushingDWPT = flushControl.doAfterDocument(perThread, isUpdate);
 
       assert seqNo > perThread.lastSeqNo: "seqNo=" + seqNo + " lastSeqNo=" + perThread.lastSeqNo;
       perThread.lastSeqNo = seqNo;
 
     } finally {
       perThreadPool.release(perThread);
+
+      if (!aborting && postUpdate(flushingDWPT, hasEvents)) {
+        seqNo = -seqNo;
+      }
     }
 
-    if (postUpdate(flushingDWPT, hasEvents)) {
-      seqNo = -seqNo;
-    }
     return seqNo;
   }
 
@@ -481,8 +487,9 @@ final class DocumentsWriter implements Closeable, Accountable {
 
     final ThreadState perThread = flushControl.obtainAndLock();
 
-    final DocumentsWriterPerThread flushingDWPT;
-    long seqNo;
+    DocumentsWriterPerThread flushingDWPT = null; // value unused but javac can't tell
+    long seqNo = 0; // value unused but javac can't tell
+    boolean aborting = true;
     try {
       // This must happen after we've pulled the ThreadState because IW.close
       // waits for all ThreadStates to be released:
@@ -494,26 +501,30 @@ final class DocumentsWriter implements Closeable, Accountable {
       try {
         seqNo = dwpt.updateDocument(doc, analyzer, delNode, flushNotifications);
       } finally {
-        if (dwpt.isAborted()) {
-          flushControl.doOnAbort(perThread);
-        }
-        // We don't know whether the document actually
-        // counted as being indexed, so we must subtract here to
+        // We don't know how many documents were actually
+        // counted as indexed, so we must subtract here to
         // accumulate our separate counter:
         numDocsInRAM.addAndGet(dwpt.getNumDocsInRAM() - dwptNumDocs);
+
+        if (dwpt.isAborted()) {
+          flushControl.doOnAbort(perThread);
+        } else {
+          // Flush might be needed when dwpt.updateDocuments() succeeded or after non aborting exception
+          aborting = false;
+          final boolean isUpdate = delNode != null && delNode.isDelete();
+          flushingDWPT = flushControl.doAfterDocument(perThread, isUpdate);
+        }
       }
-      final boolean isUpdate = delNode != null && delNode.isDelete();
-      flushingDWPT = flushControl.doAfterDocument(perThread, isUpdate);
 
       assert seqNo > perThread.lastSeqNo: "seqNo=" + seqNo + " lastSeqNo=" + perThread.lastSeqNo;
       perThread.lastSeqNo = seqNo;
 
     } finally {
       perThreadPool.release(perThread);
-    }
 
-    if (postUpdate(flushingDWPT, hasEvents)) {
-      seqNo = -seqNo;
+      if (!aborting && postUpdate(flushingDWPT, hasEvents)) {
+        seqNo = -seqNo;
+      }
     }
     
     return seqNo;

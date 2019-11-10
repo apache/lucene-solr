@@ -16,6 +16,7 @@
  */
 package org.apache.lucene.index;
 
+import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.index.DocumentsWriterPerThreadPool.ThreadState;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.InfoStream;
@@ -94,14 +95,14 @@ abstract class FlushPolicy {
   }
 
   /**
-   * Returns the current most RAM consuming non-pending {@link ThreadState} with
-   * at least one indexed document.
+   * Returns the current most RAM consuming non-pending {@link ThreadState}. It might have 0 indexed documents
+   * because {@link DocumentsWriter#updateDocument} and {@link DocumentsWriter#updateDocuments} can trigger flush after
+   * non aborting error.
    * <p>
    * This method will never return <code>null</code>
    */
   protected ThreadState findLargestNonPendingWriter(
       DocumentsWriterFlushControl control, ThreadState perThreadState) {
-    assert perThreadState.dwpt.getNumDocsInRAM() > 0;
     // the dwpt which needs to be flushed eventually
     ThreadState maxRamUsingThreadState = control.findLargestNonPendingWriter();
     assert assertMessage("set largest ram consuming thread pending on lower watermark");

@@ -282,20 +282,18 @@ final class DocumentsWriterFlushControl implements Accountable {
 
   /**
    * Sets flush pending state on the given {@link ThreadState}. The
-   * {@link ThreadState} must have indexed at least on Document and must not be
-   * already pending.
+   * {@link ThreadState} must not be already pending.
+   * It might not have indexed any document in case all docs submitted to it errored out.
    */
   public synchronized void setFlushPending(ThreadState perThread) {
     assert !perThread.flushPending;
-    if (perThread.dwpt.getNumDocsInRAM() > 0) {
-      perThread.flushPending = true; // write access synced
-      final long bytes = perThread.bytesUsed;
-      flushBytes += bytes;
-      activeBytes -= bytes;
-      numPending++; // write access synced
-      assert assertMemory();
-    } // don't assert on numDocs since we could hit an abort excp. while selecting that dwpt for flushing
-    
+    perThread.flushPending = true; // write access synced
+    final long bytes = perThread.bytesUsed;
+    flushBytes += bytes;
+    activeBytes -= bytes;
+    numPending++; // write access synced
+    assert assertMemory();
+    // even if numDocs initially non 0, we could hit an abort excp. while selecting that dwpt for flushing
   }
   
   synchronized void doOnAbort(ThreadState state) {
@@ -726,7 +724,7 @@ final class DocumentsWriterFlushControl implements Accountable {
       ThreadState next = activePerThreadsIterator.next();
       if (!next.flushPending) {
         final long nextRam = next.bytesUsed;
-        if (nextRam > 0 && next.dwpt.getNumDocsInRAM() > 0) {
+        if (nextRam > 0) {
           if (infoStream.isEnabled("FP")) {
             infoStream.message("FP", "thread state has " + nextRam + " bytes; docInRAM=" + next.dwpt.getNumDocsInRAM());
           }

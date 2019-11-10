@@ -439,13 +439,7 @@ final class DefaultIndexingChain extends DocConsumer {
     if (fieldType.indexOptions() != IndexOptions.NONE) {
       fp = getOrAddField(fieldName, fieldType, true);
       boolean first = fp.fieldGen != fieldGen;
-      try {
-        fp.invert(field, first);
-      } catch (IOException e) {
-        // An exception getting the token should be treated the same as an exception trying to write it
-        docWriter.onAbortingException(e);
-        throw e;
-      }
+      fp.invert(field, first);
 
       if (first) {
         fields[fieldCount++] = fp;
