@@ -80,7 +80,7 @@ public final class CompetitiveImpactAccumulator {
     }
   }
 
-  /** Get the set of competitive freq and norm pairs, orderer by increasing freq and norm. */
+  /** Get the set of competitive freq and norm pairs, ordered by increasing freq and norm. */
   public SortedSet<Impact> getCompetitiveFreqNormPairs() {
     if (dirty) {
       for (int i = 0; i < maxFreqs.length; ++i) {
