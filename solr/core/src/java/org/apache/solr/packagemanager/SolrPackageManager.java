@@ -130,22 +130,26 @@ public class SolrPackageManager implements Closeable {
       }
 
       // Setup/update all the plugins in the package
-      for (Plugin p: packageInstance.getPlugins()) {
+      for (Plugin plugin: packageInstance.getPlugins()) {
         Map<String, String> systemParams = new HashMap<String,String>();
         systemParams.put("collection", collection);
         systemParams.put("package-name", packageInstance.name);
         systemParams.put("package-version", packageInstance.version);
 
-        Command cmd = isUpdate? p.updateCommand: p.setupCommand;
-        if (cmd != null && !Strings.isNullOrEmpty(cmd.method)) {
-          try {
-            String payload = resolve(new ObjectMapper().writeValueAsString(cmd.payload), packageInstance.parameterDefaults, collectionParameterOverrides, systemParams);
-            String path = resolve(cmd.path, packageInstance.parameterDefaults, collectionParameterOverrides, systemParams);
-            PackageUtils.postMessage(PackageUtils.GREEN, log, false, "Executing " + payload + " for collection:" + collection);
-            // nocommit prompt
-            SolrCLI.postJsonToSolr(solrClient, path, payload);
-          } catch (Exception ex) {
-            throw new SolrException(ErrorCode.SERVER_ERROR, ex);
+        if (!isUpdate) {
+          Command cmd = plugin.setupCommand;
+          if (cmd != null && !Strings.isNullOrEmpty(cmd.method)) {
+            try {
+              String payload = resolve(new ObjectMapper().writeValueAsString(cmd.payload), packageInstance.parameterDefaults, collectionParameterOverrides, systemParams);
+              String path = resolve(cmd.path, packageInstance.parameterDefaults, collectionParameterOverrides, systemParams);
+              PackageUtils.postMessage(PackageUtils.GREEN, log, false, "Executing " + payload + " for collection:" + collection);
+              // nocommit prompt and better message
+              SolrCLI.postJsonToSolr(solrClient, path, payload);
+            } catch (Exception ex) {
+              throw new SolrException(ErrorCode.SERVER_ERROR, ex);
+            }
+          } else {
+            PackageUtils.postMessage(PackageUtils.RED, log, false, "There is no setup command to execute for plugin: " + plugin.name);
           }
         }
       }
@@ -208,7 +212,7 @@ public class SolrPackageManager implements Closeable {
           String expectedValue = resolve(cmd.expected, pkg.parameterDefaults, collectionParameterOverrides, systemParams);
           PackageUtils.postMessage(PackageUtils.GREEN, log, false, "Actual: "+actualValue+", expected: "+expectedValue);
           if (!expectedValue.equals(actualValue)) {
-            PackageUtils.postMessage(PackageUtils.GREEN, log, false, "Failed to deploy plugin: "+p.id);
+            PackageUtils.postMessage(PackageUtils.RED, log, false, "Failed to deploy plugin: "+p.name);
             success = false;
           }
         } // nocommit POST?

@@ -5,6 +5,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.common.util.ReflectMapWriter;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
@@ -18,7 +20,7 @@ public class SolrPackage implements Comparable<SolrPackage> {
 
   private String repository;
 
-  public static class SolrPackageRelease {
+  public static class SolrPackageRelease implements ReflectMapWriter {
 
     public String version;
     public Date date;
@@ -30,18 +32,7 @@ public class SolrPackage implements Comparable<SolrPackage> {
     public Manifest manifest;
     @Override
     public String toString() {
-      return "SolrPackageRelease{" +
-          "version='" + version + '\'' +
-          ", date=" + date +
-          ", url='" + url + '\'' +
-          ", sig='" + sig + '\'' +
-          ", min='" + manifest.minSolrVersion + '\'' +
-          ", max='" + manifest.maxSolrVersion + '\'' +
-          ", dependencies='" + manifest.dependencies + '\'' +
-          ", plugins='" + manifest.plugins + '\'' +
-          ", paramDefaults='" + manifest.parameterDefaults + '\'' +
-          ", sha512sum='" + sha512sum + '\'' +
-          '}';
+      return jsonStr();
     }
   }
 
@@ -57,13 +48,10 @@ public class SolrPackage implements Comparable<SolrPackage> {
     public Map<String, String> parameterDefaults;
   }
 
-  public static class Plugin {
-    public String id;
+  public static class Plugin implements ReflectMapWriter {
+    public String name;
     @JsonProperty("setup-command")
     public Command setupCommand;
-
-    @JsonProperty("update-command")
-    public Command updateCommand;
 
     @JsonProperty("uninstall-command")
     public Command uninstallCommand;
@@ -73,7 +61,7 @@ public class SolrPackage implements Comparable<SolrPackage> {
 
     @Override
     public String toString() {
-      return id + ": {setup: "+setupCommand+", update: "+updateCommand+", uninstall: "+uninstallCommand+", verify: "+verifyCommand+"}";
+      return jsonStr();
     }
   }
 

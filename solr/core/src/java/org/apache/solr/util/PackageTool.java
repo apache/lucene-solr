@@ -59,7 +59,7 @@ import com.jayway.jsonpath.PathNotFoundException;
 
 
 public class PackageTool extends SolrCLI.ToolBase {
-  
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
@@ -75,66 +75,72 @@ public class PackageTool extends SolrCLI.ToolBase {
 
   @Override
   protected void runImpl(CommandLine cli) throws Exception {
-    // Need a logging free, clean output going through to the user.
-    Configurator.setRootLevel(Level.OFF);
+    try {
+      // Need a logging free, clean output going through to the user.
+      Configurator.setRootLevel(Level.OFF);
 
-    solrUrl = cli.getOptionValues("solrUrl")[cli.getOptionValues("solrUrl").length-1];
-    solrBaseUrl = solrUrl.replaceAll("\\/solr$", ""); // strip out ending "/solr"
-    log.info("Solr url: "+solrUrl+", solr base url: "+solrBaseUrl);
-    solrClient = new HttpSolrClient.Builder(solrBaseUrl).build(); // nocommit close this
-    String zkHost = getZkHost(cli);
+      solrUrl = cli.getOptionValues("solrUrl")[cli.getOptionValues("solrUrl").length-1];
+      solrBaseUrl = solrUrl.replaceAll("\\/solr$", ""); // strip out ending "/solr"
+      log.info("Solr url: "+solrUrl+", solr base url: "+solrBaseUrl);
+      solrClient = new HttpSolrClient.Builder(solrBaseUrl).build(); // nocommit close this
+      String zkHost = getZkHost(cli);
 
-    log.info("ZK: "+zkHost);
-    String cmd = cli.getArgs()[0];
+      log.info("ZK: "+zkHost);
+      String cmd = cli.getArgs()[0];
 
-    try (SolrZkClient zkclient = new SolrZkClient(zkHost, 30000)) {
-      if (cmd != null) {
-        packageManager = new SolrPackageManager(solrClient, solrBaseUrl, zkHost); 
-        try {
-          updateManager = new SolrUpdateManager(solrClient, packageManager,
-              getRepositoriesJson(zkclient), solrBaseUrl);
+      try (SolrZkClient zkclient = new SolrZkClient(zkHost, 30000)) {
+        if (cmd != null) {
+          packageManager = new SolrPackageManager(solrClient, solrBaseUrl, zkHost); 
+          try {
+            updateManager = new SolrUpdateManager(solrClient, packageManager,
+                getRepositoriesJson(zkclient), solrBaseUrl);
 
-          switch (cmd) {
-            case "add-repo":
-              addRepo(zkHost, cli.getArgs()[1], cli.getArgs()[2]);
-              break;
-            case "list-installed":
-              listInstalled(cli.getArgList().subList(1, cli.getArgList().size()));
-              break;
-            case "list-available":
-              try {
-                listAvailable(cli.getArgList().subList(1, cli.getArgList().size()));
-              } catch (SolrException ex) {
-                ex.printStackTrace();
-              }
-              break;
-            case "install":
-              install(cli.getArgList().subList(1, cli.getArgList().size()));
-              break;
-            case "deploy":
-              String packageName = cli.getArgList().get(1).toString().split(":")[0];
-              String version = cli.getArgList().get(1).toString().contains(":")? // nocommit, fix
-                  cli.getArgList().get(1).toString().split(":")[1]: null;
-                  deploy(packageName, version, cli.hasOption("update"), cli.getOptionValues("collections"), cli.getOptionValues("param"));
-                  break;
-            case "update":
-              if (cli.getArgList().size() == 1) {
-                update();
-              } else {
-                updatePackage(zkHost, cli.getArgs()[1], cli.getArgList().subList(2, cli.getArgList().size()));
-              }
-              break;
-            default:
-              throw new RuntimeException("Unrecognized command: "+cmd);
-          };
-        } finally {
-          packageManager.close();
+            switch (cmd) {
+              case "add-repo":
+                addRepo(zkHost, cli.getArgs()[1], cli.getArgs()[2]);
+                break;
+              case "list-installed":
+                listInstalled(cli.getArgList().subList(1, cli.getArgList().size()));
+                break;
+              case "list-available":
+                try {
+                  listAvailable(cli.getArgList().subList(1, cli.getArgList().size()));
+                } catch (SolrException ex) {
+                  ex.printStackTrace();
+                }
+                break;
+              case "install":
+                install(cli.getArgList().subList(1, cli.getArgList().size()));
+                break;
+              case "deploy":
+                String packageName = cli.getArgList().get(1).toString().split(":")[0];
+                String version = cli.getArgList().get(1).toString().contains(":")? // nocommit, fix
+                    cli.getArgList().get(1).toString().split(":")[1]: null;
+                    deploy(packageName, version, cli.hasOption("update"), cli.getOptionValues("collections"), cli.getOptionValues("param"));
+                    break;
+              case "update":
+                if (cli.getArgList().size() == 1) {
+                  update();
+                } else {
+                  updatePackage(zkHost, cli.getArgs()[1], cli.getArgList().subList(2, cli.getArgList().size()));
+                }
+                break;
+              default:
+                throw new RuntimeException("Unrecognized command: "+cmd);
+            };
+          } finally {
+            packageManager.close();
+          }
         }
+      } finally {
+        solrClient.close();
       }
-    } finally {
-      solrClient.close();
+      log.info("Finished: "+cmd); // nocommit
+
+    } catch (Exception ex) {
+      ex.printStackTrace();
+      throw ex;
     }
-    log.info("Finished: "+cmd); // nocommit
   }
 
   protected void addRepo(String zkHost, String name, String uri) throws KeeperException, InterruptedException, MalformedURLException, IOException {
@@ -195,7 +201,7 @@ public class PackageTool extends SolrCLI.ToolBase {
     SolrPackageInstance packageInstance = packageManager.getPackageInstance(packageName, version);
     // nocommit if not found, exception here
     if (version == null) version = packageInstance.getVersion();
-    
+
     Manifest manifest = packageInstance.manifest;
     if (PackageUtils.checkVersionConstraint(SolrUpdateManager.systemVersion, manifest.minSolrVersion, manifest.maxSolrVersion) == false) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Version incompatible! Solr version: "
@@ -203,7 +209,7 @@ public class PackageTool extends SolrCLI.ToolBase {
           + ", maxSolrVersion: "+manifest.maxSolrVersion);
     }
 
-    
+
     PackageUtils.postMessage(PackageUtils.GREEN, log, false, packageManager.deployPackage(packageInstance, pegToLatest, isUpdate,
         Arrays.asList(collections), parameters));
   }

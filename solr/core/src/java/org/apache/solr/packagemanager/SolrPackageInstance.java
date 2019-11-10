@@ -3,13 +3,14 @@ package org.apache.solr.packagemanager;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.packagemanager.SolrPackage.Manifest;
 import org.apache.solr.packagemanager.SolrPackage.Plugin;
 
 /**
  * Describes one instance of a package as it exists in Solr when installed.
  */
-public class SolrPackageInstance {
+public class SolrPackageInstance implements ReflectMapWriter {
 	final public String name;
 	final public String description;
 	final public String version;

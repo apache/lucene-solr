@@ -14,15 +14,10 @@
           "dependencies": [],
           "plugins": [
             {
-              "id": "request-handler",
+              "name": "request-handler",
               "setup-command": {
                 "path": "/api/collections/${collection}/config",
                 "payload": {"add-requesthandler": {"name": "${RH-HANDLER-PATH}", "class": "question-answer:fullstory.QARequestHandler", "defaults":{ "x": "y" ,"a": "b", "rows":10 }, "useParams": "x"}},
-                "method": "POST"
-              },
-              "update-command": {
-                "path": "/api/collections/${collection}/config",
-                "payload": {"update-requesthandler": {"name": "${RH-HANDLER-PATH}", "class": "question-answer:fullstory.QARequestHandler", "defaults":{ "x": "y" ,"a": "b", "rows":10 }, "useParams": "x"}},
                 "method": "POST"
               },
               "uninstall-command": null,
@@ -43,7 +38,7 @@
         "version": "1.1.0",
         "date": "2019-01-01",
         "url": "question-answer-request-handler-1.1.jar",
-        "sig": "LsxF+NbzRxCj1azNoluGWC5NidCTVyvvQdNgJJB3D7RDvRtzuaRUFnwbhhFsJOujZ5PcLVOOfmoti4YQegtqJA=="
+        "sig": "HUmyFcZSu5lsaII505oYV0m/7CRUJ79oX3exOfxn3pcs3YKNMydqElZ0uuS5M+Pg9FXrN22fBp+0Wjx5M2XAZA=="
       }
     ]
   }
