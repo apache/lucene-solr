@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.lucene.luke.app.desktop.util.StringUtils;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -23,6 +22,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Strings;
 import com.jayway.jsonpath.JsonPath;
 
 public class SolrPackageManager implements Closeable {
@@ -136,13 +136,13 @@ public class SolrPackageManager implements Closeable {
         systemParams.put("package-name", packageInstance.name);
         systemParams.put("package-version", packageInstance.version);
 
-        //String cmd = resolve(isUpdate? p.updateCommand: p.setupCommand, packageInstance.parameterDefaults, collectionParameterOverrides, systemParams);
         Command cmd = isUpdate? p.updateCommand: p.setupCommand;
-        if (cmd != null && !StringUtils.isNullOrEmpty(cmd.method)) {
+        if (cmd != null && !Strings.isNullOrEmpty(cmd.method)) {
           try {
             String payload = resolve(new ObjectMapper().writeValueAsString(cmd.payload), packageInstance.parameterDefaults, collectionParameterOverrides, systemParams);
             String path = resolve(cmd.path, packageInstance.parameterDefaults, collectionParameterOverrides, systemParams);
-            System.out.println("Executing " + payload + " for collection:" + collection);
+            PackageUtils.postMessage(PackageUtils.GREEN, log, false, "Executing " + payload + " for collection:" + collection);
+            // nocommit prompt
             SolrCLI.postJsonToSolr(solrClient, path, payload);
           } catch (Exception ex) {
             throw new SolrException(ErrorCode.SERVER_ERROR, ex);
@@ -163,7 +163,7 @@ public class SolrPackageManager implements Closeable {
     // Verify that package was successfully deployed
     boolean success = verify(packageInstance, collections);
     if (success) {
-      System.out.println("Deployed and verified package: " + packageInstance.name + ", version: " + packageInstance.version);
+      PackageUtils.postMessage(PackageUtils.GREEN, log, false, "Deployed and verified package: " + packageInstance.name + ", version: " + packageInstance.version);
     }
     return success;
   }
@@ -187,9 +187,9 @@ public class SolrPackageManager implements Closeable {
     // verify deployment succeeded?
     boolean success = true;
     for (Plugin p: pkg.getPlugins()) {
-      System.out.println(p.verifyCommand);
+      PackageUtils.postMessage(PackageUtils.GREEN, log, false, p.verifyCommand);
       for (String collection: collections) {
-        System.out.println("Executing " + p.verifyCommand + " for collection:" + collection);
+        PackageUtils.postMessage(PackageUtils.GREEN, log, false, "Executing " + p.verifyCommand + " for collection:" + collection);
         Map<String, String> collectionParameterOverrides = getPackageParams(pkg.name, collection);
 
         Command cmd = p.verifyCommand;
@@ -202,13 +202,13 @@ public class SolrPackageManager implements Closeable {
 
         if ("GET".equalsIgnoreCase(cmd.method)) {
           String response = PackageUtils.getJson(solrClient.getHttpClient(), url);
-          System.out.println(response);
+          PackageUtils.postMessage(PackageUtils.GREEN, log, false, response);
           String actualValue = JsonPath.parse(response, PackageUtils.jsonPathConfiguration())
               .read(resolve(cmd.condition, pkg.parameterDefaults, collectionParameterOverrides, systemParams));
           String expectedValue = resolve(cmd.expected, pkg.parameterDefaults, collectionParameterOverrides, systemParams);
-          System.out.println("Actual: "+actualValue+", expected: "+expectedValue);
+          PackageUtils.postMessage(PackageUtils.GREEN, log, false, "Actual: "+actualValue+", expected: "+expectedValue);
           if (!expectedValue.equals(actualValue)) {
-            System.out.println("Failed to deploy plugin: "+p.id);
+            PackageUtils.postMessage(PackageUtils.GREEN, log, false, "Failed to deploy plugin: "+p.id);
             success = false;
           }
         } // nocommit POST?

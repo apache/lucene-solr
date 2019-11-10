@@ -34,6 +34,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.slf4j.Logger;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.zafarkhaja.semver.Version;
@@ -112,5 +113,29 @@ public class PackageUtils {
   public static int compareVersions(String v1, String v2) {
     return Version.valueOf(v1).compareTo(Version.valueOf(v2));
   }
+
+  public static String BLACK = "\u001B[30m";
+  public static String RED = "\u001B[31m";
+  public static String GREEN = "\u001B[32m";
+  public static String YELLOW = "\u001B[33m";
+  public static String BLUE = "\u001B[34m";
+  public static String PURPLE = "\u001B[35m";
+  public static String CYAN = "\u001B[36m";
+  public static String WHITE = "\u001B[37m";
+
+  public static void postMessage(String color, Logger log, boolean printInLog, Object message) {
+
+    String RESET = "\u001B[0m";
+
+    if (color != null) {
+      System.out.println(color + String.valueOf(message) + RESET);
+    } else {
+      System.out.println(message);
+    }
+    if (printInLog) {
+      log.info(String.valueOf(message));
+    }
+
+}
 
 }

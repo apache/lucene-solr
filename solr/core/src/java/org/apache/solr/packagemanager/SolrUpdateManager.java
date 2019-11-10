@@ -96,7 +96,7 @@ public class SolrUpdateManager {
 
     try {
       // post the metadata
-      System.out.println("Posting metadata");
+      PackageUtils.postMessage(PackageUtils.GREEN, log, false, "Posting metadata");
       
       if (release.manifest == null) {
         String manifestJson = PackageUtils.getFileFromJar(downloaded, "manifest.json");
@@ -110,7 +110,7 @@ public class SolrUpdateManager {
       // nocommit calculate SHA512 after posting?
 
       // post the artifacts
-      System.out.println("Posting artifacts");
+      PackageUtils.postMessage(PackageUtils.GREEN, log, false, "Posting artifacts");
       PackageUtils.postFile(solrClient, ByteBuffer.wrap(FileUtils.readFileToByteArray(downloaded.toFile())),
           "/package/"+packageName+"/"+version+"/"+downloaded.getFileName().toString(),
           release.sig
@@ -132,7 +132,7 @@ public class SolrUpdateManager {
 
       try {
         V2Response resp = req.process(solrClient);
-        System.out.println("Response: "+resp.jsonStr());
+        PackageUtils.postMessage(PackageUtils.GREEN, log, false, "Response: "+resp.jsonStr());
       } catch (SolrServerException | IOException e) {
         throw new SolrException(ErrorCode.BAD_REQUEST, e);
       }
