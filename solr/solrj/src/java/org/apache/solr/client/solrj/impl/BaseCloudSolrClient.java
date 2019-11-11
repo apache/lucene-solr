@@ -1124,17 +1124,13 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
       sortedReplicas.addAll(replicas);
 
-      if (collectionNames.size() > 1) {
-        String joinedInputCollections = StrUtils.join(inputCollections, ',');
-        Set<String> seenNodes = new HashSet<>();
-        sortedReplicas.forEach( replica -> {
-              if (seenNodes.add(replica.getNodeName())) {
-                theUrlList.add(ZkCoreNodeProps.getCoreUrl(replica.getBaseUrl(), joinedInputCollections));
-              }
-            });
-      } else {
-        sortedReplicas.stream().map(Replica::getCoreUrl).forEachOrdered(theUrlList::add);
-      }
+      String joinedInputCollections = StrUtils.join(inputCollections, ',');
+      Set<String> seenNodes = new HashSet<>();
+      sortedReplicas.forEach( replica -> {
+        if (seenNodes.add(replica.getNodeName())) {
+          theUrlList.add(ZkCoreNodeProps.getCoreUrl(replica.getBaseUrl(), joinedInputCollections));
+        }
+      });
 
       if (theUrlList.isEmpty()) {
         collectionStateCache.keySet().removeAll(collectionNames);
