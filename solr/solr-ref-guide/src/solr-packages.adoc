@@ -151,7 +151,7 @@ curl http://localhost:8983/api/cluster/package?omitHeader=true
 ----
 
 3) The Package is ready to use now. Now, use it in your collection.
-source,bash]
+[source,bash]
 ----
 curl  http://localhost:8983/api/c/gettingstarted/config -H 'Content-type:application/json' -d  '{
           "create-requesthandler" : { "name" : "/test",
