@@ -1,6 +1,9 @@
 package org.apache.solr.packagemanager;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -12,6 +15,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -21,9 +25,12 @@ import org.apache.solr.client.solrj.request.beans.Package;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.core.BlobRepository;
 import org.apache.solr.packagemanager.SolrPackage.Artifact;
 import org.apache.solr.packagemanager.SolrPackage.SolrPackageRelease;
+import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,8 +39,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class SolrUpdateManager {
 
   final private SolrPackageManager packageManager;
-  final private String repositoriesJsonStr;
-  protected List<SolrPackageRepository> repositories;
 
   public static final String systemVersion = Version.LATEST.toString();
 
@@ -41,39 +46,21 @@ public class SolrUpdateManager {
 
   private static final Logger log = LoggerFactory.getLogger(SolrUpdateManager.class);
 
-  public SolrUpdateManager(HttpSolrClient solrClient, SolrPackageManager packageManager, String repositoriesJsonStr, String solrBaseUrl) {
+  public SolrUpdateManager(HttpSolrClient solrClient, SolrPackageManager packageManager) {
     this.packageManager = packageManager;
-    this.repositoriesJsonStr = repositoriesJsonStr;
     this.solrClient = solrClient;
-  }
-
-  protected synchronized void initRepositoriesFromJson() {
-    SolrPackageRepository items[];
-    try {
-      items = new ObjectMapper().readValue(this.repositoriesJsonStr, SolrPackageRepository[].class);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-    this.repositories = Arrays.asList(items);
-  }
-
-  public synchronized void refresh() {
-    initRepositoriesFromJson();
-    for (SolrPackageRepository updateRepository: repositories) {
-      updateRepository.refresh();
-    }
   }
 
   public List<SolrPackage> getPackages() {
     List<SolrPackage> list = new ArrayList<>(getPackagesMap().values());
     Collections.sort(list);
-
     return list;
   }
 
+  // nocommit javadoc
   public Map<String, SolrPackage> getPackagesMap() {
     Map<String, SolrPackage> packagesMap = new HashMap<>();
-    for (SolrPackageRepository repository : getRepositories()) {
+    for (SolrPackageRepository repository: getRepositories()) {
       packagesMap.putAll(repository.getPackages());
     }
 
@@ -81,12 +68,53 @@ public class SolrUpdateManager {
   }
 
   public List<SolrPackageRepository> getRepositories() {
-    refresh();
+    SolrPackageRepository items[];
+    try {
+      items = new ObjectMapper().readValue(getRepositoriesJson(packageManager.zkClient), SolrPackageRepository[].class);
+    } catch (IOException | KeeperException | InterruptedException e) {
+      throw new SolrException(ErrorCode.SERVER_ERROR, e);
+    }
+    List<SolrPackageRepository> repositories = Arrays.asList(items);
+
+    for (SolrPackageRepository updateRepository: repositories) {
+      updateRepository.refresh();
+    }
+
     return repositories;
   }
 
-  public boolean updateOrInstallPackage(String packageName, String version) throws SolrException {
-    // nocommit: handle version being null
+  public void addRepo(String name, String uri) throws KeeperException, InterruptedException, MalformedURLException, IOException {
+    String existingRepositoriesJson = getRepositoriesJson(packageManager.zkClient);
+    log.info(existingRepositoriesJson);
+
+    List repos = new ObjectMapper().readValue(existingRepositoriesJson, List.class);
+    PackageUtils.postMessage(PackageUtils.GREEN, log, false, "SPR is: "+solrClient);
+    repos.add(new SolrPackageRepository(name, uri));
+    if (packageManager.zkClient.exists("/repositories.json", true) == false) {
+      packageManager.zkClient.create("/repositories.json", new ObjectMapper().writeValueAsString(repos).getBytes(), CreateMode.PERSISTENT, true);
+    } else {
+      packageManager.zkClient.setData("/repositories.json", new ObjectMapper().writeValueAsString(repos).getBytes(), true);
+    }
+
+    if (packageManager.zkClient.exists("/keys", true)==false) packageManager.zkClient.create("/keys", new byte[0], CreateMode.PERSISTENT, true);
+    if (packageManager.zkClient.exists("/keys/exe", true)==false) packageManager.zkClient.create("/keys/exe", new byte[0], CreateMode.PERSISTENT, true);
+    if (packageManager.zkClient.exists("/keys/exe/"+name+".der", true)==false) {
+      packageManager.zkClient.create("/keys/exe/"+name+".der", new byte[0], CreateMode.PERSISTENT, true);
+    }
+    packageManager.zkClient.setData("/keys/exe/"+name+".der", IOUtils.toByteArray(new URL(uri+"/publickey.der").openStream()), true);
+
+    PackageUtils.postMessage(PackageUtils.GREEN, log, false, "Added repository: "+name);
+    PackageUtils.postMessage(PackageUtils.GREEN, log, false, getRepositoriesJson(packageManager.zkClient));
+  }
+
+  private String getRepositoriesJson(SolrZkClient zkClient) throws UnsupportedEncodingException, KeeperException, InterruptedException {
+    if (zkClient.exists("/repositories.json", true)) {
+      return new String(zkClient.getData("/repositories.json", null, null, true), "UTF-8");
+    }
+    return "[]";
+  }
+
+  private boolean installPackage(String packageName, String version) throws SolrException {
     SolrPackageInstance existingPlugin = packageManager.getPackageInstance(packageName, version);
     if (existingPlugin != null && existingPlugin.getVersion().equals(version)) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Plugin already installed.");
@@ -99,7 +127,7 @@ public class SolrUpdateManager {
     try {
       // post the metadata
       PackageUtils.postMessage(PackageUtils.GREEN, log, false, "Posting metadata");
-      
+
       if (release.manifest == null) {
         String manifestJson = PackageUtils.getFileFromArtifacts(downloaded, "manifest.json");
         if (manifestJson == null) {
@@ -110,7 +138,7 @@ public class SolrUpdateManager {
       String manifestJson = new ObjectMapper().writeValueAsString(release.manifest);
       String manifestSHA512 = BlobRepository.sha512Digest(ByteBuffer.wrap(manifestJson.getBytes()));
       PackageUtils.postFile(solrClient, ByteBuffer.wrap(manifestJson.getBytes()),
-            "/package/"+packageName+"/"+version+"/manifest.json", null);
+          "/package/" + packageName + "/" + version + "/manifest.json", null);
 
       // post the artifacts
       PackageUtils.postMessage(PackageUtils.GREEN, log, false, "Posting artifacts");
@@ -153,7 +181,7 @@ public class SolrUpdateManager {
       SolrPackageRelease release = findReleaseForPackage(packageName, version);
       List<Path> downloadedPaths = new ArrayList<Path>(release.artifacts.size());
 
-      for (SolrPackageRepository repo: repositories) {
+      for (SolrPackageRepository repo: getRepositories()) {
         if (repo.hasPackage(packageName)) {
           for (Artifact art: release.artifacts) {
             downloadedPaths.add(repo.download(art.url));
@@ -167,7 +195,7 @@ public class SolrUpdateManager {
     throw new SolrException(ErrorCode.BAD_REQUEST, "Package not found in any repository.");
   }
 
-  public SolrPackageRelease findReleaseForPackage(String packageName, String version) throws SolrException {
+  private SolrPackageRelease findReleaseForPackage(String packageName, String version) throws SolrException {
     SolrPackage pkg = getPackagesMap().get(packageName);
     if (pkg == null) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Package "+packageName+" not found in any repository");
@@ -194,7 +222,7 @@ public class SolrUpdateManager {
     return getLastPackageRelease(pkg);
   }
 
-  public SolrPackageRelease getLastPackageRelease(SolrPackage pkg) {
+  private SolrPackageRelease getLastPackageRelease(SolrPackage pkg) {
     SolrPackageRelease latest = null;
     for (SolrPackageRelease release: pkg.versions) {
       if (latest == null) {
@@ -220,7 +248,7 @@ public class SolrUpdateManager {
 
   public List<SolrPackage> getUpdates() {
     List<SolrPackage> updates = new ArrayList<>();
-    for (SolrPackageInstance installed : packageManager.fetchPackages()) {
+    for (SolrPackageInstance installed : packageManager.fetchInstalledPackageInstances()) {
       String packageName = installed.getPackageName();
       if (hasPackageUpdate(packageName)) {
         updates.add(getPackagesMap().get(packageName));
@@ -229,10 +257,6 @@ public class SolrUpdateManager {
     return updates;
   }
 
-  public boolean hasUpdates() {
-    return getUpdates().size() > 0;
-  }
-  
   public void listAvailable(List args) throws SolrException {
     PackageUtils.postMessage(PackageUtils.GREEN, log, false, "Available packages:\n-----");
     for (SolrPackage pkg: getPackages()) {
@@ -242,49 +266,27 @@ public class SolrUpdateManager {
       }
     }
   }
-  
-  
-  public void install(List args) throws SolrException {
-    String pkg = args.get(0).toString().split(":")[0];
-    String version = args.get(0).toString().contains(":")? args.get(0).toString().split(":")[1]: null;
-    updateOrInstallPackage(pkg, version);
-    PackageUtils.postMessage(PackageUtils.GREEN, log, false, args.get(0).toString() + " installed.");
-  }
 
-  public void updatePackage(String zkHost, String packageName, List args) throws SolrException {
-    if (hasUpdates()) {
-      String latestVersion = getLastPackageRelease(packageName).version;
+  public void installPackage(String zkHost, String packageName, String version) throws SolrException {
+    String latestVersion = getLastPackageRelease(packageName).version;
 
-      Map<String, String> collectionsDeployedIn = packageManager.getDeployedCollections(zkHost, packageName);
-      List<String> peggedToLatest = collectionsDeployedIn.keySet().stream().
-          filter(collection -> collectionsDeployedIn.get(collection).equals("$LATEST")).collect(Collectors.toList());
-      PackageUtils.postMessage(PackageUtils.GREEN, log, false, "Already deployed on collections: "+collectionsDeployedIn);
-      updateOrInstallPackage(packageName, latestVersion);
-
-      SolrPackageInstance updatedPackage = packageManager.getPackageInstance(packageName, "latest");
-      boolean res = packageManager.verify(updatedPackage, peggedToLatest);
-      PackageUtils.postMessage(PackageUtils.GREEN, log, false, "Verifying version "+updatedPackage.getVersion()+" on "+peggedToLatest
-          +", result: "+res);
-      if (!res) throw new SolrException(ErrorCode.BAD_REQUEST, "Failed verification after deployment");
-    } else {
-      PackageUtils.postMessage(PackageUtils.GREEN, log, false, "Package "+packageName+" is already up to date.");
+    Map<String, String> collectionsDeployedIn = packageManager.getDeployedCollections(packageName);
+    List<String> peggedToLatest = collectionsDeployedIn.keySet().stream().
+        filter(collection -> collectionsDeployedIn.get(collection).equals("$LATEST")).collect(Collectors.toList());
+    if (!peggedToLatest.isEmpty()) {
+      PackageUtils.postMessage(PackageUtils.GREEN, log, false, "Collections that will be affected (since they are configured to use $LATEST): "+peggedToLatest);
     }
-  }
 
-  public void listUpdates() throws SolrException {
-    if (hasUpdates()) {
-      PackageUtils.postMessage(PackageUtils.GREEN, log, false, "Available updates:\n-----");
-
-      for (SolrPackage i: getUpdates()) {
-        SolrPackage plugin = (SolrPackage)i;
-        PackageUtils.postMessage(PackageUtils.GREEN, log, false, plugin.name + " \t\t"+plugin.description);
-        for (SolrPackageRelease version: plugin.versions) {
-          PackageUtils.postMessage(PackageUtils.GREEN, log, false, "\tVersion: "+version.version);
-        }
-      }
+    if (version == null || version.equals("latest")) {
+      installPackage(packageName, latestVersion);
     } else {
-      PackageUtils.postMessage(PackageUtils.GREEN, log, false, "No updates found. System is up to date.");
+      installPackage(packageName, version);
     }
+
+    SolrPackageInstance updatedPackage = packageManager.getPackageInstance(packageName, "latest");
+    boolean res = packageManager.verify(updatedPackage, peggedToLatest);
+    PackageUtils.postMessage(PackageUtils.GREEN, log, false, "Verifying version "+updatedPackage.getVersion()+" on " + peggedToLatest +", result: "+res);
+    if (!res) throw new SolrException(ErrorCode.BAD_REQUEST, "Failed verification after deployment");
   }
 
 }

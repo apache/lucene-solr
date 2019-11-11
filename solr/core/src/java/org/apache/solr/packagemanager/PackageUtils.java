@@ -17,9 +17,11 @@
 package org.apache.solr.packagemanager;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -29,12 +31,15 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.core.BlobRepository;
+import org.apache.solr.packagemanager.SolrPackage.Manifest;
 import org.slf4j.Logger;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -111,6 +116,31 @@ public class PackageUtils {
     String constraint = ">="+minInclusive + " & <="+maxInclusive;
     System.out.println("Current: "+solrVersion+", constraint: "+constraint);
     return Strings.isNullOrEmpty(constraint) || Version.valueOf(solrVersion).satisfies(constraint);
+  }
+
+  public static Manifest fetchManifest(HttpSolrClient solrClient, String solrBaseUrl, String manifestFilePath, String expectedSHA512) throws MalformedURLException, IOException {
+    String manifestJson = PackageUtils.getJson(solrClient.getHttpClient(), solrBaseUrl + "/api/node/files" + manifestFilePath);
+    String calculatedSHA512 = BlobRepository.sha512Digest(ByteBuffer.wrap(manifestJson.getBytes()));
+    if (expectedSHA512.equals(calculatedSHA512) == false) {
+      throw new SolrException(ErrorCode.UNAUTHORIZED, "The manifest SHA512 doesn't match expected SHA512. Possible unauthorized manipulation. "
+          + "Expected: " + expectedSHA512 + ", calculated: " + calculatedSHA512 + ", manifest location: " + manifestFilePath);
+    }
+    Manifest manifest = new ObjectMapper().readValue(manifestJson, Manifest.class);
+    return manifest;
+  }
+  
+  public static String resolve(String str, Map<String, String> defaults, Map<String, String> overrides, Map<String, String> systemParams) {
+    if (str == null) return null;
+    for (String param: defaults.keySet()) {
+      str = str.replaceAll("\\$\\{"+param+"\\}", overrides.containsKey(param)? overrides.get(param): defaults.get(param));
+    }
+    for (String param: overrides.keySet()) {
+      str = str.replaceAll("\\$\\{"+param+"\\}", overrides.get(param));
+    }
+    for (String param: systemParams.keySet()) {
+      str = str.replaceAll("\\$\\{"+param+"\\}", systemParams.get(param));
+    }
+    return str;
   }
 
   // nocommit javadoc
