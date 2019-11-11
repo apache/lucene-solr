@@ -19,7 +19,7 @@
 The definitive manual on AsciiDoc syntax is in the http://asciidoctor.org/docs/user-manual/[Asciidoctor User Manual]. To help people get started, however, here is a simpler cheat sheet.
 
 == AsciiDoc vs Asciidoctor Syntax
-We use tools from the Asciidoctor project to build the HTML and PDF versions of the Ref Guide. Asciidoctor is a Ruby port of the original AsciiDoc project, which was mostly abandoned several years ago.
+We use tools from the Asciidoctor project to build the HTML version of the Ref Guide. Asciidoctor is a Ruby port of the original AsciiDoc project, which was mostly abandoned several years ago.
 
 While much of the syntax between the two is the same, there are many conventions supported by Asciidoctor that did not exist in AsciiDoc. While the Asciidoctor project has tried to provide back-compatibility with the older project, that may not be true forever. For this reason, it's strongly recommended to only use the Asciidoctor User Manual as a reference for any syntax that's not described here.
 
@@ -66,9 +66,9 @@ More info: http://asciidoctor.org/docs/user-manual/#source-code-blocks
 
 === Source Block Syntax Highlighting
 
-The PDF and HTML outputs use Pygments to add syntax highlighting to code examples. This is done by adding the language of the code block after the `source`, as shown in the above example source block (`xml` in that case).
+The HTML output uses Rouge to add syntax highlighting to code examples. This is done by adding the language of the code block after the `source`, as shown in the above example source block (`xml` in that case).
 
-Pygments has a long selection of lexers available. You can see the full list at http://pygments.org/docs/lexers. Use one of the valid short names to get syntax highlighting for that language.
+Rouge has a long selection of lexers available. You can see the full list at https://github.com/rouge-ruby/rouge/wiki/List-of-supported-languages-and-lexers. Use one of the valid short names to get syntax highlighting for that language.
 
 Ideally, we will have an appropriate lexer to use for all source blocks, but that's not possible. When in doubt, choose `text`, or leave it blank.
 
@@ -88,7 +88,7 @@ Snippets can be included directly from any file in the Lucene/Solr GIT repo by r
 ----
 --
 
-When building the PDF or HTML versions of the Guide, the `solr-root-path` attribute will be automatically set correctly for the (temporary) `build/solr-ref-guide/content` directory used by Ant.
+When building the Guide, the `solr-root-path` attribute will be automatically set correctly for the (temporary) `build/solr-ref-guide/content` directory used by Ant.
 
 In order for editors (such as ATOM) to be able to offer "live preview" of the `*.adoc` files using these includes, the `solr-root-path` attribute must also be set as a document level attribute in each file, with the correct relative path.
 
@@ -128,7 +128,7 @@ Titles can be added to most blocks (images, source blocks, tables, etc.) by simp
 == Links
 
 === Link to Sites on the Internet
-When converting content to HTML or PDF, Asciidoctor will automatically render many link types (such as `http:` and `mailto:`) without any additional syntax.
+When converting content to HTML, Asciidoctor will automatically render many link types (such as `http:` and `mailto:`) without any additional syntax.
 
 However, you can add a name to a link by adding the URI followed by square brackets:
 
@@ -188,9 +188,8 @@ To link to this section, there are two approaches depending on where you are lin
 ==== Link to Another Page
 To link to _another page_ or a section on another page, you must refer to the full filename and refer to the section you want to link to.
 
-Unfortunately, when you want to refer the reader to another page without deep-linking to a section, you cannot simply put the other file name in angle brackets and call it a day. This is due to the PDF conversion - once all the pages are combined into one big page for one big PDF, the lack of a specific reference causes inter-page links to fail.
-
-So, *you must always link to a specific section*. If all you want is a reference to the top of another page, you can use the implicit `id` of the page -- the filename w/o the `.adoc` extension -- as your anchor reference.
+Unfortunately, when you want to refer the reader to another page without deep-linking to a section, you cannot simply put the other file name in angle brackets and call it a day.
+*You must always link to a specific section*. If all you want is a reference to the top of another page, you can use the implicit `id` of the page -- the filename w/o the `.adoc` extension -- as your anchor reference.
 
 Example::
 To construct a link to the `upgrading-solr.adoc` page, we need to refer to the file name (`upgrading-solr.adoc`), then use the page id (`upgrading-solr`) as the anchor reference. As in:
@@ -365,7 +364,7 @@ AsciiDoc supports several types of callout boxes, called "admonitions":
 * CAUTION
 * WARNING
 
-It is enough to start a paragraph with one of these words followed by a colon (such as `NOTE:`). When it is converted to HTML or PDF, those sections will be formatted properly - indented from the main text and showing an icon inline.
+It is enough to start a paragraph with one of these words followed by a colon (such as `NOTE:`). When it is converted to HTML, those sections will be formatted properly - indented from the main text and showing an icon inline.
 
 You can add titles to admonitions by making it an admonition block. The structure of an admonition block is like this:
 

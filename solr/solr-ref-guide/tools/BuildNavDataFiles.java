@@ -28,7 +28,7 @@ import org.asciidoctor.Asciidoctor;
 import org.asciidoctor.ast.DocumentHeader;
 
 
-public class BuildNavAndPDFBody {
+public class BuildNavDataFiles {
 
   public static void main(String[] args) throws Exception {
     if (args.length != 2) {
@@ -83,53 +83,23 @@ public class BuildNavAndPDFBody {
       }
     }
 
-
-    // Build up the PDF file,
-    // while doing this also build up some next/prev maps for use in building the scrollnav
-    File pdfFile = new File(new File(adocDir, "_data"), "pdf-main-body.adoc");
-    if (pdfFile.exists()) {
-      throw new RuntimeException(pdfFile.toString() + " already exists");
-    }
+    // Loop over all files "in order" to build up next/prev maps for use in building the scrollnav
     final Map<String,Page> nextPage = new HashMap<String,Page>();
     final Map<String,Page> prevPage = new HashMap<String,Page>();
-    System.out.println("Creating " + pdfFile.toString());
-    try (Writer w = new OutputStreamWriter(new FileOutputStream(pdfFile), "UTF-8")) {
-      // Note: not worrying about headers or anything like that ...
-      // expecting this file to just be included by the main PDF file.
+    System.out.println("Looping over pages to build nav data");
 
-      // track how deep we are so we can adjust headers accordingly
-      // start with a "negative" depth to treat all "top level" pages as same depth as main-page using Math.max
-      // (see below)
-      final AtomicInteger depth = new AtomicInteger(-1);
-
-      // the previous page seen in our walk
+    { // the previous page seen during our walk
       AtomicReference<Page> previous = new AtomicReference<Page>();
       
       mainPage.depthFirstWalk(new Page.RecursiveAction() {
         public boolean act(Page page) {
-          try {
-            if (null != previous.get()) {
-              // add previous as our 'prev' page, and ourselves as the 'next' of previous
-              prevPage.put(page.shortname, previous.get());
-              nextPage.put(previous.get().shortname, page);
-            }
-            previous.set(page);
-
-            // use an explicit anchor, since the auto-generated ID from the "title" might not match
-            // the shortname/filename
-            w.append("[[").append(page.shortname).append("]]\n");
-            // HACK: where this file actually lives will determine what we need here...
-            w.write("include::../");
-            w.write(page.file.getName());
-            w.write("[leveloffset=+"+Math.max(0, depth.intValue())+"]\n\n");
-            depth.incrementAndGet();
-            return true;
-          } catch (IOException ioe) {
-            throw new RuntimeException("IOE recursively acting on " + page.shortname, ioe);
+          if (null != previous.get()) {
+            // add previous as our 'prev' page, and ourselves as the 'next' of previous
+            prevPage.put(page.shortname, previous.get());
+            nextPage.put(previous.get().shortname, page);
           }
-        }
-        public void postKids(Page page) {
-          depth.decrementAndGet();
+          previous.set(page);
+          return true;
         }
       });
     }
