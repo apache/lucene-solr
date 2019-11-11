@@ -36,17 +36,20 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-public class SolrUpdateManager {
+/**
+ * Handles most of the management of packages that are present in an external repository.
+ */
+public class RepositoryManager {
 
-  final private SolrPackageManager packageManager;
+  final private PackageManager packageManager;
 
   public static final String systemVersion = Version.LATEST.toString();
 
   final HttpSolrClient solrClient;
 
-  private static final Logger log = LoggerFactory.getLogger(SolrUpdateManager.class);
+  private static final Logger log = LoggerFactory.getLogger(RepositoryManager.class);
 
-  public SolrUpdateManager(HttpSolrClient solrClient, SolrPackageManager packageManager) {
+  public RepositoryManager(HttpSolrClient solrClient, PackageManager packageManager) {
     this.packageManager = packageManager;
     this.solrClient = solrClient;
   }
@@ -60,36 +63,36 @@ public class SolrUpdateManager {
   // nocommit javadoc
   public Map<String, SolrPackage> getPackagesMap() {
     Map<String, SolrPackage> packagesMap = new HashMap<>();
-    for (SolrPackageRepository repository: getRepositories()) {
+    for (PackageRepository repository: getRepositories()) {
       packagesMap.putAll(repository.getPackages());
     }
 
     return packagesMap;
   }
 
-  public List<SolrPackageRepository> getRepositories() {
-    SolrPackageRepository items[];
+  public List<PackageRepository> getRepositories() {
+    PackageRepository items[];
     try {
-      items = new ObjectMapper().readValue(getRepositoriesJson(packageManager.zkClient), SolrPackageRepository[].class);
+      items = new ObjectMapper().readValue(getRepositoriesJson(packageManager.zkClient), DefaultPackageRepository[].class);
     } catch (IOException | KeeperException | InterruptedException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
-    List<SolrPackageRepository> repositories = Arrays.asList(items);
+    List<PackageRepository> repositories = Arrays.asList(items);
 
-    for (SolrPackageRepository updateRepository: repositories) {
+    for (PackageRepository updateRepository: repositories) {
       updateRepository.refresh();
     }
 
     return repositories;
   }
 
-  public void addRepo(String name, String uri) throws KeeperException, InterruptedException, MalformedURLException, IOException {
+  public void addRepository(String name, String uri) throws KeeperException, InterruptedException, MalformedURLException, IOException {
     String existingRepositoriesJson = getRepositoriesJson(packageManager.zkClient);
     log.info(existingRepositoriesJson);
 
     List repos = new ObjectMapper().readValue(existingRepositoriesJson, List.class);
     PackageUtils.printGreen("SPR is: "+solrClient);
-    repos.add(new SolrPackageRepository(name, uri));
+    repos.add(new DefaultPackageRepository(name, uri));
     if (packageManager.zkClient.exists("/repositories.json", true) == false) {
       packageManager.zkClient.create("/repositories.json", new ObjectMapper().writeValueAsString(repos).getBytes(), CreateMode.PERSISTENT, true);
     } else {
@@ -121,7 +124,7 @@ public class SolrUpdateManager {
     }
 
     SolrPackageRelease release = findReleaseForPackage(packageName, version);
-    List<Path> downloaded = downloadPackage(packageName, version);
+    List<Path> downloaded = downloadPackageArtifacts(packageName, version);
     // nocommit handle a failure in downloading
 
     try {
@@ -176,12 +179,12 @@ public class SolrUpdateManager {
     return false;
   }
 
-  protected List<Path> downloadPackage(String packageName, String version) throws SolrException {
+  protected List<Path> downloadPackageArtifacts(String packageName, String version) throws SolrException {
     try {
       SolrPackageRelease release = findReleaseForPackage(packageName, version);
       List<Path> downloadedPaths = new ArrayList<Path>(release.artifacts.size());
 
-      for (SolrPackageRepository repo: getRepositories()) {
+      for (PackageRepository repo: getRepositories()) {
         if (repo.hasPackage(packageName)) {
           for (Artifact art: release.artifacts) {
             downloadedPaths.add(repo.download(art.url));

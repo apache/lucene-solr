@@ -29,8 +29,8 @@ import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.packagemanager.PackageUtils;
 import org.apache.solr.packagemanager.SolrPackageInstance;
-import org.apache.solr.packagemanager.SolrPackageManager;
-import org.apache.solr.packagemanager.SolrUpdateManager;
+import org.apache.solr.packagemanager.PackageManager;
+import org.apache.solr.packagemanager.RepositoryManager;
 import org.apache.solr.util.SolrCLI.StatusTool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,8 +53,8 @@ public class PackageTool extends SolrCLI.ToolBase {
   public static String solrUrl = null;
   public static String solrBaseUrl = null;
   public static HttpSolrClient solrClient;
-  public SolrPackageManager packageManager;
-  public SolrUpdateManager updateManager;
+  public PackageManager packageManager;
+  public RepositoryManager repositoryManager;
 
   @Override
   protected void runImpl(CommandLine cli) throws Exception {
@@ -70,19 +70,19 @@ public class PackageTool extends SolrCLI.ToolBase {
 
       try {
         if (cmd != null) {
-          packageManager = new SolrPackageManager(solrClient, solrBaseUrl, zkHost); 
+          packageManager = new PackageManager(solrClient, solrBaseUrl, zkHost); 
           try {
-            updateManager = new SolrUpdateManager(solrClient, packageManager);
+            repositoryManager = new RepositoryManager(solrClient, packageManager);
 
             switch (cmd) {
               case "add-repo":
-                updateManager.addRepo(cli.getArgs()[1], cli.getArgs()[2]);
+                repositoryManager.addRepository(cli.getArgs()[1], cli.getArgs()[2]);
                 break;
               case "list-installed":
                 packageManager.listInstalled(cli.getArgList().subList(1, cli.getArgList().size()));
                 break;
               case "list-available":
-                updateManager.listAvailable(cli.getArgList().subList(1, cli.getArgList().size()));
+                repositoryManager.listAvailable(cli.getArgList().subList(1, cli.getArgList().size()));
                 break;
               case "list-deployed":
                 if (cli.hasOption('c')) {
@@ -105,8 +105,8 @@ public class PackageTool extends SolrCLI.ToolBase {
               {
                 String packageName = parsePackageVersion(cli.getArgList().get(1).toString())[0];
                 String version = parsePackageVersion(cli.getArgList().get(1).toString())[1];
-                updateManager.installPackage(zkHost, packageName, version);
-                PackageUtils.printGreen(updateManager.toString() + " installed.");
+                repositoryManager.installPackage(zkHost, packageName, version);
+                PackageUtils.printGreen(repositoryManager.toString() + " installed.");
                 break;
               }
               case "deploy":

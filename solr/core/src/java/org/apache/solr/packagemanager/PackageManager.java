@@ -27,7 +27,10 @@ import com.google.common.base.Strings;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 
-public class SolrPackageManager implements Closeable {
+/**
+ * Handles most of the management of packages that as installed in Solr.
+ */
+public class PackageManager implements Closeable {
 
   final String solrBaseUrl;
   final HttpSolrClient solrClient;
@@ -36,14 +39,14 @@ public class SolrPackageManager implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 
-  public SolrPackageManager(HttpSolrClient solrClient, String solrBaseUrl, String zkHost) {
+  public PackageManager(HttpSolrClient solrClient, String solrBaseUrl, String zkHost) {
     this.solrBaseUrl = solrBaseUrl;
     this.solrClient = solrClient;
     this.zkClient = new SolrZkClient(zkHost, 30000);
     log.info("Done initializing a zkClient instance...");
   }
 
-  Map<String, List<SolrPackageInstance>> packages = null;
+  private Map<String, List<SolrPackageInstance>> packages = null;
 
   public List<SolrPackageInstance> fetchInstalledPackageInstances() throws SolrException {
     log.info("Getting packages from packages.json...");
@@ -284,9 +287,9 @@ public class SolrPackageManager implements Closeable {
     if (version == null) version = packageInstance.getVersion();
 
     Manifest manifest = packageInstance.manifest;
-    if (PackageUtils.checkVersionConstraint(SolrUpdateManager.systemVersion, manifest.minSolrVersion, manifest.maxSolrVersion) == false) {
+    if (PackageUtils.checkVersionConstraint(RepositoryManager.systemVersion, manifest.minSolrVersion, manifest.maxSolrVersion) == false) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Version incompatible! Solr version: "
-          + SolrUpdateManager.systemVersion+", package minSolrVersion: " + manifest.minSolrVersion
+          + RepositoryManager.systemVersion+", package minSolrVersion: " + manifest.minSolrVersion
           + ", maxSolrVersion: "+manifest.maxSolrVersion);
     }
 

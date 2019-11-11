@@ -1,8 +1,6 @@
 package org.apache.solr.packagemanager;
 
-import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -18,24 +16,24 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class SolrPackageRepository {
-  private static final Logger log = LoggerFactory.getLogger(SolrPackageRepository.class);
+/**
+ * This is a serializable bean (for the JSON that is stored in /repository.json).
+ * Supports standard repositories based on a webservice.
+ */
+public class DefaultPackageRepository extends PackageRepository {
+  private static final Logger log = LoggerFactory.getLogger(DefaultPackageRepository.class);
 
-  @JsonProperty("name")
-  public String name;
-  @JsonProperty("url")
-  public String repositoryURL;
+  public DefaultPackageRepository() { // this is needed for deserialization from JSON
+  
+  }
 
-  public SolrPackageRepository() {
-  }//nocommit wtf?
-
-  public SolrPackageRepository(String repositoryName, String repositoryURL) {
+  public DefaultPackageRepository(String repositoryName, String repositoryURL) {
     this.name = repositoryName;
     this.repositoryURL = repositoryURL;
   }
 
+  @Override
   public void refresh() {
     packages = null;
   }
@@ -43,6 +41,7 @@ public class SolrPackageRepository {
   @JsonIgnore
   private Map<String, SolrPackage> packages;
 
+  @Override
   public Map<String, SolrPackage> getPackages() {
     if (packages == null) {
       initPackages();
@@ -51,14 +50,17 @@ public class SolrPackageRepository {
     return packages;
   }
 
+  @Override
   public SolrPackage getPackage(String packageName) {
     return getPackages().get(packageName);
   }
 
+  @Override
   public boolean hasPackage(String packageName) {
     return getPackages().containsKey(packageName);
   }
 
+  @Override
   public Path download(String artifactName) throws SolrException, IOException {
     Path tmpDirectory = Files.createTempDirectory("solr-packages");
     tmpDirectory.toFile().deleteOnExit();
@@ -71,13 +73,6 @@ public class SolrPackageRepository {
       case "https":
       case "ftp":
         FileUtils.copyURLToFile(url, destination.toFile());
-        break;
-      case "file":
-        try {
-          FileUtils.copyFile(new File(url.toURI()), destination.toFile());
-        } catch (URISyntaxException e) {
-          throw new SolrException(ErrorCode.INVALID_STATE, e);
-        }
         break;
       default:
         throw new SolrException(ErrorCode.BAD_REQUEST, "URL protocol " + url.getProtocol() + " not supported");
