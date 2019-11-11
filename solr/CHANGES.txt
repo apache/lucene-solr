@@ -92,6 +92,8 @@ Bug Fixes
 * SOLR-13872: Fixed Backup failures - typically manifesting as NoSuchFileException - due to race conditions
   in saving/reserving commit points (hossman)
 
+* SOLR-13921: Processing UpdateRequest with delegation token throws NullPointerException (Istvan Farkas via Kevin Risden)
+
 Other Changes
 ---------------------
 
