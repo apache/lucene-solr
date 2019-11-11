@@ -43,4 +43,15 @@ public class SolrPackageInstance implements ReflectMapWriter {
 	public List<Plugin> getPlugins() {
     return plugins;
   }
+	
+	@Override
+	public boolean equals(Object obj) {
+	  if (obj == null) return false;
+	  return name.equals(((SolrPackageInstance)obj).name) && version.equals(((SolrPackageInstance)obj).version);
+	}
+	
+	@Override
+	  public String toString() {
+	    return name +":"+version;
+	  }
 }

@@ -20,6 +20,8 @@ package org.apache.solr.cloud;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.core.TestSolrConfigHandler;
 import org.apache.solr.util.PackageTool;
@@ -48,6 +50,7 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
 
     configureCluster(1)
     .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+    .addConfig("conf2", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
     .configure();
 
     repositoryServer = new LocalWebServer(TEST_PATH().resolve("question-answer-repository").toString());
@@ -63,6 +66,10 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
   @Test
   public void testPackageManager() throws Exception {
     PackageTool tool = new PackageTool();
+    
+    // Enable the logger for this test. Need to do this since the tool disables logger.
+    Configurator.setRootLevel(Level.INFO);
+
     String solrUrl = cluster.getJettySolrRunner(0).getBaseUrl().toString();
 
     run(tool, new String[] {"-solrUrl", solrUrl, "list-installed"});
@@ -76,12 +83,18 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
     run(tool, new String[] {"-solrUrl", solrUrl, "list-installed"});
 
     CollectionAdminRequest.createCollection("abc", "conf1", 1, 1).process(cluster.getSolrClient());
-    CollectionAdminRequest.createCollection("def", "conf1", 1, 1).process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("def", "conf2", 1, 1).process(cluster.getSolrClient());
 
     String rhPath = "/mypath2";
 
+    run(tool, new String[] {"-solrUrl", solrUrl, "list-deployed", "question-answer"});
+
     run(tool, new String[] {"-solrUrl", solrUrl, "deploy", "question-answer", "-collections", "abc", "-p", "RH-HANDLER-PATH=" + rhPath});
     assertPackageVersion("abc", "question-answer", "1.0.0", rhPath, "1.0.0");
+
+    run(tool, new String[] {"-solrUrl", solrUrl, "list-deployed", "question-answer"});
+
+    run(tool, new String[] {"-solrUrl", solrUrl, "list-deployed", "-c", "abc"});
 
     // Should we test the "auto-update to latest" functionality or the default explicit deploy functionality
     boolean autoUpdateToLatest = random().nextBoolean();

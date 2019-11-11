@@ -21,19 +21,20 @@ public class SolrPackage implements Comparable<SolrPackage> {
   private String repository;
 
   public static class SolrPackageRelease implements ReflectMapWriter {
-
     public String version;
     public Date date;
-    public String url;
-
-    public String sha512sum;
-    public String sig;
-
+    public List<Artifact> artifacts;
     public Manifest manifest;
+
     @Override
     public String toString() {
       return jsonStr();
     }
+  }
+
+  public static class Artifact {
+    public String url;
+    public String sig;
   }
 
   public static class Manifest {

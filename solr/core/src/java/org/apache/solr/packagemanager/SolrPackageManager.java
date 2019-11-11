@@ -4,7 +4,9 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -14,16 +16,19 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.core.BlobRepository;
 import org.apache.solr.packagemanager.SolrPackage.Command;
 import org.apache.solr.packagemanager.SolrPackage.Manifest;
 import org.apache.solr.packagemanager.SolrPackage.Plugin;
 import org.apache.solr.util.SolrCLI;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.PathNotFoundException;
 
 public class SolrPackageManager implements Closeable {
 
@@ -43,11 +48,14 @@ public class SolrPackageManager implements Closeable {
 
   Map<String, List<SolrPackageInstance>> packages = null;
 
-  // nocommit: Add SHA512 checking
-  Manifest fetchManifest(String manifestFilePath) throws MalformedURLException, IOException {
-    Manifest manifest = PackageUtils.getJson(solrClient.getHttpClient(),
-        solrBaseUrl + "/api/node/files" + manifestFilePath, Manifest.class);
-    log.info("Now manifest: "+manifest);
+  Manifest fetchManifest(String manifestFilePath, String expectedSHA512) throws MalformedURLException, IOException {
+    String manifestJson = PackageUtils.getJson(solrClient.getHttpClient(), solrBaseUrl + "/api/node/files" + manifestFilePath);
+    String calculatedSHA512 = BlobRepository.sha512Digest(ByteBuffer.wrap(manifestJson.getBytes()));
+    if (expectedSHA512.equals(calculatedSHA512) == false) {
+      throw new SolrException(ErrorCode.UNAUTHORIZED, "The manifest SHA512 doesn't match expected SHA512. Possible unauthorized manipulation. "
+          + "Expected: " + expectedSHA512 + ", calculated: " + calculatedSHA512 + ", manifest location: " + manifestFilePath);
+    }
+    Manifest manifest = new ObjectMapper().readValue(manifestJson, Manifest.class);
     return manifest;
   }
 
@@ -65,7 +73,7 @@ public class SolrPackageManager implements Closeable {
         for (Object packageName: packagesZnodeMap.keySet()) {
           List pkg = (List)packagesZnodeMap.get(packageName);
           for (Map pkgVersion: (List<Map>)pkg) {
-            Manifest manifest = fetchManifest(pkgVersion.get("manifest").toString());
+            Manifest manifest = fetchManifest(pkgVersion.get("manifest").toString(), pkgVersion.get("manifestSHA512").toString());
             List<Plugin> solrplugins = manifest.plugins;
             SolrPackageInstance pkgInstance = new SolrPackageInstance(packageName.toString(), null, 
                 pkgVersion.get("version").toString(), manifest, solrplugins, manifest.parameterDefaults);
@@ -92,8 +100,43 @@ public class SolrPackageManager implements Closeable {
                 .get("packages")).get(packageName);
   }
 
+  public Map<String, SolrPackageInstance> getPackagesDeployed(String collection) {
+    String paramsJson = PackageUtils.getJson(solrClient.getHttpClient(), solrBaseUrl+"/api/collections/"+collection+"/config/params/PKG_VERSIONS?omitHeader=true");
+    Map<String, String> packages = null;
+    try {
+      packages = JsonPath.parse(paramsJson, PackageUtils.jsonPathConfiguration())
+          .read("$['response'].['params'].['PKG_VERSIONS'])", Map.class);
+    } catch (PathNotFoundException ex) {
+      // Don't worry if PKG_VERSION wasn't found. It just means this collection was never touched by the package manager.
+    }
+    
+    if (packages == null) return Collections.emptyMap();
+    Map<String, SolrPackageInstance> ret = new HashMap<String, SolrPackageInstance>();
+    for (String packageName: packages.keySet()) {
+      if (Strings.isNullOrEmpty(packageName) == false) { // There can be an empty key, storing the version here
+        ret.put(packageName, getPackageInstance(packageName, packages.get(packageName)));
+      }
+    }
+    return ret;
+  }
+
   public boolean deployPackage(SolrPackageInstance packageInstance, boolean pegToLatest, boolean isUpdate, List<String> collections, String overrides[]) {
     for (String collection: collections) {
+      
+      SolrPackageInstance deployedPackage = getPackagesDeployed(collection).get(packageInstance.name);
+      if (packageInstance.equals(deployedPackage)) {
+        if (!pegToLatest) {
+          PackageUtils.postMessage(PackageUtils.RED, log, false, "Package " + packageInstance + " already deployed on "+collection);
+          continue;
+        }
+      } else {
+        if (deployedPackage != null && !isUpdate) {
+          PackageUtils.postMessage(PackageUtils.RED, log, false, "Package " + deployedPackage + " already deployed on "+collection+". To update to "+packageInstance+", pass --update parameter.");
+          continue;
+        }
+      }
+      
+      // nocommit factor this shit away
       Map<String, String> collectionParameterOverrides = isUpdate? getPackageParams(packageInstance.name, collection): new HashMap<String,String>();
       if (overrides != null) {
         for (String override: overrides) {
@@ -129,24 +172,25 @@ public class SolrPackageManager implements Closeable {
         }
       }
 
-      // Setup/update all the plugins in the package
-      for (Plugin plugin: packageInstance.getPlugins()) {
-        Map<String, String> systemParams = new HashMap<String,String>();
-        systemParams.put("collection", collection);
-        systemParams.put("package-name", packageInstance.name);
-        systemParams.put("package-version", packageInstance.version);
+      // If it is a fresh deploy on a collection, run setup commands all the plugins in the package
+      if (!isUpdate) {
+        Map<String, String> systemParams = Map.of("collection", collection, "package-name", packageInstance.name, "package-version", packageInstance.version);
 
-        if (!isUpdate) {
+        for (Plugin plugin: packageInstance.getPlugins()) {
           Command cmd = plugin.setupCommand;
           if (cmd != null && !Strings.isNullOrEmpty(cmd.method)) {
-            try {
-              String payload = resolve(new ObjectMapper().writeValueAsString(cmd.payload), packageInstance.parameterDefaults, collectionParameterOverrides, systemParams);
-              String path = resolve(cmd.path, packageInstance.parameterDefaults, collectionParameterOverrides, systemParams);
-              PackageUtils.postMessage(PackageUtils.GREEN, log, false, "Executing " + payload + " for collection:" + collection);
-              // nocommit prompt and better message
-              SolrCLI.postJsonToSolr(solrClient, path, payload);
-            } catch (Exception ex) {
-              throw new SolrException(ErrorCode.SERVER_ERROR, ex);
+            if ("POST".equalsIgnoreCase(cmd.method)) {
+              try {
+                String payload = resolve(new ObjectMapper().writeValueAsString(cmd.payload), packageInstance.parameterDefaults, collectionParameterOverrides, systemParams);
+                String path = resolve(cmd.path, packageInstance.parameterDefaults, collectionParameterOverrides, systemParams);
+                PackageUtils.postMessage(PackageUtils.GREEN, log, false, "Executing " + payload + " for path:" + path);
+                // nocommit prompt and better message
+                SolrCLI.postJsonToSolr(solrClient, path, payload);
+              } catch (Exception ex) {
+                throw new SolrException(ErrorCode.SERVER_ERROR, ex);
+              }
+            } else {
+              throw new SolrException(ErrorCode.BAD_REQUEST, "Non-POST method not supported for setup commands");
             }
           } else {
             PackageUtils.postMessage(PackageUtils.RED, log, false, "There is no setup command to execute for plugin: " + plugin.name);
@@ -193,6 +237,7 @@ public class SolrPackageManager implements Closeable {
     for (Plugin p: pkg.getPlugins()) {
       PackageUtils.postMessage(PackageUtils.GREEN, log, false, p.verifyCommand);
       for (String collection: collections) {
+        // nocommit print the resolved command
         PackageUtils.postMessage(PackageUtils.GREEN, log, false, "Executing " + p.verifyCommand + " for collection:" + collection);
         Map<String, String> collectionParameterOverrides = getPackageParams(pkg.name, collection);
 
@@ -215,7 +260,9 @@ public class SolrPackageManager implements Closeable {
             PackageUtils.postMessage(PackageUtils.RED, log, false, "Failed to deploy plugin: "+p.name);
             success = false;
           }
-        } // nocommit POST?
+        } else {
+          throw new SolrException(ErrorCode.BAD_REQUEST, "Non-GET method not supported for setup commands");
+        }
       }
     }
     return success;
@@ -252,4 +299,55 @@ public class SolrPackageManager implements Closeable {
       solrClient.close();
     }
   }
+
+  public void deploy(String packageName, String version, boolean isUpdate, String[] collections, String[] parameters) throws SolrException {
+    boolean pegToLatest = "latest".equals(version); // User wants to peg this package's version to the latest installed (for auto-update, i.e. no explicit deploy step)
+    SolrPackageInstance packageInstance = getPackageInstance(packageName, version);
+    // nocommit if not found, exception here
+    if (version == null) version = packageInstance.getVersion();
+  
+    Manifest manifest = packageInstance.manifest;
+    if (PackageUtils.checkVersionConstraint(SolrUpdateManager.systemVersion, manifest.minSolrVersion, manifest.maxSolrVersion) == false) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Version incompatible! Solr version: "
+          + SolrUpdateManager.systemVersion+", package minSolrVersion: " + manifest.minSolrVersion
+          + ", maxSolrVersion: "+manifest.maxSolrVersion);
+    }
+  
+    PackageUtils.postMessage(PackageUtils.GREEN, log, false, deployPackage(packageInstance, pegToLatest, isUpdate,
+        Arrays.asList(collections), parameters));
+  }
+  
+  public void listInstalled(List args) {
+    for (SolrPackageInstance pkg: fetchPackages()) {
+      PackageUtils.postMessage(PackageUtils.GREEN, log, false, pkg.getPackageName()+" ("+pkg.getVersion()+")");
+    }
+  }
+  
+  // javadoc
+  public Map<String, String> getDeployedCollections(String zkHost, String packageName) {
+
+    List<String> allCollections;
+    try (SolrZkClient zkClient = new SolrZkClient(zkHost, 30000)) {
+      allCollections = zkClient.getChildren("/collections", null, true);
+    } catch (KeeperException | InterruptedException e) {
+      throw new RuntimeException(e);
+    }
+    Map<String, String> deployed = new HashMap<String, String>();
+    for (String collection: allCollections) {
+      // Check package version installed
+      String paramsJson = PackageUtils.getJson(solrClient.getHttpClient(), solrBaseUrl+"/api/collections/"+collection+"/config/params/PKG_VERSIONS?omitHeader=true");
+      String version = null;
+      try {
+        version = JsonPath.parse(paramsJson, PackageUtils.jsonPathConfiguration())
+            .read("$['response'].['params'].['PKG_VERSIONS'].['"+packageName+"'])");
+      } catch (PathNotFoundException ex) {
+        // Don't worry if PKG_VERSION wasn't found. It just means this collection was never touched by the package manager.
+      }
+      if (version != null) {
+        deployed.put(collection, version);
+      }
+    }
+    return deployed;
+  }
+
 }

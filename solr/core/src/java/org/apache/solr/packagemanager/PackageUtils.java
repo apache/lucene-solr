@@ -19,6 +19,7 @@ package org.apache.solr.packagemanager;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -84,14 +85,17 @@ public class PackageUtils {
   }
 
   // nocommit javadoc, mention that returns null if file doesn't exist within jar
-  public static String getFileFromJar(Path jarfile, String filename) {
-    try (ZipFile zipFile = new ZipFile(jarfile.toFile())) {
-      ZipEntry entry = zipFile.getEntry(filename);
-      if (entry == null) return null;
-      return IOUtils.toString(zipFile.getInputStream(entry));
-    } catch (Exception ex) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, ex);
+  public static String getFileFromArtifacts(List<Path> jars, String filename) {
+    for (Path jarfile: jars) {
+      try (ZipFile zipFile = new ZipFile(jarfile.toFile())) {
+        ZipEntry entry = zipFile.getEntry(filename);
+        if (entry == null) continue;
+        return IOUtils.toString(zipFile.getInputStream(entry));
+      } catch (Exception ex) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, ex);
+      }
     }
+    return null;
   }
 
   public static String getJson(HttpClient client, String url) {

@@ -2,7 +2,6 @@ package org.apache.solr.packagemanager;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Files;
@@ -15,7 +14,6 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.packagemanager.SolrPackage.SolrPackageRelease;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,9 +59,10 @@ public class SolrPackageRepository {
     return getPackages().containsKey(packageName);
   }
 
-  public Path download(URL url) throws SolrException, IOException {
+  public Path download(String artifactName) throws SolrException, IOException {
     Path tmpDirectory = Files.createTempDirectory("solr-packages");
     tmpDirectory.toFile().deleteOnExit();
+    URL url = new URL(new URL(repositoryURL), artifactName);
     String fileName = url.getPath().substring(url.getPath().lastIndexOf('/') + 1);
     Path destination = tmpDirectory.resolve(fileName);
 
@@ -93,16 +92,6 @@ public class SolrPackageRepository {
 
       packages = new HashMap<>(items.length);
       for (SolrPackage pkg : items) {
-        for (SolrPackageRelease r : pkg.versions) {
-          try {
-            r.url = new URL(new URL(repositoryURL), r.url).toString();
-            if (r.date.getTime() == 0) {
-              log.warn("Illegal release date when parsing {}@{}, setting to epoch", pkg.name, r.version);
-            }
-          } catch (MalformedURLException e) {
-            log.warn("Skipping release {} of plugin {} due to failure to build valid absolute URL. Url was {}{}", r.version, pkg.name, repositoryURL, r.url);
-          }
-        }
         pkg.setRepository(name);
         packages.put(pkg.name, pkg);
       }
