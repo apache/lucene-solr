@@ -130,7 +130,6 @@ public class AuditEvent {
     this.solrPort = httpRequest.getLocalPort();
     this.solrIp = httpRequest.getLocalAddr();
     this.clientIp = httpRequest.getRemoteAddr();
-    this.resource = httpRequest.getPathInfo();
     this.httpMethod = httpRequest.getMethod();
     this.httpQueryString = httpRequest.getQueryString();
     this.headers = getHeadersFromRequest(httpRequest);
@@ -140,6 +139,13 @@ public class AuditEvent {
       this.solrParams.put(sp.getKey(), Arrays.asList(sp.getValue()));
     });
 
+    // Full resource path is servletPath + pathInfo. See https://issues.apache.org/jira/browse/SOLR-13905
+    this.resource = httpRequest.getServletPath();
+    if (httpRequest.getPathInfo() != null) {
+      this.resource += httpRequest.getPathInfo();
+    }
+    // TODO Remove this
+    log.warn("*** resource = {}. servletPath={}, pathInfo={}", this.resource, httpRequest.getServletPath(), httpRequest.getPathInfo());
     setRequestType(findRequestType());
 
     if (exception != null) setException(exception);
@@ -451,14 +457,11 @@ public class AuditEvent {
   }
 
   private RequestType findRequestType() {
-    if (ADMIN_PATH_REGEXES.stream().map(Pattern::compile)
-            .anyMatch(p -> p.matcher(resource).matches())) return RequestType.ADMIN;
-    if (SEARCH_PATH_REGEXES.stream().map(Pattern::compile)
-                    .anyMatch(p -> p.matcher(resource).matches())) return RequestType.SEARCH;
-    if (INDEXING_PATH_REGEXES.stream().map(Pattern::compile)
-                    .anyMatch(p -> p.matcher(resource).matches())) return RequestType.UPDATE;
-    if (STREAMING_PATH_REGEXES.stream().map(Pattern::compile)
-                    .anyMatch(p -> p.matcher(resource).matches())) return RequestType.STREAMING;
+    if (resource == null) return RequestType.UNKNOWN;
+    if (SEARCH_PATH_PATTERNS.stream().anyMatch(p -> p.matcher(resource).matches())) return RequestType.SEARCH;
+    if (INDEXING_PATH_PATTERNS.stream().anyMatch(p -> p.matcher(resource).matches())) return RequestType.UPDATE;
+    if (STREAMING_PATH_PATTERNS.stream().anyMatch(p -> p.matcher(resource).matches())) return RequestType.STREAMING;
+    if (ADMIN_PATH_PATTERNS.stream().anyMatch(p -> p.matcher(resource).matches())) return RequestType.ADMIN;
     return RequestType.UNKNOWN;
   }
   
@@ -473,8 +476,11 @@ public class AuditEvent {
       "^/(____v2|api)/cluster$");
 
   private static final List<String> STREAMING_PATH_REGEXES = Collections.singletonList(".*/stream.*");
-
   private static final List<String> INDEXING_PATH_REGEXES = Collections.singletonList(".*/update.*");
-
   private static final List<String> SEARCH_PATH_REGEXES = Arrays.asList(".*/select.*", ".*/query.*");
+
+  private static final List<Pattern> ADMIN_PATH_PATTERNS = ADMIN_PATH_REGEXES.stream().map(Pattern::compile).collect(Collectors.toList());
+  private static final List<Pattern> STREAMING_PATH_PATTERNS = STREAMING_PATH_REGEXES.stream().map(Pattern::compile).collect(Collectors.toList());
+  private static final List<Pattern> INDEXING_PATH_PATTERNS = INDEXING_PATH_REGEXES.stream().map(Pattern::compile).collect(Collectors.toList());
+  private static final List<Pattern> SEARCH_PATH_PATTERNS = SEARCH_PATH_REGEXES.stream().map(Pattern::compile).collect(Collectors.toList());
 }

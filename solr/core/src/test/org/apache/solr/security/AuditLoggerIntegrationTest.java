@@ -216,6 +216,16 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     assertAuditEvent(events.get(2), ERROR,"/select", SEARCH, null, 400);
   }
 
+//  @Test
+//  public void rootPathRequest() throws Exception {
+//    setupCluster(false, null, false);
+//    String baseUrl = testHarness.get().cluster.getJettySolrRunner(0).getBaseUrl().toString();
+//    String res = IOUtils.toString(new URL(baseUrl + "/admin/info/system"), StandardCharsets.UTF_8);
+//    log.warn("text={}", res);
+//    final List<AuditEvent> events = testHarness.get().receiver.waitForAuditEvents(1);
+//    assertAuditEvent(events.get(0), COMPLETED, "/admin/info/system");
+//  }
+
   @Test
   public void authValid() throws Exception {
     setupCluster(false, null, true);
