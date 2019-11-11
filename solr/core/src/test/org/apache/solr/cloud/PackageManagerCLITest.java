@@ -121,6 +121,12 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
       }
       assertPackageVersion("abc", "question-answer", "1.1.0", rhPath, "1.1.0");
     }
+    
+    log.info("Running undeploy...");
+    run(tool, new String[] {"-solrUrl", solrUrl, "undeploy", "question-answer", "-collections", "abc"});
+    
+    run(tool, new String[] {"-solrUrl", solrUrl, "list-deployed", "question-answer"});
+
   }
 
   void assertPackageVersion(String collection, String pkg, String version, String component, String componentVersion) throws Exception {

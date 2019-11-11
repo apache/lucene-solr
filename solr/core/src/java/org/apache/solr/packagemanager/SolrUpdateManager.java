@@ -88,7 +88,7 @@ public class SolrUpdateManager {
     log.info(existingRepositoriesJson);
 
     List repos = new ObjectMapper().readValue(existingRepositoriesJson, List.class);
-    PackageUtils.postMessage(PackageUtils.GREEN, log, false, "SPR is: "+solrClient);
+    PackageUtils.printGreen("SPR is: "+solrClient);
     repos.add(new SolrPackageRepository(name, uri));
     if (packageManager.zkClient.exists("/repositories.json", true) == false) {
       packageManager.zkClient.create("/repositories.json", new ObjectMapper().writeValueAsString(repos).getBytes(), CreateMode.PERSISTENT, true);
@@ -103,8 +103,8 @@ public class SolrUpdateManager {
     }
     packageManager.zkClient.setData("/keys/exe/"+name+".der", IOUtils.toByteArray(new URL(uri+"/publickey.der").openStream()), true);
 
-    PackageUtils.postMessage(PackageUtils.GREEN, log, false, "Added repository: "+name);
-    PackageUtils.postMessage(PackageUtils.GREEN, log, false, getRepositoriesJson(packageManager.zkClient));
+    PackageUtils.printGreen("Added repository: "+name);
+    PackageUtils.printGreen(getRepositoriesJson(packageManager.zkClient));
   }
 
   private String getRepositoriesJson(SolrZkClient zkClient) throws UnsupportedEncodingException, KeeperException, InterruptedException {
@@ -126,7 +126,7 @@ public class SolrUpdateManager {
 
     try {
       // post the metadata
-      PackageUtils.postMessage(PackageUtils.GREEN, log, false, "Posting metadata");
+      PackageUtils.printGreen("Posting metadata");
 
       if (release.manifest == null) {
         String manifestJson = PackageUtils.getFileFromArtifacts(downloaded, "manifest.json");
@@ -141,7 +141,7 @@ public class SolrUpdateManager {
           "/package/" + packageName + "/" + version + "/manifest.json", null);
 
       // post the artifacts
-      PackageUtils.postMessage(PackageUtils.GREEN, log, false, "Posting artifacts");
+      PackageUtils.printGreen("Posting artifacts");
       for (int i=0; i<release.artifacts.size(); i++) {
         PackageUtils.postFile(solrClient, ByteBuffer.wrap(FileUtils.readFileToByteArray(downloaded.get(i).toFile())),
             "/package/" + packageName + "/"+version + "/" + downloaded.get(i).getFileName().toString(),
@@ -165,7 +165,7 @@ public class SolrUpdateManager {
 
       try {
         V2Response resp = req.process(solrClient);
-        PackageUtils.postMessage(PackageUtils.GREEN, log, false, "Response: "+resp.jsonStr());
+        PackageUtils.printGreen("Response: "+resp.jsonStr());
       } catch (SolrServerException | IOException e) {
         throw new SolrException(ErrorCode.BAD_REQUEST, e);
       }
@@ -258,11 +258,11 @@ public class SolrUpdateManager {
   }
 
   public void listAvailable(List args) throws SolrException {
-    PackageUtils.postMessage(PackageUtils.GREEN, log, false, "Available packages:\n-----");
+    PackageUtils.printGreen("Available packages:\n-----");
     for (SolrPackage pkg: getPackages()) {
-      PackageUtils.postMessage(PackageUtils.GREEN, log, false, pkg.name + " \t\t"+pkg.description);
+      PackageUtils.printGreen(pkg.name + " \t\t"+pkg.description);
       for (SolrPackageRelease version: pkg.versions) {
-        PackageUtils.postMessage(PackageUtils.GREEN, log, false, "\tVersion: "+version.version);
+        PackageUtils.printGreen("\tVersion: "+version.version);
       }
     }
   }
@@ -274,7 +274,7 @@ public class SolrUpdateManager {
     List<String> peggedToLatest = collectionsDeployedIn.keySet().stream().
         filter(collection -> collectionsDeployedIn.get(collection).equals("$LATEST")).collect(Collectors.toList());
     if (!peggedToLatest.isEmpty()) {
-      PackageUtils.postMessage(PackageUtils.GREEN, log, false, "Collections that will be affected (since they are configured to use $LATEST): "+peggedToLatest);
+      PackageUtils.printGreen("Collections that will be affected (since they are configured to use $LATEST): "+peggedToLatest);
     }
 
     if (version == null || version.equals("latest")) {
@@ -285,7 +285,7 @@ public class SolrUpdateManager {
 
     SolrPackageInstance updatedPackage = packageManager.getPackageInstance(packageName, "latest");
     boolean res = packageManager.verify(updatedPackage, peggedToLatest);
-    PackageUtils.postMessage(PackageUtils.GREEN, log, false, "Verifying version "+updatedPackage.getVersion()+" on " + peggedToLatest +", result: "+res);
+    PackageUtils.printGreen("Verifying version "+updatedPackage.getVersion()+" on " + peggedToLatest +", result: "+res);
     if (!res) throw new SolrException(ErrorCode.BAD_REQUEST, "Failed verification after deployment");
   }
 

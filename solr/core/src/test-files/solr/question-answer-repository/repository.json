@@ -24,7 +24,11 @@
                 "payload": {"add-requesthandler": {"name": "${RH-HANDLER-PATH}", "class": "question-answer:fullstory.QARequestHandler"}},
                 "method": "POST"
               },
-              "uninstall-command": null,
+              "uninstall-command": {
+                "path": "/api/collections/${collection}/config",
+                "payload": {"delete-requesthandler": "${RH-HANDLER-PATH}"},
+                "method": "POST"
+              },
               "verify-command": {
                 "path": "/api/collections/${collection}/config/requestHandler?componentName=${RH-HANDLER-PATH}&meta=true",
                 "method": "GET",
@@ -44,7 +48,7 @@
         "artifacts": [
           {
             "url": "question-answer-request-handler-1.1.jar",
-            "sig": "HUmyFcZSu5lsaII505oYV0m/7CRUJ79oX3exOfxn3pcs3YKNMydqElZ0uuS5M+Pg9FXrN22fBp+0Wjx5M2XAZA=="
+            "sig": "O+BsNmAuIGfPJTnum4cvNN/vU0NPUsfnmuJNCSWxP5Ssk1GzjN6jveipsL9haUfYgVyafrrDiENhXLuZ7b0maQ=="
           }
         ]
       }

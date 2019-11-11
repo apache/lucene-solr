@@ -157,7 +157,15 @@ public class PackageUtils {
   public static String CYAN = "\u001B[36m";
   public static String WHITE = "\u001B[37m";
 
-  public static void postMessage(String color, Logger log, boolean printInLog, Object message) {
+  public static void printGreen(Object message) {
+    PackageUtils.print(PackageUtils.GREEN, null, false, message);
+  }
+
+  public static void printRed(Object message) {
+    PackageUtils.print(PackageUtils.RED, null, false, message);
+  }
+
+  public static void print(String color, Logger log, boolean printInLog, Object message) {
 
     String RESET = "\u001B[0m";
 

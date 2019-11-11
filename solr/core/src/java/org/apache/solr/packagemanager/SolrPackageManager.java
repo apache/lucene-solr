@@ -80,11 +80,11 @@ public class SolrPackageManager implements Closeable {
   // nocommit create a bean for this response?
   Map<String, String> getPackageParams(String packageName, String collection) {
     try {
-    return (Map<String, String>)((Map)((Map)((Map)
-        PackageUtils.getJson(solrClient.getHttpClient(), solrBaseUrl + "/api/collections/" + collection + "/config/params/packages", Map.class)
-        .get("response"))
-        .get("params"))
-        .get("packages")).get(packageName);
+      return (Map<String, String>)((Map)((Map)((Map)
+          PackageUtils.getJson(solrClient.getHttpClient(), solrBaseUrl + "/api/collections/" + collection + "/config/params/packages", Map.class)
+          .get("response"))
+          .get("params"))
+          .get("packages")).get(packageName);
     } catch (Exception ex) {
       // This should be because there are no parameters. Be tolerant here.
       return Collections.emptyMap();
@@ -117,12 +117,12 @@ public class SolrPackageManager implements Closeable {
       SolrPackageInstance deployedPackage = getPackagesDeployed(collection).get(packageInstance.name);
       if (packageInstance.equals(deployedPackage)) {
         if (!pegToLatest) {
-          PackageUtils.postMessage(PackageUtils.RED, log, false, "Package " + packageInstance + " already deployed on "+collection);
+          PackageUtils.printRed("Package " + packageInstance + " already deployed on "+collection);
           continue;
         }
       } else {
         if (deployedPackage != null && !isUpdate) {
-          PackageUtils.postMessage(PackageUtils.RED, log, false, "Package " + deployedPackage + " already deployed on "+collection+". To update to "+packageInstance+", pass --update parameter.");
+          PackageUtils.printRed("Package " + deployedPackage + " already deployed on "+collection+". To update to "+packageInstance+", pass --update parameter.");
           continue;
         }
       }
@@ -174,7 +174,7 @@ public class SolrPackageManager implements Closeable {
               try {
                 String payload = PackageUtils.resolve(new ObjectMapper().writeValueAsString(cmd.payload), packageInstance.parameterDefaults, collectionParameterOverrides, systemParams);
                 String path = PackageUtils.resolve(cmd.path, packageInstance.parameterDefaults, collectionParameterOverrides, systemParams);
-                PackageUtils.postMessage(PackageUtils.GREEN, log, false, "Executing " + payload + " for path:" + path);
+                PackageUtils.printGreen("Executing " + payload + " for path:" + path);
                 // nocommit prompt and better message
                 SolrCLI.postJsonToSolr(solrClient, path, payload);
               } catch (Exception ex) {
@@ -184,7 +184,7 @@ public class SolrPackageManager implements Closeable {
               throw new SolrException(ErrorCode.BAD_REQUEST, "Non-POST method not supported for setup commands");
             }
           } else {
-            PackageUtils.postMessage(PackageUtils.RED, log, false, "There is no setup command to execute for plugin: " + plugin.name);
+            PackageUtils.printRed("There is no setup command to execute for plugin: " + plugin.name);
           }
         }
       }
@@ -202,7 +202,7 @@ public class SolrPackageManager implements Closeable {
     // Verify that package was successfully deployed
     boolean success = verify(packageInstance, collections);
     if (success) {
-      PackageUtils.postMessage(PackageUtils.GREEN, log, false, "Deployed and verified package: " + packageInstance.name + ", version: " + packageInstance.version);
+      PackageUtils.printGreen("Deployed and verified package: " + packageInstance.name + ", version: " + packageInstance.version);
     }
     return success;
   }
@@ -212,10 +212,10 @@ public class SolrPackageManager implements Closeable {
     // verify deployment succeeded?
     boolean success = true;
     for (Plugin p: pkg.getPlugins()) {
-      PackageUtils.postMessage(PackageUtils.GREEN, log, false, p.verifyCommand);
+      PackageUtils.printGreen(p.verifyCommand);
       for (String collection: collections) {
         // nocommit print the resolved command
-        PackageUtils.postMessage(PackageUtils.GREEN, log, false, "Executing " + p.verifyCommand + " for collection:" + collection);
+        PackageUtils.printGreen("Executing " + p.verifyCommand + " for collection:" + collection);
         Map<String, String> collectionParameterOverrides = getPackageParams(pkg.name, collection);
 
         Command cmd = p.verifyCommand;
@@ -228,13 +228,13 @@ public class SolrPackageManager implements Closeable {
 
         if ("GET".equalsIgnoreCase(cmd.method)) {
           String response = PackageUtils.getJson(solrClient.getHttpClient(), url);
-          PackageUtils.postMessage(PackageUtils.GREEN, log, false, response);
+          PackageUtils.printGreen(response);
           String actualValue = JsonPath.parse(response, PackageUtils.jsonPathConfiguration())
               .read(PackageUtils.resolve(cmd.condition, pkg.parameterDefaults, collectionParameterOverrides, systemParams));
           String expectedValue = PackageUtils.resolve(cmd.expected, pkg.parameterDefaults, collectionParameterOverrides, systemParams);
-          PackageUtils.postMessage(PackageUtils.GREEN, log, false, "Actual: "+actualValue+", expected: "+expectedValue);
+          PackageUtils.printGreen("Actual: "+actualValue+", expected: "+expectedValue);
           if (!expectedValue.equals(actualValue)) {
-            PackageUtils.postMessage(PackageUtils.RED, log, false, "Failed to deploy plugin: "+p.name);
+            PackageUtils.printRed("Failed to deploy plugin: "+p.name);
             success = false;
           }
         } else {
@@ -262,7 +262,7 @@ public class SolrPackageManager implements Closeable {
         }
       }
     }
-    if (version == null || version.equalsIgnoreCase("latest")) {
+    if (version == null || version.equalsIgnoreCase("latest") || version.equalsIgnoreCase("$LATEST")) {
       return latest;
     } else return null;
   }
@@ -290,13 +290,64 @@ public class SolrPackageManager implements Closeable {
           + ", maxSolrVersion: "+manifest.maxSolrVersion);
     }
 
-    PackageUtils.postMessage(PackageUtils.GREEN, log, false, deployPackage(packageInstance, pegToLatest, isUpdate,
+    PackageUtils.printGreen(deployPackage(packageInstance, pegToLatest, isUpdate,
         Arrays.asList(collections), parameters));
+  }
+
+  public void undeploy(String packageName, String[] collections) throws SolrException {
+    for (String collection: collections) {
+      SolrPackageInstance deployedPackage = getPackagesDeployed(collection).get(packageName);
+      Map<String, String> collectionParameterOverrides = getPackageParams(packageName, collection);
+
+      // Get package params
+      try {
+        boolean packageParamsExist = ((Map)PackageUtils.getJson(solrClient.getHttpClient(), solrBaseUrl + "/api/collections/abc/config/params/packages", Map.class)
+            .getOrDefault("response", Collections.emptyMap())).containsKey("params");
+        SolrCLI.postJsonToSolr(solrClient, "/api/collections/" + collection + "/config/params",
+            new ObjectMapper().writeValueAsString(Collections.singletonMap(packageParamsExist? "update": "set",
+                Collections.singletonMap("packages", Collections.singletonMap(packageName, collectionParameterOverrides)))));
+      } catch (Exception e) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, e);
+      }
+
+
+      // Run the uninstall command for all plugins
+      Map<String, String> systemParams = Map.of("collection", collection, "package-name", deployedPackage.name, "package-version", deployedPackage.version);
+
+      for (Plugin plugin: deployedPackage.getPlugins()) {
+        Command cmd = plugin.uninstallCommand;
+        if (cmd != null && !Strings.isNullOrEmpty(cmd.method)) {
+          if ("POST".equalsIgnoreCase(cmd.method)) {
+            try {
+              String payload = PackageUtils.resolve(new ObjectMapper().writeValueAsString(cmd.payload), deployedPackage.parameterDefaults, collectionParameterOverrides, systemParams);
+              String path = PackageUtils.resolve(cmd.path, deployedPackage.parameterDefaults, collectionParameterOverrides, systemParams);
+              PackageUtils.printGreen("Executing " + payload + " for path:" + path);
+              SolrCLI.postJsonToSolr(solrClient, path, payload);
+            } catch (Exception ex) {
+              throw new SolrException(ErrorCode.SERVER_ERROR, ex);
+            }
+          } else {
+            throw new SolrException(ErrorCode.BAD_REQUEST, "Non-POST method not supported for uninstall commands");
+          }
+        } else {
+          PackageUtils.printRed("There is no uninstall command to execute for plugin: " + plugin.name);
+        }
+      }
+      
+      // Set the package version in the collection's parameters
+      try {
+        SolrCLI.postJsonToSolr(solrClient, "/api/collections/" + collection + "/config/params", "{set: {PKG_VERSIONS: {"+packageName+": null}}}");
+        SolrCLI.postJsonToSolr(solrClient, "/api/cluster/package", "{\"refresh\": \"" + packageName + "\"}");
+      } catch (Exception ex) {
+        throw new SolrException(ErrorCode.SERVER_ERROR, ex);
+      }
+
+    }
   }
 
   public void listInstalled(List args) {
     for (SolrPackageInstance pkg: fetchInstalledPackageInstances()) {
-      PackageUtils.postMessage(PackageUtils.GREEN, log, false, pkg.getPackageName()+" ("+pkg.getVersion()+")");
+      PackageUtils.printGreen(pkg.getPackageName()+" ("+pkg.getVersion()+")");
     }
   }
 
