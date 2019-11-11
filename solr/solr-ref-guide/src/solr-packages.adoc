@@ -67,7 +67,7 @@ The end points are
 Use the following steps to upload a jar signed with your public key
 
 1) If you don't have a jar file with plugins, download a sample from github
-example
+
 [source, bash]
 ----
 $ curl -o runtimelibs.jar   -LO https://github.com/apache/lucene-solr/blob/master/solr/core/src/test-files/runtimecode/runtimelibs.jar.bin?raw=true
