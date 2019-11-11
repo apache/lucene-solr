@@ -131,6 +131,10 @@ image::images/math-expressions/sined.png[]
 
 image::images/math-expressions/integral.png[]
 
+=== Convolutional Smoothing
+
+image::images/math-expressions/conv-smooth.png[]
+
 === Autocorrelation
 
 image::images/math-expressions/noise-autocorrelation.png[]
