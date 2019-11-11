@@ -123,6 +123,7 @@ Any class name can be prefixed with the packagename e.g : `mypkg:fully.qualified
 
 
 example:
+
 1) create a package
 
 [source,bash]
