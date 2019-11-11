@@ -16,186 +16,125 @@
  */
 package org.apache.lucene.search.grouping;
 
+import java.util.Arrays;
+
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
+import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.util.LuceneTestCase;
 
 import org.junit.Ignore;
+import org.junit.Test;
 
+/*
+ * This class implements tests for the <code>TopGroup.merge</code> method
+ * using a narrative approach. Use of a creative narrative may seem unusual
+ * or even silly but the idea behind it is to make it hopefully easier to
+ * reason about the documents and groups and scores in the test whilst testing
+ * several scenario permutations.
+ *
+ * Imagine:
+ *
+ * Each document represents (say) a picture book of an animal.
+ * We are searching for two books and wish to draw a picture of our own, inspired by the books.
+ * We think that large animals are easier to draw and therefore order the books by the featured animal's size.
+ * We think that different colors would make for a good drawing and therefore group the books by the featured animal's color.
+ *
+ * Index content:
+ *
+ * The documents are in 2 groups ("blue" and "red") and there are 4 documents across 2 shards:
+ * shard 1 (blue whale, red ant) and shard 2 (blue dragonfly, red squirrel).
+ *
+ * If all documents are present the "blue whale" and the "red squirrel" documents would be returned
+ * for our drawing since they are the largest animals in their respective groups.
+ */
 public class TopGroupsTest extends LuceneTestCase {
 
-  @Ignore // https://issues.apache.org/jira/browse/LUCENE-8996
+  private static String RED_GROUP_KEY = "RED";
+  private static String BLUE_GROUP_KEY = "BLUE";
+
+  private static Sort GROUP_SORT = Sort.RELEVANCE;
+  private static Sort DOC_SORT = Sort.RELEVANCE;
+
+  private static int DOC_OFFSET = 0;
+  private static int TOP_DOC_N = 10;
+
+
+  private static ScoreDoc DOC_RED_ANT = new ScoreDoc(1 /* docid */, 1.0f /* score */);
+  private static ScoreDoc DOC_RED_SQUIRREL = new ScoreDoc(3 /* docid */, 3.0f /* score */);
+  private static ScoreDoc DOC_BLUE_DRAGONFLY = new ScoreDoc(2 /* docid */, 2.0f /* score */);
+  private static ScoreDoc DOC_BLUE_WHALE = new ScoreDoc(4 /* docid */, 4.0f /* score */);
+
+  private static TopGroups.ScoreMergeMode MERGE_MODE = TopGroups.ScoreMergeMode.Total;
+
+  @Test
   public void testAllGroupsEmptyInSecondPass() {
-    narrativeMergeTestImplementation(false, false, false, false);
+    GroupDocs<String> emptyRed = createEmptyGroupDocs(RED_GROUP_KEY);
+    GroupDocs<String> emptyBlue = createEmptyGroupDocs(BLUE_GROUP_KEY);
+
+    TopGroups<String> emptyGroups = createTopGroups(new GroupDocs[] {emptyRed, emptyBlue}, Float.NaN);
+
+    // if we merge two empty groups the final maxScore should be Float.NaN
+    TopGroups mergedGroups = TopGroups.merge(new TopGroups[] {emptyGroups, emptyGroups}, GROUP_SORT, DOC_SORT, DOC_OFFSET, TOP_DOC_N, MERGE_MODE);
+    assertTrue("Score should be equal to Float.NaN when merging empty top groups", Float.isNaN(mergedGroups.maxScore));
   }
 
-  @Ignore // https://issues.apache.org/jira/browse/LUCENE-8996
-  public void testSomeGroupsEmptyInSecondPass() {
-    narrativeMergeTestImplementation(false, false, false, true);
-    narrativeMergeTestImplementation(false, false, true, false);
-    narrativeMergeTestImplementation(false, false, true, true);
+  @Test
+  @Ignore("Ignore until https://issues.apache.org/jira/browse/LUCENE-8996 is resolved")
+  public void testMergeARealScoreWithNanShouldntReturnNaN() {
+    GroupDocs<String> emptyRed = createEmptyGroupDocs(RED_GROUP_KEY);
+    GroupDocs<String> emptyBlue = createEmptyGroupDocs(BLUE_GROUP_KEY);
 
-    narrativeMergeTestImplementation(false, true, false, false);
-    narrativeMergeTestImplementation(false, true, false, true);
-    narrativeMergeTestImplementation(false, true, true, false);
-    narrativeMergeTestImplementation(false, true, true, true);
+    GroupDocs<String> fullRed = createGroupDocs(RED_GROUP_KEY, new ScoreDoc[] {DOC_RED_ANT, DOC_RED_SQUIRREL}, DOC_RED_SQUIRREL.score /*score*/, DOC_RED_SQUIRREL.score /*max score*/);
+    GroupDocs<String> fullBlue = createGroupDocs(BLUE_GROUP_KEY, new ScoreDoc[] {DOC_BLUE_DRAGONFLY, DOC_BLUE_WHALE}, DOC_BLUE_WHALE.score /*score*/, DOC_BLUE_WHALE.score /*max score*/);
 
-    narrativeMergeTestImplementation(true, false, false, false);
-    narrativeMergeTestImplementation(true, false, false, true);
-    narrativeMergeTestImplementation(true, false, true, false);
-    narrativeMergeTestImplementation(true, false, true, true);
+    final float maxScoreShard1 = fullBlue.maxScore;
+    // shard one has real groups with a max score
+    TopGroups<String> topGroupsShard1 = createTopGroups(new GroupDocs[] {fullBlue, fullRed}, maxScoreShard1);
+    // shard two has empty groups with max score Float.NaN
+    TopGroups<String> topGroupsShard2 = createTopGroups(new GroupDocs[] {emptyBlue, emptyRed}, Float.NaN);
 
-    narrativeMergeTestImplementation(true, true, false, false);
-    narrativeMergeTestImplementation(true, true, false, true);
-    narrativeMergeTestImplementation(true, true, true, false);
+    // merging the groups must produce a TopGroups object with maxScore equals to maxScoreShard1
+    TopGroups mergedGroups = TopGroups.merge(new TopGroups[] {topGroupsShard1, topGroupsShard2}, GROUP_SORT, DOC_SORT, DOC_OFFSET, TOP_DOC_N, MERGE_MODE);
+    assertEquals(maxScoreShard1, mergedGroups.maxScore, 0.0);
   }
 
-  public void testNoGroupsEmptyInSecondPass() {
-    narrativeMergeTestImplementation(true, true, true, true);
-  }
+  @Test
+  public void testMergeARealScoresReturnTheRightResults() {
+    GroupDocs<String> redSquirrelGroupDocs = createGroupDocs(RED_GROUP_KEY, new ScoreDoc[] {DOC_RED_SQUIRREL}, DOC_RED_SQUIRREL.score /*score*/, DOC_RED_SQUIRREL.score /*max score*/);
+    GroupDocs<String> blueWhaleGroupDocs = createGroupDocs(BLUE_GROUP_KEY, new ScoreDoc[] {DOC_BLUE_WHALE}, DOC_BLUE_WHALE.score /*score*/, DOC_BLUE_WHALE.score /*max score*/);
+    GroupDocs<String> blueDragonflyGroupDocs = createGroupDocs(BLUE_GROUP_KEY, new ScoreDoc[] {DOC_BLUE_DRAGONFLY}, DOC_BLUE_DRAGONFLY.score /*score*/, DOC_BLUE_DRAGONFLY.score /*max score*/);
+    GroupDocs<String> redAntGroupDocs = createGroupDocs(RED_GROUP_KEY, new ScoreDoc[] {DOC_RED_ANT}, DOC_RED_ANT.score /*score*/, DOC_RED_ANT.score /*max score*/);
 
-  /*
-   * This method implements tests for the <code>TopGroup.merge</code> method
-   * using a narrative approach. Use of a creative narrative may seem unusual
-   * or even silly but the idea behind it is to make it hopefully easier to
-   * reason about the documents and groups and scores in the test whilst testing
-   * several scenario permutations.
-   *
-   * Imagine:
-   *
-   * Each document represents (say) a picture book of an animal.
-   * We are searching for two books and wish to draw a picture of our own, inspired by the books.
-   * We think that large animals are easier to draw and therefore order the books by the featured animal's size.
-   * We think that different colors would make for a good drawing and therefore group the books by the featured animal's color.
-   *
-   * Index content:
-   *
-   * The documents are in 2 groups ("blue" and "red") and there are 4 documents across 2 shards:
-   * shard 1 (blue whale, red ant) and shard 2 (blue dragonfly, red squirrel).
-   *
-   * If all documents are present the "blue whale" and the "red squirrel" documents would be returned
-   * for our drawing since they are the largest animals in their respective groups.
-   *
-   * Test permutations (haveBlueWhale, haveRedAnt, haveBlueDragonfly, haveRedSquirrel) arise because
-   * in the first pass of the search all documents can be present, but
-   * in the second pass of the search some documents could be missing
-   * if they have been deleted 'just so' between the two phases.
-   *
-   * Additionally a <code>haveAnimal == false</code> condition also represents scenarios where a given
-   * group has documents on some but not all shards in the collection.
-   */
-  private void narrativeMergeTestImplementation(
-      boolean haveBlueWhale,
-      boolean haveRedAnt,
-      boolean haveBlueDragonfly,
-      boolean haveRedSquirrel) {
+    // shard one has real groups with a max score
+    TopGroups<String> topGroupsShard1 = createTopGroups(new GroupDocs[] {blueWhaleGroupDocs, redAntGroupDocs}, blueWhaleGroupDocs.maxScore);
+    // shard two has empty groups with max score Float.NaN
+    TopGroups<String> topGroupsShard2 = createTopGroups(new GroupDocs[] {blueDragonflyGroupDocs, redSquirrelGroupDocs}, blueDragonflyGroupDocs.maxScore);
 
-    final String blueGroupValue = "blue";
-    final String redGroupValue = "red";
-
-    final Integer redAntSize = 1;
-    final Integer blueDragonflySize = 10;
-    final Integer redSquirrelSize = 100;
-    final Integer blueWhaleSize = 1000;
-
-    final float redAntScore = redAntSize;
-    final float blueDragonflyScore = blueDragonflySize;
-    final float redSquirrelScore = redSquirrelSize;
-    final float blueWhaleScore = blueWhaleSize;
-
-    final Sort sort = Sort.RELEVANCE;
-
-    final TopGroups<String> shard1TopGroups;
-    {
-      final GroupDocs<String> group1 = haveBlueWhale
-          ? createSingletonGroupDocs(blueGroupValue, new Object[] { blueWhaleSize }, 1 /* docId */, blueWhaleScore, 0 /* shardIndex */)
-              : createEmptyGroupDocs(blueGroupValue, new Object[] { blueWhaleSize });
-
-      final GroupDocs<String> group2 = haveRedAnt
-          ? createSingletonGroupDocs(redGroupValue, new Object[] { redAntSize }, 2 /* docId */, redAntScore, 0 /* shardIndex */)
-              : createEmptyGroupDocs(redGroupValue, new Object[] { redAntSize });
-
-      shard1TopGroups = new TopGroups<String>(
-          sort.getSort() /* groupSort */,
-          sort.getSort() /* withinGroupSort */,
-          group1.scoreDocs.length + group2.scoreDocs.length /* totalHitCount */,
-          group1.scoreDocs.length + group2.scoreDocs.length /* totalGroupedHitCount */,
-          combineGroupDocs(group1, group2) /* groups */,
-          (haveBlueWhale ? blueWhaleScore : (haveRedAnt ? redAntScore : Float.NaN)) /* maxScore */);
-    }
-
-    final TopGroups<String> shard2TopGroups;
-    {
-      final GroupDocs<String> group1 = haveBlueDragonfly
-          ? createSingletonGroupDocs(blueGroupValue, new Object[] { blueDragonflySize }, 3 /* docId */, blueDragonflyScore, 1 /* shardIndex */)
-              : createEmptyGroupDocs(blueGroupValue, new Object[] { blueDragonflySize });
-
-      final GroupDocs<String> group2 = haveRedSquirrel
-      ? createSingletonGroupDocs(redGroupValue, new Object[] { redSquirrelSize }, 4 /* docId */, redSquirrelScore, 1 /* shardIndex */)
-          : createEmptyGroupDocs(redGroupValue, new Object[] { redSquirrelSize });
-
-      shard2TopGroups = new TopGroups<String>(
-          sort.getSort() /* groupSort */,
-          sort.getSort() /* withinGroupSort */,
-          group1.scoreDocs.length + group2.scoreDocs.length /* totalHitCount */,
-          group1.scoreDocs.length + group2.scoreDocs.length /* totalGroupedHitCount */,
-          combineGroupDocs(group1, group2) /* groups */,
-          (haveRedSquirrel ? redSquirrelScore : (haveBlueDragonfly ? blueDragonflyScore : Float.NaN)) /* maxScore */);
-    }
-
-    final TopGroups<String> mergedTopGroups = TopGroups.<String>merge(
-        combineTopGroups(shard1TopGroups, shard2TopGroups),
-        sort /* groupSort */,
-        sort /* docSort */,
-        0 /* docOffset */,
-        2 /* docTopN */,
-        TopGroups.ScoreMergeMode.None);
-    assertNotNull(mergedTopGroups);
-
-    final int expectedCount =
-        (haveBlueWhale     ? 1 : 0) +
-        (haveRedAnt        ? 1 : 0) +
-        (haveBlueDragonfly ? 1 : 0) +
-        (haveRedSquirrel   ? 1 : 0);
-
-    assertEquals(expectedCount, mergedTopGroups.totalHitCount);
-    assertEquals(expectedCount, mergedTopGroups.totalGroupedHitCount);
-
-    assertEquals(2, mergedTopGroups.groups.length);
-    {
-      assertEquals(blueGroupValue, mergedTopGroups.groups[0].groupValue);
-      final float expectedBlueMaxScore =
-          (haveBlueWhale ? blueWhaleScore : (haveBlueDragonfly ? blueDragonflyScore : Float.MIN_VALUE));
-      checkMaxScore(expectedBlueMaxScore, mergedTopGroups.groups[0].maxScore);
-    }
-    {
-      assertEquals(redGroupValue, mergedTopGroups.groups[1].groupValue);
-      final float expectedRedMaxScore =
-          (haveRedSquirrel ? redSquirrelScore : (haveRedAnt ? redAntScore : Float.MIN_VALUE));
-      checkMaxScore(expectedRedMaxScore, mergedTopGroups.groups[1].maxScore);
-    }
-
-    final float expectedMaxScore =
-        (haveBlueWhale ? blueWhaleScore
-            : (haveRedSquirrel ? redSquirrelScore
-                : (haveBlueDragonfly ? blueDragonflyScore
-                    : (haveRedAnt ? redAntScore
-                        : Float.MIN_VALUE))));
-    checkMaxScore(expectedMaxScore, mergedTopGroups.maxScore);
-  }
-
-  private static void checkMaxScore(float expected, float actual) {
-    if (Float.isNaN(expected)) {
-      assertTrue(Float.isNaN(actual));
-    } else {
-      assertEquals(expected, actual, 0.0);
-    }
+    // merging the groups should produce a group that has blueWhaleGroupDocs.max as a maxScore
+    TopGroups mergedGroups = TopGroups.merge(new TopGroups[] {topGroupsShard1, topGroupsShard2}, GROUP_SORT, DOC_SORT, DOC_OFFSET, TOP_DOC_N, MERGE_MODE);
+    assertEquals(blueWhaleGroupDocs.maxScore, mergedGroups.maxScore, 0.0);
+    // also the first group should be blue and contain the biggest blue animal (the whale)
+    assertEquals(DOC_BLUE_WHALE.doc, mergedGroups.groups[0].scoreDocs[0].doc);
+    // the second group should be red and contain the biggest red animal (the squirrel)
+    assertEquals(DOC_RED_SQUIRREL.doc, mergedGroups.groups[1].scoreDocs[0].doc);
   }
 
   // helper methods
 
-  private static GroupDocs<String> createEmptyGroupDocs(String groupValue, Object[] groupSortValues) {
+  /* Create a TopGroup containing the given GroupDocs - sort will be by score and total hit count and group hit
+  * count will be randomized values*/
+  private static TopGroups<String> createTopGroups(GroupDocs<String> groups[], float maxScore){
+    SortField[] sortByScore = new SortField[] {SortField.FIELD_SCORE};
+    int totalHitCount = 0; // randomize
+    int totalGroupedHitCount = 0; // randomize
+    return new TopGroups<String>(sortByScore, sortByScore, totalHitCount, totalGroupedHitCount, groups, maxScore);
+  }
+
+  /* Create a GroupDocs with no documents - if the shard didn't have documents matching the query */
+  private static GroupDocs<String> createEmptyGroupDocs(String groupValue) {
+    Object[] groupSortValues = new Object[0];
     return new  GroupDocs<String>(
         Float.NaN /* score */,
         Float.NaN /* maxScore */,
@@ -203,33 +142,19 @@ public class TopGroupsTest extends LuceneTestCase {
         new ScoreDoc[0],
         groupValue,
         groupSortValues);
-    }
+  }
 
-  private static GroupDocs<String> createSingletonGroupDocs(String groupValue, Object[] groupSortValues,
-      int docId, float docScore, int shardIndex) {
-    return new  GroupDocs<String>(
-        Float.NaN /* score */,
-        docScore /* maxScore */,
-        new TotalHits(1, TotalHits.Relation.EQUAL_TO),
-        new ScoreDoc[] { new ScoreDoc(docId, docScore, shardIndex) },
+  /* Create a GroupDocs with the given an array of ScoreDocs that belong to the group. It assumes
+  * that we are sorting only on scores and fetches the scores from the given ScoreDocs  */
+  private static GroupDocs<String> createGroupDocs(String groupValue, ScoreDoc[] scoreDocs, float score, float maxScore) {
+    // extract the scores from the scoreDocs
+    Object[] groupSortValues = Arrays.stream(scoreDocs).map(doc -> doc.score).toArray();
+    return new  GroupDocs<>(
+        score,
+        maxScore,
+        new TotalHits(0, TotalHits.Relation.EQUAL_TO),
+        scoreDocs,
         groupValue,
         groupSortValues);
-    }
-
-  private static GroupDocs<String>[] combineGroupDocs(GroupDocs<String> group0, GroupDocs<String> group1) {
-    @SuppressWarnings({"unchecked","rawtypes"})
-    final GroupDocs<String>[] groups = new GroupDocs[2];
-    groups[0] = group0;
-    groups[1] = group1;
-    return groups;
   }
-
-  private static TopGroups<String>[] combineTopGroups(TopGroups<String> group0, TopGroups<String> group1) {
-    @SuppressWarnings({"unchecked","rawtypes"})
-    final TopGroups<String>[] groups = new TopGroups[2];
-    groups[0] = group0;
-    groups[1] = group1;
-    return groups;
-  }
-
 }
