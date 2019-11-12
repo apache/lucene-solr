@@ -1,7 +1,25 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.solr.packagemanager;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.ByteBuffer;
@@ -42,13 +60,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  */
 public class RepositoryManager {
 
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   final private PackageManager packageManager;
 
   public static final String systemVersion = Version.LATEST.toString();
 
   final HttpSolrClient solrClient;
-
-  private static final Logger log = LoggerFactory.getLogger(RepositoryManager.class);
 
   public RepositoryManager(HttpSolrClient solrClient, PackageManager packageManager) {
     this.packageManager = packageManager;
@@ -103,9 +121,9 @@ public class RepositoryManager {
     List repos = new ObjectMapper().readValue(existingRepositoriesJson, List.class);
     repos.add(new DefaultPackageRepository(name, uri));
     if (packageManager.zkClient.exists("/repositories.json", true) == false) {
-      packageManager.zkClient.create("/repositories.json", new ObjectMapper().writeValueAsString(repos).getBytes(), CreateMode.PERSISTENT, true);
+      packageManager.zkClient.create("/repositories.json", new ObjectMapper().writeValueAsString(repos).getBytes("UTF-8"), CreateMode.PERSISTENT, true);
     } else {
-      packageManager.zkClient.setData("/repositories.json", new ObjectMapper().writeValueAsString(repos).getBytes(), true);
+      packageManager.zkClient.setData("/repositories.json", new ObjectMapper().writeValueAsString(repos).getBytes("UTF-8"), true);
     }
 
     if (packageManager.zkClient.exists("/keys", true)==false) packageManager.zkClient.create("/keys", new byte[0], CreateMode.PERSISTENT, true);
@@ -155,8 +173,8 @@ public class RepositoryManager {
         release.manifest = new ObjectMapper().readValue(manifestJson, SolrPackage.Manifest.class);
       }
       String manifestJson = new ObjectMapper().writeValueAsString(release.manifest);
-      String manifestSHA512 = BlobRepository.sha512Digest(ByteBuffer.wrap(manifestJson.getBytes()));
-      PackageUtils.postFile(solrClient, ByteBuffer.wrap(manifestJson.getBytes()),
+      String manifestSHA512 = BlobRepository.sha512Digest(ByteBuffer.wrap(manifestJson.getBytes("UTF-8")));
+      PackageUtils.postFile(solrClient, ByteBuffer.wrap(manifestJson.getBytes("UTF-8")),
           "/package/" + packageName + "/" + version + "/manifest.json", null);
 
       // post the artifacts

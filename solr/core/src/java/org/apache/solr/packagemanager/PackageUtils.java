@@ -28,6 +28,7 @@ import java.util.zip.ZipFile;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -109,7 +110,7 @@ public class PackageUtils {
       try (ZipFile zipFile = new ZipFile(jarfile.toFile())) {
         ZipEntry entry = zipFile.getEntry(filename);
         if (entry == null) continue;
-        return IOUtils.toString(zipFile.getInputStream(entry));
+        return IOUtils.toString(zipFile.getInputStream(entry), "UTF-8");
       } catch (Exception ex) {
         throw new SolrException(ErrorCode.BAD_REQUEST, ex);
       }
@@ -141,7 +142,7 @@ public class PackageUtils {
    */
   public static Manifest fetchManifest(HttpSolrClient solrClient, String solrBaseUrl, String manifestFilePath, String expectedSHA512) throws MalformedURLException, IOException {
     String manifestJson = PackageUtils.getJson(solrClient.getHttpClient(), solrBaseUrl + "/api/node/files" + manifestFilePath);
-    String calculatedSHA512 = BlobRepository.sha512Digest(ByteBuffer.wrap(manifestJson.getBytes()));
+    String calculatedSHA512 = BlobRepository.sha512Digest(ByteBuffer.wrap(manifestJson.getBytes("UTF-8")));
     if (expectedSHA512.equals(calculatedSHA512) == false) {
       throw new SolrException(ErrorCode.UNAUTHORIZED, "The manifest SHA512 doesn't match expected SHA512. Possible unauthorized manipulation. "
           + "Expected: " + expectedSHA512 + ", calculated: " + calculatedSHA512 + ", manifest location: " + manifestFilePath);
@@ -168,7 +169,7 @@ public class PackageUtils {
   }
 
   /**
-   * Compares two versions v1 and v2. Returns negative if v1 < v2, positive if v1 > v2 and 0 if equal.
+   * Compares two versions v1 and v2. Returns negative if v1 isLessThan v2, positive if v1 isGreaterThan v2 and 0 if equal.
    */
   public static int compareVersions(String v1, String v2) {
     return Version.valueOf(v1).compareTo(Version.valueOf(v2));
@@ -197,6 +198,7 @@ public class PackageUtils {
     PackageUtils.print(PackageUtils.RED, message);
   }
 
+  @SuppressForbidden(reason = "Need to use System.out.println() instead of log4j/slf4j for cleaner output")
   public static void print(String color, Object message) {
     String RESET = "\u001B[0m";
 

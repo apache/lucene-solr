@@ -25,6 +25,7 @@ import org.apache.commons.cli.OptionBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.packagemanager.PackageUtils;
@@ -36,10 +37,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
+@SuppressForbidden(reason = "Need to use System.out.println() instead of log4j/slf4j for cleaner output")
 public class PackageTool extends SolrCLI.ToolBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  @SuppressForbidden(reason = "Need to turn off logging, and SLF4J doesn't seem to provide for a way.")
   public PackageTool() {
     // Need a logging free, clean output going through to the user.
     Configurator.setRootLevel(Level.OFF);
@@ -130,7 +133,7 @@ public class PackageTool extends SolrCLI.ToolBase {
                 System.out.println("./solr package install <package-name>[:<version>] ");
                 System.out.println("Install a package into Solr. This copies over the artifacts from the repository into Solr's internal package store and sets up classloader for this package to be used.");
                 System.out.println("");
-                System.out.println("./solr package deploy <package-name>[:<version>] -collections <comma-separated-collections> [-p <param1>=<val1> -p <param2>=<val2> ...] ");
+                System.out.println("./solr package deploy <package-name>[:<version>] [-y] [--update] -collections <comma-separated-collections> [-p <param1>=<val1> -p <param2>=<val2> ...] ");
                 System.out.println("Bootstraps a previously installed package into the specified collections. It the package accepts parameters for its setup commands, they can be specified (as per package documentation).");
                 System.out.println("");
                 System.out.println("./solr package list-installed");

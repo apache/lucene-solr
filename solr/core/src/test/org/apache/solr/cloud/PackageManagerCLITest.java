@@ -22,6 +22,7 @@ import java.util.Arrays;
 
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
+import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.core.TestSolrConfigHandler;
 import org.apache.solr.util.PackageTool;
@@ -64,6 +65,7 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressForbidden(reason = "Need to turn off logging, and SLF4J doesn't seem to provide for a way.")
   public void testPackageManager() throws Exception {
     PackageTool tool = new PackageTool();
     
