@@ -77,6 +77,7 @@ public class TestBitUtil extends LuceneTestCase {
   private long[] buildRandomBits() {
     long[] bits = new long[random().nextInt(3) + 2];
     for (int j = 0; j < bits.length; j++) {
+      // Bias towards zeros which require special logic.
       bits[j] = random().nextInt(4) == 0 ? 0L : random().nextLong();
     }
     return bits;
