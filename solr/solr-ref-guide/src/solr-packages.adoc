@@ -231,7 +231,7 @@ $ curl  http://localhost:8983/api/cluster/package -H 'Content-type:application/j
          "files" :["/mypkg/2.0/myplugins.jar"]}}'
 ----
 
-9) Verify our plugin
+9) Verify the plugin to see if the correct version of the package is being used
 [source,bash]
 ----
 $ curl http://localhost:8983/solr/gettingstarted/config/requestHandler?componentName=/test&meta=true&omitHeader=true
