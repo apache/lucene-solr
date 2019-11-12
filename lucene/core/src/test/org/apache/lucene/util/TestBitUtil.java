@@ -28,13 +28,18 @@ public class TestBitUtil extends LuceneTestCase {
       for (int bitIndex = -1; bitIndex < 64 * numLong; bitIndex++) {
         int nextIndex = BitUtil.nextBitSet(bits, numLong, bitIndex);
         if (nextIndex == -1) {
-          assertEquals("No next bit set, so expected no bit count diff (i=" + i + " bitIndex=" + bitIndex + ")",
+          assertEquals("No next bit set, so expected no bit count diff"
+                  + " (i=" + i + " bitIndex=" + bitIndex + ")",
               BitUtil.countBitsUpTo(bits, numLong, bitIndex + 1), BitUtil.countBits(bits, numLong));
         } else {
-          assertTrue("Expected next bit set at nextIndex=" + nextIndex + " (i=" + i + " bitIndex=" + bitIndex + ")",
+          assertTrue("Expected next bit set at nextIndex=" + nextIndex
+                  + " (i=" + i + " bitIndex=" + bitIndex + ")",
               BitUtil.isBitSet(bits, numLong, nextIndex));
-          assertEquals("Next bit set at nextIndex=" + nextIndex + " so expected bit count diff of 1 (i=" + i + " bitIndex=" + bitIndex + ")",
-              BitUtil.countBitsUpTo(bits, numLong, bitIndex + 1) + 1, BitUtil.countBitsUpTo(bits, numLong, nextIndex + 1));
+          assertEquals("Next bit set at nextIndex=" + nextIndex
+                  + " so expected bit count diff of 1"
+                  + " (i=" + i + " bitIndex=" + bitIndex + ")",
+              BitUtil.countBitsUpTo(bits, numLong, bitIndex + 1) + 1,
+              BitUtil.countBitsUpTo(bits, numLong, nextIndex + 1));
         }
       }
     }
@@ -72,7 +77,7 @@ public class TestBitUtil extends LuceneTestCase {
   private long[] buildRandomBits() {
     long[] bits = new long[random().nextInt(3) + 2];
     for (int j = 0; j < bits.length; j++) {
-      bits[j] = random().nextLong();
+      bits[j] = random().nextInt(4) == 0 ? 0L : random().nextLong();
     }
     return bits;
   }

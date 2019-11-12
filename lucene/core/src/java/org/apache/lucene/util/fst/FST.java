@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.ByteBuffersDataOutput;
@@ -345,7 +346,6 @@ public final class FST<T> implements Accountable {
         if (bits == null || bits.length < numLongs) {
           bits = new long[ArrayUtil.oversize(numLongs, Long.BYTES)];
         } else {
-          // Avoid range check in Arrays.fill().
           for (int i = 0; i < numLongs; i++) {
             bits[i] = 0L;
           }
