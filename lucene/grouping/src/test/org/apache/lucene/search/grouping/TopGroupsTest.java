@@ -18,14 +18,17 @@ package org.apache.lucene.search.grouping;
 
 import java.util.Arrays;
 
+import com.carrotsearch.randomizedtesting.RandomizedTest;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TotalHits;
-import org.apache.lucene.util.LuceneTestCase;
 
 import org.junit.Ignore;
 import org.junit.Test;
+
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 /*
  * This class implements tests for the <code>TopGroup.merge</code> method
@@ -49,71 +52,71 @@ import org.junit.Test;
  * If all documents are present the "blue whale" and the "red squirrel" documents would be returned
  * for our drawing since they are the largest animals in their respective groups.
  */
-public class TopGroupsTest extends LuceneTestCase {
+public class TopGroupsTest extends RandomizedTest {
 
-  private static String RED_GROUP_KEY = "RED";
-  private static String BLUE_GROUP_KEY = "BLUE";
+  private final static String RED_GROUP_KEY = "RED";
+  private final static String BLUE_GROUP_KEY = "BLUE";
 
-  private static Sort GROUP_SORT = Sort.RELEVANCE;
-  private static Sort DOC_SORT = Sort.RELEVANCE;
+  private final static Sort GROUP_SORT = Sort.RELEVANCE;
+  private final static Sort DOC_SORT = Sort.RELEVANCE;
 
-  private static int DOC_OFFSET = 0;
-  private static int TOP_DOC_N = 10;
+  private final static int DOC_OFFSET = 0;
+  private final static int TOP_DOC_N = 10;
 
 
-  private static ScoreDoc DOC_RED_ANT = new ScoreDoc(1 /* docid */, 1.0f /* score */);
-  private static ScoreDoc DOC_RED_SQUIRREL = new ScoreDoc(3 /* docid */, 3.0f /* score */);
-  private static ScoreDoc DOC_BLUE_DRAGONFLY = new ScoreDoc(2 /* docid */, 2.0f /* score */);
-  private static ScoreDoc DOC_BLUE_WHALE = new ScoreDoc(4 /* docid */, 4.0f /* score */);
+  private final static ScoreDoc DOC_RED_ANT = new ScoreDoc(1 /* docid */, 1.0f /* score */);
+  private final static ScoreDoc DOC_RED_SQUIRREL = new ScoreDoc(3 /* docid */, 3.0f /* score */);
+  private final static ScoreDoc DOC_BLUE_DRAGONFLY = new ScoreDoc(2 /* docid */, 2.0f /* score */);
+  private final static ScoreDoc DOC_BLUE_WHALE = new ScoreDoc(4 /* docid */, 4.0f /* score */);
 
-  private static TopGroups.ScoreMergeMode MERGE_MODE = TopGroups.ScoreMergeMode.Total;
+  private final static TopGroups.ScoreMergeMode MERGE_MODE = TopGroups.ScoreMergeMode.Total;
 
   @Test
   public void testAllGroupsEmptyInSecondPass() {
-    GroupDocs<String> emptyRed = createEmptyGroupDocs(RED_GROUP_KEY);
-    GroupDocs<String> emptyBlue = createEmptyGroupDocs(BLUE_GROUP_KEY);
+    final GroupDocs<String> emptyRed = createEmptyGroupDocs(RED_GROUP_KEY);
+    final GroupDocs<String> emptyBlue = createEmptyGroupDocs(BLUE_GROUP_KEY);
 
-    TopGroups<String> emptyGroups = createTopGroups(new GroupDocs[] {emptyRed, emptyBlue}, Float.NaN);
+    final TopGroups<String> emptyGroups = createTopGroups(new GroupDocs[]{emptyRed, emptyBlue}, Float.NaN);
 
     // if we merge two empty groups the final maxScore should be Float.NaN
-    TopGroups mergedGroups = TopGroups.merge(new TopGroups[] {emptyGroups, emptyGroups}, GROUP_SORT, DOC_SORT, DOC_OFFSET, TOP_DOC_N, MERGE_MODE);
+    final TopGroups mergedGroups = TopGroups.merge(new TopGroups[]{emptyGroups, emptyGroups}, GROUP_SORT, DOC_SORT, DOC_OFFSET, TOP_DOC_N, MERGE_MODE);
     assertTrue("Score should be equal to Float.NaN when merging empty top groups", Float.isNaN(mergedGroups.maxScore));
   }
 
   @Test
   @Ignore("Ignore until https://issues.apache.org/jira/browse/LUCENE-8996 is resolved")
   public void testMergeARealScoreWithNanShouldntReturnNaN() {
-    GroupDocs<String> emptyRed = createEmptyGroupDocs(RED_GROUP_KEY);
-    GroupDocs<String> emptyBlue = createEmptyGroupDocs(BLUE_GROUP_KEY);
+    final GroupDocs<String> emptyRed = createEmptyGroupDocs(RED_GROUP_KEY);
+    final GroupDocs<String> emptyBlue = createEmptyGroupDocs(BLUE_GROUP_KEY);
 
-    GroupDocs<String> fullRed = createGroupDocs(RED_GROUP_KEY, new ScoreDoc[] {DOC_RED_ANT, DOC_RED_SQUIRREL}, DOC_RED_SQUIRREL.score /*score*/, DOC_RED_SQUIRREL.score /*max score*/);
-    GroupDocs<String> fullBlue = createGroupDocs(BLUE_GROUP_KEY, new ScoreDoc[] {DOC_BLUE_DRAGONFLY, DOC_BLUE_WHALE}, DOC_BLUE_WHALE.score /*score*/, DOC_BLUE_WHALE.score /*max score*/);
+    final GroupDocs<String> fullRed = createGroupDocs(RED_GROUP_KEY, new ScoreDoc[]{DOC_RED_ANT, DOC_RED_SQUIRREL}, DOC_RED_SQUIRREL.score /*score*/, DOC_RED_SQUIRREL.score /*max score*/);
+    GroupDocs<String> fullBlue = createGroupDocs(BLUE_GROUP_KEY, new ScoreDoc[]{DOC_BLUE_DRAGONFLY, DOC_BLUE_WHALE}, DOC_BLUE_WHALE.score /*score*/, DOC_BLUE_WHALE.score /*max score*/);
 
     final float maxScoreShard1 = fullBlue.maxScore;
     // shard one has real groups with a max score
-    TopGroups<String> topGroupsShard1 = createTopGroups(new GroupDocs[] {fullBlue, fullRed}, maxScoreShard1);
+    final TopGroups<String> topGroupsShard1 = createTopGroups(new GroupDocs[]{fullBlue, fullRed}, maxScoreShard1);
     // shard two has empty groups with max score Float.NaN
-    TopGroups<String> topGroupsShard2 = createTopGroups(new GroupDocs[] {emptyBlue, emptyRed}, Float.NaN);
+    final TopGroups<String> topGroupsShard2 = createTopGroups(new GroupDocs[]{emptyBlue, emptyRed}, Float.NaN);
 
     // merging the groups must produce a TopGroups object with maxScore equals to maxScoreShard1
-    TopGroups mergedGroups = TopGroups.merge(new TopGroups[] {topGroupsShard1, topGroupsShard2}, GROUP_SORT, DOC_SORT, DOC_OFFSET, TOP_DOC_N, MERGE_MODE);
+    final TopGroups mergedGroups = TopGroups.merge(new TopGroups[]{topGroupsShard1, topGroupsShard2}, GROUP_SORT, DOC_SORT, DOC_OFFSET, TOP_DOC_N, MERGE_MODE);
     assertEquals(maxScoreShard1, mergedGroups.maxScore, 0.0);
   }
 
   @Test
   public void testMergeARealScoresReturnTheRightResults() {
-    GroupDocs<String> redSquirrelGroupDocs = createGroupDocs(RED_GROUP_KEY, new ScoreDoc[] {DOC_RED_SQUIRREL}, DOC_RED_SQUIRREL.score /*score*/, DOC_RED_SQUIRREL.score /*max score*/);
-    GroupDocs<String> blueWhaleGroupDocs = createGroupDocs(BLUE_GROUP_KEY, new ScoreDoc[] {DOC_BLUE_WHALE}, DOC_BLUE_WHALE.score /*score*/, DOC_BLUE_WHALE.score /*max score*/);
-    GroupDocs<String> blueDragonflyGroupDocs = createGroupDocs(BLUE_GROUP_KEY, new ScoreDoc[] {DOC_BLUE_DRAGONFLY}, DOC_BLUE_DRAGONFLY.score /*score*/, DOC_BLUE_DRAGONFLY.score /*max score*/);
-    GroupDocs<String> redAntGroupDocs = createGroupDocs(RED_GROUP_KEY, new ScoreDoc[] {DOC_RED_ANT}, DOC_RED_ANT.score /*score*/, DOC_RED_ANT.score /*max score*/);
+    final GroupDocs<String> redSquirrelGroupDocs = createGroupDocs(RED_GROUP_KEY, new ScoreDoc[]{DOC_RED_SQUIRREL}, DOC_RED_SQUIRREL.score /*score*/, DOC_RED_SQUIRREL.score /*max score*/);
+    final GroupDocs<String> blueWhaleGroupDocs = createGroupDocs(BLUE_GROUP_KEY, new ScoreDoc[]{DOC_BLUE_WHALE}, DOC_BLUE_WHALE.score /*score*/, DOC_BLUE_WHALE.score /*max score*/);
+    final GroupDocs<String> blueDragonflyGroupDocs = createGroupDocs(BLUE_GROUP_KEY, new ScoreDoc[]{DOC_BLUE_DRAGONFLY}, DOC_BLUE_DRAGONFLY.score /*score*/, DOC_BLUE_DRAGONFLY.score /*max score*/);
+    final GroupDocs<String> redAntGroupDocs = createGroupDocs(RED_GROUP_KEY, new ScoreDoc[]{DOC_RED_ANT}, DOC_RED_ANT.score /*score*/, DOC_RED_ANT.score /*max score*/);
 
     // shard one has real groups with a max score
-    TopGroups<String> topGroupsShard1 = createTopGroups(new GroupDocs[] {blueWhaleGroupDocs, redAntGroupDocs}, blueWhaleGroupDocs.maxScore);
+    final TopGroups<String> topGroupsShard1 = createTopGroups(new GroupDocs[]{blueWhaleGroupDocs, redAntGroupDocs}, blueWhaleGroupDocs.maxScore);
     // shard two has empty groups with max score Float.NaN
-    TopGroups<String> topGroupsShard2 = createTopGroups(new GroupDocs[] {blueDragonflyGroupDocs, redSquirrelGroupDocs}, blueDragonflyGroupDocs.maxScore);
+    final TopGroups<String> topGroupsShard2 = createTopGroups(new GroupDocs[]{blueDragonflyGroupDocs, redSquirrelGroupDocs}, blueDragonflyGroupDocs.maxScore);
 
     // merging the groups should produce a group that has blueWhaleGroupDocs.max as a maxScore
-    TopGroups mergedGroups = TopGroups.merge(new TopGroups[] {topGroupsShard1, topGroupsShard2}, GROUP_SORT, DOC_SORT, DOC_OFFSET, TOP_DOC_N, MERGE_MODE);
+    final TopGroups mergedGroups = TopGroups.merge(new TopGroups[]{topGroupsShard1, topGroupsShard2}, GROUP_SORT, DOC_SORT, DOC_OFFSET, TOP_DOC_N, MERGE_MODE);
     assertEquals(blueWhaleGroupDocs.maxScore, mergedGroups.maxScore, 0.0);
     // also the first group should be blue and contain the biggest blue animal (the whale)
     assertEquals(DOC_BLUE_WHALE.doc, mergedGroups.groups[0].scoreDocs[0].doc);
@@ -124,18 +127,19 @@ public class TopGroupsTest extends LuceneTestCase {
   // helper methods
 
   /* Create a TopGroup containing the given GroupDocs - sort will be by score and total hit count and group hit
-  * count will be randomized values*/
-  private static TopGroups<String> createTopGroups(GroupDocs<String> groups[], float maxScore){
-    SortField[] sortByScore = new SortField[] {SortField.FIELD_SCORE};
-    int totalHitCount = 0; // randomize
-    int totalGroupedHitCount = 0; // randomize
+   * count will be randomized values */
+  private static TopGroups<String> createTopGroups(GroupDocs<String> groups[], float maxScore) {
+    final SortField[] sortByScore = new SortField[]{SortField.FIELD_SCORE};
+    final int totalHitCount = randomIntBetween(0, 1000);
+    final int totalGroupedHitCount = randomIntBetween(0, totalHitCount);
     return new TopGroups<String>(sortByScore, sortByScore, totalHitCount, totalGroupedHitCount, groups, maxScore);
   }
 
-  /* Create a GroupDocs with no documents - if the shard didn't have documents matching the query */
+  /* Create a GroupDocs with no documents, the response sent by a shard that did not have documents
+   matching the given group */
   private static GroupDocs<String> createEmptyGroupDocs(String groupValue) {
-    Object[] groupSortValues = new Object[0];
-    return new  GroupDocs<String>(
+    final Object[] groupSortValues = new Object[0]; // empty: no groupSortValues
+    return new GroupDocs<String>(
         Float.NaN /* score */,
         Float.NaN /* maxScore */,
         new TotalHits(0, TotalHits.Relation.EQUAL_TO),
@@ -145,11 +149,11 @@ public class TopGroupsTest extends LuceneTestCase {
   }
 
   /* Create a GroupDocs with the given an array of ScoreDocs that belong to the group. It assumes
-  * that we are sorting only on scores and fetches the scores from the given ScoreDocs  */
+   * that we are sorting only on scores and fetches the scores from the given ScoreDocs  */
   private static GroupDocs<String> createGroupDocs(String groupValue, ScoreDoc[] scoreDocs, float score, float maxScore) {
     // extract the scores from the scoreDocs
-    Object[] groupSortValues = Arrays.stream(scoreDocs).map(doc -> doc.score).toArray();
-    return new  GroupDocs<>(
+    final Object[] groupSortValues = Arrays.stream(scoreDocs).map(doc -> doc.score).toArray();
+    return new GroupDocs<>(
         score,
         maxScore,
         new TotalHits(0, TotalHits.Relation.EQUAL_TO),
