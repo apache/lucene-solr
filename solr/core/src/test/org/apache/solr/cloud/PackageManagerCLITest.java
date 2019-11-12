@@ -89,7 +89,7 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
 
     run(tool, new String[] {"-solrUrl", solrUrl, "list-deployed", "question-answer"});
 
-    run(tool, new String[] {"-solrUrl", solrUrl, "deploy", "question-answer", "-collections", "abc", "-p", "RH-HANDLER-PATH=" + rhPath});
+    run(tool, new String[] {"-solrUrl", solrUrl, "deploy", "question-answer", "-y", "-collections", "abc", "-p", "RH-HANDLER-PATH=" + rhPath});
     assertPackageVersion("abc", "question-answer", "1.0.0", rhPath, "1.0.0");
 
     run(tool, new String[] {"-solrUrl", solrUrl, "list-deployed", "question-answer"});
@@ -103,7 +103,7 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
       log.info("Testing auto-update to latest installed");
 
       // This command pegs the version to the latest available
-      run(tool, new String[] {"-solrUrl", solrUrl, "deploy", "question-answer:latest", "-collections", "abc"});
+      run(tool, new String[] {"-solrUrl", solrUrl, "deploy", "question-answer:latest", "-y", "-collections", "abc"});
       assertPackageVersion("abc", "question-answer", "$LATEST", rhPath, "1.0.0");
 
       run(tool, new String[] {"-solrUrl", solrUrl, "install", "question-answer"});
@@ -115,9 +115,9 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
       assertPackageVersion("abc", "question-answer", "1.0.0", rhPath, "1.0.0");
 
       if (random().nextBoolean()) { // even if parameters are not passed in, they should be picked up from previous deployment
-        run(tool, new String[] {"-solrUrl", solrUrl, "deploy", "--update", "question-answer", "-collections", "abc", "-p", "RH-HANDLER-PATH=" + rhPath});
+        run(tool, new String[] {"-solrUrl", solrUrl, "deploy", "--update", "-y", "question-answer", "-collections", "abc", "-p", "RH-HANDLER-PATH=" + rhPath});
       } else {
-        run(tool, new String[] {"-solrUrl", solrUrl, "deploy", "--update", "question-answer", "-collections", "abc"});
+        run(tool, new String[] {"-solrUrl", solrUrl, "deploy", "--update", "-y", "question-answer", "-collections", "abc"});
       }
       assertPackageVersion("abc", "question-answer", "1.1.0", rhPath, "1.1.0");
     }

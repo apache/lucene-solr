@@ -111,7 +111,9 @@ public class PackageTool extends SolrCLI.ToolBase {
               {
                 String packageName = parsePackageVersion(cli.getArgList().get(1).toString())[0];
                 String version = parsePackageVersion(cli.getArgList().get(1).toString())[1];
-                packageManager.deploy(packageName, version, cli.hasOption("update"), cli.getOptionValues("collections"), cli.getOptionValues("param"));
+                boolean noprompt = cli.hasOption('y');
+                boolean isUpdate = cli.hasOption("update") || cli.hasOption('u');
+                packageManager.deploy(packageName, version, cli.getOptionValues("collections"), cli.getOptionValues("param"), isUpdate, noprompt);
                 break;
               }
               case "undeploy":
@@ -208,7 +210,13 @@ public class PackageTool extends SolrCLI.ToolBase {
         .isRequired(false)
         .withDescription("Run './solr package help' for more details.")
         .withLongOpt("collection")
-        .create("c")
+        .create("c"),
+
+        OptionBuilder
+        .isRequired(false)
+        .withDescription("Run './solr package help' for more details.")
+        .withLongOpt("noprompt")
+        .create("y")
     };
   }
 

@@ -9,6 +9,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Scanner;
 
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrException;
@@ -106,7 +107,8 @@ public class PackageManager implements Closeable {
     return ret;
   }
 
-  public boolean deployPackage(SolrPackageInstance packageInstance, boolean pegToLatest, boolean isUpdate, List<String> collections, String overrides[]) {
+  private boolean deployPackage(SolrPackageInstance packageInstance, boolean pegToLatest, boolean isUpdate, boolean noprompt,
+      List<String> collections, String overrides[]) {
     for (String collection: collections) {
 
       SolrPackageInstance deployedPackage = getPackagesDeployed(collection).get(packageInstance.name);
@@ -164,8 +166,19 @@ public class PackageManager implements Closeable {
                 String payload = PackageUtils.resolve(new ObjectMapper().writeValueAsString(cmd.payload), packageInstance.parameterDefaults, collectionParameterOverrides, systemParams);
                 String path = PackageUtils.resolve(cmd.path, packageInstance.parameterDefaults, collectionParameterOverrides, systemParams);
                 PackageUtils.printGreen("Executing " + payload + " for path:" + path);
-                // nocommit prompt and better message
-                SolrCLI.postJsonToSolr(solrClient, path, payload);
+                boolean shouldExecute = true;
+                if (!noprompt) { // show a prompt asking user to execute the setup command for the plugin
+                  PackageUtils.print(PackageUtils.YELLOW, "Execute this command (y/n): ");
+                  String userInput = new Scanner(System.in).next();
+                  if (!"yes".equalsIgnoreCase(userInput) && !"y".equalsIgnoreCase(userInput)) {
+                    shouldExecute = false;
+                    PackageUtils.printRed("Skipping setup command for deploying (deployment verification may fail)."
+                        + " Please run this step manually or refer to package documentation.");
+                  }
+                }
+                if (shouldExecute) {
+                  SolrCLI.postJsonToSolr(solrClient, path, payload);
+                }
               } catch (Exception ex) {
                 throw new SolrException(ErrorCode.SERVER_ERROR, ex);
               }
@@ -280,7 +293,15 @@ public class PackageManager implements Closeable {
     } else return null;
   }
 
-  public void deploy(String packageName, String version, boolean isUpdate, String[] collections, String[] parameters) throws SolrException {
+  /**
+   * Deploys a version of a package to a list of collections.
+   * @param version If null, the most recent version is deployed. 
+   *    EXPERT FEATURE: If version is "latest", this collection will be auto updated whenever a newer version of this package is installed.
+   * @param isUpdate Is this a fresh deployment or is it an update (i.e. there is already a version of this package deployed on this collection)
+   * @param noprompt If true, don't prompt before executing setup commands.
+   */
+  public void deploy(String packageName, String version, String[] collections, String[] parameters,
+      boolean isUpdate, boolean noprompt) throws SolrException {
     boolean pegToLatest = "latest".equals(version); // User wants to peg this package's version to the latest installed (for auto-update, i.e. no explicit deploy step)
     SolrPackageInstance packageInstance = getPackageInstance(packageName, version);
     if (packageInstance == null) {
@@ -296,11 +317,14 @@ public class PackageManager implements Closeable {
           + ", maxSolrVersion: " + manifest.maxSolrVersion);
     }
 
-    boolean res = deployPackage(packageInstance, pegToLatest, isUpdate,
+    boolean res = deployPackage(packageInstance, pegToLatest, isUpdate, noprompt,
         Arrays.asList(collections), parameters);
     PackageUtils.print(res? PackageUtils.GREEN: PackageUtils.RED, res? "Deployment successful": "Deployment failed");
   }
 
+  /**
+   * Undeploys a packge from given collections.
+   */
   public void undeploy(String packageName, String[] collections) throws SolrException {
     for (String collection: collections) {
       SolrPackageInstance deployedPackage = getPackagesDeployed(collection).get(packageName);
