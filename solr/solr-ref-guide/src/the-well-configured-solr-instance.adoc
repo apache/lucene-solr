@@ -31,7 +31,7 @@ This section covers the following topics:
 
 <<solr-plugins.adoc#solr-plugins,Solr Plugins>>: Introduces Solr plugins with pointers to more information.
 
-<<solr-packages.adoc, Packages in Solr>>: Deploying, installing, updating packages with plugins into Solr Cluster
+<<solr-packages.adoc#solr-packages, Packages in Solr>>: Deploying, installing, updating packages with plugins into Solr Cluster
 
 <<jvm-settings.adoc#jvm-settings,JVM Settings>>: Gives some guidance on best practices for working with Java Virtual Machines.
 
