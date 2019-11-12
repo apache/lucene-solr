@@ -79,16 +79,16 @@ $ curl -o runtimelibs.jar   -LO https://github.com/apache/lucene-solr/blob/maste
 $ openssl dgst -sha1 -sign my_key.pem runtimelibs.jar | openssl enc -base64
 ----
 
-3) Upload your jar with signature. (Use the output you got from the previous command) . Ensure that new lines and spaces are removed. Do not forget to do URL encoding of you signature( e.g   escape `+` with `%2B`)
+3) Upload your jar with signature. (replace the `sig` param with the output you got from the previous command) . Ensure that new lines and spaces are removed. Do not forget to do URL encoding of you signature( e.g   escape `+` with `%2B`)
 [source, bash]
 ----
-curl --data-binary @runtimelibs.jar -X PUT  http://localhost:7574/api/cluster/files/mypkg/1.0/myplugins.jar?sig=elNjhmWIOgTgbAzeZ%2BOcwR42N7vqL6Ig9eAqn4YoP2thT7FJuhiaZuCPivjMkD682EBo9gveSCTyXIsZKjOCbQ==
+$ curl --data-binary @runtimelibs.jar -X PUT  http://localhost:7574/api/cluster/files/mypkg/1.0/myplugins.jar?sig=elNjhmWIOgTgbAzeZ%2BOcwR42N7vqL6Ig9eAqn4YoP2thT7FJuhiaZuCPivjMkD682EBo9gveSCTyXIsZKjOCbQ==
 ----
 
 4) Verify your jar upload
 [source, bash]
 ----
-curl http://localhost:7574/api/node/files/mypkg/1.0?omitHeader=true
+$ curl http://localhost:7574/api/node/files/mypkg/1.0?omitHeader=true
 ----
 [source, json]
 ----

@@ -156,6 +156,10 @@ public class PackageStoreAPI {
           if (signatures != null) {
             vals.put("sig", signatures);
           }
+          PackageStore.FileType type = packageStore.getType(path, true);
+          if(type != PackageStore.FileType.NOFILE) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,  "Path already exists "+ path);
+          }
           packageStore.put(new PackageStore.FileEntry(buf, new MetaData(vals), path));
           rsp.add(CommonParams.FILE, path);
         } catch (IOException e) {
