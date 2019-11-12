@@ -90,7 +90,7 @@ public class TopGroupsTest extends RandomizedTest {
     final GroupDocs<String> emptyBlue = createEmptyGroupDocs(BLUE_GROUP_KEY);
 
     final GroupDocs<String> fullRed = createGroupDocs(RED_GROUP_KEY, new ScoreDoc[]{DOC_RED_ANT, DOC_RED_SQUIRREL}, DOC_RED_SQUIRREL.score /*score*/, DOC_RED_SQUIRREL.score /*max score*/);
-    GroupDocs<String> fullBlue = createGroupDocs(BLUE_GROUP_KEY, new ScoreDoc[]{DOC_BLUE_DRAGONFLY, DOC_BLUE_WHALE}, DOC_BLUE_WHALE.score /*score*/, DOC_BLUE_WHALE.score /*max score*/);
+    final GroupDocs<String> fullBlue = createGroupDocs(BLUE_GROUP_KEY, new ScoreDoc[]{DOC_BLUE_DRAGONFLY, DOC_BLUE_WHALE}, DOC_BLUE_WHALE.score /*score*/, DOC_BLUE_WHALE.score /*max score*/);
 
     final float maxScoreShard1 = fullBlue.maxScore;
     // shard one has real groups with a max score
