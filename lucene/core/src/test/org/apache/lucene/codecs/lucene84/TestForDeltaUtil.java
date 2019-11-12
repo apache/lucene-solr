@@ -25,14 +25,13 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.packed.PackedInts;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 
-public class TestEliasFanoUtil extends LuceneTestCase {
+public class TestForDeltaUtil extends LuceneTestCase {
 
   public void testEncodeDecodeLE() throws IOException {
     doTestEncodeDecode(ByteOrder.LITTLE_ENDIAN);
@@ -47,12 +46,11 @@ public class TestEliasFanoUtil extends LuceneTestCase {
     final int[] values = new int[iterations * ForUtil.BLOCK_SIZE];
 
     for (int i = 0; i < iterations; ++i) {
-      final int bpv = TestUtil.nextInt(random(), 0, 31);
+      final int bpv = TestUtil.nextInt(random(), 1, 31-7);
       for (int j = 0; j < ForUtil.BLOCK_SIZE; ++j) {
         values[i * ForUtil.BLOCK_SIZE + j] = RandomNumbers.randomIntBetween(random(),
-            0, (int) PackedInts.maxValue(bpv));
+            1, (int) PackedInts.maxValue(bpv));
       }
-      Arrays.sort(values, i * ForUtil.BLOCK_SIZE, (i + 1) * ForUtil.BLOCK_SIZE);
     }
 
     final Directory d = new ByteBuffersDirectory();
@@ -61,14 +59,14 @@ public class TestEliasFanoUtil extends LuceneTestCase {
     {
       // encode
       IndexOutput out = d.createOutput("test.bin", IOContext.DEFAULT);
-      final EliasFanoUtil efUtil = new EliasFanoUtil(new ForUtil(byteOrder));
+      final ForDeltaUtil forDeltaUtil = new ForDeltaUtil(new ForUtil(byteOrder));
 
       for (int i = 0; i < iterations; ++i) {
         long[] source = new long[ForUtil.BLOCK_SIZE];
         for (int j = 0; j < ForUtil.BLOCK_SIZE; ++j) {
           source[j] = values[i*ForUtil.BLOCK_SIZE+j];
         }
-        efUtil.encode(source, out);
+        forDeltaUtil.encodeDeltas(source, out);
       }
       endPointer = out.getFilePointer();
       out.close();
@@ -77,30 +75,30 @@ public class TestEliasFanoUtil extends LuceneTestCase {
     {
       // decode
       IndexInput in = d.openInput("test.bin", IOContext.READONCE);
-      EliasFanoSequence sequence = new EliasFanoSequence();
-      final EliasFanoUtil efUtil = new EliasFanoUtil(new ForUtil(byteOrder));
+      final ForDeltaUtil forDeltaUtil = new ForDeltaUtil(new ForUtil(byteOrder));
       for (int i = 0; i < iterations; ++i) {
         if (random().nextInt(5) == 0) {
-          efUtil.skip(in);
+          forDeltaUtil.skip(in);
           continue;
         }
-        efUtil.decode(in, sequence);
-        int[] ints = new int[ForUtil.BLOCK_SIZE];
+        long base = 0;
+        final long[] restored = new long[ForUtil.BLOCK_SIZE];
+        forDeltaUtil.decodeAndPrefixSum(in, base, restored);
+        final long[] expected = new long[ForUtil.BLOCK_SIZE];
         for (int j = 0; j < ForUtil.BLOCK_SIZE; ++j) {
-          ints[j] = Math.toIntExact(sequence.next());
+          expected[j] = values[i*ForUtil.BLOCK_SIZE+j];
+          if (j > 0) {
+            expected[j] += expected[j-1];
+          } else {
+            expected[j] += base;
+          }
         }
-        assertArrayEquals(Arrays.toString(ints),
-            ArrayUtil.copyOfSubArray(values, i*ForUtil.BLOCK_SIZE, (i+1)*ForUtil.BLOCK_SIZE),
-            ints);
+        assertArrayEquals(Arrays.toString(restored), expected, restored);
       }
       assertEquals(endPointer, in.getFilePointer());
       in.close();
     }
 
     d.close();
-  }
-
-  public void testAdvance() {
-    
   }
 }

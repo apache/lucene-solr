@@ -74,6 +74,16 @@ final class ForUtil {
     }
   }
 
+  private static void expand8To32(long[] arr) {
+    for (int i = 0; i < 16; ++i) {
+      long l = arr[i];
+      arr[i] = (l >>> 24) & 0x000000FF000000FFL;
+      arr[16+i] = (l >>> 16) & 0x000000FF000000FFL;
+      arr[32+i] = (l >>> 8) & 0x000000FF000000FFL;
+      arr[48+i] = l & 0x000000FF000000FFL;
+    }
+  }
+
   private static void collapse8(long[] arr) {
     for (int i = 0; i < 16; ++i) {
       arr[i] = (arr[i] << 56) | (arr[16+i] << 48) | (arr[32+i] << 40) | (arr[48+i] << 32) | (arr[64+i] << 24) | (arr[80+i] << 16) | (arr[96+i] << 8) | arr[112+i];
@@ -87,6 +97,14 @@ final class ForUtil {
       arr[32+i] = (l >>> 32) & 0xFFFFL;
       arr[64+i] = (l >>> 16) & 0xFFFFL;
       arr[96+i] = l & 0xFFFFL;
+    }
+  }
+
+  private static void expand16To32(long[] arr) {
+    for (int i = 0; i < 32; ++i) {
+      long l = arr[i];
+      arr[i] = (l >>> 16) & 0x0000FFFF0000FFFFL;
+      arr[32+i] = l & 0x0000FFFF0000FFFFL;
     }
   }
 
@@ -110,6 +128,94 @@ final class ForUtil {
     }
   }
 
+  private static void prefixSum8(long[] arr, long base) {
+    expand8To32(arr);
+    prefixSum32(arr, base);
+  }
+
+  private static void prefixSum16(long[] arr, long base) {
+    // We need to move to the next primitive size to avoid overflows
+    expand16To32(arr);
+    prefixSum32(arr, base);
+  }
+
+  private static void prefixSum32(long[] arr, long base) {
+    arr[0] += base << 32;
+    innerPrefixSum32(arr);
+    expand32(arr);
+    final long l = arr[BLOCK_SIZE/2-1];
+    for (int i = BLOCK_SIZE/2; i < BLOCK_SIZE; ++i) {
+      arr[i] += l;
+    }
+  }
+
+  // For some reason unrolling seems to help
+  private static void innerPrefixSum32(long[] arr) {
+    arr[1] += arr[0];
+    arr[2] += arr[1];
+    arr[3] += arr[2];
+    arr[4] += arr[3];
+    arr[5] += arr[4];
+    arr[6] += arr[5];
+    arr[7] += arr[6];
+    arr[8] += arr[7];
+    arr[9] += arr[8];
+    arr[10] += arr[9];
+    arr[11] += arr[10];
+    arr[12] += arr[11];
+    arr[13] += arr[12];
+    arr[14] += arr[13];
+    arr[15] += arr[14];
+    arr[16] += arr[15];
+    arr[17] += arr[16];
+    arr[18] += arr[17];
+    arr[19] += arr[18];
+    arr[20] += arr[19];
+    arr[21] += arr[20];
+    arr[22] += arr[21];
+    arr[23] += arr[22];
+    arr[24] += arr[23];
+    arr[25] += arr[24];
+    arr[26] += arr[25];
+    arr[27] += arr[26];
+    arr[28] += arr[27];
+    arr[29] += arr[28];
+    arr[30] += arr[29];
+    arr[31] += arr[30];
+    arr[32] += arr[31];
+    arr[33] += arr[32];
+    arr[34] += arr[33];
+    arr[35] += arr[34];
+    arr[36] += arr[35];
+    arr[37] += arr[36];
+    arr[38] += arr[37];
+    arr[39] += arr[38];
+    arr[40] += arr[39];
+    arr[41] += arr[40];
+    arr[42] += arr[41];
+    arr[43] += arr[42];
+    arr[44] += arr[43];
+    arr[45] += arr[44];
+    arr[46] += arr[45];
+    arr[47] += arr[46];
+    arr[48] += arr[47];
+    arr[49] += arr[48];
+    arr[50] += arr[49];
+    arr[51] += arr[50];
+    arr[52] += arr[51];
+    arr[53] += arr[52];
+    arr[54] += arr[53];
+    arr[55] += arr[54];
+    arr[56] += arr[55];
+    arr[57] += arr[56];
+    arr[58] += arr[57];
+    arr[59] += arr[58];
+    arr[60] += arr[59];
+    arr[61] += arr[60];
+    arr[62] += arr[61];
+    arr[63] += arr[62];
+  }
+
   private final ByteOrder byteOrder;
   private final long[] tmp = new long[BLOCK_SIZE/2];
 
@@ -118,7 +224,7 @@ final class ForUtil {
   }
 
   /**
-   * Encode 128 8-bits integers from {@code data} into {@code out}.
+   * Encode 128 integers from {@code longs} into {@code out}.
    */
   void encode(long[] longs, int bitsPerValue, DataOutput out) throws IOException {
     final int nextPrimitive;
@@ -275,84 +381,217 @@ final class ForUtil {
 
 
   /**
-   * Decode 128 integers into {@code ints}.
+   * Decode 128 integers into {@code longs}.
    */
   void decode(int bitsPerValue, DataInput in, long[] longs) throws IOException {
     switch (bitsPerValue) {
     case 1:
       decode1(in, byteOrder, tmp, longs);
+      expand8(longs);
       break;
     case 2:
       decode2(in, byteOrder, tmp, longs);
+      expand8(longs);
       break;
     case 3:
       decode3(in, byteOrder, tmp, longs);
+      expand8(longs);
       break;
     case 4:
       decode4(in, byteOrder, tmp, longs);
+      expand8(longs);
       break;
     case 5:
       decode5(in, byteOrder, tmp, longs);
+      expand8(longs);
       break;
     case 6:
       decode6(in, byteOrder, tmp, longs);
+      expand8(longs);
       break;
     case 7:
       decode7(in, byteOrder, tmp, longs);
+      expand8(longs);
       break;
     case 8:
       decode8(in, byteOrder, tmp, longs);
+      expand8(longs);
       break;
     case 9:
       decode9(in, byteOrder, tmp, longs);
+      expand16(longs);
       break;
     case 10:
       decode10(in, byteOrder, tmp, longs);
+      expand16(longs);
       break;
     case 11:
       decode11(in, byteOrder, tmp, longs);
+      expand16(longs);
       break;
     case 12:
       decode12(in, byteOrder, tmp, longs);
+      expand16(longs);
       break;
     case 13:
       decode13(in, byteOrder, tmp, longs);
+      expand16(longs);
       break;
     case 14:
       decode14(in, byteOrder, tmp, longs);
+      expand16(longs);
       break;
     case 15:
       decode15(in, byteOrder, tmp, longs);
+      expand16(longs);
       break;
     case 16:
       decode16(in, byteOrder, tmp, longs);
+      expand16(longs);
       break;
     case 17:
       decode17(in, byteOrder, tmp, longs);
+      expand32(longs);
       break;
     case 18:
       decode18(in, byteOrder, tmp, longs);
+      expand32(longs);
       break;
     case 19:
       decode19(in, byteOrder, tmp, longs);
+      expand32(longs);
       break;
     case 20:
       decode20(in, byteOrder, tmp, longs);
+      expand32(longs);
       break;
     case 21:
       decode21(in, byteOrder, tmp, longs);
+      expand32(longs);
       break;
     case 22:
       decode22(in, byteOrder, tmp, longs);
+      expand32(longs);
       break;
     case 23:
       decode23(in, byteOrder, tmp, longs);
+      expand32(longs);
       break;
     case 24:
       decode24(in, byteOrder, tmp, longs);
+      expand32(longs);
       break;
     default:
       decodeSlow(bitsPerValue, in, byteOrder, tmp, longs);
+      expand32(longs);
+      break;
+    }
+  }
+
+  /**
+   * Delta-decode 128 integers into {@code longs}.
+   */
+  void decodeAndPrefixSum(int bitsPerValue, DataInput in, long base, long[] longs) throws IOException {
+    switch (bitsPerValue) {
+    case 1:
+      decode1(in, byteOrder, tmp, longs);
+      prefixSum8(longs, base);
+      break;
+    case 2:
+      decode2(in, byteOrder, tmp, longs);
+      prefixSum8(longs, base);
+      break;
+    case 3:
+      decode3(in, byteOrder, tmp, longs);
+      prefixSum8(longs, base);
+      break;
+    case 4:
+      decode4(in, byteOrder, tmp, longs);
+      prefixSum8(longs, base);
+      break;
+    case 5:
+      decode5(in, byteOrder, tmp, longs);
+      prefixSum8(longs, base);
+      break;
+    case 6:
+      decode6(in, byteOrder, tmp, longs);
+      prefixSum8(longs, base);
+      break;
+    case 7:
+      decode7(in, byteOrder, tmp, longs);
+      prefixSum8(longs, base);
+      break;
+    case 8:
+      decode8(in, byteOrder, tmp, longs);
+      prefixSum8(longs, base);
+      break;
+    case 9:
+      decode9(in, byteOrder, tmp, longs);
+      prefixSum16(longs, base);
+      break;
+    case 10:
+      decode10(in, byteOrder, tmp, longs);
+      prefixSum16(longs, base);
+      break;
+    case 11:
+      decode11(in, byteOrder, tmp, longs);
+      prefixSum16(longs, base);
+      break;
+    case 12:
+      decode12(in, byteOrder, tmp, longs);
+      prefixSum16(longs, base);
+      break;
+    case 13:
+      decode13(in, byteOrder, tmp, longs);
+      prefixSum16(longs, base);
+      break;
+    case 14:
+      decode14(in, byteOrder, tmp, longs);
+      prefixSum16(longs, base);
+      break;
+    case 15:
+      decode15(in, byteOrder, tmp, longs);
+      prefixSum16(longs, base);
+      break;
+    case 16:
+      decode16(in, byteOrder, tmp, longs);
+      prefixSum16(longs, base);
+      break;
+    case 17:
+      decode17(in, byteOrder, tmp, longs);
+      prefixSum32(longs, base);
+      break;
+    case 18:
+      decode18(in, byteOrder, tmp, longs);
+      prefixSum32(longs, base);
+      break;
+    case 19:
+      decode19(in, byteOrder, tmp, longs);
+      prefixSum32(longs, base);
+      break;
+    case 20:
+      decode20(in, byteOrder, tmp, longs);
+      prefixSum32(longs, base);
+      break;
+    case 21:
+      decode21(in, byteOrder, tmp, longs);
+      prefixSum32(longs, base);
+      break;
+    case 22:
+      decode22(in, byteOrder, tmp, longs);
+      prefixSum32(longs, base);
+      break;
+    case 23:
+      decode23(in, byteOrder, tmp, longs);
+      prefixSum32(longs, base);
+      break;
+    case 24:
+      decode24(in, byteOrder, tmp, longs);
+      prefixSum32(longs, base);
+      break;
+    default:
+      decodeSlow(bitsPerValue, in, byteOrder, tmp, longs);
+      prefixSum32(longs, base);
       break;
     }
   }
@@ -367,7 +606,6 @@ final class ForUtil {
     shiftLongs(tmp, 2, longs, 10, 2, MASK8_1);
     shiftLongs(tmp, 2, longs, 12, 1, MASK8_1);
     shiftLongs(tmp, 2, longs, 14, 0, MASK8_1);
-    expand8(longs);
   }
 
   private static void decode2(DataInput in, ByteOrder byteOrder, long[] tmp, long[] longs) throws IOException {
@@ -376,7 +614,6 @@ final class ForUtil {
     shiftLongs(tmp, 4, longs, 4, 4, MASK8_2);
     shiftLongs(tmp, 4, longs, 8, 2, MASK8_2);
     shiftLongs(tmp, 4, longs, 12, 0, MASK8_2);
-    expand8(longs);
   }
 
   private static void decode3(DataInput in, ByteOrder byteOrder, long[] tmp, long[] longs) throws IOException {
@@ -391,14 +628,12 @@ final class ForUtil {
       l1 |= (tmp[tmpIdx+2] & MASK8_2) << 0;
       longs[longsIdx+1] = l1;
     }
-    expand8(longs);
   }
 
   private static void decode4(DataInput in, ByteOrder byteOrder, long[] tmp, long[] longs) throws IOException {
     in.readLongs(byteOrder, tmp, 0, 8);
     shiftLongs(tmp, 8, longs, 0, 4, MASK8_4);
     shiftLongs(tmp, 8, longs, 8, 0, MASK8_4);
-    expand8(longs);
   }
 
   private static void decode5(DataInput in, ByteOrder byteOrder, long[] tmp, long[] longs) throws IOException {
@@ -416,7 +651,6 @@ final class ForUtil {
       l2 |= (tmp[tmpIdx+4] & MASK8_3) << 0;
       longs[longsIdx+2] = l2;
     }
-    expand8(longs);
   }
 
   private static void decode6(DataInput in, ByteOrder byteOrder, long[] tmp, long[] longs) throws IOException {
@@ -428,7 +662,6 @@ final class ForUtil {
       l0 |= (tmp[tmpIdx+2] & MASK8_2) << 0;
       longs[longsIdx+0] = l0;
     }
-    expand8(longs);
   }
 
   private static void decode7(DataInput in, ByteOrder byteOrder, long[] tmp, long[] longs) throws IOException {
@@ -444,12 +677,10 @@ final class ForUtil {
       l0 |= (tmp[tmpIdx+6] & MASK8_1) << 0;
       longs[longsIdx+0] = l0;
     }
-    expand8(longs);
   }
 
   private static void decode8(DataInput in, ByteOrder byteOrder, long[] tmp, long[] longs) throws IOException {
     in.readLongs(byteOrder, longs, 0, 16);
-    expand8(longs);
   }
 
   private static void decode9(DataInput in, ByteOrder byteOrder, long[] tmp, long[] longs) throws IOException {
@@ -479,7 +710,6 @@ final class ForUtil {
       l6 |= (tmp[tmpIdx+8] & MASK16_7) << 0;
       longs[longsIdx+6] = l6;
     }
-    expand16(longs);
   }
 
   private static void decode10(DataInput in, ByteOrder byteOrder, long[] tmp, long[] longs) throws IOException {
@@ -497,7 +727,6 @@ final class ForUtil {
       l2 |= (tmp[tmpIdx+4] & MASK16_6) << 0;
       longs[longsIdx+2] = l2;
     }
-    expand16(longs);
   }
 
   private static void decode11(DataInput in, ByteOrder byteOrder, long[] tmp, long[] longs) throws IOException {
@@ -525,7 +754,6 @@ final class ForUtil {
       l4 |= (tmp[tmpIdx+10] & MASK16_5) << 0;
       longs[longsIdx+4] = l4;
     }
-    expand16(longs);
   }
 
   private static void decode12(DataInput in, ByteOrder byteOrder, long[] tmp, long[] longs) throws IOException {
@@ -537,7 +765,6 @@ final class ForUtil {
       l0 |= (tmp[tmpIdx+2] & MASK16_4) << 0;
       longs[longsIdx+0] = l0;
     }
-    expand16(longs);
   }
 
   private static void decode13(DataInput in, ByteOrder byteOrder, long[] tmp, long[] longs) throws IOException {
@@ -563,7 +790,6 @@ final class ForUtil {
       l2 |= (tmp[tmpIdx+12] & MASK16_3) << 0;
       longs[longsIdx+2] = l2;
     }
-    expand16(longs);
   }
 
   private static void decode14(DataInput in, ByteOrder byteOrder, long[] tmp, long[] longs) throws IOException {
@@ -579,7 +805,6 @@ final class ForUtil {
       l0 |= (tmp[tmpIdx+6] & MASK16_2) << 0;
       longs[longsIdx+0] = l0;
     }
-    expand16(longs);
   }
 
   private static void decode15(DataInput in, ByteOrder byteOrder, long[] tmp, long[] longs) throws IOException {
@@ -603,12 +828,10 @@ final class ForUtil {
       l0 |= (tmp[tmpIdx+14] & MASK16_1) << 0;
       longs[longsIdx+0] = l0;
     }
-    expand16(longs);
   }
 
   private static void decode16(DataInput in, ByteOrder byteOrder, long[] tmp, long[] longs) throws IOException {
     in.readLongs(byteOrder, longs, 0, 32);
-    expand16(longs);
   }
 
   private static void decode17(DataInput in, ByteOrder byteOrder, long[] tmp, long[] longs) throws IOException {
@@ -662,7 +885,6 @@ final class ForUtil {
       l14 |= (tmp[tmpIdx+16] & MASK32_15) << 0;
       longs[longsIdx+14] = l14;
     }
-    expand32(longs);
   }
 
   private static void decode18(DataInput in, ByteOrder byteOrder, long[] tmp, long[] longs) throws IOException {
@@ -692,7 +914,6 @@ final class ForUtil {
       l6 |= (tmp[tmpIdx+8] & MASK32_14) << 0;
       longs[longsIdx+6] = l6;
     }
-    expand32(longs);
   }
 
   private static void decode19(DataInput in, ByteOrder byteOrder, long[] tmp, long[] longs) throws IOException {
@@ -744,7 +965,6 @@ final class ForUtil {
       l12 |= (tmp[tmpIdx+18] & MASK32_13) << 0;
       longs[longsIdx+12] = l12;
     }
-    expand32(longs);
   }
 
   private static void decode20(DataInput in, ByteOrder byteOrder, long[] tmp, long[] longs) throws IOException {
@@ -762,7 +982,6 @@ final class ForUtil {
       l2 |= (tmp[tmpIdx+4] & MASK32_12) << 0;
       longs[longsIdx+2] = l2;
     }
-    expand32(longs);
   }
 
   private static void decode21(DataInput in, ByteOrder byteOrder, long[] tmp, long[] longs) throws IOException {
@@ -812,7 +1031,6 @@ final class ForUtil {
       l10 |= (tmp[tmpIdx+20] & MASK32_11) << 0;
       longs[longsIdx+10] = l10;
     }
-    expand32(longs);
   }
 
   private static void decode22(DataInput in, ByteOrder byteOrder, long[] tmp, long[] longs) throws IOException {
@@ -840,7 +1058,6 @@ final class ForUtil {
       l4 |= (tmp[tmpIdx+10] & MASK32_10) << 0;
       longs[longsIdx+4] = l4;
     }
-    expand32(longs);
   }
 
   private static void decode23(DataInput in, ByteOrder byteOrder, long[] tmp, long[] longs) throws IOException {
@@ -888,7 +1105,6 @@ final class ForUtil {
       l8 |= (tmp[tmpIdx+22] & MASK32_9) << 0;
       longs[longsIdx+8] = l8;
     }
-    expand32(longs);
   }
 
   private static void decode24(DataInput in, ByteOrder byteOrder, long[] tmp, long[] longs) throws IOException {
@@ -900,7 +1116,6 @@ final class ForUtil {
       l0 |= (tmp[tmpIdx+2] & MASK32_8) << 0;
       longs[longsIdx+0] = l0;
     }
-    expand32(longs);
   }
 
 }

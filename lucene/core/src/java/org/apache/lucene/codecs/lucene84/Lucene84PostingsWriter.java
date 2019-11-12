@@ -92,6 +92,7 @@ public final class Lucene84PostingsWriter extends PushPostingsWriterBase {
   private int docCount;
 
   private final PForUtil pforUtil;
+  private final ForDeltaUtil forDeltaUtil;
   private final Lucene84SkipWriter skipWriter;
 
   private boolean fieldHasNorms;
@@ -117,7 +118,9 @@ public final class Lucene84PostingsWriter extends PushPostingsWriterBase {
       } else {
         throw new Error();
       }
-      pforUtil = new PForUtil(new ForUtil(byteOrder));
+      final ForUtil forUtil = new ForUtil(byteOrder);
+      forDeltaUtil = new ForDeltaUtil(forUtil);
+      pforUtil = new PForUtil(forUtil);
       if (state.fieldInfos.hasProx()) {
         posDeltaBuffer = new long[BLOCK_SIZE];
         String posFileName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, Lucene84PostingsFormat.POS_EXTENSION);
@@ -245,7 +248,7 @@ public final class Lucene84PostingsWriter extends PushPostingsWriterBase {
     docCount++;
 
     if (docBufferUpto == BLOCK_SIZE) {
-      pforUtil.encode(docDeltaBuffer, docOut);
+      forDeltaUtil.encodeDeltas(docDeltaBuffer, docOut);
       if (writeFreqs) {
         pforUtil.encode(freqBuffer, docOut);
       }

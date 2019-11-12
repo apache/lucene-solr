@@ -97,6 +97,16 @@ final class ForUtil {
     }
   }
 
+  private static void expand8To32(long[] arr) {
+    for (int i = 0; i < 16; ++i) {
+      long l = arr[i];
+      arr[i] = (l >>> 24) & 0x000000FF000000FFL;
+      arr[16+i] = (l >>> 16) & 0x000000FF000000FFL;
+      arr[32+i] = (l >>> 8) & 0x000000FF000000FFL;
+      arr[48+i] = l & 0x000000FF000000FFL;
+    }
+  }
+
   private static void collapse8(long[] arr) {
     for (int i = 0; i < 16; ++i) {
       arr[i] = (arr[i] << 56) | (arr[16+i] << 48) | (arr[32+i] << 40) | (arr[48+i] << 32) | (arr[64+i] << 24) | (arr[80+i] << 16) | (arr[96+i] << 8) | arr[112+i];
@@ -110,6 +120,14 @@ final class ForUtil {
       arr[32+i] = (l >>> 32) & 0xFFFFL;
       arr[64+i] = (l >>> 16) & 0xFFFFL;
       arr[96+i] = l & 0xFFFFL;
+    }
+  }
+
+  private static void expand16To32(long[] arr) {
+    for (int i = 0; i < 32; ++i) {
+      long l = arr[i];
+      arr[i] = (l >>> 16) & 0x0000FFFF0000FFFFL;
+      arr[32+i] = l & 0x0000FFFF0000FFFFL;
     }
   }
 
@@ -133,6 +151,94 @@ final class ForUtil {
     }
   }
 
+  private static void prefixSum8(long[] arr, long base) {
+    expand8To32(arr);
+    prefixSum32(arr, base);
+  }
+
+  private static void prefixSum16(long[] arr, long base) {
+    // We need to move to the next primitive size to avoid overflows
+    expand16To32(arr);
+    prefixSum32(arr, base);
+  }
+
+  private static void prefixSum32(long[] arr, long base) {
+    arr[0] += base << 32;
+    innerPrefixSum32(arr);
+    expand32(arr);
+    final long l = arr[BLOCK_SIZE/2-1];
+    for (int i = BLOCK_SIZE/2; i < BLOCK_SIZE; ++i) {
+      arr[i] += l;
+    }
+  }
+
+  // For some reason unrolling seems to help
+  private static void innerPrefixSum32(long[] arr) {
+    arr[1] += arr[0];
+    arr[2] += arr[1];
+    arr[3] += arr[2];
+    arr[4] += arr[3];
+    arr[5] += arr[4];
+    arr[6] += arr[5];
+    arr[7] += arr[6];
+    arr[8] += arr[7];
+    arr[9] += arr[8];
+    arr[10] += arr[9];
+    arr[11] += arr[10];
+    arr[12] += arr[11];
+    arr[13] += arr[12];
+    arr[14] += arr[13];
+    arr[15] += arr[14];
+    arr[16] += arr[15];
+    arr[17] += arr[16];
+    arr[18] += arr[17];
+    arr[19] += arr[18];
+    arr[20] += arr[19];
+    arr[21] += arr[20];
+    arr[22] += arr[21];
+    arr[23] += arr[22];
+    arr[24] += arr[23];
+    arr[25] += arr[24];
+    arr[26] += arr[25];
+    arr[27] += arr[26];
+    arr[28] += arr[27];
+    arr[29] += arr[28];
+    arr[30] += arr[29];
+    arr[31] += arr[30];
+    arr[32] += arr[31];
+    arr[33] += arr[32];
+    arr[34] += arr[33];
+    arr[35] += arr[34];
+    arr[36] += arr[35];
+    arr[37] += arr[36];
+    arr[38] += arr[37];
+    arr[39] += arr[38];
+    arr[40] += arr[39];
+    arr[41] += arr[40];
+    arr[42] += arr[41];
+    arr[43] += arr[42];
+    arr[44] += arr[43];
+    arr[45] += arr[44];
+    arr[46] += arr[45];
+    arr[47] += arr[46];
+    arr[48] += arr[47];
+    arr[49] += arr[48];
+    arr[50] += arr[49];
+    arr[51] += arr[50];
+    arr[52] += arr[51];
+    arr[53] += arr[52];
+    arr[54] += arr[53];
+    arr[55] += arr[54];
+    arr[56] += arr[55];
+    arr[57] += arr[56];
+    arr[58] += arr[57];
+    arr[59] += arr[58];
+    arr[60] += arr[59];
+    arr[61] += arr[60];
+    arr[62] += arr[61];
+    arr[63] += arr[62];
+  }
+
   private final ByteOrder byteOrder;
   private final long[] tmp = new long[BLOCK_SIZE/2];
 
@@ -141,7 +247,7 @@ final class ForUtil {
   }
 
   /**
-   * Encode 128 8-bits integers from {@code data} into {@code out}.
+   * Encode 128 integers from {@code longs} into {@code out}.
    */
   void encode(long[] longs, int bitsPerValue, DataOutput out) throws IOException {
     final int nextPrimitive;
@@ -305,7 +411,6 @@ def writeDecode(bpv, f):
       shift -= bpv
     if shift + bpv > 0:
       writeRemainder(bpv, next_primitive, shift + bpv, o, 128/num_values_per_long - o, f)
-  f.write('    expand%d(longs);\n' %next_primitive)
   f.write('  }\n')
   f.write('\n')
 
@@ -319,17 +424,48 @@ if __name__ == '__main__':
   f.write('\n')
   f.write("""
   /**
-   * Decode 128 integers into {@code ints}.
+   * Decode 128 integers into {@code longs}.
    */
   void decode(int bitsPerValue, DataInput in, long[] longs) throws IOException {
     switch (bitsPerValue) {
 """)
-  for i in range(1, MAX_SPECIALIZED_BITS_PER_VALUE+1):
-    f.write('    case %d:\n' %i)
-    f.write('      decode%d(in, byteOrder, tmp, longs);\n' %i)
+  for bpv in range(1, MAX_SPECIALIZED_BITS_PER_VALUE+1):
+    next_primitive = 32
+    if bpv <= 8:
+      next_primitive = 8
+    elif bpv <= 16:
+      next_primitive = 16
+    f.write('    case %d:\n' %bpv)
+    f.write('      decode%d(in, byteOrder, tmp, longs);\n' %bpv)
+    f.write('      expand%d(longs);\n' %next_primitive)
     f.write('      break;\n')
   f.write('    default:\n')
   f.write('      decodeSlow(bitsPerValue, in, byteOrder, tmp, longs);\n')
+  f.write('      expand32(longs);\n')
+  f.write('      break;\n')
+  f.write('    }\n')
+  f.write('  }\n')
+
+  f.write("""
+  /**
+   * Delta-decode 128 integers into {@code longs}.
+   */
+  void decodeAndPrefixSum(int bitsPerValue, DataInput in, long base, long[] longs) throws IOException {
+    switch (bitsPerValue) {
+""")
+  for bpv in range(1, MAX_SPECIALIZED_BITS_PER_VALUE+1):
+    next_primitive = 32 
+    if bpv <= 8:
+      next_primitive = 8 
+    elif bpv <= 16:
+      next_primitive = 16
+    f.write('    case %d:\n' %bpv)
+    f.write('      decode%d(in, byteOrder, tmp, longs);\n' %bpv)
+    f.write('      prefixSum%d(longs, base);\n' %next_primitive)
+    f.write('      break;\n')
+  f.write('    default:\n')
+  f.write('      decodeSlow(bitsPerValue, in, byteOrder, tmp, longs);\n')
+  f.write('      prefixSum32(longs, base);\n')
   f.write('      break;\n')
   f.write('    }\n')
   f.write('  }\n')

@@ -151,7 +151,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
     }
   }
 
-  static void cumulativeSum(long[] buffer, int count, long base) {
+  static void prefixSum(long[] buffer, int count, long base) {
     buffer[0] += base;
     for (int i = 1; i < count; ++i) {
       buffer[i] += buffer[i-1];
@@ -274,7 +274,9 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
 
   final class BlockDocsEnum extends PostingsEnum {
 
-    final PForUtil pforUtil = new PForUtil(new ForUtil(byteOrder));
+    final ForUtil forUtil = new ForUtil(byteOrder);
+    final ForDeltaUtil forDeltaUtil = new ForDeltaUtil(forUtil);
+    final PForUtil pforUtil = new PForUtil(forUtil);
 
     private final long[] docBuffer = new long[BLOCK_SIZE];
     private final long[] freqBuffer = new long[BLOCK_SIZE];
@@ -407,8 +409,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
       assert left > 0;
 
       if (left >= BLOCK_SIZE) {
-        pforUtil.decode(docIn, docBuffer);
-        cumulativeSum(docBuffer, BLOCK_SIZE, accum);
+        forDeltaUtil.decodeAndPrefixSum(docIn, accum, docBuffer);
         accum = docBuffer[BLOCK_SIZE - 1];
 
         if (indexHasFreq) {
@@ -424,7 +425,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
       } else {
         // Read vInts:
         readVIntBlock(docIn, docBuffer, freqBuffer, left, indexHasFreq);
-        cumulativeSum(docBuffer, left, accum);
+        prefixSum(docBuffer, left, accum);
         accum = docBuffer[left - 1];
       }
       docBufferUpto = 0;
@@ -526,7 +527,9 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
   // Also handles payloads + offsets
   final class EverythingEnum extends PostingsEnum {
 
-    final PForUtil pforUtil = new PForUtil(new ForUtil(byteOrder));
+    final ForUtil forUtil = new ForUtil(byteOrder);
+    final ForDeltaUtil forDeltaUtil = new ForDeltaUtil(forUtil);
+    final PForUtil pforUtil = new PForUtil(forUtil);
 
     private final long[] docBuffer = new long[BLOCK_SIZE];
     private final long[] freqBuffer = new long[BLOCK_SIZE];
@@ -702,8 +705,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
       assert left > 0;
 
       if (left >= BLOCK_SIZE) {
-        pforUtil.decode(docIn, docBuffer);
-        cumulativeSum(docBuffer, BLOCK_SIZE, accum);
+        forDeltaUtil.decodeAndPrefixSum(docIn, accum, docBuffer);
         accum = docBuffer[BLOCK_SIZE - 1];
         pforUtil.decode(docIn, freqBuffer);
       } else if (docFreq == 1) {
@@ -711,7 +713,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
         freqBuffer[0] = totalTermFreq;
       } else {
         readVIntBlock(docIn, docBuffer, freqBuffer, left, true);
-        cumulativeSum(docBuffer, left, accum);
+        prefixSum(docBuffer, left, accum);
         accum = docBuffer[left - 1];
       }
       docBufferUpto = 0;
@@ -1006,7 +1008,9 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
 
   final class BlockImpactsDocsEnum extends ImpactsEnum {
 
-    final PForUtil pforUtil = new PForUtil(new ForUtil(byteOrder));
+    final ForUtil forUtil = new ForUtil(byteOrder);
+    final ForDeltaUtil forDeltaUtil = new ForDeltaUtil(forUtil);
+    final PForUtil pforUtil = new PForUtil(forUtil);
 
     private final long[] docBuffer = new long[BLOCK_SIZE];
     private final long[] freqBuffer = new long[BLOCK_SIZE];
@@ -1074,8 +1078,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
       assert left > 0;
 
       if (left >= BLOCK_SIZE) {
-        pforUtil.decode(docIn, docBuffer);
-        cumulativeSum(docBuffer, BLOCK_SIZE, accum);
+        forDeltaUtil.decodeAndPrefixSum(docIn, accum, docBuffer);
         accum = docBuffer[BLOCK_SIZE - 1];
         if (indexHasFreqs) {
           pforUtil.decode(docIn, freqBuffer);
@@ -1083,7 +1086,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
         docBufferLen = BLOCK_SIZE;
       } else {
         readVIntBlock(docIn, docBuffer, freqBuffer, left, indexHasFreqs);
-        cumulativeSum(docBuffer, left, accum);
+        prefixSum(docBuffer, left, accum);
         accum = docBuffer[left - 1];
         docBufferLen = left;
       }
@@ -1142,9 +1145,6 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
       }
 
       int next = findFirstGreater(docBuffer, target, docBufferUpto, docBufferLen);
-      if (next < 0) {
-        next = -1 - next;
-      }
       if (next == docBufferLen) {
         docUpto = docFreq;
         this.doc = NO_MORE_DOCS;
@@ -1186,7 +1186,9 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
 
   final class BlockImpactsPostingsEnum extends ImpactsEnum {
 
-    final PForUtil pforUtil = new PForUtil(new ForUtil(byteOrder));
+    final ForUtil forUtil = new ForUtil(byteOrder);
+    final ForDeltaUtil forDeltaUtil = new ForDeltaUtil(forUtil);
+    final PForUtil pforUtil = new PForUtil(forUtil);
 
     private final long[] docBuffer = new long[BLOCK_SIZE];
     private final long[] freqBuffer = new long[BLOCK_SIZE];
@@ -1291,14 +1293,13 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
       assert left > 0;
 
       if (left >= BLOCK_SIZE) {
-        pforUtil.decode(docIn, docBuffer);
-        cumulativeSum(docBuffer, BLOCK_SIZE, accum);
+        forDeltaUtil.decodeAndPrefixSum(docIn, accum, docBuffer);
         accum = docBuffer[BLOCK_SIZE - 1];
         pforUtil.decode(docIn, freqBuffer);
         docBufferLen = BLOCK_SIZE;
       } else {
         readVIntBlock(docIn, docBuffer, freqBuffer, left, true);
-        cumulativeSum(docBuffer, left, accum);
+        prefixSum(docBuffer, left, accum);
         accum = docBuffer[left - 1];
         docBufferLen = left;
       }
@@ -1480,7 +1481,9 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
 
   final class BlockImpactsEverythingEnum extends ImpactsEnum {
 
-    final PForUtil pforUtil = new PForUtil(new ForUtil(byteOrder));
+    final ForUtil forUtil = new ForUtil(byteOrder);
+    final ForDeltaUtil forDeltaUtil = new ForDeltaUtil(forUtil);
+    final PForUtil pforUtil = new PForUtil(forUtil);
 
     private final long[] docBuffer = new long[BLOCK_SIZE];
     private final long[] freqBuffer = new long[BLOCK_SIZE];
@@ -1677,15 +1680,14 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
       assert left > 0;
 
       if (left >= BLOCK_SIZE) {
-        pforUtil.decode(docIn, docBuffer);
-        cumulativeSum(docBuffer, BLOCK_SIZE, accum);
+        forDeltaUtil.decodeAndPrefixSum(docIn, accum, docBuffer);
         accum = docBuffer[BLOCK_SIZE - 1];
         if (indexHasFreq) {
           isFreqsRead = false; // freq block will be loaded lazily when necessary, we don't load it here
         }
       } else {
         readVIntBlock(docIn, docBuffer, freqBuffer, left, indexHasFreq);
-        cumulativeSum(docBuffer, left, accum);
+        prefixSum(docBuffer, left, accum);
         accum = docBuffer[left - 1];
       }
       docBufferUpto = 0;
