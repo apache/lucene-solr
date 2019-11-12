@@ -118,9 +118,8 @@ For every package/version in the packages definition, there is a unique `SolrRes
 ** `add` command: add a version of a package
 ** `delete` command :  delete a version of a package
 
-==== Using them in plugins
+==== Using them in Plugins
 Any class name can be prefixed with the packagename e.g : `mypkg:fully.qualified.ClassName` and Solr would use the latest version of the package to load the classes from.
-
 
 example:
 
@@ -150,15 +149,15 @@ curl http://localhost:8983/api/cluster/package?omitHeader=true
           "files":["/mypkg/1.0/myplugins.jar"]}]}}}
 ----
 
-3) The Package is ready to use now. Now, use it in your collection.
+3) The Package is ready to use now. Now, register a plugin in your collection from the package. Note the `"mypkg"` prefix applied to the `class` attribute. The same result can be achieved by editing your `solrconfig.xml` as well
 [source,bash]
 ----
-curl  http://localhost:8983/api/c/gettingstarted/config -H 'Content-type:application/json' -d  '{
+curl  http://localhost:8983/solr/gettingstarted/config -H 'Content-type:application/json' -d  '{
           "create-requesthandler" : { "name" : "/test",
           "class": "mypkg:org.apache.solr.core.RuntimeLibReqHandler" }}'
 ----
 
-4) Verify that your component is created
+4) Verify that the component is created and it is using the correct version of the package to load classes from
 
 [source,bash]
 ----
@@ -176,10 +175,10 @@ curl http://localhost:8983/solr/gettingstarted/config/requestHandler?componentNa
           "files":["/mypkg/1.0/myplugins.jar"]}}}}}
 ----
 
-5) Test your request handler
+5) Test the request handler
 [source,bash]
 ----
-$ curl http://localhost:7574/solr/gettingstarted/test?omitHeader=true
+$ curl http://localhost:8983/solr/gettingstarted/test?omitHeader=true
 ----
 [source,json]
 ----
@@ -194,7 +193,7 @@ $ curl http://localhost:7574/solr/gettingstarted/test?omitHeader=true
   "loader":"java.net.FactoryURLClassLoader"}
 ----
 
-6) Lets update the version of our component
+6) Update the version of our component
 
 Get a new version of the jar, sign and upload it
 
@@ -205,7 +204,7 @@ $ openssl dgst -sha1 -sign my_key.pem runtimelibs.jar | openssl enc -base64
 $ curl --data-binary @runtimelibs3.jar -X PUT  http://localhost:8983/api/cluster/files/mypkg/2.0/myplugins.jar?sig=ICkC%2BnGE%2BAqiANM0ajhVPNCQsbPbHLSWlIe5ETV5835e5HqndWrFHiV2R6nLVjDCxov/wLPo1uK0VzvAPIioUQ==
 ----
 
-Verify it
+7) Verify it
 [source, bash]
 ----
 $ curl http://localhost:8983/api/node/files/mypkg/2.0?omitHeader=true
@@ -221,7 +220,7 @@ $ curl http://localhost:8983/api/node/files/mypkg/2.0?omitHeader=true
         "sig":["ICkC+nGE+AqiANM0ajhVPNCQsbPbHLSWlIe5ETV5835e5HqndWrFHiV2R6nLVjDCxov/wLPo1uK0VzvAPIioUQ=="]}]}}
 ----
 
-Now, let's add a new version of the package
+8) Add a new version of the package
 
 [source,bash]
 ----
@@ -232,7 +231,7 @@ $ curl  http://localhost:8983/api/cluster/package -H 'Content-type:application/j
          "files" :["/mypkg/2.0/myplugins.jar"]}}'
 ----
 
-Let's verify our plugin
+9) Verify our plugin
 [source,bash]
 ----
 $ curl http://localhost:8983/solr/gettingstarted/config/requestHandler?componentName=/test&meta=true&omitHeader=true
@@ -255,7 +254,8 @@ $ curl http://localhost:8983/solr/gettingstarted/config/requestHandler?component
         }}}}}
 ----
 
-now let's test the plugin
+10) Test the plugin
+
 [source,bash]
 ----
 $ curl http://localhost:8983/solr/gettingstarted/test?omitHeader=true
@@ -276,11 +276,11 @@ $ curl http://localhost:8983/solr/gettingstarted/test?omitHeader=true
   "Version": "2"
 }
 ----
-We can see that the `Version` value is `"2"` . So the plugin is updated
+Note that the `Version` value is `"2"` . So the plugin is updated
 
 ==== How to avoid automatic upgrade?
 
-The default version used in any collection is always thye latest. However setting a per-collection property in the `params.json` ensures that the versions are always fixed irrespective of the new versions added
+The default version used in any collection is always the latest. However, setting a per-collection property in the `params.json` ensures that the versions are always fixed irrespective of the new versions added
 
 [source,bash]
 ----
