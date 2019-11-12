@@ -902,7 +902,10 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
    * Find next available local port.
    * @return available port number or -1 if none could be found
    * @throws Exception on IO errors
+   * @see <a href="https://issues.apache.org/jira/browse/SOLR-13869">SOLR-13869</a>
+   * @deprecated This method is inherently flawed, see SOLR-13869
    */
+  @Deprecated
   protected static int getNextAvailablePort() throws Exception {
     int port = -1;
     try (ServerSocket s = new ServerSocket(0)) {
