@@ -143,7 +143,7 @@ curl http://localhost:8983/api/cluster/package?omitHeader=true
 
 [source,json]
 ----
-  "result":{
+  {"result":{
     "znodeVersion":0,
     "packages":{"mypkg":[{
           "version":"1.0",
@@ -167,7 +167,6 @@ curl http://localhost:8983/solr/gettingstarted/config/requestHandler?componentNa
 [source,json]
 ----
 {
-
   "config":{"requestHandler":{"/test":{
         "name":"/test",
         "class":"mypkg:org.apache.solr.core.RuntimeLibReqHandler",
@@ -180,7 +179,7 @@ curl http://localhost:8983/solr/gettingstarted/config/requestHandler?componentNa
 5) Test your request handler
 [source,bash]
 ----
-http://localhost:7574/solr/gettingstarted/test?omitHeader=true
+$ curl http://localhost:7574/solr/gettingstarted/test?omitHeader=true
 ----
 [source,json]
 ----
@@ -236,7 +235,7 @@ $ curl  http://localhost:8983/api/cluster/package -H 'Content-type:application/j
 Let's verify our plugin
 [source,bash]
 ----
-$curl http://localhost:8983/solr/gettingstarted/config/requestHandler?componentName=/test&meta=true&omitHeader=true
+$ curl http://localhost:8983/solr/gettingstarted/config/requestHandler?componentName=/test&meta=true&omitHeader=true
 ----
 
 [source,json]
