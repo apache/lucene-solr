@@ -18,6 +18,23 @@
 
 A Package in Solr may contain one or more .jar files and any no:of plugins.
 
+== Objectives
+
+* Zero disruption deployment (hot deployment): Should be possible to install and update packages without node restarts or core reloads, and hence deployments should be quick and without failed requests or stale caches.
+* Easy packaging:
+** Standard plugin concepts, e.g. query parser, search component, request handler, URP etc., should be supported without any special code/packaging changes.
+** Artifacts (jars containing custom plugins) that users have already deployed (and are using in production) should be compatible, without needing to recompile or re-package, for greater adoption.
+** Should support single jar packages as well as multiple jar packages.
+** Use familiar / standard naming
+** Use industry standard concepts and terminology around package manager, similar to those like apt, dnf, homebrew etc.
+
+
+== Classloaders
+
+At the heart of the system, we have classloader isolation. To achieve this, the system is simplified into two layered classloaders:
+The root classloader which has all the jars from Solr classpath. This requires Solr node restart to change anything.
+A set of named classloaders that inherit from the root classloader. The life cycles of the named classloaders are tied to the package configuration in ZK. As soon as the configuration is modified, the corresponding classloaders are reloaded and components are asked to reload.
+
 
 == A Plugin
 
@@ -51,7 +68,21 @@ $ server/scripts/cloud-scripts/zkcli.sh -zkhost 127.0.0.1:9983 -cmd putfile /key
 ----
 
 == Package Store
-Package store is a distributed file store which can store arbitrary files in the file system. It is a peer to peer hierarchical storage system. If a new node comes up and it requires any of these files it can be downloaded from one of the nodes where it is available.
+Package store is a distributed file store which can store arbitrary files in the file system.
+
+* This is a fully replicated file system based repository.
+* It lives at <solr.home>/filestore on each Solr node
+* Every entry  is a file + metadata. The metadata is named .<filename>.json
+* The metadata file contains the sha256, signatures of the file
+* Users can’t create files starting with period (.)
+* It is agnostic of content type of files. You may store jars as well as other files.
+
+=== How does the Package Store work?
+When a file is uploaded to the PackageStore ,
+
+* It’s saved to the local file system
+* It’s saved along with the metadata. The metadata file stores the sha512 and signatures of the jar files too.
+* Every live node in the cluster is asked to download it as well
 
 === Package Store APIs
 
@@ -111,6 +142,28 @@ A Package has the following attributes:
 
 For every package/version in the packages definition, there is a unique `SolrResourceLoader` instance. This is a child of the `CoreContainer` resource loader.
 
+=== `packages.json`
+
+The package configurations live in a file called /packages.json in Zookeeper. At any given moment we can have multiple versions of a given package in the package configuration. The system will always use the latest version . Versions are sorted by their numeric value and the biggest is the latest.
+
+*example:*
+
+[source, json]
+----
+{
+ "packages" : {
+   "mypkg" : {
+     "name": "mypkg",
+     "versions": [
+       {"version" : "0.1",
+       "files" : ["/path/to/myplugin/1.1/plugin.jar"]
+       },
+       {"version" :  "0.2",
+       "files" : ["/path/to/myplugin/1.0/plugin.jar"]
+       }]}},
+
+----
+
 === API end points
 
 * `GET /api/cluster/package` Get the list of packages
@@ -118,10 +171,44 @@ For every package/version in the packages definition, there is a unique `SolrRes
 ** `add` command: add a version of a package
 ** `delete` command :  delete a version of a package
 
-==== Using them in Plugins
-Any class name can be prefixed with the packagename e.g : `mypkg:fully.qualified.ClassName` and Solr would use the latest version of the package to load the classes from.
+==== How to upgrade?
+Use the add command to add a version that is bigger than the current version
 
-example:
+==== How to downgrade ?
+Use the delete command to delete a version that is the highest and the next highest version will be chosen
+
+==== Using multiple versions in parallel in each collection
+We use the `params.json` in the collection config to store a version of a package it uses.  by default it is the $LATEST.
+[source, json]
+----
+{"params":{
+ "PKG_VERSIONS": {
+   "mypkg": "0.1",
+   "pkg2" : "$LATEST",
+ }}
+----
+* for `mypkg` use the version `0.1` irrespective of whether there is a newer version is available or not
+* for `pkg2` use the latest. This is optional. The default is ‘$LATEST’
+
+==== The workflow
+* A new version of a package is added
+* The package loader loads the classes and notifies every plugin holder of the availability of the new version
+* It checks if it is supposed to use a specific version, Ignore the update
+* If not, reload the plugin
+
+
+==== Using them in Plugins
+Any class name can be prefixed with the packagename e.g : `mypkg:fully.qualified.ClassName` and Solr would use the latest version of the package to load the classes from. The plugins loaded from packages cannot depend on core level classes.
+
+*Plugin declaration in `solrconfig.xml`*
+
+[source, xml]
+----
+<requestHandler name="/myhandler" class="mypkg:full.path.to.MyClass">
+</requestHandler>
+----
+
+==== Full Working example
 
 1) create a package
 
