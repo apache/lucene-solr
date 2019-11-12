@@ -99,6 +99,7 @@
     <isset property="local.javadocs" />
   </condition>
 
+  <property name="solr-root-path" value="../../../" />
   <property name="build.content.dir" location="${build.dir}/content" />
   <property name="main-page" value="index" />
   <!-- for pulling in versions of major deps -->
@@ -219,7 +220,7 @@
         <!-- NOTE: If you add any attributes here for use in adoc files, you almost certainly need to also add
              them to the _config.yml.template file for building the jekyll site as well
         -->
-        <attribute key="solr-root-path" value="../../../" />
+        <attribute key="solr-root-path" value="${solr-root-path}" />
         <attribute key="solr-guide-draft-status" value="${solr-guide-draft-status}" />
         <attribute key="solr-guide-version" value="${solr-guide-version}" />
         <attribute key="solr-docs-version" value="${solr-docs-version}" />

@@ -128,6 +128,7 @@ ext {
         solrGuideVersion = "${solrDocsVersion}-DRAFT"
     }
 
+    solrRootPath = '../../../../solr/'
     solrGuideDraftStatus = solrGuideVersion.matches(/^\d+\.\d+(|\.\d+)$/) ? "" : "DRAFT"
     solrGuideVersionPath = solrGuideVersion.replaceAll(/^(\d+)\.(\d+)(-DRAFT)?.*/, "\$1_\$2\$3")
 
@@ -151,6 +152,7 @@ ext {
     // Some additional version properties are lazily computed
     // in setupProps (because they need to be computed after evalution is complete).
     props = [
+            "solr-root-path"         : solrRootPath,
             "solr-guide-draft-status": solrGuideDraftStatus,
             "solr-guide-version"     : solrGuideVersion,
             "solr-guide-version-path": solrGuideVersionPath,
@@ -177,7 +179,7 @@ ext {
                     'idprefix'          : '',
                     'idseparator'       : '-',
                     'source-highlighter': 'coderay',
-                    'solr-root-path'    : '../../../',
+                    'solr-root-path'    : solrRootPath,
             ],
             'html'  : [
                     'imagesdir': buildContentDir.toString()
@@ -238,7 +240,6 @@ task buildInit(type: Sync) {
     doFirst {
         props.each { k, v ->
           dummyAntProject.setProperty(k, v)
-          println("# " + k + " " + v)
         }
     }
 
@@ -334,7 +335,7 @@ task buildSiteJekyll(type: com.github.jrubygradle.JRubyExec) {
     outputs.dir file("${buildDir}/html-site")
 
     script 'jekyll'
-    scriptArgs 'build', '--verbose'
+    scriptArgs 'build' //, '--verbose'
     workingDir buildContentDir
 }
 
