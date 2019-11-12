@@ -79,7 +79,7 @@ public class SolrPackage implements Comparable<SolrPackage> {
     this.repository = repository;
   }
 
-  public static class Command {
+  public static class Command implements ReflectMapWriter {
     public String path;
     public String method;
     public Map<String, Object> payload;
@@ -88,7 +88,7 @@ public class SolrPackage implements Comparable<SolrPackage> {
     
     @Override
       public String toString() {
-        return method + " " + path + ", Payload: "+ payload+", Condition: "+condition+", expected: "+expected;
+        return jsonStr();
       }
   }
 }
