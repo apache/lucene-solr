@@ -20,6 +20,7 @@ package org.apache.solr.packagemanager;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
 import org.apache.solr.packagemanager.SolrPackage.Manifest;
 import org.apache.solr.packagemanager.SolrPackage.Plugin;
@@ -28,11 +29,22 @@ import org.apache.solr.packagemanager.SolrPackage.Plugin;
  * Describes one instance of a package as it exists in Solr when installed.
  */
 public class SolrPackageInstance implements ReflectMapWriter {
+  @JsonProperty("name")
   final public String name;
+
+  @JsonProperty("description")
   final public String description;
+
+  @JsonProperty("version")
   final public String version;
+
+  @JsonProperty("manifest")
   final public Manifest manifest;
+
+  @JsonProperty("plugins")
   final public List<Plugin> plugins;
+
+  @JsonProperty("parameterDefaults")
   final Map<String, String> parameterDefaults;
 
   public SolrPackageInstance(String id, String description, String version, Manifest manifest,
@@ -45,22 +57,6 @@ public class SolrPackageInstance implements ReflectMapWriter {
     this.parameterDefaults = params;
   }
 
-  public String getPackageName() {
-    return name;
-  }
-
-  public String getPackageDescription() {
-    return description;
-  }
-
-  public String getVersion() {
-    return version;
-  }
-
-  public List<Plugin> getPlugins() {
-    return plugins;
-  }
-
   @Override
   public boolean equals(Object obj) {
     if (obj == null) return false;
@@ -69,6 +65,6 @@ public class SolrPackageInstance implements ReflectMapWriter {
 
   @Override
   public String toString() {
-    return name +":"+version;
+    return name +":" + version;
   }
 }

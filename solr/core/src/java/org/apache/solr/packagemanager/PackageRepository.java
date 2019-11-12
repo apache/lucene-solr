@@ -21,8 +21,7 @@ import java.nio.file.Path;
 import java.util.Map;
 
 import org.apache.solr.common.SolrException;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
+import org.apache.solr.common.annotation.JsonProperty;
 
 /**
  * Abstract class for a repository, holding {@link SolrPackage} items.

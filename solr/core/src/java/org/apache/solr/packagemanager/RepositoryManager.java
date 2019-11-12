@@ -17,6 +17,8 @@
 
 package org.apache.solr.packagemanager;
 
+import static org.apache.solr.packagemanager.PackageUtils.getMapper;
+
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
@@ -52,9 +54,6 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-
 /**
  * Handles most of the management of repositories and packages present in external repositories.
  */
@@ -98,7 +97,7 @@ public class RepositoryManager {
     // TODO: Instead of fetching again and again, we should look for caching this
     PackageRepository items[];
     try {
-      items = new ObjectMapper().readValue(getRepositoriesJson(packageManager.zkClient), DefaultPackageRepository[].class);
+      items = getMapper().readValue(getRepositoriesJson(packageManager.zkClient), DefaultPackageRepository[].class);
     } catch (IOException | KeeperException | InterruptedException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, e);
     }
@@ -118,12 +117,12 @@ public class RepositoryManager {
     String existingRepositoriesJson = getRepositoriesJson(packageManager.zkClient);
     log.info(existingRepositoriesJson);
 
-    List repos = new ObjectMapper().readValue(existingRepositoriesJson, List.class);
+    List repos = getMapper().readValue(existingRepositoriesJson, List.class);
     repos.add(new DefaultPackageRepository(name, uri));
     if (packageManager.zkClient.exists("/repositories.json", true) == false) {
-      packageManager.zkClient.create("/repositories.json", new ObjectMapper().writeValueAsString(repos).getBytes("UTF-8"), CreateMode.PERSISTENT, true);
+      packageManager.zkClient.create("/repositories.json", getMapper().writeValueAsString(repos).getBytes("UTF-8"), CreateMode.PERSISTENT, true);
     } else {
-      packageManager.zkClient.setData("/repositories.json", new ObjectMapper().writeValueAsString(repos).getBytes("UTF-8"), true);
+      packageManager.zkClient.setData("/repositories.json", getMapper().writeValueAsString(repos).getBytes("UTF-8"), true);
     }
 
     if (packageManager.zkClient.exists("/keys", true)==false) packageManager.zkClient.create("/keys", new byte[0], CreateMode.PERSISTENT, true);
@@ -152,7 +151,7 @@ public class RepositoryManager {
    */
   private boolean installPackage(String packageName, String version) throws SolrException {
     SolrPackageInstance existingPlugin = packageManager.getPackageInstance(packageName, version);
-    if (existingPlugin != null && existingPlugin.getVersion().equals(version)) {
+    if (existingPlugin != null && existingPlugin.version.equals(version)) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Plugin already installed.");
     }
 
@@ -170,9 +169,9 @@ public class RepositoryManager {
         if (manifestJson == null) {
           throw new SolrException(ErrorCode.BAD_REQUEST, "No manifest found for package: " + packageName + ", version: " + version);
         }
-        release.manifest = new ObjectMapper().readValue(manifestJson, SolrPackage.Manifest.class);
+        release.manifest = getMapper().readValue(manifestJson, SolrPackage.Manifest.class);
       }
-      String manifestJson = new ObjectMapper().writeValueAsString(release.manifest);
+      String manifestJson = getMapper().writeValueAsString(release.manifest);
       String manifestSHA512 = BlobRepository.sha512Digest(ByteBuffer.wrap(manifestJson.getBytes("UTF-8")));
       PackageUtils.postFile(solrClient, ByteBuffer.wrap(manifestJson.getBytes("UTF-8")),
           "/package/" + packageName + "/" + version + "/manifest.json", null);
@@ -282,7 +281,7 @@ public class RepositoryManager {
     if (pkg == null) {
       return false;
     }
-    String installedVersion = packageManager.getPackageInstance(packageName, null).getVersion();
+    String installedVersion = packageManager.getPackageInstance(packageName, null).version;
     SolrPackageRelease last = getLastPackageRelease(packageName);
     return last != null && PackageUtils.compareVersions(last.version, installedVersion) > 0;
   }
@@ -322,7 +321,8 @@ public class RepositoryManager {
 
     SolrPackageInstance updatedPackage = packageManager.getPackageInstance(packageName, "latest");
     boolean res = packageManager.verify(updatedPackage, peggedToLatest);
-    PackageUtils.printGreen("Verifying version "+updatedPackage.getVersion()+" on " + peggedToLatest +", result: "+res);
+    PackageUtils.printGreen("Verifying version " + updatedPackage.version + 
+        " on " + peggedToLatest + ", result: " + res);
     if (!res) throw new SolrException(ErrorCode.BAD_REQUEST, "Failed verification after deployment");
   }
 }

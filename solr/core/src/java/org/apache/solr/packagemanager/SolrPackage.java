@@ -22,25 +22,42 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.util.ReflectMapWriter;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * Describes a package (along with all released versions) as it appears in a repository.
  */
-public class SolrPackage implements Comparable<SolrPackage> {
+public class SolrPackage implements Comparable<SolrPackage>, ReflectMapWriter {
 
+  @JsonProperty("name")
   public String name;
+
+  @JsonProperty("description")
   public String description;
+
+  @JsonProperty("versions")
   public List<SolrPackageRelease> versions;
 
+  @JsonProperty("repository")
   private String repository;
 
+  @Override
+  public String toString() {
+    return jsonStr();
+  }
+
   public static class SolrPackageRelease implements ReflectMapWriter {
+    @JsonProperty("version")
     public String version;
+
+    @JsonProperty("date")
     public Date date;
+
+    @JsonProperty("artifacts")
     public List<Artifact> artifacts;
+
+    @JsonProperty("manifest")
     public Manifest manifest;
 
     @Override
@@ -49,19 +66,24 @@ public class SolrPackage implements Comparable<SolrPackage> {
     }
   }
 
-  public static class Artifact {
+  public static class Artifact implements ReflectMapWriter {
+    @JsonProperty("url")
     public String url;
+
+    @JsonProperty("sig")
     public String sig;
   }
 
-  public static class Manifest {
+  public static class Manifest implements ReflectMapWriter {
     @JsonProperty("min-solr-version")
     public String minSolrVersion;
+
     @JsonProperty("max-solr-version")
     public String maxSolrVersion;
 
-    public List<String> dependencies;
+    @JsonProperty("plugins")
     public List<Plugin> plugins;
+
     @JsonProperty("parameter-defaults")
     public Map<String, String> parameterDefaults;
   }
@@ -97,10 +119,19 @@ public class SolrPackage implements Comparable<SolrPackage> {
   }
 
   public static class Command implements ReflectMapWriter {
+    @JsonProperty("path")
     public String path;
+
+    @JsonProperty("method")
     public String method;
+
+    @JsonProperty("payload")
     public Map<String, Object> payload;
+
+    @JsonProperty("condition")
     public String condition;
+
+    @JsonProperty("expected")
     public String expected;
     
     @Override

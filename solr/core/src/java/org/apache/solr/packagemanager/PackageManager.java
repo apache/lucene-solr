@@ -17,6 +17,8 @@
 
 package org.apache.solr.packagemanager;
 
+import static org.apache.solr.packagemanager.PackageUtils.getMapper;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -40,7 +42,6 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
@@ -81,7 +82,7 @@ public class PackageManager implements Closeable {
       Map packagesZnodeMap = null;
 
       if (zkClient.exists("/packages.json", true) == true) {
-        packagesZnodeMap = (Map)new ObjectMapper().readValue(
+        packagesZnodeMap = (Map)getMapper().readValue(
             new String(zkClient.getData("/packages.json", null, null, true), "UTF-8"), Map.class).get("packages");
         for (Object packageName: packagesZnodeMap.keySet()) {
           List pkg = (List)packagesZnodeMap.get(packageName);
@@ -148,7 +149,7 @@ public class PackageManager implements Closeable {
         boolean packageParamsExist = ((Map)PackageUtils.getJson(solrClient.getHttpClient(), solrBaseUrl + "/api/collections/abc/config/params/packages", Map.class)
             .getOrDefault("response", Collections.emptyMap())).containsKey("params");
         SolrCLI.postJsonToSolr(solrClient, "/api/collections/" + collection + "/config/params",
-            new ObjectMapper().writeValueAsString(Collections.singletonMap(packageParamsExist? "update": "set",
+            getMapper().writeValueAsString(Collections.singletonMap(packageParamsExist? "update": "set",
                 Collections.singletonMap("packages", Collections.singletonMap(packageInstance.name, collectionParameterOverrides)))));
       } catch (Exception e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, e);
@@ -175,12 +176,12 @@ public class PackageManager implements Closeable {
       if (!isUpdate) {
         Map<String, String> systemParams = Map.of("collection", collection, "package-name", packageInstance.name, "package-version", packageInstance.version);
 
-        for (Plugin plugin: packageInstance.getPlugins()) {
+        for (Plugin plugin: packageInstance.plugins) {
           Command cmd = plugin.setupCommand;
           if (cmd != null && !Strings.isNullOrEmpty(cmd.method)) {
             if ("POST".equalsIgnoreCase(cmd.method)) {
               try {
-                String payload = PackageUtils.resolve(new ObjectMapper().writeValueAsString(cmd.payload), packageInstance.parameterDefaults, collectionParameterOverrides, systemParams);
+                String payload = PackageUtils.resolve(getMapper().writeValueAsString(cmd.payload), packageInstance.parameterDefaults, collectionParameterOverrides, systemParams);
                 String path = PackageUtils.resolve(cmd.path, packageInstance.parameterDefaults, collectionParameterOverrides, systemParams);
                 PackageUtils.printGreen("Executing " + payload + " for path:" + path);
                 boolean shouldExecute = true;
@@ -256,7 +257,7 @@ public class PackageManager implements Closeable {
    */
   public boolean verify(SolrPackageInstance pkg, List<String> collections) {
     boolean success = true;
-    for (Plugin plugin: pkg.getPlugins()) {
+    for (Plugin plugin: pkg.plugins) {
       PackageUtils.printGreen(plugin.verifyCommand);
       for (String collection: collections) {
         Map<String, String> collectionParameterOverrides = getPackageParams(pkg.name, collection);
@@ -325,7 +326,7 @@ public class PackageManager implements Closeable {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Package instance doesn't exist: " + packageName + ":" + null +
           ". Use install command to install this version first.");
     }
-    if (version == null) version = packageInstance.getVersion();
+    if (version == null) version = packageInstance.version;
 
     Manifest manifest = packageInstance.manifest;
     if (PackageUtils.checkVersionConstraint(RepositoryManager.systemVersion, manifest.minSolrVersion, manifest.maxSolrVersion) == false) {
@@ -350,12 +351,12 @@ public class PackageManager implements Closeable {
       // Run the uninstall command for all plugins
       Map<String, String> systemParams = Map.of("collection", collection, "package-name", deployedPackage.name, "package-version", deployedPackage.version);
 
-      for (Plugin plugin: deployedPackage.getPlugins()) {
+      for (Plugin plugin: deployedPackage.plugins) {
         Command cmd = plugin.uninstallCommand;
         if (cmd != null && !Strings.isNullOrEmpty(cmd.method)) {
           if ("POST".equalsIgnoreCase(cmd.method)) {
             try {
-              String payload = PackageUtils.resolve(new ObjectMapper().writeValueAsString(cmd.payload), deployedPackage.parameterDefaults, collectionParameterOverrides, systemParams);
+              String payload = PackageUtils.resolve(getMapper().writeValueAsString(cmd.payload), deployedPackage.parameterDefaults, collectionParameterOverrides, systemParams);
               String path = PackageUtils.resolve(cmd.path, deployedPackage.parameterDefaults, collectionParameterOverrides, systemParams);
               PackageUtils.printGreen("Executing " + payload + " for path:" + path);
               SolrCLI.postJsonToSolr(solrClient, path, payload);
@@ -387,7 +388,7 @@ public class PackageManager implements Closeable {
    */
   public void listInstalled() {
     for (SolrPackageInstance pkg: fetchInstalledPackageInstances()) {
-      PackageUtils.printGreen(pkg.getPackageName() + " (" + pkg.getVersion() + ")");
+      PackageUtils.printGreen(pkg.name + " (" + pkg.version + ")");
     }
   }
 

@@ -41,6 +41,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.BlobRepository;
 import org.apache.solr.packagemanager.SolrPackage.Manifest;
+import org.apache.solr.util.SolrJacksonAnnotationInspector;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.zafarkhaja.semver.Version;
@@ -58,6 +59,10 @@ public class PackageUtils {
     JsonProvider jsonProvider = new JacksonJsonProvider();
     Configuration c = Configuration.builder().jsonProvider(jsonProvider).mappingProvider(provider).options(com.jayway.jsonpath.Option.REQUIRE_PROPERTIES).build();
     return c;
+  }
+
+  public static ObjectMapper getMapper() {
+    return new ObjectMapper().setAnnotationIntrospector(new SolrJacksonAnnotationInspector());
   }
 
   /**
@@ -94,7 +99,7 @@ public class PackageUtils {
    */
   public static <T> T getJson(HttpClient client, String url, Class<T> klass) {
     try {
-      return new ObjectMapper().readValue(getJson(client, url), klass);
+      return getMapper().readValue(getJson(client, url), klass);
     } catch (IOException e) {
       throw new RuntimeException(e);
     } 
@@ -147,7 +152,7 @@ public class PackageUtils {
       throw new SolrException(ErrorCode.UNAUTHORIZED, "The manifest SHA512 doesn't match expected SHA512. Possible unauthorized manipulation. "
           + "Expected: " + expectedSHA512 + ", calculated: " + calculatedSHA512 + ", manifest location: " + manifestFilePath);
     }
-    Manifest manifest = new ObjectMapper().readValue(manifestJson, Manifest.class);
+    Manifest manifest = getMapper().readValue(manifestJson, Manifest.class);
     return manifest;
   }
 
