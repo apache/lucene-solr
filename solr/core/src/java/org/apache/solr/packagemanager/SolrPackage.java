@@ -1,52 +1,43 @@
 package org.apache.solr.packagemanager;
 
 
-import java.io.Serializable;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+
+import org.apache.solr.common.util.ReflectMapWriter;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * Describes a package (along with all released versions) as it appears in a repository.
  */
-public class SolrPackage implements Serializable, Comparable<SolrPackage> {
+public class SolrPackage implements Comparable<SolrPackage> {
 
-  public String id;
+  public String name;
   public String description;
   public List<SolrPackageRelease> versions;
 
-  private String repositoryId;
+  private String repository;
 
-  public static class SolrPackageRelease {
-
+  public static class SolrPackageRelease implements ReflectMapWriter {
     public String version;
     public Date date;
-    public String url;
+    public List<Artifact> artifacts;
+    public Manifest manifest;
 
-    public String sha512sum;
-    public String sig;
-
-    public Metadata metadata;
     @Override
     public String toString() {
-      return "SolrPackageRelease{" +
-          "version='" + version + '\'' +
-          ", date=" + date +
-          ", url='" + url + '\'' +
-          ", sig='" + sig + '\'' +
-          ", min='" + metadata.minSolrVersion + '\'' +
-          ", max='" + metadata.maxSolrVersion + '\'' +
-          ", dependencies='" + metadata.dependencies + '\'' +
-          ", plugins='" + metadata.plugins + '\'' +
-          ", paramDefaults='" + metadata.parameterDefaults + '\'' +
-          ", sha512sum='" + sha512sum + '\'' +
-          '}';
+      return jsonStr();
     }
   }
 
-  public static class Metadata {
+  public static class Artifact {
+    public String url;
+    public String sig;
+  }
+
+  public static class Manifest {
     @JsonProperty("min-solr-version")
     public String minSolrVersion;
     @JsonProperty("max-solr-version")
@@ -58,43 +49,40 @@ public class SolrPackage implements Serializable, Comparable<SolrPackage> {
     public Map<String, String> parameterDefaults;
   }
 
-  public static class Plugin {
-    public String id;
+  public static class Plugin implements ReflectMapWriter {
+    public String name;
     @JsonProperty("setup-command")
-    public String setupCommand;
-
-    @JsonProperty("update-command")
-    public String updateCommand;
+    public Command setupCommand;
 
     @JsonProperty("uninstall-command")
-    public String uninstallCommand;
+    public Command uninstallCommand;
 
     @JsonProperty("verify-command")
     public Command verifyCommand;
 
     @Override
     public String toString() {
-      return id + ": {setup: "+setupCommand+", update: "+updateCommand+", uninstall: "+uninstallCommand+", verify: "+verifyCommand+"}";
+      return jsonStr();
     }
   }
 
   @Override
   public int compareTo(SolrPackage o) {
-    return id.compareTo(o.id);
+    return name.compareTo(o.name);
   }
 
-  public String getRepositoryId() {
-    return repositoryId;
+  public String getRepository() {
+    return repository;
   }
 
-  public void setRepositoryId(String repositoryId) {
-    this.repositoryId = repositoryId;
+  public void setRepository(String repository) {
+    this.repository = repository;
   }
 
   public static class Command {
     public String path;
     public String method;
-    public Map payload;
+    public Map<String, Object> payload;
     public String condition;
     public String expected;
     

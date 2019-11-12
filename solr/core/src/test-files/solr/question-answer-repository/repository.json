@@ -1,0 +1,58 @@
+[
+  {
+    "name": "question-answer",
+    "description": "A natural language question answering plugin",
+    "versions": [
+      {
+        "version": "1.0.0",
+        "date": "2019-01-01",
+        "artifacts": [
+          {
+            "url": "question-answer-request-handler-1.0.jar",
+            "sig": "C9UWKkucmY3UNzqn0VLneVMe9kCbJjw7Urc76vGenoRwp32xvNn5ZIGZ7G34xZP7cVjqn/ltDlLWBZ/C3eAtuw=="
+          }
+        ],
+        "manifest": {
+          "min-solr-version": "8.0",
+          "max-solr-version": "9.99",
+          "dependencies": [],
+          "plugins": [
+            {
+              "name": "request-handler",
+              "setup-command": {
+                "path": "/api/collections/${collection}/config",
+                "payload": {"add-requesthandler": {"name": "${RH-HANDLER-PATH}", "class": "question-answer:fullstory.QARequestHandler"}},
+                "method": "POST"
+              },
+              "uninstall-command": {
+                "path": "/api/collections/${collection}/config",
+                "payload": {"delete-requesthandler": "${RH-HANDLER-PATH}"},
+                "method": "POST"
+              },
+              "verify-command": {
+                "path": "/api/collections/${collection}/config/requestHandler?componentName=${RH-HANDLER-PATH}&meta=true",
+                "method": "GET",
+                "condition": "$['config'].['requestHandler'].['${RH-HANDLER-PATH}'].['_packageinfo_'].['version']",
+                "expected": "${package-version}"
+              }
+            }
+          ],
+          "parameter-defaults": {
+            "RH-HANDLER-PATH": "/mypath"
+          }
+        }
+      },
+      {
+        "version": "1.1.0",
+        "date": "2019-01-01",
+        "artifacts": [
+          {
+            "url": "question-answer-request-handler-1.1.jar",
+            "sig": "O+BsNmAuIGfPJTnum4cvNN/vU0NPUsfnmuJNCSWxP5Ssk1GzjN6jveipsL9haUfYgVyafrrDiENhXLuZ7b0maQ=="
+          }
+        ]
+      }
+    ]
+  }
+]
+

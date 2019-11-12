@@ -769,14 +769,13 @@ function run_package() {
 
   numSolrs=`find "$SOLR_PID_DIR" -name "solr-*.pid" -type f | wc -l | tr -d ' '`
   if [ "$numSolrs" != "0" ]; then
-    echo -e "\nFound $numSolrs Solr nodes: "
+    #echo -e "\nFound $numSolrs Solr nodes: "
     while read PIDF
       do
         ID=`cat "$PIDF"`
         port=`jetty_port "$ID"`
         if [ "$port" != "" ]; then
-          echo -e "\nSolr process $ID running on port $port"
-          #run_tool status -solr "$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$port/solr"
+          #echo -e "\nSolr process $ID running on port $port"
           runningSolrUrl="$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$port/solr"
           break
           CODE=$?
@@ -811,8 +810,6 @@ function run_package() {
     fi
   fi
 
-  echo "Solr Base URL is $runningSolrUrl"
-  echo "Params: $@"
   run_tool package -solrUrl "$runningSolrUrl" $@
   #exit $?
 }

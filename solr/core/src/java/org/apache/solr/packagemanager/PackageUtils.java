@@ -16,32 +16,32 @@
  */
 package org.apache.solr.packagemanager;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.StringWriter;
+import java.net.MalformedURLException;
 import java.nio.ByteBuffer;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipFile;
 
 import org.apache.commons.io.IOUtils;
-import org.apache.http.HttpEntity;
-import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.conn.ssl.NoopHostnameVerifier;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.conn.ssl.SSLContextBuilder;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClients;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.core.BlobRepository;
+import org.apache.solr.packagemanager.SolrPackage.Manifest;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.zafarkhaja.semver.Version;
 import com.google.common.base.Strings;
 import com.jayway.jsonpath.Configuration;
@@ -51,24 +51,22 @@ import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 import com.jayway.jsonpath.spi.mapper.MappingProvider;
 
 public class PackageUtils {
-  
+
   public static Configuration jsonPathConfiguration() {
     MappingProvider provider = new JacksonMappingProvider();
     JsonProvider jsonProvider = new JacksonJsonProvider();
     Configuration c = Configuration.builder().jsonProvider(jsonProvider).mappingProvider(provider).options(com.jayway.jsonpath.Option.REQUIRE_PROPERTIES).build();
     return c;
   }
-  
-  public static ByteBuffer getFileContent(File file) throws IOException {
-    ByteBuffer jar;
-    try (FileInputStream fis = new FileInputStream(file)) {
-      byte[] buf = new byte[fis.available()];
-      fis.read(buf);
-      jar = ByteBuffer.wrap(buf);
-    }
-    return jar;
-  }
 
+  /**
+   * Uploads a file to the package store / file store of Solr.
+   * 
+   * @param client A Solr client
+   * @param buffer File contents
+   * @param name Name of the file as it will appear in the file store (can be hierarchical)
+   * @param sig Signature digest (public key should be separately uploaded to ZK)
+   */
   public static void postFile(SolrClient client, ByteBuffer buffer, String name, String sig)
       throws SolrServerException, IOException {
     String resource = "/api/cluster/files" + name;
@@ -90,52 +88,123 @@ public class PackageUtils {
     }
   }
 
-  public static String getStringFromStream(String url) {
-    return get(url);
+  /**
+   * Download JSON from the url and deserialize into klass.
+   */
+  public static <T> T getJson(HttpClient client, String url, Class<T> klass) {
+    try {
+      return new ObjectMapper().readValue(getJson(client, url), klass);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    } 
   }
 
-  public static String get(String url) {
-    try (CloseableHttpClient client = PackageUtils.createTrustAllHttpClientBuilder()) {
-      HttpGet httpGet = new HttpGet(url);
-      httpGet.setHeader("Content-type", "application/json");
-
-      CloseableHttpResponse response = client.execute(httpGet);
-
-      try {
-        HttpEntity rspEntity = response.getEntity();
-        if (rspEntity != null) {
-          InputStream is = rspEntity.getContent();
-          StringWriter writer = new StringWriter();
-          IOUtils.copy(is, writer, "UTF-8");
-          String results = writer.toString();
-
-          return(results);
-        }
-      } catch (IOException e) {
-        e.printStackTrace();
+  /**
+   * Search through the list of jar files for a given file. Returns string of
+   * the file contents or null if file wasn't found. This is suitable for looking
+   * for manifest or property files within pre-downloaded jar files.
+   */
+  public static String getFileFromArtifacts(List<Path> jars, String filename) {
+    for (Path jarfile: jars) {
+      try (ZipFile zipFile = new ZipFile(jarfile.toFile())) {
+        ZipEntry entry = zipFile.getEntry(filename);
+        if (entry == null) continue;
+        return IOUtils.toString(zipFile.getInputStream(entry));
+      } catch (Exception ex) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, ex);
       }
-    } catch (Exception e1) {
-      throw new RuntimeException(e1);
     }
     return null;
   }
 
-  public static CloseableHttpClient createTrustAllHttpClientBuilder() throws Exception {
-    SSLContextBuilder builder = new SSLContextBuilder();
-    builder.loadTrustMaterial(null, (chain, authType) -> true);           
-    SSLConnectionSocketFactory sslsf = new 
-        SSLConnectionSocketFactory(builder.build(), NoopHostnameVerifier.INSTANCE);
-    return HttpClients.custom().setSSLSocketFactory(sslsf).build();
+  /**
+   * Returns JSON string from a given URL
+   */
+  public static String getJson(HttpClient client, String url) {
+    try {
+      return IOUtils.toString(client.execute(new HttpGet(url)).getEntity().getContent(), "UTF-8");
+    } catch (UnsupportedOperationException | IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 
-  public static boolean checkVersionConstraint(String solrVersion, String minInclusive, String maxInclusive) {
+  /**
+   * Checks whether a given version is within minInclusive and maxInclusive range
+   */
+  public static boolean checkVersionConstraint(String ver, String minInclusive, String maxInclusive) {
     String constraint = ">="+minInclusive + " & <="+maxInclusive;
-    System.out.println("Current: "+solrVersion+", constraint: "+constraint);
-    return Strings.isNullOrEmpty(constraint) || Version.valueOf(solrVersion).satisfies(constraint);
+    return Strings.isNullOrEmpty(constraint) || Version.valueOf(ver).satisfies(constraint);
   }
 
+  /**
+   * Fetches a manifest file from the File Store / Package Store. A SHA512 check is enforced after fetching.
+   */
+  public static Manifest fetchManifest(HttpSolrClient solrClient, String solrBaseUrl, String manifestFilePath, String expectedSHA512) throws MalformedURLException, IOException {
+    String manifestJson = PackageUtils.getJson(solrClient.getHttpClient(), solrBaseUrl + "/api/node/files" + manifestFilePath);
+    String calculatedSHA512 = BlobRepository.sha512Digest(ByteBuffer.wrap(manifestJson.getBytes()));
+    if (expectedSHA512.equals(calculatedSHA512) == false) {
+      throw new SolrException(ErrorCode.UNAUTHORIZED, "The manifest SHA512 doesn't match expected SHA512. Possible unauthorized manipulation. "
+          + "Expected: " + expectedSHA512 + ", calculated: " + calculatedSHA512 + ", manifest location: " + manifestFilePath);
+    }
+    Manifest manifest = new ObjectMapper().readValue(manifestJson, Manifest.class);
+    return manifest;
+  }
+
+  /**
+   * Replace a templatized string with parameter substituted string. First applies the overrides, then defaults and then systemParams.
+   */
+  public static String resolve(String str, Map<String, String> defaults, Map<String, String> overrides, Map<String, String> systemParams) {
+    if (str == null) return null;
+    for (String param: defaults.keySet()) {
+      str = str.replaceAll("\\$\\{"+param+"\\}", overrides.containsKey(param)? overrides.get(param): defaults.get(param));
+    }
+    for (String param: overrides.keySet()) {
+      str = str.replaceAll("\\$\\{"+param+"\\}", overrides.get(param));
+    }
+    for (String param: systemParams.keySet()) {
+      str = str.replaceAll("\\$\\{"+param+"\\}", systemParams.get(param));
+    }
+    return str;
+  }
+
+  /**
+   * Compares two versions v1 and v2. Returns negative if v1 < v2, positive if v1 > v2 and 0 if equal.
+   */
   public static int compareVersions(String v1, String v2) {
     return Version.valueOf(v1).compareTo(Version.valueOf(v2));
+  }
+
+  public static String BLACK = "\u001B[30m";
+  public static String RED = "\u001B[31m";
+  public static String GREEN = "\u001B[32m";
+  public static String YELLOW = "\u001B[33m";
+  public static String BLUE = "\u001B[34m";
+  public static String PURPLE = "\u001B[35m";
+  public static String CYAN = "\u001B[36m";
+  public static String WHITE = "\u001B[37m";
+
+  /**
+   * Console print using green color
+   */
+  public static void printGreen(Object message) {
+    PackageUtils.print(PackageUtils.GREEN, message);
+  }
+
+  /**
+   * Console print using red color
+   */
+  public static void printRed(Object message) {
+    PackageUtils.print(PackageUtils.RED, message);
+  }
+
+  public static void print(String color, Object message) {
+    String RESET = "\u001B[0m";
+
+    if (color != null) {
+      System.out.println(color + String.valueOf(message) + RESET);
+    } else {
+      System.out.println(message);
+    }
   }
 
 }
