@@ -28,13 +28,15 @@ import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
 
 /**
- * Handles most of the management of packages that as installed in Solr.
+ * Handles most of the management of packages that are already installed in Solr.
  */
 public class PackageManager implements Closeable {
 
   final String solrBaseUrl;
   final HttpSolrClient solrClient;
   final SolrZkClient zkClient;
+
+  private Map<String, List<SolrPackageInstance>> packages = null;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -46,7 +48,12 @@ public class PackageManager implements Closeable {
     log.info("Done initializing a zkClient instance...");
   }
 
-  private Map<String, List<SolrPackageInstance>> packages = null;
+  @Override
+  public void close() throws IOException {
+    if (zkClient != null) {
+      zkClient.close();
+    }
+  }
 
   public List<SolrPackageInstance> fetchInstalledPackageInstances() throws SolrException {
     log.info("Getting packages from packages.json...");
@@ -55,7 +62,6 @@ public class PackageManager implements Closeable {
     try {
       Map packagesZnodeMap = null;
 
-      // nocommit create a bean representing the structure of the packages.json
       if (zkClient.exists("/packages.json", true) == true) {
         packagesZnodeMap = (Map)new ObjectMapper().readValue(
             new String(zkClient.getData("/packages.json", null, null, true), "UTF-8"), Map.class).get("packages");
@@ -78,20 +84,6 @@ public class PackageManager implements Closeable {
     }
     log.info("Got packages: "+ret);
     return ret;
-  }
-
-  // nocommit create a bean for this response?
-  Map<String, String> getPackageParams(String packageName, String collection) {
-    try {
-      return (Map<String, String>)((Map)((Map)((Map)
-          PackageUtils.getJson(solrClient.getHttpClient(), solrBaseUrl + "/api/collections/" + collection + "/config/params/packages", Map.class)
-          .get("response"))
-          .get("params"))
-          .get("packages")).get(packageName);
-    } catch (Exception ex) {
-      // This should be because there are no parameters. Be tolerant here.
-      return Collections.emptyMap();
-    }
   }
 
   public Map<String, SolrPackageInstance> getPackagesDeployed(String collection) {
@@ -130,13 +122,7 @@ public class PackageManager implements Closeable {
         }
       }
 
-      // nocommit factor this shit away
-      Map<String, String> collectionParameterOverrides = isUpdate? getPackageParams(packageInstance.name, collection): new HashMap<String,String>();
-      if (overrides != null) {
-        for (String override: overrides) {
-          collectionParameterOverrides.put(override.split("=")[0], override.split("=")[1]);
-        }
-      }
+      Map<String,String> collectionParameterOverrides = getCollectionParameterOverrides(packageInstance, isUpdate, overrides, collection);
 
       // Get package params
       try {
@@ -195,11 +181,10 @@ public class PackageManager implements Closeable {
       // Set the package version in the collection's parameters
       try {
         SolrCLI.postJsonToSolr(solrClient, "/api/collections/" + collection + "/config/params",
-            "{update:{PKG_VERSIONS:{'"+packageInstance.name+"' : '"+(pegToLatest? "$LATEST": packageInstance.version)+"'}}}");
+            "{update:{PKG_VERSIONS:{'" + packageInstance.name + "' : '" + (pegToLatest? "$LATEST": packageInstance.version) + "'}}}");
       } catch (Exception ex) {
         throw new SolrException(ErrorCode.SERVER_ERROR, ex);
       }
-
     }
 
     // Verify that package was successfully deployed
@@ -210,24 +195,46 @@ public class PackageManager implements Closeable {
     return success;
   }
 
-  //nocommit should this be private?
+  private Map<String,String> getCollectionParameterOverrides(SolrPackageInstance packageInstance, boolean isUpdate,
+      String[] overrides, String collection) {
+    Map<String, String> collectionParameterOverrides = isUpdate? getPackageParams(packageInstance.name, collection): new HashMap<String,String>();
+    if (overrides != null) {
+      for (String override: overrides) {
+        collectionParameterOverrides.put(override.split("=")[0], override.split("=")[1]);
+      }
+    }
+    return collectionParameterOverrides;
+  }
+
+  @SuppressWarnings({"rawtypes", "unchecked"})
+  Map<String, String> getPackageParams(String packageName, String collection) {
+    try {
+      return (Map<String, String>)((Map)((Map)((Map)
+          PackageUtils.getJson(solrClient.getHttpClient(), solrBaseUrl + "/api/collections/" + collection + "/config/params/packages", Map.class)
+          .get("response"))
+          .get("params"))
+          .get("packages")).get(packageName);
+    } catch (Exception ex) {
+      // This should be because there are no parameters. Be tolerant here.
+      return Collections.emptyMap();
+    }
+  }
+
+  /**
+   * Given a package and list of collections, verify if the package is installed
+   * in those collections. It uses the verify command of every plugin in the package (if defined).
+   */
   public boolean verify(SolrPackageInstance pkg, List<String> collections) {
-    // verify deployment succeeded?
     boolean success = true;
-    for (Plugin p: pkg.getPlugins()) {
-      PackageUtils.printGreen(p.verifyCommand);
+    for (Plugin plugin: pkg.getPlugins()) {
+      PackageUtils.printGreen(plugin.verifyCommand);
       for (String collection: collections) {
-        // nocommit print the resolved command
-        PackageUtils.printGreen("Executing " + p.verifyCommand + " for collection:" + collection);
         Map<String, String> collectionParameterOverrides = getPackageParams(pkg.name, collection);
+        Command cmd = plugin.verifyCommand;
 
-        Command cmd = p.verifyCommand;
-
-        Map<String, String> systemParams = new HashMap<String,String>();
-        systemParams.put("collection", collection);
-        systemParams.put("package-name", pkg.name);
-        systemParams.put("package-version", pkg.version);
+        Map<String, String> systemParams = Map.of("collection", collection, "package-name", pkg.name, "package-version", pkg.version);
         String url = solrBaseUrl + PackageUtils.resolve(cmd.path, pkg.parameterDefaults, collectionParameterOverrides, systemParams);
+        PackageUtils.printGreen("Executing " + url + " for collection:" + collection);
 
         if ("GET".equalsIgnoreCase(cmd.method)) {
           String response = PackageUtils.getJson(solrClient.getHttpClient(), url);
@@ -237,7 +244,7 @@ public class PackageManager implements Closeable {
           String expectedValue = PackageUtils.resolve(cmd.expected, pkg.parameterDefaults, collectionParameterOverrides, systemParams);
           PackageUtils.printGreen("Actual: "+actualValue+", expected: "+expectedValue);
           if (!expectedValue.equals(actualValue)) {
-            PackageUtils.printRed("Failed to deploy plugin: "+p.name);
+            PackageUtils.printRed("Failed to deploy plugin: " + plugin.name);
             success = false;
           }
         } else {
@@ -248,7 +255,10 @@ public class PackageManager implements Closeable {
     return success;
   }
 
-  // nocommit: javadocs should mention that version==null or "latest" will return latest version installed
+  /**
+   * Get the installed instance of a specific version of a package. If version is null, "latest" or "$LATEST",
+   * then it returns the highest version available in the system for the package.
+   */
   public SolrPackageInstance getPackageInstance(String packageName, String version) {
     fetchInstalledPackageInstances();
     List<SolrPackageInstance> versions = packages.get(packageName);
@@ -270,49 +280,31 @@ public class PackageManager implements Closeable {
     } else return null;
   }
 
-  @Override
-  public void close() throws IOException {
-    if (zkClient != null) {
-      zkClient.close();
-    }
-    if (solrClient != null) {
-      solrClient.close();
-    }
-  }
-
   public void deploy(String packageName, String version, boolean isUpdate, String[] collections, String[] parameters) throws SolrException {
     boolean pegToLatest = "latest".equals(version); // User wants to peg this package's version to the latest installed (for auto-update, i.e. no explicit deploy step)
     SolrPackageInstance packageInstance = getPackageInstance(packageName, version);
-    // nocommit if not found, exception here
+    if (packageInstance == null) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Package instance doesn't exist: " + packageName + ":" + null +
+          ". Use install command to install this version first.");
+    }
     if (version == null) version = packageInstance.getVersion();
 
     Manifest manifest = packageInstance.manifest;
     if (PackageUtils.checkVersionConstraint(RepositoryManager.systemVersion, manifest.minSolrVersion, manifest.maxSolrVersion) == false) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Version incompatible! Solr version: "
-          + RepositoryManager.systemVersion+", package minSolrVersion: " + manifest.minSolrVersion
-          + ", maxSolrVersion: "+manifest.maxSolrVersion);
+          + RepositoryManager.systemVersion + ", package minSolrVersion: " + manifest.minSolrVersion
+          + ", maxSolrVersion: " + manifest.maxSolrVersion);
     }
 
-    PackageUtils.printGreen(deployPackage(packageInstance, pegToLatest, isUpdate,
-        Arrays.asList(collections), parameters));
+    boolean res = deployPackage(packageInstance, pegToLatest, isUpdate,
+        Arrays.asList(collections), parameters);
+    PackageUtils.print(res? PackageUtils.GREEN: PackageUtils.RED, res? "Deployment successful": "Deployment failed");
   }
 
   public void undeploy(String packageName, String[] collections) throws SolrException {
     for (String collection: collections) {
       SolrPackageInstance deployedPackage = getPackagesDeployed(collection).get(packageName);
       Map<String, String> collectionParameterOverrides = getPackageParams(packageName, collection);
-
-      // Get package params
-      try {
-        boolean packageParamsExist = ((Map)PackageUtils.getJson(solrClient.getHttpClient(), solrBaseUrl + "/api/collections/abc/config/params/packages", Map.class)
-            .getOrDefault("response", Collections.emptyMap())).containsKey("params");
-        SolrCLI.postJsonToSolr(solrClient, "/api/collections/" + collection + "/config/params",
-            new ObjectMapper().writeValueAsString(Collections.singletonMap(packageParamsExist? "update": "set",
-                Collections.singletonMap("packages", Collections.singletonMap(packageName, collectionParameterOverrides)))));
-      } catch (Exception e) {
-        throw new SolrException(ErrorCode.SERVER_ERROR, e);
-      }
-
 
       // Run the uninstall command for all plugins
       Map<String, String> systemParams = Map.of("collection", collection, "package-name", deployedPackage.name, "package-version", deployedPackage.version);
@@ -336,7 +328,7 @@ public class PackageManager implements Closeable {
           PackageUtils.printRed("There is no uninstall command to execute for plugin: " + plugin.name);
         }
       }
-      
+
       // Set the package version in the collection's parameters
       try {
         SolrCLI.postJsonToSolr(solrClient, "/api/collections/" + collection + "/config/params", "{set: {PKG_VERSIONS: {"+packageName+": null}}}");
@@ -345,16 +337,23 @@ public class PackageManager implements Closeable {
         throw new SolrException(ErrorCode.SERVER_ERROR, ex);
       }
 
+      // TODO: Also better to remove the package parameters
     }
   }
 
-  public void listInstalled(List args) {
+  /**
+   * Print a list of installed packages
+   */
+  public void listInstalled() {
     for (SolrPackageInstance pkg: fetchInstalledPackageInstances()) {
-      PackageUtils.printGreen(pkg.getPackageName()+" ("+pkg.getVersion()+")");
+      PackageUtils.printGreen(pkg.getPackageName() + " (" + pkg.getVersion() + ")");
     }
   }
 
-  // javadoc
+  /**
+   * Given a package, return a map of collections where this package is
+   * installed to the installed version (which can be "$LATEST")
+   */
   public Map<String, String> getDeployedCollections(String packageName) {
     List<String> allCollections;
     try {

@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
- * This is a serializable bean (for the JSON that is stored in /repository.json).
+ * This is a serializable bean (for the JSON that is stored in /repository.json) representing a repository of Solr packages.
  * Supports standard repositories based on a webservice.
  */
 public class DefaultPackageRepository extends PackageRepository {

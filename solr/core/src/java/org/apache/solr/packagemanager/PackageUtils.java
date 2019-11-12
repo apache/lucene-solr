@@ -40,7 +40,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.BlobRepository;
 import org.apache.solr.packagemanager.SolrPackage.Manifest;
-import org.slf4j.Logger;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.zafarkhaja.semver.Version;
@@ -52,14 +51,22 @@ import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 import com.jayway.jsonpath.spi.mapper.MappingProvider;
 
 public class PackageUtils {
-  
+
   public static Configuration jsonPathConfiguration() {
     MappingProvider provider = new JacksonMappingProvider();
     JsonProvider jsonProvider = new JacksonJsonProvider();
     Configuration c = Configuration.builder().jsonProvider(jsonProvider).mappingProvider(provider).options(com.jayway.jsonpath.Option.REQUIRE_PROPERTIES).build();
     return c;
   }
-  
+
+  /**
+   * Uploads a file to the package store / file store of Solr.
+   * 
+   * @param client A Solr client
+   * @param buffer File contents
+   * @param name Name of the file as it will appear in the file store (can be hierarchical)
+   * @param sig Signature digest (public key should be separately uploaded to ZK)
+   */
   public static void postFile(SolrClient client, ByteBuffer buffer, String name, String sig)
       throws SolrServerException, IOException {
     String resource = "/api/cluster/files" + name;
@@ -81,6 +88,9 @@ public class PackageUtils {
     }
   }
 
+  /**
+   * Download JSON from the url and deserialize into klass.
+   */
   public static <T> T getJson(HttpClient client, String url, Class<T> klass) {
     try {
       return new ObjectMapper().readValue(getJson(client, url), klass);
@@ -89,7 +99,11 @@ public class PackageUtils {
     } 
   }
 
-  // nocommit javadoc, mention that returns null if file doesn't exist within jar
+  /**
+   * Search through the list of jar files for a given file. Returns string of
+   * the file contents or null if file wasn't found. This is suitable for looking
+   * for manifest or property files within pre-downloaded jar files.
+   */
   public static String getFileFromArtifacts(List<Path> jars, String filename) {
     for (Path jarfile: jars) {
       try (ZipFile zipFile = new ZipFile(jarfile.toFile())) {
@@ -103,6 +117,9 @@ public class PackageUtils {
     return null;
   }
 
+  /**
+   * Returns JSON string from a given URL
+   */
   public static String getJson(HttpClient client, String url) {
     try {
       return IOUtils.toString(client.execute(new HttpGet(url)).getEntity().getContent(), "UTF-8");
@@ -111,13 +128,17 @@ public class PackageUtils {
     }
   }
 
-  // nocommit javadoc
-  public static boolean checkVersionConstraint(String solrVersion, String minInclusive, String maxInclusive) {
+  /**
+   * Checks whether a given version is within minInclusive and maxInclusive range
+   */
+  public static boolean checkVersionConstraint(String ver, String minInclusive, String maxInclusive) {
     String constraint = ">="+minInclusive + " & <="+maxInclusive;
-    System.out.println("Current: "+solrVersion+", constraint: "+constraint);
-    return Strings.isNullOrEmpty(constraint) || Version.valueOf(solrVersion).satisfies(constraint);
+    return Strings.isNullOrEmpty(constraint) || Version.valueOf(ver).satisfies(constraint);
   }
 
+  /**
+   * Fetches a manifest file from the File Store / Package Store. A SHA512 check is enforced after fetching.
+   */
   public static Manifest fetchManifest(HttpSolrClient solrClient, String solrBaseUrl, String manifestFilePath, String expectedSHA512) throws MalformedURLException, IOException {
     String manifestJson = PackageUtils.getJson(solrClient.getHttpClient(), solrBaseUrl + "/api/node/files" + manifestFilePath);
     String calculatedSHA512 = BlobRepository.sha512Digest(ByteBuffer.wrap(manifestJson.getBytes()));
@@ -128,7 +149,10 @@ public class PackageUtils {
     Manifest manifest = new ObjectMapper().readValue(manifestJson, Manifest.class);
     return manifest;
   }
-  
+
+  /**
+   * Replace a templatized string with parameter substituted string. First applies the overrides, then defaults and then systemParams.
+   */
   public static String resolve(String str, Map<String, String> defaults, Map<String, String> overrides, Map<String, String> systemParams) {
     if (str == null) return null;
     for (String param: defaults.keySet()) {
@@ -143,7 +167,9 @@ public class PackageUtils {
     return str;
   }
 
-  // nocommit javadoc
+  /**
+   * Compares two versions v1 and v2. Returns negative if v1 < v2, positive if v1 > v2 and 0 if equal.
+   */
   public static int compareVersions(String v1, String v2) {
     return Version.valueOf(v1).compareTo(Version.valueOf(v2));
   }
@@ -157,16 +183,21 @@ public class PackageUtils {
   public static String CYAN = "\u001B[36m";
   public static String WHITE = "\u001B[37m";
 
+  /**
+   * Console print using green color
+   */
   public static void printGreen(Object message) {
-    PackageUtils.print(PackageUtils.GREEN, null, false, message);
+    PackageUtils.print(PackageUtils.GREEN, message);
   }
 
+  /**
+   * Console print using red color
+   */
   public static void printRed(Object message) {
-    PackageUtils.print(PackageUtils.RED, null, false, message);
+    PackageUtils.print(PackageUtils.RED, message);
   }
 
-  public static void print(String color, Logger log, boolean printInLog, Object message) {
-
+  public static void print(String color, Object message) {
     String RESET = "\u001B[0m";
 
     if (color != null) {
@@ -174,10 +205,6 @@ public class PackageUtils {
     } else {
       System.out.println(message);
     }
-    if (printInLog) {
-      log.info(String.valueOf(message));
-    }
-
-}
+  }
 
 }

@@ -52,7 +52,6 @@ public class PackageTool extends SolrCLI.ToolBase {
 
   public static String solrUrl = null;
   public static String solrBaseUrl = null;
-  public static HttpSolrClient solrClient;
   public PackageManager packageManager;
   public RepositoryManager repositoryManager;
 
@@ -62,13 +61,12 @@ public class PackageTool extends SolrCLI.ToolBase {
       solrUrl = cli.getOptionValues("solrUrl")[cli.getOptionValues("solrUrl").length-1];
       solrBaseUrl = solrUrl.replaceAll("\\/solr$", ""); // strip out ending "/solr"
       log.info("Solr url: "+solrUrl+", solr base url: "+solrBaseUrl);
-      solrClient = new HttpSolrClient.Builder(solrBaseUrl).build(); // nocommit close this
       String zkHost = getZkHost(cli);
 
       log.info("ZK: "+zkHost);
-      String cmd = cli.getArgs()[0];
+      String cmd = cli.getArgList().size() == 0? "help": cli.getArgs()[0];
 
-      try {
+      try (HttpSolrClient solrClient = new HttpSolrClient.Builder(solrBaseUrl).build()) {
         if (cmd != null) {
           packageManager = new PackageManager(solrClient, solrBaseUrl, zkHost); 
           try {
@@ -79,10 +77,10 @@ public class PackageTool extends SolrCLI.ToolBase {
                 repositoryManager.addRepository(cli.getArgs()[1], cli.getArgs()[2]);
                 break;
               case "list-installed":
-                packageManager.listInstalled(cli.getArgList().subList(1, cli.getArgList().size()));
+                packageManager.listInstalled();
                 break;
               case "list-available":
-                repositoryManager.listAvailable(cli.getArgList().subList(1, cli.getArgList().size()));
+                repositoryManager.listAvailable();
                 break;
               case "list-deployed":
                 if (cli.hasOption('c')) {
@@ -105,7 +103,7 @@ public class PackageTool extends SolrCLI.ToolBase {
               {
                 String packageName = parsePackageVersion(cli.getArgList().get(1).toString())[0];
                 String version = parsePackageVersion(cli.getArgList().get(1).toString())[1];
-                repositoryManager.installPackage(zkHost, packageName, version);
+                repositoryManager.install(packageName, version);
                 PackageUtils.printGreen(repositoryManager.toString() + " installed.");
                 break;
               }
@@ -119,7 +117,6 @@ public class PackageTool extends SolrCLI.ToolBase {
               case "undeploy":
               {
                 String packageName = parsePackageVersion(cli.getArgList().get(1).toString())[0];
-                String version = parsePackageVersion(cli.getArgList().get(1).toString())[1];
                 packageManager.undeploy(packageName, cli.getOptionValues("collections"));
                 break;
               }
@@ -156,26 +153,26 @@ public class PackageTool extends SolrCLI.ToolBase {
             packageManager.close();
           }
         }
-      } finally {
-        solrClient.close();
       }
-      log.info("Finished: "+cmd); // nocommit
+      log.info("Finished: "+cmd);
 
     } catch (Exception ex) {
-      ex.printStackTrace();
+      ex.printStackTrace(); // We need to print this since SolrCLI drops the stack trace in favour of brevity. Package tool should surely print full stacktraces!
       throw ex;
     }
   }
 
-  // nocommit javadocs
+  /**
+   * Parses package name and version in the format "name:version" or "name"
+   * @param arg User supplied argument
+   * @return Array of two elements, first the package name, second version (or null if not present)
+   */
   private String[] parsePackageVersion(String arg) {
     String packageName = arg.split(":")[0];
     String version = arg.contains(":")? arg.split(":")[1]: null;
     return new String[] {packageName, version};
   }
 
-
-  // nocommit fix the descriptions of all the options
   @SuppressWarnings("static-access")
   public Option[] getOptions() {
     return new Option[] {
@@ -183,39 +180,33 @@ public class PackageTool extends SolrCLI.ToolBase {
         .withArgName("URL")
         .hasArg()
         .isRequired(true)
-        .withDescription("Address of the Solr Web application, defaults to: "+SolrCLI.DEFAULT_SOLR_URL)
+        .withDescription("Address of the Solr Web application, defaults to: " + SolrCLI.DEFAULT_SOLR_URL)
         .create("solrUrl"),
 
         OptionBuilder
         .withArgName("COLLECTIONS")
         .hasArgs()
         .isRequired(false)
-        .withDescription("Solr URL scheme: http or https, defaults to http if not specified")
+        .withDescription("List of collections. Run './solr package help' for more details.")
         .create("collections"),
 
         OptionBuilder
         .withArgName("PARAMS")
         .hasArgs()
         .isRequired(false)
-        .withDescription("Solr URL scheme: http or https, defaults to http if not specified")
+        .withDescription("List of parameters to be used with deploy command. Run './solr package help' for more details.")
         .withLongOpt("param")
         .create("p"),
 
         OptionBuilder
         .isRequired(false)
-        .withDescription("Solr URL scheme: http or https, defaults to http if not specified")
+        .withDescription("If a deployment is an update over a previous deployment. Run './solr package help' for more details.")
         .withLongOpt("update")
         .create("u"),
 
         OptionBuilder
         .isRequired(false)
-        .withDescription("Solr URL scheme: http or https, defaults to http if not specified")
-        .withLongOpt("auto-update")
-        .create(),
-
-        OptionBuilder
-        .isRequired(false)
-        .withDescription("Solr URL scheme: http or https, defaults to http if not specified")
+        .withDescription("Run './solr package help' for more details.")
         .withLongOpt("collection")
         .create("c")
     };

@@ -29,6 +29,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.core.BlobRepository;
 import org.apache.solr.packagemanager.SolrPackage.Artifact;
 import org.apache.solr.packagemanager.SolrPackage.SolrPackageRelease;
+import org.apache.solr.pkg.PackageAPI;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -37,7 +38,7 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
- * Handles most of the management of packages that are present in an external repository.
+ * Handles most of the management of repositories and packages present in external repositories.
  */
 public class RepositoryManager {
 
@@ -60,7 +61,9 @@ public class RepositoryManager {
     return list;
   }
 
-  // nocommit javadoc
+  /**
+   * Get a map of package name to {@link SolrPackage} objects
+   */
   public Map<String, SolrPackage> getPackagesMap() {
     Map<String, SolrPackage> packagesMap = new HashMap<>();
     for (PackageRepository repository: getRepositories()) {
@@ -70,7 +73,11 @@ public class RepositoryManager {
     return packagesMap;
   }
 
+  /**
+   * List of added repositories
+   */
   public List<PackageRepository> getRepositories() {
+    // TODO: Instead of fetching again and again, we should look for caching this
     PackageRepository items[];
     try {
       items = new ObjectMapper().readValue(getRepositoriesJson(packageManager.zkClient), DefaultPackageRepository[].class);
@@ -86,12 +93,14 @@ public class RepositoryManager {
     return repositories;
   }
 
+  /**
+   * Add a repository to Solr
+   */
   public void addRepository(String name, String uri) throws KeeperException, InterruptedException, MalformedURLException, IOException {
     String existingRepositoriesJson = getRepositoriesJson(packageManager.zkClient);
     log.info(existingRepositoriesJson);
 
     List repos = new ObjectMapper().readValue(existingRepositoriesJson, List.class);
-    PackageUtils.printGreen("SPR is: "+solrClient);
     repos.add(new DefaultPackageRepository(name, uri));
     if (packageManager.zkClient.exists("/repositories.json", true) == false) {
       packageManager.zkClient.create("/repositories.json", new ObjectMapper().writeValueAsString(repos).getBytes(), CreateMode.PERSISTENT, true);
@@ -117,19 +126,26 @@ public class RepositoryManager {
     return "[]";
   }
 
+  /**
+   * Install a given package and version from the available repositories to Solr.
+   * The various steps for doing so are, briefly, a) find upload a manifest to package store,
+   * b) download the artifacts and upload to package store, c) call {@link PackageAPI} to register
+   * the package.
+   */
   private boolean installPackage(String packageName, String version) throws SolrException {
     SolrPackageInstance existingPlugin = packageManager.getPackageInstance(packageName, version);
     if (existingPlugin != null && existingPlugin.getVersion().equals(version)) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Plugin already installed.");
     }
 
-    SolrPackageRelease release = findReleaseForPackage(packageName, version);
+    SolrPackageRelease release = getPackageRelease(packageName, version);
     List<Path> downloaded = downloadPackageArtifacts(packageName, version);
-    // nocommit handle a failure in downloading
+    // TODO: Should we introduce a checksum to validate the downloading?
+    // Currently, not a big problem since signature based checking happens anyway
 
     try {
-      // post the metadata
-      PackageUtils.printGreen("Posting metadata");
+      // post the manifest
+      PackageUtils.printGreen("Posting manifest");
 
       if (release.manifest == null) {
         String manifestJson = PackageUtils.getFileFromArtifacts(downloaded, "manifest.json");
@@ -152,7 +168,7 @@ public class RepositoryManager {
             );
       }
 
-      // Call Package Manager API to add this version of the package
+      // Call Package API to add this version of the package
       Package.AddVersion add = new Package.AddVersion();
       add.version = version;
       add.pkg = packageName;
@@ -179,9 +195,9 @@ public class RepositoryManager {
     return false;
   }
 
-  protected List<Path> downloadPackageArtifacts(String packageName, String version) throws SolrException {
+  private List<Path> downloadPackageArtifacts(String packageName, String version) throws SolrException {
     try {
-      SolrPackageRelease release = findReleaseForPackage(packageName, version);
+      SolrPackageRelease release = getPackageRelease(packageName, version);
       List<Path> downloadedPaths = new ArrayList<Path>(release.artifacts.size());
 
       for (PackageRepository repo: getRepositories()) {
@@ -198,22 +214,22 @@ public class RepositoryManager {
     throw new SolrException(ErrorCode.BAD_REQUEST, "Package not found in any repository.");
   }
 
-  private SolrPackageRelease findReleaseForPackage(String packageName, String version) throws SolrException {
+  /**
+   * Given a package name and version, find the release/version object as found in the repository
+   */
+  private SolrPackageRelease getPackageRelease(String packageName, String version) throws SolrException {
     SolrPackage pkg = getPackagesMap().get(packageName);
     if (pkg == null) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Package "+packageName+" not found in any repository");
     }
-
     if (version == null || "latest".equals(version)) {
       return getLastPackageRelease(pkg);
     }
-
     for (SolrPackageRelease release : pkg.versions) {
       if (PackageUtils.compareVersions(version, release.version) == 0) {
         return release;
       }
     }
-
     throw new SolrException(ErrorCode.BAD_REQUEST, "Package " + packageName + ":" + version + " does not exist in any repository.");
   }
 
@@ -239,6 +255,10 @@ public class RepositoryManager {
     return latest;
   }
 
+  /**
+   * Is there a version of the package available in the repositories that is more
+   * latest than our latest installed version of the package?
+   */
   public boolean hasPackageUpdate(String packageName) {
     SolrPackage pkg = getPackagesMap().get(packageName);
     if (pkg == null) {
@@ -249,18 +269,10 @@ public class RepositoryManager {
     return last != null && PackageUtils.compareVersions(last.version, installedVersion) > 0;
   }
 
-  public List<SolrPackage> getUpdates() {
-    List<SolrPackage> updates = new ArrayList<>();
-    for (SolrPackageInstance installed : packageManager.fetchInstalledPackageInstances()) {
-      String packageName = installed.getPackageName();
-      if (hasPackageUpdate(packageName)) {
-        updates.add(getPackagesMap().get(packageName));
-      }
-    }
-    return updates;
-  }
-
-  public void listAvailable(List args) throws SolrException {
+  /**
+   * Print list of available packages
+   */
+  public void listAvailable() throws SolrException {
     PackageUtils.printGreen("Available packages:\n-----");
     for (SolrPackage pkg: getPackages()) {
       PackageUtils.printGreen(pkg.name + " \t\t"+pkg.description);
@@ -270,7 +282,11 @@ public class RepositoryManager {
     }
   }
 
-  public void installPackage(String zkHost, String packageName, String version) throws SolrException {
+  /**
+   * Install a version of the package. Also, run verify commands in case some
+   * collection was using "$LATEST" version of this package and got auto-updated.
+   */
+  public void install(String packageName, String version) throws SolrException {
     String latestVersion = getLastPackageRelease(packageName).version;
 
     Map<String, String> collectionsDeployedIn = packageManager.getDeployedCollections(packageName);
@@ -291,5 +307,4 @@ public class RepositoryManager {
     PackageUtils.printGreen("Verifying version "+updatedPackage.getVersion()+" on " + peggedToLatest +", result: "+res);
     if (!res) throw new SolrException(ErrorCode.BAD_REQUEST, "Failed verification after deployment");
   }
-
 }
