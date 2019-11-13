@@ -67,8 +67,9 @@ Other
 ======================= Lucene 8.4.0 =======================
 
 API Changes
----------------------
-(No changes)
+
+* LUCENE-9029: Deprecate SloppyMath toRadians/toDegrees in favor of Java Math.
+  (Jack Conradson via Adrien Grand)
 
 New Features
 ---------------------
