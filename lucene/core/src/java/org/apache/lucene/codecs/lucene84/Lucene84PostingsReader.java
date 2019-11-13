@@ -407,11 +407,10 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
       }
       
       final int left = docFreq - docUpto;
-      assert left > 0;
+      assert left >= 0;
 
       if (left >= BLOCK_SIZE) {
         forDeltaUtil.decodeAndPrefixSum(docIn, accum, docBuffer);
-        accum = docBuffer[BLOCK_SIZE - 1];
 
         if (indexHasFreq) {
           if (needsFreq) {
@@ -421,7 +420,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
           }
         }
       } else if (docFreq == 1) {
-        accum = docBuffer[0] = singletonDocID;
+        docBuffer[0] = singletonDocID;
         freqBuffer[0] = totalTermFreq;
         Arrays.fill(docBuffer, 1, BLOCK_SIZE, DocIdSetIterator.NO_MORE_DOCS);
       } else {
@@ -429,16 +428,13 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
         readVIntBlock(docIn, docBuffer, freqBuffer, left, indexHasFreq);
         prefixSum(docBuffer, left, accum);
         Arrays.fill(docBuffer, left, BLOCK_SIZE, DocIdSetIterator.NO_MORE_DOCS);
-        accum = docBuffer[left - 1];
       }
+      accum = docBuffer[BLOCK_SIZE - 1];
       docBufferUpto = 0;
     }
 
     @Override
     public int nextDoc() throws IOException {
-      if (docUpto == docFreq) {
-        return doc = NO_MORE_DOCS;
-      }
       if (docBufferUpto == BLOCK_SIZE) {
         refillDocs(); // we don't need to load freqBuffer for now (will be loaded later if necessary)
       }
@@ -494,9 +490,6 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
         // foresee whether skipper is necessary.
         nextSkipDoc = skipper.getNextSkipDoc();
       }
-      if (docUpto == docFreq) {
-        return doc = NO_MORE_DOCS;
-      }
       if (docBufferUpto == BLOCK_SIZE) {
         refillDocs();
       }
@@ -511,8 +504,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
         if (doc >= target) {
           break;
         }
-        docBufferUpto++;
-        if (docUpto == docFreq) {
+        if (++docBufferUpto == BLOCK_SIZE) {
           return this.doc = NO_MORE_DOCS;
         }
       }
@@ -705,22 +697,21 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
 
     private void refillDocs() throws IOException {
       final int left = docFreq - docUpto;
-      assert left > 0;
+      assert left >= 0;
 
       if (left >= BLOCK_SIZE) {
         forDeltaUtil.decodeAndPrefixSum(docIn, accum, docBuffer);
-        accum = docBuffer[BLOCK_SIZE - 1];
         pforUtil.decode(docIn, freqBuffer);
       } else if (docFreq == 1) {
-        accum = docBuffer[0] = singletonDocID;
+        docBuffer[0] = singletonDocID;
         freqBuffer[0] = totalTermFreq;
         Arrays.fill(docBuffer, 1, BLOCK_SIZE, DocIdSetIterator.NO_MORE_DOCS);
       } else {
         readVIntBlock(docIn, docBuffer, freqBuffer, left, true);
         prefixSum(docBuffer, left, accum);
         Arrays.fill(docBuffer, left, BLOCK_SIZE, DocIdSetIterator.NO_MORE_DOCS);
-        accum = docBuffer[left - 1];
       }
+      accum = docBuffer[BLOCK_SIZE - 1];
       docBufferUpto = 0;
     }
 
@@ -795,9 +786,6 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
 
     @Override
     public int nextDoc() throws IOException {
-      if (docUpto == docFreq) {
-        return doc = NO_MORE_DOCS;
-      }
       if (docBufferUpto == BLOCK_SIZE) {
         refillDocs();
       }
@@ -815,8 +803,6 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
 
     @Override
     public int advance(int target) throws IOException {
-      // TODO: make frq block load lazy/skippable
-
       if (target > nextSkipDoc) {
         if (skipper == null) {
           // Lazy init: first time this enum has ever been used for skipping
@@ -854,9 +840,6 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
         }
         nextSkipDoc = skipper.getNextSkipDoc();
       }
-      if (docUpto == docFreq) {
-        return doc = NO_MORE_DOCS;
-      }
       if (docBufferUpto == BLOCK_SIZE) {
         refillDocs();
       }
@@ -873,7 +856,8 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
         if (doc >= target) {
           break;
         }
-        if (docUpto == docFreq) {
+
+        if (docBufferUpto == BLOCK_SIZE) {
           return this.doc = NO_MORE_DOCS;
         }
       }
@@ -1079,11 +1063,10 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
 
     private void refillDocs() throws IOException {
       final int left = docFreq - docUpto;
-      assert left > 0;
+      assert left >= 0;
 
       if (left >= BLOCK_SIZE) {
         forDeltaUtil.decodeAndPrefixSum(docIn, accum, docBuffer);
-        accum = docBuffer[BLOCK_SIZE - 1];
         if (indexHasFreqs) {
           pforUtil.decode(docIn, freqBuffer);
         }
@@ -1091,8 +1074,8 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
         readVIntBlock(docIn, docBuffer, freqBuffer, left, indexHasFreqs);
         prefixSum(docBuffer, left, accum);
         Arrays.fill(docBuffer, left, BLOCK_SIZE, DocIdSetIterator.NO_MORE_DOCS);
-        accum = docBuffer[left - 1];
       }
+      accum = docBuffer[BLOCK_SIZE - 1];
       docBufferUpto = 0;
     }
 
@@ -1136,9 +1119,6 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
       if (target > nextSkipDoc) {
         advanceShallow(target);
       }
-      if (docUpto == docFreq) {
-        return doc = NO_MORE_DOCS;
-      }
       if (docBufferUpto == BLOCK_SIZE) {
         if (seekTo >= 0) {
           docIn.seek(seekTo);
@@ -1148,6 +1128,9 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
       }
 
       int next = findFirstGreater(docBuffer, target, docBufferUpto);
+      if (next == BLOCK_SIZE) {
+        return doc = NO_MORE_DOCS;
+      }
       this.doc = (int) docBuffer[next];
       this.freq = (int) freqBuffer[next];
       docUpto += next - docBufferUpto + 1;
@@ -1287,18 +1270,17 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
 
     private void refillDocs() throws IOException {
       final int left = docFreq - docUpto;
-      assert left > 0;
+      assert left >= 0;
 
       if (left >= BLOCK_SIZE) {
         forDeltaUtil.decodeAndPrefixSum(docIn, accum, docBuffer);
-        accum = docBuffer[BLOCK_SIZE - 1];
         pforUtil.decode(docIn, freqBuffer);
       } else {
         readVIntBlock(docIn, docBuffer, freqBuffer, left, true);
         prefixSum(docBuffer, left, accum);
         Arrays.fill(docBuffer, left, BLOCK_SIZE, DocIdSetIterator.NO_MORE_DOCS);
-        accum = docBuffer[left - 1];
       }
+      accum = docBuffer[BLOCK_SIZE - 1];
       docBufferUpto = 0;
     }
 
@@ -1373,9 +1355,6 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
       if (target > nextSkipDoc) {
         advanceShallow(target);
       }
-      if (docUpto == docFreq) {
-        return doc = NO_MORE_DOCS;
-      }
       if (docBufferUpto == BLOCK_SIZE) {
         if (seekTo >= 0) {
           docIn.seek(seekTo);
@@ -1385,6 +1364,9 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
       }
 
       int next = findFirstGreater(docBuffer, target, docBufferUpto);
+      if (next == BLOCK_SIZE) {
+        return doc = NO_MORE_DOCS;
+      }
       this.doc = (int) docBuffer[next];
       this.freq = (int) freqBuffer[next];
       for (int i = docBufferUpto; i <= next; ++i) {
@@ -1668,11 +1650,10 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
       }
 
       final int left = docFreq - docUpto;
-      assert left > 0;
+      assert left >= 0;
 
       if (left >= BLOCK_SIZE) {
         forDeltaUtil.decodeAndPrefixSum(docIn, accum, docBuffer);
-        accum = docBuffer[BLOCK_SIZE - 1];
         if (indexHasFreq) {
           isFreqsRead = false; // freq block will be loaded lazily when necessary, we don't load it here
         }
@@ -1680,8 +1661,8 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
         readVIntBlock(docIn, docBuffer, freqBuffer, left, indexHasFreq);
         prefixSum(docBuffer, left, accum);
         Arrays.fill(docBuffer, left, BLOCK_SIZE, DocIdSetIterator.NO_MORE_DOCS);
-        accum = docBuffer[left - 1];
       }
+      accum = docBuffer[BLOCK_SIZE - 1];
       docBufferUpto = 0;
     }
     
@@ -1800,9 +1781,6 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
       if (target > nextSkipDoc) {
         advanceShallow(target);
       }
-      if (docUpto == docFreq) {
-        return doc = NO_MORE_DOCS;
-      }
       if (docBufferUpto == BLOCK_SIZE) {
         if (seekTo >= 0) {
           docIn.seek(seekTo);
@@ -1822,7 +1800,8 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
         if (doc >= target) {
           break;
         }
-        if (docUpto == docFreq) {
+
+        if (docBufferUpto == BLOCK_SIZE) {
           return this.doc = NO_MORE_DOCS;
         }
       }
