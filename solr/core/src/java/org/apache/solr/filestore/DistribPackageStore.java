@@ -71,15 +71,12 @@ public class DistribPackageStore implements PackageStore {
   }
 
 
-
-
-
   @Override
   public Path getRealpath(String path) {
     if (File.separatorChar == '\\') {
       path = path.replace('/', File.separatorChar);
     }
-    if (path.charAt(0) != File.separatorChar) {
+    if (!path.isEmpty() && path.charAt(0) != File.separatorChar) {
       path = File.separator + path;
     }
     return new File(this.coreContainer.getResourceLoader().getInstancePath() +
@@ -222,7 +219,7 @@ public class DistribPackageStore implements PackageStore {
               "?meta=true&wt=javabin&omitHeader=true";
           boolean nodeHasBlob = false;
           Object nl = Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(), reqUrl, Utils.JAVABINCONSUMER);
-          if (Utils.getObjectByPath(nl, false, Arrays.asList("files", getMetaPath())) != null) {
+          if (Utils.getObjectByPath(nl, false, Arrays.asList("files", path)) != null) {
             nodeHasBlob = true;
           }
 
@@ -292,7 +289,7 @@ public class DistribPackageStore implements PackageStore {
             return;
           }
           ew.put("timestamp", getTimeStamp());
-          if(metaData != null)
+          if (metaData != null)
             metaData.writeMap(ew);
 
         }
@@ -321,7 +318,7 @@ public class DistribPackageStore implements PackageStore {
     byte[] bytes = baos.toByteArray();
     info.persistToFile(entry.buf, ByteBuffer.wrap(bytes, 0, bytes.length));
     tmpFiles.put(entry.getPath(), info);
-    List<String> nodes =  coreContainer.getPackageStoreAPI().shuffledNodes();
+    List<String> nodes = coreContainer.getPackageStoreAPI().shuffledNodes();
     int i = 0;
     int FETCHFROM_SRC = 50;
     String myNodeName = coreContainer.getZkController().getNodeName();
@@ -388,7 +385,14 @@ public class DistribPackageStore implements PackageStore {
     }
 
     if (from == null || "*".equals(from)) {
-      f.fetchFromAnyNode();
+      log.info("Missing file in package store: {}", path);
+      if (f.fetchFromAnyNode()) {
+        log.info("Successfully downloaded : {}", path);
+        return true;
+      } else{
+        log.info("Unable to download file : {}", path);
+        return false;
+      }
 
     } else {
       f.fetchFileFromNodeAndPersist(from);
