@@ -125,6 +125,9 @@ Improvements
 
 * SOLR-13844: Remove replica recovery terms with the replica term (Houston Putman via Cao Manh Dat)
 
+* SOLR-13898: Use the new SolrCache.commputeIfAbsent instead of non-atomic get / put in order to
+  improve cache hit ratios. (ab, Ben Manes)
+
 
 Optimizations
 ---------------------
