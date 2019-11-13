@@ -281,6 +281,11 @@ public class DistribPackageStore implements PackageStore {
         }
 
         @Override
+        public long size() {
+          return realPath().toFile().length();
+        }
+
+        @Override
         public void writeMap(EntryWriter ew) throws IOException {
           MetaData metaData = readMetaData();
           ew.put(CommonParams.NAME, getSimpleName());
@@ -288,6 +293,8 @@ public class DistribPackageStore implements PackageStore {
             ew.put("dir", true);
             return;
           }
+
+          ew.put("size", size());
           ew.put("timestamp", getTimeStamp());
           if (metaData != null)
             metaData.writeMap(ew);
@@ -389,7 +396,7 @@ public class DistribPackageStore implements PackageStore {
       if (f.fetchFromAnyNode()) {
         log.info("Successfully downloaded : {}", path);
         return true;
-      } else{
+      } else {
         log.info("Unable to download file : {}", path);
         return false;
       }

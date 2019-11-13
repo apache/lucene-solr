@@ -94,7 +94,7 @@ public class PackageLoader implements Closeable {
       } else {
         Package p = packageClassLoaders.remove(e.getKey());
         if (p != null) {
-          //other classes are holding to a reference to this objecec
+          //other classes are holding to a reference to this object
           // they should know that this is removed
           p.markDeleted();
           closeWhileHandlingException(p);
