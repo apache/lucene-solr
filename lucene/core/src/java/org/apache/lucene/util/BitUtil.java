@@ -178,4 +178,129 @@ public final class BitUtil {
      return ((l >>> 1) ^ -(l & 1));
    }
 
+  /**
+   * Returns whether the bit at given zero-based index is set.
+   * <br>Example: bitIndex 66 means the third bit on the right of the second long.
+   *
+   * @param bits     The bits stored in an array of long for efficiency.
+   * @param numLongs The number of longs in {@code bits} to consider.
+   * @param bitIndex The bit zero-based index. It must be greater than or equal to 0,
+   *                 and strictly less than {@code numLongs * Long.SIZE}.
+   */
+  public static boolean isBitSet(long[] bits, int numLongs, int bitIndex) {
+    assert numLongs >= 0 && numLongs <= bits.length && bitIndex >= 0 && bitIndex < numLongs * Long.SIZE
+        : "bitIndex=" + bitIndex + " numLongs=" + numLongs + " bits.length=" + bits.length;
+    return (bits[bitIndex / Long.SIZE] & (1L << bitIndex)) != 0; // Shifts are mod 64.
+  }
+
+  /**
+   * Counts all bits set in the provided longs.
+   *
+   * @param bits     The bits stored in an array of long for efficiency.
+   * @param numLongs The number of longs in {@code bits} to consider.
+   */
+  public static int countBits(long[] bits, int numLongs) {
+    assert numLongs >= 0 && numLongs <= bits.length
+        : "numLongs=" + numLongs + " bits.length=" + bits.length;
+    int bitCount = 0;
+    for (int i = 0; i < numLongs; i++) {
+      bitCount += Long.bitCount(bits[i]);
+    }
+    return bitCount;
+  }
+
+  /**
+   * Counts the bits set up to the given bit zero-based index, exclusive.
+   * <br>In other words, how many 1s there are up to the bit at the given index excluded.
+   * <br>Example: bitIndex 66 means the third bit on the right of the second long.
+   *
+   * @param bits     The bits stored in an array of long for efficiency.
+   * @param numLongs The number of longs in {@code bits} to consider.
+   * @param bitIndex The bit zero-based index, exclusive. It must be greater than or equal to 0,
+   *                 and less than or equal to {@code numLongs * Long.SIZE}.
+   */
+  public static int countBitsUpTo(long[] bits, int numLongs, int bitIndex) {
+    assert numLongs >= 0 && numLongs <= bits.length && bitIndex >= 0 && bitIndex <= numLongs * Long.SIZE
+        : "bitIndex=" + bitIndex + " numLongs=" + numLongs + " bits.length=" + bits.length;
+    int bitCount = 0;
+    int lastLong = bitIndex / Long.SIZE;
+    for (int i = 0; i < lastLong; i++) {
+      // Count the bits set for all plain longs.
+      bitCount += Long.bitCount(bits[i]);
+    }
+    if (lastLong < numLongs) {
+      // Prepare a mask with 1s on the right up to bitIndex exclusive.
+      long mask = (1L << bitIndex) - 1L; // Shifts are mod 64.
+      // Count the bits set only within the mask part, so up to bitIndex exclusive.
+      bitCount += Long.bitCount(bits[lastLong] & mask);
+    }
+    return bitCount;
+  }
+
+  /**
+   * Returns the index of the next bit set following the given bit zero-based index.
+   * <br>For example with bits 100011:
+   * the next bit set after index=-1 is at index=0;
+   * the next bit set after index=0 is at index=1;
+   * the next bit set after index=1 is at index=5;
+   * there is no next bit set after index=5.
+   *
+   * @param bits     The bits stored in an array of long for efficiency.
+   * @param numLongs The number of longs in {@code bits} to consider.
+   * @param bitIndex The bit zero-based index. It must be greater than or equal to -1,
+   *                 and strictly less than {@code numLongs * Long.SIZE}.
+   * @return The zero-based index of the next bit set after the provided {@code bitIndex};
+   * or -1 if none.
+   */
+  public static int nextBitSet(long[] bits, int numLongs, int bitIndex) {
+    assert numLongs >= 0 && numLongs <= bits.length && bitIndex >= -1 && bitIndex < numLongs * Long.SIZE
+        : "bitIndex=" + bitIndex + " numLongs=" + numLongs + " bits.length=" + bits.length;
+    int longIndex = bitIndex / Long.SIZE;
+    // Prepare a mask with 1s on the left down to bitIndex exclusive.
+    long mask = -(1L << (bitIndex + 1)); // Shifts are mod 64.
+    long l = mask == -1 && bitIndex != -1 ? 0 : bits[longIndex] & mask;
+    while (l == 0) {
+      if (++longIndex == numLongs) {
+        return -1;
+      }
+      l = bits[longIndex];
+    }
+    return Long.numberOfTrailingZeros(l) + longIndex * 64;
+  }
+
+  /**
+   * Returns the index of the previous bit set preceding the given bit zero-based index.
+   * <br>For example with bits 100011:
+   * there is no previous bit set before index=0.
+   * the previous bit set before index=1 is at index=0;
+   * the previous bit set before index=5 is at index=1;
+   * the previous bit set before index=64 is at index=5;
+   *
+   * @param bits     The bits stored in an array of long for efficiency.
+   * @param numLongs The number of longs in {@code bits} to consider.
+   * @param bitIndex The bit zero-based index. It must be greater than or equal to 0,
+   *                 and less than or equal to {@code numLongs * Long.SIZE}.
+   * @return The zero-based index of the previous bit set before the provided {@code bitIndex};
+   * or -1 if none.
+   */
+  public static int previousBitSet(long[] bits, int numLongs, int bitIndex) {
+    assert numLongs >= 0 && numLongs <= bits.length && bitIndex >= 0 && bitIndex <= numLongs * Long.SIZE
+        : "bitIndex=" + bitIndex + " numLongs=" + numLongs + " bits.length=" + bits.length;
+    int longIndex = bitIndex / Long.SIZE;
+    long l;
+    if (longIndex == numLongs) {
+      l = 0;
+    } else {
+      // Prepare a mask with 1s on the right up to bitIndex exclusive.
+      long mask = (1L << bitIndex) - 1L; // Shifts are mod 64.
+      l = bits[longIndex] & mask;
+    }
+    while (l == 0) {
+      if (longIndex-- == 0) {
+        return -1;
+      }
+      l = bits[longIndex];
+    }
+    return 63 - Long.numberOfLeadingZeros(l) + longIndex * 64;
+  }
 }
