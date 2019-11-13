@@ -99,7 +99,7 @@ public class PackageUtils {
    */
   public static <T> T getJson(HttpClient client, String url, Class<T> klass) {
     try {
-      return getMapper().readValue(getJson(client, url), klass);
+      return getMapper().readValue(getJsonStringFromUrl(client, url), klass);
     } catch (IOException e) {
       throw new RuntimeException(e);
     } 
@@ -109,8 +109,9 @@ public class PackageUtils {
    * Search through the list of jar files for a given file. Returns string of
    * the file contents or null if file wasn't found. This is suitable for looking
    * for manifest or property files within pre-downloaded jar files.
+   * Please note that the first instance of the file found is returned.
    */
-  public static String getFileFromArtifacts(List<Path> jars, String filename) {
+  public static String getFileFromJarsAsString(List<Path> jars, String filename) {
     for (Path jarfile: jars) {
       try (ZipFile zipFile = new ZipFile(jarfile.toFile())) {
         ZipEntry entry = zipFile.getEntry(filename);
@@ -126,7 +127,7 @@ public class PackageUtils {
   /**
    * Returns JSON string from a given URL
    */
-  public static String getJson(HttpClient client, String url) {
+  public static String getJsonStringFromUrl(HttpClient client, String url) {
     try {
       return IOUtils.toString(client.execute(new HttpGet(url)).getEntity().getContent(), "UTF-8");
     } catch (UnsupportedOperationException | IOException e) {
@@ -146,7 +147,7 @@ public class PackageUtils {
    * Fetches a manifest file from the File Store / Package Store. A SHA512 check is enforced after fetching.
    */
   public static Manifest fetchManifest(HttpSolrClient solrClient, String solrBaseUrl, String manifestFilePath, String expectedSHA512) throws MalformedURLException, IOException {
-    String manifestJson = PackageUtils.getJson(solrClient.getHttpClient(), solrBaseUrl + "/api/node/files" + manifestFilePath);
+    String manifestJson = PackageUtils.getJsonStringFromUrl(solrClient.getHttpClient(), solrBaseUrl + "/api/node/files" + manifestFilePath);
     String calculatedSHA512 = BlobRepository.sha512Digest(ByteBuffer.wrap(manifestJson.getBytes("UTF-8")));
     if (expectedSHA512.equals(calculatedSHA512) == false) {
       throw new SolrException(ErrorCode.UNAUTHORIZED, "The manifest SHA512 doesn't match expected SHA512. Possible unauthorized manipulation. "

@@ -165,7 +165,7 @@ public class RepositoryManager {
       PackageUtils.printGreen("Posting manifest");
 
       if (release.manifest == null) {
-        String manifestJson = PackageUtils.getFileFromArtifacts(downloaded, "manifest.json");
+        String manifestJson = PackageUtils.getFileFromJarsAsString(downloaded, "manifest.json");
         if (manifestJson == null) {
           throw new SolrException(ErrorCode.BAD_REQUEST, "No manifest found for package: " + packageName + ", version: " + version);
         }

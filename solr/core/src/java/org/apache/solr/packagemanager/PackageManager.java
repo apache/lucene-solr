@@ -106,7 +106,7 @@ public class PackageManager implements Closeable {
   }
 
   public Map<String, SolrPackageInstance> getPackagesDeployed(String collection) {
-    String paramsJson = PackageUtils.getJson(solrClient.getHttpClient(), solrBaseUrl+"/api/collections/"+collection+"/config/params/PKG_VERSIONS?omitHeader=true");
+    String paramsJson = PackageUtils.getJsonStringFromUrl(solrClient.getHttpClient(), solrBaseUrl+"/api/collections/"+collection+"/config/params/PKG_VERSIONS?omitHeader=true");
     Map<String, String> packages = null;
     try {
       packages = JsonPath.parse(paramsJson, PackageUtils.jsonPathConfiguration())
@@ -268,7 +268,7 @@ public class PackageManager implements Closeable {
         PackageUtils.printGreen("Executing " + url + " for collection:" + collection);
 
         if ("GET".equalsIgnoreCase(cmd.method)) {
-          String response = PackageUtils.getJson(solrClient.getHttpClient(), url);
+          String response = PackageUtils.getJsonStringFromUrl(solrClient.getHttpClient(), url);
           PackageUtils.printGreen(response);
           String actualValue = JsonPath.parse(response, PackageUtils.jsonPathConfiguration())
               .read(PackageUtils.resolve(cmd.condition, pkg.parameterDefaults, collectionParameterOverrides, systemParams));
@@ -406,7 +406,7 @@ public class PackageManager implements Closeable {
     Map<String, String> deployed = new HashMap<String, String>();
     for (String collection: allCollections) {
       // Check package version installed
-      String paramsJson = PackageUtils.getJson(solrClient.getHttpClient(), solrBaseUrl + "/api/collections/" + collection + "/config/params/PKG_VERSIONS?omitHeader=true");
+      String paramsJson = PackageUtils.getJsonStringFromUrl(solrClient.getHttpClient(), solrBaseUrl + "/api/collections/" + collection + "/config/params/PKG_VERSIONS?omitHeader=true");
       String version = null;
       try {
         version = JsonPath.parse(paramsJson, PackageUtils.jsonPathConfiguration())
