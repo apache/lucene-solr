@@ -119,27 +119,22 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
   }
 
   @Override
-  public void readLongs(ByteOrder byteOrder, long[] dst, int offset, int length) throws IOException {
+  public void readLELongs(long[] dst, int offset, int length) throws IOException {
     if (curLongBufferViews == null) {
       // Lazy init to not make pay for memory and initialization cost if you don't need to read arrays of longs
       curLongBufferViews = new LongBuffer[Long.BYTES];
       Arrays.fill(curLongBufferViews, EMPTY);
       for (int i = 0; i < Math.min(Long.BYTES, curBuf.limit()); ++i) {
         // Compute a view for each possible alignment in the native byte order
-        curLongBufferViews[i] = curBuf.duplicate().position(i).order(ByteOrder.nativeOrder()).asLongBuffer();
+        curLongBufferViews[i] = curBuf.duplicate().position(i).order(ByteOrder.LITTLE_ENDIAN).asLongBuffer();
       }
     }
     try {
       final int position = curBuf.position();
       guard.getLongs(curLongBufferViews[position & 0x07].position(position >>> 3), dst, offset, length);
-      if (byteOrder != ByteOrder.nativeOrder()) {
-        for (int i = offset, end = offset + length; i < end; ++i) {
-          dst[i] = Long.reverseBytes(dst[i]);
-        }
-      }
       curBuf.position(position + (length << 3));
     } catch (BufferUnderflowException e) {
-      super.readLongs(byteOrder, dst, offset, length);
+      super.readLELongs(dst, offset, length);
     } catch (NullPointerException npe) {
       throw new AlreadyClosedException("Already closed: " + this);
     }

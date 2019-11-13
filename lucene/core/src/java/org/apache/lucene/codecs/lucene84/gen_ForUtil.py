@@ -42,7 +42,6 @@ HEADER = """// This file has been automatically generated, DO NOT EDIT
 package org.apache.lucene.codecs.lucene84;
 
 import java.io.IOException;
-import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.function.IntToLongFunction;
 
@@ -239,12 +238,7 @@ final class ForUtil {
     arr[63] += arr[62];
   }
 
-  private final ByteOrder byteOrder;
   private final long[] tmp = new long[BLOCK_SIZE/2];
-
-  ForUtil(ByteOrder byteOrder) {
-    this.byteOrder = byteOrder;
-  }
 
   /**
    * Encode 128 integers from {@code longs} into {@code out}.
@@ -298,11 +292,8 @@ final class ForUtil {
     }
 
     for (int i = 0; i < numLongsPerShift; ++i) {
-      long l = tmp[i];
-      // Java longs are big endian and we want to write with the native endianness, so we need to reverse for little endian
-      if (byteOrder != ByteOrder.BIG_ENDIAN) {
-        l = Long.reverseBytes(l);
-      }
+      // Java longs are big endian and we want to read little endian longs, so we need to reverse bytes
+      long l = Long.reverseBytes(tmp[i]);
       out.writeLong(l);
     }
   }
@@ -314,9 +305,9 @@ final class ForUtil {
     return bitsPerValue << (BLOCK_SIZE_LOG2 - 3);
   }
 
-  private static void decodeSlow(int bitsPerValue, DataInput in, ByteOrder byteOrder, long[] tmp, long[] longs) throws IOException {
+  private static void decodeSlow(int bitsPerValue, DataInput in, long[] tmp, long[] longs) throws IOException {
     final int numLongs = bitsPerValue << 1;
-    in.readLongs(byteOrder, tmp, 0, numLongs);
+    in.readLELongs(tmp, 0, numLongs);
     final long mask = mask32(bitsPerValue);
     int longsIdx = 0;
     int shift = 32 - bitsPerValue;
@@ -396,12 +387,12 @@ def writeDecode(bpv, f):
     next_primitive = 8
   elif bpv <= 16:
     next_primitive = 16
-  f.write('  private static void decode%d(DataInput in, ByteOrder byteOrder, long[] tmp, long[] longs) throws IOException {\n' %bpv)
+  f.write('  private static void decode%d(DataInput in, long[] tmp, long[] longs) throws IOException {\n' %bpv)
   num_values_per_long = 64 / next_primitive
   if bpv == next_primitive:
-    f.write('    in.readLongs(byteOrder, longs, 0, %d);\n' %(bpv*2))
+    f.write('    in.readLELongs(longs, 0, %d);\n' %(bpv*2))
   else:
-    f.write('    in.readLongs(byteOrder, tmp, 0, %d);\n' %(bpv*2))
+    f.write('    in.readLELongs(tmp, 0, %d);\n' %(bpv*2))
     shift = next_primitive - bpv
     o = 0
     while shift >= 0:
@@ -435,11 +426,11 @@ if __name__ == '__main__':
     elif bpv <= 16:
       next_primitive = 16
     f.write('    case %d:\n' %bpv)
-    f.write('      decode%d(in, byteOrder, tmp, longs);\n' %bpv)
+    f.write('      decode%d(in, tmp, longs);\n' %bpv)
     f.write('      expand%d(longs);\n' %next_primitive)
     f.write('      break;\n')
   f.write('    default:\n')
-  f.write('      decodeSlow(bitsPerValue, in, byteOrder, tmp, longs);\n')
+  f.write('      decodeSlow(bitsPerValue, in, tmp, longs);\n')
   f.write('      expand32(longs);\n')
   f.write('      break;\n')
   f.write('    }\n')
@@ -459,11 +450,11 @@ if __name__ == '__main__':
     elif bpv <= 16:
       next_primitive = 16
     f.write('    case %d:\n' %bpv)
-    f.write('      decode%d(in, byteOrder, tmp, longs);\n' %bpv)
+    f.write('      decode%d(in, tmp, longs);\n' %bpv)
     f.write('      prefixSum%d(longs, base);\n' %next_primitive)
     f.write('      break;\n')
   f.write('    default:\n')
-  f.write('      decodeSlow(bitsPerValue, in, byteOrder, tmp, longs);\n')
+  f.write('      decodeSlow(bitsPerValue, in, tmp, longs);\n')
   f.write('      prefixSum32(longs, base);\n')
   f.write('      break;\n')
   f.write('    }\n')

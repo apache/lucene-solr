@@ -18,7 +18,6 @@ package org.apache.lucene.store;
 
 
 import java.io.IOException;
-import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.HashMap;
@@ -160,16 +159,13 @@ public abstract class DataInput implements Cloneable {
   }
 
   /**
-   * Read a specified number of longs with the given byte order.
+   * Read a specified number of longs with the little endian byte order.
    */
-  public void readLongs(ByteOrder byteOrder, long[] dst, int offset, int length) throws IOException {
+  // TODO: Make the entire DataInput/DataOutput API little endian?
+  public void readLELongs(long[] dst, int offset, int length) throws IOException {
     Objects.checkFromIndexSize(offset, length, dst.length);
     for (int i = 0; i < length; ++i) {
-      long l = readLong();
-      if (byteOrder != ByteOrder.BIG_ENDIAN) {
-        l = Long.reverseBytes(l);
-      }
-      dst[offset + i] = l;
+      dst[offset + i] = Long.reverseBytes(readLong());
     }
   }
 

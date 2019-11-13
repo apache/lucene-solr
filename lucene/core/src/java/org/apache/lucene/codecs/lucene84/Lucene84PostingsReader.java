@@ -27,14 +27,12 @@ import static org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat.VERSION_C
 import static org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat.VERSION_START;
 
 import java.io.IOException;
-import java.nio.ByteOrder;
 import java.util.Arrays;
 
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat.IntBlockTermState;
-import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Impacts;
 import org.apache.lucene.index.ImpactsEnum;
@@ -65,7 +63,6 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
   private final IndexInput posIn;
   private final IndexInput payIn;
 
-  private final ByteOrder byteOrder;
   private final int version;
 
   /** Sole constructor. */
@@ -84,16 +81,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
     try {
       docIn = state.directory.openInput(docName, state.context);
       version = CodecUtil.checkIndexHeader(docIn, DOC_CODEC, VERSION_START, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
-      byte byteOrderByte = docIn.readByte();
       CodecUtil.retrieveChecksum(docIn);
-
-      if (byteOrderByte == 'L') {
-        byteOrder = ByteOrder.LITTLE_ENDIAN;
-      } else if (byteOrderByte == 'B') {
-        byteOrder = ByteOrder.BIG_ENDIAN;
-      } else {
-        throw new CorruptIndexException("Illegal byte order byte " + byteOrderByte, docIn);
-      }
 
       if (state.fieldInfos.hasProx()) {
         String proxName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, Lucene84PostingsFormat.POS_EXTENSION);
@@ -275,7 +263,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
 
   final class BlockDocsEnum extends PostingsEnum {
 
-    final ForUtil forUtil = new ForUtil(byteOrder);
+    final ForUtil forUtil = new ForUtil();
     final ForDeltaUtil forDeltaUtil = new ForDeltaUtil(forUtil);
     final PForUtil pforUtil = new PForUtil(forUtil);
 
@@ -522,7 +510,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
   // Also handles payloads + offsets
   final class EverythingEnum extends PostingsEnum {
 
-    final ForUtil forUtil = new ForUtil(byteOrder);
+    final ForUtil forUtil = new ForUtil();
     final ForDeltaUtil forDeltaUtil = new ForDeltaUtil(forUtil);
     final PForUtil pforUtil = new PForUtil(forUtil);
 
@@ -997,7 +985,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
 
   final class BlockImpactsDocsEnum extends ImpactsEnum {
 
-    final ForUtil forUtil = new ForUtil(byteOrder);
+    final ForUtil forUtil = new ForUtil();
     final ForDeltaUtil forDeltaUtil = new ForDeltaUtil(forUtil);
     final PForUtil pforUtil = new PForUtil(forUtil);
 
@@ -1167,7 +1155,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
 
   final class BlockImpactsPostingsEnum extends ImpactsEnum {
 
-    final ForUtil forUtil = new ForUtil(byteOrder);
+    final ForUtil forUtil = new ForUtil();
     final ForDeltaUtil forDeltaUtil = new ForDeltaUtil(forUtil);
     final PForUtil pforUtil = new PForUtil(forUtil);
 
@@ -1454,7 +1442,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
 
   final class BlockImpactsEverythingEnum extends ImpactsEnum {
 
-    final ForUtil forUtil = new ForUtil(byteOrder);
+    final ForUtil forUtil = new ForUtil();
     final ForDeltaUtil forDeltaUtil = new ForDeltaUtil(forUtil);
     final PForUtil pforUtil = new PForUtil(forUtil);
 

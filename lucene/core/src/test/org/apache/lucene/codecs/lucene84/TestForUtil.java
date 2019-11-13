@@ -17,7 +17,6 @@
 package org.apache.lucene.codecs.lucene84;
 
 import java.io.IOException;
-import java.nio.ByteOrder;
 import java.util.Arrays;
 
 import org.apache.lucene.store.ByteBuffersDirectory;
@@ -34,15 +33,7 @@ import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 
 public class TestForUtil extends LuceneTestCase {
 
-  public void testEncodeDecodeLE() throws IOException {
-    doTestEncodeDecode(ByteOrder.LITTLE_ENDIAN);
-  }
-
-  public void testEncodeDecodeBE() throws IOException {
-    doTestEncodeDecode(ByteOrder.BIG_ENDIAN);
-  }
-
-  public void doTestEncodeDecode(ByteOrder byteOrder) throws IOException {
+  public void testEncodeDecode() throws IOException {
     final int iterations = RandomNumbers.randomIntBetween(random(), 50, 1000);
     final int[] values = new int[iterations * ForUtil.BLOCK_SIZE];
 
@@ -60,7 +51,7 @@ public class TestForUtil extends LuceneTestCase {
     {
       // encode
       IndexOutput out = d.createOutput("test.bin", IOContext.DEFAULT);
-      final ForUtil forUtil = new ForUtil(byteOrder);
+      final ForUtil forUtil = new ForUtil();
 
       for (int i = 0; i < iterations; ++i) {
         long[] source = new long[ForUtil.BLOCK_SIZE];
@@ -80,7 +71,7 @@ public class TestForUtil extends LuceneTestCase {
     {
       // decode
       IndexInput in = d.openInput("test.bin", IOContext.READONCE);
-      final ForUtil forUtil = new ForUtil(byteOrder);
+      final ForUtil forUtil = new ForUtil();
       for (int i = 0; i < iterations; ++i) {
         final int bitsPerValue = in.readByte();
         final long currentFilePointer = in.getFilePointer();

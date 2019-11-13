@@ -118,7 +118,7 @@ public final class Lucene84PostingsWriter extends PushPostingsWriterBase {
       } else {
         throw new Error();
       }
-      final ForUtil forUtil = new ForUtil(byteOrder);
+      final ForUtil forUtil = new ForUtil();
       forDeltaUtil = new ForDeltaUtil(forUtil);
       pforUtil = new PForUtil(forUtil);
       if (state.fieldInfos.hasProx()) {
