@@ -308,7 +308,7 @@ final class ForUtil {
   }
 
   /**
-   * Number of bytes required to encode 128 integers of {@code bitsPerValue}.
+   * Number of bytes required to encode 128 integers of {@code bitsPerValue} bits per value.
    */
   int numBytes(int bitsPerValue) throws IOException {
     return bitsPerValue << (BLOCK_SIZE_LOG2 - 3);
@@ -365,7 +365,7 @@ def writeRemainder(bpv, next_primitive, remaining_bits_per_long, o, num_values, 
     num_longs /= 2
     num_values /= 2
     iteration *= 2
-  f.write('    for(int iter = 0, tmpIdx = 0, longsIdx = %d; iter < %d; ++iter, tmpIdx += %d, longsIdx += %d) {\n' %(o, iteration, num_longs, num_values))
+  f.write('    for (int iter = 0, tmpIdx = 0, longsIdx = %d; iter < %d; ++iter, tmpIdx += %d, longsIdx += %d) {\n' %(o, iteration, num_longs, num_values))
   i = 0
   remaining_bits = 0
   tmp_idx = 0
