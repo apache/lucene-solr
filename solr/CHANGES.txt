@@ -158,6 +158,9 @@ Bug Fixes
 * SOLR-13882: Collections API COLSTATUS does not check live_nodes when reporting replica's status.
   (Erick Erickson, Andrzej Białecki)
 
+* SOLR-13872: Fixed Backup failures - typically manifesting as NoSuchFileException - due to race conditions
+  in saving/reserving commit points (hossman)
+
 Other Changes
 ---------------------
 
