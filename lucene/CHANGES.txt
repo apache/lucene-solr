@@ -45,6 +45,9 @@ Optimizations
   instead of sorting when the maximum recursion level is exceeded, providing
   better worst-case runtime. (Paul Sanwald via Adrien Grand)
 
+* LUCENE-8920: The denser arcs of FST now index labels with a bitset in order
+  to provide near constant time access. (Bruno Roustant, Mike Sokolov via Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-9001: Fix race condition in SetOnce. (Przemko Robakowski)
