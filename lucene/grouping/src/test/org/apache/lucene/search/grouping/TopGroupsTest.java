@@ -133,7 +133,7 @@ public class TopGroupsTest extends RandomizedTest {
   // takes a pair of groups and returns them in an array
   private static GroupDocs<String>[] groupResults(GroupDocs<String> group1, GroupDocs<String> group2){
     @SuppressWarnings("unchecked")
-     GroupDocs<String>[] groupDocs = new GroupDocs[2];
+     GroupDocs<String>[] groupDocs = (GroupDocs<String>[])new GroupDocs[2];
      groupDocs[0] = group1;
      groupDocs[1] = group2;
      return groupDocs;
@@ -142,7 +142,7 @@ public class TopGroupsTest extends RandomizedTest {
   // takes a pair of shard responses and returns an array
   private static TopGroups<String>[] shardResponses(TopGroups<String> topGroups1, TopGroups<String> topGroups2){
     @SuppressWarnings("unchecked")
-    TopGroups<String>[] responses = new TopGroups[2];
+    TopGroups<String>[] responses = (TopGroups<String>[])new TopGroups<?>[2];
     responses[0] = topGroups1;
     responses[1] = topGroups2;
     return responses;
