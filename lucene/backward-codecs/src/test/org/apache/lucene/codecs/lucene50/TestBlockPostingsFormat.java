@@ -55,7 +55,7 @@ import org.apache.lucene.util.TestUtil;
  * Tests BlockPostingsFormat
  */
 public class TestBlockPostingsFormat extends BasePostingsFormatTestCase {
-  private final Codec codec = TestUtil.alwaysPostingsFormat(new Lucene50PostingsFormat());
+  private final Codec codec = TestUtil.alwaysPostingsFormat(new Lucene50RWPostingsFormat());
 
   @Override
   protected Codec getCodec() {
@@ -280,20 +280,6 @@ public class TestBlockPostingsFormat extends BasePostingsFormatTestCase {
     r.close();
     w.close();
     d.close();
-  }
-
-  private void shouldFail(int minItemsInBlock, int maxItemsInBlock) {
-    expectThrows(IllegalArgumentException.class, () -> {
-      new Lucene50PostingsFormat(minItemsInBlock, maxItemsInBlock, BlockTreeTermsReader.FSTLoadMode.AUTO);
-    });
-  }
-
-  public void testInvalidBlockSizes() throws Exception {
-    shouldFail(0, 0);
-    shouldFail(10, 8);
-    shouldFail(-1, 10);
-    shouldFail(10, -1);
-    shouldFail(10, 12);
   }
 
   public void testImpactSerialization() throws IOException {

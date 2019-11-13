@@ -370,6 +370,9 @@ public final class Lucene84PostingsFormat extends PostingsFormat {
    */
   public static final String PAY_EXTENSION = "pay";
 
+  /** Size of blocks. */
+  public static final int BLOCK_SIZE = ForUtil.BLOCK_SIZE;
+
   /**
    * Expert: The maximum number of skip levels. Smaller values result in 
    * slightly smaller indexes, but slower skipping in big posting lists.

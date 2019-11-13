@@ -276,6 +276,7 @@ final class ForUtil {
 
     for (int i = 0; i < numLongsPerShift; ++i) {
       long l = tmp[i];
+      // Java longs are big endian and we want to write with the native endianness, so we need to reverse for little endian
       if (byteOrder != ByteOrder.BIG_ENDIAN) {
         l = Long.reverseBytes(l);
       }

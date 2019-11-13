@@ -61,8 +61,9 @@ final class PForUtil {
     // We store the patch on a byte, so we can't decrease the number of bits required by more than 8
     final int patchedBitsRequired =  Math.max(PackedInts.bitsRequired(top4[0]), maxBitsRequired - 8);
     int numExceptions = 0;
+    final long maxUnpatchedValue = (1L << patchedBitsRequired) - 1;
     for (int i = 1; i < 4; ++i) {
-      if (top4[i] > (1L << patchedBitsRequired) - 1) {
+      if (top4[i] > maxUnpatchedValue) {
         numExceptions++;
       }
     }
@@ -73,7 +74,7 @@ final class PForUtil {
         if (longs[i] > (1L << patchedBitsRequired) - 1) {
           exceptions[exceptionCount*2] = (byte) i;
           exceptions[exceptionCount*2+1] = (byte) (longs[i] >>> patchedBitsRequired);
-          longs[i] &= (1L << patchedBitsRequired) - 1;
+          longs[i] &= maxUnpatchedValue;
           exceptionCount++;
         }
       }

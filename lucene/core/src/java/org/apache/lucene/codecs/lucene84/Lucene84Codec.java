@@ -43,13 +43,13 @@ import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 
 /**
- * Implements the Lucene 8.0 index format, with configurable per-field postings
+ * Implements the Lucene 8.4 index format, with configurable per-field postings
  * and docvalues formats.
  * <p>
  * If you want to reuse functionality of this codec in another codec, extend
  * {@link FilterCodec}.
  *
- * @see org.apache.lucene.codecs.lucene80 package documentation for file format details.
+ * @see org.apache.lucene.codecs.lucene84 package documentation for file format details.
  *
  * @lucene.experimental
  */

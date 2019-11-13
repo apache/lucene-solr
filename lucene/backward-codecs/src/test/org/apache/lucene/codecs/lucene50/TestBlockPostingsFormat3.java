@@ -33,23 +33,21 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
-import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexWriter;
-import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Terms;
-import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.English;
-import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.AutomatonTestUtil;
@@ -82,7 +80,7 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
       }
     };
     IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
-    iwc.setCodec(TestUtil.alwaysPostingsFormat(new Lucene50PostingsFormat()));
+    iwc.setCodec(TestUtil.alwaysPostingsFormat(new Lucene50RWPostingsFormat()));
     // TODO we could actually add more fields implemented with different PFs
     // or, just put this test into the usual rotation?
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwc);
@@ -137,7 +135,7 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
     verify(dir);
     TestUtil.checkIndex(dir); // for some extra coverage, checkIndex before we forceMerge
     iwc = newIndexWriterConfig(analyzer);
-    iwc.setCodec(TestUtil.alwaysPostingsFormat(new Lucene50PostingsFormat()));
+    iwc.setCodec(TestUtil.alwaysPostingsFormat(new Lucene50RWPostingsFormat()));
     iwc.setOpenMode(OpenMode.APPEND);
     IndexWriter iw2 = new IndexWriter(dir, iwc);
     iw2.forceMerge(1);
@@ -461,27 +459,5 @@ public class TestBlockPostingsFormat3 extends LuceneTestCase {
       }
     }
   }
-  
-  private static class RandomBits implements Bits {
-    FixedBitSet bits;
-    
-    RandomBits(int maxDoc, double pctLive, Random random) {
-      bits = new FixedBitSet(maxDoc);
-      for (int i = 0; i < maxDoc; i++) {
-        if (random.nextDouble() <= pctLive) {        
-          bits.set(i);
-        }
-      }
-    }
-    
-    @Override
-    public boolean get(int index) {
-      return bits.get(index);
-    }
 
-    @Override
-    public int length() {
-      return bits.length();
-    }
-  }
 }
