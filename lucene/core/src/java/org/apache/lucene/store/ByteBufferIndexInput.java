@@ -47,7 +47,7 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
   protected ByteBuffer[] buffers;
   protected int curBufIndex = -1;
   protected ByteBuffer curBuf; // redundant for speed: buffers[curBufIndex]
-  private final LongBuffer[] curLongBufferViews = new LongBuffer[Long.BYTES];
+  private LongBuffer[] curLongBufferViews;
 
   protected boolean isClone = false;
   
@@ -72,11 +72,7 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
 
   protected void setCurBuf(ByteBuffer curBuf) {
     this.curBuf = curBuf;
-    Arrays.fill(curLongBufferViews, EMPTY);
-    for (int i = 0; i < Math.min(Long.BYTES, curBuf.limit()); ++i) {
-      // Compute a view for each possible alignment in the native byte order
-      curLongBufferViews[i] = curBuf.duplicate().position(i).order(ByteOrder.nativeOrder()).asLongBuffer();
-    }
+    curLongBufferViews = null;
   }
 
   @Override
@@ -124,6 +120,15 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
 
   @Override
   public void readLongs(ByteOrder byteOrder, long[] dst, int offset, int length) throws IOException {
+    if (curLongBufferViews == null) {
+      // Lazy init to not make pay for memory and initialization cost if you don't need to read arrays of longs
+      curLongBufferViews = new LongBuffer[Long.BYTES];
+      Arrays.fill(curLongBufferViews, EMPTY);
+      for (int i = 0; i < Math.min(Long.BYTES, curBuf.limit()); ++i) {
+        // Compute a view for each possible alignment in the native byte order
+        curLongBufferViews[i] = curBuf.duplicate().position(i).order(ByteOrder.nativeOrder()).asLongBuffer();
+      }
+    }
     try {
       final int position = curBuf.position();
       guard.getLongs(curLongBufferViews[position & 0x07].position(position >>> 3), dst, offset, length);
@@ -374,7 +379,7 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
     buffers = null;
     curBuf = null;
     curBufIndex = 0;
-    Arrays.fill(curLongBufferViews, null);
+    curLongBufferViews = null;
   }
   
   /** Optimization of ByteBufferIndexInput for when there is only one buffer */
