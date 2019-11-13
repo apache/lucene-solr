@@ -42,7 +42,7 @@ public class Completion50PostingsFormat extends CompletionPostingsFormat {
    * if the completion FST should be loaded on or off heap.
    */
   public Completion50PostingsFormat(FSTLoadMode fstLoadMode) {
-    super(fstLoadMode);
+    super("completion", fstLoadMode);
   }
 
   @Override
