@@ -23,6 +23,9 @@ import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.packed.PackedInts;
 
+/**
+ * Utility class to encode sequences of 128 small positive integers.
+ */
 final class PForUtil {
 
   private static boolean allEqual(long[] l) {
@@ -41,7 +44,7 @@ final class PForUtil {
   }
 
   /**
-   * Encode 128 8-bits integers from {@code data} into {@code out}.
+   * Encode 128 integers from {@code longs} into {@code out}.
    */
   void encode(long[] longs, DataOutput out) throws IOException {
     // At most 3 exceptions
@@ -50,7 +53,7 @@ final class PForUtil {
     for (int i = 0; i < ForUtil.BLOCK_SIZE; ++i) {
       if (longs[i] > top4[0]) {
         top4[0] = longs[i];
-        Arrays.sort(top4);
+        Arrays.sort(top4); // For only 4 entries we just sort on every iteration instead of maintaining a PQ
       }
     }
 

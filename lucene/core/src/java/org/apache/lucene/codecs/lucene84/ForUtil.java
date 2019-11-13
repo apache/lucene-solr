@@ -319,8 +319,6 @@ final class ForUtil {
       }
       longs[longsIdx] = l;
     }
-
-    expand32(longs);
   }
 
   /**

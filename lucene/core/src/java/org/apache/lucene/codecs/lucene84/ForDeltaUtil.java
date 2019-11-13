@@ -23,6 +23,9 @@ import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.packed.PackedInts;
 
+/**
+ * Utility class to encode/decode increasing sequences of 128 integers.
+ */
 public class ForDeltaUtil {
 
   private final ForUtil forUtil;
@@ -36,14 +39,14 @@ public class ForDeltaUtil {
    * The provided {@code longs} are expected to be deltas between consecutive values.
    */
   void encodeDeltas(long[] longs, DataOutput out) throws IOException {
-    long or = 0;
-    for (long l : longs) {
-      or |= l;
-    }
-    if (or == 1) { // happens with very dense postings
-      assert Arrays.stream(longs).allMatch(l -> l == 1);
+    if (Arrays.stream(longs).allMatch(l -> l == 1)) { // happens with very dense postings
       out.writeByte((byte) 0);
     } else {
+      long or = 0;
+      for (long l : longs) {
+        or |= l;
+      }
+      assert or != 0;
       final int bitsPerValue = PackedInts.bitsRequired(or);
       out.writeByte((byte) bitsPerValue);
       forUtil.encode(longs, bitsPerValue, out);
@@ -56,7 +59,7 @@ public class ForDeltaUtil {
   void decodeAndPrefixSum(DataInput in, long base, long[] longs) throws IOException {
     final int bitsPerValue = Byte.toUnsignedInt(in.readByte());
     if (bitsPerValue == 0) {
-      // Note: I did not spend time optimizing this branch
+      // Note: can this special-case be optimized?
       for (int i = 0; i < ForUtil.BLOCK_SIZE; ++i) {
         longs[i] = base + 1L + i;
       }
