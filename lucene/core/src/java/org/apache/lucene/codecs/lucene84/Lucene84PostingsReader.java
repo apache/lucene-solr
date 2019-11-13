@@ -43,6 +43,7 @@ import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SlowImpactsEnum;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
@@ -158,13 +159,13 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
     }
   }
 
-  static int findFirstGreater(long[] buffer, int target, int from, int to) {
-    for (int i = from; i < to; ++i) {
+  static int findFirstGreater(long[] buffer, int target, int from) {
+    for (int i = from; i < BLOCK_SIZE; ++i) {
       if (buffer[i] >= target) {
         return i;
       }
     }
-    return to;
+    return BLOCK_SIZE;
   }
 
   @Override
@@ -422,10 +423,12 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
       } else if (docFreq == 1) {
         accum = docBuffer[0] = singletonDocID;
         freqBuffer[0] = totalTermFreq;
+        Arrays.fill(docBuffer, 1, BLOCK_SIZE, DocIdSetIterator.NO_MORE_DOCS);
       } else {
         // Read vInts:
         readVIntBlock(docIn, docBuffer, freqBuffer, left, indexHasFreq);
         prefixSum(docBuffer, left, accum);
+        Arrays.fill(docBuffer, left, BLOCK_SIZE, DocIdSetIterator.NO_MORE_DOCS);
         accum = docBuffer[left - 1];
       }
       docBufferUpto = 0;
@@ -711,9 +714,11 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
       } else if (docFreq == 1) {
         accum = docBuffer[0] = singletonDocID;
         freqBuffer[0] = totalTermFreq;
+        Arrays.fill(docBuffer, 1, BLOCK_SIZE, DocIdSetIterator.NO_MORE_DOCS);
       } else {
         readVIntBlock(docIn, docBuffer, freqBuffer, left, true);
         prefixSum(docBuffer, left, accum);
+        Arrays.fill(docBuffer, left, BLOCK_SIZE, DocIdSetIterator.NO_MORE_DOCS);
         accum = docBuffer[left - 1];
       }
       docBufferUpto = 0;
@@ -1016,7 +1021,6 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
     private final long[] freqBuffer = new long[BLOCK_SIZE];
 
     private int docBufferUpto;
-    private int docBufferLen;
 
     private final Lucene84ScoreSkipReader skipper;
 
@@ -1083,12 +1087,11 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
         if (indexHasFreqs) {
           pforUtil.decode(docIn, freqBuffer);
         }
-        docBufferLen = BLOCK_SIZE;
       } else {
         readVIntBlock(docIn, docBuffer, freqBuffer, left, indexHasFreqs);
         prefixSum(docBuffer, left, accum);
+        Arrays.fill(docBuffer, left, BLOCK_SIZE, DocIdSetIterator.NO_MORE_DOCS);
         accum = docBuffer[left - 1];
-        docBufferLen = left;
       }
       docBufferUpto = 0;
     }
@@ -1144,16 +1147,11 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
         refillDocs();
       }
 
-      int next = findFirstGreater(docBuffer, target, docBufferUpto, docBufferLen);
-      if (next == docBufferLen) {
-        docUpto = docFreq;
-        this.doc = NO_MORE_DOCS;
-      } else {
-        this.doc = (int) docBuffer[next];
-        this.freq = (int) freqBuffer[next];
-        docUpto += next - docBufferUpto + 1;
-        docBufferUpto = next + 1;
-      }
+      int next = findFirstGreater(docBuffer, target, docBufferUpto);
+      this.doc = (int) docBuffer[next];
+      this.freq = (int) freqBuffer[next];
+      docUpto += next - docBufferUpto + 1;
+      docBufferUpto = next + 1;
       return doc;
     }
 
@@ -1196,7 +1194,6 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
 
     private int docBufferUpto;
     private int posBufferUpto;
-    private int docBufferLen;
 
     private final Lucene84ScoreSkipReader skipper;
 
@@ -1296,12 +1293,11 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
         forDeltaUtil.decodeAndPrefixSum(docIn, accum, docBuffer);
         accum = docBuffer[BLOCK_SIZE - 1];
         pforUtil.decode(docIn, freqBuffer);
-        docBufferLen = BLOCK_SIZE;
       } else {
         readVIntBlock(docIn, docBuffer, freqBuffer, left, true);
         prefixSum(docBuffer, left, accum);
+        Arrays.fill(docBuffer, left, BLOCK_SIZE, DocIdSetIterator.NO_MORE_DOCS);
         accum = docBuffer[left - 1];
-        docBufferLen = left;
       }
       docBufferUpto = 0;
     }
@@ -1388,19 +1384,14 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
         refillDocs();
       }
 
-      int next = findFirstGreater(docBuffer, target, docBufferUpto, docBufferLen);
-      if (next == docBufferLen) {
-        docUpto = docFreq;
-        this.doc = NO_MORE_DOCS;
-      } else {
-        this.doc = (int) docBuffer[next];
-        this.freq = (int) freqBuffer[next];
-        for (int i = docBufferUpto; i <= next; ++i) {
-          posPendingCount += freqBuffer[i];
-        }
-        docUpto += next - docBufferUpto + 1;
-        docBufferUpto = next + 1;
+      int next = findFirstGreater(docBuffer, target, docBufferUpto);
+      this.doc = (int) docBuffer[next];
+      this.freq = (int) freqBuffer[next];
+      for (int i = docBufferUpto; i <= next; ++i) {
+        posPendingCount += freqBuffer[i];
       }
+      docUpto += next - docBufferUpto + 1;
+      docBufferUpto = next + 1;
       position = 0;
       return doc;
     }
@@ -1688,6 +1679,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
       } else {
         readVIntBlock(docIn, docBuffer, freqBuffer, left, indexHasFreq);
         prefixSum(docBuffer, left, accum);
+        Arrays.fill(docBuffer, left, BLOCK_SIZE, DocIdSetIterator.NO_MORE_DOCS);
         accum = docBuffer[left - 1];
       }
       docBufferUpto = 0;
