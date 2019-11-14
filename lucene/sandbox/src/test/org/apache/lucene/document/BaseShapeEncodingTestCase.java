@@ -593,8 +593,8 @@ public abstract class BaseShapeEncodingTestCase extends LuceneTestCase {
       if ((bits & 1 << 6) == 1 << 6 == true && (bits & 1 << 7) == 1 << 7 == false) {
         int aY = NumericUtils.sortableBytesToInt(bytes, 0 * ShapeField.BYTES);
         int aX = NumericUtils.sortableBytesToInt(bytes, 1 * ShapeField.BYTES);
-        NumericUtils.intToSortableBytes(aY, bytes, 5 * ShapeField.BYTES);
-        NumericUtils.intToSortableBytes(aX, bytes, 6 * ShapeField.BYTES);
+        NumericUtils.intToSortableBytes(aY, bytes, 4 * ShapeField.BYTES);
+        NumericUtils.intToSortableBytes(aX, bytes, 5 * ShapeField.BYTES);
       }
       bits = bits & ~(1 << 6);
       bits = bits & ~(1 << 7);
