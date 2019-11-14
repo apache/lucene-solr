@@ -145,13 +145,16 @@ public final class ShapeField {
 
   public static void encodePoint(byte[] bytes, int aY, int aX) {
     int bits =  MINY_MINX_MAXY_MAXX_Y_X;
-    bits |= 1 << 6; // type point
     NumericUtils.intToSortableBytes(aY, bytes, 0);
     NumericUtils.intToSortableBytes(aX, bytes, BYTES);
     NumericUtils.intToSortableBytes(aY, bytes, 2 * BYTES);
     NumericUtils.intToSortableBytes(aX, bytes, 3 * BYTES);
-    // no need to add point in data dimension, this should help compressing
-    // this dimension for point only leafs.
+    NumericUtils.intToSortableBytes(aY, bytes, 4 * BYTES);
+    NumericUtils.intToSortableBytes(aX, bytes, 5 * BYTES);
+    bits |= 1 << 3;
+    bits |= 1 << 4;
+    bits |= 1 << 5;
+    bits |= 1 << 6; // type point
     NumericUtils.intToSortableBytes(bits, bytes, 6 * BYTES);
   }
 
