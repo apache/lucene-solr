@@ -17,7 +17,6 @@
 package org.apache.solr.util;
 
 import static org.apache.solr.packagemanager.PackageUtils.printGreen;
-import static org.apache.solr.packagemanager.PackageUtils.printRed;
 import static org.apache.solr.packagemanager.PackageUtils.print;
 
 import java.lang.invoke.MethodHandles;
