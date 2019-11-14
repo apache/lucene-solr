@@ -347,11 +347,14 @@ final class IndexedDISI extends DocIdSetIterator {
   }
 
   int block = -1;
+  long blockStart;
   long blockEnd;
   long denseBitmapOffset = -1; // Only used for DENSE blocks
+  int currentBlockIndex = -1;
   int nextBlockIndex = -1;
   Method method;
 
+  // This position of the iterator; the last extant doc returned, or may point to a non-existent target after advanceExact
   int doc = -1;
   int index = -1;
 
@@ -395,6 +398,8 @@ final class IndexedDISI extends DocIdSetIterator {
     final int targetBlock = target & 0xFFFF0000;
     if (block < targetBlock) {
       advanceBlock(targetBlock);
+    } else if (block != targetBlock) {
+      rewindBlock(targetBlock);
     }
     boolean found = block == targetBlock && method.advanceExactWithinBlock(this, target);
     this.doc = target;
@@ -405,27 +410,48 @@ final class IndexedDISI extends DocIdSetIterator {
     final int blockIndex = targetBlock >> 16;
     // If the destination block is 2 blocks or more ahead, we use the jump-table.
     if (jumpTable != null && blockIndex >= (block >> 16)+2) {
-      // If the jumpTableEntryCount is exceeded, there are no further bits. Last entry is always NO_MORE_DOCS
-      final int inRangeBlockIndex = blockIndex < jumpTableEntryCount ? blockIndex : jumpTableEntryCount-1;
-      final int index = jumpTable.readInt(inRangeBlockIndex*Integer.BYTES*2);
-      final int offset = jumpTable.readInt(inRangeBlockIndex*Integer.BYTES*2+Integer.BYTES);
-      this.nextBlockIndex = index-1; // -1 to compensate for the always-added 1 in readBlockHeader
-      slice.seek(offset);
-      readBlockHeader();
-      return;
+      jumpToBlock(blockIndex);
+    } else {
+      // Fallback to iteration of blocks
+      do {
+        slice.seek(blockEnd);
+        readBlockHeader();
+      } while (block < targetBlock);
     }
+  }
 
-    // Fallback to iteration of blocks
-    do {
-      slice.seek(blockEnd);
+  private void jumpToBlock(int blockIndex) throws IOException {
+    // If the jumpTableEntryCount is exceeded, there are no further bits. Last entry is always NO_MORE_DOCS
+    final int inRangeBlockIndex = blockIndex < jumpTableEntryCount ? blockIndex : jumpTableEntryCount - 1;
+    final int index = jumpTable.readInt(inRangeBlockIndex * Integer.BYTES * 2);
+    final int offset = jumpTable.readInt(inRangeBlockIndex * Integer.BYTES * 2 + Integer.BYTES);
+    this.nextBlockIndex = index - 1; // -1 to compensate for the always-added 1 in readBlockHeader
+    slice.seek(offset);
+    readBlockHeader();
+  }
+
+  private void rewindBlock(int targetBlock) throws IOException {
+    final int blockIndex = targetBlock >> 16;
+    if (jumpTable != null) {
+      jumpToBlock(blockIndex);
+    } else {
+      // Fallback to iteration of blocks
+      slice.seek(0);
+      nextBlockIndex = -1;
+      doc = -1;
       readBlockHeader();
-    } while (block < targetBlock);
+      while (block < targetBlock) {
+        slice.seek(blockEnd);
+        readBlockHeader();
+      }
+    }
   }
 
   private void readBlockHeader() throws IOException {
     block = Short.toUnsignedInt(slice.readShort()) << 16;
     assert block >= 0;
     final int numValues = 1 + Short.toUnsignedInt(slice.readShort());
+    currentBlockIndex = nextBlockIndex;
     index = nextBlockIndex;
     nextBlockIndex = index + numValues;
     if (numValues <= MAX_ARRAY_LENGTH) {
@@ -452,6 +478,7 @@ final class IndexedDISI extends DocIdSetIterator {
       numberOfOnes = index + 1;
       denseOrigoIndex = numberOfOnes;
     }
+    blockStart = slice.getFilePointer();
   }
 
   @Override
@@ -459,6 +486,8 @@ final class IndexedDISI extends DocIdSetIterator {
     return advance(doc + 1);
   }
 
+  /** @return the ordinal of the current doc, i.e. the number of existing docs < doc
+   */
   public int index() {
     return index;
   }
@@ -469,6 +498,7 @@ final class IndexedDISI extends DocIdSetIterator {
   }
 
   enum Method {
+
     SPARSE {
       @Override
       boolean advanceWithinBlock(IndexedDISI disi, int target) throws IOException {
@@ -488,10 +518,13 @@ final class IndexedDISI extends DocIdSetIterator {
       @Override
       boolean advanceExactWithinBlock(IndexedDISI disi, int target) throws IOException {
         final int targetInBlock = target & 0xFFFF;
-        // TODO: binary search
         if (target == disi.doc) {
           return disi.exists;
         }
+        if (target < disi.doc) {
+          rewindCurrentBlock(disi);
+        }
+        // TODO: binary search
         for (; disi.index < disi.nextBlockIndex;) {
           int doc = Short.toUnsignedInt(disi.slice.readShort());
           disi.index++;
@@ -508,7 +541,14 @@ final class IndexedDISI extends DocIdSetIterator {
         disi.exists = false;
         return false;
       }
+
+      @Override
+      void rewindCurrentBlock(IndexedDISI disi) throws IOException {
+        disi.slice.seek(disi.blockStart);
+        disi.index = disi.currentBlockIndex;
+      }
     },
+
     DENSE {
       @Override
       boolean advanceWithinBlock(IndexedDISI disi, int target) throws IOException {
@@ -556,6 +596,10 @@ final class IndexedDISI extends DocIdSetIterator {
         final int targetInBlock = target & 0xFFFF;
         final int targetWordIndex = targetInBlock >>> 6;
 
+        if (target < disi.doc) {
+          rewindCurrentBlock(disi);
+        }
+
         // If possible, skip ahead using the rank cache
         // If the distance between the current position and the target is < rank-longs
         // there is no sense in using rank
@@ -574,8 +618,15 @@ final class IndexedDISI extends DocIdSetIterator {
         return (leftBits & 1L) != 0;
       }
 
-
+      @Override
+      void rewindCurrentBlock(IndexedDISI disi) throws IOException {
+        disi.slice.seek(disi.blockStart);
+        disi.index = disi.denseOrigoIndex - 1;
+        disi.wordIndex = -1;
+        disi.numberOfOnes = disi.denseOrigoIndex;
+      }
     },
+
     ALL {
       @Override
       boolean advanceWithinBlock(IndexedDISI disi, int target) {
@@ -583,10 +634,17 @@ final class IndexedDISI extends DocIdSetIterator {
         disi.index = target - disi.gap;
         return true;
       }
+
       @Override
       boolean advanceExactWithinBlock(IndexedDISI disi, int target) {
         disi.index = target - disi.gap;
         return true;
+      }
+
+      @Override
+      void rewindCurrentBlock(IndexedDISI disi) {
+        // This should never be called; ALL blocks have no state to rewind
+        assert(false);
       }
     };
 
@@ -597,6 +655,10 @@ final class IndexedDISI extends DocIdSetIterator {
     /** Advance the iterator exactly to the position corresponding to the given {@code target}
      * and return whether this document exists. */
     abstract boolean advanceExactWithinBlock(IndexedDISI disi, int target) throws IOException;
+
+    /** Returns the iterator to the state it was in just after reading the block header of the current block.
+     */
+    abstract void rewindCurrentBlock(IndexedDISI disi) throws IOException;
   }
 
   /**

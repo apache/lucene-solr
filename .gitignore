@@ -7,7 +7,7 @@ build
 dist
 lib
 test-lib
-/*~
+*~
 /velocity.log
 /build.properties
 /.idea
@@ -29,4 +29,9 @@ pom.xml
 __pycache__
 /dev-tools/scripts/scripts.iml
 .DS_Store
-
+/.gradle/
+/_lucene-solr.iml
+/buildSrc/
+/dev-tools/dev-tools.iml
+/user.gradle
+/user.properties

@@ -20,7 +20,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
@@ -30,6 +29,8 @@ import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+
+import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 
 // Copied from the lucene70 package for separation of codec-code
 public class TestIndexedDISI extends LuceneTestCase {
@@ -466,6 +467,15 @@ public class TestIndexedDISI extends LuceneTestCase {
       }
     }
 
+    for (int step : new int[] {10, 100, 1000, 10000, 100000}) {
+      try (IndexInput in = dir.openInput("foo", IOContext.DEFAULT)) {
+        IndexedDISI disi = new IndexedDISI(in, 0L, length, jumpTableentryCount, denseRankPower, cardinality);
+        BitSetIterator disi2 = new BitSetIterator(set, cardinality);
+        int disi2length = set.length();
+        assertAdvanceExactRandomAccess(disi, disi2, disi2length, step);
+      }
+    }
+
     dir.deleteFile("foo");
   }
 
@@ -493,13 +503,64 @@ public class TestIndexedDISI extends LuceneTestCase {
     }
   }
 
+  private void assertAdvanceExactRandomAccess(IndexedDISI disi, BitSetIterator disi2, int disi2length, int step)
+      throws IOException {
+    int index = -1;
+    int numIter = Math.min(disi2length * 2 / step, 10000);
+    int[] targets = new int[numIter];
+    int[] indexes = new int[numIter];
+    boolean[] exists = new boolean[numIter];
+    int[] docs = new int[numIter];
+    int count = 0;
+    // Do one pass through disi2, gathering conditions to assert: target, exists, and index
+    for (int target = 0; count < numIter && target < disi2length; count++) {
+      target += TestUtil.nextInt(random(), 0, step);
+      int doc = disi2.docID();
+      while (doc < target) {
+        doc = disi2.nextDoc();
+        index++;
+        //System.out.printf("generating test case doc=%d index=%d\n", doc, index);
+      }
+      targets[count] = target;
+      docs[count] = doc;
+      indexes[count] = index;
+      exists[count] = doc == target;
+    }
+    // Now assert correct values when jumping around randomly
+    for (int i = 0; i < count; i++) {
+      int j = random().nextInt(count);
+      if (docs[j] == NO_MORE_DOCS) {
+        // don't trash the iterator
+        continue;
+      }
+      assertSingleRandomAccess(disi, targets[j], docs[j], exists[j], indexes[j]);
+    }
+    // finally, check the iterator's end state
+    if (count > 0) {
+      int last = count - 1;
+      assertSingleRandomAccess(disi, targets[last], docs[last], exists[last], indexes[last]);
+    }
+  }
+
+  private  void assertSingleRandomAccess(IndexedDISI disi, int target, int doc, boolean exists, int index) throws IOException {
+    boolean exist = disi.advanceExact(target);
+    assertEquals(exists, exist);
+    if (exist) {
+      assertEquals(index, disi.index());
+    } else if (random().nextBoolean()) {
+      assertEquals("For target=" + target, doc, disi.nextDoc());
+      // This is a bit strange when doc == NO_MORE_DOCS as the index overcounts in the disi2 while-loop
+      assertEquals(index, disi.index());
+    }
+  }
+
   private void assertSingleStepEquality(IndexedDISI disi, BitSetIterator disi2) throws IOException {
     int i = 0;
-    for (int doc = disi2.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = disi2.nextDoc()) {
+    for (int doc = disi2.nextDoc(); doc != NO_MORE_DOCS; doc = disi2.nextDoc()) {
       assertEquals(doc, disi.nextDoc());
       assertEquals(i++, disi.index());
     }
-    assertEquals(DocIdSetIterator.NO_MORE_DOCS, disi.nextDoc());
+    assertEquals(NO_MORE_DOCS, disi.nextDoc());
   }
 
   private void assertAdvanceEquality(IndexedDISI disi, BitSetIterator disi2, int step) throws IOException {
@@ -512,7 +573,7 @@ public class TestIndexedDISI extends LuceneTestCase {
         index++;
       } while (doc < target);
       assertEquals(doc, disi.advance(target));
-      if (doc == DocIdSetIterator.NO_MORE_DOCS) {
+      if (doc == NO_MORE_DOCS) {
         break;
       }
       assertEquals("Expected equality using step " + step + " at docID " + doc, index, disi.index());
