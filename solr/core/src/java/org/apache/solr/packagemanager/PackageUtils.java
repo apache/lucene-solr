@@ -210,6 +210,10 @@ public class PackageUtils {
     PackageUtils.print(PackageUtils.RED, message);
   }
 
+  public static void print(Object message) {
+    print(null, message);
+  }
+
   @SuppressForbidden(reason = "Need to use System.out.println() instead of log4j/slf4j for cleaner output")
   public static void print(String color, Object message) {
     String RESET = "\u001B[0m";

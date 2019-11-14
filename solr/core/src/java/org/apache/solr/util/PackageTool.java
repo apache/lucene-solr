@@ -153,30 +153,34 @@ public class PackageTool extends SolrCLI.ToolBase {
               }
               case "help":
               case "usage":
+                print("Package Manager\n---------------");
                 printGreen("./solr package add-repo <repository-name> <repository-url>");
-                print(PackageUtils.YELLOW, "Add a repository to Solr.");
-                printGreen("");
+                print("Add a repository to Solr.");
+                print("");
                 printGreen("./solr package install <package-name>[:<version>] ");
-                print(PackageUtils.YELLOW, "Install a package into Solr. This copies over the artifacts from the repository into Solr's internal package store and sets up classloader for this package to be used.");
-                printGreen("");
+                print("Install a package into Solr. This copies over the artifacts from the repository into Solr's internal package store and sets up classloader for this package to be used.");
+                print("");
                 printGreen("./solr package deploy <package-name>[:<version>] [-y] [--update] -collections <comma-separated-collections> [-p <param1>=<val1> -p <param2>=<val2> ...] ");
-                print(PackageUtils.YELLOW, "Bootstraps a previously installed package into the specified collections. It the package accepts parameters for its setup commands, they can be specified (as per package documentation).");
-                printGreen("");
+                print("Bootstraps a previously installed package into the specified collections. It the package accepts parameters for its setup commands, they can be specified (as per package documentation).");
+                print("");
                 printGreen("./solr package list-installed");
-                print(PackageUtils.YELLOW, "Print a list of packages installed in Solr.");
-                printGreen("");
+                print("Print a list of packages installed in Solr.");
+                print("");
                 printGreen("./solr package list-available");
-                print(PackageUtils.YELLOW, "Print a list of packages available in the repositories.");
-                printGreen("");
+                print("Print a list of packages available in the repositories.");
+                print("");
                 printGreen("./solr package list-deployed -c <collection>");
-                print(PackageUtils.YELLOW, "Print a list of packages deployed on a given collection.");
-                printGreen("");
+                print("Print a list of packages deployed on a given collection.");
+                print("");
                 printGreen("./solr package list-deployed <package-name>");
-                print(PackageUtils.YELLOW, "Print a list of collections on which a given package has been deployed.");
-                printGreen("");
+                print("Print a list of collections on which a given package has been deployed.");
+                print("");
                 printGreen("./solr package undeploy <package-name> -collections <comma-separated-collections>");
-                print(PackageUtils.YELLOW, "Undeploys a package from specified collection(s)");
-                printRed("\n\nNote: Please add '-solrUrl http://host:port' parameter if needed (usually on Windows).");
+                print("Undeploys a package from specified collection(s)");
+                print("\n");
+                print("Note: (a) Please add '-solrUrl http://host:port' parameter if needed (usually on Windows).");
+                print("      (b) Please make sure that all Solr nodes are started with '-Denable.packages=true' parameter.");
+                print("\n");
                 break;
               default:
                 throw new RuntimeException("Unrecognized command: "+cmd);
