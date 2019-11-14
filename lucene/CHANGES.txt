@@ -67,16 +67,23 @@ Other
 ======================= Lucene 8.4.0 =======================
 
 API Changes
----------------------
-(No changes)
+
+* LUCENE-9029: Deprecate SloppyMath toRadians/toDegrees in favor of Java Math.
+  (Jack Conradson via Adrien Grand)
 
 New Features
 ---------------------
 (No changes)
 
 Improvements
----------------------
-(No changes)
+
+* LUCENE-9002: Skip costly caching clause in LRUQueryCache if it makes the query
+  many times slower. (Guoqiang Jiang)
+
+* LUCENE-9006: WordDelimiterGraphFilter's catenateAll token is now ordered before any token parts, like WDF did.
+  (David Smiley)
+
+* LUCENE-9028: introducing Intervals.multiterm() (Mikhail Khludnev)
 
 Optimizations
 
@@ -89,9 +96,25 @@ Optimizations
   documents, since computing the number of live documents is an expensive
   operation. (Adrien Grand)
 
+* LUCENE-8992: TopFieldCollector and TopScoreDocCollector can now share minimum scores across leaves
+  concurrently. (Adrien Grand, Atri Sharma, Jim Ferenczi)
+
+* LUCENE-8932: BKDReader's index is now stored off-heap when the IndexInput is
+  an instance of ByteBufferIndexInput. (Jack Conradson via Adrien Grand)
+
+* LUCENE-9024: IntroSelector now falls back to the median of medians algorithm
+  instead of sorting when the maximum recursion level is exceeded, providing
+  better worst-case runtime. (Paul Sanwald via Adrien Grand)
+
+* LUCENE-8920: The denser arcs of FST now index labels with a bitset in order
+  to provide near constant time access. (Bruno Roustant, Mike Sokolov via Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-9001: Fix race condition in SetOnce. (Przemko Robakowski)
+
+* LUCENE-9030: Fix WordnetSynonymParser behaviour so it behaves similar to
+  SolrSynonymParser. (Christoph Buescher via Alan Woodward)
 
 Other
 
@@ -105,6 +128,8 @@ Other
 Build
 
 * Upgrade forbiddenapis to version 2.7; upgrade Groovy to 2.4.17.  (Uwe Schindler)
+
+* LUCENE-9041: Upgrade ecj to 3.19.0 to fix sporadic precommit javadoc issues (Kevin Risden)
 
 ======================= Lucene 8.3.0 =======================
 
@@ -217,6 +242,12 @@ Bug Fixes
 * LUCENE-8755: spatial-extras quad and packed quad prefix trees could throw a
   NullPointerException for certain cell edge coordinates (Chongchen Chen, David Smiley)
 
+* LUCENE-9005: BooleanQuery.visit() would pull subVisitors from its parent visitor, rather
+  than from a visitor for its own specific query.  This could cause problems when BQ was
+  nested under another BQ. Instead, we now pull a MUST subvisitor, pass it to any MUST
+  subclauses, and then pull SHOULD, MUST_NOT and FILTER visitors from it rather than from
+  the parent.  (Alan Woodward)
+
 Other
 
 * LUCENE-8778 LUCENE-8911 LUCENE-8957: Define analyzer SPI names as static final fields and document the names in Javadocs.
@@ -234,6 +265,7 @@ Other
 * LUCENE-8999: LuceneTestCase.expectThrows now propogates assert/assumption failures up to the test
   w/o wrapping in a new assertion failure unless the caller has explicitly expected them (hossman)
 
+* LUCENE-8062: GlobalOrdinalsWithScoreQuery is no longer eligible for query caching. (Jim Ferenczi)
 
 ======================= Lucene 8.2.0 =======================
 

@@ -841,6 +841,11 @@
    <dynamicField name="*_ds_ni_p"   type="pdouble"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
    <dynamicField name="*_sortable"  type="sortable_text" indexed="true" multiValued="false" stored="true" />
 
+  <dynamicField name="*_date_p"      type="pdate"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
+  <dynamicField name="*_dates_p"     type="pdate"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
+  <dynamicField name="*_date_ni_p"   type="pdate"    indexed="false"  stored="true" docValues="true" multiValued="false"/>
+  <dynamicField name="*_dates_ni_p"  type="pdate"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
+
   <copyField source="single_i_dvn" dest="copy_single_i_dvn"/>
   <copyField source="single_d_dvn" dest="copy_single_d_dvn"/>
   <copyField source="single_s_dvn" dest="copy_single_s_dvn"/>

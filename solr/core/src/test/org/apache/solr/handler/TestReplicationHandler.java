@@ -49,13 +49,16 @@ import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocument;
@@ -103,7 +106,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       + File.separator;
 
   JettySolrRunner masterJetty, slaveJetty, repeaterJetty;
-  SolrClient masterClient, slaveClient, repeaterClient;
+  HttpSolrClient masterClient, slaveClient, repeaterClient;
   SolrInstance master = null, slave = null, repeater = null;
 
   static String context = "/solr";
@@ -178,7 +181,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     return jetty;
   }
 
-  static SolrClient createNewSolrClient(int port) {
+  static HttpSolrClient createNewSolrClient(int port) {
     try {
       // setup the client...
       final String baseUrl = buildUrl(port) + "/" + DEFAULT_TEST_CORENAME;
@@ -1572,6 +1575,59 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, thrown.code());
     assertThat(thrown.getMessage(), containsString("Missing required parameter: name"));
   }
+
+  @Test
+  public void testEmptyBackups() throws Exception {
+    final File backupDir = createTempDir().toFile();
+    final CheckBackupStatus backupStatus = new CheckBackupStatus(masterClient, /* Silly API */ ".");
+    
+    { // initial request w/o any committed docs
+      final GenericSolrRequest req = new GenericSolrRequest
+        (SolrRequest.METHOD.GET, "/replication",
+         params("command", "backup",
+                "location", backupDir.getAbsolutePath(),
+                "name", "empty_backup1"));
+      final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      final SimpleSolrResponse rsp = req.process(masterClient);
+      
+      while (!timeout.hasTimedOut()) {
+        backupStatus.fetchStatus();
+        if (backupStatus.success) {
+          break;
+        }
+        timeout.sleep(50);
+      }
+      assertTrue(backupStatus.success);
+    
+      assertTrue("snapshot.empty_backup1 doesn't exist in expected location",
+                 new File(backupDir, "snapshot.empty_backup1").exists());
+    }
+    
+    index(masterClient, "id", "1", "name", "foo");
+    
+    { // second backup w/uncommited doc
+      final GenericSolrRequest req = new GenericSolrRequest
+        (SolrRequest.METHOD.GET, "/replication",
+         params("command", "backup",
+                "location", backupDir.getAbsolutePath(),
+                "name", "empty_backup2"));
+      final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      final SimpleSolrResponse rsp = req.process(masterClient);
+      
+      while (!timeout.hasTimedOut()) {
+        backupStatus.fetchStatus();
+        if (backupStatus.success) {
+          break;
+        }
+        timeout.sleep(50);
+      }
+      assertTrue(backupStatus.success);
+    
+      assertTrue("snapshot.empty_backup2 doesn't exist in expected location",
+                 new File(backupDir, "snapshot.empty_backup2").exists());
+    }
+  }
+  
   
   private class AddExtraDocs implements Runnable {
 

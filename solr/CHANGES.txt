@@ -66,6 +66,12 @@ Upgrade Notes
 
 * SOLR-13593 SOLR-13690 SOLR-13691: Allow to look up analyzer components by their SPI names in field type configuration. (Tomoko Uchida)
 
+* SOLR-13854, SOLR-13858: SolrMetricProducer / SolrInfoBean APIs have changed and third-party components that implement these APIs need to be updated. (ab)
+
+* SOLR-13783: In situations where a NamedList must be output as plain text, commas between key-value pairs will now be
+  followed by a space (e.g. {shape=square, color=yellow} rather than {shape=square,color=yellow}) for consistency with
+  other java.util.Map implementations based on AbstractMap (Chris Hennick).
+
 Improvements
 ----------------------
 
@@ -94,16 +100,33 @@ Jetty 9.4.19.v20190610
 
 Upgrade Notes
 ---------------------
-(No changes)
+
+* org.apache.solr.search.grouping.distributed.command.QueryCommand.Builder has new method 'setMainQuery' which is used
+  to set top-level query. build() would fail if called without setting mainQuery
 
 New Features
 ---------------------
-(No changes)
+* SOLR-13821: A Package store to store and load package artifacts (noble, Ishan Chattopadhyaya)
+
+* SOLR-13822: A Package management system with the following features. A packages.json in ZK to store
+  the configuration, APIs to read/edit them and isolated classloaders to load the classes from
+  hose packages if the 'class' attribute is prefixed with `<package-name>:` (noble, Ishan Chattopadhyaya)
+
+* SOLR-10786: Add DBSCAN clustering Streaming Evaluator (Joel Bernstein)
 
 Improvements
 ---------------------
 
-*SOLR-13731: javabin must support a 1:1 mapping of the JSON update format (noble)
+* SOLR-13731: 'javabin' must support a 1:1 mapping of the JSON update format (noble)
+
+* SOLR-13831: Support defining arbitrary autoscaling simulation scenarios. (ab)
+
+* SOLR-13865: Move replica routing code to SolrJ. (Houston Putman via Tomas Fernandez-Lobbe)
+
+* SOLR-13844: Remove replica recovery terms with the replica term (Houston Putman via Cao Manh Dat)
+
+* SOLR-13898: Use the new SolrCache.computeIfAbsent instead of non-atomic get / put in order to
+  improve cache hit ratios. (ab, Ben Manes)
 
 
 Optimizations
@@ -112,11 +135,45 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+
+* SOLR-13827: Fail on unknown operation in Request Parameters API (Munendra S N, noble)
+
+* SOLR-13403: Fix NPE in TermsComponent for DatePointField (yonik, Munendra S N)
+
+* SOLR-9802: Fix grouping failure for date field in solrcloud (Erick Erickson, Munendra S N, Vitaly Lavrov)
+
+* SOLR-12393: Compute score if requested even when expanded docs not sorted by score in ExpandComponent.
+  (David Smiley, Munendra S N)
+
+* SOLR-13877: Fix NPE in expand component when matched docs have fewer unique values. (Munendra S N)
+
+* SOLR-13823: Fix ClassCastEx when score is requested with group.query. This also fixes score not being generated
+  for distributed group.query case. (Uwe Jäger, Munendra S N)
+
+* SOLR-13207: In dismax and edismax "minimum should match" queries, the < operator not followed by a number will now return
+  an HTTP 400 error rather than 500, and the error message will explain that < must be followed by a number. (Chris Hennick)
+
+* SOLR-13762: Fix BinaryField support for non-binary wt's (Thomas Woeckinger via Jason Gerlowski)
+
+* SOLR-13882: Collections API COLSTATUS does not check live_nodes when reporting replica's status.
+  (Erick Erickson, Andrzej Białecki)
+
+* SOLR-13872: Fixed Backup failures - typically manifesting as NoSuchFileException - due to race conditions
+  in saving/reserving commit points (hossman)
+
+* SOLR-13921: Processing UpdateRequest with delegation token throws NullPointerException (Istvan Farkas via Kevin Risden)
 
 Other Changes
 ---------------------
-(No changes)
+
+* SOLR-12769: Fix incorrect documentation for 'delete' op in Request parameters API (Alexandre Rafalovitch, Munendra S N)
+
+* SOLR-13841: Provide mappings for jackson annotation @JsonProperty to use Jackson deserializer (noble)
+
+* SOLR-13824: Strictly reject anything after JSON in most APIs (Mikhail Khludnev, Munendra S N)
+
+* SOLR-13869: SolrTestCaseJ4.getNextAvailablePort() has been deprecated (and will be removed in 9.0) since
+  it is fundementally flawed.  Users with tests that depend on this method should restructure them. (hossman)
 
 ==================  8.3.0 ==================
 
@@ -181,15 +238,13 @@ New Features
 
 * SOLR-8241: Add CaffeineCache, an efficient implementation of SolrCache.(Ben Manes, Shawn Heisey, David Smiley, Andrzej Bialecki)
 
-* SOLR-13821: A Package store to store and load package artefacts (noble, Ishan Chattopadhyaya)
-
 * SOLR-13298: Allow zplot to plot matrices (Joel Bernstein)
 
 Improvements
 ----------------------
 
 * SOLR-12368: Support InPlace DV updates for a field that does not yet exist in any documents
-(hossman, Simon Willnauer, Adrien Grand, Munendra S N)
+  (hossman, Simon Willnauer, Adrien Grand, Munendra S N)
 
 * SOLR-13558, SOLR-13693: Allow dynamic resizing of SolrCache-s. (ab)
 
@@ -329,6 +384,16 @@ Bug Fixes
 * SOLR-13834: ZkController#getSolrCloudManager() created a new instance of ZkStateReader, thereby causing mismatch in the
   visibility of the cluster state and, as a result, undesired race conditions (Clay Goddard via Ishan Chattopadhyaya)
 
+* SOLR-13835: HttpSolrCall produces incorrect extra AuditEvent on AuthorizationResponse.PROMPT (janhoy, hossman)
+
+* SOLR-13843: The MOVEREPLICA API ignores replica type and always adds 'nrt' replicas (Amrit Sarkar via shalin)
+
+* SOLR-13677: All Metrics Gauges should be unregistered by components that registered them. (noble, ab)
+
+* SOLR-13855: DistributedZkUpdateProcessor should have been propagating URP.finish() lifecycle like it used to before
+  8.1 (a regression).  Impacts integrity since Run URP's finish() propagates this to the updateLog to fsync.
+  (David Smiley)
+
 Other Changes
 ----------------------
 
@@ -363,6 +428,8 @@ Other Changes
   (Diego Ceccarelli, Christine Poerschke, Munendra S N)
 
 * SOLR-13787: An annotation based system to write v2 APIs (noble)
+
+* SOLR-12786: Update Ref Guide build tool versions (Cassandra)
 
 ==================  8.2.0 ==================
 

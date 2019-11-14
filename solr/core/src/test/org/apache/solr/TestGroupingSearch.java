@@ -34,6 +34,7 @@ import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.GroupParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.index.LogDocMergePolicyFactory;
 import org.apache.solr.request.SolrQueryRequest;
@@ -574,6 +575,21 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
              ,"/grouped/id:1000=={'matches':10,'doclist':{'numFound':0,'start':0,'docs':[]}}"
     );
 
+    // group.query and sort
+    assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.query",f+":1", "fl","id,score", "rows","2", "group.limit","2", "sort",f+" desc, score desc", "indent","off")
+        ,"/grouped/"+f+":1==" +
+            "{'matches':10,'doclist':{'numFound':3,'start':0,'maxScore':10.0,'docs':[{'id':'8','score':10.0},{'id':'10','score':3.0}]}},"
+    );
+    // group.query with fl=score and default sort
+    assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.query",f+":1", "fl","id,score", "rows","2", "group.limit","2", "sort", "score desc", "indent","off")
+        ,"/grouped/"+f+":1==" +
+            "{'matches':10,'doclist':{'numFound':3,'start':0,'maxScore':10.0,'docs':[{'id':'8','score':10.0},{'id':'10','score':3.0}]}},"
+    );
+    assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.query",f+":1", "fl","id", "rows","2", "group.limit","2", "indent","off")
+        ,"/grouped/"+f+":1==" +
+            "{'matches':10,'doclist':{'numFound':3,'start':0,'docs':[{'id':'8'},{'id':'10'}]}},"
+    );
+
     // group.query and offset
     assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.query","id:[2 TO 5]", "fl","id", "group.limit","3", "group.offset","2")
        ,"/grouped=={'id:[2 TO 5]':{'matches':10," +
@@ -695,6 +711,30 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         req,
         "/grouped=={'"+FOO_STRING_DOCVAL_FIELD+"':{'matches':2,'groups':[{'groupValue':'a','doclist':{'numFound':1,'start':0,'docs':[{'id':'5'}]}}]}}",
         "/facet_counts=={'facet_queries':{'LW1':2,'LM1':2,'LM3':2},'facet_fields':{}," + EMPTY_FACETS + "}"
+    );
+  }
+
+  @Test
+  public void testGroupingOnDateField() throws Exception {
+    assertU(add(doc("id", "1",  "date_dt", "2012-11-20T00:00:00Z")));
+    assertU(add(doc("id", "2",  "date_dt", "2012-11-21T00:00:00Z")));
+    assertU(commit());
+
+    assertU(add(doc("id", "3",  "date_dt", "2012-11-20T00:00:00Z")));
+    assertU(add(doc("id", "4",  "date_dt", "2013-01-15T00:00:00Z")));
+    assertU(add(doc("id", "5")));
+    assertU(commit());
+
+    ModifiableSolrParams params = params("q", "*:*", "group.limit", "10",
+        "group", "true", "fl", "id", "group.ngroups", "true");
+
+    assertJQ(req(params, "group.field", "date_dt", "sort", "id asc"),
+        "/grouped=={'date_dt':{'matches':5,'ngroups':4, 'groups':" +
+            "[{'groupValue':'2012-11-20T00:00:00Z','doclist':{'numFound':2,'start':0,'docs':[{'id':'1'},{'id':'3'}]}}," +
+            "{'groupValue':'2012-11-21T00:00:00Z','doclist':{'numFound':1,'start':0,'docs':[{'id':'2'}]}}," +
+            "{'groupValue':'2013-01-15T00:00:00Z','doclist':{'numFound':1,'start':0,'docs':[{'id':'4'}]}}," +
+            "{'groupValue':null,'doclist':{'numFound':1,'start':0,'docs':[{'id':'5'}]}}" +
+            "]}}"
     );
   }
 

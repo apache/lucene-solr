@@ -264,7 +264,7 @@ public class RequestUtil {
       List<String> path = StrUtils.splitSmart(queryParamName, ".", true);
       path = path.subList(1, path.size());
       for (String jsonStr : vals) {
-        Object o = ObjectBuilder.fromJSON(jsonStr);
+        Object o = ObjectBuilder.fromJSONStrict(jsonStr);
         // zero-length strings or comments can cause this to be null (and a zero-length string can result from a json content-type w/o a body)
         if (o != null) {
           ObjectUtil.mergeObjects(json, path, o, handler);

@@ -34,7 +34,6 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
-import java.net.ServerSocket;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -897,20 +896,6 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     configString = schemaString = null;
     initCoreDataDir = null;
   }
-
-  /**
-   * Find next available local port.
-   * @return available port number or -1 if none could be found
-   * @throws Exception on IO errors
-   */
-  protected static int getNextAvailablePort() throws Exception {
-    int port = -1;
-    try (ServerSocket s = new ServerSocket(0)) {
-      port = s.getLocalPort();
-    }
-    return port;
-  }
-
 
   /** Validates an update XML String is successful
    */

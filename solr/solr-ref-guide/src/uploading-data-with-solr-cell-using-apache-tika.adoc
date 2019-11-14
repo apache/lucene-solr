@@ -91,7 +91,7 @@ Once Solr is started, you can use curl to send a sample PDF included with Solr v
 
 [source,bash]
 ----
-curl 'http://localhost:8983/solr/gettingstarted/update/extract?literal.id=doc1&uprefix=ignored_&commit=true' -F "myfile=@example/exampledocs/solr-word.pdf"
+curl 'http://localhost:8983/solr/gettingstarted/update/extract?literal.id=doc1&commit=true' -F "myfile=@example/exampledocs/solr-word.pdf"
 ----
 
 The URL above calls the `ExtractingRequestHandler`, uploads the file `solr-word.pdf`, and assigns it the unique ID `doc1`. Here's a closer look at the components of this command:
@@ -105,7 +105,7 @@ There are alternatives to this, such as mapping a metadata field to the ID, gene
 
 * The `-F` flag instructs curl to POST data using the Content-Type `multipart/form-data` and supports the uploading of binary files. The `@` symbol instructs curl to upload the attached file.
 
-* The argument `myfile=@example/exampledocs/solr-word.pdf` uploads the sample file.Note this includes the path, so if you upload a different file, always be sure to include either the relative or absolute path to the file.
+* The argument `myfile=@example/exampledocs/solr-word.pdf` uploads the sample file. Note this includes the path, so if you upload a different file, always be sure to include either the relative or absolute path to the file.
 
 You can also use `bin/post` to do the same thing:
 
@@ -141,7 +141,7 @@ Previously we added the document without these parameters so all fields were add
 The `uprefix` parameter only applies to fields that are _undefined_, so these won't be prefixed if the document is reindexed later.
 However, you would see the new `last_modified_dt` field.
 
-The easiest way to try this parameter is to start over with a fresh collection.
+The easiest way to try out the `uprefix` parameter is to start over with a fresh collection.
 ====
 
 == ExtractingRequestHandler Parameters and Configuration

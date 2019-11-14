@@ -78,6 +78,7 @@ import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortSpecParsing;
 import org.apache.solr.search.SyntaxError;
@@ -326,11 +327,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       }
 
       if(count > 0 && count < 200) {
-        try {
-          groupQuery = getGroupQuery(field, count, ordBytes);
-        } catch(Exception e) {
-          throw new IOException(e);
-        }
+        groupQuery = getGroupQuery(field, count, ordBytes);
       }
     } else {
       groupSet = new LongHashSet(docList.size());
@@ -406,15 +403,15 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       collector = groupExpandCollector;
     }
 
-    if (pfilter.filter == null) {
-      searcher.search(query, collector);
-    } else {
-      Query q = new BooleanQuery.Builder()
+    if (pfilter.filter != null) {
+      query = new BooleanQuery.Builder()
           .add(query, Occur.MUST)
           .add(pfilter.filter, Occur.FILTER)
           .build();
-      searcher.search(q, collector);
     }
+    searcher.search(query, collector);
+
+    ReturnFields returnFields = rb.rsp.getReturnFields();
     LongObjectMap<Collector> groups = ((GroupCollector) groupExpandCollector).getGroups();
     NamedList outMap = new SimpleOrderedMap();
     CharsRefBuilder charsRef = new CharsRefBuilder();
@@ -424,6 +421,9 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       TopDocs topDocs = topDocsCollector.topDocs();
       ScoreDoc[] scoreDocs = topDocs.scoreDocs;
       if (scoreDocs.length > 0) {
+        if (returnFields.wantsScore() && sort != null) {
+          TopFieldCollector.populateScores(scoreDocs, searcher, query);
+        }
         int[] docs = new int[scoreDocs.length];
         float[] scores = new float[scoreDocs.length];
         for (int i = 0; i < docs.length; i++) {
@@ -685,16 +685,15 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
                            int size,
                            LongHashSet groupSet) {
 
-    BytesRef[] bytesRefs = new BytesRef[size];
+    List<BytesRef> bytesRefs = new ArrayList<>(size);
     BytesRefBuilder term = new BytesRefBuilder();
     Iterator<LongCursor> it = groupSet.iterator();
-    int index = -1;
 
     while (it.hasNext()) {
       LongCursor cursor = it.next();
       String stringVal = numericToString(ft, cursor.value);
       ft.readableToIndexed(stringVal, term);
-      bytesRefs[++index] = term.toBytesRef();
+      bytesRefs.add(term.toBytesRef());
     }
 
     return new TermInSetQuery(fname, bytesRefs);
@@ -734,13 +733,12 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
 
   private Query getGroupQuery(String fname,
                               int size,
-                              IntObjectHashMap<BytesRef> ordBytes) throws Exception {
-    BytesRef[] bytesRefs = new BytesRef[size];
-    int index = -1;
+                              IntObjectHashMap<BytesRef> ordBytes) {
+    List<BytesRef> bytesRefs = new ArrayList<>(size);
     Iterator<IntObjectCursor<BytesRef>>it = ordBytes.iterator();
     while (it.hasNext()) {
       IntObjectCursor<BytesRef> cursor = it.next();
-      bytesRefs[++index] = cursor.value;
+      bytesRefs.add(cursor.value);
     }
     return new TermInSetQuery(fname, bytesRefs);
   }
