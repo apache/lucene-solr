@@ -79,7 +79,6 @@ org.apache.velocity.tools:*=3.0
 org.apache.velocity:*=2.1
 org.apache.xmlbeans:xmlbeans=3.0.1
 org.apache.zookeeper:*=3.5.5
-org.asciidoctor:asciidoctor-ant=1.6.2
 org.asciidoctor:asciidoctorj=1.6.2
 org.aspectj:aspectjrt=1.8.0
 org.bitbucket.b_c:jose4j=0.6.5

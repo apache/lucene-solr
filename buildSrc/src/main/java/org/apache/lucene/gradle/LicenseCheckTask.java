@@ -56,6 +56,7 @@ public class LicenseCheckTask extends DefaultTask {
     REPLACE_PATTERNS.put(Pattern.compile("asm([^/]+)$"), "asm");
     REPLACE_PATTERNS.put(Pattern.compile("slf4j-([^/]+)$"), "slf4j");
     REPLACE_PATTERNS.put(Pattern.compile("(?:bcmail|bcprov)-([^\\.]+)$"), "$1");
+    REPLACE_PATTERNS.put(Pattern.compile("(javax\\.servlet)-.+"), "$1");
   }
 
   private Pattern skipRegexChecksum;
