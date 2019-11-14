@@ -489,9 +489,11 @@ public class IndexFetcher {
       filesDownloaded = Collections.synchronizedList(new ArrayList<Map<String, Object>>());
       // if the generation of master is older than that of the slave , it means they are not compatible to be copied
       // then a new index directory to be created and all the files need to be copied
+      log.debug("Checking if isFullCopyNeeded");
       boolean isFullCopyNeeded = IndexDeletionPolicyWrapper
           .getCommitTimestamp(localCommit) >= masterVersion
           || localCommit.getGeneration() >= masterGeneration || forceReplication;
+      log.debug("isFullCopyNeeded? {}", isFullCopyNeeded);
 
       String timestamp = new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT).format(new Date());
       String tmpIdxDirName = "index." + timestamp;
@@ -516,6 +518,7 @@ public class IndexFetcher {
         if (!isFullCopyNeeded && isIndexStale(indexDir)) {
           isFullCopyNeeded = true;
         }
+        log.debug("isFullCopyNeeded stilll? {}", isFullCopyNeeded);
 
         if (!isFullCopyNeeded && !fetchFromLeader) {
           // a searcher might be using some flushed but not committed segments
@@ -523,12 +526,16 @@ public class IndexFetcher {
           // so we need to close the existing searcher on the last commit
           // and wait until we are able to clean up all unused lucene files
           if (solrCore.getCoreContainer().isZooKeeperAware()) {
+            log.debug("closing searcher");
             solrCore.closeSearcher();
+            log.debug("searcher closed");
           }
 
           // rollback and reopen index writer and wait until all unused files
           // are successfully deleted
+          log.debug("creating new IndexWriter");
           solrCore.getUpdateHandler().newIndexWriter(true);
+          log.debug("Done creating new IndexWriter");
           RefCounted<IndexWriter> writer = solrCore.getUpdateHandler().getSolrCoreState().getIndexWriter(null);
           try {
             IndexWriter indexWriter = writer.get();
@@ -551,13 +558,16 @@ public class IndexFetcher {
           } finally {
             writer.decref();
           }
+          log.debug("Done cleaning up unused files");
         }
         boolean reloadCore = false;
 
         try {
           // we have to be careful and do this after we know isFullCopyNeeded won't be flipped
           if (!isFullCopyNeeded) {
+            log.debug("Closing IndexWriter");
             solrCore.getUpdateHandler().getSolrCoreState().closeIndexWriter(solrCore, true);
+            log.debug("Done Closing IndexWriter");
           }
 
           log.info("Starting download (fullCopy={}) to {}", isFullCopyNeeded, tmpIndexDir);
@@ -1222,6 +1232,7 @@ public class IndexFetcher {
    * @throws IOException  if low level io error
    */
   private boolean isIndexStale(Directory dir) throws IOException {
+    log.debug("Start isIndexStale");
     for (Map<String, Object> file : filesToDownload) {
       String filename = (String) file.get(NAME);
       Long length = (Long) file.get(SIZE);
