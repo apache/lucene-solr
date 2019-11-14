@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
@@ -80,17 +81,23 @@ public class LicenseCheckTask extends DefaultTask {
     setDescription("Check licenses for dependencies.");
     this.licenseDirectory = licenseDirectory;
     doLast(task -> {
-      Set<ResolvedArtifact> deps = new HashSet<>();
-      getProject().getSubprojects().forEach(project -> {
-        project.getConfigurations().forEach(config -> {
-          if (config.isCanBeResolved()) {
-            deps.addAll(config.getResolvedConfiguration().getResolvedArtifacts());
-          }
-        });
-      });
-      deps.removeIf(artifact -> {
-        String groupName = artifact.getModuleVersion().getId().getGroup();
-        return "org.apache.lucene".equals(groupName) || "org.apache.solr".equals(groupName);
+      Map<ResolvedArtifact, Set<String>> deps = new LinkedHashMap<>();
+
+      getProject().getSubprojects().stream().forEach(project -> {
+        project.getConfigurations().stream()
+          .filter(config -> config.isCanBeResolved())
+          .forEach(config -> {
+            config.getResolvedConfiguration().getResolvedArtifacts().stream()
+              .filter(artifact -> {
+                String groupName = artifact.getModuleVersion().getId().getGroup();
+                return !"org.apache.lucene".equals(groupName) &&
+                       !"org.apache.solr".equals(groupName);
+              })
+              .forEach(artifact -> {
+                Set<String> list = deps.computeIfAbsent(artifact, (key) -> new TreeSet<>());
+                list.add(config.toString());
+              });
+          });
       });
 
       doCheck(deps);
@@ -119,7 +126,7 @@ public class LicenseCheckTask extends DefaultTask {
   /**
    * Execute the task.
    */
-  public void doCheck(Set<ResolvedArtifact> jars) {
+  public void doCheck(Map<ResolvedArtifact, Set<String>> jars) {
     if (skipChecksum) {
       getLogger().info("Skipping checksum verification for dependencies");
     } else {
@@ -142,12 +149,12 @@ public class LicenseCheckTask extends DefaultTask {
   /**
    * Process all JARs.
    */
-  private void processJars(Set<ResolvedArtifact> jars) {
+  private void processJars(Map<ResolvedArtifact, Set<String>> jars) {
     long start = System.currentTimeMillis();
     int errors = 0;
     int checked = 0;
-    for (ResolvedArtifact artifact : jars) {
-      if (!checkJarFile(artifact)) {
+    for (Map.Entry<ResolvedArtifact, Set<String>> e : jars.entrySet()) {
+      if (!checkJarFile(e.getKey(), e.getValue())) {
         errors++;
       }
       checked++;
@@ -161,7 +168,7 @@ public class LicenseCheckTask extends DefaultTask {
   /**
    * Check a single JAR file.
    */
-  private boolean checkJarFile(ResolvedArtifact artifact) {
+  private boolean checkJarFile(ResolvedArtifact artifact, Set<String> sources) {
     File jarFile = artifact.getFile();
     getLogger().debug("Scanning: {}", jarFile.getPath());
 
@@ -268,9 +275,9 @@ public class LicenseCheckTask extends DefaultTask {
     if (foundLicenses.isEmpty()) {
       this.failures = true;
       StringBuilder message = new StringBuilder();
-      message.append(
-          "MISSING LICENSE for the following file:\n  " + jarFile.getAbsolutePath()
-              + "\n  Expected locations below:\n");
+      message.append("MISSING LICENSE for the following file:\n  " + jarFile.getAbsolutePath() + "\n");
+      message.append("Referenced by:\n  " + String.join("\n  ", sources) + "\n");
+      message.append("Expected locations below:\n");
       for (File location : expectedLocations) {
         message.append("  => ").append(location.getAbsolutePath()).append("\n");
       }
