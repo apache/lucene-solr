@@ -1,0 +1,5 @@
+This product includes software developed by
+Google, Inc. (http://code.google.com/p/guava-libraries/)
+
+Repacked Carrot2 Guava at:
+https://github.com/carrot2/lib-repackaged

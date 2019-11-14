@@ -26,9 +26,9 @@ def distDir = "dist"
 
 ext.testsPolicy = "${rootDir}/lucene/tools/junit4/solr-tests.policy"
 
-tasks.create("checkLicenses", LicenseCheckTask, file("licenses"))
+tasks.create("checkLicenses", LicenseCheckTask, file("licenses_gradle"))
 
-tasks.create("jarChecksums", JarChecksum, file('solr'), file('licenses'))
+tasks.create("jarChecksums", JarChecksum, file('solr'), file('licenses_gradle'))
 
 task packageDist(type: org.apache.lucene.gradle.dist.PackageLuceneSolrDist) {
   group = 'Dist'

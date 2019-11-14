@@ -1,0 +1,5 @@
+Janino - An embedded Java[TM] compiler
+
+Copyright (c) 2001-2016, Arno Unkrig
+Copyright (c) 2015-2016  TIBCO Software Inc.
+All rights reserved.

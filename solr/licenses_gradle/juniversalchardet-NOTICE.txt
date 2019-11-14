@@ -1,0 +1,6 @@
+Project home page: http://code.google.com/p/juniversalchardet/
+Java port by Kohei TAKETA (No copyright specified)
+
+The library is subject to the Mozilla Public License Version 1.1. 
+Alternatively, the library may be used under the terms of either the GNU General Public License Version 2 or later,
+or the GNU Lesser General Public License 2.1 or later.
