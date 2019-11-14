@@ -66,6 +66,9 @@ public class PackageTool extends SolrCLI.ToolBase {
   public RepositoryManager repositoryManager;
 
   @Override
+  @SuppressForbidden(reason = "We really need to print the stacktrace here, otherwise "
+      + "there shall be little else information to debug problems. Other SolrCLI tools "
+      + "don't print stack traces, hence special treatment is needed here.")
   protected void runImpl(CommandLine cli) throws Exception {
     try {
       solrUrl = cli.getOptionValues("solrUrl")[cli.getOptionValues("solrUrl").length-1];
