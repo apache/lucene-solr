@@ -186,6 +186,7 @@ public class HttpSolrCall {
     this.response = response;
     this.retry = retry;
     this.requestType = RequestType.UNKNOWN;
+    req.setAttribute(HttpSolrCall.class.getName(), this);
     queryParams = SolrRequestParsers.parseQueryString(req.getQueryString());
     // set a request timer which can be reused by requests if needed
     req.setAttribute(SolrRequestParsers.REQUEST_TIMER_SERVLET_ATTRIBUTE, new RTimerTree());
@@ -196,7 +197,6 @@ public class HttpSolrCall {
       // this lets you handle /update/commit when /update is a servlet
       path += req.getPathInfo();
     }
-    req.setAttribute(HttpSolrCall.class.getName(), this);
   }
 
   public String getPath() {

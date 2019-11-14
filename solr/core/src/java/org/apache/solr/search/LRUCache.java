@@ -24,7 +24,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Function;
 
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
@@ -259,6 +261,66 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
   }
 
   @Override
+  public V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction) {
+    synchronized (map) {
+      if (getState() == State.LIVE) {
+        lookups++;
+        stats.lookups.increment();
+      }
+      AtomicBoolean newEntry = new AtomicBoolean();
+      CacheValue<V> entry = map.computeIfAbsent(key, k -> {
+        V value = mappingFunction.apply(k);
+        // preserve the semantics of computeIfAbsent
+        if (value == null) {
+          return null;
+        }
+        CacheValue<V> cacheValue = new CacheValue<>(value, timeSource.getEpochTimeNs());
+        if (getState() == State.LIVE) {
+          stats.inserts.increment();
+        }
+        if (syntheticEntries) {
+          if (cacheValue.createTime < oldestEntry) {
+            oldestEntry = cacheValue.createTime;
+          }
+        }
+        // increment local inserts regardless of state???
+        // it does make it more consistent with the current size...
+        inserts++;
+
+        // important to calc and add new ram bytes first so that removeEldestEntry can compare correctly
+        long keySize = RamUsageEstimator.sizeOfObject(key, QUERY_DEFAULT_RAM_BYTES_USED);
+        long valueSize = RamUsageEstimator.sizeOfObject(cacheValue, QUERY_DEFAULT_RAM_BYTES_USED);
+        ramBytesUsed += keySize + valueSize + LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY;
+        newEntry.set(true);
+        return cacheValue;
+      });
+      if (!newEntry.get()) {
+        if (getState() == State.LIVE) {
+          hits++;
+          stats.hits.increment();
+        }
+      }
+      return entry != null ? entry.value : null;
+    }
+  }
+
+  @Override
+  public V remove(K key) {
+    synchronized (map) {
+      CacheValue<V> entry = map.remove(key);
+      if (entry != null) {
+        long delta = RamUsageEstimator.sizeOfObject(key, QUERY_DEFAULT_RAM_BYTES_USED)
+            + RamUsageEstimator.sizeOfObject(entry, QUERY_DEFAULT_RAM_BYTES_USED)
+            + LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY;
+        ramBytesUsed -= delta;
+        return entry.value;
+      } else {
+        return null;
+      }
+    }
+  }
+
+  @Override
   public V put(K key, V value) {
     if (maxSize == Integer.MAX_VALUE && maxRamBytes == Long.MAX_VALUE) {
       throw new IllegalStateException("Cache: " + getName() + " has neither size nor RAM limit!");
@@ -391,11 +453,6 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
   }
 
   @Override
-  public Set<String> getMetricNames() {
-    return metricNames;
-  }
-
-  @Override
   public SolrMetricsContext getSolrMetricsContext() {
     return solrMetricsContext;
   }
@@ -431,7 +488,7 @@ public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Acco
       res.put("cumulative_evictionsRamUsage", stats.evictionsRamUsage.longValue());
       res.put("cumulative_evictionsIdleTime", stats.evictionsIdleTime.longValue());
     });
-    solrMetricsContext.gauge(this, cacheMap, true, scope, getCategory().toString());
+    solrMetricsContext.gauge(cacheMap, true, scope, getCategory().toString());
   }
 
   // for unit tests only

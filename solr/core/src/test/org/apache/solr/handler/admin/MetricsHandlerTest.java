@@ -443,7 +443,7 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
       super.initializeMetrics(parentContext, scope);
       MetricsMap metrics = new MetricsMap((detailed, map) -> map.putAll(gaugevals));
-      solrMetricsContext.gauge(this,
+      solrMetricsContext.gauge(
            metrics,  true, "dumphandlergauge", getCategory().toString(), scope);
 
     }

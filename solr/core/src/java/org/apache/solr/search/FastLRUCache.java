@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -240,8 +241,18 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
   }
 
   @Override
+  public V remove(K key) {
+    return cache.remove(key);
+  }
+
+  @Override
   public V get(K key) {
     return cache.get(key);
+  }
+
+  @Override
+  public V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction) {
+    return cache.computeIfAbsent(key, mappingFunction);
   }
 
   @Override
@@ -304,12 +315,6 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
   }
 
   @Override
-  public Set<String> getMetricNames() {
-    return metricNames;
-  }
-
-
-  @Override
   public SolrMetricsContext getSolrMetricsContext() {
     return solrMetricsContext;
   }
@@ -317,7 +322,7 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     this.solrMetricsContext = parentContext.getChildContext(this);
-    this.solrMetricsContext.gauge(this, cacheMap, true, scope, getCategory().toString());
+    this.solrMetricsContext.gauge(cacheMap, true, scope, getCategory().toString());
   }
 
   // for unit tests only

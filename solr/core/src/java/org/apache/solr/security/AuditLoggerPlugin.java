@@ -44,7 +44,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.security.AuditEvent.EventType;
 import org.slf4j.Logger;
@@ -56,7 +55,7 @@ import org.slf4j.LoggerFactory;
  * @since 8.1.0
  * @lucene.experimental
  */
-public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfoBean, SolrMetricProducer {
+public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfoBean {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String PARAM_EVENT_TYPES = "eventTypes";
   static final String PARAM_ASYNC = "async";
@@ -240,17 +239,17 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
     solrMetricsContext = parentContext.getChildContext(this);
     String className = this.getClass().getSimpleName();
     log.debug("Initializing metrics for {}", className);
-    numErrors = solrMetricsContext.meter(this, "errors", getCategory().toString(), scope, className);
-    numLost = solrMetricsContext.meter(this, "lost", getCategory().toString(), scope, className);
-    numLogged = solrMetricsContext.meter(this, "count", getCategory().toString(), scope, className);
-    requestTimes = solrMetricsContext.timer(this, "requestTimes", getCategory().toString(), scope, className);
-    totalTime = solrMetricsContext.counter(this, "totalTime", getCategory().toString(), scope, className);
+    numErrors = solrMetricsContext.meter("errors", getCategory().toString(), scope, className);
+    numLost = solrMetricsContext.meter("lost", getCategory().toString(), scope, className);
+    numLogged = solrMetricsContext.meter("count", getCategory().toString(), scope, className);
+    requestTimes = solrMetricsContext.timer("requestTimes", getCategory().toString(), scope, className);
+    totalTime = solrMetricsContext.counter("totalTime", getCategory().toString(), scope, className);
     if (async) {
-      solrMetricsContext.gauge(this, () -> blockingQueueSize, true, "queueCapacity", getCategory().toString(), scope, className);
-      solrMetricsContext.gauge(this, () -> blockingQueueSize - queue.remainingCapacity(), true, "queueSize", getCategory().toString(), scope, className);
-      queuedTime = solrMetricsContext.timer(this, "queuedTime", getCategory().toString(), scope, className);
+      solrMetricsContext.gauge(() -> blockingQueueSize, true, "queueCapacity", getCategory().toString(), scope, className);
+      solrMetricsContext.gauge(() -> blockingQueueSize - queue.remainingCapacity(), true, "queueSize", getCategory().toString(), scope, className);
+      queuedTime = solrMetricsContext.timer("queuedTime", getCategory().toString(), scope, className);
     }
-    solrMetricsContext.gauge(this, () -> async, true, "async", getCategory().toString(), scope, className);
+    solrMetricsContext.gauge(() -> async, true, "async", getCategory().toString(), scope, className);
   }
   
   @Override
@@ -268,11 +267,6 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
     return Category.SECURITY;
   }
   
-  @Override
-  public Set<String> getMetricNames() {
-    return metricNames;
-  }
-
   @Override
   public SolrMetricsContext getSolrMetricsContext() {
     return solrMetricsContext;
@@ -320,7 +314,7 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
       log.info("Shutting down async Auditlogger background thread(s)");
       executorService.shutdownNow();
       try {
-        SolrMetricProducer.super.close();
+        SolrInfoBean.super.close();
       } catch (Exception e) {
         throw new IOException("Exception closing", e);
       }

@@ -131,7 +131,7 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
 
   @Test
   public void testCoreRemovalWhileRecovering() {
-    String collection = "recoveringFlag";
+    String collection = "recoveringFlagRemoval";
     try (ZkShardTerms zkShardTerms = new ZkShardTerms(collection, "shard1", cluster.getZkClient())) {
       // List all possible orders of ensureTermIsHigher, startRecovering, doneRecovering
       zkShardTerms.registerTerm("replica1_rem");

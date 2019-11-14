@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -177,6 +178,16 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
   @Override
   public V put(K key, V value) {
     return cache.put(key, value);
+  }
+
+  @Override
+  public V remove(K key) {
+    return cache.remove(key);
+  }
+
+  @Override
+  public V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction) {
+    return cache.computeIfAbsent(key, mappingFunction);
   }
 
   @Override
@@ -336,17 +347,12 @@ public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
 
       }
     });
-    solrMetricsContext.gauge(this, cacheMap, true, scope, getCategory().toString());
+    solrMetricsContext.gauge(cacheMap, true, scope, getCategory().toString());
   }
 
   // for unit tests only
   MetricsMap getMetricsMap() {
     return cacheMap;
-  }
-
-  @Override
-  public Set<String> getMetricNames() {
-    return metricNames;
   }
 
   @Override

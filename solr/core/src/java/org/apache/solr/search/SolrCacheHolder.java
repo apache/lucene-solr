@@ -19,9 +19,8 @@ package org.apache.solr.search;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
-import java.util.Set;
+import java.util.function.Function;
 
-import com.codahale.metrics.MetricRegistry;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +43,15 @@ public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
 
   public V put(K key, V value) {
     return delegate.put(key, value);
+  }
 
+  @Override
+  public V remove(K key) {
+    return delegate.remove(key);
+  }
+
+  public V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction) {
+    return delegate.computeIfAbsent(key, mappingFunction);
   }
 
   public V get(K key) {
@@ -121,16 +128,6 @@ public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
   }
 
   @Override
-  public MetricRegistry getMetricRegistry() {
-    return delegate.getMetricRegistry();
-  }
-
-  @Override
-  public Set<String> getMetricNames() {
-    return delegate.getMetricNames();
-  }
-
-  @Override
   public String getDescription() {
     return delegate.getDescription();
   }
@@ -143,6 +140,11 @@ public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     delegate.initializeMetrics(parentContext, scope);
+  }
+
+  @Override
+  public SolrMetricsContext getSolrMetricsContext() {
+    return delegate.getSolrMetricsContext();
   }
 
 }

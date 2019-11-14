@@ -171,14 +171,13 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
     final Command command;
     final Method method;
     final Object obj;
-    ObjectMapper mapper = new ObjectMapper();
+    ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
     int paramsCount;
     Class c;
     boolean isWrappedInPayloadObj = false;
 
 
     Cmd(Command command, Object obj, Method method) {
-      mapper.setAnnotationIntrospector(SolrJacksonAnnotationInspector.INSTANCE);
       if (Modifier.isPublic(method.getModifiers())) {
         this.command = command;
         this.obj = obj;

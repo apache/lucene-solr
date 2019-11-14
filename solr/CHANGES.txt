@@ -66,7 +66,7 @@ Upgrade Notes
 
 * SOLR-13593 SOLR-13690 SOLR-13691: Allow to look up analyzer components by their SPI names in field type configuration. (Tomoko Uchida)
 
-* SOLR-13854: SolrMetricProducer API has changed and user components that implement this API need to be updated. (ab)
+* SOLR-13854, SOLR-13858: SolrMetricProducer / SolrInfoBean APIs have changed and third-party components that implement these APIs need to be updated. (ab)
 
 * SOLR-13783: In situations where a NamedList must be output as plain text, commas between key-value pairs will now be
   followed by a space (e.g. {shape=square, color=yellow} rather than {shape=square,color=yellow}) for consistency with
@@ -112,6 +112,8 @@ New Features
   the configuration, APIs to read/edit them and isolated classloaders to load the classes from
   hose packages if the 'class' attribute is prefixed with `<package-name>:` (noble, Ishan Chattopadhyaya)
 
+* SOLR-10786: Add DBSCAN clustering Streaming Evaluator (Joel Bernstein)
+
 Improvements
 ---------------------
 
@@ -122,6 +124,9 @@ Improvements
 * SOLR-13865: Move replica routing code to SolrJ. (Houston Putman via Tomas Fernandez-Lobbe)
 
 * SOLR-13844: Remove replica recovery terms with the replica term (Houston Putman via Cao Manh Dat)
+
+* SOLR-13898: Use the new SolrCache.computeIfAbsent instead of non-atomic get / put in order to
+  improve cache hit ratios. (ab, Ben Manes)
 
 
 Optimizations
@@ -150,14 +155,25 @@ Bug Fixes
 
 * SOLR-13762: Fix BinaryField support for non-binary wt's (Thomas Woeckinger via Jason Gerlowski)
 
+* SOLR-13882: Collections API COLSTATUS does not check live_nodes when reporting replica's status.
+  (Erick Erickson, Andrzej Białecki)
+
+* SOLR-13872: Fixed Backup failures - typically manifesting as NoSuchFileException - due to race conditions
+  in saving/reserving commit points (hossman)
+
+* SOLR-13921: Processing UpdateRequest with delegation token throws NullPointerException (Istvan Farkas via Kevin Risden)
+
 Other Changes
 ---------------------
 
 * SOLR-12769: Fix incorrect documentation for 'delete' op in Request parameters API (Alexandre Rafalovitch, Munendra S N)
 
-* Provide mappings for jackson annotation @JsonProperty to use Jackson deserializer (noble)
+* SOLR-13841: Provide mappings for jackson annotation @JsonProperty to use Jackson deserializer (noble)
 
 * SOLR-13824: Strictly reject anything after JSON in most APIs (Mikhail Khludnev, Munendra S N)
+
+* SOLR-13869: SolrTestCaseJ4.getNextAvailablePort() has been deprecated (and will be removed in 9.0) since
+  it is fundementally flawed.  Users with tests that depend on this method should restructure them. (hossman)
 
 ==================  8.3.0 ==================
 
