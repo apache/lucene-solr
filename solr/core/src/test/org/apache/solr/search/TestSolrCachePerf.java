@@ -38,10 +38,7 @@ import org.junit.Test;
 public class TestSolrCachePerf extends SolrTestCaseJ4 {
 
   private static final Class<? extends SolrCache>[] IMPLS = new Class[] {
-      CaffeineCache.class,
-      LRUCache.class,
-      LFUCache.class,
-      FastLRUCache.class
+      CaffeineCache.class
   };
 
   private final int NUM_KEYS = 5000;

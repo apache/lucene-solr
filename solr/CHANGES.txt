@@ -72,6 +72,9 @@ Upgrade Notes
   followed by a space (e.g. {shape=square, color=yellow} rather than {shape=square,color=yellow}) for consistency with
   other java.util.Map implementations based on AbstractMap (Chris Hennick).
 
+* SOLR-13817: Legacy SolrCache implementations (LRUCache, LFUCache, FastLRUCache) have been removed.
+  Users have to modify their existing configurations to use CaffeineCache instead. (ab)
+
 Improvements
 ----------------------
 
@@ -103,6 +106,9 @@ Upgrade Notes
 
 * org.apache.solr.search.grouping.distributed.command.QueryCommand.Builder has new method 'setMainQuery' which is used
   to set top-level query. build() would fail if called without setting mainQuery
+
+* SOLR-13817: Deprecate legacy SolrCache implementations. Users are encouraged to transition their
+  configurations to use org.apache.solr.search.CaffeineCache instead. (ab)
 
 New Features
 ---------------------
