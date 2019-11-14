@@ -14,37 +14,40 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.packagemanager;
 
-package org.apache.solr.client.solrj.request.beans;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.Map;
 
-import java.util.List;
-
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.annotation.JsonProperty;
-import org.apache.solr.common.util.ReflectMapWriter;
 
-/**Just a container class for POJOs used in Package APIs
- *
+/**
+ * Abstract class for a repository, holding {@link SolrPackage} items.
  */
-public class Package {
-  public static class AddVersion implements ReflectMapWriter {
-    @JsonProperty(value = "package", required = true)
-    public String pkg;
-    @JsonProperty(required = true)
-    public String version;
-    @JsonProperty(required = true)
-    public List<String> files;
-    @JsonProperty
-    public String manifest;
-    @JsonProperty
-    public String manifestSHA512;
+public abstract class PackageRepository {
 
-  }
+  @JsonProperty("name")
+  public String name = null;
 
-  public static class DelVersion implements ReflectMapWriter {
-    @JsonProperty(value = "package", required = true)
-    public String pkg;
-    @JsonProperty(required = true)
-    public String version;
+  @JsonProperty("url")
+  public String repositoryURL = null;
 
-  }
+  public abstract void refresh();
+
+  /**
+   * Returns a map of package name to {@link SolrPackage}s.
+   */
+  public abstract Map<String, SolrPackage> getPackages();
+
+  public abstract SolrPackage getPackage(String packageName);
+
+  public abstract boolean hasPackage(String packageName);
+
+  /**
+   * Provides a method to download an artifact from this repository.
+   */
+  public abstract Path download(String artifactName) throws SolrException, IOException; 
+
 }
