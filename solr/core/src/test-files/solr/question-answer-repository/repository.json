@@ -13,8 +13,7 @@
           }
         ],
         "manifest": {
-          "min-solr-version": "8.0",
-          "max-solr-version": "9.99",
+          "version-constraint": "8 - 9",
           "plugins": [
             {
               "name": "request-handler",
@@ -47,7 +46,7 @@
         "artifacts": [
           {
             "url": "question-answer-request-handler-1.1.jar",
-            "sig": "VjiXjoCk8RBijsATN2F1vchqRQ3OvjvJWK7YU1ThMJxP5AAW713MV/1SMJGH7/vlTdtV4/nbf4VD5e1FnVN/GQ=="
+            "sig": "qdNsVe5G8clkBDQwcX2MViA1XU6bhqEwFCPiqPxot7YQw5oj/pFvDPkzWaVa6rNbUzK3WUBbhV5TedhF7hZMOQ=="
           }
         ]
       }

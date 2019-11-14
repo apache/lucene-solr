@@ -117,7 +117,7 @@ public class RepositoryManager {
     String existingRepositoriesJson = getRepositoriesJson(packageManager.zkClient);
     log.info(existingRepositoriesJson);
 
-    List repos = getMapper().readValue(existingRepositoriesJson, List.class);
+    List<PackageRepository> repos = getMapper().readValue(existingRepositoriesJson, List.class);
     repos.add(new DefaultPackageRepository(name, uri));
     if (packageManager.zkClient.exists("/repositories.json", true) == false) {
       packageManager.zkClient.create("/repositories.json", getMapper().writeValueAsString(repos).getBytes("UTF-8"), CreateMode.PERSISTENT, true);
@@ -131,9 +131,6 @@ public class RepositoryManager {
       packageManager.zkClient.create("/keys/exe/"+name+".der", new byte[0], CreateMode.PERSISTENT, true);
     }
     packageManager.zkClient.setData("/keys/exe/"+name+".der", IOUtils.toByteArray(new URL(uri+"/publickey.der").openStream()), true);
-
-    PackageUtils.printGreen("Added repository: "+name);
-    PackageUtils.printGreen(getRepositoriesJson(packageManager.zkClient));
   }
 
   private String getRepositoriesJson(SolrZkClient zkClient) throws UnsupportedEncodingException, KeeperException, InterruptedException {
@@ -162,34 +159,36 @@ public class RepositoryManager {
 
     try {
       // post the manifest
-      PackageUtils.printGreen("Posting manifest");
+      PackageUtils.printGreen("Posting manifest...");
 
       if (release.manifest == null) {
         String manifestJson = PackageUtils.getFileFromJarsAsString(downloaded, "manifest.json");
         if (manifestJson == null) {
-          throw new SolrException(ErrorCode.BAD_REQUEST, "No manifest found for package: " + packageName + ", version: " + version);
+          throw new SolrException(ErrorCode.NOT_FOUND, "No manifest found for package: " + packageName + ", version: " + version);
         }
         release.manifest = getMapper().readValue(manifestJson, SolrPackage.Manifest.class);
       }
       String manifestJson = getMapper().writeValueAsString(release.manifest);
       String manifestSHA512 = BlobRepository.sha512Digest(ByteBuffer.wrap(manifestJson.getBytes("UTF-8")));
       PackageUtils.postFile(solrClient, ByteBuffer.wrap(manifestJson.getBytes("UTF-8")),
-          "/package/" + packageName + "/" + version + "/manifest.json", null);
+          String.format("/package/%s/%s/%s", packageName, version, "manifest.json"), null);
 
       // post the artifacts
-      PackageUtils.printGreen("Posting artifacts");
+      PackageUtils.printGreen("Posting artifacts...");
       for (int i=0; i<release.artifacts.size(); i++) {
         PackageUtils.postFile(solrClient, ByteBuffer.wrap(FileUtils.readFileToByteArray(downloaded.get(i).toFile())),
-            "/package/" + packageName + "/"+version + "/" + downloaded.get(i).getFileName().toString(),
+            String.format("/package/%s/%s/%s", packageName, version, downloaded.get(i).getFileName().toString()),
             release.artifacts.get(i).sig
             );
       }
 
       // Call Package API to add this version of the package
+      PackageUtils.printGreen("Executing Package API to register this package...");
       Package.AddVersion add = new Package.AddVersion();
       add.version = version;
       add.pkg = packageName;
-      add.files = downloaded.stream().map(file -> "/package/" + packageName + "/" + version + "/" + file.getFileName().toString()).collect(Collectors.toList());  
+      add.files = downloaded.stream().map(
+          file -> String.format("/package/%s/%s/%s", packageName, version, file.getFileName().toString())).collect(Collectors.toList());  
       add.manifest = "/package/" + packageName + "/" + version + "/manifest.json";
       add.manifestSHA512 = manifestSHA512;
 
@@ -226,9 +225,9 @@ public class RepositoryManager {
         }
       }
     } catch (IOException e) {
-      throw new SolrException(ErrorCode.BAD_REQUEST, "Error during download of package " + packageName, e);
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Error during download of package " + packageName, e);
     }
-    throw new SolrException(ErrorCode.BAD_REQUEST, "Package not found in any repository.");
+    throw new SolrException(ErrorCode.NOT_FOUND, "Package not found in any repository.");
   }
 
   /**
@@ -284,19 +283,6 @@ public class RepositoryManager {
     String installedVersion = packageManager.getPackageInstance(packageName, null).version;
     SolrPackageRelease last = getLastPackageRelease(packageName);
     return last != null && PackageUtils.compareVersions(last.version, installedVersion) > 0;
-  }
-
-  /**
-   * Print list of available packages
-   */
-  public void listAvailable() throws SolrException {
-    PackageUtils.printGreen("Available packages:\n-----");
-    for (SolrPackage pkg: getPackages()) {
-      PackageUtils.printGreen(pkg.name + " \t\t"+pkg.description);
-      for (SolrPackageRelease version: pkg.versions) {
-        PackageUtils.printGreen("\tVersion: "+version.version);
-      }
-    }
   }
 
   /**

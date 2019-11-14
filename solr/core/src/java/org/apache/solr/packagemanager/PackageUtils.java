@@ -136,10 +136,9 @@ public class PackageUtils {
   }
 
   /**
-   * Checks whether a given version is within minInclusive and maxInclusive range
+   * Checks whether a given version satisfies the constraint (defined by a semver expression)
    */
-  public static boolean checkVersionConstraint(String ver, String minInclusive, String maxInclusive) {
-    String constraint = ">="+minInclusive + " & <="+maxInclusive;
+  public static boolean checkVersionConstraint(String ver, String constraint) {
     return Strings.isNullOrEmpty(constraint) || Version.valueOf(ver).satisfies(constraint);
   }
 
@@ -161,6 +160,8 @@ public class PackageUtils {
    * Replace a templatized string with parameter substituted string. First applies the overrides, then defaults and then systemParams.
    */
   public static String resolve(String str, Map<String, String> defaults, Map<String, String> overrides, Map<String, String> systemParams) {
+    // TODO: Should perhaps use Matchers etc. instead of this clumsy replaceAll().
+
     if (str == null) return null;
     for (String param: defaults.keySet()) {
       str = str.replaceAll("\\$\\{"+param+"\\}", overrides.containsKey(param)? overrides.get(param): defaults.get(param));
@@ -215,4 +216,14 @@ public class PackageUtils {
     }
   }
 
+  public static String[] validateCollections(String collections[]) {
+    String collectionNameRegex = "^[a-zA-Z0-9_-]*$";
+    for (String c: collections) {
+      if (c.matches(collectionNameRegex) == false) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid collection name: " + c +
+            ". Didn't match the pattern: '"+collectionNameRegex+"'");
+      }
+    }
+    return collections;
+  }
 }

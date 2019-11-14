@@ -16,6 +16,8 @@
  */
 package org.apache.solr.util;
 
+import static org.apache.solr.packagemanager.PackageUtils.printGreen;
+
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 
@@ -28,16 +30,21 @@ import org.apache.logging.log4j.core.config.Configurator;
 import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.packagemanager.PackageManager;
 import org.apache.solr.packagemanager.PackageUtils;
 import org.apache.solr.packagemanager.RepositoryManager;
+import org.apache.solr.packagemanager.SolrPackage;
+import org.apache.solr.packagemanager.SolrPackage.SolrPackageRelease;
 import org.apache.solr.packagemanager.SolrPackageInstance;
 import org.apache.solr.util.SolrCLI.StatusTool;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-@SuppressForbidden(reason = "Need to use System.out.println() instead of log4j/slf4j for cleaner output")
+@SuppressForbidden(reason = "Need to use printGreen() instead of log4j/slf4j for cleaner output")
 public class PackageTool extends SolrCLI.ToolBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -77,13 +84,25 @@ public class PackageTool extends SolrCLI.ToolBase {
 
             switch (cmd) {
               case "add-repo":
-                repositoryManager.addRepository(cli.getArgs()[1], cli.getArgs()[2]);
+                String repoName = cli.getArgs()[1];
+                String repoUrl = cli.getArgs()[2];
+                repositoryManager.addRepository(repoName, repoUrl);
+                PackageUtils.printGreen("Added repository: " + repoName);
                 break;
               case "list-installed":
-                packageManager.listInstalled();
+                PackageUtils.printGreen("Installed packages:\n-----");                
+                for (SolrPackageInstance pkg: packageManager.fetchInstalledPackageInstances()) {
+                  PackageUtils.printGreen(pkg);
+                }
                 break;
               case "list-available":
-                repositoryManager.listAvailable();
+                PackageUtils.printGreen("Available packages:\n-----");
+                for (SolrPackage pkg: repositoryManager.getPackages()) {
+                  PackageUtils.printGreen(pkg.name + " \t\t"+pkg.description);
+                  for (SolrPackageRelease version: pkg.versions) {
+                    PackageUtils.printGreen("\tVersion: "+version.version);
+                  }
+                }
                 break;
               case "list-deployed":
                 if (cli.hasOption('c')) {
@@ -104,52 +123,58 @@ public class PackageTool extends SolrCLI.ToolBase {
                 break;
               case "install":
               {
-                String packageName = parsePackageVersion(cli.getArgList().get(1).toString())[0];
-                String version = parsePackageVersion(cli.getArgList().get(1).toString())[1];
+                Pair<String, String> parsedVersion = parsePackageVersion(cli.getArgList().get(1).toString());
+                String packageName = parsedVersion.first();
+                String version = parsedVersion.second();
                 repositoryManager.install(packageName, version);
                 PackageUtils.printGreen(repositoryManager.toString() + " installed.");
                 break;
               }
               case "deploy":
               {
-                String packageName = parsePackageVersion(cli.getArgList().get(1).toString())[0];
-                String version = parsePackageVersion(cli.getArgList().get(1).toString())[1];
+                Pair<String, String> parsedVersion = parsePackageVersion(cli.getArgList().get(1).toString());
+                String packageName = parsedVersion.first();
+                String version = parsedVersion.second();
                 boolean noprompt = cli.hasOption('y');
                 boolean isUpdate = cli.hasOption("update") || cli.hasOption('u');
-                packageManager.deploy(packageName, version, cli.getOptionValues("collections"), cli.getOptionValues("param"), isUpdate, noprompt);
+                packageManager.deploy(packageName, version, PackageUtils.validateCollections(cli.getOptionValues("collections")), cli.getOptionValues("param"), isUpdate, noprompt);
                 break;
               }
               case "undeploy":
               {
-                String packageName = parsePackageVersion(cli.getArgList().get(1).toString())[0];
+                Pair<String, String> parsedVersion = parsePackageVersion(cli.getArgList().get(1).toString());
+                if (parsedVersion.second() != null) {
+                  throw new SolrException(ErrorCode.BAD_REQUEST, "Only package name expected, without a version. Actual: " + cli.getArgList().get(1));
+                }
+                String packageName = parsedVersion.first();
                 packageManager.undeploy(packageName, cli.getOptionValues("collections"));
                 break;
               }
               case "help":
               case "usage":
-                System.out.println("./solr package add-repo <repository-name> <repository-url>");
-                System.out.println("Add a repository to Solr.");
-                System.out.println("");
-                System.out.println("./solr package install <package-name>[:<version>] ");
-                System.out.println("Install a package into Solr. This copies over the artifacts from the repository into Solr's internal package store and sets up classloader for this package to be used.");
-                System.out.println("");
-                System.out.println("./solr package deploy <package-name>[:<version>] [-y] [--update] -collections <comma-separated-collections> [-p <param1>=<val1> -p <param2>=<val2> ...] ");
-                System.out.println("Bootstraps a previously installed package into the specified collections. It the package accepts parameters for its setup commands, they can be specified (as per package documentation).");
-                System.out.println("");
-                System.out.println("./solr package list-installed");
-                System.out.println("Print a list of packages installed in Solr.");
-                System.out.println("");
-                System.out.println("./solr package list-available");
-                System.out.println("Print a list of packages available in the repositories.");
-                System.out.println("");
-                System.out.println("./solr package list-deployed -c <collection>");
-                System.out.println("Print a list of packages deployed on a given collection.");
-                System.out.println("");
-                System.out.println("./solr package list-deployed <package-name>");
-                System.out.println("Print a list of collections on which a given package has been deployed.");
-                System.out.println("");
-                System.out.println("./solr package undeploy <package-name> -collections <comma-separated-collections>");
-                System.out.println("Undeploys a package from specified collection(s)");
+                printGreen("./solr package add-repo <repository-name> <repository-url>");
+                printGreen("Add a repository to Solr.");
+                printGreen("");
+                printGreen("./solr package install <package-name>[:<version>] ");
+                printGreen("Install a package into Solr. This copies over the artifacts from the repository into Solr's internal package store and sets up classloader for this package to be used.");
+                printGreen("");
+                printGreen("./solr package deploy <package-name>[:<version>] [-y] [--update] -collections <comma-separated-collections> [-p <param1>=<val1> -p <param2>=<val2> ...] ");
+                printGreen("Bootstraps a previously installed package into the specified collections. It the package accepts parameters for its setup commands, they can be specified (as per package documentation).");
+                printGreen("");
+                printGreen("./solr package list-installed");
+                printGreen("Print a list of packages installed in Solr.");
+                printGreen("");
+                printGreen("./solr package list-available");
+                printGreen("Print a list of packages available in the repositories.");
+                printGreen("");
+                printGreen("./solr package list-deployed -c <collection>");
+                printGreen("Print a list of packages deployed on a given collection.");
+                printGreen("");
+                printGreen("./solr package list-deployed <package-name>");
+                printGreen("Print a list of collections on which a given package has been deployed.");
+                printGreen("");
+                printGreen("./solr package undeploy <package-name> -collections <comma-separated-collections>");
+                printGreen("Undeploys a package from specified collection(s)");
                 break;
               default:
                 throw new RuntimeException("Unrecognized command: "+cmd);
@@ -169,13 +194,18 @@ public class PackageTool extends SolrCLI.ToolBase {
 
   /**
    * Parses package name and version in the format "name:version" or "name"
-   * @param arg User supplied argument
-   * @return Array of two elements, first the package name, second version (or null if not present)
+   * @return A pair of package name (first) and version (second)
    */
-  private String[] parsePackageVersion(String arg) {
-    String packageName = arg.split(":")[0];
-    String version = arg.contains(":")? arg.split(":")[1]: null;
-    return new String[] {packageName, version};
+  private Pair<String, String> parsePackageVersion(String arg) {
+    String splits[] = arg.split(":");
+    if (splits.length > 2) {
+      throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid package name: " + arg +
+          ". Didn't match the pattern: <packagename>:<version> or <packagename>");
+    }
+
+    String packageName = splits[0];
+    String version = splits.length == 2? splits[1]: null;
+    return new Pair(packageName, version);
   }
 
   @SuppressWarnings("static-access")

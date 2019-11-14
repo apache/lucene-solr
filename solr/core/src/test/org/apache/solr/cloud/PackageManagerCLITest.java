@@ -41,6 +41,11 @@ import org.slf4j.LoggerFactory;
 
 public class PackageManagerCLITest extends SolrCloudTestCase {
 
+  // Note for those who want to modify the jar files used in the packages used in this test:
+  // You need to re-sign the jars for install step, as follows:
+  // $ openssl dgst -sha1 -sign ./solr/core/src/test-files/solr/question-answer-repository-private-key.pem ./solr/core/src/test-files/solr/question-answer-repository/question-answer-request-handler-1.1.jar | openssl enc -base64
+  // You can place the new signature thus obtained (removing any whitespaces) in the repository.json.
+
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static LocalWebServer repositoryServer;

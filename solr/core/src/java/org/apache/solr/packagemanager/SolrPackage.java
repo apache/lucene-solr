@@ -75,11 +75,8 @@ public class SolrPackage implements Comparable<SolrPackage>, ReflectMapWriter {
   }
 
   public static class Manifest implements ReflectMapWriter {
-    @JsonProperty("min-solr-version")
-    public String minSolrVersion;
-
-    @JsonProperty("max-solr-version")
-    public String maxSolrVersion;
+    @JsonProperty("version-constraint")
+    public String versionConstraint;
 
     @JsonProperty("plugins")
     public List<Plugin> plugins;

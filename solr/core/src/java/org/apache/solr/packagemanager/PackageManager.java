@@ -329,10 +329,9 @@ public class PackageManager implements Closeable {
     if (version == null) version = packageInstance.version;
 
     Manifest manifest = packageInstance.manifest;
-    if (PackageUtils.checkVersionConstraint(RepositoryManager.systemVersion, manifest.minSolrVersion, manifest.maxSolrVersion) == false) {
+    if (PackageUtils.checkVersionConstraint(RepositoryManager.systemVersion, manifest.versionConstraint) == false) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Version incompatible! Solr version: "
-          + RepositoryManager.systemVersion + ", package minSolrVersion: " + manifest.minSolrVersion
-          + ", maxSolrVersion: " + manifest.maxSolrVersion);
+          + RepositoryManager.systemVersion + ", package version constraint: " + manifest.versionConstraint);
     }
 
     boolean res = deployPackage(packageInstance, pegToLatest, isUpdate, noprompt,
@@ -380,15 +379,6 @@ public class PackageManager implements Closeable {
       }
 
       // TODO: Also better to remove the package parameters
-    }
-  }
-
-  /**
-   * Print a list of installed packages
-   */
-  public void listInstalled() {
-    for (SolrPackageInstance pkg: fetchInstalledPackageInstances()) {
-      PackageUtils.printGreen(pkg.name + " (" + pkg.version + ")");
     }
   }
 

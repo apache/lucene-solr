@@ -32,20 +32,16 @@ public class SolrPackageInstance implements ReflectMapWriter {
   @JsonProperty("name")
   final public String name;
 
-  @JsonProperty("description")
   final public String description;
 
   @JsonProperty("version")
   final public String version;
 
-  @JsonProperty("manifest")
   final public Manifest manifest;
 
-  @JsonProperty("plugins")
   final public List<Plugin> plugins;
 
-  @JsonProperty("parameterDefaults")
-  final Map<String, String> parameterDefaults;
+  final public Map<String, String> parameterDefaults;
 
   public SolrPackageInstance(String id, String description, String version, Manifest manifest,
       List<Plugin> plugins, Map<String, String> params) {
@@ -65,6 +61,6 @@ public class SolrPackageInstance implements ReflectMapWriter {
 
   @Override
   public String toString() {
-    return name +":" + version;
+    return jsonStr();
   }
 }
