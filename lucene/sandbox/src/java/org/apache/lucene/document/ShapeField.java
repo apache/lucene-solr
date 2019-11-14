@@ -65,7 +65,7 @@ public final class ShapeField {
       setTriangleValue(aXencoded, aYencoded);
     }
 
-    // constructor for points and lines
+    // constructor for lines
     Triangle(String name, int aXencoded, int aYencoded, int bXencoded, int bYencoded) {
       super(name, TYPE);
       if (aXencoded == bXencoded && aYencoded == bYencoded) {
@@ -75,7 +75,7 @@ public final class ShapeField {
       }
     }
 
-    // generic constructor
+    // constructor for triangles
     Triangle(String name, Tessellator.Triangle t) {
       super(name, TYPE);
       int aX = t.getEncodedX(0);
@@ -144,17 +144,14 @@ public final class ShapeField {
   private static final int MINY_MINX_Y_MAXX_MAXY_X = 7;
 
   public static void encodePoint(byte[] bytes, int aY, int aX) {
-    int bits = MINY_MINX_MAXY_MAXX_Y_X;
-    bits |= 1 << 3;
-    bits |= 1 << 4;
-    bits |= 1 << 5;
+    int bits =  MINY_MINX_MAXY_MAXX_Y_X;
     bits |= 1 << 6; // type point
     NumericUtils.intToSortableBytes(aY, bytes, 0);
     NumericUtils.intToSortableBytes(aX, bytes, BYTES);
     NumericUtils.intToSortableBytes(aY, bytes, 2 * BYTES);
     NumericUtils.intToSortableBytes(aX, bytes, 3 * BYTES);
-    NumericUtils.intToSortableBytes(aY, bytes, 4 * BYTES);
-    NumericUtils.intToSortableBytes(aX, bytes, 5 * BYTES);
+    // no need to add point in data dimension, this should help compressing
+    // this dimension for point only leafs.
     NumericUtils.intToSortableBytes(bits, bytes, 6 * BYTES);
   }
 
@@ -231,7 +228,7 @@ public final class ShapeField {
     int bY;
     int cY;
     boolean ab, bc, ca;
-    //change orientation if CW
+    // change orientation if CW
     if (GeoUtils.orient(aLon, aLat, bLon, bLat, cLon, cLat) == -1) {
       aX = cLon;
       bX = bLon;
@@ -253,7 +250,7 @@ public final class ShapeField {
       bc = bcFromShape;
       ca = caFromShape;
     }
-    //rotate edges and place minX at the beginning
+    // rotate edges and place minX at the beginning
     if (bX < aX || cX < aX) {
       if (bX < cX) {
         int tempX = aX;
@@ -283,8 +280,8 @@ public final class ShapeField {
         bc = tempBool;
       }
     } else if (aX == bX && aX == cX) {
-      //degenerated case, all points with same longitude
-      //we need to prevent that aX is in the middle (not part of the MBS)
+      // degenerated case, all points with same longitude
+      // we need to prevent that aX is in the middle (not part of the MBS)
       if (bY < aY || cY < aY) {
         if (bY < cY) {
           int tempX = aX;
@@ -394,6 +391,7 @@ public final class ShapeField {
       triangle.type = DecodedTriangle.TYPE.LINE;
       decodeLine(t, triangle, bits);
     } else {
+      // for backwards compatibility
       triangle.type = DecodedTriangle.TYPE.UNKNOWN;
       decodeTriangle(t, triangle, bits);
     }
@@ -455,7 +453,7 @@ public final class ShapeField {
   }
 
   private static void decodeTriangle(final byte[] t, final DecodedTriangle triangle, final int bits) {
-    //extract the first three bits
+    // extract the first three bits
     int tCode = (((1 << 3) - 1) & (bits >> 0));
     switch (tCode) {
       case MINY_MINX_MAXY_MAXX_Y_X:
@@ -557,7 +555,7 @@ public final class ShapeField {
       default:
         throw new IllegalArgumentException("Could not decode the provided triangle");
     }
-    //Points of the decoded triangle must be co-planar or CCW oriented
+    // Points of the decoded triangle must be co-planar or CCW oriented
     assert GeoUtils.orient(triangle.aX, triangle.aY, triangle.bX, triangle.bY, triangle.cX, triangle.cY) >= 0;
     assert triangle.minX <= triangle.aX && triangle.minX <= triangle.bX && triangle.minX <= triangle.cX;
     assert triangle.minY <= triangle.aY && triangle.minY <= triangle.bY && triangle.minY <= triangle.cY;
