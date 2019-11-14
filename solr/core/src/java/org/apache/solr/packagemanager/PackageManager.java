@@ -37,6 +37,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.packagemanager.SolrPackage.Command;
 import org.apache.solr.packagemanager.SolrPackage.Manifest;
 import org.apache.solr.packagemanager.SolrPackage.Plugin;
+import org.apache.solr.pkg.PackagePluginHolder;
 import org.apache.solr.util.SolrCLI;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -158,7 +159,7 @@ public class PackageManager implements Closeable {
       // Set the package version in the collection's parameters
       try {
         SolrCLI.postJsonToSolr(solrClient, "/api/collections/" + collection + "/config/params",
-            "{set:{PKG_VERSIONS:{" + packageInstance.name+": '" + (pegToLatest? "$LATEST": packageInstance.version)+"'}}}");
+            "{set:{PKG_VERSIONS:{" + packageInstance.name+": '" + (pegToLatest? PackagePluginHolder.LATEST: packageInstance.version)+"'}}}");
       } catch (Exception ex) {
         throw new SolrException(ErrorCode.SERVER_ERROR, ex);
       }
@@ -212,7 +213,7 @@ public class PackageManager implements Closeable {
       // Set the package version in the collection's parameters
       try {
         SolrCLI.postJsonToSolr(solrClient, "/api/collections/" + collection + "/config/params",
-            "{update:{PKG_VERSIONS:{'" + packageInstance.name + "' : '" + (pegToLatest? "$LATEST": packageInstance.version) + "'}}}");
+            "{update:{PKG_VERSIONS:{'" + packageInstance.name + "' : '" + (pegToLatest? PackagePluginHolder.LATEST: packageInstance.version) + "'}}}");
       } catch (Exception ex) {
         throw new SolrException(ErrorCode.SERVER_ERROR, ex);
       }
@@ -287,7 +288,7 @@ public class PackageManager implements Closeable {
   }
 
   /**
-   * Get the installed instance of a specific version of a package. If version is null, "latest" or "$LATEST",
+   * Get the installed instance of a specific version of a package. If version is null, PackageUtils.LATEST or PackagePluginHolder.LATEST,
    * then it returns the highest version available in the system for the package.
    */
   public SolrPackageInstance getPackageInstance(String packageName, String version) {
@@ -306,7 +307,7 @@ public class PackageManager implements Closeable {
         }
       }
     }
-    if (version == null || version.equalsIgnoreCase("latest") || version.equalsIgnoreCase("$LATEST")) {
+    if (version == null || version.equalsIgnoreCase(PackageUtils.LATEST) || version.equalsIgnoreCase(PackagePluginHolder.LATEST)) {
       return latest;
     } else return null;
   }
@@ -314,13 +315,13 @@ public class PackageManager implements Closeable {
   /**
    * Deploys a version of a package to a list of collections.
    * @param version If null, the most recent version is deployed. 
-   *    EXPERT FEATURE: If version is "latest", this collection will be auto updated whenever a newer version of this package is installed.
+   *    EXPERT FEATURE: If version is PackageUtils.LATEST, this collection will be auto updated whenever a newer version of this package is installed.
    * @param isUpdate Is this a fresh deployment or is it an update (i.e. there is already a version of this package deployed on this collection)
    * @param noprompt If true, don't prompt before executing setup commands.
    */
   public void deploy(String packageName, String version, String[] collections, String[] parameters,
       boolean isUpdate, boolean noprompt) throws SolrException {
-    boolean pegToLatest = "latest".equals(version); // User wants to peg this package's version to the latest installed (for auto-update, i.e. no explicit deploy step)
+    boolean pegToLatest = PackageUtils.LATEST.equals(version); // User wants to peg this package's version to the latest installed (for auto-update, i.e. no explicit deploy step)
     SolrPackageInstance packageInstance = getPackageInstance(packageName, version);
     if (packageInstance == null) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Package instance doesn't exist: " + packageName + ":" + null +
@@ -384,7 +385,7 @@ public class PackageManager implements Closeable {
 
   /**
    * Given a package, return a map of collections where this package is
-   * installed to the installed version (which can be "$LATEST")
+   * installed to the installed version (which can be {@link PackagePluginHolder#LATEST})
    */
   public Map<String, String> getDeployedCollections(String packageName) {
     List<String> allCollections;

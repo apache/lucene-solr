@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -50,10 +51,12 @@ import org.apache.solr.core.BlobRepository;
 import org.apache.solr.packagemanager.SolrPackage.Artifact;
 import org.apache.solr.packagemanager.SolrPackage.SolrPackageRelease;
 import org.apache.solr.pkg.PackageAPI;
+import org.apache.solr.pkg.PackagePluginHolder;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 /**
  * Handles most of the management of repositories and packages present in external repositories.
  */
@@ -171,13 +174,13 @@ public class RepositoryManager {
       String manifestJson = getMapper().writeValueAsString(release.manifest);
       String manifestSHA512 = BlobRepository.sha512Digest(ByteBuffer.wrap(manifestJson.getBytes("UTF-8")));
       PackageUtils.postFile(solrClient, ByteBuffer.wrap(manifestJson.getBytes("UTF-8")),
-          String.format("/package/%s/%s/%s", packageName, version, "manifest.json"), null);
+          String.format(Locale.ROOT, "/package/%s/%s/%s", packageName, version, "manifest.json"), null);
 
       // post the artifacts
       PackageUtils.printGreen("Posting artifacts...");
       for (int i=0; i<release.artifacts.size(); i++) {
         PackageUtils.postFile(solrClient, ByteBuffer.wrap(FileUtils.readFileToByteArray(downloaded.get(i).toFile())),
-            String.format("/package/%s/%s/%s", packageName, version, downloaded.get(i).getFileName().toString()),
+            String.format(Locale.ROOT, "/package/%s/%s/%s", packageName, version, downloaded.get(i).getFileName().toString()),
             release.artifacts.get(i).sig
             );
       }
@@ -188,7 +191,7 @@ public class RepositoryManager {
       add.version = version;
       add.pkg = packageName;
       add.files = downloaded.stream().map(
-          file -> String.format("/package/%s/%s/%s", packageName, version, file.getFileName().toString())).collect(Collectors.toList());  
+          file -> String.format(Locale.ROOT, "/package/%s/%s/%s", packageName, version, file.getFileName().toString())).collect(Collectors.toList());  
       add.manifest = "/package/" + packageName + "/" + version + "/manifest.json";
       add.manifestSHA512 = manifestSHA512;
 
@@ -238,7 +241,7 @@ public class RepositoryManager {
     if (pkg == null) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "Package "+packageName+" not found in any repository");
     }
-    if (version == null || "latest".equals(version)) {
+    if (version == null || PackageUtils.LATEST.equals(version)) {
       return getLastPackageRelease(pkg);
     }
     for (SolrPackageRelease release : pkg.versions) {
@@ -287,25 +290,25 @@ public class RepositoryManager {
 
   /**
    * Install a version of the package. Also, run verify commands in case some
-   * collection was using "$LATEST" version of this package and got auto-updated.
+   * collection was using {@link PackagePluginHolder#LATEST} version of this package and got auto-updated.
    */
   public void install(String packageName, String version) throws SolrException {
     String latestVersion = getLastPackageRelease(packageName).version;
 
     Map<String, String> collectionsDeployedIn = packageManager.getDeployedCollections(packageName);
     List<String> peggedToLatest = collectionsDeployedIn.keySet().stream().
-        filter(collection -> collectionsDeployedIn.get(collection).equals("$LATEST")).collect(Collectors.toList());
+        filter(collection -> collectionsDeployedIn.get(collection).equals(PackagePluginHolder.LATEST)).collect(Collectors.toList());
     if (!peggedToLatest.isEmpty()) {
       PackageUtils.printGreen("Collections that will be affected (since they are configured to use $LATEST): "+peggedToLatest);
     }
 
-    if (version == null || version.equals("latest")) {
+    if (version == null || version.equals(PackageUtils.LATEST)) {
       installPackage(packageName, latestVersion);
     } else {
       installPackage(packageName, version);
     }
 
-    SolrPackageInstance updatedPackage = packageManager.getPackageInstance(packageName, "latest");
+    SolrPackageInstance updatedPackage = packageManager.getPackageInstance(packageName, PackageUtils.LATEST);
     boolean res = packageManager.verify(updatedPackage, peggedToLatest);
     PackageUtils.printGreen("Verifying version " + updatedPackage.version + 
         " on " + peggedToLatest + ", result: " + res);

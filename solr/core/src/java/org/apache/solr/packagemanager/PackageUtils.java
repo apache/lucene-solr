@@ -54,6 +54,11 @@ import com.jayway.jsonpath.spi.mapper.MappingProvider;
 
 public class PackageUtils {
 
+  /**
+   * Represents a version which denotes the latest version available at the moment.
+   */
+  public static String LATEST = "latest";
+ 
   public static Configuration jsonPathConfiguration() {
     MappingProvider provider = new JacksonMappingProvider();
     JsonProvider jsonProvider = new JacksonJsonProvider();
