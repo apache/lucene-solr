@@ -47,6 +47,7 @@ import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
@@ -229,8 +230,12 @@ public class TestIntervals extends LuceneTestCase {
     assertNull(getMatches(source, 2, "no_such_field"));
     MatchesIterator mi = getMatches(source, 2, "field1");
     assertMatch(mi, 1, 1, 6, 14);
+    final TermQuery porridge = new TermQuery(new Term("field1","porridge"));
+    assertEquals(porridge, mi.getQuery());
     assertMatch(mi, 4, 4, 27, 35);
+    assertEquals(porridge, mi.getQuery());
     assertMatch(mi, 7, 7, 47, 55);
+    assertEquals(porridge, mi.getQuery());
     assertFalse(mi.next());
 
     assertEquals(1, source.minExtent());
@@ -283,9 +288,18 @@ public class TestIntervals extends LuceneTestCase {
     assertMatch(mi, 3, 4, 20, 34);
     MatchesIterator sub = mi.getSubMatches();
     assertMatch(sub, 3, 3, 20, 25);
+    assertEquals(new TermQuery( new Term("field1", "pease")), sub.getQuery());
     assertMatch(sub, 4, 4, 26, 34);
+    assertEquals(new TermQuery( new Term("field1", "porridge")), sub.getQuery());
     assertFalse(sub.next());
+    
     assertMatch(mi, 6, 7, 41, 55);
+    sub = mi.getSubMatches();
+    assertTrue(sub.next());
+    assertEquals(new TermQuery( new Term("field1", "pease")), sub.getQuery());
+    assertTrue(sub.next());
+    assertEquals(new TermQuery( new Term("field1", "porridge")), sub.getQuery());
+    assertFalse(sub.next());
 
     assertEquals(2, source.minExtent());
 
@@ -335,8 +349,10 @@ public class TestIntervals extends LuceneTestCase {
     assertNull(getMatches(source, 0, "field1"));
     MatchesIterator mi = getMatches(source, 3, "field1");
     assertMatch(mi, 3, 3, 15, 18);
+    assertEquals(new TermQuery(new Term("field1","hot")), mi.getQuery());
     assertNull(mi.getSubMatches());
     assertMatch(mi, 7, 7, 31, 36);
+    assertEquals(new TermQuery(new Term("field1","pease")), mi.getQuery());
     assertNull(mi.getSubMatches());
     assertFalse(mi.next());
 
@@ -355,7 +371,6 @@ public class TestIntervals extends LuceneTestCase {
         { 3, 8 },
         {}, {}, {}, {}
     });
-
     assertEquals(2, source.minExtent());
 
     checkVisits(source, 5, "alph", "sacred", "measureless");
@@ -449,9 +464,13 @@ public class TestIntervals extends LuceneTestCase {
     assertMatch(it, 6, 21, 41, 118);
     MatchesIterator sub = it.getSubMatches();
     assertMatch(sub, 6, 6, 41, 46);
+    assertEquals(new TermQuery(new Term("field1", "pease")), sub.getQuery());
     assertMatch(sub, 19, 19, 106, 110);
+    assertEquals(new TermQuery(new Term("field1", "like")), sub.getQuery());
     assertMatch(sub, 20, 20, 111, 113);
+    assertEquals(new TermQuery(new Term("field1", "it")),sub.getQuery());
     assertMatch(sub, 21, 21, 114, 118);
+    assertEquals(new TermQuery(new Term("field1", "cold")),sub.getQuery());
     assertFalse(sub.next());
     assertFalse(it.next());
     assertEquals(4, source.minExtent());
