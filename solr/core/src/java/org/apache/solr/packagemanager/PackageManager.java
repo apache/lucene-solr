@@ -31,9 +31,11 @@ import java.util.Map;
 import java.util.Scanner;
 
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.packagemanager.SolrPackage.Command;
 import org.apache.solr.packagemanager.SolrPackage.Manifest;
 import org.apache.solr.packagemanager.SolrPackage.Plugin;
@@ -107,15 +109,14 @@ public class PackageManager implements Closeable {
   }
 
   public Map<String, SolrPackageInstance> getPackagesDeployed(String collection) {
-    String paramsJson = PackageUtils.getJsonStringFromUrl(solrClient.getHttpClient(), solrBaseUrl+"/api/collections/"+collection+"/config/params/PKG_VERSIONS?omitHeader=true");
     Map<String, String> packages = null;
     try {
-      packages = JsonPath.parse(paramsJson, PackageUtils.jsonPathConfiguration())
-          .read("$['response'].['params'].['PKG_VERSIONS'])", Map.class);
+      NavigableObject result = (NavigableObject) Utils.executeGET(solrClient.getHttpClient(),
+          solrBaseUrl+"/api/collections/"+collection+"/config/params/PKG_VERSIONS?omitHeader=true&wt=javabin", Utils.JAVABINCONSUMER);
+      packages = (Map<String, String>) result._get("/response/params/PKG_VERSIONS", Collections.emptyMap());
     } catch (PathNotFoundException ex) {
       // Don't worry if PKG_VERSION wasn't found. It just means this collection was never touched by the package manager.
     }
-
     if (packages == null) return Collections.emptyMap();
     Map<String, SolrPackageInstance> ret = new HashMap<String, SolrPackageInstance>();
     for (String packageName: packages.keySet()) {
