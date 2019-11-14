@@ -17,6 +17,8 @@
 package org.apache.solr.util;
 
 import static org.apache.solr.packagemanager.PackageUtils.printGreen;
+import static org.apache.solr.packagemanager.PackageUtils.printRed;
+import static org.apache.solr.packagemanager.PackageUtils.print;
 
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
@@ -44,7 +46,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-@SuppressForbidden(reason = "Need to use printGreen() instead of log4j/slf4j for cleaner output")
 public class PackageTool extends SolrCLI.ToolBase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -153,28 +154,29 @@ public class PackageTool extends SolrCLI.ToolBase {
               case "help":
               case "usage":
                 printGreen("./solr package add-repo <repository-name> <repository-url>");
-                printGreen("Add a repository to Solr.");
+                print(PackageUtils.YELLOW, "Add a repository to Solr.");
                 printGreen("");
                 printGreen("./solr package install <package-name>[:<version>] ");
-                printGreen("Install a package into Solr. This copies over the artifacts from the repository into Solr's internal package store and sets up classloader for this package to be used.");
+                print(PackageUtils.YELLOW, "Install a package into Solr. This copies over the artifacts from the repository into Solr's internal package store and sets up classloader for this package to be used.");
                 printGreen("");
                 printGreen("./solr package deploy <package-name>[:<version>] [-y] [--update] -collections <comma-separated-collections> [-p <param1>=<val1> -p <param2>=<val2> ...] ");
-                printGreen("Bootstraps a previously installed package into the specified collections. It the package accepts parameters for its setup commands, they can be specified (as per package documentation).");
+                print(PackageUtils.YELLOW, "Bootstraps a previously installed package into the specified collections. It the package accepts parameters for its setup commands, they can be specified (as per package documentation).");
                 printGreen("");
                 printGreen("./solr package list-installed");
-                printGreen("Print a list of packages installed in Solr.");
+                print(PackageUtils.YELLOW, "Print a list of packages installed in Solr.");
                 printGreen("");
                 printGreen("./solr package list-available");
-                printGreen("Print a list of packages available in the repositories.");
+                print(PackageUtils.YELLOW, "Print a list of packages available in the repositories.");
                 printGreen("");
                 printGreen("./solr package list-deployed -c <collection>");
-                printGreen("Print a list of packages deployed on a given collection.");
+                print(PackageUtils.YELLOW, "Print a list of packages deployed on a given collection.");
                 printGreen("");
                 printGreen("./solr package list-deployed <package-name>");
-                printGreen("Print a list of collections on which a given package has been deployed.");
+                print(PackageUtils.YELLOW, "Print a list of collections on which a given package has been deployed.");
                 printGreen("");
                 printGreen("./solr package undeploy <package-name> -collections <comma-separated-collections>");
-                printGreen("Undeploys a package from specified collection(s)");
+                print(PackageUtils.YELLOW, "Undeploys a package from specified collection(s)");
+                printRed("\n\nNote: Please add '-solrUrl http://host:port' parameter if needed (usually on Windows).");
                 break;
               default:
                 throw new RuntimeException("Unrecognized command: "+cmd);
