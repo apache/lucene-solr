@@ -8,7 +8,7 @@
         "date": "2019-01-01",
         "artifacts": [
           {
-            "url": "question-answer-request-handler-1.0.jar",
+            "url": "question-answer-request-handler-1.0.jar.tmp",
             "sig": "TTzgh5/usbyWg7oZ7lRwz4eQfh1FeXWvv4U85tsVthVz0MRDz9t7SmonDkegZ7OyqeoiQ4I207pifpVW+DRd9Q=="
           }
         ],
@@ -45,7 +45,7 @@
         "date": "2019-01-01",
         "artifacts": [
           {
-            "url": "question-answer-request-handler-1.1.jar",
+            "url": "question-answer-request-handler-1.1.jar.tmp",
             "sig": "LypqlmbJ76AWa5jx0XhjKxO4lrcQAvpSuYddfzcE6TnX0VDPFhrlQHSSX6cZLtvNbQ+74xUMKgsoX1IUnEnKYw=="
           }
         ]

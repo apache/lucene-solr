@@ -144,7 +144,7 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
         cluster.getSolrClient(),
         Arrays.asList("response", "params", "PKG_VERSIONS", pkg),
         version,
-        1);
+        10);
 
     TestSolrConfigHandler.testForResponseElement(
         null,
@@ -153,7 +153,7 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
         cluster.getSolrClient(),
         Arrays.asList("config", "requestHandler", component, "_packageinfo_", "version"),
         componentVersion,
-        1);
+        10);
   }
 
   private void run(PackageTool tool, String[] args) throws Exception {
