@@ -74,7 +74,7 @@ final class IntervalMatches {
 
       @Override
       public Query getQuery() {
-        throw new UnsupportedOperationException();
+        return source.getQuery();
       }
     };
   }
