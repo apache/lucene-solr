@@ -39,10 +39,16 @@ New Features
 
 * SOLR-13821: A Package store to store and load package artifacts (noble, Ishan Chattopadhyaya)
 
-* SOLR-13822: A Package management system with the following features. A packages.json in ZK to store
-  the configuration, APIs to read/edit them and isolated classloaders to load the classes from
-  hose packages if the 'class' attribute is prefixed with `<package-name>:` (noble, Ishan Chattopadhyaya)
-  
+* SOLR-13822: A Package management system with the following features:
+  (a) A packages.json in ZK to store the configuration,
+  (b) APIs to read/edit them, and
+  (c) Isolated classloaders to load the classes from those packages when the 'class'
+      attribute is prefixed with '<package-name>:'
+  (noble, Ishan Chattopadhyaya)
+
+* SOLR-13662: A CLI based Package Manager ("bin/solr package help" for more details).
+  (Ishan Chattopadhyaya, noble, David Smiley, Jan Hoydahl)
+
 * SOLR-10786: Add DBSCAN clustering Streaming Evaluator (Joel Bernstein)
 
 Improvements

@@ -417,6 +417,10 @@ public class SolrCLI {
       return new AuthTool();
     else if ("autoscaling".equals(toolType))
       return new AutoscalingTool();
+    else if ("export".equals(toolType))
+      return new ExportTool();
+    else if ("package".equals(toolType))
+      return new PackageTool();
 
     // If you add a built-in tool to this class, add it here to avoid
     // classpath scanning
