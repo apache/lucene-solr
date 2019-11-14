@@ -43,7 +43,6 @@ package org.apache.lucene.codecs.lucene84;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.function.IntToLongFunction;
 
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
@@ -246,21 +245,17 @@ final class ForUtil {
   void encode(long[] longs, int bitsPerValue, DataOutput out) throws IOException {
     final int nextPrimitive;
     final int numLongs;
-    final IntToLongFunction maskFunction;
     if (bitsPerValue <= 8) {
       nextPrimitive = 8;
       numLongs = BLOCK_SIZE / 8;
-      maskFunction = ForUtil::mask8;
       collapse8(longs);
     } else if (bitsPerValue <= 16) {
       nextPrimitive = 16;
       numLongs = BLOCK_SIZE / 4;
-      maskFunction = ForUtil::mask16;
       collapse16(longs);
     } else {
       nextPrimitive = 32;
       numLongs = BLOCK_SIZE / 2;
-      maskFunction = ForUtil::mask32;
       collapse32(longs);
     }
 
@@ -274,20 +269,39 @@ final class ForUtil {
     }
 
     final int remainingBitsPerLong = nextPrimitive % bitsPerValue;
+    final long maskRemainingBitsPerLong;
+    if (nextPrimitive == 8) {
+      maskRemainingBitsPerLong = mask8(remainingBitsPerLong);
+    } else if (nextPrimitive == 16) {
+      maskRemainingBitsPerLong = mask16(remainingBitsPerLong);
+    } else {
+      maskRemainingBitsPerLong = mask32(remainingBitsPerLong);
+    }
     int tmpIdx = 0;
     int remainingBitsPerValue = bitsPerValue;
     while (idx < numLongs) {
       if (remainingBitsPerValue > remainingBitsPerLong) {
         remainingBitsPerValue -= remainingBitsPerLong;
-        tmp[tmpIdx++] |= (longs[idx] >>> remainingBitsPerValue) & maskFunction.applyAsLong(remainingBitsPerLong);
+        tmp[tmpIdx++] |= (longs[idx] >>> remainingBitsPerValue) & maskRemainingBitsPerLong;
         if (remainingBitsPerValue == 0) {
           idx++;
           remainingBitsPerValue = bitsPerValue;
         }
       } else {
-        tmp[tmpIdx] |= (longs[idx++] & maskFunction.applyAsLong(remainingBitsPerValue)) << (remainingBitsPerLong - remainingBitsPerValue);
+        final long mask1, mask2;
+        if (nextPrimitive == 8) {
+          mask1 = mask8(remainingBitsPerValue);
+          mask2 = mask8(remainingBitsPerLong - remainingBitsPerValue);
+        } else if (nextPrimitive == 16) {
+          mask1 = mask16(remainingBitsPerValue);
+          mask2 = mask16(remainingBitsPerLong - remainingBitsPerValue);
+        } else {
+          mask1 = mask32(remainingBitsPerValue);
+          mask2 = mask32(remainingBitsPerLong - remainingBitsPerValue);
+        }
+        tmp[tmpIdx] |= (longs[idx++] & mask1) << (remainingBitsPerLong - remainingBitsPerValue);
         remainingBitsPerValue = bitsPerValue - remainingBitsPerLong + remainingBitsPerValue;
-        tmp[tmpIdx++] |= (longs[idx] >>> remainingBitsPerValue) & maskFunction.applyAsLong(bitsPerValue - remainingBitsPerValue);
+        tmp[tmpIdx++] |= (longs[idx] >>> remainingBitsPerValue) & mask2;
       }
     }
 

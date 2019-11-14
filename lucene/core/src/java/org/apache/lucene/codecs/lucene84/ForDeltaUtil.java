@@ -17,7 +17,6 @@
 package org.apache.lucene.codecs.lucene84;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
@@ -39,7 +38,7 @@ public class ForDeltaUtil {
    * The provided {@code longs} are expected to be deltas between consecutive values.
    */
   void encodeDeltas(long[] longs, DataOutput out) throws IOException {
-    if (Arrays.stream(longs).allMatch(l -> l == 1)) { // happens with very dense postings
+    if (longs[0] == 1 && PForUtil.allEqual(longs)) { // happens with very dense postings
       out.writeByte((byte) 0);
     } else {
       long or = 0;

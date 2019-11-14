@@ -28,7 +28,7 @@ import org.apache.lucene.util.packed.PackedInts;
  */
 final class PForUtil {
 
-  private static boolean allEqual(long[] l) {
+  static boolean allEqual(long[] l) {
     for (int i = 1; i < ForUtil.BLOCK_SIZE; ++i) {
       if (l[i] != l[0]) {
         return false;
