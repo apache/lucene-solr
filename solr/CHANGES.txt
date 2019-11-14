@@ -34,6 +34,9 @@ Upgrade Notes
 * org.apache.solr.search.grouping.distributed.command.QueryCommand.Builder has new method 'setMainQuery' which is used
   to set top-level query. build() would fail if called without setting mainQuery
 
+* SOLR-13817: Deprecate legacy SolrCache implementations. Users are encouraged to transition their
+  configurations to use org.apache.solr.search.CaffeineCache instead.
+
 New Features
 ---------------------
 

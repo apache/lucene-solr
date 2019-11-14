@@ -43,6 +43,8 @@ import static org.apache.lucene.util.RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_U
 
 /**
  *
+ * @deprecated This cache implementation is deprecated and will be removed in Solr 9.0.
+ * Use {@link CaffeineCache} instead.
  */
 public class LRUCache<K,V> extends SolrCacheBase implements SolrCache<K,V>, Accountable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

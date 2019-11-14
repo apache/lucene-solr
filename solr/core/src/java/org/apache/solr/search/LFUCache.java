@@ -49,6 +49,8 @@ import static org.apache.solr.common.params.CommonParams.NAME;
  * @see org.apache.solr.util.ConcurrentLFUCache
  * @see org.apache.solr.search.SolrCache
  * @since solr 3.6
+ * @deprecated This cache implementation is deprecated and will be removed in Solr 9.0.
+ * Use {@link CaffeineCache} instead.
  */
 public class LFUCache<K, V> implements SolrCache<K, V>, Accountable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
