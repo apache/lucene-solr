@@ -72,6 +72,9 @@ Upgrade Notes
   followed by a space (e.g. {shape=square, color=yellow} rather than {shape=square,color=yellow}) for consistency with
   other java.util.Map implementations based on AbstractMap (Chris Hennick).
 
+* SOLR-13817: Legacy SolrCache implementations (LRUCache, LFUCache, FastLRUCache) have been removed.
+  Users have to modify their existing configurations to use CaffeineCache instead. (ab)
+
 Improvements
 ----------------------
 
@@ -104,13 +107,22 @@ Upgrade Notes
 * org.apache.solr.search.grouping.distributed.command.QueryCommand.Builder has new method 'setMainQuery' which is used
   to set top-level query. build() would fail if called without setting mainQuery
 
+* SOLR-13817: Deprecate legacy SolrCache implementations. Users are encouraged to transition their
+  configurations to use org.apache.solr.search.CaffeineCache instead. (ab)
+
 New Features
 ---------------------
 * SOLR-13821: A Package store to store and load package artifacts (noble, Ishan Chattopadhyaya)
 
-* SOLR-13822: A Package management system with the following features. A packages.json in ZK to store
-  the configuration, APIs to read/edit them and isolated classloaders to load the classes from
-  hose packages if the 'class' attribute is prefixed with `<package-name>:` (noble, Ishan Chattopadhyaya)
+* SOLR-13822: A Package management system with the following features:
+  (a) A packages.json in ZK to store the configuration,
+  (b) APIs to read/edit them, and
+  (c) Isolated classloaders to load the classes from those packages when the 'class'
+      attribute is prefixed with '<package-name>:'
+  (noble, Ishan Chattopadhyaya)
+
+* SOLR-13662: A CLI based Package Manager ("bin/solr package help" for more details).
+  (Ishan Chattopadhyaya, noble, David Smiley, Jan Hoydahl)
 
 * SOLR-10786: Add DBSCAN clustering Streaming Evaluator (Joel Bernstein)
 
@@ -124,6 +136,9 @@ Improvements
 * SOLR-13865: Move replica routing code to SolrJ. (Houston Putman via Tomas Fernandez-Lobbe)
 
 * SOLR-13844: Remove replica recovery terms with the replica term (Houston Putman via Cao Manh Dat)
+
+* SOLR-13898: Use the new SolrCache.computeIfAbsent instead of non-atomic get / put in order to
+  improve cache hit ratios. (ab, Ben Manes)
 
 
 Optimizations
@@ -155,6 +170,11 @@ Bug Fixes
 * SOLR-13882: Collections API COLSTATUS does not check live_nodes when reporting replica's status.
   (Erick Erickson, Andrzej Białecki)
 
+* SOLR-13872: Fixed Backup failures - typically manifesting as NoSuchFileException - due to race conditions
+  in saving/reserving commit points (hossman)
+
+* SOLR-13921: Processing UpdateRequest with delegation token throws NullPointerException (Istvan Farkas via Kevin Risden)
+
 Other Changes
 ---------------------
 
@@ -163,6 +183,9 @@ Other Changes
 * SOLR-13841: Provide mappings for jackson annotation @JsonProperty to use Jackson deserializer (noble)
 
 * SOLR-13824: Strictly reject anything after JSON in most APIs (Mikhail Khludnev, Munendra S N)
+
+* SOLR-13869: SolrTestCaseJ4.getNextAvailablePort() has been deprecated (and will be removed in 9.0) since
+  it is fundementally flawed.  Users with tests that depend on this method should restructure them. (hossman)
 
 ==================  8.3.0 ==================
 

@@ -113,6 +113,8 @@ public interface PackageStore {
 
     Date getTimeStamp();
 
+    long size();
+
     boolean isDir();
 
 

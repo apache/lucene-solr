@@ -246,6 +246,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     if (directoryFactory.searchersReserveCommitPoints()) {
       // reserve commit point for life of searcher
+      // TODO: This may not be safe w/softCommit, see SOLR-13908
       core.getDeletionPolicy().saveCommitPoint(reader.getIndexCommit().getGeneration());
     }
 

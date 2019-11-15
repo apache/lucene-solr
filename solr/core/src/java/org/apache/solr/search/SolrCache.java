@@ -19,6 +19,7 @@ package org.apache.solr.search;
 import org.apache.solr.core.SolrInfoBean;
 
 import java.util.Map;
+import java.util.function.Function;
 
 
 /**
@@ -92,6 +93,19 @@ public interface SolrCache<K,V> extends SolrInfoBean {
 
   /** :TODO: copy from Map */
   public V get(K key);
+
+  public V remove(K key);
+
+  /**
+   * Get an existing element or atomically compute it if missing.
+   * @param key key
+   * @param mappingFunction function to compute the element. If the function returns a null
+   *                        result the cache mapping will not be created. NOTE: this function
+   *                        must NOT attempt to modify any mappings in the cache.
+   * @return existing or newly computed value, null if there was no existing value and
+   * it was not possible to compute a new value (in which case the new mapping won't be created).
+   */
+  public V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction);
 
   /** :TODO: copy from Map */
   public void clear();
