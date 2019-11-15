@@ -69,9 +69,18 @@ public class TestSolrCachePerf extends SolrTestCaseJ4 {
     }
     computeRatio.forEach((type, computeStats) -> {
       SummaryStatistics getPutStats = getPutRatio.get(type);
-      assertTrue("compute ratio (" + computeStats.getMean() + ") should be higher or equal from get/put ("
-          + getPutStats.getMean() + ")", computeStats.getMean() >= getPutStats.getMean());
+      assertGreaterThanOrEqual( "Compute ratio should be higher or equal to get/put ratio", computeStats.getMean(), getPutStats.getMean(), 0.0001);
     });
+  }
+
+  private void assertGreaterThanOrEqual(String message, double greater, double smaller, double delta) {
+    if (greater > smaller) {
+      return;
+    } else {
+      if (Math.abs(greater - smaller) > delta) {
+        fail(message + ": " + greater + " >= " + smaller);
+      }
+    }
   }
 
   static final String VALUE = "foo";
@@ -135,6 +144,7 @@ public class TestSolrCachePerf extends SolrTestCaseJ4 {
       perImplRatio.addValue(
           Double.parseDouble(String.valueOf(metrics.get("CACHE.foo.hitratio"))));
       perImplTime.addValue((double)(stopTime - startTime));
+      cache.close();
     }
   }
 }
