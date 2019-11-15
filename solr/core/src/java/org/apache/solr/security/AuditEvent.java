@@ -472,8 +472,8 @@ public class AuditEvent {
       "^/(____v2|api)/(c|collections)/[^/]+/schema$",
       "^/(____v2|api)/(c|collections)/[^/]+/shards.*",
       "^/(____v2|api)/cores.*$",
-      "^/(____v2|api)/node$",
-      "^/(____v2|api)/cluster$");
+      "^/(____v2|api)/node.*$",
+      "^/(____v2|api)/cluster.*$");
 
   private static final List<String> STREAMING_PATH_REGEXES = Collections.singletonList(".*/stream.*");
   private static final List<String> INDEXING_PATH_REGEXES = Collections.singletonList(".*/update.*");

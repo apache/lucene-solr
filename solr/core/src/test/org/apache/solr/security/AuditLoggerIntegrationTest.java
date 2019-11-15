@@ -17,11 +17,13 @@
 package org.apache.solr.security;
 
 import java.io.BufferedReader;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,6 +40,7 @@ import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
@@ -216,15 +219,16 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
     assertAuditEvent(events.get(2), ERROR,"/select", SEARCH, null, 400);
   }
 
-//  @Test
-//  public void rootPathRequest() throws Exception {
-//    setupCluster(false, null, false);
-//    String baseUrl = testHarness.get().cluster.getJettySolrRunner(0).getBaseUrl().toString();
-//    String res = IOUtils.toString(new URL(baseUrl + "/admin/info/system"), StandardCharsets.UTF_8);
-//    log.warn("text={}", res);
-//    final List<AuditEvent> events = testHarness.get().receiver.waitForAuditEvents(1);
-//    assertAuditEvent(events.get(0), COMPLETED, "/admin/info/system");
-//  }
+  @Test
+  public void illegalAdminPathError() throws Exception {
+    setupCluster(false, null, false);
+    String baseUrl = testHarness.get().cluster.getJettySolrRunner(0).getBaseUrl().toString();
+    expectThrows(FileNotFoundException.class, () -> {
+      IOUtils.toString(new URL(baseUrl.replace("/solr", "") + "/api/node/foo"), StandardCharsets.UTF_8);
+    });
+    final List<AuditEvent> events = testHarness.get().receiver.waitForAuditEvents(1);
+    assertAuditEvent(events.get(0), ERROR, "/____v2/node/foo", ADMIN, null, 404);
+  }
 
   @Test
   public void authValid() throws Exception {
