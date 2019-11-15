@@ -22,24 +22,34 @@ sourceSets {
   }
 }
 
-task tests {
+task helpTest {
   group = 'Help (Build Documentation)'
   description = "How to run Lucene and Solr tests and the options that are available to you."
 
   doLast {
-    println file("${rootDir}/buildSrc/common/help-text/testHelp.txt").text
+    println file("${rootDir}/help/help-text/testHelp.txt").text
   }
 }
 
-task deps {
+task helpAnt {
+  group = 'Help (Build Documentation)'
+  description = "List the Gradle equivalences for selected Ant targets."
+
+  doLast {
+    println file("${rootDir}/help/help-text/antHelp.txt").text
+  }
+}
+
+
+task helpDeps {
   group = 'Help (Build Documentation)'
   description = "How dependencies are managed and what you need to know to change them."
   doLast {
-    println file("${rootDir}/buildSrc/common/help-text/buildDependenciesHelp.txt").text
+    println file("${rootDir}/help/help-text/buildDependenciesHelp.txt").text
   }
 }
 
-task testBuild {
+task helpBuild {
   group = 'Help (Build Documentation)'
   description = "Information on using Docker to test that your build changes are not too disruptive."
 }

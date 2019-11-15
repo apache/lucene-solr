@@ -1,0 +1,19 @@
+Building
+=======
+
+Unless stated otherwise examples below assume current working directory
+and gradlew script in the top directory of the project's checkout.
+
+
+Common Ant tasks and their equivalence in Gradle
+------------------------------------------------
+
+ant compile => gradlew compileJava
+ant jar => gradlew package
+ant clean  => gradlew clean
+ant clean-jars => [no replacement - JARs sourced directly from gradle caches]
+ant jar-checksums => gradlew jarChecksums
+ant test => gradlew test [or better (includes any other verification
+tasks): gradlew check]
+ant validate => gradlew check
+ant precommit => gradlew check -x test (under development)
