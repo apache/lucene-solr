@@ -176,3 +176,12 @@ Usage: java [SystemProperties] -jar post.jar [-h|-] [<file|folder|url|arg> [<fil
 .
 .
 ----
+
+To index the example docs into a `gettingstarted` collection, run the following command:
+
+[source,plain]
+----
+$ java -jar -Dc=gettingstarted -Dauto example\exampledocs\post.jar example\exampledocs\*
+----
+
+The `-Dauto` parameter sends the appropriate document type to the appropriate extraction endpoints. 
