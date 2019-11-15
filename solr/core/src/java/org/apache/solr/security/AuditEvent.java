@@ -144,8 +144,6 @@ public class AuditEvent {
     if (httpRequest.getPathInfo() != null) {
       this.resource += httpRequest.getPathInfo();
     }
-    // TODO Remove this
-    log.warn("*** resource = {}. servletPath={}, pathInfo={}", this.resource, httpRequest.getServletPath(), httpRequest.getPathInfo());
     setRequestType(findRequestType());
 
     if (exception != null) setException(exception);
