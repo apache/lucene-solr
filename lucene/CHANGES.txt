@@ -66,6 +66,8 @@ Other
 
 * LUCENE-8994: Code Cleanup - Pass values to list constructor instead of empty constructor followed by addAll(). (Koen De Groote)
 
+* LUCENE-9046: Fix wrong example in Javadoc of TermInSetQuery (Namgyu Kim)
+
 Build
 
 * Upgrade forbiddenapis to version 2.7; upgrade Groovy to 2.4.17.  (Uwe Schindler)
