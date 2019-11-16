@@ -96,7 +96,7 @@ public class TermsComponent extends SearchComponent {
         (String) args.get(HttpShardHandlerFactory.INIT_SHARDS_WHITELIST), 
         !HttpShardHandlerFactory.doGetDisableShardsWhitelist());
   }
-  
+
   @Override
   public void prepare(ResponseBuilder rb) throws IOException {
     SolrParams params = rb.req.getParams();
@@ -207,9 +207,9 @@ public class TermsComponent extends SearchComponent {
                 String.format(Locale.ROOT, "The terms component does not support Points-based fields with sorting or with parameters %s,%s,%s,%s ", TermsParams.TERMS_LOWER, TermsParams.TERMS_UPPER, TermsParams.TERMS_PREFIX_STR, TermsParams.TERMS_REGEXP_STR));
           }
 
+          PointMerger.ValueIterator valueIterator = new PointMerger.ValueIterator(sf, rb.req.getSearcher().getRawReader().leaves());
+          MutableValue mv = valueIterator.getMutableValue();
           if (sort) {
-            PointMerger.ValueIterator valueIterator = new PointMerger.ValueIterator(sf, rb.req.getSearcher().getRawReader().leaves());
-            MutableValue mv = valueIterator.getMutableValue();
             BoundedTreeSet<CountPair<MutableValue, Integer>> queue = new BoundedTreeSet<>(limit);
 
             for (; ; ) {
@@ -230,8 +230,6 @@ public class TermsComponent extends SearchComponent {
             // streaming solution that is deferred until writing the response
             // TODO: we can't use the streaming solution until XML writer supports PushWriter!
             termsResult.add(field, (MapWriter) ew -> {
-              PointMerger.ValueIterator valueIterator = new PointMerger.ValueIterator(sf, rb.req.getSearcher().getRawReader().leaves());
-              MutableValue mv = valueIterator.getMutableValue();
               int num = 0;
               for(;;) {
                 long count = valueIterator.getNextCount();
@@ -243,8 +241,6 @@ public class TermsComponent extends SearchComponent {
             });
              ***/
 
-            PointMerger.ValueIterator valueIterator = new PointMerger.ValueIterator(sf, rb.req.getSearcher().getRawReader().leaves());
-            MutableValue mv = valueIterator.getMutableValue();
             int num = 0;
             for(;;) {
               long count = valueIterator.getNextCount();

@@ -70,6 +70,7 @@ import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -439,6 +440,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     }
   }
 
+  @Ignore
   public void testKillTlogReplica() throws Exception {
     DocCollection docCollection = createAndWaitForCollection(1, 0, 2, 0);
 
@@ -476,12 +478,12 @@ public class TestTlogReplica extends SolrCloudTestCase {
         .process(cloudClient, collectionName);
 
     {
-      long docsPending = (long) getSolrCore(true).get(0).getMetricRegistry().getGauges().get("UPDATE.updateHandler.docsPending").getValue();
+      long docsPending = (long) getSolrCore(true).get(0).getSolrMetricsContext().getMetricRegistry().getGauges().get("UPDATE.updateHandler.docsPending").getValue();
       assertEquals("Expected 4 docs are pending in core " + getSolrCore(true).get(0).getCoreDescriptor(),4, docsPending);
     }
 
     for (SolrCore solrCore : getSolrCore(false)) {
-      long docsPending = (long) solrCore.getMetricRegistry().getGauges().get("UPDATE.updateHandler.docsPending").getValue();
+      long docsPending = (long) solrCore.getSolrMetricsContext().getMetricRegistry().getGauges().get("UPDATE.updateHandler.docsPending").getValue();
       assertEquals("Expected non docs are pending in core " + solrCore.getCoreDescriptor(),0, docsPending);
     }
 
@@ -967,6 +969,6 @@ public class TestTlogReplica extends SolrCloudTestCase {
   }
 
   private long getTimesCopyOverOldUpdates(SolrCore core) {
-    return ((Meter)core.getMetricRegistry().getMetrics().get("TLOG.copyOverOldUpdates.ops")).getCount();
+    return ((Meter)core.getSolrMetricsContext().getMetricRegistry().getMetrics().get("TLOG.copyOverOldUpdates.ops")).getCount();
   }
 }

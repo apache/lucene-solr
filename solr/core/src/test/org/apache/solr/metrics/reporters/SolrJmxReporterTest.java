@@ -18,10 +18,11 @@ package org.apache.solr.metrics.reporters;
 
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanServer;
+import javax.management.MBeanServerFactory;
 import javax.management.ObjectInstance;
 import javax.management.ObjectName;
 
-import java.rmi.registry.LocateRegistry;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -41,6 +42,7 @@ import org.apache.solr.metrics.SolrMetricReporter;
 import org.apache.solr.metrics.SolrMetricTestUtils;
 import org.apache.solr.schema.FieldType;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -49,24 +51,27 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
 
   private static final int MAX_ITERATIONS = 20;
 
-  private static int jmxPort;
+  /** The MbeanServer started by the test, that we expect the SolrJmxReporter to find by agentId */
+  private static MBeanServer TEST_MBEAN_SERVER;
   private static String PREFIX;
 
   private String domain;
 
   private SolrCoreMetricManager coreMetricManager;
   private SolrMetricManager metricManager;
-  private SolrJmxReporter reporter;
-  private MBeanServer mBeanServer;
-  private String reporterName;
   private String rootName;
 
   @BeforeClass
   public static void init() throws Exception {
-    jmxPort = getNextAvailablePort();
-    assertFalse(jmxPort == -1);
-    LocateRegistry.createRegistry(jmxPort);
+    TEST_MBEAN_SERVER = MBeanServerFactory.createMBeanServer();
     PREFIX = getSimpleClassName() + "-";
+  }
+  @AfterClass
+  public static void shutdown() throws Exception {
+    if (null != TEST_MBEAN_SERVER) {
+      MBeanServerFactory.releaseMBeanServer(TEST_MBEAN_SERVER);
+      TEST_MBEAN_SERVER = null;
+    }
   }
 
   @Before
@@ -85,28 +90,38 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
 
     Map<String, SolrMetricReporter> reporters = metricManager.getReporters(coreMetricManager.getRegistryName());
     assertTrue("reporters.size should be > 0, but was + " + reporters.size(), reporters.size() > 0);
-    reporterName = pluginInfo.name;
+    String reporterName = pluginInfo.name;
     String taggedName = reporterName + "@" + coreMetricManager.getTag();
     assertNotNull("reporter " + taggedName + " not present among " + reporters, reporters.get(taggedName));
     assertTrue("wrong reporter class: " + reporters.get(taggedName), reporters.get(taggedName) instanceof SolrJmxReporter);
 
-    reporter = (SolrJmxReporter) reporters.get(taggedName);
-    mBeanServer = reporter.getMBeanServer();
-    assertNotNull("MBean server not found.", mBeanServer);
+    SolrJmxReporter reporter = (SolrJmxReporter) reporters.get(taggedName);
+    assertNotNull("MBean server not found on reporter", reporter.getMBeanServer());
+    assertEquals("Wrong MBeanServer found on reporter",
+                 TEST_MBEAN_SERVER,
+                 reporter.getMBeanServer());
   }
 
   private PluginInfo createReporterPluginInfo(String rootName, boolean enabled) {
     Random random = random();
     String className = SolrJmxReporter.class.getName();
     String reporterName = PREFIX + TestUtil.randomSimpleString(random, 5, 10);
-
+      
+    
     Map<String, Object> attrs = new HashMap<>();
     attrs.put(FieldType.CLASS_NAME, className);
     attrs.put(CoreAdminParams.NAME, reporterName);
     attrs.put("rootName", rootName);
     attrs.put("enabled", enabled);
-    attrs.put("serviceUrl", "service:jmx:rmi:///jndi/rmi://localhost:" + jmxPort + "/solrjmx");
 
+    try {
+      String agentId = (String) TEST_MBEAN_SERVER.getAttribute
+        (new ObjectName("JMImplementation:type=MBeanServerDelegate"),
+         "MBeanServerId");
+      attrs.put("agentId", agentId);
+    } catch (Exception e) {
+      throw new RuntimeException("Unable to determine agentId of MBeanServer: " + e.getMessage(), e);
+    }
     boolean shouldOverrideDomain = random.nextBoolean();
     if (shouldOverrideDomain) {
       domain = PREFIX + TestUtil.randomSimpleString(random);
@@ -121,13 +136,16 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
     if (null == metricManager) {
       return; // test failed to init, nothing to cleanup
     }
+    
     metricManager.closeReporters(coreMetricManager.getRegistryName());
-    Set<ObjectInstance> objects =
-        mBeanServer.queryMBeans(ObjectName.getInstance(domain + ":*"), null);
-    assertTrue(objects.isEmpty());
+
+    // sanity check there are no longer any registered beans in our domain....
+    assertEquals(Collections.emptySet(), 
+                 TEST_MBEAN_SERVER.queryMBeans(ObjectName.getInstance(domain + ":*"), null));
 
     coreMetricManager.close();
     deleteCore();
+    
   }
 
   @Test
@@ -145,7 +163,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
       coreMetricManager.registerMetricProducer(scope, producer);
       registered.putAll(metrics);
       //waitForListener();
-      Set<ObjectInstance> objects = mBeanServer.queryMBeans(null, null);
+      Set<ObjectInstance> objects = TEST_MBEAN_SERVER.queryMBeans(null, null);
       assertEquals(registered.size(), objects.stream().
           filter(o -> scope.equals(o.getObjectName().getKeyProperty("scope")) &&
                       rootName.equals(o.getObjectName().getDomain())).count());
@@ -161,7 +179,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
     Map<String, Counter> metrics = SolrMetricTestUtils.getRandomMetrics(random, true);
     SolrMetricProducer producer = SolrMetricTestUtils.getProducerOf(metricManager, category, scope, metrics);
     coreMetricManager.registerMetricProducer(scope, producer);
-    Set<ObjectInstance> objects = mBeanServer.queryMBeans(null, null);
+    Set<ObjectInstance> objects = TEST_MBEAN_SERVER.queryMBeans(null, null);
     assertEquals(metrics.size(), objects.stream().
         filter(o -> scope.equals(o.getObjectName().getKeyProperty("scope")) &&
         o.getObjectName().getDomain().equals(rootName)).count());
@@ -172,7 +190,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
         pluginInfo, String.valueOf(coreMetricManager.getCore().hashCode()));
     coreMetricManager.registerMetricProducer(scope, producer);
 
-    objects = mBeanServer.queryMBeans(null, null);
+    objects = TEST_MBEAN_SERVER.queryMBeans(null, null);
     assertEquals(metrics.size(), objects.stream().
         filter(o -> scope.equals(o.getObjectName().getKeyProperty("scope")) &&
             rootName.equals(o.getObjectName().getDomain())).count());
@@ -182,7 +200,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
 
   @Test
   public void testClosedCore() throws Exception {
-    Set<ObjectInstance> objects = mBeanServer.queryMBeans(new ObjectName("*:category=CORE,name=indexDir,*"), null);
+    Set<ObjectInstance> objects = TEST_MBEAN_SERVER.queryMBeans(new ObjectName("*:category=CORE,name=indexDir,*"), null);
     assertEquals("Unexpected number of indexDir beans: " + objects.toString(), 1, objects.size());
     final ObjectInstance inst = objects.iterator().next();
     stopped = false;
@@ -191,7 +209,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
         public void run() {
           while (!stopped) {
             try {
-              Object value = mBeanServer.getAttribute(inst.getObjectName(), "Value");
+              Object value = TEST_MBEAN_SERVER.getAttribute(inst.getObjectName(), "Value");
               assertNotNull(value);
             } catch (InstanceNotFoundException x) {
               // no longer present
@@ -206,7 +224,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
       Thread.sleep(500);
       h.getCoreContainer().unload(h.getCore().getName());
       Thread.sleep(2000);
-      objects = mBeanServer.queryMBeans(new ObjectName("*:category=CORE,name=indexDir,*"), null);
+      objects = TEST_MBEAN_SERVER.queryMBeans(new ObjectName("*:category=CORE,name=indexDir,*"), null);
       assertEquals("Unexpected number of beans after core closed: " + objects, 0, objects.size());
     } finally {
       stopped = true;
@@ -235,7 +253,7 @@ public class SolrJmxReporterTest extends SolrTestCaseJ4 {
     Map<String, Counter> metrics = SolrMetricTestUtils.getRandomMetrics(random(), true);
     SolrMetricProducer producer = SolrMetricTestUtils.getProducerOf(metricManager, category, scope, metrics);
     coreMetricManager.registerMetricProducer(scope, producer);
-    Set<ObjectInstance> objects = mBeanServer.queryMBeans(null, null);
+    Set<ObjectInstance> objects = TEST_MBEAN_SERVER.queryMBeans(null, null);
     assertEquals(metrics.size(), objects.stream().
         filter(o -> scope.equals(o.getObjectName().getKeyProperty("scope")) &&
             root1.equals(o.getObjectName().getDomain())).count());

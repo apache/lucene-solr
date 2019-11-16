@@ -58,7 +58,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.codahale.metrics.Counter;
-import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.MapMaker;
@@ -182,7 +181,7 @@ import static org.apache.solr.common.params.CommonParams.PATH;
  * When multi-core support was added to Solr way back in version 1.3, this class was required so that the core
  * functionality could be re-used multiple times.
  */
-public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeable {
+public final class SolrCore implements SolrInfoBean, Closeable {
 
   public static final String version = "1.0";
 
@@ -962,7 +961,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
       checkVersionFieldExistsInSchema(schema, coreDescriptor);
 
-      // initialize searcher-related metrics
+      // initialize core metrics
       initializeMetrics(solrMetricsContext, null);
 
       SolrFieldCacheBean solrFieldCacheBean = new SolrFieldCacheBean();
@@ -1183,24 +1182,24 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    newSearcherCounter = parentContext.counter(this, "new", Category.SEARCHER.toString());
-    newSearcherTimer = parentContext.timer(this, "time", Category.SEARCHER.toString(), "new");
-    newSearcherWarmupTimer = parentContext.timer(this, "warmup", Category.SEARCHER.toString(), "new");
-    newSearcherMaxReachedCounter = parentContext.counter(this, "maxReached", Category.SEARCHER.toString(), "new");
-    newSearcherOtherErrorsCounter = parentContext.counter(this, "errors", Category.SEARCHER.toString(), "new");
+    newSearcherCounter = parentContext.counter("new", Category.SEARCHER.toString());
+    newSearcherTimer = parentContext.timer("time", Category.SEARCHER.toString(), "new");
+    newSearcherWarmupTimer = parentContext.timer("warmup", Category.SEARCHER.toString(), "new");
+    newSearcherMaxReachedCounter = parentContext.counter("maxReached", Category.SEARCHER.toString(), "new");
+    newSearcherOtherErrorsCounter = parentContext.counter("errors", Category.SEARCHER.toString(), "new");
 
-    parentContext.gauge(this, () -> name == null ? "(null)" : name, true, "coreName", Category.CORE.toString());
-    parentContext.gauge(this, () -> startTime, true, "startTime", Category.CORE.toString());
-    parentContext.gauge(this, () -> getOpenCount(), true, "refCount", Category.CORE.toString());
-    parentContext.gauge(this, () -> resourceLoader.getInstancePath().toString(), true, "instanceDir", Category.CORE.toString());
-    parentContext.gauge(this, () -> isClosed() ? "(closed)" : getIndexDir(), true, "indexDir", Category.CORE.toString());
-    parentContext.gauge(this, () -> isClosed() ? 0 : getIndexSize(), true, "sizeInBytes", Category.INDEX.toString());
-    parentContext.gauge(this, () -> isClosed() ? "(closed)" : NumberUtils.readableSize(getIndexSize()), true, "size", Category.INDEX.toString());
+    parentContext.gauge(() -> name == null ? "(null)" : name, true, "coreName", Category.CORE.toString());
+    parentContext.gauge(() -> startTime, true, "startTime", Category.CORE.toString());
+    parentContext.gauge(() -> getOpenCount(), true, "refCount", Category.CORE.toString());
+    parentContext.gauge(() -> resourceLoader.getInstancePath().toString(), true, "instanceDir", Category.CORE.toString());
+    parentContext.gauge(() -> isClosed() ? "(closed)" : getIndexDir(), true, "indexDir", Category.CORE.toString());
+    parentContext.gauge(() -> isClosed() ? 0 : getIndexSize(), true, "sizeInBytes", Category.INDEX.toString());
+    parentContext.gauge(() -> isClosed() ? "(closed)" : NumberUtils.readableSize(getIndexSize()), true, "size", Category.INDEX.toString());
     if (coreContainer != null) {
-      parentContext.gauge(this, () -> coreContainer.getNamesForCore(this), true, "aliases", Category.CORE.toString());
+      parentContext.gauge(() -> coreContainer.getNamesForCore(this), true, "aliases", Category.CORE.toString());
       final CloudDescriptor cd = getCoreDescriptor().getCloudDescriptor();
       if (cd != null) {
-        parentContext.gauge(this, () -> {
+        parentContext.gauge(() -> {
           if (cd.getCollectionName() != null) {
             return cd.getCollectionName();
           } else {
@@ -1208,7 +1207,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
           }
         }, true, "collection", Category.CORE.toString());
 
-        parentContext.gauge(this, () -> {
+        parentContext.gauge(() -> {
           if (cd.getShardId() != null) {
             return cd.getShardId();
           } else {
@@ -1220,10 +1219,10 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     // initialize disk total / free metrics
     Path dataDirPath = Paths.get(dataDir);
     File dataDirFile = dataDirPath.toFile();
-    parentContext.gauge(this, () -> dataDirFile.getTotalSpace(), true, "totalSpace", Category.CORE.toString(), "fs");
-    parentContext.gauge(this, () -> dataDirFile.getUsableSpace(), true, "usableSpace", Category.CORE.toString(), "fs");
-    parentContext.gauge(this, () -> dataDirPath.toAbsolutePath().toString(), true, "path", Category.CORE.toString(), "fs");
-    parentContext.gauge(this, () -> {
+    parentContext.gauge(() -> dataDirFile.getTotalSpace(), true, "totalSpace", Category.CORE.toString(), "fs");
+    parentContext.gauge(() -> dataDirFile.getUsableSpace(), true, "usableSpace", Category.CORE.toString(), "fs");
+    parentContext.gauge(() -> dataDirPath.toAbsolutePath().toString(), true, "path", Category.CORE.toString(), "fs");
+    parentContext.gauge(() -> {
       try {
         return org.apache.lucene.util.IOUtils.spins(dataDirPath.toAbsolutePath());
       } catch (IOException e) {
@@ -2946,11 +2945,6 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
   @Override
   public Category getCategory() {
     return Category.CORE;
-  }
-
-  @Override
-  public MetricRegistry getMetricRegistry() {
-    return coreMetricManager.getRegistry();
   }
 
   public Codec getCodec() {
