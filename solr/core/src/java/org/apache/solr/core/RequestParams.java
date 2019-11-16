@@ -30,6 +30,7 @@ import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
@@ -169,24 +170,42 @@ public class RequestParams implements MapSerializable {
 
   }
 
+  public static RequestParams getFreshRequestParams(InputStream inputStream) {
+    try {
+      Object[] o = getMapAndVersion(inputStream, RequestParams.RESOURCE);
+      RequestParams requestParams = new RequestParams((Map) o[0], (Integer) o[1]);
+      //@todo check skipped version > check
+      log.info("request params refreshed to version {}", requestParams.getZnodeVersion());
+      return requestParams;
+    } finally {
+      IOUtils.closeQuietly(inputStream);
+    }
+  }
 
   private static Object[] getMapAndVersion(SolrResourceLoader loader, String name) {
-    try (InputStream in = loader.openResource(name)) {
-      int version = 0; //will be always 0 for file based resourceloader
-      if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
-        version = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
-        log.info("conf resource {} loaded . version : {} ", name, version);
-      }
-      try {
-        Map m = (Map) fromJSON (in);
-        return new Object[]{m, version};
-      } catch (Exception e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error parsing conf resource " + name, e);
-      }
-
+    InputStream in = null;
+    try {
+      in = loader.openResource(name);
+      return getMapAndVersion(in, name);
     } catch (IOException e) {
       //no problem no overlay.json file
       return new Object[]{Collections.EMPTY_MAP, -1};
+    } finally {
+      IOUtils.closeQuietly(in);
+    }
+  }
+
+  private static Object[] getMapAndVersion(InputStream in, String name) {
+    int version = 0; //will be always 0 for file based resourceloader
+    if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
+      version = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
+      log.info("conf resource {} loaded . version : {} ", name, version);
+    }
+    try {
+      Map m = (Map) fromJSON(in);
+      return new Object[]{m, version};
+    } catch (Exception e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error parsing conf resource " + name, e);
     }
   }
 

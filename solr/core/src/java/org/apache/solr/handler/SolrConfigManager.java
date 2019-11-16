@@ -17,6 +17,7 @@
 
 package org.apache.solr.handler;
 
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -49,6 +50,8 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -76,6 +79,7 @@ import org.apache.solr.util.RTimer;
 import org.apache.solr.util.SolrPluginUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xml.sax.SAXException;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.util.Collections.singletonList;
@@ -116,20 +120,48 @@ public class SolrConfigManager {
     namedPlugins = Collections.unmodifiableMap(map);
   }
 
-  public void handleGET(SolrQueryRequest req, SolrQueryResponse rsp, Lock lock,
-                        SolrConfig config, SolrResourceLoader loader) throws Exception {
+  public void handleGET(SolrQueryRequest req, SolrQueryResponse rsp, Lock lock, SolrConfig config, SolrResourceLoader loader) throws Exception {
     Command command = new Command(req, rsp, "GET");
     command.handleGET(lock, config, loader);
   }
 
-  public void handlePOST(SolrQueryRequest req, SolrQueryResponse rsp
-      , SolrConfig config, SolrResourceLoader loader) throws Exception {
+  public void handlePOST(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
     try {
       Command command = new Command(req, rsp, "POST");
-      command.handlePOST(config, loader);
+      RequestParams params = RequestParams.getFreshRequestParams(
+          req.getCore().getResourceLoader(), req.getCore().getSolrConfig().getRequestParams());
+      ConfigOverlay overlay = SolrConfig.getConfigOverlay(req.getCore().getResourceLoader());
+      command.handlePOST("", overlay, params, false, null);
     } finally {
       RequestHandlerUtils.addExperimentalFormatWarning(rsp);
     }
+  }
+
+  public void handleGET(SolrQueryRequest req, SolrQueryResponse rsp, String configSetName,
+                        SolrResourceLoader loader, SolrZkClient client) throws Exception {
+    Command command = new Command(req, rsp, "GET");
+    SolrConfig solrConfig = getSolrConfig(configSetName, client);
+    command.handleGET(null, solrConfig, loader);
+  }
+
+  public void handlePOST(SolrQueryRequest req, SolrQueryResponse rsp, String configSet, SolrZkClient client) throws Exception {
+    try {
+      Command command = new Command(req, rsp, "POST");
+      SolrConfig config = getSolrConfig(configSet, client);
+      command.handlePOST(configSet, config.getOverlay(), config.getRequestParams(), true, client);
+    } finally {
+      RequestHandlerUtils.addExperimentalFormatWarning(rsp);
+    }
+  }
+
+  private SolrConfig getSolrConfig(String configSetName, SolrZkClient client) {
+    SolrConfig config;
+    try {
+      config = new SolrConfig(configSetName, client);
+    } catch (IOException | ParserConfigurationException | SAXException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to form solrConfig", e);
+    }
+    return config;
   }
 
   private class Command {
@@ -324,8 +356,7 @@ public class SolrConfigManager {
       return pluginInfo;
     }
 
-
-    private void handlePOST(SolrConfig solrConfig, SolrResourceLoader loader) throws IOException {
+    private void handlePOST(String configSet, ConfigOverlay overlay, RequestParams requestParams, Boolean nocore, SolrZkClient client) throws IOException {
       List<CommandOperation> ops = CommandOperation.readCommands(req.getContentStreams(), resp.getValues());
       if (ops == null) return;
       try {
@@ -334,13 +365,17 @@ public class SolrConfigManager {
           for (CommandOperation op : ops) opsCopy.add(op.getCopy());
           try {
             if (parts.size() > 1 && RequestParams.NAME.equals(parts.get(1))) {
-              //@todo check
-              RequestParams params = RequestParams.getFreshRequestParams(loader, solrConfig.getRequestParams());
-              handleParams(opsCopy, params, loader);
+              if (nocore) {
+                handleParams(opsCopy, requestParams, nocore, null, configSet, client);
+              } else {
+                handleParams(opsCopy, requestParams, nocore, req.getCore().getResourceLoader(), configSet, client);
+              }
             } else {
-              //@todo check
-              ConfigOverlay overlay = SolrConfig.getConfigOverlay(req.getCore().getResourceLoader());
-              handleCommands(opsCopy, overlay, loader);
+              if (nocore) {
+                handleCommands(opsCopy, overlay, nocore, null, configSet, client);
+              } else {
+                handleCommands(opsCopy, overlay, nocore, req.getCore().getResourceLoader(), configSet, client);
+              }
             }
             break;//succeeded . so no need to go over the loop again
           } catch (ZkController.ResourceModifiedInZkException e) {
@@ -355,8 +390,8 @@ public class SolrConfigManager {
 
     }
 
-
-    private void handleParams(ArrayList<CommandOperation> ops, RequestParams params, SolrResourceLoader loader) {
+    private void handleParams(ArrayList<CommandOperation> ops, RequestParams params,
+                              Boolean noCore, SolrResourceLoader loader, String configSet, SolrZkClient client) {
       for (CommandOperation op : ops) {
         switch (op.name) {
           case SET:
@@ -424,13 +459,26 @@ public class SolrConfigManager {
         }
       }
 
-
       List errs = CommandOperation.captureErrors(ops);
       if (!errs.isEmpty()) {
         throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST, "error processing params", errs);
       }
+      if (!noCore) {
+        persistParams(ops, params, loader);
+      } else {
+        String paramsPath = ZkConfigManager.CONFIGS_ZKNODE + "/" + configSet + "/" + RequestParams.RESOURCE;
+        try {
+          if (ops.isEmpty()) ZkController.touchConfDir(client, ZkConfigManager.CONFIGS_ZKNODE + "/" + configSet);
+          ZkController.updateResource(client, paramsPath, params.toByteArray(), params.getZnodeVersion());
+        } catch (Exception e) {
+          final String msg = "Error persisting resource at " + paramsPath;
+          log.error(msg, e);
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg, e);
+        }
+      }
+    }
 
-      //@todo add option of explicit persist
+    private void persistParams(ArrayList<CommandOperation> ops, RequestParams params, SolrResourceLoader loader) {
       if (loader instanceof ZkSolrResourceLoader) {
         ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader) loader;
         if (ops.isEmpty()) {
@@ -449,10 +497,10 @@ public class SolrConfigManager {
         SolrResourceLoader.persistConfLocally(loader, RequestParams.RESOURCE, params.toByteArray());
         req.getCore().getSolrConfig().refreshRequestParams();
       }
-
     }
 
-    private void handleCommands(List<CommandOperation> ops, ConfigOverlay overlay, SolrResourceLoader loader) throws IOException {
+    private void handleCommands(List<CommandOperation> ops, ConfigOverlay overlay,
+                                Boolean noCore, SolrResourceLoader loader, String configSet, SolrZkClient client) throws IOException {
       for (CommandOperation op : ops) {
         switch (op.name) {
           case SET_PROPERTY:
@@ -493,8 +541,21 @@ public class SolrConfigManager {
         log.error("ERROR:" + Utils.toJSONString(errs));
         throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST, "error processing commands", errs);
       }
+      if (!noCore) {
+        persistOverlay(ops, overlay, loader);
+      } else {
+        String paramsPath = ZkConfigManager.CONFIGS_ZKNODE + "/" + configSet + "/" + ConfigOverlay.RESOURCE_NAME;
+        try {
+          ZkController.updateResource(client, paramsPath, overlay.toByteArray(), overlay.getZnodeVersion());
+        } catch (Exception e) {
+          final String msg = "Error persisting resource at " + paramsPath;
+          log.error(msg, e);
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, msg, e);
+        }
+      }
+    }
 
-      //@todo add option of explicit persist
+    private void persistOverlay(List<CommandOperation> ops, ConfigOverlay overlay, SolrResourceLoader loader) {
       if (loader instanceof ZkSolrResourceLoader) {
         int latestVersion = ZkController.persistConfigResourceToZooKeeper((ZkSolrResourceLoader) loader, overlay.getZnodeVersion(),
             ConfigOverlay.RESOURCE_NAME, overlay.toByteArray(), true);
@@ -508,7 +569,6 @@ public class SolrConfigManager {
         req.getCore().getCoreContainer().reload(req.getCore().getName());
         log.info("Executed config commands successfully and persisted to File System {}", ops);
       }
-
     }
 
     private ConfigOverlay deleteNamedComponent(CommandOperation op, ConfigOverlay overlay, String typ) {

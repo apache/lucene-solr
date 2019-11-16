@@ -64,7 +64,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
         final String reason = configEditing_disabled ? "due to " + CONFIGSET_EDITING_DISABLED_ARG : "because ConfigSet is immutable";
         throw new SolrException(SolrException.ErrorCode.FORBIDDEN, " solrconfig editing is not enabled " + reason);
       }
-      new SolrConfigManager().handlePOST(req, rsp, req.getCore().getSolrConfig(), req.getCore().getResourceLoader());
+      new SolrConfigManager().handlePOST(req, rsp);
     } else {
       new SolrConfigManager().handleGET(req, rsp, reloadLock, req.getCore().getSolrConfig(), req.getCore().getResourceLoader());
     }

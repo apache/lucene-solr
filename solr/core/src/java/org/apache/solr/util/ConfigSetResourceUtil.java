@@ -19,14 +19,23 @@ package org.apache.solr.util;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.util.Collections;
+import java.util.Map;
 
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkConfigManager;
+import org.apache.solr.common.util.IOUtils;
+import org.apache.solr.core.ConfigOverlay;
+import org.apache.solr.core.RequestParams;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.xml.sax.InputSource;
 
-public class InputSourceUtil {
+import static org.apache.solr.common.util.Utils.fromJSON;
+
+public class ConfigSetResourceUtil {
   public static InputSource populate(SolrZkClient client, String path, Stat stat) {
     try {
       byte[] data = client.getData(path, null, stat, true);
@@ -38,4 +47,35 @@ public class InputSourceUtil {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to access path:" + path, e);
     }
   }
+
+  public static RequestParams populateRequestParams(String configSetName, SolrZkClient client) {
+    RequestParams requestParams;
+    String path = ZkConfigManager.CONFIGS_ZKNODE + "/" + configSetName + "/" + RequestParams.RESOURCE;
+    if (!ZkController.isResourceExists(client, path)) {
+      requestParams = new RequestParams(Collections.EMPTY_MAP, -1);
+    }
+    InputSource is = ConfigSetResourceUtil.populate(client, path, new Stat());
+    requestParams = RequestParams.getFreshRequestParams(is.getByteStream());
+    return requestParams;
+  }
+
+  public static ConfigOverlay populateOverlay(String configSetName, SolrZkClient client) {
+    ConfigOverlay overlay;
+    String path = ZkConfigManager.CONFIGS_ZKNODE + "/" + configSetName + "/" + ConfigOverlay.RESOURCE_NAME;
+    if (!ZkController.isResourceExists(client, path)) {
+      overlay = new ConfigOverlay(Collections.EMPTY_MAP, -1);
+    }
+    Stat stat = new Stat();
+    InputSource inputSource = ConfigSetResourceUtil.populate(client, path, stat);
+    InputStream inputStream = null;
+    try {
+      inputStream = inputSource.getByteStream();
+      Map m = (Map) fromJSON(inputStream);
+      overlay = new ConfigOverlay(m, stat.getVersion());
+    } finally {
+      IOUtils.closeQuietly(inputStream);
+    }
+    return overlay;
+  }
+
 }

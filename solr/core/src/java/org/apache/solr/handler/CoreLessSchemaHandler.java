@@ -29,6 +29,7 @@ import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.request.SolrQueryRequest;
@@ -36,7 +37,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SchemaManager;
 import org.apache.solr.security.PermissionNameProvider;
-import org.apache.solr.util.InputSourceUtil;
+import org.apache.solr.util.ConfigSetResourceUtil;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +48,7 @@ public class CoreLessSchemaHandler {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final CoreContainer coreContainer;
   private static final String SCHEMA_NAME = "managed-schema";
-  private static final String CONFIG_PREFIX = "/configs/";
+  private static final String CONFIG_PREFIX = ZkConfigManager.CONFIGS_ZKNODE + "/";
   private static final String PATH_PREFIX = "/cluster/configset/";
   private static final String PATH_POSTFIX_SCHEMA = "/schema";
 
@@ -106,17 +107,15 @@ public class CoreLessSchemaHandler {
   private ManagedIndexSchema getManagedSchema(String configSetName, SolrConfig config) {
     String schemaNode = CONFIG_PREFIX + configSetName + "/" + SCHEMA_NAME;
     Stat stat = new Stat();
-    InputSource schemaIS = InputSourceUtil.populate(coreContainer.getZkController().getZkClient(), schemaNode, new Stat());
+    InputSource schemaIS = ConfigSetResourceUtil.populate(coreContainer.getZkController().getZkClient(), schemaNode, new Stat());
     return new ManagedIndexSchema(
         config.luceneMatchVersion, coreContainer.getResourceLoader(), SCHEMA_NAME, schemaIS, stat.getVersion(), new Object());
   }
 
   private SolrConfig getSolrConfig(String configSetName) {
-    String confNode = CONFIG_PREFIX + configSetName + "/" + SolrConfig.DEFAULT_CONF_FILE;
-    InputSource confIS = InputSourceUtil.populate(coreContainer.getZkController().getZkClient(), confNode, new Stat());
     SolrConfig config;
     try {
-      config = new SolrConfig(confIS);
+      config = new SolrConfig(configSetName, coreContainer.getZkController().getZkClient());
     } catch (IOException | ParserConfigurationException | SAXException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to form solrConfig", e);
     }

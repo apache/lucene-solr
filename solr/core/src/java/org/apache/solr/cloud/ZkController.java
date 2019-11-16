@@ -2373,17 +2373,33 @@ public class ZkController implements Closeable {
 
   public static void touchConfDir(ZkSolrResourceLoader zkLoader) {
     SolrZkClient zkClient = zkLoader.getZkController().getZkClient();
+    String path = zkLoader.getConfigSetZkPath();
+    touchConfDir(zkClient, path);
+  }
+
+  public static void touchConfDir(SolrZkClient zkClient, String path) {
     try {
-      zkClient.setData(zkLoader.getConfigSetZkPath(), new byte[]{0}, true);
+      zkClient.setData(path, new byte[]{0}, true);
     } catch (Exception e) {
       if (e instanceof InterruptedException) {
         Thread.currentThread().interrupt(); // Restore the interrupted status
       }
-      final String msg = "Error 'touching' conf location " + zkLoader.getConfigSetZkPath();
+      final String msg = "Error 'touching' conf location " + path;
       log.error(msg, e);
       throw new SolrException(ErrorCode.SERVER_ERROR, msg, e);
-
     }
+  }
+
+  public static Boolean isResourceExists(SolrZkClient client, String path) {
+    try {
+      return client.exists(path, true);
+    } catch (InterruptedException | KeeperException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to access path:" + path, e);
+    }
+  }
+
+  public static void updateResource(SolrZkClient zkClient, String path, byte[] data, int version) throws KeeperException, InterruptedException {
+    zkClient.setData(path, data, version, true);
   }
 
   public static class ResourceModifiedInZkException extends SolrException {

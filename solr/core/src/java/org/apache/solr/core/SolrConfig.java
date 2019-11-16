@@ -54,6 +54,8 @@ import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.request.SolrRequestHandler;
@@ -74,7 +76,9 @@ import org.apache.solr.update.SolrIndexConfig;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
+import org.apache.solr.util.ConfigSetResourceUtil;
 import org.apache.solr.util.DOMUtil;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
@@ -166,16 +170,19 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
   }
 
   /**
-   * Creates a configuration instance from a configuration stream.
+   * Creates a configuration instance from zkClient
+   * creates other necessary resources too
    * A default resource loader will be created (@see SolrResourceLoader).
    * If the stream is null, the resource loader will open the configuration stream.
    * If the stream is not null, no attempt to load the resource will occur (the name is not used).
-   *
-   * @param is the configuration stream
+   * @param key configset key
+   * @param zkClient the zkClient
    */
-  public SolrConfig(InputSource is)
-      throws ParserConfigurationException, IOException, SAXException {
-    this((SolrResourceLoader) null, DEFAULT_CONF_FILE, is);
+  public SolrConfig(String key, SolrZkClient zkClient) throws ParserConfigurationException, IOException, SAXException {
+    this(null, DEFAULT_CONF_FILE,
+        ConfigSetResourceUtil.populate(zkClient, ZkConfigManager.CONFIGS_ZKNODE + "/" + key + "/" + SolrConfig.DEFAULT_CONF_FILE, new Stat()),
+        ConfigSetResourceUtil.populateOverlay(key, zkClient), ConfigSetResourceUtil.populateRequestParams(key, zkClient)
+    );
   }
 
   /**
@@ -203,7 +210,6 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error loading solr config from " + resource, e);
     }
   }
-
   /**
    * Creates a configuration instance from a resource loader, a configuration name and a stream.
    * If the stream is null, the resource loader will open the configuration stream.
@@ -215,9 +221,22 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
    */
   public SolrConfig(SolrResourceLoader loader, String name, InputSource is)
       throws ParserConfigurationException, IOException, SAXException {
+    this(loader, name, is, null, null);
+  }
+
+  public SolrConfig(SolrResourceLoader loader, String name, InputSource is, ConfigOverlay overlay, RequestParams requestParams)
+      throws ParserConfigurationException, IOException, SAXException {
     super(loader, name, is, "/config/");
-    getOverlay();//just in case it is not initialized
-    getRequestParams();
+    if (overlay == null) {
+      this.overlay = getConfigOverlay(getResourceLoader());
+    } else {
+      this.overlay = overlay;
+    }
+    if (requestParams == null) {
+      this.requestParams = refreshRequestParams();
+    } else {
+      this.requestParams = requestParams;
+    }
     initLibs();
     luceneMatchVersion = SolrConfig.parseLuceneVersionString(getVal(IndexSchema.LUCENE_MATCH_VERSION_PARAM, true));
     log.info("Using Lucene MatchVersion: {}", luceneMatchVersion);
@@ -987,7 +1006,6 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     }
     return requestParams;
   }
-
 
   public RequestParams refreshRequestParams() {
     requestParams = RequestParams.getFreshRequestParams(getResourceLoader(), requestParams);

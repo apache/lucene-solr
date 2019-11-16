@@ -34,6 +34,7 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -47,7 +48,6 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.rest.BaseSolrResource;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
@@ -168,8 +168,9 @@ public class SchemaManager {
       try {
         managedIndexSchema.persist(sw);
         final SolrZkClient zkClient = controller.getZkClient();
-        final String resourceLocation =  "/configs/" + name+"/"+managedIndexSchema.getResourceName();
-       zkClient.setData(resourceLocation, sw.toString().getBytes(StandardCharsets.UTF_8), managedIndexSchema.getSchemaZkVersion(), true);
+        final String resourceLocation = ZkConfigManager.CONFIGS_ZKNODE + "/" + name + "/" + managedIndexSchema.getResourceName();
+        byte[] bytes = sw.toString().getBytes(StandardCharsets.UTF_8);
+        ZkController.updateResource(zkClient, resourceLocation, bytes, managedIndexSchema.getSchemaZkVersion());
       } catch (IOException e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "unable to serialize schema");
         //unlikely

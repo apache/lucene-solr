@@ -29,9 +29,6 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.PermissionNameProvider;
-import org.apache.solr.util.InputSourceUtil;
-import org.apache.zookeeper.data.Stat;
-import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
 public class CoreLessSolrConfigHandler {
@@ -56,8 +53,8 @@ public class CoreLessSolrConfigHandler {
       //trim path for consistency
       String fPath = trimPath(req, configSetName);
       req.getContext().put("path", fPath);
-      SolrConfig solrConfig = getSolrConfig(configSetName);
-      new SolrConfigManager().handleGET(req, rsp, null, solrConfig, coreContainer.getResourceLoader());
+      new SolrConfigManager().handleGET(req, rsp, configSetName,
+          coreContainer.getResourceLoader(), coreContainer.getZkController().getZkClient());
     }
   }
 
@@ -73,22 +70,9 @@ public class CoreLessSolrConfigHandler {
     @Command()
     public void post(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
       String configSetName = req.getPathTemplateValues().get("name");
-      SolrConfig solrConfig = getSolrConfig(configSetName);
       String fPath = trimPath(req, configSetName);
       req.getContext().put("path", fPath);
-      new SolrConfigManager().handlePOST(req, rsp, solrConfig, coreContainer.getResourceLoader());
+      new SolrConfigManager().handlePOST(req, rsp, configSetName, coreContainer.getZkController().getZkClient());
     }
-  }
-
-  private SolrConfig getSolrConfig(String configSetName) {
-    String confNode = CONFIG_PREFIX + configSetName + "/" + SolrConfig.DEFAULT_CONF_FILE;
-    InputSource confIS = InputSourceUtil.populate(coreContainer.getZkController().getZkClient(), confNode, new Stat());
-    SolrConfig config;
-    try {
-      config = new SolrConfig(confIS);
-    } catch (IOException | ParserConfigurationException | SAXException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed to form solrConfig", e);
-    }
-    return config;
   }
 }
