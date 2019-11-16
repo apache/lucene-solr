@@ -3158,6 +3158,10 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   private static final Map implicitPluginsInfo = (Map) Utils.fromJSONResource("ImplicitPlugins.json");
 
   public List<PluginInfo> getImplicitHandlers() {
+    return getImplicitHandlers(implicitPluginsInfo);
+  }
+
+  public static List<PluginInfo> getImplicitHandlers(Map implicitPluginsInfo) {
     List<PluginInfo> implicits = new ArrayList<>();
     Map requestHandlers = (Map) implicitPluginsInfo.get(SolrRequestHandler.TYPE);
     for (Object o : requestHandlers.entrySet()) {
