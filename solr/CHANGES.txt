@@ -54,6 +54,8 @@ New Features
 
 * SOLR-10786: Add DBSCAN clustering Streaming Evaluator (Joel Bernstein)
 
+* SOLR-13911: Add 'missing' aggregation in JSON FacetModule (hossman, Munendra S N)
+
 Improvements
 ---------------------
 
