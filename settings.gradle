@@ -9,7 +9,6 @@
 
 include 'buildSrc'
 include 'dev-tools'
-include 'help'
 
 include 'lucene'
 include 'lucene:lucene-core'

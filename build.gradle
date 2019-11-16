@@ -64,9 +64,6 @@ if (userHomeConfigFile.exists()) {
 // we add some custom ext methods here, including mfile
 apply from: file("${rootDir}/buildSrc/common/configure-ext.gradle")
 
-// build help tasks
-apply from: mfile(rootDir, 'buildSrc/common/build-help.gradle')
-
 // setup repositories
 apply from: mfile(rootDir, 'buildSrc/common/configure-repositories.gradle')
 
@@ -250,7 +247,7 @@ configure(subprojects) {
 
       exclude group: 'org.slf4j', module: 'slf4j-log4j12' // zk and perhaps others can bring in log4j12 binding
 
-      exclude group: 'xml-apis', module: 'xml-apis' // somehow can be inconsistenly brought in by xerces:xercesImpl - exlude it
+      exclude group: 'xml-apis', module: 'xml-apis' // somehow can be inconsistenly brought in by xerces:xercesImpl - exclude it
     }
 
     modules {
@@ -309,8 +306,6 @@ configure(subprojects) {
       sourceJarOutput sourceJar
     }
   }
-
-
 }
 
 
@@ -339,6 +334,21 @@ configure(subprojects) {
 
 
 // ### -> Other config
+
+// Add "help" tasks which display plain text files under 'help' folder.
+[
+  ["Ant", "help/ant.txt", "List Gradle commands that mimic previous Ant targets."],
+  ["Tests", "help/tests.txt", "Running Lucene and Solr tests and the options that are available to you."],
+  ["Dependencies", "help/dependencies.txt", "How dependencies are managed and what you need to know to change them."],
+].each { section, path, sectionInfo ->
+  task "help${section}" {
+    group = 'Help (developer guides and hints)'
+    description = sectionInfo
+    doFirst {
+      println "\n" + rootProject.file(path).getText("UTF-8")
+    }
+  }
+}
 
 
 // TODO: prob does not go here
