@@ -79,6 +79,8 @@ dependencies {
   implementation 'io.opentracing:opentracing-noop'
   implementation 'io.opentracing:opentracing-util'
   
+  implementation ('com.github.zafarkhaja:java-semver')
+
   implementation ('org.apache.zookeeper:zookeeper')
   implementation ('org.apache.zookeeper:zookeeper-jute')
   implementation ('org.apache.httpcomponents:httpclient')
