@@ -108,6 +108,16 @@ public final class ManagedIndexSchema extends IndexSchema {
     this.schemaZkVersion = schemaZkVersion;
     this.schemaUpdateLock = schemaUpdateLock;
   }
+
+  public ManagedIndexSchema(Version luceneMatchVersion,SolrResourceLoader loader, String name, InputSource is
+      , int schemaZkVersion, Object schemaUpdateLock) {
+    super(name, is, luceneMatchVersion,loader);
+    this.isMutable = true;
+    this.managedSchemaResourceName = name;
+    this.schemaZkVersion = schemaZkVersion;
+    //@todo maybe remove lock
+    this.schemaUpdateLock = schemaUpdateLock;
+  }
   
   
   /**
@@ -1146,9 +1156,12 @@ public final class ManagedIndexSchema extends IndexSchema {
   
   @Override
   protected void postReadInform() {
-    super.postReadInform();
-    for (FieldType fieldType : fieldTypes.values()) {
-      informResourceLoaderAwareObjectsForFieldType(fieldType);
+    //@todo check exclusive
+    if (loader instanceof ZkSolrResourceLoader) {
+      super.postReadInform();
+      for (FieldType fieldType : fieldTypes.values()) {
+        informResourceLoaderAwareObjectsForFieldType(fieldType);
+      }
     }
   }
 

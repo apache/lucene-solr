@@ -50,6 +50,7 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.queries.payloads.PayloadDecoder;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.util.Version;
+import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -615,9 +616,12 @@ public class IndexSchema {
   }
 
   protected void postReadInform() {
-    //Run the callbacks on SchemaAware now that everything else is done
-    for (SchemaAware aware : schemaAware) {
-      aware.inform(this);
+    //@todo check exclusive
+    if (loader instanceof ZkSolrResourceLoader) {
+      //Run the callbacks on SchemaAware now that everything else is done
+      for (SchemaAware aware : schemaAware) {
+        aware.inform(this);
+      }
     }
   }
 
