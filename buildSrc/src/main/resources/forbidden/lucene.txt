@@ -24,10 +24,6 @@ java.io.RandomAccessFile
 java.nio.file.Path#toFile()
 java.util.jar.JarFile
 java.util.zip.ZipFile
-@defaultMessage Use home-grown methods instead
-java.lang.Math#toRadians(double)
-java.lang.Math#toDegrees(double)
-
 @defaultMessage Prefer using ArrayUtil as Arrays#copyOfRange fills zeros for bad bounds
 java.util.Arrays#copyOfRange(byte[],int,int)
 java.util.Arrays#copyOfRange(char[],int,int)

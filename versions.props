@@ -9,6 +9,7 @@ com.fasterxml.jackson*:*=2.9.9
 com.fasterxml.woodstox:*=5.2.0
 com.github.ben-manes.caffeine:caffeine=2.8.0
 com.github.virtuald:curvesapi=1.04
+com.github.zafarkhaja:java-semver=0.9.0
 com.google.guava:guava=25.1-jre
 com.google.protobuf:protobuf-java=3.7.1
 com.google.re2j:re2j=1.2
