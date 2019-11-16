@@ -166,6 +166,19 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
   }
 
   /**
+   * Creates a configuration instance from a configuration stream.
+   * A default resource loader will be created (@see SolrResourceLoader).
+   * If the stream is null, the resource loader will open the configuration stream.
+   * If the stream is not null, no attempt to load the resource will occur (the name is not used).
+   *
+   * @param is the configuration stream
+   */
+  public SolrConfig(InputSource is)
+      throws ParserConfigurationException, IOException, SAXException {
+    this((SolrResourceLoader) null, DEFAULT_CONF_FILE, is);
+  }
+
+  /**
    * Creates a configuration instance from an instance directory, configuration name and stream.
    *
    * @param instanceDir the directory used to create the resource loader
@@ -960,6 +973,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
   private ConfigOverlay overlay;
 
+  //@todo refactor
   public ConfigOverlay getOverlay() {
     if (overlay == null) {
       overlay = getConfigOverlay(getResourceLoader());
