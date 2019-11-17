@@ -15,72 +15,97 @@
  * limitations under the License.
  */
 
-apply plugin: 'java-library'
-apply plugin: org.apache.lucene.gradle.dist.PartOfDist
-
-jar.enabled = false
+apply plugin: 'base'
 
 configurations {
   startJar
+  libExt
+  lib {
+    exclude group: "org.slf4j"
+  }
 }
 
 dependencies {
+  startJar('org.eclipse.jetty:jetty-start::shaded', {
+    transitive false
+  })
+
+  libExt 'com.lmax:disruptor'
+  libExt 'org.slf4j:jcl-over-slf4j'
+  libExt 'org.slf4j:jul-to-slf4j'
+  libExt 'org.slf4j:slf4j-api'
+  libExt 'org.apache.logging.log4j:log4j-1.2-api'
+  libExt 'org.apache.logging.log4j:log4j-api'
+  libExt 'org.apache.logging.log4j:log4j-core'
+  libExt 'org.apache.logging.log4j:log4j-slf4j-impl'
+  libExt 'org.apache.logging.log4j:log4j-web'
+
+  lib('org.eclipse.jetty:jetty-alpn-java-server', {
+    exclude group: "org.eclipse.jetty.alpn", module: "alpn-api"
+  })
+
+  lib 'io.dropwizard.metrics:metrics-core'
+  lib('io.dropwizard.metrics:metrics-graphite', {
+    exclude group: "com.rabbitmq", module: "amqp-client"
+  })
+  lib 'io.dropwizard.metrics:metrics-jetty9'
+  lib 'io.dropwizard.metrics:metrics-jvm'
+  lib 'io.dropwizard.metrics:metrics-jmx'
   
-  runtimeOnly ('com.lmax:disruptor')
-  runtimeOnly ('org.slf4j:jcl-over-slf4j')
-  runtimeOnly ('org.slf4j:jul-to-slf4j')
-  runtimeOnly ('org.slf4j:slf4j-api')
+  lib 'org.eclipse.jetty:jetty-continuation'
+  lib 'org.eclipse.jetty:jetty-deploy'
+  lib 'org.eclipse.jetty:jetty-http'
+  lib 'org.eclipse.jetty:jetty-io'
+  lib 'org.eclipse.jetty:jetty-jmx'
+  lib 'org.eclipse.jetty:jetty-rewrite'
+  lib 'org.eclipse.jetty:jetty-security'
+  lib 'org.eclipse.jetty:jetty-server'
+  lib 'org.eclipse.jetty:jetty-servlet'
+  lib 'org.eclipse.jetty:jetty-servlets'
+  lib 'org.eclipse.jetty:jetty-util'
+  lib 'org.eclipse.jetty:jetty-webapp'
+  lib 'org.eclipse.jetty:jetty-xml'
+  lib 'org.eclipse.jetty:jetty-alpn-server'
+
+  lib 'org.eclipse.jetty.http2:http2-server'
+  lib 'org.eclipse.jetty.http2:http2-common'
+  lib 'org.eclipse.jetty.http2:http2-hpack'
   
-  runtimeOnly ('org.eclipse.jetty:jetty-alpn-java-server')
-  runtimeOnly ('org.eclipse.jetty:jetty-alpn-java-client')
-  
-  implementation ('org.apache.logging.log4j:log4j-1.2-api')
-  implementation ('org.apache.logging.log4j:log4j-api')
-  implementation ('org.apache.logging.log4j:log4j-core')
-  implementation ('org.apache.logging.log4j:log4j-slf4j-impl')
-  
-  implementation ('io.dropwizard.metrics:metrics-core')
-  implementation ('io.dropwizard.metrics:metrics-graphite')
-  implementation ('io.dropwizard.metrics:metrics-jetty9')
-  implementation ('io.dropwizard.metrics:metrics-jvm')
-  
-  implementation ('org.eclipse.jetty:jetty-continuation')
-  implementation ('org.eclipse.jetty:jetty-deploy')
-  implementation ('org.eclipse.jetty:jetty-http')
-  implementation ('org.eclipse.jetty:jetty-io')
-  implementation ('org.eclipse.jetty:jetty-jmx')
-  implementation ('org.eclipse.jetty:jetty-rewrite')
-  implementation ('org.eclipse.jetty:jetty-security')
-  implementation ('org.eclipse.jetty:jetty-server')
-  implementation ('org.eclipse.jetty:jetty-servlet')
-  implementation ('org.eclipse.jetty:jetty-servlets')
-  implementation ('org.eclipse.jetty:jetty-util')
-  implementation ('org.eclipse.jetty:jetty-webapp')
-  implementation ('org.eclipse.jetty:jetty-xml')
-  implementation 'org.eclipse.jetty:jetty-alpn-server'
-  implementation 'org.eclipse.jetty:jetty-alpn-client'
-  
-  implementation ('org.eclipse.jetty.http2:http2-server')
-  implementation ('org.eclipse.jetty.http2:http2-common')
-  implementation ('org.eclipse.jetty.http2:http2-hpack')
-  implementation ('org.eclipse.jetty.http2:http2-http-client-transport')
-  
-  implementation ('javax.servlet:javax.servlet-api')
-  
-  startJar 'org.eclipse.jetty:jetty-start::shaded'
+  lib 'javax.servlet:javax.servlet-api'
 }
 
-task getStartJar(type: Copy) {
-  from {project.configurations.startJar.files} {
-    include 'jetty-start*'
+task collectDependencies(type: Sync) {
+  from { project.configurations.startJar.singleFile } {
+    rename { file -> 'start.jar' }\
   }
-  into project.projectDir
-  rename { String fileName ->
-    'start.jar'
-  }
+
+  from(project.configurations.lib, {
+    into 'lib/'
+  })
+
+  from(project.configurations.libExt, {
+    into 'lib/ext/'
+  })
+
+  from(projectDir, {
+    include "contexts/**"
+    include "etc/**"
+    include "modules/**"
+    include "resources/**"
+    include "scripts/**"
+    include "solr/**"
+    include "README.txt"
+  })
+
+  into "$buildDir/assembled"
 }
 
-unusedDeps {
-  jarExclude '.*?\\.jar' // solr-server creates no jar, so we don't currently check it
+// TODO: remove this. Keep project sources separate from preassembled locations.
+task copyIntoProjectSources(type: Copy) {
+  dependsOn collectDependencies
+
+  from "$buildDir/assembled"
+  into projectDir
 }
 
+assemble.dependsOn collectDependencies, copyIntoProjectSources

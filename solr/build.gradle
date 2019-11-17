@@ -37,5 +37,6 @@ task packageDist(type: org.apache.lucene.gradle.dist.PackageLuceneSolrDist) {
   // additional includes for solr-server
   includeArtifacts '**/server/solr/**', '**/server/resources/**', '**/server/etc/**', '**/server/modules/**', '**/server/scripts/**', '**/server/contexts/**', '**/server/start.jar'
   
-  dependsOn { project(":solr:solr-server").getStartJar }
+  // REMOVE; cross-project task dependency.
+  // dependsOn { project(":solr:solr-server").getStartJar }
 }
