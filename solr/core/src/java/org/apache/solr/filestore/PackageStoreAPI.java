@@ -88,7 +88,6 @@ public class PackageStoreAPI {
   public ArrayList<String> shuffledNodes() {
     Set<String> liveNodes = coreContainer.getZkController().getZkStateReader().getClusterState().getLiveNodes();
     ArrayList<String> l = new ArrayList(liveNodes);
-    l.remove(coreContainer.getZkController().getNodeName());
     Collections.shuffle(l, BlobRepository.RANDOM);
     return l;
   }

@@ -1,4 +1,4 @@
-= Packages in Solr
+= Package Manager Internals
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -16,9 +16,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
-A Package in Solr may contain one or more .jar files and any no:of plugins.
+The package manager (CLI) internally uses various Solr APIs to install, deploy and update packages. This document contains an overview of those APIs.
 
-== Objectives
+== Design Objectives
 
 * Zero disruption deployment (hot deployment): Should be possible to install and update packages without node restarts or core reloads, and hence deployments should be quick and without failed requests or stale caches.
 * Easy packaging:
@@ -36,21 +36,14 @@ The root classloader which has all the jars from Solr classpath. This requires S
 A set of named classloaders that inherit from the root classloader. The life cycles of the named classloaders are tied to the package configuration in ZK. As soon as the configuration is modified, the corresponding classloaders are reloaded and components are asked to reload.
 
 
-== A Plugin
-
-A Plugin is an implementation of any of the standard Solr pluggable component. A Package has two components
-
- * The jar file(s)
- * The configuration of the Package in Zookeeper in a file called `/packages.json`
-
-=== Package loading security
-Packages are disabled by default. Start all your nodes with the system property `-Denable.package=true` to use this feature.
+== Package loading security
+Packages are disabled by default. Start all your nodes with the system property `-Denable.packages=true` to use this feature.
 
 *Example*
 [source,bash]
 ----
 
-$ bin/solr -e cloud -noprompt -a "-Denable.packages=true"
+$ bin/solr -c -Denable.packages=true
 ----
 
 ==== Upload your keys
@@ -93,9 +86,9 @@ The end points are
 * `GET /api/node/files/{full/path/to/file}?meta=true` get the metadata of the file
 * `GET /api/node/files/{full/path/to/}` get the list of files in `/full/path/to`
 
+=== Signing your artifacts
 
-
-Use the following steps to upload a jar signed with your public key
+Use the following steps to upload a jar signed with your public key:
 
 1) If you don't have a jar file with plugins, download a sample from github
 
@@ -125,22 +118,22 @@ $ curl http://localhost:7574/api/node/files/mypkg/1.0?omitHeader=true
 ----
 {
   "files":{"/mypkg/1.0":[{
-        "name":"myplugins.jar",
-        "timestamp":"2019-11-11T07:36:17.354Z",
-        "sha512":"d01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420",
-        "sig":["elNjhmWIOgTgbAzeZ+OcwR42N7vqL6Ig9eAqn4YoP2thT7FJuhiaZuCPivjMkD682EBo9gveSCTyXIsZKjOCbQ=="]}]}}
+  "name":"myplugins.jar",
+  "timestamp":"2019-11-11T07:36:17.354Z",
+  "sha512":"d01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420",
+  "sig":["elNjhmWIOgTgbAzeZ+OcwR42N7vqL6Ig9eAqn4YoP2thT7FJuhiaZuCPivjMkD682EBo9gveSCTyXIsZKjOCbQ=="]}]}}
 ----
 
 
 == Packages
-A Package has the following attributes:
+A Package have the following attributes:
 
 * A unique name
 * One or more versions with the following attributes:
 ** `version` : The version string
 ** `files` : An array of files from the package store
 
-For every package/version in the packages definition, there is a unique `SolrResourceLoader` instance. This is a child of the `CoreContainer` resource loader.
+For every package / version in the packages definition, there is a unique `SolrResourceLoader` instance. This is a child of the `CoreContainer` resource loader.
 
 === `packages.json`
 
@@ -208,7 +201,7 @@ Any class name can be prefixed with the packagename e.g : `mypkg:fully.qualified
 </requestHandler>
 ----
 
-==== Full Working example
+==== Full working example
 
 1) create a package
 
@@ -365,7 +358,7 @@ $ curl http://localhost:8983/solr/gettingstarted/test?omitHeader=true
 ----
 Note that the `Version` value is `"2"` . So the plugin is updated
 
-==== How to avoid automatic upgrade?
+==== How to avoid automatic upgrade (while only using internal APIs)?
 
 The default version used in any collection is always the latest. However, setting a per-collection property in the `params.json` ensures that the versions are always fixed irrespective of the new versions added
 
