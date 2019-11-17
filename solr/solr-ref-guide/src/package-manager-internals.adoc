@@ -1,21 +1,4 @@
 = Package Manager Internals
-// Licensed to the Apache Software Foundation (ASF) under one
-// or more contributor license agreements.  See the NOTICE file
-// distributed with this work for additional information
-// regarding copyright ownership.  The ASF licenses this file
-// to you under the Apache License, Version 2.0 (the
-// "License"); you may not use this file except in compliance
-// with the License.  You may obtain a copy of the License at
-//
-//   http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing,
-// software distributed under the License is distributed on an
-// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-// KIND, either express or implied.  See the License for the
-// specific language governing permissions and limitations
-// under the License.
-
 The package manager (CLI) internally uses various Solr APIs to install, deploy and update packages. This document contains an overview of those APIs.
 
 == Design Objectives
@@ -26,15 +9,13 @@ The package manager (CLI) internally uses various Solr APIs to install, deploy a
 ** Artifacts (jars containing custom plugins) that users have already deployed (and are using in production) should be compatible, without needing to recompile or re-package, for greater adoption.
 ** Should support single jar packages as well as multiple jar packages.
 ** Use familiar / standard naming
-** Use industry standard concepts and terminology around package manager, similar to those like apt, dnf, homebrew etc.
-
+** Use industry standard concepts and terminology around package manager, similar to those like apt, dnf, homebrew etc.s
 
 == Classloaders
 
 At the heart of the system, we have classloader isolation. To achieve this, the system is simplified into two layered classloaders:
 The root classloader which has all the jars from Solr classpath. This requires Solr node restart to change anything.
 A set of named classloaders that inherit from the root classloader. The life cycles of the named classloaders are tied to the package configuration in ZK. As soon as the configuration is modified, the corresponding classloaders are reloaded and components are asked to reload.
-
 
 == Package loading security
 Packages are disabled by default. Start all your nodes with the system property `-Denable.packages=true` to use this feature.
@@ -46,7 +27,7 @@ Packages are disabled by default. Start all your nodes with the system property 
 $ bin/solr -c -Denable.packages=true
 ----
 
-==== Upload your keys
+=== Upload your keys
 Package binaries must be signed with your private keys and ensure your public keys are published in Zookeeper
 
 *Example*
@@ -157,20 +138,20 @@ The package configurations live in a file called /packages.json in Zookeeper. At
 
 ----
 
-=== API end points
+== API end points
 
 * `GET /api/cluster/package` Get the list of packages
 * `POST /api/cluster/package` edit packages
 ** `add` command: add a version of a package
 ** `delete` command :  delete a version of a package
 
-==== How to upgrade?
+=== How to upgrade?
 Use the add command to add a version that is bigger than the current version
 
-==== How to downgrade ?
+=== How to downgrade ?
 Use the delete command to delete a version that is the highest and the next highest version will be chosen
 
-==== Using multiple versions in parallel in each collection
+=== Using multiple versions in parallel in each collection
 We use the `params.json` in the collection config to store a version of a package it uses.  by default it is the $LATEST.
 [source, json]
 ----
@@ -183,14 +164,14 @@ We use the `params.json` in the collection config to store a version of a packag
 * for `mypkg` use the version `0.1` irrespective of whether there is a newer version is available or not
 * for `pkg2` use the latest. This is optional. The default is ‘$LATEST’
 
-==== The workflow
+=== The workflow
 * A new version of a package is added
 * The package loader loads the classes and notifies every plugin holder of the availability of the new version
 * It checks if it is supposed to use a specific version, Ignore the update
 * If not, reload the plugin
 
 
-==== Using them in Plugins
+=== Using them in Plugins
 Any class name can be prefixed with the packagename e.g : `mypkg:fully.qualified.ClassName` and Solr would use the latest version of the package to load the classes from. The plugins loaded from packages cannot depend on core level classes.
 
 *Plugin declaration in `solrconfig.xml`*
@@ -201,7 +182,7 @@ Any class name can be prefixed with the packagename e.g : `mypkg:fully.qualified
 </requestHandler>
 ----
 
-==== Full working example
+=== Full working example
 
 1) create a package
 
@@ -358,7 +339,7 @@ $ curl http://localhost:8983/solr/gettingstarted/test?omitHeader=true
 ----
 Note that the `Version` value is `"2"` . So the plugin is updated
 
-==== How to avoid automatic upgrade (while only using internal APIs)?
+=== How to avoid automatic upgrade (while only using internal APIs)?
 
 The default version used in any collection is always the latest. However, setting a per-collection property in the `params.json` ensures that the versions are always fixed irrespective of the new versions added
 

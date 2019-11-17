@@ -1,4 +1,6 @@
 = Package Management
+:page-children: package-manager-internals
+
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -32,7 +34,7 @@ The package manager in Solr consists of the following internal components:
 * Isolated classloaders
 * Package Store
 
-In this guide, we will focus on the Package Manager CLI, which essentially uses the other APIs and components internally. For details on the other components (and hence details of inner workings of the package manager), please refer to <<package-manager-internals.adoc,Package Manager internals>>.
+In this guide, we will focus on the Package Manager CLI, which essentially uses the other APIs and components internally. For details on the other components (and hence details of inner workings of the package manager), please refer to <<package-manager-internals.adoc#package-manager-internals,Package Manager internals>>.
 
 == Interacting with the package manager
 
@@ -152,6 +154,6 @@ $ bin/solr package deploy mypackage:2.0.0 --update -collections mycollection
 You can run the `list-deployed` command to verify that this collection is using the newly added version.
 
 == Security
-Except the `add-repo` step, all other steps can be executed using a HTTP endpoint in Solr (see <<package-manager-internals.adoc,Package Manager internals>>). This step registers the public key of the trusted repository, and hence can only be executed using the package manager (CLI) having direct write access to Zookeeper. Hence, as you can imagine, it is important to protect Zookeeper from unauthorized write access.
+Except the `add-repo` step, all other steps can be executed using a HTTP endpoint in Solr (see <<package-manager-internals.adoc#package-manager-internals,Package Manager internals>>). This step registers the public key of the trusted repository, and hence can only be executed using the package manager (CLI) having direct write access to Zookeeper. Hence, as you can imagine, it is important to protect Zookeeper from unauthorized write access.
 
 Also, keep in mind, that it is possible to install any package from a trusted and an already added repository. Hence, if you want to use some packages in production, then it is better to setup your own repository and add that to Solr, instead of adding a generic third-party repository that is beyond your administrative control.
