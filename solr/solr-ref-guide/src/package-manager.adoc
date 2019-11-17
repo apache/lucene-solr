@@ -96,7 +96,7 @@ $ bin/solr package install <package-name>[:<version>]
 Once a package has been installed, the plugins contained in it can be used in a collection, using either of the two methods:
 
 ==== Deploying using `deploy` command
- This can be done using the package manager's `deploy` command, provided the package supports it (package author's documentation would usually mention that):
+This can be done using the package manager's `deploy` command, provided the package supports it (package author's documentation would usually mention that):
 
 [source,bash]
 ----
@@ -120,7 +120,7 @@ After that, `RELOAD` your collection. Now, you should set the package version th
 [source,bash]
 ----
 curl  "http://localhost:8983/api/collections/collection1/config/params" \
-   -H 'Content-type:application/json'  -d "{set: {PKG_VERSIONS: {mypackage: '1.0.0'}}}"
+   -H 'Content-type:application/json' -d "{set: {PKG_VERSIONS: {mypackage: '1.0.0'}}}"
 ----
 
 ==== Verifying the deployment
@@ -154,4 +154,4 @@ You can run the `list-deployed` command to verify that this collection is using 
 == Security
 Except the `add-repo` step, all other steps can be executed using a HTTP endpoint in Solr (see <<package-manager-internals.adoc,Package Manager internals>>). This step registers the public key of the trusted repository, and hence can only be executed using the package manager (CLI) having direct write access to Zookeeper. Hence, as you can imagine, it is important to protect Zookeeper from unauthorized write access.
 
-Also, keep in mind, that it is possible to install any package from a trusted and an already added repository. Hence, if you want to use some packages in production, then it is better to setup your own repository and add that to Solr, instead of adding generic third-party repository that is beyond your administrative control.
+Also, keep in mind, that it is possible to install any package from a trusted and an already added repository. Hence, if you want to use some packages in production, then it is better to setup your own repository and add that to Solr, instead of adding a generic third-party repository that is beyond your administrative control.
