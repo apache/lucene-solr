@@ -19,10 +19,10 @@
 == Glossary of terms
 
 === Package
-A set of jar files (usually one) containing one or more <<solr-plugins.adoc#solr-plugins,Solr plugins>>.
+A set of jar files (usually one) containing one or more <<solr-plugins.adoc#solr-plugins,Solr plugins>>. Each jar file is also accompanied by a signature string (which can be against a supplied public key).
 
 === Repository
-A location hosting one or many packages. Usually, this is a webservice that serves meta information about packages as well as serves the package artifacts for downloading.
+A location hosting one or many packages. Usually, this is a web service that serves meta information about packages as well as serves the package artifacts for downloading.
 
 == Overview
 The package manager in Solr consists of the following internal components:
