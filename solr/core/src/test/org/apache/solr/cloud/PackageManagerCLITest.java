@@ -35,6 +35,7 @@ import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,6 +72,7 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
 
   @Test
   @SuppressForbidden(reason = "Need to turn off logging, and SLF4J doesn't seem to provide for a way.")
+  @Ignore
   public void testPackageManager() throws Exception {
     PackageTool tool = new PackageTool();
     
