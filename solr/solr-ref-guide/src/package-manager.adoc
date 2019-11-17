@@ -83,7 +83,6 @@ To list packages available for installation from added repositories:
 $ bin/solr package list-available
 ----
 
-
 To install a package:
 
 [source,bash]
@@ -98,16 +97,19 @@ Once a package has been installed, the plugins contained in it can be used in a 
 
 ==== Deploying using `deploy` command
  This can be done using the package manager's `deploy` command, provided the package supports it (package author's documentation would usually mention that):
+
 [source,bash]
 ----
 $ bin/solr package deploy <package-name>:[version] -collections <collection1>[,<collection2>,...]
 ----
+
 This may prompt you to execute a command to deploy the package. If you pass `-y` to the command, then this prompt can be skipped.
 
 ==== Deploying manually
 Alternatively, it is also possible manually edit a configset (solrconfig.xml, managedschema / schema.xml etc.) and using it by RELOADing a collection.
 
 Example: Add a request handler from the package `mypackage` to a configset's solrconfig.xml:
+
 [source, xml]
 ----
 <requestHandler name="/myhandler" class="mypackage:full.path.to.MyClass"></requestHandler>
