@@ -52,6 +52,8 @@ Optimizations
 * LUCENE-8920: The denser arcs of FST now index labels with a bitset in order
   to provide near constant time access. (Bruno Roustant, Mike Sokolov via Adrien Grand)
 
+* LUCENE-9027: Use SIMD instructions to decode postings. (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-9001: Fix race condition in SetOnce. (Przemko Robakowski)

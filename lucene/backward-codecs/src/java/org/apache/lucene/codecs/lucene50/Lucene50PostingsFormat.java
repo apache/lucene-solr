@@ -25,7 +25,6 @@ import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.MultiLevelSkipListWriter;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.PostingsReaderBase;
-import org.apache.lucene.codecs.PostingsWriterBase;
 import org.apache.lucene.codecs.blocktree.BlockTreeTermsReader;
 import org.apache.lucene.codecs.blocktree.BlockTreeTermsWriter;
 import org.apache.lucene.index.IndexOptions;
@@ -350,7 +349,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * @lucene.experimental
  */
 
-public final class Lucene50PostingsFormat extends PostingsFormat {
+public class Lucene50PostingsFormat extends PostingsFormat {
 
   /**
    * Filename extension for document number, frequencies, and skip data.
@@ -386,9 +385,6 @@ public final class Lucene50PostingsFormat extends PostingsFormat {
   final static int VERSION_IMPACT_SKIP_DATA = 1;
   final static int VERSION_CURRENT = VERSION_IMPACT_SKIP_DATA;
 
-  private final int minTermBlockSize;
-  private final int maxTermBlockSize;
-
   /**
    * Fixed packed block size, number of integers encoded in 
    * a single packed block.
@@ -400,18 +396,12 @@ public final class Lucene50PostingsFormat extends PostingsFormat {
   /** Creates {@code Lucene50PostingsFormat} with default
    *  settings. */
   public Lucene50PostingsFormat() {
-    this(BlockTreeTermsWriter.DEFAULT_MIN_BLOCK_SIZE, BlockTreeTermsWriter.DEFAULT_MAX_BLOCK_SIZE, BlockTreeTermsReader.FSTLoadMode.AUTO);
+    this(BlockTreeTermsReader.FSTLoadMode.AUTO);
   }
 
-  /** Creates {@code Lucene50PostingsFormat} with custom
-   *  values for {@code minBlockSize} and {@code
-   *  maxBlockSize} passed to block terms dictionary.
-   *  @see BlockTreeTermsWriter#BlockTreeTermsWriter(SegmentWriteState,PostingsWriterBase,int,int) */
-  public Lucene50PostingsFormat(int minTermBlockSize, int maxTermBlockSize, BlockTreeTermsReader.FSTLoadMode loadMode) {
+  /** Creates {@code Lucene50PostingsFormat}. */
+  public Lucene50PostingsFormat(BlockTreeTermsReader.FSTLoadMode loadMode) {
     super("Lucene50");
-    BlockTreeTermsWriter.validateSettings(minTermBlockSize, maxTermBlockSize);
-    this.minTermBlockSize = minTermBlockSize;
-    this.maxTermBlockSize = maxTermBlockSize;
     this.fstLoadMode = loadMode;
   }
 
@@ -422,20 +412,7 @@ public final class Lucene50PostingsFormat extends PostingsFormat {
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    PostingsWriterBase postingsWriter = new Lucene50PostingsWriter(state);
-    boolean success = false;
-    try {
-      FieldsConsumer ret = new BlockTreeTermsWriter(state, 
-                                                    postingsWriter,
-                                                    minTermBlockSize, 
-                                                    maxTermBlockSize);
-      success = true;
-      return ret;
-    } finally {
-      if (!success) {
-        IOUtils.closeWhileHandlingException(postingsWriter);
-      }
-    }
+    throw new UnsupportedOperationException("Old formats can't be used for writing");
   }
 
   @Override

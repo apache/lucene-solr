@@ -28,6 +28,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import org.apache.lucene.util.BitUtil;
+import org.apache.lucene.util.FutureObjects;
 
 /**
  * Abstract base class for performing read operations of Lucene's low-level
@@ -155,6 +156,26 @@ public abstract class DataInput implements Cloneable {
    */
   public long readLong() throws IOException {
     return (((long)readInt()) << 32) | (readInt() & 0xFFFFFFFFL);
+  }
+
+  /**
+   * Read a specified number of longs with the little endian byte order.
+   * <p>This method can be used to read longs whose bytes have been
+   * {@link Long#reverseBytes reversed} at write time:
+   * <pre class="prettyprint">
+   * for (long l : longs) {
+   *   output.writeLong(Long.reverseBytes(l));
+   * }
+   * </pre>
+   * @lucene.experimental
+   */
+  // TODO: LUCENE-9047: Make the entire DataInput/DataOutput API little endian
+  // Then this would just be `readLongs`?
+  public void readLELongs(long[] dst, int offset, int length) throws IOException {
+    FutureObjects.checkFromIndexSize(offset, length, dst.length);
+    for (int i = 0; i < length; ++i) {
+      dst[offset + i] = Long.reverseBytes(readLong());
+    }
   }
 
   /** Reads a long stored in variable-length format.  Reads between one and
