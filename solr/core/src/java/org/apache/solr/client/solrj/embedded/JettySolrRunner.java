@@ -381,7 +381,8 @@ public class JettySolrRunner {
         dispatchFilter = root.getServletHandler().newFilterHolder(Source.EMBEDDED);
         dispatchFilter.setHeldClass(SolrDispatchFilter.class);
         dispatchFilter.setInitParameter("excludePatterns", excludePatterns);
-        root.addFilter(dispatchFilter, "*", EnumSet.of(DispatcherType.REQUEST));
+        // Map dispatchFilter in same path as in web.xml
+        root.addFilter(dispatchFilter, "/*", EnumSet.of(DispatcherType.REQUEST));
 
         synchronized (JettySolrRunner.this) {
           waitOnSolr = true;
@@ -394,8 +395,6 @@ public class JettySolrRunner {
         System.clearProperty("hostPort");
       }
     });
-    // for some reason, there must be a servlet for this to get applied
-    root.addServlet(Servlet404.class, "/*");
     chain = root;
     }
 
