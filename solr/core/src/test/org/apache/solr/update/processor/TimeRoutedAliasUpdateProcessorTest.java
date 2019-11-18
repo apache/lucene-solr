@@ -714,6 +714,7 @@ public class TimeRoutedAliasUpdateProcessorTest extends RoutedAliasUpdateProcess
       TimeRoutedAlias.parseInstantFromCollectionName(alias, alias + TRA + "2017-10-02"));
   }
 
+  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13943")
   @Test
   public void testDateMathInStart() throws Exception {
     ClusterStateProvider clusterStateProvider = solrClient.getClusterStateProvider();
