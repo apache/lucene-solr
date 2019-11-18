@@ -103,6 +103,11 @@ public class NoOpResourceManager extends ResourceManager {
     }
 
     @Override
+    public boolean isRegistered(String componentId) {
+      return false;
+    }
+
+    @Override
     public Map<String, ManagedComponent> getComponents() {
       return Collections.emptyMap();
     }
@@ -113,7 +118,7 @@ public class NoOpResourceManager extends ResourceManager {
     }
 
     @Override
-    public Map<String, Number> getTotalValues() throws InterruptedException {
+    public Map<String, Object> getTotalValues() throws InterruptedException {
       return Collections.emptyMap();
     }
 

@@ -139,12 +139,12 @@ public class TestDefaultResourceManagerPool extends SolrTestCaseJ4 {
       manageStartLatch.countDown();
       log.info("-- managing");
       pool.getCurrentValues();
-      Map<String, Number> totalValues = pool.getTotalValues();
+      Map<String, Object> totalValues = pool.getTotalValues();
       Map<String, Object> poolLimits = pool.getPoolLimits();
       if (poolLimits.containsKey("foo")) {
         // manage
         if (totalValues.containsKey("bar")) {
-          int totalValue = totalValues.get("bar").intValue();
+          int totalValue = ((Number)totalValues.get("bar")).intValue();
           int poolLimit = ((Number)poolLimits.get("foo")).intValue();
           if (totalValue > poolLimit) {
             for (ManagedComponent cmp : pool.getComponents().values()) {
@@ -193,18 +193,18 @@ public class TestDefaultResourceManagerPool extends SolrTestCaseJ4 {
     resourceManager.createPool("test", "mock", Collections.singletonMap("foo", 10), Collections.emptyMap());
     assertNotNull(resourceManager.getPool("test"));
     for (int i = 0; i < 10; i++) {
-      TestComponent component = new TestComponent("test.component." + i);
+      TestComponent component = new TestComponent("test:component:" + i);
       component.setFoo(i);
       resourceManager.registerComponent("test", component);
     }
     ResourceManagerPool pool = resourceManager.getPool("test");
     assertEquals(10, pool.getComponents().size());
     pool.getCurrentValues();
-    Map<String, Number> totalValues = pool.getTotalValues();
+    Map<String, Object> totalValues = pool.getTotalValues();
     assertNotNull(totalValues.get("bar"));
-    assertEquals(55, totalValues.get("bar").intValue());
+    assertEquals(55, ((Number)totalValues.get("bar")).intValue());
     assertNotNull(totalValues.get("baz"));
-    assertEquals(65, totalValues.get("baz").intValue());
+    assertEquals(65, ((Number)totalValues.get("baz")).intValue());
     for (ManagedComponent cmp : pool.getComponents().values()) {
       TestComponent component = (TestComponent)cmp;
       Map<String, Object> limits = pool.getResourceManagerPlugin().getResourceLimits(component);
@@ -225,9 +225,9 @@ public class TestDefaultResourceManagerPool extends SolrTestCaseJ4 {
     pool.getCurrentValues();
     totalValues = pool.getTotalValues();
     assertNotNull(totalValues.get("bar"));
-    assertEquals(46, totalValues.get("bar").intValue());
+    assertEquals(46, ((Number)totalValues.get("bar")).intValue());
     assertNotNull(totalValues.get("baz"));
-    assertEquals(56, totalValues.get("baz").intValue());
+    assertEquals(56, ((Number)totalValues.get("baz")).intValue());
     int changed = 0;
     for (ManagedComponent cmp : pool.getComponents().values()) {
       TestComponent component = (TestComponent)cmp;

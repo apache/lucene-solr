@@ -23,7 +23,7 @@ import java.util.Map;
 
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.managed.types.CacheManagerPlugin;
-import org.apache.solr.managed.types.ManagedCacheComponent;
+import org.apache.solr.search.SolrCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +41,7 @@ public class DefaultResourceManagerPluginFactory implements ResourceManagerPlugi
 
   static {
     typeToPluginClass.put(CacheManagerPlugin.TYPE, CacheManagerPlugin.class);
-    typeToComponentClass.put(CacheManagerPlugin.TYPE, ManagedCacheComponent.class);
+    typeToComponentClass.put(CacheManagerPlugin.TYPE, SolrCache.class);
   }
 
   private final SolrResourceLoader loader;

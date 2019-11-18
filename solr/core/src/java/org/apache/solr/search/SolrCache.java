@@ -16,9 +16,9 @@
  */
 package org.apache.solr.search;
 
+import org.apache.lucene.util.Accountable;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.managed.ManagedComponent;
-import org.apache.solr.managed.types.ManagedCacheComponent;
 
 import java.util.Map;
 import java.util.function.Function;
@@ -27,21 +27,33 @@ import java.util.function.Function;
 /**
  * Primary API for dealing with Solr's internal caches.
  */
-public interface SolrCache<K,V> extends SolrInfoBean, ManagedCacheComponent {
+public interface SolrCache<K,V> extends SolrInfoBean, ManagedComponent, Accountable {
 
+  // current cache properties
+  /** Hit ratio. */
   String HIT_RATIO_PARAM = "hitratio";
+  /** Number of hits. */
   String HITS_PARAM = "hits";
+  /** Number of inserts. */
   String INSERTS_PARAM = "inserts";
+  /** Number of eevictions. */
   String EVICTIONS_PARAM = "evictions";
+  /** Number of lookups. */
   String LOOKUPS_PARAM = "lookups";
+  /** Current cache size. */
   String SIZE_PARAM = "size";
+  /** Maximum allowed size. */
   String MAX_SIZE_PARAM = "maxSize";
+  /** Current RAM bytes used. */
   String RAM_BYTES_USED_PARAM = "ramBytesUsed";
+  /** Maximum allowed RAM use in MB. */
   String MAX_RAM_MB_PARAM = "maxRamMB";
+  /** Maximum idle time allowed in seconds. */
   String MAX_IDLE_TIME_PARAM = "maxIdleTime";
+  /** Initial cache size. */
   String INITIAL_SIZE_PARAM = "initialSize";
+  /** Use a background thread for cache evictions and cleanup. */
   String CLEANUP_THREAD_PARAM = "cleanupThread";
-  String SHOW_ITEMS_PARAM = "showItems";
 
   /**
    * The initialization routine. Instance specific arguments are passed in

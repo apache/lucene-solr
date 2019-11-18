@@ -40,9 +40,9 @@ public interface ResourceManagerPool extends Runnable, Closeable {
 
   /**
    * This returns cumulative monitored values of all components.
-   * <p>NOTE: you must call {@link #getCurrentValues()} first!</p>
+   * <p>NOTE: you MUST call {@link #getCurrentValues()} first!</p>
    */
-  Map<String, Number> getTotalValues() throws InterruptedException;
+  Map<String, Object> getTotalValues() throws InterruptedException;
 
   /** Get current pool limits. */
   Map<String, Object> getPoolLimits();

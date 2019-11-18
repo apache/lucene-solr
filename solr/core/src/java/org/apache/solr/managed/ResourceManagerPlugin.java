@@ -17,6 +17,7 @@
 package org.apache.solr.managed;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -40,6 +41,11 @@ public interface ResourceManagerPlugin<T extends ManagedComponent> {
    */
   Collection<String> getControlledParams();
 
+  /**
+   * Return current values of monitored parameters. Note: the resulting map may contain also
+   * other implementation-specific parameter values.
+   * @param component monitored component
+   */
   Map<String, Object> getMonitoredValues(T component) throws Exception;
 
   default void setResourceLimits(T component, Map<String, Object> limits) throws Exception {
@@ -62,4 +68,26 @@ public interface ResourceManagerPlugin<T extends ManagedComponent> {
    */
   void manage(ResourceManagerPool pool) throws Exception;
 
+  /**
+   * Aggregated current monitored values.
+   * <p>Default implementation of this method simply sums up all non-negative numeric values across
+   * components and ignores any non-numeric values.</p>
+   */
+  default Map<String, Object> aggregateTotalValues(Map<String, Map<String, Object>> perComponentValues) {
+    // calculate the totals
+    Map<String, Object> newTotalValues = new HashMap<>();
+    perComponentValues.values().forEach(map -> map.forEach((k, v) -> {
+      // only calculate totals for numbers
+      if (!(v instanceof Number)) {
+        return;
+      }
+      Double val = ((Number)v).doubleValue();
+      // -1 and MAX_VALUE are our special guard values
+      if (val < 0 || val.longValue() == Long.MAX_VALUE || val.longValue() == Integer.MAX_VALUE) {
+        return;
+      }
+      newTotalValues.merge(k, val, (v1, v2) -> ((Number)v1).doubleValue() + ((Number)v2).doubleValue());
+    }));
+    return newTotalValues;
+  }
 }

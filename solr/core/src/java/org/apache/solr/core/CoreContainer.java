@@ -234,7 +234,6 @@ public class CoreContainer {
 
   protected volatile ResourceManagerHandler resourceManagerHandler;
 
-  private final LibListener clusterPropertiesListener = new LibListener(this);
   private PackageStoreAPI packageStoreAPI;
   private PackageLoader packageLoader;
 

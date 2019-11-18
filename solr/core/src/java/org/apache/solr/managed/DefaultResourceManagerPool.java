@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * This class manages a pool of resources of the same type, which use the same
- * {@link ResourceManagerPlugin} for managing their resource limits.
+ * {@link ResourceManagerPlugin} implementation for managing their resource limits.
  */
 public class DefaultResourceManagerPool implements ResourceManagerPool {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -44,7 +44,7 @@ public class DefaultResourceManagerPool implements ResourceManagerPool {
   private final ResourceManagerPlugin resourceManagerPlugin;
   private final Map<String, Object> args;
   private final ManagedContext poolContext = new ManagedContext();
-  private Map<String, Float> totalValues = null;
+  private Map<String, Map<String, Object>> currentValues = null;
   private final ReentrantLock updateLock = new ReentrantLock();
   int scheduleDelaySeconds;
   ScheduledFuture<?> scheduledFuture;
@@ -119,34 +119,15 @@ public class DefaultResourceManagerPool implements ResourceManagerPool {
     updateLock.lockInterruptibly();
     try {
       // collect the current values
-      Map<String, Map<String, Object>> currentValues = new HashMap<>();
+      Map<String, Map<String, Object>> newCurrentValues = new HashMap<>();
       for (ManagedComponent managedComponent : components.values()) {
         try {
-          currentValues.put(managedComponent.getManagedComponentId().toString(), resourceManagerPlugin.getMonitoredValues(managedComponent));
+          newCurrentValues.put(managedComponent.getManagedComponentId().toString(), resourceManagerPlugin.getMonitoredValues(managedComponent));
         } catch (Exception e) {
           log.warn("Error getting managed values from " + managedComponent.getManagedComponentId(), e);
         }
       }
-      // calculate the totals
-      Map<String, Float> newTotalValues = new HashMap<>();
-      currentValues.values().forEach(map -> map.forEach((k, v) -> {
-        // only calculate totals for numbers
-        if (!(v instanceof Number)) {
-          return;
-        }
-        Float val = ((Number)v).floatValue();
-        // -1 and MAX_VALUE are our special guard values
-        if (val < 0 || val.longValue() == Long.MAX_VALUE || val.longValue() == Integer.MAX_VALUE) {
-          return;
-        }
-        Float total = newTotalValues.get(k);
-        if (total == null) {
-          newTotalValues.put(k, val);
-        } else {
-          newTotalValues.put(k, total + val);
-        }
-      }));
-      totalValues = newTotalValues;
+      this.currentValues = newCurrentValues;
       return Collections.unmodifiableMap(currentValues);
     } finally {
       updateLock.unlock();
@@ -154,13 +135,8 @@ public class DefaultResourceManagerPool implements ResourceManagerPool {
   }
 
   @Override
-  public Map<String, Number> getTotalValues() throws InterruptedException {
-    updateLock.lockInterruptibly();
-    try {
-      return Collections.unmodifiableMap(totalValues);
-    } finally {
-      updateLock.unlock();
-    }
+  public Map<String, Object> getTotalValues() throws InterruptedException {
+    return Collections.unmodifiableMap(resourceManagerPlugin.aggregateTotalValues(currentValues));
   }
 
   @Override

@@ -19,8 +19,6 @@ package org.apache.solr.managed;
 
 import java.util.Arrays;
 
-import org.apache.solr.metrics.SolrMetricManager;
-
 /**
  * Hierarchical component id.
  */
@@ -32,7 +30,20 @@ public class ManagedComponentId {
   public ManagedComponentId(String name, String... path) {
     this.name = name;
     this.path = path;
-    this.id = SolrMetricManager.mkName(name, path);
+    StringBuilder sb = new StringBuilder();
+    if (path != null) {
+      for (String pathEl : path) {
+        if (sb.length() > 0) {
+          sb.append(':');
+        }
+        sb.append(pathEl);
+      }
+    }
+    if (sb.length() > 0) {
+      sb.append(':');
+    }
+    sb.append(name);
+    id = sb.toString();
   }
 
   public String getName() {
@@ -51,7 +62,7 @@ public class ManagedComponentId {
     if (fullName == null || fullName.isEmpty()) {
       return null;
     }
-    String[] parts = fullName.split("\\.");
+    String[] parts = fullName.split(":");
     if (parts.length > 1) {
       String name = parts[parts.length - 1];
       String[] path = Arrays.copyOfRange(parts, 0, parts.length - 1);

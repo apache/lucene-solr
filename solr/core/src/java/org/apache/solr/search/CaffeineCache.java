@@ -37,6 +37,8 @@ import com.github.benmanes.caffeine.cache.RemovalListener;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.managed.ManagedComponentId;
+import org.apache.solr.managed.ManagedContext;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.slf4j.Logger;
@@ -103,7 +105,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
     super.init(args, regenerator);
     String str = (String) args.get(SIZE_PARAM);
     maxSize = (str == null) ? 1024 : Integer.parseInt(str);
-    str = (String) args.get("initialSize");
+    str = (String) args.get(INITIAL_SIZE_PARAM);
     initialSize = Math.min((str == null) ? 1024 : Integer.parseInt(str), maxSize);
     str = (String) args.get(MAX_IDLE_TIME_PARAM);
     if (str == null) {
@@ -385,5 +387,15 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
       }
     });
     solrMetricsContext.gauge(cacheMap, true, scope, getCategory().toString());
+  }
+
+  @Override
+  public ManagedComponentId getManagedComponentId() {
+    return null;
+  }
+
+  @Override
+  public ManagedContext getManagedContext() {
+    return null;
   }
 }

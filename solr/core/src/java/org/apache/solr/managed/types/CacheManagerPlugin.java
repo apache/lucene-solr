@@ -37,7 +37,7 @@ import org.slf4j.LoggerFactory;
  * which can be adjusted using configuration parameter {@link #DEAD_BAND}. If monitored values don't
  * exceed the limits +/- the dead band then no action is taken.</p>
  */
-public class CacheManagerPlugin implements ResourceManagerPlugin<ManagedCacheComponent> {
+public class CacheManagerPlugin implements ResourceManagerPlugin<SolrCache> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static String TYPE = "cache";
@@ -76,7 +76,7 @@ public class CacheManagerPlugin implements ResourceManagerPlugin<ManagedCacheCom
   }
 
   @Override
-  public void setResourceLimit(ManagedCacheComponent component, String limitName, Object val) {
+  public void setResourceLimit(SolrCache component, String limitName, Object val) {
     if (!(val instanceof Number)) {
       try {
         val = Long.parseLong(String.valueOf(val));
@@ -101,7 +101,7 @@ public class CacheManagerPlugin implements ResourceManagerPlugin<ManagedCacheCom
   }
 
   @Override
-  public Map<String, Object> getResourceLimits(ManagedCacheComponent component) {
+  public Map<String, Object> getResourceLimits(SolrCache component) {
     Map<String, Object> limits = new HashMap<>();
     limits.put(SolrCache.MAX_SIZE_PARAM, component.getMaxSize());
     limits.put(SolrCache.MAX_RAM_MB_PARAM, component.getMaxRamMB());
@@ -109,12 +109,8 @@ public class CacheManagerPlugin implements ResourceManagerPlugin<ManagedCacheCom
   }
 
   @Override
-  public Map<String, Object> getMonitoredValues(ManagedCacheComponent component) throws Exception {
-    Map<String, Object> values = new HashMap<>();
-    values.put(SolrCache.HIT_RATIO_PARAM, component.getHitRatio());
-    values.put(SolrCache.RAM_BYTES_USED_PARAM, component.ramBytesUsed());
-    values.put(SolrCache.SIZE_PARAM, component.getSize());
-    return values;
+  public Map<String, Object> getMonitoredValues(SolrCache component) throws Exception {
+    return component.getSolrMetricsContext().getMetricsSnapshot();
   }
 
   @Override
@@ -135,7 +131,7 @@ public class CacheManagerPlugin implements ResourceManagerPlugin<ManagedCacheCom
   @Override
   public void manage(ResourceManagerPool pool) throws Exception {
     Map<String, Map<String, Object>> currentValues = pool.getCurrentValues();
-    Map<String, Number> totalValues = pool.getTotalValues();
+    Map<String, Object> totalValues = pool.getTotalValues();
     // pool limits are defined using controlled tags
     pool.getPoolLimits().forEach((poolLimitName, value) -> {
       // only numeric limits are supported
@@ -150,8 +146,12 @@ public class CacheManagerPlugin implements ResourceManagerPlugin<ManagedCacheCom
       if (monitoredTag == null) {
         return;
       }
-      Number totalValue = totalValues.get(monitoredTag);
-      if (totalValue == null || totalValue.floatValue() <= 0.0f) {
+      Object tv = totalValues.get(monitoredTag);
+      if (tv == null || !(tv instanceof Number)) {
+        return;
+      }
+      Number totalValue = (Number) tv;
+      if (totalValue.floatValue() <= 0.0f) {
         return;
       }
       float totalDelta = poolLimitValue - totalValue.floatValue();
@@ -164,7 +164,7 @@ public class CacheManagerPlugin implements ResourceManagerPlugin<ManagedCacheCom
       float changeRatio = poolLimitValue / totalValue.floatValue();
       // modify current limits by the changeRatio
       pool.getComponents().forEach((name, component) -> {
-        Map<String, Object> resourceLimits = getResourceLimits((ManagedCacheComponent)component);
+        Map<String, Object> resourceLimits = getResourceLimits((SolrCache) component);
         Object limit = resourceLimits.get(poolLimitName);
         // XXX we could attempt here to control eg. ramBytesUsed by adjusting maxSize limit
         // XXX and vice versa if the current limit is undefined or unsupported
@@ -172,12 +172,12 @@ public class CacheManagerPlugin implements ResourceManagerPlugin<ManagedCacheCom
           return;
         }
         float currentResourceLimit = ((Number)limit).floatValue();
-        if (currentResourceLimit <= 0) {
+        if (currentResourceLimit <= 0) { // undefined or unsupported
           return;
         }
         float newLimit = currentResourceLimit * changeRatio;
         try {
-          setResourceLimit((ManagedCacheComponent)component, poolLimitName, newLimit);
+          setResourceLimit((SolrCache) component, poolLimitName, newLimit);
         } catch (Exception e) {
           log.warn("Failed to set managed limit " + poolLimitName +
               " from " + currentResourceLimit + " to " + newLimit + " on " + component.getManagedComponentId(), e);

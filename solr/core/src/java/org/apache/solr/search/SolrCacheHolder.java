@@ -150,16 +150,6 @@ public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
   }
 
   @Override
-  public int getSize() {
-    return delegate.getSize();
-  }
-
-  @Override
-  public float getHitRatio() {
-    return delegate.getHitRatio();
-  }
-
-  @Override
   public long ramBytesUsed() {
     return delegate.ramBytesUsed();
   }
