@@ -27,6 +27,22 @@ import org.apache.lucene.util.packed.PackedInts;
  */
 public class ForDeltaUtil {
 
+  // IDENTITY_PLUS_ONE[i] == i+1
+  private static final long[] IDENTITY_PLUS_ONE = new long[ForUtil.BLOCK_SIZE];
+  static {
+    for (int i = 0; i < ForUtil.BLOCK_SIZE; ++i) {
+      IDENTITY_PLUS_ONE[i] = i+1;
+    }
+  }
+
+  private static void prefixSumOfOnes(long[] arr, long base) {
+    System.arraycopy(IDENTITY_PLUS_ONE, 0, arr, 0, ForUtil.BLOCK_SIZE);
+    // This loop gets auto-vectorized
+    for (int i = 0; i < arr.length; ++i) {
+      arr[i] += base;
+    }
+  }
+
   private final ForUtil forUtil;
 
   ForDeltaUtil(ForUtil forUtil) {
@@ -58,10 +74,7 @@ public class ForDeltaUtil {
   void decodeAndPrefixSum(DataInput in, long base, long[] longs) throws IOException {
     final int bitsPerValue = Byte.toUnsignedInt(in.readByte());
     if (bitsPerValue == 0) {
-      // Note: can this special-case be optimized?
-      for (int i = 0; i < ForUtil.BLOCK_SIZE; ++i) {
-        longs[i] = base + 1L + i;
-      }
+      prefixSumOfOnes(longs, base);
     } else {
       forUtil.decodeAndPrefixSum(bitsPerValue, in, base, longs);
     }
