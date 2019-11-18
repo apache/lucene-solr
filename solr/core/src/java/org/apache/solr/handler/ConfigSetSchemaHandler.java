@@ -44,7 +44,7 @@ import org.slf4j.LoggerFactory;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-public class CoreLessSchemaHandler {
+public class ConfigSetSchemaHandler {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final CoreContainer coreContainer;
   private static final String SCHEMA_NAME = "managed-schema";
@@ -52,7 +52,7 @@ public class CoreLessSchemaHandler {
   private static final String PATH_PREFIX = "/cluster/configset/";
   private static final String PATH_POSTFIX_SCHEMA = "/schema";
 
-  public CoreLessSchemaHandler(CoreContainer coreContainer) {
+  public ConfigSetSchemaHandler(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
   }
 

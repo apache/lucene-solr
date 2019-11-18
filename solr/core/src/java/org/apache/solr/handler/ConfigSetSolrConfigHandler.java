@@ -17,21 +17,15 @@
 
 package org.apache.solr.handler;
 
-import javax.xml.parsers.ParserConfigurationException;
-import java.io.IOException;
-
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.client.solrj.SolrRequest;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.SolrConfig;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.PermissionNameProvider;
-import org.xml.sax.SAXException;
 
-public class CoreLessSolrConfigHandler {
+public class ConfigSetSolrConfigHandler {
   private static final String PATH_PREFIX = "/cluster/configset/";
   private static final String PATH_POSTFIX_CONFIG = "/config";
   private static final String CONFIG_PREFIX = "/configs/";
@@ -39,7 +33,7 @@ public class CoreLessSolrConfigHandler {
   public final Write write = new Write();
   public final Read read = new Read();
 
-  public CoreLessSolrConfigHandler(CoreContainer coreContainer) {
+  public ConfigSetSolrConfigHandler(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
   }
 

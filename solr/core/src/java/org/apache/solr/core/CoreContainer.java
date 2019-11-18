@@ -78,8 +78,8 @@ import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.BackupRepositoryFactory;
 import org.apache.solr.filestore.PackageStoreAPI;
-import org.apache.solr.handler.CoreLessSchemaHandler;
-import org.apache.solr.handler.CoreLessSolrConfigHandler;
+import org.apache.solr.handler.ConfigSetSchemaHandler;
+import org.apache.solr.handler.ConfigSetSolrConfigHandler;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SnapShooter;
 import org.apache.solr.handler.admin.AutoscalingHistoryHandler;
@@ -227,8 +227,8 @@ public class CoreContainer {
   protected volatile AutoscalingHistoryHandler autoscalingHistoryHandler;
 
   private PackageStoreAPI packageStoreAPI;
-  private CoreLessSchemaHandler coreLessSchemaHandler;
-  private CoreLessSolrConfigHandler coreLessSolrConfigHandler;
+  private ConfigSetSchemaHandler configSetSchemaHandler;
+  private ConfigSetSolrConfigHandler configSetSolrConfigHandler;
   private PackageLoader packageLoader;
 
 
@@ -620,16 +620,16 @@ public class CoreContainer {
     }
 
     packageStoreAPI = new PackageStoreAPI(this);
-    coreLessSchemaHandler = new CoreLessSchemaHandler(this);
-    coreLessSolrConfigHandler = new CoreLessSolrConfigHandler(this);
+    configSetSchemaHandler = new ConfigSetSchemaHandler(this);
+    configSetSolrConfigHandler = new ConfigSetSolrConfigHandler(this);
     containerHandlers.getApiBag().register(new AnnotatedApi(packageStoreAPI.readAPI), Collections.EMPTY_MAP);
     containerHandlers.getApiBag().register(new AnnotatedApi(packageStoreAPI.writeAPI), Collections.EMPTY_MAP);
     //schema endpoints
-    containerHandlers.getApiBag().register(new AnnotatedApi(coreLessSchemaHandler.write), Collections.EMPTY_MAP);
-    containerHandlers.getApiBag().register(new AnnotatedApi(coreLessSchemaHandler.read), Collections.EMPTY_MAP);
+    containerHandlers.getApiBag().register(new AnnotatedApi(configSetSchemaHandler.write), Collections.EMPTY_MAP);
+    containerHandlers.getApiBag().register(new AnnotatedApi(configSetSchemaHandler.read), Collections.EMPTY_MAP);
     //solrconfig endpoints
-    containerHandlers.getApiBag().register(new AnnotatedApi(coreLessSolrConfigHandler.write), Collections.EMPTY_MAP);
-    containerHandlers.getApiBag().register(new AnnotatedApi(coreLessSolrConfigHandler.read), Collections.EMPTY_MAP);
+    containerHandlers.getApiBag().register(new AnnotatedApi(configSetSolrConfigHandler.write), Collections.EMPTY_MAP);
+    containerHandlers.getApiBag().register(new AnnotatedApi(configSetSolrConfigHandler.read), Collections.EMPTY_MAP);
 
     metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig());
     String registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.node);
