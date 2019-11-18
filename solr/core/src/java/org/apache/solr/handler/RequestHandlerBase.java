@@ -38,7 +38,6 @@ import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -53,7 +52,7 @@ import static org.apache.solr.core.RequestParams.USEPARAM;
 /**
  *
  */
-public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfoBean, SolrMetricProducer, NestedRequestHandler, ApiSupport {
+public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfoBean, NestedRequestHandler, ApiSupport {
 
   protected NamedList initArgs = null;
   protected SolrParams defaults;
@@ -148,17 +147,17 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     this.solrMetricsContext = parentContext.getChildContext(this);
-    numErrors = solrMetricsContext.meter(this, "errors", getCategory().toString(), scope);
-    numServerErrors = solrMetricsContext.meter(this, "serverErrors", getCategory().toString(), scope);
-    numClientErrors = solrMetricsContext.meter(this, "clientErrors", getCategory().toString(), scope);
-    numTimeouts = solrMetricsContext.meter(this, "timeouts", getCategory().toString(), scope);
-    requests = solrMetricsContext.counter(this, "requests", getCategory().toString(), scope);
+    numErrors = solrMetricsContext.meter("errors", getCategory().toString(), scope);
+    numServerErrors = solrMetricsContext.meter("serverErrors", getCategory().toString(), scope);
+    numClientErrors = solrMetricsContext.meter("clientErrors", getCategory().toString(), scope);
+    numTimeouts = solrMetricsContext.meter("timeouts", getCategory().toString(), scope);
+    requests = solrMetricsContext.counter("requests", getCategory().toString(), scope);
     MetricsMap metricsMap = new MetricsMap((detail, map) ->
         shardPurposes.forEach((k, v) -> map.put(k, v.getCount())));
-    solrMetricsContext.gauge(this, metricsMap, true, "shardRequests", getCategory().toString(), scope);
-    requestTimes = solrMetricsContext.timer(this,"requestTimes", getCategory().toString(), scope);
-    totalTime = solrMetricsContext.counter(this, "totalTime", getCategory().toString(), scope);
-    solrMetricsContext.gauge(this, () -> handlerStart, true, "handlerStart", getCategory().toString(), scope);
+    solrMetricsContext.gauge(metricsMap, true, "shardRequests", getCategory().toString(), scope);
+    requestTimes = solrMetricsContext.timer("requestTimes", getCategory().toString(), scope);
+    totalTime = solrMetricsContext.counter("totalTime", getCategory().toString(), scope);
+    solrMetricsContext.gauge(() -> handlerStart, true, "handlerStart", getCategory().toString(), scope);
   }
 
   public static SolrParams getSolrParamsFromNamedList(NamedList args, String key) {
@@ -265,11 +264,6 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   @Override
   public Category getCategory() {
     return Category.QUERY;
-  }
-
-  @Override
-  public Set<String> getMetricNames() {
-    return metricNames;
   }
 
   @Override

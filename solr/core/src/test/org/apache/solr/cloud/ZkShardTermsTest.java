@@ -129,6 +129,28 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
     }
   }
 
+  @Test
+  public void testCoreRemovalWhileRecovering() {
+    String collection = "recoveringFlagRemoval";
+    try (ZkShardTerms zkShardTerms = new ZkShardTerms(collection, "shard1", cluster.getZkClient())) {
+      // List all possible orders of ensureTermIsHigher, startRecovering, doneRecovering
+      zkShardTerms.registerTerm("replica1_rem");
+      zkShardTerms.registerTerm("replica2_rem");
+
+      // normal case when leader failed to send an update to replica
+      zkShardTerms.ensureTermsIsHigher("replica1_rem", Collections.singleton("replica2_rem"));
+      zkShardTerms.startRecovering("replica2_rem");
+      assertEquals(zkShardTerms.getTerm("replica2_rem"), 1);
+      assertEquals(zkShardTerms.getTerm("replica2_rem_recovering"), 0);
+
+      // Remove core, and check if the correct core was removed as well as the recovering term for that core
+      zkShardTerms.removeTerm("replica2_rem");
+      assertEquals(zkShardTerms.getTerm("replica1_rem"), 1);
+      assertEquals(zkShardTerms.getTerm("replica2_rem"), -1);
+      assertEquals(zkShardTerms.getTerm("replica2_rem_recovering"), -1);
+    }
+  }
+
   public void testRegisterTerm() throws InterruptedException {
     String collection = "registerTerm";
     ZkShardTerms rep1Terms = new ZkShardTerms(collection, "shard1", cluster.getZkClient());

@@ -70,6 +70,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
   private Timer syncTime;
   private Counter syncErrors;
   private Counter syncSkipped;
+  private SolrMetricsContext solrMetricsContext;
 
   public PeerSyncWithLeader(SolrCore core, String leaderUrl, int nUpdates) {
     this.core = core;
@@ -90,10 +91,16 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
   public static final String METRIC_SCOPE = "peerSync";
 
   @Override
+  public SolrMetricsContext getSolrMetricsContext() {
+    return solrMetricsContext;
+  }
+
+  @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    syncTime = parentContext.timer(null, "time", scope, METRIC_SCOPE);
-    syncErrors = parentContext.counter(null, "errors", scope, METRIC_SCOPE);
-    syncSkipped = parentContext.counter(null, "skipped", scope, METRIC_SCOPE);
+    this.solrMetricsContext = parentContext.getChildContext(this);
+    syncTime = solrMetricsContext.timer("time", scope, METRIC_SCOPE);
+    syncErrors = solrMetricsContext.counter("errors", scope, METRIC_SCOPE);
+    syncSkipped = solrMetricsContext.counter("skipped", scope, METRIC_SCOPE);
   }
 
   // start of peersync related debug messages.  includes the core name for correlation.

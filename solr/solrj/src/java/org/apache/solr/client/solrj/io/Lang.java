@@ -302,7 +302,7 @@ public class Lang {
         .withFunctionName("trim", TrimEvaluator.class)
         .withFunctionName("cosine", CosineDistanceEvaluator.class)
         .withFunctionName("trunc", TruncEvaluator.class)
-
+        .withFunctionName("dbscan", DbscanEvaluator.class)
         // Boolean Stream Evaluators
 
         .withFunctionName("and", AndEvaluator.class)

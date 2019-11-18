@@ -33,7 +33,7 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.search.FastLRUCache;
+import org.apache.solr.search.CaffeineCache;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.slf4j.Logger;
@@ -68,9 +68,9 @@ public class LRUStatsCache extends ExactStatsCache {
   // global stats synchronized from the master
 
   // cache of <term, termStats>
-  private final FastLRUCache<String,TermStats> currentGlobalTermStats = new FastLRUCache<>();
+  private final CaffeineCache<String,TermStats> currentGlobalTermStats = new CaffeineCache<>();
   // cache of <field, colStats>
-  private final FastLRUCache<String,CollectionStats> currentGlobalColStats = new FastLRUCache<>();
+  private final CaffeineCache<String,CollectionStats> currentGlobalColStats = new CaffeineCache<>();
 
   // missing stats to be fetched with the next request
   private Set<String> missingColStats = ConcurrentHashMap.newKeySet();
@@ -184,7 +184,7 @@ public class LRUStatsCache extends ExactStatsCache {
     Map<String,TermStats> termStats = StatsUtil.termStatsMapFromString(termStatsString);
     if (termStats != null) {
       SolrCache<String,TermStats> cache = perShardTermStats.computeIfAbsent(shard, s -> {
-        FastLRUCache c = new FastLRUCache<>();
+        CaffeineCache c = new CaffeineCache<>();
         Map<String, String> map = new HashMap<>(lruCacheInitArgs);
         map.put(CommonParams.NAME, s);
         c.init(map, null, null);

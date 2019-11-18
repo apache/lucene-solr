@@ -125,7 +125,7 @@ public class TestNestedDocsSort extends SolrTestCaseJ4 {
       try {
         final SolrCache cache = req.getSearcher().getCache("perSegFilter");
         assertNotNull(cache);
-        final Map<String,Object> state = cache.getMetricsSnapshot();
+        final Map<String,Object> state = cache.getSolrMetricsContext().getMetricsSnapshot();
         String lookupsKey = null;
         for(String key : state.keySet()){
           if(key.endsWith(".lookups")) {
@@ -135,7 +135,7 @@ public class TestNestedDocsSort extends SolrTestCaseJ4 {
         }
         Number before = (Number) state.get(lookupsKey);
         parse("childfield(name_s1,$q) asc");
-        Number after = (Number) cache.getMetricsSnapshot().get(lookupsKey);
+        Number after = (Number) cache.getSolrMetricsContext().getMetricsSnapshot().get(lookupsKey);
         assertEquals("parsing bjq lookups parent filter,"
             + "parsing sort spec lookups parent and child filters, "
             + "hopefully for the purpose",3, after.intValue()-before.intValue());

@@ -16,8 +16,6 @@
  */
 
 /**
- * Data objects used in V2 Requests with jackson bindings
+ * This package contains Package Manager (CLI) implementation
  */
-package org.apache.solr.client.solrj.request.beans;
-
-
+package org.apache.solr.packagemanager;
