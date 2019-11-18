@@ -219,6 +219,23 @@ public abstract class BaseDirectoryTestCase extends LuceneTestCase {
     }
   }
 
+  public void testLittleEndianLongsUnderflow() throws Exception {
+    try (Directory dir = getDirectory(createTempDir("testLittleEndianLongsUnderflow"))) {
+      final int offset = random().nextInt(8);
+      final int length = TestUtil.nextInt(random(), 1, 16);
+      try (IndexOutput out = dir.createOutput("littleEndianLongs", newIOContext(random()))) {
+        byte[] b = new byte[offset + length * Long.BYTES - TestUtil.nextInt(random(), 1, Long.BYTES)];
+        random().nextBytes(b);
+        out.writeBytes(b, b.length);
+      }
+      try (IndexInput input = dir.openInput("littleEndianLongs", newIOContext(random()))) {
+        input.seek(offset);
+        expectThrows(EOFException.class,
+            () -> input.readLELongs(new long[length], 0, length));
+      }
+    }
+  }
+
   public void testString() throws Exception {
     try (Directory dir = getDirectory(createTempDir("testString"))) {
       IndexOutput output = dir.createOutput("string", newIOContext(random()));

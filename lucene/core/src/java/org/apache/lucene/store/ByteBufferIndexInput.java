@@ -23,7 +23,6 @@ import java.nio.BufferUnderflowException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.LongBuffer;
-import java.util.Arrays;
 
 /**
  * Base IndexInput implementation that uses an array
@@ -37,7 +36,7 @@ import java.util.Arrays;
  * are a power-of-two (<code>chunkSizePower</code>).
  */
 public abstract class ByteBufferIndexInput extends IndexInput implements RandomAccessInput {
-  private static final LongBuffer EMPTY = LongBuffer.allocate(0);
+  private static final LongBuffer EMPTY_LONGBUFFER = LongBuffer.allocate(0);
 
   protected final long length;
   protected final long chunkSizeMask;
@@ -120,18 +119,30 @@ public abstract class ByteBufferIndexInput extends IndexInput implements RandomA
 
   @Override
   public void readLELongs(long[] dst, int offset, int length) throws IOException {
+    // ByteBuffer#getLong could work but it has some per-long overhead and there
+    // is no ByteBuffer#getLongs to read multiple longs at once. So we use the
+    // below trick in order to be able to leverage LongBuffer#get(long[]) to
+    // read multiple longs at once with as little overhead as possible.
     if (curLongBufferViews == null) {
-      // Lazy init to not make pay for memory and initialization cost if you don't need to read arrays of longs
+      // readLELongs is only used for postings today, so we compute the long
+      // views lazily so that other data-structures don't have to pay for the
+      // associated initialization/memory overhead.
       curLongBufferViews = new LongBuffer[Long.BYTES];
-      Arrays.fill(curLongBufferViews, EMPTY);
-      for (int i = 0; i < Math.min(Long.BYTES, curBuf.limit()); ++i) {
-        // Compute a view for each possible alignment in the native byte order
-        curLongBufferViews[i] = curBuf.duplicate().position(i).order(ByteOrder.LITTLE_ENDIAN).asLongBuffer();
+      for (int i = 0; i < Long.BYTES; ++i) {
+        // Compute a view for each possible alignment. We cache these views
+        // because #asLongBuffer() has some cost that we don't want to pay on
+        // each invocation of #readLELongs.
+        if (i < curBuf.limit()) {
+          curLongBufferViews[i] = curBuf.duplicate().position(i).order(ByteOrder.LITTLE_ENDIAN).asLongBuffer();
+        } else {
+          curLongBufferViews[i] = EMPTY_LONGBUFFER;
+        }
       }
     }
     try {
       final int position = curBuf.position();
       guard.getLongs(curLongBufferViews[position & 0x07].position(position >>> 3), dst, offset, length);
+      // if the above call succeeded, then we know the below sum cannot overflow
       curBuf.position(position + (length << 3));
     } catch (BufferUnderflowException e) {
       super.readLELongs(dst, offset, length);
