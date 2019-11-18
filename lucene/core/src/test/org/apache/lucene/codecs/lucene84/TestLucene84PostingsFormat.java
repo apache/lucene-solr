@@ -14,8 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.lucene50;
-
+package org.apache.lucene.codecs.lucene84;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -31,7 +30,10 @@ import org.apache.lucene.codecs.CompetitiveImpactAccumulator;
 import org.apache.lucene.codecs.blocktree.BlockTreeTermsReader;
 import org.apache.lucene.codecs.blocktree.FieldReader;
 import org.apache.lucene.codecs.blocktree.Stats;
-import org.apache.lucene.codecs.lucene50.Lucene50ScoreSkipReader.MutableImpactList;
+import org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat;
+import org.apache.lucene.codecs.lucene84.Lucene84ScoreSkipReader;
+import org.apache.lucene.codecs.lucene84.Lucene84SkipWriter;
+import org.apache.lucene.codecs.lucene84.Lucene84ScoreSkipReader.MutableImpactList;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.BasePostingsFormatTestCase;
@@ -51,11 +53,8 @@ import org.apache.lucene.store.MMapDirectory;
 import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.util.TestUtil;
 
-/**
- * Tests BlockPostingsFormat
- */
-public class TestBlockPostingsFormat extends BasePostingsFormatTestCase {
-  private final Codec codec = TestUtil.alwaysPostingsFormat(new Lucene50PostingsFormat());
+public class TestLucene84PostingsFormat extends BasePostingsFormatTestCase {
+  private final Codec codec = TestUtil.alwaysPostingsFormat(new Lucene84PostingsFormat());
 
   @Override
   protected Codec getCodec() {
@@ -284,7 +283,7 @@ public class TestBlockPostingsFormat extends BasePostingsFormatTestCase {
 
   private void shouldFail(int minItemsInBlock, int maxItemsInBlock) {
     expectThrows(IllegalArgumentException.class, () -> {
-      new Lucene50PostingsFormat(minItemsInBlock, maxItemsInBlock, BlockTreeTermsReader.FSTLoadMode.AUTO);
+      new Lucene84PostingsFormat(minItemsInBlock, maxItemsInBlock, BlockTreeTermsReader.FSTLoadMode.AUTO);
     });
   }
 
@@ -338,12 +337,12 @@ public class TestBlockPostingsFormat extends BasePostingsFormatTestCase {
     }
     try(Directory dir = newDirectory()) {
       try (IndexOutput out = dir.createOutput("foo", IOContext.DEFAULT)) {
-        Lucene50SkipWriter.writeImpacts(acc, out);
+        Lucene84SkipWriter.writeImpacts(acc, out);
       }
       try (IndexInput in = dir.openInput("foo", IOContext.DEFAULT)) {
         byte[] b = new byte[Math.toIntExact(in.length())];
         in.readBytes(b, 0, b.length);
-        List<Impact> impacts2 = Lucene50ScoreSkipReader.readImpacts(new ByteArrayDataInput(b), new MutableImpactList());
+        List<Impact> impacts2 = Lucene84ScoreSkipReader.readImpacts(new ByteArrayDataInput(b), new MutableImpactList());
         assertEquals(impacts, impacts2);
       }
     }
