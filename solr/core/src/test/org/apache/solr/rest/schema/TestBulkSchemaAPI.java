@@ -20,6 +20,7 @@ import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -32,9 +33,12 @@ import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.DFISimilarity;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SimilarityFactory;
 import org.apache.solr.search.similarities.SchemaSimilarityFactory;
 import org.apache.solr.util.RESTfulServerProvider;
@@ -42,6 +46,7 @@ import org.apache.solr.util.RestTestBase;
 import org.apache.solr.util.RestTestHarness;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -188,7 +193,63 @@ public class TestBulkSchemaAPI extends RestTestBase {
     assertNotNull(map);
     Map analyzer = (Map)map.get("analyzer");
     assertEquals("org.apache.lucene.analysis.core.WhitespaceAnalyzer", String.valueOf(analyzer.get("class")));
-    assertEquals("5.0.0", String.valueOf(analyzer.get("luceneMatchVersion")));
+    assertEquals("5.0.0", String.valueOf(analyzer.get(IndexSchema.LUCENE_MATCH_VERSION_PARAM)));
+  }
+
+  public void testAnalyzerByName() throws Exception {
+
+    String addFieldTypeAnalyzer = "{\n" +
+        "'add-field-type' : {" +
+        "    'name' : 'myNewTextField',\n" +
+        "    'class':'solr.TextField',\n" +
+        "    'analyzer' : {\n" +
+        "        'charFilters' : [{\n" +
+        "                'name':'patternReplace',\n" +
+        "                'replacement':'$1$1',\n" +
+        "                'pattern':'([a-zA-Z])\\\\\\\\1+'\n" +
+        "            }],\n" +
+        "        'tokenizer' : { 'name':'whitespace' },\n" +
+        "        'filters' : [{ 'name':'asciiFolding' }]\n" +
+        "    }\n"+
+        "}}";
+
+    String response = restTestHarness.post("/schema", json(addFieldTypeAnalyzer));
+    Map map = (Map) fromJSONString(response);
+    assertNull(response, map.get("error"));
+
+    map = getObj(restTestHarness, "myNewTextField", "fieldTypes");
+    assertNotNull(map);
+    Map analyzer = (Map)map.get("analyzer");
+    Map tokenizer = (Map)analyzer.get("tokenizer");
+    List charFilters = (List)analyzer.get("charFilters");
+    List tokenFilters = (List)analyzer.get("filters");
+    assertEquals("whitespace", String.valueOf(tokenizer.get("name")));
+    assertEquals("patternReplace", String.valueOf(((Map)charFilters.get(0)).get("name")));
+    assertEquals("asciiFolding", String.valueOf(((Map)tokenFilters.get(0)).get("name")));
+  }
+
+  public void testAnalyzerByBogusName() throws Exception {
+
+    String addFieldTypeAnalyzer = "{\n" +
+        "'add-field-type' : {" +
+        "    'name' : 'myNewTextField',\n" +
+        "    'class':'solr.TextField',\n" +
+        "    'analyzer' : {\n" +
+        "        'tokenizer' : { 'name':'bogus' }\n" +
+        "    }\n"+
+        "}}";
+
+    String response = restTestHarness.post("/schema", json(addFieldTypeAnalyzer));
+    Map map = (Map) fromJSONString(response);
+    Map error = (Map)map.get("error");
+    assertNotNull("No errors", error);
+    List details = (List)error.get("details");
+    assertNotNull("No details", details);
+    assertEquals("Wrong number of details", 1, details.size());
+    List errorList = (List)((Map)details.get(0)).get("errorMessages");
+    assertEquals(1, errorList.size());
+    assertTrue (((String)errorList.get(0)).contains
+        ("A SPI class of type org.apache.lucene.analysis.util.TokenizerFactory with name 'bogus' does not exist."));
   }
 
   public void testAddFieldMatchingExistingDynamicField() throws Exception {
@@ -896,6 +957,24 @@ public class TestBulkSchemaAPI extends RestTestBase {
       assertEquals("1", docs.get(2).getFieldValue("id"));
     }
     
+  }
+  
+  @Test
+  public void testAddNewFieldAndQuery() throws Exception {
+    getSolrClient().add(Arrays.asList(
+        sdoc("id", "1", "term_s", "tux")));
+
+    getSolrClient().commit(true, true);
+    Map<String,Object> attrs = new HashMap<>();
+    attrs.put("name", "newstringtestfield");
+    attrs.put("type", "string");
+
+    new SchemaRequest.AddField(attrs).process(getSolrClient());
+
+    SolrQuery query = new SolrQuery("*:*");
+    query.addFacetField("newstringtestfield");
+    int size = getSolrClient().query(query).getResults().size();
+    assertEquals(1, size);
   }
   
   public void testSimilarityParser() throws Exception {

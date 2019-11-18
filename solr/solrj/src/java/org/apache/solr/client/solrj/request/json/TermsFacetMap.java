@@ -55,9 +55,6 @@ public class TermsFacetMap extends JsonFacetMap<TermsFacetMap> {
    * Defaults to 10 if not specified.
    */
   public TermsFacetMap setLimit(int maximumBuckets) {
-    if (maximumBuckets < 0) {
-      throw new IllegalArgumentException("Parameter 'maximumBuckets' must be non-negative");
-    }
     put("limit", maximumBuckets);
     return this;
   }
@@ -147,8 +144,8 @@ public class TermsFacetMap extends JsonFacetMap<TermsFacetMap> {
    * Defaults to 1 if not specified.
    */
   public TermsFacetMap setMinCount(int minCount) {
-    if (minCount < 1) {
-      throw new IllegalArgumentException("Parameter 'minCount' must be a positive integer");
+    if (minCount < 0) {
+      throw new IllegalArgumentException("Parameter 'minCount' must be a non-negative integer");
     }
     put("mincount", minCount);
     return this;

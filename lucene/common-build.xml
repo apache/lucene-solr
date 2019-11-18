@@ -135,7 +135,25 @@
   <property name="tests.asserts" value="true" />
   <property name="tests.policy" location="${common.dir}/tools/junit4/tests.policy"/>
 
-  <condition property="tests.asserts.args" value="-ea -esa" else="">
+  <condition property="tests.asserts.bug.jdk8205399" value="-da:java.util.HashMap" else="">
+    <!-- LUCENE-8991 / JDK-8205399: HashMap assertion bug until java12-->
+    <and>
+      <or>
+        <contains string="${java.vm.name}" substring="hotspot" casesensitive="false"/>
+        <contains string="${java.vm.name}" substring="openjdk" casesensitive="false"/>
+        <contains string="${java.vm.name}" substring="jrockit" casesensitive="false"/>
+      </or>
+      <or>
+        <equals arg1="${java.specification.version}" arg2="1.8"/>
+        <equals arg1="${java.specification.version}" arg2="9"/>
+        <equals arg1="${java.specification.version}" arg2="10"/>
+        <equals arg1="${java.specification.version}" arg2="11"/>
+      </or>
+      <isfalse value="${tests.asserts.hashmap}" />
+    </and>
+  </condition>
+  
+  <condition property="tests.asserts.args" value="-ea -esa ${tests.asserts.bug.jdk8205399}" else="">
     <istrue value="${tests.asserts}"/>
   </condition>
 
@@ -2018,7 +2036,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   </target>
   
   <target name="-ecj-resolve" unless="ecj.loaded" depends="ivy-availability-check,ivy-configure" if="ecj-javadoc-lint.supported">
-    <ivy:cachepath organisation="org.eclipse.jdt" module="ecj" revision="3.17.0"
+    <ivy:cachepath organisation="org.eclipse.jdt" module="ecj" revision="3.19.0"
      inline="true" conf="master" type="jar" pathid="ecj.classpath" />
     <componentdef classname="org.eclipse.jdt.core.JDTCompilerAdapter"
      classpathref="ecj.classpath" name="ecj-component"/>
@@ -2309,7 +2327,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
 
   <!-- GROOVY scripting engine for ANT tasks -->
   <target name="resolve-groovy" unless="groovy.loaded" depends="ivy-availability-check,ivy-configure">
-    <ivy:cachepath organisation="org.codehaus.groovy" module="groovy-all" revision="2.4.16"
+    <ivy:cachepath organisation="org.codehaus.groovy" module="groovy-all" revision="2.4.17"
       inline="true" conf="default" type="jar" transitive="true" pathid="groovy.classpath"/>
     <taskdef name="groovy"
       classname="org.codehaus.groovy.ant.Groovy"
@@ -2323,7 +2341,7 @@ ${ant.project.name}.test.dependencies=${test.classpath.list}
   <property name="forbidden-sysout-excludes" value=""/>
   
   <target name="-install-forbidden-apis" unless="forbidden-apis.loaded" depends="ivy-availability-check,ivy-configure">
-    <ivy:cachepath organisation="de.thetaphi" module="forbiddenapis" revision="2.6"
+    <ivy:cachepath organisation="de.thetaphi" module="forbiddenapis" revision="2.7"
       inline="true" conf="default" transitive="true" pathid="forbidden-apis.classpath"/>
     <taskdef name="forbidden-apis" classname="de.thetaphi.forbiddenapis.ant.AntTask" classpathref="forbidden-apis.classpath"/>
     <property name="forbidden-apis.loaded" value="true"/>

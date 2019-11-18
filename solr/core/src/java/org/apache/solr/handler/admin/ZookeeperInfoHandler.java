@@ -183,12 +183,12 @@ public final class ZookeeperInfoHandler extends RequestHandlerBase {
       boolean replicaInRecovery = false;
 
       Map<String, Object> shards = (Map<String, Object>) collectionState.get("shards");
-      for (String shardId : shards.keySet()) {
+      for (Object o : shards.values()) {
         boolean hasActive = false;
-        Map<String, Object> shard = (Map<String, Object>) shards.get(shardId);
+        Map<String, Object> shard = (Map<String, Object>) o;
         Map<String, Object> replicas = (Map<String, Object>) shard.get("replicas");
-        for (String replicaId : replicas.keySet()) {
-          Map<String, Object> replicaState = (Map<String, Object>) replicas.get(replicaId);
+        for (Object value : replicas.values()) {
+          Map<String, Object> replicaState = (Map<String, Object>) value;
           Replica.State coreState = Replica.State.getState((String) replicaState.get(ZkStateReader.STATE_PROP));
           String nodeName = (String) replicaState.get("node_name");
 

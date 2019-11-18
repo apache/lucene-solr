@@ -20,11 +20,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.codahale.metrics.MetricRegistry;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.search.SolrCacheBase;
 
 /**
@@ -32,7 +30,7 @@ import org.apache.solr.search.SolrCacheBase;
  *
  * @lucene.experimental
  */
-public class Metrics extends SolrCacheBase implements SolrInfoBean, SolrMetricProducer {
+public class Metrics extends SolrCacheBase implements SolrInfoBean {
 
 
   public AtomicLong blockCacheSize = new AtomicLong(0);
@@ -54,17 +52,13 @@ public class Metrics extends SolrCacheBase implements SolrInfoBean, SolrMetricPr
   public AtomicLong shardBuffercacheLost = new AtomicLong(0);
 
   private MetricsMap metricsMap;
-  private MetricRegistry registry;
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
-  private SolrMetricManager metricManager;
-  private String registryName;
+  private SolrMetricsContext solrMetricsContext;
   private long previous = System.nanoTime();
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
-    this.metricManager = manager;
-    this.registryName = registryName;
-    registry = manager.registry(registryName);
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    solrMetricsContext = parentContext.getChildContext(this);
     metricsMap = new MetricsMap((detailed, map) -> {
       long now = System.nanoTime();
       long delta = Math.max(now - previous, 1);
@@ -108,7 +102,7 @@ public class Metrics extends SolrCacheBase implements SolrInfoBean, SolrMetricPr
       previous = now;
 
     });
-    manager.registerGauge(this, registryName, metricsMap, tag, true, getName(), getCategory().toString(), scope);
+    solrMetricsContext.gauge(metricsMap, true, getName(), getCategory().toString(), scope);
   }
 
   private float getPerSecond(long value, double seconds) {
@@ -128,13 +122,7 @@ public class Metrics extends SolrCacheBase implements SolrInfoBean, SolrMetricPr
   }
 
   @Override
-  public Set<String> getMetricNames() {
-    return metricNames;
+  public SolrMetricsContext getSolrMetricsContext() {
+    return solrMetricsContext;
   }
-
-  @Override
-  public MetricRegistry getMetricRegistry() {
-    return registry;
-  }
-
 }

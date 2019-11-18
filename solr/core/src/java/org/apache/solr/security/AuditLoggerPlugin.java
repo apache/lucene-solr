@@ -36,7 +36,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
-import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -45,8 +44,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.security.AuditEvent.EventType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,7 +55,7 @@ import org.slf4j.LoggerFactory;
  * @since 8.1.0
  * @lucene.experimental
  */
-public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfoBean, SolrMetricProducer {
+public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfoBean {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private static final String PARAM_EVENT_TYPES = "eventTypes";
   static final String PARAM_ASYNC = "async";
@@ -75,14 +73,12 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
   int blockingQueueSize;
 
   protected AuditEventFormatter formatter;
-  private MetricRegistry registry;
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private ExecutorService executorService;
   private boolean closed;
   private MuteRules muteRules;
-  
-  protected String registryName;
-  protected SolrMetricManager metricManager;
+
+  protected SolrMetricsContext solrMetricsContext;
   protected Meter numErrors = new Meter();
   protected Meter numLost = new Meter();
   protected Meter numLogged = new Meter();
@@ -239,25 +235,21 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
   }
   
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, final String scope) {
+  public void initializeMetrics(SolrMetricsContext parentContext, final String scope) {
+    solrMetricsContext = parentContext.getChildContext(this);
     String className = this.getClass().getSimpleName();
     log.debug("Initializing metrics for {}", className);
-    this.metricManager = manager;
-    this.registryName = registryName;
-    // Metrics
-    registry = manager.registry(registryName);
-    numErrors = manager.meter(this, registryName, "errors", getCategory().toString(), scope, className);
-    numLost = manager.meter(this, registryName, "lost", getCategory().toString(), scope, className);
-    numLogged = manager.meter(this, registryName, "count", getCategory().toString(), scope, className);
-    requestTimes = manager.timer(this, registryName, "requestTimes", getCategory().toString(), scope, className);
-    totalTime = manager.counter(this, registryName, "totalTime", getCategory().toString(), scope, className);
+    numErrors = solrMetricsContext.meter("errors", getCategory().toString(), scope, className);
+    numLost = solrMetricsContext.meter("lost", getCategory().toString(), scope, className);
+    numLogged = solrMetricsContext.meter("count", getCategory().toString(), scope, className);
+    requestTimes = solrMetricsContext.timer("requestTimes", getCategory().toString(), scope, className);
+    totalTime = solrMetricsContext.counter("totalTime", getCategory().toString(), scope, className);
     if (async) {
-      manager.registerGauge(this, registryName, () -> blockingQueueSize, "queueCapacity", true, "queueCapacity", getCategory().toString(), scope, className);
-      manager.registerGauge(this, registryName, () -> blockingQueueSize - queue.remainingCapacity(), "queueSize", true, "queueSize", getCategory().toString(), scope, className);
-      queuedTime = manager.timer(this, registryName, "queuedTime", getCategory().toString(), scope, className);
+      solrMetricsContext.gauge(() -> blockingQueueSize, true, "queueCapacity", getCategory().toString(), scope, className);
+      solrMetricsContext.gauge(() -> blockingQueueSize - queue.remainingCapacity(), true, "queueSize", getCategory().toString(), scope, className);
+      queuedTime = solrMetricsContext.timer("queuedTime", getCategory().toString(), scope, className);
     }
-    manager.registerGauge(this, registryName, () -> async, "async", true, "async", getCategory().toString(), scope, className);
-    metricNames.addAll(Arrays.asList("errors", "logged", "requestTimes", "totalTime", "queueCapacity", "queueSize", "async"));
+    solrMetricsContext.gauge(() -> async, true, "async", getCategory().toString(), scope, className);
   }
   
   @Override
@@ -276,15 +268,10 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
   }
   
   @Override
-  public Set<String> getMetricNames() {
-    return metricNames;
+  public SolrMetricsContext getSolrMetricsContext() {
+    return solrMetricsContext;
   }
 
-  @Override
-  public MetricRegistry getMetricRegistry() {
-    return registry;
-  }
-  
   /**
    * Interface for formatting the event
    */
@@ -326,6 +313,11 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
       closed = true;
       log.info("Shutting down async Auditlogger background thread(s)");
       executorService.shutdownNow();
+      try {
+        SolrInfoBean.super.close();
+      } catch (Exception e) {
+        throw new IOException("Exception closing", e);
+      }
     }
   }
 

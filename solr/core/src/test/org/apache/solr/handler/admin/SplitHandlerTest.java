@@ -227,7 +227,7 @@ public class SplitHandlerTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testHistoramBuilding() throws Exception {
+  public void testHistogramBuilding() throws Exception {
     List<Prefix> prefixes = SplitByPrefixTest.findPrefixes(20, 0, 0x00ffffff);
     List<Prefix> uniquePrefixes = SplitByPrefixTest.removeDups(prefixes);
     assertTrue(prefixes.size() > uniquePrefixes.size());  // make sure we have some duplicates to test hash collisions
@@ -273,6 +273,10 @@ public class SplitHandlerTest extends SolrTestCaseJ4 {
   }
 
   private boolean eqCount(Collection<SplitOp.RangeCount> a, Collection<SplitOp.RangeCount> b) {
+    if (a.size() != b.size()) {
+      return false;
+    }
+    
     Iterator<SplitOp.RangeCount> it1 = a.iterator();
     Iterator<SplitOp.RangeCount> it2 = b.iterator();
     while (it1.hasNext()) {

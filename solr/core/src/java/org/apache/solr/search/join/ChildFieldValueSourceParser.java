@@ -177,8 +177,8 @@ public class ChildFieldValueSourceParser extends ValueSourceParser {
       }
       bjQ = (AllParentsAware) query;
       
-      parentFilter = BlockJoinParentQParser.getCachedFilter(fp.getReq(), bjQ.getParentQuery()).filter;
-      childFilter = BlockJoinParentQParser.getCachedFilter(fp.getReq(), bjQ.getChildQuery()).filter;
+      parentFilter = BlockJoinParentQParser.getCachedFilter(fp.getReq(), bjQ.getParentQuery()).getFilter();
+      childFilter = BlockJoinParentQParser.getCachedFilter(fp.getReq(), bjQ.getChildQuery()).getFilter();
 
       if (sortFieldName==null || sortFieldName.equals("")) {
         throw new SyntaxError ("field is omitted in "+fp.getString());

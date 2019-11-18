@@ -140,8 +140,8 @@ public class FieldTypeXmlAdapter {
       if (tokenizer == null)
         throw new SolrException(ErrorCode.BAD_REQUEST, "Analyzer must define a tokenizer!");
 
-      if (tokenizer.get("class") == null)
-        throw new SolrException(ErrorCode.BAD_REQUEST, "Every tokenizer must define a class property!");
+      if (tokenizer.get("class") == null && tokenizer.get("name") == null)
+        throw new SolrException(ErrorCode.BAD_REQUEST, "Every tokenizer must define a class or name property!");
 
       analyzerElem.appendChild(appendAttrs(doc.createElement("tokenizer"), tokenizer));
 
@@ -168,9 +168,10 @@ public class FieldTypeXmlAdapter {
   protected static void appendFilterElements(Document doc, Element analyzer, String filterName, List<Map<String,?>> filters) {
     for (Map<String,?> next : filters) {
       String filterClass = (String)next.get("class");
-      if (filterClass == null)
+      String filterSPIName = (String)next.get("name");
+      if (filterClass == null && filterSPIName == null)
         throw new SolrException(ErrorCode.BAD_REQUEST, 
-            "Every "+filterName+" must define a class property!");      
+            "Every "+filterName+" must define a class or name property!");
       analyzer.appendChild(appendAttrs(doc.createElement(filterName), next));
     }    
   }

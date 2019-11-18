@@ -19,12 +19,14 @@ package org.apache.lucene.document;
 import java.util.Arrays;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
-import org.apache.lucene.geo.Polygon2D;
+import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.XYEncodingUtils;
 import org.apache.lucene.geo.XYPolygon;
 import org.apache.lucene.geo.XYPolygon2D;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.NumericUtils;
+
+import static org.apache.lucene.geo.XYEncodingUtils.decode;
 
 /**
  * Finds all previously indexed cartesian shapes that intersect the specified arbitrary cartesian {@link XYPolygon}.
@@ -36,7 +38,7 @@ import org.apache.lucene.util.NumericUtils;
  **/
 final class XYShapePolygonQuery extends ShapeQuery {
   final XYPolygon[] polygons;
-  final private Polygon2D poly2D;
+  final private Component2D poly2D;
 
   /**
    * Creates a query that matches all indexed shapes to the provided polygons
@@ -72,25 +74,26 @@ final class XYShapePolygonQuery extends ShapeQuery {
     double maxLon = XYEncodingUtils.decode(NumericUtils.sortableBytesToInt(maxTriangle, maxXOffset));
 
     // check internal node against query
-    return poly2D.relate(minLat, maxLat, minLon, maxLon);
+    return poly2D.relate(minLon, maxLon, minLat, maxLat);
   }
 
   @Override
-  protected boolean queryMatches(byte[] t, int[] scratchTriangle, QueryRelation queryRelation) {
+  protected boolean queryMatches(byte[] t, ShapeField.DecodedTriangle scratchTriangle, QueryRelation queryRelation) {
     ShapeField.decodeTriangle(t, scratchTriangle);
 
-    double alat = XYEncodingUtils.decode(scratchTriangle[0]);
-    double alon = XYEncodingUtils.decode(scratchTriangle[1]);
-    double blat = XYEncodingUtils.decode(scratchTriangle[2]);
-    double blon = XYEncodingUtils.decode(scratchTriangle[3]);
-    double clat = XYEncodingUtils.decode(scratchTriangle[4]);
-    double clon = XYEncodingUtils.decode(scratchTriangle[5]);
+    double alat = decode(scratchTriangle.aY);
+    double alon = decode(scratchTriangle.aX);
+    double blat = decode(scratchTriangle.bY);
+    double blon = decode(scratchTriangle.bX);
+    double clat = decode(scratchTriangle.cY);
+    double clon = decode(scratchTriangle.cX);
 
-    if (queryRelation == QueryRelation.WITHIN) {
-      return poly2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_INSIDE_QUERY;
+    switch (queryRelation) {
+      case INTERSECTS: return poly2D.relateTriangle(alon, alat, blon, blat, clon, clat) != Relation.CELL_OUTSIDE_QUERY;
+      case WITHIN: return poly2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_INSIDE_QUERY;
+      case DISJOINT: return poly2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_OUTSIDE_QUERY;
+      default: throw new IllegalArgumentException("Unsupported query type :[" + queryRelation + "]");
     }
-    // INTERSECTS
-    return poly2D.relateTriangle(alon, alat, blon, blat, clon, clat) != Relation.CELL_OUTSIDE_QUERY;
   }
 
   @Override

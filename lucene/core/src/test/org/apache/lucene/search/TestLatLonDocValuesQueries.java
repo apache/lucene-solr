@@ -26,7 +26,7 @@ public class TestLatLonDocValuesQueries extends BaseGeoPointTestCase {
 
   @Override
   protected boolean supportsPolygons() {
-    return false;
+    return true;
   }
 
   @Override
@@ -46,8 +46,7 @@ public class TestLatLonDocValuesQueries extends BaseGeoPointTestCase {
 
   @Override
   protected Query newPolygonQuery(String field, Polygon... polygons) {
-    fail();
-    return null;
+    return LatLonDocValuesField.newSlowPolygonQuery(field, polygons);
   }
 
   @Override

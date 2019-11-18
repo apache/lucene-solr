@@ -207,8 +207,8 @@ public class EarthDebugger {
 
     newAngle:
     while (angle < 360) {
-      double x = Math.cos(SloppyMath.toRadians(angle));
-      double y = Math.sin(SloppyMath.toRadians(angle));
+      double x = Math.cos(Math.toRadians(angle));
+      double y = Math.sin(Math.toRadians(angle));
       double factor = 2.0;
       double step = 1.0;
       int last = 0;

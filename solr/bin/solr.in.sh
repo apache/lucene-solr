@@ -82,7 +82,7 @@
 # Set to true to activate the JMX RMI connector to allow remote JMX client applications
 # to monitor the JVM hosting Solr; set to "false" to disable that behavior
 # (false is recommended in production environments)
-ENABLE_REMOTE_JMX_OPTS="true"
+#ENABLE_REMOTE_JMX_OPTS="false"
 
 # The script will use SOLR_PORT+10000 for the RMI_PORT or you can set it here
 # RMI_PORT=18983
@@ -139,6 +139,8 @@ ENABLE_REMOTE_JMX_OPTS="true"
 #SOLR_SSL_NEED_CLIENT_AUTH=false
 # Enable clients to authenticate (but not require)
 #SOLR_SSL_WANT_CLIENT_AUTH=false
+# Verify client's hostname during SSL handshake
+#SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION=false
 # SSL Certificates contain host/ip "peer name" information that is validated by default. Setting
 # this to false can be useful to disable these checks when re-using a certificate on many hosts
 #SOLR_SSL_CHECK_PEER_NAME=true

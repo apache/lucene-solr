@@ -18,7 +18,7 @@ package org.apache.solr.client.solrj;
 
 import java.util.Arrays;
 
-import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
@@ -27,13 +27,13 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class GetByIdTest extends SolrJettyTestBase {
-  
+public class GetByIdTest extends EmbeddedSolrServerTestBase {
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore();
   }
-  
+
   @Before
   @Override
   public void setUp() throws Exception {
@@ -43,39 +43,39 @@ public class GetByIdTest extends SolrJettyTestBase {
         sdoc("id", "1", "term_s", "Microsoft", "term2_s", "MSFT"),
         sdoc("id", "2", "term_s", "Apple", "term2_s", "AAPL"),
         sdoc("id", "3", "term_s", "Yahoo", "term2_s", "YHOO")));
-    
+
     getSolrClient().commit(true, true);
   }
-  
+
   @Test
   public void testGetId() throws Exception {
     SolrDocument rsp = getSolrClient().getById("0");
     assertNull(rsp);
-    
+
     rsp = getSolrClient().getById("1");
     assertEquals("1", rsp.get("id"));
     assertEquals("Microsoft", rsp.get("term_s"));
     assertEquals("MSFT", rsp.get("term2_s"));
 
-    rsp = getSolrClient().getById("2");    
+    rsp = getSolrClient().getById("2");
     assertEquals("2", rsp.get("id"));
     assertEquals("Apple", rsp.get("term_s"));
     assertEquals("AAPL", rsp.get("term2_s"));
   }
-  
+
   @Test
   public void testGetIdWithParams() throws Exception {
     final SolrParams ID_FL_ONLY = params(CommonParams.FL, "id");
-    
+
     SolrDocument rsp = getSolrClient().getById("0", ID_FL_ONLY);
     assertNull(rsp);
-    
+
     rsp = getSolrClient().getById("1", ID_FL_ONLY);
     assertEquals("1", rsp.get("id"));
     assertNull("This field should have been removed from the response.", rsp.get("term_s"));
     assertNull("This field should have been removed from the response.", rsp.get("term2_s"));
 
-    rsp = getSolrClient().getById("2", ID_FL_ONLY);    
+    rsp = getSolrClient().getById("2", ID_FL_ONLY);
     assertEquals("2", rsp.get("id"));
     assertNull("This field should have been removed from the response.", rsp.get("term_s"));
     assertNull("This field should have been removed from the response.", rsp.get("term2_s"));
@@ -88,25 +88,25 @@ public class GetByIdTest extends SolrJettyTestBase {
     assertEquals("1", rsp.get(0).get("id"));
     assertEquals("Microsoft", rsp.get(0).get("term_s"));
     assertEquals("MSFT", rsp.get(0).get("term2_s"));
-    
+
     assertEquals("2", rsp.get(1).get("id"));
     assertEquals("Apple", rsp.get(1).get("term_s"));
     assertEquals("AAPL", rsp.get(1).get("term2_s"));
-    
+
     assertEquals("3", rsp.get(2).get("id"));
     assertEquals("Yahoo", rsp.get(2).get("term_s"));
     assertEquals("YHOO", rsp.get(2).get("term2_s"));
   }
-  
+
   @Test
   public void testGetIdsWithParams() throws Exception {
     SolrDocumentList rsp = getSolrClient().getById(Arrays.asList("0", "1", "2"), params(CommonParams.FL, "id"));
     assertEquals(2, rsp.getNumFound());
-    
+
     assertEquals("1", rsp.get(0).get("id"));
     assertNull("This field should have been removed from the response.", rsp.get(0).get("term_s"));
     assertNull("This field should have been removed from the response.", rsp.get(0).get("term2_s"));
-    
+
     assertEquals("2", rsp.get(1).get("id"));
     assertNull("This field should have been removed from the response.", rsp.get(1).get("term_s"));
     assertNull("This field should have been removed from the response.", rsp.get(1).get("term2_s"));

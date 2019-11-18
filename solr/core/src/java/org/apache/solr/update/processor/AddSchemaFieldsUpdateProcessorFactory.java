@@ -424,11 +424,12 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
           builder.append("]");
           builder.append("\nCopyFields to be added to the schema: [");
           isFirst = true;
-          for (String fieldName : newCopyFields.keySet()) {
+          for (Map.Entry<String, Map<Integer, List<CopyFieldDef>>> entry : newCopyFields.entrySet()) {
+            String fieldName = entry.getKey();
             builder.append(isFirst ? "" : ",");
             isFirst = false;
             builder.append("source=").append(fieldName).append("{");
-            for (List<CopyFieldDef> copyFieldDefList : newCopyFields.get(fieldName).values()) {
+            for (List<CopyFieldDef> copyFieldDefList : entry.getValue().values()) {
               for (CopyFieldDef copyFieldDef : copyFieldDefList) {
                 builder.append("{dest=").append(copyFieldDef.getDest(fieldName));
                 builder.append(", maxChars=").append(copyFieldDef.getMaxChars()).append("}");
@@ -445,10 +446,11 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
           try {
             IndexSchema newSchema = oldSchema.addFields(newFields, Collections.emptyMap(), false);
             // Add copyFields
-            for (String srcField : newCopyFields.keySet()) {
-              for (Integer maxChars : newCopyFields.get(srcField).keySet()) {
-                newSchema = newSchema.addCopyFields(srcField, 
-                  newCopyFields.get(srcField).get(maxChars).stream().map(f -> f.getDest(srcField)).collect(Collectors.toList()), 
+            for (Map.Entry<String, Map<Integer, List<CopyFieldDef>>> entry : newCopyFields.entrySet()) {
+              String srcField = entry.getKey();
+              for (Integer maxChars : entry.getValue().keySet()) {
+                newSchema = newSchema.addCopyFields(srcField,
+                    entry.getValue().get(maxChars).stream().map(f -> f.getDest(srcField)).collect(Collectors.toList()),
                   maxChars);
               }
             }

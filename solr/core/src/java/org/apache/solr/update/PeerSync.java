@@ -49,8 +49,8 @@ import org.apache.solr.handler.component.ShardHandler;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
 import org.apache.solr.logging.MDCLoggingContext;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -96,6 +96,7 @@ public class PeerSync implements SolrMetricProducer {
   private Timer syncTime;
   private Counter syncErrors;
   private Counter syncSkipped;
+  private SolrMetricsContext solrMetricsContext;
 
   // comparator that sorts by absolute value, putting highest first
   public static Comparator<Long> absComparator = (l1, l2) -> Long.compare(Math.abs(l2), Math.abs(l1));
@@ -133,10 +134,16 @@ public class PeerSync implements SolrMetricProducer {
   public static final String METRIC_SCOPE = "peerSync";
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
-    syncTime = manager.timer(null, registry, "time", scope, METRIC_SCOPE);
-    syncErrors = manager.counter(null, registry, "errors", scope, METRIC_SCOPE);
-    syncSkipped = manager.counter(null, registry, "skipped", scope, METRIC_SCOPE);
+  public SolrMetricsContext getSolrMetricsContext() {
+    return solrMetricsContext;
+  }
+
+  @Override
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    this.solrMetricsContext = parentContext.getChildContext(this);
+    syncTime = solrMetricsContext.timer("time", scope, METRIC_SCOPE);
+    syncErrors = solrMetricsContext.counter("errors", scope, METRIC_SCOPE);
+    syncSkipped = solrMetricsContext.counter("skipped", scope, METRIC_SCOPE);
   }
 
   public static long percentile(List<Long> arr, float frac) {

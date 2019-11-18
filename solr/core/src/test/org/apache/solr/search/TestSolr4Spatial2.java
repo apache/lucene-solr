@@ -62,6 +62,13 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testQuadTreeRobustness() {
+    assertU(adoc("id", "0", "oslocation", "244502.06 639062.07"));
+    // old (pre 8.3.0) still works
+    assertU(adoc("id", "0", "oslocationold", "244502.06 639062.07"));
+  }
+
+  @Test
   public void testBBox() throws Exception {
     String fieldName = random().nextBoolean() ? "bbox" : "bboxD_dynamic";
     assertU(adoc("id", "0"));//nothing
@@ -309,8 +316,11 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
       assertJQ(sameReq, "/response/numFound==1", "/response/docs/[0]/id=='1'");
 
       // When there are new segments, we accumulate another hit. This tests the cache was not blown away on commit.
+      // (i.e. the cache instance is new but it should've been regenerated from the old one).
       // Checking equality for the first reader's cache key indicates whether the cache should still be valid.
       Object leafKey2 = getFirstLeafReaderKey();
+      // get the current instance of metrics - the old one may not represent the current cache instance
+      cacheMetrics = (MetricsMap) ((SolrMetricManager.GaugeWrapper)h.getCore().getCoreMetricManager().getRegistry().getMetrics().get("CACHE.searcher.perSegSpatialFieldCache_" + fieldName)).getGauge();
       assertEquals(leafKey1.equals(leafKey2) ? "2" : "1", cacheMetrics.getValue().get("cumulative_hits").toString());
     }
 
@@ -363,4 +373,14 @@ public class TestSolr4Spatial2 extends SolrTestCaseJ4 {
     assertQ(req(params), "*[count(//doc)=1]", "count(//lst[@name='highlighting']/*)=1");
   }
 
+  @Test
+  public void testErrorHandlingGeodist() throws Exception{
+    assertU(adoc("id", "1", "llp", "32.7693246, -79.9289094"));
+    assertQEx("wrong test exception message","sort param could not be parsed as a query, " +
+            "and is not a field that exists in the index: geodist(llp,47.36667,8.55)",
+        req(
+            "q", "*:*",
+            "sort", "geodist(llp,47.36667,8.55) asc"
+        ), SolrException.ErrorCode.BAD_REQUEST);
+  }
 }

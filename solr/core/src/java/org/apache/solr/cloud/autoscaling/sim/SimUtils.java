@@ -16,6 +16,9 @@
  */
 package org.apache.solr.cloud.autoscaling.sim;
 
+import java.lang.invoke.MethodHandles;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -25,11 +28,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
+import org.apache.solr.client.solrj.cloud.autoscaling.Cell;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.Row;
@@ -41,11 +46,17 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.RedactionUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Various utility methods useful for autoscaling simulations and snapshots.
  */
 public class SimUtils {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
 
   public static final Set<String> COMMON_REPLICA_TAGS = new HashSet<>(Arrays.asList(
       Variable.Type.CORE_IDX.metricsAttribute,
@@ -123,17 +134,20 @@ public class SimUtils {
     }
     allReplicaInfos.keySet().forEach(collection -> {
       Set<String> infosCores = allReplicaInfos.getOrDefault(collection, Collections.emptyMap()).keySet();
-      Set<String> csCores = allReplicas.getOrDefault(collection, Collections.emptyMap()).keySet();
+      Map<String, Replica> replicas = allReplicas.getOrDefault(collection, Collections.emptyMap());
+      Set<String> csCores = replicas.keySet();
       if (!infosCores.equals(csCores)) {
         Set<String> notInClusterState = infosCores.stream()
             .filter(k -> !csCores.contains(k))
             .collect(Collectors.toSet());
         Set<String> notInNodeProvider = csCores.stream()
-            .filter(k -> !infosCores.contains(k))
+            .filter(k -> !infosCores.contains(k) && replicas.get(k).isActive(solrCloudManager.getClusterStateProvider().getLiveNodes()))
             .collect(Collectors.toSet());
-        throw new RuntimeException("Mismatched replica data between ClusterState and NodeStateProvider:\n\t" +
-            "replica not in ClusterState: " + notInClusterState + "\n\t" +
-            "replica not in NodeStateProvider: " + notInNodeProvider);
+        if (!notInClusterState.isEmpty() || !notInNodeProvider.isEmpty()) {
+          throw new RuntimeException("Mismatched replica data for collection " + collection + " between ClusterState and NodeStateProvider:\n\t" +
+              "replica in NodeStateProvider but not in ClusterState: " + notInClusterState + "\n\t" +
+              "replica in ClusterState but not in NodeStateProvider: " + notInNodeProvider);
+        }
       }
     });
     // verify all replicas have size info
@@ -231,10 +245,13 @@ public class SimUtils {
     for (Row row : rows) {
       Map<String, Object> nodeStat = nodeStats.computeIfAbsent(row.node, n -> new LinkedHashMap<>());
       nodeStat.put("isLive", row.isLive());
-      nodeStat.put("freedisk", row.getVal("freedisk", 0));
-      nodeStat.put("totaldisk", row.getVal("totaldisk", 0));
+      for (Cell cell : row.getCells()) {
+        nodeStat.put(cell.getName(), cell.getValue());
+      }
+//      nodeStat.put("freedisk", row.getVal("freedisk", 0));
+//      nodeStat.put("totaldisk", row.getVal("totaldisk", 0));
       int cores = ((Number)row.getVal("cores", 0)).intValue();
-      nodeStat.put("cores", cores);
+//      nodeStat.put("cores", cores);
       coreStats.computeIfAbsent(cores, num -> new AtomicInteger()).incrementAndGet();
       Map<String, Map<String, Map<String, Object>>> collReplicas = new TreeMap<>();
       // check consistency
@@ -335,6 +352,9 @@ public class SimUtils {
     }
     String a = cmd.keySet().iterator().next();
     ModifiableSolrParams params = new ModifiableSolrParams();
+    if (req.getParams() != null) {
+      params.add(req.getParams());
+    }
     params.add(CollectionAdminParams.COLLECTION, path.substring(3));
     if (req.getParams() != null) {
       params.add(req.getParams());
@@ -350,5 +370,33 @@ public class SimUtils {
     }
     params.add(CoreAdminParams.ACTION, a);
     return params;
+  }
+
+  /**
+   * Prepare collection and node / host names for redaction.
+   * @param clusterState cluster state
+   */
+  public static RedactionUtils.RedactionContext getRedactionContext(ClusterState clusterState) {
+    RedactionUtils.RedactionContext ctx = new RedactionUtils.RedactionContext();
+    TreeSet<String> names = new TreeSet<>(clusterState.getLiveNodes());
+    for (String nodeName : names) {
+      String urlString = Utils.getBaseUrlForNodeName(nodeName, "http");
+      try {
+        URL u = new URL(urlString);
+        // protocol format
+        String hostPort = u.getHost() + ":" + u.getPort();
+        ctx.addName(u.getHost() + ":" + u.getPort(), RedactionUtils.NODE_REDACTION_PREFIX);
+        // node name format
+        ctx.addEquivalentName(hostPort, u.getHost() + "_" + u.getPort() + "_", RedactionUtils.NODE_REDACTION_PREFIX);
+      } catch (MalformedURLException e) {
+        log.warn("Invalid URL for node name " + nodeName + ", replacing including protocol and path", e);
+        ctx.addName(urlString, RedactionUtils.NODE_REDACTION_PREFIX);
+        ctx.addEquivalentName(urlString, Utils.getBaseUrlForNodeName(nodeName, "https"), RedactionUtils.NODE_REDACTION_PREFIX);
+      }
+    }
+    names.clear();
+    names.addAll(clusterState.getCollectionStates().keySet());
+    names.forEach(n -> ctx.addName(n, RedactionUtils.COLL_REDACTION_PREFIX));
+    return ctx;
   }
 }

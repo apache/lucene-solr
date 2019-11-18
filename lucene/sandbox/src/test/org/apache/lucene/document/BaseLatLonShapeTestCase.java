@@ -20,6 +20,7 @@ import java.util.Arrays;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.document.ShapeField.QueryRelation;
+import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Line2D;
@@ -66,12 +67,12 @@ public abstract class BaseLatLonShapeTestCase extends BaseShapeTestCase {
   }
 
   @Override
-  protected Line2D toLine2D(Object... lines) {
+  protected Component2D toLine2D(Object... lines) {
     return Line2D.create(Arrays.stream(lines).toArray(Line[]::new));
   }
 
   @Override
-  protected Polygon2D toPolygon2D(Object... polygons) {
+  protected Component2D toPolygon2D(Object... polygons) {
     return Polygon2D.create(Arrays.stream(polygons).toArray(Polygon[]::new));
   }
 
@@ -264,18 +265,18 @@ public abstract class BaseLatLonShapeTestCase extends BaseShapeTestCase {
       }
 
       @Override
-      double[] quantizeTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
-        int[] decoded = encodeDecodeTriangle(ax, ay, bx, by, cx, cy);
-        return new double[]{decodeLatitude(decoded[0]), decodeLongitude(decoded[1]), decodeLatitude(decoded[2]), decodeLongitude(decoded[3]), decodeLatitude(decoded[4]), decodeLongitude(decoded[5])};
+      double[] quantizeTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
+        ShapeField.DecodedTriangle decoded = encodeDecodeTriangle(ax, ay, ab, bx, by, bc, cx, cy, ca);
+        return new double[]{decodeLatitude(decoded.aY), decodeLongitude(decoded.aX), decodeLatitude(decoded.bY), decodeLongitude(decoded.bX), decodeLatitude(decoded.cY), decodeLongitude(decoded.cX)};
       }
 
       @Override
-      int[] encodeDecodeTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
+      ShapeField.DecodedTriangle encodeDecodeTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
         byte[] encoded = new byte[7 * ShapeField.BYTES];
-        ShapeField.encodeTriangle(encoded, encodeLatitude(ay), encodeLongitude(ax), encodeLatitude(by), encodeLongitude(bx), encodeLatitude(cy), encodeLongitude(cx));
-        int[] decoded = new int[6];
-        ShapeField.decodeTriangle(encoded, decoded);
-        return decoded;
+        ShapeField.encodeTriangle(encoded, encodeLatitude(ay), encodeLongitude(ax), ab, encodeLatitude(by), encodeLongitude(bx), bc, encodeLatitude(cy), encodeLongitude(cx), ca);
+        ShapeField.DecodedTriangle triangle  = new ShapeField.DecodedTriangle();
+        ShapeField.decodeTriangle(encoded, triangle);
+        return triangle;
       }
     };
   }

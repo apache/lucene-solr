@@ -498,6 +498,14 @@
     </analyzer>
   </fieldType>
   <fieldType name="severityType" class="${solr.tests.EnumFieldType}" enumsConfig="enumsConfig.xml" enumName="severity"/>
+  
+  <fieldType name="binary" class="solr.BinaryField" />
+  <fieldType name="collation" class="solr.CollationField" language="en" />
+  <fieldType name="externalFile" class="solr.ExternalFileField" />
+  <fieldType name="icuCollation" class="solr.ICUCollationField" locale="en" />
+  <fieldType name="latLonPointSpatial" class="solr.LatLonPointSpatialField" />
+  <fieldType name="randomSort" class="solr.RandomSortField" />
+  <fieldType name="point" class="solr.PointType" subFieldSuffix="_coordinate" />
 
   <fieldType name="sortable_text" class="solr.SortableTextField">
     <analyzer>
@@ -632,6 +640,28 @@
   <field name="dateRemove" type="date" indexed="true" stored="true" multiValued="true"/>
   <field name="floatRemove" type="float" indexed="true" stored="true" multiValued="true"/>
 
+  <field name="binaryRemove" type="binary" indexed="true" stored="true" multiValued="true"/>
+  <field name="booleanRemove" type="boolean" indexed="true" stored="true" multiValued="true"/>
+  <field name="collationRemove" type="collation" indexed="true" stored="true" multiValued="true"/>
+  <field name="datePointRemove" type="pdate" indexed="true" stored="true" multiValued="true"/>
+  <field name="dateRangeRemove" type="dateRange" indexed="true" stored="true" multiValued="true"/>
+  <field name="doublePointRemove" type="pdouble" indexed="true" stored="true" multiValued="true"/>
+  <field name="externalFileRemove" type="externalFile" indexed="true" stored="true" multiValued="true"/>
+  <field name="floatPointRemove" type="pfloat" indexed="true" stored="true" multiValued="true"/>
+  <field name="icuCollationRemove" type="icuCollation" indexed="true" stored="true" multiValued="true"/>
+  <field name="intPointRemove" type="pint" indexed="true" stored="true" multiValued="true"/>
+  <field name="latLonPointSpatialRemove" type="latLonPointSpatial" indexed="true" stored="true" multiValued="true"/>
+  <field name="latLonRemove" type="location" indexed="true" stored="true" multiValued="true"/>
+  <field name="longPointRemove" type="plong" indexed="true" stored="true" multiValued="true"/>
+  <field name="point_0_coordinate" type="float" indexed="true" stored="true" multiValued="true"/>
+  <field name="point_1_coordinate" type="float" indexed="true" stored="true" multiValued="true"/>
+  <field name="pointRemove" type="point" indexed="true" stored="true" multiValued="true"/>
+  <field name="randomSortRemove" type="randomSort" indexed="true" stored="true" multiValued="true"/>
+  <field name="spatialRecursivePrefixTreeRemove" type="location_rpt" indexed="true" stored="true" multiValued="true"/>
+  <field name="stringRemove" type="string" indexed="true" stored="true" multiValued="true"/>
+  <field name="textRemove" type="text" indexed="true" stored="true" multiValued="true"/>
+  <field name="uuidRemove" type="uuid" indexed="true" stored="true" multiValued="true"/>
+
   <field name="nopositionstext" type="nopositions" indexed="true" stored="true"/>
 
   <field name="tlong" type="tlong" indexed="true" stored="true"/>
@@ -650,6 +680,8 @@
   
   <!-- EnumType -->
   <field name="severity" type="severityType" docValues="true" indexed="true" stored="true" multiValued="false"/>
+
+  <field name="max_chars" type="string" indexed="false" stored="true"/>
 
 
   <!-- Dynamic field definitions.  If a field name is not found, dynamicFields
@@ -809,6 +841,11 @@
    <dynamicField name="*_ds_ni_p"   type="pdouble"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
    <dynamicField name="*_sortable"  type="sortable_text" indexed="true" multiValued="false" stored="true" />
 
+  <dynamicField name="*_date_p"      type="pdate"    indexed="true"  stored="true" docValues="true" multiValued="false"/>
+  <dynamicField name="*_dates_p"     type="pdate"    indexed="true"  stored="true" docValues="true" multiValued="true"/>
+  <dynamicField name="*_date_ni_p"   type="pdate"    indexed="false"  stored="true" docValues="true" multiValued="false"/>
+  <dynamicField name="*_dates_ni_p"  type="pdate"    indexed="false"  stored="true" docValues="true" multiValued="true"/>
+
   <copyField source="single_i_dvn" dest="copy_single_i_dvn"/>
   <copyField source="single_d_dvn" dest="copy_single_d_dvn"/>
   <copyField source="single_s_dvn" dest="copy_single_s_dvn"/>
@@ -849,6 +886,8 @@
   <!-- dynamic destination -->
   <copyField source="*_dynamic" dest="dynamic_*"/>
   <copyField source="*_path" dest="*_ancestor"/>
+
+  <copyField source="title" dest="max_chars" maxChars="10"/>
 
   <!-- example of a custom similarity -->
   <similarity class="solr.CustomSimilarityFactory">

@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj.response.json;
 
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -35,23 +36,25 @@ public class NestableJsonFacet {
   private long domainCount;
   private final Map<String, NestableJsonFacet> queryFacetsByName;
   private final Map<String, BucketBasedJsonFacet> bucketBasedFacetByName;
-  private final Map<String, Number> statFacetsByName;
+  private final Map<String, Object> statsByName;
   private final Map<String, HeatmapJsonFacet> heatmapFacetsByName;
 
   public NestableJsonFacet(NamedList<Object> facetNL) {
     queryFacetsByName = new HashMap<>();
     bucketBasedFacetByName = new HashMap<>();
-    statFacetsByName = new HashMap<>();
     heatmapFacetsByName = new HashMap<>();
+    statsByName = new HashMap<>();
 
     for (Map.Entry<String, Object> entry : facetNL) {
       final String key = entry.getKey();
       if (getKeysToSkip().contains(key)) {
         continue;
       } else if ("count".equals(key)) {
-        domainCount = (int) entry.getValue();
-      } else if(entry.getValue() instanceof Number) { // Stat/agg facet value
-        statFacetsByName.put(key, (Number)entry.getValue());
+        domainCount = ((Number) entry.getValue()).longValue();
+      } else  if (entry.getValue() instanceof Number || entry.getValue() instanceof String ||
+          entry.getValue() instanceof Date) {
+        // Stat/agg facet value
+        statsByName.put(key, entry.getValue());
       } else if(entry.getValue() instanceof NamedList) { // Either heatmap/query/range/terms facet
         final NamedList<Object> facet = (NamedList<Object>) entry.getValue();
         final boolean isBucketBased = facet.get("buckets") != null;
@@ -103,17 +106,17 @@ public class NestableJsonFacet {
   }
 
   /**
-   * Retrieve the value for a stat or agg facet with the provided name
+   * Retrieve the value for a stat or agg with the provided name
    */
-  public Number getStatFacetValue(String name) {
-    return statFacetsByName.get(name);
+  public Object getStatValue(String name) {
+    return statsByName.get(name);
   }
 
   /**
-   * @return the names of any stat or agg facets that are direct descendants of this facet
+   * @return the names of any stat or agg that are direct descendants of this facet
    */
-  public Set<String> getStatFacetNames() {
-    return statFacetsByName.keySet();
+  public Set<String> getStatNames() {
+    return statsByName.keySet();
   }
 
   /**

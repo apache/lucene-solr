@@ -29,25 +29,25 @@ These settings are all configured in child elements of the `<query>` element in 
 
 == Caches
 
-Solr caches are associated with a specific instance of an Index Searcher, a specific view of an index that doesn't change during the lifetime of that searcher. As long as that Index Searcher is being used, any items in its cache will be valid and available for reuse. Caching in Solr differs from caching in many other applications in that cached Solr objects do not expire after a time interval; instead, they remain valid for the lifetime of the Index Searcher.
+Solr caches are associated with a specific instance of an Index Searcher, a specific view of an index that doesn't change during the lifetime of that searcher. As long as that Index Searcher is being used, any items in its cache will be valid and available for reuse. By default cached Solr objects do not expire after a time interval; instead, they remain valid for the lifetime of the Index Searcher. Idle time-based expiration can be enabled by using `maxIdleTime` option.
 
 When a new searcher is opened, the current searcher continues servicing requests while the new one auto-warms its cache. The new searcher uses the current searcher's cache to pre-populate its own. When the new searcher is ready, it is registered as the current searcher and begins handling all new search requests. The old searcher will be closed once it has finished servicing all its requests.
 
-In Solr, there are three cache implementations: `solr.search.LRUCache`, `solr.search.FastLRUCache,` and `solr.search.LFUCache`.
+=== Cache Implementations
 
-The acronym LRU stands for Least Recently Used. When an LRU cache fills up, the entry with the oldest last-accessed timestamp is evicted to make room for the new entry. The net effect is that entries that are accessed frequently tend to stay in the cache, while those that are not accessed frequently tend to drop out and will be re-fetched from the index if needed again.
+Solr comes with a default `SolrCache` implementation that is used for different types of caches.
 
-The `FastLRUCache`, which was introduced in Solr 1.4, is designed to be lock-free, so it is well suited for caches which are hit several times in a request.
+The `CaffeineCache` is an implementation backed by the https://github.com/ben-manes/caffeine[Caffeine caching library]. By default it uses a Window TinyLFU (W-TinyLFU) eviction policy, which allows the eviction based on both frequency and recency of use in O(1) time with a small footprint. Generally this cache implementation is recommended over other legacy caches as it usually offers lower memory footprint, higher hit ratio and better multi-threaded performance over legacy caches.
 
-Both `LRUCache` and `FastLRUCache` use an auto-warm count that supports both integers and percentages which get evaluated relative to the current size of the cache when warming happens.
-
-The `LFUCache` refers to the Least Frequently Used cache. This works in a way similar to the LRU cache, except that when the cache fills up, the entry that has been used the least is evicted.
+`CaffeineCache` uses an auto-warm count that supports both integers and percentages which get evaluated relative to the current size of the cache when warming happens.
 
 The Statistics page in the Solr Admin UI will display information about the performance of all the active caches. This information can help you fine-tune the sizes of the various caches appropriately for your particular application. When a Searcher terminates, a summary of its cache usage is also written to the log.
 
-Each cache has settings to define its initial size (`initialSize`), maximum size (`size`) and number of items to use for during warming (`autowarmCount`). The LRU and FastLRU cache implementations can take a percentage instead of an absolute value for `autowarmCount`.
+Each cache has settings to define its initial size (`initialSize`), maximum size (`size`) and number of items to use for during warming (`autowarmCount`). For `autowarmCount` this can be also expressed as a percentage instead of an absolute value.
 
-FastLRUCache and LFUCache support `showItems` attribute. This is the number of cache items to display in the stats page for the cache. It is for debugging.
+A `maxIdleTime` attribute controls the automatic eviction of entries that haven't been used for a while. This attribute is expressed in seconds, with the default value of `0` meaning no entries are automatically evicted due to exceeded idle time. Smaller values of this attribute will cause older entries to be evicted quickly, which will reduce cache memory usage but may instead cause thrashing due to a repeating eviction-lookup-miss-insertion cycle of the same entries. Larger values will cause entries to stay around longer, waiting to be reused, at the cost of increased memory usage. Reasonable values, depending on the query volume and patterns, may lie somewhere between 60-3600.
+
+The `maxRamMB` attribute limits the maximum amount of memory a cache may consume. When both `size` and `maxRamMB` limits are specified the `maxRamMB` limit will take precedence and the `size` limit will be ignored.
 
 Details of each cache are described below.
 
@@ -59,21 +59,19 @@ The most typical way Solr uses the `filterCache` is to cache results of each `fq
 
 Solr also uses this cache for faceting when the configuration parameter `facet.method` is set to `fc`. For a discussion of faceting, see <<searching.adoc#searching,Searching>>.
 
-The filter cache uses a specialized cache named as FastLRUCache which is optimized for fast concurrent access with the trade-off that writes and evictions are costlier than the LRUCache used for query result cache and document cache.
-
 [source,xml]
 ----
-<filterCache class="solr.FastLRUCache"
+<filterCache class="solr.CaffeineCache"
              size="512"
              initialSize="512"
              autowarmCount="128"/>
 ----
 
-The FastLRUCache used for filter cache also supports a `maxRamMB` parameter which restricts the maximum amount of heap used by this cache. The FastLRUCache only supports evictions by either heap usage or size but not both. Therefore, the `size` parameter is ignored if `maxRamMB` is specified.
+The cache supports a `maxRamMB` parameter which restricts the maximum amount of heap used by this cache. The `CaffeineCache` only supports evictions by either heap usage or size but not both. Therefore, the `size` parameter is ignored if `maxRamMB` is specified.
 
 [source,xml]
 ----
-<filterCache class="solr.FastLRUCache"
+<filterCache class="solr.CaffeineCache"
              maxRamMB="1000"
              autowarmCount="128"/>
 ----
@@ -82,15 +80,14 @@ The FastLRUCache used for filter cache also supports a `maxRamMB` parameter whic
 
 This cache holds the results of previous searches: ordered lists of document IDs (DocList) based on a query, a sort, and the range of documents requested.
 
-The `queryResultCache` has an additional (optional) setting to limit the maximum amount of RAM used (`maxRamMB`). This lets you specify the maximum heap size, in megabytes, used by the contents of this cache. When the cache grows beyond this size, oldest accessed queries will be evicted until the heap usage of the cache decreases below the specified limit. If a `size` is specified in addition to `maxRamMB` then both heap usage and maximum size limits are respected.
+The `queryResultCache` has an optional setting to limit the maximum amount of RAM used (`maxRamMB`). This lets you specify the maximum heap size, in megabytes, used by the contents of this cache. When the cache grows beyond this size, oldest accessed queries will be evicted until the heap usage of the cache decreases below the specified limit. If a `size` is specified in addition to `maxRamMB` then only the heap usage limit is respected.
 
 [source,xml]
 ----
-<queryResultCache class="solr.LRUCache"
+<queryResultCache class="solr.CaffeineCache"
                   size="512"
                   initialSize="512"
-                  autowarmCount="128"
-                  maxRamMB="1000"/>
+                  autowarmCount="128"/>
 ----
 
 === documentCache
@@ -99,7 +96,7 @@ This cache holds Lucene Document objects (the stored fields for each document). 
 
 [source,xml]
 ----
-<documentCache class="solr.LRUCache"
+<documentCache class="solr.CaffeineCache"
                size="512"
                initialSize="512"
                autowarmCount="0"/>
@@ -111,7 +108,7 @@ You can also define named caches for your own application code to use. You can l
 
 [source,xml]
 ----
-<cache name="myUserCache" class="solr.LRUCache"
+<cache name="myUserCache" class="solr.CaffeineCache"
                           size="4096"
                           initialSize="1024"
                           autowarmCount="1024"

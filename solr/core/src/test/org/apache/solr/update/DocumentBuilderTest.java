@@ -30,6 +30,7 @@ import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.util.ByteArrayUtf8CharSequence;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.schema.FieldType;
 import org.junit.After;
@@ -272,6 +273,30 @@ public class DocumentBuilderTest extends SolrTestCaseJ4 {
     field = fieldIterator.next();
     assertEquals(CAT_FLD, field.name());
     assertTrue(field.stringValue().startsWith("STORED V3|"));
+  }
+
+  @Test
+  public void testCopyFieldMaxChars() {
+    SolrCore core = h.getCore();
+
+    String testValue = "this is more than 10 characters";
+    String truncatedValue = "this is mo";
+
+    //maxChars with a string value
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.addField( "title", testValue);
+
+    Document out = DocumentBuilder.toDocument(doc, core.getLatestSchema());
+    assertEquals(testValue, out.get("title"));
+    assertEquals(truncatedValue, out.get("max_chars"));
+
+    //maxChars with a ByteArrayUtf8CharSequence
+    doc = new SolrInputDocument();
+    doc.addField( "title", new ByteArrayUtf8CharSequence(testValue));
+
+    out = DocumentBuilder.toDocument(doc, core.getLatestSchema());
+    assertEquals(testValue, out.get("title"));
+    assertEquals(truncatedValue, out.get("max_chars"));
   }
 
 }

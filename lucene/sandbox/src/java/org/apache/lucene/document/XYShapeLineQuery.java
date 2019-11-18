@@ -19,6 +19,7 @@ package org.apache.lucene.document;
 import java.util.Arrays;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
+import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.XYLine;
 import org.apache.lucene.index.PointValues.Relation;
@@ -45,7 +46,7 @@ import static org.apache.lucene.geo.XYEncodingUtils.decode;
  **/
 final class XYShapeLineQuery extends ShapeQuery {
   final XYLine[] lines;
-  final private Line2D line2D;
+  final private Component2D line2D;
 
   public XYShapeLineQuery(String field, QueryRelation queryRelation, XYLine... lines) {
     super(field, queryRelation);
@@ -76,31 +77,32 @@ final class XYShapeLineQuery extends ShapeQuery {
   @Override
   protected Relation relateRangeBBoxToQuery(int minXOffset, int minYOffset, byte[] minTriangle,
                                             int maxXOffset, int maxYOffset, byte[] maxTriangle) {
-    double minLat = decode(NumericUtils.sortableBytesToInt(minTriangle, minYOffset));
-    double minLon = decode(NumericUtils.sortableBytesToInt(minTriangle, minXOffset));
-    double maxLat = decode(NumericUtils.sortableBytesToInt(maxTriangle, maxYOffset));
-    double maxLon = decode(NumericUtils.sortableBytesToInt(maxTriangle, maxXOffset));
+    double minY = decode(NumericUtils.sortableBytesToInt(minTriangle, minYOffset));
+    double minX = decode(NumericUtils.sortableBytesToInt(minTriangle, minXOffset));
+    double maxY = decode(NumericUtils.sortableBytesToInt(maxTriangle, maxYOffset));
+    double maxX = decode(NumericUtils.sortableBytesToInt(maxTriangle, maxXOffset));
 
     // check internal node against query
-    return line2D.relate(minLat, maxLat, minLon, maxLon);
+    return line2D.relate(minX, maxX, minY, maxY);
   }
 
   @Override
-  protected boolean queryMatches(byte[] t, int[] scratchTriangle, QueryRelation queryRelation) {
+  protected boolean queryMatches(byte[] t, ShapeField.DecodedTriangle scratchTriangle, QueryRelation queryRelation) {
     ShapeField.decodeTriangle(t, scratchTriangle);
 
-    double alat = decode(scratchTriangle[0]);
-    double alon = decode(scratchTriangle[1]);
-    double blat = decode(scratchTriangle[2]);
-    double blon = decode(scratchTriangle[3]);
-    double clat = decode(scratchTriangle[4]);
-    double clon = decode(scratchTriangle[5]);
+    double alat = decode(scratchTriangle.aY);
+    double alon = decode(scratchTriangle.aX);
+    double blat = decode(scratchTriangle.bY);
+    double blon = decode(scratchTriangle.bX);
+    double clat = decode(scratchTriangle.cY);
+    double clon = decode(scratchTriangle.cX);
 
-    if (queryRelation == QueryRelation.WITHIN) {
-      return line2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_INSIDE_QUERY;
+    switch (queryRelation) {
+      case INTERSECTS: return line2D.relateTriangle(alon, alat, blon, blat, clon, clat) != Relation.CELL_OUTSIDE_QUERY;
+      case WITHIN: return line2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_INSIDE_QUERY;
+      case DISJOINT: return line2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_OUTSIDE_QUERY;
+      default: throw new IllegalArgumentException("Unsupported query type :[" + queryRelation + "]");
     }
-    // INTERSECTS
-    return line2D.relateTriangle(alon, alat, blon, blat, clon, clat) != Relation.CELL_OUTSIDE_QUERY;
   }
 
   @Override

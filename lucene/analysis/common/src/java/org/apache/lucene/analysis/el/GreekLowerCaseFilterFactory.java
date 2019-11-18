@@ -38,7 +38,7 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 public class GreekLowerCaseFilterFactory extends TokenFilterFactory {
 
   /** SPI name */
-  public static final String NAME = "greekLowerCase";
+  public static final String NAME = "greekLowercase";
  
   /** Creates a new GreekLowerCaseFilterFactory */
   public GreekLowerCaseFilterFactory(Map<String,String> args) {

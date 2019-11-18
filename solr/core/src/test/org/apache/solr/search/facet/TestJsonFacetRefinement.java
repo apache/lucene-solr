@@ -211,7 +211,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
         null,
         null
     );
-    
+
     // same test, but nested in a terms facet
     doTestRefine("{top:{type:terms, field:Afield, facet:{x : {type:terms, field:X, limit:2, refine:true} } } }",
         "{top: {buckets:[{val:'A', count:2, x:{buckets:[{val:x1, count:5},{val:x2, count:3}], more:true} } ] } }",
@@ -277,7 +277,7 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
                  "    between:{ x:{_l : [x1]} }" + 
                  "} } ");
     // a range face w/o any sub facets shouldn't require any refinement
-    doTestRefine("{top:{type:range, other:all, field:R, start:0, end:3, gap:2 } }" +
+    doTestRefine("{top:{type:range, other:all, field:R, start:0, end:3, gap:2 } }" ,
                  // phase #1
                  "{top: {buckets:[{val:0, count:2}, {val:2, count:2}]," +
                  "       before:{count:3},after:{count:47}," +
@@ -290,7 +290,39 @@ public class TestJsonFacetRefinement extends SolrTestCaseHS {
                  // refinement...
                  null,
                  null);
-    
+
+    // same test, but nested in range facet with ranges
+    doTestRefine("{top:{type:range, field:R, ranges:[{from:0, to:1}], facet:{x : {type:terms, field:X, limit:2, refine:true} } } }",
+        "{top: {buckets:[{val:\"[0,1)\", count:2, x:{buckets:[{val:x1, count:5},{val:x2, count:3}],more:true} } ] } }",
+        "{top: {buckets:[{val:\"[0,1)\", count:1, x:{buckets:[{val:x2, count:4},{val:x3, count:2}],more:true} } ] } }",
+        null,
+        "=={top: {" +
+            "_s:[  [\"[0,1)\" , {x:{_l:[x1]}} ]  ]" +
+            "    }  " +
+            "}"
+    );
+
+    doTestRefine("{top:{type:range, field:R, ranges:[{from:\"*\", to:1}], facet:{x : {type:terms, field:X, limit:2, refine:true} } } }",
+        "{top: {buckets:[{val:\"[*,1)\", count:2, x:{buckets:[{val:x1, count:5},{val:x2, count:3}],more:true} } ] } }",
+        "{top: {buckets:[{val:\"[*,1)\", count:1, x:{buckets:[{val:x2, count:4},{val:x3, count:2}],more:true} } ] } }",
+        null,
+        "=={top: {" +
+            "_s:[  [\"[*,1)\" , {x:{_l:[x1]}} ]  ]" +
+            "    }  " +
+            "}"
+    );
+
+    // a range facet w/o any sub facets shouldn't require any refinement
+    // other and include ignored for ranges
+    doTestRefine("{top:{type:range, other:all, field:R, ranges:[{from:0, to:2},{from:2, to:3}] } }",
+            // phase #1
+            "{top: {buckets:[{val:\"[0,2)\", count:2}, {val:\"[2,3)\", count:2}]," +
+            "       } }",
+        "{top: {buckets:[{val:\"[0,2)\", count:2}, {val:\"[2,3)\", count:19}]," +
+            "       } }",
+        // refinement...
+        null,
+        null);
 
     // for testing partial _p, we need a partial facet within a partial facet
     doTestRefine("{top:{type:terms, field:Afield, refine:true, limit:1, facet:{x : {type:terms, field:X, limit:1, refine:true} } } }",

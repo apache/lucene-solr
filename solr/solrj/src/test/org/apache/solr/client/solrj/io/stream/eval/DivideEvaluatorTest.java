@@ -158,7 +158,6 @@ public class DivideEvaluatorTest extends SolrTestCase {
     values.put("a", 0);
     values.put("b", 2);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(0L, result);
+    Assert.assertEquals(0D, result);
   }
 }

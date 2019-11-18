@@ -458,8 +458,8 @@ public class CloneFieldUpdateProcessorFactory
           destMap.put(resolvedDest, destField);
         }
 
-        for (String dest : destMap.keySet()) {
-          doc.put(dest, destMap.get(dest));
+        for (Map.Entry<String, SolrInputField> entry : destMap.entrySet()) {
+          doc.put(entry.getKey(), entry.getValue());
         }
         super.processAdd(cmd);
       }

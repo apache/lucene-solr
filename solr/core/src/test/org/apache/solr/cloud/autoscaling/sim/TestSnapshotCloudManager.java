@@ -17,24 +17,32 @@
 package org.apache.solr.cloud.autoscaling.sim;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
+import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
+import org.apache.solr.client.solrj.cloud.autoscaling.Suggestion;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
@@ -66,6 +74,10 @@ public class TestSnapshotCloudManager extends SolrCloudTestCase {
         .configure();
     CollectionAdminRequest.createCollection(CollectionAdminParams.SYSTEM_COLL, null, 1, 2, 0, 1)
         .process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("coll1", null, 1, 1)
+        .process(cluster.getSolrClient());
+    CollectionAdminRequest.createCollection("coll10", null, 1, 1)
+        .process(cluster.getSolrClient());
     realManager = cluster.getJettySolrRunner(cluster.getJettySolrRunners().size() - 1).getCoreContainer()
         .getZkController().getSolrCloudManager();
   }
@@ -73,7 +85,7 @@ public class TestSnapshotCloudManager extends SolrCloudTestCase {
   @Test
   public void testSnapshots() throws Exception {
     SnapshotCloudManager snapshotCloudManager = new SnapshotCloudManager(realManager, null);
-    Map<String, Object> snapshot = snapshotCloudManager.getSnapshot(true);
+    Map<String, Object> snapshot = snapshotCloudManager.getSnapshot(true, false);
     SnapshotCloudManager snapshotCloudManager1 = new SnapshotCloudManager(snapshot);
     SimSolrCloudTestCase.assertClusterStateEquals(realManager.getClusterStateProvider().getClusterState(), snapshotCloudManager.getClusterStateProvider().getClusterState());
     SimSolrCloudTestCase.assertClusterStateEquals(realManager.getClusterStateProvider().getClusterState(), snapshotCloudManager1.getClusterStateProvider().getClusterState());
@@ -88,7 +100,7 @@ public class TestSnapshotCloudManager extends SolrCloudTestCase {
     Path tmpPath = createTempDir();
     File tmpDir = tmpPath.toFile();
     SnapshotCloudManager snapshotCloudManager = new SnapshotCloudManager(realManager, null);
-    snapshotCloudManager.saveSnapshot(tmpDir, true);
+    snapshotCloudManager.saveSnapshot(tmpDir, true, false);
     SnapshotCloudManager snapshotCloudManager1 = SnapshotCloudManager.readSnapshot(tmpDir);
     SimSolrCloudTestCase.assertClusterStateEquals(snapshotCloudManager.getClusterStateProvider().getClusterState(), snapshotCloudManager1.getClusterStateProvider().getClusterState());
     assertNodeStateProvider(snapshotCloudManager, snapshotCloudManager1);
@@ -96,15 +108,52 @@ public class TestSnapshotCloudManager extends SolrCloudTestCase {
   }
 
   @Test
+  public void testRedaction() throws Exception {
+    Path tmpPath = createTempDir();
+    File tmpDir = tmpPath.toFile();
+    SnapshotCloudManager snapshotCloudManager = new SnapshotCloudManager(realManager, null);
+    Set<String> redacted = new HashSet<>(realManager.getClusterStateProvider().getLiveNodes());
+    redacted.addAll(realManager.getClusterStateProvider().getClusterState().getCollectionStates().keySet());
+    snapshotCloudManager.saveSnapshot(tmpDir, true, true);
+    for (String key : SnapshotCloudManager.REQUIRED_KEYS) {
+      File src = new File(tmpDir, key + ".json");
+      assertTrue(src.toString() + " doesn't exist", src.exists());
+      try (FileInputStream is = new FileInputStream(src)) {
+        String data = IOUtils.toString(is, Charset.forName("UTF-8"));
+        assertFalse("empty data in " + src, data.trim().isEmpty());
+        for (String redactedName : redacted) {
+          assertFalse("redacted name " + redactedName + " found in " + src, data.contains(redactedName));
+        }
+      }
+    }
+  }
+
+  @Test
+  public void testComplexSnapshot() throws Exception {
+    File snapshotDir = new File(TEST_HOME(), "simSnapshot");
+    SnapshotCloudManager snapshotCloudManager = SnapshotCloudManager.readSnapshot(snapshotDir);
+    assertEquals(48, snapshotCloudManager.getClusterStateProvider().getLiveNodes().size());
+    assertEquals(16, snapshotCloudManager.getClusterStateProvider().getClusterState().getCollectionStates().size());
+    try (SimCloudManager simCloudManager = SimCloudManager.createCluster(snapshotCloudManager, null, TimeSource.get("simTime:50"))) {
+      List<Suggester.SuggestionInfo> suggestions = PolicyHelper.getSuggestions(simCloudManager.getDistribStateManager().getAutoScalingConfig(), simCloudManager);
+      //assertEquals(1, suggestions.size());
+      if (suggestions.size() > 0) {
+        Suggester.SuggestionInfo suggestion = suggestions.get(0);
+        assertEquals(Suggestion.Type.improvement.toString(), suggestion.toMap(new HashMap<>()).get("type").toString());
+      }
+    }
+  }
+
+  @Test
   public void testSimulatorFromSnapshot() throws Exception {
     Path tmpPath = createTempDir();
     File tmpDir = tmpPath.toFile();
     SnapshotCloudManager snapshotCloudManager = new SnapshotCloudManager(realManager, null);
-    snapshotCloudManager.saveSnapshot(tmpDir, true);
+    snapshotCloudManager.saveSnapshot(tmpDir, true, false);
     SnapshotCloudManager snapshotCloudManager1 = SnapshotCloudManager.readSnapshot(tmpDir);
     try (SimCloudManager simCloudManager = SimCloudManager.createCluster(snapshotCloudManager1, null, TimeSource.get("simTime:50"))) {
       SimSolrCloudTestCase.assertClusterStateEquals(snapshotCloudManager.getClusterStateProvider().getClusterState(), simCloudManager.getClusterStateProvider().getClusterState());
-      assertNodeStateProvider(snapshotCloudManager, simCloudManager);
+      assertNodeStateProvider(snapshotCloudManager, simCloudManager, "freedisk");
       assertDistribStateManager(snapshotCloudManager.getDistribStateManager(), simCloudManager.getDistribStateManager());
       ClusterState state = simCloudManager.getClusterStateProvider().getClusterState();
       Replica r = state.getCollection(CollectionAdminParams.SYSTEM_COLL).getReplicas().get(0);
@@ -126,14 +175,20 @@ public class TestSnapshotCloudManager extends SolrCloudTestCase {
     }
   }
 
-  private static void assertNodeStateProvider(SolrCloudManager oneMgr, SolrCloudManager twoMgr) throws Exception {
+  private static void assertNodeStateProvider(SolrCloudManager oneMgr, SolrCloudManager twoMgr, String... ignorableNodeValues) throws Exception {
     NodeStateProvider one = oneMgr.getNodeStateProvider();
     NodeStateProvider two = twoMgr.getNodeStateProvider();
     for (String node : oneMgr.getClusterStateProvider().getLiveNodes()) {
       Map<String, Object> oneVals = one.getNodeValues(node, SimUtils.COMMON_NODE_TAGS);
       Map<String, Object> twoVals = two.getNodeValues(node, SimUtils.COMMON_NODE_TAGS);
-      oneVals = Utils.getDeepCopy(oneVals, 10, false, true);
-      twoVals = Utils.getDeepCopy(twoVals, 10, false, true);
+      oneVals = new TreeMap<>(Utils.getDeepCopy(oneVals, 10, false, true));
+      twoVals = new TreeMap<>(Utils.getDeepCopy(twoVals, 10, false, true));
+      if (ignorableNodeValues != null) {
+        for (String key : ignorableNodeValues) {
+          oneVals.remove(key);
+          twoVals.remove(key);
+        }
+      }
       assertEquals(Utils.toJSONString(oneVals), Utils.toJSONString(twoVals));
       Map<String, Map<String, List<ReplicaInfo>>> oneInfos = one.getReplicaInfo(node, SimUtils.COMMON_REPLICA_TAGS);
       Map<String, Map<String, List<ReplicaInfo>>> twoInfos = two.getReplicaInfo(node, SimUtils.COMMON_REPLICA_TAGS);
@@ -160,10 +215,16 @@ public class TestSnapshotCloudManager extends SolrCloudTestCase {
 
   // ignore these because SimCloudManager always modifies them
   private static final Set<Pattern> IGNORE_DISTRIB_STATE_PATTERNS = new HashSet<>(Arrays.asList(
-      Pattern.compile("/autoscaling/triggerState.*"),
-      Pattern.compile("/clusterstate\\.json"), // different format in SimClusterStateProvider
+      Pattern.compile("/autoscaling/triggerState/.*"),
+      // some triggers may have run after the snapshot was taken
+      Pattern.compile("/autoscaling/events/.*"),
+      // we always use format 1 in SimClusterStateProvider
+      Pattern.compile("/clusterstate\\.json"),
+      // depending on the startup sequence leaders may differ
       Pattern.compile("/collections/[^/]+?/leader_elect/.*"),
       Pattern.compile("/collections/[^/]+?/leaders/.*"),
+      Pattern.compile("/collections/[^/]+?/terms/.*"),
+      Pattern.compile("/overseer_elect/election/.*"),
       Pattern.compile("/live_nodes/.*")
   ));
 

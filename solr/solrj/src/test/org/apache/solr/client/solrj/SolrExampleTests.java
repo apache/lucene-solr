@@ -18,6 +18,7 @@ package org.apache.solr.client.solrj;
 
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -72,6 +73,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
+import org.apache.solr.util.RTimer;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -107,6 +109,44 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     client.deleteByQuery("*:*");
     client.commit();
   }
+
+  @Test
+  @Monster("Only useful to verify the performance of serialization+ deserialization")
+  // ant -Dtestcase=SolrExampleBinaryTest -Dtests.method=testQueryPerf -Dtests.monster=true test
+  public void testQueryPerf() throws Exception {
+    HttpSolrClient client = (HttpSolrClient) getSolrClient();
+    client.deleteByQuery("*:*");
+    client.commit();
+    ArrayList<SolrInputDocument> docs = new ArrayList<>();
+    int id = 0;
+    docs.add(makeTestDoc("id", id++, "features", "aaa", "manu", "apple", "cat", "a", "inStock", true, "popularity", 12, "price", .017));
+    docs.add(makeTestDoc("id", id++, "features", "aaa", "manu", "lg", "cat", "a", "inStock", false, "popularity", 13, "price", 16.04));
+    docs.add(makeTestDoc("id", id++, "features", "aaa", "manu", "samsung", "cat", "a", "inStock", true, "popularity", 14, "price", 12.34));
+    docs.add(makeTestDoc("id", id++, "features", "aaa", "manu", "lg", "cat", "b", "inStock", false, "popularity", 24, "price", 51.39));
+    docs.add(makeTestDoc("id", id++, "features", "aaa", "manu", "nokia", "cat", "b", "inStock", true, "popularity", 28, "price", 131.39));
+    docs.add(makeTestDoc("id", id++, "features", "bbb", "manu", "ztc", "cat", "a", "inStock", false, "popularity", 32));
+    docs.add(makeTestDoc("id", id++, "features", "bbb", "manu", "htc", "cat", "a", "inStock", true, "popularity", 31, "price", 131.39));
+    docs.add(makeTestDoc("id", id++, "features", "bbb", "manu", "apple", "cat", "b", "inStock", false, "popularity", 36));
+    docs.add(makeTestDoc("id", id++, "features", "bbb", "manu", "lg", "cat", "b", "inStock", true, "popularity", 37, "price", 1.39));
+    docs.add(makeTestDoc("id", id++, "features", "bbb", "manu", "ztc", "cat", "b", "inStock", false, "popularity", 38, "price", 47.98));
+    docs.add(makeTestDoc("id", id++, "features", "bbb", "manu", "ztc", "cat", "b", "inStock", true, "popularity", -38));
+    docs.add(makeTestDoc("id", id++, "cat", "b")); // something not matching all fields
+    client.add(docs);
+    client.commit();
+    //this sets the cache
+    QueryResponse rsp = getSolrClient().query(new SolrQuery("*:*").setRows(20));
+
+    RTimer timer = new RTimer();
+    int count = 10000;
+    log.info("Started perf test....");
+    for(int i=0;i< count; i++){
+      rsp = getSolrClient().query(new SolrQuery("*:*").setRows(20));
+    }
+
+    log.info("time taken to execute {} queries is {} ms",count, timer.getTime());
+
+  }
+
 
   /**
    * query the example
@@ -688,15 +728,15 @@ abstract public class SolrExampleTests extends SolrExampleTestsBase
     Assert.assertEquals(0, rsp.getResults().getNumFound());
 
     ContentStreamUpdateRequest up = new ContentStreamUpdateRequest("/update");
-    var file = getFile("solrj/books.csv");
+    File file = getFile("solrj/books.csv");
     final int opened[] =  new int[] {0};
     final int closed[] =  new int[] {0};
 
-    var assertClosed = random().nextBoolean();
+    boolean assertClosed = random().nextBoolean();
     if (assertClosed) {
-      var allBytes = Files.readAllBytes(file.toPath());
-      
-      var contentStreamMock = new ContentStreamBase.ByteArrayStream(allBytes, "solrj/books.csv", "application/csv") {
+      byte[] allBytes = Files.readAllBytes(file.toPath());
+
+      ContentStreamBase.ByteArrayStream contentStreamMock = new ContentStreamBase.ByteArrayStream(allBytes, "solrj/books.csv", "application/csv") {
         @Override
         public InputStream getStream() throws IOException {
           opened [0]++;

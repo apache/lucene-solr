@@ -19,31 +19,29 @@ package org.apache.solr.search;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.managed.ManagedComponent;
 import org.apache.solr.managed.types.ManagedCacheComponent;
-import org.apache.solr.metrics.SolrMetricProducer;
 
 import java.util.Map;
+import java.util.function.Function;
 
 
 /**
  * Primary API for dealing with Solr's internal caches.
  */
-public interface SolrCache<K,V> extends SolrInfoBean, SolrMetricProducer, ManagedCacheComponent {
+public interface SolrCache<K,V> extends SolrInfoBean, ManagedCacheComponent {
 
-  /** Current size of the cache. */
-  String SIZE_PARAM = "size";
-  /** Maximum size of the cache. */
-  String MAX_SIZE_PARAM = "maxSize";
-  /** Minimum size of the cache. */
-  String MIN_SIZE_PARAM = "minSize";
-  /** Maximum RAM use in MB. */
-  String MAX_RAM_MB_PARAM = "maxRamMB";
-  /** Ram usage estimate. */
-  String RAM_BYTES_USED_PARAM = "ramBytesUsed";
-  // not camelCase for back-compat
-  /** Cache hit ratio. */
   String HIT_RATIO_PARAM = "hitratio";
-
-  long MB = 1024L * 1024L;
+  String HITS_PARAM = "hits";
+  String INSERTS_PARAM = "inserts";
+  String EVICTIONS_PARAM = "evictions";
+  String LOOKUPS_PARAM = "lookups";
+  String SIZE_PARAM = "size";
+  String MAX_SIZE_PARAM = "maxSize";
+  String RAM_BYTES_USED_PARAM = "ramBytesUsed";
+  String MAX_RAM_MB_PARAM = "maxRamMB";
+  String MAX_IDLE_TIME_PARAM = "maxIdleTime";
+  String INITIAL_SIZE_PARAM = "initialSize";
+  String CLEANUP_THREAD_PARAM = "cleanupThread";
+  String SHOW_ITEMS_PARAM = "showItems";
 
   /**
    * The initialization routine. Instance specific arguments are passed in
@@ -98,6 +96,19 @@ public interface SolrCache<K,V> extends SolrInfoBean, SolrMetricProducer, Manage
   /** :TODO: copy from Map */
   public V get(K key);
 
+  public V remove(K key);
+
+  /**
+   * Get an existing element or atomically compute it if missing.
+   * @param key key
+   * @param mappingFunction function to compute the element. If the function returns a null
+   *                        result the cache mapping will not be created. NOTE: this function
+   *                        must NOT attempt to modify any mappings in the cache.
+   * @return existing or newly computed value, null if there was no existing value and
+   * it was not possible to compute a new value (in which case the new mapping won't be created).
+   */
+  public V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction);
+
   /** :TODO: copy from Map */
   public void clear();
 
@@ -131,7 +142,6 @@ public interface SolrCache<K,V> extends SolrInfoBean, SolrMetricProducer, Manage
    */
   public State getState();
 
-
   /**
    * Warm this cache associated with <code>searcher</code> using the <code>old</code>
    * cache object.  <code>this</code> and <code>old</code> will have the same concrete type.
@@ -142,6 +152,23 @@ public interface SolrCache<K,V> extends SolrInfoBean, SolrMetricProducer, Manage
 
 
   /** Frees any non-memory resources */
-  public void close();
+  default void close() throws Exception {
+    SolrInfoBean.super.close();
+  }
 
+  /** Returns maximum size limit (number of items) if set and supported, -1 otherwise. */
+  int getMaxSize();
+
+  /** Set maximum size limit (number of items), or -1 for unlimited. Note: this has effect
+   * only on implementations that support it, it's a no-op otherwise
+   */
+  void setMaxSize(int maxSize);
+
+  /** Returns maximum size limit (in MB) if set and supported, -1 otherwise. */
+  int getMaxRamMB();
+
+  /** Set maximum size limit (in MB), or -1 for unlimited. Note: this has effect
+   * only on implementations that support it, it's a no-op otherwise.
+   */
+  void setMaxRamMB(int maxRamMB);
 }

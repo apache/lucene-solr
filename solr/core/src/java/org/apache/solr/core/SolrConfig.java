@@ -60,9 +60,10 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.rest.RestManager;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.search.CacheConfig;
-import org.apache.solr.search.FastLRUCache;
+import org.apache.solr.search.CaffeineCache;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.ValueSourceParser;
@@ -205,7 +206,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     getOverlay();//just in case it is not initialized
     getRequestParams();
     initLibs();
-    luceneMatchVersion = SolrConfig.parseLuceneVersionString(getVal("luceneMatchVersion", true));
+    luceneMatchVersion = SolrConfig.parseLuceneVersionString(getVal(IndexSchema.LUCENE_MATCH_VERSION_PARAM, true));
     log.info("Using Lucene MatchVersion: {}", luceneMatchVersion);
 
     String indexConfigPrefix;
@@ -270,8 +271,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
       args.put("size", "10000");
       args.put("initialSize", "10");
       args.put("showItems", "-1");
-      args.put("class", FastLRUCache.class.getName());
-      conf = new CacheConfig(args);
+      conf = new CacheConfig(CaffeineCache.class, args, null);
     }
     fieldValueCacheConfig = conf;
     useColdSearcher = getBool("query/useColdSearcher", false);
@@ -294,11 +294,11 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
     slowQueryThresholdMillis = getInt("query/slowQueryThresholdMillis", -1);
     for (SolrPluginInfo plugin : plugins) loadPluginInfo(plugin);
 
-    Map<String, CacheConfig> userCacheConfigs = CacheConfig.getConfigs(this, "query/cache");
+    Map<String, CacheConfig> userCacheConfigs = CacheConfig.getMultipleConfigs(this, "query/cache");
     List<PluginInfo> caches = getPluginInfos(SolrCache.class.getName());
     if (!caches.isEmpty()) {
       for (PluginInfo c : caches) {
-        userCacheConfigs.put(c.name, new CacheConfig(c.attributes));
+        userCacheConfigs.put(c.name, CacheConfig.getConfig(this, "cache", c.attributes, null));
       }
     }
     this.userCacheConfigs = Collections.unmodifiableMap(userCacheConfigs);
@@ -378,7 +378,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
           // and even then -- only if there is a single SpellCheckComponent
           // because of queryConverter.setIndexAnalyzer
       .add(new SolrPluginInfo(QueryConverter.class, "queryConverter", REQUIRE_NAME, REQUIRE_CLASS))
-      .add(new SolrPluginInfo(RuntimeLib.class, RuntimeLib.TYPE, REQUIRE_NAME, MULTI_OK))
+      .add(new SolrPluginInfo(PluginBag.RuntimeLib.class, "runtimeLib", REQUIRE_NAME, MULTI_OK))
           // this is hackish, since it picks up all SolrEventListeners,
           // regardless of when/how/why they are used (or even if they are
           // declared outside of the appropriate context) but there's no nice
@@ -887,7 +887,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
   @Override
   public Map<String, Object> toMap(Map<String, Object> result) {
     if (getZnodeVersion() > -1) result.put(ZNODEVER, getZnodeVersion());
-    result.put("luceneMatchVersion", luceneMatchVersion);
+    result.put(IndexSchema.LUCENE_MATCH_VERSION_PARAM, luceneMatchVersion);
     result.put("updateHandler", getUpdateHandlerInfo());
     Map m = new LinkedHashMap();
     result.put("query", m);
@@ -903,7 +903,11 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
       tag = tag.replace("/", "");
       if (plugin.options.contains(PluginOpts.REQUIRE_NAME)) {
         LinkedHashMap items = new LinkedHashMap();
-        for (PluginInfo info : infos) items.put(info.name, info);
+        for (PluginInfo info : infos) {
+          //TODO remove after fixing https://issues.apache.org/jira/browse/SOLR-13706
+          if (info.type.equals("searchComponent") && info.name.equals("highlight")) continue;
+          items.put(info.name, info);
+        }
         for (Map.Entry e : overlay.getNamedPlugins(plugin.tag).entrySet()) items.put(e.getKey(), e.getValue());
         result.put(tag, items);
       } else {
@@ -941,7 +945,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
   private void addCacheConfig(Map queryMap, CacheConfig... cache) {
     if (cache == null) return;
-    for (CacheConfig config : cache) if (config != null) queryMap.put(config.getName(), config);
+    for (CacheConfig config : cache) if (config != null) queryMap.put(config.getNodeName(), config);
 
   }
 

@@ -24,7 +24,6 @@ import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
@@ -59,8 +58,9 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.SolrCLI;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
@@ -97,6 +97,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
   @Test
   //commented 9-Aug-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
+  @LogLevel("org.apache.solr.security=DEBUG")
   public void testBasicAuth() throws Exception {
     boolean isUseV2Api = random().nextBoolean();
     String authcPrefix = "/admin/authentication";
@@ -139,9 +140,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
 
       final SolrRequest genericReq;
       if (isUseV2Api) {
-        genericReq = new V2Request.Builder("/cluster/security/authentication")
-            .withPayload(command)
-            .withMethod(SolrRequest.METHOD.POST).build();
+        genericReq = new V2Request.Builder("/cluster/security/authentication").withMethod(SolrRequest.METHOD.POST).build();
       } else {
         genericReq = new GenericSolrRequest(SolrRequest.METHOD.POST, authcPrefix, new ModifiableSolrParams());
         ((GenericSolrRequest)genericReq).setContentWriter(new StringPayloadContentWriter(command, CommonParams.JSON_MIME));
@@ -235,7 +234,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
         HttpSolrClient.RemoteSolrException e = expectThrows(HttpSolrClient.RemoteSolrException.class, () -> {
           new UpdateRequest().deleteByQuery("*:*").process(aNewClient, COLLECTION);
         });
-        assertTrue(e.getMessage().contains("Unauthorized request"));
+        assertTrue(e.getMessage(), e.getMessage().contains("Authentication failed"));
       } finally {
         aNewClient.close();
         cluster.stopJettySolrRunner(aNewJetty);
@@ -347,33 +346,17 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
     update.commit(cluster.getSolrClient(), COLLECTION);
   }
 
-  /** @see #executeCommand */
-  private static Map<String,Object> getAuthPlugins(String url) {
-    Map<String,Object> plugins = new HashMap<>();
-    if (url.endsWith("authentication")) {
-      for (JettySolrRunner r : cluster.getJettySolrRunners()) {
-        plugins.put(r.getNodeName(), r.getCoreContainer().getAuthenticationPlugin());
-      }
-    } else if (url.endsWith("authorization")) {
-      for (JettySolrRunner r : cluster.getJettySolrRunners()) {
-        plugins.put(r.getNodeName(), r.getCoreContainer().getAuthorizationPlugin());
-      }
-    } else {
-      fail("Test helper method assumptions broken: " + url);
-    }
-    return plugins;
-  }
-  
   public static void executeCommand(String url, HttpClient cl, String payload,
                                     String user, String pwd) throws Exception {
 
-    // HACK: (attempted) work around for SOLR-13464...
+    // HACK: work around for SOLR-13464...
     //
     // note the authz/authn objects in use on each node before executing the command,
     // then wait until we see new objects on every node *after* executing the command
     // before returning...
-    final Set<Map.Entry<String,Object>> initialPlugins = getAuthPlugins(url).entrySet();
-    
+    final Set<Map.Entry<String,Object>> initialPlugins
+      = getAuthPluginsInUseForCluster(url).entrySet();
+
     HttpPost httpPost;
     HttpResponse r;
     httpPost = new HttpPost(url);
@@ -387,10 +370,11 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
     Utils.consumeFully(r.getEntity());
 
     // HACK (continued)...
-    final TimeOut timeout = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     timeout.waitFor("core containers never fully updated their auth plugins",
                     () -> {
-                      final Set<Map.Entry<String,Object>> tmpSet = getAuthPlugins(url).entrySet();
+                      final Set<Map.Entry<String,Object>> tmpSet
+                        = getAuthPluginsInUseForCluster(url).entrySet();
                       tmpSet.retainAll(initialPlugins);
                       return tmpSet.isEmpty();
                     });
@@ -410,6 +394,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
   //this could be generated everytime. But , then we will not know if there is any regression
   protected static final String STD_CONF = "{\n" +
       "  'authentication':{\n" +
+      "    'blockUnknown':'false',\n" +
       "    'class':'solr.BasicAuthPlugin',\n" +
       "    'credentials':{'solr':'orwp2Ghgj39lmnrZOTm7Qtre1VqHFDfwAEzr0ApbN3Y= Ju5osoAqOX8iafhWpPP01E5P+sg8tK8tHON7rCYZRRw='}},\n" +
       "  'authorization':{\n" +

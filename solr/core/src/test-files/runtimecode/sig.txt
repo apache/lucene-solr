@@ -36,7 +36,6 @@ openssl dgst -sha1 -sign ../cryptokeys/priv_key512.pem runtimelibs.jar.bin | ope
 
 L3q/qIGs4NaF6JiO0ZkMUFa88j0OmYc+I6O7BOdNuMct/xoZ4h73aZHZGc0+nmI1
 f/U3bOlMPINlSOM6LK3JpQ==
-L3q/qIGs4NaF6JiO0ZkMUFa88j0OmYc+I6O7BOdNuMct/xoZ4h73aZHZGc0+nmI1f/U3bOlMPINlSOM6LK3JpQ==
 
 openssl dgst -sha1 -sign ../cryptokeys/priv_key512.pem runtimelibs_v2.jar.bin | openssl enc -base64
 
@@ -48,6 +47,15 @@ openssl dgst -sha1 -sign ../cryptokeys/priv_key512.pem runtimelibs_v3.jar.bin | 
 a400n4T7FT+2gM0SC6+MfSOExjud8MkhTSFylhvwNjtWwUgKdPFn434Wv7Qc4QEq
 DVLhQoL3WqYtQmLPti0G4Q==
 
+openssl dgst -sha1 -sign ../cryptokeys/priv_key512.pem cache.jar.bin | openssl enc -base64
+
+A2CDnReirpII005KRN1C3pvt4NM4kItsagQPNaa3ljj/5R3LKVgiPuNvqBsffU8n
+81LOAfr5VMyGFcb4QMHpyg==
+
+openssl dgst -sha1 -sign ../cryptokeys/priv_key512.pem cache_v2.jar.bin | openssl enc -base64
+
+SOrekHt+uup+z2z+nZU5indk2huRRfmbM+W+vQ0variHrcZEG9EXt5LuPFl8Ki9A
+hr6klMHdVP8nj4wuQhu/Hg==
 
 ====================sha512====================
 
@@ -63,3 +71,35 @@ bc5ce45ad281b6a08fb7e529b1eb475040076834816570902acb6ebdd809410e31006efdeaa7f78a
 openssl dgst -sha512 runtimelibs_v3.jar.bin
 
 60ec88c2a2e9b409f7afc309273383810a0d07a078b482434eda9674f7e25b8adafa8a67c9913c996cbfb78a7f6ad2b9db26dbd4fe0ca4068f248d5db563f922
+
+openssl dgst -sha512 cache.jar.bin
+
+8946650ba88919cea2f81e4771c418411f61837b2a276088c2f2c86ef2d730f152ccf5975fa8a2c7035a1f00de1994a7788676d95dc7ccea6aaf28c7fff1f46b
+
+openssl dgst -sha512 cache_v2.jar.bin
+
+873337e67b90b7ff99df012b2e9093c63079c37a564643d34861a88c4cbaf0698ebb096905929d69cdbde3b4d29d55e31db24ee05c01b39c0b75a16e54eb4335
+
+=============sha256============================
+
+openssl dgst -sha256 runtimelibs.jar.bin
+
+e1f9e23988c19619402f1040c9251556dcd6e02b9d3e3b966a129ea1be5c70fc
+
+openssl dgst -sha512 runtimelibs_v2.jar.bin
+
+79298d7d5c3e60d91154efe7d72f4536eac46698edfa22ab894b85492d562ed4
+
+openssl dgst -sha256 runtimelibs_v3.jar.bin
+
+20e0bfaec71b2e93c4da9f2ed3745dda04dc3fc915b66cc0275863982e73b2a3
+
+openssl dgst -sha256 cache.jar.bin
+
+32e8b5b2a95ea306538b52017f0954aa1b0f8a8b2d0acbc498fd0e66a223f7bd
+
+openssl dgst -sha256 cache_v2.jar.bin
+
+0f670f6dcc2b00f9a448a7ebd457d4ff985ab702c85cdb3608dcae9889e8d702
+
+

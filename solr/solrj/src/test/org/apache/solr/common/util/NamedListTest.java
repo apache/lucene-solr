@@ -26,6 +26,16 @@ import org.junit.Test;
 
 public class NamedListTest extends SolrTestCase {
 
+  @Test
+  public void testToString() {
+    NamedList<String> nl = new NamedList<>();
+    assertEquals("{}", nl.toString());
+    nl.add("key1", "value1");
+    assertEquals("{key1=value1}", nl.toString());
+    nl.add("key2", "value2");
+    assertEquals("{key1=value1, key2=value2}", nl.toString());
+  }
+
   public void testRemove() {
     NamedList<String> nl = new NamedList<>();
     nl.add("key1", "value1");

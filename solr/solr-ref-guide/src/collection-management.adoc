@@ -1232,7 +1232,7 @@ Backs up Solr collections and associated configurations to a shared filesystem -
 
 `/admin/collections?action=BACKUP&name=myBackupName&collection=myCollectionName&location=/path/to/my/shared/drive`
 
-The BACKUP command will backup Solr indexes and configurations for a specified collection. The BACKUP command takes one copy from each shard for the indexes. For configurations, it backs up the configset that was associated with the collection and metadata.
+The BACKUP command will backup Solr indexes and configurations for a specified collection. The BACKUP command <<making-and-restoring-backups.adoc#making-and-restoring-backups,takes one copy from each shard for the indexes>>. For configurations, it backs up the configset that was associated with the collection and metadata.
 
 === BACKUP Parameters
 

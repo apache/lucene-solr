@@ -60,7 +60,7 @@ There are several things defined in this file:
 
 Save your settings to a file called `security.json` locally. If you are using Solr in standalone mode, you should put this file in `$SOLR_HOME`.
 
-If `blockUnknown` does not appear in the `security.json` file, it will default to `false`. This has the effect of not requiring authentication at all. In some cases, you may want this; for example, if you want to have `security.json` in place but aren't ready to enable authentication. However, you will want to ensure that this parameter is set to `true` in order for authentication to be truly enabled in your system.
+If `blockUnknown` does not appear in the `security.json` file, it will default to `true`. This has the effect of requiring authentication for HTTP access to Solr. In some cases, you may not want authentication after enabling the plugin; for example, if you want to have `security.json` in place but aren't ready to enable authentication. However, you will want to ensure that `blockUnknown` is set to `true` or omitted entirely in order for authentication to be enforced for all requests to your system.
 
 If `realm` is not defined, it will default to `solr`.
 
@@ -71,7 +71,7 @@ If you are using SolrCloud, you must upload `security.json` to ZooKeeper. You ca
 bin/solr zk cp file:path_to_local_security.json zk:/security.json -z localhost:9983
 ----
 
-NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<setting-up-an-external-zookeeper-ensemble#updating-solr-s-include-files,instructions>>) you can omit `-z <zk host string>` from the above command.
+NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<setting-up-an-external-zookeeper-ensemble#updating-solr-include-files,instructions>>) you can omit `-z <zk host string>` from the above command.
 
 === Caveats
 

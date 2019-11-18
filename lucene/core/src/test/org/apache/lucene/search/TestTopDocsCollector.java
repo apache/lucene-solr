@@ -19,16 +19,29 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.document.Document;
+import org.apache.lucene.document.Field;
+import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LineFileDocs;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.NamedThreadFactory;
 
 public class TestTopDocsCollector extends LuceneTestCase {
 
@@ -91,10 +104,37 @@ public class TestTopDocsCollector extends LuceneTestCase {
 
   private TopDocsCollector<ScoreDoc> doSearch(int numResults) throws IOException {
     Query q = new MatchAllDocsQuery();
+    return doSearch(numResults, q);
+  }
+
+  private TopDocsCollector<ScoreDoc> doSearch(int numResults, Query q) throws IOException {
     IndexSearcher searcher = newSearcher(reader);
     TopDocsCollector<ScoreDoc> tdc = new MyTopsDocCollector(numResults);
     searcher.search(q, tdc);
     return tdc;
+  }
+
+  private TopDocsCollector<ScoreDoc> doSearchWithThreshold(int numResults, int thresHold, Query q, IndexReader indexReader) throws IOException {
+    IndexSearcher searcher = new IndexSearcher(indexReader);
+    TopDocsCollector<ScoreDoc> tdc = TopScoreDocCollector.create(numResults, thresHold);
+    searcher.search(q, tdc);
+    return tdc;
+  }
+
+  private TopDocs doConcurrentSearchWithThreshold(int numResults, int threshold, Query q, IndexReader indexReader) throws IOException {
+    ExecutorService service = new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS,
+        new LinkedBlockingQueue<Runnable>(),
+        new NamedThreadFactory("TestTopDocsCollector"));
+    try {
+      IndexSearcher searcher = new IndexSearcher(indexReader, service);
+
+      CollectorManager collectorManager = TopScoreDocCollector.createSharedManager(numResults,
+          null, threshold);
+
+      return (TopDocs) searcher.search(q, collectorManager);
+    } finally {
+      service.shutdown();
+    }
   }
   
   @Override
@@ -125,20 +165,21 @@ public class TestTopDocsCollector extends LuceneTestCase {
     TopDocsCollector<ScoreDoc> tdc = doSearch(numResults);
     
     // start < 0
-    assertEquals(0, tdc.topDocs(-1).scoreDocs.length);
-    
-    // start > pq.size()
-    assertEquals(0, tdc.topDocs(numResults + 1).scoreDocs.length);
-    
+    IllegalArgumentException exception = expectThrows(IllegalArgumentException.class, () -> {
+      tdc.topDocs(-1);
+    });
+
+    assertEquals("Expected value of starting position is between 0 and 5, got -1", exception.getMessage());
+
     // start == pq.size()
     assertEquals(0, tdc.topDocs(numResults).scoreDocs.length);
     
     // howMany < 0
-    assertEquals(0, tdc.topDocs(0, -1).scoreDocs.length);
-    
-    // howMany == 0
-    assertEquals(0, tdc.topDocs(0, 0).scoreDocs.length);
-    
+    exception = expectThrows(IllegalArgumentException.class, () -> {
+      tdc.topDocs(0, -1);
+    });
+
+    assertEquals("Number of hits requested must be greater than 0 but value was -1", exception.getMessage());
   }
   
   public void testZeroResults() throws Exception {
@@ -178,6 +219,22 @@ public class TestTopDocsCollector extends LuceneTestCase {
     tdc = doSearch(15);
     // get the last 5 only.
     assertEquals(5, tdc.topDocs(10).scoreDocs.length);
+  }
+
+  public void testIllegalArguments() throws Exception {
+    final TopDocsCollector<ScoreDoc> tdc = doSearch(15);
+
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
+      tdc.topDocs(-1);
+    });
+
+    assertEquals("Expected value of starting position is between 0 and 15, got -1", expected.getMessage());
+
+    expected = expectThrows(IllegalArgumentException.class, () -> {
+      tdc.topDocs(9, -1);
+    });
+
+    assertEquals("Number of hits requested must be greater than 0 but value was -1", expected.getMessage());
   }
   
   // This does not test the PQ's correctness, but whether topDocs()
@@ -274,6 +331,29 @@ public class TestTopDocsCollector extends LuceneTestCase {
     dir.close();
   }
 
+  public void testSharedCountCollectorManager() throws Exception {
+    Query q = new MatchAllDocsQuery();
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE));
+    Document doc = new Document();
+    w.addDocuments(Arrays.asList(doc, doc, doc, doc));
+    w.flush();
+    w.addDocuments(Arrays.asList(doc, doc));
+    w.flush();
+    IndexReader reader = DirectoryReader.open(w);
+    assertEquals(2, reader.leaves().size());
+    w.close();
+
+    TopDocsCollector collector = doSearchWithThreshold( 5, 10, q, reader);
+    TopDocs tdc = doConcurrentSearchWithThreshold(5, 10, q, reader);
+    TopDocs tdc2 = collector.topDocs();
+
+    CheckHits.checkEqual(q, tdc.scoreDocs, tdc2.scoreDocs);
+
+    reader.close();
+    dir.close();
+  }
+
   public void testTotalHits() throws Exception {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE));
@@ -322,4 +402,212 @@ public class TestTopDocsCollector extends LuceneTestCase {
     dir.close();
   }
 
+  public void testConcurrentMinScore() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE));
+    Document doc = new Document();
+    w.addDocuments(Arrays.asList(doc, doc, doc, doc, doc));
+    w.flush();
+    w.addDocuments(Arrays.asList(doc, doc, doc, doc, doc, doc));
+    w.flush();
+    w.addDocuments(Arrays.asList(doc, doc));
+    w.flush();
+    IndexReader reader = DirectoryReader.open(w);
+    assertEquals(3, reader.leaves().size());
+    w.close();
+
+    CollectorManager<TopScoreDocCollector, TopDocs> manager =
+        TopScoreDocCollector.createSharedManager(2, null, 0);
+    TopScoreDocCollector collector = manager.newCollector();
+    TopScoreDocCollector collector2 = manager.newCollector();
+    assertTrue(collector.minScoreAcc == collector2.minScoreAcc);
+    MaxScoreAccumulator minValueChecker = collector.minScoreAcc;
+    // force the check of the global minimum score on every round
+    minValueChecker.modInterval = 0;
+
+    ScoreAndDoc scorer = new ScoreAndDoc();
+    ScoreAndDoc scorer2 = new ScoreAndDoc();
+
+    LeafCollector leafCollector = collector.getLeafCollector(reader.leaves().get(0));
+    leafCollector.setScorer(scorer);
+    LeafCollector leafCollector2 = collector2.getLeafCollector(reader.leaves().get(1));
+    leafCollector2.setScorer(scorer2);
+
+    scorer.doc = 0;
+    scorer.score = 3;
+    leafCollector.collect(0);
+    assertNull(minValueChecker.get());
+    assertNull(scorer.minCompetitiveScore);
+
+    scorer2.doc = 0;
+    scorer2.score = 6;
+    leafCollector2.collect(0);
+    assertNull(minValueChecker.get());
+    assertNull(scorer2.minCompetitiveScore);
+
+    scorer.doc = 1;
+    scorer.score = 2;
+    leafCollector.collect(1);
+    assertEquals(2f, minValueChecker.get().score, 0f);
+    assertEquals(Math.nextUp(2f), scorer.minCompetitiveScore, 0f);
+    assertNull(scorer2.minCompetitiveScore);
+
+    scorer2.doc = 1;
+    scorer2.score = 9;
+    leafCollector2.collect(1);
+    assertEquals(6f, minValueChecker.get().score, 0f);
+    assertEquals(Math.nextUp(2f), scorer.minCompetitiveScore, 0f);
+    assertEquals(Math.nextUp(6f), scorer2.minCompetitiveScore, 0f);
+
+    scorer2.doc = 2;
+    scorer2.score = 7;
+    leafCollector2.collect(2);
+    assertEquals(minValueChecker.get().score, 7f, 0f);
+    assertEquals(Math.nextUp(2f), scorer.minCompetitiveScore, 0f);
+    assertEquals(Math.nextUp(7f), scorer2.minCompetitiveScore, 0f);
+
+    scorer2.doc = 3;
+    scorer2.score = 1;
+    leafCollector2.collect(3);
+    assertEquals(minValueChecker.get().score, 7f, 0f);
+    assertEquals(Math.nextUp(2f), scorer.minCompetitiveScore, 0f);
+    assertEquals(Math.nextUp(7f), scorer2.minCompetitiveScore, 0f);
+
+    scorer.doc = 2;
+    scorer.score = 10;
+    leafCollector.collect(2);
+    assertEquals(minValueChecker.get().score, 7f, 0f);
+    assertEquals(7f, scorer.minCompetitiveScore, 0f);
+    assertEquals(Math.nextUp(7f), scorer2.minCompetitiveScore, 0f);
+
+    scorer.doc = 3;
+    scorer.score = 11;
+    leafCollector.collect(3);
+    assertEquals(minValueChecker.get().score, 10, 0f);
+    assertEquals(Math.nextUp(10f), scorer.minCompetitiveScore, 0f);
+    assertEquals(Math.nextUp(7f), scorer2.minCompetitiveScore, 0f);
+
+    TopScoreDocCollector collector3 = manager.newCollector();
+    LeafCollector leafCollector3 = collector3.getLeafCollector(reader.leaves().get(2));
+    ScoreAndDoc scorer3 = new ScoreAndDoc();
+    leafCollector3.setScorer(scorer3);
+    assertEquals(Math.nextUp(10f), scorer3.minCompetitiveScore, 0f);
+
+    scorer3.doc = 0;
+    scorer3.score = 1f;
+    leafCollector3.collect(0);
+    assertEquals(10f, minValueChecker.get().score, 0f);
+    assertEquals(Math.nextUp(10f), scorer3.minCompetitiveScore, 0f);
+
+    scorer.doc = 4;
+    scorer.score = 11;
+    leafCollector.collect(4);
+    assertEquals(11f, minValueChecker.get().score, 0f);
+    assertEquals(Math.nextUp(11f), scorer.minCompetitiveScore, 0f);
+    assertEquals(Math.nextUp(7f), scorer2.minCompetitiveScore, 0f);
+    assertEquals(Math.nextUp(10f), scorer3.minCompetitiveScore, 0f);
+
+    scorer3.doc = 1;
+    scorer3.score = 2f;
+    leafCollector3.collect(1);
+    assertEquals(minValueChecker.get().score, 11f, 0f);
+    assertEquals(Math.nextUp(11f), scorer.minCompetitiveScore, 0f);
+    assertEquals(Math.nextUp(7f), scorer2.minCompetitiveScore, 0f);
+    assertEquals(Math.nextUp(11f), scorer3.minCompetitiveScore, 0f);
+
+
+    TopDocs topDocs = manager.reduce(Arrays.asList(collector, collector2, collector3));
+    assertEquals(11, topDocs.totalHits.value);
+    assertEquals(new TotalHits(11, TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO), topDocs.totalHits);
+
+    reader.close();
+    dir.close();
+  }
+
+  public void testRandomMinCompetitiveScore() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig());
+    int numDocs = atLeast(1000);
+    for (int i = 0; i < numDocs; ++i) {
+      int numAs = 1 + random().nextInt(5);
+      int numBs = random().nextFloat() < 0.5f ?  0 : 1 + random().nextInt(5);
+      int numCs = random().nextFloat() < 0.1f ?  0 : 1 + random().nextInt(5);
+      Document doc = new Document();
+      for (int j = 0; j < numAs; ++j) {
+        doc.add(new StringField("f", "A", Field.Store.NO));
+      }
+      for (int j = 0; j < numBs; ++j) {
+        doc.add(new StringField("f", "B", Field.Store.NO));
+      }
+      for (int j = 0; j < numCs; ++j) {
+        doc.add(new StringField("f", "C", Field.Store.NO));
+      }
+      w.addDocument(doc);
+    }
+    IndexReader indexReader = w.getReader();
+    w.close();
+    Query[] queries = new Query[]{
+        new TermQuery(new Term("f", "A")),
+        new TermQuery(new Term("f", "B")),
+        new TermQuery(new Term("f", "C")),
+        new BooleanQuery.Builder()
+            .add(new TermQuery(new Term("f", "A")), BooleanClause.Occur.MUST)
+            .add(new TermQuery(new Term("f", "B")), BooleanClause.Occur.SHOULD)
+            .build()
+    };
+    for (Query query : queries) {
+      TopDocsCollector collector = doSearchWithThreshold(5, 0, query, indexReader);
+      TopDocs tdc = doConcurrentSearchWithThreshold(5, 0, query, indexReader);
+      TopDocs tdc2 = collector.topDocs();
+
+      assertTrue(tdc.totalHits.value > 0);
+      assertTrue(tdc2.totalHits.value > 0);
+      CheckHits.checkEqual(query, tdc.scoreDocs, tdc2.scoreDocs);
+    }
+
+    indexReader.close();
+    dir.close();
+  }
+
+  public void testRealisticConcurrentMinimumScore() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    try (LineFileDocs docs = new LineFileDocs(random())) {
+      int numDocs = atLeast(100);
+      for (int i = 0; i < numDocs; i++) {
+        writer.addDocument(docs.nextDoc());
+      }
+    }
+
+    IndexReader reader = writer.getReader();
+    writer.close();
+
+    final IndexSearcher s = newSearcher(reader);
+    Terms terms = MultiTerms.getTerms(reader, "body");
+    int termCount = 0;
+    TermsEnum termsEnum = terms.iterator();
+    while(termsEnum.next() != null) {
+      termCount++;
+    }
+    assertTrue(termCount > 0);
+
+    // Target ~10 terms to search:
+    double chance = 10.0 / termCount;
+    termsEnum = terms.iterator();
+    while(termsEnum.next() != null) {
+      if (random().nextDouble() <= chance) {
+        BytesRef term = BytesRef.deepCopyOf(termsEnum.term());
+        Query query = new TermQuery(new Term("body", term));
+
+        TopDocsCollector collector = doSearchWithThreshold(5, 0, query, reader);
+        TopDocs tdc = doConcurrentSearchWithThreshold(5, 0, query, reader);
+        TopDocs tdc2 = collector.topDocs();
+
+        CheckHits.checkEqual(query, tdc.scoreDocs, tdc2.scoreDocs);
+      }
+    }
+
+    reader.close();
+    dir.close();
+  }
 }
