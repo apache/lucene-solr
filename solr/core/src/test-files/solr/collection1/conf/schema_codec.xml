@@ -20,7 +20,7 @@
        as a way to vet that the configuration actually matters.
   -->
   <fieldType name="string_direct" class="solr.StrField" postingsFormat="Direct" docValuesFormat="Asserting" />
-  <fieldType name="string_standard" class="solr.StrField" postingsFormat="Lucene50"/>
+  <fieldType name="string_standard" class="solr.StrField" postingsFormat="Lucene84"/>
 
   <fieldType name="string_disk" class="solr.StrField" docValuesFormat="Lucene80"/>
 
