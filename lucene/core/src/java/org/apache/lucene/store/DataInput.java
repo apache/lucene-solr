@@ -160,8 +160,17 @@ public abstract class DataInput implements Cloneable {
 
   /**
    * Read a specified number of longs with the little endian byte order.
+   * <p>This method can be used to read longs whose bytes have been
+   * {@link Long#reverseBytes reversed} at write time:
+   * <pre class="prettyprint">
+   * for (long l : longs) {
+   *   output.writeLong(Long.reverseBytes(l));
+   * }
+   * </pre>
+   * @lucene.experimental
    */
-  // TODO: Make the entire DataInput/DataOutput API little endian?
+  // TODO: LUCENE-9047: Make the entire DataInput/DataOutput API little endian
+  // Then this would just be `readLongs`?
   public void readLELongs(long[] dst, int offset, int length) throws IOException {
     Objects.checkFromIndexSize(offset, length, dst.length);
     for (int i = 0; i < length; ++i) {
