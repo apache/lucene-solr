@@ -22,7 +22,9 @@ import javax.servlet.http.HttpServletRequest;
 /**
  * Various Util methods for interaction on servlet level, i.e. HttpServletRequest
  */
-public class ServletUtils {
+public abstract class ServletUtils {
+  private ServletUtils() { /* only static methods in this class */ }
+
   /**
    * Use this to get the full path after context path "/solr", which is a combination of
    * servletPath and pathInfo.
