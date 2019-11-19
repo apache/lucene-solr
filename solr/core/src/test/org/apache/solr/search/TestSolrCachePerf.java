@@ -72,7 +72,7 @@ public class TestSolrCachePerf extends SolrTestCaseJ4 {
     }
     computeRatio.forEach((type, computeStats) -> {
       SummaryStatistics getPutStats = getPutRatio.get(type);
-      assertGreaterThanOrEqual( "Compute ratio should be higher or equal to get/put ratio", computeStats.getMean(), getPutStats.getMean(), 0.0001);
+      assertGreaterThanOrEqual( "Cache " + type + ": compute ratio should be higher or equal to get/put ratio", computeStats.getMean(), getPutStats.getMean(), 0.001);
     });
   }
 
