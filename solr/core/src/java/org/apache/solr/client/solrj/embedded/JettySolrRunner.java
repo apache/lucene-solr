@@ -23,6 +23,9 @@ import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.BindException;
@@ -391,6 +394,8 @@ public class JettySolrRunner {
         System.clearProperty("hostPort");
       }
     });
+    // Default servlet as a fall-through
+    root.addServlet(Servlet404.class, "/");
     chain = root;
     }
 
@@ -782,6 +787,17 @@ public class JettySolrRunner {
 
   // --------------------------------------------------------------
   // --------------------------------------------------------------
+
+  /**
+   * This is a stupid hack to give jetty something to attach to
+   */
+  public static class Servlet404 extends HttpServlet {
+    @Override
+    public void service(HttpServletRequest req, HttpServletResponse res)
+        throws IOException {
+      res.sendError(404, "Can not find: " + req.getRequestURI());
+    }
+  }
 
   /**
    * A main class that starts jetty+solr This is useful for debugging
