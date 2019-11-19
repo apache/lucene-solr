@@ -117,6 +117,8 @@ Other Changes
 * SOLR-13869: SolrTestCaseJ4.getNextAvailablePort() has been deprecated (and will be removed in 9.0) since
   it is fundementally flawed.  Users with tests that depend on this method should restructure them. (hossman)
 
+* SOLR-13782: Solr Ref Guide no longer published in PDF format. (Cassandra Targett)
+
 ==================  8.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
