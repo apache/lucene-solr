@@ -369,7 +369,7 @@ public class JettySolrRunner {
 
         log.info("Jetty properties: {}", nodeProperties);
 
-        debugFilter = root.addFilter(DebugFilter.class, "*", EnumSet.of(DispatcherType.REQUEST) );
+        debugFilter = root.addFilter(DebugFilter.class, "/*", EnumSet.of(DispatcherType.REQUEST) );
         extraFilters = new LinkedList<>();
         for (Map.Entry<Class<? extends Filter>, String> entry : config.extraFilters.entrySet()) {
           extraFilters.add(root.addFilter(entry.getKey(), entry.getValue(), EnumSet.of(DispatcherType.REQUEST)));
@@ -786,17 +786,6 @@ public class JettySolrRunner {
 
   // --------------------------------------------------------------
   // --------------------------------------------------------------
-
-  /**
-   * This is a stupid hack to give jetty something to attach to
-   */
-  public static class Servlet404 extends HttpServlet {
-    @Override
-    public void service(HttpServletRequest req, HttpServletResponse res)
-        throws IOException {
-      res.sendError(404, "Can not find: " + req.getRequestURI());
-    }
-  }
 
   /**
    * A main class that starts jetty+solr This is useful for debugging
