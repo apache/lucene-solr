@@ -23,11 +23,13 @@ import java.util.Arrays;
  * Hierarchical component id.
  */
 public class ManagedComponentId {
+  private final String type;
   private final String name;
   private final String[] path;
   private final String id;
 
-  public ManagedComponentId(String name, String... path) {
+  public ManagedComponentId(String type, String name, String... path) {
+    this.type = type;
     this.name = name;
     this.path = path;
     StringBuilder sb = new StringBuilder();
@@ -44,6 +46,10 @@ public class ManagedComponentId {
     }
     sb.append(name);
     id = sb.toString();
+  }
+
+  public String getType() {
+    return type;
   }
 
   public String getName() {
@@ -63,12 +69,16 @@ public class ManagedComponentId {
       return null;
     }
     String[] parts = fullName.split(":");
-    if (parts.length > 1) {
-      String name = parts[parts.length - 1];
-      String[] path = Arrays.copyOfRange(parts, 0, parts.length - 1);
-      return new ManagedComponentId(name, path);
+    if (parts.length < 2) {
+      throw new RuntimeException("at least 2 parts (type and name) must be present: " + fullName);
+    }
+    if (parts.length > 2) {
+      String type = parts[parts.length - 1];
+      String name = parts[parts.length - 2];
+      String[] path = Arrays.copyOfRange(parts, 0, parts.length - 2);
+      return new ManagedComponentId(type, name, path);
     } else {
-      return new ManagedComponentId(parts[0]);
+      return new ManagedComponentId(parts[0], parts[1]);
     }
   }
 }

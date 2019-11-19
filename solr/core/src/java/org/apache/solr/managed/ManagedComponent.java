@@ -16,19 +16,23 @@
  */
 package org.apache.solr.managed;
 
+import org.apache.solr.core.SolrInfoBean;
+
 /**
  * A managed component.
  */
-public interface ManagedComponent {
+public interface ManagedComponent extends SolrInfoBean {
   /**
-   * Unique name of this component. By convention id-s form a dot-separated hierarchy that
-   * follows the naming of metric registries and metric names.
+   * Unique name of this component. By convention id-s form a colon-separated hierarchy.
    */
   ManagedComponentId getManagedComponentId();
 
   /**
-   * Component context used for managing additional component state.
-   * @return component's context
+   * Component context used for managing additional component state for the purpose of resource management.
    */
   ManagedContext getManagedContext();
+
+  default void close() throws Exception {
+    SolrInfoBean.super.close();
+  }
 }

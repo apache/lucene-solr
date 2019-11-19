@@ -69,7 +69,7 @@ public interface ResourceManagerPlugin<T extends ManagedComponent> {
   void manage(ResourceManagerPool pool) throws Exception;
 
   /**
-   * Aggregated current monitored values.
+   * Return aggregated current monitored values.
    * <p>Default implementation of this method simply sums up all non-negative numeric values across
    * components and ignores any non-numeric values.</p>
    */

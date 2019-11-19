@@ -16,11 +16,30 @@
  */
 package org.apache.solr.managed;
 
-import java.util.concurrent.ConcurrentHashMap;
-
 /**
  *
  */
-public class ManagedContext extends ConcurrentHashMap<String, Object> {
+public class ManagedContext {
+  private final ResourceManager resourceManager;
+  private final String poolName;
+  private final ManagedComponent component;
 
+  public ManagedContext(ResourceManager resourceManager, String poolName, ManagedComponent component) {
+    this.resourceManager = resourceManager;
+    this.poolName = poolName;
+    this.component = component;
+    this.resourceManager.registerComponent(poolName, component);
+  }
+
+  public ResourceManager getResourceManager() {
+    return resourceManager;
+  }
+
+  public String getPoolName() {
+    return poolName;
+  }
+
+  public void unregister() {
+    resourceManager.unregisterComponent(poolName, component.getManagedComponentId());
+  }
 }

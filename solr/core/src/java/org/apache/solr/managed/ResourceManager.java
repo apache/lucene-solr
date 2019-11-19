@@ -198,7 +198,7 @@ public abstract class ResourceManager implements SolrCloseable, PluginInfoInitia
    * @param pool existing pool name.
    * @param managedComponents components to add
    */
-  public void registerComponents(String pool, Collection<ManagedComponent> managedComponents) throws Exception {
+  public void registerComponents(String pool, Collection<ManagedComponent> managedComponents) {
     ensureActive();
     for (ManagedComponent managedComponent : managedComponents) {
       registerComponent(pool, managedComponent);
@@ -212,7 +212,7 @@ public abstract class ResourceManager implements SolrCloseable, PluginInfoInitia
    *                        used in the selected pool. The component must not be already managed by
    *                        another pool of the same type.
    */
-  public abstract void registerComponent(String pool, ManagedComponent managedComponent) throws Exception;
+  public abstract void registerComponent(String pool, ManagedComponent managedComponent);
 
   /**
    * Remove a managed component from a pool.

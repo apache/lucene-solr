@@ -44,7 +44,6 @@ public class DefaultResourceManagerPool implements ResourceManagerPool {
   private final ResourceManagerPlugin resourceManagerPlugin;
   private final Map<String, Object> args;
   private final ManagedContext poolContext = new ManagedContext();
-  private Map<String, Map<String, Object>> currentValues = null;
   private final ReentrantLock updateLock = new ReentrantLock();
   int scheduleDelaySeconds;
   ScheduledFuture<?> scheduledFuture;
@@ -119,24 +118,18 @@ public class DefaultResourceManagerPool implements ResourceManagerPool {
     updateLock.lockInterruptibly();
     try {
       // collect the current values
-      Map<String, Map<String, Object>> newCurrentValues = new HashMap<>();
+      Map<String, Map<String, Object>> currentValues = new HashMap<>();
       for (ManagedComponent managedComponent : components.values()) {
         try {
-          newCurrentValues.put(managedComponent.getManagedComponentId().toString(), resourceManagerPlugin.getMonitoredValues(managedComponent));
+          currentValues.put(managedComponent.getManagedComponentId().toString(), resourceManagerPlugin.getMonitoredValues(managedComponent));
         } catch (Exception e) {
           log.warn("Error getting managed values from " + managedComponent.getManagedComponentId(), e);
         }
       }
-      this.currentValues = newCurrentValues;
       return Collections.unmodifiableMap(currentValues);
     } finally {
       updateLock.unlock();
     }
-  }
-
-  @Override
-  public Map<String, Object> getTotalValues() throws InterruptedException {
-    return Collections.unmodifiableMap(resourceManagerPlugin.aggregateTotalValues(currentValues));
   }
 
   @Override

@@ -23,8 +23,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ForkJoinPool;
@@ -39,6 +37,8 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.managed.ManagedComponentId;
 import org.apache.solr.managed.ManagedContext;
+import org.apache.solr.managed.ResourceManagerPluginFactory;
+import org.apache.solr.managed.types.CacheManagerPlugin;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.slf4j.Logger;
@@ -88,9 +88,11 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
   private int maxIdleTimeSec;
   private boolean cleanupThread;
 
-  private Set<String> metricNames = ConcurrentHashMap.newKeySet();
   private MetricsMap cacheMap;
   private SolrMetricsContext solrMetricsContext;
+
+  private ManagedContext managedContext;
+  private ManagedComponentId managedComponentId;
 
   private long initialRamBytes = 0;
   private final LongAdder ramBytes = new LongAdder();
@@ -387,15 +389,17 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
       }
     });
     solrMetricsContext.gauge(cacheMap, true, scope, getCategory().toString());
+    managedComponentId = new ManagedComponentId(CacheManagerPlugin.TYPE, solrMetricsContext.getTag(), solrMetricsContext.getRegistryName(), getCategory().toString(), scope);
+    managedContext = new ManagedContext()
   }
 
   @Override
   public ManagedComponentId getManagedComponentId() {
-    return null;
+    return managedComponentId;
   }
 
   @Override
   public ManagedContext getManagedContext() {
-    return null;
+    return managedContext;
   }
 }
