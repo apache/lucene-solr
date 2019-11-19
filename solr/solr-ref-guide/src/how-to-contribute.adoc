@@ -22,13 +22,6 @@ The Lucene/Solr project has made it easy for anyone to contribute to the Solr Re
 
 The Guide is written in simple AsciiDoc-formatted files, and the source lives in the main Lucene/Solr source repository, right alongside the code.
 
-// This section only appears in the PDF version of the Ref Guide.
-ifdef::backend-pdf[]
-Find information on how to contribute to documentation online at https://lucene.apache.org/solr/guide/how-to-contribute.html.
-endif::[]
-
-// This section only appears in the HTML version of the Ref Guide.
-ifdef::backend-html5[]
 The following sections give an overview of how to work with AsciiDoc-format files, how our documentation is generated, and how to do a Ref Guide release.
 
 Once you have a patch you'd like to contribute, you can submit it with a JIRA issue, the same as any other patch. See also the Solr wiki section on https://wiki.apache.org/solr/HowToContribute[How To Contribute] for information on submitting patches.
@@ -39,12 +32,10 @@ include::meta-docs/asciidoc-syntax.adoc[leveloffset=+2]
 include::meta-docs/editing-tools.adoc[leveloffset=+2]
 
 == Modifying the Publication Formats
-The Solr Reference Guide is published in two formats: HTML and PDF. Different tools are used for each.
+The Solr Reference Guide is published in HTML format, using Jekyll and some plugins.
 
 include::meta-docs/jekyll.adoc[leveloffset=+2]
 
-include::meta-docs/pdf.adoc[leveloffset=+2]
-
+== How to Publish the Guide
 // This is the how to publish section:
 include::meta-docs/publish.adoc[leveloffset=+1]
-endif::[]
