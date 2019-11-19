@@ -108,7 +108,7 @@ public class JettySolrRunner {
 
   private LinkedList<FilterHolder> extraFilters;
 
-  private static final String excludePatterns = "/css/.+,/js/.+,/img/.+,/tpl/.+";
+  private static final String excludePatterns = "/partials/.+,/libs/.+,/css/.+,/js/.+,/img/.+,/templates/.+";
 
   private int proxyPort = -1;
 
