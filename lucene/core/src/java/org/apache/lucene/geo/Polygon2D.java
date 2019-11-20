@@ -202,7 +202,7 @@ public class Polygon2D implements Component2D {
     // check each corner: if < 3 && > 0 are present, its cheaper than crossesSlowly
     int numCorners = numberOfTriangleCorners(ax, ay, bx, by, cx, cy);
     if (numCorners == 3) {
-      if (tree.crossesTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy)) {
+      if (tree.crossesTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy, false)) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_INSIDE_QUERY;
@@ -210,7 +210,7 @@ public class Polygon2D implements Component2D {
       if (Component2D.pointInTriangle(minX, maxX, minY, maxY, tree.x1, tree.y1, ax, ay, bx, by, cx, cy) == true) {
         return Relation.CELL_CROSSES_QUERY;
       }
-      if (tree.crossesTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy)) {
+      if (tree.crossesTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy, false)) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_OUTSIDE_QUERY;

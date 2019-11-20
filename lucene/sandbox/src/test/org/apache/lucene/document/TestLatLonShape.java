@@ -488,4 +488,44 @@ public class TestLatLonShape extends LuceneTestCase {
         quantizeLon(-5), quantizeLat(0));
     assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, r);
   }
+
+  public void testLUCENE8736x() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+
+    // test polygons:
+    //[5, 5], [10, 6], [10, 10], [5, 10], [5, 5] ]
+    Polygon indexPoly1 = new Polygon(
+        new double[] {5d, 6d, 10d, 10d, 5d},
+        new double[] {5d, 10d, 10d, 5d, 5d}
+    );
+
+    // [ [6, 6], [9, 6], [9, 9], [6, 9], [6, 6] ]
+    Polygon indexPoly2 = new Polygon(
+        new double[] {6d, 6d, 9d, 9d, 6d},
+        new double[] {6d, 9d, 9d, 6d, 6d}
+    );
+
+    // index polygons:
+    Document doc;
+    addPolygonsToDoc(FIELDNAME, doc = new Document(), indexPoly1);
+    w.addDocument(doc);
+    addPolygonsToDoc(FIELDNAME, doc = new Document(), indexPoly2);
+    w.addDocument(doc);
+    w.forceMerge(1);
+
+    ///// search //////
+    IndexReader reader = w.getReader();
+    w.close();
+    IndexSearcher searcher = newSearcher(reader);
+
+    // [ [0, 0], [5, 5], [7, 7] ]
+    Line searchLine = new Line(new double[] {0, 5, 7}, new double[] {0, 5, 7});
+
+
+    Query q = LatLonShape.newLineQuery(FIELDNAME, QueryRelation.INTERSECTS, searchLine);
+    assertEquals(2, searcher.count(q));
+
+    IOUtils.close(w, reader, dir);
+  }
 }
