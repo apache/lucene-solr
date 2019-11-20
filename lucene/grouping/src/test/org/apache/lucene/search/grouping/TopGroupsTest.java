@@ -27,10 +27,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import static junit.framework.TestCase.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.assertEquals;
-
 /*
  * This class implements tests for the <code>TopGroup.merge</code> method
  * using a narrative approach. Use of a creative narrative may seem unusual
