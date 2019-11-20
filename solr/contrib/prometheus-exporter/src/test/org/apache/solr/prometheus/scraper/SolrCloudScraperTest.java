@@ -67,7 +67,7 @@ public class SolrCloudScraperTest extends PrometheusExporterTestBase {
 
     SolrClientFactory factory = new SolrClientFactory(PrometheusExporterSettings.builder().build());
 
-    return new SolrCloudScraper(solrClient, executor, factory);
+    return new SolrCloudScraper(solrClient, executor, factory, 1);
   }
 
   private ClusterState getClusterState() {

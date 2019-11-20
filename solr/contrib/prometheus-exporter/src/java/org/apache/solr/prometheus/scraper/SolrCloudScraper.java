@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -43,16 +44,17 @@ public class SolrCloudScraper extends SolrScraper {
   private final CloudSolrClient solrClient;
   private final SolrClientFactory solrClientFactory;
 
-  private Cache<String, HttpSolrClient> hostClientCache = CacheBuilder.newBuilder()
-      .maximumSize(100)
-      .removalListener((RemovalListener<String, HttpSolrClient>)
-          removalNotification -> IOUtils.closeQuietly(removalNotification.getValue()))
-      .build();
+  private Cache<String, HttpSolrClient> hostClientCache;
 
-  public SolrCloudScraper(CloudSolrClient solrClient, Executor executor, SolrClientFactory solrClientFactory) {
+  public SolrCloudScraper(CloudSolrClient solrClient, Executor executor, SolrClientFactory solrClientFactory, int scrapeInterval) {
     super(executor);
     this.solrClient = solrClient;
     this.solrClientFactory = solrClientFactory;
+    this.hostClientCache = CacheBuilder.newBuilder()
+        .expireAfterAccess(scrapeInterval * 2, TimeUnit.SECONDS)
+        .removalListener((RemovalListener<String, HttpSolrClient>)
+            removalNotification -> IOUtils.closeQuietly(removalNotification.getValue()))
+        .build();
   }
 
   @Override

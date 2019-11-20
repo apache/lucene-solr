@@ -111,7 +111,7 @@ public class SolrExporter {
         numberThreads,
         new DefaultSolrThreadFactory("solr-exporter-requests"));
 
-    this.solrScraper = createScraper(scrapeConfiguration, metricsConfiguration.getSettings());
+    this.solrScraper = createScraper(scrapeConfiguration, metricsConfiguration.getSettings(), scrapeInterval);
     this.metricsCollector = new MetricsCollectorFactory(metricCollectorExecutor, scrapeInterval, solrScraper, metricsConfiguration).create();
     this.prometheusCollector = new CachedPrometheusCollector();
   }
@@ -139,7 +139,7 @@ public class SolrExporter {
     defaultRegistry.unregister(this.prometheusCollector);
   }
 
-  private SolrScraper createScraper(SolrScrapeConfiguration configuration, PrometheusExporterSettings settings) {
+  private SolrScraper createScraper(SolrScrapeConfiguration configuration, PrometheusExporterSettings settings, int scrapeInterval) {
     SolrClientFactory factory = new SolrClientFactory(settings);
 
     switch (configuration.getType()) {
@@ -148,7 +148,7 @@ public class SolrExporter {
             factory.createStandaloneSolrClient(configuration.getSolrHost().get()), requestExecutor);
       case CLOUD:
         return new SolrCloudScraper(
-            factory.createCloudSolrClient(configuration.getZookeeperConnectionString().get()), requestExecutor, factory);
+            factory.createCloudSolrClient(configuration.getZookeeperConnectionString().get()), requestExecutor, factory, scrapeInterval);
       default:
         throw new RuntimeException(String.format(Locale.ROOT, "Invalid type: %s", configuration.getType()));
     }
