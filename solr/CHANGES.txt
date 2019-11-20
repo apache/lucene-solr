@@ -35,6 +35,7 @@ Bug Fixes
 
 * SOLR-13963: JavaBinCodec has concurrent modification of CharArr resulting in corrupt internode updates (Colvin Cowie, noble)
 
+* SOLR-13941: Tests configure Jetty differently than when running via start.jar (janhoy, Uwe Schindler)
 
 ==================  8.3.0 ==================
 
