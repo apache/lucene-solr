@@ -489,7 +489,7 @@ public class TestLatLonShape extends LuceneTestCase {
     assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, r);
   }
 
-  public void testLUCENE8736x() throws Exception {
+  public void testLUCENE9055() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter w = new RandomIndexWriter(random(), dir);
 
