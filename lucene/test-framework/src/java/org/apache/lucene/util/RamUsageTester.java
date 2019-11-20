@@ -22,6 +22,7 @@ import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.Path;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
@@ -239,6 +240,7 @@ public final class RamUsageTester {
       // For File and Path, we just take the length of String representation as approximation:
       a(File.class, v -> charArraySize(v.toString().length()));
       a(Path.class, v -> charArraySize(v.toString().length()));
+      a(ByteOrder.class, v -> 0); // Instances of ByteOrder are constants
     }
     
     @SuppressWarnings("unchecked")

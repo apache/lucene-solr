@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.servlet.ServletUtils;
 import org.apache.solr.servlet.SolrRequestParsers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -130,6 +131,7 @@ public class AuditEvent {
     this.solrPort = httpRequest.getLocalPort();
     this.solrIp = httpRequest.getLocalAddr();
     this.clientIp = httpRequest.getRemoteAddr();
+    this.resource = ServletUtils.getPathAfterContext(httpRequest);
     this.httpMethod = httpRequest.getMethod();
     this.httpQueryString = httpRequest.getQueryString();
     this.headers = getHeadersFromRequest(httpRequest);

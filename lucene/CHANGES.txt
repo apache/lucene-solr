@@ -87,6 +87,8 @@ Improvements
 
 * LUCENE-9018: ConcatenateGraphFilter now has a configurable separator. (Stanislav Mikulchik, David Smiley)
 
+* LUCENE-9036: ExitableDirectoryReader may interupt scaning over DocValues (Mikhail Khludnev)
+
 Optimizations
 
 * LUCENE-8928: When building a kd-tree for dimensions n > 2, compute exact bounds for an inner node every N splits
@@ -111,6 +113,8 @@ Optimizations
 * LUCENE-8920: The denser arcs of FST now index labels with a bitset in order
   to provide near constant time access. (Bruno Roustant, Mike Sokolov via Adrien Grand)
 
+* LUCENE-9027: Use SIMD instructions to decode postings. (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-9001: Fix race condition in SetOnce. (Przemko Robakowski)
@@ -126,6 +130,8 @@ Other
 
 * LUCENE-8746: Refactor EdgeTree - Introduce a Component tree that represents the tree of components (e.g polygons).
   Edge tree is now just a tree of edges. (Ignacio Vera)
+
+* LUCENE-9046: Fix wrong example in Javadoc of TermInSetQuery (Namgyu Kim)
 
 Build
 

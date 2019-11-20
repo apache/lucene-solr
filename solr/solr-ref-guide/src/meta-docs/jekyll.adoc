@@ -31,7 +31,7 @@ The following sections describe the main features of Jekyll that you will encoun
 === Jekyll-Asciidoctor Plugin
 We use a plugin for Jekyll from the Asciidoctor project to integrate Jekyll with Asciidoc formatted content. The source for the plugin is available at https://github.com/asciidoctor/jekyll-asciidoc.
 
-This plugin allows us to use Asciidoctor-style variables with Jekyll, instead of having to maintain two sets of the same variables (one for HTML version and another for PDF version).
+This plugin allows us to use Asciidoctor-style variables with Jekyll.
 
 === _config.yml
 
@@ -49,7 +49,7 @@ Many guides to Jekyll also say that defining the layout in the front matter is r
 
 The Solr Ref Guide uses the front matter to define some custom attributes on a per page basis:
 
-* `page-children` - ordered list of child pages, this is used to build the site navigation menu that appears to the left of each page's content (and to order the pages in the PDF)
+* `page-children` - ordered list of child pages, this is used to build the site navigation menu that appears to the left of each page's content.
 
 Other page-level elements can also be defined, such as an Asciidoctor attribute that should apply only to that page, but are not needed on a regular basis.
 
@@ -193,7 +193,6 @@ My content...
 --
 ----
 
-. Because these tabbed sections are created when the HTML and related JavaScript is loaded, when the PDF is generated it will ignore all the class and ID information in the page because it is meaningless to it (asciidoctor-pdf does not recognize roles/custom classes). In the PDF, this content will be displayed in Example Blocks, which have some formatting rules, but will not be shown as tabs and shouldn't show any other oddities.
 
 == Building the HTML Site
 

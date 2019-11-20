@@ -126,6 +126,8 @@ New Features
 
 * SOLR-10786: Add DBSCAN clustering Streaming Evaluator (Joel Bernstein)
 
+* SOLR-13911: Add 'missing' aggregation in JSON FacetModule (hossman, Munendra S N)
+
 Improvements
 ---------------------
 
@@ -175,6 +177,8 @@ Bug Fixes
 
 * SOLR-13921: Processing UpdateRequest with delegation token throws NullPointerException (Istvan Farkas via Kevin Risden)
 
+* SOLR-13941: Tests configure Jetty differently than when running via start.jar (janhoy, Uwe Schindler)
+
 Other Changes
 ---------------------
 
@@ -186,6 +190,8 @@ Other Changes
 
 * SOLR-13869: SolrTestCaseJ4.getNextAvailablePort() has been deprecated (and will be removed in 9.0) since
   it is fundementally flawed.  Users with tests that depend on this method should restructure them. (hossman)
+
+* SOLR-13782: Solr Ref Guide no longer published in PDF format. (Cassandra Targett)
 
 ==================  8.3.0 ==================
 
