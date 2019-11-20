@@ -16,16 +16,16 @@
  */
 package org.apache.solr.managed;
 
-import org.apache.solr.core.SolrInfoBean;
-
 /**
  * A managed component.
  */
-public interface ManagedComponent extends SolrInfoBean {
+public interface ManagedComponent extends AutoCloseable {
   /**
    * Unique name of this component. By convention id-s form a colon-separated hierarchy.
    */
   ManagedComponentId getManagedComponentId();
+
+  void initializeManagedComponent(ResourceManager resourceManager, String poolName, String... otherPools);
 
   /**
    * Component context used for managing additional component state for the purpose of resource management.
@@ -33,6 +33,8 @@ public interface ManagedComponent extends SolrInfoBean {
   ManagedContext getManagedContext();
 
   default void close() throws Exception {
-    SolrInfoBean.super.close();
+    if (getManagedContext() != null) {
+      getManagedContext().close();
+    }
   }
 }

@@ -163,9 +163,10 @@ public interface SolrCache<K,V> extends SolrInfoBean, ManagedComponent, Accounta
   // init and have the cache implementation save it.
 
 
-  /** Frees any non-memory resources */
+  /** Frees any non-memory resources and unregisters this instance from resource management. */
   default void close() throws Exception {
     SolrInfoBean.super.close();
+    ManagedComponent.super.close();
   }
 
   /** Returns maximum size limit (number of items) if set and supported, -1 otherwise. */

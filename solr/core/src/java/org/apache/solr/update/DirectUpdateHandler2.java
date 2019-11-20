@@ -169,45 +169,45 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    solrMetricsContext = parentContext.getChildContext(this);
-    commitCommands = solrMetricsContext.meter("commits", getCategory().toString(), scope);
-    solrMetricsContext.gauge(() -> commitTracker.getCommitCount(), true, "autoCommits", getCategory().toString(), scope);
-    solrMetricsContext.gauge(() -> softCommitTracker.getCommitCount(), true, "softAutoCommits", getCategory().toString(), scope);
+    solrMetricsContext = parentContext.getChildContext(this, scope);
+    commitCommands = solrMetricsContext.meter("commits", getCategory().toString());
+    solrMetricsContext.gauge(() -> commitTracker.getCommitCount(), true, "autoCommits", getCategory().toString());
+    solrMetricsContext.gauge(() -> softCommitTracker.getCommitCount(), true, "softAutoCommits", getCategory().toString());
     if (commitTracker.getDocsUpperBound() > 0) {
       solrMetricsContext.gauge(() -> commitTracker.getDocsUpperBound(), true, "autoCommitMaxDocs",
-          getCategory().toString(), scope);
+          getCategory().toString());
     }
     if (commitTracker.getTimeUpperBound() > 0) {
       solrMetricsContext.gauge(() -> "" + commitTracker.getTimeUpperBound() + "ms", true, "autoCommitMaxTime",
-          getCategory().toString(), scope);
+          getCategory().toString());
     }
     if (commitTracker.getTLogFileSizeUpperBound() > 0) {
       solrMetricsContext.gauge(() -> commitTracker.getTLogFileSizeUpperBound(), true, "autoCommitMaxSize",
-          getCategory().toString(), scope);
+          getCategory().toString());
     }
     if (softCommitTracker.getDocsUpperBound() > 0) {
       solrMetricsContext.gauge(() -> softCommitTracker.getDocsUpperBound(), true, "softAutoCommitMaxDocs",
-          getCategory().toString(), scope);
+          getCategory().toString());
     }
     if (softCommitTracker.getTimeUpperBound() > 0) {
       solrMetricsContext.gauge(() -> "" + softCommitTracker.getTimeUpperBound() + "ms", true, "softAutoCommitMaxTime",
-          getCategory().toString(), scope);
+          getCategory().toString());
     }
-    optimizeCommands = solrMetricsContext.meter("optimizes", getCategory().toString(), scope);
-    rollbackCommands = solrMetricsContext.meter("rollbacks", getCategory().toString(), scope);
-    splitCommands = solrMetricsContext.meter("splits", getCategory().toString(), scope);
-    mergeIndexesCommands = solrMetricsContext.meter("merges", getCategory().toString(), scope);
-    expungeDeleteCommands = solrMetricsContext.meter("expungeDeletes", getCategory().toString(), scope);
-    solrMetricsContext.gauge(() -> numDocsPending.longValue(), true, "docsPending", getCategory().toString(), scope);
-    solrMetricsContext.gauge(() -> addCommands.longValue(), true, "adds", getCategory().toString(), scope);
-    solrMetricsContext.gauge(() -> deleteByIdCommands.longValue(), true, "deletesById", getCategory().toString(), scope);
-    solrMetricsContext.gauge(() -> deleteByQueryCommands.longValue(), true, "deletesByQuery", getCategory().toString(), scope);
-    solrMetricsContext.gauge(() -> numErrors.longValue(), true, "errors", getCategory().toString(), scope);
+    optimizeCommands = solrMetricsContext.meter("optimizes", getCategory().toString());
+    rollbackCommands = solrMetricsContext.meter("rollbacks", getCategory().toString());
+    splitCommands = solrMetricsContext.meter("splits", getCategory().toString());
+    mergeIndexesCommands = solrMetricsContext.meter("merges", getCategory().toString());
+    expungeDeleteCommands = solrMetricsContext.meter("expungeDeletes", getCategory().toString());
+    solrMetricsContext.gauge(() -> numDocsPending.longValue(), true, "docsPending", getCategory().toString());
+    solrMetricsContext.gauge(() -> addCommands.longValue(), true, "adds", getCategory().toString());
+    solrMetricsContext.gauge(() -> deleteByIdCommands.longValue(), true, "deletesById", getCategory().toString());
+    solrMetricsContext.gauge(() -> deleteByQueryCommands.longValue(), true, "deletesByQuery", getCategory().toString());
+    solrMetricsContext.gauge(() -> numErrors.longValue(), true, "errors", getCategory().toString());
 
-    addCommandsCumulative = solrMetricsContext.meter("cumulativeAdds", getCategory().toString(), scope);
-    deleteByIdCommandsCumulative = solrMetricsContext.meter("cumulativeDeletesById", getCategory().toString(), scope);
-    deleteByQueryCommandsCumulative = solrMetricsContext.meter("cumulativeDeletesByQuery", getCategory().toString(), scope);
-    numErrorsCumulative = solrMetricsContext.meter("cumulativeErrors", getCategory().toString(), scope);
+    addCommandsCumulative = solrMetricsContext.meter("cumulativeAdds", getCategory().toString());
+    deleteByIdCommandsCumulative = solrMetricsContext.meter("cumulativeDeletesById", getCategory().toString());
+    deleteByQueryCommandsCumulative = solrMetricsContext.meter("cumulativeDeletesByQuery", getCategory().toString());
+    numErrorsCumulative = solrMetricsContext.meter("cumulativeErrors", getCategory().toString());
   }
 
   private void deleteAll() throws IOException {

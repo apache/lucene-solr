@@ -452,7 +452,7 @@ public class HttpShardHandlerFactory extends ShardHandlerFactory implements org.
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    solrMetricsContext = parentContext.getChildContext(this);
+    solrMetricsContext = parentContext.getChildContext(this, scope);
     String expandedScope = SolrMetricManager.mkName(scope, SolrInfoBean.Category.QUERY.name());
     httpListenerFactory.initializeMetrics(solrMetricsContext, expandedScope);
     commExecutor = MetricUtils.instrumentedExecutorService(commExecutor, null,

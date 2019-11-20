@@ -52,5 +52,5 @@ public interface ResourceManagerPool extends Runnable, Closeable {
   /**
    * Pool context used for managing additional pool state.
    */
-  ManagedContext getPoolContext();
+  PoolContext getPoolContext();
 }

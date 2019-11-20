@@ -23,6 +23,7 @@ import java.util.function.Function;
 
 import org.apache.solr.managed.ManagedComponentId;
 import org.apache.solr.managed.ManagedContext;
+import org.apache.solr.managed.ResourceManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -157,6 +158,11 @@ public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
   @Override
   public ManagedComponentId getManagedComponentId() {
     return delegate.getManagedComponentId();
+  }
+
+  @Override
+  public void initializeManagedComponent(ResourceManager resourceManager, String poolName, String... otherPools) {
+    delegate.initializeManagedComponent(resourceManager, poolName, otherPools);
   }
 
   @Override

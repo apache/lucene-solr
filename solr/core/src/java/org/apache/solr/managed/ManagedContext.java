@@ -16,30 +16,45 @@
  */
 package org.apache.solr.managed;
 
+import java.io.Closeable;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.Set;
+
 /**
  *
  */
-public class ManagedContext {
+public class ManagedContext implements Closeable {
   private final ResourceManager resourceManager;
-  private final String poolName;
+  private final String[] poolNames;
   private final ManagedComponent component;
 
-  public ManagedContext(ResourceManager resourceManager, String poolName, ManagedComponent component) {
+  public ManagedContext(ResourceManager resourceManager, ManagedComponent component, String poolName, String... otherPools) {
     this.resourceManager = resourceManager;
-    this.poolName = poolName;
+    Set<String> pools = new LinkedHashSet<>();
+    pools.add(poolName);
+    if (otherPools != null) {
+      Collections.addAll(pools, otherPools);
+    }
+    this.poolNames = (String[])pools.toArray(new String[pools.size()]);
     this.component = component;
-    this.resourceManager.registerComponent(poolName, component);
+    for (String pool : poolNames) {
+      this.resourceManager.registerComponent(pool, component);
+    }
   }
 
   public ResourceManager getResourceManager() {
     return resourceManager;
   }
 
-  public String getPoolName() {
-    return poolName;
+  public String[] getPoolNames() {
+    return poolNames;
   }
 
-  public void unregister() {
-    resourceManager.unregisterComponent(poolName, component.getManagedComponentId());
+  @Override
+  public void close() {
+    for (String poolName : poolNames) {
+      resourceManager.unregisterComponent(poolName, component.getManagedComponentId());
+    }
   }
 }

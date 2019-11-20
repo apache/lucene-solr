@@ -44,11 +44,11 @@ public interface SolrMetricProducer extends AutoCloseable {
    * Initialize metrics specific to this producer.
    * @param parentContext parent metrics context. If this component has the same life-cycle as the parent
    *                it can simply use the parent context, otherwise it should obtain a child context
-   *                using {@link SolrMetricsContext#getChildContext(Object)} passing <code>this</code>
-   *                as the child object.
-   * @param scope component scope
+   *                using {@link SolrMetricsContext#getChildContext(Object, String)} passing <code>this</code>
+   *                as the child object and <code>childScope</code> as the scope.
+   * @param childScope component scope
    */
-  void initializeMetrics(SolrMetricsContext parentContext, String scope);
+  void initializeMetrics(SolrMetricsContext parentContext, String childScope);
 
   /**
    * Implementations should return the context used in

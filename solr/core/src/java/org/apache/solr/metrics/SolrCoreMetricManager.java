@@ -53,7 +53,7 @@ public class SolrCoreMetricManager implements Closeable {
     initCloudMode();
     metricManager = core.getCoreContainer().getMetricManager();
     String registryName = createRegistryName(cloudMode, collectionName, shardName, replicaName, core.getName());
-    solrMetricsContext = new SolrMetricsContext(metricManager, registryName, core.getMetricTag());
+    solrMetricsContext = new SolrMetricsContext(metricManager, registryName, "SolrCore", core.getMetricTag());
     leaderRegistryName = createLeaderRegistryName(cloudMode, collectionName, shardName);
   }
 
@@ -106,7 +106,7 @@ public class SolrCoreMetricManager implements Closeable {
     if (oldLeaderRegistryName != null) {
       metricManager.closeReporters(oldLeaderRegistryName, solrMetricsContext.getTag());
     }
-    solrMetricsContext = new SolrMetricsContext(metricManager, newRegistryName, solrMetricsContext.getTag());
+    solrMetricsContext = new SolrMetricsContext(metricManager, newRegistryName, "SolrCore", solrMetricsContext.getTag());
     // load reporters again, using the new core name
     loadReporters();
   }

@@ -236,20 +236,20 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
   
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, final String scope) {
-    solrMetricsContext = parentContext.getChildContext(this);
+    solrMetricsContext = parentContext.getChildContext(this, scope);
     String className = this.getClass().getSimpleName();
     log.debug("Initializing metrics for {}", className);
-    numErrors = solrMetricsContext.meter("errors", getCategory().toString(), scope, className);
-    numLost = solrMetricsContext.meter("lost", getCategory().toString(), scope, className);
-    numLogged = solrMetricsContext.meter("count", getCategory().toString(), scope, className);
-    requestTimes = solrMetricsContext.timer("requestTimes", getCategory().toString(), scope, className);
-    totalTime = solrMetricsContext.counter("totalTime", getCategory().toString(), scope, className);
+    numErrors = solrMetricsContext.meter("errors", getCategory().toString(), className);
+    numLost = solrMetricsContext.meter("lost", getCategory().toString(), className);
+    numLogged = solrMetricsContext.meter("count", getCategory().toString(), className);
+    requestTimes = solrMetricsContext.timer("requestTimes", getCategory().toString(), className);
+    totalTime = solrMetricsContext.counter("totalTime", getCategory().toString(), className);
     if (async) {
-      solrMetricsContext.gauge(() -> blockingQueueSize, true, "queueCapacity", getCategory().toString(), scope, className);
-      solrMetricsContext.gauge(() -> blockingQueueSize - queue.remainingCapacity(), true, "queueSize", getCategory().toString(), scope, className);
-      queuedTime = solrMetricsContext.timer("queuedTime", getCategory().toString(), scope, className);
+      solrMetricsContext.gauge(() -> blockingQueueSize, true, "queueCapacity", getCategory().toString(), className);
+      solrMetricsContext.gauge(() -> blockingQueueSize - queue.remainingCapacity(), true, "queueSize", getCategory().toString(), className);
+      queuedTime = solrMetricsContext.timer("queuedTime", getCategory().toString(), className);
     }
-    solrMetricsContext.gauge(() -> async, true, "async", getCategory().toString(), scope, className);
+    solrMetricsContext.gauge(() -> async, true, "async", getCategory().toString(), className);
   }
   
   @Override

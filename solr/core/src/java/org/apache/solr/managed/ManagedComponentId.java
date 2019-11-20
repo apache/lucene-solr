@@ -19,30 +19,41 @@ package org.apache.solr.managed;
 
 import java.util.Arrays;
 
+import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.metrics.SolrMetricsContext;
+
 /**
  * Hierarchical component id.
  */
 public class ManagedComponentId {
+
+  public static final String SEPARATOR = ":";
+
   private final String type;
   private final String name;
   private final String[] path;
   private final String id;
 
-  public ManagedComponentId(String type, String name, String... path) {
+  public ManagedComponentId(String type, Object component, String... path) {
+    this(type, SolrMetricProducer.getUniqueMetricTag(component, null), path);
+  }
+
+  ManagedComponentId(String type, String name, String... path) {
     this.type = type;
     this.name = name;
     this.path = path;
     StringBuilder sb = new StringBuilder();
+    sb.append(type);
     if (path != null) {
       for (String pathEl : path) {
         if (sb.length() > 0) {
-          sb.append(':');
+          sb.append(SEPARATOR);
         }
         sb.append(pathEl);
       }
     }
     if (sb.length() > 0) {
-      sb.append(':');
+      sb.append(SEPARATOR);
     }
     sb.append(name);
     id = sb.toString();
@@ -68,14 +79,14 @@ public class ManagedComponentId {
     if (fullName == null || fullName.isEmpty()) {
       return null;
     }
-    String[] parts = fullName.split(":");
+    String[] parts = fullName.split(SEPARATOR);
     if (parts.length < 2) {
       throw new RuntimeException("at least 2 parts (type and name) must be present: " + fullName);
     }
     if (parts.length > 2) {
-      String type = parts[parts.length - 1];
-      String name = parts[parts.length - 2];
-      String[] path = Arrays.copyOfRange(parts, 0, parts.length - 2);
+      String type = parts[0];
+      String name = parts[parts.length - 1];
+      String[] path = Arrays.copyOfRange(parts, 1, parts.length - 1);
       return new ManagedComponentId(type, name, path);
     } else {
       return new ManagedComponentId(parts[0], parts[1]);

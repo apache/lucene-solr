@@ -149,7 +149,7 @@ public class MBeansHandlerTest extends SolrTestCaseJ4 {
 
       @Override
       public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-        this.solrMetricsContext = parentContext.getChildContext(this);
+        this.solrMetricsContext = parentContext.getChildContext(this, scope);
       }
 
       @Override

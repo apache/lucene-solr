@@ -17,7 +17,6 @@
 package org.apache.solr.handler.admin;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -151,8 +150,8 @@ public class ResourceManagerHandler extends RequestHandlerBase implements Permis
         result.add("poolParams", pool.getParams());
         result.add("resources", pool.getComponents().keySet());
         try {
-          pool.getCurrentValues();
-          result.add("totalValues", pool.getTotalValues());
+          Map<String, Map<String, Object>> values = pool.getCurrentValues();
+          result.add("totalValues", pool.getResourceManagerPlugin().aggregateTotalValues(values));
         } catch (Exception e) {
           log.warn("Error getting current values from pool " + name, e);
           result.add("error", "Error getting current values: " + e.toString());

@@ -17,6 +17,8 @@
 
 package org.apache.solr.metrics;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -38,13 +40,26 @@ import org.apache.solr.util.stats.MetricUtils;
 public class SolrMetricsContext {
   private final String registryName;
   private final SolrMetricManager metricManager;
+  private final String scope;
   private final String tag;
   private final Set<String> metricNames = ConcurrentHashMap.newKeySet();
 
-  public SolrMetricsContext(SolrMetricManager metricManager, String registryName, String tag) {
+  public SolrMetricsContext(SolrMetricManager metricManager, String registryName, String scope, String tag) {
     this.registryName = registryName;
     this.metricManager = metricManager;
+    this.scope = scope;
     this.tag = tag;
+  }
+
+  public SolrMetricsContext(SolrMetricManager metricManager, String registryName, String tag) {
+    this(metricManager, registryName, null, tag);
+  }
+
+  /**
+   * Scope of the component where this context is used.
+   */
+  public String getScope() {
+    return scope;
   }
 
   /**
@@ -92,8 +107,8 @@ public class SolrMetricsContext {
    * and child are different.
    * @param child child object that produces metrics with a different life-cycle than the parent.
    */
-  public SolrMetricsContext getChildContext(Object child) {
-    SolrMetricsContext childContext = new SolrMetricsContext(metricManager, registryName, SolrMetricProducer.getUniqueMetricTag(child, tag));
+  public SolrMetricsContext getChildContext(Object child, String childScope) {
+    SolrMetricsContext childContext = new SolrMetricsContext(metricManager, registryName, childScope, SolrMetricProducer.getUniqueMetricTag(child, tag));
     return childContext;
   }
 
@@ -113,18 +128,32 @@ public class SolrMetricsContext {
     return MetricUtils.convertMetrics(getMetricRegistry(), metricNames);
   }
 
+  private String createName(String metricName, String... metricpath) {
+    ArrayList<String> l = new ArrayList<>();
+    if(metricpath != null ) {
+      Collections.addAll(l, metricpath);
+    }
+    if (scope != null) {
+      l.add(scope);
+    }
+    if (metricName != null) {
+      l.add(metricName);
+    }
+    return String.join(".", l);
+  }
+
   /**
    * Convenience method for {@link SolrMetricManager#meter(SolrMetricsContext, String, String, String...)}.
    */
   public Meter meter(String metricName, String... metricPath) {
-    return metricManager.meter(this, registryName, metricName, metricPath);
+    return metricManager.meter(this, registryName, createName(metricName, metricPath));
   }
 
   /**
    * Convenience method for {@link SolrMetricManager#counter(SolrMetricsContext, String, String, String...)}.
    */
   public Counter counter(String metricName, String... metricPath) {
-    return metricManager.counter(this, registryName, metricName, metricPath);
+    return metricManager.counter(this, registryName, createName(metricName, metricPath));
 
   }
 
@@ -132,21 +161,21 @@ public class SolrMetricsContext {
    * Convenience method for {@link SolrMetricManager#registerGauge(SolrMetricsContext, String, Gauge, String, boolean, String, String...)}.
    */
   public void gauge(Gauge<?> gauge, boolean force, String metricName, String... metricPath) {
-    metricManager.registerGauge(this, registryName, gauge, tag, force, metricName, metricPath);
+    metricManager.registerGauge(this, registryName, gauge, tag, force, createName(metricName, metricPath));
   }
 
   /**
    * Convenience method for {@link SolrMetricManager#meter(SolrMetricsContext, String, String, String...)}.
    */
   public Timer timer(String metricName, String... metricPath) {
-    return metricManager.timer(this, registryName, metricName, metricPath);
+    return metricManager.timer(this, registryName, createName(metricName, metricPath));
   }
 
   /**
    * Convenience method for {@link SolrMetricManager#histogram(SolrMetricsContext, String, String, String...)}.
    */
   public Histogram histogram(String metricName, String... metricPath) {
-    return metricManager.histogram(this, registryName, metricName, metricPath);
+    return metricManager.histogram(this, registryName, createName(metricName, metricPath));
   }
 
   /**

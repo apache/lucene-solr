@@ -194,7 +194,7 @@ public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
       props.put(HdfsDirectoryFactory.NRTCACHINGDIRECTORY_ENABLE, "false");
       props.put(HdfsDirectoryFactory.LOCALITYMETRICS_ENABLED, "true");
       factory.init(new NamedList<>(props));
-      factory.initializeMetrics(new SolrMetricsContext(metricManager, registry, "foo"), scope);
+      factory.initializeMetrics(new SolrMetricsContext(metricManager, registry, "foo", "foo"), scope);
 
       // get the metrics map for the locality bean
       MetricsMap metrics = (MetricsMap) ((SolrMetricManager.GaugeWrapper) metricManager.registry(registry).getMetrics().get("OTHER." + scope + ".hdfsLocality")).getGauge();

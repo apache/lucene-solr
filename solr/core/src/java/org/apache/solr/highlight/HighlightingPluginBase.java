@@ -68,8 +68,8 @@ public abstract class HighlightingPluginBase implements SolrInfoBean
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    solrMetricsContext = parentContext.getChildContext(this);
-    numRequests = solrMetricsContext.counter("requests", getCategory().toString(), scope);
+    solrMetricsContext = parentContext.getChildContext(this, scope);
+    numRequests = solrMetricsContext.counter("requests", getCategory().toString());
   }
 }
 

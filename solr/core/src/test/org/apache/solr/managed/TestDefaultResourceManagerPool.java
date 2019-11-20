@@ -41,7 +41,7 @@ public class TestDefaultResourceManagerPool extends SolrTestCaseJ4 {
   }
 
   public static class TestComponent implements MockManagedComponent {
-    ManagedContext context = new ManagedContext();
+    ManagedContext context;
     ManagedComponentId id;
     int foo, bar, baz;
 
@@ -74,6 +74,11 @@ public class TestDefaultResourceManagerPool extends SolrTestCaseJ4 {
     @Override
     public ManagedComponentId getManagedComponentId() {
       return id;
+    }
+
+    @Override
+    public void initializeManagedComponent(ResourceManager resourceManager, String poolName, String... otherPools) {
+      context = new ManagedContext(resourceManager, this, poolName, otherPools);
     }
 
     @Override
@@ -138,8 +143,8 @@ public class TestDefaultResourceManagerPool extends SolrTestCaseJ4 {
       }
       manageStartLatch.countDown();
       log.info("-- managing");
-      pool.getCurrentValues();
-      Map<String, Object> totalValues = pool.getTotalValues();
+      Map<String, Map<String, Object>> currentValues = pool.getCurrentValues();
+      Map<String, Object> totalValues = pool.getResourceManagerPlugin().aggregateTotalValues(currentValues);
       Map<String, Object> poolLimits = pool.getPoolLimits();
       if (poolLimits.containsKey("foo")) {
         // manage
@@ -199,8 +204,8 @@ public class TestDefaultResourceManagerPool extends SolrTestCaseJ4 {
     }
     ResourceManagerPool pool = resourceManager.getPool("test");
     assertEquals(10, pool.getComponents().size());
-    pool.getCurrentValues();
-    Map<String, Object> totalValues = pool.getTotalValues();
+    Map<String, Map<String, Object>> currentValues = pool.getCurrentValues();
+    Map<String, Object> totalValues = pool.getResourceManagerPlugin().aggregateTotalValues(currentValues);
     assertNotNull(totalValues.get("bar"));
     assertEquals(55, ((Number)totalValues.get("bar")).intValue());
     assertNotNull(totalValues.get("baz"));
@@ -222,8 +227,8 @@ public class TestDefaultResourceManagerPool extends SolrTestCaseJ4 {
     manageStartLatch = new CountDownLatch(1);
     boolean await = manageFinishLatch.await(30000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("did not finish in time", await);
-    pool.getCurrentValues();
-    totalValues = pool.getTotalValues();
+    currentValues = pool.getCurrentValues();
+    totalValues = pool.getResourceManagerPlugin().aggregateTotalValues(currentValues);
     assertNotNull(totalValues.get("bar"));
     assertEquals(46, ((Number)totalValues.get("bar")).intValue());
     assertNotNull(totalValues.get("baz"));

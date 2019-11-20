@@ -37,7 +37,7 @@ import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.managed.ManagedComponentId;
 import org.apache.solr.managed.ManagedContext;
-import org.apache.solr.managed.ResourceManagerPluginFactory;
+import org.apache.solr.managed.ResourceManager;
 import org.apache.solr.managed.types.CacheManagerPlugin;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -364,7 +364,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    solrMetricsContext = parentContext.getChildContext(this);
+    solrMetricsContext = parentContext.getChildContext(this, scope);
     cacheMap = new MetricsMap((detailed, map) -> {
       if (cache != null) {
         CacheStats stats = cache.stats();
@@ -389,8 +389,12 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
       }
     });
     solrMetricsContext.gauge(cacheMap, true, scope, getCategory().toString());
-    managedComponentId = new ManagedComponentId(CacheManagerPlugin.TYPE, solrMetricsContext.getTag(), solrMetricsContext.getRegistryName(), getCategory().toString(), scope);
-    managedContext = new ManagedContext()
+  }
+
+  @Override
+  public void initializeManagedComponent(ResourceManager resourceManager, String poolName, String... otherPools) {
+    managedComponentId = new ManagedComponentId(CacheManagerPlugin.TYPE, this, solrMetricsContext.getRegistryName(), getCategory().toString(), solrMetricsContext.getScope());
+    managedContext = new ManagedContext(resourceManager, this, poolName, otherPools);
   }
 
   @Override

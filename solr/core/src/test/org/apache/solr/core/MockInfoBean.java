@@ -49,7 +49,7 @@ class MockInfoBean implements SolrInfoBean, SolrMetricProducer {
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    solrMetricsContext = parentContext.getChildContext(this);
+    solrMetricsContext = parentContext.getChildContext(this, scope);
     MetricsMap metricsMap = new MetricsMap((detailed, map) -> {
       map.put("Integer", 123);
       map.put("Double",567.534);
@@ -60,6 +60,6 @@ class MockInfoBean implements SolrInfoBean, SolrMetricProducer {
       map.put("String","testing");
       map.put("Object", new Object());
     });
-    solrMetricsContext.gauge(metricsMap, true, getClass().getSimpleName(), getCategory().toString(), scope);
+    solrMetricsContext.gauge(metricsMap, true, getClass().getSimpleName(), getCategory().toString());
   }
 }

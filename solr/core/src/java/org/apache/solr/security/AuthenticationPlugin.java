@@ -144,16 +144,16 @@ public abstract class AuthenticationPlugin implements SolrInfoBean {
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    this.solrMetricsContext = parentContext.getChildContext(this);
+    this.solrMetricsContext = parentContext.getChildContext(this, scope);
     // Metrics
-    numErrors = this.solrMetricsContext.meter("errors", getCategory().toString(), scope);
-    requests = this.solrMetricsContext.counter("requests", getCategory().toString(), scope);
-    numAuthenticated = this.solrMetricsContext.counter("authenticated",getCategory().toString(), scope);
-    numPassThrough = this.solrMetricsContext.counter("passThrough",  getCategory().toString(), scope);
-    numWrongCredentials = this.solrMetricsContext.counter("failWrongCredentials",getCategory().toString(), scope);
-    numMissingCredentials = this.solrMetricsContext.counter("failMissingCredentials",getCategory().toString(), scope);
-    requestTimes = this.solrMetricsContext.timer("requestTimes", getCategory().toString(), scope);
-    totalTime = this.solrMetricsContext.counter("totalTime", getCategory().toString(), scope);
+    numErrors = this.solrMetricsContext.meter("errors", getCategory().toString());
+    requests = this.solrMetricsContext.counter("requests", getCategory().toString());
+    numAuthenticated = this.solrMetricsContext.counter("authenticated",getCategory().toString());
+    numPassThrough = this.solrMetricsContext.counter("passThrough",  getCategory().toString());
+    numWrongCredentials = this.solrMetricsContext.counter("failWrongCredentials",getCategory().toString());
+    numMissingCredentials = this.solrMetricsContext.counter("failMissingCredentials",getCategory().toString());
+    requestTimes = this.solrMetricsContext.timer("requestTimes", getCategory().toString());
+    totalTime = this.solrMetricsContext.counter("totalTime", getCategory().toString());
   }
 
   @Override

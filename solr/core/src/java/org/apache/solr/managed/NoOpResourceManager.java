@@ -118,11 +118,6 @@ public class NoOpResourceManager extends ResourceManager {
     }
 
     @Override
-    public Map<String, Object> getTotalValues() throws InterruptedException {
-      return Collections.emptyMap();
-    }
-
-    @Override
     public Map<String, Object> getPoolLimits() {
       return Collections.emptyMap();
     }
@@ -138,7 +133,7 @@ public class NoOpResourceManager extends ResourceManager {
     }
 
     @Override
-    public ManagedContext getPoolContext() {
+    public PoolContext getPoolContext() {
       return null;
     }
 
@@ -184,7 +179,7 @@ public class NoOpResourceManager extends ResourceManager {
   }
 
   @Override
-  public void registerComponent(String pool, ManagedComponent managedComponent) throws Exception {
+  public void registerComponent(String pool, ManagedComponent managedComponent) {
     // no-op
   }
 

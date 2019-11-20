@@ -433,11 +433,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       infoRegistry.put(cache.name(), cache);
     }
     ResourceManager resourceManager = core.getCoreContainer().getResourceManager();
-    this.solrMetricsContext = core.getSolrMetricsContext().getChildContext(this);
+    this.solrMetricsContext = core.getSolrMetricsContext().getChildContext(this, null);
     for (SolrCache cache : cacheList) {
       cache.initializeMetrics(solrMetricsContext, SolrMetricManager.mkName(cache.name(), STATISTICS_KEY));
       try {
-        resourceManager.registerComponent(DefaultResourceManager.NODE_SEARCHER_CACHE_POOL, cache);
+        cache.initializeManagedComponent(resourceManager, DefaultResourceManager.NODE_SEARCHER_CACHE_POOL);
       } catch (Exception e) {
         log.warn("Exception adding cache '" + cache.getManagedComponentId() + "' to the resource manager pool", e);
       }
@@ -486,7 +486,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     for (SolrCache cache : cacheList) {
       try {
-        core.getCoreContainer().getResourceManager().unregisterComponent(DefaultResourceManager.NODE_SEARCHER_CACHE_POOL, cache.getManagedComponentId().toString());
         cache.close();
       } catch (Exception e) {
         SolrException.log(log, "Exception closing cache " + cache.name(), e);

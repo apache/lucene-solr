@@ -131,7 +131,7 @@ public class CacheManagerPlugin implements ResourceManagerPlugin<SolrCache> {
   @Override
   public void manage(ResourceManagerPool pool) throws Exception {
     Map<String, Map<String, Object>> currentValues = pool.getCurrentValues();
-    Map<String, Object> totalValues = pool.getTotalValues();
+    Map<String, Object> totalValues = pool.getResourceManagerPlugin().aggregateTotalValues(currentValues);
     // pool limits are defined using controlled tags
     pool.getPoolLimits().forEach((poolLimitName, value) -> {
       // only numeric limits are supported

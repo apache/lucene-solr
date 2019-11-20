@@ -88,7 +88,7 @@ public class HdfsLocalityReporter implements SolrInfoBean {
    */
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    solrMetricsContext = parentContext.getChildContext(this);
+    solrMetricsContext = parentContext.getChildContext(this, scope);
     MetricsMap metricsMap = new MetricsMap((detailed, map) -> {
       long totalBytes = 0;
       long localBytes = 0;
@@ -138,7 +138,7 @@ public class HdfsLocalityReporter implements SolrInfoBean {
         map.put(LOCALITY_BLOCKS_RATIO, localCount / (double) totalCount);
       }
     });
-    solrMetricsContext.gauge(metricsMap, true, "hdfsLocality", getCategory().toString(), scope);
+    solrMetricsContext.gauge(metricsMap, true, "hdfsLocality", getCategory().toString());
   }
 
   /**

@@ -97,7 +97,7 @@ public class PeerSyncWithLeader implements SolrMetricProducer {
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    this.solrMetricsContext = parentContext.getChildContext(this);
+    this.solrMetricsContext = parentContext.getChildContext(this, null);
     syncTime = solrMetricsContext.timer("time", scope, METRIC_SCOPE);
     syncErrors = solrMetricsContext.counter("errors", scope, METRIC_SCOPE);
     syncSkipped = solrMetricsContext.counter("skipped", scope, METRIC_SCOPE);

@@ -432,7 +432,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    solrMetricsContext = parentContext.getChildContext(this);
+    solrMetricsContext = parentContext.getChildContext(this, scope);
     bufferedOpsGauge = () -> {
       if (state == State.BUFFERING) {
         if (bufferTlog == null) return  0;
@@ -449,13 +449,13 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       }
     };
 
-    solrMetricsContext.gauge(bufferedOpsGauge, true, "ops", scope, "buffered");
-    solrMetricsContext.gauge(() -> logs.size(), true, "logs", scope, "replay", "remaining");
-    solrMetricsContext.gauge(() -> getTotalLogsSize(), true, "bytes", scope, "replay", "remaining");
-    applyingBufferedOpsMeter = solrMetricsContext.meter("ops", scope, "applyingBuffered");
+    solrMetricsContext.gauge(bufferedOpsGauge, true, "ops", "buffered");
+    solrMetricsContext.gauge(() -> logs.size(), true, "logs", "replay", "remaining");
+    solrMetricsContext.gauge(() -> getTotalLogsSize(), true, "bytes", "replay", "remaining");
+    applyingBufferedOpsMeter = solrMetricsContext.meter("ops", "applyingBuffered");
     replayOpsMeter = solrMetricsContext.meter("ops", scope, "replay");
-    copyOverOldUpdatesMeter = solrMetricsContext.meter("ops", scope, "copyOverOldUpdates");
-    solrMetricsContext.gauge(() -> state.getValue(), true, "state", scope);
+    copyOverOldUpdatesMeter = solrMetricsContext.meter("ops", "copyOverOldUpdates");
+    solrMetricsContext.gauge(() -> state.getValue(), true, "state");
   }
 
   @Override

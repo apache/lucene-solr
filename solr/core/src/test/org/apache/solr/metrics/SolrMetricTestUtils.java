@@ -80,7 +80,7 @@ public final class SolrMetricTestUtils {
       SolrMetricsContext solrMetricsContext;
       @Override
       public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-        this.solrMetricsContext = parentContext.getChildContext(this);
+        this.solrMetricsContext = parentContext.getChildContext(this, scope);
         if (category == null) {
           throw new IllegalArgumentException("null category");
         }

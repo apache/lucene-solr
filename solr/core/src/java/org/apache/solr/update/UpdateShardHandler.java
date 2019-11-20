@@ -179,7 +179,7 @@ public class UpdateShardHandler implements SolrInfoBean {
 
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
-    solrMetricsContext = parentContext.getChildContext(this);
+    solrMetricsContext = parentContext.getChildContext(this, scope);
     String expandedScope = SolrMetricManager.mkName(scope, getCategory().name());
     updateHttpListenerFactory.initializeMetrics(solrMetricsContext, expandedScope);
     defaultConnectionManager.initializeMetrics(solrMetricsContext, expandedScope);

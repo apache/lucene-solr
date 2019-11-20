@@ -94,7 +94,7 @@ public class TestSolrCachePerf extends SolrTestCaseJ4 {
       CacheRegenerator cr = new NoOpRegenerator();
       Object o = cache.init(params, null, cr);
       cache.setState(SolrCache.State.LIVE);
-      cache.initializeMetrics(new SolrMetricsContext(metricManager, "foo", "bar"), "foo");
+      cache.initializeMetrics(new SolrMetricsContext(metricManager, "foo", "foo", "bar"), "foo");
       AtomicBoolean stop = new AtomicBoolean();
       SummaryStatistics perImplRatio = ratioStats.computeIfAbsent(clazz.getSimpleName(), c -> new SummaryStatistics());
       SummaryStatistics perImplTime = timeStats.computeIfAbsent(clazz.getSimpleName(), c -> new SummaryStatistics());
