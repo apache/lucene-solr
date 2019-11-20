@@ -105,6 +105,8 @@ Bug Fixes
 
 * SOLR-13921: Processing UpdateRequest with delegation token throws NullPointerException (Istvan Farkas via Kevin Risden)
 
+* SOLR-13941: Tests configure Jetty differently than when running via start.jar (janhoy, Uwe Schindler)
+
 Other Changes
 ---------------------
 
