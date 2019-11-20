@@ -69,7 +69,9 @@ import static org.apache.solr.common.params.CommonParams.ID;
  * </p>
  * <p>
  * To add additional mappings, just define them as plugins in solrconfig.xml via
+ * {@code
  * <expressible name="count" class="org.apache.solr.client.solrj.io.stream.RecordCountStream" />
+ * }
  * </p>
  *
  * @since 5.1.0
