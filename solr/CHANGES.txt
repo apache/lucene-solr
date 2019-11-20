@@ -142,6 +142,8 @@ Improvements
 * SOLR-13898: Use the new SolrCache.computeIfAbsent instead of non-atomic get / put in order to
   improve cache hit ratios. (ab, Ben Manes)
 
+* SOLR-13907: In the Cloud/tree section of the Admin UI, fix metadata panel and force an horizontal scrollbar for the tree
+  (Richard Goodman via Tomás Fernández Löbbe)
 
 Optimizations
 ---------------------
