@@ -42,7 +42,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
-import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.Replica;
@@ -51,7 +50,6 @@ import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.util.TimeOut;
@@ -112,6 +110,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
     // Create a custom BackupAPIImpl which uses ReplicatoinHandler for the backups
     // but still defaults to CoreAdmin for making named snapshots (since that's what's documented)
     testSnapshotsAndBackupsDuringConcurrentCommitsAndOptimizes(new BackupAPIImpl() {
+      final BackupStatusChecker backupStatus = new BackupStatusChecker(coreClient);
       /** no solrj API for ReplicationHandler */
       private GenericSolrRequest makeReplicationReq(SolrParams p) {
         return new GenericSolrRequest(GenericSolrRequest.METHOD.GET, "/replication", p);
@@ -130,44 +129,7 @@ public class TestStressThreadBackup extends SolrCloudTestCase {
           p.add(CoreAdminParams.COMMIT_NAME, snapName);
         }
         makeReplicationReq(p).process(coreClient);
-        
-        // "/replication" handler is all async, need to poll untill we see *this*
-        // backupName report success
-        while (!timeout.hasTimedOut()) {
-          if (checkBackupSuccess(backupName)) {
-            return;
-          }
-          timeout.sleep(50);
-        }
-        
-        // total TimeOut elapsed, so one last check or fail whole test.
-        assertTrue(backupName + " never succeeded after waiting excessive amount of time",
-                   checkBackupSuccess(backupName));
-      }
-
-      /**
-       * Returns true if the replication handler's 'details' command indicates that
-       * the most recently (succcessfully) completed backup has the specified name.
-       * "fails" the test if 'details' ever indicates there was a backup exception.
-       */
-      private boolean checkBackupSuccess(final String backupName) throws Exception {
-        final SimpleSolrResponse rsp = makeReplicationReq(params("command", "details")).process(coreClient);
-        final NamedList data = rsp.getResponse();
-        log.info("Checking Status of {}: {}", backupName, data);
-        final NamedList<String> backupData = (NamedList<String>) data.findRecursive("details","backup");
-        if (null == backupData) {
-          // no backup has finished yet
-          return false;
-        }
-        
-        final Object exception = backupData.get("exception");
-        assertNull("Backup failure", exception);
-
-        if (backupName.equals(backupData.get("snapshotName"))
-            && "success".equals(backupData.get("status"))) {
-          return true;
-        }
-        return false;
+        backupStatus.waitForBackupSuccess(backupName, timeout);
       }
     });
     

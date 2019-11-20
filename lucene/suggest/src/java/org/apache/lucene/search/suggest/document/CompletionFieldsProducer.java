@@ -39,7 +39,6 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.IOUtils;
 
-import static org.apache.lucene.search.suggest.document.CompletionPostingsFormat.CODEC_NAME;
 import static org.apache.lucene.search.suggest.document.CompletionPostingsFormat.COMPLETION_CODEC_VERSION;
 import static org.apache.lucene.search.suggest.document.CompletionPostingsFormat.COMPLETION_VERSION_CURRENT;
 import static org.apache.lucene.search.suggest.document.CompletionPostingsFormat.DICT_EXTENSION;
@@ -72,7 +71,7 @@ final class CompletionFieldsProducer extends FieldsProducer {
     this.readers = readers;
   }
 
-  CompletionFieldsProducer(SegmentReadState state, FSTLoadMode fstLoadMode) throws IOException {
+  CompletionFieldsProducer(String codecName, SegmentReadState state, FSTLoadMode fstLoadMode) throws IOException {
     String indexFile = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, INDEX_EXTENSION);
     delegateFieldsProducer = null;
     boolean success = false;
@@ -81,12 +80,12 @@ final class CompletionFieldsProducer extends FieldsProducer {
       // open up dict file containing all fsts
       String dictFile = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, DICT_EXTENSION);
       dictIn = state.directory.openInput(dictFile, state.context);
-      CodecUtil.checkIndexHeader(dictIn, CODEC_NAME, COMPLETION_CODEC_VERSION, COMPLETION_VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+      CodecUtil.checkIndexHeader(dictIn, codecName, COMPLETION_CODEC_VERSION, COMPLETION_VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
       // just validate the footer for the dictIn
       CodecUtil.retrieveChecksum(dictIn);
 
       // open up index file (fieldNumber, offset)
-      CodecUtil.checkIndexHeader(index, CODEC_NAME, COMPLETION_CODEC_VERSION, COMPLETION_VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+      CodecUtil.checkIndexHeader(index, codecName, COMPLETION_CODEC_VERSION, COMPLETION_VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
       // load delegate PF
       PostingsFormat delegatePostingsFormat = PostingsFormat.forName(index.readString());
       delegateFieldsProducer = delegatePostingsFormat.fieldsProducer(state);

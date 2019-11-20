@@ -180,12 +180,20 @@ public class PackageAPI {
     @JsonProperty
     public List<String> files;
 
+    @JsonProperty
+    public String manifest;
+
+    @JsonProperty
+    public String manifestSHA512;
+
     public PkgVersion() {
     }
 
     public PkgVersion(Package.AddVersion addVersion) {
       this.version = addVersion.version;
       this.files = addVersion.files;
+      this.manifest = addVersion.manifest;
+      this.manifestSHA512 = addVersion.manifestSHA512;
     }
 
     @Override
@@ -227,7 +235,8 @@ public class PackageAPI {
         payload.addError("No such package: " + p);
         return;
       }
-
+      //first refresh my own
+      packageLoader.notifyListeners(p);
       for (String s : coreContainer.getPackageStoreAPI().shuffledNodes()) {
         Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
             coreContainer.getZkController().zkStateReader.getBaseUrlForNodeName(s).replace("/solr", "/api") + "/cluster/package?wt=javabin&omitHeader=true&refreshPackage=" + p,

@@ -40,11 +40,15 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
+
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
@@ -1579,52 +1583,51 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   @Test
   public void testEmptyBackups() throws Exception {
     final File backupDir = createTempDir().toFile();
-    final CheckBackupStatus backupStatus = new CheckBackupStatus(masterClient, /* Silly API */ ".");
+    final BackupStatusChecker backupStatus = new BackupStatusChecker(masterClient);
     
     { // initial request w/o any committed docs
+      final String backupName = "empty_backup1";
       final GenericSolrRequest req = new GenericSolrRequest
         (SolrRequest.METHOD.GET, "/replication",
          params("command", "backup",
                 "location", backupDir.getAbsolutePath(),
-                "name", "empty_backup1"));
+                "name", backupName));
       final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
       final SimpleSolrResponse rsp = req.process(masterClient);
-      
-      while (!timeout.hasTimedOut()) {
-        backupStatus.fetchStatus();
-        if (backupStatus.success) {
-          break;
-        }
-        timeout.sleep(50);
-      }
-      assertTrue(backupStatus.success);
-    
-      assertTrue("snapshot.empty_backup1 doesn't exist in expected location",
-                 new File(backupDir, "snapshot.empty_backup1").exists());
+
+      final String dirName = backupStatus.waitForBackupSuccess(backupName, timeout);
+      assertEquals("Did not get expected dir name for backup, did API change?",
+                   "snapshot.empty_backup1", dirName);
+      assertTrue(dirName + " doesn't exist in expected location for backup " + backupName,
+                 new File(backupDir, dirName).exists());
     }
     
     index(masterClient, "id", "1", "name", "foo");
     
     { // second backup w/uncommited doc
+      final String backupName = "empty_backup2";
       final GenericSolrRequest req = new GenericSolrRequest
         (SolrRequest.METHOD.GET, "/replication",
          params("command", "backup",
                 "location", backupDir.getAbsolutePath(),
-                "name", "empty_backup2"));
+                "name", backupName));
       final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
       final SimpleSolrResponse rsp = req.process(masterClient);
       
-      while (!timeout.hasTimedOut()) {
-        backupStatus.fetchStatus();
-        if (backupStatus.success) {
-          break;
-        }
-        timeout.sleep(50);
+      final String dirName = backupStatus.waitForBackupSuccess(backupName, timeout);
+      assertEquals("Did not get expected dir name for backup, did API change?",
+                   "snapshot.empty_backup2", dirName);
+      assertTrue(dirName + " doesn't exist in expected location for backup " + backupName,
+                 new File(backupDir, dirName).exists());
+    }
+
+    // confirm backups really are empty
+    for (int i = 1; i <=2; i++) {
+      final String name = "snapshot.empty_backup"+i;
+      try (Directory dir = new SimpleFSDirectory(new File(backupDir, name).toPath());
+           IndexReader reader = DirectoryReader.open(dir)) {
+        assertEquals(name + " is not empty", 0, reader.numDocs());
       }
-      assertTrue(backupStatus.success);
-    
-      assertTrue("snapshot.empty_backup2 doesn't exist in expected location",
-                 new File(backupDir, "snapshot.empty_backup2").exists());
     }
   }
   

@@ -374,7 +374,7 @@ An optional in-memory cache can be defined in `solrconfig.xml`, which should be 
 [source,xml]
 ----
 <cache name="perSegSpatialFieldCache_geom"
-           class="solr.LRUCache"
+           class="solr.CaffeineCache"
            size="256"
            initialSize="0"
            autowarmCount="100%"

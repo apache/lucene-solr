@@ -19,6 +19,7 @@ package org.apache.lucene.util.fst;
 
 import java.io.IOException;
 
+import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
@@ -49,6 +50,30 @@ import org.apache.lucene.util.fst.FST.INPUT_TYPE; // javadoc
  */
 
 public class Builder<T> {
+
+  /**
+   * Default oversizing factor used to decide whether to encode a node with direct addressing or binary search.
+   * Default is 1: ensure no oversizing on average.
+   * <p>
+   * This factor does not determine whether to encode a node with a list of variable length arcs or with
+   * fixed length arcs. It only determines the effective encoding of a node that is already known to be
+   * encoded with fixed length arcs.
+   * See {@code FST.shouldExpandNodeWithFixedLengthArcs()}
+   * and {@code FST.shouldExpandNodeWithDirectAddressing()}.
+   * <p>
+   * For English words we measured 217K nodes, only 3.27% nodes are encoded with fixed length arcs,
+   * and 99.99% of them with direct addressing. Overall FST memory reduced by 1.67%.
+   * <p>
+   * For worst case we measured 168K nodes, 50% of them are encoded with fixed length arcs,
+   * and 14% of them with direct encoding. Overall FST memory reduced by 0.8%.
+   * <p>
+   * Use {@code TestFstDirectAddressing.main()}
+   * and {@code TestFstDirectAddressing.testWorstCaseForDirectAddressing()}
+   * to evaluate a change.
+   *
+   * @see #setDirectAddressingMaxOversizingFactor
+   */
+  static final float DIRECT_ADDRESSING_MAX_OVERSIZING_FACTOR = 1.0f;
 
   private final NodeHash<T> dedupHash;
   final FST<T> fst;
@@ -83,12 +108,18 @@ public class Builder<T> {
   long lastFrozenNode;
 
   // Reused temporarily while building the FST:
-  int[] reusedBytesPerArc = new int[4];
+  int[] numBytesPerArc = new int[4];
+  int[] numLabelBytesPerArc = new int[numBytesPerArc.length];
+  final FixedLengthArcsBuffer fixedLengthArcsBuffer = new FixedLengthArcsBuffer();
 
   long arcCount;
   long nodeCount;
+  long binarySearchNodeCount;
+  long directAddressingNodeCount;
 
-  boolean allowArrayArcs;
+  boolean allowFixedLengthArcs;
+  float directAddressingMaxOversizingFactor = DIRECT_ADDRESSING_MAX_OVERSIZING_FACTOR;
+  long directAddressingExpansionCredit;
 
   BytesStore bytes;
 
@@ -138,9 +169,9 @@ public class Builder<T> {
    *    FSA, use {@link NoOutputs#getSingleton()} and {@link NoOutputs#getNoOutput()} as the
    *    singleton output object.
    *
-   * @param allowArrayArcs Pass false to disable the array arc optimization
-   *    while building the FST; this will make the resulting
-   *    FST smaller but slower to traverse.
+   * @param allowFixedLengthArcs Pass false to disable the fixed length arc optimization (binary search or
+   *    direct addressing) while building the FST; this will make the resulting FST smaller but slower to
+   *    traverse.
    *
    * @param bytesPageBits How many bits wide to make each
    *    byte[] block in the BytesStore; if you know the FST
@@ -149,12 +180,12 @@ public class Builder<T> {
    */
   public Builder(FST.INPUT_TYPE inputType, int minSuffixCount1, int minSuffixCount2, boolean doShareSuffix,
                  boolean doShareNonSingletonNodes, int shareMaxTailLength, Outputs<T> outputs,
-                 boolean allowArrayArcs, int bytesPageBits) {
+                 boolean allowFixedLengthArcs, int bytesPageBits) {
     this.minSuffixCount1 = minSuffixCount1;
     this.minSuffixCount2 = minSuffixCount2;
     this.doShareNonSingletonNodes = doShareNonSingletonNodes;
     this.shareMaxTailLength = shareMaxTailLength;
-    this.allowArrayArcs = allowArrayArcs;
+    this.allowFixedLengthArcs = allowFixedLengthArcs;
     fst = new FST<>(inputType, outputs, bytesPageBits);
     bytes = fst.bytes;
     assert bytes != null;
@@ -171,6 +202,27 @@ public class Builder<T> {
     for(int idx=0;idx<frontier.length;idx++) {
       frontier[idx] = new UnCompiledNode<>(this, idx);
     }
+  }
+
+  /**
+   * Overrides the default the maximum oversizing of fixed array allowed to enable direct addressing
+   * of arcs instead of binary search.
+   * <p>
+   * Setting this factor to a negative value (e.g. -1) effectively disables direct addressing,
+   * only binary search nodes will be created.
+   *
+   * @see #DIRECT_ADDRESSING_MAX_OVERSIZING_FACTOR
+   */
+  public Builder<T> setDirectAddressingMaxOversizingFactor(float factor) {
+    directAddressingMaxOversizingFactor = factor;
+    return this;
+  }
+
+  /**
+   * @see #setDirectAddressingMaxOversizingFactor(float)
+   */
+  public float getDirectAddressingMaxOversizingFactor() {
+    return directAddressingMaxOversizingFactor;
   }
 
   public long getTermCount() {
@@ -637,6 +689,54 @@ public class Builder<T> {
         output = owner.fst.outputs.add(outputPrefix, output);
         assert owner.validOutput(output);
       }
+    }
+  }
+
+  /**
+   * Reusable buffer for building nodes with fixed length arcs (binary search or direct addressing).
+   */
+  static class FixedLengthArcsBuffer {
+
+    // Initial capacity is the max length required for the header of a node with fixed length arcs:
+    // header(byte) + numArcs(vint) + numBytes(vint)
+    private byte[] bytes = new byte[11];
+    private final ByteArrayDataOutput bado = new ByteArrayDataOutput(bytes);
+
+    /** Ensures the capacity of the internal byte array. Enlarges it if needed. */
+    FixedLengthArcsBuffer ensureCapacity(int capacity) {
+      if (bytes.length < capacity) {
+        bytes = new byte[ArrayUtil.oversize(capacity, Byte.BYTES)];
+        bado.reset(bytes);
+      }
+      return this;
+    }
+
+    FixedLengthArcsBuffer resetPosition() {
+      bado.reset(bytes);
+      return this;
+    }
+
+    FixedLengthArcsBuffer writeByte(byte b) {
+      bado.writeByte(b);
+      return this;
+    }
+
+    FixedLengthArcsBuffer writeVInt(int i) {
+      try {
+        bado.writeVInt(i);
+      } catch (IOException e) { // Never thrown.
+        throw new RuntimeException(e);
+      }
+      return this;
+    }
+
+    int getPosition() {
+      return bado.getPosition();
+    }
+
+    /** Gets the internal byte array. */
+    byte[] getBytes() {
+      return bytes;
     }
   }
 }
