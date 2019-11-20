@@ -24,7 +24,7 @@ dependencies {
   implementation project(':solr:solr-solrj')
   implementation project(':solr:solr-contrib:solr-contrib-dataimporthandler')
   implementation project(':lucene:lucene-analyzers:lucene-analyzers-common')
-  implementation project(':solr:solr-contrib:solr-contrib-extraction')
+  implementation project(':solr:solr-contrib:solr-contrib-cell')
   
   implementation ('org.slf4j:slf4j-api')
   implementation ('javax.activation:activation')
@@ -46,5 +46,5 @@ unusedDeps {
 }
 
 missingDeps {
-  addExclusionsFrom(project(':solr:solr-contrib:solr-contrib-extraction'))
+  addExclusionsFrom(project(':solr:solr-contrib:solr-contrib-cell'))
 }

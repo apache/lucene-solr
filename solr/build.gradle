@@ -18,25 +18,45 @@
 import org.apache.lucene.gradle.LicenseCheckTask
 import org.apache.lucene.gradle.JarChecksum
 
+plugins {
+  id 'base'
+}
+
+configurations {
+  dist {
+    // Only pull explicitly mentioned primary artifacts, no subdependencies.
+    transitive false
+  }
+}
+
+dependencies {
+  dist project(":solr:solr-core")
+  dist project(":solr:solr-contrib:solr-contrib-analysis-extras")
+  dist project(":solr:solr-contrib:solr-contrib-analytics")
+  dist project(":solr:solr-contrib:solr-contrib-clustering")
+  dist project(":solr:solr-contrib:solr-contrib-dataimporthandler")
+  dist project(":solr:solr-contrib:solr-contrib-dataimporthandler-extras")
+  dist project(":solr:solr-contrib:solr-contrib-cell")
+  dist project(":solr:solr-contrib:solr-contrib-langid")
+  dist project(":solr:solr-contrib:solr-contrib-ltr")
+  dist project(":solr:solr-contrib:solr-contrib-prometheus-exporter")
+  dist project(":solr:solr-contrib:solr-contrib-velocity")
+  dist project(":solr:solr-solrj")
+  dist project(":solr:solr-test-framework")
+}
+
 subprojects {
   group = 'org.apache.solr'
 }
 
-def distDir = "dist"
-
-ext.testsPolicy = "${rootDir}/lucene/tools/junit4/solr-tests.policy"
+ext {
+  testsPolicy = "${rootDir}/lucene/tools/junit4/solr-tests.policy"
+}
 
 tasks.create("checkLicenses", LicenseCheckTask, file("licenses_gradle"))
-
 tasks.create("jarChecksums", JarChecksum, file('solr'), file('licenses_gradle'))
 
-task packageDist(type: org.apache.lucene.gradle.dist.PackageLuceneSolrDist) {
-  group = 'Dist'
-  description = 'Generates the Lucene and Solr distribution.'
-  
-  // additional includes for solr-server
-  includeArtifacts '**/server/solr/**', '**/server/resources/**', '**/server/etc/**', '**/server/modules/**', '**/server/scripts/**', '**/server/contexts/**', '**/server/start.jar'
-  
-  // REMOVE; cross-project task dependency.
-  // dependsOn { project(":solr:solr-server").getStartJar }
+task dist(type: Sync) {
+  from configurations.dist
+  into "dist"
 }

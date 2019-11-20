@@ -46,7 +46,7 @@ include 'dev-tools'
   "solr:solr-contrib:solr-contrib-clustering"              : "solr/contrib/clustering",
   "solr:solr-contrib:solr-contrib-dataimporthandler"       : "solr/contrib/dataimporthandler",
   "solr:solr-contrib:solr-contrib-dataimporthandler-extras": "solr/contrib/dataimporthandler-extras",
-  "solr:solr-contrib:solr-contrib-extraction"              : "solr/contrib/extraction",
+  "solr:solr-contrib:solr-contrib-cell"                    : "solr/contrib/extraction",
   "solr:solr-contrib:solr-contrib-langid"                  : "solr/contrib/langid",
   "solr:solr-contrib:solr-contrib-ltr"                     : "solr/contrib/ltr",
   "solr:solr-contrib:solr-contrib-prometheus-exporter"     : "solr/contrib/prometheus-exporter",

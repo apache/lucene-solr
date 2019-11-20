@@ -26,7 +26,6 @@ dependencies {
   
   api project(':solr:solr-solrj')
   api project(':solr:solr-core')
-  api project(':solr:solr-server')
   api project(':lucene:lucene-core')
   api project(':lucene:lucene-codecs')
   api project(':lucene:lucene-queries')
@@ -85,8 +84,7 @@ dependencies {
   runtimeOnly ('org.apache.logging.log4j:log4j-api')
   runtimeOnly ('org.apache.logging.log4j:log4j-core')
   runtimeOnly ('org.apache.logging.log4j:log4j-slf4j-impl')
-  runtimeOnly ('com.lmax:disruptor')
-  
+  runtimeOnly ('com.lmax:disruptor') 
 }
 
 missingDeps {
