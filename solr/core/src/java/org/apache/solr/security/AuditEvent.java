@@ -141,11 +141,6 @@ public class AuditEvent {
       this.solrParams.put(sp.getKey(), Arrays.asList(sp.getValue()));
     });
 
-    // Full resource path is servletPath + pathInfo. See https://issues.apache.org/jira/browse/SOLR-13905
-    this.resource = httpRequest.getServletPath();
-    if (httpRequest.getPathInfo() != null) {
-      this.resource += httpRequest.getPathInfo();
-    }
     setRequestType(findRequestType());
 
     if (exception != null) setException(exception);
