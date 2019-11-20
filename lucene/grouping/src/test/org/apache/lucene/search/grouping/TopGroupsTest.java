@@ -18,12 +18,12 @@ package org.apache.lucene.search.grouping;
 
 import java.util.Arrays;
 
-import com.carrotsearch.randomizedtesting.RandomizedTest;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TotalHits;
 
+import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Ignore;
 import org.junit.Test;
 
@@ -53,7 +53,7 @@ import static org.junit.Assert.assertEquals;
  * If all documents are present the "blue whale" and the "red squirrel" documents would be returned
  * for our drawing since they are the largest animals in their respective groups.
  */
-public class TopGroupsTest extends RandomizedTest {
+public class TopGroupsTest extends LuceneTestCase {
 
   private final static String RED_GROUP_KEY = "RED";
   private final static String BLUE_GROUP_KEY = "BLUE";
@@ -152,8 +152,8 @@ public class TopGroupsTest extends RandomizedTest {
    * count will be randomized values */
   private static <T> TopGroups<T> createTopGroups(GroupDocs<T>[] groups, float maxScore) {
     final SortField[] sortByScore = new SortField[]{SortField.FIELD_SCORE};
-    final int totalHitCount = randomIntBetween(0, 1000);
-    final int totalGroupedHitCount = randomIntBetween(0, totalHitCount);
+    final int totalHitCount = random().nextInt(1000);
+    final int totalGroupedHitCount = random().nextInt(totalHitCount);
     return new TopGroups<>(sortByScore, sortByScore, totalHitCount, totalGroupedHitCount, groups, maxScore);
   }
 
