@@ -122,6 +122,9 @@ Bug Fixes
 * LUCENE-9030: Fix WordnetSynonymParser behaviour so it behaves similar to
   SolrSynonymParser. (Christoph Buescher via Alan Woodward)
 
+* LUCENE-9050: MultiTermIntervalsSource.visit() was not calling back to its
+  visitor. (Alan Woodward)
+
 Other
 
 * LUCENE-8979: Code Cleanup: Use entryset for map iteration wherever possible. - Part 2 (Koen De Groote)

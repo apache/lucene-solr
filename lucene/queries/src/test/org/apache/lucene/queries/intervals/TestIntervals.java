@@ -856,6 +856,8 @@ public class TestIntervals extends LuceneTestCase {
       }
     });
     assertEquals("Automaton [?ot] expanded to too many terms (limit 1)", e.getMessage());
+
+    checkVisits(Intervals.wildcard(new BytesRef("p??")), 1);
   }
 
   public void testWrappedFilters() throws IOException {
