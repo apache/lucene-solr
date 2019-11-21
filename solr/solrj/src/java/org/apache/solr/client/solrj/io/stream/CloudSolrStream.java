@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -82,6 +83,7 @@ public class CloudSolrStream extends TupleStream implements Expressible {
   protected transient List<TupleStream> solrStreams;
   protected transient TreeSet<TupleWrapper> tuples;
   protected transient StreamContext streamContext;
+  private int count;
 
   // Used by parallel stream
   protected CloudSolrStream(){
@@ -439,6 +441,11 @@ public class CloudSolrStream extends TupleStream implements Expressible {
   }
 
   protected Tuple _read() throws IOException {
+    ++count;
+    if(count == 5000) {
+      buffer();
+      count = 0;
+    }
     TupleWrapper tw = tuples.pollFirst();
     if(tw != null) {
       Tuple t = tw.getTuple();
@@ -463,14 +470,31 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     }
   }
 
+  private void buffer() throws IOException{
+    for(TupleWrapper tw : tuples) {
+      tw.buffer();
+    }
+  }
+
   protected class TupleWrapper implements Comparable<TupleWrapper> {
     private Tuple tuple;
     private SolrStream stream;
     private StreamComparator comp;
+    private LinkedList<Tuple> buffer = new LinkedList();
 
     public TupleWrapper(SolrStream stream, StreamComparator comp) {
       this.stream = stream;
       this.comp = comp;
+    }
+
+    public void buffer() throws IOException {
+      if(buffer.size() > 0) {
+        if(buffer.peekLast().EOF) {
+          return;
+        }
+      }
+
+      buffer.addLast(stream.read());
     }
 
     public int compareTo(TupleWrapper w) {
@@ -495,7 +519,11 @@ public class CloudSolrStream extends TupleStream implements Expressible {
     }
 
     public boolean next() throws IOException {
-      this.tuple = stream.read();
+      if(buffer.size() > 0) {
+        this.tuple = buffer.pop();
+      } else {
+        this.tuple = stream.read();
+      }
 
       if(tuple.EOF) {
         eofTuples.put(stream.getBaseUrl(), tuple);
