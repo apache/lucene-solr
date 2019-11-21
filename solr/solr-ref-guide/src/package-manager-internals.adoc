@@ -1,7 +1,7 @@
 = Package Manager Internals
 The package manager (CLI) internally uses various Solr APIs to install, deploy and update packages. This document contains an overview of those APIs.
 
-== Design Objectives
+== Salient Features
 
 * Zero disruption deployment (hot deployment): Should be possible to install and update packages without node restarts or core reloads, and hence deployments should be quick and without failed requests or stale caches.
 * Easy packaging:
@@ -81,13 +81,13 @@ $ curl -o runtimelibs.jar   -LO https://github.com/apache/lucene-solr/blob/maste
 2) Sign the jar with your private key
 [source, bash]
 ----
-$ openssl dgst -sha1 -sign my_key.pem runtimelibs.jar | openssl enc -base64
+$ openssl dgst -sha1 -sign my_key.pem runtimelibs.jar | openssl enc -base64 | sed 's/+/%2B/g' | tr -d \\n | sed
 ----
 
-3) Upload your jar with signature. (replace the `sig` param with the output you got from the previous command) . Ensure that new lines and spaces are removed. Do not forget to do URL encoding of you signature( e.g   escape `+` with `%2B`)
+3) Upload your jar with signature. (replace the `sig` param with the output you got from the previous command)
 [source, bash]
 ----
-$ curl --data-binary @runtimelibs.jar -X PUT  http://localhost:7574/api/cluster/files/mypkg/1.0/myplugins.jar?sig=elNjhmWIOgTgbAzeZ%2BOcwR42N7vqL6Ig9eAqn4YoP2thT7FJuhiaZuCPivjMkD682EBo9gveSCTyXIsZKjOCbQ==
+$ curl --data-binary @runtimelibs.jar -X PUT  http://localhost:7574/api/cluster/files/mypkg/1.0/myplugins.jar?sig=<signature-of-jar>
 ----
 
 4) Verify your jar upload
@@ -261,8 +261,8 @@ Get a new version of the jar, sign and upload it
 [source, bash]
 ----
 $ curl -o runtimelibs3.jar   -LO https://github.com/apache/lucene-solr/blob/master/solr/core/src/test-files/runtimecode/runtimelibs_v3.jar.bin?raw=true
-$ openssl dgst -sha1 -sign my_key.pem runtimelibs.jar | openssl enc -base64
-$ curl --data-binary @runtimelibs3.jar -X PUT  http://localhost:8983/api/cluster/files/mypkg/2.0/myplugins.jar?sig=ICkC%2BnGE%2BAqiANM0ajhVPNCQsbPbHLSWlIe5ETV5835e5HqndWrFHiV2R6nLVjDCxov/wLPo1uK0VzvAPIioUQ==
+$ openssl dgst -sha1 -sign my_key.pem runtimelibs.jar | openssl enc -base64 | sed 's/+/%2B/g' | tr -d \\n | sed
+$ curl --data-binary @runtimelibs3.jar -X PUT  http://localhost:8983/api/cluster/files/mypkg/2.0/myplugins.jar?sig=<signature>
 ----
 
 7) Verify it
