@@ -96,7 +96,7 @@ class MultiTermIntervalsSource extends IntervalsSource {
 
   @Override
   public void visit(String field, QueryVisitor visitor) {
-
+    visitor.visitLeaf(new IntervalQuery(field, this));
   }
 
   @Override
