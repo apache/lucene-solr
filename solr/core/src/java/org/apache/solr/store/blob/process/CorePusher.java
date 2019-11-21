@@ -98,6 +98,16 @@ public class CorePusher {
             // This can happen if another indexing batch comes in and acquires the push lock first and ends up pushing segments 
             // produced by this indexing batch.
             // This optimization saves us from creating somewhat expensive ServerSideMetadata.
+            // Note1! At this point we might not be the leader and shared store might have already received pushes from
+            //        new leader. It is still ok to declare success since our indexing batch was correctly pushed earlier
+            //        by another thread before the new leader could have pushed its batches.
+            // Note2! It is important to note that we are piggybacking on cached BlobCoreMetadata's generation number here.
+            //        A more accurate representation of this optimization would be to add a "lastGenerationPushed" property
+            //        to per core cache and update it to whatever generation gets pushed successfully and to -1 on each 
+            //        successful pull. But that is not necessary since local core will be on blobCoreMetadata's generation
+            //        number after pull and on push blobCoreMetadata get generation number from local core.
+            //        The reason it is important to call it out here is that BlobCoreMetadata' generation also gets
+            //        persisted to shared store which is not the requirement for this optimization.
             log.info(String.format("Nothing to push, pushLockTime=%s pushPullData=%s", lockAcquisitionTime, pushPullData.toString()));
             return;
           }
