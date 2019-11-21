@@ -19,7 +19,6 @@ package org.apache.solr.store.blob.process;
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
@@ -29,7 +28,6 @@ import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.store.blob.client.BlobCoreMetadata;
 import org.apache.solr.store.blob.client.BlobCoreMetadataBuilder;
@@ -384,24 +382,11 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
   }
 
   /**
-   * TODO - code part of unknown core pulls that will likely change in the Solr Cloud world!
-   * 
    * Creates a local (empty) core. This is required before we can fill this core with data pulled from Blob.
    */
   private void createCore(PullCoreInfo pci) throws Exception {
 
     log.info("About to create local core " + pci.getCoreName());
-
-    // The location here might be different from the location used in coreExists() above. This is ok, if the core
-    // did not exist and we're creating it, it's ok to create on another drive (and hopefully the HDD/SSD core placement
-    // code will go away with the move to Blob based Storage of cores).
-    //CoreMetadata.CoreLocation location = CoreMetadataProvider.get(coreContainer).getCoreLocation(coreName);
-
-    //create(String coreName, Path instancePath, Map<String, String> parameters, boolean newCollection) {
-    Map<String, String> params = new HashMap<>();
-    params.put(CoreDescriptor.CORE_CONFIGSET, "coreset");
-    params.put(CoreDescriptor.CORE_TRANSIENT, "false"); // transient not supported in cloud mode
-    params.put(CoreDescriptor.CORE_LOADONSTARTUP, "true"); // recommended true in cloud mode
 
     ZkController controller = coreContainer.getZkController();
     DocCollection collection = controller.getZkStateReader().
@@ -420,17 +405,10 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
           pci.getCollectionName() + " does not exist in ZK");
     }
 
-    params.put(CoreDescriptor.CORE_COLLECTION, pci.getCollectionName());
-    params.put(CoreDescriptor.CORE_NODE_NAME, replica.getName());
-    params.put(CoreDescriptor.CORE_SHARD, collection.getShardId(replica.getNodeName(), pci.getCoreName()));
+    Map<String, String> coreProperties = BlobStoreUtils.getSharedCoreProperties(controller.getZkStateReader(), collection, replica);
 
     coreContainer.create(pci.getCoreName(), coreContainer.getCoreRootDirectory().resolve(pci.getCoreName()),
-        params, false);
-
-    // The location here might be different from the location used in coreExists() above. This is ok, if the core
-    // did not exist and we're creating it, it's ok to create on another drive (and hopefully the HDD/SSD core placement
-    // code will go away with the move to Blob based Storage of cores).
-    //CoreMetadata.CoreLocation location = CoreMetadataProvider.get(coreContainer).getCoreLocation(coreName);
+        coreProperties, false);
 
     // TODO account for corrupt cores
   }

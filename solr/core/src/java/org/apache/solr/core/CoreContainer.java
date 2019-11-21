@@ -124,6 +124,7 @@ import org.apache.solr.security.HttpClientBuilderPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.security.SecurityPluginHolder;
+import org.apache.solr.store.blob.util.BlobStoreUtils;
 import org.apache.solr.store.shared.SharedStoreManager;
 import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.UpdateShardHandler;
@@ -840,56 +841,73 @@ public class CoreContainer {
    * This method goes over all the {@link Replica.Type#SHARED} replicas that belong to this node and ensures that
    * there are local core descriptors corresponding to all of them. If missing, it will create them.
    *
+   * If we encounter any unknown error during discovery we will log a warning and ignore the error i.e.
+   * we prefer loading core container over missing cores.   
+   * 
    * @param locallyDiscoveredCoreDescriptors list of the core descriptors that already exist locally
    * @return list of the core descriptors of {@link Replica.Type#SHARED} replicas that were missing locally
    */
   private List<CoreDescriptor> discoverAdditionalCoreDescriptorsForSharedReplicas(List<CoreDescriptor> locallyDiscoveredCoreDescriptors) {
     List<CoreDescriptor> additionalCoreDescriptors = new ArrayList<>();
-    HashSet<String> localCoreDescriptorSet = new HashSet<>(locallyDiscoveredCoreDescriptors.size());
-    for (CoreDescriptor cd : locallyDiscoveredCoreDescriptors) {
-      localCoreDescriptorSet.add(cd.getName());
-    }
-
-    ClusterState clusterState = this.getZkController().getClusterState();
-    for (DocCollection collection : clusterState.getCollectionsMap().values()) {
-      if (!collection.getSharedIndex()) {
-        // skip non-shared collections
-        continue;
+    try {
+      HashSet<String> localCoreDescriptorSet = new HashSet<>(locallyDiscoveredCoreDescriptors.size());
+      for (CoreDescriptor cd : locallyDiscoveredCoreDescriptors) {
+        localCoreDescriptorSet.add(cd.getName());
       }
 
-      // TODO: if shard activation(including post split) can guarantee core existence locally we can skip inactive shards
-      // go over collection's replicas belonging to this node
-      for (Replica replica : collection.getReplicas(getZkController().getNodeName())) { 
-        if (!localCoreDescriptorSet.contains(replica.getCoreName())) {
-          String coreName = replica.getCoreName();
-          // no corresponding core present locally
-          log.info(String.format("Found a replica with missing core, collection=%s replica=%s core=%s",
-              collection.getName(), replica.getName(), coreName));
+      ClusterState clusterState = this.getZkController().getClusterState();
+      for (DocCollection collection : clusterState.getCollectionsMap().values()) {
+        try {
+          if (!collection.getSharedIndex()) {
+            // skip non-shared collections
+            continue;
+          }
 
-          Map<String, String> params = new HashMap<>();
-          // TODO: Borrowed this setting from CorePullTask#createCore
-          //       This should come from Zk (ZkStateReader#readConfigName(String)?)
-          params.put(CoreDescriptor.CORE_CONFIGSET, "coreset");
-          params.put(CoreDescriptor.CORE_TRANSIENT, "false");
-          // it is important to set it to true so that at load time core is created
-          params.put(CoreDescriptor.CORE_LOADONSTARTUP, "true");
-          params.put(CoreDescriptor.CORE_COLLECTION, collection.getName());
-          params.put(CoreDescriptor.CORE_NODE_NAME, replica.getName());
-          params.put(CoreDescriptor.CORE_SHARD, collection.getShardId(replica.getNodeName(), coreName));
+          // TODO: if shard activation(including post split) can guarantee core existence locally we can skip inactive shards
+          // go over collection's replicas belonging to this node
+          List<Replica> nodeReplicas = collection.getReplicas(getZkController().getNodeName());
+          if (nodeReplicas != null) {
+            for (Replica replica : nodeReplicas) {
+              try {
+                if (!localCoreDescriptorSet.contains(replica.getCoreName())) {
+                  String coreName = replica.getCoreName();
+                  // no corresponding core descriptor present locally
+                  log.info(String.format("Found a replica with missing core descriptor, collection=%s replica=%s core=%s",
+                      collection.getName(), replica.getName(), coreName));
 
-          // create the missing core descriptor
-          CoreDescriptor cd = new CoreDescriptor(coreName,
-              getCoreRootDirectory().resolve(coreName),
-              params,
-              getContainerProperties(),
-              isZooKeeperAware());
-          // add to list of additional core descriptors
-          additionalCoreDescriptors.add(cd);
+                  Map<String, String> coreProperties = BlobStoreUtils.getSharedCoreProperties(getZkController().getZkStateReader(), collection, replica);
 
-          // also add to local core descriptor set, so if we encounter it again(ideally we should not) we might not recreate it
-          localCoreDescriptorSet.add(coreName);
+                  // create the missing core descriptor
+                  CoreDescriptor cd = new CoreDescriptor(coreName,
+                      getCoreRootDirectory().resolve(coreName),
+                      coreProperties,
+                      getContainerProperties(),
+                      isZooKeeperAware());
+                  // this will create the core.properties file on disk 
+                  coresLocator.create(this, cd);
+                  // add to list of additional core descriptors
+                  additionalCoreDescriptors.add(cd);
+
+                  // also add to local core descriptor set, so if we encounter it again(ideally we should not) we might not recreate it
+                  localCoreDescriptorSet.add(coreName);
+                }
+              } catch (Exception ex) {
+                log.warn(String.format("Failed to create missing core descriptor for a replica, collection=%s replica=%s core=%s",
+                    collection.getName(),
+                    replica != null ? replica.getName() : "",
+                    replica != null ? replica.getCoreName() : "")
+                    , ex);
+              }
+            }
+          }
+        } catch (Exception ex) {
+          log.warn(String.format("Failed to discover additional core descriptors for a shared collection from zookeeper, collection=%s",
+              collection != null ? collection.getName() : "")
+              , ex);
         }
       }
+    } catch (Exception ex) {
+      log.warn("Failed to discover additional core descriptors for shared collections from zookeeper.", ex);
     }
     return additionalCoreDescriptors;
   }
