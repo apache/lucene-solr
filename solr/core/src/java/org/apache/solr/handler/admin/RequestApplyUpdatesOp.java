@@ -100,11 +100,18 @@ class RequestApplyUpdatesOp implements CoreAdminHandler.CoreAdminOp {
       //       As of now we are only taking care of basic happy path. We still need to evaluate what will happen
       //       if a split is abandoned because of failure(e.g. long GC pause) and is re-tried?
       //       How to make sure our re-attempt wins even when the ghost of previous attempt resumes and intervenes?
+      //
+      // TODO: There is an assumption here that for SHARED replicas this code path is only called for shard splits.
+      //       If that is true, can we establish/assert that explicitly?
+      //       If that is not true, then we need to understand those other use cases and update following logic accordingly.
       if (!SharedShardMetadataController.METADATA_NODE_DEFAULT_VALUE.equals(shardVersionMetadata.getMetadataSuffix())) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "New sub shard has zk information that is not default");
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            String.format("New sub shard has zk information that is not default, collection=%s, shard=%s, core=%s",
+                collectionName, shardName, coreName));
       }
 
-      // sync local cache with zk's default information i.e. equivalent of no-op pull 
+      // sync local cache with zk's default information i.e. equivalent of no-op pull
+      // this syncing is necessary for the zk conditional update to succeed at the end of core push
       SharedCoreConcurrencyController concurrencyController = cc.getSharedStoreManager().getSharedCoreConcurrencyController();
       String sharedBlobName = Assign.buildSharedShardName(collectionName, shardName);
       concurrencyController.updateCoreVersionMetadata(collectionName, shardName, coreName,

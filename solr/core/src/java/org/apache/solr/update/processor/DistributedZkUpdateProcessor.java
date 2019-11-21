@@ -1125,7 +1125,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     }
 
     // this lock acquire/release logic is built on the assumption that one particular instance of this processor
-    // will solely be consumed by a single thread.
+    // will solely be consumed by a single thread. And all the documents of indexing batch will be processed by this one instance. 
     // Following pull logic should only run once before the first document of indexing batch(add/delete) is processed by this processor
     if (corePullLock != null) {
       // we already have a lock i.e. we have already read from the shared store (if needed)
@@ -1136,90 +1136,84 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     SharedCoreConcurrencyController concurrencyController = coreContainer.getSharedStoreManager().getSharedCoreConcurrencyController();
     concurrencyController.recordState(collectionName, shardName, coreName, SharedCoreStage.IndexingBatchReceived);
     corePullLock = concurrencyController.getCorePullLock(collectionName, shardName, coreName);
-    // acquire lock for the whole duration of update
-    // it will be release in close method
-    corePullLock.readLock().lock();
     // from this point on wards we should always exit this method with read lock (no matter failure or what)
-
-    SharedCoreVersionMetadata coreVersionMetadata = concurrencyController.getCoreVersionMetadata(collectionName, shardName, coreName);
-    /**
-     * we only need to sync if there is no soft guarantee of being in sync.
-     * if there is one we will rely on that, and if we turned out to be wrong indexing will fail at push time
-     * and will remove this guarantee in {@link CorePusher#pushCoreToBlob(PushPullData)}
-     */
-    if (!coreVersionMetadata.isSoftGuaranteeOfEquality()) {
-      SharedShardMetadataController metadataController = coreContainer.getSharedStoreManager().getSharedShardMetadataController();
-      SharedShardVersionMetadata shardVersionMetadata = metadataController.readMetadataValue(collectionName, shardName);
-      if (!concurrencyController.areVersionsEqual(coreVersionMetadata, shardVersionMetadata)) {
-        // we need to pull before indexing therefore we need to upgrade to write lock
-        // we have to release read lock before we can acquire write lock
-        corePullLock.readLock().unlock();
-        boolean reacquireReadLock = true;
-        try {
-          // There is a likelihood that many indexing requests came at once and realized we are out of sync.
-          // They all would try to acquire write lock. One of them makes progress to pull from shared store.
-          // After that regular indexing will see soft guarantee of equality and moves straight to indexing
-          // under read lock. Now it is possible that new indexing keeps coming in and read lock is never free.
-          // In that case the poor guys that came in earlier and wanted to pull will still be struggling(starving) to
-          // acquire write lock. Since we know that write lock is only needed by one to do the work, we will
-          // try time boxed acquisition and in case of failed acquisition we will see if some one else has already completed the pull.
-          // We will make few attempts before we bail out. Ideally bail out scenario should never happen.
-          // If it does then either we are too slow in pulling and can tune following parameters or something else is wrong.
-          int attempt = 1;
-          while (true) {
-            try {
-              // try acquiring write lock
-              if (corePullLock.writeLock().tryLock(SharedCoreConcurrencyController.SECONDS_TO_WAIT_INDEXING_PULL_WRITE_LOCK, TimeUnit.SECONDS)) {
-                try {
-                  // in between upgrading locks things might have updated, should reestablish if pull is still needed
-                  coreVersionMetadata = concurrencyController.getCoreVersionMetadata(collectionName, shardName, coreName);
-                  if (!coreVersionMetadata.isSoftGuaranteeOfEquality()) {
-                    shardVersionMetadata = metadataController.readMetadataValue(collectionName, shardName);
-                    if (!concurrencyController.areVersionsEqual(coreVersionMetadata, shardVersionMetadata)) {
-                      BlobStoreUtils.syncLocalCoreWithSharedStore(collectionName, coreName, shardName, coreContainer, shardVersionMetadata, /* isLeaderSyncing */true);
-                    }
-                  }
-                  // reacquire read lock for the remainder of indexing before releasing write lock that was acquired for pull part
-                  corePullLock.readLock().lock();
-                  reacquireReadLock = false;
-                } finally {
-                  corePullLock.writeLock().unlock();
-                }
-                // write lock acquisition was successful and we are in sync with shared store
-                break;
-              } else {
-                // we could not acquire write lock but see if some other thread has already done the pulling
-                coreVersionMetadata = concurrencyController.getCoreVersionMetadata(collectionName, shardName, coreName);
-                if (coreVersionMetadata.isSoftGuaranteeOfEquality()) {
-                  log.info(String.format("Indexing thread waited to acquire to write lock and could not. " +
-                          "But someone else has done the pulling so we are good. attempt=%s collection=%s shard=%s core=%s",
-                      attempt, collectionName, shardName, coreName));
-                  break;
-                }
-                // no one else has pulled yet either, lets make another attempt ourselves
-                attempt++;
-                if (attempt > SharedCoreConcurrencyController.MAX_ATTEMPTS_INDEXING_PULL_WRITE_LOCK) {
-                  throw new SolrException(ErrorCode.SERVER_ERROR, String.format("Indexing thread failed to acquire write lock for pull in %s seconds. " +
-                          "And no one else either has done the pull during that time. collection=%s shard=%s core=%s",
-                      Integer.toString(SharedCoreConcurrencyController.SECONDS_TO_WAIT_INDEXING_PULL_WRITE_LOCK * SharedCoreConcurrencyController.MAX_ATTEMPTS_INDEXING_PULL_WRITE_LOCK),
-                      collectionName, shardName, coreName));
-                }
-              }
-            } catch (InterruptedException ie) {
-              Thread.currentThread().interrupt();
-              throw new SolrException(ErrorCode.SERVER_ERROR, String.format("Indexing thread interrupted while trying to acquire pull write lock." +
-                  " collection=%s shard=%s core=%s", collectionName, shardName, coreName), ie);
-            }
-          }
-        } finally {
-          // we should always leave with read lock acquired(failure or success), since it is the job of close method to release it
-          if (reacquireReadLock) {
-            corePullLock.readLock().lock();
-          }
+    try {
+      SharedCoreVersionMetadata coreVersionMetadata = concurrencyController.getCoreVersionMetadata(collectionName, shardName, coreName);
+      /**
+       * we only need to sync if there is no soft guarantee of being in sync.
+       * if there is one we will rely on that, and if we turned out to be wrong indexing will fail at push time
+       * and will remove this guarantee in {@link CorePusher#pushCoreToBlob(PushPullData)}
+       */
+      if (!coreVersionMetadata.isSoftGuaranteeOfEquality()) {
+        SharedShardMetadataController metadataController = coreContainer.getSharedStoreManager().getSharedShardMetadataController();
+        SharedShardVersionMetadata shardVersionMetadata = metadataController.readMetadataValue(collectionName, shardName);
+        if (!concurrencyController.areVersionsEqual(coreVersionMetadata, shardVersionMetadata)) {
+          acquireWriteLockAndPull(collectionName, shardName, coreName, coreContainer);
         }
       }
+    } finally {
+      // acquire lock for the whole duration of update
+      // we should always leave with read lock acquired(failure or success), since it is the job of close method to release it
+      corePullLock.readLock().lock();
+      concurrencyController.recordState(collectionName, shardName, coreName, SharedCoreStage.LocalIndexingStarted);
     }
-    concurrencyController.recordState(collectionName, shardName, coreName, SharedCoreStage.LocalIndexingStarted);
+  }
+
+  private void acquireWriteLockAndPull(String collectionName, String shardName, String coreName, CoreContainer coreContainer) {
+    // There is a likelihood that many indexing requests came at once and realized we are out of sync.
+    // They all would try to acquire write lock. One of them makes progress to pull from shared store.
+    // After that regular indexing will see soft guarantee of equality and moves straight to indexing
+    // under read lock. Now it is possible that new indexing keeps coming in and read lock is never free.
+    // In that case the poor guys that came in earlier and wanted to pull will still be struggling(starving) to
+    // acquire write lock. Since we know that write lock is only needed by one to do the work, we will
+    // try time boxed acquisition and in case of failed acquisition we will see if some one else has already completed the pull.
+    // We will make few attempts before we bail out. Ideally bail out scenario should never happen.
+    // If it does then either we are too slow in pulling and can tune following parameters or something else is wrong.
+    int attempt = 1;
+    while (true) {
+      SharedCoreConcurrencyController concurrencyController = coreContainer.getSharedStoreManager().getSharedCoreConcurrencyController();
+      try {
+        // try acquiring write lock
+        if (corePullLock.writeLock().tryLock(SharedCoreConcurrencyController.SECONDS_TO_WAIT_INDEXING_PULL_WRITE_LOCK, TimeUnit.SECONDS)) {
+          try {
+            // while acquiring write lock things might have updated, should reestablish if pull is still needed
+            SharedCoreVersionMetadata coreVersionMetadata = concurrencyController.getCoreVersionMetadata(collectionName, shardName, coreName);
+            if (!coreVersionMetadata.isSoftGuaranteeOfEquality()) {
+              SharedShardMetadataController metadataController = coreContainer.getSharedStoreManager().getSharedShardMetadataController();
+              SharedShardVersionMetadata shardVersionMetadata = metadataController.readMetadataValue(collectionName, shardName);
+              if (!concurrencyController.areVersionsEqual(coreVersionMetadata, shardVersionMetadata)) {
+                BlobStoreUtils.syncLocalCoreWithSharedStore(collectionName, coreName, shardName, coreContainer, shardVersionMetadata, /* isLeaderSyncing */true);
+              }
+            }
+          } finally {
+            corePullLock.writeLock().unlock();
+          }
+          // write lock acquisition was successful and we are in sync with shared store
+          break;
+        } else {
+          // we could not acquire write lock but see if some other thread has already done the pulling
+          SharedCoreVersionMetadata coreVersionMetadata = concurrencyController.getCoreVersionMetadata(collectionName, shardName, coreName);
+          if (coreVersionMetadata.isSoftGuaranteeOfEquality()) {
+            log.info(String.format("Indexing thread waited to acquire to write lock and could not. " +
+                    "But someone else has done the pulling so we are good. attempt=%s collection=%s shard=%s core=%s",
+                attempt, collectionName, shardName, coreName));
+            break;
+          }
+          // no one else has pulled yet either, lets make another attempt ourselves
+          attempt++;
+          if (attempt > SharedCoreConcurrencyController.MAX_ATTEMPTS_INDEXING_PULL_WRITE_LOCK) {
+            throw new SolrException(ErrorCode.SERVER_ERROR, String.format("Indexing thread failed to acquire write lock for pull in %s seconds. " +
+                    "And no one else either has done the pull during that time. collection=%s shard=%s core=%s",
+                Integer.toString(SharedCoreConcurrencyController.SECONDS_TO_WAIT_INDEXING_PULL_WRITE_LOCK * SharedCoreConcurrencyController.MAX_ATTEMPTS_INDEXING_PULL_WRITE_LOCK),
+                collectionName, shardName, coreName));
+          }
+        }
+      } catch (InterruptedException ie) {
+        Thread.currentThread().interrupt();
+        throw new SolrException(ErrorCode.SERVER_ERROR, String.format("Indexing thread interrupted while trying to acquire pull write lock." +
+            " collection=%s shard=%s core=%s", collectionName, shardName, coreName), ie);
+      }
+    }
   }
 
   // TODO: optionally fail if n replicas are not reached...
