@@ -137,6 +137,12 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     if (coll != null) {
       // check readOnly property in coll state
       readOnlyCollection = coll.isReadOnly();
+      if (coll.getSharedIndex() && replicaType != Replica.Type.SHARED) {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+            String.format("Collections backed by shared store can only have replicas of type SHARED, " +
+                    "collection=%s, shard=%s core=%s replicaType=%s", 
+                collection, cloudDesc.getShardId(), req.getCore().getName(), replicaType.name()));
+      }
     }
     this.sharedCoreTracker = sharedCoreTracker;
   }

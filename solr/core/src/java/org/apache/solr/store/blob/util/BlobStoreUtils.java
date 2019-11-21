@@ -1,13 +1,19 @@
 package org.apache.solr.store.blob.util;
 import java.lang.invoke.MethodHandles;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
+import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.store.blob.client.BlobCoreMetadata;
 import org.apache.solr.store.blob.client.BlobCoreMetadataBuilder;
 import org.apache.solr.store.blob.client.CoreStorageClient;
@@ -21,6 +27,7 @@ import org.apache.solr.store.shared.SharedCoreConcurrencyController;
 import org.apache.solr.store.shared.SharedCoreConcurrencyController.SharedCoreStage;
 import org.apache.solr.store.shared.metadata.SharedShardMetadataController;
 import org.apache.solr.store.shared.metadata.SharedShardMetadataController.SharedShardVersionMetadata;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -133,5 +140,24 @@ public class BlobStoreUtils {
 
   }
 
+  /**
+   * Returns the list of core properties that are needed to create a missing core corresponding
+   * to provided {@code replica} of the {@code collection}. 
+   */
+  public static Map<String, String> getSharedCoreProperties(ZkStateReader zkStateReader, DocCollection collection, Replica replica) throws KeeperException {
+    // "numShards" is another property that is found in core descriptors. But it is only set on the cores created at 
+    // collection creation time. It is not part of cores created by addition of replicas/shards or shard splits.
+    // Once set, it is not even kept in sync with latest number of shards. That initial value does not seem to have any 
+    // purpose beyond collection creation nor does its persistence as core property. Therefore we do not put it in any 
+    // of missing cores we create.
 
+    Map<String, String> params = new HashMap<>();
+    params.put(CoreDescriptor.CORE_COLLECTION, collection.getName());
+    params.put(CoreDescriptor.CORE_NODE_NAME, replica.getName());
+    params.put(CoreDescriptor.CORE_SHARD, collection.getShardId(replica.getNodeName(), replica.getCoreName()));
+    params.put(CloudDescriptor.REPLICA_TYPE, Replica.Type.SHARED.name());
+    String configName = zkStateReader.readConfigName(collection.getName());
+    params.put(CollectionAdminParams.COLL_CONF, configName);
+    return params;
+  }
 }
