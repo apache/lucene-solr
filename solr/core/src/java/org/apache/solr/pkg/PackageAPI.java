@@ -269,8 +269,18 @@ public class PackageAPI {
             log.error("Error deserializing packages.json", e);
             packages = new Packages();
           }
-          packages.packages.computeIfAbsent(add.pkg, Utils.NEW_ARRAYLIST_FUN).add(new PkgVersion(add));
-          packages.znodeVersion = stat.getVersion() ;
+          List list = packages.packages.computeIfAbsent(add.pkg, Utils.NEW_ARRAYLIST_FUN);
+          for (Object o : list) {
+            if (o instanceof PkgVersion) {
+              PkgVersion version = (PkgVersion) o;
+              if (Objects.equals(version.version, add.version)) {
+                payload.addError("Version '" + add.version + "' exists already");
+                return null;
+              }
+            }
+          }
+          list.add(new PkgVersion(add));
+          packages.znodeVersion = stat.getVersion() + 1;
           finalState[0] = packages;
           return Utils.toJSON(packages);
         });

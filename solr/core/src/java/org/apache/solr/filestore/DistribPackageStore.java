@@ -459,8 +459,8 @@ public class DistribPackageStore implements PackageStore {
       if (fetch(path, null)) {
         file = getRealpath(path).toFile();
       }
-      if (!file.exists()) return FileType.NOFILE;
     }
+    if (!file.exists()) return FileType.NOFILE;
     if (file.isDirectory()) return FileType.DIRECTORY;
     return isMetaDataFile(file.getName()) ? FileType.METADATA : FileType.FILE;
   }
