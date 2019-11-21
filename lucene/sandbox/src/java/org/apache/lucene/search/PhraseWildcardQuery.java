@@ -64,6 +64,7 @@ import org.apache.lucene.util.mutable.MutableValueBool;
  * even all segments. And finally it controls the total number of expansions.
  * <p>
  * Immutable.
+ * @lucene.experimental
  */
 public class PhraseWildcardQuery extends Query {
 
