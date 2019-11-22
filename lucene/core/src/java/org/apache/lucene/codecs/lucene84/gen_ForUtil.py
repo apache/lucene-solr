@@ -42,7 +42,6 @@ HEADER = """// This file has been automatically generated, DO NOT EDIT
 package org.apache.lucene.codecs.lucene84;
 
 import java.io.IOException;
-import java.util.Arrays;
 
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
@@ -260,15 +259,18 @@ final class ForUtil {
     }
 
     final int numLongsPerShift = bitsPerValue * 2;
-    Arrays.fill(tmp, 0L);
     int idx = 0;
-    for (int shift = nextPrimitive - bitsPerValue; shift >= 0; shift -= bitsPerValue) {
+    int shift = nextPrimitive - bitsPerValue;
+    for (int i = 0; i < numLongsPerShift; ++i) {
+      tmp[i] = longs[idx++] << shift;
+    }
+    for (shift = shift - bitsPerValue; shift >= 0; shift -= bitsPerValue) {
       for (int i = 0; i < numLongsPerShift; ++i) {
         tmp[i] |= longs[idx++] << shift;
       }
     }
 
-    final int remainingBitsPerLong = nextPrimitive % bitsPerValue;
+    final int remainingBitsPerLong = shift + bitsPerValue;
     final long maskRemainingBitsPerLong;
     if (nextPrimitive == 8) {
       maskRemainingBitsPerLong = mask8(remainingBitsPerLong);
@@ -277,6 +279,7 @@ final class ForUtil {
     } else {
       maskRemainingBitsPerLong = mask32(remainingBitsPerLong);
     }
+
     int tmpIdx = 0;
     int remainingBitsPerValue = bitsPerValue;
     while (idx < numLongs) {
