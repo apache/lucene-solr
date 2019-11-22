@@ -91,6 +91,18 @@ public class AuditLoggerPluginTest extends SolrTestCaseJ4 {
       .setDate(SAMPLE_DATE)
       .setCollections(Collections.singletonList("streamcoll"))
       .setResource("/stream");
+  protected static final AuditEvent EVENT_HEALTH_API = new AuditEvent(AuditEvent.EventType.COMPLETED)
+      .setUsername("Jan")
+      .setHttpMethod("GET")
+      .setMessage("Healthy")
+      .setDate(SAMPLE_DATE)
+      .setResource("/api/node/health");
+  protected static final AuditEvent EVENT_HEALTH_V2 = new AuditEvent(AuditEvent.EventType.COMPLETED)
+      .setUsername("Jan")
+      .setHttpMethod("GET")
+      .setMessage("Healthy")
+      .setDate(SAMPLE_DATE)
+      .setResource("/____v2/node/health");
 
   private MockAuditLoggerPlugin plugin;
   private HashMap<String, Object> config;
@@ -134,6 +146,7 @@ public class AuditLoggerPluginTest extends SolrTestCaseJ4 {
     assertFalse(plugin.shouldLog(EVENT_ANONYMOUS.getEventType()));    
     assertFalse(plugin.shouldLog(EVENT_AUTHENTICATED.getEventType()));    
     assertFalse(plugin.shouldLog(EVENT_AUTHORIZED.getEventType()));
+    assertFalse(plugin.shouldLog(EVENT_AUTHORIZED.getEventType()));
   }
 
   @Test(expected = SolrException.class)
@@ -167,7 +180,14 @@ public class AuditLoggerPluginTest extends SolrTestCaseJ4 {
     assertEquals(1, plugin.typeCounts.getOrDefault("REJECTED", new AtomicInteger()).get());
     assertEquals(2, plugin.events.size());
   }
-  
+
+  @Test
+  public void v2ApiPath() {
+    assertEquals("/api/node/health", EVENT_HEALTH_API.getResource());
+    // /____v2/ is mapped to /api/
+    assertEquals("/api/node/health", EVENT_HEALTH_V2.getResource());
+  }
+
   @Test
   public void jsonEventFormatter() {
     assertEquals("{\"message\":\"Anonymous\",\"level\":\"INFO\",\"date\":" + SAMPLE_DATE.getTime() + ",\"solrParams\":{},\"solrPort\":0,\"resource\":\"/collection1\",\"httpMethod\":\"GET\",\"eventType\":\"ANONYMOUS\",\"status\":-1,\"qtime\":-1.0}", 
