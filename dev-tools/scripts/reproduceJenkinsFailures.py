@@ -229,7 +229,7 @@ def printAndMoveReports(testIters, newSubDir, location):
               if errorFailureMatch is not None:
                 failures[testcase] += 1
                 break
-          # have to play nice with 'ant clean' ... nocommit: test this
+          # have to play nice with 'ant clean'...
           newDirPath = os.path.join('repro-reports', newSubDir, dir)
           os.makedirs(newDirPath, exist_ok=True)
           os.rename(filePath, os.path.join(newDirPath, file))
