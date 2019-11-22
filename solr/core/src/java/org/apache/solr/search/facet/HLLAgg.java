@@ -17,18 +17,17 @@
 package org.apache.solr.search.facet;
 
 import java.io.IOException;
-import java.util.function.IntFunction;
 
-import org.apache.lucene.index.SortedNumericDocValues;
-import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.solr.util.hll.HLL;
-import org.apache.solr.util.hll.HLLType;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
+import org.apache.lucene.index.SortedNumericDocValues;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.solr.common.util.Hash;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.util.hll.HLL;
+import org.apache.solr.util.hll.HLLType;
 
 public class HLLAgg extends StrAggValueSource {
   public static Integer NO_VALUES = 0;
@@ -120,13 +119,11 @@ public class HLLAgg extends StrAggValueSource {
   // TODO: hybrid model for non-distrib numbers?
   // todo - better efficiency for sorting?
 
-  abstract class BaseNumericAcc extends SlotAcc {
-    SchemaField sf;
+  abstract class BaseNumericAcc extends DocValuesAcc {
     HLL[] sets;
 
     public BaseNumericAcc(FacetContext fcontext, String field, int numSlots) throws IOException {
-      super(fcontext);
-      sf = fcontext.searcher.getSchema().getField(field);
+      super(fcontext, fcontext.qcontext.searcher().getSchema().getField(field));
       sets = new HLL[numSlots];
     }
 
@@ -141,24 +138,13 @@ public class HLLAgg extends StrAggValueSource {
     }
 
     @Override
-    public void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
-      int valuesDocID = docIdSetIterator().docID();
-      if (valuesDocID < doc) {
-        valuesDocID = docIdSetIterator().advance(doc);
-      }
-      if (valuesDocID > doc) {
-        return;
-      }
-      assert valuesDocID == doc;
-
+    protected void collectValues(int doc, int slot) throws IOException {
       HLL hll = sets[slot];
       if (hll == null) {
         hll = sets[slot] = factory.getHLL();
       }
       collectValues(doc, hll);
     }
-
-    protected abstract DocIdSetIterator docIdSetIterator();
 
     protected abstract void collectValues(int doc, HLL hll) throws IOException;
 
@@ -245,6 +231,5 @@ public class HLLAgg extends StrAggValueSource {
       }
     }
   }
-
 
 }

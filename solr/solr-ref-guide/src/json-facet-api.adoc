@@ -570,6 +570,7 @@ Unlike all the facets discussed so far, Aggregation functions (also called *face
 |min |`min(salary)` |minimum value
 |max |`max(mul(price,popularity))` |maximum value
 |missing |`missing(author)` |number of documents which do not have value for given field or function
+|countvals |`countvals(author)` |number of values for a given field or function
 |unique |`unique(author)` |number of unique values of the given field. Beyond 100 values it yields not exact estimate
 |uniqueBlock |`uniqueBlock(\_root_)` |same as above with smaller footprint strictly for <<json-faceting-domain-changes.adoc#block-join-domain-changes,counting the number of Block Join blocks>>. The given field must be unique across blocks, and only singlevalued string fields are supported, docValues are recommended.
 |hll |`hll(author)` |distributed cardinality estimate via hyper-log-log algorithm

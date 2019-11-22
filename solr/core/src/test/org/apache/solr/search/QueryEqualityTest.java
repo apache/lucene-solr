@@ -1194,6 +1194,9 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
     assertFuncEquals("agg_missing(foo_i)", "agg_missing(foo_i)");
     assertFuncEquals("agg(missing(foo_i))", "agg(missing(foo_i))");
     assertFuncEquals("agg_missing(field(foo_i))", "agg_missing(field(foo_i))");
+    assertFuncEquals("agg_countvals(foo_i)", "agg_countvals(foo_i)");
+    assertFuncEquals("agg(countvals(foo_i))", "agg(countvals(foo_i))");
+    assertFuncEquals("agg_countvals(field(foo_i))", "agg_countvals(field(foo_i))");
     // assertFuncEquals("agg_multistat(foo_i)", "agg_multistat(foo_i)");
   }
 
