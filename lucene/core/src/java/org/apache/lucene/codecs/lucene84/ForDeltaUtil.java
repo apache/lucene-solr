@@ -38,7 +38,7 @@ public class ForDeltaUtil {
   private static void prefixSumOfOnes(long[] arr, long base) {
     System.arraycopy(IDENTITY_PLUS_ONE, 0, arr, 0, ForUtil.BLOCK_SIZE);
     // This loop gets auto-vectorized
-    for (int i = 0; i < arr.length; ++i) {
+    for (int i = 0; i < ForUtil.BLOCK_SIZE; ++i) {
       arr[i] += base;
     }
   }
