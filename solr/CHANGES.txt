@@ -37,6 +37,8 @@ Bug Fixes
 
 * SOLR-13941: Tests configure Jetty differently than when running via start.jar (janhoy, Uwe Schindler)
 
+* SOLR-13905: Make findRequestType in AuditEvent more robust (janhoy)
+
 ==================  8.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
