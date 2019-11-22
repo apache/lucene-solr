@@ -16,10 +16,6 @@
  */
 package org.apache.solr.handler.dataimport;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
-import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
-
 import org.apache.solr.common.SolrException;
 import org.apache.solr.util.CryptoKeys;
 import org.slf4j.Logger;
@@ -27,7 +23,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
-
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -39,6 +34,31 @@ import java.sql.*;
 import java.util.*;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.math.BigInteger;
+import java.math.BigDecimal;
+import java.sql.Statement;
+import java.sql.ResultSet;
+import org.slf4j.LoggerFactory;
+import java.util.ArrayList;
+import java.util.List;
+import java.sql.ResultSetMetaData;
+import javax.naming.NamingException;
+import javax.naming.InitialContext;
+import java.util.concurrent.TimeUnit;
+import java.sql.SQLException;
+import java.sql.Driver;
+import java.sql.DriverManager;
+import java.util.Properties;
+import java.util.HashMap;
+import java.sql.Connection;
+import java.util.concurrent.Callable;
+import org.slf4j.Logger;
+import java.util.Map;
+import java.util.Iterator;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
+import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
 
 /**
  * <p> A DataSource implementation which can fetch data using JDBC. </p> <p> Refer to <a
@@ -267,11 +287,31 @@ public class JdbcDataSource extends
   }
 
   private void resolveVariables(Context ctx, Properties initProps) {
-    for (Map.Entry<Object, Object> entry : initProps.entrySet()) {
-      if (entry.getValue() != null) {
-        entry.setValue(ctx.replaceTokens((String) entry.getValue()));
+      final Map<Object, Object> encryptedMap = new HashMap<Object, Object>();
+      for (final Map.Entry<Object, Object> entry : initProps.entrySet()) {
+          if (entry.getValue() != null) {
+              final String value = ctx.replaceTokens((String)entry.getValue());
+              if (entry.getKey().toString().endsWith(".encrypted")) {
+                  String cipherKey = System.getProperty("cipherkey");
+                  if (cipherKey == null || cipherKey.length() == 0) {
+                      cipherKey = System.getenv("CIPHER_KEY");
+                  }
+                  if (cipherKey == null || cipherKey.length() == 0) {
+                      throw new RuntimeException("Cipher key not found");
+                  }
+                  final AESCipher aesCipher = new AESCipher(cipherKey);
+                  final String key = entry.getKey().toString();
+                  encryptedMap.put(key.substring(0, key.lastIndexOf(".")), aesCipher.decrypt(value));
+              }
+              else {
+                  entry.setValue(value);
+              }
+          }
       }
-    }
+      for (final Object key2 : encryptedMap.keySet()) {
+          initProps.remove(key2 + ".encrypted");
+      }
+      initProps.putAll(encryptedMap);
   }
 
   @Override
