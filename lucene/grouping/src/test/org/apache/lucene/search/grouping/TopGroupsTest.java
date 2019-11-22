@@ -97,7 +97,7 @@ public class TopGroupsTest extends LuceneTestCase {
     final TopGroups<String> topGroupsShard2 = createTopGroups(groupResults(emptyBlue, emptyRed), Float.NaN);
 
     // merging the groups must produce a TopGroups object with maxScore equals to maxScoreShard1
-    final TopGroups mergedGroups = TopGroups.merge(shardResponses(topGroupsShard1, topGroupsShard2), GROUP_SORT, DOC_SORT, DOC_OFFSET, TOP_DOC_N, MERGE_MODE);
+    final TopGroups<String> mergedGroups = TopGroups.merge(shardResponses(topGroupsShard1, topGroupsShard2), GROUP_SORT, DOC_SORT, DOC_OFFSET, TOP_DOC_N, MERGE_MODE);
     assertNotNull("Merged groups cannot be null", mergedGroups);
     assertEquals(maxScoreShard1, mergedGroups.maxScore, 0.0);
   }
@@ -115,7 +115,7 @@ public class TopGroupsTest extends LuceneTestCase {
     final TopGroups<String> topGroupsShard2 = createTopGroups(groupResults(blueDragonflyGroupDocs, redSquirrelGroupDocs), blueDragonflyGroupDocs.maxScore);
 
     // merging the groups should produce a group that has blueWhaleGroupDocs.max as a maxScore
-    final TopGroups mergedGroups = TopGroups.merge(shardResponses(topGroupsShard1, topGroupsShard2), GROUP_SORT, DOC_SORT, DOC_OFFSET, TOP_DOC_N, MERGE_MODE);
+    final TopGroups<String> mergedGroups = TopGroups.merge(shardResponses(topGroupsShard1, topGroupsShard2), GROUP_SORT, DOC_SORT, DOC_OFFSET, TOP_DOC_N, MERGE_MODE);
     assertNotNull("Merged groups cannot be null", mergedGroups);
     assertEquals(blueWhaleGroupDocs.maxScore, mergedGroups.maxScore, 0.0);
     // also the first group should be blue and contain the biggest blue animal (the whale)
@@ -129,7 +129,7 @@ public class TopGroupsTest extends LuceneTestCase {
   // takes a pair of groups and returns them in an array
   private static GroupDocs<String>[] groupResults(GroupDocs<String> group1, GroupDocs<String> group2){
     @SuppressWarnings("unchecked")
-     GroupDocs<String>[] groupDocs = (GroupDocs<String>[])new GroupDocs[2];
+     GroupDocs<String>[] groupDocs = (GroupDocs<String>[])new GroupDocs<?>[2];
      groupDocs[0] = group1;
      groupDocs[1] = group2;
      return groupDocs;
