@@ -227,7 +227,7 @@ public class AuditLoggerIntegrationTest extends SolrCloudAuthTestCase {
       IOUtils.toString(new URL(baseUrl.replace("/solr", "") + "/api/node/foo"), StandardCharsets.UTF_8);
     });
     final List<AuditEvent> events = testHarness.get().receiver.waitForAuditEvents(1);
-    assertAuditEvent(events.get(0), ERROR, "/____v2/node/foo", ADMIN, null, 404);
+    assertAuditEvent(events.get(0), ERROR, "/api/node/foo", ADMIN, null, 404);
   }
 
   @Test
