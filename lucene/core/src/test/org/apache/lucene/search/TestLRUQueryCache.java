@@ -33,6 +33,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
@@ -2150,6 +2151,65 @@ public class TestLRUQueryCache extends LuceneTestCase {
     reader.close();
     dir.close();
     service.shutdown();
+  }
+
+  public void testAsyncCachingHitsClosedReader() throws Exception {
+    Directory dir = newDirectory();
+    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+    doc.add(new StringField("color", "red", Store.NO));
+    w.addDocument(doc);
+    IndexReader reader = w.getReader();
+    w.close();
+
+    // Because our index has a single document, it also has a single segment. In that
+    // case, IndexSearcher will use the current thread for searching, so the only thing
+    // that runs via the executor is the caching of queries.
+    final CountDownLatch[] awaitCaching = new CountDownLatch[1];
+    awaitCaching[0] = new CountDownLatch(1);
+    final CountDownLatch[] cachingRan = new CountDownLatch[1];
+    cachingRan[0] = new CountDownLatch(1);
+    final AtomicBoolean success = new AtomicBoolean(false);
+    Executor executor = runnable -> {
+      new Thread(() -> {
+        try {
+          awaitCaching[0].await();
+          runnable.run();
+          success.set(true);
+        } catch (InterruptedException e) {
+          Thread.currentThread().interrupt();
+        } finally {
+          cachingRan[0].countDown();
+        }
+      }).start();
+    };
+
+    final IndexSearcher searcher = new IndexSearcher(reader, executor);
+    final LRUQueryCache queryCache = new LRUQueryCache(2, 100000, context -> true);
+    searcher.setQueryCache(queryCache);
+    searcher.setQueryCachingPolicy(ALWAYS_CACHE);
+
+    searcher.search(new ConstantScoreQuery(new TermQuery(new Term("color", "red"))), 1);
+    assertEquals(Collections.emptyList(), queryCache.cachedQueries());
+    awaitCaching[0].countDown();
+    cachingRan[0].await();
+    assertTrue(success.get());
+    assertEquals(Collections.singletonList(new TermQuery(new Term("color", "red"))), queryCache.cachedQueries());
+
+    awaitCaching[0] = new CountDownLatch(1);
+    cachingRan[0] = new CountDownLatch(1);
+    success.set(false);
+    queryCache.clear();
+
+    searcher.search(new ConstantScoreQuery(new TermQuery(new Term("color", "red"))), 1);
+    assertEquals(Collections.emptyList(), queryCache.cachedQueries());
+    reader.close();
+    awaitCaching[0].countDown();
+    cachingRan[0].await();
+    assertTrue(success.get());
+    assertEquals(Collections.emptyList(), queryCache.cachedQueries());
+
+    dir.close();
   }
 
   public static class BlockedMockExecutor implements ExecutorService {
