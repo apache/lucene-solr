@@ -56,6 +56,8 @@ New Features
 
 * SOLR-13911: Add 'missing' aggregation in JSON FacetModule (hossman, Munendra S N)
 
+* SOLR-13912: Add 'countvals' aggregation in JSON FacetModule (hossman, Munendra S N)
+
 Improvements
 ---------------------
 
