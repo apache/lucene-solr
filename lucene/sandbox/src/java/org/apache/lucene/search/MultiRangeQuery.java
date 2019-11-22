@@ -278,7 +278,7 @@ public abstract class MultiRangeQuery extends Query {
             public long cost() {
               if (cost == -1) {
                 // Computing the cost may be expensive, so only do it if necessary
-                cost = values.estimatePointCount(visitor) * rangeClauses.size();
+                cost = values.estimateDocCount(visitor) * rangeClauses.size();
                 assert cost >= 0;
               }
               return cost;

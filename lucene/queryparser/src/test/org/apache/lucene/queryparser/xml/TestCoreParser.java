@@ -16,9 +16,6 @@
  */
 package org.apache.lucene.queryparser.xml;
 
-import java.io.IOException;
-import java.io.InputStream;
-
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenFilter;
@@ -34,6 +31,9 @@ import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.AfterClass;
 import org.xml.sax.SAXException;
+
+import java.io.IOException;
+import java.io.InputStream;
 
 public class TestCoreParser extends LuceneTestCase {
 

@@ -58,8 +58,9 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.SolrCLI;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
@@ -96,6 +97,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
   @Test
   //commented 9-Aug-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
   // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
+  @LogLevel("org.apache.solr.security=DEBUG")
   public void testBasicAuth() throws Exception {
     boolean isUseV2Api = random().nextBoolean();
     String authcPrefix = "/admin/authentication";
@@ -138,9 +140,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
 
       final SolrRequest genericReq;
       if (isUseV2Api) {
-        genericReq = new V2Request.Builder("/cluster/security/authentication")
-            .withPayload(command)
-            .withMethod(SolrRequest.METHOD.POST).build();
+        genericReq = new V2Request.Builder("/cluster/security/authentication").withMethod(SolrRequest.METHOD.POST).build();
       } else {
         genericReq = new GenericSolrRequest(SolrRequest.METHOD.POST, authcPrefix, new ModifiableSolrParams());
         ((GenericSolrRequest)genericReq).setContentWriter(new StringPayloadContentWriter(command, CommonParams.JSON_MIME));
@@ -234,7 +234,7 @@ public class BasicAuthIntegrationTest extends SolrCloudAuthTestCase {
         HttpSolrClient.RemoteSolrException e = expectThrows(HttpSolrClient.RemoteSolrException.class, () -> {
           new UpdateRequest().deleteByQuery("*:*").process(aNewClient, COLLECTION);
         });
-        assertTrue(e.getMessage().contains("Unauthorized request"));
+        assertTrue(e.getMessage(), e.getMessage().contains("Authentication failed"));
       } finally {
         aNewClient.close();
         cluster.stopJettySolrRunner(aNewJetty);

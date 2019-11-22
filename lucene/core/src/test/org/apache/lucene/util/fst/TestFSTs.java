@@ -303,7 +303,7 @@ public class TestFSTs extends LuceneTestCase {
   public void testBigSet() throws IOException {
     testRandomWords(TestUtil.nextInt(random(), 50000, 60000), 1);
   }
-  
+
   // Build FST for all unique terms in the test line docs
   // file, up until a doc limit
   public void testRealTerms() throws Exception {
@@ -1078,10 +1078,10 @@ public class TestFSTs extends LuceneTestCase {
             int children = verifyStateAndBelow(fst, new FST.Arc<>().copyFrom(arc), depth + 1);
 
             assertEquals(
-                expanded,
-                (depth <= FST.FIXED_ARRAY_SHALLOW_DISTANCE &&
-                    children >= FST.FIXED_ARRAY_NUM_ARCS_SHALLOW) ||
-                 children >= FST.FIXED_ARRAY_NUM_ARCS_DEEP);
+                (depth <= FST.FIXED_LENGTH_ARC_SHALLOW_DEPTH &&
+                    children >= FST.FIXED_LENGTH_ARC_SHALLOW_NUM_ARCS) ||
+                 children >= FST.FIXED_LENGTH_ARC_DEEP_NUM_ARCS,
+                expanded);
             if (arc.isLast()) break;
           }
 
@@ -1092,8 +1092,8 @@ public class TestFSTs extends LuceneTestCase {
     }
 
     // Sanity check.
-    assertTrue(FST.FIXED_ARRAY_NUM_ARCS_SHALLOW < FST.FIXED_ARRAY_NUM_ARCS_DEEP);
-    assertTrue(FST.FIXED_ARRAY_SHALLOW_DISTANCE >= 0);
+    assertTrue(FST.FIXED_LENGTH_ARC_SHALLOW_NUM_ARCS < FST.FIXED_LENGTH_ARC_DEEP_NUM_ARCS);
+    assertTrue(FST.FIXED_LENGTH_ARC_SHALLOW_DEPTH >= 0);
 
     SyntheticData s = new SyntheticData();
 
@@ -1634,5 +1634,24 @@ public class TestFSTs extends LuceneTestCase {
     } catch (AssertionError ae) {
       // expected
     }
+  }
+
+  public void testSimpleDepth() throws Exception {
+    PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
+    Builder<Long> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
+
+    BytesRef ab = new BytesRef("ab");
+    BytesRef ac = new BytesRef("ac");
+    BytesRef bd = new BytesRef("bd");
+
+    builder.add(Util.toIntsRef(ab, new IntsRefBuilder()), 3L);
+    builder.add(Util.toIntsRef(ac, new IntsRefBuilder()), 5L);
+    builder.add(Util.toIntsRef(bd, new IntsRefBuilder()), 7L);
+
+    FST<Long> fst = builder.finish();
+
+    assertEquals(3, (long) Util.get(fst, ab));
+    assertEquals(5, (long) Util.get(fst, ac));
+    assertEquals(7, (long) Util.get(fst, bd));
   }
 }

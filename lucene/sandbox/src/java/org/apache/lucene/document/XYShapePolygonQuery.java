@@ -19,7 +19,7 @@ package org.apache.lucene.document;
 import java.util.Arrays;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
-import org.apache.lucene.geo.Polygon2D;
+import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.XYEncodingUtils;
 import org.apache.lucene.geo.XYPolygon;
 import org.apache.lucene.geo.XYPolygon2D;
@@ -38,7 +38,7 @@ import static org.apache.lucene.geo.XYEncodingUtils.decode;
  **/
 final class XYShapePolygonQuery extends ShapeQuery {
   final XYPolygon[] polygons;
-  final private Polygon2D poly2D;
+  final private Component2D poly2D;
 
   /**
    * Creates a query that matches all indexed shapes to the provided polygons
@@ -74,7 +74,7 @@ final class XYShapePolygonQuery extends ShapeQuery {
     double maxLon = XYEncodingUtils.decode(NumericUtils.sortableBytesToInt(maxTriangle, maxXOffset));
 
     // check internal node against query
-    return poly2D.relate(minLat, maxLat, minLon, maxLon);
+    return poly2D.relate(minLon, maxLon, minLat, maxLat);
   }
 
   @Override

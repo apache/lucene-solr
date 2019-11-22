@@ -62,8 +62,8 @@ public class PluginInfoHandler extends RequestHandlerBase
         info.add( NAME,          (m.getName()       !=null ? m.getName()        : na) );
         info.add( "description", (m.getDescription()!=null ? m.getDescription() : na) );
 
-        if (stats) {
-          info.add( "stats", m.getMetricsSnapshot());
+        if (stats && m.getSolrMetricsContext() != null) {
+          info.add( "stats", m.getSolrMetricsContext().getMetricsSnapshot());
         }
       }
     }

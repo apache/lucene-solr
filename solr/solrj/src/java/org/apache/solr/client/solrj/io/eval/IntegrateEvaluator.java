@@ -17,6 +17,7 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Locale;
 
 import org.apache.commons.math3.analysis.UnivariateFunction;
@@ -34,8 +35,8 @@ public class IntegrateEvaluator extends RecursiveObjectEvaluator implements Many
   @Override
   public Object doWork(Object... values) throws IOException {
 
-    if(values.length != 3) {
-      throw new IOException("The integrate function requires 3 parameters");
+    if(values.length > 3) {
+      throw new IOException("The integrate function requires at most 3 parameters");
     }
 
     if (!(values[0] instanceof VectorFunction)) {
@@ -43,28 +44,45 @@ public class IntegrateEvaluator extends RecursiveObjectEvaluator implements Many
     }
 
     VectorFunction vectorFunction = (VectorFunction) values[0];
-    if(!(vectorFunction.getFunction() instanceof UnivariateFunction)) {
+    if (!(vectorFunction.getFunction() instanceof UnivariateFunction)) {
       throw new IOException("Cannot evaluate integral from parameter.");
     }
 
-    Number min = null;
-    Number max = null;
+    UnivariateFunction func = (UnivariateFunction) vectorFunction.getFunction();
 
-    if(values[1] instanceof Number) {
-      min = (Number) values[1];
+    if(values.length == 3) {
+
+
+      Number min = null;
+      Number max = null;
+
+      if (values[1] instanceof Number) {
+        min = (Number) values[1];
+      } else {
+        throw new IOException("The second parameter of the integrate function must be a number");
+      }
+
+      if (values[2] instanceof Number) {
+        max = (Number) values[2];
+      } else {
+        throw new IOException("The third parameter of the integrate function must be a number");
+      }
+
+      RombergIntegrator rombergIntegrator = new RombergIntegrator();
+      return rombergIntegrator.integrate(5000, func, min.doubleValue(), max.doubleValue());
     } else {
-      throw new IOException("The second parameter of the integrate function must be a number");
+      RombergIntegrator integrator = new RombergIntegrator();
+
+      double[] x = (double[])vectorFunction.getFromContext("x");
+      double[] y = (double[])vectorFunction.getFromContext("y");
+      ArrayList<Number> out = new ArrayList();
+      out.add(0);
+      for(int i=1; i<x.length; i++) {
+        out.add(integrator.integrate(5000, func, x[0], x[i]));
+      }
+
+      return out;
+
     }
-
-    if(values[2] instanceof Number ) {
-      max = (Number) values[2];
-    } else {
-      throw new IOException("The third parameter of the integrate function must be a number");
-    }
-
-    UnivariateFunction func = (UnivariateFunction)vectorFunction.getFunction();
-
-    RombergIntegrator rombergIntegrator = new RombergIntegrator();
-    return rombergIntegrator.integrate(5000, func, min.doubleValue(), max.doubleValue());
   }
 }

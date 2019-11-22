@@ -74,6 +74,8 @@ public class ZkShardTerms implements AutoCloseable{
   private final Set<CoreTermWatcher> listeners = new HashSet<>();
   private final AtomicBoolean isClosed = new AtomicBoolean(false);
 
+  private static final String RECOVERING_TERM_SUFFIX = "_recovering";
+
   private Terms terms;
 
   // Listener of a core for shard's term change events
@@ -239,7 +241,11 @@ public class ZkShardTerms implements AutoCloseable{
   }
 
   public boolean isRecovering(String name) {
-    return terms.values.containsKey(name + "_recovering");
+    return terms.values.containsKey(recoveringTerm(name));
+  }
+
+  public static String recoveringTerm(String coreNodeName) {
+    return coreNodeName + RECOVERING_TERM_SUFFIX;
   }
 
 
@@ -448,7 +454,7 @@ public class ZkShardTerms implements AutoCloseable{
      * @return true if {@code coreNodeName} can become leader, false if otherwise
      */
     boolean canBecomeLeader(String coreNodeName) {
-      return haveHighestTermValue(coreNodeName) && !values.containsKey(coreNodeName + "_recovering");
+      return haveHighestTermValue(coreNodeName) && !values.containsKey(recoveringTerm(coreNodeName));
     }
 
     /**
@@ -482,9 +488,10 @@ public class ZkShardTerms implements AutoCloseable{
 
       HashMap<String, Long> newValues = new HashMap<>(values);
       long leaderTerm = newValues.get(leader);
-      for (String key : newValues.keySet()) {
+      for (Map.Entry<String, Long> entry : newValues.entrySet()) {
+        String key = entry.getKey();
         if (replicasNeedingRecovery.contains(key)) foundReplicasInLowerTerms = true;
-        if (Objects.equals(newValues.get(key), leaderTerm)) {
+        if (Objects.equals(entry.getValue(), leaderTerm)) {
           if(skipIncreaseTermOf(key, replicasNeedingRecovery)) {
             changed = true;
           } else {
@@ -500,9 +507,8 @@ public class ZkShardTerms implements AutoCloseable{
     }
 
     private boolean skipIncreaseTermOf(String key, Set<String> replicasNeedingRecovery) {
-      if (key.endsWith("_recovering")) {
-        key = key.substring(0, key.length() - "_recovering".length());
-        return replicasNeedingRecovery.contains(key);
+      if (key.endsWith(RECOVERING_TERM_SUFFIX)) {
+        key = key.substring(0, key.length() - RECOVERING_TERM_SUFFIX.length());
       }
       return replicasNeedingRecovery.contains(key);
     }
@@ -523,15 +529,19 @@ public class ZkShardTerms implements AutoCloseable{
     }
 
     /**
-     * Return a new {@link Terms} in which term of {@code coreNodeName} is removed
+     * Return a new {@link Terms} in which terms for the {@code coreNodeName} are removed
      * @param coreNodeName of the replica
      * @return null if term of {@code coreNodeName} is already not exist
      */
     Terms removeTerm(String coreNodeName) {
-      if (!values.containsKey(coreNodeName)) return null;
+      if (!values.containsKey(recoveringTerm(coreNodeName)) && !values.containsKey(coreNodeName)) {
+        return null;
+      }
 
       HashMap<String, Long> newValues = new HashMap<>(values);
       newValues.remove(coreNodeName);
+      newValues.remove(recoveringTerm(coreNodeName));
+
       return new Terms(newValues, version);
     }
 
@@ -568,7 +578,7 @@ public class ZkShardTerms implements AutoCloseable{
 
       HashMap<String, Long> newValues = new HashMap<>(values);
       newValues.put(coreNodeName, maxTerm);
-      newValues.remove(coreNodeName+"_recovering");
+      newValues.remove(recoveringTerm(coreNodeName));
       return new Terms(newValues, version);
     }
 
@@ -587,10 +597,10 @@ public class ZkShardTerms implements AutoCloseable{
         return null;
 
       HashMap<String, Long> newValues = new HashMap<>(values);
-      if (!newValues.containsKey(coreNodeName+"_recovering")) {
+      if (!newValues.containsKey(recoveringTerm(coreNodeName))) {
         long currentTerm = newValues.getOrDefault(coreNodeName, 0L);
         // by keeping old term, we will have more information in leader election
-        newValues.put(coreNodeName+"_recovering", currentTerm);
+        newValues.put(recoveringTerm(coreNodeName), currentTerm);
       }
       newValues.put(coreNodeName, maxTerm);
       return new Terms(newValues, version);
@@ -602,12 +612,12 @@ public class ZkShardTerms implements AutoCloseable{
      * @return null if term of {@code coreNodeName} is already finished doing recovering
      */
     Terms doneRecovering(String coreNodeName) {
-      if (!values.containsKey(coreNodeName+"_recovering")) {
+      if (!values.containsKey(recoveringTerm(coreNodeName))) {
         return null;
       }
 
       HashMap<String, Long> newValues = new HashMap<>(values);
-      newValues.remove(coreNodeName+"_recovering");
+      newValues.remove(recoveringTerm(coreNodeName));
       return new Terms(newValues, version);
     }
 

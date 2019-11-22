@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.noggit.JSONParser;
 import org.noggit.ObjectBuilder;
@@ -39,7 +38,7 @@ import static java.util.Collections.singletonMap;
 import static org.apache.solr.common.util.StrUtils.formatString;
 import static org.apache.solr.common.util.Utils.toJSON;
 
-public class CommandOperation implements MapWriter {
+public class CommandOperation {
   public final String name;
   private Object commandData;//this is most often a map
   private List<String> errors = new ArrayList<>();
@@ -281,7 +280,10 @@ public class CommandOperation implements MapWriter {
     List<CommandOperation> operations = new ArrayList<>();
     for (; ; ) {
       int ev = parser.nextEvent();
-      if (ev == JSONParser.OBJECT_END) return operations;
+      if (ev == JSONParser.OBJECT_END) {
+        ObjectBuilder.checkEOF(parser);
+        return operations;
+      }
       Object key = ob.getKey();
       ev = parser.nextEvent();
       Object val = ob.getVal();
@@ -386,11 +388,5 @@ public class CommandOperation implements MapWriter {
     Object o = getVal(name);
     if (o == null) return null;
     return getInt(name, null);
-  }
-
-  @Override
-  public void writeMap(EntryWriter ew) throws IOException {
-    ew.put(name, commandData);
-    ew.putIfNotNull("errors", errors);
   }
 }

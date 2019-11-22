@@ -19,6 +19,7 @@ package org.apache.solr;
 import java.io.File;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -61,4 +62,25 @@ public class SolrTestCaseJ4Test extends SolrTestCaseJ4 {
   public void testCorrectCore() throws Exception {
     assertEquals("should be core1", "core1", h.getCore().getName());
   }
+
+  @Test
+  public void testParams() throws Exception {
+    final ModifiableSolrParams params = new ModifiableSolrParams();
+    assertEquals(params.toString(), params().toString());
+
+    params.add("q", "*:*");
+    assertEquals(params.toString(), params("q", "*:*").toString());
+
+    params.add("rows", "42");
+    assertEquals(params.toString(), params("q", "*:*", "rows", "42").toString());
+
+    expectThrows(RuntimeException.class, () -> {
+      params("parameterWithoutValue");
+    });
+
+    expectThrows(RuntimeException.class, () -> {
+      params("q", "*:*", "rows", "42", "parameterWithoutValue");
+    });
+  }
+
 }

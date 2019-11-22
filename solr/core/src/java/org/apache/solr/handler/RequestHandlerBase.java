@@ -24,7 +24,6 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
-import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import com.google.common.collect.ImmutableList;
 import org.apache.solr.api.Api;
@@ -39,8 +38,7 @@ import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -54,7 +52,7 @@ import static org.apache.solr.core.RequestParams.USEPARAM;
 /**
  *
  */
-public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfoBean, SolrMetricProducer, NestedRequestHandler, ApiSupport {
+public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfoBean, NestedRequestHandler, ApiSupport {
 
   protected NamedList initArgs = null;
   protected SolrParams defaults;
@@ -79,9 +77,7 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   private PluginInfo pluginInfo;
 
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
-  private MetricRegistry registry;
-  protected String registryName;
-  protected SolrMetricManager metricManager;
+  protected SolrMetricsContext solrMetricsContext;
 
 
   @SuppressForbidden(reason = "Need currentTimeMillis, used only for stats output")
@@ -144,21 +140,24 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, final String scope) {
-    this.metricManager = manager;
-    this.registryName = registryName;
-    this.registry = manager.registry(registryName);
-    numErrors = manager.meter(this, registryName, "errors", getCategory().toString(), scope);
-    numServerErrors = manager.meter(this, registryName, "serverErrors", getCategory().toString(), scope);
-    numClientErrors = manager.meter(this, registryName, "clientErrors", getCategory().toString(), scope);
-    numTimeouts = manager.meter(this, registryName, "timeouts", getCategory().toString(), scope);
-    requests = manager.counter(this, registryName, "requests", getCategory().toString(), scope);
+  public SolrMetricsContext getSolrMetricsContext() {
+    return solrMetricsContext;
+  }
+
+  @Override
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    this.solrMetricsContext = parentContext.getChildContext(this);
+    numErrors = solrMetricsContext.meter("errors", getCategory().toString(), scope);
+    numServerErrors = solrMetricsContext.meter("serverErrors", getCategory().toString(), scope);
+    numClientErrors = solrMetricsContext.meter("clientErrors", getCategory().toString(), scope);
+    numTimeouts = solrMetricsContext.meter("timeouts", getCategory().toString(), scope);
+    requests = solrMetricsContext.counter("requests", getCategory().toString(), scope);
     MetricsMap metricsMap = new MetricsMap((detail, map) ->
         shardPurposes.forEach((k, v) -> map.put(k, v.getCount())));
-    manager.registerGauge(this, registryName, metricsMap, tag, true, "shardRequests", getCategory().toString(), scope);
-    requestTimes = manager.timer(this, registryName, "requestTimes", getCategory().toString(), scope);
-    totalTime = manager.counter(this, registryName, "totalTime", getCategory().toString(), scope);
-    manager.registerGauge(this, registryName, () -> handlerStart, tag, true, "handlerStart", getCategory().toString(), scope);
+    solrMetricsContext.gauge(metricsMap, true, "shardRequests", getCategory().toString(), scope);
+    requestTimes = solrMetricsContext.timer("requestTimes", getCategory().toString(), scope);
+    totalTime = solrMetricsContext.counter("totalTime", getCategory().toString(), scope);
+    solrMetricsContext.gauge(() -> handlerStart, true, "handlerStart", getCategory().toString(), scope);
   }
 
   public static SolrParams getSolrParamsFromNamedList(NamedList args, String key) {
@@ -265,16 +264,6 @@ public abstract class RequestHandlerBase implements SolrRequestHandler, SolrInfo
   @Override
   public Category getCategory() {
     return Category.QUERY;
-  }
-
-  @Override
-  public Set<String> getMetricNames() {
-    return metricNames;
-  }
-
-  @Override
-  public MetricRegistry getMetricRegistry() {
-    return registry;
   }
 
   @Override

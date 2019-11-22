@@ -476,11 +476,11 @@ public class IndexSearcher {
       private final HitsThresholdChecker hitsThresholdChecker = (executor == null || leafSlices.length <= 1) ? HitsThresholdChecker.create(TOTAL_HITS_THRESHOLD) :
           HitsThresholdChecker.createShared(TOTAL_HITS_THRESHOLD);
 
-      private final BottomValueChecker bottomValueChecker = BottomValueChecker.createMaxBottomScoreChecker();
+      private final MaxScoreAccumulator minScoreAcc = (executor == null || leafSlices.length <= 1) ? null : new MaxScoreAccumulator();
 
       @Override
       public TopScoreDocCollector newCollector() throws IOException {
-        return TopScoreDocCollector.create(cappedNumHits, after, hitsThresholdChecker, bottomValueChecker);
+        return TopScoreDocCollector.create(cappedNumHits, after, hitsThresholdChecker, minScoreAcc);
       }
 
       @Override
@@ -604,15 +604,17 @@ public class IndexSearcher {
     final int cappedNumHits = Math.min(numHits, limit);
     final Sort rewrittenSort = sort.rewrite(this);
 
-    final CollectorManager<TopFieldCollector, TopFieldDocs> manager = new CollectorManager<TopFieldCollector, TopFieldDocs>() {
+    final CollectorManager<TopFieldCollector, TopFieldDocs> manager = new CollectorManager<>() {
 
       private final HitsThresholdChecker hitsThresholdChecker = (executor == null || leafSlices.length <= 1) ? HitsThresholdChecker.create(TOTAL_HITS_THRESHOLD) :
           HitsThresholdChecker.createShared(TOTAL_HITS_THRESHOLD);
 
+      private final MaxScoreAccumulator minScoreAcc = (executor == null || leafSlices.length <= 1) ? null : new MaxScoreAccumulator();
+
       @Override
       public TopFieldCollector newCollector() throws IOException {
         // TODO: don't pay the price for accurate hit counts by default
-        return TopFieldCollector.create(rewrittenSort, cappedNumHits, after, hitsThresholdChecker);
+        return TopFieldCollector.create(rewrittenSort, cappedNumHits, after, hitsThresholdChecker, minScoreAcc);
       }
 
       @Override

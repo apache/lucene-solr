@@ -77,14 +77,15 @@ import org.apache.solr.metrics.AltBufferPoolMetricSet;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.OperatingSystemMetricSet;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.security.AuditEvent;
 import org.apache.solr.security.AuthenticationPlugin;
 import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.util.SolrFileCleaningTracker;
+import org.apache.solr.util.tracing.GlobalTracer;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.configuration.SSLConfigurationsFactory;
-import org.apache.solr.util.tracing.GlobalTracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -108,7 +109,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
   
   private boolean isV2Enabled = !"true".equals(System.getProperty("disable.v2.api", "false"));
 
-  private final String metricTag = Integer.toHexString(hashCode());
+  private final String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
   private SolrMetricManager metricManager;
   private String registryName;
   private volatile boolean closeOnDestroy = true;
@@ -180,7 +181,6 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       final Path solrHomePath = solrHome == null ? SolrResourceLoader.locateSolrHome() : Paths.get(solrHome);
       coresInit = createCoreContainer(solrHomePath, extraProperties);
       SolrResourceLoader.ensureUserFilesDataDir(solrHomePath);
-      SolrResourceLoader.ensureBlobsDir(solrHomePath);
       this.httpClient = coresInit.getUpdateShardHandler().getDefaultHttpClient();
       setupJvmMetrics(coresInit);
       log.debug("user.dir=" + System.getProperty("user.dir"));
@@ -371,14 +371,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
         }
       }
 
-      String requestPath = request.getServletPath();
+      String requestPath = ServletUtils.getPathAfterContext(request);
       // No need to even create the HttpSolrCall object if this path is excluded.
       if (excludePatterns != null) {
-        String extraPath = request.getPathInfo();
-        if (extraPath != null) {
-          // In embedded mode, servlet path is empty - include all post-context path here for testing
-          requestPath += extraPath;
-        }
         for (Pattern p : excludePatterns) {
           Matcher matcher = p.matcher(requestPath);
           if (matcher.lookingAt()) {
@@ -468,11 +463,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
    * want to add attributes to the request and send errors differently
    */
   protected HttpSolrCall getHttpSolrCall(HttpServletRequest request, HttpServletResponse response, boolean retry) {
-    String path = request.getServletPath();
-    if (request.getPathInfo() != null) {
-      // this lets you handle /update/commit when /update is a servlet
-      path += request.getPathInfo();
-    }
+    String path = ServletUtils.getPathAfterContext(request);
 
     if (isV2Enabled && (path.startsWith("/____v2/") || path.equals("/____v2"))) {
       return new V2HttpCall(this, cores, request, response, false);
@@ -492,11 +483,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
       return true;
     } else {
       // /admin/info/key must be always open. see SOLR-9188
-      // tests work only w/ getPathInfo
-      //otherwise it's just enough to have getServletPath()
-      String requestPath = request.getPathInfo();
-      if (requestPath == null) 
-        requestPath = request.getServletPath();
+      String requestPath = ServletUtils.getPathAfterContext(request);
       if (PublicKeyHandler.PATH.equals(requestPath)) {
         if (log.isDebugEnabled())
           log.debug("Pass through PKI authentication endpoint");
@@ -627,8 +614,8 @@ public class SolrDispatchFilter extends BaseSolrFilter {
             public void close() {
               // even though we skip closes, we let local tests know not to close so that a full understanding can take
               // place
-              assert !Thread.currentThread().getStackTrace()[2].getClassName().matches(
-                  "org\\.apache\\.(?:solr|lucene).*") : CLOSE_STREAM_MSG;
+              assert Thread.currentThread().getStackTrace()[2].getClassName().matches(
+                  "org\\.apache\\.(?:solr|lucene).*") ? false : true : CLOSE_STREAM_MSG;
               this.stream = ClosedServletInputStream.CLOSED_SERVLET_INPUT_STREAM;
             }
           };
@@ -662,8 +649,9 @@ public class SolrDispatchFilter extends BaseSolrFilter {
             public void close() {
               // even though we skip closes, we let local tests know not to close so that a full understanding can take
               // place
-              assert !Thread.currentThread().getStackTrace()[2].getClassName().matches(
-                  "org\\.apache\\.(?:solr|lucene).*") : CLOSE_STREAM_MSG;
+              assert Thread.currentThread().getStackTrace()[2].getClassName().matches(
+                  "org\\.apache\\.(?:solr|lucene).*") ? false
+                      : true : CLOSE_STREAM_MSG;
               stream = ClosedServletOutputStream.CLOSED_SERVLET_OUTPUT_STREAM;
             }
           };

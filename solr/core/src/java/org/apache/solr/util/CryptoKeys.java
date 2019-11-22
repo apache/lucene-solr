@@ -21,6 +21,8 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -41,6 +43,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Base64;
 import org.slf4j.Logger;
@@ -60,7 +63,7 @@ public final class CryptoKeys implements CLIO {
       m.put(e.getKey(), getX509PublicKey(e.getValue()));
 
     }
-    this.keys = m;
+    this.keys = ImmutableMap.copyOf(m);
   }
 
   /**
@@ -83,6 +86,26 @@ public final class CryptoKeys implements CLIO {
 
     return null;
   }
+
+  public String verify(String sig, InputStream is) {
+    exception = null;
+    for (Map.Entry<String, PublicKey> entry : keys.entrySet()) {
+      boolean verified;
+      try {
+        verified = CryptoKeys.verify(entry.getValue(), Base64.base64ToByteArray(sig), is);
+        log.debug("verified {} ", verified);
+        if (verified) return entry.getKey();
+      } catch (Exception e) {
+        exception = e;
+        log.debug("NOT verified  ");
+      }
+
+    }
+
+    return null;
+  }
+
+
 
 
   /**
@@ -115,6 +138,30 @@ public final class CryptoKeys implements CLIO {
     }
 
   }
+
+  public static boolean verify(PublicKey publicKey, byte[] sig, InputStream is)
+      throws InvalidKeyException, SignatureException, IOException {
+    try {
+      Signature signature = Signature.getInstance("SHA1withRSA");
+      signature.initVerify(publicKey);
+      byte[] buf = new byte[1024];
+      while (true) {
+        int sz = is.read(buf);
+        if (sz == -1) break;
+        signature.update(buf, 0, sz);
+      }
+      try {
+        return signature.verify(sig);
+      } catch (SignatureException e) {
+        return false;
+      }
+    } catch (NoSuchAlgorithmException e) {
+      //will not happen
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
+
+  }
+
 
   private static byte[][] evpBytesTokey(int key_len, int iv_len, MessageDigest md,
                                         byte[] salt, byte[] data, int count) {

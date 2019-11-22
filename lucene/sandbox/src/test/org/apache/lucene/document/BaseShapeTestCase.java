@@ -23,7 +23,7 @@ import java.util.Set;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.document.ShapeField.QueryRelation;
-import org.apache.lucene.geo.Line2D;
+import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
@@ -188,9 +188,9 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
   /** factory method to create a new polygon query */
   protected abstract Query newPolygonQuery(String field, QueryRelation queryRelation, Object... polygons);
 
-  protected abstract Line2D toLine2D(Object... line);
+  protected abstract Component2D toLine2D(Object... line);
 
-  protected abstract Object toPolygon2D(Object... polygon);
+  protected abstract Component2D toPolygon2D(Object... polygon);
 
   private void verify(Object... shapes) throws Exception {
     IndexWriterConfig iwc = newIndexWriterConfig();
@@ -372,7 +372,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
 
       // line
       Object queryLine = randomQueryLine(shapes);
-      Line2D queryLine2D = toLine2D(queryLine);
+      Component2D queryLine2D = toLine2D(queryLine);
       QueryRelation queryRelation = RandomPicks.randomFrom(random(), POINT_LINE_RELATIONS);
       Query query = newLineQuery(FIELD_NAME, queryRelation, queryLine);
 
@@ -413,7 +413,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
         } else if (shapes[id] == null) {
           expected = false;
         } else {
-          expected = VALIDATOR.setRelation(queryRelation).testLineQuery(queryLine2D, shapes[id]);
+          expected = VALIDATOR.setRelation(queryRelation).testComponentQuery(queryLine2D, shapes[id]);
         }
 
         if (hits.get(docID) != expected) {
@@ -463,7 +463,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
 
       // Polygon
       Object queryPolygon = randomQueryPolygon();
-      Object queryPoly2D = toPolygon2D(queryPolygon);
+      Component2D queryPoly2D = toPolygon2D(queryPolygon);
       QueryRelation queryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
       Query query = newPolygonQuery(FIELD_NAME, queryRelation, queryPolygon);
 
@@ -504,7 +504,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
         } else if (shapes[id] == null) {
           expected = false;
         } else {
-          expected = VALIDATOR.setRelation(queryRelation).testPolygonQuery(queryPoly2D, shapes[id]);
+          expected = VALIDATOR.setRelation(queryRelation).testComponentQuery(queryPoly2D, shapes[id]);
         }
 
         if (hits.get(docID) != expected) {
@@ -570,8 +570,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
 
     protected QueryRelation queryRelation = QueryRelation.INTERSECTS;
     public abstract boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape);
-    public abstract boolean testLineQuery(Line2D line2d, Object shape);
-    public abstract boolean testPolygonQuery(Object poly2d, Object shape);
+    public abstract boolean testComponentQuery(Component2D line2d, Object shape);
 
     public Validator setRelation(QueryRelation relation) {
       this.queryRelation = relation;

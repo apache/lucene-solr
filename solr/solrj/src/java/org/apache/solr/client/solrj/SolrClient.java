@@ -959,6 +959,21 @@ public abstract class SolrClient implements Serializable, Closeable {
   }
 
   /**
+   * Issues a ping request to check if the collection's replicas are alive
+   *
+   * @param collection collection to ping
+   *
+   * @return a {@link org.apache.solr.client.solrj.response.SolrPingResponse} containing the response
+   *         from the server
+   *
+   * @throws IOException If there is a low-level I/O error.
+   * @throws SolrServerException if there is an error on the server
+   */
+  public SolrPingResponse ping(String collection) throws SolrServerException, IOException {
+    return new SolrPing().process(this, collection);
+  }
+
+  /**
    * Issues a ping request to check if the server is alive
    *
    * @return a {@link org.apache.solr.client.solrj.response.SolrPingResponse} containing the response
@@ -970,6 +985,7 @@ public abstract class SolrClient implements Serializable, Closeable {
   public SolrPingResponse ping() throws SolrServerException, IOException {
     return new SolrPing().process(this, null);
   }
+
 
   /**
    * Performs a query to the Solr server

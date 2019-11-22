@@ -207,7 +207,7 @@ public class Lang {
         .withFunctionName("ttest", TTestEvaluator.class)
         .withFunctionName("pairedTtest", PairedTTestEvaluator.class)
         .withFunctionName("multiVariateNormalDistribution", MultiVariateNormalDistributionEvaluator.class)
-        .withFunctionName("integrate", IntegrateEvaluator.class)
+        .withFunctionName("integral", IntegrateEvaluator.class)
         .withFunctionName("density", DensityEvaluator.class)
         .withFunctionName("mannWhitney", MannWhitneyUEvaluator.class)
         .withFunctionName("sumSq", SumSqEvaluator.class)
@@ -300,7 +300,9 @@ public class Lang {
         .withFunctionName("upper", UpperEvaluator.class)
         .withFunctionName("split", SplitEvaluator.class)
         .withFunctionName("trim", TrimEvaluator.class)
-
+        .withFunctionName("cosine", CosineDistanceEvaluator.class)
+        .withFunctionName("trunc", TruncEvaluator.class)
+        .withFunctionName("dbscan", DbscanEvaluator.class)
         // Boolean Stream Evaluators
 
         .withFunctionName("and", AndEvaluator.class)

@@ -126,7 +126,6 @@ examples
 [source,json]
 { "replica" : "<2", "node":"#ANY"}
 
-
 [source,json]
 //place 3 replicas in the group of nodes node-name1, node-name2
 {  "replica" : "3",  "nodeset":["node-name1","node-name2"]}
@@ -134,7 +133,7 @@ examples
 [source,json]
 { "nodeset":{"<property-name>":"<property-value>"}}
 
-The property names can be one of  `node` , `host` , `sysprop.*` , `freedisk` , `ip_*` , `nodeRole` , `heapUsage` , `metrics.*`
+The property names can be one of: `node`, `host`, `sysprop.*`, `freedisk`, `ip_*`, `nodeRole`, `heapUsage`, `metrics.*`.
 
 when using the `nodeset` attribute, an optional attribute `put` can be used to specify how to distribute the replicas in that node set.
 
@@ -500,3 +499,143 @@ Number of iterations of the simulation loop. Default is 10.
 
 Results of the simulation contain the initial suggestions, suggestions at each step of the
 simulation and the final simulated state of the cluster.
+
+=== Simulation scenario tool
+The autoscaling command-line tool supports also the execution of end-to-end simulation scenarios consisting of
+several cluster- and collection-level operations and events.
+
+This tool can be invoked using `bin/solr autoscaling -scenario <FILE>`. All other command-line options are ignored in this mode.
+
+The file describing a scenario to test uses a simple plain text (UTF-8 encoded) line-oriented format, where
+each line of text uses the following syntax:
+
+[source,text]
+----
+line := command whitespace params | '#'
+params := [ path, '?' ] key, '=', value { '&', key, '=', value } *
+----
+
+Keys and values additionally use www-urlencoded format to avoid meta-characters and non-ascii characters.
+
+The `params` part of the line closely follows a regular Solr params representation on purpose - in many cases
+the content of this part of the command is passed directly to the respective collection- or cluster-level API.
+
+==== Scenario context
+Scenario has a context, which is simply a map of key-value pairs. Before executing each command the context is
+updated to contain the current values for the following properties:
+
+* `_random_node_` - randomly selected node name, or null if no node is live
+* `_overseer_leader_` - node name of the current Overseer leader node, or absent if there's no Overseer
+* `_live_nodes_` - a list of current live nodes, or absent if there are no live nodes
+* `_collections_` - a list of existing collections, or absent if there are no collections (or no live nodes)
+* `_suggestions_` - a list of autoscaling suggestions generated using CREATE_SUGGESTIONS command.
+* `_responses_` - a list of SolrResponse-s resulting from SOLR_REQUEST commands.
+* `_loop_iter_` - current loop iteration, or absent outside of loop.
+* `_trigger_event_<triggerName>` - last trigger event captured by WAIT_EVENT
+
+Command parameters support variable expansion using string values from the current context (non-string values, including numeric, are ignored)
+and from system properties, with the context values taking precedence if set.
+
+For example, assuming a system property is set 'foo=bar', the following command will load a snapshot from
+`/tmp/bar`:
+[source,text]
+----
+load_snapshot path=/tmp/${foo}
+----
+
+==== Scenario commands
+The following commands are supported (command names are case insensitive, but params aren't):
+
+* `create_cluster numNodes=N[&disableMetricsHistory=false&timeSourcee=simTime:50]` - create a simulated cluster with N nodes
+* `load_snapshot (path=/some/path | zkHost=ZK_CONNECT_STRING)` - create a simulated cluster from an autoscaling snapshot or from a live cluster.
+* `save_snapshot path=/some/path[&redact=false]` - save an autoscaling snapshot of the current simulated cluster state.
+* `calculate_suggestions` - calculate autoscaling suggestions based on the current cluster state and the policy.
+* `apply_suggestions` - apply previously calculated suggestions.
+* `kill_nodes (numNodes=N | nodes=node1,node2,...)` - kill a number of randomly selected nodes, or specific nodes.
+* `add_nodes numNodes=N` - add a number of new nodes.
+* `load_autoscaling (path=/some/path | json={...}` - load `autoscaling.json` config from a path or from the supplied JSON string, and apply this config to the simulated cluster.
+* `loop_start [iterations=N]`, `loop_end` - iterate commands enclosed in `loop_start` / `loop_end` N times, or until a loop abort is requested.
+* `set_op_delays op1=delayMs1&op2=delayMs2...` - set operation delays for specific collection commands to simulate slow execution.
+* `solr_request /admin/handler?httpMethod=POST&stream.body={'json':'body'}&other=params` - execute one of SolrRequest types supported by `SimCloudManager`.
+* `run [time=60000]` - run the simulator for some time, allowing background tasks to execute (eg. trigger event processing).
+* `wait_collection collection=test&shards=N&replicas=M[&withInactive=false&requireLeaders=true&wait=90]` - wait until the collection shape matches the criteria or the wait time elapses (in which case an error is thrown).
+* `event_listener trigger=triggerName&stage=SUCCEEDED[&beforeAction=foo | &afterAction=bar]` - prepare to listen for a specific trigger event.
+* `wait_event trigger=triggerName[&wait=90]` - wait until an event specified in `event_listener` is captured or a wait time elapses (in which cases an error is thrown).
+* `ctx_set key=myKey&value=myValue` - set a key / value pair in the scenario's context.
+* `ctx_remove key=myKey` - remove a key / value pair from the scenario's context.
+* `dump [redact=false&withData=false&withStats=false&withSuggestions=false&withDiagnostics=false&withNodeState=false&withClusterState=false&withManagerState=false]` - dump the simulator state to the console.
+* `set_node_metrics nodeset=node1,node2...&aKey1=aValue1&aKey2=aValue2...` - set node metrics.
+* `set_shard_metrics collection=test&shard=shard1[&delta=false&divide=false]&aKey1=aValue1&aKey2=aValue2...` - set per-shard metrics, optionally expressed as delta change from existing values and optionally with the values divided across existing replicas for a shard.
+* `index_docs numDocs=NNN[&start=XXX]` - simulate bulk indexing of a large number of documents.
+* `assert condition=(equals | not_equals | null | not_null)&(key=objectPath | value=myValue)[&expected=value]` - assert a condition. When `key` is specified then it can be an object path to complex values present in the scenario's context.
+
+==== Example scenarios
+Example scenario testing the behavior of `.autoAddReplicas` trigger:
+[source,text]
+----
+# standard comment
+// java comment
+create_cluster numNodes=2 // inline comment
+// load autoscaling config from a json string. Notice that the value must be URL-encoded
+load_autoscaling json={'cluster-policy'+:+[{'replica'+:+'<3',+'shard'+:+'#EACH',+'collection'+:+'testCollection','node':'#ANY'}]}&defaultWaitFor=10
+solr_request /admin/collections?action=CREATE&autoAddReplicas=true&name=testCollection&numShards=2&replicationFactor=2&maxShardsPerNode=2
+wait_collection collection=testCollection&shards=2&replicas=2
+// prepare a listener for trigger events and the processing state SUCCEEDED
+event_listener trigger=.auto_add_replicas&stage=SUCCEEDED
+// kill a random node
+kill_nodes node=${_random_node_}
+// wait for the listener to capture the event
+wait_event trigger=.auto_add_replicas&wait=60
+// the collection should have the same shape as before
+wait_collection collection=testCollection&shards=2&replicas=2
+save_snapshot path=${snapshotPath}
+----
+
+Example scenario testing the behavior of `indexSize` trigger. Notice the use of POST SolrRequest and the use of
+`assert` command with an object path:
+
+[source,text]
+----
+create_cluster numNodes=100
+solr_request /admin/collections?action=CREATE&autoAddReplicas=true&name=testCollection&numShards=2&replicationFactor=2&maxShardsPerNode=2
+wait_collection collection=testCollection&shards=2&replicas=2
+// example of defining a trigger config
+solr_request /admin/autoscaling?httpMethod=POST&stream.body={'set-trigger':{'name':'indexSizeTrigger','event':'indexSize','waitFor':'10s','aboveDocs':1000,'enabled':true,'actions':[{'name':'compute_plan','class':'solr.ComputePlanAction'},{'name':'execute_plan','class':'solr.ExecutePlanAction'}]}}
+// prepare an event listener
+event_listener trigger=indexSizeTrigger&stage=SUCCEEDED
+// add documents
+index_docs collection=testCollection&numDocs=3000
+// run for 60 sec
+run
+// wait for a trigger event (as defined in the listener)
+wait_event trigger=indexSizeTrigger&wait=60
+// even is stored in the context
+assert condition=not_null&key=_trigger_event_indexSizeTrigger
+assert condition=equals&key=_trigger_event_indexSizeTrigger/eventType&expected=INDEXSIZE
+assert condition=equals&key=_trigger_event_indexSizeTrigger/properties/requestedOps[0]/action&expected=SPLITSHARD
+wait_collection collection=testCollection&shards=6&withInactive=true&requireLeaders=false&replicas=2
+----
+
+Example scenario where context variables are used for conditional execution of loops. Depending on the value of
+`iterative` and `justCalc` the two loops will execute 0 or more times. Notice also how the scenario picks up
+a random node to consistently add replicas to it.
+
+[source,text]
+----
+create_cluster numNodes=2
+solr_request /admin/collections?action=CREATE&autoAddReplicas=true&name=testCollection&numShards=2&replicationFactor=2&maxShardsPerNode=10
+wait_collection collection=testCollection&shards=2&replicas=2
+ctx_set key=myNode&value=${_random_node_}
+solr_request /admin/collections?action=ADDREPLICA&collection=testCollection&shard=shard1&node=${myNode}
+solr_request /admin/collections?action=ADDREPLICA&collection=testCollection&shard=shard1&node=${myNode}
+loop_start iterations=${iterative}
+  calculate_suggestions
+  apply_suggestions
+  solr_request /admin/collections?action=ADDREPLICA&collection=testCollection&shard=shard1&node=${myNode}
+  solr_request /admin/collections?action=ADDREPLICA&collection=testCollection&shard=shard1&node=${myNode}
+loop_end
+loop_start iterations=${justCalc}
+  calculate_suggestions
+loop_end
+dump redact=true
+----
