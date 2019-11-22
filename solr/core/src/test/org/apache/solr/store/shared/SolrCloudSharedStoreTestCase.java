@@ -17,14 +17,22 @@
 package org.apache.solr.store.shared;
 
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.store.blob.client.BlobCoreMetadata;
 import org.apache.solr.store.blob.client.CoreStorageClient;
 import org.apache.solr.store.blob.client.LocalStorageClient;
 import org.apache.solr.store.blob.process.BlobProcessUtil;
+import org.apache.solr.store.blob.process.CorePullTask;
+import org.apache.solr.store.blob.process.CorePullerFeeder;
+import org.apache.solr.store.blob.process.CoreSyncStatus;
+import org.apache.solr.store.blob.process.CorePullTask.PullCoreCallback;
 import org.apache.solr.store.blob.provider.BlobStorageProvider;
 
 /**
@@ -110,6 +118,36 @@ public class SolrCloudSharedStoreTestCase extends SolrCloudTestCase {
       }
     };
     return testBlobStorageProvider;
+  }
+  
+  /**
+   * Initiates a new test BlobProcessUtil to be injected into a Solr node within MiniSolrCloudCluster.
+   * BlobProcessUtil defines a CorePullerFeeder to allow for async pull testing. 
+   */
+  protected static Map<String, CountDownLatch> configureTestBlobProcessForNode(JettySolrRunner runner) {
+    final Map<String, CountDownLatch> asyncPullTracker = new HashMap<>();
+
+    final PullCoreCallback callback = new PullCoreCallback() {
+      @Override
+      public void finishedPull(CorePullTask pullTask, BlobCoreMetadata blobMetadata, CoreSyncStatus status,
+          String message) throws InterruptedException {
+        CountDownLatch latch = asyncPullTracker.get(pullTask.getPullCoreInfo().getDedupeKey());
+        if (latch != null) {
+          latch.countDown();
+        }
+      }
+    };
+    
+    CorePullerFeeder cpf = new CorePullerFeeder(runner.getCoreContainer()) {  
+      @Override
+      protected CorePullTask.PullCoreCallback getCorePullTaskCallback() {
+        return callback;
+      }
+    };
+
+    BlobProcessUtil testUtil = new BlobProcessUtil(runner.getCoreContainer(), cpf);
+    setupTestBlobProcessUtilForNode(testUtil, runner);
+    return asyncPullTracker;
   }
 
 }

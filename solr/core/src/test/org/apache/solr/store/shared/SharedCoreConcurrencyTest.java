@@ -39,12 +39,7 @@ import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.store.blob.client.BlobCoreMetadata;
 import org.apache.solr.store.blob.client.CoreStorageClient;
-import org.apache.solr.store.blob.process.BlobProcessUtil;
-import org.apache.solr.store.blob.process.CorePullTask;
-import org.apache.solr.store.blob.process.CorePullerFeeder;
-import org.apache.solr.store.blob.process.CoreSyncStatus;
 import org.apache.solr.store.shared.SharedCoreConcurrencyController.SharedCoreStage;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -330,30 +325,6 @@ public class SharedCoreConcurrencyTest extends SolrCloudSharedStoreTestCase {
       prevThreadId = currentThreadId;
       prevStage = currentStage;
     }
-  }
-
-  private Map<String, CountDownLatch> configureTestBlobProcessForNode(JettySolrRunner runner) {
-    Map<String, CountDownLatch> asyncPullTracker = new HashMap<>();
-
-    CorePullerFeeder cpf = new CorePullerFeeder(runner.getCoreContainer()) {
-      @Override
-      protected CorePullTask.PullCoreCallback getCorePullTaskCallback() {
-        return new CorePullTask.PullCoreCallback() {
-          @Override
-          public void finishedPull(CorePullTask pullTask, BlobCoreMetadata blobMetadata, CoreSyncStatus status,
-                                   String message) throws InterruptedException {
-            CountDownLatch latch = asyncPullTracker.get(pullTask.getPullCoreInfo().getCoreName());
-            if(latch != null) {
-              latch.countDown();
-            }
-          }
-        };
-      }
-    };
-
-    BlobProcessUtil testUtil = new BlobProcessUtil(runner.getCoreContainer(), cpf);
-    setupTestBlobProcessUtilForNode(testUtil, runner);
-    return asyncPullTracker;
   }
 
   private void configureTestSharedConcurrencyControllerForNode(JettySolrRunner runner, List<String> progress) {
