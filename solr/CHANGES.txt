@@ -128,6 +128,8 @@ New Features
 
 * SOLR-13911: Add 'missing' aggregation in JSON FacetModule (hossman, Munendra S N)
 
+* SOLR-13912: Add 'countvals' aggregation in JSON FacetModule (hossman, Munendra S N)
+
 Improvements
 ---------------------
 
@@ -180,6 +182,9 @@ Bug Fixes
 * SOLR-13921: Processing UpdateRequest with delegation token throws NullPointerException (Istvan Farkas via Kevin Risden)
 
 * SOLR-13941: Tests configure Jetty differently than when running via start.jar (janhoy, Uwe Schindler)
+
+* SOLR-13950: Fix InterruptedException being swallowed in ZkStateReader’s getLeaderRetry method
+  (Andy Vuong via Tomás Fernández Löbbe)
 
 Other Changes
 ---------------------

@@ -61,6 +61,19 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.params.CommonParams.ID;
 
 /**
+ * <p>
+ * Solr Request Handler for streaming data.
+ * </p>
+ * <p>
+ * It loads a default set of mappings via {@link org.apache.solr.handler.SolrDefaultStreamFactory}.
+ * </p>
+ * <p>
+ * To add additional mappings, just define them as plugins in solrconfig.xml via
+ * {@code
+ * &lt;expressible name="count" class="org.apache.solr.client.solrj.io.stream.RecordCountStream" /&gt;
+ * }
+ * </p>
+ *
  * @since 5.1.0
  */
 public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
@@ -83,17 +96,6 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
   }
 
   public void inform(SolrCore core) {
-
-    /*
-     * The stream factory will always contain the zkUrl for the given collection Adds default streams with their
-     * corresponding function names. These defaults can be overridden or added to in the solrConfig in the stream
-     * RequestHandler def. Example config override
-     * <lst name="streamFunctions">
-     *  <str name="group">org.apache.solr.client.solrj.io.stream.ReducerStream</str>
-     *  <str name="count">org.apache.solr.client.solrj.io.stream.RecordCountStream</str>
-     * </lst>
-     */
-
     String defaultCollection;
     String defaultZkhost;
     CoreContainer coreContainer = core.getCoreContainer();
