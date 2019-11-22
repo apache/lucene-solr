@@ -112,6 +112,7 @@ Bug Fixes
 * SOLR-13941: Tests configure Jetty differently than when running via start.jar (janhoy, Uwe Schindler)
 
 * SOLR-13950: Fix InterruptedException being swallowed in ZkStateReader’s getLeaderRetry method
+  (Andy Vuong via Tomás Fernández Löbbe)
 
 Other Changes
 ---------------------
