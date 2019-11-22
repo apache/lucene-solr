@@ -20,7 +20,9 @@ package org.apache.solr.handler;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.core.ConfigOverlay;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.RequestParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.PermissionNameProvider;
@@ -38,7 +40,10 @@ public class ConfigSetSolrConfigHandler {
   }
 
   @EndPoint(method = SolrRequest.METHOD.GET,
-      path = {PATH_PREFIX, PATH_PREFIX + "{name}" + PATH_POSTFIX_CONFIG},
+      path = {
+          PATH_PREFIX, PATH_PREFIX + "{name}" + PATH_POSTFIX_CONFIG,
+          PATH_PREFIX + "{name}" + PATH_POSTFIX_CONFIG + "/" + ConfigOverlay.NAME,
+          PATH_PREFIX + "{name}" + PATH_POSTFIX_CONFIG + "/" + RequestParams.NAME},
       permission = PermissionNameProvider.Name.SCHEMA_READ_PERM)
   public class Read {
     @Command()
@@ -58,7 +63,7 @@ public class ConfigSetSolrConfigHandler {
   }
 
   @EndPoint(method = SolrRequest.METHOD.POST,
-      path = PATH_PREFIX + "{name}" + PATH_POSTFIX_CONFIG,
+      path = {PATH_PREFIX + "{name}" + PATH_POSTFIX_CONFIG, PATH_PREFIX + "{name}" + PATH_POSTFIX_CONFIG + "/" + RequestParams.NAME},
       permission = PermissionNameProvider.Name.SCHEMA_EDIT_PERM)
   public class Write {
     @Command()

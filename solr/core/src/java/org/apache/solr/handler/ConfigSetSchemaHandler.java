@@ -66,9 +66,8 @@ public class ConfigSetSchemaHandler {
     @Command()
     public void get(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
       String configSetName = req.getPathTemplateValues().get("name");
-      //@todo apv remove query param ?
       //@todo apv check get version call
-      String schemaPath = req.getParams().get("query");
+      String schemaPath = trimPath(req, configSetName);
       //populating ManagedSchema
       SolrConfig config = getSolrConfig(configSetName);
       ManagedIndexSchema schema = getManagedSchema(configSetName, config);
@@ -122,4 +121,8 @@ public class ConfigSetSchemaHandler {
     return config;
   }
 
+  private String trimPath(SolrQueryRequest req, String configSetName) {
+    String fPath = (String) req.getContext().get("path");
+    return fPath.replace("/cluster/configset/" + configSetName, "");
+  }
 }
