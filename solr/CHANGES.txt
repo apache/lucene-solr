@@ -75,6 +75,8 @@ Improvements
 * SOLR-13907: In the Cloud/tree section of the Admin UI, fix metadata panel and force an horizontal scrollbar for the tree
   (Richard Goodman via Tomás Fernández Löbbe)
 
+* SOLR-13905: Make findRequestType in AuditEvent more robust (janhoy)
+
 Optimizations
 ---------------------
 (No changes)
