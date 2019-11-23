@@ -36,9 +36,16 @@ public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase
 
   @Test
   public void test() throws Exception {
-    
     Random random = random();
     del("*:*");
+
+    index(id, random.nextInt(), "b_t", "snake a,b spider shark snail slug seal", "foo_i_p", "1");
+    query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "foo_i_p");
+    del("*:*");
+
+    // verify point field on empty index
+    query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "foo_i_p");
+
     index(id, random.nextInt(), "b_t", "snake a,b spider shark snail slug seal", "foo_i", "1");
     index(id, random.nextInt(), "b_t", "snake spider shark snail slug", "foo_i", "2", "foo_date_p", "2015-01-03T14:30:00Z");
     index(id, random.nextInt(), "b_t", "snake spider shark snail", "foo_i", "3");
@@ -67,9 +74,8 @@ public class DistributedTermsComponentTest extends BaseDistributedSearchTestCase
     query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "b_t", "terms.list", "snake,zebra", "terms.ttf", "true");
     query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "b_t", "terms.fl", "c_t", "terms.list", "snake,ant,zebra", "terms.ttf", "true");
 
-    // TODO: SOLR-13403 fix distributed failure case
     // for date point field
-    //query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "foo_date_p");
+    query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "foo_date_p");
     // terms.ttf=true doesn't work for point fields
     //query("qt", "/terms", "shards.qt", "/terms", "terms", "true", "terms.fl", "foo_date_p", "terms.ttf", "true");
   }

@@ -186,8 +186,6 @@ include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-terms-facet-
 ====
 --
 
-// TODO: This table has cells that won't work with PDF: https://github.com/ctargett/refguide-asciidoc-poc/issues/13
-
 [width="100%",cols="20%,90%",options="header",]
 |===
 |Parameter |Description
@@ -376,8 +374,6 @@ The output from the range facet above would look a bit like:
 ==== Range Facet Parameters
 
 Range facet parameter names and semantics largely mirror facet.range query-parameter style faceting. For example "start" here corresponds to "facet.range.start" in a facet.range command.
-
-// TODO: This table has cells that won't work with PDF: https://github.com/ctargett/refguide-asciidoc-poc/issues/13
 
 [width="100%",cols="10%,90%",options="header",]
 |===
@@ -573,6 +569,8 @@ Unlike all the facets discussed so far, Aggregation functions (also called *face
 |avg |`avg(popularity)` |average of numeric values
 |min |`min(salary)` |minimum value
 |max |`max(mul(price,popularity))` |maximum value
+|missing |`missing(author)` |number of documents which do not have value for given field or function
+|countvals |`countvals(author)` |number of values for a given field or function
 |unique |`unique(author)` |number of unique values of the given field. Beyond 100 values it yields not exact estimate
 |uniqueBlock |`uniqueBlock(\_root_)` |same as above with smaller footprint strictly for <<json-faceting-domain-changes.adoc#block-join-domain-changes,counting the number of Block Join blocks>>. The given field must be unique across blocks, and only singlevalued string fields are supported, docValues are recommended.
 |hll |`hll(author)` |distributed cardinality estimate via hyper-log-log algorithm

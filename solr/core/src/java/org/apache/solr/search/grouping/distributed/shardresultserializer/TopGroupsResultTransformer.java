@@ -52,7 +52,7 @@ import static org.apache.solr.common.params.CommonParams.ID;
 
 /**
  * Implementation for transforming {@link TopGroups} and {@link TopDocs} into a {@link NamedList} structure and
- * visa versa.
+ * vice versa.
  */
 public class TopGroupsResultTransformer implements ShardResultTransformer<List<Command>, Map<String, ?>> {
 

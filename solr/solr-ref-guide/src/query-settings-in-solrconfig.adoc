@@ -37,6 +37,8 @@ When a new searcher is opened, the current searcher continues servicing requests
 
 In Solr, the following cache implementations are available: recommended `solr.search.CaffeineCache`, and legacy implementations: `solr.search.LRUCache`, `solr.search.FastLRUCache,` and `solr.search.LFUCache`.
 
+NOTE: `LRUCache`, `LFUCache` and `FastLRUCache` are deprecated and will be removed in Solr 9.0. Users should switch their configurations to use `CaffeineCache` instead.
+
 The `CaffeineCache` is an implementation backed by the https://github.com/ben-manes/caffeine[Caffeine caching library]. By default it uses a Window TinyLFU (W-TinyLFU) eviction policy, which allows the eviction based on both frequency and recency of use in O(1) time with a small footprint. Generally this cache implementation is recommended over other legacy caches as it usually offers lower memory footprint, higher hit ratio and better multi-threaded performance over legacy caches.
 
 The acronym LRU stands for Least Recently Used. When an LRU cache fills up, the entry with the oldest last-accessed timestamp is evicted to make room for the new entry. The net effect is that entries that are accessed frequently tend to stay in the cache, while those that are not accessed frequently tend to drop out and will be re-fetched from the index if needed again.

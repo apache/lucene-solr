@@ -180,7 +180,9 @@ public class SloppyMath {
    * Convert to degrees.
    * @param radians radians to convert to degrees
    * @return degrees
+   * @deprecated Use {@link Math#toDegrees(double)} on Java 9+.
    */
+  @Deprecated
   public static double toDegrees(final double radians) {
     return radians * TO_DEGREES;
   }
@@ -189,7 +191,9 @@ public class SloppyMath {
    * Convert to radians.
    * @param degrees degrees to convert to radians
    * @return radians
+   * @deprecated Use {@link Math#toRadians(double)} on Java 9+.
    */
+  @Deprecated
   public static double toRadians(final double degrees) {
     return degrees * TO_RADIANS;
   }

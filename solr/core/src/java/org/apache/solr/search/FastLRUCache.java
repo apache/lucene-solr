@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -44,6 +45,8 @@ import org.slf4j.LoggerFactory;
  * @see org.apache.solr.util.ConcurrentLRUCache
  * @see org.apache.solr.search.SolrCache
  * @since solr 1.4
+ * @deprecated This cache implementation is deprecated and will be removed in Solr 9.0.
+ * Use {@link CaffeineCache} instead.
  */
 public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>, Accountable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -240,8 +243,18 @@ public class FastLRUCache<K, V> extends SolrCacheBase implements SolrCache<K, V>
   }
 
   @Override
+  public V remove(K key) {
+    return cache.remove(key);
+  }
+
+  @Override
   public V get(K key) {
     return cache.get(key);
+  }
+
+  @Override
+  public V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction) {
+    return cache.computeIfAbsent(key, mappingFunction);
   }
 
   @Override

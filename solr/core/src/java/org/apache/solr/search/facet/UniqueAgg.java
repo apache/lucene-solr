@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.function.IntFunction;
 
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
@@ -125,13 +124,11 @@ public class UniqueAgg extends StrAggValueSource {
   }
 
 
-  static abstract class BaseNumericAcc extends SlotAcc {
-    SchemaField sf;
+  static abstract class BaseNumericAcc extends DocValuesAcc {
     LongSet[] sets;
 
     public BaseNumericAcc(FacetContext fcontext, String field, int numSlots) throws IOException {
-      super(fcontext);
-      sf = fcontext.searcher.getSchema().getField(field);
+      super(fcontext, fcontext.qcontext.searcher().getSchema().getField(field));
       sets = new LongSet[numSlots];
     }
 
@@ -146,24 +143,13 @@ public class UniqueAgg extends StrAggValueSource {
     }
 
     @Override
-    public void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
-      int valuesDocID = docIdSetIterator().docID();
-      if (valuesDocID < doc) {
-        valuesDocID = docIdSetIterator().advance(doc);
-      }
-      if (valuesDocID > doc) {
-        // missing
-        return;
-      }
-
+    protected void collectValues(int doc, int slot) throws IOException {
       LongSet set = sets[slot];
       if (set == null) {
         set = sets[slot] = new LongSet(16);
       }
       collectValues(doc, set);
     }
-
-    protected abstract DocIdSetIterator docIdSetIterator();
 
     protected abstract void collectValues(int doc, LongSet set) throws IOException;
 

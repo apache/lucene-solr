@@ -41,15 +41,28 @@ final class NodeHash<T> {
 
   private boolean nodesEqual(Builder.UnCompiledNode<T> node, long address) throws IOException {
     fst.readFirstRealTargetArc(address, scratchArc, in);
-    if (scratchArc.bytesPerArc != 0 && node.numArcs != scratchArc.numArcs) {
-      return false;
+
+    // Fail fast for a node with fixed length arcs.
+    if (scratchArc.bytesPerArc() != 0) {
+      if (scratchArc.nodeFlags() == FST.ARCS_FOR_BINARY_SEARCH) {
+        if (node.numArcs != scratchArc.numArcs()) {
+          return false;
+        }
+      } else {
+        assert scratchArc.nodeFlags() == FST.ARCS_FOR_DIRECT_ADDRESSING;
+        if ((node.arcs[node.numArcs - 1].label - node.arcs[0].label + 1) != scratchArc.numArcs()
+            || node.numArcs != scratchArc.bitTable().countBits()) {
+          return false;
+        }
+      }
     }
-    for(int arcUpto=0;arcUpto<node.numArcs;arcUpto++) {
+
+    for(int arcUpto=0; arcUpto < node.numArcs; arcUpto++) {
       final Builder.Arc<T> arc = node.arcs[arcUpto];
-      if (arc.label != scratchArc.label ||
-          !arc.output.equals(scratchArc.output) ||
-          ((Builder.CompiledNode) arc.target).node != scratchArc.target ||
-          !arc.nextFinalOutput.equals(scratchArc.nextFinalOutput) ||
+      if (arc.label != scratchArc.label() ||
+          !arc.output.equals(scratchArc.output()) ||
+          ((Builder.CompiledNode) arc.target).node != scratchArc.target() ||
+          !arc.nextFinalOutput.equals(scratchArc.nextFinalOutput()) ||
           arc.isFinal != scratchArc.isFinal()) {
         return false;
       }
@@ -98,10 +111,10 @@ final class NodeHash<T> {
     fst.readFirstRealTargetArc(node, scratchArc, in);
     while(true) {
       // System.out.println("  label=" + scratchArc.label + " target=" + scratchArc.target + " h=" + h + " output=" + fst.outputs.outputToString(scratchArc.output) + " next?=" + scratchArc.flag(4) + " final?=" + scratchArc.isFinal() + " pos=" + in.getPosition());
-      h = PRIME * h + scratchArc.label;
-      h = PRIME * h + (int) (scratchArc.target^(scratchArc.target>>32));
-      h = PRIME * h + scratchArc.output.hashCode();
-      h = PRIME * h + scratchArc.nextFinalOutput.hashCode();
+      h = PRIME * h + scratchArc.label();
+      h = PRIME * h + (int) (scratchArc.target() ^(scratchArc.target() >>32));
+      h = PRIME * h + scratchArc.output().hashCode();
+      h = PRIME * h + scratchArc.nextFinalOutput().hashCode();
       if (scratchArc.isFinal()) {
         h += 17;
       }
@@ -170,4 +183,5 @@ final class NodeHash<T> {
       }
     }
   }
+
 }

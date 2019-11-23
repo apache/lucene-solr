@@ -114,6 +114,14 @@ unless the jvm has been started with `-DStreamingExpressionMacros=true` (usually
 
 Because streaming expressions relies on the `/export` handler, many of the field and field type requirements to use `/export` are also requirements for `/stream`, particularly for `sort` and `fl` parameters. Please see the section <<exporting-result-sets.adoc#exporting-result-sets,Exporting Result Sets>> for details.
 
+=== Adding Custom Expressions
+
+Creating your own custom expressions can be easily done by implementing the {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/io/stream/expr/Expressible.html[Expressible] interface.   To add a custom expression to the
+list of known mappings for the `/stream` handler, you just need to declare it as a plugin in `solrconfig.xml` via:
+
+[source,xml]
+<expressible name="custom" class="org.example.CustomStreamingExpression"/> 
+
 == Types of Streaming Expressions
 
 === About Stream Sources

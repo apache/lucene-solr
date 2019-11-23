@@ -1,5 +1,5 @@
 = The Well-Configured Solr Instance
-:page-children: configuring-solrconfig-xml, solr-cores-and-solr-xml, configuration-apis, implicit-requesthandlers, solr-plugins, jvm-settings, v2-api
+:page-children: configuring-solrconfig-xml, solr-cores-and-solr-xml, configuration-apis, implicit-requesthandlers, solr-plugins, jvm-settings, v2-api, package-manager
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -30,6 +30,8 @@ This section covers the following topics:
 <<implicit-requesthandlers.adoc#implicit-requesthandlers,Implicit RequestHandlers>>: Describes various end-points automatically provided by Solr and how to configure them.
 
 <<solr-plugins.adoc#solr-plugins,Solr Plugins>>: Introduces Solr plugins with pointers to more information.
+
+<<package-manager.adoc#glossary-of-terms, Packages and Package Management>>: Installing, deploying and updating packages (containing plugins) into a Solr cluster
 
 <<jvm-settings.adoc#jvm-settings,JVM Settings>>: Gives some guidance on best practices for working with Java Virtual Machines.
 

@@ -87,6 +87,26 @@ public final class CryptoKeys {
     return null;
   }
 
+  public String verify(String sig, InputStream is) {
+    exception = null;
+    for (Map.Entry<String, PublicKey> entry : keys.entrySet()) {
+      boolean verified;
+      try {
+        verified = CryptoKeys.verify(entry.getValue(), Base64.base64ToByteArray(sig), is);
+        log.debug("verified {} ", verified);
+        if (verified) return entry.getKey();
+      } catch (Exception e) {
+        exception = e;
+        log.debug("NOT verified  ");
+      }
+
+    }
+
+    return null;
+  }
+
+
+
 
   /**
    * Create PublicKey from a .DER file
@@ -363,12 +383,12 @@ public final class CryptoKeys {
 
   public static void main(String[] args) throws Exception {
     RSAKeyPair keyPair = new RSAKeyPair();
-    System.out.println(keyPair.getPublicKeyStr());
+//    CLIO.out(keyPair.getPublicKeyStr());
     PublicKey pk = deserializeX509PublicKey(keyPair.getPublicKeyStr());
     byte[] payload = "Hello World!".getBytes(StandardCharsets.UTF_8);
     byte[] encrypted = keyPair.encrypt(ByteBuffer.wrap(payload));
     String cipherBase64 = Base64.byteArrayToBase64(encrypted);
-    System.out.println("encrypted: "+ cipherBase64);
+//    CLIO.out("encrypted: "+ cipherBase64);
     System.out.println("signed: "+ Base64.byteArrayToBase64(keyPair.signSha256(payload)));
     System.out.println("decrypted "+  new String(decryptRSA(encrypted , pk), StandardCharsets.UTF_8));
   }

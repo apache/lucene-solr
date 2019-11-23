@@ -18,13 +18,18 @@
 package org.apache.solr.filestore;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.solr.api.Command;
@@ -39,6 +44,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.BlobRepository;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
@@ -75,6 +81,50 @@ public class PackageStoreAPI {
     return packageStore;
   }
 
+  /**
+   * get a list of nodes randomly shuffled
+   * * @lucene.internal
+   */
+  public ArrayList<String> shuffledNodes() {
+    Set<String> liveNodes = coreContainer.getZkController().getZkStateReader().getClusterState().getLiveNodes();
+    ArrayList<String> l = new ArrayList(liveNodes);
+    l.remove(coreContainer.getZkController().getNodeName());
+    Collections.shuffle(l, BlobRepository.RANDOM);
+    return l;
+  }
+
+  public void validateFiles(List<String> files, boolean validateSignatures, Consumer<String> errs) {
+    for (String path : files) {
+      try {
+        PackageStore.FileType type = packageStore.getType(path, true);
+        if (type != PackageStore.FileType.FILE) {
+          errs.accept("No such file : " + path);
+          continue;
+        }
+
+        packageStore.get(path, entry -> {
+          if (entry.getMetaData().signatures == null ||
+              entry.getMetaData().signatures.isEmpty()) {
+            errs.accept(path + " has no signature");
+            return;
+          }
+          if (validateSignatures) {
+            try {
+              validate(entry.meta.signatures, entry);
+            } catch (SolrException e) {
+              log.error("error validating package artifact", e);
+              errs.accept(e.getMessage());
+            }
+          }
+        }, false);
+      } catch (Exception e) {
+        log.error("Error reading file ", e);
+        errs.accept("Error reading file " + path + " " + e.getMessage());
+      }
+    }
+
+  }
+
   @EndPoint(
       path = "/cluster/files/*",
       method = SolrRequest.METHOD.PUT,
@@ -106,6 +156,10 @@ public class PackageStoreAPI {
           if (signatures != null) {
             vals.put("sig", signatures);
           }
+          PackageStore.FileType type = packageStore.getType(path, true);
+          if(type != PackageStore.FileType.NOFILE) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,  "Path already exists "+ path);
+          }
           packageStore.put(new PackageStore.FileEntry(buf, new MetaData(vals), path));
           rsp.add(CommonParams.FILE, path);
         } catch (IOException e) {
@@ -127,7 +181,7 @@ public class PackageStoreAPI {
     }
 
     private List<String> readSignatures(SolrQueryRequest req, ByteBuffer buf)
-        throws SolrException {
+        throws SolrException, IOException {
       String[] signatures = req.getParams().getParams("sig");
       if (signatures == null || signatures.length == 0) return null;
       List<String> sigs = Arrays.asList(signatures);
@@ -136,7 +190,7 @@ public class PackageStoreAPI {
     }
 
     public void validate(List<String> sigs,
-                         ByteBuffer buf) throws SolrException {
+                         ByteBuffer buf) throws SolrException, IOException {
       Map<String, byte[]> keys = CloudUtil.getTrustedKeys(
           coreContainer.getZkController().getZkClient(), "exe");
       if (keys == null || keys.isEmpty()) {
@@ -148,11 +202,12 @@ public class PackageStoreAPI {
         cryptoKeys = new CryptoKeys(keys);
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Error parsing public keyts in ZooKeeper");
+            "Error parsing public keys in ZooKeeper");
       }
       for (String sig : sigs) {
         if (cryptoKeys.verify(sig, buf) == null) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Signature does not match any public key : " + sig);
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Signature does not match any public key : " + sig +" len: "+buf.limit()+  " content sha512: "+
+              DigestUtils.sha512Hex(new ByteBufferInputStream(buf)));
         }
 
       }
@@ -187,7 +242,7 @@ public class PackageStoreAPI {
         path = "";
       }
 
-      PackageStore.FileType typ = packageStore.getType(path);
+      PackageStore.FileType typ = packageStore.getType(path, false);
       if (typ == PackageStore.FileType.NOFILE) {
         rsp.add("files", Collections.singletonMap(path, null));
         return;
@@ -221,7 +276,7 @@ public class PackageStoreAPI {
           } catch (IOException e) {
             throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error reading file" + path);
           }
-        });
+        }, false);
 
       });
     }
@@ -268,6 +323,38 @@ public class PackageStoreAPI {
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unsupported char in file name: " + part);
         }
       }
+    }
+  }
+
+  public void validate(List<String> sigs,
+                       PackageStore.FileEntry entry) throws SolrException {
+    Map<String, byte[]> keys = CloudUtil.getTrustedKeys(
+        coreContainer.getZkController().getZkClient(), "exe");
+    if (keys == null || keys.isEmpty()) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "ZooKeeper does not have any public keys");
+    }
+    CryptoKeys cryptoKeys = null;
+    try {
+      cryptoKeys = new CryptoKeys(keys);
+    } catch (Exception e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
+          "Error parsing public keys in ZooKeeper");
+    }
+    for (String sig : sigs) {
+      Supplier<String> errMsg = () -> "Signature does not match any public key : " + sig + "sha256 "+ entry.getMetaData().sha512;
+      if (entry.getBuffer() != null) {
+        if (cryptoKeys.verify(sig, entry.getBuffer()) == null) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, errMsg.get());
+        }
+      } else {
+        InputStream inputStream = entry.getInputStream();
+        if (cryptoKeys.verify(sig, inputStream) == null) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, errMsg.get());
+        }
+
+      }
+
     }
   }
 }

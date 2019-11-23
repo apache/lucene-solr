@@ -1392,6 +1392,8 @@ public class QueryComponent extends SearchComponent
           .setSort(groupSortSpec.getSort())
           .setQuery(query, rb.req)
           .setDocSet(searcher)
+          .setMainQuery(rb.getQuery())
+          .setNeedScores(needScores)
           .build()
       );
     }

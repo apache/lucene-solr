@@ -25,9 +25,11 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 //import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.LongAdder;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Function;
 
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -170,6 +172,46 @@ public class ConcurrentLFUCache<K, V> implements Cache<K,V>, Accountable {
   }
 
   @Override
+  public V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction) {
+    // prescreen access first
+    V val = get(key);
+    if (val != null) {
+      return val;
+    }
+    AtomicBoolean newValue = new AtomicBoolean();
+    if (islive) {
+      stats.accessCounter.increment();
+    }
+    CacheEntry<K, V> entry =  map.computeIfAbsent(key, k -> {
+      V value = mappingFunction.apply(key);
+      // preserve the semantics of computeIfAbsent
+      if (value == null) {
+        return null;
+      }
+      CacheEntry<K, V> e = new CacheEntry<>(key, value, timeSource.getEpochTimeNs());
+      newValue.set(true);
+      oldestEntry.updateAndGet(x -> x > e.lastAccessed  || x == 0 ? e.lastAccessed : x);
+      stats.size.increment();
+      ramBytes.add(e.ramBytesUsed() + HASHTABLE_RAM_BYTES_PER_ENTRY); // added key + value + entry
+      if (islive) {
+        stats.putCounter.increment();
+      } else {
+        stats.nonLivePutCounter.increment();
+      }
+      return e;
+    });
+    if (newValue.get()) {
+      maybeMarkAndSweep();
+    } else {
+      if (islive && entry != null) {
+        entry.lastAccessed = timeSource.getEpochTimeNs();
+        entry.hits.increment();
+      }
+    }
+    return entry != null ? entry.value : null;
+  }
+
+  @Override
   public V remove(K key) {
     CacheEntry<K, V> cacheEntry = map.remove(key);
     if (cacheEntry != null) {
@@ -187,6 +229,8 @@ public class ConcurrentLFUCache<K, V> implements Cache<K,V>, Accountable {
     return putCacheEntry(e);
   }
 
+
+
   /**
    * Visible for testing to create synthetic cache entries.
    * @lucene.internal
@@ -196,13 +240,10 @@ public class ConcurrentLFUCache<K, V> implements Cache<K,V>, Accountable {
     // initialize oldestEntry
     oldestEntry.updateAndGet(x -> x > e.lastAccessed  || x == 0 ? e.lastAccessed : x);
     CacheEntry<K, V> oldCacheEntry = map.put(e.key, e);
-    int currentSize;
     if (oldCacheEntry == null) {
       stats.size.increment();
-      currentSize = stats.size.intValue();
       ramBytes.add(e.ramBytesUsed() + HASHTABLE_RAM_BYTES_PER_ENTRY); // added key + value + entry
     } else {
-      currentSize = stats.size.intValue();
       ramBytes.add(-oldCacheEntry.ramBytesUsed());
       ramBytes.add(e.ramBytesUsed());
     }
@@ -211,7 +252,11 @@ public class ConcurrentLFUCache<K, V> implements Cache<K,V>, Accountable {
     } else {
       stats.nonLivePutCounter.increment();
     }
+    maybeMarkAndSweep();
+    return oldCacheEntry == null ? null : oldCacheEntry.value;
+  }
 
+  private void maybeMarkAndSweep() {
     // Check if we need to clear out old entries from the cache.
     // isCleaning variable is checked instead of markAndSweepLock.isLocked()
     // for performance because every put invokation will check until
@@ -223,6 +268,7 @@ public class ConcurrentLFUCache<K, V> implements Cache<K,V>, Accountable {
     // Thread safety note: isCleaning read is piggybacked (comes after) other volatile reads
     // in this method.
     boolean evictByIdleTime = maxIdleTimeNs != Long.MAX_VALUE;
+    int currentSize = stats.size.intValue();
     long idleCutoff = evictByIdleTime ? timeSource.getEpochTimeNs() - maxIdleTimeNs : -1L;
     if ((currentSize > upperWaterMark || (evictByIdleTime && oldestEntry.get() < idleCutoff)) && !isCleaning) {
       if (newThreadForCleanup) {
@@ -233,7 +279,6 @@ public class ConcurrentLFUCache<K, V> implements Cache<K,V>, Accountable {
         markAndSweep();
       }
     }
-    return oldCacheEntry == null ? null : oldCacheEntry.value;
   }
 
   /**
