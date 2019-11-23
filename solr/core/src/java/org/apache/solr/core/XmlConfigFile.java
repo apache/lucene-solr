@@ -301,7 +301,7 @@ public class XmlConfigFile { // formerly simply "Config"
         }
       }
 
-      log.debug(name + ":" + path + "=" + nodeList);
+      log.trace(name + ":" + path + "=" + nodeList);
       return nodeList;
 
     } catch (XPathExpressionException e) {
