@@ -132,6 +132,8 @@ Other Changes
 
 * SOLR-13782: Solr Ref Guide no longer published in PDF format. (Cassandra Targett)
 
+* SOLR-12193: Move some log messages to TRACE level (gezapeti, janhoy)
+
 ==================  8.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
