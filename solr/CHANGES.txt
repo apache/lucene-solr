@@ -39,6 +39,8 @@ Bug Fixes
 
 * SOLR-13905: Make findRequestType in AuditEvent more robust (janhoy)
 
+* SOLR-13465: CoreContainer.auditloggerPlugin should be volatile (janhoy, hossman)
+
 ==================  8.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
