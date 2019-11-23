@@ -116,6 +116,8 @@ Bug Fixes
 * SOLR-13950: Fix InterruptedException being swallowed in ZkStateReader’s getLeaderRetry method
   (Andy Vuong via Tomás Fernández Löbbe)
 
+* SOLR-13465: CoreContainer.auditloggerPlugin should be volatile (janhoy, hossman)
+
 Other Changes
 ---------------------
 
