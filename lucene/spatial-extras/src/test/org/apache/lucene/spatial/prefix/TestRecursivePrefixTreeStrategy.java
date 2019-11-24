@@ -31,6 +31,7 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
+@SuppressWarnings("deprecation")
 public class TestRecursivePrefixTreeStrategy extends StrategyTestCase {
 
   private int maxLength;

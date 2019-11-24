@@ -25,7 +25,6 @@ import org.apache.lucene.analysis.StopFilter;
 import org.apache.lucene.analysis.TokenFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
-import org.apache.lucene.analysis.synonym.SynonymFilter;
 import org.apache.lucene.analysis.synonym.SynonymGraphFilter;
 import org.apache.lucene.analysis.synonym.SynonymMap;
 import org.apache.lucene.util.CharsRef;
@@ -69,17 +68,19 @@ public class TestConcatenateGraphFilter extends BaseTokenStreamTestCase {
     assertTokenStreamContents(stream, new String[]{builder.toCharsRef().toString()}, null, null, new int[]{1});
   }
 
+  @SuppressWarnings("deprecation")
   @Test
   public void testWithSynonym() throws Exception {
     SynonymMap.Builder builder = new SynonymMap.Builder(true);
     builder.add(new CharsRef("mykeyword"), new CharsRef("mysynonym"), true);
     Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, true);
     tokenizer.setReader(new StringReader("mykeyword"));
-    SynonymFilter filter = new SynonymFilter(tokenizer, builder.build(), true);
+    org.apache.lucene.analysis.synonym.SynonymFilter filter = new org.apache.lucene.analysis.synonym.SynonymFilter(tokenizer, builder.build(), true);
     ConcatenateGraphFilter stream = new ConcatenateGraphFilter(filter);
     assertTokenStreamContents(stream, new String[] {"mykeyword", "mysynonym"}, null, null, new int[] { 1, 0 });
   }
 
+  @SuppressWarnings("deprecation")
   @Test
   public void testWithSynonyms() throws Exception {
     SynonymMap.Builder builder = new SynonymMap.Builder(true);
@@ -87,7 +88,7 @@ public class TestConcatenateGraphFilter extends BaseTokenStreamTestCase {
     Tokenizer tokenStream = new MockTokenizer(MockTokenizer.WHITESPACE, true);
     String input = "mykeyword another keyword";
     tokenStream.setReader(new StringReader(input));
-    SynonymFilter filter = new SynonymFilter(tokenStream, builder.build(), true);
+    org.apache.lucene.analysis.synonym.SynonymFilter filter = new org.apache.lucene.analysis.synonym.SynonymFilter(tokenStream, builder.build(), true);
     ConcatenateGraphFilter stream = new ConcatenateGraphFilter(filter, SEP_LABEL, false, 100);
     String[] expectedOutputs = new String[2];
     CharsRefBuilder expectedOutput = new CharsRefBuilder();
@@ -132,6 +133,7 @@ public class TestConcatenateGraphFilter extends BaseTokenStreamTestCase {
     }
   }
 
+  @SuppressWarnings("deprecation")
   @Test
   public void testValidNumberOfExpansions() throws IOException {
     SynonymMap.Builder builder = new SynonymMap.Builder(true);
@@ -145,7 +147,7 @@ public class TestConcatenateGraphFilter extends BaseTokenStreamTestCase {
     }
     MockTokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, true);
     tokenizer.setReader(new StringReader(valueBuilder.toString()));
-    SynonymFilter filter = new SynonymFilter(tokenizer, builder.build(), true);
+    org.apache.lucene.analysis.synonym.SynonymFilter filter = new org.apache.lucene.analysis.synonym.SynonymFilter(tokenizer, builder.build(), true);
 
     int count;
     try (ConcatenateGraphFilter stream = new ConcatenateGraphFilter(filter)) {

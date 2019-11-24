@@ -40,11 +40,13 @@ public class MaxDocValueSource extends ValueSource {
     return name() + "()";
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   @Override
   public void createWeight(Map context, IndexSearcher searcher) throws IOException {
     context.put("searcher",searcher);
   }
 
+  @SuppressWarnings("rawtypes")
   @Override
   public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     IndexSearcher searcher = (IndexSearcher)context.get("searcher");

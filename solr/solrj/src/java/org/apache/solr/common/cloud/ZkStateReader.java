@@ -243,6 +243,7 @@ public class ZkStateReader implements SolrCloseable {
    * @return current configuration from <code>autoscaling.json</code>. NOTE:
    * this data is retrieved from ZK on each call.
    */
+  @SuppressWarnings("unchecked")
   public AutoScalingConfig getAutoScalingConfig(Watcher watcher) throws KeeperException, InterruptedException {
     Stat stat = new Stat();
 

@@ -58,7 +58,7 @@ public class UsingSolrJRefGuideExamplesTest extends SolrCloudTestCase {
   private static final int NUM_INDEXED_DOCUMENTS = 3;
   private static final int NUM_LIVE_NODES = 1;
   
-  private Queue<String> expectedLines = new ArrayDeque();
+  private Queue<String> expectedLines = new ArrayDeque<>();
 
   @BeforeClass
   public static void setUpCluster() throws Exception {

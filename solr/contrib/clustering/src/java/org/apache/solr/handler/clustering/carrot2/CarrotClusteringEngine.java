@@ -286,6 +286,7 @@ public class CarrotClusteringEngine extends SearchClusteringEngine {
   /**
    * Prepares Carrot2 documents for clustering.
    */
+  @SuppressWarnings("deprecation")
   private List<Document> getDocuments(SolrDocumentList solrDocList, Map<SolrDocument, Integer> docIds,
                                       Query query, final SolrQueryRequest sreq) throws IOException {
     SolrHighlighter highlighter = null;

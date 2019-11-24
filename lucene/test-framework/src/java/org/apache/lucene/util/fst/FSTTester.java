@@ -341,6 +341,7 @@ public class FSTTester<T> {
   }
 
   // FST is complete
+  @SuppressWarnings("deprecation")
   private void verifyUnPruned(int inputMode, FST<T> fst) throws IOException {
 
     final FST<Long> fstLong;

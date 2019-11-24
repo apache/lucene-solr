@@ -20,7 +20,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import junit.framework.AssertionFailedError;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.solr.SolrTestCaseJ4;
@@ -1225,7 +1224,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   public void testPayloadScoreQuery() throws Exception {
     // There was a bug with PayloadScoreQuery's .equals() method that said two queries were equal with different includeSpanScore settings
 
-    expectThrows(AssertionFailedError.class, "queries should not have been equal",
+    expectThrows(AssertionError.class, "queries should not have been equal",
         () -> assertQueryEquals
             ("payload_score"
                 , "{!payload_score f=foo_dpf v=query func=min includeSpanScore=false}"
@@ -1235,7 +1234,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
   }
 
   public void testPayloadCheckQuery() throws Exception {
-    expectThrows(AssertionFailedError.class, "queries should not have been equal",
+    expectThrows(AssertionError.class, "queries should not have been equal",
         () -> assertQueryEquals
             ("payload_check"
                 , "{!payload_check f=foo_dpf payloads=2}one"
@@ -1266,7 +1265,7 @@ public class QueryEqualityTest extends SolrTestCaseJ4 {
         "{!bool must='{!lucene}foo_s:c' filter='{!lucene}foo_s:d' " +
             "must_not='{!lucene}foo_s:a' should='{!lucene}foo_s:b' filter='{!lucene}foo_s:e'}");
 
-    expectThrows(AssertionFailedError.class, "queries should not have been equal",
+    expectThrows(AssertionError.class, "queries should not have been equal",
         () -> assertQueryEquals
             ("bool"
                 , "{!bool must='{!lucene}foo_s:a'}"

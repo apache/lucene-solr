@@ -36,6 +36,7 @@ import org.apache.lucene.util.mutable.MutableValueFloat;
 /**
  * <code>QueryValueSource</code> returns the relevance score of the query
  */
+@SuppressWarnings({"unchecked", "rawtypes"})
 public class QueryValueSource extends ValueSource {
   final Query q;
   final float defVal;

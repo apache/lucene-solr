@@ -78,6 +78,7 @@ public class TestFeatureExtractionFromMultipleSegments extends TestRerankBase {
     aftertest();
   }
 
+  @SuppressWarnings("unchecked")
   @Test
   public void testFeatureExtractionFromMultipleSegments() throws Exception {
 

@@ -31,6 +31,7 @@ import java.util.*;
  */
 public class TestLineEntityProcessor extends AbstractDataImportHandlerTestCase {
 
+  @SuppressWarnings({"rawtypes", "unchecked"})
   @Test
   /************************************************************************/
   public void testSimple() throws IOException {
@@ -53,7 +54,7 @@ public class TestLineEntityProcessor extends AbstractDataImportHandlerTestCase {
             new VariableResolver(),  //resolver
             getDataSource(filecontents),   //parentDataSource
             Context.FULL_DUMP,                             //currProcess
-            Collections.EMPTY_LIST,        //entityFields
+            Collections.emptyList(),        //entityFields
             attrs                          //entityAttrs
     );
     LineEntityProcessor ep = new LineEntityProcessor();
@@ -71,6 +72,7 @@ public class TestLineEntityProcessor extends AbstractDataImportHandlerTestCase {
     assertEquals(24, fList.size());
   }
 
+  @SuppressWarnings("rawtypes")
   @Test
   /************************************************************************/
   public void testOnly_xml_files() throws IOException {
@@ -88,12 +90,13 @@ public class TestLineEntityProcessor extends AbstractDataImportHandlerTestCase {
             LineEntityProcessor.SKIP_LINE_REGEX, null
     );
 
+    @SuppressWarnings("unchecked")
     Context c = getContext(
             null,                          //parentEntity
             new VariableResolver(),  //resolver
             getDataSource(filecontents),   //parentDataSource
             Context.FULL_DUMP,                             //currProcess
-            Collections.EMPTY_LIST,        //entityFields
+            Collections.emptyList(),        //entityFields
             attrs                          //entityAttrs
     );
     LineEntityProcessor ep = new LineEntityProcessor();
@@ -109,6 +112,7 @@ public class TestLineEntityProcessor extends AbstractDataImportHandlerTestCase {
     assertEquals(5, fList.size());
   }
 
+  @SuppressWarnings("rawtypes")
   @Test
   /************************************************************************/
   public void testOnly_xml_files_no_xsd() throws IOException {
@@ -126,12 +130,13 @@ public class TestLineEntityProcessor extends AbstractDataImportHandlerTestCase {
             LineEntityProcessor.SKIP_LINE_REGEX, "\\.xsd"
     );
 
+    @SuppressWarnings("unchecked")
     Context c = getContext(
             null,                          //parentEntity
             new VariableResolver(),  //resolver
             getDataSource(filecontents),   //parentDataSource
             Context.FULL_DUMP,                             //currProcess
-            Collections.EMPTY_LIST,        //entityFields
+            Collections.emptyList(),        //entityFields
             attrs                          //entityAttrs
     );
     LineEntityProcessor ep = new LineEntityProcessor();
@@ -147,6 +152,7 @@ public class TestLineEntityProcessor extends AbstractDataImportHandlerTestCase {
     assertEquals(4, fList.size());
   }
 
+  @SuppressWarnings("rawtypes")
   @Test
   /************************************************************************/
   public void testNo_xsd_files() throws IOException {
@@ -162,12 +168,13 @@ public class TestLineEntityProcessor extends AbstractDataImportHandlerTestCase {
             LineEntityProcessor.SKIP_LINE_REGEX, "\\.xsd"
     );
 
+    @SuppressWarnings("unchecked")
     Context c = getContext(
             null,                          //parentEntity
             new VariableResolver(),  //resolver
             getDataSource(filecontents),   //parentDataSource
             Context.FULL_DUMP,                             //currProcess
-            Collections.EMPTY_LIST,        //entityFields
+            Collections.emptyList(),        //entityFields
             attrs                          //entityAttrs
     );
     LineEntityProcessor ep = new LineEntityProcessor();

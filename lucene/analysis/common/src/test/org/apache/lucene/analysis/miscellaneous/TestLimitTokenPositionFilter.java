@@ -20,7 +20,6 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.synonym.SynonymFilter;
 import org.apache.lucene.analysis.synonym.SynonymMap;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
@@ -60,6 +59,7 @@ public class TestLimitTokenPositionFilter extends BaseTokenStreamTestCase {
     }
   }
 
+  @SuppressWarnings("deprecation")
   public void testMaxPosition3WithSynomyms() throws IOException {
     for (final boolean consumeAll : new boolean[]{true, false}) {
       MockTokenizer tokenizer = whitespaceMockTokenizer("one two three four five");
@@ -76,7 +76,7 @@ public class TestLimitTokenPositionFilter extends BaseTokenStreamTestCase {
       SynonymMap.Builder.join(new String[]{"dopple", "ganger"}, multiWordCharsRef);
       builder.add(new CharsRef("two"), multiWordCharsRef.get(), true);
       SynonymMap synonymMap = builder.build();
-      TokenStream stream = new SynonymFilter(tokenizer, synonymMap, true);
+      TokenStream stream = new org.apache.lucene.analysis.synonym.SynonymFilter(tokenizer, synonymMap, true);
       stream = new LimitTokenPositionFilter(stream, 3, consumeAll);
 
       // "only", the 4th word of multi-word synonym "and indubitably single only" is not emitted, since its position is greater than 3.

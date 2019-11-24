@@ -104,7 +104,7 @@ public class CloudSolrClientCacheTest extends SolrTestCaseJ4 {
 
   }
 
-
+  @SuppressWarnings("deprecation")
   private LBHttpSolrClient getMockLbHttpSolrClient(Map<String, Function> responses) throws Exception {
     LBHttpSolrClient mockLbclient = mock(LBHttpSolrClient.class);
 

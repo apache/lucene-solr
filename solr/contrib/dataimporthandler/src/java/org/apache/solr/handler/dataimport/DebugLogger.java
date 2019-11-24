@@ -41,6 +41,7 @@ import java.util.Stack;
  *
  * @since solr 1.3
  */
+@SuppressWarnings({"rawtypes", "unchecked"})
 class DebugLogger {
   private Stack<DebugInfo> debugStack;
 
@@ -54,6 +55,7 @@ class DebugLogger {
 
   boolean enabled = true;
 
+  @SuppressWarnings("serial")
   public DebugLogger() {
 //    writer = solrWriter;
     output = new NamedList();

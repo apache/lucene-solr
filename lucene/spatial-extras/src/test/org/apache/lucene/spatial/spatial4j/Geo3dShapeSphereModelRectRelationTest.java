@@ -66,6 +66,7 @@ public class Geo3dShapeSphereModelRectRelationTest extends ShapeRectRelationTest
 
   }
 
+  @SuppressWarnings({"unchecked", "rawtypes", "deprecation"})
   @Test
   public void testFailure2_LUCENE6475() {
     GeoCircle geo3dCircle = GeoCircleFactory.makeGeoCircle(planetModel, 1.6282053147165243E-4 * RADIANS_PER_DEGREE,

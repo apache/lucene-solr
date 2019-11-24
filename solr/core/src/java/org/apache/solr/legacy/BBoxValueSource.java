@@ -46,6 +46,7 @@ class BBoxValueSource extends ShapeValuesSource {
     return "bboxShape(" + strategy.getFieldName() + ")";
   }
 
+  @SuppressWarnings("deprecation")
   @Override
   public ShapeValues getValues(LeafReaderContext readerContext) throws IOException {
 

@@ -54,11 +54,13 @@ public class TotalTermFreqValueSource extends ValueSource {
     return name() + '(' + field + ',' + val + ')';
   }
 
+  @SuppressWarnings("rawtypes")
   @Override
   public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     return (FunctionValues)context.get(this);
   }
 
+  @SuppressWarnings({"rawtypes", "unchecked"})
   @Override
   public void createWeight(Map context, IndexSearcher searcher) throws IOException {
     long totalTermFreq = 0;

@@ -184,6 +184,7 @@ public abstract class StrategyTestCase extends SpatialTestCase {
     return strategy.makeQuery(q.args);
   }
 
+  @SuppressWarnings("deprecation")
   protected void adoc(String id, String shapeStr) throws IOException, ParseException {
     Shape shape = shapeStr==null ? null : ctx.readShapeFromWkt(shapeStr);
     addDocument(newDoc(id, shape));

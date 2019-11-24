@@ -102,11 +102,13 @@ public class QueryEqualsHashCodeTest extends LuceneTestCase {
     assertTrue(first.hashCode() != second.hashCode());
   }
 
+  @SuppressWarnings("deprecation")
   private SpatialArgs makeArgs1() {
     final Shape shape1 = ctx.makeRectangle(0, 0, 10, 10);
     return new SpatialArgs(predicate, shape1);
   }
 
+  @SuppressWarnings("deprecation")
   private SpatialArgs makeArgs2() {
     final Shape shape2 = ctx.makeRectangle(0, 0, 20, 20);
     return new SpatialArgs(predicate, shape2);

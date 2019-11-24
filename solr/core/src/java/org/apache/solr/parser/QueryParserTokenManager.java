@@ -2,10 +2,12 @@
 package org.apache.solr.parser;
 
 /** Token Manager. */
+@SuppressWarnings("cast")
 public class QueryParserTokenManager implements QueryParserConstants
 {
   int commentNestingDepth ;
 
+  
 private final int jjStopStringLiteralDfa_3(int pos, long active0)
 {
    switch (pos)
@@ -1328,9 +1330,9 @@ private int jjMoveNfa_1(int startState, int curPos)
    }
 }
 static final int[] jjnextStates = {
-   32, 34, 35, 31, 36, 17, 18, 20, 56, 59, 25, 60, 57, 59, 25, 60,
-   22, 23, 38, 39, 46, 38, 39, 40, 46, 38, 39, 41, 49, 54, 46, 42,
-   43, 45, 50, 51, 53, 38, 39, 54, 46, 58, 61, 29, 2, 4, 5,
+   32, 34, 35, 31, 36, 17, 18, 20, 56, 59, 25, 60, 57, 59, 25, 60, 
+   22, 23, 38, 39, 46, 38, 39, 40, 46, 38, 39, 41, 49, 54, 46, 42, 
+   43, 45, 50, 51, 53, 38, 39, 54, 46, 58, 61, 29, 2, 4, 5, 
 };
 private static final boolean jjCanMove_0(int hiByte, int i1, int i2, long l1, long l2)
 {
@@ -1371,9 +1373,9 @@ private static final boolean jjCanMove_2(int hiByte, int i1, int i2, long l1, lo
 
 /** Token literal values. */
 public static final String[] jjstrLiteralImages = {
-"", null, null, null, null, null, null, null, null, null, null, null, null,
-null, null, null, "\53", "\55", null, "\50", "\51", "\72", "\52", "\136", null, null,
-null, null, null, null, "\133", "\173", null, "\146\151\154\164\145\162\50", null,
+"", null, null, null, null, null, null, null, null, null, null, null, null, 
+null, null, null, "\53", "\55", null, "\50", "\51", "\72", "\52", "\136", null, null, 
+null, null, null, null, "\133", "\173", null, "\146\151\154\164\145\162\50", null, 
 "\124\117", "\135", "\175", null, null, };
 
 /** Lexer state names. */
@@ -1386,14 +1388,14 @@ public static final String[] lexStateNames = {
 
 /** Lex State array. */
 public static final int[] jjnewLexState = {
-   -1, -1, -1, -1, -1, -1, -1, -1, -1, 2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0, -1,
-   -1, -1, -1, -1, -1, 1, 1, -1, -1, 3, -1, 3, 3, -1, -1,
+   -1, -1, -1, -1, -1, -1, -1, -1, -1, 2, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 0, -1, 
+   -1, -1, -1, -1, -1, 1, 1, -1, -1, 3, -1, 3, 3, -1, -1, 
 };
 static final long[] jjtoToken = {
-   0xffffffe001L,
+   0xffffffe001L, 
 };
 static final long[] jjtoSkip = {
-   0x1f00L,
+   0x1f00L, 
 };
 protected CharStream input_stream;
 private final int[] jjrounds = new int[63];
@@ -1478,7 +1480,7 @@ int jjmatchedPos;
 int jjmatchedKind;
 
 /** Get the next Token. */
-public Token getNextToken()
+public Token getNextToken() 
 {
   Token matchedToken;
   int curPos = 0;

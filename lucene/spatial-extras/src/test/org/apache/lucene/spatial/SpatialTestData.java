@@ -41,6 +41,7 @@ public class SpatialTestData {
    * an "id", a "name" and the "shape".  Empty lines and lines starting with a '#' are skipped.
    * The stream is closed.
    */
+  @SuppressWarnings("deprecation")
   public static Iterator<SpatialTestData> getTestData(InputStream in, SpatialContext ctx) throws IOException {
     List<SpatialTestData> results = new ArrayList<>();
     BufferedReader bufInput = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));

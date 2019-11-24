@@ -33,6 +33,7 @@ import org.w3c.dom.NodeList;
 public class FuzzyLikeThisQueryBuilder implements QueryBuilder {
 
   private static final int DEFAULT_MAX_NUM_TERMS = 50;
+  @SuppressWarnings("deprecation")
   private static final float DEFAULT_MIN_SIMILARITY = FuzzyQuery.defaultMinSimilarity;
   private static final int DEFAULT_PREFIX_LENGTH = 1;
   private static final boolean DEFAULT_IGNORE_TF = false;

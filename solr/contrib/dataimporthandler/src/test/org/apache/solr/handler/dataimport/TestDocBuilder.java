@@ -51,6 +51,7 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
     assertNotNull(clz);
   }
 
+  @SuppressWarnings("unchecked")
   @Test
   public void singleEntityNoRows() {
     DataImporter di = new DataImporter();
@@ -70,6 +71,7 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
     assertEquals(0, di.getDocBuilder().importStatistics.rowsCount.get());
   }
 
+  @SuppressWarnings("unchecked")
   @Test
   public void testDeltaImportNoRows_MustNotCommit() {
     DataImporter di = new DataImporter();
@@ -92,6 +94,7 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
     assertEquals(0, di.getDocBuilder().importStatistics.rowsCount.get());
   }
 
+  @SuppressWarnings("unchecked")
   @Test
   public void singleEntityOneRow() {
     DataImporter di = new DataImporter();
@@ -121,6 +124,7 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
     }
   }
 
+  @SuppressWarnings("unchecked")
   @Test
   public void testImportCommand() {
     DataImporter di = new DataImporter();
@@ -150,6 +154,7 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
     }
   }
 
+  @SuppressWarnings("unchecked")
   @Test
   public void singleEntityMultipleRows() {
     DataImporter di = new DataImporter();
@@ -182,6 +187,7 @@ public class TestDocBuilder extends AbstractDataImportHandlerTestCase {
     assertEquals(3, di.getDocBuilder().importStatistics.rowsCount.get());
   }
 
+  @SuppressWarnings("unchecked")
   @Test
   public void templateXPath() {
     DataImporter di = new DataImporter();

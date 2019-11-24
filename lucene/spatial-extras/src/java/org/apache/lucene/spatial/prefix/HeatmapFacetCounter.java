@@ -88,6 +88,7 @@ public class HeatmapFacetCounter {
    * @param facetLevel the target depth (detail) of cells.
    * @param maxCells the maximum number of cells to return. If the cells exceed this count, an
    */
+  @SuppressWarnings("deprecation")
   public static Heatmap calcFacets(PrefixTreeStrategy strategy, IndexReaderContext context, Bits topAcceptDocs,
                                    Shape inputShape, final int facetLevel, int maxCells) throws IOException {
     if (maxCells > (MAX_ROWS_OR_COLUMNS * MAX_ROWS_OR_COLUMNS)) {

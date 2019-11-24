@@ -89,6 +89,7 @@ import org.slf4j.MDC;
 import static org.apache.solr.common.params.CommonParams.ADMIN_PATHS;
 import static org.apache.solr.common.params.CommonParams.ID;
 
+@SuppressWarnings({"rawtypes", "unchecked"})
 public abstract class BaseCloudSolrClient extends SolrClient {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -1222,7 +1223,6 @@ public abstract class BaseCloudSolrClient extends SolrClient {
    * all shards involved in processing an update request, typically useful
    * for gauging the replication factor of a batch.
    */
-  @SuppressWarnings("rawtypes")
   public int getMinAchievedReplicationFactor(String collection, NamedList resp) {
     // it's probably already on the top-level header set by condense
     NamedList header = (NamedList)resp.get("responseHeader");
@@ -1245,7 +1245,6 @@ public abstract class BaseCloudSolrClient extends SolrClient {
    * the replication factor that was achieved in each shard involved in the request.
    * For single doc updates, there will be only one shard in the return value.
    */
-  @SuppressWarnings("rawtypes")
   public Map<String,Integer> getShardReplicationFactor(String collection, NamedList resp) {
     connect();
 

@@ -232,7 +232,7 @@ public interface JsonTextWriter extends TextWriter {
     writeStr(name, val, false);
   }
 
-
+  @SuppressWarnings("unchecked")
   default void writeMap(String name, Map val, boolean excludeOuter, boolean isFirstVal) throws IOException {
     if (!excludeOuter) {
       writeMapOpener(val.size());

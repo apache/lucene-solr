@@ -147,7 +147,7 @@ public class TestVariableResolver extends AbstractDataImportHandlerTestCase {
     l.add(m);
     resolver.setEvaluators(new DataImporter().getEvaluators(l));
     ContextImpl context = new ContextImpl(null, resolver, null,
-        Context.FULL_DUMP, Collections.EMPTY_MAP, null, null);
+        Context.FULL_DUMP, Collections.emptyMap(), null, null);
     
     SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'", Locale.ROOT);
     format.setTimeZone(TimeZone.getTimeZone("UTC"));

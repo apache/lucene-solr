@@ -72,6 +72,7 @@ import static org.apache.solr.common.util.ByteArrayUtf8CharSequence.convertCharS
  * <p>
  * NOTE -- {@link JavaBinCodec} instances cannot be reused for more than one marshall or unmarshall operation.
  */
+@SuppressWarnings("unchecked")
 public class JavaBinCodec implements PushWriter {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

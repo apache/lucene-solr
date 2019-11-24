@@ -36,6 +36,7 @@ import org.locationtech.spatial4j.shape.Rectangle;
 import org.locationtech.spatial4j.shape.Shape;
 import org.locationtech.spatial4j.shape.impl.RectangleImpl;
 
+@SuppressWarnings("deprecation")
 public class TestBBoxStrategy extends RandomSpatialOpStrategyTestCase {
 
   @Override
