@@ -126,10 +126,10 @@ on a convenient organization of the index, and should only be considered if norm
 === Adding Custom Expressions
 
 Creating your own custom expressions can be easily done by implementing the {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/io/stream/expr/Expressible.html[Expressible] interface.   To add a custom expression to the
-list of known mappings for the `/stream` handler, you just need to declare it as a plugin in `solrconfig.xml` via:
+list of known mappings for the `/stream` and `/graph` handlers, you just need to declare it as a plugin in `solrconfig.xml` via:
 
 [source,xml]
-<expressible name="custom" class="org.example.CustomStreamingExpression"/> 
+<expressible name="custom" class="org.example.CustomStreamingExpression"/>
 
 
 

@@ -65,10 +65,10 @@ import static org.apache.solr.common.params.CommonParams.ID;
  * Solr Request Handler for streaming data.
  * </p>
  * <p>
- * It loads a default set of mappings via {@link org.apache.solr.handler.SolrDefaultStreamFactory}.
+ * It loads a Solr specific set of streaming expression functions via {@link org.apache.solr.handler.SolrDefaultStreamFactory}.
  * </p>
  * <p>
- * To add additional mappings, just define them as plugins in solrconfig.xml via
+ * To add additional functions, just define them as plugins in solrconfig.xml via
  * {@code
  * &lt;expressible name="count" class="org.apache.solr.client.solrj.io.stream.RecordCountStream" /&gt;
  * }

@@ -22,7 +22,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -36,8 +35,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -49,6 +48,19 @@ import org.slf4j.LoggerFactory;
 
 
 /**
+ * <p>
+ * Solr Request Handler for graph traversal with streaming functions that responds with GraphML markup.
+ * </p>
+ * <p>
+ * It loads the default set of streaming expression functions via {@link org.apache.solr.client.solrj.io.stream.expr.DefaultStreamFactory}.
+ * </p>
+ * <p>
+ * To add additional functions, just define them as plugins in solrconfig.xml via
+ * {@code
+ * &lt;expressible name="count" class="org.apache.solr.client.solrj.io.stream.RecordCountStream" /&gt;
+ * }
+ * </p>
+ * 
  * @since 6.1.0
  */
 public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
@@ -63,17 +75,6 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
   }
 
   public void inform(SolrCore core) {
-
-    /* The stream factory will always contain the zkUrl for the given collection
-     * Adds default streams with their corresponding function names. These
-     * defaults can be overridden or added to in the solrConfig in the stream
-     * RequestHandler def. Example config override
-     *  <lst name="streamFunctions">
-     *    <str name="group">org.apache.solr.client.solrj.io.stream.ReducerStream</str>
-     *    <str name="count">org.apache.solr.client.solrj.io.stream.RecordCountStream</str>
-     *  </lst>
-     * */
-
     String defaultCollection;
     String defaultZkhost;
     CoreContainer coreContainer = core.getCoreContainer();
@@ -87,14 +88,10 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     }
 
     // This pulls all the overrides and additions from the config
-    Object functionMappingsObj = initArgs.get("streamFunctions");
-    if(null != functionMappingsObj){
-      NamedList<?> functionMappings = (NamedList<?>)functionMappingsObj;
-      for(Entry<String,?> functionMapping : functionMappings){
-        Class<? extends Expressible> clazz = core.getResourceLoader().findClass((String)functionMapping.getValue(),
-            Expressible.class);
-        streamFactory.withFunctionName(functionMapping.getKey(), clazz);
-      }
+    List<PluginInfo> pluginInfos = core.getSolrConfig().getPluginInfos(Expressible.class.getName());
+    for (PluginInfo pluginInfo : pluginInfos) {
+      Class<? extends Expressible> clazz = core.getMemClassLoader().findClass(pluginInfo.className, Expressible.class);
+      streamFactory.withFunctionName(pluginInfo.name, clazz);
     }
   }
 
@@ -128,7 +125,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
   }
 
   public String getDescription() {
-    return "StreamHandler";
+    return "GraphHandler";
   }
 
   public String getSource() {
