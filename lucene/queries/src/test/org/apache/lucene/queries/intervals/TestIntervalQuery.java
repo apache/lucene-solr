@@ -18,17 +18,23 @@
 package org.apache.lucene.queries.intervals;
 
 import java.io.IOException;
+import java.util.stream.StreamSupport;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -39,6 +45,7 @@ public class TestIntervalQuery extends LuceneTestCase {
   private Directory directory;
 
   public static final String field = "field";
+  public static final String field2 = field+"2";
 
   @Override
   public void setUp() throws Exception {
@@ -48,6 +55,7 @@ public class TestIntervalQuery extends LuceneTestCase {
     for (int i = 0; i < docFields.length; i++) {
       Document doc = new Document();
       doc.add(newTextField(field, docFields[i], Field.Store.YES));
+      doc.add(newTextField(field2, field2, Field.Store.YES));
       writer.addDocument(doc);
     }
     reader = writer.getReader();
@@ -75,7 +83,7 @@ public class TestIntervalQuery extends LuceneTestCase {
       "x x x x x intend x x x message x x x message x x x addressed x x"
   };
 
-  private void checkHits(Query query, int[] results) throws IOException {
+  private void checkHits(Query query, int... results) throws IOException {
     CheckHits.checkHits(random(), query, field, searcher, results);
   }
 
@@ -83,7 +91,23 @@ public class TestIntervalQuery extends LuceneTestCase {
     checkHits(new IntervalQuery(field, Intervals.phrase(Intervals.term("w1"), Intervals.term("w2"))),
         new int[]{0});
   }
+  
+  public void testFixFieldForTerm() throws IOException {
+    final IntervalQuery fieldAsField2 = new IntervalQuery(field2, Intervals.fixField(field, Intervals.term("w1")));
+    checkHits(fieldAsField2,
+        0,1,2,3,4,5);
+    final Matches matches = getMatches(fieldAsField2, 0);
+    assertTrue("What if I want to highlight "+field+" even made an interval query over "+field2, 
+    StreamSupport.stream(matches.spliterator(), false).anyMatch((f)->f.equals(field)));
+    
+  }
 
+  private Matches getMatches(IntervalQuery source, int doc) throws IOException {
+    int ord = ReaderUtil.subIndex(doc, searcher.getIndexReader().leaves());
+    final Weight weight = source.createWeight(searcher, ScoreMode.COMPLETE, 1.0f);
+    LeafReaderContext ctx = searcher.getIndexReader().leaves().get(ord);
+    return weight.matches(ctx, doc - ctx.docBase);
+  }
   public void testOrderedNearQueryWidth3() throws IOException {
     checkHits(new IntervalQuery(field, Intervals.maxwidth(3, Intervals.ordered(Intervals.term("w1"), Intervals.term("w2")))),
         new int[]{0, 1, 2, 5});
