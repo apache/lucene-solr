@@ -722,6 +722,31 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
 
         TInfo tinfo = parseTerm(fp); // would have made this parser a new separate class and registered it, but this handy method is private :/
 
+        IndexSchema schema = fp.getReq().getCore().getLatestSchema();
+        final FieldType fieldType = schema.getFieldType(tinfo.field);
+
+        if (fieldType.getTypeName().equals("delimited_payloads_string")) {
+
+          ValueSource defaultValueSource;
+          if (fp.hasMoreArguments()) {
+            defaultValueSource = fp.parseValueSource();
+          } else {
+            defaultValueSource = new LiteralValueSource("");
+          }
+
+          if (fp.hasMoreArguments()) {
+              // functions are not supported with strings
+              throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid payload function: " + fp.parseArg());
+          }
+
+          return new StringPayloadValueSource(
+              tinfo.field,
+              tinfo.val,
+              tinfo.indexedField,
+              tinfo.indexedBytes.get(),
+              defaultValueSource);
+        }
+
         ValueSource defaultValueSource;
         if (fp.hasMoreArguments()) {
           defaultValueSource = fp.parseValueSource();
@@ -742,7 +767,6 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid payload function: " + func);
         }
 
-        IndexSchema schema = fp.getReq().getCore().getLatestSchema();
         PayloadDecoder decoder = schema.getPayloadDecoder(tinfo.field);
 
         if (decoder==null) {
@@ -759,36 +783,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
             defaultValueSource);
       }
     });
-
-    addParser("spayload", new ValueSourceParser() {
-      @Override
-      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        // spayload(field,value[,default])
-
-        TInfo tinfo = parseTerm(fp); // would have made this parser a new separate class and registered it, but this handy method is private :/
-
-        ValueSource defaultValueSource;
-        if (fp.hasMoreArguments()) {
-          defaultValueSource = fp.parseValueSource();
-        } else {
-          defaultValueSource = new LiteralValueSource("");
-        }
-
-        IndexSchema schema = fp.getReq().getCore().getLatestSchema();
-        final FieldType fieldType = schema.getFieldType(tinfo.field);
-
-        if (fieldType.getTypeName().equals("delimited_payloads_string")) {
-          return new StringPayloadValueSource(
-              tinfo.field,
-              tinfo.val,
-              tinfo.indexedField,
-              tinfo.indexedBytes.get(),
-              defaultValueSource);
-        }
-        return new LiteralValueSource("");
-      }
-    });
-
+    
     addParser("true", new ValueSourceParser() {
       @Override
       public ValueSource parse(FunctionQParser fp) {

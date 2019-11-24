@@ -40,6 +40,8 @@ Upgrade Notes
 New Features
 ---------------------
 
+* SOLR-13863: payload query function now is able to read and sort also string payload field (delimited_payloads_string)
+
 * SOLR-13821: A Package store to store and load package artifacts (noble, Ishan Chattopadhyaya)
 
 * SOLR-13822: A Package management system with the following features:
