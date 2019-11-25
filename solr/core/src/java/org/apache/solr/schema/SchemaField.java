@@ -154,7 +154,33 @@ public final class SchemaField extends FieldProperties implements IndexableField
     return type.getSortField(this, top);
   }
 
-  /** 
+  /**
+   * @return The PostingsFormat name declared as parameter of this field; if it is not
+   * defined, the PostingsFormat name declared as parameter of this field type; or
+   * finally null if the parameter is not defined anywhere.
+   */
+  public String getPostingsFormat() {
+    String postingsFormat = (String) args.get(POSTINGS_FORMAT);
+    if (postingsFormat == null) {
+      postingsFormat = type.getPostingsFormat();
+    }
+    return postingsFormat;
+  }
+
+  /**
+   * @return The DocValuesFormat name declared as parameter of this field; if it is not
+   * defined, the DocValuesFormat name declared as parameter of this field type; or
+   * finally null if the parameter is not defined anywhere.
+   */
+  public String getDocValuesFormat() {
+    String docValuesFormat = (String) args.get(DOC_VALUES_FORMAT);
+    if (docValuesFormat == null) {
+      docValuesFormat = type.getDocValuesFormat();
+    }
+    return docValuesFormat;
+  }
+
+  /**
    * Sanity checks that the properties of this field type are plausible 
    * for a field that may be used in sorting, throwing an appropriate 
    * exception (including the field name) if it is not.  FieldType subclasses 

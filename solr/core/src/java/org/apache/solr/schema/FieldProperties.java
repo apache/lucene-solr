@@ -16,6 +16,8 @@
  */
 package org.apache.solr.schema;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -73,6 +75,12 @@ public abstract class FieldProperties {
     }
   }
 
+  static final String POSTINGS_FORMAT = "postingsFormat";
+  static final String DOC_VALUES_FORMAT = "docValuesFormat";
+
+  // We call contains() on this collection, but since it is very small, a simple list is fine.
+  private static final Collection<String> IGNORED_PROPERTY_NAMES =
+      Arrays.asList("default", POSTINGS_FORMAT, DOC_VALUES_FORMAT);
 
   /** Returns the symbolic name for the property. */
   static String getPropertyName(int property) {
@@ -85,7 +93,7 @@ public abstract class FieldProperties {
         return 1 << i;
       }
     }
-    if (failOnError && !"default".equals(name)) {
+    if (failOnError && !IGNORED_PROPERTY_NAMES.contains(name)) {
       throw new IllegalArgumentException("Invalid field property: " + name);
     } else {
       return 0;
