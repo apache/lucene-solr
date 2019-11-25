@@ -327,7 +327,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
 
     final CountDownLatch[] latch = {new CountDownLatch(1)};
 
-    final LRUQueryCache queryCache = new LRUQueryCache(2, 100000, context -> true) {
+    final LRUQueryCache queryCache = new LRUQueryCache(2, 100000, context -> true, Float.POSITIVE_INFINITY) {
       @Override
       protected void onDocIdSetCache(Object readerCoreKey, long ramBytesUsed) {
         super.onDocIdSetCache(readerCoreKey, ramBytesUsed);
@@ -429,7 +429,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
 
     final CountDownLatch latch = new CountDownLatch(1);
 
-    final LRUQueryCache queryCache = new LRUQueryCache(2, 100000, context -> true) {
+    final LRUQueryCache queryCache = new LRUQueryCache(2, 100000, context -> true, Float.POSITIVE_INFINITY) {
       @Override
       protected void onDocIdSetCache(Object readerCoreKey, long ramBytesUsed) {
         super.onDocIdSetCache(readerCoreKey, ramBytesUsed);
@@ -504,7 +504,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
       }
     };
 
-    final LRUQueryCache queryCache = new LRUQueryCache(2, 100000, context -> true);
+    final LRUQueryCache queryCache = new LRUQueryCache(2, 100000, context -> true, Float.POSITIVE_INFINITY);
 
     final Query blue = new TermQuery(new Term("color", "blue"));
 
@@ -1454,16 +1454,6 @@ public class TestLRUQueryCache extends LuceneTestCase {
     assertEquals(false, scorerCalled.get());
     assertEquals(0, cache.getCacheCount());
 
-    // test that the doc id set is computed using the bulk scorer
-    bulkScorerCalled.set(false);
-    weight = searcher.createWeight(new MatchAllDocsQuery(), ScoreMode.COMPLETE_NO_SCORES, 1);
-    weight = new WeightWrapper(weight, scorerCalled, bulkScorerCalled);
-    weight = cache.doCache(weight, ALWAYS_CACHE, null /* executor */);
-    weight.scorer(leaf);
-    assertEquals(true, bulkScorerCalled.get());
-    assertEquals(false, scorerCalled.get());
-    assertEquals(1, cache.getCacheCount());
-
     searcher.getIndexReader().close();
     dir.close();
   }
@@ -2014,7 +2004,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
 
     IndexSearcher searcher = new IndexSearcher(reader, service);
 
-    final LRUQueryCache queryCache = new LRUQueryCache(2, 100000, context -> true);
+    final LRUQueryCache queryCache = new LRUQueryCache(2, 100000, context -> true, Float.POSITIVE_INFINITY);
 
     searcher.setQueryCache(queryCache);
     searcher.setQueryCachingPolicy(ALWAYS_CACHE);
@@ -2029,86 +2019,6 @@ public class TestLRUQueryCache extends LuceneTestCase {
     w.close();
     dir.close();
     service.shutdown();
-  }
-
-  public void testClosedReaderExecution() throws IOException {
-    CountDownLatch latch = new CountDownLatch(1);
-    ExecutorService service = new BlockedMockExecutor(latch);
-
-    Directory dir = newDirectory();
-    final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
-
-    for (int i = 0; i < 100; i++) {
-      Document doc = new Document();
-      StringField f = new StringField("color", "blue", Store.NO);
-      doc.add(f);
-      w.addDocument(doc);
-      f.setStringValue("red");
-      w.addDocument(doc);
-      f.setStringValue("green");
-      w.addDocument(doc);
-
-      if (i % 10 == 0) {
-        w.commit();
-      }
-    }
-
-    final DirectoryReader reader = w.getReader();
-
-    final Query red = new TermQuery(new Term("color", "red"));
-
-    IndexSearcher searcher = new IndexSearcher(reader, service) {
-      @Override
-      protected LeafSlice[] slices(List<LeafReaderContext> leaves) {
-        ArrayList<LeafSlice> slices = new ArrayList<>();
-        for (LeafReaderContext ctx : leaves) {
-          slices.add(new LeafSlice(Arrays.asList(ctx)));
-        }
-        return slices.toArray(LeafSlice[]::new);
-      }
-    };
-
-    final LRUQueryCache queryCache = new LRUQueryCache(2, 100000, context -> true);
-
-    searcher.setQueryCache(queryCache);
-    searcher.setQueryCachingPolicy(ALWAYS_CACHE);
-
-    // To ensure that failing ExecutorService still allows query to run
-    // successfully
-
-    ExecutorService tempService = new ThreadPoolExecutor(2, 2, 0L, TimeUnit.MILLISECONDS,
-        new LinkedBlockingQueue<Runnable>(),
-        new NamedThreadFactory("TestLRUQueryCache"));
-
-    tempService.submit(new Runnable() {
-      @Override
-      public void run() {
-        try {
-          List<LeafReaderContext> leaves = searcher.leafContexts;
-
-          for (LeafReaderContext context : leaves) {
-            context.reader().close();
-          }
-
-          searcher.reader.close();
-
-          reader.close();
-        } catch (Exception e) {
-          throw new RuntimeException(e.getMessage());
-        }
-
-        latch.countDown();
-
-      }
-    });
-
-    expectThrows(AlreadyClosedException.class, () -> searcher.search(new ConstantScoreQuery(red), 1));
-
-    assertEquals(Collections.emptyList(), queryCache.cachedQueries());
-
-    dir.close();
-    service.shutdown();
-    tempService.shutdown();
   }
 
   public void testFailedAsyncCaching() throws IOException {
@@ -2138,7 +2048,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
 
     assertEquals(1, searcher.leafContexts.size());
 
-    final LRUQueryCache queryCache = new LRUQueryCache(2, 100000, context -> true);
+    final LRUQueryCache queryCache = new LRUQueryCache(2, 100000, context -> true, Float.POSITIVE_INFINITY);
 
     searcher.setQueryCache(queryCache);
     searcher.setQueryCachingPolicy(ALWAYS_CACHE);
@@ -2185,7 +2095,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     };
 
     final IndexSearcher searcher = new IndexSearcher(reader, executor);
-    final LRUQueryCache queryCache = new LRUQueryCache(2, 100000, context -> true);
+    final LRUQueryCache queryCache = new LRUQueryCache(2, 100000, context -> true, Float.POSITIVE_INFINITY);
     searcher.setQueryCache(queryCache);
     searcher.setQueryCachingPolicy(ALWAYS_CACHE);
 
@@ -2248,7 +2158,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
     }
 
     public Future<?> submit(final Runnable runnable) {
-      throw  new UnsupportedOperationException();
+      throw new UnsupportedOperationException();
     }
 
     public <T> List<Future<T>> invokeAll(final Collection<? extends Callable<T>> callables) throws InterruptedException {
@@ -2275,6 +2185,7 @@ public class TestLRUQueryCache extends LuceneTestCase {
         throw new RuntimeException(e.getMessage());
       }
     }
+  }
 
   public void testSkipCachingForRangeQuery() throws IOException {
     Directory dir = newDirectory();
