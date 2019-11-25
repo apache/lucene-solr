@@ -209,6 +209,13 @@ Other Changes
 
 * SOLR-12193: Move some log messages to TRACE level (gezapeti, janhoy)
 
+==================  8.3.1 ==================
+
+Bug Fixes
+----------------------
+
+* SOLR-13963: JavaBinCodec has concurrent modification of CharArr resulting in corrupt internode updates (Colvin Cowie, noble)
+
 ==================  8.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
