@@ -152,6 +152,9 @@ Improvements
 * SOLR-13952: Separate out Gradle-specific code from other (mostly test) changes and commit 
   separately (Erick Erickson)
 
+* SOLR-13961: When using partial/atomic updates to remove child documents, we now support setting to null or
+  an empty list as equivalent to the "remove" command. (Thomas Wöckinger)
+
 Optimizations
 ---------------------
 (No changes)
