@@ -335,7 +335,6 @@ public class TestMemoryIndexAgainstDirectory extends BaseTokenStreamTestCase {
     reader.close();
   }
   
-  @SuppressWarnings("unused")
   private Allocator randomByteBlockAllocator() {
     if (random().nextBoolean()) {
       return new RecyclingByteBlockAllocator();
@@ -378,7 +377,6 @@ public class TestMemoryIndexAgainstDirectory extends BaseTokenStreamTestCase {
   }
 
   // LUCENE-3831
-  @SuppressWarnings("resource")
   public void testNullPointerException() throws IOException {
     RegexpQuery regex = new RegexpQuery(new Term("field", "worl."));
     SpanQuery wrappedquery = new SpanMultiTermQueryWrapper<>(regex);
@@ -392,7 +390,6 @@ public class TestMemoryIndexAgainstDirectory extends BaseTokenStreamTestCase {
   }
     
   // LUCENE-3831
-  @SuppressWarnings("resource")
   public void testPassesIfWrapped() throws IOException {
     RegexpQuery regex = new RegexpQuery(new Term("field", "worl."));
     SpanQuery wrappedquery = new SpanOrQuery(new SpanMultiTermQueryWrapper<>(regex));

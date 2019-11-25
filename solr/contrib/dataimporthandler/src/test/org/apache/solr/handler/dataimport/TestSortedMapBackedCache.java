@@ -105,7 +105,6 @@ public class TestSortedMapBackedCache extends AbstractDIHCacheTestCase {
     }    
   }
 
-  @SuppressWarnings("unused")
   @Test
   public void testCacheReopensWithUpdate() {
     DIHCache cache = null;

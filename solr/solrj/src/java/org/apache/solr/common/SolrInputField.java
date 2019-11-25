@@ -27,7 +27,6 @@ import static org.apache.solr.common.util.ByteArrayUtf8CharSequence.convertCharS
  *
  * @since solr 1.3
  */
-@SuppressWarnings({"unchecked", "rawtypes"})
 public class SolrInputField implements Iterable<Object>, Serializable
 {
   String name;
@@ -64,6 +63,7 @@ public class SolrInputField implements Iterable<Object>, Serializable
    * Add values to a field.  If the added value is a collection, each value
    * will be added individually.
    */
+  @SuppressWarnings("unchecked")
   public void addValue(Object v) {
     if( value == null ) {
       if ( v instanceof Collection ) {
@@ -108,6 +108,7 @@ public class SolrInputField implements Iterable<Object>, Serializable
   //---------------------------------------------------------------
   //---------------------------------------------------------------
   
+  @SuppressWarnings("unchecked")
   public Object getFirstValue() {
     if( value instanceof Collection ) {
       Collection c = (Collection<Object>)value;
@@ -153,6 +154,7 @@ public class SolrInputField implements Iterable<Object>, Serializable
    * @return the values for this field.  This will return a collection even
    * if the field is not multi-valued
    */
+  @SuppressWarnings("unchecked")
   public Collection<Object> getValues() {
     if (value instanceof Collection) {
       return convertCharSeq((Collection<Object>) value);
@@ -212,7 +214,7 @@ public class SolrInputField implements Iterable<Object>, Serializable
     };
 
   }
-
+  @SuppressWarnings("unchecked")
   public Iterator<Object> getRawIterator() {
     if( value instanceof Collection ) {
       return ((Collection)value).iterator();

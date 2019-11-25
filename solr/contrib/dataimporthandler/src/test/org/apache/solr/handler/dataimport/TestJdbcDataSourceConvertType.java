@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Properties;
 
-@SuppressWarnings("deprecation")
 @ThreadLeakAction({ThreadLeakAction.Action.WARN})
 @ThreadLeakLingering(linger = 0)
 @ThreadLeakZombies(ThreadLeakZombies.Consequence.CONTINUE)
@@ -49,7 +48,6 @@ public class TestJdbcDataSourceConvertType extends AbstractDataImportHandlerTest
     convertTypeTest("true", Long.class);
   }
 
-  @SuppressWarnings("rawtypes")
   private void convertTypeTest(String convertType, Class resultClass) throws Throwable {
     JdbcDataSource dataSource = new JdbcDataSource();
     Properties p = new Properties();

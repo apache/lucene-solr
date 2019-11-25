@@ -45,7 +45,6 @@ public class TestWordnetSynonymParser extends BaseTokenStreamTestCase {
     analyzer.close();
     
     analyzer = new Analyzer() {
-      @SuppressWarnings("deprecation")
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
         Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);

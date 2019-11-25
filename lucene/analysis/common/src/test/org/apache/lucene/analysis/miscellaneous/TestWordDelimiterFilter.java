@@ -54,7 +54,6 @@ import static org.apache.lucene.analysis.miscellaneous.WordDelimiterIterator.DEF
  * TODO: should explicitly test things like protWords and not rely on
  * the factory tests in Solr.
  */
-@SuppressWarnings("deprecation")
 public class TestWordDelimiterFilter extends BaseTokenStreamTestCase {
 
   /*

@@ -1459,6 +1459,7 @@ public final class HttpServer2 implements FilterContainer {
           response.getOutputStream(), false, "UTF-8")) {
         ReflectionUtils.printThreadInfo(out, "");
       }
+      ReflectionUtils.logThreadInfo(LOG, "jsp requested", 1);
     }
   }
 

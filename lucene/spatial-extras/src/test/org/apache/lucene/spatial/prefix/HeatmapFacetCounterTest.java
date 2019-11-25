@@ -43,7 +43,6 @@ import org.locationtech.spatial4j.shape.impl.RectangleImpl;
 import static com.carrotsearch.randomizedtesting.RandomizedTest.atMost;
 import static com.carrotsearch.randomizedtesting.RandomizedTest.randomIntBetween;
 
-@SuppressWarnings("deprecation")
 public class HeatmapFacetCounterTest extends StrategyTestCase {
 
   SpatialPrefixTree grid;

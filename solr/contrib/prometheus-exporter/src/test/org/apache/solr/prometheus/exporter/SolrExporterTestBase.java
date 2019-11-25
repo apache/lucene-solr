@@ -47,7 +47,6 @@ public class SolrExporterTestBase extends PrometheusExporterTestBase {
   private CloseableHttpClient httpClient;
   private int promtheusExporterPort;
 
-  @SuppressWarnings("deprecation")
   @Override
   @After
   public void tearDown() throws Exception {

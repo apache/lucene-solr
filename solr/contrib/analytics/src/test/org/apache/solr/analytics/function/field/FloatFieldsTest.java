@@ -26,7 +26,6 @@ import org.junit.Test;
 
 public class FloatFieldsTest extends AbstractAnalyticsFieldTest {
 
-  @SuppressWarnings("deprecation")
   @Test
   public void expressionFactoryCreationTest() {
     ExpressionFactory fact = getExpressionFactory();
@@ -69,7 +68,6 @@ public class FloatFieldsTest extends AbstractAnalyticsFieldTest {
     checkSingleFieldValues(singleFloats, values, missing);
   }
 
-  @SuppressWarnings("deprecation")
   @Test
   public void multiValuedTrieFloatTest() throws IOException {
     FloatMultiTrieField valueField = new FloatMultiTrieField("float_fm_t");

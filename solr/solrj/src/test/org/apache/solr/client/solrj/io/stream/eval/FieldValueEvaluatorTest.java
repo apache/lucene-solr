@@ -27,7 +27,7 @@ import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.FieldValueEvaluator;
 import org.junit.Test;
 
-import org.junit.Assert;
+import junit.framework.Assert;
 
 public class FieldValueEvaluatorTest extends SolrTestCase {
 

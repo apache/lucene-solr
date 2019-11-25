@@ -31,7 +31,6 @@ import org.apache.lucene.store.Directory;
 
 public class TestFixBrokenOffsetsFilter extends BaseTokenStreamTestCase {
 
-  @SuppressWarnings("deprecation")
   public void testBogusTermVectors() throws IOException {
     Directory dir = newDirectory();
     IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null));

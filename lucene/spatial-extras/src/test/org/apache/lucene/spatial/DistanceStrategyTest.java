@@ -36,7 +36,6 @@ import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.shape.Point;
 import org.locationtech.spatial4j.shape.Shape;
 
-@SuppressWarnings("deprecation")
 public class DistanceStrategyTest extends StrategyTestCase {
   @ParametersFactory(argumentFormatting = "strategy=%s")
   public static Iterable<Object[]> parameters() {

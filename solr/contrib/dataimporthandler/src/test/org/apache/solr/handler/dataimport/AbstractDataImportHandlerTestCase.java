@@ -115,7 +115,6 @@ public abstract class AbstractDataImportHandlerTestCase extends
    * @param extraParams any extra request parameters needed to be passed to DataImportHandler
    * @throws Exception in case of any error
    */
-  @SuppressWarnings({"rawtypes", "unchecked"})
   protected void runFullImport(String dataConfig, Map<String, String> extraParams) throws Exception {
     HashMap<String, String> params = new HashMap<>();
     params.put("command", "full-import");
@@ -135,7 +134,7 @@ public abstract class AbstractDataImportHandlerTestCase extends
   /**
    * Helper for creating a Context instance. Useful for testing Transformers
    */
-  @SuppressWarnings("rawtypes")
+  @SuppressWarnings("unchecked")
   public static TestContext getContext(EntityProcessorWrapper parent,
                                    VariableResolver resolver, DataSource parentDataSource,
                                    String currProcess, final List<Map<String, String>> entityFields,
@@ -151,7 +150,7 @@ public abstract class AbstractDataImportHandlerTestCase extends
    * Strings at even index are keys, odd-index strings are values in the
    * returned map
    */
-  @SuppressWarnings("rawtypes")
+  @SuppressWarnings("unchecked")
   public static Map createMap(Object... args) {
    return Utils.makeMap(args);
   }
@@ -217,7 +216,6 @@ public abstract class AbstractDataImportHandlerTestCase extends
       return delegate.getVariableResolver();
     }
 
-    @SuppressWarnings("rawtypes")
     @Override
     public DataSource getDataSource() {
       return delegate.getDataSource();
@@ -258,7 +256,6 @@ public abstract class AbstractDataImportHandlerTestCase extends
       return delegate.getParentContext();
     }
 
-    @SuppressWarnings("rawtypes")
     @Override
     public DataSource getDataSource(String name) {
       return delegate.getDataSource(name);
