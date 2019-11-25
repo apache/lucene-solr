@@ -28,9 +28,13 @@ Velocity 2.0 and Velocity Tools 3.0
 Apache ZooKeeper 3.5.5
 Jetty 9.4.19.v20190610
 
+==================  8.3.1 ==================
+
 Bug Fixes
----------------------
-(No changes)
+----------------------
+
+* SOLR-13963: JavaBinCodec has concurrent modification of CharArr resulting in corrupt internode updates (Colvin Cowie, noble)
+
 
 ==================  8.3.0 ==================
 
