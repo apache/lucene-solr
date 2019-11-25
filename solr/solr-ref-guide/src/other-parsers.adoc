@@ -1040,6 +1040,26 @@ If the local index is sharded according to the join key field, the XCJF query ca
 
 XCJF parser works with both String and Point types of fields.  The fields that are being used for the join key must be single value and have docValues enabled.  It's advised to shard the local collection by the join key as this allows for the optimization mentioned above to be utilized.  The XCJF should not be generally used as part of the "q", but rather it is designed to be used as a filter query  "fq" parameter to ensure proper caching.  The remote solr collection that is being queried should have a single value field for the join key with docValues enabled.  The remote solr collection does not have any specific sharding requirements.
 
+=== XCJF Query Parser definition in solrconfig.xml
+
+The XCJF has some configuration options that can be specified in the solrconfig.xml
+`routerField`:: 
+If the documents are routed to shards using the CompositeID router by the join field, then that field name should be specified in the configuration here.  This will allow the parser to optimize the resulting HashRange query
+
+`solrUrl`::
+If specified, this array of strings specifies the white listed Solr URLs that you can pass in.  This is used to tighten down the security of Solr.  If you know the valid list of solr urls that you want to support in production, you should white list those here to prevent an attacker from using solr to explore the network.
+
+[source,xml]
+----
+  <queryParser name="xcjf" class="org.apache.solr.search.join.XCJFQParserPlugin">
+    <!-- Define which field has the routing information for the collection to use the hash range query parser. -->
+    <str name="routerField">joinfield_id_s</str>
+    <arr name="solrUrl">
+      <str>http://localhost:8983/solr</str>
+    </arr>
+  </queryParser>
+----
+
 === XCJF Query Parameters
 
 `collection`::
@@ -1058,10 +1078,10 @@ The join key field name in the external collection ( required )
 The join key field name in the local collection
 
 `v`::
-The query subsituted in as a local param.
-(See Notes) The query to be executed against the external Solr collection to retrieve the set of join key values. Note:  The original query can be passed at the end of the string or as the "v" parameter.  It's recommended to use query parameter substitution with the "v" parameter to ensure no issues arise with the default query parsers.
+The query subsituted in as a local param.  This is the query string that will match documents in the remote collection.
+
 `routed`::
-(See Notes) true / false.  If true, the XCJF query will use each shard's hash range to determine the set of join keys to retrieve for that shard.  This parameter improves the performance of the cross-collection join, but it depends on the local collection being routed by the toField.  If this parameter is not specified, the XCJF query will try to determine the correct value automatically.
+true / false.  If true, the XCJF query will use each shard's hash range to determine the set of join keys to retrieve for that shard.  This parameter improves the performance of the cross-collection join, but it depends on the local collection being routed by the toField.  If this parameter is not specified, the XCJF query will try to determine the correct value automatically.
 
 `ttl`::
 The length of time that an XCJF query in the cache will be considered valid, in seconds.  Defaults to 3600 (one hour).  The XCJF query will not be aware of changes to the remote collection, so if the remote collection is updated, cached XCJF queries may give inaccurate results.  After the ttl period has expired, the XCJF query will re-execute the join against the remote collection.

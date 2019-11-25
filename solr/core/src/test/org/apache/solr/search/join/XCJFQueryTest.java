@@ -25,6 +25,8 @@ import java.util.Locale;
 
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.impl.ZkClientClusterStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -50,11 +52,13 @@ public class XCJFQueryTest extends SolrCloudTestCase {
         .withSolrXml(TEST_PATH().resolve("solr.xml"))
         .configure();
 
+    
     CollectionAdminRequest.createCollection("products", "xcjf", NUM_SHARDS, NUM_REPLICAS)
         .process(cluster.getSolrClient());
 
     CollectionAdminRequest.createCollection("parts", "xcjf", NUM_SHARDS, NUM_REPLICAS)
         .process(cluster.getSolrClient());
+
   }
 
   public static void setupIndexes(boolean routeByKey) throws IOException, SolrServerException {
@@ -181,6 +185,48 @@ public class XCJFQueryTest extends SolrCloudTestCase {
     // so we should get incomplete results.
     testXcjfQuery("{!xcjf_nonrouted collection=products from=product_id_s to=product_id_s routed=true}size_s:M",
             false);
+  }
+  
+  @Test
+  public void testSolrUrlWhitelist() throws Exception {
+    setupIndexes(false);
+    
+    // programmatically add the current jetty solr url to the solrUrl whitelist property in the solrconfig.xml
+    int i = 0;
+    for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
+      i++;
+      System.setProperty("test.xcjf.solr.url."+i, runner.getBaseUrl().toString());
+    }
+    // now we need to re-upload our config , now that we know a valid solr url for the cluster.
+    CloudSolrClient client = cluster.getSolrClient();
+    ((ZkClientClusterStateProvider)client.getClusterStateProvider()).uploadConfig(configset("xcjf"), "xcjf");
+    // reload the cores with the updated whitelisted solr url config.
+    CollectionAdminRequest.Reload.reloadCollection("products").process(client);
+    CollectionAdminRequest.Reload.reloadCollection("parts").process(client);
+    
+    final ModifiableSolrParams params = new ModifiableSolrParams();
+    //  a bogus solrUrl
+    params.add("q", "");
+    params.add("rows", "0");
+
+    // we expect an exception because bogus url isn't valid.
+    try {
+      // This should throw an exception.
+      cluster.getSolrClient().query("{!xcjf_whitelist solrUrl=\"http://bogusurl/\" collection=products from=product_id_s to=product_id_s}size_s:M", params);
+      // shouldn't get here.
+      assertTrue(false);
+    } catch (Exception e) {
+      // should get here.
+      assertTrue(true);
+    }
+
+    // verify the xcfj_whitelist definition has the current valid urls and works.
+    testXcjfQuery(String.format(Locale.ROOT,
+        "{!xcjf_whitelist solrUrl=\"%s\" collection=products from=product_id_i to=product_id_i}size_s:M",
+        getSolrUrl()),
+        true);
+
+    
   }
 
   public void testXcjfQuery(String query, boolean expectFullResults) throws Exception {

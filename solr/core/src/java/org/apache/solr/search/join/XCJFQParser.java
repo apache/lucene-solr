@@ -46,10 +46,13 @@ public class XCJFQParser extends QParser {
           QueryParsing.TYPE, QueryParsing.V, ZK_HOST, SOLR_URL, COLLECTION, FROM, TO, ROUTED_BY_JOIN_KEY, TTL));
 
   private final String routerField;
+  private final Set<String> solrUrlWhitelist;
 
-  public XCJFQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req, String routerField) {
+  public XCJFQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req, String routerField, Set<String> solrUrlWhiteList) {
     super(qstr, localParams, params, req);
     this.routerField = routerField;
+    // If specified in the config, this will limit which solr url's the parser can connect to.
+    this.solrUrlWhitelist = solrUrlWhiteList;
   }
 
   @Override
@@ -57,6 +60,11 @@ public class XCJFQParser extends QParser {
     String query = localParams.get(QueryParsing.V);
     String zkHost = localParams.get(ZK_HOST);
     String solrUrl = localParams.get(SOLR_URL);
+    // Test if this is a valid solr url.
+    if (solrUrl != null && solrUrlWhitelist != null && !solrUrlWhitelist.contains(solrUrl)) {
+      throw new SyntaxError("Solr Url was not in the whitelist.  Please check your configuration.");
+    }
+    
     String collection = localParams.get(COLLECTION);
     String fromField = localParams.get(FROM);
     String toField = localParams.get(TO);

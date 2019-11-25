@@ -54,4 +54,14 @@
 
   <queryParser name="xcjf_nonrouted" class="org.apache.solr.search.join.XCJFQParserPlugin" />
 
+  <queryParser name="xcjf_whitelist" class="org.apache.solr.search.join.XCJFQParserPlugin">
+    <str name="routerField">product_id_s</str>
+    <arr name="solrUrl">
+      <str>${test.xcjf.solr.url.1:}</str>
+      <str>${test.xcjf.solr.url.2:}</str>
+      <str>${test.xcjf.solr.url.3:}</str>
+    </arr>
+  </queryParser>
+
+
 </config>
