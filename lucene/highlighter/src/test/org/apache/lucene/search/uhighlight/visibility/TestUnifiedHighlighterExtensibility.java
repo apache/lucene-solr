@@ -46,6 +46,7 @@ import org.apache.lucene.search.uhighlight.UHComponents;
 import org.apache.lucene.search.uhighlight.UnifiedHighlighter;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.automaton.CharArrayMatcher;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.junit.Test;
 
@@ -180,7 +181,7 @@ public class TestUnifiedHighlighterExtensibility extends LuceneTestCase {
         BytesRef[] terms = filterExtractedTerms(fieldMatcher, allTerms);
         Set<HighlightFlag> highlightFlags = getFlags(field);
         PhraseHelper phraseHelper = getPhraseHelper(field, query, highlightFlags);
-        CharacterRunAutomaton[] automata = getAutomata(field, query, highlightFlags);
+        CharArrayMatcher[] automata = getAutomata(field, query, highlightFlags);
         boolean queryHasUnrecognizedPart = false;
         return new UHComponents(field, fieldMatcher, query, terms, phraseHelper, automata, queryHasUnrecognizedPart, highlightFlags);
       }

@@ -26,8 +26,11 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.Operations;
+
+import static org.apache.lucene.util.automaton.CompiledAutomaton.*;
 
 /**
  * A {@link Query} that will match terms against a finite-state machine.
@@ -162,8 +165,8 @@ public class AutomatonQuery extends MultiTermQuery implements Accountable {
 
   @Override
   public void visit(QueryVisitor visitor) {
-    if (visitor.acceptField(getField())) {
-      visitor.visitLeaf(this);
+    if (visitor.acceptField(field)) {
+      compiled.visit(visitor, this, field);
     }
   }
 

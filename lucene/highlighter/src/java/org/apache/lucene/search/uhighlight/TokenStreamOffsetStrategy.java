@@ -25,6 +25,7 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.Automata;
+import org.apache.lucene.util.automaton.CharArrayMatcher;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 /**
@@ -34,7 +35,7 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
  */
 public class TokenStreamOffsetStrategy extends AnalysisOffsetStrategy {
 
-  private final CharacterRunAutomaton[] combinedAutomata;
+  private final CharArrayMatcher[] combinedAutomata;
 
   public TokenStreamOffsetStrategy(UHComponents components, Analyzer indexAnalyzer) {
     super(components, indexAnalyzer);
@@ -43,8 +44,8 @@ public class TokenStreamOffsetStrategy extends AnalysisOffsetStrategy {
   }
 
   //TODO this is inefficient; instead build a union automata just for terms part.
-  private static CharacterRunAutomaton[] convertTermsToAutomata(BytesRef[] terms, CharacterRunAutomaton[] automata) {
-    CharacterRunAutomaton[] newAutomata = new CharacterRunAutomaton[terms.length + automata.length];
+  private static CharArrayMatcher[] convertTermsToAutomata(BytesRef[] terms, CharArrayMatcher[] automata) {
+    CharArrayMatcher[] newAutomata = new CharArrayMatcher[terms.length + automata.length];
     for (int i = 0; i < terms.length; i++) {
       String termString = terms[i].utf8ToString();
       newAutomata[i] = new CharacterRunAutomaton(Automata.makeString(termString)) {
@@ -66,7 +67,7 @@ public class TokenStreamOffsetStrategy extends AnalysisOffsetStrategy {
 
   private static class TokenStreamOffsetsEnum extends OffsetsEnum {
     TokenStream stream; // becomes null when closed
-    final CharacterRunAutomaton[] matchers;
+    final CharArrayMatcher[] matchers;
     final CharTermAttribute charTermAtt;
     final OffsetAttribute offsetAtt;
 
@@ -74,7 +75,7 @@ public class TokenStreamOffsetStrategy extends AnalysisOffsetStrategy {
 
     final BytesRef matchDescriptions[];
 
-    TokenStreamOffsetsEnum(TokenStream ts, CharacterRunAutomaton[] matchers) throws IOException {
+    TokenStreamOffsetsEnum(TokenStream ts, CharArrayMatcher[] matchers) throws IOException {
       this.stream = ts;
       this.matchers = matchers;
       matchDescriptions = new BytesRef[matchers.length];

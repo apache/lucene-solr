@@ -21,6 +21,8 @@ import java.util.Arrays;
 import java.util.Set;
 
 import org.apache.lucene.index.Term;
+import org.apache.lucene.util.automaton.ByteRunAutomaton;
+import org.apache.lucene.util.automaton.CharArrayMatcher;
 
 /**
  * Allows recursion through a query tree
@@ -37,8 +39,9 @@ public abstract class QueryVisitor {
    */
   public void consumeTerms(Query query, Term... terms) { }
 
-  // TODO it would be nice to have a way to consume 'classes' of Terms from
-  // things like AutomatonQuery
+  public void consumeTermsMatching(Query query, String field, ByteRunAutomaton automaton) {
+    visitLeaf(query); // default impl for BWC
+  }
 
   /**
    * Called by leaf queries that do not match on terms

@@ -20,7 +20,7 @@ package org.apache.lucene.util.automaton;
 /**
  * Automaton representation for matching char[].
  */
-public class CharacterRunAutomaton extends RunAutomaton {
+public class CharacterRunAutomaton extends RunAutomaton implements CharArrayMatcher {
   /**
    * Construct with a default number of maxDeterminizedStates.
    */

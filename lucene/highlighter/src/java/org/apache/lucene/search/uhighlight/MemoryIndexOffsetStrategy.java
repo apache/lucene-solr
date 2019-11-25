@@ -30,6 +30,7 @@ import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.memory.MemoryIndex;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.util.automaton.Automata;
+import org.apache.lucene.util.automaton.CharArrayMatcher;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 
@@ -62,7 +63,7 @@ public class MemoryIndexOffsetStrategy extends AnalysisOffsetStrategy {
       return null;
     }
 
-    List<CharacterRunAutomaton> allAutomata = new ArrayList<>();
+    List<CharArrayMatcher> allAutomata = new ArrayList<>();
     if (components.getTerms().length > 0) {
       allAutomata.add(new CharacterRunAutomaton(Automata.makeStringUnion(Arrays.asList(components.getTerms()))));
     }
@@ -72,9 +73,6 @@ public class MemoryIndexOffsetStrategy extends AnalysisOffsetStrategy {
           MultiTermHighlighting.extractAutomata(spanQuery, components.getFieldMatcher(), true));//true==lookInSpan
     }
 
-    if (allAutomata.size() == 1) {
-      return allAutomata.get(0);
-    }
     //TODO it'd be nice if we could get at the underlying Automaton in CharacterRunAutomaton so that we
     //  could union them all. But it's not exposed, and sometimes the automaton is byte (not char) oriented
 

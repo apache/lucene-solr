@@ -62,6 +62,7 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InPlaceMergeSorter;
+import org.apache.lucene.util.automaton.CharArrayMatcher;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 /**
@@ -769,7 +770,7 @@ public class UnifiedHighlighter {
     PhraseHelper phraseHelper = getPhraseHelper(field, query, highlightFlags);
     boolean queryHasUnrecognizedPart = hasUnrecognizedQuery(fieldMatcher, query);
     BytesRef[] terms = null;
-    CharacterRunAutomaton[] automata = null;
+    CharArrayMatcher[] automata = null;
     if (!highlightFlags.contains(HighlightFlag.WEIGHT_MATCHES) || !queryHasUnrecognizedPart) {
       terms = filterExtractedTerms(fieldMatcher, allTerms);
       automata = getAutomata(field, query, highlightFlags);
@@ -839,7 +840,7 @@ public class UnifiedHighlighter {
         : PhraseHelper.NONE;
   }
 
-  protected CharacterRunAutomaton[] getAutomata(String field, Query query, Set<HighlightFlag> highlightFlags) {
+  protected CharArrayMatcher[] getAutomata(String field, Query query, Set<HighlightFlag> highlightFlags) {
     // do we "eagerly" look in span queries for automata here, or do we not and let PhraseHelper handle those?
     // if don't highlight phrases strictly,
     final boolean lookInSpan =

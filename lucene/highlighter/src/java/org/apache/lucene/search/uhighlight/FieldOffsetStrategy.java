@@ -31,6 +31,7 @@ import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
+import org.apache.lucene.util.automaton.CharArrayMatcher;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 /**
@@ -168,7 +169,7 @@ public abstract class FieldOffsetStrategy {
   }
 
   protected void createOffsetsEnumsForAutomata(Terms termsIndex, int doc, List<OffsetsEnum> results) throws IOException {
-    final CharacterRunAutomaton[] automata = components.getAutomata();
+    final CharArrayMatcher[] automata = components.getAutomata();
     List<List<PostingsEnum>> automataPostings = new ArrayList<>(automata.length);
     for (int i = 0; i < automata.length; i++) {
       automataPostings.add(new ArrayList<>());
@@ -180,7 +181,7 @@ public abstract class FieldOffsetStrategy {
     CharsRefBuilder refBuilder = new CharsRefBuilder();
     while ((term = termsEnum.next()) != null) {
       for (int i = 0; i < automata.length; i++) {
-        CharacterRunAutomaton automaton = automata[i];
+        CharArrayMatcher automaton = automata[i];
         refBuilder.copyUTF8Bytes(term);
         if (automaton.run(refBuilder.chars(), 0, refBuilder.length())) {
           PostingsEnum postings = termsEnum.postings(null, PostingsEnum.OFFSETS);
@@ -192,7 +193,7 @@ public abstract class FieldOffsetStrategy {
     }
 
     for (int i = 0; i < automata.length; i++) {
-      CharacterRunAutomaton automaton = automata[i];
+      CharArrayMatcher automaton = automata[i];
       List<PostingsEnum> postingsEnums = automataPostings.get(i);
       if (postingsEnums.isEmpty()) {
         continue;
