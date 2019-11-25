@@ -28,6 +28,8 @@ limitations under the License.
 {
   float: left;
   width: 21%;
+  top: 2px;
+  position: sticky;
 }
 
 #content #query #form label
@@ -155,6 +157,12 @@ limitations under the License.
 {
   float: right;
   width: 77%;
+}
+
+#content #query #result #url {
+  position: sticky;
+  top: 0px;
+  background-color: yellow;
 }
 
 #content #query #result #response
