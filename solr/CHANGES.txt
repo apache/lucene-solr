@@ -77,6 +77,9 @@ Improvements
 
 * SOLR-13905: Make findRequestType in AuditEvent more robust (janhoy)
 
+* SOLR-13961: When using partial/atomic updates to remove child documents, we now support setting to null or
+  an empty list as equivalent to the "remove" command. (Thomas Wöckinger)
+
 Optimizations
 ---------------------
 (No changes)
