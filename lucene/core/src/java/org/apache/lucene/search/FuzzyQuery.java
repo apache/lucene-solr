@@ -25,6 +25,7 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.ByteRunAutomaton;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
@@ -163,9 +164,8 @@ public class FuzzyQuery extends MultiTermQuery {
       if (maxEdits == 0 || prefixLength >= term.text().length()) {
         visitor.consumeTerms(this, term);
       } else {
-        CompiledAutomaton a = new CompiledAutomaton(toAutomaton(), null, true,
-            Operations.DEFAULT_MAX_DETERMINIZED_STATES, false);
-        a.visit(visitor, this, field);
+        visitor.consumeTermsMatching(this, field,
+            new ByteRunAutomaton(toAutomaton(), false, Operations.DEFAULT_MAX_DETERMINIZED_STATES));
       }
     }
   }

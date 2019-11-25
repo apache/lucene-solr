@@ -356,7 +356,7 @@ public class CompiledAutomaton implements Accountable {
         case NONE:
           break;
         case ALL:
-          visitor.visitLeaf(parent); // nocommit - really need something like a field exists query here?
+          visitor.consumeTermsMatching(parent, field, new ByteRunAutomaton(Automata.makeAnyString()));
           break;
         case SINGLE:
           visitor.consumeTerms(parent, new Term(field, term));
