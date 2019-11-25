@@ -78,10 +78,6 @@ public abstract class FieldProperties {
   static final String POSTINGS_FORMAT = "postingsFormat";
   static final String DOC_VALUES_FORMAT = "docValuesFormat";
 
-  // We call contains() on this collection, but since it is very small, a simple list is fine.
-  private static final Collection<String> IGNORED_PROPERTY_NAMES =
-      Arrays.asList("default", POSTINGS_FORMAT, DOC_VALUES_FORMAT);
-
   /** Returns the symbolic name for the property. */
   static String getPropertyName(int property) {
     return propertyNames[ Integer.numberOfTrailingZeros(property) ];
@@ -93,13 +89,16 @@ public abstract class FieldProperties {
         return 1 << i;
       }
     }
-    if (failOnError && !IGNORED_PROPERTY_NAMES.contains(name)) {
+    if (failOnError && !isPropertyIgnored(name)) {
       throw new IllegalArgumentException("Invalid field property: " + name);
     } else {
       return 0;
     }
   }
 
+  private static boolean isPropertyIgnored(String name) {
+    return name.equals("default") || name.equals(POSTINGS_FORMAT) || name.equals(DOC_VALUES_FORMAT);
+  }
 
   static String propertiesToString(int properties) {
     StringBuilder sb = new StringBuilder();
