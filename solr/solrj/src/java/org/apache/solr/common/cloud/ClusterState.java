@@ -233,6 +233,7 @@ public class ClusterState implements JSONWriter.Writable {
    * @param liveNodes list of live nodes
    * @return the ClusterState
    */
+  @SuppressWarnings("unchecked")
   public static ClusterState load(Integer version, byte[] bytes, Set<String> liveNodes, String znode) {
     // System.out.println("######## ClusterState.load:" + (bytes==null ? null : new String(bytes)));
     if (bytes == null || bytes.length == 0) {
@@ -242,6 +243,7 @@ public class ClusterState implements JSONWriter.Writable {
     return load(version, stateMap, liveNodes, znode);
   }
 
+  @SuppressWarnings("unchecked")
   public static ClusterState load(Integer version, Map<String, Object> stateMap, Set<String> liveNodes, String znode) {
     Map<String,CollectionRef> collections = new LinkedHashMap<>(stateMap.size());
     for (Entry<String, Object> entry : stateMap.entrySet()) {
@@ -254,6 +256,7 @@ public class ClusterState implements JSONWriter.Writable {
   }
 
   // TODO move to static DocCollection.loadFromMap
+  @SuppressWarnings("unchecked")
   private static DocCollection collectionFromObjects(String name, Map<String, Object> objs, Integer version, String znode) {
     Map<String,Object> props;
     Map<String,Slice> slices;

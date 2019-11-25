@@ -257,6 +257,7 @@ public class TestBugInSomething extends BaseTokenStreamTestCase {
         -119, 0, 92, 94, -36, 53, -9, -102, -18, 90, 94, -26, 31, 71, -20
     };
     Analyzer a = new Analyzer() {
+      @SuppressWarnings("deprecation")
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
         Tokenizer tokenizer = new WikipediaTokenizer();

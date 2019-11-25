@@ -31,6 +31,7 @@ import java.util.Map;
  *
  * @since solr 1.3
  */
+@SuppressWarnings("rawtypes")
 public class ContextImpl extends Context {
   protected EntityProcessorWrapper epw;
 
@@ -84,7 +85,7 @@ public class ContextImpl extends Context {
 
   @Override
   public List<Map<String, String>> getAllEntityFields() {
-    return epw==null || epw.getEntity() == null ? Collections.EMPTY_LIST : epw.getEntity().getAllFieldsList();
+    return epw==null || epw.getEntity() == null ? Collections.emptyList() : epw.getEntity().getAllFieldsList();
   }
 
   @Override

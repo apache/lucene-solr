@@ -824,7 +824,7 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
     }
   }
   
-
+  @SuppressWarnings("deprecation")
   private static void checkSingleServer(NamedList<Object> response) {
     final CloudSolrClient.RouteResponse rr = (CloudSolrClient.RouteResponse) response;
     final Map<String,LBHttpSolrClient.Req> routes = rr.getRoutes();

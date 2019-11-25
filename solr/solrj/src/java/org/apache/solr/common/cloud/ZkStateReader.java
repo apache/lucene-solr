@@ -243,6 +243,7 @@ public class ZkStateReader implements SolrCloseable {
    * @return current configuration from <code>autoscaling.json</code>. NOTE:
    * this data is retrieved from ZK on each call.
    */
+  @SuppressWarnings("unchecked")
   public AutoScalingConfig getAutoScalingConfig(Watcher watcher) throws KeeperException, InterruptedException {
     Stat stat = new Stat();
 
@@ -968,7 +969,7 @@ public class ZkStateReader implements SolrCloseable {
         }
         return false;
       });
-    } catch (TimeoutException | InterruptedException e) {
+    } catch (TimeoutException e) {
       throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "No registered leader was found after waiting for "
           + timeout + "ms " + ", collection: " + collection + " slice: " + shard + " saw state=" + clusterState.getCollectionOrNull(collection)
           + " with live_nodes=" + clusterState.getLiveNodes());

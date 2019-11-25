@@ -18,7 +18,11 @@
 package org.apache.lucene.queries.intervals;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
@@ -36,9 +40,14 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.ReaderUtil;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.PrefixQuery;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
@@ -140,6 +149,38 @@ public class TestIntervals extends LuceneTestCase {
     assertEquals(expectedMatchCount, matchedDocs);
   }
 
+  private void checkVisits(IntervalsSource source, int expectedVisitCount, String... expectedTerms) {
+    Set<String> actualTerms = new HashSet<>();
+    int[] visitedSources = new int[1];
+    source.visit("field", new QueryVisitor() {
+      @Override
+      public void consumeTerms(Query query, Term... terms) {
+        visitedSources[0]++;
+        actualTerms.addAll(Arrays.stream(terms).map(Term::text).collect(Collectors.toList()));
+      }
+
+      @Override
+      public void visitLeaf(Query query) {
+        visitedSources[0]++;
+        super.visitLeaf(query);
+      }
+
+      @Override
+      public QueryVisitor getSubVisitor(BooleanClause.Occur occur, Query parent) {
+        visitedSources[0]++;
+        return super.getSubVisitor(occur, parent);
+      }
+    });
+
+    Set<String> expectedSet = new HashSet<>(Arrays.asList(expectedTerms));
+    expectedSet.removeAll(actualTerms);
+    actualTerms.removeAll(Arrays.asList(expectedTerms));
+    assertEquals(expectedVisitCount, visitedSources[0]);
+    assertTrue("Unexpected terms collected: " + actualTerms, actualTerms.isEmpty());
+    assertTrue("Missing expected terms: " + expectedSet, expectedSet.isEmpty());
+
+  }
+
   private MatchesIterator getMatches(IntervalsSource source, int doc, String field) throws IOException {
     int ord = ReaderUtil.subIndex(doc, searcher.getIndexReader().leaves());
     LeafReaderContext ctx = searcher.getIndexReader().leaves().get(ord);
@@ -189,11 +230,17 @@ public class TestIntervals extends LuceneTestCase {
     assertNull(getMatches(source, 2, "no_such_field"));
     MatchesIterator mi = getMatches(source, 2, "field1");
     assertMatch(mi, 1, 1, 6, 14);
+    final TermQuery porridge = new TermQuery(new Term("field1","porridge"));
+    assertEquals(porridge, mi.getQuery());
     assertMatch(mi, 4, 4, 27, 35);
+    assertEquals(porridge, mi.getQuery());
     assertMatch(mi, 7, 7, 47, 55);
+    assertEquals(porridge, mi.getQuery());
     assertFalse(mi.next());
 
     assertEquals(1, source.minExtent());
+
+    checkVisits(source, 1, "porridge");
   }
 
   public void testOrderedNearIntervals() throws IOException {
@@ -221,6 +268,8 @@ public class TestIntervals extends LuceneTestCase {
     assertFalse(mi.next());
 
     assertEquals(2, source.minExtent());
+
+    checkVisits(source, 3, "pease", "hot");
   }
 
   public void testPhraseIntervals() throws IOException {
@@ -239,11 +288,22 @@ public class TestIntervals extends LuceneTestCase {
     assertMatch(mi, 3, 4, 20, 34);
     MatchesIterator sub = mi.getSubMatches();
     assertMatch(sub, 3, 3, 20, 25);
+    assertEquals(new TermQuery( new Term("field1", "pease")), sub.getQuery());
     assertMatch(sub, 4, 4, 26, 34);
+    assertEquals(new TermQuery( new Term("field1", "porridge")), sub.getQuery());
     assertFalse(sub.next());
+    
     assertMatch(mi, 6, 7, 41, 55);
+    sub = mi.getSubMatches();
+    assertTrue(sub.next());
+    assertEquals(new TermQuery( new Term("field1", "pease")), sub.getQuery());
+    assertTrue(sub.next());
+    assertEquals(new TermQuery( new Term("field1", "porridge")), sub.getQuery());
+    assertFalse(sub.next());
 
     assertEquals(2, source.minExtent());
+
+    checkVisits(source, 3, "pease", "porridge");
   }
 
   public void testUnorderedNearIntervals() throws IOException {
@@ -272,6 +332,8 @@ public class TestIntervals extends LuceneTestCase {
     });
 
     assertEquals(2, source.minExtent());
+
+    checkVisits(source, 3, "pease", "hot");
   }
 
   public void testIntervalDisjunction() throws IOException {
@@ -287,12 +349,16 @@ public class TestIntervals extends LuceneTestCase {
     assertNull(getMatches(source, 0, "field1"));
     MatchesIterator mi = getMatches(source, 3, "field1");
     assertMatch(mi, 3, 3, 15, 18);
+    assertEquals(new TermQuery(new Term("field1","hot")), mi.getQuery());
     assertNull(mi.getSubMatches());
     assertMatch(mi, 7, 7, 31, 36);
+    assertEquals(new TermQuery(new Term("field1","pease")), mi.getQuery());
     assertNull(mi.getSubMatches());
     assertFalse(mi.next());
 
     assertEquals(1, source.minExtent());
+
+    checkVisits(source, 4, "pease", "hot", "notMatching");
   }
 
   public void testCombinationDisjunction() throws IOException {
@@ -305,8 +371,9 @@ public class TestIntervals extends LuceneTestCase {
         { 3, 8 },
         {}, {}, {}, {}
     });
-
     assertEquals(2, source.minExtent());
+
+    checkVisits(source, 5, "alph", "sacred", "measureless");
   }
 
   public void testNesting() throws IOException {
@@ -371,6 +438,8 @@ public class TestIntervals extends LuceneTestCase {
         { 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 18, 18 },
         {}
     });
+
+    checkVisits(before, 7, "pease", "porridge", "hot", "cold");
   }
 
   public void testNesting2() throws IOException {
@@ -395,9 +464,13 @@ public class TestIntervals extends LuceneTestCase {
     assertMatch(it, 6, 21, 41, 118);
     MatchesIterator sub = it.getSubMatches();
     assertMatch(sub, 6, 6, 41, 46);
+    assertEquals(new TermQuery(new Term("field1", "pease")), sub.getQuery());
     assertMatch(sub, 19, 19, 106, 110);
+    assertEquals(new TermQuery(new Term("field1", "like")), sub.getQuery());
     assertMatch(sub, 20, 20, 111, 113);
+    assertEquals(new TermQuery(new Term("field1", "it")),sub.getQuery());
     assertMatch(sub, 21, 21, 114, 118);
+    assertEquals(new TermQuery(new Term("field1", "cold")),sub.getQuery());
     assertFalse(sub.next());
     assertFalse(it.next());
     assertEquals(4, source.minExtent());
@@ -435,9 +508,10 @@ public class TestIntervals extends LuceneTestCase {
             { 0, 3 },
             {}
         });
-    checkIntervals(Intervals.unorderedNoOverlaps(
+    IntervalsSource source = Intervals.unorderedNoOverlaps(
         Intervals.term("porridge"),
-        Intervals.unordered(Intervals.term("pease"), Intervals.term("porridge"))), "field1", 3, new int[][]{
+        Intervals.unordered(Intervals.term("pease"), Intervals.term("porridge")));
+    checkIntervals(source, "field1", 3, new int[][]{
         {},
         { 1, 4, 4, 7 },
         { 1, 4, 4, 7 },
@@ -445,6 +519,8 @@ public class TestIntervals extends LuceneTestCase {
         { 1, 4, 4, 7 },
         {}
     });
+    // automatic rewrites mean that we end up with 11 sources to visit
+    checkVisits(source, 11, "porridge", "pease");
   }
 
   public void testContainedBy() throws IOException {
@@ -475,6 +551,8 @@ public class TestIntervals extends LuceneTestCase {
     assertFalse(subs.next());
     assertFalse(mi.next());
     assertEquals(1, source.minExtent());
+
+    checkVisits(source, 5, "porridge", "pease", "cold");
   }
 
   public void testContaining() throws IOException {
@@ -770,6 +848,8 @@ public class TestIntervals extends LuceneTestCase {
       });
       assertEquals("Automaton [p*] expanded to too many terms (limit 1)", e.getMessage());
     }
+
+    checkVisits(Intervals.prefix(new BytesRef("p")), 1);
   }
 
   public void testWildcard() throws IOException {
@@ -795,6 +875,8 @@ public class TestIntervals extends LuceneTestCase {
       }
     });
     assertEquals("Automaton [?ot] expanded to too many terms (limit 1)", e.getMessage());
+
+    checkVisits(Intervals.wildcard(new BytesRef("p??")), 1);
   }
 
   public void testWrappedFilters() throws IOException {

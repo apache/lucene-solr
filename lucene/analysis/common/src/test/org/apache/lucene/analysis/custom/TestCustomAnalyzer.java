@@ -47,6 +47,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.SetOnce.AlreadySetException;
 import org.apache.lucene.util.Version;
 
+@SuppressWarnings("deprecation")
 public class TestCustomAnalyzer extends BaseTokenStreamTestCase {
   
   // Test some examples (TODO: we only check behavior, we may need something like TestRandomChains...)

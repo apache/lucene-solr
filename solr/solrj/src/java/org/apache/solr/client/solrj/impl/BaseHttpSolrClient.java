@@ -48,6 +48,7 @@ public abstract class BaseHttpSolrClient extends SolrClient {
    * This should be thrown when a server has an error in executing the request and
    * it sends a proper payload back to the client
    */
+  @SuppressWarnings("serial")
   public static class RemoteExecutionException extends HttpSolrClient.RemoteSolrException {
     private NamedList meta;
 
@@ -57,6 +58,7 @@ public abstract class BaseHttpSolrClient extends SolrClient {
     }
 
 
+    @SuppressWarnings("deprecation")
     public static HttpSolrClient.RemoteExecutionException create(String host, NamedList errResponse) {
       Object errObj = errResponse.get("error");
       if (errObj != null) {

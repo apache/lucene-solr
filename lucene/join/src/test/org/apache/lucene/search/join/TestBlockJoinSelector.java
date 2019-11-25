@@ -108,6 +108,7 @@ public class TestBlockJoinSelector extends LuceneTestCase {
         : ((NumericDocValues) sdv).advanceExact(target);
   }
 
+  @SuppressWarnings("deprecation")
   public void testSortedSelector() throws IOException {
     final BitSet parents = new FixedBitSet(20);
     parents.set(0);
@@ -217,6 +218,7 @@ public class TestBlockJoinSelector extends LuceneTestCase {
     }
   }
 
+  @SuppressWarnings("deprecation")
   public void testNumericSelector() throws Exception {
     final BitSet parents = new FixedBitSet(20);
     parents.set(0);

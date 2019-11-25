@@ -39,6 +39,7 @@ public class Test2BFST extends LuceneTestCase {
 
   private static long LIMIT = 3L*1024*1024*1024;
 
+  @SuppressWarnings("deprecation")
   public void test() throws Exception {
     assumeWorkingMMapOnWindows();
     

@@ -36,6 +36,7 @@ import java.util.Map;
  */
 public class TestRegexTransformer extends AbstractDataImportHandlerTestCase {
 
+  @SuppressWarnings("rawtypes")
   @Test
   public void testCommaSeparated() {
     List<Map<String, String>> fields = new ArrayList<>();
@@ -52,6 +53,7 @@ public class TestRegexTransformer extends AbstractDataImportHandlerTestCase {
   }
 
 
+  @SuppressWarnings({"unchecked", "rawtypes"})
   @Test
   public void testGroupNames() {
     List<Map<String, String>> fields = new ArrayList<>();
@@ -114,6 +116,7 @@ public class TestRegexTransformer extends AbstractDataImportHandlerTestCase {
     assertEquals("valueWithoutSpaces", result.get("title_underscore")); // value should be returned as-is
   }
 
+  @SuppressWarnings("unchecked")
   @Test
   public void testMileage() {
     // init a whole pile of fields
@@ -163,6 +166,7 @@ public class TestRegexTransformer extends AbstractDataImportHandlerTestCase {
     assertEquals("Fuel Economy range: 26 mpg Hwy, 19 mpg City", result.get("t3"));
   }
 
+  @SuppressWarnings("unchecked")
   @Test
   public void testMultiValuedRegex(){
       List<Map<String, String>> fields = new ArrayList<>();

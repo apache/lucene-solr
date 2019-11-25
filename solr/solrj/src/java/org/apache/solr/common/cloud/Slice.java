@@ -36,6 +36,7 @@ import static org.apache.solr.common.util.Utils.toJSONString;
 /**
  * A Slice contains immutable information about a logical shard (all replicas that share the same shard id).
  */
+@SuppressWarnings("unchecked")
 public class Slice extends ZkNodeProps implements Iterable<Replica> {
 
   /** Loads multiple slices into a Map from a generic Map that probably came from deserialized JSON. */

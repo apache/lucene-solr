@@ -109,7 +109,12 @@ public final class FastCharStream implements CharStream {
   public final int getColumn() {
     return bufferStart + bufferPosition;
   }
+  /**
+   * @deprecated use getEndLine
+   * @see #getEndLine
+   */
   @Override
+  @Deprecated
   public final int getLine() {
     return 1;
   }

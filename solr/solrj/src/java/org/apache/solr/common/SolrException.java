@@ -29,6 +29,7 @@ import org.slf4j.MDC;
 /**
  *
  */
+@SuppressWarnings("unchecked")
 public class SolrException extends RuntimeException {
 
   public static final String ROOT_ERROR_CLASS = "root-error-class";

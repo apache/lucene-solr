@@ -31,18 +31,18 @@ repository ("Repository") in CVS modules ("Modules") and made available
 as downloadable archives ("Downloads").</p>
    
 <ul>
-	<li>Content may be structured and packaged into modules to
+    <li>Content may be structured and packaged into modules to
 facilitate delivering, extending, and upgrading the Content. Typical
 modules may include plug-ins ("Plug-ins"), plug-in fragments
 ("Fragments"), and features ("Features").</li>
-	<li>Each Plug-in or Fragment may be packaged as a sub-directory or JAR (Java&#8482; ARchive) in a directory named "plugins".</li>
-	<li>A
+    <li>Each Plug-in or Fragment may be packaged as a sub-directory or JAR (Java&#8482; ARchive) in a directory named "plugins".</li>
+    <li>A
 Feature is a bundle of one or more Plug-ins and/or Fragments and
 associated material. Each Feature may be packaged as a sub-directory in
 a directory named "features". Within a Feature, files named
 "feature.xml" may contain a list of the names and version numbers of
 the Plug-ins and/or Fragments associated with that Feature.</li>
-	<li>Features
+    <li>Features
 may also include other Features ("Included Features"). Within a
 Feature, files named "feature.xml" may contain a list of the names and
 version numbers of Included Features.</li>
@@ -57,13 +57,13 @@ directory of a Download or Module
 including, but not limited to the following locations:</p>
 
 <ul>
-	<li>The top-level (root) directory</li>
-	<li>Plug-in and Fragment directories</li>
-	<li>Inside Plug-ins and Fragments packaged as JARs</li>
-	<li>Sub-directories of the directory named "src" of certain Plug-ins</li>
-	<li>Feature directories</li>
+    <li>The top-level (root) directory</li>
+    <li>Plug-in and Fragment directories</li>
+    <li>Inside Plug-ins and Fragments packaged as JARs</li>
+    <li>Sub-directories of the directory named "src" of certain Plug-ins</li>
+    <li>Feature directories</li>
 </ul>
-		
+        
 <p>Note: if a Feature made available by the Eclipse Foundation is
 installed using the Eclipse Update Manager, you must agree to a license
 ("Feature Update License") during the
@@ -84,12 +84,12 @@ CONDITIONS. SOME OF THESE
 OTHER LICENSE AGREEMENTS MAY INCLUDE (BUT ARE NOT LIMITED TO):</p>
 
 <ul>
-	<li>Common Public License Version 1.0 (available at <a href="http://www.eclipse.org/legal/cpl-v10.html">http://www.eclipse.org/legal/cpl-v10.html</a>)</li>
-	<li>Apache Software License 1.1 (available at <a href="http://www.apache.org/licenses/LICENSE">http://www.apache.org/licenses/LICENSE</a>)</li>
-	<li>Apache Software License 2.0 (available at <a href="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</a>)</li>
-	<li>IBM Public License 1.0 (available at <a href="http://oss.software.ibm.com/developerworks/opensource/license10.html">http://oss.software.ibm.com/developerworks/opensource/license10.html</a>)</li>	
-	<li>Metro Link Public License 1.00 (available at <a href="http://www.opengroup.org/openmotif/supporters/metrolink/license.html">http://www.opengroup.org/openmotif/supporters/metrolink/license.html</a>)</li>
-	<li>Mozilla Public License Version 1.1 (available at <a href="http://www.mozilla.org/MPL/MPL-1.1.html">http://www.mozilla.org/MPL/MPL-1.1.html</a>)</li>
+    <li>Common Public License Version 1.0 (available at <a href="http://www.eclipse.org/legal/cpl-v10.html">http://www.eclipse.org/legal/cpl-v10.html</a>)</li>
+    <li>Apache Software License 1.1 (available at <a href="http://www.apache.org/licenses/LICENSE">http://www.apache.org/licenses/LICENSE</a>)</li>
+    <li>Apache Software License 2.0 (available at <a href="http://www.apache.org/licenses/LICENSE-2.0">http://www.apache.org/licenses/LICENSE-2.0</a>)</li>
+    <li>IBM Public License 1.0 (available at <a href="http://oss.software.ibm.com/developerworks/opensource/license10.html">http://oss.software.ibm.com/developerworks/opensource/license10.html</a>)</li>    
+    <li>Metro Link Public License 1.00 (available at <a href="http://www.opengroup.org/openmotif/supporters/metrolink/license.html">http://www.opengroup.org/openmotif/supporters/metrolink/license.html</a>)</li>
+    <li>Mozilla Public License Version 1.1 (available at <a href="http://www.mozilla.org/MPL/MPL-1.1.html">http://www.mozilla.org/MPL/MPL-1.1.html</a>)</li>
 </ul>
 
 <p>IT IS YOUR OBLIGATION TO READ AND ACCEPT ALL SUCH TERMS AND

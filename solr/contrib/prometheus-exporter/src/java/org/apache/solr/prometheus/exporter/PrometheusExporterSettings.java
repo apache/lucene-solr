@@ -56,11 +56,13 @@ public class PrometheusExporterSettings {
 
   }
 
+  @SuppressWarnings("rawtypes")
   public static PrometheusExporterSettings from(Node settings) {
     NamedList config = DOMUtil.childNodesToNamedList(settings);
 
     Builder builder = builder();
 
+    @SuppressWarnings("unchecked")
     List<NamedList> httpClientSettings = config.getAll("httpClients");
 
     for (NamedList entry : httpClientSettings) {

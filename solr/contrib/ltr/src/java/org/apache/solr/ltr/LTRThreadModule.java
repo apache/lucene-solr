@@ -57,6 +57,7 @@ import org.apache.solr.util.plugin.NamedListInitializedPlugin;
  * <code>totalPoolThreads</code> imposes a contention between the queries if
  * <code>(totalPoolThreads &lt; numThreadsPerRequest * total parallel queries)</code>.
  */
+@SuppressWarnings({"rawtypes", "unchecked"})
 final public class LTRThreadModule extends CloseHook implements NamedListInitializedPlugin  {
 
   public static LTRThreadModule getInstance(NamedList args) {

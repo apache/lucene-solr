@@ -34,6 +34,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.TwoPhaseIterator;
 import org.apache.lucene.util.BytesRef;
 
@@ -149,10 +150,11 @@ class TermIntervalsSource extends IntervalsSource {
     if (te.seekExact(term) == false) {
       return null;
     }
-    return matches(te, doc);
+    return matches(te, doc, field);
   }
 
-  static MatchesIterator matches(TermsEnum te, int doc) throws IOException {
+  static MatchesIterator matches(TermsEnum te, int doc, String field) throws IOException {
+    TermQuery query = new TermQuery(new Term(field, te.term()));
     PostingsEnum pe = te.postings(null, PostingsEnum.OFFSETS);
     if (pe.advance(doc) != doc) {
       return null;
@@ -200,7 +202,7 @@ class TermIntervalsSource extends IntervalsSource {
 
       @Override
       public Query getQuery() {
-        throw new UnsupportedOperationException();
+        return query;
       }
     };
   }

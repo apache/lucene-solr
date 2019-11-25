@@ -126,4 +126,26 @@ public final class FastCharStream implements CharStream {
   public final int getBeginLine() {
     return 1;
   }
+
+  @Override
+  @Deprecated
+  /**
+   * Returns the column position of the character last read.
+   * @deprecated
+   * @see #getEndColumn
+   */
+  public int getColumn() {
+    return 1;
+  }
+
+  @Override
+  @Deprecated
+  /**
+   * Returns the line number of the character last read.
+   * @deprecated
+   * @see #getEndLine
+   */
+  public int getLine() {
+    return 1;
+  }
 }

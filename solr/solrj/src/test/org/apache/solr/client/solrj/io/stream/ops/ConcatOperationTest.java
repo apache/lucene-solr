@@ -18,7 +18,7 @@ package org.apache.solr.client.solrj.io.stream.ops;
 
 import java.util.Map;
 
-import junit.framework.Assert;
+import org.junit.Assert;
 
 import org.apache.commons.collections.map.HashedMap;
 import org.apache.solr.SolrTestCase;

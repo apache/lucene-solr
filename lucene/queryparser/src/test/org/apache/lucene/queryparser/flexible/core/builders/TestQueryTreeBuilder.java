@@ -27,8 +27,9 @@ import org.apache.lucene.queryparser.flexible.core.util.UnescapedCharSequence;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Test;
 
+@SuppressWarnings("deprecation")
 public class TestQueryTreeBuilder extends LuceneTestCase {
-  
+
   @Test
   public void testSetFieldBuilder() throws QueryNodeException {
     QueryTreeBuilder qtb = new QueryTreeBuilder();

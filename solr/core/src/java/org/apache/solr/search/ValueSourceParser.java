@@ -57,14 +57,15 @@ import org.apache.solr.schema.TextField;
 import org.apache.solr.search.facet.AggValueSource;
 import org.apache.solr.search.facet.AvgAgg;
 import org.apache.solr.search.facet.CountAgg;
+import org.apache.solr.search.facet.CountValsAgg;
 import org.apache.solr.search.facet.HLLAgg;
 import org.apache.solr.search.facet.MinMaxAgg;
 import org.apache.solr.search.facet.MissingAgg;
 import org.apache.solr.search.facet.PercentileAgg;
+import org.apache.solr.search.facet.RelatednessAgg;
 import org.apache.solr.search.facet.StddevAgg;
 import org.apache.solr.search.facet.SumAgg;
 import org.apache.solr.search.facet.SumsqAgg;
-import org.apache.solr.search.facet.RelatednessAgg;
 import org.apache.solr.search.facet.UniqueAgg;
 import org.apache.solr.search.facet.UniqueBlockAgg;
 import org.apache.solr.search.facet.VarianceAgg;
@@ -1020,6 +1021,13 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         return new MissingAgg(fp.parseValueSource(FunctionQParser.FLAG_DEFAULT | FunctionQParser.FLAG_USE_FIELDNAME_SOURCE));
+      }
+    });
+
+    addParser("agg_countvals", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+        return new CountValsAgg(fp.parseValueSource(FunctionQParser.FLAG_DEFAULT | FunctionQParser.FLAG_USE_FIELDNAME_SOURCE));
       }
     });
     

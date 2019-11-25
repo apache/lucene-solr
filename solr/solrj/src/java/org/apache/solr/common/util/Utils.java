@@ -88,6 +88,7 @@ import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableSet;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
+@SuppressWarnings("unchecked")
 public class Utils {
   public static final Function NEW_HASHMAP_FUN = o -> new HashMap<>();
   public static final Function NEW_LINKED_HASHMAP_FUN = o -> new LinkedHashMap<>();

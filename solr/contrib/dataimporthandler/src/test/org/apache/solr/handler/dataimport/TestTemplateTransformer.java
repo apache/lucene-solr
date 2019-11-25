@@ -31,10 +31,10 @@ import java.util.Arrays;
  *
  * @since solr 1.3
  */
+@SuppressWarnings({"unchecked", "rawtypes"})
 public class TestTemplateTransformer extends AbstractDataImportHandlerTestCase {
 
   @Test
-  @SuppressWarnings("unchecked")
   public void testTransformRow() {
     List fields = new ArrayList();
     fields.add(createMap("column", "firstName"));
@@ -71,7 +71,6 @@ public class TestTemplateTransformer extends AbstractDataImportHandlerTestCase {
   }
     
   @Test
-  @SuppressWarnings("unchecked")
   public void testTransformRowMultiValue() {
     List fields = new ArrayList();
     fields.add(createMap("column", "year"));

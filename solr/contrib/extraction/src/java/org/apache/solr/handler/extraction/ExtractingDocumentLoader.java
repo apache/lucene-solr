@@ -51,10 +51,6 @@ import org.apache.tika.sax.XHTMLContentHandler;
 import org.apache.tika.sax.xpath.Matcher;
 import org.apache.tika.sax.xpath.MatchingContentHandler;
 import org.apache.tika.sax.xpath.XPathParser;
-import org.apache.xml.serialize.BaseMarkupSerializer;
-import org.apache.xml.serialize.OutputFormat;
-import org.apache.xml.serialize.TextSerializer;
-import org.apache.xml.serialize.XMLSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.ContentHandler;
@@ -131,6 +127,7 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
     doAdd(handler, templateAdd);
   }
 
+  @SuppressWarnings({"deprecation", "unchecked", "rawtypes"})
   @Override
   public void load(SolrQueryRequest req, SolrQueryResponse rsp,
       ContentStream stream, UpdateRequestProcessor processor) throws Exception {
@@ -176,16 +173,16 @@ public class ExtractingDocumentLoader extends ContentStreamLoader {
         ContentHandler parsingHandler = handler;
 
         StringWriter writer = null;
-        BaseMarkupSerializer serializer = null;
+        org.apache.xml.serialize.BaseMarkupSerializer serializer = null;
         if (extractOnly == true) {
           String extractFormat = params.get(ExtractingParams.EXTRACT_FORMAT, "xml");
           writer = new StringWriter();
           if (extractFormat.equals(TEXT_FORMAT)) {
-            serializer = new TextSerializer();
+            serializer = new org.apache.xml.serialize.TextSerializer();
             serializer.setOutputCharStream(writer);
-            serializer.setOutputFormat(new OutputFormat("Text", "UTF-8", true));
+            serializer.setOutputFormat(new org.apache.xml.serialize.OutputFormat("Text", "UTF-8", true));
           } else {
-            serializer = new XMLSerializer(writer, new OutputFormat("XML", "UTF-8", true));
+            serializer = new org.apache.xml.serialize.XMLSerializer(writer, new org.apache.xml.serialize.OutputFormat("XML", "UTF-8", true));
           }
           if (xpathExpr != null) {
             Matcher matcher =

@@ -133,6 +133,7 @@ public abstract class SpatialStrategy {
    * scores will be 1 for indexed points at the center of the query shape and as
    * low as ~0.1 at its furthest edges.
    */
+  @SuppressWarnings("deprecation")
   public final DoubleValuesSource makeRecipDistanceValueSource(Shape queryShape) {
     Rectangle bbox = queryShape.getBoundingBox();
     double diagonalDist = ctx.getDistCalc().distance(

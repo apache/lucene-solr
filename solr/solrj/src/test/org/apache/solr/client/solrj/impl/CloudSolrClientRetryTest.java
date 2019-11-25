@@ -40,6 +40,7 @@ public class CloudSolrClientRetryTest extends SolrCloudTestCase {
   }
 
   @Test
+  @SuppressWarnings("deprecation")
   public void testRetry() throws Exception {
     String collectionName = "testRetry";
     CloudSolrClient solrClient = cluster.getSolrClient();

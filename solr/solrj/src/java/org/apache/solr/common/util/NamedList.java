@@ -61,6 +61,7 @@ import org.apache.solr.common.params.SolrParams;
  * </p>
  *
  */
+@SuppressWarnings("unchecked")
 public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry<String,T>> , MapWriter {
 
   private static final long serialVersionUID = 1957981902839867821L;

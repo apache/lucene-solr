@@ -88,6 +88,7 @@ import org.apache.solr.util.SolrPluginUtils;
  * Advances in Neural Information Processing Systems (NIPS), 2007.</a>
  * </ul>
  */
+@SuppressWarnings("unchecked")
 public class MultipleAdditiveTreesModel extends LTRScoringModel {
 
   /**

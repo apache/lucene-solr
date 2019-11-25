@@ -149,6 +149,7 @@ public class TestFieldUpdatesBuffer extends LuceneTestCase {
     assertFalse(buffer.isNumeric());
   }
 
+  @SuppressWarnings("unchecked")
   public <T extends DocValuesUpdate> T getRandomUpdate(boolean binary) {
     String termField = RandomPicks.randomFrom(random(), Arrays.asList("id", "_id", "some_other_field"));
     String docId = "" + random().nextInt(10);
