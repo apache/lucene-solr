@@ -22,7 +22,6 @@ import java.util.Set;
 
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.automaton.ByteRunAutomaton;
-import org.apache.lucene.util.automaton.CharArrayMatcher;
 
 /**
  * Allows recursion through a query tree

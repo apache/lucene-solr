@@ -19,10 +19,19 @@ package org.apache.lucene.search.uhighlight;
 
 import org.apache.lucene.util.automaton.CharArrayMatcher;
 
+/**
+ * Associates a label with a CharArrayMatcher to distinguish different sources for terms in highlighting
+ */
 public interface LabelledCharArrayMatcher extends CharArrayMatcher {
 
+  /**
+   * @return the label for this matcher
+   */
   String getLabel();
 
+  /**
+   * Associates a label with a CharArrayMatcher
+   */
   static LabelledCharArrayMatcher wrap(String label, CharArrayMatcher in) {
     return new LabelledCharArrayMatcher() {
       @Override
