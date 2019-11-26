@@ -17,7 +17,6 @@
 package org.apache.lucene.geo;
 
 import java.util.Arrays;
-import java.util.zip.ZipEntry;
 
 import static org.apache.lucene.geo.GeoUtils.lineCrossesLine;
 import static org.apache.lucene.geo.GeoUtils.lineCrossesLineWithBoundary;
@@ -51,9 +50,9 @@ public class EdgeTree {
     /** right child edge, or null */
     EdgeTree right;
     /** helper bytes to signal a point is on an edge when checking, it is within the edge tree or disjoint */
-    final private byte FALSE =0;
-    final private byte TRUE =1;
-    final private byte ON_EDGE =2;
+    final private byte FALSE = 0;
+    final private byte TRUE = 1;
+    final private byte ON_EDGE = 2;
 
   EdgeTree(double x1, double y1, double x2, double y2, double low, double max) {
       this.y1 = y1;
