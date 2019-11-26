@@ -347,6 +347,9 @@ public class CompiledAutomaton implements Accountable {
     }
   }
 
+  /**
+   * Report back to a QueryVisitor how this automaton matches terms
+   */
   public void visit(QueryVisitor visitor, Query parent, String field) {
     if (visitor.acceptField(field)) {
       switch (type) {

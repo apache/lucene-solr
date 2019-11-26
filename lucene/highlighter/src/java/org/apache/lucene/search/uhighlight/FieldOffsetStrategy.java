@@ -31,7 +31,6 @@ import org.apache.lucene.search.MatchesIterator;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
-import org.apache.lucene.util.automaton.CharArrayMatcher;
 
 /**
  * Ultimately returns an {@link OffsetsEnum} yielding potentially highlightable words in the text.  Needs
@@ -182,7 +181,7 @@ public abstract class FieldOffsetStrategy {
       for (int i = 0; i < automata.length; i++) {
         CharArrayMatcher automaton = automata[i];
         refBuilder.copyUTF8Bytes(term);
-        if (automaton.run(refBuilder.chars(), 0, refBuilder.length())) {
+        if (automaton.match(refBuilder.get())) {
           PostingsEnum postings = termsEnum.postings(null, PostingsEnum.OFFSETS);
           if (doc == postings.advance(doc)) {
             automataPostings.get(i).add(postings);

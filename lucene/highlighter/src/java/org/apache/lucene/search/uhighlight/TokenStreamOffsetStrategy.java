@@ -25,7 +25,6 @@ import org.apache.lucene.analysis.tokenattributes.OffsetAttribute;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.Automata;
-import org.apache.lucene.util.automaton.CharArrayMatcher;
 import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 /**
@@ -48,12 +47,8 @@ public class TokenStreamOffsetStrategy extends AnalysisOffsetStrategy {
     CharArrayMatcher[] newAutomata = new CharArrayMatcher[terms.length + automata.length];
     for (int i = 0; i < terms.length; i++) {
       String termString = terms[i].utf8ToString();
-      newAutomata[i] = new CharacterRunAutomaton(Automata.makeString(termString)) {
-        @Override
-        public String toString() {
-          return termString;
-        }
-      };
+      CharacterRunAutomaton a = new CharacterRunAutomaton(Automata.makeString(termString));
+      newAutomata[i] = LabelledCharArrayMatcher.wrap(termString, a::run);
     }
     // Append existing automata (that which is used for MTQs)
     System.arraycopy(automata, 0, newAutomata, terms.length, automata.length);
@@ -89,7 +84,7 @@ public class TokenStreamOffsetStrategy extends AnalysisOffsetStrategy {
       if (stream != null) {
         while (stream.incrementToken()) {
           for (int i = 0; i < matchers.length; i++) {
-            if (matchers[i].run(charTermAtt.buffer(), 0, charTermAtt.length())) {
+            if (matchers[i].match(charTermAtt.buffer(), 0, charTermAtt.length())) {
               currentMatch = i;
               return true;
             }

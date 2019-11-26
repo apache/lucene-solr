@@ -15,9 +15,14 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.util.automaton;
+package org.apache.lucene.search.uhighlight;
 
+import java.util.List;
+
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.automaton.Automata;
+import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 /**
  * Matches a character array
@@ -27,13 +32,18 @@ public interface CharArrayMatcher {
   /**
    * Return {@code true} if the passed-in character array matches
    */
-  boolean run(char[] s, int offset, int length);
+  boolean match(char[] s, int offset, int length);
 
   /**
    * Return {@code true} if the passed-in CharsRef matches
    */
-  default boolean run(CharsRef chars) {
-    return run(chars.chars, chars.offset, chars.length);
+  default boolean match(CharsRef chars) {
+    return match(chars.chars, chars.offset, chars.length);
+  }
+
+  static CharArrayMatcher fromTerms(List<BytesRef> terms) {
+    CharacterRunAutomaton a = new CharacterRunAutomaton(Automata.makeStringUnion(terms));
+    return a::run;
   }
 
 }

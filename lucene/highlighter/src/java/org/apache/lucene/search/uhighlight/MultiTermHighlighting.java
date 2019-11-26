@@ -81,7 +81,7 @@ final class MultiTermHighlighting {
 
     @Override
     public void consumeTermsMatching(Query query, String field, ByteRunAutomaton automaton) {
-      runAutomata.add(LabelledCharArrayMatcher.wrap(query.toString(), automaton.asCharArrayMatcher()));
+      runAutomata.add(LabelledCharArrayMatcher.wrap(query.toString(), automaton));
     }
 
   }
