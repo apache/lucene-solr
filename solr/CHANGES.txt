@@ -80,7 +80,7 @@ Improvements
 
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
 
-* SOLR-13863: payload query function now is able to read and sort also string payload field (delimited_payloads_string)
+* SOLR-13863: payload query function now handles string encoded payload field (delimited_payloads_string)
 
 Other Changes
 ----------------------
