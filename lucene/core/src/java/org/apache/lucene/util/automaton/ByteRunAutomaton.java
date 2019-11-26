@@ -16,9 +16,6 @@
  */
 package org.apache.lucene.util.automaton;
 
-
-import org.apache.lucene.util.UnicodeUtil;
-
 /**
  * Automaton representation for matching UTF-8 byte[].
  */

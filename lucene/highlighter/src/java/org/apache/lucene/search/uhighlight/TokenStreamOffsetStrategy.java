@@ -39,19 +39,19 @@ public class TokenStreamOffsetStrategy extends AnalysisOffsetStrategy {
   public TokenStreamOffsetStrategy(UHComponents components, Analyzer indexAnalyzer) {
     super(components, indexAnalyzer);
     assert components.getPhraseHelper().hasPositionSensitivity() == false;
-    combinedAutomata = convertTermsToAutomata(components.getTerms(), components.getAutomata());
+    combinedAutomata = convertTermsToMatchers(components.getTerms(), components.getAutomata());
   }
 
   //TODO this is inefficient; instead build a union automata just for terms part.
-  private static CharArrayMatcher[] convertTermsToAutomata(BytesRef[] terms, CharArrayMatcher[] automata) {
-    CharArrayMatcher[] newAutomata = new CharArrayMatcher[terms.length + automata.length];
+  private static CharArrayMatcher[] convertTermsToMatchers(BytesRef[] terms, CharArrayMatcher[] matchers) {
+    CharArrayMatcher[] newAutomata = new CharArrayMatcher[terms.length + matchers.length];
     for (int i = 0; i < terms.length; i++) {
       String termString = terms[i].utf8ToString();
       CharacterRunAutomaton a = new CharacterRunAutomaton(Automata.makeString(termString));
       newAutomata[i] = LabelledCharArrayMatcher.wrap(termString, a::run);
     }
     // Append existing automata (that which is used for MTQs)
-    System.arraycopy(automata, 0, newAutomata, terms.length, automata.length);
+    System.arraycopy(matchers, 0, newAutomata, terms.length, matchers.length);
     return newAutomata;
   }
 
