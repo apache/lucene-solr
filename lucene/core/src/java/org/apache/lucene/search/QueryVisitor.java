@@ -39,8 +39,17 @@ public abstract class QueryVisitor {
    */
   public void consumeTerms(Query query, Term... terms) { }
 
+  /**
+   * Called by leaf queries that match on a class of terms
+   *
+   * @param query     the leaf query
+   * @param field     the field queried against
+   * @param automaton an automaton defining which terms match
+   *
+   * @lucene.experimental
+   */
   public void consumeTermsMatching(Query query, String field, ByteRunAutomaton automaton) {
-    visitLeaf(query); // default impl for BWC
+    visitLeaf(query); // default impl for backward compatibility
   }
 
   /**

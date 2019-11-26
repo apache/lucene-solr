@@ -15,25 +15,26 @@
  * limitations under the License.
  */
 
-package org.apache.lucene.util.automaton;
+package org.apache.lucene.search.uhighlight;
 
-import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.automaton.CharArrayMatcher;
 
-/**
- * Matches a character array
- */
-public interface CharArrayMatcher {
+public interface LabelledCharArrayMatcher extends CharArrayMatcher {
 
-  /**
-   * Return {@code true} if the passed-in character array matches
-   */
-  boolean run(char[] s, int offset, int length);
+  String getLabel();
 
-  /**
-   * Return {@code true} if the passed-in CharsRef matches
-   */
-  default boolean run(CharsRef chars) {
-    return run(chars.chars, chars.offset, chars.length);
+  static LabelledCharArrayMatcher wrap(String label, CharArrayMatcher in) {
+    return new LabelledCharArrayMatcher() {
+      @Override
+      public String getLabel() {
+        return label;
+      }
+
+      @Override
+      public boolean run(char[] s, int offset, int length) {
+        return in.run(s, offset, length);
+      }
+    };
   }
 
 }

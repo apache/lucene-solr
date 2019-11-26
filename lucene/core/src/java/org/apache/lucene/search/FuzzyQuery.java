@@ -164,6 +164,7 @@ public class FuzzyQuery extends MultiTermQuery {
       if (maxEdits == 0 || prefixLength >= term.text().length()) {
         visitor.consumeTerms(this, term);
       } else {
+        // Note: we're rebuilding the automaton here, so this can be expensive
         visitor.consumeTermsMatching(this, field,
             new ByteRunAutomaton(toAutomaton(), false, Operations.DEFAULT_MAX_DETERMINIZED_STATES));
       }

@@ -36,6 +36,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.uhighlight.FieldHighlighter;
 import org.apache.lucene.search.uhighlight.FieldOffsetStrategy;
+import org.apache.lucene.search.uhighlight.LabelledCharArrayMatcher;
 import org.apache.lucene.search.uhighlight.OffsetsEnum;
 import org.apache.lucene.search.uhighlight.Passage;
 import org.apache.lucene.search.uhighlight.PassageFormatter;
@@ -66,7 +67,7 @@ public class TestUnifiedHighlighterExtensibility extends LuceneTestCase {
         (s) -> false,
         new MatchAllDocsQuery(), new BytesRef[0],
         PhraseHelper.NONE,
-        new CharacterRunAutomaton[0], false, Collections.emptySet())) {
+        new LabelledCharArrayMatcher[0], false, Collections.emptySet())) {
       @Override
       public UnifiedHighlighter.OffsetSource getOffsetSource() {
         return offsetSource;
@@ -181,7 +182,7 @@ public class TestUnifiedHighlighterExtensibility extends LuceneTestCase {
         BytesRef[] terms = filterExtractedTerms(fieldMatcher, allTerms);
         Set<HighlightFlag> highlightFlags = getFlags(field);
         PhraseHelper phraseHelper = getPhraseHelper(field, query, highlightFlags);
-        CharArrayMatcher[] automata = getAutomata(field, query, highlightFlags);
+        LabelledCharArrayMatcher[] automata = getAutomata(field, query, highlightFlags);
         boolean queryHasUnrecognizedPart = false;
         return new UHComponents(field, fieldMatcher, query, terms, phraseHelper, automata, queryHasUnrecognizedPart, highlightFlags);
       }

@@ -47,11 +47,10 @@ final class MultiTermHighlighting {
    * Extracts MultiTermQueries that match the provided field predicate.
    * Returns equivalent automata that will match terms.
    */
-  static CharArrayMatcher[] extractAutomata(Query query, Predicate<String> fieldMatcher, boolean lookInSpan) {
-
+  static LabelledCharArrayMatcher[] extractAutomata(Query query, Predicate<String> fieldMatcher, boolean lookInSpan) {
     AutomataCollector collector = new AutomataCollector(lookInSpan, fieldMatcher);
     query.visit(collector);
-    return collector.runAutomata.toArray(new CharArrayMatcher[0]);
+    return collector.runAutomata.toArray(new LabelledCharArrayMatcher[0]);
   }
 
   /**
@@ -64,7 +63,7 @@ final class MultiTermHighlighting {
 
   private static class AutomataCollector extends QueryVisitor {
 
-    List<CharArrayMatcher> runAutomata = new ArrayList<>();
+    List<LabelledCharArrayMatcher> runAutomata = new ArrayList<>();
     final boolean lookInSpan;
     final Predicate<String> fieldMatcher;
 
@@ -88,7 +87,7 @@ final class MultiTermHighlighting {
 
     @Override
     public void consumeTermsMatching(Query query, String field, ByteRunAutomaton automaton) {
-      runAutomata.add(automaton.asCharArrayMatcher(query.toString()));
+      runAutomata.add(LabelledCharArrayMatcher.wrap(query.toString(), automaton.asCharArrayMatcher()));
     }
 
   }

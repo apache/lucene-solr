@@ -169,7 +169,7 @@ public abstract class FieldOffsetStrategy {
   }
 
   protected void createOffsetsEnumsForAutomata(Terms termsIndex, int doc, List<OffsetsEnum> results) throws IOException {
-    final CharArrayMatcher[] automata = components.getAutomata();
+    final LabelledCharArrayMatcher[] automata = components.getAutomata();
     List<List<PostingsEnum>> automataPostings = new ArrayList<>(automata.length);
     for (int i = 0; i < automata.length; i++) {
       automataPostings.add(new ArrayList<>());
@@ -193,13 +193,13 @@ public abstract class FieldOffsetStrategy {
     }
 
     for (int i = 0; i < automata.length; i++) {
-      CharArrayMatcher automaton = automata[i];
+      LabelledCharArrayMatcher automaton = automata[i];
       List<PostingsEnum> postingsEnums = automataPostings.get(i);
       if (postingsEnums.isEmpty()) {
         continue;
       }
-      // Build one OffsetsEnum exposing the automata.toString as the term, and the sum of freq
-      BytesRef wildcardTerm = new BytesRef(automaton.toString());
+      // Build one OffsetsEnum exposing the automaton label as the term, and the sum of freq
+      BytesRef wildcardTerm = new BytesRef(automaton.getLabel());
       int sumFreq = 0;
       for (PostingsEnum postingsEnum : postingsEnums) {
         sumFreq += postingsEnum.freq();

@@ -36,12 +36,12 @@ public class UHComponents {
   private final Query query;
   private final BytesRef[] terms; // Query: all terms we extracted (some may be position sensitive)
   private final PhraseHelper phraseHelper; // Query: position-sensitive information
-  private final CharArrayMatcher[] automata; // Query: wildcards (i.e. multi-term query), not position sensitive
+  private final LabelledCharArrayMatcher[] automata; // Query: wildcards (i.e. multi-term query), not position sensitive
   private final boolean hasUnrecognizedQueryPart; // Query: if part of the query (other than the extracted terms / automata) is a leaf we don't know
   private final Set<UnifiedHighlighter.HighlightFlag> highlightFlags;
 
   public UHComponents(String field, Predicate<String> fieldMatcher, Query query,
-                      BytesRef[] terms, PhraseHelper phraseHelper, CharArrayMatcher[] automata,
+                      BytesRef[] terms, PhraseHelper phraseHelper, LabelledCharArrayMatcher[] automata,
                       boolean hasUnrecognizedQueryPart, Set<UnifiedHighlighter.HighlightFlag> highlightFlags) {
     this.field = field;
     this.fieldMatcher = fieldMatcher;
@@ -73,7 +73,7 @@ public class UHComponents {
     return phraseHelper;
   }
 
-  public CharArrayMatcher[] getAutomata() {
+  public LabelledCharArrayMatcher[] getAutomata() {
     return automata;
   }
 

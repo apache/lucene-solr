@@ -47,44 +47,39 @@ public class ByteRunAutomaton extends RunAutomaton {
     return accept[p];
   }
 
-  public CharArrayMatcher asCharArrayMatcher(String label) {
-    return new CharArrayMatcher() {
-      @Override
-      public boolean run(char[] chars, int offset, int length) {
-        int state = 0;
-        final int maxIdx = offset + length;
-        for (int i = offset; i < maxIdx; i++) {
-          final int code = chars[i];
-          int b;
-          // UTF16 to UTF8   (inlined logic from UnicodeUtil.UTF16toUTF8 )
-          if (code < 0x80) {
-            state = step(state, code);
+  /**
+   * Returns a representation of the automaton that matches char[] instead of byte[]
+   */
+  public CharArrayMatcher asCharArrayMatcher() {
+    return (chars, offset, length) -> {
+      int state = 0;
+      final int maxIdx = offset + length;
+      for (int i = offset; i < maxIdx; i++) {
+        final int code = chars[i];
+        int b;
+        // UTF16 to UTF8   (inlined logic from UnicodeUtil.UTF16toUTF8 )
+        if (code < 0x80) {
+          state = step(state, code);
+          if (state == -1) return false;
+        } else if (code < 0x800) {
+          b = (0xC0 | (code >> 6));
+          state = step(state, b);
+          if (state == -1) return false;
+          b = (0x80 | (code & 0x3F));
+          state = step(state, b);
+          if (state == -1) return false;
+        } else {
+          // more complex
+          byte[] utf8Bytes = new byte[4 * (maxIdx - i)];
+          int utf8Len = UnicodeUtil.UTF16toUTF8(chars, i, maxIdx - i, utf8Bytes);
+          for (int utfIdx = 0; utfIdx < utf8Len; utfIdx++) {
+            state = step(state, utf8Bytes[utfIdx] & 0xFF);
             if (state == -1) return false;
-          } else if (code < 0x800) {
-            b = (0xC0 | (code >> 6));
-            state = step(state, b);
-            if (state == -1) return false;
-            b = (0x80 | (code & 0x3F));
-            state = step(state, b);
-            if (state == -1) return false;
-          } else {
-            // more complex
-            byte[] utf8Bytes = new byte[4 * (maxIdx - i)];
-            int utf8Len = UnicodeUtil.UTF16toUTF8(chars, i, maxIdx - i, utf8Bytes);
-            for (int utfIdx = 0; utfIdx < utf8Len; utfIdx++) {
-              state = step(state, utf8Bytes[utfIdx] & 0xFF);
-              if (state == -1) return false;
-            }
-            break;
           }
+          break;
         }
-        return isAccept(state);
       }
-
-      @Override
-      public String toString() {
-        return label;
-      }
+      return isAccept(state);
     };
   }
 }
