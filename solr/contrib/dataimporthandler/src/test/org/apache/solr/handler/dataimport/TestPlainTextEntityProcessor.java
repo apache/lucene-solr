@@ -39,7 +39,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
  * @since solr 1.4
  */
 public class TestPlainTextEntityProcessor extends AbstractDataImportHandlerTestCase {
-  @SuppressWarnings("unchecked")
   @Test
   public void testSimple() throws IOException {
     DataImporter di = new DataImporter();
@@ -115,7 +114,6 @@ public class TestPlainTextEntityProcessor extends AbstractDataImportHandlerTestC
     }
   }
 
-  @SuppressWarnings("unchecked")
   @Test
   public void testSimple2() throws IOException {
     DataImporter di = new DataImporter();
@@ -150,7 +148,6 @@ public class TestPlainTextEntityProcessor extends AbstractDataImportHandlerTestC
   }
 
 
-  @SuppressWarnings("rawtypes")
   public static class DS extends DataSource {
     static String s = "hello world";
 

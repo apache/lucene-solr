@@ -23,7 +23,6 @@ import org.junit.Test;
 import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.shape.Shape;
 
-@SuppressWarnings("deprecation")
 public class SpatialArgsTest extends LuceneTestCase {
 
   @Test

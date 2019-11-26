@@ -42,7 +42,6 @@ import static java.util.stream.Collectors.toList;
  * Bean representation of <code>autoscaling.json</code>, which parses data
  * lazily.
  */
-@SuppressWarnings("unchecked")
 public class AutoScalingConfig implements MapWriter {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -570,7 +569,6 @@ public class AutoScalingConfig implements MapWriter {
     return getList(key, properties, null);
   }
 
-  @SuppressWarnings("rawtypes")
   private static List<Object> getList(String key, Map<String, Object> properties, List<Object> defaultList) {
     if (defaultList == null) {
       defaultList = Collections.emptyList();

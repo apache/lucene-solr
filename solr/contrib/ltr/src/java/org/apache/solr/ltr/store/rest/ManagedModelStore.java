@@ -105,6 +105,7 @@ public class ManagedModelStore extends ManagedResource implements ManagedResourc
 
   private Object managedData;
 
+  @SuppressWarnings("unchecked")
   @Override
   protected void onManagedDataLoadedFromStorage(NamedList<?> managedInitArgs,
       Object managedData) throws SolrException {
@@ -118,7 +119,6 @@ public class ManagedModelStore extends ManagedResource implements ManagedResourc
 
   }
 
-  @SuppressWarnings("unchecked")
   public void loadStoredModels() {
     log.info("------ managed models ~ loading ------");
 

@@ -59,7 +59,6 @@ public class ScaleFloatFunction extends ValueSource {
     float maxVal;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private ScaleInfo createScaleInfo(Map context, LeafReaderContext readerContext) throws IOException {
     final List<LeafReaderContext> leaves = ReaderUtil.getTopLevelContext(readerContext).leaves();
 
@@ -100,7 +99,6 @@ public class ScaleFloatFunction extends ValueSource {
     return scaleInfo;
   }
 
-  @SuppressWarnings("rawtypes")
   @Override
   public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
 
@@ -134,7 +132,6 @@ public class ScaleFloatFunction extends ValueSource {
     };
   }
 
-  @SuppressWarnings("rawtypes")
   @Override
   public void createWeight(Map context, IndexSearcher searcher) throws IOException {
     source.createWeight(context, searcher);

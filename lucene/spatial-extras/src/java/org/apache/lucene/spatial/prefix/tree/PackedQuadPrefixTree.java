@@ -84,7 +84,6 @@ public class PackedQuadPrefixTree extends QuadPrefixTree {
     return new PackedQuadCell(0x0L);
   }
 
-  @SuppressWarnings("deprecation")
   @Override
   public Cell getCell(Point p, int level) {
     if (!robust) { // old method
@@ -145,7 +144,6 @@ public class PackedQuadPrefixTree extends QuadPrefixTree {
     checkBattenbergNotRobustly(QUAD[3], x + w, y - h, level, matches, term, shape, maxLevel);
   }
 
-  @SuppressWarnings("deprecation")
   protected void checkBattenbergNotRobustly(byte quad, double cx, double cy, int level, List<Cell> matches,
                                  long term, Shape shape, int maxLevel) {
     // short-circuit if we find a match for the point (no need to continue recursion)

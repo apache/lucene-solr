@@ -20,6 +20,9 @@ import java.io.IOException;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 
+
+import junit.framework.AssertionFailedError;
+
 /** 
  * Tests that the {@link BaseExplanationTestCase} helper code, as well as 
  * {@link CheckHits#checkNoMatchExplanations} are checking what they are suppose to.
@@ -27,12 +30,12 @@ import org.apache.lucene.index.Term;
 public class TestBaseExplanationTestCase extends BaseExplanationTestCase {
 
   public void testQueryNoMatchWhenExpected() throws Exception {
-    expectThrows(AssertionError.class, () -> {
+    expectThrows(AssertionFailedError.class, () -> {
         qtest(new TermQuery(new Term(FIELD, "BOGUS")), new int[] { 3 /* none */ });
       });
   }
   public void testQueryMatchWhenNotExpected() throws Exception {
-    expectThrows(AssertionError.class, () -> {
+    expectThrows(AssertionFailedError.class, () -> {
         qtest(new TermQuery(new Term(FIELD, "w1")), new int[] { 0, 1 /*, 2, 3 */ });
       });
   }
@@ -42,7 +45,7 @@ public class TestBaseExplanationTestCase extends BaseExplanationTestCase {
     qtest(new TermQuery(new Term(FIELD, "zz")), new int[] { 1, 3 });
 
     // ensure when the Explanations are broken, we get an error about those matches
-    expectThrows(AssertionError.class, () -> {
+    expectThrows(AssertionFailedError.class, () -> {
         qtest(new BrokenExplainTermQuery(new Term(FIELD, "zz"), false, true), new int[] { 1, 3 });
               
       });
@@ -53,7 +56,7 @@ public class TestBaseExplanationTestCase extends BaseExplanationTestCase {
     qtest(new TermQuery(new Term(FIELD, "zz")), new int[] { 1, 3 });
     
     // ensure when the Explanations are broken, we get an error about the non matches
-    expectThrows(AssertionError.class, () -> {
+    expectThrows(AssertionFailedError.class, () -> {
         CheckHits.checkNoMatchExplanations(new BrokenExplainTermQuery(new Term(FIELD, "zz"), true, false),
                                            FIELD, searcher, new int[] { 1, 3 });
       });

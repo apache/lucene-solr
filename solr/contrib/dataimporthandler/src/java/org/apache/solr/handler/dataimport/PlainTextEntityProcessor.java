@@ -42,7 +42,6 @@ public class PlainTextEntityProcessor extends EntityProcessorBase {
     ended = false;
   }
 
-  @SuppressWarnings({"unchecked", "deprecation"})
   @Override
   public Map<String, Object> nextRow() {
     if (ended) return null;

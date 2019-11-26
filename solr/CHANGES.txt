@@ -149,8 +149,8 @@ Improvements
 
 * SOLR-13905: Make findRequestType in AuditEvent more robust (janhoy)
 
-* SOLR-13952: Separate out Gradle-specific code from other (mostly test) changes and commit 
-  separately (Erick Erickson)
+* SOLR-13961: When using partial/atomic updates to remove child documents, we now support setting to null or
+  an empty list as equivalent to the "remove" command. (Thomas Wöckinger)
 
 Optimizations
 ---------------------
@@ -208,6 +208,13 @@ Other Changes
 * SOLR-13782: Solr Ref Guide no longer published in PDF format. (Cassandra Targett)
 
 * SOLR-12193: Move some log messages to TRACE level (gezapeti, janhoy)
+
+==================  8.3.1 ==================
+
+Bug Fixes
+----------------------
+
+* SOLR-13963: JavaBinCodec has concurrent modification of CharArr resulting in corrupt internode updates (Colvin Cowie, noble)
 
 ==================  8.3.0 ==================
 

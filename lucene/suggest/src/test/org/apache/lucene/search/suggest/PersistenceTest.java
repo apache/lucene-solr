@@ -51,7 +51,6 @@ public class PersistenceTest extends LuceneTestCase {
     runTest(TSTLookup.class, true);
   }
   
-  @SuppressWarnings("deprecation")
   public void testJaspellPersistence() throws Exception {
     runTest(JaspellLookup.class, true);
   }

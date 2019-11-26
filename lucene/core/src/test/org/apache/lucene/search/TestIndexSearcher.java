@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -34,8 +35,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
@@ -188,7 +189,7 @@ public class TestIndexSearcher extends LuceneTestCase {
     assertEquals(IndexSearcher.getDefaultQueryCache(), searcher.getQueryCache());
     QueryCache dummyCache = new QueryCache() {
       @Override
-      public Weight doCache(Weight weight, QueryCachingPolicy policy) {
+      public Weight doCache(Weight weight, QueryCachingPolicy policy, Executor executor) {
         return weight;
       }
     };
@@ -294,7 +295,7 @@ public class TestIndexSearcher extends LuceneTestCase {
     service.shutdown();
   }
 
-  private static class RejectingMockExecutor implements ExecutorService {
+  public static class RejectingMockExecutor implements ExecutorService {
 
     public void shutdown() {
     }

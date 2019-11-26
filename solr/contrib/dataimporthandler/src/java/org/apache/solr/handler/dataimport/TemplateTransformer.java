@@ -52,6 +52,7 @@ public class TemplateTransformer extends Transformer {
   private Map<String ,List<String>> templateVsVars = new HashMap<>();
 
   @Override
+  @SuppressWarnings("unchecked")
   public Object transformRow(Map<String, Object> row, Context context) {
 
 
@@ -93,7 +94,6 @@ public class TemplateTransformer extends Transformer {
     return row;
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private void addToRow(String key, Map<String, Object> row, Object value) {
     Object prevVal = row.get(key);
     if (prevVal != null) {

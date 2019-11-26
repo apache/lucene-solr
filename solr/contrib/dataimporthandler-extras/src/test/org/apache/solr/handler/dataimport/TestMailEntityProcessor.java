@@ -46,7 +46,6 @@ import java.util.Map;
  * @since solr 1.4
  */
 @Ignore("Needs a Mock Mail Server to work")
-@SuppressWarnings("unchecked")
 public class TestMailEntityProcessor extends AbstractDataImportHandlerTestCase {
 
   // Credentials

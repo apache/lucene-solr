@@ -41,7 +41,7 @@ public class TestWriterImpl extends AbstractDataImportHandlerTestCase {
   }
   
   @Test
-  @SuppressWarnings({"unchecked", "rawtypes"})
+  @SuppressWarnings("unchecked")
   public void testDataConfigWithDataSource() throws Exception {
     List rows = new ArrayList();
     rows.add(createMap("id", "1", "desc", "one"));

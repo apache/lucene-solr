@@ -26,7 +26,6 @@ import org.junit.Test;
 
 public class DateFieldsTest extends AbstractAnalyticsFieldTest {
 
-  @SuppressWarnings("deprecation")
   @Test
   public void expressionFactoryCreationTest() {
     ExpressionFactory fact = getExpressionFactory();
@@ -69,7 +68,6 @@ public class DateFieldsTest extends AbstractAnalyticsFieldTest {
     checkSingleFieldValues(singleDates, values, missing);
   }
 
-  @SuppressWarnings("deprecation")
   @Test
   public void multiValuedTrieDateTest() throws IOException {
     DateMultiTrieField valueField = new DateMultiTrieField("date_dtm_t");

@@ -288,7 +288,7 @@ public class AnalyzerFactoryTask extends PerfTask {
    * @param stok stream tokenizer from which to draw analysis factory params
    * @param clazz analysis factory class to instantiate
    */
-  @SuppressWarnings({"fallthrough", "deprecation"})
+  @SuppressWarnings("fallthrough")
   private void createAnalysisPipelineComponent
       (StreamTokenizer stok, Class<? extends AbstractAnalysisFactory> clazz) {
     Map<String,String> argMap = new HashMap<>();

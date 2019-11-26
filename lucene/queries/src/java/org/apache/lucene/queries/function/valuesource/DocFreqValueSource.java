@@ -144,7 +144,6 @@ public class DocFreqValueSource extends ValueSource {
     return name() + '(' + field + ',' + val + ')';
   }
 
-  @SuppressWarnings("rawtypes")
   @Override
   public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
     IndexSearcher searcher = (IndexSearcher)context.get("searcher");
@@ -152,7 +151,6 @@ public class DocFreqValueSource extends ValueSource {
     return new ConstIntDocValues(docfreq, this);
   }
 
-  @SuppressWarnings({"unchecked", "rawtypes"})
   @Override
   public void createWeight(Map context, IndexSearcher searcher) throws IOException {
     context.put("searcher",searcher);

@@ -63,7 +63,6 @@ import static org.locationtech.spatial4j.shape.SpatialRelation.WITHIN;
 
 /** Randomized PrefixTree test that considers the fuzziness of the
  * results introduced by grid approximation. */
-@SuppressWarnings("deprecation")
 public class RandomSpatialOpFuzzyPrefixTreeTest extends StrategyTestCase {
 
   static final int ITERATIONS = 10;

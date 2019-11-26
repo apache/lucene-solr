@@ -27,7 +27,7 @@ import org.apache.solr.client.solrj.io.eval.StreamEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
 
-import org.junit.Assert;
+import junit.framework.Assert;
 
 public class GreaterThanEqualToEvaluatorTest extends SolrTestCase {
 

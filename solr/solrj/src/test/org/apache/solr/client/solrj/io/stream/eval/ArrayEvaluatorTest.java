@@ -29,7 +29,7 @@ import org.apache.solr.client.solrj.io.stream.StreamContext;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.junit.Test;
 
-import org.junit.Assert;
+import junit.framework.Assert;
 
 public class ArrayEvaluatorTest extends SolrTestCase {
 
