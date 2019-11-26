@@ -125,9 +125,6 @@ Bug Fixes
 * LUCENE-9030: Fix WordnetSynonymParser behaviour so it behaves similar to
   SolrSynonymParser. (Christoph Buescher via Alan Woodward)
 
-* LUCENE-9050: MultiTermIntervalsSource.visit() was not calling back to its
-  visitor. (Alan Woodward)
-
 * LUCENE-9054: Fix reproduceJenkinsFailures.py to not overwrite junit XML files when retrying (hossman)
 
 * LUCENE-9031: UnsupportedOperationException on MatchesIterator.getQuery() (Alan Woodward, Mikhail Khludnev)
@@ -148,6 +145,13 @@ Build
 * Upgrade forbiddenapis to version 2.7; upgrade Groovy to 2.4.17.  (Uwe Schindler)
 
 * LUCENE-9041: Upgrade ecj to 3.19.0 to fix sporadic precommit javadoc issues (Kevin Risden)
+
+======================= Lucene 8.3.1 =======================
+
+Bug Fixes
+
+* LUCENE-9050: MultiTermIntervalsSource.visit() was not calling back to its
+  visitor. (Alan Woodward)
 
 ======================= Lucene 8.3.0 =======================
 
