@@ -54,6 +54,9 @@ Optimizations
 
 * LUCENE-9027: Use SIMD instructions to decode postings. (Adrien Grand)
 
+* LUCENE-9049: Remove FST cached root arcs now redundant with labels indexed by bitset.
+  This frees some on-heap FST space. (Jack Conradson via Bruno Roustant)
+
 Bug Fixes
 
 * LUCENE-9001: Fix race condition in SetOnce. (Przemko Robakowski)
