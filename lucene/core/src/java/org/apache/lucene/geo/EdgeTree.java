@@ -76,7 +76,7 @@ public class EdgeTree {
 
   /**
    * Returns true if the point crosses this edge subtree an odd number of times. It
-   * throws a {@link @ContainBoundaryException} if the point is on an edge.
+   * throws a {@link ContainsBoundaryException} if the point is on an edge.
    * <p>
    * See <a href="https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html">
    * https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html</a> for more information.
