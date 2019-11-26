@@ -19,8 +19,7 @@ package org.apache.lucene.codecs.lucene50;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Set;
-import java.util.SortedSet;
+import java.util.Collection;
 
 import org.apache.lucene.codecs.CompetitiveImpactAccumulator;
 import org.apache.lucene.codecs.MultiLevelSkipListWriter;
@@ -140,7 +139,7 @@ final class Lucene50SkipWriter extends MultiLevelSkipListWriter {
       // sets of competitive freq,norm pairs should be empty at this point
       assert Arrays.stream(curCompetitiveFreqNorms)
           .map(CompetitiveImpactAccumulator::getCompetitiveFreqNormPairs)
-          .mapToInt(Set::size)
+          .mapToInt(Collection::size)
           .sum() == 0;
       initialized = true;
     }
@@ -204,7 +203,7 @@ final class Lucene50SkipWriter extends MultiLevelSkipListWriter {
   }
 
   static void writeImpacts(CompetitiveImpactAccumulator acc, IndexOutput out) throws IOException {
-    SortedSet<Impact> impacts = acc.getCompetitiveFreqNormPairs();
+    Collection<Impact> impacts = acc.getCompetitiveFreqNormPairs();
     Impact previous = new Impact(0, 0);
     for (Impact impact : impacts) {
       assert impact.freq > previous.freq;
