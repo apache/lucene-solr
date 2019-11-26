@@ -414,9 +414,7 @@ public final class ByteBuffersDataOutput extends DataOutput implements Accountab
    */
   public void reset() {
     if (blockReuse != NO_REUSE) {
-      for (ByteBuffer bb : blocks) {
-        blockReuse.accept(bb);
-      }
+      blocks.forEach(blockReuse);
     }
     blocks.clear();
     currentBlock = EMPTY;
