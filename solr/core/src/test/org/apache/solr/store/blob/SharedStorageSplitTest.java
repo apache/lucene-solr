@@ -42,13 +42,7 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.store.blob.client.BlobCoreMetadata;
 import org.apache.solr.store.blob.client.CoreStorageClient;
-import org.apache.solr.store.blob.process.BlobProcessUtil;
-import org.apache.solr.store.blob.process.CorePullTask;
-import org.apache.solr.store.blob.process.CorePullTask.PullCoreCallback;
-import org.apache.solr.store.blob.process.CorePullerFeeder;
-import org.apache.solr.store.blob.process.CoreSyncStatus;
 import org.apache.solr.store.shared.SolrCloudSharedStoreTestCase;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -57,7 +51,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Tests for shard splitting in conjunction with sharedf storage
+ * Tests for shard splitting in conjunction with shared storage
  */
 public class SharedStorageSplitTest extends SolrCloudSharedStoreTestCase  {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -333,30 +327,4 @@ public class SharedStorageSplitTest extends SolrCloudSharedStoreTestCase  {
     // become active (a known issue that still needs to be resolved.)
     doLiveSplitShard("livesplit1", true, 1, 8);
   }
-
-
-  private static Map<String, CountDownLatch> configureTestBlobProcessForNode(JettySolrRunner runner) {
-    Map<String, CountDownLatch> asyncPullTracker = new HashMap<>();
-
-    CorePullerFeeder cpf = new CorePullerFeeder(runner.getCoreContainer()) {  
-      @Override
-      protected CorePullTask.PullCoreCallback getCorePullTaskCallback() {
-        return new PullCoreCallback() {
-          @Override
-          public void finishedPull(CorePullTask pullTask, BlobCoreMetadata blobMetadata, CoreSyncStatus status,
-              String message) throws InterruptedException {
-            CountDownLatch latch = asyncPullTracker.get(pullTask.getPullCoreInfo().getDedupeKey());
-            if (latch != null) {
-              latch.countDown();
-            }
-          }
-        };
-      }
-    };
-
-    BlobProcessUtil testUtil = new BlobProcessUtil(runner.getCoreContainer(), cpf);
-    setupTestBlobProcessUtilForNode(testUtil, runner);
-    return asyncPullTracker;
-  }
-
 }
