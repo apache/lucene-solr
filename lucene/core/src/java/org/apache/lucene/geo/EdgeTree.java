@@ -317,7 +317,7 @@ public class EdgeTree {
   private static class ContainsBoundaryException extends RuntimeException {
 
     /** Sole constructor. */
-  public ContainsBoundaryException() {
+    ContainsBoundaryException() {
       super();
     }
   }
