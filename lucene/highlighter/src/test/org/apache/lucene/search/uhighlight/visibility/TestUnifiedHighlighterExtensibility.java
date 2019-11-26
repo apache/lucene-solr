@@ -47,8 +47,6 @@ import org.apache.lucene.search.uhighlight.UHComponents;
 import org.apache.lucene.search.uhighlight.UnifiedHighlighter;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.automaton.CharArrayMatcher;
-import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 import org.junit.Test;
 
 /**
