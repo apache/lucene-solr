@@ -48,7 +48,7 @@ public final class SchemaField extends FieldProperties implements IndexableField
   boolean required = false;  // this can't be final since it may be changed dynamically
   
   /** Declared field property overrides */
-  Map<String,?> args = Collections.emptyMap();
+  Map<String,Object> args = Collections.emptyMap();
 
 
   /** Create a new SchemaField with the given name and type,
@@ -155,29 +155,19 @@ public final class SchemaField extends FieldProperties implements IndexableField
   }
 
   /**
-   * @return The PostingsFormat name declared as parameter of this field; if it is not
-   * defined, the PostingsFormat name declared as parameter of this field type; or
-   * finally null if the parameter is not defined anywhere.
+   * Expert/advanced method to get the field {@link org.apache.lucene.codecs.PostingsFormat}.
+   * @return The {@code postingsFormat} declared; or null if unspecified.
    */
   public String getPostingsFormat() {
-    String postingsFormat = (String) args.get(POSTINGS_FORMAT);
-    if (postingsFormat == null) {
-      postingsFormat = type.getPostingsFormat();
-    }
-    return postingsFormat;
+    return (String) args.getOrDefault(POSTINGS_FORMAT, type.getPostingsFormat());
   }
 
   /**
-   * @return The DocValuesFormat name declared as parameter of this field; if it is not
-   * defined, the DocValuesFormat name declared as parameter of this field type; or
-   * finally null if the parameter is not defined anywhere.
+   * Expert/advanced method to get the field {@link org.apache.lucene.codecs.DocValuesFormat}.
+   * @return The {@code docValuesFormat} declared; or null if unspecified.
    */
   public String getDocValuesFormat() {
-    String docValuesFormat = (String) args.get(DOC_VALUES_FORMAT);
-    if (docValuesFormat == null) {
-      docValuesFormat = type.getDocValuesFormat();
-    }
-    return docValuesFormat;
+    return (String) args.getOrDefault(DOC_VALUES_FORMAT, type.getDocValuesFormat());
   }
 
   /**
