@@ -32,6 +32,7 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
 import org.apache.lucene.search.FuzzyQuery;
+import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.TermQuery;
 
 public class TestRamUsageEstimator extends LuceneTestCase {
@@ -161,7 +162,7 @@ public class TestRamUsageEstimator extends LuceneTestCase {
         Arrays.asList(new TermQuery(new Term("foo1", "bar1")), new TermQuery(new Term("baz1", "bam1"))), 1.0f);
     BooleanQuery bq = new BooleanQuery.Builder()
         .add(new TermQuery(new Term("foo2", "bar2")), BooleanClause.Occur.SHOULD)
-        .add(new FuzzyQuery(new Term("foo3", "baz3")), BooleanClause.Occur.MUST_NOT)
+        .add(new PhraseQuery.Builder().add(new Term("foo3", "baz3")).build(), BooleanClause.Occur.MUST_NOT)
         .add(dismax, BooleanClause.Occur.MUST)
         .build();
     long actual = sizeOf(bq);

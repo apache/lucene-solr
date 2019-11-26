@@ -23,8 +23,11 @@ import org.apache.lucene.index.SingleTermsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.automaton.Automaton;
+import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
 
 /** Implements the fuzzy search query. The similarity measurement
@@ -51,7 +54,9 @@ import org.apache.lucene.util.automaton.LevenshteinAutomata;
  * not match an indexed term "ab", and FuzzyQuery on term "a" with maxEdits=2 will not
  * match an indexed term "abc".
  */
-public class FuzzyQuery extends MultiTermQuery {
+public class FuzzyQuery extends MultiTermQuery implements Accountable {
+
+  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(AutomatonQuery.class);
   
   public final static int defaultMaxEdits = LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE;
   public final static int defaultPrefixLength = 0;
@@ -63,6 +68,9 @@ public class FuzzyQuery extends MultiTermQuery {
   private final boolean transpositions;
   private final int prefixLength;
   private final Term term;
+  private final CompiledAutomaton[] automata;
+
+  private final long ramBytesUsed;
   
   /**
    * Create a new FuzzyQuery that will match terms with an edit distance 
@@ -98,7 +106,17 @@ public class FuzzyQuery extends MultiTermQuery {
     this.prefixLength = prefixLength;
     this.transpositions = transpositions;
     this.maxExpansions = maxExpansions;
+    this.automata = FuzzyTermsEnum.buildAutomata(term.text(), prefixLength, transpositions, maxEdits);
     setRewriteMethod(new MultiTermQuery.TopTermsBlendedFreqScoringRewrite(maxExpansions));
+    this.ramBytesUsed = calculateRamBytesUsed(term, this.automata);
+  }
+
+  private static long calculateRamBytesUsed(Term term, CompiledAutomaton[] automata) {
+    long bytes = BASE_RAM_BYTES + term.ramBytesUsed();
+    for (CompiledAutomaton a : automata) {
+      bytes += a.ramBytesUsed();
+    }
+    return bytes;
   }
   
   /**
@@ -167,7 +185,7 @@ public class FuzzyQuery extends MultiTermQuery {
     if (maxEdits == 0 || prefixLength >= term.text().length()) {  // can only match if it's exact
       return new SingleTermsEnum(terms.iterator(), term.bytes());
     }
-    return new FuzzyTermsEnum(terms, atts, getTerm(), maxEdits, prefixLength, transpositions);
+    return new FuzzyTermsEnum(terms, atts, getTerm(), maxEdits, automata);
   }
 
   /**
@@ -252,5 +270,10 @@ public class FuzzyQuery extends MultiTermQuery {
       return Math.min((int) ((1D-minimumSimilarity) * termLen), 
         LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE);
     }
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return ramBytesUsed;
   }
 }

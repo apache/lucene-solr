@@ -398,25 +398,20 @@ public class DirectSpellChecker {
    */
   protected Collection<ScoreTerm> suggestSimilar(Term term, int numSug, IndexReader ir, int docfreq, int editDistance,
                                                  float accuracy, final CharsRefBuilder spare) throws IOException {
-    
-    AttributeSource atts = new AttributeSource();
-    MaxNonCompetitiveBoostAttribute maxBoostAtt =
-      atts.addAttribute(MaxNonCompetitiveBoostAttribute.class);
+
     Terms terms = MultiTerms.getTerms(ir, term.field());
     if (terms == null) {
       return Collections.emptyList();
     }
-    FuzzyTermsEnum e = new FuzzyTermsEnum(terms, atts, term, editDistance, Math.max(minPrefix, editDistance-1), true);
+    FuzzyTermsEnum e = new FuzzyTermsEnum(terms, term, editDistance, Math.max(minPrefix, editDistance - 1), true);
     final PriorityQueue<ScoreTerm> stQueue = new PriorityQueue<>();
     
     BytesRef queryTerm = new BytesRef(term.text());
     BytesRef candidateTerm;
     ScoreTerm st = new ScoreTerm();
-    BoostAttribute boostAtt =
-      e.attributes().addAttribute(BoostAttribute.class);
     while ((candidateTerm = e.next()) != null) {
       // For FuzzyQuery, boost is the score:
-      float score = boostAtt.getBoost();
+      float score = e.getBoost();
       // ignore uncompetitive hits
       if (stQueue.size() >= numSug && score <= stQueue.peek().boost) {
         continue;
@@ -457,7 +452,7 @@ public class DirectSpellChecker {
       stQueue.offer(st);
       // possibly drop entries from queue
       st = (stQueue.size() > numSug) ? stQueue.poll() : new ScoreTerm();
-      maxBoostAtt.setMaxNonCompetitiveBoost((stQueue.size() >= numSug) ? stQueue.peek().boost : Float.NEGATIVE_INFINITY);
+      e.setMaxNonCompetitiveBoost((stQueue.size() >= numSug) ? stQueue.peek().boost : Float.NEGATIVE_INFINITY);
     }
       
     return stQueue;
