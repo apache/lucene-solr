@@ -57,13 +57,10 @@ import org.jsoup.select.NodeVisitor;
  *
  * <ul>
  * <li>
- * Asciidoctor doesn't do a good job of rectifying situations where multiple documents are included in one
- * massive (PDF) document may have identical anchors (either explicitly defined, or implicitly defined because of
- * section headings).  Asciidoctor also doesn't support linking directly to another (included) asciidoc
- * document by name, unless there is an explicit '#fragement' used in the link.
+ * Validates that no file contains the same anchor more then once.
  * </li>
  * <li>
- * Any "relative" link should point to a file that actually exists.
+ * Validates that relative links point to a file that actually exists, and if it's part of the ref-guide that the '#fragement' in the link refers to an ID that exists in that file.
  * </li>
  * <li>
  * Our use of "<a href="https://getbootstrap.com/">Bootstrap</a>" features leverage some custom javascript
@@ -75,8 +72,7 @@ import org.jsoup.select.NodeVisitor;
  *
  * <p>
  * This tool parses the generated HTML site, looking for these situations in order to fail the build, since
- * (depending on the type of check) these situations will result in inconsistent/broken HTML, or equivalent
- * problems in the generated PDF.
+ * (depending on the type of check) these situations will result in inconsistent/broken HTML.
  * </p>
  * <p>
  * This tool supports 2 command line options:
@@ -158,12 +154,12 @@ public class CheckLinksAndAnchors { // TODO: rename this class now that it does 
       System.exit(-1);
     }
 
-    final Map<String,List<File>> idsToFiles = new HashMap<>();
     final Map<File,List<URI>> filesToRelativeLinks = new HashMap<>();
-    final Set<String> idsInMultiFiles = new LinkedHashSet<>(0);
+    final Map<String,Set<String>> filesToIds = new HashMap<>();
 
     int totalLinks = 0;
     int totalRelativeLinks = 0;
+    int totalIds = 0;
 
     for (File file : pages) {
       //System.out.println("input File URI: " + file.toURI().toString());
@@ -171,6 +167,11 @@ public class CheckLinksAndAnchors { // TODO: rename this class now that it does 
       assert ! filesToRelativeLinks.containsKey(file);
       final List<URI> linksInThisFile = new ArrayList<URI>(17);
       filesToRelativeLinks.put(file, linksInThisFile);
+      final Set<String> idsInThisFile = new LinkedHashSet<String>(17);
+      filesToIds.put(file.getName(), idsInThisFile);
+
+      // use this for error reporting if an ID exists multiple times in a single document
+      final Map<String,List<Element>> idsToNodes = new HashMap<>();
 
       final String fileContents = readFile(file.getPath());
       final Document doc = Jsoup.parse(fileContents);
@@ -183,13 +184,11 @@ public class CheckLinksAndAnchors { // TODO: rename this class now that it does 
         throw new RuntimeException(file.getName() + " has no main content: " + mainContentSelector);
       }
 
-      // Add all of the IDs in (the content of) this doc to idsToFiles (and idsInMultiFiles if needed)
+      // All of the ID (nodes) in (the content of) this doc
       final Elements nodesWithIds = mainContent.select("[id]");
-
       if (bareBones) {
         // It's a pain in the ass to customize the HTML output structure asciidoctor's bare-bones html5 backend
         // so instead we "fake" that the body tag contains the attribute we use in jekyll
-        // (and what gets added explicitly to each top level section in the PDF)
         nodesWithIds.add(new Element(Tag.valueOf("body"), "").attr("id", file.getName().replaceAll("\\.html$","")));
       } else {
         // We have to add Jekyll's <body> to the nodesWithIds so we check the main section anchor as well
@@ -213,16 +212,16 @@ public class CheckLinksAndAnchors { // TODO: rename this class now that it does 
                                " contains 'preamble' anchor, this is special in jekyll and must not be used in content.");
           } else {
             foundPreamble = true;
-            continue;
+            continue; // Note: we specifically don't count this in totalIds
           }
         }
 
-        if (idsToFiles.containsKey(id)) {
-          idsInMultiFiles.add(id);
-        } else {
-          idsToFiles.put(id, new ArrayList<File>(1));
+        if (idsInThisFile.contains(id)) {
+          problems++;
+          System.err.println(file.toURI().toString() + " contains ID multiple times: " + id);
         }
-        idsToFiles.get(id).add(file);
+        idsInThisFile.add(id);
+        totalIds++; // Note: we specifically don't count 'preamble'
       }
 
       // check for (relative) links that don't include a fragment
@@ -271,15 +270,6 @@ public class CheckLinksAndAnchors { // TODO: rename this class now that it does 
       problems += validateHtmlStructure(file, mainContent);
     }
 
-    // if there are problematic ids, report them
-    for (String id : idsInMultiFiles) {
-      problems++;
-      System.err.println("ID occurs multiple times: " + id);
-      for (File file : idsToFiles.get(id)) {
-        System.err.println(" ... " + file.toURI().toString());
-      }
-    }
-
     // check every (realtive) link in every file to ensure the frag exists in the target page
     for (Map.Entry<File,List<URI>> entry : filesToRelativeLinks.entrySet()) {
       final File source = entry.getKey();
@@ -296,16 +286,14 @@ public class CheckLinksAndAnchors { // TODO: rename this class now that it does 
         } else {
           if ( ! path.startsWith("../") ) {
             // if the dest file is part of the ref guide (ie: not an "up and out" link to javadocs)
-            // then we validate the fragment is known and unique...
+            // then we validate the fragment is known and exists in that file...
             final String frag = link.getFragment();
-            if ( ! idsInMultiFiles.contains(frag) ) { // skip problematic dups already reported
-              if ( ( ! idsToFiles.containsKey(frag) ) || // no file contains this id, or...
-                   // id exists, but not in linked file
-                   ( ! idsToFiles.get(frag).get(0).getName().equals(path) )) {
-                problems++;
-                System.err.println("Relative link points at id that doesn't exist in dest: " + link);
-                System.err.println(" ... source: " + source.toURI().toString());
-              }
+            final Set<String> knownIdsInDest = filesToIds.get(dest.getName());
+            assert null != knownIdsInDest : dest.getName();
+            if (! knownIdsInDest.contains(frag) ) {
+              problems++;
+              System.err.println("Relative link points at id that doesn't exist in dest: " + link);
+              System.err.println(" ... source: " + source.toURI().toString());
             }
           }
         }
@@ -313,7 +301,7 @@ public class CheckLinksAndAnchors { // TODO: rename this class now that it does 
     }
 
     System.err.println("Processed " + totalLinks + " links (" + totalRelativeLinks + " relative) to " +
-                       idsToFiles.size() + " anchors in " + pages.length + " files");
+                       totalIds + " anchors in " + pages.length + " files");
     if (0 < problems) {
       System.err.println("Total of " + problems + " problems found");
       System.exit(-1);

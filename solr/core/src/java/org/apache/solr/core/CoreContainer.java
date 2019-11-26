@@ -212,7 +212,7 @@ public class CoreContainer {
 
   private volatile SecurityPluginHolder<AuthenticationPlugin> authenticationPlugin;
 
-  private SecurityPluginHolder<AuditLoggerPlugin> auditloggerPlugin;
+  private volatile SecurityPluginHolder<AuditLoggerPlugin> auditloggerPlugin;
 
   private volatile BackupRepositoryFactory backupRepoFactory;
 

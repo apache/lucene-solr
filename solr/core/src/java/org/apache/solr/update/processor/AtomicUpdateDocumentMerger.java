@@ -552,7 +552,7 @@ public class AtomicUpdateDocumentMerger {
   }
 
   private Object getNativeFieldValue(String fieldName, Object val) {
-    if(isChildDoc(val)) {
+    if (isChildDoc(val) || val == null || (val instanceof Collection && ((Collection) val).isEmpty())) {
       return val;
     }
     SchemaField sf = schema.getField(fieldName);

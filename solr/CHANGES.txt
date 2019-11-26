@@ -128,6 +128,8 @@ New Features
 
 * SOLR-13911: Add 'missing' aggregation in JSON FacetModule (hossman, Munendra S N)
 
+* SOLR-13912: Add 'countvals' aggregation in JSON FacetModule (hossman, Munendra S N)
+
 Improvements
 ---------------------
 
@@ -142,6 +144,13 @@ Improvements
 * SOLR-13898: Use the new SolrCache.computeIfAbsent instead of non-atomic get / put in order to
   improve cache hit ratios. (ab, Ben Manes)
 
+* SOLR-13907: In the Cloud/tree section of the Admin UI, fix metadata panel and force an horizontal scrollbar for the tree
+  (Richard Goodman via Tomás Fernández Löbbe)
+
+* SOLR-13905: Make findRequestType in AuditEvent more robust (janhoy)
+
+* SOLR-13961: When using partial/atomic updates to remove child documents, we now support setting to null or
+  an empty list as equivalent to the "remove" command. (Thomas Wöckinger)
 
 Optimizations
 ---------------------
@@ -177,6 +186,13 @@ Bug Fixes
 
 * SOLR-13921: Processing UpdateRequest with delegation token throws NullPointerException (Istvan Farkas via Kevin Risden)
 
+* SOLR-13941: Tests configure Jetty differently than when running via start.jar (janhoy, Uwe Schindler)
+
+* SOLR-13950: Fix InterruptedException being swallowed in ZkStateReader’s getLeaderRetry method
+  (Andy Vuong via Tomás Fernández Löbbe)
+
+* SOLR-13465: CoreContainer.auditloggerPlugin should be volatile (janhoy, hossman)
+
 Other Changes
 ---------------------
 
@@ -188,6 +204,17 @@ Other Changes
 
 * SOLR-13869: SolrTestCaseJ4.getNextAvailablePort() has been deprecated (and will be removed in 9.0) since
   it is fundementally flawed.  Users with tests that depend on this method should restructure them. (hossman)
+
+* SOLR-13782: Solr Ref Guide no longer published in PDF format. (Cassandra Targett)
+
+* SOLR-12193: Move some log messages to TRACE level (gezapeti, janhoy)
+
+==================  8.3.1 ==================
+
+Bug Fixes
+----------------------
+
+* SOLR-13963: JavaBinCodec has concurrent modification of CharArr resulting in corrupt internode updates (Colvin Cowie, noble)
 
 ==================  8.3.0 ==================
 

@@ -55,6 +55,9 @@ Improvements
   
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
 
+* LUCENE-8213: LRUQueryCache#doCache now uses IndexSearcher's Executor (if present)
+  to asynchronously cache heavy queries (Atri Sharma)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
@@ -87,6 +90,8 @@ Improvements
 
 * LUCENE-9018: ConcatenateGraphFilter now has a configurable separator. (Stanislav Mikulchik, David Smiley)
 
+* LUCENE-9036: ExitableDirectoryReader may interupt scaning over DocValues (Mikhail Khludnev)
+
 Optimizations
 
 * LUCENE-8928: When building a kd-tree for dimensions n > 2, compute exact bounds for an inner node every N splits
@@ -111,12 +116,21 @@ Optimizations
 * LUCENE-8920: The denser arcs of FST now index labels with a bitset in order
   to provide near constant time access. (Bruno Roustant, Mike Sokolov via Adrien Grand)
 
+* LUCENE-9027: Use SIMD instructions to decode postings. (Adrien Grand)
+
 Bug Fixes
 
 * LUCENE-9001: Fix race condition in SetOnce. (Przemko Robakowski)
 
 * LUCENE-9030: Fix WordnetSynonymParser behaviour so it behaves similar to
   SolrSynonymParser. (Christoph Buescher via Alan Woodward)
+
+* LUCENE-9050: MultiTermIntervalsSource.visit() was not calling back to its
+  visitor. (Alan Woodward)
+
+* LUCENE-9054: Fix reproduceJenkinsFailures.py to not overwrite junit XML files when retrying (hossman)
+
+* LUCENE-9031: UnsupportedOperationException on MatchesIterator.getQuery() (Alan Woodward, Mikhail Khludnev)
 
 Other
 

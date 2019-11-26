@@ -18,6 +18,7 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
+import java.util.Objects;
 
 /**
  * Delegates all methods to a wrapped {@link NumericDocValues}.
@@ -29,6 +30,7 @@ public abstract class FilterNumericDocValues extends NumericDocValues {
   
   /** Sole constructor */
   protected FilterNumericDocValues(NumericDocValues in) {
+    Objects.requireNonNull(in);
     this.in = in;
   }
 
