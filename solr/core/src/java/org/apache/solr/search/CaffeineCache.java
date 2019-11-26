@@ -36,9 +36,8 @@ import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.managed.ManagedComponentId;
-import org.apache.solr.managed.ManagedContext;
+import org.apache.solr.managed.SolrResourceContext;
 import org.apache.solr.managed.ResourceManager;
-import org.apache.solr.managed.types.CacheManagerPlugin;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.slf4j.Logger;
@@ -91,7 +90,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
   private MetricsMap cacheMap;
   private SolrMetricsContext solrMetricsContext;
 
-  private ManagedContext managedContext;
+  private SolrResourceContext solrResourceContext;
   private ManagedComponentId managedComponentId;
 
   private long initialRamBytes = 0;
@@ -117,7 +116,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
     }
     str = (String) args.get(MAX_RAM_MB_PARAM);
     int maxRamMB = str == null ? -1 : Double.valueOf(str).intValue();
-    maxRamBytes = maxRamMB < 0 ? Long.MAX_VALUE : maxRamMB * 1024L * 1024L;
+    maxRamBytes = maxRamMB < 0 ? Long.MAX_VALUE : maxRamMB * MB;
     str = (String) args.get(CLEANUP_THREAD_PARAM);
     cleanupThread = str != null && Boolean.parseBoolean(str);
     if (cleanupThread) {
@@ -265,12 +264,12 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
 
   @Override
   public int getMaxRamMB() {
-    return maxRamBytes != Long.MAX_VALUE ? (int) (maxRamBytes / 1024L / 1024L) : -1;
+    return maxRamBytes != Long.MAX_VALUE ? (int) (maxRamBytes / MB) : -1;
   }
 
   @Override
   public void setMaxRamMB(int maxRamMB) {
-    long newMaxRamBytes = maxRamMB < 0 ? Long.MAX_VALUE : maxRamMB * 1024L * 1024L;
+    long newMaxRamBytes = maxRamMB < 0 ? Long.MAX_VALUE : maxRamMB * MB;
     if (newMaxRamBytes != maxRamBytes) {
       maxRamBytes = newMaxRamBytes;
       Optional<Eviction<K, V>> evictionOpt = cache.policy().eviction();
@@ -388,13 +387,13 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
         map.put("cumulative_evictions", cumulativeStats.evictionCount());
       }
     });
-    solrMetricsContext.gauge(cacheMap, true, scope, getCategory().toString());
+    solrMetricsContext.gauge(cacheMap, true, null, getCategory().toString());
   }
 
   @Override
   public void initializeManagedComponent(ResourceManager resourceManager, String poolName, String... otherPools) {
-    managedComponentId = new ManagedComponentId(CacheManagerPlugin.TYPE, this, solrMetricsContext.getRegistryName(), getCategory().toString(), solrMetricsContext.getScope());
-    managedContext = new ManagedContext(resourceManager, this, poolName, otherPools);
+    managedComponentId = new ManagedComponentId(this, solrMetricsContext.getRegistryName(), getCategory().toString(), solrMetricsContext.getScope());
+    solrResourceContext = new SolrResourceContext(resourceManager, this, poolName, otherPools);
   }
 
   @Override
@@ -403,7 +402,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
   }
 
   @Override
-  public ManagedContext getManagedContext() {
-    return managedContext;
+  public SolrResourceContext getSolrResourceContext() {
+    return solrResourceContext;
   }
 }

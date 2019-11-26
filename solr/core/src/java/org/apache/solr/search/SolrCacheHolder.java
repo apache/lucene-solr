@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.function.Function;
 
 import org.apache.solr.managed.ManagedComponentId;
-import org.apache.solr.managed.ManagedContext;
+import org.apache.solr.managed.SolrResourceContext;
 import org.apache.solr.managed.ResourceManager;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.slf4j.Logger;
@@ -166,7 +166,7 @@ public class SolrCacheHolder<K, V> implements SolrCache<K,V> {
   }
 
   @Override
-  public ManagedContext getManagedContext() {
-    return delegate.getManagedContext();
+  public SolrResourceContext getSolrResourceContext() {
+    return delegate.getSolrResourceContext();
   }
 }

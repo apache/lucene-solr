@@ -5,5 +5,5 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  *
  */
-public class PoolContext extends ConcurrentHashMap<String, Object> {
+public class ResourcePoolContext extends ConcurrentHashMap<String, Object> {
 }

@@ -151,7 +151,7 @@ public class ResourceManagerHandler extends RequestHandlerBase implements Permis
         result.add("resources", pool.getComponents().keySet());
         try {
           Map<String, Map<String, Object>> values = pool.getCurrentValues();
-          result.add("totalValues", pool.getResourceManagerPlugin().aggregateTotalValues(values));
+          result.add("totalValues", pool.aggregateTotalValues(values));
         } catch (Exception e) {
           log.warn("Error getting current values from pool " + name, e);
           result.add("error", "Error getting current values: " + e.toString());
@@ -225,7 +225,7 @@ public class ResourceManagerHandler extends RequestHandlerBase implements Permis
     if (poolName == null || poolName.isBlank()) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Resource operation requires '" + POOL_PARAM + "' parameter.");
     }
-    ResourceManagerPool pool = resourceManager.getPool(poolName);
+    ResourceManagerPool<ManagedComponent> pool = resourceManager.getPool(poolName);
     if (pool == null) {
       throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "Pool '" + poolName + "' not found.");
     }
@@ -241,7 +241,7 @@ public class ResourceManagerHandler extends RequestHandlerBase implements Permis
           result.add(n, perRes);
           perRes.add("class", component.getClass().getName());
           try {
-            perRes.add("resourceLimits", pool.getResourceManagerPlugin().getResourceLimits(component));
+            perRes.add("resourceLimits", pool.getResourceLimits(component));
           } catch (Exception e) {
             log.warn("Error getting resourceLimits of " + component.getManagedComponentId(), e);
             result.add("error", "Error getting resource limits of " + resName + ": " + e.toString());
@@ -255,13 +255,13 @@ public class ResourceManagerHandler extends RequestHandlerBase implements Permis
         }
         result.add("class", component.getClass().getName());
         try {
-          result.add("resourceLimits", pool.getResourceManagerPlugin().getResourceLimits(component));
+          result.add("resourceLimits", pool.getResourceLimits(component));
         } catch (Exception e) {
           log.warn("Error getting resource limits of " + resName + "/" + poolName + " : " + e.toString(), e);
           result.add("error", "Error getting resource limits of " + resName + ": " + e.toString());
         }
         try {
-          result.add("monitoredValues", pool.getResourceManagerPlugin().getMonitoredValues(component));
+          result.add("monitoredValues", pool.getMonitoredValues(component));
         } catch (Exception e) {
           log.warn("Error getting monitored values of " + resName + "/" + poolName + " : " + e.toString(), e);
           result.add("error", "Error getting monitored values of " + resName + ": " + e.toString());
@@ -273,7 +273,7 @@ public class ResourceManagerHandler extends RequestHandlerBase implements Permis
           throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "Component '" + resName + " not found in pool '" + poolName + "'.");
         }
         try {
-          result.add("resourceLimits", pool.getResourceManagerPlugin().getResourceLimits(managedComponent1));
+          result.add("resourceLimits", pool.getResourceLimits(managedComponent1));
         } catch (Exception e) {
           log.warn("Error getting resource limits of " + resName + "/" + poolName + " : " + e.toString(), e);
           result.add("error", "Error getting resource limits of " + resName + ": " + e.toString());
@@ -285,7 +285,7 @@ public class ResourceManagerHandler extends RequestHandlerBase implements Permis
           throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "Resource '" + resName + " not found in pool '" + poolName + "'.");
         }
         try {
-          Map<String, Object> currentLimits = new HashMap<>(pool.getResourceManagerPlugin().getResourceLimits(managedComponent2));
+          Map<String, Object> currentLimits = new HashMap<>(pool.getResourceLimits(managedComponent2));
           Map<String, Object> newLimits = getMap(params, LIMIT_PREFIX_PARAM);
           newLimits.forEach((k, v) -> {
             if (v == null) {
@@ -295,7 +295,7 @@ public class ResourceManagerHandler extends RequestHandlerBase implements Permis
             }
           });
           try {
-            pool.getResourceManagerPlugin().setResourceLimits(managedComponent2, newLimits);
+            pool.setResourceLimits(managedComponent2, newLimits);
             result.add("success", newLimits);
           } catch (Exception e) {
             log.warn("Error setting resource limits of " + resName + "/" + poolName + " : " + e.toString(), e);

@@ -5,5 +5,5 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 /**
  *
  */
-public class TestCacheManagerPlugin extends SolrCloudTestCase {
+public class TestCacheManagerPluginCloud extends SolrCloudTestCase {
 }

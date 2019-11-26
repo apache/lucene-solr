@@ -24,12 +24,12 @@ import java.util.Set;
 /**
  *
  */
-public class ManagedContext implements Closeable {
+public class SolrResourceContext implements Closeable {
   private final ResourceManager resourceManager;
   private final String[] poolNames;
   private final ManagedComponent component;
 
-  public ManagedContext(ResourceManager resourceManager, ManagedComponent component, String poolName, String... otherPools) {
+  public SolrResourceContext(ResourceManager resourceManager, ManagedComponent component, String poolName, String... otherPools) {
     this.resourceManager = resourceManager;
     Set<String> pools = new LinkedHashSet<>();
     pools.add(poolName);

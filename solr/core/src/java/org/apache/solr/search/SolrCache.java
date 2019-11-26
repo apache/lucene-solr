@@ -55,6 +55,8 @@ public interface SolrCache<K,V> extends SolrInfoBean, ManagedComponent, Accounta
   /** Use a background thread for cache evictions and cleanup. */
   String CLEANUP_THREAD_PARAM = "cleanupThread";
 
+  long MB = 1024L * 1024L;
+
   /**
    * The initialization routine. Instance specific arguments are passed in
    * the <code>args</code> map.

@@ -17,19 +17,19 @@
 package org.apache.solr.managed.types;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 
-import org.apache.solr.managed.ResourceManagerPlugin;
+import org.apache.solr.managed.ResourceManager;
 import org.apache.solr.managed.ResourceManagerPool;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.search.SolrCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * An implementation of {@link org.apache.solr.managed.ResourceManagerPlugin} specific to
+ * An implementation of {@link org.apache.solr.managed.ResourceManagerPool} specific to
  * the management of {@link org.apache.solr.search.SolrCache} instances.
  * <p>This plugin calculates the total size and maxRamMB of all registered cache instances
  * and adjusts each cache's limits so that the aggregated values again fit within the pool limits.</p>
@@ -37,46 +37,39 @@ import org.slf4j.LoggerFactory;
  * which can be adjusted using configuration parameter {@link #DEAD_BAND}. If monitored values don't
  * exceed the limits +/- the dead band then no action is taken.</p>
  */
-public class CacheManagerPlugin implements ResourceManagerPlugin<SolrCache> {
+public class CacheManagerPool extends ResourceManagerPool<SolrCache> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static String TYPE = "cache";
 
   public static final String DEAD_BAND = "deadBand";
-  public static final float DEFAULT_DEAD_BAND = 0.1f;
+  public static final double DEFAULT_DEAD_BAND = 0.1;
 
-  protected static final Map<String, String> controlledToMonitored = new HashMap<>();
+  protected static final Map<String, Function<Map<String, Object>, Double>> controlledToMonitored = new HashMap<>();
 
   static {
-    controlledToMonitored.put(SolrCache.MAX_RAM_MB_PARAM, SolrCache.RAM_BYTES_USED_PARAM);
-    controlledToMonitored.put(SolrCache.MAX_SIZE_PARAM, SolrCache.SIZE_PARAM);
+    controlledToMonitored.put(SolrCache.MAX_RAM_MB_PARAM, values -> {
+      Number ramBytes = (Number) values.get(SolrCache.RAM_BYTES_USED_PARAM);
+      return ramBytes != null ? ramBytes.doubleValue() / SolrCache.MB : 0.0;
+    });
+    controlledToMonitored.put(SolrCache.MAX_SIZE_PARAM, values ->
+        ((Number)values.getOrDefault(SolrCache.MAX_SIZE_PARAM, -1.0)).doubleValue());
   }
 
-  protected static final Collection<String> MONITORED_PARAMS = Arrays.asList(
-      SolrCache.SIZE_PARAM,
-      SolrCache.HIT_RATIO_PARAM,
-      SolrCache.RAM_BYTES_USED_PARAM
-  );
+  protected double deadBand = DEFAULT_DEAD_BAND;
 
-  protected static final Collection<String> CONTROLLED_PARAMS = Arrays.asList(
-      SolrCache.MAX_RAM_MB_PARAM,
-      SolrCache.MAX_SIZE_PARAM
-  );
-
-  protected float deadBand = DEFAULT_DEAD_BAND;
-
-  @Override
-  public Collection<String> getMonitoredParams() {
-    return MONITORED_PARAMS;
-  }
-
-  @Override
-  public Collection<String> getControlledParams() {
-    return CONTROLLED_PARAMS;
+  public CacheManagerPool(String name, String type, ResourceManager resourceManager, Map<String, Object> poolLimits, Map<String, Object> poolParams) {
+    super(name, type, resourceManager, poolLimits, poolParams);
+    String deadBandStr = String.valueOf(poolParams.getOrDefault(DEAD_BAND, DEFAULT_DEAD_BAND));
+    try {
+      deadBand = Double.parseDouble(deadBandStr);
+    } catch (Exception e) {
+      log.warn("Invalid deadBand parameter value '" + deadBandStr + "', using default " + DEFAULT_DEAD_BAND);
+    }
   }
 
   @Override
-  public void setResourceLimit(SolrCache component, String limitName, Object val) {
+  public Object doSetResourceLimit(SolrCache component, String limitName, Object val) {
     if (!(val instanceof Number)) {
       try {
         val = Long.parseLong(String.valueOf(val));
@@ -98,6 +91,7 @@ public class CacheManagerPlugin implements ResourceManagerPlugin<SolrCache> {
       default:
         throw new IllegalArgumentException("Unsupported limit name '" + limitName + "'");
     }
+    return value.intValue();
   }
 
   @Override
@@ -110,60 +104,50 @@ public class CacheManagerPlugin implements ResourceManagerPlugin<SolrCache> {
 
   @Override
   public Map<String, Object> getMonitoredValues(SolrCache component) throws Exception {
-    return component.getSolrMetricsContext().getMetricsSnapshot();
-  }
-
-  @Override
-  public String getType() {
-    return TYPE;
-  }
-
-  @Override
-  public void init(Map<String, Object> params) {
-    String deadBandStr = String.valueOf(params.getOrDefault(DEAD_BAND, DEFAULT_DEAD_BAND));
-    try {
-      deadBand = Float.parseFloat(deadBandStr);
-    } catch (Exception e) {
-      log.warn("Invalid deadBand parameter value '" + deadBandStr + "', using default " + DEFAULT_DEAD_BAND);
+    Map<String, Object> values = new HashMap<>();
+    values.put(SolrCache.SIZE_PARAM, component.size());
+    values.put(SolrCache.RAM_BYTES_USED_PARAM, component.ramBytesUsed());
+    SolrMetricsContext metricsContext = component.getSolrMetricsContext();
+    if (metricsContext != null) {
+      Map<String, Object> metrics = metricsContext.getMetricsSnapshot();
+      String hitRatioKey = component.getCategory().toString() + "." + metricsContext.getScope() + "." + SolrCache.HIT_RATIO_PARAM;
+      values.put(SolrCache.HIT_RATIO_PARAM, metrics.get(hitRatioKey));
     }
+    return values;
   }
 
   @Override
-  public void manage(ResourceManagerPool pool) throws Exception {
-    Map<String, Map<String, Object>> currentValues = pool.getCurrentValues();
-    Map<String, Object> totalValues = pool.getResourceManagerPlugin().aggregateTotalValues(currentValues);
+  protected void doManage() throws Exception {
+    Map<String, Map<String, Object>> currentValues = getCurrentValues();
+    Map<String, Object> totalValues = aggregateTotalValues(currentValues);
     // pool limits are defined using controlled tags
-    pool.getPoolLimits().forEach((poolLimitName, value) -> {
+    poolLimits.forEach((poolLimitName, value) -> {
       // only numeric limits are supported
       if (value == null || !(value instanceof Number)) {
         return;
       }
-      float poolLimitValue = ((Number)value).floatValue();
+      double poolLimitValue = ((Number)value).doubleValue();
       if (poolLimitValue <= 0) {
         return;
       }
-      String monitoredTag = controlledToMonitored.get(poolLimitName);
-      if (monitoredTag == null) {
+      Function<Map<String, Object>, Double> func = controlledToMonitored.get(poolLimitName);
+      if (func == null) {
         return;
       }
-      Object tv = totalValues.get(monitoredTag);
-      if (tv == null || !(tv instanceof Number)) {
+      Double totalValue = func.apply(totalValues);
+      if (totalValue.doubleValue() <= 0.0) {
         return;
       }
-      Number totalValue = (Number) tv;
-      if (totalValue.floatValue() <= 0.0f) {
-        return;
-      }
-      float totalDelta = poolLimitValue - totalValue.floatValue();
+      double totalDelta = poolLimitValue - totalValue.doubleValue();
 
       // dead band to avoid thrashing
       if (Math.abs(totalDelta / poolLimitValue) < deadBand) {
         return;
       }
 
-      float changeRatio = poolLimitValue / totalValue.floatValue();
-      // modify current limits by the changeRatio
-      pool.getComponents().forEach((name, component) -> {
+      double changeRatio = poolLimitValue / totalValue.doubleValue();
+      // modify evenly every component's current limits by the changeRatio
+      components.forEach((name, component) -> {
         Map<String, Object> resourceLimits = getResourceLimits((SolrCache) component);
         Object limit = resourceLimits.get(poolLimitName);
         // XXX we could attempt here to control eg. ramBytesUsed by adjusting maxSize limit
@@ -171,11 +155,11 @@ public class CacheManagerPlugin implements ResourceManagerPlugin<SolrCache> {
         if (limit == null || !(limit instanceof Number)) {
           return;
         }
-        float currentResourceLimit = ((Number)limit).floatValue();
+        double currentResourceLimit = ((Number)limit).doubleValue();
         if (currentResourceLimit <= 0) { // undefined or unsupported
           return;
         }
-        float newLimit = currentResourceLimit * changeRatio;
+        double newLimit = currentResourceLimit * changeRatio;
         try {
           setResourceLimit((SolrCache) component, poolLimitName, newLimit);
         } catch (Exception e) {

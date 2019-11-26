@@ -22,39 +22,41 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.managed.types.CacheManagerPlugin;
+import org.apache.solr.managed.types.CacheManagerPool;
 import org.apache.solr.search.SolrCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Default implementation of {@link ResourceManagerPluginFactory}.
+ * Default implementation of {@link ResourceManagerPoolFactory}.
  */
-public class DefaultResourceManagerPluginFactory implements ResourceManagerPluginFactory {
+public class DefaultResourceManagerPoolFactory implements ResourceManagerPoolFactory {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final Map<String, Class<? extends ResourceManagerPlugin>> typeToPluginClass = new HashMap<>();
+  private static final Map<String, Class<? extends ResourceManagerPool>> typeToPoolClass = new HashMap<>();
   private static final Map<String, Class<? extends ManagedComponent>> typeToComponentClass = new HashMap<>();
 
-  public static final String TYPE_TO_PLUGIN = "typeToPlugin";
+  public static final String TYPE_TO_POOL = "typeToPool";
   public static final String TYPE_TO_COMPONENT = "typeToComponent";
 
   static {
-    typeToPluginClass.put(CacheManagerPlugin.TYPE, CacheManagerPlugin.class);
-    typeToComponentClass.put(CacheManagerPlugin.TYPE, SolrCache.class);
+    typeToPoolClass.put(CacheManagerPool.TYPE, CacheManagerPool.class);
+    typeToPoolClass.put(NoOpResourceManager.NOOP, NoOpResourceManager.NoOpResourcePool.class);
+    typeToComponentClass.put(CacheManagerPool.TYPE, SolrCache.class);
+    typeToComponentClass.put(NoOpResourceManager.NOOP, NoOpResourceManager.NoOpManagedComponent.class);
   }
 
   private final SolrResourceLoader loader;
 
-  public DefaultResourceManagerPluginFactory(SolrResourceLoader loader, Map<String, Object> config) {
+  public DefaultResourceManagerPoolFactory(SolrResourceLoader loader, Map<String, Object> config) {
     this.loader = loader;
-    Map<String, String> typeToPluginMap = (Map<String, String>)config.getOrDefault(TYPE_TO_PLUGIN, Collections.emptyMap());
+    Map<String, String> typeToPoolMap = (Map<String, String>)config.getOrDefault(TYPE_TO_POOL, Collections.emptyMap());
     Map<String, String> typeToComponentMap = (Map<String, String>)config.getOrDefault(TYPE_TO_COMPONENT, Collections.emptyMap());
-    Map<String, Class<? extends ResourceManagerPlugin>> newPlugins = new HashMap<>();
+    Map<String, Class<? extends ResourceManagerPool>> newPlugins = new HashMap<>();
     Map<String, Class<? extends ManagedComponent>> newComponents = new HashMap<>();
-    typeToPluginMap.forEach((type, className) -> {
+    typeToPoolMap.forEach((type, className) -> {
       try {
-        Class<? extends ResourceManagerPlugin> pluginClazz = loader.findClass(className, ResourceManagerPlugin.class);
+        Class<? extends ResourceManagerPool> pluginClazz = loader.findClass(className, ResourceManagerPool.class);
         newPlugins.put(type, pluginClazz);
       } catch (Exception e) {
         log.warn("Error finding plugin class", e);
@@ -63,7 +65,7 @@ public class DefaultResourceManagerPluginFactory implements ResourceManagerPlugi
     typeToComponentMap.forEach((type, className) -> {
       try {
         Class<? extends ManagedComponent> componentClazz = loader.findClass(className, ManagedComponent.class);
-        if (typeToPluginClass.containsKey(type) || newPlugins.containsKey(type)) {
+        if (typeToPoolClass.containsKey(type) || newPlugins.containsKey(type)) {
           newComponents.put(type, componentClazz);
         }
       } catch (Exception e) {
@@ -75,7 +77,7 @@ public class DefaultResourceManagerPluginFactory implements ResourceManagerPlugi
       if (!newComponents.containsKey(type) && !typeToComponentClass.containsKey(type)) {
         return;
       }
-      typeToPluginClass.put(type, pluginClass);
+      typeToPoolClass.put(type, pluginClass);
       if (newComponents.containsKey(type)) {
         typeToComponentClass.put(type, newComponents.get(type));
       }
@@ -83,14 +85,23 @@ public class DefaultResourceManagerPluginFactory implements ResourceManagerPlugi
   }
 
   @Override
-  public <T extends ManagedComponent> ResourceManagerPlugin<T> create(String type, Map<String, Object> params) throws Exception {
-    Class<? extends ResourceManagerPlugin> pluginClazz = typeToPluginClass.get(type);
+  public <T extends ManagedComponent> ResourceManagerPool<T> create(String name, String type, ResourceManager resourceManager,
+                                                                    Map<String, Object> poolLimits, Map<String, Object> poolParams) throws Exception {
+    Class<? extends ResourceManagerPool> pluginClazz = typeToPoolClass.get(type);
     if (pluginClazz == null) {
       throw new IllegalArgumentException("Unsupported plugin type '" + type + "'");
     }
-    ResourceManagerPlugin<T> resourceManagerPlugin = loader.newInstance(pluginClazz.getName(), ResourceManagerPlugin.class);
-    resourceManagerPlugin.init(params);
-    return resourceManagerPlugin;
+    Class<? extends ManagedComponent> componentClass = typeToComponentClass.get(type);
+    if (componentClass == null) {
+      throw new IllegalArgumentException("Unsupported component type '" + type + "'");
+    }
+    ResourceManagerPool<T> resourceManagerPool = loader.newInstance(
+        pluginClazz.getName(),
+        ResourceManagerPool.class,
+        null,
+        new Class[]{String.class, String.class, ResourceManager.class, Map.class, Map.class},
+        new Object[]{name, type, resourceManager, poolLimits, poolParams});
+    return resourceManagerPool;
   }
 
   @Override
@@ -99,7 +110,7 @@ public class DefaultResourceManagerPluginFactory implements ResourceManagerPlugi
   }
 
   @Override
-  public Class<? extends ResourceManagerPlugin> getPluginClassByType(String type) {
-    return typeToPluginClass.get(type);
+  public Class<? extends ResourceManagerPool> getPoolClassByType(String type) {
+    return typeToPoolClass.get(type);
   }
 }

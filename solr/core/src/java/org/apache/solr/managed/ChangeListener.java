@@ -16,29 +16,19 @@
  */
 package org.apache.solr.managed;
 
-import java.util.Map;
-
 /**
- * Factory for creating instances of {@link ResourceManagerPlugin}-s.
+ *
  */
-public interface ResourceManagerPluginFactory {
+public interface ChangeListener {
 
   /**
-   * Create a plugin of a given symbolic type.
-   * @param type plugin symbolic type
-   * @param params plugin parameters
+   * Notify about changing a limit of a resource.
+   * @param poolName pool name where resource is managed.
+   * @param component managed component
+   * @param limitName limit name
+   * @param newRequestedVal requested new value of the resource limit.
+   * @param newActualVal actual value applied to the resource configuration. Note: this may differ from the
+   *                     value requested due to internal logic of the component.
    */
-  <T extends ManagedComponent> ResourceManagerPlugin<T> create(String type, Map<String, Object> params) throws Exception;
-
-  /**
-   * Get the implementation class for a component of a given symbolic type.
-   * @param type symbolic type
-   */
-  Class<? extends ManagedComponent> getComponentClassByType(String type);
-
-  /**
-   * Get the implementation class for a plugin of a given symbolic type.
-   * @param type symbolic type
-   */
-  Class<? extends ResourceManagerPlugin> getPluginClassByType(String type);
+  void changedLimit(String poolName, ManagedComponent component, String limitName, Object newRequestedVal, Object newActualVal);
 }

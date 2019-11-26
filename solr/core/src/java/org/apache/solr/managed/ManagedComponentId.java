@@ -29,21 +29,18 @@ public class ManagedComponentId {
 
   public static final String SEPARATOR = ":";
 
-  private final String type;
   private final String name;
   private final String[] path;
   private final String id;
 
-  public ManagedComponentId(String type, Object component, String... path) {
-    this(type, SolrMetricProducer.getUniqueMetricTag(component, null), path);
+  public ManagedComponentId(Object component, String... path) {
+    this(SolrMetricProducer.getUniqueMetricTag(component, null), path);
   }
 
-  ManagedComponentId(String type, String name, String... path) {
-    this.type = type;
+  ManagedComponentId(String name, String... path) {
     this.name = name;
     this.path = path;
     StringBuilder sb = new StringBuilder();
-    sb.append(type);
     if (path != null) {
       for (String pathEl : path) {
         if (sb.length() > 0) {
@@ -57,10 +54,6 @@ public class ManagedComponentId {
     }
     sb.append(name);
     id = sb.toString();
-  }
-
-  public String getType() {
-    return type;
   }
 
   public String getName() {
@@ -80,16 +73,12 @@ public class ManagedComponentId {
       return null;
     }
     String[] parts = fullName.split(SEPARATOR);
-    if (parts.length < 2) {
-      throw new RuntimeException("at least 2 parts (type and name) must be present: " + fullName);
-    }
-    if (parts.length > 2) {
-      String type = parts[0];
+    if (parts.length > 1) {
       String name = parts[parts.length - 1];
-      String[] path = Arrays.copyOfRange(parts, 1, parts.length - 1);
-      return new ManagedComponentId(type, name, path);
+      String[] path = Arrays.copyOfRange(parts, 0, parts.length - 1);
+      return new ManagedComponentId(name, path);
     } else {
-      return new ManagedComponentId(parts[0], parts[1]);
+      return new ManagedComponentId(parts[0]);
     }
   }
 }

@@ -16,7 +16,7 @@
  */
 
 /**
- * Implementations of {@link org.apache.solr.managed.ResourceManagerPlugin} specialized for
+ * Implementations of {@link org.apache.solr.managed.ResourceManagerPool} specialized for
  * particular types of objects.
  */
 package org.apache.solr.managed.types;

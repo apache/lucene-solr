@@ -30,11 +30,11 @@ public interface ManagedComponent extends AutoCloseable {
   /**
    * Component context used for managing additional component state for the purpose of resource management.
    */
-  ManagedContext getManagedContext();
+  SolrResourceContext getSolrResourceContext();
 
   default void close() throws Exception {
-    if (getManagedContext() != null) {
-      getManagedContext().close();
+    if (getSolrResourceContext() != null) {
+      getSolrResourceContext().close();
     }
   }
 }

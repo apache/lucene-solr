@@ -30,32 +30,39 @@ public class NoOpResourceManager extends ResourceManager {
 
   public static final NoOpResourceManager INSTANCE = new NoOpResourceManager();
 
-  private static final class NoOpResourceManagerPlugin implements ResourceManagerPlugin {
-    static final NoOpResourceManagerPlugin INSTANCE = new NoOpResourceManagerPlugin();
-
+  public static class NoOpManagedComponent implements ManagedComponent {
     @Override
-    public String getType() {
-      return NOOP;
+    public ManagedComponentId getManagedComponentId() {
+      return ManagedComponentId.of(NOOP);
     }
 
     @Override
-    public Collection<String> getMonitoredParams() {
-      return Collections.emptySet();
+    public void initializeManagedComponent(ResourceManager resourceManager, String poolName, String... otherPools) {
+
     }
 
     @Override
-    public Collection<String> getControlledParams() {
-      return Collections.emptySet();
+    public SolrResourceContext getSolrResourceContext() {
+      return null;
+    }
+  }
+
+  public static final class NoOpResourcePool<NoOpManagedComponent> extends ResourceManagerPool {
+    static final NoOpResourcePool<NoOpResourceManager.NoOpManagedComponent> INSTANCE =
+        new NoOpResourcePool<>(NoOpResourceManager.INSTANCE, Collections.emptyMap(), Collections.emptyMap());
+
+    public NoOpResourcePool(ResourceManager resourceManager, Map poolLimits, Map poolParams) {
+      super(NOOP, NOOP, resourceManager, poolLimits, poolParams);
     }
 
     @Override
-    public Map<String, Object> getMonitoredValues(ManagedComponent component) throws Exception {
+    public Map<String, Object> getMonitoredValues(ManagedComponent component) {
       return Collections.emptyMap();
     }
 
     @Override
-    public void setResourceLimit(ManagedComponent component, String limitName, Object value) throws Exception {
-      // no-op
+    protected Object doSetResourceLimit(ManagedComponent component, String limitName, Object value) throws Exception {
+      return value;
     }
 
     @Override
@@ -64,87 +71,8 @@ public class NoOpResourceManager extends ResourceManager {
     }
 
     @Override
-    public void manage(ResourceManagerPool pool) throws Exception {
-      // no-op
-    }
+    protected void doManage() throws Exception {
 
-    @Override
-    public void init(Map params) {
-      // no-op
-    }
-  }
-
-  private static final class NoOpResourcePool implements ResourceManagerPool {
-    static final NoOpResourcePool INSTANCE = new NoOpResourcePool();
-
-    @Override
-    public String getName() {
-      return NOOP;
-    }
-
-    @Override
-    public String getType() {
-      return NOOP;
-    }
-
-    @Override
-    public ResourceManagerPlugin getResourceManagerPlugin() {
-      return NoOpResourceManagerPlugin.INSTANCE;
-    }
-
-    @Override
-    public void registerComponent(ManagedComponent managedComponent) {
-      // no-op
-    }
-
-    @Override
-    public boolean unregisterComponent(String name) {
-      return false;
-    }
-
-    @Override
-    public boolean isRegistered(String componentId) {
-      return false;
-    }
-
-    @Override
-    public Map<String, ManagedComponent> getComponents() {
-      return Collections.emptyMap();
-    }
-
-    @Override
-    public Map<String, Map<String, Object>> getCurrentValues() throws InterruptedException {
-      return Collections.emptyMap();
-    }
-
-    @Override
-    public Map<String, Object> getPoolLimits() {
-      return Collections.emptyMap();
-    }
-
-    @Override
-    public Map<String, Object> getParams() {
-      return Collections.emptyMap();
-    }
-
-    @Override
-    public void setPoolLimits(Map<String, Object> poolLimits) {
-      // no-op
-    }
-
-    @Override
-    public PoolContext getPoolContext() {
-      return null;
-    }
-
-    @Override
-    public void close() throws IOException {
-      // no-op
-    }
-
-    @Override
-    public void run() {
-      // no-op
     }
   }
 
@@ -154,8 +82,13 @@ public class NoOpResourceManager extends ResourceManager {
   }
 
   @Override
-  public void createPool(String name, String type, Map<String, Object> poolLimits, Map<String, Object> args) throws Exception {
-    // no-op
+  public ResourceManagerPoolFactory getResourceManagerPoolFactory() {
+    return null;
+  }
+
+  @Override
+  public ResourceManagerPool createPool(String name, String type, Map<String, Object> poolLimits, Map<String, Object> args) throws Exception {
+    return NoOpResourcePool.INSTANCE;
   }
 
   @Override

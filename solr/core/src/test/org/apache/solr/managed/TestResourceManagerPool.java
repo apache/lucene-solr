@@ -1,8 +1,6 @@
 package org.apache.solr.managed;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -23,7 +21,7 @@ import org.slf4j.LoggerFactory;
 /**
  *
  */
-public class TestDefaultResourceManagerPool extends SolrTestCaseJ4 {
+public class TestResourceManagerPool extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final int SPEED = 50;
@@ -33,15 +31,8 @@ public class TestDefaultResourceManagerPool extends SolrTestCaseJ4 {
   private ResourceManager resourceManager;
   private SolrResourceLoader loader;
 
-  public interface MockManagedComponent extends ManagedComponent {
-    int getFoo();
-    int getBar();
-    int getBaz();
-    void setFoo(int foo);
-  }
-
-  public static class TestComponent implements MockManagedComponent {
-    ManagedContext context;
+  public static class TestComponent implements ManagedComponent {
+    SolrResourceContext context;
     ManagedComponentId id;
     int foo, bar, baz;
 
@@ -49,22 +40,18 @@ public class TestDefaultResourceManagerPool extends SolrTestCaseJ4 {
       this.id = ManagedComponentId.of(id);
     }
 
-    @Override
     public int getFoo() {
       return foo;
     }
 
-    @Override
     public int getBar() {
       return bar;
     }
 
-    @Override
     public int getBaz() {
       return baz;
     }
 
-    @Override
     public void setFoo(int foo) {
       this.foo = foo;
       this.bar = foo + 1;
@@ -78,19 +65,18 @@ public class TestDefaultResourceManagerPool extends SolrTestCaseJ4 {
 
     @Override
     public void initializeManagedComponent(ResourceManager resourceManager, String poolName, String... otherPools) {
-      context = new ManagedContext(resourceManager, this, poolName, otherPools);
+      context = new SolrResourceContext(resourceManager, this, poolName, otherPools);
     }
 
     @Override
-    public ManagedContext getManagedContext() {
+    public SolrResourceContext getSolrResourceContext() {
       return context;
     }
   }
 
-  public static class MockManagerPlugin implements ResourceManagerPlugin<MockManagedComponent> {
-
-    public MockManagerPlugin() {
-
+  public static class MockManagerPool extends ResourceManagerPool<TestComponent> {
+    public MockManagerPool(String name, String type, ResourceManager resourceManager, Map<String, Object> poolLimits, Map<String, Object> poolParams) {
+      super(name, type, resourceManager, poolLimits, poolParams);
     }
 
     @Override
@@ -99,22 +85,7 @@ public class TestDefaultResourceManagerPool extends SolrTestCaseJ4 {
     }
 
     @Override
-    public void init(Map<String, Object> params) {
-
-    }
-
-    @Override
-    public Collection<String> getMonitoredParams() {
-      return Arrays.asList("foo", "bar", "baz");
-    }
-
-    @Override
-    public Collection<String> getControlledParams() {
-      return Collections.singleton("foo");
-    }
-
-    @Override
-    public Map<String, Object> getMonitoredValues(MockManagedComponent component) throws Exception {
+    public Map<String, Object> getMonitoredValues(TestComponent component) throws Exception {
       Map<String, Object> result = new HashMap<>();
       result.put("bar", component.getBar());
       result.put("baz", component.getBaz());
@@ -123,36 +94,36 @@ public class TestDefaultResourceManagerPool extends SolrTestCaseJ4 {
     }
 
     @Override
-    public void setResourceLimit(MockManagedComponent component, String limitName, Object value) throws Exception {
+    public Object doSetResourceLimit(TestComponent component, String limitName, Object value) throws Exception {
       if (limitName.equals("foo") && value instanceof Number) {
         component.setFoo(((Number)value).intValue());
+        return ((Number)value).intValue();
       } else {
         throw new Exception("invalid limit name or value");
       }
     }
 
     @Override
-    public Map<String, Object> getResourceLimits(MockManagedComponent component) throws Exception {
+    public Map<String, Object> getResourceLimits(TestComponent component) throws Exception {
       return Collections.singletonMap("foo", component.getFoo());
     }
 
     @Override
-    public void manage(ResourceManagerPool pool) throws Exception {
+    public void doManage() throws Exception {
       if (manageStartLatch.getCount() == 0) { // already fired
         return;
       }
       manageStartLatch.countDown();
       log.info("-- managing");
-      Map<String, Map<String, Object>> currentValues = pool.getCurrentValues();
-      Map<String, Object> totalValues = pool.getResourceManagerPlugin().aggregateTotalValues(currentValues);
-      Map<String, Object> poolLimits = pool.getPoolLimits();
+      Map<String, Map<String, Object>> currentValues = getCurrentValues();
+      Map<String, Object> totalValues = aggregateTotalValues(currentValues);
       if (poolLimits.containsKey("foo")) {
         // manage
         if (totalValues.containsKey("bar")) {
           int totalValue = ((Number)totalValues.get("bar")).intValue();
           int poolLimit = ((Number)poolLimits.get("foo")).intValue();
           if (totalValue > poolLimit) {
-            for (ManagedComponent cmp : pool.getComponents().values()) {
+            for (Object cmp : getComponents().values()) {
               TestComponent component = (TestComponent)cmp;
               int foo = component.getFoo();
               if (foo > 0) {
@@ -175,10 +146,10 @@ public class TestDefaultResourceManagerPool extends SolrTestCaseJ4 {
     initArgs.put("plugins", config);
     Map<String, String> plugins = new HashMap<>();
     Map<String, String> components = new HashMap<>();
-    config.put(DefaultResourceManagerPluginFactory.TYPE_TO_PLUGIN, plugins);
-    config.put(DefaultResourceManagerPluginFactory.TYPE_TO_COMPONENT, components);
-    plugins.put("mock", MockManagerPlugin.class.getName());
-    components.put("mock", MockManagedComponent.class.getName());
+    config.put(DefaultResourceManagerPoolFactory.TYPE_TO_POOL, plugins);
+    config.put(DefaultResourceManagerPoolFactory.TYPE_TO_COMPONENT, components);
+    plugins.put("mock", MockManagerPool.class.getName());
+    components.put("mock", TestComponent.class.getName());
     resourceManager.init(new PluginInfo("resourceManager", initArgs));
   }
 
@@ -198,21 +169,21 @@ public class TestDefaultResourceManagerPool extends SolrTestCaseJ4 {
     resourceManager.createPool("test", "mock", Collections.singletonMap("foo", 10), Collections.emptyMap());
     assertNotNull(resourceManager.getPool("test"));
     for (int i = 0; i < 10; i++) {
-      TestComponent component = new TestComponent("test:component:" + i);
+      TestComponent component = new TestComponent("component:" + i);
       component.setFoo(i);
       resourceManager.registerComponent("test", component);
     }
     ResourceManagerPool pool = resourceManager.getPool("test");
     assertEquals(10, pool.getComponents().size());
     Map<String, Map<String, Object>> currentValues = pool.getCurrentValues();
-    Map<String, Object> totalValues = pool.getResourceManagerPlugin().aggregateTotalValues(currentValues);
+    Map<String, Object> totalValues = pool.aggregateTotalValues(currentValues);
     assertNotNull(totalValues.get("bar"));
     assertEquals(55, ((Number)totalValues.get("bar")).intValue());
     assertNotNull(totalValues.get("baz"));
     assertEquals(65, ((Number)totalValues.get("baz")).intValue());
-    for (ManagedComponent cmp : pool.getComponents().values()) {
+    for (Object cmp : pool.getComponents().values()) {
       TestComponent component = (TestComponent)cmp;
-      Map<String, Object> limits = pool.getResourceManagerPlugin().getResourceLimits(component);
+      Map<String, Object> limits = pool.getResourceLimits(component);
       assertEquals(1, limits.size());
       assertNotNull(limits.get("foo"));
       String name = component.getManagedComponentId().getName();
@@ -228,15 +199,15 @@ public class TestDefaultResourceManagerPool extends SolrTestCaseJ4 {
     boolean await = manageFinishLatch.await(30000 / SPEED, TimeUnit.MILLISECONDS);
     assertTrue("did not finish in time", await);
     currentValues = pool.getCurrentValues();
-    totalValues = pool.getResourceManagerPlugin().aggregateTotalValues(currentValues);
+    totalValues = pool.aggregateTotalValues(currentValues);
     assertNotNull(totalValues.get("bar"));
     assertEquals(46, ((Number)totalValues.get("bar")).intValue());
     assertNotNull(totalValues.get("baz"));
     assertEquals(56, ((Number)totalValues.get("baz")).intValue());
     int changed = 0;
-    for (ManagedComponent cmp : pool.getComponents().values()) {
+    for (Object cmp : pool.getComponents().values()) {
       TestComponent component = (TestComponent)cmp;
-      Map<String, Object> limits = pool.getResourceManagerPlugin().getResourceLimits(component);
+      Map<String, Object> limits = pool.getResourceLimits(component);
       assertEquals(1, limits.size());
       assertNotNull(limits.get("foo"));
       String name = component.getManagedComponentId().getName();

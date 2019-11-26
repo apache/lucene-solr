@@ -30,7 +30,6 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.schema.FieldType;
-import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,7 +37,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Base class for resource management. It uses a flat model where there are named
  * resource pools of a given type, each pool with its own defined resource limits. Components can be added
- * to a pool for the management of a specific aspect of that component using {@link ResourceManagerPlugin}.
+ * to a pool for the management of a specific aspect of that component.
  */
 public abstract class ResourceManager implements SolrCloseable, PluginInfoInitialized {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -162,14 +161,17 @@ public abstract class ResourceManager implements SolrCloseable, PluginInfoInitia
     }
   }
 
+  public abstract ResourceManagerPoolFactory getResourceManagerPoolFactory();
+
   /**
    * Create a named resource management pool.
-   * @param name pool name
-   * @param type pool type (one of the supported {@link ResourceManagerPlugin} types)
-   * @param poolLimits pool limits
-   * @param args other parameters. These are also used for creating a {@link ResourceManagerPlugin}
+   * @param name pool name (must not be empty)
+   * @param type pool type (one of the supported {@link ResourceManagerPool} types)
+   * @param poolLimits pool limits (must not be null)
+   * @param args other parameters (must not be null).
+   * @return newly created and scheduled resource pool
    */
-  public abstract void createPool(String name, String type, Map<String, Object> poolLimits, Map<String, Object> args) throws Exception;
+  public abstract ResourceManagerPool createPool(String name, String type, Map<String, Object> poolLimits, Map<String, Object> args) throws Exception;
 
   /**
    * List all currently existing pool names.
