@@ -17,6 +17,7 @@
 package org.apache.lucene.geo;
 
 import java.util.Arrays;
+import java.util.zip.ZipEntry;
 
 import static org.apache.lucene.geo.GeoUtils.lineCrossesLine;
 import static org.apache.lucene.geo.GeoUtils.lineCrossesLineWithBoundary;
@@ -49,8 +50,10 @@ public class EdgeTree {
     EdgeTree left;
     /** right child edge, or null */
     EdgeTree right;
-    /** helper exception to signal a point is on an edge when checking for contains */
-    final private static ContainsBoundaryException containsBoundaryException = new ContainsBoundaryException();
+    /** helper bytes to signal a point is on an edge when checking, it is within the edge tree or disjoint */
+    final private byte FALSE =0;
+    final private byte TRUE =1;
+    final private byte ON_EDGE =2;
 
   EdgeTree(double x1, double y1, double x2, double y2, double low, double max) {
       this.y1 = y1;
@@ -66,17 +69,11 @@ public class EdgeTree {
    * of times.
    */
   protected boolean contains(double x, double y) {
-    try {
-      return containsPnPoly(x, y);
-    } catch (ContainsBoundaryException ex) {
-      // point is on an edge
-      return true;
-    }
+    return containsPnPoly(x, y) > FALSE;
   }
 
   /**
-   * Returns true if the point crosses this edge subtree an odd number of times. It
-   * throws a {@link ContainsBoundaryException} if the point is on an edge.
+   * Returns true if the point crosses this edge subtree an odd number of times.
    * <p>
    * See <a href="https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html">
    * https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html</a> for more information.
@@ -105,25 +102,31 @@ public class EdgeTree {
   // THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF
   // CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
   // IN THE SOFTWARE.
-  private boolean containsPnPoly(double x, double y) {
-    boolean res = false;
+  private byte containsPnPoly(double x, double y) {
+    byte res = FALSE;
     if (y <= this.max) {
       if (y == this.y1 && y == this.y2 ||
           (y <= this.y1 && y >= this.y2) != (y >= this.y1 && y <= this.y2)) {
         if ((x == this.x1 && x == this.x2) ||
             ((x <= this.x1 && x >= this.x2) != (x >= this.x1 && x <= this.x2) &&
                 GeoUtils.orient(this.x1, this.y1, this.x2, this.y2, x, y) == 0)) {
-          throw containsBoundaryException;
+          return ON_EDGE;
         } else if (this.y1 > y != this.y2 > y) {
-          res = x < (this.x2 - this.x1) * (y - this.y1) / (this.y2 - this.y1) + this.x1;
+          res = x < (this.x2 - this.x1) * (y - this.y1) / (this.y2 - this.y1) + this.x1 ? TRUE : FALSE;
         }
       }
       if (this.left != null) {
         res ^= left.containsPnPoly(x, y);
+        if (((res >> 1) & 1) == 1) {
+          return ON_EDGE;
+        }
       }
 
       if (this.right != null && y >= this.low) {
         res ^= right.containsPnPoly(x, y);
+        if (((res >> 1) & 1) == 1) {
+          return ON_EDGE;
+        }
       }
     }
     return res;
@@ -312,13 +315,5 @@ public class EdgeTree {
       newNode.max = Math.max(newNode.max, newNode.right.max);
     }
     return newNode;
-  }
-
-  private static class ContainsBoundaryException extends RuntimeException {
-
-    /** Sole constructor. */
-    ContainsBoundaryException() {
-      super();
-    }
   }
 }
