@@ -62,8 +62,6 @@ import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InPlaceMergeSorter;
-import org.apache.lucene.util.automaton.CharArrayMatcher;
-import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 /**
  * A Highlighter that can get offsets from either

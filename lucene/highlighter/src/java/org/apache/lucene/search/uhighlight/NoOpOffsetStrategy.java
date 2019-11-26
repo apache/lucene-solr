@@ -22,7 +22,6 @@ import java.util.Collections;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 /**
  * Never returns offsets. Used when the query would highlight nothing.

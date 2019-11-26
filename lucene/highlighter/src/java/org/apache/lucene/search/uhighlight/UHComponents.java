@@ -22,8 +22,6 @@ import java.util.function.Predicate;
 
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.automaton.CharArrayMatcher;
-import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 /**
  * A parameter object to hold the components a {@link FieldOffsetStrategy} needs.

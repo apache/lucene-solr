@@ -32,7 +32,6 @@ import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.automaton.CharArrayMatcher;
-import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 /**
  * Ultimately returns an {@link OffsetsEnum} yielding potentially highlightable words in the text.  Needs
