@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.servlet.ServletUtils;
@@ -400,6 +401,17 @@ public class AuditEvent {
    */
   public Throwable getException() {
     return exception;
+  }
+
+  /**
+   * Get baseUrl as StringBuffer for back compat with previous version
+   * @deprecated Please use {@link #getBaseUrl()} instead
+   * @return StringBuffer of the base url without query part
+   */
+  @Deprecated
+  @JsonIgnore
+  public StringBuffer getRequestUrl() {
+    return new StringBuffer(baseUrl);
   }
 
   /**
