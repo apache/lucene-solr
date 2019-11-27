@@ -26,6 +26,8 @@ import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 /**
  * Matches a character array
+ *
+ * @lucene.internal
  */
 public interface CharArrayMatcher {
 
