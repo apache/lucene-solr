@@ -22,7 +22,7 @@ visualization and statistical analysis: searching, sampling
 and aggregation.
 
 <<Searching, Searching>> - <<Sampling, Sampling>> - <<Aggregation, Aggregation>>
-- <<facet, facet>> - <<facet2D, facet2D>> - <<timeseries, timeseries>> -
+- <<stats, stats>> - <<facet, facet>> - <<facet2D, facet2D>> - <<timeseries, timeseries>> -
 <<significantTerms, significantTerms>> - <<nodes, nodes>>
 
 == Searching
@@ -134,6 +134,27 @@ image::images/math-expressions/bivariate.png[]
 Aggregations are a powerful statistical tool for summarizing large data sets and
 surfacing patterns, trends and correlations within the data. Aggregations are also a powerful
 tool for visualization and provide data sets for further statistical analysis.
+
+== stats
+
+The simplest aggregation is the `stats` function. The `stats` function calculates
+aggregations for an entire result set that matches a query. The `stats` function supports
+the following aggregation functions: count(*), sum, min, max and avg. Any number
+and combination of statistics can be calculated in a single function call.
+
+
+The `stats` function can be visualized
+in Zeppelin-Solr as a table. In the example below two statistics are calculated
+over a result set and are displayed in a table:
+
+image::images/math-expressions/stats-table.png[]
+
+The `stats` function can also be visualized using the *Number* visualization which is
+used to highlight important numbers. The example below shows the `count(*)` aggregation
+displayed in the Number visualization:
+
+image::images/math-expressions/stats.png[]
+
 
 === facet
 
