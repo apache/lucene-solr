@@ -50,9 +50,9 @@ public class EdgeTree {
     /** right child edge, or null */
     EdgeTree right;
     /** helper bytes to signal if a point is on an edge, it is within the edge tree or disjoint */
-    final private byte FALSE = 0x00;
-    final private byte TRUE = 0x01;
-    final private byte ON_EDGE = 0x02;
+    final private static byte FALSE = 0x00;
+    final private static byte TRUE = 0x01;
+    final private static byte ON_EDGE = 0x02;
 
   EdgeTree(double x1, double y1, double x2, double y2, double low, double max) {
       this.y1 = y1;
@@ -130,6 +130,7 @@ public class EdgeTree {
         }
       }
     }
+    assert res >= FALSE && res <= ON_EDGE;
     return res;
   }
 
