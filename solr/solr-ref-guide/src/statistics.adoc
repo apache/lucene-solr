@@ -166,6 +166,34 @@ The cumulative probability can be plotted by switching the *y-axis* to the *cumP
 
 image::images/math-expressions/cumProb.png[]
 
+=== Custom Histograms
+
+Custom histograms can be defined and visualized by combining the output from multiple
+`stats` functions into a single histogram. Instead of automatically binning a numeric
+field the custom histogram allows for comparision of bins based on queries.
+
+NOTE: The `stats` function is first discuss in the *Searching, Sampling and Aggregation* section of the
+user guide.
+
+A simple example will illustrate how to define and visualize a custom histogram.
+
+In this example, three `stats` functions are wrapped in a `plist` function. The
+`plist` (parallel list) function  executes each of its internal functions in parallel
+and concatenates the results into a single stream. `plist` also maintains the order
+of the outputs from each of the sub-functions. In this example each `stats` function
+computes the count of documents that match a specific query. In this case they count the
+number of documents that contain the terms copper, gold and silver. The list of tuples
+with the counts is then stored in variable *a*.
+
+Then an `array` of labels is created and set to variable *l*.
+
+Finally the `zplot` function is used to plot the labels vector and the `count(*)` column.
+Notice the `col` function is used inside of the `zplot` function to extract the
+counts from the `stats` results.
+
+image::images/math-expressions/custom-hist.png[]
+
+
 === Frequency Tables
 
 The `freqTable` function returns a frequency distribution for a discrete data set.
