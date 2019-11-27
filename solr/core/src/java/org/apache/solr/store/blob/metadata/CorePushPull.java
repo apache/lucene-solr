@@ -129,20 +129,13 @@ public class CorePushPull {
           try {
 
             /*
-             * Removing from the core metadata the files that should no longer be there.
-             * 
-             * TODO
-             * This is a little confusing: This is equivalent to what we were doing in first-party 
-             * where the files to delete for a push were just the files that we determined were 
-             * missing locally but on blob (filesToPull) for a push. This operates on the assumption
-             * that the core locally was refreshed with what was in blob before this update (both in
-             * first party and Solr Cloud). 
-             * 
-             * SharedMetadataResolutionResult makes no distinction between what action is being taken 
-             * (push or pull) hence the confusing method naming but leaving this for now while we reach
-             * blob feature parity.
-             * 
-             * The deletion logic will move out of this class in the future and make this less confusing. 
+             * Removing from the core metadata the files that are stored on the blob store but no longer needed.
+             *
+             * When this method is executed, the content of the index on Blob is to be replaced with the local content.
+             * The assumption (or normal flow) is for local to refresh from Blob, update locally then push the
+             * changes to Blob.
+             * When merges happen locally the update has to mark old segment files for delete (and for example the
+             * previous "segments_N" is to be deleted as a new higher generation segment has been created).
              */
             for (BlobCoreMetadata.BlobFile d : resolvedMetadataResult.getFilesToDelete()) {
                 bcmBuilder.removeFile(d);
@@ -166,7 +159,7 @@ public class CorePushPull {
             }
             
             // Directory's javadoc says: "Java's i/o APIs not used directly, but rather all i/o is through this API"
-            // But this is untrue/totally false/misleading. SnapPuller has File all over.
+            // But this is untrue/totally false/misleading. IndexFetcher has File all over.
             for (CoreFileData cfd : resolvedMetadataResult.getFilesToPush()) {
               // Sanity check that we're talking about the same file (just sanity, Solr doesn't update files so should never be different)
               assert cfd.getFileSize() == snapshotIndexDir.fileLength(cfd.getFileName());
@@ -287,7 +280,7 @@ public class CorePushPull {
                   }
 
                   if (createNewIndexDir) {
-                    // point index to the new directory
+                    // point index to the new directory. Method call below always returns true BTW.
                     coreSwitchedToNewIndexDir = solrCore.modifyIndexProps(tempIndexDirName);
                   } else {
                     moveFilesFromTempToIndexDir(solrCore, tempIndexDir, indexDir);
@@ -434,7 +427,7 @@ public class CorePushPull {
 
       String message = String.format(Locale.ROOT,
             "PushPullData=[%s] action=%s storageProvider=%s bucketRegion=%s bucketName=%s "
-            + "runTime=%s startLatency=%s bytesTransferred=%s attempt=%s filesAffected=%s localGenerationNumber=%s blobGenerationNumber=%s ",
+              + "runTime=%s startLatency=%s bytesTransferred=%s attempt=%s filesAffected=%s localGeneration=%s blobGeneration=%s ",
           pushPullData.toString(), action, coreStorageClient.getStorageProvider().name(), coreStorageClient.getBucketRegion(),
           coreStorageClient.getBucketName(), runTime, startLatency, bytesTransferred, attempt, filesAffected,
           solrServerMetadata.getGeneration(), blobMetadata.getGeneration());

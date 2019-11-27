@@ -101,12 +101,10 @@ class BlobDeleterTask implements Runnable {
         long runTime = now - startTimeMs;
         long startLatency = now - this.queuedTimeMs;
         String message = String.format(Locale.ROOT,
-                      "sharedBlobName=%s action=%s storageProvider=%s bucketRegion=%s bucketName=%s "
-                      + "runTime=%s startLatency=%s bytesTransferred=%s attempt=%s localGenerationNumber=%s "
-                      + "blobGenerationNumber=%s filesAffected=%s isSuccess=%s",
-                      sharedBlobName, "DELETE", client.getStorageProvider().name(), client.getBucketRegion(),
-                client.getBucketName(), runTime, startLatency, 0L, attempt.get(), -1L,
-                -1L, this.blobNames.size(), isSuccess);
+               "sharedBlobName=%s action=DELETE storageProvider=%s bucketRegion=%s bucketName=%s "
+                      + "runTime=%s startLatency=%s attempt=%s filesAffected=%s isSuccess=%s",
+                      sharedBlobName, client.getStorageProvider().name(), client.getBucketRegion(),
+                      client.getBucketName(), runTime, startLatency, attempt.get(), this.blobNames.size(), isSuccess);
         log.info(message);
       }
   }

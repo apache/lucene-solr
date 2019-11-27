@@ -151,10 +151,11 @@ public class ServerSideMetadata {
         generation = latestCommit.getGeneration();
         latestCommitFiles = latestCommitBuilder.build();
 
-        // Capture now the hash and verify again if we need to pull content from the Blob store into this directory,
-        // to make sure there are no local changes at the same time that might lead to a corruption in case of interaction
-        // with the download.
-        // TODO: revise with "design assumptions around pull pipeline" mentioned in allCommits TODO below
+        // Capture now the hash and verify again after files have been pulled and before the directory is updated (or before
+        // the index is switched to use a new directory) to make sure there are no local changes at the same time that might
+        // lead to a corruption in case of interaction with the download or might be a sign of other problems (it is not
+        // expected that indexing can happen on a local directory of a SHARED replica if that replica is not up to date with
+        // the Blob store version).
         directoryHash = getSolrDirectoryHash(coreDir);
 
         allCommitsFiles = latestCommitFiles;
@@ -295,7 +296,7 @@ public class ServerSideMetadata {
           digest.update(Long.toString(coreDir.fileLength(fileName)).getBytes(StandardCharsets.UTF_8));
         } catch (FileNotFoundException fnf) {
           // The file was deleted between the listAll() and the check, use an impossible size to not match a digest
-          // for which the file is completely present or completely absent.
+          // for which the file is completely present or completely absent (which will cause this hash to never match that directory again).
           digest.update(Long.toString(-42).getBytes(StandardCharsets.UTF_8));
         }
       }

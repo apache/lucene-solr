@@ -88,7 +88,7 @@ public class CorePusher {
       //
       // Only need to read this if we ever establish starvation on push lock and want to do something about it:
       // First thing we do after acquiring the lock is to see if latest commit's generation is equal to what we pushed last.
-      // If equal then we have nothing to push, its an optimization that saves us from creating somewhat expensive ServerSideMetadata.
+      // If equal then we have nothing to push, it's an optimization that saves us from creating somewhat expensive ServerSideMetadata.
       // That equality check can also be duplicated here before acquiring the push lock but that would just be a simple optimization.
       // It will not save us from starvation. Because that condition being "true" also means that there is no active pusher,
       // so there is no question of starvation.

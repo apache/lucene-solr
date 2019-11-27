@@ -126,7 +126,7 @@ public class SharedStoreResolutionUtil {
           localFilesMissingOnBlob.put(cfd.getFileName(), cfd);
       }
 
-      // for files to pull all the index files present locally matters
+      // for files to pull all the index files present locally matter
       for (CoreFileData cfd : local.getAllCommitsFiles()) {
         allLocalFiles.put(cfd.getFileName(), cfd);
       }
@@ -165,11 +165,11 @@ public class SharedStoreResolutionUtil {
     
     if (local == null) {
       // The shard index data does not exist locally. All we can do is pull.  
-      // We've computed blobFilesMissingLocally and localFilesMissingOnBlob is empty as it should be.
+      // We've computed blobFilesMissingLocally. localFilesMissingOnBlob is empty as it should be.
       return new SharedMetadataResolutionResult(localFilesMissingOnBlob.values(), blobFilesMissingLocally.values(), blobFilesMissingLocally.values(), false);
     }
 
-    boolean localConflictingWithBlob = false;
+    boolean downloadToNewDir = false;
     // Verify there are no inconsistencies between local index and blob index files
     for (BlobFile bf : distant.getBlobFiles()) {
       // We remove from map of local files those already present remotely since they don't have to be pushed.
@@ -184,23 +184,26 @@ public class SharedStoreResolutionUtil {
               distant.getSharedBlobName(), local.getCoreName(), bf.getSolrFileName(), bf.getBlobName(),
               cf.getFileSize(), bf.getFileSize(), cf.getChecksum(), bf.getChecksum());
           log.info(message);
-          localConflictingWithBlob = true;
+          downloadToNewDir = true;
         }
       }
     }
 
-    if(!localConflictingWithBlob) {
-      // If local index generation number is higher than blob even than we will declare a conflict.
-      // Since in the presence of higher generation number locally, blob contents cannot establish their legitimacy.
-      localConflictingWithBlob = local.getGeneration() > distant.getGeneration();
+    // If local index generation is higher than blob's we will download to new directory because if both segments_N
+    // files are present in same directory Solr will open the higher one (and we really want the lower one from Blob).
+    if (local.getGeneration() > distant.getGeneration()) {
+      log.info("local generation higher than blob. sharedShardName=" + distant.getSharedBlobName() + " coreName=" + local.getCoreName() +
+          " localGeneration=" + local.getGeneration() + " blobGeneration=" + distant.getGeneration());
+      downloadToNewDir = true;
     }
-    // If there is a conflict we will switch index to a newer directory and pull all blob files.
+
+    // If needed we will switch index to a new directory and pull all blob files.
     // Later in the pipeline at the actual time of pull(CorePushPull#pullUpdateFromBlob) there is an optimization to make use of local index directory
     // for already available files instead of downloading from blob. It was possible to design that into the contract of this 
     // resolver to produce list of files to be pulled from blob and list of files to be pulled(read copied) from local index directory.
     // But that would have unnecessarily convoluted the design of this resolver.
-    Collection<BlobFile> filesToPull = localConflictingWithBlob ? Arrays.asList(distant.getBlobFiles()) : blobFilesMissingLocally.values();
-    return new SharedMetadataResolutionResult(localFilesMissingOnBlob.values(), filesToPull, blobFilesMissingLocally.values(), localConflictingWithBlob);
+    Collection<BlobFile> filesToPull = downloadToNewDir ? Arrays.asList(distant.getBlobFiles()) : blobFilesMissingLocally.values();
+    return new SharedMetadataResolutionResult(localFilesMissingOnBlob.values(), filesToPull, blobFilesMissingLocally.values(), downloadToNewDir);
   }
   
   /** Identify the segments_N file in Blob files. */

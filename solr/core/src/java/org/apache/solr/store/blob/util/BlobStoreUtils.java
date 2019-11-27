@@ -151,7 +151,7 @@ public class BlobStoreUtils {
         }
       } catch (Exception ex) {
         // wrap every thrown exception in a solr exception
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error occured pulling shard=" + shardName + " collection=" + collectionName + " from shared store " + ex);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error occurred pulling shard=" + shardName + " collection=" + collectionName + " from shared store", ex);
       }
     } else {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Sync requested for unknown shard=" + shardName + " in collection=" + collectionName);
