@@ -81,6 +81,8 @@ Other
 
 * LUCENE-8983: Add sandbox PhraseWildcardQuery to control multi-terms expansions in a phrase. (Bruno Roustant)
 
+* LUCENE-9067: Polygon2D#contains() is now thread safe. (Ignacio Vera)
+
 Build
 
 * Upgrade forbiddenapis to version 2.7; upgrade Groovy to 2.4.17.  (Uwe Schindler)
