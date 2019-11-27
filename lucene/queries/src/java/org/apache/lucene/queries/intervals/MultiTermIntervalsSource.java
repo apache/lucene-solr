@@ -83,7 +83,7 @@ class MultiTermIntervalsSource extends IntervalsSource {
     BytesRef term;
     int count = 0;
     while ((term = te.next()) != null) {
-      MatchesIterator mi = TermIntervalsSource.matches(te, doc);
+      MatchesIterator mi = TermIntervalsSource.matches(te, doc, field);
       if (mi != null) {
         subMatches.add(mi);
         if (count++ > maxExpansions) {
@@ -96,7 +96,7 @@ class MultiTermIntervalsSource extends IntervalsSource {
 
   @Override
   public void visit(String field, QueryVisitor visitor) {
-
+    visitor.visitLeaf(new IntervalQuery(field, this));
   }
 
   @Override

@@ -181,7 +181,13 @@ public class IndexSearcher {
   }
 
   /** Runs searches for each segment separately, using the
-   *  provided Executor. NOTE:
+   *  provided Executor. The passed in Executor will also be
+   *  used by LRUQueryCache (if enabled) to perform asynchronous
+   *  query caching.
+   *  If a task is rejected by the host Executor, the failed task
+   *  will then be executed on the caller thread. This is done to
+   *  ensure that a query succeeds, albeit with a higher latency.
+   *  NOTE:
    *  if you are using {@link NIOFSDirectory}, do not use
    *  the shutdownNow method of ExecutorService as this uses
    *  Thread.interrupt under-the-hood which can silently
@@ -843,7 +849,7 @@ public class IndexSearcher {
     final QueryCache queryCache = this.queryCache;
     Weight weight = query.createWeight(this, scoreMode, boost);
     if (scoreMode.needsScores() == false && queryCache != null) {
-      weight = queryCache.doCache(weight, queryCachingPolicy);
+      weight = queryCache.doCache(weight, queryCachingPolicy, executor);
     }
     return weight;
   }

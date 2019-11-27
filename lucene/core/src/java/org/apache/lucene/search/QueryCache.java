@@ -17,6 +17,8 @@
 package org.apache.lucene.search;
 
 
+import java.util.concurrent.Executor;
+
 /**
  * A cache for queries.
  *
@@ -30,7 +32,8 @@ public interface QueryCache {
    * matching docs per-segment accordingly to the given <code>policy</code>.
    * NOTE: The returned weight will only be equivalent if scores are not needed.
    * @see Collector#scoreMode()
+   * If the Executor is not null, it will be used to perform asynchronous caching
    */
-  Weight doCache(Weight weight, QueryCachingPolicy policy);
+  Weight doCache(Weight weight, QueryCachingPolicy policy, Executor executor);
 
 }

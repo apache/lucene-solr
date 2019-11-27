@@ -19,6 +19,7 @@ package org.apache.solr.util;
 
 import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.databind.AnnotationIntrospector;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyName;
 import com.fasterxml.jackson.databind.introspect.Annotated;
 import com.fasterxml.jackson.databind.introspect.AnnotatedField;
@@ -86,4 +87,9 @@ public class SolrJacksonAnnotationInspector extends AnnotationIntrospector {
     return findNameForSerialization(a);
   }
 
+  public static ObjectMapper createObjectMapper(){
+    ObjectMapper mapper = new ObjectMapper();
+    mapper.setAnnotationIntrospector(INSTANCE);
+    return mapper;
+  }
 }

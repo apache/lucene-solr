@@ -55,6 +55,9 @@ Improvements
   
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
 
+* LUCENE-8213: LRUQueryCache#doCache now uses IndexSearcher's Executor (if present)
+  to asynchronously cache heavy queries (Atri Sharma)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
@@ -67,8 +70,9 @@ Other
 ======================= Lucene 8.4.0 =======================
 
 API Changes
----------------------
-(No changes)
+
+* LUCENE-9029: Deprecate SloppyMath toRadians/toDegrees in favor of Java Math.
+  (Jack Conradson via Adrien Grand)
 
 New Features
 ---------------------
@@ -76,10 +80,17 @@ New Features
 
 Improvements
 
+* LUCENE-9002: Skip costly caching clause in LRUQueryCache if it makes the query
+  many times slower. (Guoqiang Jiang)
+
 * LUCENE-9006: WordDelimiterGraphFilter's catenateAll token is now ordered before any token parts, like WDF did.
   (David Smiley)
 
 * LUCENE-9028: introducing Intervals.multiterm() (Mikhail Khludnev)
+
+* LUCENE-9018: ConcatenateGraphFilter now has a configurable separator. (Stanislav Mikulchik, David Smiley)
+
+* LUCENE-9036: ExitableDirectoryReader may interupt scaning over DocValues (Mikhail Khludnev)
 
 Optimizations
 
@@ -102,9 +113,24 @@ Optimizations
   instead of sorting when the maximum recursion level is exceeded, providing
   better worst-case runtime. (Paul Sanwald via Adrien Grand)
 
+* LUCENE-8920: The denser arcs of FST now index labels with a bitset in order
+  to provide near constant time access. (Bruno Roustant, Mike Sokolov via Adrien Grand)
+
+* LUCENE-9027: Use SIMD instructions to decode postings. (Adrien Grand)
+
+* LUCENE-9049: Remove FST cached root arcs now redundant with labels indexed by bitset.
+  This frees some on-heap FST space. (Jack Conradson via Bruno Roustant)
+
 Bug Fixes
 
 * LUCENE-9001: Fix race condition in SetOnce. (Przemko Robakowski)
+
+* LUCENE-9030: Fix WordnetSynonymParser behaviour so it behaves similar to
+  SolrSynonymParser. (Christoph Buescher via Alan Woodward)
+
+* LUCENE-9054: Fix reproduceJenkinsFailures.py to not overwrite junit XML files when retrying (hossman)
+
+* LUCENE-9031: UnsupportedOperationException on MatchesIterator.getQuery() (Alan Woodward, Mikhail Khludnev)
 
 Other
 
@@ -115,9 +141,20 @@ Other
 * LUCENE-8746: Refactor EdgeTree - Introduce a Component tree that represents the tree of components (e.g polygons).
   Edge tree is now just a tree of edges. (Ignacio Vera)
 
+* LUCENE-9046: Fix wrong example in Javadoc of TermInSetQuery (Namgyu Kim)
+
 Build
 
 * Upgrade forbiddenapis to version 2.7; upgrade Groovy to 2.4.17.  (Uwe Schindler)
+
+* LUCENE-9041: Upgrade ecj to 3.19.0 to fix sporadic precommit javadoc issues (Kevin Risden)
+
+======================= Lucene 8.3.1 =======================
+
+Bug Fixes
+
+* LUCENE-9050: MultiTermIntervalsSource.visit() was not calling back to its
+  visitor. (Alan Woodward)
 
 ======================= Lucene 8.3.0 =======================
 
