@@ -422,7 +422,7 @@ public class IndexSearcher {
       return count;
     }
 
-    // general case: create a collecor and count matches
+    // general case: create a collector and count matches
     final CollectorManager<TotalHitCountCollector, Integer> collectorManager = new CollectorManager<TotalHitCountCollector, Integer>() {
 
       @Override

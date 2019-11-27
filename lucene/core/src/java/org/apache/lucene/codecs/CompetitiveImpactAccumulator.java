@@ -93,7 +93,7 @@ public final class CompetitiveImpactAccumulator {
     assertConsistent();
   }
 
-  /** Get the set of competitive freq and norm pairs, orderer by increasing freq and norm. */
+  /** Get the set of competitive freq and norm pairs, ordered by increasing freq and norm. */
   public Collection<Impact> getCompetitiveFreqNormPairs() {
     List<Impact> impacts = new ArrayList<>();
     int maxFreqForLowerNorms = 0;
