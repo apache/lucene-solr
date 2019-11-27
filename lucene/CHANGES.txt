@@ -143,6 +143,8 @@ Other
 
 * LUCENE-9046: Fix wrong example in Javadoc of TermInSetQuery (Namgyu Kim)
 
+* LUCENE-9067: PolygonD#contains() is now thread safe. (Ignacio Vera)
+
 Build
 
 * Upgrade forbiddenapis to version 2.7; upgrade Groovy to 2.4.17.  (Uwe Schindler)
