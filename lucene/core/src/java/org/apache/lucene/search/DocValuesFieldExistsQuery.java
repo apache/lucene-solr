@@ -33,7 +33,7 @@ public final class DocValuesFieldExistsQuery extends Query {
 
   private final String field;
 
-  /** Create a query that will match that have a value for the given
+  /** Create a query that will match documents which have a value for the given
    *  {@code field}. */
   public DocValuesFieldExistsQuery(String field) {
     this.field = Objects.requireNonNull(field);
