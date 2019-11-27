@@ -14,37 +14,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.lucene.search.uhighlight;
 
-import java.io.IOException;
-import java.util.Collections;
+import java.util.List;
 
-import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRef;
+import org.apache.lucene.util.automaton.Automata;
+import org.apache.lucene.util.automaton.CharacterRunAutomaton;
 
 /**
- * Never returns offsets. Used when the query would highlight nothing.
+ * Matches a character array
  *
  * @lucene.internal
  */
-public class NoOpOffsetStrategy extends FieldOffsetStrategy {
+public interface CharArrayMatcher {
 
-  public static final NoOpOffsetStrategy INSTANCE = new NoOpOffsetStrategy();
+  /**
+   * Return {@code true} if the passed-in character array matches
+   */
+  boolean match(char[] s, int offset, int length);
 
-  private NoOpOffsetStrategy() {
-    super(new UHComponents("_ignored_", (s) -> false, new MatchNoDocsQuery(),
-        new BytesRef[0], PhraseHelper.NONE, new LabelledCharArrayMatcher[0], false, Collections.emptySet()));
+  /**
+   * Return {@code true} if the passed-in CharsRef matches
+   */
+  default boolean match(CharsRef chars) {
+    return match(chars.chars, chars.offset, chars.length);
   }
 
-  @Override
-  public UnifiedHighlighter.OffsetSource getOffsetSource() {
-    return UnifiedHighlighter.OffsetSource.NONE_NEEDED;
-  }
-
-  @Override
-  public OffsetsEnum getOffsetsEnum(LeafReader reader, int docId, String content) throws IOException {
-    return OffsetsEnum.EMPTY;
+  static CharArrayMatcher fromTerms(List<BytesRef> terms) {
+    CharacterRunAutomaton a = new CharacterRunAutomaton(Automata.makeStringUnion(terms));
+    return a::run;
   }
 
 }
