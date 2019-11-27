@@ -116,14 +116,14 @@ public class EdgeTree {
       }
       if (this.left != null) {
         res ^= left.containsPnPoly(x, y);
-        if (((res >> 1) & 1) == 1) {
+        if ((res & 0x02) == 0x02) {
           return ON_EDGE;
         }
       }
 
       if (this.right != null && y >= this.low) {
         res ^= right.containsPnPoly(x, y);
-        if (((res >> 1) & 1) == 1) {
+        if ((res & 0x02) == 0x02) {
           return ON_EDGE;
         }
       }
