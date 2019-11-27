@@ -725,7 +725,8 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         IndexSchema schema = fp.getReq().getCore().getLatestSchema();
         final FieldType fieldType = schema.getFieldType(tinfo.field);
 
-        if (fieldType.getTypeName().equals("delimited_payloads_string")) {
+        final String payloadEncoder = PayloadUtils.getPayloadEncoder(fieldType);
+        if (payloadEncoder.equals("identity")) {
 
           ValueSource defaultValueSource;
           if (fp.hasMoreArguments()) {
