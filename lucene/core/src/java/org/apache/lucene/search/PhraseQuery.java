@@ -330,6 +330,22 @@ public class PhraseQuery extends Query {
       }
     }
 
+    public PostingsAndFreq(PostingsEnum postings, ImpactsEnum impacts, int position, List<Term> terms) {
+      this.postings = postings;
+      this.impacts = impacts;
+      this.position = position;
+      nTerms = terms == null ? 0 : terms.size();
+      if (nTerms > 0) {
+        Term[] terms2 = terms.toArray(new Term[0]);
+        if (nTerms > 1) {
+          Arrays.sort(terms2);
+        }
+        this.terms = terms2;
+      } else {
+        this.terms = null;
+      }
+    }
+
     @Override
     public int compareTo(PostingsAndFreq other) {
       if (position != other.position) {

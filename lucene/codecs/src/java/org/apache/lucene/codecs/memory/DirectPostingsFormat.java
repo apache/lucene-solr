@@ -1655,7 +1655,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
     }
   }
 
-  // Docs + freqs + positions/offets:
+  // Docs + freqs + positions/offsets:
   private final static class LowFreqDocsEnum extends PostingsEnum {
     private int[] postings;
     private final int posMult;
