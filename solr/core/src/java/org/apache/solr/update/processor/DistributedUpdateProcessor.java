@@ -23,6 +23,8 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import com.google.common.annotations.VisibleForTesting;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -693,6 +695,13 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
       // create a new doc by default if an old one wasn't found
       mergedDoc = docMerger.merge(sdoc, new SolrInputDocument());
     } else {
+      // Safety check: don't allow an update to an existing doc that has children, unless we actually support this.
+      if (req.getSchema().isUsableForChildDocs() // however, next line we see it doesn't support child docs
+          && req.getSchema().supportsPartialUpdatesOfChildDocs() == false
+          && req.getSearcher().count(new TermQuery(new Term(IndexSchema.ROOT_FIELD_NAME, idBytes))) > 1) {
+        throw new SolrException(ErrorCode.BAD_REQUEST, "This schema does not support partial updates to nested docs. See ref guide.");
+      }
+
       String oldRootDocRootFieldVal = (String) oldRootDocWithChildren.getFieldValue(IndexSchema.ROOT_FIELD_NAME);
       if(req.getSchema().savesChildDocRelations() && oldRootDocRootFieldVal != null &&
           !idString.equals(oldRootDocRootFieldVal)) {
@@ -1080,15 +1089,17 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   }
 
   @Override
-  public void finish() throws IOException {
-    assertNotFinished();
+  public final void finish() throws IOException {
+    assert ! finished : "lifecycle sanity check";
+    finished = true;
+
+    doDistribFinish();
 
     super.finish();
   }
 
-  protected void assertNotFinished() {
-    assert ! finished : "lifecycle sanity check";
-    finished = true;
+  protected void doDistribFinish() throws IOException {
+    // no-op for derived classes to implement
   }
 
   /**

@@ -49,11 +49,11 @@ public class AppendEvaluatorTest extends SolrTestCase {
     Object result;
     
     values.clear();
-    values.put("a", 1L);
+    values.put("a", 1);
     values.put("b", Arrays.asList("foo","bar","baz"));
     result = evaluator.evaluate(new Tuple(values));
     Assert.assertTrue(result instanceof List);
-    Assert.assertEquals(1L, ((List)result).get(0));
+    Assert.assertEquals(1D, ((List)result).get(0));
     Assert.assertEquals("foo", ((List)result).get(1));
     Assert.assertEquals("bar", ((List)result).get(2));
     Assert.assertEquals("baz", ((List)result).get(3));

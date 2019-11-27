@@ -50,20 +50,17 @@ public class CeilingEvaluatorTest extends SolrTestCase {
     values.clear();
     values.put("a", 1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(1L, result);
+    Assert.assertEquals(1D, result);
     
     values.clear();
     values.put("a", 1.1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(2L, result);
+    Assert.assertEquals(2D, result);
     
     values.clear();
     values.put("a", -1.1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(-1L, result);
+    Assert.assertEquals(-1D, result);
   }
 
   @Test(expected = IOException.class)
@@ -76,7 +73,7 @@ public class CeilingEvaluatorTest extends SolrTestCase {
     factory.constructEvaluator("ceil(a,b)");
   }
 
-  @Test(expected = IOException.class)
+  @Test//(expected = NumberFormatException.class)
   public void ceilNoValue() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("ceil(a)");
     
@@ -85,7 +82,7 @@ public class CeilingEvaluatorTest extends SolrTestCase {
     assertNull(result);
   }
 
-  @Test(expected = IOException.class)
+  @Test//(expected = NumberFormatException.class)
   public void ceilNullValue() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("ceil(a)");
     

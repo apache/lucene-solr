@@ -61,6 +61,7 @@ import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LongValues;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ExpandParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
@@ -77,8 +78,10 @@ import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortSpecParsing;
+import org.apache.solr.search.SyntaxError;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
@@ -146,7 +149,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     }
 
     if (field == null) {
-      throw new IOException("Expand field is null.");
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "missing expand field");
     }
 
     String sortParam = params.get(ExpandParams.EXPAND_SORT);
@@ -161,39 +164,34 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
     }
 
     Query query;
-    if (qs == null) {
-      query = rb.getQuery();
-    } else {
-      try {
+    List<Query> newFilters = new ArrayList<>();
+    try {
+      if (qs == null) {
+        query = rb.getQuery();
+      } else {
         QParser parser = QParser.getParser(qs, req);
         query = parser.getQuery();
-      } catch (Exception e) {
-        throw new IOException(e);
       }
-    }
 
-    List<Query> newFilters = new ArrayList<>();
-
-    if (fqs == null) {
-      List<Query> filters = rb.getFilters();
-      if (filters != null) {
-        for (Query q : filters) {
-          if (!(q instanceof CollapsingQParserPlugin.CollapsingPostFilter)) {
-            newFilters.add(q);
+      if (fqs == null) {
+        List<Query> filters = rb.getFilters();
+        if (filters != null) {
+          for (Query q : filters) {
+            if (!(q instanceof CollapsingQParserPlugin.CollapsingPostFilter)) {
+              newFilters.add(q);
+            }
           }
         }
-      }
-    } else {
-      try {
+      } else {
         for (String fq : fqs) {
           if (fq != null && fq.trim().length() != 0 && !fq.equals("*:*")) {
             QParser fqp = QParser.getParser(fq, req);
             newFilters.add(fqp.getQuery());
           }
         }
-      } catch (Exception e) {
-        throw new IOException(e);
       }
+    } catch (SyntaxError e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
 
     SolrIndexSearcher searcher = req.getSearcher();
@@ -214,7 +212,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       } else {
         values = DocValues.getSorted(reader, field);
       }
-    } else {
+    } else if (fieldType.getNumberType() != null) {
       //Get the nullValue for the numeric collapse field
       String defaultValue = searcher.getSchema().getField(field).getDefaultValue();
       
@@ -223,6 +221,9 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       // Since the expand component depends on the operation of the collapse component, 
       // which validates that numeric field types are 32-bit,
       // we don't need to handle invalid 64-bit field types here.
+      // FIXME: what happens when expand.field specified?
+      //  how would this work for date field?
+      //  SOLR-10400: before this, long and double were explicitly handled
       if (defaultValue != null) {
         if (numType == NumberType.INTEGER) {
           nullValue = Long.parseLong(defaultValue);
@@ -232,6 +233,10 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       } else if (NumberType.FLOAT.equals(numType)) { // Integer case already handled by nullValue defaulting to 0
         nullValue = Float.floatToIntBits(0.0f);
       }
+    } else {
+      // possible if directly expand.field is specified
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Expand not supported for fieldType:'" + fieldType.getTypeName() +"'");
     }
 
     FixedBitSet groupBits = null;
@@ -322,11 +327,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       }
 
       if(count > 0 && count < 200) {
-        try {
-          groupQuery = getGroupQuery(field, count, ordBytes);
-        } catch(Exception e) {
-          throw new IOException(e);
-        }
+        groupQuery = getGroupQuery(field, count, ordBytes);
       }
     } else {
       groupSet = new LongHashSet(docList.size());
@@ -402,15 +403,15 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       collector = groupExpandCollector;
     }
 
-    if (pfilter.filter == null) {
-      searcher.search(query, collector);
-    } else {
-      Query q = new BooleanQuery.Builder()
+    if (pfilter.filter != null) {
+      query = new BooleanQuery.Builder()
           .add(query, Occur.MUST)
           .add(pfilter.filter, Occur.FILTER)
           .build();
-      searcher.search(q, collector);
     }
+    searcher.search(query, collector);
+
+    ReturnFields returnFields = rb.rsp.getReturnFields();
     LongObjectMap<Collector> groups = ((GroupCollector) groupExpandCollector).getGroups();
     NamedList outMap = new SimpleOrderedMap();
     CharsRefBuilder charsRef = new CharsRefBuilder();
@@ -420,6 +421,9 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       TopDocs topDocs = topDocsCollector.topDocs();
       ScoreDoc[] scoreDocs = topDocs.scoreDocs;
       if (scoreDocs.length > 0) {
+        if (returnFields.wantsScore() && sort != null) {
+          TopFieldCollector.populateScores(scoreDocs, searcher, query);
+        }
         int[] docs = new int[scoreDocs.length];
         float[] scores = new float[scoreDocs.length];
         for (int i = 0; i < docs.length; i++) {
@@ -681,16 +685,15 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
                            int size,
                            LongHashSet groupSet) {
 
-    BytesRef[] bytesRefs = new BytesRef[size];
+    List<BytesRef> bytesRefs = new ArrayList<>(size);
     BytesRefBuilder term = new BytesRefBuilder();
     Iterator<LongCursor> it = groupSet.iterator();
-    int index = -1;
 
     while (it.hasNext()) {
       LongCursor cursor = it.next();
       String stringVal = numericToString(ft, cursor.value);
       ft.readableToIndexed(stringVal, term);
-      bytesRefs[++index] = term.toBytesRef();
+      bytesRefs.add(term.toBytesRef());
     }
 
     return new TermInSetQuery(fname, bytesRefs);
@@ -730,13 +733,12 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
 
   private Query getGroupQuery(String fname,
                               int size,
-                              IntObjectHashMap<BytesRef> ordBytes) throws Exception {
-    BytesRef[] bytesRefs = new BytesRef[size];
-    int index = -1;
+                              IntObjectHashMap<BytesRef> ordBytes) {
+    List<BytesRef> bytesRefs = new ArrayList<>(size);
     Iterator<IntObjectCursor<BytesRef>>it = ordBytes.iterator();
     while (it.hasNext()) {
       IntObjectCursor<BytesRef> cursor = it.next();
-      bytesRefs[++index] = cursor.value;
+      bytesRefs.add(cursor.value);
     }
     return new TermInSetQuery(fname, bytesRefs);
   }

@@ -18,6 +18,16 @@
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.CLUSTER_PREFERENCES;
+import static org.apache.solr.client.solrj.cloud.autoscaling.TestPolicy2.loadFromResource;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.CORES;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.FREEDISK;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.REPLICA;
+import static org.apache.solr.common.cloud.ZkStateReader.CLUSTER_STATE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOVEREPLICA;
+
 import java.io.IOException;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
@@ -35,8 +45,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -75,15 +83,8 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.CLUSTER_PREFERENCES;
-import static org.apache.solr.client.solrj.cloud.autoscaling.TestPolicy2.loadFromResource;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.CORES;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.FREEDISK;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.REPLICA;
-import static org.apache.solr.common.cloud.ZkStateReader.CLUSTER_STATE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOVEREPLICA;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 
 public class TestPolicy extends SolrTestCaseJ4 {
   boolean useNodeset ;
@@ -898,13 +899,8 @@ public class TestPolicy extends SolrTestCaseJ4 {
   }
 
   private static void expectError(String name, Object val, String msg) {
-    try {
-      Clause.validate(name, val, true);
-      fail("expected exception containing " + msg);
-    } catch (Exception e) {
-      assertTrue("expected exception containing " + msg, e.getMessage().contains(msg));
-    }
-
+    Exception e = expectThrows(Exception.class, () -> Clause.validate(name, val, true));
+    assertTrue("expected exception containing " + msg, e.getMessage().contains(msg));
   }
 
   public void testOperands() {
@@ -1085,35 +1081,24 @@ public class TestPolicy extends SolrTestCaseJ4 {
     }
     config = new AutoScalingConfig(policies);
     policy = config.getPolicy();
-    session = policy.createSession(provider);
-    suggester = session.getSuggester(MOVEREPLICA)
-        .hint(Hint.SRC_NODE, "node1");
-
-    operation = suggester.getSuggestion();
-    assertNotNull(operation);
-    assertEquals("node2", operation.getParams().get("targetNode"));
-    assertEquals("r3", operation.getParams().get("replica"));
-
-    session = suggester.getSession();
-    suggester = session.getSuggester(MOVEREPLICA)
-        .hint(Hint.SRC_NODE, "node1");
-    operation = suggester.getSuggestion();
-    assertNotNull(operation);
-    assertEquals("node2", operation.getParams().get("targetNode"));
-    assertEquals("r5", operation.getParams().get("replica"));
-
-    session = suggester.getSession();
-    suggester = session.getSuggester(MOVEREPLICA)
-        .hint(Hint.SRC_NODE, "node1");
-    operation = suggester.getSuggestion();
-    assertEquals("node2", operation.getParams().get("targetNode"));
-    assertEquals("r1", operation.getParams().get("replica"));
-
-    session = suggester.getSession();
-    suggester = session.getSuggester(MOVEREPLICA)
-        .hint(Hint.SRC_NODE, "node1");
-    operation = suggester.getSuggestion();
-    assertNull(operation);
+    session = null;
+    for (String expectedReplica : new String[] { "r1", "r3", "r5", null }) {
+      if (session == null) {
+        session = policy.createSession(provider);
+      } else {
+        session = suggester.getSession();
+      }
+      suggester = session.getSuggester(MOVEREPLICA)
+          .hint(Hint.SRC_NODE, "node1");
+      operation = suggester.getSuggestion();
+      if (expectedReplica == null) {
+        assertNull(operation);
+      } else {
+        assertNotNull(operation);
+        assertEquals("node2", operation.getParams().get("targetNode"));
+        assertEquals(expectedReplica, operation.getParams().get("replica"));
+      }
+    }
 
     // now lets change the policy such that a node can have 2 shard2 replicas
     policies = (Map) Utils.fromJSONString("{" +
@@ -1143,29 +1128,23 @@ public class TestPolicy extends SolrTestCaseJ4 {
     }
     config = new AutoScalingConfig(policies);
     policy = config.getPolicy();
-    session = policy.createSession(provider);
-    suggester = session.getSuggester(MOVEREPLICA)
-        .hint(Hint.SRC_NODE, "node1");
 
-    operation = suggester.getSuggestion();
-    assertNotNull(operation);
-    assertEquals("node2", operation.getParams().get("targetNode"));
-    assertEquals("r3", operation.getParams().get("replica"));
-
-    session = suggester.getSession();
-    suggester = session.getSuggester(MOVEREPLICA)
-        .hint(Hint.SRC_NODE, "node1");
-    operation = suggester.getSuggestion();
-    assertNotNull(operation);
-    assertEquals("node2", operation.getParams().get("targetNode"));
-    assertEquals("r5", operation.getParams().get("replica"));
-
-    session = suggester.getSession();
-    suggester = session.getSuggester(MOVEREPLICA)
-        .hint(Hint.SRC_NODE, "node1");
-    operation = suggester.getSuggestion();
-    assertEquals("node3", operation.getParams().get("targetNode"));
-    assertEquals("r1", operation.getParams().get("replica"));
+    session = null;
+    final String[] expectedReplica = new String[] { "r1", "r3", "r5" };
+    final String[] expectedTargetNode = new String[] { "node3", "node3", "node2" };
+    for (int ii = 0; ii < expectedReplica.length; ++ii) {
+      if (session == null) {
+        session = policy.createSession(provider);
+      } else {
+        session = suggester.getSession();
+      }
+      suggester = session.getSuggester(MOVEREPLICA)
+          .hint(Hint.SRC_NODE, "node1");
+      operation = suggester.getSuggestion();
+      assertNotNull(operation);
+      assertEquals(expectedTargetNode[ii], operation.getParams().get("targetNode"));
+      assertEquals(expectedReplica[ii], operation.getParams().get("replica"));
+    }
   }
 
   private static SolrCloudManager cloudManagerWithData(String data) {
@@ -1865,7 +1844,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "            'freedisk':918005641216}," +
         "      '127.0.0.1:60089_solr':{" +
         "        'cores':2," +
-        "            'freedisk':918005641216}}}");
+        "            'freedisk':918005641216}}");
 
     Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(autoscaleJson));
     Policy.Session session = policy.createSession(new DelegatingCloudManager(null) {
@@ -2271,7 +2250,11 @@ public class TestPolicy extends SolrTestCaseJ4 {
     assertEquals("/c/mycoll1", l.get(0)._get( "operation/path",null));
     assertNotNull(l.get(0)._get("operation/command/move-replica", null));
     assertEquals("10.0.0.6:7574_solr", l.get(0)._get( "operation/command/move-replica/targetNode",null));
-    assertEquals("core_node2", l.get(0)._get("operation/command/move-replica/replica", null));
+    /*
+     * one of the two cores on 10.0.0.6:8983_solr should move to 10.0.0.6:7574_solr and
+     * (everything else being equal) core_node1 is chosen ahead of core_node2 based on its name
+     */
+    assertEquals("core_node1", l.get(0)._get("operation/command/move-replica/replica", null));
   }
 
 
@@ -2798,11 +2781,15 @@ public class TestPolicy extends SolrTestCaseJ4 {
     StringWriter writer = new StringWriter();
     NamedList<Object> val = new NamedList<>();
     val.add("violations", violations);
-    new SolrJSONWriter(writer)
-        .writeObj(val)
-        .close();
-    JSONWriter.write(writer, true, JsonTextWriter.JSON_NL_MAP, val);
-
+    
+    if (random().nextBoolean()) {
+      new SolrJSONWriter(writer)
+          .writeObj(val)
+          .close();
+    } else {
+      JSONWriter.write(writer, true, JsonTextWriter.JSON_NL_MAP, val);
+    }
+    
     Object root = Utils.fromJSONString(writer.toString());
     assertEquals(2l,
         Utils.getObjectByPath(root, true, "violations[0]/violation/replica/NRT"));

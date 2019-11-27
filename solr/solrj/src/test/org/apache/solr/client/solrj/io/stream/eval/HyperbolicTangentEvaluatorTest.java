@@ -76,7 +76,7 @@ public class HyperbolicTangentEvaluatorTest extends SolrTestCase {
     factory.constructEvaluator("tanh(a,b)");
   }
 
-  @Test(expected = IOException.class)
+  @Test//(expected = NumberFormatException.class)
   public void noValue() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("tanh(a)");
     
@@ -85,7 +85,7 @@ public class HyperbolicTangentEvaluatorTest extends SolrTestCase {
     assertNull(result);
   }
 
-  @Test(expected = IOException.class)
+  @Test//(expected = NumberFormatException.class)
   public void nullValue() throws Exception{
     test(null);
   }

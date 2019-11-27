@@ -42,26 +42,31 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
   @Override
   protected Relation relateRangeBBoxToQuery(int minXOffset, int minYOffset, byte[] minTriangle,
                                             int maxXOffset, int maxYOffset, byte[] maxTriangle) {
+    if (queryRelation == QueryRelation.INTERSECTS || queryRelation == QueryRelation.DISJOINT) {
+      return rectangle2D.intersectRangeBBox(minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
+    }
     return rectangle2D.relateRangeBBox(minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
   }
 
   /** returns true if the query matches the encoded triangle */
   @Override
-  protected boolean queryMatches(byte[] t, int[] scratchTriangle, QueryRelation queryRelation) {
+  protected boolean queryMatches(byte[] t, ShapeField.DecodedTriangle scratchTriangle, QueryRelation queryRelation) {
     // decode indexed triangle
     ShapeField.decodeTriangle(t, scratchTriangle);
 
-    int aY = scratchTriangle[0];
-    int aX = scratchTriangle[1];
-    int bY = scratchTriangle[2];
-    int bX = scratchTriangle[3];
-    int cY = scratchTriangle[4];
-    int cX = scratchTriangle[5];
+    int aY = scratchTriangle.aY;
+    int aX = scratchTriangle.aX;
+    int bY = scratchTriangle.bY;
+    int bX = scratchTriangle.bX;
+    int cY = scratchTriangle.cY;
+    int cX = scratchTriangle.cX;
 
-    if (queryRelation == QueryRelation.WITHIN) {
-      return rectangle2D.containsTriangle(aX, aY, bX, bY, cX, cY);
+    switch (queryRelation) {
+      case INTERSECTS: return rectangle2D.intersectsTriangle(aX, aY, bX, bY, cX, cY);
+      case WITHIN: return rectangle2D.containsTriangle(aX, aY, bX, bY, cX, cY);
+      case DISJOINT: return rectangle2D.intersectsTriangle(aX, aY, bX, bY, cX, cY) == false;
+      default: throw new IllegalArgumentException("Unsupported query type :[" + queryRelation + "]");
     }
-    return rectangle2D.intersectsTriangle(aX, aY, bX, bY, cX, cY);
   }
 
   @Override

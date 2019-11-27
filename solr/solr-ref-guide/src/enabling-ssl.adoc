@@ -90,6 +90,8 @@ SOLR_SSL_TRUST_STORE_PASSWORD=secret
 SOLR_SSL_NEED_CLIENT_AUTH=false
 # Enable clients to authenticate (but not require)
 SOLR_SSL_WANT_CLIENT_AUTH=false
+# Verify client's hostname during SSL handshake
+SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION=false
 # SSL Certificates contain host/ip "peer name" information that is validated by default. Setting
 # this to false can be useful to disable these checks when re-using a certificate on many hosts
 SOLR_SSL_CHECK_PEER_NAME=true
@@ -101,7 +103,7 @@ SOLR_SSL_TRUST_STORE_TYPE=JKS
 When you start Solr, the `bin/solr` script includes the settings in `bin/solr.in.sh` and will pass these SSL-related system properties to the JVM.
 
 .Client Authentication Settings
-WARNING: Enable either SOLR_SSL_NEED_CLIENT_AUTH or SOLR_SSL_WANT_CLIENT_AUTH but not both at the same time. They are mutually exclusive and Jetty will select one of them which may not be what you expect.
+WARNING: Enable either SOLR_SSL_NEED_CLIENT_AUTH or SOLR_SSL_WANT_CLIENT_AUTH but not both at the same time. They are mutually exclusive and Jetty will select one of them which may not be what you expect. SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION should be set to true if you only want requests from authenticated host-names to be accepted.
 
 Similarly, when you start Solr on Windows, the `bin\solr.cmd` script includes the settings in `bin\solr.in.cmd` - uncomment and update the set of properties beginning with `SOLR_SSL_*` to pass these SSL-related system properties to the JVM:
 
@@ -121,6 +123,8 @@ REM Require clients to authenticate
 set SOLR_SSL_NEED_CLIENT_AUTH=false
 REM Enable clients to authenticate (but not require)
 set SOLR_SSL_WANT_CLIENT_AUTH=false
+REM Verify client hostname during SSL handshake
+set SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION=false
 REM SSL Certificates contain host/ip "peer name" information that is validated by default. Setting
 REM this to false can be useful to disable these checks when re-using a certificate on many hosts
 set SOLR_SSL_CHECK_PEER_NAME=true
@@ -243,7 +247,7 @@ If you have set up your ZooKeeper cluster to use a <<taking-solr-to-production.a
 
 === Run SolrCloud with SSL
 
-NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<setting-up-an-external-zookeeper-ensemble#updating-solr-s-include-files,instructions>>) you can omit `-z <zk host string>` from all of the `bin/solr`/`bin\solr.cmd` commands below.
+NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<setting-up-an-external-zookeeper-ensemble#updating-solr-include-files,instructions>>) you can omit `-z <zk host string>` from all of the `bin/solr`/`bin\solr.cmd` commands below.
 
 ==== Create Solr Home Directories for Two Nodes
 

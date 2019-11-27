@@ -188,7 +188,7 @@ public class TestFloatPointNearestNeighbor extends LuceneTestCase {
       FloatPointNearestNeighbor.NearestHit[] expectedHits = new FloatPointNearestNeighbor.NearestHit[numPoints];
       for (int id = 0 ; id < numPoints ; ++id) {
         FloatPointNearestNeighbor.NearestHit hit = new FloatPointNearestNeighbor.NearestHit();
-        hit.distanceSquared = FloatPointNearestNeighbor.euclideanDistanceSquared(origin, values[id]);
+        hit.distanceSquared = euclideanDistanceSquared(origin, values[id]);
         hit.docID = id;
         expectedHits[id] = hit;
       }
@@ -232,9 +232,18 @@ public class TestFloatPointNearestNeighbor extends LuceneTestCase {
     dir.close();
   }
 
+  private static double euclideanDistanceSquared(float[] a, float[] b) {
+    double sumOfSquaredDifferences = 0.0d;
+    for (int d = 0 ; d < a.length ; ++d) {
+      double diff = (double)a[d] - (double)b[d];
+      sumOfSquaredDifferences += diff * diff;
+    }
+    return sumOfSquaredDifferences;
+  }
+
   private IndexWriterConfig getIndexWriterConfig() {
     IndexWriterConfig iwc = newIndexWriterConfig();
-    iwc.setCodec(Codec.forName("Lucene80"));
+    iwc.setCodec(Codec.forName("Lucene84"));
     return iwc;
   }
 }

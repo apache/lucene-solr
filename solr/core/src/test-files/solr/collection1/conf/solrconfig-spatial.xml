@@ -27,13 +27,13 @@
   <requestHandler name="/select" class="solr.SearchHandler" />
   <query>
     <cache name="perSegSpatialFieldCache_srptgeom"
-           class="solr.LRUCache"
+           class="solr.CaffeineCache"
            size="3"
            initialSize="0"
            autowarmCount="100%"
            regenerator="solr.NoOpRegenerator"/>
     <cache name="perSegSpatialFieldCache_srptgeom_geo3d"
-           class="solr.LRUCache"
+           class="solr.CaffeineCache"
            size="3"
            initialSize="0"
            autowarmCount="100%"

@@ -20,20 +20,58 @@ Filters examine a stream of tokens and keep them, transform them or discard them
 
 You configure each filter with a `<filter>` element in `schema.xml` as a child of `<analyzer>`, following the `<tokenizer>` element. Filter definitions should follow a tokenizer or another filter definition because they take a `TokenStream` as input. For example:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<fieldType name="text" class="solr.TextField">
+  <analyzer type="index">
+    <tokenizer name="standard"/>
+    <filter name="lowercase"/>
+  </analyzer>
+</fieldType>
+----
+====
+[example.tab-pane#byclass-filter]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <fieldType name="text" class="solr.TextField">
   <analyzer type="index">
     <tokenizer class="solr.StandardTokenizerFactory"/>
-    <filter class="solr.LowerCaseFilterFactory"/>...
+    <filter class="solr.LowerCaseFilterFactory"/>
   </analyzer>
 </fieldType>
 ----
+====
+--
 
-The class attribute names a factory class that will instantiate a filter object as needed. Filter factory classes must implement the `org.apache.solr.analysis.TokenFilterFactory` interface. Like tokenizers, filters are also instances of TokenStream and thus are producers of tokens. Unlike tokenizers, filters also consume tokens from a TokenStream. This allows you to mix and match filters, in any order you prefer, downstream of a tokenizer.
+The name/class attribute names a factory class that will instantiate a filter object as needed. Filter factory classes must implement the `org.apache.lucene.analysis.util.TokenFilterFactory` interface. Like tokenizers, filters are also instances of TokenStream and thus are producers of tokens. Unlike tokenizers, filters also consume tokens from a TokenStream. This allows you to mix and match filters, in any order you prefer, downstream of a tokenizer.
 
 Arguments may be passed to tokenizer factories to modify their behavior by setting attributes on the `<filter>` element. For example:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter2]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<fieldType name="semicolonDelimited" class="solr.TextField">
+  <analyzer type="query">
+    <tokenizer name="pattern" pattern="; " />
+    <filter name="length" min="2" max="7"/>
+  </analyzer>
+</fieldType>
+----
+====
+[example.tab-pane#byclass-filter-2]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <fieldType name="semicolonDelimited" class="solr.TextField">
@@ -43,6 +81,8 @@ Arguments may be passed to tokenizer factories to modify their behavior by setti
   </analyzer>
 </fieldType>
 ----
+====
+--
 
 The following sections describe the filter factories that are included in this release of Solr.
 
@@ -77,6 +117,22 @@ This filter converts alphabetic, numeric, and symbolic Unicode characters which 
 
 *Example:*
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-asciifolding]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="whitespace"/>
+  <filter name="asciiFolding" preserveOriginal="false" />
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-asciifolding]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -84,6 +140,8 @@ This filter converts alphabetic, numeric, and symbolic Unicode characters which 
   <filter class="solr.ASCIIFoldingFilterFactory" preserveOriginal="false" />
 </analyzer>
 ----
+====
+--
 
 *In:* "á" (Unicode character 00E1)
 
@@ -112,6 +170,23 @@ BeiderMorseFilter changed its behavior in Solr 5.0 due to an update to version 3
 
 *Example:*
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-beidermorse]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="standard"/>
+  <filter name="beiderMorse" nameType="GENERIC" ruleType="APPROX" concat="true" languageSet="auto">
+  </filter>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-beidermorse]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -120,6 +195,8 @@ BeiderMorseFilter changed its behavior in Solr 5.0 due to an update to version 3
   </filter>
 </analyzer>
 ----
+====
+--
 
 == Classic Filter
 
@@ -131,6 +208,22 @@ This filter takes the output of the <<tokenizers.adoc#classic-tokenizer,Classic 
 
 *Example:*
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-classic]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="classic"/>
+  <filter name="classic"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-classic]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -138,6 +231,8 @@ This filter takes the output of the <<tokenizers.adoc#classic-tokenizer,Classic 
   <filter class="solr.ClassicFilterFactory"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "I.B.M. cat's can't"
 
@@ -161,6 +256,22 @@ This filter creates word shingles by combining common tokens such as stop words 
 
 *Example:*
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-commongrams]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="standard"/>
+  <filter name="commonGrams" words="stopwords.txt" ignoreCase="true"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-commongrams]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -168,6 +279,8 @@ This filter creates word shingles by combining common tokens such as stop words 
   <filter class="solr.CommonGramsFilterFactory" words="stopwords.txt" ignoreCase="true"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "the Cat"
 
@@ -191,6 +304,22 @@ Implements the Daitch-Mokotoff Soundex algorithm, which allows identification of
 
 *Example:*
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-daitchmokotoffsondex]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="standard"/>
+  <filter name="daitchMokotoffSoundex" inject="true"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-daitchmokotoffsondex]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -198,6 +327,8 @@ Implements the Daitch-Mokotoff Soundex algorithm, which allows identification of
   <filter class="solr.DaitchMokotoffSoundexFilterFactory" inject="true"/>
 </analyzer>
 ----
+====
+--
 
 == Double Metaphone Filter
 
@@ -215,6 +346,22 @@ This filter creates tokens using the http://commons.apache.org/proper/commons-co
 
 Default behavior for inject (true): keep the original token and add phonetic token(s) at the same position.
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-doublemetaphone]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="standard"/>
+  <filter name="doubleMetaphone"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-doublemetaphone]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -222,6 +369,8 @@ Default behavior for inject (true): keep the original token and add phonetic tok
   <filter class="solr.DoubleMetaphoneFilterFactory"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "four score and Kuczewski"
 
@@ -238,8 +387,8 @@ Discard original token (`inject="false"`).
 [source,xml]
 ----
 <analyzer>
-  <tokenizer class="solr.StandardTokenizerFactory"/>
-  <filter class="solr.DoubleMetaphoneFilterFactory" inject="false"/>
+  <tokenizer name="standard"/>
+  <filter name="doubleMetaphone" inject="false"/>
 </analyzer>
 ----
 
@@ -267,6 +416,22 @@ This filter generates edge n-gram tokens of sizes within the given range.
 
 Default behavior.
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-edgengram]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="standard"/>
+  <filter name="edgeNGram"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-edgengram]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -274,6 +439,8 @@ Default behavior.
   <filter class="solr.EdgeNGramFilterFactory"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "four score and twenty"
 
@@ -288,8 +455,8 @@ A range of 1 to 4.
 [source,xml]
 ----
 <analyzer>
-  <tokenizer class="solr.StandardTokenizerFactory"/>
-  <filter class="solr.EdgeNGramFilterFactory" minGramSize="1" maxGramSize="4"/>
+  <tokenizer name="standard"/>
+  <filter name="edgeNGram" minGramSize="1" maxGramSize="4"/>
 </analyzer>
 ----
 
@@ -306,8 +473,8 @@ A range of 4 to 6.
 [source,xml]
 ----
 <analyzer>
-  <tokenizer class="solr.StandardTokenizerFactory"/>
-  <filter class="solr.EdgeNGramFilterFactory" minGramSize="4" maxGramSize="6"/>
+  <tokenizer name="standard"/>
+  <filter name="edgeNGram" minGramSize="4" maxGramSize="6"/>
 </analyzer>
 ----
 
@@ -327,6 +494,22 @@ This filter stems plural English words to their singular form.
 
 *Example:*
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-englishminimalstem]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer type="index">
+  <tokenizer name="standard"/>
+  <filter name="englishMinimalStem"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-englishminimalstem]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer type="index">
@@ -334,6 +517,8 @@ This filter stems plural English words to their singular form.
   <filter class="solr.EnglishMinimalStemFilterFactory"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "dogs cats"
 
@@ -351,6 +536,22 @@ This filter removes singular possessives (trailing *'s*) from words. Note that p
 
 *Example:*
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-englishpossessive]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="whitespace"/>
+  <filter name="englishPossessive"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-englishpossessive]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -358,6 +559,8 @@ This filter removes singular possessives (trailing *'s*) from words. Note that p
   <filter class="solr.EnglishPossessiveFilterFactory"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "Man's dog bites dogs' man"
 
@@ -379,6 +582,22 @@ This filter outputs a single token which is a concatenation of the sorted and de
 
 *Example:*
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-fingerprint]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer type="index">
+  <tokenizer name="whitespace"/>
+  <filter name="fingerprint" separator="_" />
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-fingerprint]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer type="index">
@@ -386,6 +605,8 @@ This filter outputs a single token which is a concatenation of the sorted and de
   <filter class="solr.FingerprintFilterFactory" separator="_" />
 </analyzer>
 ----
+====
+--
 
 *In:* "the quick brown fox jumped over the lazy dog"
 
@@ -423,6 +644,26 @@ Be aware that your results will vary widely based on the quality of the provided
 
 *Example:*
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-hunspellstem]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer type="index">
+  <tokenizer name="whitespace"/>
+  <filter name="hunspellStem"
+    dictionary="en_GB.dic"
+    affix="en_GB.aff"
+    ignoreCase="true"
+    strictAffixParsing="true" />
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-hunspellstem]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer type="index">
@@ -434,6 +675,8 @@ Be aware that your results will vary widely based on the quality of the provided
     strictAffixParsing="true" />
 </analyzer>
 ----
+====
+--
 
 *In:* "jump jumping jumped"
 
@@ -453,6 +696,22 @@ Note that for this filter to work properly, the upstream tokenizer must not remo
 
 *Example:*
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-hyphenatedwords]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer type="index">
+  <tokenizer name="whitespace"/>
+  <filter name="hyphenatedWords"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-hyphenatedwords]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer type="index">
@@ -460,6 +719,8 @@ Note that for this filter to work properly, the upstream tokenizer must not remo
   <filter class="solr.HyphenatedWordsFilterFactory"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "A hyphen- ated word"
 
@@ -481,6 +742,22 @@ To use this filter, you must add additional .jars to Solr's classpath (as descri
 
 *Example without a filter:*
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-icufolding]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="standard"/>
+  <filter name="icuFolding"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-icufolding]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -488,14 +765,16 @@ To use this filter, you must add additional .jars to Solr's classpath (as descri
   <filter class="solr.ICUFoldingFilterFactory"/>
 </analyzer>
 ----
+====
+--
 
 *Example with a filter to exclude Swedish/Finnish characters:*
 
 [source,xml]
 ----
 <analyzer>
-  <tokenizer class="solr.StandardTokenizerFactory"/>
-  <filter class="solr.ICUFoldingFilterFactory" filter="[^åäöÅÄÖ]"/>
+  <tokenizer name="standard"/>
+  <filter name="icuFolding" filter="[^åäöÅÄÖ]"/>
 </analyzer>
 ----
 
@@ -515,7 +794,7 @@ This filter factory normalizes text according to one of five Unicode Normalizati
 
 *Arguments:*
 
-`name`:: The name of the normalization form. Valid options are `nfc`, `nfd`, `nfkc`, `nfkd`, or `nfkc_cf` (the default). Required.
+`form`:: The name of the normalization form. Valid options are `nfc`, `nfd`, `nfkc`, `nfkd`, or `nfkc_cf` (the default). Required.
 
 `mode`:: The mode of Unicode character composition and decomposition. Valid options are: `compose` (the default) or `decompose`. Required.
 
@@ -523,21 +802,39 @@ This filter factory normalizes text according to one of five Unicode Normalizati
 
 *Example with NFKC_Casefold:*
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-icunormalizer2]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="standard"/>
+  <filter name="icuNormalizer2" form="nfkc_cf" mode="compose"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-icunormalizer2]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
   <tokenizer class="solr.StandardTokenizerFactory"/>
-  <filter class="solr.ICUNormalizer2FilterFactory" name="nfkc_cf" mode="compose"/>
+  <filter class="solr.ICUNormalizer2FilterFactory" form="nfkc_cf" mode="compose"/>
 </analyzer>
 ----
+====
+--
 
 *Example with a filter to exclude Swedish/Finnish characters:*
 
 [source,xml]
 ----
 <analyzer>
-  <tokenizer class="solr.StandardTokenizerFactory"/>
-  <filter class="solr.ICUNormalizer2FilterFactory" name="nfkc_cf" mode="compose" filter="[^åäöÅÄÖ]"/>
+  <tokenizer name="standard"/>
+  <filter name="icuNormalizer2" form="nfkc_cf" mode="compose" filter="[^åäöÅÄÖ]"/>
 </analyzer>
 ----
 
@@ -557,6 +854,22 @@ This filter applies http://userguide.icu-project.org/transforms/general[ICU Tran
 
 *Example:*
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-icutransform]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="standard"/>
+  <filter name="icuTransform" id="Traditional-Simplified"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-icutransform]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -564,6 +877,8 @@ This filter applies http://userguide.icu-project.org/transforms/general[ICU Tran
   <filter class="solr.ICUTransformFilterFactory" id="Traditional-Simplified"/>
 </analyzer>
 ----
+====
+--
 
 For detailed information about ICU Transforms, see http://userguide.icu-project.org/transforms/general.
 
@@ -589,6 +904,22 @@ Where `keepwords.txt` contains:
 
 `happy funny silly`
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-keepword]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="standard"/>
+  <filter name="keepWord" words="keepwords.txt"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-keepword]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -596,6 +927,8 @@ Where `keepwords.txt` contains:
   <filter class="solr.KeepWordFilterFactory" words="keepwords.txt"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "Happy, sad or funny"
 
@@ -610,8 +943,8 @@ Same `keepwords.txt`, case insensitive:
 [source,xml]
 ----
 <analyzer>
-  <tokenizer class="solr.StandardTokenizerFactory"/>
-  <filter class="solr.KeepWordFilterFactory" words="keepwords.txt" ignoreCase="true"/>
+  <tokenizer name="standard"/>
+  <filter name="keepWord" words="keepwords.txt" ignoreCase="true"/>
 </analyzer>
 ----
 
@@ -628,9 +961,9 @@ Using LowerCaseFilterFactory before filtering for keep words, no `ignoreCase` fl
 [source,xml]
 ----
 <analyzer>
-  <tokenizer class="solr.StandardTokenizerFactory"/>
-  <filter class="solr.LowerCaseFilterFactory"/>
-  <filter class="solr.KeepWordFilterFactory" words="keepwords.txt"/>
+  <tokenizer name="standard"/>
+  <filter name="lowercase"/>
+  <filter name="keepWord" words="keepwords.txt"/>
 </analyzer>
 ----
 
@@ -652,13 +985,31 @@ KStem is an alternative to the Porter Stem Filter for developers looking for a l
 
 *Example:*
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-kstem]
+====
+[.tab-label]*With name*
 [source,xml]
 ----
 <analyzer type="index">
-  <tokenizer class="solr.StandardTokenizerFactory "/>
+  <tokenizer name="standard"/>
+  <filter name="kStem"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-kstem]
+====
+[.tab-label]*With class name (legacy)*
+[source,xml]
+----
+<analyzer type="index">
+  <tokenizer class="solr.StandardTokenizerFactory"/>
   <filter class="solr.KStemFilterFactory"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "jump jumping jumped"
 
@@ -682,6 +1033,22 @@ This filter passes tokens whose length falls within the min/max limit specified.
 
 *Example:*
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-length]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="standard"/>
+  <filter name="length" min="3" max="7"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-length]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -689,6 +1056,8 @@ This filter passes tokens whose length falls within the min/max limit specified.
   <filter class="solr.LengthFilterFactory" min="3" max="7"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "turn right at Albuquerque"
 
@@ -712,6 +1081,23 @@ By default, this filter ignores any tokens in the wrapped `TokenStream` once the
 
 *Example:*
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-limittokencount]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer type="index">
+  <tokenizer name="whitespace"/>
+  <filter name="limitTokenCount" maxTokenCount="10"
+          consumeAllTokens="false" />
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-limittokencount]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer type="index">
@@ -720,6 +1106,8 @@ By default, this filter ignores any tokens in the wrapped `TokenStream` once the
           consumeAllTokens="false" />
 </analyzer>
 ----
+====
+--
 
 *In:* "1 2 3 4 5 6 7 8 9 10 11 12"
 
@@ -743,6 +1131,23 @@ By default, this filter ignores any tokens in the wrapped `TokenStream` once the
 
 *Example:*
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-limittokenoffset]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="whitespace"/>
+  <filter name="limitTokenOffset" maxStartOffset="10"
+          consumeAllTokens="false" />
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-limittokenoffset]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -751,6 +1156,8 @@ By default, this filter ignores any tokens in the wrapped `TokenStream` once the
           consumeAllTokens="false" />
 </analyzer>
 ----
+====
+--
 
 *In:* "0 2 4 6 8 A C E"
 
@@ -774,6 +1181,23 @@ By default, this filter ignores any tokens in the wrapped `TokenStream` once the
 
 *Example:*
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-limittokenposition]
+====
+[.tab-label]*With name)*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="whitespace"/>
+  <filter name="limitTokenPosition" maxTokenPosition="3"
+          consumeAllTokens="false" />
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-limittokenposition]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -782,6 +1206,8 @@ By default, this filter ignores any tokens in the wrapped `TokenStream` once the
           consumeAllTokens="false" />
 </analyzer>
 ----
+====
+--
 
 *In:* "1 2 3 4 5"
 
@@ -799,6 +1225,22 @@ Converts any uppercase letters in a token to the equivalent lowercase token. All
 
 *Example:*
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-lowercase]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="standard"/>
+  <filter name="lowercase"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-lowercase]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -806,6 +1248,8 @@ Converts any uppercase letters in a token to the equivalent lowercase token. All
   <filter class="solr.LowerCaseFilterFactory"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "Down With CamelCase"
 
@@ -825,6 +1269,22 @@ This is specialized version of the <<Stop Filter,Stop Words Filter Factory>> tha
 //TODO: make this show an actual API call.
 With this configuration the set of words is named "english" and can be managed via `/solr/collection_name/schema/analysis/stopwords/english`
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-managedstop]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="standard"/>
+  <filter name="managedStop" managed="english"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-managedstop]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -832,6 +1292,8 @@ With this configuration the set of words is named "english" and can be managed v
   <filter class="solr.ManagedStopFilterFactory" managed="english"/>
 </analyzer>
 ----
+====
+--
 
 See <<Stop Filter>> for example input/output.
 
@@ -865,6 +1327,27 @@ NOTE: Although this filter produces correct token graphs, it cannot consume an i
 //TODO: make this show an actual API call
 With this configuration the set of mappings is named "english" and can be managed via `/solr/collection_name/schema/analysis/synonyms/english`
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-managedsynonymgraph]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer type="index">
+  <tokenizer name="standard"/>
+  <filter name="managedSynonymGraph" managed="english"/>
+  <filter name="flattenGraph"/> <!-- required on index analyzers after graph filters -->
+</analyzer>
+<analyzer type="query">
+  <tokenizer name="standard"/>
+  <filter name="managedSynonymGraph" managed="english"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-managedsynonymgraph]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer type="index">
@@ -877,6 +1360,8 @@ With this configuration the set of mappings is named "english" and can be manage
   <filter class="solr.ManagedSynonymGraphFilterFactory" managed="english"/>
 </analyzer>
 ----
+====
+--
 
 See <<Synonym Graph Filter>> below for example input/output.
 
@@ -896,6 +1381,22 @@ Generates n-gram tokens of sizes in the given range. Note that tokens are ordere
 
 Default behavior.
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-ngram]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="standard"/>
+  <filter name="nGram"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-ngram]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -903,6 +1404,8 @@ Default behavior.
   <filter class="solr.NGramFilterFactory"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "four score"
 
@@ -917,8 +1420,8 @@ A range of 1 to 4.
 [source,xml]
 ----
 <analyzer>
-  <tokenizer class="solr.StandardTokenizerFactory"/>
-  <filter class="solr.NGramFilterFactory" minGramSize="1" maxGramSize="4"/>
+  <tokenizer name="standard"/>
+  <filter name="nGram" minGramSize="1" maxGramSize="4"/>
 </analyzer>
 ----
 
@@ -935,8 +1438,8 @@ A range of 3 to 5.
 [source,xml]
 ----
 <analyzer>
-  <tokenizer class="solr.StandardTokenizerFactory"/>
-  <filter class="solr.NGramFilterFactory" minGramSize="3" maxGramSize="5"/>
+  <tokenizer name="standard"/>
+  <filter name="nGram" minGramSize="3" maxGramSize="5"/>
 </analyzer>
 ----
 
@@ -960,6 +1463,22 @@ This filter adds a numeric floating point payload value to tokens that match a g
 
 *Example:*
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-numericpayload]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="whitespace"/>
+  <filter name="numericPayload" payload="0.75" typeMatch="word"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-numericpayload]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -967,6 +1486,8 @@ This filter adds a numeric floating point payload value to tokens that match a g
   <filter class="solr.NumericPayloadTokenFilterFactory" payload="0.75" typeMatch="word"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "bing bang boom"
 
@@ -992,6 +1513,22 @@ This filter applies a regular expression to each token and, for those that match
 
 Simple string replace:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-patternreplace]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="standard"/>
+  <filter name="patternReplace" pattern="cat" replacement="dog"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-patternreplace]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -999,6 +1536,8 @@ Simple string replace:
   <filter class="solr.PatternReplaceFilterFactory" pattern="cat" replacement="dog"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "cat concatenate catycat"
 
@@ -1013,8 +1552,8 @@ String replacement, first occurrence only:
 [source,xml]
 ----
 <analyzer>
-  <tokenizer class="solr.StandardTokenizerFactory"/>
-  <filter class="solr.PatternReplaceFilterFactory" pattern="cat" replacement="dog" replace="first"/>
+  <tokenizer name="standard"/>
+  <filter name="patternReplace" pattern="cat" replacement="dog" replace="first"/>
 </analyzer>
 ----
 
@@ -1031,8 +1570,8 @@ More complex pattern with capture group reference in the replacement. Tokens tha
 [source,xml]
 ----
 <analyzer>
-  <tokenizer class="solr.StandardTokenizerFactory"/>
-  <filter class="solr.PatternReplaceFilterFactory" pattern="(\D+)(\d+)$" replacement="$1_$2"/>
+  <tokenizer name="standard"/>
+  <filter name="patternReplace" pattern="(\D+)(\d+)$" replacement="$1_$2"/>
 </analyzer>
 ----
 
@@ -1060,6 +1599,22 @@ This filter creates tokens using one of the phonetic encoding algorithms in the 
 
 Default behavior for DoubleMetaphone encoding.
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-phonetic]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="standard"/>
+  <filter name="phonetic" encoder="DoubleMetaphone"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-phonetic]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -1067,6 +1622,8 @@ Default behavior for DoubleMetaphone encoding.
   <filter class="solr.PhoneticFilterFactory" encoder="DoubleMetaphone"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "four score and twenty"
 
@@ -1083,8 +1640,8 @@ Discard original token.
 [source,xml]
 ----
 <analyzer>
-  <tokenizer class="solr.StandardTokenizerFactory"/>
-  <filter class="solr.PhoneticFilterFactory" encoder="DoubleMetaphone" inject="false"/>
+  <tokenizer name="standard"/>
+  <filter name="phonetic" encoder="DoubleMetaphone" inject="false"/>
 </analyzer>
 ----
 
@@ -1101,8 +1658,8 @@ Default Soundex encoder.
 [source,xml]
 ----
 <analyzer>
-  <tokenizer class="solr.StandardTokenizerFactory"/>
-  <filter class="solr.PhoneticFilterFactory" encoder="Soundex"/>
+  <tokenizer name="standard"/>
+  <filter name="phonetic" encoder="Soundex"/>
 </analyzer>
 ----
 
@@ -1122,6 +1679,22 @@ This filter applies the Porter Stemming Algorithm for English. The results are s
 
 *Example:*
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-porterstem]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer type="index">
+  <tokenizer name="standard"/>
+  <filter name="porterStem"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-porterstem]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer type="index">
@@ -1129,6 +1702,8 @@ This filter applies the Porter Stemming Algorithm for English. The results are s
   <filter class="solr.PorterStemFilterFactory"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "jump jumping jumped"
 
@@ -1154,6 +1729,25 @@ This filter enables a form of conditional filtering: it only applies its wrapped
 
 All terms except those in `protectedTerms.txt` are truncated at 4 characters and lowercased:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-protectedterm]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="whitespace"/>
+  <filter name="protectedTerm"
+          ignoreCase="true" protected="protectedTerms.txt"
+          wrappedFilters="truncate,lowercase"
+          truncate.prefixLength="4"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-protectedterm]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -1164,6 +1758,8 @@ All terms except those in `protectedTerms.txt` are truncated at 4 characters and
           truncate.prefixLength="4"/>
 </analyzer>
 ----
+====
+--
 
 *Example:*
 
@@ -1174,8 +1770,8 @@ For all terms except those in `protectedTerms.txt`, synonyms are added, terms ar
 [source,xml]
 ----
 <analyzer type="query">
-  <tokenizer class="solr.WhitespaceTokenizerFactory"/>
-  <filter class="solr.ProtectedTermFilterFactory"
+  <tokenizer name="whitespace"/>
+  <filter name="protectedTerm"
           ignoreCase="true" protected="protectedTerms.txt"
           wrappedFilters="SynonymGraph-fwd,ReverseString,SynonymGraph-rev"
           synonymgraph-FWD.synonyms="fwd-syns.txt"
@@ -1206,6 +1802,24 @@ Consider the following entry from a `synonyms.txt` file:
 
 When used in the following configuration:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-removeduplicates]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer type="query">
+  <tokenizer name="standard"/>
+  <filter name="synonymGraph" synonyms="synonyms.txt"/>
+  <filter name="englishMinimalStem"/>
+  <filter name="removeDuplicates"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-removeduplicates]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer type="query">
@@ -1215,6 +1829,8 @@ When used in the following configuration:
   <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "Watch TV"
 
@@ -1246,6 +1862,23 @@ This filter reverses tokens to provide faster leading wildcard and prefix querie
 
 *Example:*
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-reversedwildcard]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer type="index">
+  <tokenizer name="whitespace"/>
+  <filter name="reversedWildcard" withOriginal="true"
+    maxPosAsterisk="2" maxPosQuestion="1" minTrailing="2" maxFractionAsterisk="0"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-reversedwildcard]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer type="index">
@@ -1254,6 +1887,8 @@ This filter reverses tokens to provide faster leading wildcard and prefix querie
     maxPosAsterisk="2" maxPosQuestion="1" minTrailing="2" maxFractionAsterisk="0"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "*foo *bar"
 
@@ -1283,6 +1918,22 @@ This filter constructs shingles, which are token n-grams, from the token stream.
 
 Default behavior.
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-shingle]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="standard"/>
+  <filter name="shingle"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-shingle]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -1290,6 +1941,8 @@ Default behavior.
   <filter class="solr.ShingleFilterFactory"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "To be, or what?"
 
@@ -1304,8 +1957,8 @@ A shingle size of four, do not include original token.
 [source,xml]
 ----
 <analyzer>
-  <tokenizer class="solr.StandardTokenizerFactory"/>
-  <filter class="solr.ShingleFilterFactory" maxShingleSize="4" outputUnigrams="false"/>
+  <tokenizer name="standard"/>
+  <filter name="shingle" maxShingleSize="4" outputUnigrams="false"/>
 </analyzer>
 ----
 
@@ -1335,6 +1988,22 @@ Solr contains Snowball stemmers for Armenian, Basque, Catalan, Danish, Dutch, En
 
 Default behavior:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-snowball]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="standard"/>
+  <filter name="snowballPorter"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-snowball]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -1342,6 +2011,8 @@ Default behavior:
   <filter class="solr.SnowballPorterFilterFactory"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "flip flipped flipping"
 
@@ -1356,8 +2027,8 @@ French stemmer, English words:
 [source,xml]
 ----
 <analyzer>
-  <tokenizer class="solr.StandardTokenizerFactory"/>
-  <filter class="solr.SnowballPorterFilterFactory" language="French"/>
+  <tokenizer name="standard"/>
+  <filter name="snowballPorter" language="French"/>
 </analyzer>
 ----
 
@@ -1374,8 +2045,8 @@ Spanish stemmer, Spanish words:
 [source,xml]
 ----
 <analyzer>
-  <tokenizer class="solr.StandardTokenizerFactory"/>
-  <filter class="solr.SnowballPorterFilterFactory" language="Spanish"/>
+  <tokenizer name="standard"/>
+  <filter name="snowballPorter" language="Spanish"/>
 </analyzer>
 ----
 
@@ -1405,6 +2076,22 @@ This filter discards, or _stops_ analysis of, tokens that are on the given stop 
 
 Case-sensitive matching, capitalized words not stopped. Token positions skip stopped words.
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-stop]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="standard"/>
+  <filter name="stop" words="stopwords.txt"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-stop]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -1412,6 +2099,8 @@ Case-sensitive matching, capitalized words not stopped. Token positions skip sto
   <filter class="solr.StopFilterFactory" words="stopwords.txt"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "To be or what?"
 
@@ -1424,8 +2113,8 @@ Case-sensitive matching, capitalized words not stopped. Token positions skip sto
 [source,xml]
 ----
 <analyzer>
-  <tokenizer class="solr.StandardTokenizerFactory"/>
-  <filter class="solr.StopFilterFactory" words="stopwords.txt" ignoreCase="true"/>
+  <tokenizer name="standard"/>
+  <filter name="stop" words="stopwords.txt" ignoreCase="true"/>
 </analyzer>
 ----
 
@@ -1459,6 +2148,24 @@ By contrast, a query like "`find the popsicle`" would remove '`the`' as a stopwo
 
 *Example:*
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-suggeststop]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer type="query">
+  <tokenizer name="whitespace"/>
+  <filter name="lowercase"/>
+  <filter name="suggestStop" ignoreCase="true"
+          words="stopwords.txt" format="wordset"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-suggeststop]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer type="query">
@@ -1468,6 +2175,8 @@ By contrast, a query like "`find the popsicle`" would remove '`the`' as a stopwo
           words="stopwords.txt" format="wordset"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "The The"
 
@@ -1535,6 +2244,27 @@ small => tiny,teeny,weeny
 
 *Example:*
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-stop-synonymgraph]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer type="index">
+  <tokenizer name="standard"/>
+  <filter name="synonymGraph" synonyms="mysynonyms.txt"/>
+  <filter name="flattenGraph"/> <!-- required on index analyzers after graph filters -->
+</analyzer>
+<analyzer type="query">
+  <tokenizer name="standard"/>
+  <filter name="synonymGraph" synonyms="mysynonyms.txt"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-stop-synonymgraph]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer type="index">
@@ -1547,6 +2277,8 @@ small => tiny,teeny,weeny
   <filter class="solr.SynonymGraphFilterFactory" synonyms="mysynonyms.txt"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "teh small couch"
 
@@ -1572,6 +2304,22 @@ This filter adds the numeric character offsets of the token as a payload value f
 
 *Example:*
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-stop-tokenoffsetpayload]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="whitespace"/>
+  <filter name="tokenOffsetPayload"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-stop-tokenoffsetpayload]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -1579,6 +2327,8 @@ This filter adds the numeric character offsets of the token as a payload value f
   <filter class="solr.TokenOffsetPayloadTokenFilterFactory"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "bing bang boom"
 
@@ -1600,6 +2350,22 @@ This filter trims leading and/or trailing whitespace from tokens. Most tokenizer
 
 The PatternTokenizerFactory configuration used here splits the input on simple commas, it does not remove whitespace.
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-trim]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="pattern" pattern=","/>
+  <filter name="trim"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-trim]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -1607,6 +2373,8 @@ The PatternTokenizerFactory configuration used here splits the input on simple c
   <filter class="solr.TrimFilterFactory"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "one, two , three ,four "
 
@@ -1624,6 +2392,22 @@ This filter adds the token's type, as an encoded byte sequence, as its payload.
 
 *Example:*
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-typeaspayload]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="whitespace"/>
+  <filter name="typeAsPayload"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-typeaspayload]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -1631,6 +2415,8 @@ This filter adds the token's type, as an encoded byte sequence, as its payload.
   <filter class="solr.TypeAsPayloadTokenFilterFactory"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "Pay Bob's I.O.U."
 
@@ -1652,6 +2438,22 @@ This filter adds the token's type, as a token at the same position as the token,
 
 With the example below, each token's type will be emitted verbatim at the same position:
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-typeassynonym]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="standard"/>
+  <filter name="typeAsSynonym"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-typeassynonym]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -1659,9 +2461,27 @@ With the example below, each token's type will be emitted verbatim at the same p
   <filter class="solr.TypeAsSynonymFilterFactory"/>
 </analyzer>
 ----
+====
+--
 
 With the example below, for a token "example.com" with type `<URL>`, the token emitted at the same position will be "\_type_<URL>":
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-typeassynonym-args]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <tokenizer name="uax29URLEmail"/>
+  <filter name="typeAsSynonym" prefix="_type_"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-typeassynonym-args]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
@@ -1669,6 +2489,8 @@ With the example below, for a token "example.com" with type `<URL>`, the token e
   <filter class="solr.TypeAsSynonymFilterFactory" prefix="_type_"/>
 </analyzer>
 ----
+====
+--
 
 == Type Token Filter
 
@@ -1686,12 +2508,29 @@ This filter blacklists or whitelists a specified list of token types, assuming t
 
 *Example:*
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-typetoken]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer>
+  <filter name="typeToken" types="stoptypes.txt" useWhitelist="true"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-typetoken]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer>
   <filter class="solr.TypeTokenFilterFactory" types="stoptypes.txt" useWhitelist="true"/>
 </analyzer>
 ----
+====
+--
 
 == Word Delimiter Filter
 
@@ -1770,6 +2609,27 @@ $ => DIGIT
 
 Default behavior. The whitespace tokenizer is used here to preserve non-alphanumeric characters.
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-filter-worddelimitergraph]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<analyzer type="index">
+  <tokenizer name="whitespace"/>
+  <filter name="wordDelimiterGraph"/>
+  <filter name="flattenGraph"/> <!-- required on index analyzers after graph filters -->
+</analyzer>
+<analyzer type="query">
+  <tokenizer name="whitespace"/>
+  <filter name="wordDelimiterGraph"/>
+</analyzer>
+----
+====
+[example.tab-pane#byclass-filter-worddelimitergraph]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <analyzer type="index">
@@ -1777,12 +2637,13 @@ Default behavior. The whitespace tokenizer is used here to preserve non-alphanum
   <filter class="solr.WordDelimiterGraphFilterFactory"/>
   <filter class="solr.FlattenGraphFilterFactory"/> <!-- required on index analyzers after graph filters -->
 </analyzer>
-
 <analyzer type="query">
   <tokenizer class="solr.WhitespaceTokenizerFactory"/>
   <filter class="solr.WordDelimiterGraphFilterFactory"/>
 </analyzer>
 ----
+====
+--
 
 *In:* "hot-spot RoboBlaster/9000 100XL"
 
@@ -1797,8 +2658,8 @@ Do not split on case changes, and do not generate number parts. Note that by not
 [source,xml]
 ----
 <analyzer type="query">
-  <tokenizer class="solr.WhitespaceTokenizerFactory"/>
-  <filter class="solr.WordDelimiterGraphFilterFactory" generateNumberParts="0" splitOnCaseChange="0"/>
+  <tokenizer name="whitespace"/>
+  <filter name="wordDelimiterGraph" generateNumberParts="0" splitOnCaseChange="0"/>
 </analyzer>
 ----
 
@@ -1815,8 +2676,8 @@ Concatenate word parts and number parts, but not word and number parts that occu
 [source,xml]
 ----
 <analyzer type="query">
-  <tokenizer class="solr.WhitespaceTokenizerFactory"/>
-  <filter class="solr.WordDelimiterGraphFilterFactory" catenateWords="1" catenateNumbers="1"/>
+  <tokenizer name="whitespace"/>
+  <filter name="wordDelimiterGraph" catenateWords="1" catenateNumbers="1"/>
 </analyzer>
 ----
 
@@ -1833,8 +2694,8 @@ Concatenate all. Word and/or number parts are joined together.
 [source,xml]
 ----
 <analyzer type="query">
-  <tokenizer class="solr.WhitespaceTokenizerFactory"/>
-  <filter class="solr.WordDelimiterGraphFilterFactory" catenateAll="1"/>
+  <tokenizer name="whitespace"/>
+  <filter name="wordDelimiterGraph" catenateAll="1"/>
 </analyzer>
 ----
 
@@ -1851,8 +2712,8 @@ Using a protected words list that contains "AstroBlaster" and "XL-5000" (among o
 [source,xml]
 ----
 <analyzer type="query">
-  <tokenizer class="solr.WhitespaceTokenizerFactory"/>
-  <filter class="solr.WordDelimiterGraphFilterFactory" protected="protwords.txt"/>
+  <tokenizer name="whitespace"/>
+  <filter name="wordDelimiterGraph" protected="protwords.txt"/>
 </analyzer>
 ----
 

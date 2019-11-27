@@ -96,14 +96,10 @@ public class HighlighterTest extends SolrTestCaseJ4 {
         "id", "1"));
     assertU(commit());
 
-    try {
-      assertQ("Tried PostingsSolrHighlighter but failed due to offsets not in postings",
-          req("q", "long", "hl.method", "postings", "df", field, "hl", "true"));
-      fail("Did not encounter exception for no offsets");
-    } catch (Exception e) {
-      assertTrue("Cause should be illegal argument", e.getCause() instanceof IllegalArgumentException);
-      assertTrue("Should warn no offsets", e.getCause().getMessage().contains("indexed without offsets"));
-    }
+    IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () -> {
+      h.query(req("q", "long", "hl.method", "postings", "df", field, "hl", "true"));
+    });
+    assertTrue("Should warn no offsets", e.getMessage().contains("indexed without offsets"));
     // note: the default schema.xml has no offsets in postings to test the PostingsHighlighter. Leave that for another
     //  test class.
   }

@@ -138,7 +138,7 @@ public class IndexSchema {
 
   protected List<SchemaField> fieldsWithDefaultValue = new ArrayList<>();
   protected Collection<SchemaField> requiredFields = new HashSet<>();
-  protected volatile DynamicField[] dynamicFields;
+  protected DynamicField[] dynamicFields = new DynamicField[] {};
   public DynamicField[] getDynamicFields() { return dynamicFields; }
 
   protected Map<String, SchemaField> dynamicFieldCache = new ConcurrentHashMap<>();
@@ -151,7 +151,7 @@ public class IndexSchema {
   protected Map<String, List<CopyField>> copyFieldsMap = new HashMap<>();
   public Map<String,List<CopyField>> getCopyFieldsMap() { return Collections.unmodifiableMap(copyFieldsMap); }
 
-  protected DynamicCopy[] dynamicCopyFields;
+  protected DynamicCopy[] dynamicCopyFields = new DynamicCopy[] {};
   public DynamicCopy[] getDynamicCopyFields() { return dynamicCopyFields; }
 
   private Map<FieldType, PayloadDecoder> decoders = new HashMap<>();  // cache to avoid scanning token filters repeatedly, unnecessarily
@@ -962,18 +962,12 @@ public class IndexSchema {
   private void incrementCopyFieldTargetCount(SchemaField dest) {
     copyFieldTargetCounts.put(dest, copyFieldTargetCounts.containsKey(dest) ? copyFieldTargetCounts.get(dest) + 1 : 1);
   }
-  
-  private void registerDynamicCopyField( DynamicCopy dcopy ) {
-    if( dynamicCopyFields == null ) {
-      dynamicCopyFields = new DynamicCopy[] {dcopy};
-    }
-    else {
-      DynamicCopy[] temp = new DynamicCopy[dynamicCopyFields.length+1];
-      System.arraycopy(dynamicCopyFields,0,temp,0,dynamicCopyFields.length);
-      temp[temp.length -1] = dcopy;
-      dynamicCopyFields = temp;
-    }
-    log.trace("Dynamic Copy Field:" + dcopy);
+
+  private void registerDynamicCopyField(DynamicCopy dcopy) {
+    DynamicCopy[] temp = new DynamicCopy[dynamicCopyFields.length + 1];
+    System.arraycopy(dynamicCopyFields, 0, temp, 0, dynamicCopyFields.length);
+    temp[temp.length - 1] = dcopy;
+    dynamicCopyFields = temp;
   }
 
   static SimilarityFactory readSimilarity(SolrResourceLoader loader, Node node) {
@@ -1337,11 +1331,9 @@ public class IndexSchema {
         }
       }
     }
-    if (null != dynamicCopyFields) {
-      for (DynamicCopy dynamicCopy : dynamicCopyFields) {
-        if (dynamicCopy.getDestFieldName().equals(destField)) {
-          fieldNames.add(dynamicCopy.getRegex());
-        }
+    for (DynamicCopy dynamicCopy : dynamicCopyFields) {
+      if (dynamicCopy.getDestFieldName().equals(destField)) {
+        fieldNames.add(dynamicCopy.getRegex());
       }
     }
     return fieldNames;
@@ -1356,11 +1348,9 @@ public class IndexSchema {
   // This is useful when we need the maxSize param of each CopyField
   public List<CopyField> getCopyFieldsList(final String sourceField){
     final List<CopyField> result = new ArrayList<>();
-    if (null != dynamicCopyFields) {
-      for (DynamicCopy dynamicCopy : dynamicCopyFields) {
-        if (dynamicCopy.matches(sourceField)) {
-          result.add(new CopyField(getField(sourceField), dynamicCopy.getTargetField(sourceField), dynamicCopy.maxChars));
-        }
+    for (DynamicCopy dynamicCopy : dynamicCopyFields) {
+      if (dynamicCopy.matches(sourceField)) {
+        result.add(new CopyField(getField(sourceField), dynamicCopy.getTargetField(sourceField), dynamicCopy.maxChars));
       }
     }
     List<CopyField> fixedCopyFields = copyFieldsMap.get(sourceField);
@@ -1556,48 +1546,46 @@ public class IndexSchema {
         }
       }
     }
-    if (null != dynamicCopyFields) {
-      for (IndexSchema.DynamicCopy dynamicCopy : dynamicCopyFields) {
-        final String source = dynamicCopy.getRegex();
-        final String destination = dynamicCopy.getDestFieldName();
-        if ((null == requestedSourceFields || requestedSourceFields.contains(source))
-            && (null == requestedDestinationFields || requestedDestinationFields.contains(destination))) {
-          SimpleOrderedMap<Object> dynamicCopyProps = new SimpleOrderedMap<>();
+    for (IndexSchema.DynamicCopy dynamicCopy : dynamicCopyFields) {
+      final String source = dynamicCopy.getRegex();
+      final String destination = dynamicCopy.getDestFieldName();
+      if ((null == requestedSourceFields || requestedSourceFields.contains(source))
+          && (null == requestedDestinationFields || requestedDestinationFields.contains(destination))) {
+        SimpleOrderedMap<Object> dynamicCopyProps = new SimpleOrderedMap<>();
 
-          dynamicCopyProps.add(SOURCE, dynamicCopy.getRegex());
-          if (showDetails) {
-            IndexSchema.DynamicField sourceDynamicBase = dynamicCopy.getSourceDynamicBase();
-            if (null != sourceDynamicBase) {
-              dynamicCopyProps.add(SOURCE_DYNAMIC_BASE, sourceDynamicBase.getRegex());
-            } else if (source.contains("*")) {
-              List<String> sourceExplicitFields = new ArrayList<>();
-              Pattern pattern = Pattern.compile(source.replace("*", ".*"));   // glob->regex
-              for (String field : fields.keySet()) {
-                if (pattern.matcher(field).matches()) {
-                  sourceExplicitFields.add(field);
-                }
-              }
-              if (sourceExplicitFields.size() > 0) {
-                Collections.sort(sourceExplicitFields);
-                dynamicCopyProps.add(SOURCE_EXPLICIT_FIELDS, sourceExplicitFields);
+        dynamicCopyProps.add(SOURCE, dynamicCopy.getRegex());
+        if (showDetails) {
+          IndexSchema.DynamicField sourceDynamicBase = dynamicCopy.getSourceDynamicBase();
+          if (null != sourceDynamicBase) {
+            dynamicCopyProps.add(SOURCE_DYNAMIC_BASE, sourceDynamicBase.getRegex());
+          } else if (source.contains("*")) {
+            List<String> sourceExplicitFields = new ArrayList<>();
+            Pattern pattern = Pattern.compile(source.replace("*", ".*")); // glob->regex
+            for (String field : fields.keySet()) {
+              if (pattern.matcher(field).matches()) {
+                sourceExplicitFields.add(field);
               }
             }
-          }
-
-          dynamicCopyProps.add(DESTINATION, dynamicCopy.getDestFieldName());
-          if (showDetails) {
-            IndexSchema.DynamicField destDynamicBase = dynamicCopy.getDestDynamicBase();
-            if (null != destDynamicBase) {
-              dynamicCopyProps.add(DESTINATION_DYNAMIC_BASE, destDynamicBase.getRegex());
+            if (sourceExplicitFields.size() > 0) {
+              Collections.sort(sourceExplicitFields);
+              dynamicCopyProps.add(SOURCE_EXPLICIT_FIELDS, sourceExplicitFields);
             }
           }
-
-          if (0 != dynamicCopy.getMaxChars()) {
-            dynamicCopyProps.add(MAX_CHARS, dynamicCopy.getMaxChars());
-          }
-
-          copyFieldProperties.add(dynamicCopyProps);
         }
+
+        dynamicCopyProps.add(DESTINATION, dynamicCopy.getDestFieldName());
+        if (showDetails) {
+          IndexSchema.DynamicField destDynamicBase = dynamicCopy.getDestDynamicBase();
+          if (null != destDynamicBase) {
+            dynamicCopyProps.add(DESTINATION_DYNAMIC_BASE, destDynamicBase.getRegex());
+          }
+        }
+
+        if (0 != dynamicCopy.getMaxChars()) {
+          dynamicCopyProps.add(MAX_CHARS, dynamicCopy.getMaxChars());
+        }
+
+        copyFieldProperties.add(dynamicCopyProps);
       }
     }
     return copyFieldProperties;
@@ -1972,6 +1960,17 @@ public class IndexSchema {
     }
     FieldType nestPathType = getFieldTypeNoEx(NEST_PATH_FIELD_NAME);
     return nestPathType instanceof NestPathField;
+  }
+
+  /**
+   * Does this schema supports partial updates (aka atomic updates) and child docs as well.
+   */
+  public boolean supportsPartialUpdatesOfChildDocs() {
+    if (savesChildDocRelations() == false) {
+      return false;
+    }
+    SchemaField rootField = getField(IndexSchema.ROOT_FIELD_NAME);
+    return rootField.stored() || rootField.hasDocValues();
   }
 
   public PayloadDecoder getPayloadDecoder(String field) {

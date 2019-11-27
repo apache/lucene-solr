@@ -118,13 +118,9 @@ public class TestStreamBody extends RestTestBase {
       public String getPath() { //don't let superclass substitute qt for the path
         return "/update";
       }
-    };    
-    try {
-      queryRequest.process(getSolrClient());
-      fail();
-    } catch (SolrException se) {
-      assertTrue(se.getMessage(), se.getMessage().contains("Stream Body is disabled"));
-    }
+    };
+    SolrException se = expectThrows(SolrException.class, () -> queryRequest.process(getSolrClient()));
+    assertTrue(se.getMessage(), se.getMessage().contains("Stream Body is disabled"));
     enableStreamBody(true);
     queryRequest.process(getSolrClient());
   }

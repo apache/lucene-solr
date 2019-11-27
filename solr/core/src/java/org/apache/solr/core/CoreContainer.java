@@ -47,6 +47,7 @@ import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
+import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
@@ -69,7 +70,6 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
@@ -77,6 +77,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.backup.repository.BackupRepository;
 import org.apache.solr.core.backup.repository.BackupRepositoryFactory;
+import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.SnapShooter;
 import org.apache.solr.handler.admin.AutoscalingHistoryHandler;
@@ -99,6 +100,8 @@ import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.search.SolrFieldCacheBean;
@@ -203,13 +206,15 @@ public class CoreContainer {
 
   private volatile SecurityPluginHolder<AuthenticationPlugin> authenticationPlugin;
 
-  private SecurityPluginHolder<AuditLoggerPlugin> auditloggerPlugin;
+  private volatile SecurityPluginHolder<AuditLoggerPlugin> auditloggerPlugin;
 
   private volatile BackupRepositoryFactory backupRepoFactory;
 
   protected volatile SolrMetricManager metricManager;
 
-  protected volatile String metricTag = Integer.toHexString(hashCode());
+  protected volatile String metricTag = SolrMetricProducer.getUniqueMetricTag(this, null);
+
+  protected volatile SolrMetricsContext solrMetricsContext;
 
   protected MetricsHandler metricsHandler;
 
@@ -219,7 +224,8 @@ public class CoreContainer {
 
   protected volatile AutoscalingHistoryHandler autoscalingHistoryHandler;
 
-  private final LibListener clusterPropertiesListener = new LibListener(this);
+  private PackageStoreAPI packageStoreAPI;
+  private PackageLoader packageLoader;
 
 
   // Bits for the state variable.
@@ -395,6 +401,7 @@ public class CoreContainer {
           getResourceLoader().newInstance(klas, AuditLoggerPlugin.class));
 
       newAuditloggerPlugin.plugin.init(auditConf);
+      newAuditloggerPlugin.plugin.initializeMetrics(solrMetricsContext, "/auditlogging");
     } else {
       log.debug("Security conf doesn't exist. Skipping setup for audit logging module.");
     }
@@ -451,6 +458,7 @@ public class CoreContainer {
     if (authenticationPlugin != null) {
       authenticationPlugin.plugin.init(authenticationConfig);
       setupHttpClientForAuthPlugin(authenticationPlugin.plugin);
+      authenticationPlugin.plugin.initializeMetrics(solrMetricsContext, "/authentication");
     }
     this.authenticationPlugin = authenticationPlugin;
     try {
@@ -576,6 +584,13 @@ public class CoreContainer {
     return replayUpdatesExecutor;
   }
 
+  public PackageLoader getPackageLoader() {
+    return packageLoader;
+  }
+
+  public PackageStoreAPI getPackageStoreAPI() {
+    return packageStoreAPI;
+  }
   //-------------------------------------------------------------------
   // Initialization / Cleanup
   //-------------------------------------------------------------------
@@ -600,7 +615,13 @@ public class CoreContainer {
       }
     }
 
+    packageStoreAPI = new PackageStoreAPI(this);
+    containerHandlers.getApiBag().register(new AnnotatedApi(packageStoreAPI.readAPI), Collections.EMPTY_MAP);
+    containerHandlers.getApiBag().register(new AnnotatedApi(packageStoreAPI.writeAPI), Collections.EMPTY_MAP);
+
     metricManager = new SolrMetricManager(loader, cfg.getMetricsConfig());
+    String registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.node);
+    solrMetricsContext = new SolrMetricsContext(metricManager, registryName, metricTag);
 
     coreContainerWorkExecutor = MetricUtils.instrumentedExecutorService(
         coreContainerWorkExecutor, null,
@@ -610,11 +631,11 @@ public class CoreContainer {
     shardHandlerFactory = ShardHandlerFactory.newInstance(cfg.getShardHandlerFactoryPluginInfo(), loader);
     if (shardHandlerFactory instanceof SolrMetricProducer) {
       SolrMetricProducer metricProducer = (SolrMetricProducer) shardHandlerFactory;
-      metricProducer.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, "httpShardHandler");
+      metricProducer.initializeMetrics(solrMetricsContext, "httpShardHandler");
     }
 
     updateShardHandler = new UpdateShardHandler(cfg.getUpdateShardHandlerConfig());
-    updateShardHandler.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, "updateShardHandler");
+    updateShardHandler.initializeMetrics(solrMetricsContext, "updateShardHandler");
 
     solrCores.load(loader);
 
@@ -625,9 +646,10 @@ public class CoreContainer {
 
     zkSys.initZooKeeper(this, solrHome, cfg.getCloudConfig());
     if (isZooKeeperAware()) {
-      getZkController().getZkStateReader().registerClusterPropertiesListener(clusterPropertiesListener);
       pkiAuthenticationPlugin = new PKIAuthenticationPlugin(this, zkSys.getZkController().getNodeName(),
           (PublicKeyHandler) containerHandlers.get(PublicKeyHandler.PATH));
+      // use deprecated API for back-compat, remove in 9.0
+      pkiAuthenticationPlugin.initializeMetrics(solrMetricsContext, "/authentication/pki");
       TracerConfigurator.loadTracer(loader, cfg.getTracerConfiguratorPluginInfo(), getZkController().getZkStateReader());
     }
 
@@ -637,7 +659,6 @@ public class CoreContainer {
     reloadSecurityProperties();
     this.backupRepoFactory = new BackupRepositoryFactory(cfg.getBackupRepositoryPlugins());
 
-    containerHandlers.put("/ext", clusterPropertiesListener.extHandler);
     createHandler(ZK_PATH, ZookeeperInfoHandler.class.getName(), ZookeeperInfoHandler.class);
     createHandler(ZK_STATUS_PATH, ZookeeperStatusHandler.class.getName(), ZookeeperStatusHandler.class);
     collectionsHandler = createHandler(COLLECTIONS_HANDLER_PATH, cfg.getCollectionsHandlerClass(), CollectionsHandler.class);
@@ -648,7 +669,7 @@ public class CoreContainer {
     // metricsHistoryHandler uses metricsHandler, so create it first
     metricsHandler = new MetricsHandler(this);
     containerHandlers.put(METRICS_PATH, metricsHandler);
-    metricsHandler.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, METRICS_PATH);
+    metricsHandler.initializeMetrics(solrMetricsContext, METRICS_PATH);
 
     createMetricsHistoryHandler();
 
@@ -658,7 +679,7 @@ public class CoreContainer {
     metricsCollectorHandler.init(null);
 
     containerHandlers.put(AUTHZ_PATH, securityConfHandler);
-    securityConfHandler.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, AUTHZ_PATH);
+    securityConfHandler.initializeMetrics(solrMetricsContext, AUTHZ_PATH);
     containerHandlers.put(AUTHC_PATH, securityConfHandler);
 
 
@@ -673,22 +694,20 @@ public class CoreContainer {
 
     // initialize gauges for reporting the number of cores and disk total/free
 
-    String registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.node);
-    String metricTag = Integer.toHexString(hashCode());
-    metricManager.registerGauge(null, registryName, () -> solrCores.getCores().size(),
-        metricTag, true, "loaded", SolrInfoBean.Category.CONTAINER.toString(), "cores");
-    metricManager.registerGauge(null, registryName, () -> solrCores.getLoadedCoreNames().size() - solrCores.getCores().size(),
-        metricTag, true, "lazy", SolrInfoBean.Category.CONTAINER.toString(), "cores");
-    metricManager.registerGauge(null, registryName, () -> solrCores.getAllCoreNames().size() - solrCores.getLoadedCoreNames().size(),
-        metricTag, true, "unloaded", SolrInfoBean.Category.CONTAINER.toString(), "cores");
+    solrMetricsContext.gauge(() -> solrCores.getCores().size(),
+        true, "loaded", SolrInfoBean.Category.CONTAINER.toString(), "cores");
+    solrMetricsContext.gauge(() -> solrCores.getLoadedCoreNames().size() - solrCores.getCores().size(),
+        true, "lazy", SolrInfoBean.Category.CONTAINER.toString(), "cores");
+    solrMetricsContext.gauge(() -> solrCores.getAllCoreNames().size() - solrCores.getLoadedCoreNames().size(),
+        true, "unloaded", SolrInfoBean.Category.CONTAINER.toString(), "cores");
     Path dataHome = cfg.getSolrDataHome() != null ? cfg.getSolrDataHome() : cfg.getCoreRootDirectory();
-    metricManager.registerGauge(null, registryName, () -> dataHome.toFile().getTotalSpace(),
-        metricTag, true, "totalSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs");
-    metricManager.registerGauge(null, registryName, () -> dataHome.toFile().getUsableSpace(),
-        metricTag, true, "usableSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs");
-    metricManager.registerGauge(null, registryName, () -> dataHome.toAbsolutePath().toString(),
-        metricTag, true, "path", SolrInfoBean.Category.CONTAINER.toString(), "fs");
-    metricManager.registerGauge(null, registryName, () -> {
+    solrMetricsContext.gauge(() -> dataHome.toFile().getTotalSpace(),
+        true, "totalSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs");
+    solrMetricsContext.gauge(() -> dataHome.toFile().getUsableSpace(),
+        true, "usableSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs");
+    solrMetricsContext.gauge(() -> dataHome.toAbsolutePath().toString(),
+        true, "path", SolrInfoBean.Category.CONTAINER.toString(), "fs");
+    solrMetricsContext.gauge(() -> {
           try {
             return org.apache.lucene.util.IOUtils.spins(dataHome.toAbsolutePath());
           } catch (IOException e) {
@@ -696,14 +715,14 @@ public class CoreContainer {
             return true;
           }
         },
-        metricTag, true, "spins", SolrInfoBean.Category.CONTAINER.toString(), "fs");
-    metricManager.registerGauge(null, registryName, () -> cfg.getCoreRootDirectory().toFile().getTotalSpace(),
-        metricTag, true, "totalSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
-    metricManager.registerGauge(null, registryName, () -> cfg.getCoreRootDirectory().toFile().getUsableSpace(),
-        metricTag, true, "usableSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
-    metricManager.registerGauge(null, registryName, () -> cfg.getCoreRootDirectory().toAbsolutePath().toString(),
-        metricTag, true, "path", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
-    metricManager.registerGauge(null, registryName, () -> {
+        true, "spins", SolrInfoBean.Category.CONTAINER.toString(), "fs");
+    solrMetricsContext.gauge(() -> cfg.getCoreRootDirectory().toFile().getTotalSpace(),
+        true, "totalSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
+    solrMetricsContext.gauge(() -> cfg.getCoreRootDirectory().toFile().getUsableSpace(),
+        true, "usableSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
+    solrMetricsContext.gauge(() -> cfg.getCoreRootDirectory().toAbsolutePath().toString(),
+        true, "path", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
+    solrMetricsContext.gauge(() -> {
           try {
             return org.apache.lucene.util.IOUtils.spins(cfg.getCoreRootDirectory().toAbsolutePath());
           } catch (IOException e) {
@@ -711,19 +730,23 @@ public class CoreContainer {
             return true;
           }
         },
-        metricTag, true, "spins", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
+        true, "spins", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
     // add version information
-    metricManager.registerGauge(null, registryName, () -> this.getClass().getPackage().getSpecificationVersion(),
-        metricTag, true, "specification", SolrInfoBean.Category.CONTAINER.toString(), "version");
-    metricManager.registerGauge(null, registryName, () -> this.getClass().getPackage().getImplementationVersion(),
-        metricTag, true, "implementation", SolrInfoBean.Category.CONTAINER.toString(), "version");
+    solrMetricsContext.gauge(() -> this.getClass().getPackage().getSpecificationVersion(),
+        true, "specification", SolrInfoBean.Category.CONTAINER.toString(), "version");
+    solrMetricsContext.gauge(() -> this.getClass().getPackage().getImplementationVersion(),
+        true, "implementation", SolrInfoBean.Category.CONTAINER.toString(), "version");
 
     SolrFieldCacheBean fieldCacheBean = new SolrFieldCacheBean();
-    fieldCacheBean.initializeMetrics(metricManager, registryName, metricTag, null);
+    fieldCacheBean.initializeMetrics(solrMetricsContext, null);
 
     if (isZooKeeperAware()) {
       metricManager.loadClusterReporters(metricReporters, this);
+      packageLoader = new PackageLoader(this);
+      containerHandlers.getApiBag().register(new AnnotatedApi(packageLoader.getPackageAPI().editAPI), Collections.EMPTY_MAP);
+      containerHandlers.getApiBag().register(new AnnotatedApi(packageLoader.getPackageAPI().readAPI), Collections.EMPTY_MAP);
     }
+
 
     // setup executor to load cores in parallel
     ExecutorService coreLoadExecutor = MetricUtils.instrumentedExecutorService(
@@ -808,7 +831,7 @@ public class CoreContainer {
       // initialize this handler here when SolrCloudManager is ready
       autoScalingHandler = new AutoScalingHandler(getZkController().getSolrCloudManager(), loader);
       containerHandlers.put(AutoScalingHandler.HANDLER_PATH, autoScalingHandler);
-      autoScalingHandler.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, AutoScalingHandler.HANDLER_PATH);
+      autoScalingHandler.initializeMetrics(solrMetricsContext, AutoScalingHandler.HANDLER_PATH);
     }
     // This is a bit redundant but these are two distinct concepts for all they're accomplished at the same time.
     status |= LOAD_COMPLETE | INITIAL_CORE_LOAD_COMPLETE;
@@ -839,7 +862,7 @@ public class CoreContainer {
         name = "localhost";
       }
       cloudManager = null;
-      client = new EmbeddedSolrServer(this, CollectionAdminParams.SYSTEM_COLL) {
+      client = new EmbeddedSolrServer(this, null) {
         @Override
         public void close() throws IOException {
           // do nothing - we close the container ourselves
@@ -856,7 +879,7 @@ public class CoreContainer {
     metricsHistoryHandler = new MetricsHistoryHandler(name, metricsHandler,
         client, cloudManager, initArgs);
     containerHandlers.put(METRICS_HISTORY_PATH, metricsHistoryHandler);
-    metricsHistoryHandler.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, METRICS_HISTORY_PATH);
+    metricsHistoryHandler.initializeMetrics(solrMetricsContext, METRICS_HISTORY_PATH);
   }
 
   public void securityNodeChanged() {
@@ -871,16 +894,7 @@ public class CoreContainer {
     SecurityConfHandler.SecurityConfig securityConfig = securityConfHandler.getSecurityConfig(false);
     initializeAuthorizationPlugin((Map<String, Object>) securityConfig.getData().get("authorization"));
     initializeAuthenticationPlugin((Map<String, Object>) securityConfig.getData().get("authentication"));
-    if (authenticationPlugin != null) {
-      authenticationPlugin.plugin.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, "/authentication");
-    }
-    if (pkiAuthenticationPlugin != null && pkiAuthenticationPlugin.getMetricRegistry() == null) {
-      pkiAuthenticationPlugin.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, "/authentication/pki");
-    }
     initializeAuditloggerPlugin((Map<String, Object>) securityConfig.getData().get("auditlogging"));
-    if (auditloggerPlugin != null) {
-      auditloggerPlugin.plugin.initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, "/auditlogging");
-    }
   }
 
   private static void checkForDuplicateCoreNames(List<CoreDescriptor> cds) {
@@ -1046,6 +1060,9 @@ public class CoreContainer {
       log.warn("Exception while closing auditlogger plugin.", e);
     }
 
+    if(packageLoader != null){
+      org.apache.lucene.util.IOUtils.closeWhileHandlingException(packageLoader);
+    }
     org.apache.lucene.util.IOUtils.closeWhileHandlingException(loader); // best effort
   }
 
@@ -1206,15 +1223,15 @@ public class CoreContainer {
    *                     that calls solrCores.waitAddPendingCoreOps(...) and solrCores.removeFromPendingOps(...)
    *
    *                     <pre>
-   *                                           <code>
-   *                                           try {
-   *                                              solrCores.waitAddPendingCoreOps(dcore.getName());
-   *                                              createFromDescriptor(...);
-   *                                           } finally {
-   *                                              solrCores.removeFromPendingOps(dcore.getName());
-   *                                           }
-   *                                           </code>
-   *                                         </pre>
+   *                                                               <code>
+   *                                                               try {
+   *                                                                  solrCores.waitAddPendingCoreOps(dcore.getName());
+   *                                                                  createFromDescriptor(...);
+   *                                                               } finally {
+   *                                                                  solrCores.removeFromPendingOps(dcore.getName());
+   *                                                               }
+   *                                                               </code>
+   *                                                             </pre>
    *                     <p>
    *                     Trying to put the waitAddPending... in this method results in Bad Things Happening due to race conditions.
    *                     getCore() depends on getting the core returned _if_ it's in the pending list due to some other thread opening it.
@@ -1787,17 +1804,9 @@ public class CoreContainer {
       containerHandlers.put(path, (SolrRequestHandler) handler);
     }
     if (handler instanceof SolrMetricProducer) {
-      ((SolrMetricProducer) handler).initializeMetrics(metricManager, SolrInfoBean.Group.node.toString(), metricTag, path);
+      ((SolrMetricProducer) handler).initializeMetrics(solrMetricsContext, path);
     }
     return handler;
-  }
-
-  public PluginBag<SolrRequestHandler> getContainerHandlers() {
-    return containerHandlers;
-  }
-
-  public LibListener getClusterPropertiesListener(){
-    return clusterPropertiesListener;
   }
 
   public CoreAdminHandler getMultiCoreHandler() {

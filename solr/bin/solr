@@ -209,6 +209,11 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
   if [ -n "$SOLR_SSL_NEED_CLIENT_AUTH" ]; then
     SOLR_SSL_OPTS+=" -Dsolr.jetty.ssl.needClientAuth=$SOLR_SSL_NEED_CLIENT_AUTH"
   fi
+
+  if [ -z "$SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION" ] ; then
+    SOLR_SSL_OPTS+=" -Dsolr.jetty.ssl.verifyClientHostName=HTTPS"
+  fi
+
   if [ -n "$SOLR_SSL_WANT_CLIENT_AUTH" ]; then
     SOLR_SSL_OPTS+=" -Dsolr.jetty.ssl.wantClientAuth=$SOLR_SSL_WANT_CLIENT_AUTH"
   fi
@@ -312,7 +317,7 @@ function print_usage() {
   if [ -z "$CMD" ]; then
     echo ""
     echo "Usage: solr COMMAND OPTIONS"
-    echo "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection, delete, version, zk, auth, assert, config, autoscaling"
+    echo "       where COMMAND is one of: start, stop, restart, status, healthcheck, create, create_core, create_collection, delete, version, zk, auth, assert, config, autoscaling, export"
     echo ""
     echo "  Standalone server example (start Solr running in the background on port 8984):"
     echo ""
@@ -758,6 +763,56 @@ function get_info() {
 
   return $CODE
 } # end get_info
+
+function run_package() {
+  runningSolrUrl=""
+
+  numSolrs=`find "$SOLR_PID_DIR" -name "solr-*.pid" -type f | wc -l | tr -d ' '`
+  if [ "$numSolrs" != "0" ]; then
+    #echo -e "\nFound $numSolrs Solr nodes: "
+    while read PIDF
+      do
+        ID=`cat "$PIDF"`
+        port=`jetty_port "$ID"`
+        if [ "$port" != "" ]; then
+          #echo -e "\nSolr process $ID running on port $port"
+          runningSolrUrl="$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$port/solr"
+          break
+          CODE=$?
+          echo ""
+        else
+          echo -e "\nSolr process $ID from $PIDF not found."
+          CODE=1
+        fi
+    done < <(find "$SOLR_PID_DIR" -name "solr-*.pid" -type f)
+  else
+    # no pid files but check using ps just to be sure
+    numSolrs=`ps auxww | grep start\.jar | grep solr\.solr\.home | grep -v grep | wc -l | sed -e 's/^[ \t]*//'`
+    if [ "$numSolrs" != "0" ]; then
+      echo -e "\nFound $numSolrs Solr nodes: "
+      PROCESSES=$(ps auxww | grep start\.jar | grep solr\.solr\.home | grep -v grep | awk '{print $2}' | sort -r)
+      for ID in $PROCESSES
+        do
+          port=`jetty_port "$ID"`
+          if [ "$port" != "" ]; then
+            echo ""
+            echo "Solr process $ID running on port $port"
+            runningSolrUrl="$SOLR_URL_SCHEME://$SOLR_TOOL_HOST:$port/solr"
+            break
+            CODE=$?
+            echo ""
+          fi
+      done
+    else
+      echo -e "\nNo Solr nodes are running.\n"
+      exit 1
+      CODE=3
+    fi
+  fi
+
+  run_tool package -solrUrl "$runningSolrUrl" $@
+  #exit $?
+}
 
 # tries to gracefully stop Solr using the Jetty
 # stop command and if that fails, then uses kill -9
@@ -1349,6 +1404,16 @@ if [[ "$SCRIPT_CMD" == "autoscaling" ]]; then
   exit $?
 fi
 
+if [[ "$SCRIPT_CMD" == "export" ]]; then
+  run_tool export $@
+  exit $?
+fi
+
+if [[ "$SCRIPT_CMD" == "package" ]]; then
+  run_package $@
+  exit $?
+fi
+
 if [[ "$SCRIPT_CMD" == "auth" ]]; then
 
   VERBOSE=""
@@ -1511,6 +1576,8 @@ if [ -z "$SOLR_ULIMIT_CHECKS" ] || [ "$SOLR_ULIMIT_CHECKS" != "false" ]; then
     if hash ulimit 2>/dev/null; then
        openFiles=$(ulimit -n)
        maxProcs=$(ulimit -u)
+       virtualMemory=$(ulimit -v)
+       maxMemory=$(ulimit -m)
        if [ $openFiles != "unlimited" ] && [ $openFiles -lt "$SOLR_RECOMMENDED_OPEN_FILES" ]; then
            echo "*** [WARN] *** Your open file limit is currently $openFiles.  "
            echo " It should be set to $SOLR_RECOMMENDED_OPEN_FILES to avoid operational disruption. "
@@ -1522,10 +1589,23 @@ if [ -z "$SOLR_ULIMIT_CHECKS" ] || [ "$SOLR_ULIMIT_CHECKS" != "false" ]; then
            echo " It should be set to $SOLR_RECOMMENDED_MAX_PROCESSES to avoid operational disruption. "
            echo " If you no longer wish to see this warning, set SOLR_ULIMIT_CHECKS to false in your profile or solr.in.sh"
        fi
+       if [ $virtualMemory != "unlimited" ]; then
+           echo "*** [WARN] ***  Your Virtual Memory limit is $virtualMemory. "
+           echo " It should be set to 'unlimited' to avoid operational disruption. "
+           echo " If you no longer wish to see this warning, set SOLR_ULIMIT_CHECKS to false in your profile or solr.in.sh"
+       fi
+       if [ $maxMemory != "unlimited" ]; then
+           echo "*** [WARN] ***  Your Max Memory Size limit is $maxMemory. "
+           echo " It should be set to 'unlimited' to avoid operational disruption. "
+           echo " If you no longer wish to see this warning, set SOLR_ULIMIT_CHECKS to false in your profile or solr.in.sh"
+       fi
+
     else
       echo "Could not check ulimits for processes and open files, recommended values are"
-      echo "     max processes: $SOLR_RECOMMENDED_MAX_PROCESSES "
-      echo "     open files:    $SOLR_RECOMMENDED_OPEN_FILES"
+      echo "     max processes:   $SOLR_RECOMMENDED_MAX_PROCESSES "
+      echo "     open files:      $SOLR_RECOMMENDED_OPEN_FILES"
+      echo "     virtual memory:  unlimited"
+      echo "     max memorh size: unlimited"
     fi
   fi
 fi

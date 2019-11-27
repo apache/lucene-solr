@@ -49,7 +49,7 @@ in `io.opentracing.util.GlobalTracer`. By doing this some backend like DataDog i
 https://docs.datadoghq.com/tracing/setup/java/[datadog-java-agent] use Javaagent to register a `Tracer` in
 `io.opentracing.util.GlobalTracer`.
 
-=== Configuring sample rate
+=== Configuring Sample Rate
 
 By default only 0.1% of requests are sampled, this ensure that tracing activities does not affect performance of a node.
 

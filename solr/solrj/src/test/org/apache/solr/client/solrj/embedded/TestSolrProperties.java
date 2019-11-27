@@ -16,10 +16,9 @@
  */
 package org.apache.solr.client.solrj.embedded;
 
-import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
-
 import java.lang.invoke.MethodHandles;
 
+import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -48,13 +47,9 @@ public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
     RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
   protected SolrClient getSolrAdmin() {
-    return new EmbeddedSolrServer(cores, "core0");
+    return new EmbeddedSolrServer(cores, null);
   }
   
-  protected SolrClient getRenamedSolrAdmin() {
-    return new EmbeddedSolrServer(cores, "renamed_core");
-  }
-
   @Test
   public void testProperties() throws Exception {
 
@@ -77,12 +72,7 @@ public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
     SolrTestCaseJ4.ignoreException("unknown field");
 
     // You can't add it to core1
-    try {
-      up.process(getSolrCore1());
-      fail("Can't add core0 field to core1!");
-    }
-    catch (Exception ex) {
-    }
+    expectThrows(Exception.class, () -> up.process(getSolrCore1()));
 
     // Add to core1
     doc.setField("id", "BBB");
@@ -92,14 +82,8 @@ public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
     up.process(getSolrCore1());
 
     // You can't add it to core1
-    try {
-      SolrTestCaseJ4.ignoreException("core0");
-      up.process(getSolrCore0());
-      fail("Can't add core1 field to core0!");
-    }
-    catch (Exception ex) {
-    }
-    
+    SolrTestCaseJ4.ignoreException("core0");
+    expectThrows(Exception.class, () -> up.process(getSolrCore0()));
     SolrTestCaseJ4.resetExceptionIgnores();
 
     // now Make sure AAA is in 0 and BBB in 1

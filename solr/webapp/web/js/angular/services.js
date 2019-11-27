@@ -30,6 +30,7 @@ solrAdminServices.factory('System',
     return $resource('admin/collections',
     {'wt':'json', '_':Date.now()}, {
     "list": {params:{action: "LIST"}},
+    "listaliases": {params:{action: "LISTALIASES"}},
     "status": {params:{action: "CLUSTERSTATUS"}},
     "add": {params:{action: "CREATE"}},
     "delete": {params:{action: "DELETE"}},
@@ -139,6 +140,11 @@ solrAdminServices.factory('System',
             headers: {'Content-Type': undefined}
         }).success(success).error(error);
     }
+})
+.filter('splitByComma', function() {
+  return function(input) {
+    return input === undefined ? input : input.split(',');
+  }
 })
 .factory('Luke',
   ['$resource', function($resource) {

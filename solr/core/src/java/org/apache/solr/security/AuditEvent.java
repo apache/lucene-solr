@@ -31,6 +31,8 @@ import java.util.stream.Collectors;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.servlet.ServletUtils;
+import org.apache.solr.servlet.SolrRequestParsers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
@@ -129,13 +131,16 @@ public class AuditEvent {
     this.solrPort = httpRequest.getLocalPort();
     this.solrIp = httpRequest.getLocalAddr();
     this.clientIp = httpRequest.getRemoteAddr();
-    this.resource = httpRequest.getContextPath();
     this.httpMethod = httpRequest.getMethod();
     this.httpQueryString = httpRequest.getQueryString();
     this.headers = getHeadersFromRequest(httpRequest);
     this.requestUrl = httpRequest.getRequestURL();
     this.nodeName = MDC.get(ZkStateReader.NODE_NAME_PROP);
+    SolrRequestParsers.parseQueryString(httpQueryString).forEach(sp -> {
+      this.solrParams.put(sp.getKey(), Arrays.asList(sp.getValue()));
+    });
 
+    setResource(ServletUtils.getPathAfterContext(httpRequest));
     setRequestType(findRequestType());
 
     if (exception != null) setException(exception);
@@ -162,7 +167,7 @@ public class AuditEvent {
     this(eventType, httpRequest);
     this.collections = authorizationContext.getCollectionRequests()
         .stream().map(r -> r.collectionName).collect(Collectors.toList());
-    this.resource = authorizationContext.getResource();
+    setResource(authorizationContext.getResource());
     this.requestType = RequestType.convertType(authorizationContext.getRequestType());
     authorizationContext.getParams().forEach(p -> {
       this.solrParams.put(p.getKey(), Arrays.asList(p.getValue()));
@@ -375,7 +380,7 @@ public class AuditEvent {
   }
 
   public AuditEvent setResource(String resource) {
-    this.resource = resource;
+    this.resource = normalizeResourcePath(resource);
     return this;
   }
 
@@ -447,30 +452,35 @@ public class AuditEvent {
   }
 
   private RequestType findRequestType() {
-    if (ADMIN_PATH_REGEXES.stream().map(Pattern::compile)
-            .anyMatch(p -> p.matcher(resource).matches())) return RequestType.ADMIN;
-    if (SEARCH_PATH_REGEXES.stream().map(Pattern::compile)
-                    .anyMatch(p -> p.matcher(resource).matches())) return RequestType.SEARCH;
-    if (INDEXING_PATH_REGEXES.stream().map(Pattern::compile)
-                    .anyMatch(p -> p.matcher(resource).matches())) return RequestType.UPDATE;
-    if (STREAMING_PATH_REGEXES.stream().map(Pattern::compile)
-                    .anyMatch(p -> p.matcher(resource).matches())) return RequestType.STREAMING;
+    if (resource == null) return RequestType.UNKNOWN;
+    if (SEARCH_PATH_PATTERNS.stream().anyMatch(p -> p.matcher(resource).matches())) return RequestType.SEARCH;
+    if (INDEXING_PATH_PATTERNS.stream().anyMatch(p -> p.matcher(resource).matches())) return RequestType.UPDATE;
+    if (STREAMING_PATH_PATTERNS.stream().anyMatch(p -> p.matcher(resource).matches())) return RequestType.STREAMING;
+    if (ADMIN_PATH_PATTERNS.stream().anyMatch(p -> p.matcher(resource).matches())) return RequestType.ADMIN;
     return RequestType.UNKNOWN;
   }
-  
+
+  protected String normalizeResourcePath(String resourcePath) {
+    if (resourcePath == null) return "";
+    return resourcePath.replaceFirst("^/____v2", "/api");
+  }
+
   private static final List<String> ADMIN_PATH_REGEXES = Arrays.asList(
-      "^/solr/admin/.*",
-      "^/api/(c|collections)/$",
+      "^/admin/.*",
+      "^/api/(c|collections)$",
       "^/api/(c|collections)/[^/]+/config$",
       "^/api/(c|collections)/[^/]+/schema$",
       "^/api/(c|collections)/[^/]+/shards.*",
       "^/api/cores.*$",
-      "^/api/node$",
-      "^/api/cluster$");
+      "^/api/node.*$",
+      "^/api/cluster.*$");
 
   private static final List<String> STREAMING_PATH_REGEXES = Collections.singletonList(".*/stream.*");
-
   private static final List<String> INDEXING_PATH_REGEXES = Collections.singletonList(".*/update.*");
-
   private static final List<String> SEARCH_PATH_REGEXES = Arrays.asList(".*/select.*", ".*/query.*");
+
+  private static final List<Pattern> ADMIN_PATH_PATTERNS = ADMIN_PATH_REGEXES.stream().map(Pattern::compile).collect(Collectors.toList());
+  private static final List<Pattern> STREAMING_PATH_PATTERNS = STREAMING_PATH_REGEXES.stream().map(Pattern::compile).collect(Collectors.toList());
+  private static final List<Pattern> INDEXING_PATH_PATTERNS = INDEXING_PATH_REGEXES.stream().map(Pattern::compile).collect(Collectors.toList());
+  private static final List<Pattern> SEARCH_PATH_PATTERNS = SEARCH_PATH_REGEXES.stream().map(Pattern::compile).collect(Collectors.toList());
 }

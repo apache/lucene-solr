@@ -20,6 +20,7 @@ import java.util.Arrays;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.document.ShapeField.QueryRelation;
+import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.ShapeTestUtil;
 import org.apache.lucene.geo.XYLine;
@@ -58,12 +59,12 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
   }
 
   @Override
-  protected Line2D toLine2D(Object... lines) {
+  protected Component2D toLine2D(Object... lines) {
     return Line2D.create(Arrays.stream(lines).toArray(XYLine[]::new));
   }
 
   @Override
-  protected XYPolygon2D toPolygon2D(Object... polygons) {
+  protected Component2D toPolygon2D(Object... polygons) {
     return XYPolygon2D.create(Arrays.stream(polygons).toArray(XYPolygon[]::new));
   }
 
@@ -144,18 +145,18 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
       }
 
       @Override
-      double[] quantizeTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
-        int[] decoded = encodeDecodeTriangle(ax, ay, bx, by, cx, cy);
-        return new double[]{decode(decoded[0]), decode(decoded[1]), decode(decoded[2]), decode(decoded[3]), decode(decoded[4]), decode(decoded[5])};
+      double[] quantizeTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
+        ShapeField.DecodedTriangle decoded = encodeDecodeTriangle(ax, ay, ab, bx, by, bc, cx, cy, ca);
+        return new double[]{decode(decoded.aY), decode(decoded.aX), decode(decoded.bY), decode(decoded.bX), decode(decoded.cY), decode(decoded.cX)};
       }
 
       @Override
-      int[] encodeDecodeTriangle(double ax, double ay, double bx, double by, double cx, double cy) {
+      ShapeField.DecodedTriangle encodeDecodeTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
         byte[] encoded = new byte[7 * ShapeField.BYTES];
-        ShapeField.encodeTriangle(encoded, encode(ay), encode(ax), encode(by), encode(bx), encode(cy), encode(cx));
-        int[] decoded = new int[6];
-        ShapeField.decodeTriangle(encoded, decoded);
-        return decoded;
+        ShapeField.encodeTriangle(encoded, encode(ay), encode(ax), ab, encode(by), encode(bx), bc, encode(cy), encode(cx), ca);
+        ShapeField.DecodedTriangle triangle  = new ShapeField.DecodedTriangle();
+        ShapeField.decodeTriangle(encoded, triangle);
+        return triangle;
       }
     };
   }

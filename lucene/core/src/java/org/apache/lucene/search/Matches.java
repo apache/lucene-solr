@@ -22,8 +22,6 @@ import java.util.Collection;
 import java.util.function.Consumer;
 
 import org.apache.lucene.index.Term;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.BytesRefIterator;
 
 /**
  * Reports the positions and optionally offsets of all matching terms in a query

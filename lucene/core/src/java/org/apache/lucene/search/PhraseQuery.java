@@ -24,8 +24,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.function.Consumer;
 
-import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
-import org.apache.lucene.codecs.lucene50.Lucene50PostingsReader;
+import org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat;
+import org.apache.lucene.codecs.lucene84.Lucene84PostingsReader;
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
@@ -392,6 +392,22 @@ public class PhraseQuery extends Query {
       }
     }
 
+    public PostingsAndFreq(PostingsEnum postings, ImpactsEnum impacts, int position, List<Term> terms) {
+      this.postings = postings;
+      this.impacts = impacts;
+      this.position = position;
+      nTerms = terms == null ? 0 : terms.size();
+      if (nTerms > 0) {
+        Term[] terms2 = terms.toArray(new Term[0]);
+        if (nTerms > 1) {
+          Arrays.sort(terms2);
+        }
+        this.terms = terms2;
+      } else {
+        this.terms = null;
+      }
+    }
+
     @Override
     public int compareTo(PostingsAndFreq other) {
       if (position != other.position) {
@@ -436,10 +452,10 @@ public class PhraseQuery extends Query {
   /** A guess of
    * the average number of simple operations for the initial seek and buffer refill
    * per document for the positions of a term.
-   * See also {@link Lucene50PostingsReader.BlockImpactsPostingsEnum#nextPosition()}.
+   * See also {@link Lucene84PostingsReader.BlockImpactsPostingsEnum#nextPosition()}.
    * <p>
    * Aside: Instead of being constant this could depend among others on
-   * {@link Lucene50PostingsFormat#BLOCK_SIZE},
+   * {@link Lucene84PostingsFormat#BLOCK_SIZE},
    * {@link TermsEnum#docFreq()},
    * {@link TermsEnum#totalTermFreq()},
    * {@link DocIdSetIterator#cost()} (expected number of matching docs),
@@ -448,7 +464,7 @@ public class PhraseQuery extends Query {
    */
   private static final int TERM_POSNS_SEEK_OPS_PER_DOC = 128;
 
-  /** Number of simple operations in {@link Lucene50PostingsReader.BlockImpactsPostingsEnum#nextPosition()}
+  /** Number of simple operations in {@link Lucene84PostingsReader.BlockImpactsPostingsEnum#nextPosition()}
    *  when no seek or buffer refill is done.
    */
   private static final int TERM_OPS_PER_POS = 7;
@@ -490,9 +506,9 @@ public class PhraseQuery extends Query {
           final Term term = terms[i];
           states[i] = TermStates.build(context, term, scoreMode.needsScores());
           if (scoreMode.needsScores()) {
-            TermStatistics termStatistics = searcher.termStatistics(term, states[i]);
-            if (termStatistics != null) {
-              termStats[termUpTo++] = termStatistics;
+            TermStates ts = states[i];
+            if (ts.docFreq() > 0) {
+              termStats[termUpTo++] = searcher.termStatistics(term, ts.docFreq(), ts.totalTermFreq());
             }
           }
         }

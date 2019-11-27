@@ -90,7 +90,7 @@ public class DelegationTokenHttpSolrClient extends HttpSolrClient {
   @Override
   protected HttpRequestBase createMethod(final SolrRequest request, String collection) throws IOException, SolrServerException {
     SolrParams params = request.getParams();
-    if (params.getParams(DELEGATION_TOKEN_PARAM) != null) {
+    if (params != null && params.getParams(DELEGATION_TOKEN_PARAM) != null) {
       throw new IllegalArgumentException(DELEGATION_TOKEN_PARAM + " parameter not supported");
     }
     return super.createMethod(request, collection);
@@ -99,7 +99,7 @@ public class DelegationTokenHttpSolrClient extends HttpSolrClient {
   @Override
   public void setQueryParams(Set<String> queryParams) {
     queryParams = queryParams == null ?
-        Collections.unmodifiableSet(new HashSet<String>(Arrays.asList(DELEGATION_TOKEN_PARAM))): queryParams;
+        Set.of(DELEGATION_TOKEN_PARAM): queryParams;
     if (!queryParams.contains(DELEGATION_TOKEN_PARAM)) {
       queryParams = new HashSet<String>(queryParams);
       queryParams.add(DELEGATION_TOKEN_PARAM);

@@ -26,6 +26,15 @@ public final class UnknownDictionary extends BinaryDictionary {
 
   private final CharacterDefinition characterDefinition = CharacterDefinition.getInstance();
   
+  /**
+   * @param scheme scheme for loading resources (FILE or CLASSPATH).
+   * @param path where to load resources from; a path, including the file base name without
+   * extension; this is used to match multiple files with the same base name.
+   */
+  public UnknownDictionary(ResourceScheme scheme, String path) throws IOException {
+    super(scheme, path);
+  }
+
   private UnknownDictionary() throws IOException {
     super();
   }

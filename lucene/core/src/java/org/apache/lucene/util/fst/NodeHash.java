@@ -41,10 +41,23 @@ final class NodeHash<T> {
 
   private boolean nodesEqual(Builder.UnCompiledNode<T> node, long address) throws IOException {
     fst.readFirstRealTargetArc(address, scratchArc, in);
-    if (scratchArc.bytesPerArc() != 0 && node.numArcs != scratchArc.numArcs()) {
-      return false;
+
+    // Fail fast for a node with fixed length arcs.
+    if (scratchArc.bytesPerArc() != 0) {
+      if (scratchArc.nodeFlags() == FST.ARCS_FOR_BINARY_SEARCH) {
+        if (node.numArcs != scratchArc.numArcs()) {
+          return false;
+        }
+      } else {
+        assert scratchArc.nodeFlags() == FST.ARCS_FOR_DIRECT_ADDRESSING;
+        if ((node.arcs[node.numArcs - 1].label - node.arcs[0].label + 1) != scratchArc.numArcs()
+            || node.numArcs != scratchArc.bitTable().countBits()) {
+          return false;
+        }
+      }
     }
-    for(int arcUpto=0;arcUpto<node.numArcs;arcUpto++) {
+
+    for(int arcUpto=0; arcUpto < node.numArcs; arcUpto++) {
       final Builder.Arc<T> arc = node.arcs[arcUpto];
       if (arc.label != scratchArc.label() ||
           !arc.output.equals(scratchArc.output()) ||
@@ -170,4 +183,5 @@ final class NodeHash<T> {
       }
     }
   }
+
 }

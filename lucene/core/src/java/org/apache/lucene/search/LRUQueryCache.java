@@ -28,6 +28,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Executor;
+import java.util.concurrent.FutureTask;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
@@ -88,7 +91,6 @@ import static org.apache.lucene.util.RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_U
  * @lucene.experimental
  */
 public class LRUQueryCache implements QueryCache, Accountable {
-
   private final int maxSize;
   private final long maxRamBytesUsed;
   private final Predicate<LeafReaderContext> leavesToCache;
@@ -101,6 +103,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
   private final Set<Query> mostRecentlyUsedQueries;
   private final Map<IndexReader.CacheKey, LeafCache> cache;
   private final ReentrantLock lock;
+  private final float skipCacheFactor;
 
   // these variables are volatile so that we do not need to sync reads
   // but increments need to be performed under the lock
@@ -114,12 +117,20 @@ public class LRUQueryCache implements QueryCache, Accountable {
    * Expert: Create a new instance that will cache at most <code>maxSize</code>
    * queries with at most <code>maxRamBytesUsed</code> bytes of memory, only on
    * leaves that satisfy {@code leavesToCache}.
+   *
+   * Also, clauses whose cost is {@code skipCacheFactor} times more than the cost of the top-level query
+   * will not be cached in order to not slow down queries too much.
    */
   public LRUQueryCache(int maxSize, long maxRamBytesUsed,
-      Predicate<LeafReaderContext> leavesToCache) {
+                       Predicate<LeafReaderContext> leavesToCache, float skipCacheFactor) {
     this.maxSize = maxSize;
     this.maxRamBytesUsed = maxRamBytesUsed;
     this.leavesToCache = leavesToCache;
+    if (skipCacheFactor >= 1 == false) { // NaN >= 1 evaluates false
+      throw new IllegalArgumentException("skipCacheFactor must be no less than 1, get " + skipCacheFactor);
+    }
+    this.skipCacheFactor = skipCacheFactor;
+
     uniqueQueries = new LinkedHashMap<>(16, 0.75f, true);
     mostRecentlyUsedQueries = uniqueQueries.keySet();
     cache = new IdentityHashMap<>();
@@ -141,7 +152,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
    * be cached in order to not hurt latency too much because of caching.
    */
   public LRUQueryCache(int maxSize, long maxRamBytesUsed) {
-    this(maxSize, maxRamBytesUsed, new MinSegmentSizePredicate(10000, .03f));
+    this(maxSize, maxRamBytesUsed, new MinSegmentSizePredicate(10000, .03f), 250);
   }
 
   // pkg-private for testing
@@ -258,10 +269,11 @@ public class LRUQueryCache implements QueryCache, Accountable {
     }
   }
 
-  DocIdSet get(Query key, LeafReaderContext context, IndexReader.CacheHelper cacheHelper) {
+  DocIdSet get(Query key, IndexReader.CacheHelper cacheHelper) {
     assert lock.isHeldByCurrentThread();
     assert key instanceof BoostQuery == false;
     assert key instanceof ConstantScoreQuery == false;
+
     final IndexReader.CacheKey readerKey = cacheHelper.getKey();
     final LeafCache leafCache = cache.get(readerKey);
     if (leafCache == null) {
@@ -283,7 +295,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
     return cached;
   }
 
-  void putIfAbsent(Query query, LeafReaderContext context, DocIdSet set, IndexReader.CacheHelper cacheHelper) {
+  private void putIfAbsent(Query query, DocIdSet set, IndexReader.CacheHelper cacheHelper) {
     assert query instanceof BoostQuery == false;
     assert query instanceof ConstantScoreQuery == false;
     // under a lock to make sure that mostRecentlyUsedQueries and cache remain sync'ed
@@ -312,7 +324,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
     }
   }
 
-  void evictIfNecessary() {
+  private void evictIfNecessary() {
     assert lock.isHeldByCurrentThread();
     // under a lock to make sure that mostRecentlyUsedQueries and cache keep sync'ed
     if (requiresEviction()) {
@@ -395,6 +407,15 @@ public class LRUQueryCache implements QueryCache, Accountable {
     }
   }
 
+  // Get original weight from the cached weight
+  private Weight getOriginalWeight(Weight weight) {
+    while (weight instanceof CachingWrapperWeight) {
+      weight = ((CachingWrapperWeight) weight).in;
+    }
+
+    return weight;
+  }
+
   // pkg-private for testing
   void assertConsistent() {
     lock.lock();
@@ -449,12 +470,10 @@ public class LRUQueryCache implements QueryCache, Accountable {
   }
 
   @Override
-  public Weight doCache(Weight weight, QueryCachingPolicy policy) {
-    while (weight instanceof CachingWrapperWeight) {
-      weight = ((CachingWrapperWeight) weight).in;
-    }
+  public Weight doCache(final Weight weight, QueryCachingPolicy policy, Executor executor) {
+    Weight originalWeight = getOriginalWeight(weight);
 
-    return new CachingWrapperWeight(weight, policy);
+    return new CachingWrapperWeight(originalWeight, policy, executor);
   }
 
   @Override
@@ -656,10 +675,13 @@ public class LRUQueryCache implements QueryCache, Accountable {
     // threads when IndexSearcher is created with threads
     private final AtomicBoolean used;
 
-    CachingWrapperWeight(Weight in, QueryCachingPolicy policy) {
+    private final Executor executor;
+
+    CachingWrapperWeight(Weight in, QueryCachingPolicy policy, Executor executor) {
       super(in.getQuery(), 1f);
       this.in = in;
       this.policy = policy;
+      this.executor = executor;
       used = new AtomicBoolean(false);
     }
 
@@ -725,15 +747,56 @@ public class LRUQueryCache implements QueryCache, Accountable {
 
       DocIdSet docIdSet;
       try {
-        docIdSet = get(in.getQuery(), context, cacheHelper);
+        docIdSet = get(in.getQuery(), cacheHelper);
       } finally {
         lock.unlock();
       }
 
       if (docIdSet == null) {
         if (policy.shouldCache(in.getQuery())) {
-          docIdSet = cache(context);
-          putIfAbsent(in.getQuery(), context, docIdSet, cacheHelper);
+          final ScorerSupplier supplier = in.scorerSupplier(context);
+          if (supplier == null) {
+            putIfAbsent(in.getQuery(), DocIdSet.EMPTY, cacheHelper);
+            return null;
+          }
+
+          final long cost = supplier.cost();
+          return new ScorerSupplier() {
+            @Override
+            public Scorer get(long leadCost) throws IOException {
+              // skip cache operation which would slow query down too much
+              if (cost / skipCacheFactor > leadCost) {
+                return supplier.get(leadCost);
+              }
+
+              boolean cacheSynchronously = executor == null;
+              if (cacheSynchronously == false) {
+                boolean asyncCachingSucceeded = cacheAsynchronously(context, cacheHelper);
+
+                // If async caching failed, synchronous caching will
+                // be performed, hence do not return the uncached value
+                if (asyncCachingSucceeded) {
+                  return supplier.get(leadCost);
+                }
+              }
+              
+              Scorer scorer = supplier.get(Long.MAX_VALUE);
+              DocIdSet docIdSet = cacheImpl(new DefaultBulkScorer(scorer), context.reader().maxDoc());
+              putIfAbsent(in.getQuery(), docIdSet, cacheHelper);
+              DocIdSetIterator disi = docIdSet.iterator();
+              if (disi == null) {
+                // docIdSet.iterator() is allowed to return null when empty but we want a non-null iterator here
+                disi = DocIdSetIterator.empty();
+              }
+
+              return new ConstantScoreScorer(CachingWrapperWeight.this, 0f, ScoreMode.COMPLETE_NO_SCORES, disi);
+            }
+
+            @Override
+            public long cost() {
+              return cost;
+            }
+          };
         } else {
           return in.scorerSupplier(context);
         }
@@ -753,7 +816,7 @@ public class LRUQueryCache implements QueryCache, Accountable {
         public Scorer get(long LeadCost) throws IOException {
           return new ConstantScoreScorer(CachingWrapperWeight.this, 0f, ScoreMode.COMPLETE_NO_SCORES, disi);
         }
-        
+
         @Override
         public long cost() {
           return disi.cost();
@@ -806,15 +869,28 @@ public class LRUQueryCache implements QueryCache, Accountable {
 
       DocIdSet docIdSet;
       try {
-        docIdSet = get(in.getQuery(), context, cacheHelper);
+        docIdSet = get(in.getQuery(), cacheHelper);
       } finally {
         lock.unlock();
       }
 
       if (docIdSet == null) {
         if (policy.shouldCache(in.getQuery())) {
+          boolean cacheSynchronously = executor == null;
+          // If asynchronous caching is requested, perform the same and return
+          // the uncached iterator
+          if (cacheSynchronously == false) {
+            boolean asyncCachingSucceeded = cacheAsynchronously(context, cacheHelper);
+
+            // If async caching failed, we will perform synchronous caching
+            // hence do not return the uncached value here
+            if (asyncCachingSucceeded) {
+              return in.bulkScorer(context);
+            }
+          }
+
           docIdSet = cache(context);
-          putIfAbsent(in.getQuery(), context, docIdSet, cacheHelper);
+          putIfAbsent(in.getQuery(), docIdSet, cacheHelper);
         } else {
           return in.bulkScorer(context);
         }
@@ -832,5 +908,30 @@ public class LRUQueryCache implements QueryCache, Accountable {
       return new DefaultBulkScorer(new ConstantScoreScorer(this, 0f, ScoreMode.COMPLETE_NO_SCORES, disi));
     }
 
+    // Perform a cache load asynchronously
+    // @return true if asynchronous caching succeeded, false otherwise
+    private boolean cacheAsynchronously(LeafReaderContext context, IndexReader.CacheHelper cacheHelper) {
+      FutureTask<Void> task = new FutureTask<>(() -> {
+        // If the reader is being closed -- do nothing
+        if (context.reader().tryIncRef()) {
+          try {
+            DocIdSet localDocIdSet = cache(context);
+            putIfAbsent(in.getQuery(), localDocIdSet, cacheHelper);
+          } finally {
+            context.reader().decRef();
+          }
+        }
+
+        return null;
+      });
+      try {
+        executor.execute(task);
+      } catch (RejectedExecutionException e) {
+        // Trigger synchronous caching
+        return false;
+      }
+
+      return true;
+    }
   }
 }

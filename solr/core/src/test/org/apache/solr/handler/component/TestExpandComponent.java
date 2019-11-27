@@ -17,10 +17,12 @@
 package org.apache.solr.handler.component;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.search.CollapsingQParserPlugin;
 import org.junit.Before;
@@ -44,8 +46,6 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     assertU(commit());
   }
 
-
-
   @Test
   public void testExpand() throws Exception {
     List<String> groups = new ArrayList<>();
@@ -57,7 +57,7 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
 
     String hint = (random().nextBoolean() ? " hint="+ CollapsingQParserPlugin.HINT_TOP_FC : "");
 
-     _testExpand(groups.get(0), floatAppend, hint);
+    _testExpand(groups.get(0), floatAppend, hint);
   }
 
   @Test
@@ -77,46 +77,30 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
 
     String hint = "";
 
-      _testExpand(groups.get(0), floatAppend, hint);
+    _testExpand(groups.get(0), floatAppend, hint);
   }
 
   private void _testExpand(String group, String floatAppend, String hint) throws Exception {
+    String[][] docs = {
+        {"id","1", "term_s", "YYYY", group, "1"+floatAppend, "test_i", "5", "test_l", "10", "test_f", "2000", "type_s", "parent"},
+        {"id","2", "term_s","YYYY", group, "1"+floatAppend, "test_i", "50", "test_l", "100", "test_f", "200", "type_s", "child"},
+        {"id","3", "term_s", "YYYY", "test_i", "5000", "test_l", "100", "test_f", "200"},
+        {"id","4", "term_s", "YYYY", "test_i", "500", "test_l", "1000", "test_f", "2000"},
+        {"id","5", "term_s", "YYYY", group, "2"+floatAppend, "test_i", "4", "test_l", "10", "test_f", "2000", "type_s", "parent"},
+        {"id","6", "term_s","YYYY", group, "2"+floatAppend, "test_i", "10", "test_l", "100", "test_f", "200", "type_s", "child"},
+        {"id","7", "term_s", "YYYY", group, "1"+floatAppend, "test_i", "1", "test_l", "100000", "test_f", "2000", "type_s", "child"},
+        {"id","8", "term_s","YYYY", group, "2"+floatAppend, "test_i", "2", "test_l",  "100000", "test_f", "200", "type_s", "child"}
+    };
+    createIndex(docs);
 
-    String[] doc = {"id","1", "term_s", "YYYY", group, "1"+floatAppend, "test_i", "5", "test_l", "10", "test_f", "2000", "type_s", "parent"};
-    assertU(adoc(doc));
-    assertU(commit());
-    String[] doc1 = {"id","2", "term_s","YYYY", group, "1"+floatAppend, "test_i", "50", "test_l", "100", "test_f", "200", "type_s", "child"};
-    assertU(adoc(doc1));
-
-    String[] doc2 = {"id","3", "term_s", "YYYY", "test_i", "5000", "test_l", "100", "test_f", "200"};
-    assertU(adoc(doc2));
-    assertU(commit());
-    String[] doc3 = {"id","4", "term_s", "YYYY", "test_i", "500", "test_l", "1000", "test_f", "2000"};
-    assertU(adoc(doc3));
-
-
-    String[] doc4 = {"id","5", "term_s", "YYYY", group, "2"+floatAppend, "test_i", "4", "test_l", "10", "test_f", "2000", "type_s", "parent"};
-    assertU(adoc(doc4));
-    assertU(commit());
-    String[] doc5 = {"id","6", "term_s","YYYY", group, "2"+floatAppend, "test_i", "10", "test_l", "100", "test_f", "200", "type_s", "child"};
-    assertU(adoc(doc5));
-    assertU(commit());
-
-    String[] doc6 = {"id","7", "term_s", "YYYY", group, "1"+floatAppend, "test_i", "1", "test_l", "100000", "test_f", "2000", "type_s", "child"};
-    assertU(adoc(doc6));
-    assertU(commit());
-    String[] doc7 = {"id","8", "term_s","YYYY", group, "2"+floatAppend, "test_i", "2", "test_l", "100000", "test_f", "200", "type_s", "child"};
-    assertU(adoc(doc7));
-
-    assertU(commit());
-
-    //First basic test case.
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("q", "*:*");
     params.add("fq", "{!collapse field="+group+hint+"}");
     params.add("defType", "edismax");
     params.add("bf", "field(test_i)");
     params.add("expand", "true");
+
+    //First basic test case.
     assertQ(req(params), "*[count(/response/result/doc)=2]",
         "*[count(/response/lst[@name='expanded']/result)=2]",
         "/response/result/doc[1]/str[@name='id'][.='2']",
@@ -129,15 +113,7 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
 
     //Basic test case page 2
 
-    params = new ModifiableSolrParams();
-    params.add("q", "*:*");
-    params.add("fq", "{!collapse field="+group+hint+"}");
-    params.add("defType", "edismax");
-    params.add("bf", "field(test_i)");
-    params.add("expand", "true");
-    params.add("rows", "1");
-    params.add("start", "1");
-    assertQ(req(params), "*[count(/response/result/doc)=1]",
+    assertQ(req(params, "rows", "1", "start", "1"), "*[count(/response/result/doc)=1]",
         "*[count(/response/lst[@name='expanded']/result)=1]",
         "/response/result/doc[1]/str[@name='id'][.='6']",
         "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/str[@name='id'][.='5']",
@@ -145,14 +121,9 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     );
 
     //Test expand.sort
-    params = new ModifiableSolrParams();
-    params.add("q", "*:*");
-    params.add("fq", "{!collapse field="+group+hint+"}");
-    params.add("defType", "edismax");
-    params.add("bf", "field(test_i)");
-    params.add("expand", "true");
-    params.add("expand.sort", "test_l desc, sub(1,1) asc");//the "sub()" just testing function queries
-    assertQ(req(params), "*[count(/response/result/doc)=2]",
+    //the "sub()" just testing function queries
+    assertQ(req(params,"expand.sort", "test_l desc, sub(1,1) asc"),
+        "*[count(/response/result/doc)=2]",
         "*[count(/response/lst[@name='expanded']/result)=2]",
         "/response/result/doc[1]/str[@name='id'][.='2']",
         "/response/result/doc[2]/str[@name='id'][.='6']",
@@ -183,8 +154,7 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     );
 
 
-    //Test overide expand.q
-
+    //Test override expand.q
     params = new ModifiableSolrParams();
     params.add("q", "type_s:parent");
     params.add("defType", "edismax");
@@ -204,8 +174,7 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     );
 
 
-    //Test overide expand.fq
-
+    //Test override expand.fq
     params = new ModifiableSolrParams();
     params.add("q", "*:*");
     params.add("fq", "type_s:parent");
@@ -225,8 +194,7 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
         "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/str[@name='id'][.='6']"
     );
 
-    //Test overide expand.fq and expand.q
-
+    //Test override expand.fq and expand.q
     params = new ModifiableSolrParams();
     params.add("q", "*:*");
     params.add("fq", "type_s:parent");
@@ -248,7 +216,6 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     );
 
     //Test expand.rows
-
     params = new ModifiableSolrParams();
     params.add("q", "*:*");
     params.add("fq", "{!collapse field="+group+hint+"}");
@@ -269,7 +236,6 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
 
 
     //Test no group results
-
     params = new ModifiableSolrParams();
     params.add("q", "test_i:5");
     params.add("fq", "{!collapse field="+group+hint+"}");
@@ -283,7 +249,6 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     );
 
     //Test zero results
-
     params = new ModifiableSolrParams();
     params.add("q", "test_i:5532535");
     params.add("fq", "{!collapse field="+group+hint+"}");
@@ -297,31 +262,100 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     );
 
     //Test key-only fl
-
     params = new ModifiableSolrParams();
     params.add("q", "*:*");
     params.add("fq", "{!collapse field="+group+hint+"}");
     params.add("defType", "edismax");
     params.add("bf", "field(test_i)");
     params.add("expand", "true");
-    params.add("fl", "id");
-    assertQ(req(params), "*[count(/response/result/doc)=2]",
+
+    assertQ(req(params, "fl", "id"),
+        "*[count(/response/result/doc)=2]",
         "*[count(/response/lst[@name='expanded']/result)=2]",
         "/response/result/doc[1]/str[@name='id'][.='2']",
         "/response/result/doc[2]/str[@name='id'][.='6']",
         "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='1']",
         "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='7']",
         "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/str[@name='id'][.='5']",
-        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/str[@name='id'][.='8']"
+        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/str[@name='id'][.='8']",
+        "count(//*[@name='score'])=0" // score shouldn't be returned when not requested
+    );
+
+    //Test key-only fl with score but no sorting
+    assertQ(req(params, "fl", "id,score"), "*[count(/response/result/doc)=2]",
+        "*[count(/response/lst[@name='expanded']/result)=2]",
+        "/response/result/doc[1]/str[@name='id'][.='2']",
+        "/response/result/doc[2]/str[@name='id'][.='6']",
+        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='1']",
+        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='7']",
+        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/str[@name='id'][.='5']",
+        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/str[@name='id'][.='8']",
+        "count(//*[@name='score' and .='NaN'])=0"
+    );
+
+
+    // Test with fl and sort=score desc
+    assertQ(req(params, "expand.sort", "score desc", "fl", "id,score"),
+        "*[count(/response/result/doc)=2]",
+        "*[count(/response/lst[@name='expanded']/result)=2]",
+        "/response/result/doc[1]/str[@name='id'][.='2']",
+        "/response/result/doc[2]/str[@name='id'][.='6']",
+        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='1']",
+        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='7']",
+        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/str[@name='id'][.='5']",
+        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/str[@name='id'][.='8']",
+        "count(//*[@name='score' and .='NaN'])=0"
+    );
+
+    //Test fl with score, sort by non-score
+    assertQ(req(params, "expand.sort", "test_l desc", "fl", "id,test_i,score"),
+        "*[count(/response/result/doc)=2]",
+        "count(/response/lst[@name='expanded']/result)=2",
+        "/response/result/doc[1]/str[@name='id'][.='2']",
+        "/response/result/doc[2]/str[@name='id'][.='6']",
+        // note that the expanded docs are score descending order (score is 1 test_i)
+        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='7']",
+        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='1']",
+        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/str[@name='id'][.='8']",
+        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/str[@name='id'][.='5']",
+        "count(//*[@name='score' and .='NaN'])=0",
+        "count(/response/lst[@name='expanded']/result/doc[number(*/@name='score')!=number(*/@name='test_i')])=0"
+    );
+
+    //Test fl with score with multi-sort
+    assertQ(req(params, "expand.sort", "test_l desc, score asc", "fl", "id,test_i,score"),
+        "*[count(/response/result/doc)=2]",
+        "count(/response/lst[@name='expanded']/result)=2",
+        "/response/result/doc[1]/str[@name='id'][.='2']",
+        "/response/result/doc[2]/str[@name='id'][.='6']",
+        // note that the expanded docs are score descending order (score is 1 test_i)
+        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='7']",
+        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[2]/str[@name='id'][.='1']",
+        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/str[@name='id'][.='8']",
+        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[2]/str[@name='id'][.='5']",
+        "count(//*[@name='score' and .='NaN'])=0",
+        "count(/response/lst[@name='expanded']/result/doc[number(*/@name='score')!=number(*/@name='test_i')])=0"
+    );
+
+    // Test for expand with collapse
+    // when matched docs have fewer unique values
+    params = params("q", "*:*", "sort", "id asc", "fl", "id", "rows", "6", "expand", "true", "expand.sort", "id asc");
+    assertQ(req(params, "expand.field", "term_s"),
+        "*[count(/response/result/doc)=6]",
+        "/response/lst[@name='expanded']/result[@name='YYYY']/doc[1]/str[@name='id'][.='7']",
+        "/response/lst[@name='expanded']/result[@name='YYYY']/doc[2]/str[@name='id'][.='8']",
+        "count(//*[@name='score'])=0"
+    );
+    assertQ(req(params, "expand.field", "test_f"),
+        "*[count(/response/result/doc)=6]",
+        "/response/lst[@name='expanded']/result[@name='200.0']/doc[1]/str[@name='id'][.='8']",
+        "/response/lst[@name='expanded']/result[@name='2000.0']/doc[1]/str[@name='id'][.='7']",
+        "count(//*[@name='score'])=0"
     );
   }
 
   @Test
   public void testExpandWithEmptyIndexReturnsZeroResults() {
-    //We make sure the index is cleared
-
-    clearIndex();
-    assertU(commit());
 
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.add("q", "*:*");
@@ -330,5 +364,67 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     params.add("expand.rows", "10");
 
     assertQ(req(params), "*[count(//doc)=0]");
+  }
+
+  @Test
+  public void testErrorCases() {
+    String[] doc = {"id","1", "term_s", "YYYY", "text_t", "bleh bleh", "test_i", "5000", "test_l", "100", "test_f", "200"};
+    assertU(adoc(doc));
+    assertU(commit());
+    String[] doc1 = {"id","2", "term_s", "YYYY", "text_t", "bleh bleh", "test_i", "500", "test_l", "1000", "test_f", "2000"};
+    assertU(adoc(doc1));
+
+    ignoreException("missing expand field");
+    ignoreException("Expected identifier at pos 2");
+    ignoreException("Can't determine a Sort Order");
+    ignoreException("Expand not supported for fieldType:'text'");
+
+    // no expand field
+    SolrException e = expectThrows(SolrException.class,  () -> h.query(req("q", "*:*", "expand", "true")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertEquals("missing expand field", e.getMessage());
+
+    // query and filter syntax errors
+    e = expectThrows(SolrException.class,  () -> h.query(req("q", "*:*", "expand", "true",
+        "expand.field", "term_s", "expand.q", "{!")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertTrue(e.getMessage().contains("Expected identifier at pos 2 str='{!'"));
+
+    e = expectThrows(SolrException.class,  () -> h.query(req("q", "*:*", "expand", "true",
+        "expand.field", "term_s", "expand.q", "*:*", "expand.fq", "{!")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertTrue(e.getMessage().contains("Expected identifier at pos 2 str='{!'"));
+
+    e = expectThrows(SolrException.class,  () -> h.query(req("q", "*:*", "expand", "true",
+        "expand.field", "term_s", "expand.q", "*:*", "expand.fq", "{!")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertTrue(e.getMessage().contains("Expected identifier at pos 2 str='{!'"));
+
+    e = expectThrows(SolrException.class,  () -> h.query(req("q", "*:*", "expand", "true",
+        "expand.field", "term_s", "expand.q", "*:*", "expand.sort", "bleh")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertTrue(e.getMessage().contains("Can't determine a Sort Order (asc or desc) in sort spec 'bleh'"));
+
+    e = expectThrows(SolrException.class,  () -> h.query(req("q", "*:*", "expand", "true",
+        "expand.field", "text_t", "expand.q", "*:*")));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertEquals("Expand not supported for fieldType:'text'", e.getMessage());
+
+    resetExceptionIgnores();
+  }
+
+  /**
+   * randomize addition of docs into bunch of segments
+   * TODO: there ought to be a test utility to do this; even add in batches
+   */
+  private void createIndex(String[][] docs) {
+    Collections.shuffle(Arrays.asList(docs), random());
+    for (String[] doc : docs) {
+      assertU(adoc(doc));
+      if (random().nextBoolean()) {
+        assertU(commit());
+      }
+    }
+    assertU(commit());
   }
 }

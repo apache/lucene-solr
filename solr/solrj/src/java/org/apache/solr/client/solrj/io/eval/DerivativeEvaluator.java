@@ -21,6 +21,7 @@ import java.util.Locale;
 
 import org.apache.commons.math3.analysis.DifferentiableUnivariateFunction;
 import org.apache.commons.math3.analysis.UnivariateFunction;
+import org.apache.commons.math3.analysis.interpolation.AkimaSplineInterpolator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 
@@ -42,12 +43,17 @@ public class DerivativeEvaluator extends RecursiveObjectEvaluator implements One
     }
 
     VectorFunction vectorFunction = (VectorFunction) value;
+
+    DifferentiableUnivariateFunction func = null;
+    double[] x = (double[])vectorFunction.getFromContext("x");
+
     if(!(vectorFunction.getFunction() instanceof DifferentiableUnivariateFunction)) {
-      throw new IOException("Cannot evaluate derivative from parameter.");
+      double[] y = (double[])vectorFunction.getFromContext("y");
+      func = new AkimaSplineInterpolator().interpolate(x, y);
+    } else {
+      func = (DifferentiableUnivariateFunction) vectorFunction.getFunction();
     }
 
-    DifferentiableUnivariateFunction func = (DifferentiableUnivariateFunction)vectorFunction.getFunction();
-    double[] x = (double[])vectorFunction.getFromContext("x");
     UnivariateFunction derfunc = func.derivative();
     double[] dvalues = new double[x.length];
     for(int i=0; i<x.length; i++) {
@@ -56,7 +62,7 @@ public class DerivativeEvaluator extends RecursiveObjectEvaluator implements One
 
     VectorFunction vf = new VectorFunction(derfunc, dvalues);
     vf.addToContext("x", x);
-    vf.addToContext("y", vectorFunction.getFromContext("y"));
+    vf.addToContext("y", dvalues);
 
     return vf;
   }

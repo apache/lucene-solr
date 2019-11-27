@@ -22,7 +22,9 @@ import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
+import java.net.MalformedURLException;
 import java.net.SocketTimeoutException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.Arrays;
@@ -184,6 +186,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     if (baseUrl.endsWith("/")) {
       baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
     }
+    
     if (baseUrl.indexOf('?') >= 0) {
       throw new RuntimeException(
           "Invalid base url for solrj.  The base URL must not contain parameters: "
@@ -330,6 +333,12 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     }
     return queryModParams;
   }
+  
+  static String changeV2RequestEndpoint(String basePath) throws MalformedURLException {
+    URL oldURL = new URL(basePath);
+    String newPath = oldURL.getPath().replaceFirst("/solr", "/api");
+    return new URL(oldURL.getProtocol(), oldURL.getHost(), oldURL.getPort(), newPath).toString();
+  }
 
   protected HttpRequestBase createMethod(SolrRequest request, String collection) throws IOException, SolrServerException {
     if (request instanceof V2RequestSupport) {
@@ -364,7 +373,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       basePath += "/" + collection;
 
     if (request instanceof V2Request) {
-      if (System.getProperty("solr.v2RealPath") == null) {
+      if (System.getProperty("solr.v2RealPath") == null || ((V2Request) request).isForceV2()) {
         basePath = baseUrl.replace("/solr", "/api");
       } else {
         basePath = baseUrl + "/____v2";

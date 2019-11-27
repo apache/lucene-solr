@@ -35,7 +35,7 @@ public class UuidEvaluator extends SourceEvaluator {
   
   @Override
   public Object evaluate(Tuple tuple) throws IOException {
-    return UUID.randomUUID();
+    return UUID.randomUUID().toString();
   }
   
   @Override

@@ -21,7 +21,6 @@ import java.io.UnsupportedEncodingException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -45,7 +44,7 @@ public class SnapshotClusterStateProvider implements ClusterStateProvider {
   final Map<String, Object> clusterProperties;
 
   public SnapshotClusterStateProvider(ClusterStateProvider other) throws Exception {
-    liveNodes = Collections.unmodifiableSet(new HashSet<>(other.getLiveNodes()));
+    liveNodes = Set.copyOf(other.getLiveNodes());
     ClusterState otherState = other.getClusterState();
     clusterState = new ClusterState(otherState.getZNodeVersion(), liveNodes, otherState.getCollectionsMap());
     clusterProperties = new HashMap<>(other.getClusterProperties());
@@ -53,7 +52,7 @@ public class SnapshotClusterStateProvider implements ClusterStateProvider {
 
   public SnapshotClusterStateProvider(Map<String, Object> snapshot) {
     Objects.requireNonNull(snapshot);
-    liveNodes = Collections.unmodifiableSet(new HashSet<>((Collection<String>)snapshot.getOrDefault("liveNodes", Collections.emptySet())));
+    liveNodes = Set.copyOf((Collection<String>)snapshot.getOrDefault("liveNodes", Collections.emptySet()));
     clusterProperties = (Map<String, Object>)snapshot.getOrDefault("clusterProperties", Collections.emptyMap());
     Map<String, Object> stateMap = new HashMap<>((Map<String, Object>)snapshot.getOrDefault("clusterState", Collections.emptyMap()));
     Number version = (Number)stateMap.remove("version");

@@ -26,7 +26,6 @@ import org.apache.lucene.document.LatLonDocValuesField;
 import org.apache.lucene.document.LatLonPoint;
 import org.apache.lucene.document.StoredField;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.search.NearestNeighbor.NearestHit;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.index.DirectoryReader;
@@ -190,23 +189,22 @@ public class TestNearest extends LuceneTestCase {
       double pointLon = GeoTestUtil.nextLongitude();
 
       // dumb brute force search to get the expected result:
-      NearestHit[] expectedHits = new NearestHit[lats.length];
+      FieldDoc[] expectedHits = new FieldDoc[lats.length];
       for(int id=0;id<lats.length;id++) {
-        NearestHit hit = new NearestHit();
-        hit.distanceMeters = SloppyMath.haversinMeters(pointLat, pointLon, lats[id], lons[id]);
-        hit.docID = id;
+        double distance = SloppyMath.haversinMeters(pointLat, pointLon, lats[id], lons[id]);
+        FieldDoc hit = new FieldDoc(id, 0.0f, new Object[] {Double.valueOf(distance)});
         expectedHits[id] = hit;
       }
 
-      Arrays.sort(expectedHits, new Comparator<NearestHit>() {
+      Arrays.sort(expectedHits, new Comparator<FieldDoc>() {
           @Override
-          public int compare(NearestHit a, NearestHit b) {
-            int cmp = Double.compare(a.distanceMeters, b.distanceMeters);
+          public int compare(FieldDoc a, FieldDoc  b) {
+            int cmp = Double.compare(((Double) a.fields[0]).doubleValue(), ((Double) b.fields[0]).doubleValue());
             if (cmp != 0) {
               return cmp;
             }
             // tie break by smaller docID:
-            return a.docID - b.docID;
+            return a.doc - b.doc;
           }
         });
 
@@ -221,22 +219,23 @@ public class TestNearest extends LuceneTestCase {
 
       ScoreDoc[] hits = LatLonPointPrototypeQueries.nearest(s, "point", pointLat, pointLon, topN).scoreDocs;
       for(int i=0;i<topN;i++) {
-        NearestHit expected = expectedHits[i];
+        FieldDoc expected = expectedHits[i];
         FieldDoc expected2 = (FieldDoc) fieldDocs.scoreDocs[i];
         FieldDoc actual = (FieldDoc) hits[i];
         Document actualDoc = r.document(actual.doc);
 
         if (VERBOSE) {
           System.out.println("hit " + i);
-          System.out.println("  expected id=" + expected.docID + " lat=" + lats[expected.docID] + " lon=" + lons[expected.docID] + " distance=" + expected.distanceMeters + " meters");
+          System.out.println("  expected id=" + expected.doc+ " lat=" + lats[expected.doc] + " lon=" + lons[expected.doc]
+              + " distance=" + ((Double) expected.fields[0]).doubleValue() + " meters");
           System.out.println("  actual id=" + actualDoc.getField("id") + " distance=" + actual.fields[0] + " meters");
         }
 
-        assertEquals(expected.docID, actual.doc);
-        assertEquals(expected.distanceMeters, ((Double) actual.fields[0]).doubleValue(), 0.0);
+        assertEquals(expected.doc, actual.doc);
+        assertEquals(((Double) expected.fields[0]).doubleValue(), ((Double) actual.fields[0]).doubleValue(), 0.0);
 
-        assertEquals(expected.docID, expected.docID);
-        assertEquals(((Double) expected2.fields[0]).doubleValue(), expected.distanceMeters, 0.0);
+        assertEquals(expected2.doc, actual.doc);
+        assertEquals(((Double) expected2.fields[0]).doubleValue(), ((Double) actual.fields[0]).doubleValue(), 0.0);
       }
     }
 
@@ -247,7 +246,7 @@ public class TestNearest extends LuceneTestCase {
 
   private IndexWriterConfig getIndexWriterConfig() {
     IndexWriterConfig iwc = newIndexWriterConfig();
-    iwc.setCodec(Codec.forName("Lucene80"));
+    iwc.setCodec(Codec.forName("Lucene84"));
     return iwc;
   }
 }

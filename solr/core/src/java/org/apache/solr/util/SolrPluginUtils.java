@@ -678,7 +678,11 @@ public class SolrPluginUtils {
       spec = spaceAroundLessThanPattern.matcher(spec).replaceAll("<");
       for (String s : spacePattern.split(spec)) {
         String[] parts = lessThanPattern.split(s,0);
-        int upperBound = Integer.parseInt(parts[0]);
+        if (parts.length < 2) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+              "Invalid 'mm' spec: '" + s + "'. Expecting values before and after '<'");
+        }
+        int upperBound = checkedParseInt(parts[0], "Invalid 'mm' spec. Expecting an integer.");
         if (optionalClauseCount <= upperBound) {
           return result;
         } else {
@@ -694,17 +698,37 @@ public class SolrPluginUtils {
     if (-1 < spec.indexOf('%')) {
       /* percentage - assume the % was the last char.  If not, let Integer.parseInt fail. */
       spec = spec.substring(0,spec.length()-1);
-      int percent = Integer.parseInt(spec);
+      int percent = checkedParseInt(spec,
+          "Invalid 'mm' spec. Expecting an integer.");
       float calc = (result * percent) * (1/100f);
       result = calc < 0 ? result + (int)calc : (int)calc;
     } else {
-      int calc = Integer.parseInt(spec);
+      int calc = checkedParseInt(spec, "Invalid 'mm' spec. Expecting an integer.");
       result = calc < 0 ? result + calc : calc;
     }
 
     return (optionalClauseCount < result ?
             optionalClauseCount : (result < 0 ? 0 : result));
 
+  }
+
+  /**
+   * Wrapper of {@link Integer#parseInt(String)} that wraps any {@link NumberFormatException} in a
+   * {@link SolrException} with HTTP 400 Bad Request status.
+   *
+   * @param input the string to parse
+   * @param errorMessage the error message for any SolrException
+   * @return the integer value of {@code input}
+   * @throws SolrException when parseInt throws NumberFormatException
+   */
+  private static int checkedParseInt(String input, String errorMessage) {
+    int percent;
+    try {
+      percent = Integer.parseInt(input);
+    } catch (NumberFormatException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, errorMessage, e);
+    }
+    return percent;
   }
 
 
@@ -900,12 +924,12 @@ public class SolrPluginUtils {
         Alias a = aliases.get(field);
 
         List<Query> disjuncts = new ArrayList<>();
-        for (String f : a.fields.keySet()) {
+        for (Map.Entry<String, Float> entry : a.fields.entrySet()) {
 
-          Query sub = getFieldQuery(f,queryText,quoted, false);
+          Query sub = getFieldQuery(entry.getKey(),queryText,quoted, false);
           if (null != sub) {
-            if (null != a.fields.get(f)) {
-              sub = new BoostQuery(sub, a.fields.get(f));
+            if (null != entry.getValue()) {
+              sub = new BoostQuery(sub, entry.getValue());
             }
             disjuncts.add(sub);
           }

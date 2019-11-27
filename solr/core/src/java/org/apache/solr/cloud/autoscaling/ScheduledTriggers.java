@@ -23,7 +23,6 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -43,9 +42,9 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest.RequestStatusResponse;
@@ -134,6 +133,8 @@ public class ScheduledTriggers implements Closeable {
   private final Stats queueStats;
 
   private final TriggerListeners listeners;
+
+  private final List<TriggerListener> additionalListeners = new ArrayList<>();
 
   private AutoScalingConfig autoScalingConfig;
 
@@ -508,7 +509,7 @@ public class ScheduledTriggers implements Closeable {
    * @return an unmodifiable set of names of all triggers being managed by this class
    */
   public synchronized Set<String> getScheduledTriggerNames() {
-    return Collections.unmodifiableSet(new HashSet<>(scheduledTriggerWrappers.keySet())); // shallow copy
+    return Set.copyOf(scheduledTriggerWrappers.keySet()); // shallow copy
   }
 
   /**
@@ -551,6 +552,22 @@ public class ScheduledTriggers implements Closeable {
     awaitTermination(scheduledThreadPoolExecutor);
 
     log.debug("ScheduledTriggers closed completely");
+  }
+
+  /**
+   * Add a temporary listener for internal use (tests, simulation).
+   * @param listener listener instance
+   */
+  public void addAdditionalListener(TriggerListener listener) {
+    listeners.addAdditionalListener(listener);
+  }
+
+  /**
+   * Remove a temporary listener for internal use (tests, simulation).
+   * @param listener listener instance
+   */
+  public void removeAdditionalListener(TriggerListener listener) {
+    listeners.removeAdditionalListener(listener);
   }
 
   private class TriggerWrapper implements Runnable, Closeable {
@@ -658,6 +675,7 @@ public class ScheduledTriggers implements Closeable {
   private class TriggerListeners {
     Map<String, Map<TriggerEventProcessorStage, List<TriggerListener>>> listenersPerStage = new HashMap<>();
     Map<String, TriggerListener> listenersPerName = new HashMap<>();
+    List<TriggerListener> additionalListeners = new ArrayList<>();
     ReentrantLock updateLock = new ReentrantLock();
 
     public TriggerListeners() {
@@ -679,6 +697,41 @@ public class ScheduledTriggers implements Closeable {
 
     public TriggerListeners copy() {
       return new TriggerListeners(listenersPerStage, listenersPerName);
+    }
+
+    public void addAdditionalListener(TriggerListener listener) {
+      updateLock.lock();
+      try {
+        AutoScalingConfig.TriggerListenerConfig config = listener.getConfig();
+        for (TriggerEventProcessorStage stage : config.stages) {
+          addPerStage(config.trigger, stage, listener);
+        }
+        // add also for beforeAction / afterAction TriggerStage
+        if (!config.beforeActions.isEmpty()) {
+          addPerStage(config.trigger, TriggerEventProcessorStage.BEFORE_ACTION, listener);
+        }
+        if (!config.afterActions.isEmpty()) {
+          addPerStage(config.trigger, TriggerEventProcessorStage.AFTER_ACTION, listener);
+        }
+        additionalListeners.add(listener);
+      } finally {
+        updateLock.unlock();
+      }
+    }
+
+    public void removeAdditionalListener(TriggerListener listener) {
+      updateLock.lock();
+      try {
+        listenersPerName.remove(listener.getConfig().name);
+        listenersPerStage.forEach((trigger, perStage) -> {
+          perStage.forEach((stage, listeners) -> {
+            listeners.remove(listener);
+          });
+        });
+        additionalListeners.remove(listener);
+      } finally {
+        updateLock.unlock();
+      }
     }
 
     void setAutoScalingConfig(AutoScalingConfig autoScalingConfig) {
@@ -757,6 +810,13 @@ public class ScheduledTriggers implements Closeable {
             addPerStage(config.trigger, TriggerEventProcessorStage.AFTER_ACTION, listener);
           }
         }
+        // re-add additional listeners
+        List<TriggerListener> additional = new ArrayList<>(additionalListeners);
+        additionalListeners.clear();
+        for (TriggerListener listener : additional) {
+          addAdditionalListener(listener);
+        }
+
       } finally {
         updateLock.unlock();
       }

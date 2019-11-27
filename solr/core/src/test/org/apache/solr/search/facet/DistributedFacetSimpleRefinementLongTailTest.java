@@ -42,9 +42,8 @@ import org.junit.Test;
  */
 public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistributedSearchTestCase {
 
-  // TODO: SOLR-11695: need "num_values" and "missing"...
   // TODO: add hll & variance - update all assertions to test their values (right after any mention of 'stddev')
-  private static List<String> ALL_STATS = Arrays.asList("min", "max", "sum", "stddev", "avg", "sumsq", "unique");
+  private static List<String> ALL_STATS = Arrays.asList("min", "max", "sum", "stddev", "avg", "sumsq", "unique", "missing", "countvals");
                                                         
   private String STAT_FIELD = "stat_i1";
   private String ALL_STATS_JSON = "";
@@ -81,7 +80,7 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
     final SolrClient shard0 = clients.get(0);
     final SolrClient shard1 = clients.get(1);
     final SolrClient shard2 = clients.get(2);
-    
+
     // the 5 top foo_s terms have 100 docs each on every shard
     for (int i = 0; i < 100; i++) {
       for (int j = 0; j < 5; j++) {
@@ -91,7 +90,7 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
       }
     }
 
-    // 20 foo_s terms that come in "second" with 50 docs each 
+    // 20 foo_s terms that come in "second" with 50 docs each
     // on both shard0 & shard1 ("bbb_")
     for (int i = 0; i < 50; i++) {
       for (int j = 0; j < 20; j++) {
@@ -141,7 +140,7 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
       shardFooBuckets[i] = (List<NamedList>)
         ((NamedList<NamedList>)clients.get(i).query( req ).getResponse().get("facets")).get("foo").get("buckets");
     }
-    
+
     // top 5 same on all shards
     for (int i = 0; i < 3; i++) {
       assertEquals(10, shardFooBuckets[i].size());
@@ -187,7 +186,7 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
 
   private void checkRefinementAndOverrequesting() throws Exception {
     // // distributed queries // //
-    
+
     { // w/o refinement, the default overrequest isn't enough to find the long 'tail' *OR* the correct count for 'bbb0'...
       List<NamedList> foo_buckets = (List<NamedList>)
         ((NamedList<NamedList>)
@@ -200,13 +199,13 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
         assertTrue(bucket.toString(), bucket.get("val").toString().startsWith("aaa"));
         assertEquals(bucket.toString(), 300L, bucket.get("count"));
       }
-      
+
       // this will be short the "+1" fo the doc added to shard2...
       NamedList bucket = foo_buckets.get(5);
       assertTrue(bucket.toString(), bucket.get("val").equals("bbb0")); // 'tail' is missed
       assertEquals(bucket.toString(), 100L, bucket.get("count")); // will not include the "+1" for the doc added to shard2
     }
-    
+
     // even if we enable refinement, we still won't find the long 'tail' ...
     // regardless of wether we use either the default overrequest, or disable overrequesting...
     for (String over : Arrays.asList( "", "overrequest:0,")) { 
@@ -230,8 +229,8 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
       assertEquals(ALL_STATS.size() + 3, bucket.size()); // val,count,facet
       assertEquals(-2L, bucket.get("min"));                                         // this min only exists on shard2
       assertEquals(1L, bucket.get("max"));
-      // assertEquals(101L, bucket.get("num_values")); // TODO: SOLR-11695
-      // assertEquals(0L, bucket.get("missing")); // TODO: SOLR-11695
+      assertEquals(101L, bucket.get("countvals"));
+      assertEquals(0L, bucket.get("missing"));
       assertEquals(48.0D, bucket.get("sum"));
       assertEquals(0.475247524752475D, (double) bucket.get("avg"), 0.1E-7);
       assertEquals(54.0D, (double) bucket.get("sumsq"), 0.1E-7);
@@ -244,7 +243,7 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
     // this is because of how the "simple" refinement process works: the "top buckets" are determined based
     // on the info available in the first pass request.
     //
-    // Even though 'tail' is returned in the top6 for shard2, the cummulative total for 'bbb0' from shard0 and shard1 is
+    // Even though 'tail' is returned in the top6 for shard2, the cumulative total for 'bbb0' from shard0 and shard1 is
     // high enough that the simple facet refinement ignores 'tail' because it assumes 'bbb0's final total will be greater.
     //
     // Meanwhile, for the sub-facet on 'bar', a limit==6 means we should correctly find 'tailB' as the top sub-term of 'tail',
@@ -261,14 +260,14 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
                               "{ foo: { type:terms, limit:6, overrequest:20, refine:simple, field:foo_s, facet:{ " +
                               "  bar: { type:terms, limit:6, " + bar_opts + " field:bar_s }}}}"
                               ) ).getResponse().get("facets")).get("foo").get("buckets");
-      
+
       assertEquals(6, buckets.size());
       for (int i = 0; i < 5; i++) {
         NamedList bucket = buckets.get(i);
         assertTrue(bucket.toString(), bucket.get("val").toString().startsWith("aaa"));
         assertEquals(bucket.toString(), 300L, bucket.get("count"));
       }
-    
+
       NamedList bucket = buckets.get(5);
       assertEquals(bucket.toString(), "tail", bucket.get("val"));
       assertEquals(bucket.toString(), 135L, bucket.get("count"));
@@ -320,8 +319,8 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
         assertEquals(bucket.toString(), 14L, bucket.get("count"));
       }
     }
-    
-    // however: with a lower sub-facet limit==5, and overrequesting disabled, 
+
+    // however: with a lower sub-facet limit==5, and overrequesting disabled,
     // we're going to miss out on tailB even if we have refinement
     for (String bar_opts : Arrays.asList( "refine:none,   overrequest:0,",
                                           "refine:simple, overrequest:0," )) {
@@ -351,7 +350,7 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
         assertEquals(bucket.toString(), 14L, bucket.get("count"));
       }
     }
-    
+
   }
 
   private void checkSubFacetStats() throws Exception { 
@@ -389,8 +388,8 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
     assertEquals(300L, aaa0_Bucket.get("count"));
     assertEquals(-99L, aaa0_Bucket.get("min"));
     assertEquals(693L, aaa0_Bucket.get("max"));
-    // assertEquals(300L, aaa0_Bucket.get("num_values")); // TODO: SOLR-11695
-    // assertEquals(0L, aaa0_Bucket.get("missing")); // TODO: SOLR-11695
+    assertEquals(300L, aaa0_Bucket.get("countvals"));
+    assertEquals(0L, aaa0_Bucket.get("missing"));
     assertEquals(34650.0D, aaa0_Bucket.get("sum"));
     assertEquals(115.5D, (double) aaa0_Bucket.get("avg"), 0.1E-7);
     assertEquals(1.674585E7D, (double) aaa0_Bucket.get("sumsq"), 0.1E-7);
@@ -403,8 +402,8 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
     assertEquals(135L, tail_Bucket.get("count"));
     assertEquals(0L, tail_Bucket.get("min"));
     assertEquals(44L, tail_Bucket.get("max"));
-    // assertEquals(90L, tail_Bucket.get("num_values")); // TODO: SOLR-11695
-    // assertEquals(45L, tail_Bucket.get("missing")); // TODO: SOLR-11695
+    assertEquals(90L, tail_Bucket.get("countvals"));
+    assertEquals(45L, tail_Bucket.get("missing"));
     assertEquals(1980.0D, tail_Bucket.get("sum"));
     assertEquals(22.0D, (double) tail_Bucket.get("avg"), 0.1E-7);
     assertEquals(58740.0D, (double) tail_Bucket.get("sumsq"), 0.1E-7);
@@ -419,8 +418,8 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
     assertEquals(17L, tailB_Bucket.get("count"));
     assertEquals(35L, tailB_Bucket.get("min"));
     assertEquals(40L, tailB_Bucket.get("max"));
-    // assertEquals(12L, tailB_Bucket.get("num_values")); // TODO: SOLR-11695
-    // assertEquals(5L, tailB_Bucket.get("missing")); // TODO: SOLR-11695
+    assertEquals(12L, tailB_Bucket.get("countvals"));
+    assertEquals(5L, tailB_Bucket.get("missing"));
     assertEquals(450.0D, tailB_Bucket.get("sum"));
     assertEquals(37.5D, (double) tailB_Bucket.get("avg"), 0.1E-7);
     assertEquals(16910.0D, (double) tailB_Bucket.get("sumsq"), 0.1E-7);

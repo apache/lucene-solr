@@ -18,6 +18,15 @@ package org.apache.solr.servlet;
 
 
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.OutputStreamWriter;
+import java.io.Writer;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.Arrays;
+import java.util.Date;
+
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.HttpRequestBase;
@@ -27,15 +36,6 @@ import org.apache.solr.common.util.SuppressForbidden;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.OutputStreamWriter;
-import java.io.Writer;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.util.Arrays;
-import java.util.Date;
 
 /**
  * A test case for the several HTTP cache headers emitted by Solr
@@ -257,10 +257,10 @@ public class CacheHeaderTest extends CacheHeaderTestBase {
 
   protected File makeFile(String contents, String charset) {
     try {
-      File f = new File(initCoreDataDir, "cachetest_csv");
-      Writer out = new OutputStreamWriter(new FileOutputStream(f), charset);
-      out.write(contents);
-      out.close();
+      File f = createTempFile("cachetest","csv").toFile();
+      try (Writer out = new OutputStreamWriter(new FileOutputStream(f), charset)) {
+        out.write(contents);
+      }
       return f;
     } catch (Exception e) {
       throw new RuntimeException(e);
