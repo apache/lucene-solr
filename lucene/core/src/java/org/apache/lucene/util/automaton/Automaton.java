@@ -496,7 +496,7 @@ public class Automaton implements Accountable {
 
     int upto = t.transitionUpto;
     if (upto == states[2*t.source]) {
-      // Transition isn't initialzed yet (this is the first transition); don't check:
+      // Transition isn't initialized yet (this is the first transition); don't check:
       return true;
     }
 

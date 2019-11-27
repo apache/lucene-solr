@@ -273,7 +273,7 @@ public class CompiledAutomaton implements Accountable {
       if (transition.min < leadLabel) {
         maxIndex = i;
       } else {
-        // Transitions are alway sorted
+        // Transitions are always sorted
         break;
       }
     }
