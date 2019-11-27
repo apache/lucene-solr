@@ -72,7 +72,9 @@ public class EdgeTree {
   }
 
   /**
-   * Returns true if the point crosses this edge subtree an odd number of times.
+   * Returns byte 0x00 if the point crosses this edge subtree an even number of times.
+   * Returns byte 0x01 if the point crosses this edge subtree an odd number of times.
+   * Returns byte 0x02 if the point is on one of the edges.
    * <p>
    * See <a href="https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html">
    * https://www.ecse.rpi.edu/~wrf/Research/Short_Notes/pnpoly.html</a> for more information.
