@@ -145,7 +145,7 @@ Other
 
 * LUCENE-8983: Add sandbox PhraseWildcardQuery to control multi-terms expansions in a phrase. (Bruno Roustant)
 
-* LUCENE-9067: PolygonD#contains() is now thread safe. (Ignacio Vera)
+* LUCENE-9067: Polygon2D#contains() is now thread safe. (Ignacio Vera)
 
 Build
 
