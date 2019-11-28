@@ -154,6 +154,8 @@ Improvements
 
 * SOLR-13969: Clean up and document AuditEvent API (janhoy)
 
+* SOLR-13968: Support postingsFormat and docValuesFormat in schema fields. (Bruno Roustant)
+
 Optimizations
 ---------------------
 (No changes)
