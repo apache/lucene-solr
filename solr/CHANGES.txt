@@ -144,6 +144,9 @@ Bug Fixes
 
 * SOLR-13963: JavaBinCodec has concurrent modification of CharArr resulting in corrupt internode updates (Colvin Cowie, noble)
 
+* SOLR-13971: Velocity response writer's resource loading now possible only through startup parameters. Also, removed velocity 
+  response writer from _default configset. (Ishan Chattopadhyaya)
+
 ==================  8.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
