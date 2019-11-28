@@ -322,6 +322,7 @@ public class MultiPhraseQuery extends Query {
         if (matcher == null || matcher.approximation().advance(doc) != doc) {
           return;
         }
+        matcher.reset();
         while (matcher.nextMatch()) {
           matcher.collectTerms(termsConsumer);
         }

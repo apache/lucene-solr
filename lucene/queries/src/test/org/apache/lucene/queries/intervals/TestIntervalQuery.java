@@ -18,17 +18,25 @@
 package org.apache.lucene.queries.intervals;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.CheckHits;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Matches;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.search.Weight;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -79,9 +87,29 @@ public class TestIntervalQuery extends LuceneTestCase {
     CheckHits.checkHits(random(), query, field, searcher, results);
   }
 
+  private void checkTerms(Query query, int doc, String... expectedTerms) throws IOException {
+    Weight w = searcher.createWeight(searcher.rewrite(query), ScoreMode.COMPLETE_NO_SCORES, 1);
+    List<LeafReaderContext> contexts = searcher.getIndexReader().leaves();
+    LeafReaderContext ctx = contexts.get(ReaderUtil.subIndex(doc, contexts));
+    Matches m = w.matches(ctx, doc - ctx.docBase);
+    assertNotNull("Expected matches for document " + doc, m);
+    HashSet<String> expected = new HashSet<>(Arrays.asList(expectedTerms));
+    HashSet<String> unexpected = new HashSet<>();
+    HashSet<String> missing = new HashSet<>(expected);
+    m.getMatchingTerms(t -> {
+      if (expected.contains(t.text()) == false) {
+        unexpected.add(t.text());
+      }
+      missing.remove(t.text());
+    });
+    assertTrue("Missing expected terms in doc " + doc + ": " + missing, missing.isEmpty());
+    assertTrue("Unexpected terms found in doc " + doc + ": " + unexpected, unexpected.isEmpty());
+  }
+
   public void testPhraseQuery() throws IOException {
-    checkHits(new IntervalQuery(field, Intervals.phrase(Intervals.term("w1"), Intervals.term("w2"))),
-        new int[]{0});
+    Query q = new IntervalQuery(field, Intervals.phrase(Intervals.term("w1"), Intervals.term("w2")));
+    checkHits(q, new int[]{0});
+    checkTerms(q, 0, "w1", "w2");
   }
 
   public void testOrderedNearQueryWidth3() throws IOException {
@@ -112,6 +140,7 @@ public class TestIntervalQuery extends LuceneTestCase {
             Intervals.maxwidth(3, Intervals.ordered(Intervals.term("w2"), Intervals.term("w3")))));
 
     checkHits(q, new int[]{0, 1, 3});
+    checkTerms(q, 3, "w1", "w2", "w3");
   }
 
   public void testUnorderedQuery() throws IOException {
@@ -124,6 +153,7 @@ public class TestIntervalQuery extends LuceneTestCase {
         Intervals.unordered(Intervals.term("w1"), Intervals.term("w3")),
         Intervals.unordered(Intervals.term("w2"), Intervals.term("w4"))));
     checkHits(q, new int[]{1, 3, 5});
+    checkTerms(q, 5, "w1", "w3");
   }
 
   public void testNotWithinQuery() throws IOException {
@@ -206,6 +236,7 @@ public class TestIntervalQuery extends LuceneTestCase {
         Intervals.term("greater"),
         Intervals.or(Intervals.phrase("new", "york"), Intervals.term("york"))));
     checkHits(q, new int[]{ 8 });
+    checkTerms(q, 8, "greater", "new", "york");
   }
 
   public void testUnordered() throws IOException {

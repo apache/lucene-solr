@@ -392,7 +392,7 @@ public class PhraseQuery extends Query {
       }
     }
 
-    public PostingsAndFreq(PostingsEnum postings, ImpactsEnum impacts, int position, List<Term> terms) {
+    public PostingsAndFreq(TermPostingsEnum postings, ImpactsEnum impacts, int position, List<Term> terms) {
       this.postings = postings;
       this.impacts = impacts;
       this.position = position;

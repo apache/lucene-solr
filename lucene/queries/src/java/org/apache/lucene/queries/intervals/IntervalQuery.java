@@ -19,8 +19,10 @@ package org.apache.lucene.queries.intervals;
 
 import java.io.IOException;
 import java.util.Objects;
+import java.util.function.Consumer;
 
 import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.FilterMatchesIterator;
 import org.apache.lucene.search.IndexSearcher;
@@ -31,6 +33,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.Weight;
 
 /**
@@ -166,7 +169,7 @@ public final class IntervalQuery extends Query {
 
     @Override
     public Matches matches(LeafReaderContext context, int doc) throws IOException {
-      return MatchesUtils.forField(field, () -> {
+      return MatchesUtils.forField(field, consumer -> extractTerms(context, doc, consumer), () -> {
         MatchesIterator mi = intervalsSource.matches(field, context, doc);
         if (mi == null) {
           return null;
@@ -178,6 +181,40 @@ public final class IntervalQuery extends Query {
           }
         };
       });
+    }
+
+    private void extractTerms(LeafReaderContext context, int doc, Consumer<Term> termsConsumer) throws IOException {
+      MatchesIterator mi = intervalsSource.matches(field, context, doc);
+      if (mi == null) {
+        return;
+      }
+      while (mi.next()) {
+        MatchesIterator sub = mi.getSubMatches();
+        if (sub == null) {
+          Query q = mi.getQuery();
+          q.visit(new QueryVisitor() {
+            @Override
+            public void consumeTerms(Query query, Term... terms) {
+              for (Term term : terms) {
+                termsConsumer.accept(term);
+              }
+            }
+          });
+        }
+        else {
+          while (sub.next()) {
+            Query q = sub.getQuery();
+            q.visit(new QueryVisitor() {
+              @Override
+              public void consumeTerms(Query query, Term... terms) {
+                for (Term term : terms) {
+                  termsConsumer.accept(term);
+                }
+              }
+            });
+          }
+        }
+      }
     }
 
     @Override
