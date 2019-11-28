@@ -27,6 +27,7 @@ import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.SolrParamResourceLoader;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.VelocityResponseWriter;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -37,6 +38,12 @@ public class VelocityResponseWriterTest extends SolrTestCaseJ4 {
     System.setProperty("solr.resource.loader.enabled", "true");
     initCore("solrconfig.xml", "schema.xml", getFile("velocity/solr").getAbsolutePath());
     System.out.println(getFile("velocity/solr").getAbsolutePath());
+  }
+
+  @AfterClass
+  public static void afterClass() throws Exception {
+    System.clearProperty("params.resource.loader.enabled");
+    System.clearProperty("solr.resource.loader.enabled");
   }
 
   @Test
