@@ -34,7 +34,7 @@ Its JAR and dependencies must be added (via `<lib>` or solr/home lib inclusion),
 </queryResponseWriter>
 ----
 
-The above example shows the optional initialization and custom tool parameters used by VelocityResponseWriter; these are detailed in the following table. These initialization parameters are only specified in the writer registration in `solrconfig.xml`, not as request-time parameters. In this example, Solr are to be started with `-Dparams.resource.loader.enabled=true`. See further below for request-time parameters.
+The above example shows the optional initialization and custom tool parameters used by VelocityResponseWriter; these are detailed in the following table. These initialization parameters are only specified in the writer registration in `solrconfig.xml`, not as request-time parameters. In this example, all Solr nodes should be started with `-Dparams.resource.loader.enabled=true`. See further below for request-time parameters.
 
 == Configuration & Usage
 
