@@ -511,7 +511,6 @@ public class TestLRUQueryCache extends LuceneTestCase {
 
     searcher.setQueryCache(queryCache);
     searcher.setQueryCachingPolicy(ALWAYS_CACHE);
-    assert searcher.getSlices().length > 1;
 
     searcher.search(new ConstantScoreQuery(blue), 1);
 
