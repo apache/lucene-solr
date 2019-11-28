@@ -32,24 +32,15 @@ import org.apache.lucene.queries.payloads.PayloadFunction;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
 
-public class FloatPayloadValueSource extends ValueSource {
-  protected final String field;
-  protected final String val;
-  protected final String indexedField;
-  protected final BytesRef indexedBytes;
+public class FloatPayloadValueSource extends PayloadValueSource {
   protected final PayloadDecoder decoder;
   protected final PayloadFunction payloadFunction;
-  protected final ValueSource defaultValueSource;
 
   public FloatPayloadValueSource(String field, String val, String indexedField, BytesRef indexedBytes,
                                  PayloadDecoder decoder, PayloadFunction payloadFunction, ValueSource defaultValueSource) {
-    this.field = field;
-    this.val = val;
-    this.indexedField = indexedField;
-    this.indexedBytes = indexedBytes;
+    super(field, val, indexedField, indexedBytes, defaultValueSource);
     this.decoder = decoder;
     this.payloadFunction = payloadFunction;
-    this.defaultValueSource = defaultValueSource;
   }
 
   @Override

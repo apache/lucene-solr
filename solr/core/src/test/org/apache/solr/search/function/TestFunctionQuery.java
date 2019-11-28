@@ -29,6 +29,7 @@ import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -567,6 +568,26 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
     // Test with debug
     assertQ(req("fl","*,score","q", "{!func}payload(vals_dpf,A)", CommonParams.DEBUG, "true"), "//float[@name='score']='1.0'");
+  }
+
+  @Test
+  public void testStringPayloadFunction() {
+    clearIndex();
+
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.setField("id", "1");
+    doc.setField("vals_dpss", new String[]{"A|USD", "B|GBP", "C|EUR", "D|CHF", "D|AUD"});
+    assertU(adoc(doc));
+
+    doc = new SolrInputDocument();
+    doc.setField("id", "2");
+    doc.setField("vals_dpss", new String[]{"A|usd", "B|gbp", "C|eur", "D|chf", "D|aud"});
+    assertU(adoc(doc));
+    
+    assertU(commit());
+
+    assertQ(req("q", "id:1", "fl", "*,score,field_a:payload(vals_dpss,A)"), "//str[@name='field_a']='USD'");
+    assertQ(req("q", "id:2", "fl", "*,score,field_a:payload(vals_dpss,C)"), "//str[@name='field_a']='eur'");
   }
 
   @Test

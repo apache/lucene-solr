@@ -152,6 +152,10 @@
     <dynamicField name="*_dpi" type="delimited_payloads_int" indexed="true"  stored="true"/>
     <dynamicField name="*_dps" type="delimited_payloads_string" indexed="true"  stored="true"/>
 
+    <dynamicField name="*_dpff" type="delimited_payloads_float" indexed="true"  stored="true" multiValued="true"/>
+    <dynamicField name="*_dpii" type="delimited_payloads_int" indexed="true"  stored="true" multiValued="true"/>
+    <dynamicField name="*_dpss" type="delimited_payloads_string" indexed="true"  stored="true" multiValued="true"/>
+
     <dynamicField name="attr_*" type="text_general" indexed="true" stored="true" multiValued="true"/>
 
     <!-- Field to use to determine and enforce document uniqueness.

@@ -35,19 +35,10 @@ import org.apache.lucene.search.SimpleFieldComparator;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
 
-public class StringPayloadValueSource extends ValueSource {
-  protected final String field;
-  protected final String val;
-  protected final String indexedField;
-  protected final BytesRef indexedBytes;
-  protected final ValueSource defaultValueSource;
+public class StringPayloadValueSource extends PayloadValueSource {
 
   public StringPayloadValueSource(String field, String val, String indexedField, BytesRef indexedBytes, ValueSource defaultValueSource) {
-    this.field = field;
-    this.val = val;
-    this.indexedField = indexedField;
-    this.indexedBytes = indexedBytes;
-    this.defaultValueSource = defaultValueSource;
+    super(field, val, indexedField, indexedBytes, defaultValueSource);
   }
 
   public SortField getSortField(boolean reverse) {
@@ -195,27 +186,6 @@ public class StringPayloadValueSource extends ValueSource {
   @Override
   public String description() {
     return name() + '(' + field + ',' + val + ',' + defaultValueSource.toString() + ')';
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) return true;
-    if (o == null || getClass() != o.getClass()) return false;
-
-    StringPayloadValueSource that = (StringPayloadValueSource) o;
-
-    if (!indexedField.equals(that.indexedField)) return false;
-    if (indexedBytes != null ? !indexedBytes.equals(that.indexedBytes) : that.indexedBytes != null) return false;
-    return defaultValueSource.equals(that.defaultValueSource);
-
-  }
-
-  @Override
-  public int hashCode() {
-    int result = indexedField.hashCode();
-    result = 31 * result + (indexedBytes != null ? indexedBytes.hashCode() : 0);
-    result = 31 * result + defaultValueSource.hashCode();
-    return result;
   }
 
   class StringPayloadValueSourceSortField extends SortField {
