@@ -41,6 +41,9 @@ Bug Fixes
 
 * SOLR-13465: CoreContainer.auditloggerPlugin should be volatile (janhoy, hossman)
 
+* SOLR-13971: Velocity response writer's resource loading now possible only through startup parameters. Also, removed velocity 
+  response writer from _default configset. (Ishan Chattopadhyaya)
+
 ==================  8.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
