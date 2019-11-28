@@ -80,6 +80,8 @@ Improvements
 * SOLR-13961: When using partial/atomic updates to remove child documents, we now support setting to null or
   an empty list as equivalent to the "remove" command. (Thomas Wöckinger)
 
+* SOLR-13969: Clean up and document AuditEvent API (janhoy)
+
 Optimizations
 ---------------------
 (No changes)
