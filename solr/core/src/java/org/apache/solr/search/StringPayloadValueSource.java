@@ -180,7 +180,7 @@ public class StringPayloadValueSource extends PayloadValueSource {
 
   // TODO: should this be formalized at the ValueSource level?  Seems to be the convention
   public String name() {
-    return "spayload";
+    return "payload";
   }
 
   @Override
@@ -239,7 +239,9 @@ public class StringPayloadValueSource extends PayloadValueSource {
 
     @Override
     public int compareBottom(int doc) throws IOException {
-      return bottom.compareTo(docVals.strVal(doc));
+      if (this.bottom != null)
+        return bottom.compareTo(docVals.strVal(doc));
+      return -1;
     }
 
     @Override
