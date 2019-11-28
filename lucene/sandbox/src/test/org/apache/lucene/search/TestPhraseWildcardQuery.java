@@ -83,84 +83,51 @@ public class TestPhraseWildcardQuery extends LuceneTestCase {
 
   public void testOneMultiTerm() throws Exception {
     searchAndCheckResults(field(1), 100, "eric", "br*");
-    assertEquals(1, TestCounters.get().singleTermAnalysisCount);
-    assertEquals(1, TestCounters.get().multiTermAnalysisCount);
-    assertEquals(4, TestCounters.get().segmentUseCount);
-    assertEquals(0, TestCounters.get().segmentSkipCount);
+    assertCounters().singleTermAnalysis(1).multiTermAnalysis(1).segmentUse(4).segmentSkip(0);
   }
 
   public void testTwoMultiTerms() throws Exception {
     searchAndCheckResults(field(1), 100, "e*", "b*");
-    assertEquals(0, TestCounters.get().singleTermAnalysisCount);
-    assertEquals(2, TestCounters.get().multiTermAnalysisCount);
-    assertEquals(4, TestCounters.get().segmentUseCount);
-    assertEquals(0, TestCounters.get().segmentSkipCount);
+    assertCounters().singleTermAnalysis(0).multiTermAnalysis(2).segmentUse(4).segmentSkip(0);
 
     expectDifferentScoreForSpanNearQueryWithMultiTermSubset(() -> {
       searchAndCheckResults(field(2), 100, "tim*", "t*");
-      assertEquals(0, TestCounters.get().singleTermAnalysisCount);
-      assertEquals(2, TestCounters.get().multiTermAnalysisCount);
-      assertEquals(2, TestCounters.get().segmentUseCount);
-      assertEquals(1, TestCounters.get().segmentSkipCount);
+      assertCounters().singleTermAnalysis(0).multiTermAnalysis(2).segmentUse(2).segmentSkip(1);
     });
   }
 
   public void testThreeMultiTerms() throws Exception {
     searchAndCheckResults(field(0), 100, "t*", "ut?pi?", "e*");
-    assertEquals(0, TestCounters.get().singleTermAnalysisCount);
-    assertEquals(3, TestCounters.get().multiTermAnalysisCount);
-    assertEquals(4, TestCounters.get().segmentUseCount);
-    assertEquals(1, TestCounters.get().segmentSkipCount);
+    assertCounters().singleTermAnalysis(0).multiTermAnalysis(3).segmentUse(4).segmentSkip(1);
 
     searchAndCheckResults(field(0), 100, "t?e", "u*", "e*");
-    assertEquals(0, TestCounters.get().singleTermAnalysisCount);
-    assertEquals(3, TestCounters.get().multiTermAnalysisCount);
-    assertEquals(4, TestCounters.get().segmentUseCount);
-    assertEquals(1, TestCounters.get().segmentSkipCount);
+    assertCounters().singleTermAnalysis(0).multiTermAnalysis(3).segmentUse(4).segmentSkip(1);
 
     expectDifferentScoreForSpanNearQueryWithMultiTermSubset(() -> {
       searchAndCheckResults(field(0), 100, "t?e", "b*", "b*");
-      assertEquals(0, TestCounters.get().singleTermAnalysisCount);
-      assertEquals(3, TestCounters.get().multiTermAnalysisCount);
-      assertEquals(4, TestCounters.get().segmentUseCount);
-      assertEquals(1, TestCounters.get().segmentSkipCount);
+      assertCounters().singleTermAnalysis(0).multiTermAnalysis(3).segmentUse(4).segmentSkip(1);
     });
   }
 
   public void testOneSingleTermTwoMultiTerms() throws Exception {
     searchAndCheckResults(field(0), 100, "t*", "utopia", "e*");
-    assertEquals(1, TestCounters.get().singleTermAnalysisCount);
-    assertEquals(2, TestCounters.get().multiTermAnalysisCount);
-    assertEquals(4, TestCounters.get().segmentUseCount);
-    assertEquals(1, TestCounters.get().segmentSkipCount);
+    assertCounters().singleTermAnalysis(1).multiTermAnalysis(2).segmentUse(4).segmentSkip(1);
 
     searchAndCheckResults(field(0), 100, "t?e", "utopia", "e*");
-    assertEquals(1, TestCounters.get().singleTermAnalysisCount);
-    assertEquals(2, TestCounters.get().multiTermAnalysisCount);
-    assertEquals(4, TestCounters.get().segmentUseCount);
-    assertEquals(1, TestCounters.get().segmentSkipCount);
+    assertCounters().singleTermAnalysis(1).multiTermAnalysis(2).segmentUse(4).segmentSkip(1);
 
     searchAndCheckResults(field(0), 100, "t?a", "utopia", "e*");
-    assertEquals(1, TestCounters.get().singleTermAnalysisCount);
-    assertEquals(1, TestCounters.get().multiTermAnalysisCount);
-    assertEquals(3, TestCounters.get().segmentUseCount);
-    assertEquals(2, TestCounters.get().segmentSkipCount);
+    assertCounters().singleTermAnalysis(1).multiTermAnalysis(1).segmentUse(3).segmentSkip(2);
   }
 
   public void testTermDoesNotMatch() throws Exception {
     searchAndCheckResults(field(0), 100, "nomatch", "e*");
     // We expect that createWeight() is not called because the first term does
     // not match so the query is early stopped without multi-term expansion.
-    assertEquals(1, TestCounters.get().singleTermAnalysisCount);
-    assertEquals(0, TestCounters.get().multiTermAnalysisCount);
-    assertEquals(2, TestCounters.get().segmentUseCount);
-    assertEquals(2, TestCounters.get().segmentSkipCount);
+    assertCounters().singleTermAnalysis(1).multiTermAnalysis(0).segmentUse(2).segmentSkip(2);
 
     searchAndCheckResults(field(0), 100, "t*", "nomatch", "e*");
-    assertEquals(1, TestCounters.get().singleTermAnalysisCount);
-    assertEquals(0, TestCounters.get().multiTermAnalysisCount);
-    assertEquals(2, TestCounters.get().segmentUseCount);
-    assertEquals(2, TestCounters.get().segmentSkipCount);
+    assertCounters().singleTermAnalysis(1).multiTermAnalysis(0).segmentUse(2).segmentSkip(2);
   }
 
   public void testNoMultiTerm() throws Exception {
@@ -176,44 +143,36 @@ public class TestPhraseWildcardQuery extends LuceneTestCase {
     // Here we verify the total number of expansions directly from test stats
     // inside PhraseWildcardQuery.
 
-    clearTestCounters();
+    assertCounters().clear();
     searcher.search(phraseWildcardQuery(field(1), 3, 0, true, "e*", "b*"), MAX_DOCS);
     // We expect 3 expansions even if both multi-terms have potentially more expansions.
-    assertEquals(3, TestCounters.get().expansionCount);
+    assertCounters().expansion(3);
 
-    clearTestCounters();
+    assertCounters().clear();
     searcher.search(phraseWildcardQuery(field(0), 4, 0, true, "t?e", "utopia", "e*"), MAX_DOCS);
     // We expect 2 expansions since the "utopia" term matches only in the
     // first segment, so there is no expansion for the second segment.
-    assertEquals(2, TestCounters.get().expansionCount);
+    assertCounters().expansion(2);
   }
 
   public void testSegmentOptimizationSingleField() throws Exception {
     searchAndCheckResults(field(0), 100, 0, true, "b*", "e*");
     // Both multi-terms are present in both segments.
     // So expecting 4 segment accesses.
-    assertEquals(4, TestCounters.get().segmentUseCount);
-    assertEquals(0, TestCounters.get().segmentSkipCount);
-    assertEquals(0, TestCounters.get().queryEarlyStopCount);
+    assertCounters().multiTermAnalysis(2).segmentUse(4).segmentSkip(0).queryEarlyStop(0);
 
     searchAndCheckResults(field(0), 100, 0, true, "t?e", "b*", "e*");
     // "t?e" matches only in the first segment. This term adds 2 segment accesses and 1 segment skip.
     // The other multi-terms match in the first segment. Each one adds 1 segment access.
     // So expecting 3 segment accesses and 1 segment skips.
-    assertEquals(4, TestCounters.get().segmentUseCount);
-    assertEquals(1, TestCounters.get().segmentSkipCount);
-    assertEquals(0, TestCounters.get().queryEarlyStopCount);
+    assertCounters().multiTermAnalysis(3).segmentUse(4).segmentSkip(1).queryEarlyStop(0);
 
     searchAndCheckResults(field(0), 100, 0, true, "t?e", "blind", "e*");
-    assertEquals(3, TestCounters.get().segmentUseCount);
-    assertEquals(2, TestCounters.get().segmentSkipCount);
-    assertEquals(1, TestCounters.get().queryEarlyStopCount);
+    assertCounters().multiTermAnalysis(1).segmentUse(3).segmentSkip(2).queryEarlyStop(1);
 
     expectDifferentScoreForSpanNearQueryWithMultiTermSubset(() -> {
       searchAndCheckResults(field(2), 100, 0, true, "tim*", "t*");
-      assertEquals(2, TestCounters.get().segmentUseCount);
-      assertEquals(1, TestCounters.get().segmentSkipCount);
-      assertEquals(0, TestCounters.get().queryEarlyStopCount);
+      assertCounters().multiTermAnalysis(2).segmentUse(2).segmentSkip(1).queryEarlyStop(0);
     });
   }
 
@@ -394,14 +353,10 @@ public class TestPhraseWildcardQuery extends LuceneTestCase {
     searchAndCheckSameResults(testQuery, multiPhraseQuery, sameScoreExpected);
 
     // Clear the test stats to verify them only with the last test query execution.
-    clearTestCounters();
+    assertCounters().clear();
     // Search and compare results with SpanNearQuery.
     sameScoreExpected = !segmentOptimizationEnabled && !differentScoreExpectedForSpanNearQuery;
     searchAndCheckSameResults(testQuery, spanNearQuery, sameScoreExpected);
-  }
-
-  protected void clearTestCounters() {
-    TestCounters.get().clear();
   }
 
   protected void searchAndCheckSameResults(Query testQuery, Query referenceQuery,
@@ -566,5 +521,63 @@ public class TestPhraseWildcardQuery extends LuceneTestCase {
   private interface RunnableWithIOException {
 
     void run() throws IOException;
+  }
+
+  AssertCounters assertCounters() {
+    // Expected values for test counters are defined for 2 segments.
+    // Only verify test counters if the number of segments is 2 as expected.
+    // If the randomization produced a different number of segments,
+    // then just ignore test counters.
+    return reader.leaves().size() == 2 ? new AssertCounters() : AssertCounters.NO_OP;
+  }
+
+  /**
+   * Fluent API to assert {@link TestCounters}.
+   */
+  static class AssertCounters {
+
+    static final AssertCounters NO_OP = new AssertCounters() {
+      AssertCounters singleTermAnalysis(int c) {return this;}
+      AssertCounters multiTermAnalysis(int c) {return this;}
+      AssertCounters segmentUse(int c) {return this;}
+      AssertCounters segmentSkip(int c) {return this;}
+      AssertCounters queryEarlyStop(int c) {return this;}
+      AssertCounters expansion(int c) {return this;}
+    };
+
+    AssertCounters singleTermAnalysis(int expectedCount) {
+      assertEquals(expectedCount, TestCounters.get().singleTermAnalysisCount);
+      return this;
+    }
+
+    AssertCounters multiTermAnalysis(int expectedCount) {
+      assertEquals(expectedCount, TestCounters.get().multiTermAnalysisCount);
+      return this;
+    }
+
+    AssertCounters segmentUse(int expectedCount) {
+      assertEquals(expectedCount, TestCounters.get().segmentUseCount);
+      return this;
+    }
+
+    AssertCounters segmentSkip(int expectedCount) {
+      assertEquals(expectedCount, TestCounters.get().segmentSkipCount);
+      return this;
+    }
+
+    AssertCounters queryEarlyStop(int expectedCount) {
+      assertEquals(expectedCount, TestCounters.get().queryEarlyStopCount);
+      return this;
+    }
+
+    AssertCounters expansion(int expectedCount) {
+      assertEquals(expectedCount, TestCounters.get().expansionCount);
+      return this;
+    }
+
+    AssertCounters clear() {
+      TestCounters.get().clear();
+      return this;
+    }
   }
 }
