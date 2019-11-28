@@ -26,6 +26,7 @@ import org.apache.lucene.search.CollectionStatistics;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.TermStatistics;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.MathUtil;
 import org.apache.lucene.util.SmallFloat;
 
 /**
@@ -187,11 +188,40 @@ public class BM25Similarity extends Similarity {
 
     float[] cache = new float[256];
     for (int i = 0; i < cache.length; i++) {
-      cache[i] = k1 * ((1 - b) + b * LENGTH_TABLE[i] / avgdl);
+      cache[i] = roundNorm(k1 * ((1 - b) + b * LENGTH_TABLE[i] / avgdl));
     }
     return new BM25Scorer(boost, k1, b, idf, avgdl, cache);
   }
-  
+
+  /**
+   * Round a norm to the nearest float whose binary representation has 10
+   * trailing zeros. It helps more often follow the fast path in {@link #tf}.
+   * It translates to a relative error of 2^(-24+10) ~ 0.61% on the norm.
+   */
+  static float roundNorm(float norm) {
+    if (Float.isFinite(norm) == false) {
+      return norm;
+    }
+    int normBits = Float.floatToIntBits(norm);
+    normBits = (normBits + 0x1FF) & 0xFFFFFC00;
+    return Float.intBitsToFloat(normBits);
+  }
+
+  /**
+   * Return the tf contribution of the BM25 score.
+   */
+  static float tf(float freq, float norm) {
+    // The sum will typically be accurate for standard values of k1 and term or
+    // exact phrase queries, which use integers as freqs. And when the sum is
+    // accurate, both branches would return the same result, so we pick the
+    // fast path.
+    if (MathUtil.isSumAccurate(freq, norm)) { // fast path
+      return freq / (freq + norm);
+    } else {
+      return (float) (freq / (freq + (double) norm));
+    }
+  }
+
   /** Collection statistics for the BM25 model. */
   private static class BM25Scorer extends SimScorer {
     /** query boost */
@@ -221,8 +251,8 @@ public class BM25Similarity extends Similarity {
 
     @Override
     public float score(float freq, long encodedNorm) {
-      double norm = cache[((byte) encodedNorm) & 0xFF];
-      return weight * (float) (freq / (freq + norm));
+      float norm = cache[((byte) encodedNorm) & 0xFF];
+      return weight * tf(freq, norm);
     }
 
     @Override
@@ -246,9 +276,9 @@ public class BM25Similarity extends Similarity {
         subs.add(Explanation.match(doclen, "dl, length of field"));
       }
       subs.add(Explanation.match(avgdl, "avgdl, average length of field"));
-      float normValue = k1 * ((1 - b) + b * doclen / avgdl);
+      float normValue = roundNorm(k1 * ((1 - b) + b * doclen / avgdl));
       return Explanation.match(
-          (float) (freq.getValue().floatValue() / (freq.getValue().floatValue() + (double) normValue)),
+          tf(freq.getValue().floatValue(), normValue),
           "tf, computed as freq / (freq + k1 * (1 - b + b * dl / avgdl)) from:", subs);
     }
 
