@@ -108,12 +108,10 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
     }
 
     // params resource loader: off by default
-    Boolean prle = Boolean.getBoolean(PARAMS_RESOURCE_LOADER_ENABLED);
-    paramsResourceLoaderEnabled = (null == prle ? false : prle);
+    paramsResourceLoaderEnabled = Boolean.getBoolean(PARAMS_RESOURCE_LOADER_ENABLED);
 
     // solr resource loader: off by default
-    Boolean srle = Boolean.getBoolean(SOLR_RESOURCE_LOADER_ENABLED);
-    solrResourceLoaderEnabled = (null == srle ? false : srle);
+    solrResourceLoaderEnabled = Boolean.getBoolean(SOLR_RESOURCE_LOADER_ENABLED);
 
     initPropertiesFileName = (String) args.get(PROPERTIES_FILE);
 

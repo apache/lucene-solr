@@ -228,10 +228,9 @@ Jetty 9.4.19.v20190610
 Upgrade Notes
 ----------------------
 
-* Velocity response writer is no longer available to be used through the _default configset. In order
-  to use it, you would need to manually add it to your configset. Also, the initialization parameters 
+* Velocity: The initialization parameters
   "params.resource.loader.enabled" and "solr.resource.loader.enabled" have been removed and replaced by
-  startup parameters "velocity.resourceloader.params.enabled" and "velocity.resourceloader.solr.enabled"
+  Java system properties "velocity.resourceloader.params.enabled" and "velocity.resourceloader.solr.enabled"
   respectively (both turned off by default). Please see SOLR-13971 for more details.
 
 Bug Fixes
@@ -239,8 +238,8 @@ Bug Fixes
 
 * SOLR-13963: JavaBinCodec has concurrent modification of CharArr resulting in corrupt internode updates (Colvin Cowie, noble)
 
-* SOLR-13971: Velocity response writer's resource loading now possible only through startup parameters. Also, removed velocity 
-  response writer from _default configset. (Ishan Chattopadhyaya)
+* SOLR-13971: Velocity response writer's resource loading now possible only through startup parameters.
+  (Ishan Chattopadhyaya, David Smiley)
 
 ==================  8.3.0 ==================
 
