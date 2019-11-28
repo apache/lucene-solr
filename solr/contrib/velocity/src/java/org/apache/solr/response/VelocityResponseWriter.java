@@ -65,8 +65,8 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
   public static final String PROPERTIES_FILE = "init.properties.file";
 
   // System property names, these are _only_ loaded at node startup (no per-request control of these)
-  public static final String PARAMS_RESOURCE_LOADER_ENABLED = "params.resource.loader.enabled";
-  public static final String SOLR_RESOURCE_LOADER_ENABLED = "solr.resource.loader.enabled";
+  public static final String PARAMS_RESOURCE_LOADER_ENABLED = "velocity.resourceloader.params.enabled";
+  public static final String SOLR_RESOURCE_LOADER_ENABLED = "velocity.resourceloader.solr.enabled";
 
   // request param names
   public static final String TEMPLATE = "v.template";
