@@ -40,6 +40,8 @@ The above example shows the optional initialization and custom tool parameters u
 
 === VelocityResponseWriter Startup Parameters
 
+These are Java system properties to mitigate security risks.
+
 `velocity.resourceloader.params.enabled`::
 The "params" resource loader allows templates to be specified in Solr request parameters. For example:
 +
