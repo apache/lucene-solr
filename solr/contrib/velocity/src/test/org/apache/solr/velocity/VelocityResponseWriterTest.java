@@ -33,6 +33,8 @@ import org.junit.Test;
 public class VelocityResponseWriterTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
+    System.setProperty("params.resource.loader.enabled", "true");
+    System.setProperty("solr.resource.loader.enabled", "true");
     initCore("solrconfig.xml", "schema.xml", getFile("velocity/solr").getAbsolutePath());
     System.out.println(getFile("velocity/solr").getAbsolutePath());
   }
