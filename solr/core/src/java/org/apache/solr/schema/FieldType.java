@@ -985,8 +985,6 @@ public abstract class FieldType extends FieldProperties {
   public static final String FILTER = "filter";
   public static final String FILTERS = "filters";
 
-  private static final String POSTINGS_FORMAT = "postingsFormat";
-  private static final String DOC_VALUES_FORMAT = "docValuesFormat";
   protected static final String AUTO_GENERATE_PHRASE_QUERIES = "autoGeneratePhraseQueries";
   protected static final String ENABLE_GRAPH_QUERIES = "enableGraphQueries";
   private static final String ARGS = "args";
