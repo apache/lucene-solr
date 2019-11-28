@@ -241,6 +241,12 @@ Bug Fixes
 * SOLR-13971: Velocity response writer's resource loading now possible only through startup parameters.
   (Ishan Chattopadhyaya, David Smiley)
 
+* SOLR-13465: CoreContainer.auditloggerPlugin should be volatile (janhoy, hossman)
+
+* SOLR-13905: Make findRequestType in AuditEvent more robust (janhoy)
+
+* SOLR-13941: Tests configure Jetty differently than when running via start.jar (janhoy, Uwe Schindler)
+
 ==================  8.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
