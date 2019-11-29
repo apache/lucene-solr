@@ -130,7 +130,7 @@ public class BlobStoreUtilsTest extends SolrCloudSharedStoreTestCase {
       fail("syncLocalCoreWithSharedStore should throw exception if shared store doesn't have the core.metadata file.");
     } catch (Exception ex){
       String expectedException = "cannot get core.metadata file from shared store";
-      assertTrue(ex.getMessage().contains(expectedException)); 
+      assertTrue(ex.getCause().getMessage().contains(expectedException));
     } 
   }
   

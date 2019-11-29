@@ -68,10 +68,10 @@ public class ServerSideMetadata {
   private final ImmutableCollection<CoreFileData> latestCommitFiles;
 
   /**
-   * Index files related to current and previous commit points(if any).
+   * Names of all files (all of them, no exception) in the local index directory.
    * These files do not matter when pushing contents to blob but they do matter if blob content being pulled conflicts with them.
    */
-  private final ImmutableCollection<CoreFileData> allCommitsFiles;
+  private final ImmutableSet<String> allFiles;
 
   /**
    * Hash of the directory content used to make sure the content doesn't change as we proceed to pull new files from Blob
@@ -158,29 +158,8 @@ public class ServerSideMetadata {
         // the Blob store version).
         directoryHash = getSolrDirectoryHash(coreDir);
 
-        allCommitsFiles = latestCommitFiles;
-        // TODO: allCommits was added to detect special cases where inactive file segments can potentially conflict
-        //       with whats in shared store. But given the recent understanding of semantics around index directory locks
-        //       we need to revise our design assumptions around pull pipeline, including this one.
-        //       Disabling this for now so that unreliability around introspection of older commits 
-        //       might not get in the way of steady state indexing.
-//        // A note on listCommits says that it does not guarantee consistent results if a commit is in progress.
-//        // But in blob context we serialize commits and pulls by proper locking therefore we should be good here.
-//        List<IndexCommit> allCommits = DirectoryReader.listCommits(coreDir);
-//
-//        // we should always have a commit point as verified in the beginning of this method.
-//        assert (allCommits.size() > 1) || (allCommits.size() == 1 && allCommits.get(0).equals(latestCommit));
-//
-//        // optimization:  normally we would only be dealing with one commit point. In that case just reuse latest commit files builder.
-//        ImmutableCollection.Builder<CoreFileData> allCommitsBuilder = latestCommitBuilder;
-//        if (allCommits.size() > 1) {
-//          allCommitsBuilder = new ImmutableSet.Builder<>();
-//          for (IndexCommit commit : allCommits) {
-//            // no snapshot for inactive segments files
-//            buildCommitFiles(coreDir, commit, allCommitsBuilder, /* snapshotDir */ null);
-//          }
-//        }
-//        allCommitsFiles = allCommitsBuilder.build();
+        // Need to inventory all local files in case files that need to be pulled from Blob conflict with them.
+        allFiles = ImmutableSet.copyOf(coreDir.listAll());
       } finally {
         core.getDirectoryFactory().release(coreDir);
       }
@@ -257,8 +236,8 @@ public class ServerSideMetadata {
     return this.latestCommitFiles;
   }
 
-  public ImmutableCollection<CoreFileData> getAllCommitsFiles() {
-    return this.allCommitsFiles;
+  public ImmutableSet<String> getAllFiles() {
+    return this.allFiles;
   }
 
   public String getSnapshotDirPath() {
