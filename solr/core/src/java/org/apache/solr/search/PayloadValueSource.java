@@ -18,7 +18,6 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.SortField;
 import org.apache.lucene.util.BytesRef;
 
 public abstract class PayloadValueSource extends ValueSource {
