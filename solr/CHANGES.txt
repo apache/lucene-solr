@@ -175,6 +175,8 @@ Bug Fixes
 * SOLR-13971: Velocity response writer's resource loading now possible only through startup parameters.
   (Ishan Chattopadhyaya, David Smiley)
 
+* SOLR-13977: solr create -c not working under Windows 10 (janhoy)
+
 ==================  8.3.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

@@ -16,6 +16,8 @@
 
 @echo off
 
+@REM Make sure to keep line endings as CRLF for .cmd files
+
 IF "%OS%"=="Windows_NT" setlocal enabledelayedexpansion enableextensions
 
 set "PASS_TO_RUN_EXAMPLE="
