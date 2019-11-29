@@ -30,6 +30,7 @@ import java.util.stream.StreamSupport;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefHash;
 import org.apache.lucene.util.BytesRefIterator;
@@ -116,6 +117,21 @@ public final class MatchesUtils {
         }
       }
     };
+  }
+
+  public static Matches forFieldAndTerms(Query query, String field, LeafReaderContext ctx, int doc,
+                                         IOSupplier<BytesRefIterator> termsEnum) throws IOException {
+    return forField(field,
+        terms -> DisjunctionMatchesIterator.matchingTerms(ctx, doc, field, termsEnum.get(), terms),
+        () -> DisjunctionMatchesIterator.fromTermsEnum(ctx, doc, query, field, termsEnum.get()));
+  }
+
+  public static Matches forFieldAndTerms(Query query, String field, LeafReaderContext ctx, int doc,
+                                         List<Term> termsEnum) throws IOException {
+    BytesRefIterator it = DisjunctionMatchesIterator.asBytesRefIterator(termsEnum);
+    return forField(field,
+        terms -> DisjunctionMatchesIterator.matchingTerms(ctx, doc, field, it, terms),
+        () -> DisjunctionMatchesIterator.fromTermsEnum(ctx, doc, query, field, it));
   }
 
   /**

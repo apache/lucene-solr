@@ -232,9 +232,7 @@ public final class SynonymQuery extends Query {
       List<Term> termList = Arrays.stream(terms)
           .map(TermAndBoost::getTerm)
           .collect(Collectors.toList());
-      return MatchesUtils.forField(field,
-          consumer -> DisjunctionMatchesIterator.matchingTerms(context, doc, field, termList, consumer),
-          () -> DisjunctionMatchesIterator.fromTerms(context, doc, getQuery(), field, termList));
+      return MatchesUtils.forFieldAndTerms(getQuery(), field, context, doc, termList);
     }
 
     @Override

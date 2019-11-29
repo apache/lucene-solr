@@ -85,9 +85,7 @@ public final class DocValuesRewriteMethod extends MultiTermQuery.RewriteMethod {
         @Override
         public Matches matches(LeafReaderContext context, int doc) throws IOException {
           final SortedSetDocValues fcsi = DocValues.getSortedSet(context.reader(), query.field);
-          return MatchesUtils.forField(query.field,
-              terms -> DisjunctionMatchesIterator.matchingTerms(context, doc, query.field, getTermsEnum(fcsi), terms),
-              () -> DisjunctionMatchesIterator.fromTermsEnum(context, doc, query, query.field, getTermsEnum(fcsi)));
+          return MatchesUtils.forFieldAndTerms(query, query.field, context, doc, () -> getTermsEnum(fcsi));
         }
 
         private TermsEnum getTermsEnum(SortedSetDocValues fcsi) throws IOException {

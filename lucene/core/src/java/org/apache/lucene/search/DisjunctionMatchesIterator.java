@@ -56,7 +56,7 @@ final class DisjunctionMatchesIterator implements MatchesIterator {
     return fromTermsEnum(context, doc, query, field, asBytesRefIterator(terms));
   }
 
-  private static BytesRefIterator asBytesRefIterator(List<Term> terms) {
+  static BytesRefIterator asBytesRefIterator(List<Term> terms) {
     return new BytesRefIterator() {
       int i = 0;
       @Override
@@ -66,16 +66,6 @@ final class DisjunctionMatchesIterator implements MatchesIterator {
         return terms.get(i++).bytes();
       }
     };
-  }
-
-  static void matchingTerms(LeafReaderContext context, int doc, String field, List<Term> terms, Consumer<Term> termsConsumer) throws IOException {
-    Objects.requireNonNull(field);
-    for (Term term : terms) {
-      if (Objects.equals(field, term.field()) == false) {
-        throw new IllegalArgumentException("Tried to generate iterator from terms in multiple fields: expected [" + field + "] but got [" + term.field() + "]");
-      }
-    }
-    matchingTerms(context, doc, field, asBytesRefIterator(terms), termsConsumer);
   }
 
   static void matchingTerms(LeafReaderContext context, int doc, String field, BytesRefIterator terms, Consumer<Term> termsConsumer) throws IOException {
