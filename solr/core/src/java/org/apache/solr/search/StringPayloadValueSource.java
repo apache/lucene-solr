@@ -159,7 +159,7 @@ public class StringPayloadValueSource extends PayloadValueSource {
             docs.nextPosition();
             BytesRef payload = docs.getPayload();
             if (payload != null) {
-              return bytesRefToString(payload);
+              return payload.utf8ToString();
             }
           }
           docValue = defaultValues.strVal(doc);
@@ -170,14 +170,7 @@ public class StringPayloadValueSource extends PayloadValueSource {
       }
     };
   }
-
-  private String bytesRefToString(BytesRef payload) {
-    byte[] bytes = new byte[payload.length];
-    System.arraycopy(payload.bytes, payload.offset, bytes, 0, payload.length);
-    String ret = new String(bytes);
-    return ret;
-  }
-
+  
   // TODO: should this be formalized at the ValueSource level?  Seems to be the convention
   public String name() {
     return "payload";
