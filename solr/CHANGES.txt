@@ -125,6 +125,8 @@ Bug Fixes
 
 * SOLR-13465: CoreContainer.auditloggerPlugin should be volatile (janhoy, hossman)
 
+* SOLR-13805: NPE when calling /solr/admin/info/health on standalone solr (Nicholas DiPiazza, shalin)
+
 Other Changes
 ---------------------
 
