@@ -24,6 +24,7 @@ import org.apache.lucene.codecs.lucene84.MockTermStateFactory;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
+import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.ByteBuffersIndexOutput;
 import org.apache.lucene.util.BytesRef;
@@ -120,6 +121,8 @@ public class TestBlockWriter extends LuceneTestCase {
         0,
         0,
         0,
+        0,
+        VectorValues.DistanceFunction.NONE,
         true
     );
   }

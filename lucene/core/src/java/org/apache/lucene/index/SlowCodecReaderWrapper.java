@@ -24,6 +24,7 @@ import java.util.Iterator;
 
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.FieldsProducer;
+import org.apache.lucene.codecs.KnnGraphReader;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.StoredFieldsReader;
@@ -76,6 +77,12 @@ public final class SlowCodecReaderWrapper {
         public DocValuesProducer getDocValuesReader() {
           reader.ensureOpen();
           return readerToDocValuesProducer(reader);
+        }
+
+        @Override
+        public KnnGraphReader getKnnGraphReader() {
+          reader.ensureOpen();
+          return readerToKnnGraphReader(reader);
         }
 
         @Override
@@ -158,6 +165,33 @@ public final class SlowCodecReaderWrapper {
         return 0;
       }
 
+    };
+  }
+
+  private static KnnGraphReader readerToKnnGraphReader(LeafReader reader) {
+    return new KnnGraphReader() {
+      @Override
+      public void checkIntegrity() throws IOException {
+      }
+
+      @Override
+      public VectorValues getVectorValues(String field) throws IOException {
+        return reader.getVectorValues(field);
+      }
+
+      @Override
+      public KnnGraphValues getGraphValues(String field) throws IOException {
+        return reader.getKnnGraphValues(field);
+      }
+
+      @Override
+      public void close() throws IOException {
+      }
+
+      @Override
+      public long ramBytesUsed() {
+        return 0L;
+      }
     };
   }
   

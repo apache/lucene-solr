@@ -25,6 +25,7 @@ import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexableFieldType;
 import org.apache.lucene.index.PointValues;
+import org.apache.lucene.index.VectorValues;
 
 /**
  * Describes the properties of a field.
@@ -44,6 +45,8 @@ public class FieldType implements IndexableFieldType  {
   private int dataDimensionCount;
   private int indexDimensionCount;
   private int dimensionNumBytes;
+  private int vectorNumDimensions;
+  private VectorValues.DistanceFunction vectorDistFunc = VectorValues.DistanceFunction.NONE;
   private Map<String, String> attributes;
 
   /**
@@ -62,6 +65,8 @@ public class FieldType implements IndexableFieldType  {
     this.dataDimensionCount = ref.pointDataDimensionCount();
     this.indexDimensionCount = ref.pointIndexDimensionCount();
     this.dimensionNumBytes = ref.pointNumBytes();
+    this.vectorNumDimensions = ref.vectorNumDimensions();
+    this.vectorDistFunc = ref.vectorDistFunc();
     if (ref.getAttributes() != null) {
       this.attributes = new HashMap<>(ref.getAttributes());
     }
@@ -346,6 +351,31 @@ public class FieldType implements IndexableFieldType  {
   @Override
   public int pointNumBytes() {
     return dimensionNumBytes;
+  }
+
+  public void setVectorDimensionsAndDistanceFunction(int numDimensions, VectorValues.DistanceFunction distFunc) {
+    if (numDimensions < 0) {
+      throw new IllegalArgumentException("vector numDimensions must be >= 0; got " + numDimensions);
+    }
+    if (numDimensions > VectorValues.MAX_DIMENSIONS) {
+      throw new IllegalArgumentException("vector numDimensions must be <= VectorValues.MAX_DIMENSIONS (=" + VectorValues.MAX_DIMENSIONS + "); got " + numDimensions);
+    }
+    if (numDimensions == 0 && distFunc != VectorValues.DistanceFunction.NONE) {
+      throw new IllegalArgumentException("vector distFunc must be NONE when the vector numDimensions = 0; got " + distFunc);
+    }
+
+    this.vectorNumDimensions = numDimensions;
+    this.vectorDistFunc = distFunc;
+  }
+
+  @Override
+  public int vectorNumDimensions() {
+    return vectorNumDimensions;
+  }
+
+  @Override
+  public VectorValues.DistanceFunction vectorDistFunc() {
+    return vectorDistFunc;
   }
 
   /**

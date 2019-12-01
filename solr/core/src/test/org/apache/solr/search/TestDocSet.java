@@ -26,6 +26,7 @@ import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexReaderContext;
+import org.apache.lucene.index.KnnGraphValues;
 import org.apache.lucene.index.LeafMetaData;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -37,6 +38,7 @@ import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BitSetIterator;
@@ -440,6 +442,16 @@ public class TestDocSet extends SolrTestCase {
 
       @Override
       public PointValues getPointValues(String field) {
+        return null;
+      }
+
+      @Override
+      public VectorValues getVectorValues(String field) {
+        return null;
+      }
+
+      @Override
+      public KnnGraphValues getKnnGraphValues(String field) {
         return null;
       }
 

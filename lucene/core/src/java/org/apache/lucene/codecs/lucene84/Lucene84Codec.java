@@ -23,6 +23,7 @@ import org.apache.lucene.codecs.CompoundFormat;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
 import org.apache.lucene.codecs.FilterCodec;
+import org.apache.lucene.codecs.KnnGraphFormat;
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PointsFormat;
@@ -134,6 +135,11 @@ public class Lucene84Codec extends Codec {
   @Override
   public final PointsFormat pointsFormat() {
     return new Lucene60PointsFormat();
+  }
+
+  @Override
+  public final KnnGraphFormat knnGraphFormat() {
+    return KnnGraphFormat.EMPTY;
   }
 
   /** Returns the postings format that should be used for writing 

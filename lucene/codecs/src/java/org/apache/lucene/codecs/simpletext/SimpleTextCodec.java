@@ -21,6 +21,7 @@ import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.CompoundFormat;
 import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.FieldInfosFormat;
+import org.apache.lucene.codecs.KnnGraphFormat;
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.codecs.NormsFormat;
 import org.apache.lucene.codecs.PointsFormat;
@@ -99,5 +100,11 @@ public final class SimpleTextCodec extends Codec {
   @Override
   public PointsFormat pointsFormat() {
     return pointsFormat;
+  }
+
+  @Override
+  public KnnGraphFormat knnGraphFormat() {
+    // TODO
+    return KnnGraphFormat.EMPTY;
   }
 }

@@ -108,4 +108,9 @@ public abstract class FilterCodec extends Codec {
   public PointsFormat pointsFormat() {
     return delegate.pointsFormat();
   }
+
+  @Override
+  public KnnGraphFormat knnGraphFormat() {
+    return delegate.knnGraphFormat();
+  }
 }

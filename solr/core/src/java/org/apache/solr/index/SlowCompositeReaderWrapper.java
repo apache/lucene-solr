@@ -277,6 +277,16 @@ public final class SlowCompositeReaderWrapper extends LeafReader {
   }
 
   @Override
+  public VectorValues getVectorValues(String field) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public KnnGraphValues getKnnGraphValues(String field) {
+    throw new UnsupportedOperationException();
+  }
+
+  @Override
   public FieldInfos getFieldInfos() {
     return fieldInfos;
   }

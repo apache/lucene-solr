@@ -501,7 +501,8 @@ public class MemoryIndex {
     IndexOptions indexOptions = storeOffsets ? IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS : IndexOptions.DOCS_AND_FREQS_AND_POSITIONS;
     return new FieldInfo(fieldName, ord, fieldType.storeTermVectors(), fieldType.omitNorms(), storePayloads,
         indexOptions, fieldType.docValuesType(), -1, Collections.emptyMap(),
-        fieldType.pointDataDimensionCount(), fieldType.pointIndexDimensionCount(), fieldType.pointNumBytes(), false);
+        fieldType.pointDataDimensionCount(), fieldType.pointIndexDimensionCount(), fieldType.pointNumBytes(),
+        fieldType.vectorNumDimensions(), fieldType.vectorDistFunc(), false);
   }
 
   private void storePointValues(Info info, BytesRef pointValue) {
@@ -521,6 +522,7 @@ public class MemoryIndex {
           info.fieldInfo.name, info.fieldInfo.number, info.fieldInfo.hasVectors(), info.fieldInfo.hasPayloads(),
           info.fieldInfo.hasPayloads(), info.fieldInfo.getIndexOptions(), docValuesType, -1, info.fieldInfo.attributes(),
           info.fieldInfo.getPointDataDimensionCount(), info.fieldInfo.getPointIndexDimensionCount(), info.fieldInfo.getPointNumBytes(),
+          info.fieldInfo.getVectorNumDimensions(), info.fieldInfo.getVectorDistFunc(),
           info.fieldInfo.isSoftDeletesField()
       );
     } else if (existingDocValuesType != docValuesType) {
@@ -1238,6 +1240,18 @@ public class MemoryIndex {
         return null;
       }
       return new MemoryIndexPointValues(info);
+    }
+
+    @Override
+    public VectorValues getVectorValues(String fieldName) {
+      // TODO: FIXME
+      return VectorValues.EMPTY;
+    }
+
+    @Override
+    public KnnGraphValues getKnnGraphValues(String fieldName) {
+      // TODO: FIXME
+      return KnnGraphValues.EMPTY;
     }
 
     @Override

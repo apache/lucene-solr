@@ -331,6 +331,16 @@ public abstract class FilterLeafReader extends LeafReader {
   }
 
   @Override
+  public VectorValues getVectorValues(String field) throws IOException {
+    return in.getVectorValues(field);
+  }
+
+  @Override
+  public KnnGraphValues getKnnGraphValues(String field) throws IOException {
+    return in.getKnnGraphValues(field);
+  }
+
+  @Override
   public Fields getTermVectors(int docID)
           throws IOException {
     ensureOpen();

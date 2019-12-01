@@ -107,6 +107,16 @@ public class TestIndexableField extends LuceneTestCase {
       }
 
       @Override
+      public int vectorNumDimensions() {
+        return 0;
+      }
+
+      @Override
+      public VectorValues.DistanceFunction vectorDistFunc() {
+        return VectorValues.DistanceFunction.NONE;
+      }
+
+      @Override
       public Map<String, String> getAttributes() {
         return null;
       }

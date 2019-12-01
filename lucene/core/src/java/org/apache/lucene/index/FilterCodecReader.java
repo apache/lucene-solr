@@ -23,6 +23,7 @@ import java.util.Objects;
 
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.codecs.FieldsProducer;
+import org.apache.lucene.codecs.KnnGraphReader;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PointsReader;
 import org.apache.lucene.codecs.StoredFieldsReader;
@@ -99,6 +100,11 @@ public abstract class FilterCodecReader extends CodecReader {
   @Override
   public PointsReader getPointsReader() {
     return in.getPointsReader();
+  }
+
+  @Override
+  public KnnGraphReader getKnnGraphReader() {
+    return in.getKnnGraphReader();
   }
 
   @Override

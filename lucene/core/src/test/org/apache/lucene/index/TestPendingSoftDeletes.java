@@ -37,6 +37,8 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.Version;
 
+import static org.apache.lucene.index.VectorValues.DistanceFunction.NONE;
+
 public class TestPendingSoftDeletes extends TestPendingDeletes {
 
   @Override
@@ -164,7 +166,7 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     deletes.onNewReader(segmentReader, commitInfo);
     reader.close();
     writer.close();
-    FieldInfo fieldInfo = new FieldInfo("_soft_deletes", 1, false, false, false, IndexOptions.NONE, DocValuesType.NUMERIC, 0, Collections.emptyMap(), 0, 0, 0, true);
+    FieldInfo fieldInfo = new FieldInfo("_soft_deletes", 1, false, false, false, IndexOptions.NONE, DocValuesType.NUMERIC, 0, Collections.emptyMap(), 0, 0, 0, 0, NONE, true);
     List<Integer> docsDeleted = Arrays.asList(1, 3, 7, 8, DocIdSetIterator.NO_MORE_DOCS);
     List<DocValuesFieldUpdates> updates = Arrays.asList(singleUpdate(docsDeleted, 10, true));
     for (DocValuesFieldUpdates update : updates) {
@@ -185,7 +187,7 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
 
     docsDeleted = Arrays.asList(1, 2, DocIdSetIterator.NO_MORE_DOCS);
     updates = Arrays.asList(singleUpdate(docsDeleted, 10, true));
-    fieldInfo = new FieldInfo("_soft_deletes", 1, false, false, false, IndexOptions.NONE, DocValuesType.NUMERIC, 1, Collections.emptyMap(), 0, 0, 0, true);
+    fieldInfo = new FieldInfo("_soft_deletes", 1, false, false, false, IndexOptions.NONE, DocValuesType.NUMERIC, 1, Collections.emptyMap(), 0, 0, 0, 0, NONE, true);
     for (DocValuesFieldUpdates update : updates) {
       deletes.onDocValuesUpdate(fieldInfo, update.iterator());
     }
@@ -228,7 +230,7 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     SegmentCommitInfo segmentInfo = segmentReader.getSegmentInfo();
     PendingDeletes deletes = newPendingDeletes(segmentInfo);
     deletes.onNewReader(segmentReader, segmentInfo);
-    FieldInfo fieldInfo = new FieldInfo("_soft_deletes", 1, false, false, false, IndexOptions.NONE, DocValuesType.NUMERIC, segmentInfo.getNextDocValuesGen(), Collections.emptyMap(), 0, 0, 0, true);
+    FieldInfo fieldInfo = new FieldInfo("_soft_deletes", 1, false, false, false, IndexOptions.NONE, DocValuesType.NUMERIC, segmentInfo.getNextDocValuesGen(), Collections.emptyMap(), 0, 0, 0, 0, NONE, true);
     List<Integer> docsDeleted = Arrays.asList(1, DocIdSetIterator.NO_MORE_DOCS);
     List<DocValuesFieldUpdates> updates = Arrays.asList(singleUpdate(docsDeleted, 3, true));
     for (DocValuesFieldUpdates update : updates) {
@@ -276,7 +278,7 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     SegmentCommitInfo segmentInfo = segmentReader.getSegmentInfo();
     PendingDeletes deletes = newPendingDeletes(segmentInfo);
     deletes.onNewReader(segmentReader, segmentInfo);
-    FieldInfo fieldInfo = new FieldInfo("_soft_deletes", 1, false, false, false, IndexOptions.NONE, DocValuesType.NUMERIC, segmentInfo.getNextDocValuesGen(), Collections.emptyMap(), 0, 0, 0, true);
+    FieldInfo fieldInfo = new FieldInfo("_soft_deletes", 1, false, false, false, IndexOptions.NONE, DocValuesType.NUMERIC, segmentInfo.getNextDocValuesGen(), Collections.emptyMap(), 0, 0, 0, 0, NONE, true);
     List<DocValuesFieldUpdates> updates = Arrays.asList(singleUpdate(Arrays.asList(0, 1, DocIdSetIterator.NO_MORE_DOCS), 3, false));
     for (DocValuesFieldUpdates update : updates) {
       deletes.onDocValuesUpdate(fieldInfo, update.iterator());
@@ -295,7 +297,7 @@ public class TestPendingSoftDeletes extends TestPendingDeletes {
     assertEquals(0, deletes.numPendingDeletes());
 
     segmentInfo.advanceDocValuesGen();
-    fieldInfo = new FieldInfo("_soft_deletes", 1, false, false, false, IndexOptions.NONE, DocValuesType.NUMERIC, segmentInfo.getNextDocValuesGen(), Collections.emptyMap(), 0, 0, 0, true);
+    fieldInfo = new FieldInfo("_soft_deletes", 1, false, false, false, IndexOptions.NONE, DocValuesType.NUMERIC, segmentInfo.getNextDocValuesGen(), Collections.emptyMap(), 0, 0, 0, 0, NONE, true);
     updates = Arrays.asList(singleUpdate(Arrays.asList(1, DocIdSetIterator.NO_MORE_DOCS), 3, true));
     for (DocValuesFieldUpdates update : updates) {
       deletes.onDocValuesUpdate(fieldInfo, update.iterator());
