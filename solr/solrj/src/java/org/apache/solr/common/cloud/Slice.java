@@ -215,6 +215,9 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
     return null;
   }
 
+  public String getCollection() {
+    return collection;
+  }
   /**
    * Return slice name (shard id).
    */
