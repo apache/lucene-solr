@@ -37,9 +37,10 @@ import static org.apache.solr.common.util.Utils.toJSONString;
  * A Slice contains immutable information about a logical shard (all replicas that share the same shard id).
  */
 public class Slice extends ZkNodeProps implements Iterable<Replica> {
+  public final String collection;
 
   /** Loads multiple slices into a Map from a generic Map that probably came from deserialized JSON. */
-  public static Map<String,Slice> loadAllFromMap(Map<String, Object> genericSlices) {
+  public static Map<String,Slice> loadAllFromMap(String collection, Map<String, Object> genericSlices) {
     if (genericSlices == null) return Collections.emptyMap();
     Map<String, Slice> result = new LinkedHashMap<>(genericSlices.size());
     for (Map.Entry<String, Object> entry : genericSlices.entrySet()) {
@@ -48,7 +49,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
       if (val instanceof Slice) {
         result.put(name, (Slice) val);
       } else if (val instanceof Map) {
-        result.put(name, new Slice(name, null, (Map<String, Object>) val));
+        result.put(name, new Slice(name, null, (Map<String, Object>) val, collection));
       }
     }
     return result;
@@ -128,9 +129,10 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
    * @param replicas The replicas of the slice.  This is used directly and a copy is not made.  If null, replicas will be constructed from props.
    * @param props  The properties of the slice - a shallow copy will always be made.
    */
-  public Slice(String name, Map<String,Replica> replicas, Map<String,Object> props) {
+  public Slice(String name, Map<String,Replica> replicas, Map<String,Object> props, String collection) {
     super( props==null ? new LinkedHashMap<String,Object>(2) : new LinkedHashMap<>(props));
     this.name = name;
+    this.collection = collection;
 
     Object rangeObj = propMap.get(RANGE);
     if (propMap.get(ZkStateReader.STATE_PROP) != null) {
@@ -162,7 +164,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
     replicationFactor = null;  // future
 
     // add the replicas *after* the other properties (for aesthetics, so it's easy to find slice properties in the JSON output)
-    this.replicas = replicas != null ? replicas : makeReplicas((Map<String,Object>)propMap.get(REPLICAS));
+    this.replicas = replicas != null ? replicas : makeReplicas(collection,name, (Map<String,Object>)propMap.get(REPLICAS));
     propMap.put(REPLICAS, this.replicas);
 
     Map<String, Object> rules = (Map<String, Object>) propMap.get("routingRules");
@@ -186,7 +188,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
   }
 
 
-  private Map<String,Replica> makeReplicas(Map<String,Object> genericReplicas) {
+  private Map<String,Replica> makeReplicas(String collection, String slice,Map<String,Object> genericReplicas) {
     if (genericReplicas == null) return new HashMap<>(1);
     Map<String,Replica> result = new LinkedHashMap<>(genericReplicas.size());
     for (Map.Entry<String,Object> entry : genericReplicas.entrySet()) {
@@ -196,7 +198,7 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
       if (val instanceof Replica) {
         r = (Replica)val;
       } else {
-        r = new Replica(name, (Map<String,Object>)val);
+        r = new Replica(name, (Map<String,Object>)val, collection, slice);
       }
       result.put(name, r);
     }
