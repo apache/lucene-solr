@@ -29,9 +29,9 @@ import org.apache.solr.common.util.Utils;
 import org.junit.Before;
 import org.junit.Test;
 
-public class TestConfigSetSchemaHandler extends AbstractFullDistribZkTestBase {
+public class TestConfigSetSolrConfigHandler extends AbstractFullDistribZkTestBase {
 
-  @Before
+  @Test
   public void testCreateConfigSet() throws Exception {
     V2Response rsp = createConfigSet("newConfigSet");
     Map map = (Map) Utils.fromJSONString(rsp.jsonStr());
