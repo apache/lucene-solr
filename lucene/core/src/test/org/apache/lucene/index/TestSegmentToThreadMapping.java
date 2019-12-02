@@ -30,11 +30,13 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.SliceAllocationCircuitBreaker;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NamedThreadFactory;
+import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
 
 public class TestSegmentToThreadMapping extends LuceneTestCase {
@@ -147,7 +149,7 @@ public class TestSegmentToThreadMapping extends LuceneTestCase {
     leafReaderContexts.add(new LeafReaderContext(secondMediumSegmentReader));
     leafReaderContexts.add(new LeafReaderContext(thirdMediumSegmentReader));
 
-    IndexSearcher.LeafSlice[] resultSlices = IndexSearcher.slices(leafReaderContexts, 250_000, 5);
+    IndexSearcher.LeafSlice[] resultSlices = IndexSearcher.slices(leafReaderContexts, 250_000, 5, null);
 
     assertTrue(resultSlices.length == 1);
 
@@ -176,7 +178,7 @@ public class TestSegmentToThreadMapping extends LuceneTestCase {
     leafReaderContexts.add(new LeafReaderContext(seventhLargeSegmentReader));
     leafReaderContexts.add(new LeafReaderContext(eigthLargeSegmentReader));
 
-    IndexSearcher.LeafSlice[] resultSlices = IndexSearcher.slices(leafReaderContexts, 250_000, 5);
+    IndexSearcher.LeafSlice[] resultSlices = IndexSearcher.slices(leafReaderContexts, 250_000, 5, null);
 
     assertTrue(resultSlices.length == 3);
 
@@ -201,7 +203,7 @@ public class TestSegmentToThreadMapping extends LuceneTestCase {
     leafReaderContexts.add(new LeafReaderContext(secondMediumSegmentReader));
     leafReaderContexts.add(new LeafReaderContext(thirdMediumSegmentReader));
 
-    IndexSearcher.LeafSlice[] resultSlices = IndexSearcher.slices(leafReaderContexts, 250_000, 5);
+    IndexSearcher.LeafSlice[] resultSlices = IndexSearcher.slices(leafReaderContexts, 250_000, 5, null);
 
     assertTrue(resultSlices.length == 3);
 
@@ -261,8 +263,131 @@ public class TestSegmentToThreadMapping extends LuceneTestCase {
       leafReaderContexts.add(new LeafReaderContext(dummyIndexReader(random().nextInt((max - min) + 1) + min)));
     }
 
-    IndexSearcher.LeafSlice[] resultSlices = IndexSearcher.slices(leafReaderContexts, 250_000, 5);
+    IndexSearcher.LeafSlice[] resultSlices = IndexSearcher.slices(leafReaderContexts, 250_000, 5, null);
 
     assertTrue(resultSlices.length > 0);
+  }
+
+  public void testBlockingSliceAllocationExecutionCB() throws Exception {
+    ExecutorService service = new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS,
+        new LinkedBlockingQueue<Runnable>(),
+        new NamedThreadFactory("TestIndexSearcher"));
+
+    LeafReader reader = dummyIndexReader(290_000);
+    SliceAllocationCircuitBreaker sliceAllocationCircuitBreaker = new BlockingSliceAllocationCircuitBreaker();
+    IndexSearcher searcher = new IndexSearcher(reader, service, sliceAllocationCircuitBreaker);
+    Query query = new MatchAllDocsQuery();
+
+    searcher.search(query, Integer.MAX_VALUE);
+
+    IndexSearcher.LeafSlice[] slices = searcher.getSlices();
+    assertNotNull(slices);
+
+    assertTrue(slices.length == 1);
+
+    TestUtil.shutdownExecutorService(service);
+  }
+
+  public void testBlockingSliceAllocationWithCB() throws Exception {
+    LeafReader firstReader = dummyIndexReader(290_900);
+    LeafReader secondReader = dummyIndexReader(290_000);
+    LeafReader thirdReader = dummyIndexReader(290_000);
+    LeafReader fourthReader = dummyIndexReader(290_000);
+
+    List<LeafReaderContext> leafReaderContexts = new ArrayList<>();
+
+    leafReaderContexts.add(new LeafReaderContext(firstReader));
+    leafReaderContexts.add(new LeafReaderContext(secondReader));
+    leafReaderContexts.add(new LeafReaderContext(thirdReader));
+    leafReaderContexts.add(new LeafReaderContext(fourthReader));
+
+    SliceAllocationCircuitBreaker sliceAllocationCircuitBreaker = new BlockingSliceAllocationCircuitBreaker();
+    IndexSearcher.LeafSlice[] resultSlices = IndexSearcher.slices(leafReaderContexts, 250_000, 5,
+        sliceAllocationCircuitBreaker);
+
+    assertNotNull(resultSlices);
+    assertTrue(resultSlices.length == 1);
+  }
+
+  private class BlockingSliceAllocationCircuitBreaker implements SliceAllocationCircuitBreaker {
+    @Override
+    public boolean shouldProceed() {
+      return false;
+    }
+  }
+
+  public void testRandomBlockingCircuitBreakerWithLargeSegments() throws Exception {
+    LeafReader firstReader = dummyIndexReader(290_900);
+    LeafReader secondReader = dummyIndexReader(290_000);
+    LeafReader thirdReader = dummyIndexReader(290_000);
+    LeafReader fourthReader = dummyIndexReader(290_000);
+
+    List<LeafReaderContext> leafReaderContexts = new ArrayList<>();
+
+    leafReaderContexts.add(new LeafReaderContext(firstReader));
+    leafReaderContexts.add(new LeafReaderContext(secondReader));
+    leafReaderContexts.add(new LeafReaderContext(thirdReader));
+    leafReaderContexts.add(new LeafReaderContext(fourthReader));
+
+    SliceAllocationCircuitBreaker sliceAllocationCircuitBreaker = new RandomBlockingSliceAllocationCircuitBreaker();
+    IndexSearcher.LeafSlice[] resultSlices = IndexSearcher.slices(leafReaderContexts, 250_000, 5,
+        sliceAllocationCircuitBreaker);
+
+    assertNotNull(resultSlices);
+  }
+
+  public void testRandomBlockingCircuitBreakerWithSmallSegments() throws Exception {
+    LeafReader firstReader = dummyIndexReader(170_000);
+    LeafReader secondReader = dummyIndexReader(170_000);
+    LeafReader thirdReader = dummyIndexReader(170_000);
+    LeafReader fourthReader = dummyIndexReader(170_000);
+
+    List<LeafReaderContext> leafReaderContexts = new ArrayList<>();
+
+    leafReaderContexts.add(new LeafReaderContext(firstReader));
+    leafReaderContexts.add(new LeafReaderContext(secondReader));
+    leafReaderContexts.add(new LeafReaderContext(thirdReader));
+    leafReaderContexts.add(new LeafReaderContext(fourthReader));
+
+    SliceAllocationCircuitBreaker sliceAllocationCircuitBreaker = new RandomBlockingSliceAllocationCircuitBreaker();
+    IndexSearcher.LeafSlice[] resultSlices = IndexSearcher.slices(leafReaderContexts, 250_000, 5,
+        sliceAllocationCircuitBreaker);
+
+    assertNotNull(resultSlices);
+  }
+
+  public void testRandomBlockingCircuitBreakerWithMixedSizeSegments() throws Exception {
+    LeafReader firstReader = dummyIndexReader(170_000);
+    LeafReader secondReader = dummyIndexReader(170_000);
+    LeafReader thirdReader = dummyIndexReader(290_000);
+    LeafReader fourthReader = dummyIndexReader(170_000);
+    LeafReader fifthReader = dummyIndexReader(290_000);
+    LeafReader sixthReader = dummyIndexReader(170_000);
+
+    List<LeafReaderContext> leafReaderContexts = new ArrayList<>();
+
+    leafReaderContexts.add(new LeafReaderContext(firstReader));
+    leafReaderContexts.add(new LeafReaderContext(secondReader));
+    leafReaderContexts.add(new LeafReaderContext(thirdReader));
+    leafReaderContexts.add(new LeafReaderContext(fourthReader));
+    leafReaderContexts.add(new LeafReaderContext(fifthReader));
+    leafReaderContexts.add(new LeafReaderContext(sixthReader));
+
+    SliceAllocationCircuitBreaker sliceAllocationCircuitBreaker = new RandomBlockingSliceAllocationCircuitBreaker();
+    IndexSearcher.LeafSlice[] resultSlices = IndexSearcher.slices(leafReaderContexts, 250_000, 5,
+        sliceAllocationCircuitBreaker);
+
+    assertNotNull(resultSlices);
+  }
+
+  private class RandomBlockingSliceAllocationCircuitBreaker implements SliceAllocationCircuitBreaker {
+    @Override
+    public boolean shouldProceed() {
+      if (random().nextBoolean()) {
+        return false;
+      }
+
+      return true;
+    }
   }
 }

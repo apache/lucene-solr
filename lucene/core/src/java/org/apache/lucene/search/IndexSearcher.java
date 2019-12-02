@@ -123,6 +123,9 @@ public class IndexSearcher {
   // These are only used for multi-threaded search
   private final Executor executor;
 
+  // Used for reducing the impact of concurrent search for redline node status
+  private final SliceAllocationCircuitBreaker sliceAllocationCircuitBreaker;
+
   // the default Similarity
   private static final Similarity defaultSimilarity = new BM25Similarity();
 
@@ -193,6 +196,13 @@ public class IndexSearcher {
     this(r.getContext(), executor);
   }
 
+  /** Same as above with additional Circuit Breaker passed in
+   *
+   * @lucene.experimental */
+  public IndexSearcher(IndexReader r, Executor executor, SliceAllocationCircuitBreaker sliceAllocationCircuitBreaker) {
+    this(r.getContext(), executor, sliceAllocationCircuitBreaker);
+  }
+
   /**
    * Creates a searcher searching the provided top-level {@link IndexReaderContext}.
    * <p>
@@ -211,6 +221,20 @@ public class IndexSearcher {
     assert context.isTopLevel: "IndexSearcher's ReaderContext must be topLevel for reader" + context.reader();
     reader = context.reader();
     this.executor = executor;
+    this.sliceAllocationCircuitBreaker = new QueueSizeBasedCircuitBreaker(executor);
+    this.readerContext = context;
+    leafContexts = context.leaves();
+    this.leafSlices = executor == null ? null : slices(leafContexts);
+  }
+
+  /**
+   * Same as above but allows specifying a custom slice allocation circuit breaker
+   */
+  public IndexSearcher(IndexReaderContext context, Executor executor, SliceAllocationCircuitBreaker sliceAllocationCircuitBreaker) {
+    assert context.isTopLevel: "IndexSearcher's ReaderContext must be topLevel for reader" + context.reader();
+    reader = context.reader();
+    this.executor = executor;
+    this.sliceAllocationCircuitBreaker = sliceAllocationCircuitBreaker;
     this.readerContext = context;
     leafContexts = context.leaves();
     this.leafSlices = executor == null ? null : slices(leafContexts);
@@ -297,16 +321,18 @@ public class IndexSearcher {
    * MAX_DOCS_PER_SLICE will get their own thread
    */
   protected LeafSlice[] slices(List<LeafReaderContext> leaves) {
-    return slices(leaves, MAX_DOCS_PER_SLICE, MAX_SEGMENTS_PER_SLICE);
+    return slices(leaves, MAX_DOCS_PER_SLICE, MAX_SEGMENTS_PER_SLICE, sliceAllocationCircuitBreaker);
   }
 
   /**
    * Static method to segregate LeafReaderContexts amongst multiple slices
    */
   public static LeafSlice[] slices (List<LeafReaderContext> leaves, int maxDocsPerSlice,
-                                    int maxSegmentsPerSlice) {
+                                    int maxSegmentsPerSlice,
+                                    SliceAllocationCircuitBreaker sliceAllocationCircuitBreaker) {
     // Make a copy so we can sort:
     List<LeafReaderContext> sortedLeaves = new ArrayList<>(leaves);
+    boolean isSliceAllocationCBNull = sliceAllocationCircuitBreaker == null;
 
     // Sort by maxDoc, descending:
     Collections.sort(sortedLeaves,
@@ -316,8 +342,8 @@ public class IndexSearcher {
     long docSum = 0;
     List<LeafReaderContext> group = null;
     for (LeafReaderContext ctx : sortedLeaves) {
-      if (ctx.reader().maxDoc() > maxDocsPerSlice) {
-        assert group == null;
+      if (ctx.reader().maxDoc() > maxDocsPerSlice &&
+          (isSliceAllocationCBNull || sliceAllocationCircuitBreaker.shouldProceed())) {
         groupedLeaves.add(Collections.singletonList(ctx));
       } else {
         if (group == null) {
@@ -330,7 +356,8 @@ public class IndexSearcher {
         }
 
         docSum += ctx.reader().maxDoc();
-        if (group.size() >= maxSegmentsPerSlice || docSum > maxDocsPerSlice) {
+        if ((group.size() >= maxSegmentsPerSlice || docSum > maxDocsPerSlice) &&
+            (isSliceAllocationCBNull || sliceAllocationCircuitBreaker.shouldProceed())) {
           group = null;
           docSum = 0;
         }

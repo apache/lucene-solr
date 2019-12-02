@@ -1960,7 +1960,7 @@ public abstract class LuceneTestCase extends Assert {
         ret = new IndexSearcher(r, ex) {
           @Override
           protected LeafSlice[] slices(List<LeafReaderContext> leaves) {
-            return slices(leaves, maxDocPerSlice, maxSegmentsPerSlice);
+            return slices(leaves, maxDocPerSlice, maxSegmentsPerSlice, null);
           }
         };
       } else {
