@@ -1,0 +1,16 @@
+
+apply plugin: 'java-library'
+
+dependencies {
+  api project(':solr:core')
+
+  implementation project(':lucene:analysis:icu')
+  implementation project(':lucene:analysis:smartcn')
+  implementation project(':lucene:analysis:morfologik')
+  implementation project(':lucene:analysis:opennlp')
+  implementation project(':lucene:analysis:smartcn')
+  implementation project(':lucene:analysis:stempel')
+
+  testImplementation project(':solr:test-framework')
+}
+

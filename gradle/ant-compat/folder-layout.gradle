@@ -1,0 +1,26 @@
+// Adapt to custom folder convention.
+allprojects {
+  plugins.withType(JavaPlugin) {
+    sourceSets {
+      main.java.srcDirs = ['src/java']
+      main.resources.srcDirs = ['src/resources']
+      test.java.srcDirs = ['src/test']
+      test.resources.srcDirs = ['src/test-files']
+    }
+
+    task copyTestResources(type: Copy) {
+      from('src/test') {
+        exclude '**/*.java'
+      }
+      into sourceSets.test.java.outputDir
+    }
+    processTestResources.dependsOn copyTestResources
+  }
+}
+
+// Adapt to custom 'web' folder location.
+configure(project(":solr:webapp")) {
+  plugins.withType(WarPlugin) {
+    webAppDirName = "web"
+  }
+}

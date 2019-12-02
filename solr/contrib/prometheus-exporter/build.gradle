@@ -1,0 +1,28 @@
+
+apply plugin: 'java-library'
+
+dependencies {
+  implementation project(':solr:core')
+  implementation project(':lucene:analysis:common')
+
+  implementation ('io.prometheus:simpleclient')
+  implementation ('io.prometheus:simpleclient_common')
+  implementation ('io.prometheus:simpleclient_httpserver')
+  implementation ('net.thisptr:jackson-jq', {
+    exclude group: "org.jruby.joni", module: "joni"
+  })
+  implementation ('net.sourceforge.argparse4j:argparse4j')
+
+  testImplementation ('org.apache.httpcomponents:httpcore')
+  testImplementation ('org.eclipse.jetty:jetty-servlet')
+
+  testImplementation project(':solr:test-framework')
+}
+
+// Add two folders to default packaging.
+assemblePackaging {
+  from(projectDir, {
+    include "bin/**"
+    include "conf/**"
+  })
+}

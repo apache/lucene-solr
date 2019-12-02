@@ -1,0 +1,21 @@
+// Emit more periodic info for travis builds (otherwise they timeout due to
+// no input on the console).
+
+import org.gradle.api.tasks.testing.logging.*
+
+if (hasProperty("travis")) {
+  allprojects {
+    tasks.withType(Test) { task ->
+      maxParallelForks = 2
+
+      afterSuite { desc, result ->
+        if (desc.className) {
+          def tc = result.testCount
+          def tcs = (tc == 1 ? 'test' : 'tests')
+
+          logger.lifecycle("Completed: ${desc.className} (${tc} ${tcs})")
+        }
+      }
+    }
+  }
+}

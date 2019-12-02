@@ -1,0 +1,33 @@
+Typical workflow and tasks
+==========================
+
+This shows some typical workflow gradle commands.
+
+Run tests on a module:
+gradlew -p lucene/core test
+
+Run test of a single-class (run "gradlew :helpTests" for more):
+gradlew -p lucene/core test --tests "*Demo*"
+
+Run all tests and validation checks on a module:
+gradlew -p lucene/core check
+
+Run all tests and validation checks on everything:
+gradlew check
+
+Run all validation checks but skip all tests:
+gradlew check -x test
+
+Assemble a single module's JAR (here for lucene-core):
+gradlew -p lucene/core assemble
+ls lucene/core/build/libs
+
+Create all distributable packages, POMs, etc. and create a
+local maven repository for inspection:
+gradlew mavenLocal
+ls -R build/maven-local/
+
+Put together Solr distribution:
+gradlew -p solr/packaging assemble
+ls solr/packaging/build/solr-*
+

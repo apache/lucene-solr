@@ -1,0 +1,42 @@
+
+// This adds a root project task to install all artifacts to a build-local
+// Maven repository (so that pom files can be manually reviewed).
+
+configure(rootProject) {
+  ext {
+    mavenLocalDir = file("${buildDir}/maven-local")
+  }
+
+  task mavenLocal() {
+    group "Publishing"
+    description "Publish Maven JARs and POMs locally to " + mavenLocalDir
+
+    doLast {
+      logger.lifecycle "Local maven artifacts (poms, jars) created at: ${mavenLocalDir}"
+    }
+  }
+
+  task mavenLocalClean(type: Delete) {
+    delete mavenLocalDir
+  }
+
+  configure(subprojects.findAll { it.path in rootProject.published }) {
+    plugins.withType(PublishingPlugin) {
+      publishing {
+        repositories {
+          maven {
+            name = 'build'
+            url = mavenLocalDir
+          }
+        }
+      }
+
+      tasks.matching { it.name == "publishJarsPublicationToBuildRepository" }.all { task ->
+        // Clean prior to republishing to local build repository.
+        task.dependsOn mavenLocalClean
+        // Attach to root project's mavenLocal task.
+        mavenLocal.dependsOn task
+      }
+    }
+  }
+}

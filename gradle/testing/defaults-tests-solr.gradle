@@ -1,0 +1,13 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+
+// Solr-specific test configs.
+
+configure(allprojects.findAll {project -> project.path.startsWith(":solr") }) {
+  plugins.withType(JavaPlugin) {
+    test {
+      systemProperty 'tests.disableHdfs', Os.isFamily(Os.FAMILY_WINDOWS) ? 'true' : 'false'
+      systemProperty 'jetty.testMode', '1'
+      systemProperty 'jetty.insecurerandom', '1'
+    }
+  }
+}

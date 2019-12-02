@@ -1,0 +1,15 @@
+// Stick to previous artifact names (not identical to path/ folders).
+configure(subprojects.findAll { it.path.contains(':solr:contrib:') }) {
+  project.archivesBaseName = project.archivesBaseName.replace("-contrib-", "-")
+}
+
+// This project has a different artifact name (solr-contrib-cell). Don't know why.
+configure(project(":solr:contrib:extraction")) {
+  archivesBaseName = "solr-cell"
+}
+
+configure(subprojects.findAll { it.path.contains(':lucene:analysis:') }) {
+  project.archivesBaseName = project.archivesBaseName.replace("-analysis-", "-analyzers-")
+}
+
+

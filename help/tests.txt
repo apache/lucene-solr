@@ -1,0 +1,83 @@
+Testing
+=======
+
+Examples below assume cwd at the gradlew script in the top directory of
+the project's checkout.
+
+
+Generic test/ checkup commands
+------------------------------
+
+Run all unit tests:
+
+gradlew test
+
+Run all verification tasks, including tests:
+
+gradlew check
+
+Run all verification tasks, excluding tests (-x is gradle's generic task
+exclusion mechanism):
+
+gradlew check -x test
+
+Run verification for a selected module only:
+
+gradlew :lucene:core:check     # By full gradle project path
+gradlew -p lucene/core check   # By folder designation + task
+
+
+Randomization
+-------------
+
+Run tests with the given starting seed:
+
+gradlew :lucene:misc:test -Ptests.seed=DEADBEEF
+
+
+Filtering
+---------
+
+Run tests of lucene-core module:
+
+gradlew -p lucene/core test
+
+Run a single test case (from a single module). Uses gradle's built-in filtering
+(https://docs.gradle.org/current/userguide/java_testing.html#test_filtering):
+
+gradlew -p lucene/core test --tests TestDemo
+
+Run all tests in a package:
+
+gradlew -p lucene/core test --tests "org.apache.lucene.document.*"
+
+Run all test classes/ methods that match this pattern:
+
+gradlew -p lucene/core test --tests "*testFeatureMissing*"
+
+
+Test groups
+-----------
+
+Tests can be filtered by an annotation they're marked with.
+Some test group annotations include: @AwaitsFix, @Nightly, @Slow
+
+This uses filtering infrastructure on the *runner* (randomizedtesting), 
+not gradle's built-in mechanisms (but it can be combined with "--tests").
+For example, run all lucene-core tests annotated as @Slow:
+
+gradlew -p lucene/core test -Ptests.filter=@Slow
+
+Test group filters can be combined into Boolean expressions:
+
+gradlew -p lucene/core test "default and not(@awaitsfix or @slow)"
+
+
+Reiteration ("beasting")
+------------------------
+
+Multiply each test case N times (this works by repeating the same test
+within the same JVM; it also works in IDEs):
+
+gradlew -p lucene/core test --tests TestDemo -Ptests.iters=5
+

@@ -30,3 +30,6 @@ __pycache__
 /dev-tools/scripts/scripts.iml
 .DS_Store
 
+build/
+.gradle/
+.idea/

@@ -1,0 +1,34 @@
+// This adds a configuration and artifact to solr-core which exports "post.jar" tool.
+// this should be a separate project instead (it is self-contained and classes are reused
+// in many places).
+
+configure(project(":solr:core")) {
+  plugins.withType(JavaPlugin) {
+    configurations {
+      postJar
+    }
+
+    task assemblePostJar(type: Jar) {
+      dependsOn classes
+
+      archiveFileName = "post.jar"
+      destinationDirectory = file("${buildDir}/postJar")
+
+      from(sourceSets.main.output, {
+        include "org/apache/solr/util/CLIO.class"
+        include "org/apache/solr/util/SimplePostTool*.class"
+        include "org/apache/solr/util/RTimer*.class"
+      })
+
+      manifest {
+        attributes("Main-Class": "org.apache.solr.util.SimplePostTool")
+      }
+    }
+
+    artifacts {
+      postJar assemblePostJar
+    }
+
+    assemble.dependsOn assemblePostJar
+  }
+}

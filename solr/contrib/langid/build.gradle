@@ -1,0 +1,15 @@
+
+apply plugin: 'java-library'
+
+dependencies {
+  implementation project(':solr:core')
+
+  implementation ('org.apache.tika:tika-core') { transitive = false }
+
+  implementation 'com.cybozu.labs:langdetect'
+  implementation 'net.arnx:jsonic'
+  implementation 'org.apache.opennlp:opennlp-tools'
+
+
+  testImplementation project(':solr:test-framework')
+}

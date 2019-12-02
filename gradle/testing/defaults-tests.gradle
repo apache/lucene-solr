@@ -1,0 +1,51 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+import org.gradle.api.tasks.testing.logging.*
+
+allprojects {
+  plugins.withType(JavaPlugin) {
+    project.ext {
+      testsWorkDir = file("${buildDir}/tmp/tests-cwd")
+      testsTmpDir = file("${buildDir}/tmp/tests-tmp")
+    }
+
+    test {
+      workingDir testsWorkDir
+
+      useJUnit()
+
+      // Set up default parallel execution limits.
+      maxParallelForks = (int) Math.max(1, Math.min(Runtime.runtime.availableProcessors() / 2.0, 3.0))
+
+      minHeapSize = "256m"
+      maxHeapSize = "512m"
+
+      systemProperty 'java.awt.headless', 'true'
+      systemProperty 'jdk.map.althashing.threshold', '0'
+
+      if (!Os.isFamily(Os.FAMILY_WINDOWS)) {
+        systemProperty 'java.security.egd', 'file:/dev/./urandom'
+      }
+
+      // Set up cwd and temp locations.
+      systemProperty("java.io.tmpdir", testsTmpDir)
+      doFirst {
+        testsWorkDir.mkdirs()
+        testsTmpDir.mkdirs()
+      }
+
+      // Set up logging.
+      testLogging {
+        events TestLogEvent.FAILED
+        exceptionFormat TestExceptionFormat.FULL
+        showExceptions true
+        showCauses true
+        showStackTraces true
+      }
+
+      doFirst {
+        // Print some diagnostics about locations used.
+        logger.info("Test folders for {}: cwd={}, tmp={}", project.path, testsWorkDir, testsTmpDir)
+      }
+    }
+  }
+}

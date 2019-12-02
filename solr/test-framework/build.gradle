@@ -1,0 +1,15 @@
+
+apply plugin: 'java-library'
+
+dependencies {
+  api project(':solr:core')
+  api project(':solr:solrj')
+  api project(':lucene:test-framework')
+  api project(':lucene:analysis:common')
+
+  api 'org.apache.logging.log4j:log4j-core'
+  api 'io.opentracing:opentracing-mock'
+
+  implementation 'io.dropwizard.metrics:metrics-jetty9'
+  implementation 'com.lmax:disruptor'
+}

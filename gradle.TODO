@@ -1,0 +1,52 @@
+
+The gradle build is currently missing or could use some love in the following areas:
+
+- Apply forbiddenAPIs
+
+- configure security policy/ sandboxing for tests (!).
+
+- add test 'beasting' (rerunning the same suite multiple times). I'm afraid it'll be difficult
+  to run it sensibly because gradle doesn't offer cwd separation for the forked test runners (?)
+
+- jar checksums, jar checksum computation and validation.
+  this should be done without intermediate folders (directly
+  on dependency sets).
+
+- add a :helpDeps explanation to how the dependency system works (palantir plugin, lockfile) and
+  how to retrieve structured information about current dependencies of a given module 
+  (in a tree-like output).
+
+- identify and list precommit tasks so that they can be ported one by one.
+
+- identify and port any other "check" utilities that may be called from ant.
+
+- identify and port various "regenerate" tasks from ant builds (javacc, precompiled automata, etc.)
+
+- add rendering of javadocs (gradlew javadoc) and attaching them to maven publications.
+
+- fill in POM details in gradle/defaults-maven.gradle so that they reflect the previous content better
+  (dependencies aside).
+
+- Add any IDE integration layers that should be added (I use IntelliJ and it imports the project
+  out of the box, without the need for any special tuning).
+
+- Clean up dependencies, especially for Solr: any { transitive = false } should just explicitly
+  exclude whatever they don't need (and their dependencies currently declared explicitly
+  should be folded). Figure out which scope to import a dependency to.
+
+- add Solr packaging for docs/* (see TODO in packaging/build.gradle; currently XSLT...)
+
+- I didn't bother adding Solr dist/test-framework to packaging (who'd use it from a binary
+  distribution?)
+
+Intentional differences:
+
+- the back-compatibility target 'resolve' is added to gradle but it's really for informational purposes
+  and debugging. Packaging should be done from subcomponent configurations and dependencies,
+  not from source folders... "gradlew -p packaging assemble" puts together the entire Solr distribution
+  under packaging/build where it doesn't interfere with sources.
+
+  'resolve' for Lucene  also does *not* copy test dependencies under lib/ (like ant version does).
+
+- transitive export of certain core libraries from solr-core/ solrj (guava, etc.).
+

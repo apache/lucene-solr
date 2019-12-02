@@ -1,0 +1,12 @@
+apply plugin: 'java-library'
+
+dependencies {
+  implementation project(':lucene:core')
+  implementation project(':lucene:facet')
+  implementation project(':lucene:queries')
+  implementation project(':lucene:analysis:common')
+  implementation project(':lucene:queryparser')
+  implementation project(':lucene:expressions')
+  
+  testImplementation project(':lucene:test-framework')
+}

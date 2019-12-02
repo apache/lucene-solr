@@ -1,0 +1,42 @@
+
+// Exclude inner classes from testing.
+allprojects {
+  tasks.withType(Test) { task ->
+    exclude '**/*$*'
+  }
+}
+
+// Exclude test classes that are not actually stand-alone tests (they're executed from other stuff).
+configure(project(":lucene:replicator")) {
+  plugins.withType(JavaPlugin) {
+    test {
+      exclude "**/SimpleServer*"
+    }
+  }
+}
+
+
+// Resources from top-level project folder are looked up via getClass(). Strange.
+configure(project(":lucene:benchmark")) {
+  plugins.withType(JavaPlugin) {
+    task syncConf(type: Sync) {
+      from('conf')
+      into file("${sourceSets.test.java.outputDir}/conf")
+    }
+    processTestResources.dependsOn syncConf
+  }
+}
+
+// lucene:replicator has httpclient dependency with transitive commons-logging:1.2 but currently
+// requires 1.1.2. This commons-logging should be removed entirely and replaced with slf4j-to-*
+// redirector.
+configure(project(":lucene:replicator")) {
+  plugins.withType(JavaPlugin) {
+    configurations.all {
+      resolutionStrategy {
+        force 'commons-logging:commons-logging:1.1.3'
+      }
+    }
+  }
+}
+

@@ -1,0 +1,10 @@
+
+apply plugin: 'java-library'
+
+dependencies {
+  api project(':lucene:core')
+
+  implementation project(':lucene:queries')
+
+  testImplementation project(':lucene:test-framework')
+}

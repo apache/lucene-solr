@@ -1,0 +1,19 @@
+apply plugin: 'java-library'
+
+dependencies {
+  api project(':lucene:core')
+
+  implementation project(':lucene:facet')
+
+  implementation('org.apache.httpcomponents:httpclient', {
+    exclude group: "commons-codec", module: "commons-codec"
+  })
+
+  implementation 'org.eclipse.jetty:jetty-server'
+  implementation('org.eclipse.jetty:jetty-servlet', {
+    exclude group: "org.eclipse.jetty", module: "jetty-security"
+  })
+  implementation 'org.eclipse.jetty:jetty-continuation'
+
+  testImplementation project(':lucene:test-framework')
+}

@@ -1,0 +1,30 @@
+// Add "help" tasks which display plain text files under 'help' folder.
+
+configure(rootProject) {
+  def helpFiles = [
+      ["Workflow", "help/workflow.txt", "Typical workflow commands."],
+      ["Ant", "help/ant-gradle.txt", "Ant-gradle migration help."],
+      ["Tests", "help/tests.txt", "Tests, filtering, beasting, etc."],
+  ]
+
+  helpFiles.each { section, path, sectionInfo ->
+    task "help${section}" {
+      group = 'Help (developer guides and hints)'
+      description = sectionInfo
+      doFirst {
+        println "\n" + rootProject.file(path).getText("UTF-8")
+      }
+    }
+  }
+
+  help {
+    doLast {
+      println ""
+      println "This is an experimental Lucene/Solr gradle build. See some"
+      println "guidelines, ant-equivalent commands etc. under help/*; or type:"
+      helpFiles.each { entry ->
+        println "  gradlew :help${entry[0]}  # ${entry[2]}"
+      }
+    }
+  }
+}

@@ -1,0 +1,14 @@
+
+apply plugin: 'java-library'
+
+dependencies {
+  implementation project(':solr:core')
+
+  implementation('org.apache.velocity.tools:velocity-tools-view-jsp', {
+    exclude group: "commons-beanutils", module: "commons-beanutils"
+    exclude group: "org.apache.commons", module: "commons-digester3"
+    exclude group: "com.github.cliftonlabs", module: "json-simple"
+  })
+
+  testImplementation project(':solr:test-framework')
+}

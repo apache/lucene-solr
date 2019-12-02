@@ -1,0 +1,15 @@
+
+apply plugin: 'java-library'
+
+dependencies {
+  implementation project(':solr:core')
+
+  testImplementation project(':solr:test-framework')
+
+  testImplementation('org.mockito:mockito-core', {
+    exclude group: "net.bytebuddy", module: "byte-buddy-agent"
+  })
+  testImplementation ('org.hsqldb:hsqldb')
+  testImplementation ('org.apache.derby:derby')
+  testImplementation ('org.objenesis:objenesis')
+}

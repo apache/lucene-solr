@@ -1,0 +1,72 @@
+
+// Configure test randomization seeds and derived test properties.
+
+allprojects {
+  ext {
+    // Support passing overrides via -P or -D.
+    propertyOrDefault = { propName, defValue ->
+      def result
+      if (project.hasProperty(propName)) {
+        result = project.getProperty(propName)
+      } else if (System.properties.containsKey(propName)) {
+        result = System.properties.get(propName)
+      } else {
+        result = defValue
+      }
+      return result
+    }
+  }
+}
+
+// Pick the "root" seed from which everything else is derived.
+configure(rootProject) {
+  ext {
+    rootSeed = propertyOrDefault('tests.seed', String.format("%08X", new Random().nextLong()))
+  }
+
+  task randomizationInfo() {
+    doFirst {
+      logger.lifecycle("Running tests with randomization seed: tests.seed=${rootSeed}")
+    }
+  }
+}
+
+// Any test task will trigger display of randomization settings.
+allprojects {
+  tasks.withType(Test) { task ->
+    task.dependsOn rootProject.randomizationInfo
+  }
+}
+
+// Append randomization properties to tests, allow overriding these properties with -Pkey=value.
+allprojects {
+  tasks.withType(Test) { task ->
+    [
+        'tests.seed': rootSeed,
+        'tests.multiplier': '1',
+        'tests.codec': 'random',
+        'tests.postingsformat': 'random',
+        'tests.docvaluesformat': 'random',
+        'tests.locale': 'random',
+        'tests.timezone': 'random',
+        'tests.directory': 'random',
+        'tests.nightly': 'false',
+        'tests.weekly': 'false',
+        'tests.monster': 'false',
+        'tests.slow': 'true',
+        'tests.verbose': 'false',
+        'tests.filterstacks': 'true',
+        'tests.asserts': 'true',
+        'tests.iters': null,
+        'tests.filter': null,
+        'tests.linedocsfile': 'europarl.lines.txt.gz',
+        'tests.cleanthreads.sysprop': 'perMethod'
+    ].each { propName, defValue ->
+      def value = propertyOrDefault(propName, defValue)
+      if (value != null) {
+        systemProperty propName, value
+      }
+    }
+  }
+}
+

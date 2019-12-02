@@ -1,0 +1,210 @@
+
+// For Lucene, a 'resolve' task that copies any (non-project) dependencies
+// under lib/ folder.
+configure(allprojects.findAll {project -> project.path.startsWith(":lucene") }) {
+  plugins.withType(JavaPlugin) {
+    configurations {
+      runtimeLibs {
+        extendsFrom runtimeElements
+        extendsFrom testRuntimeClasspath
+      }
+    }
+
+    task resolve(type: Sync) {
+      from({
+        return configurations.runtimeLibs.copyRecursive { dep ->
+          !(dep instanceof org.gradle.api.artifacts.ProjectDependency)
+        }
+      })
+
+      into 'lib'
+    }
+  }
+}
+
+// For Solr, a 'resolve' task is much more complex. There are three folders:
+// lib/
+// test-lib/
+// lucene-libs/
+//
+// There doesn't seem to be one ideal set of rules on how these should be created, but
+// I tried to imitate the current (master) logic present in ivy and ant files in this way:
+//
+// The "solr platform" set of dependencies is a union of all deps for (core, solrj, server).
+//
+// Then:
+// lib - these are module's "own" dependencies, excluding Lucene's that are not present in the
+//       solr platform.
+// lucene-libs - these are lucene modules declared as module's dependencies and not
+//       present in solr platform.
+// test-lib/ - libs not present in solr platform and not included in solr:test-framework.
+//
+// None of these are really needed with gradle... they should be collected just in the distribution
+// package, not at each project's level.
+//
+// Unfortunately this "resolution" process is also related to how the final Solr packaging is assembled.
+// I don't know how to untie these two cleanly.
+//
+
+configure(allprojects.findAll {project -> project.path.startsWith(":solr:contrib") }) {
+  plugins.withType(JavaPlugin) {
+    ext {
+      packagingDir = file("${buildDir}/packaging")
+      deps = file("${packagingDir}/${project.name}")
+    }
+
+    configurations {
+      solrPlatformLibs
+      solrTestPlatformLibs
+      runtimeLibs {
+        extendsFrom runtimeElements
+      }
+      packaging
+    }
+
+    dependencies {
+      solrPlatformLibs project(":solr:core")
+      solrPlatformLibs project(":solr:solrj")
+      solrPlatformLibs project(":solr:server")
+
+      solrTestPlatformLibs project(":solr:test-framework")
+    }
+
+    // An aggregate that configures lib, lucene-libs and test-lib in a temporary location.
+    task assemblePackaging(type: Sync) {
+      from "README.txt"
+
+      from ({
+        def externalLibs = configurations.runtimeLibs.copyRecursive { dep ->
+          if (dep instanceof org.gradle.api.artifacts.ProjectDependency) {
+            return !dep.dependencyProject.path.startsWith(":solr")
+          } else {
+            return true
+          }
+        }
+        return externalLibs - configurations.solrPlatformLibs
+      }, {
+        exclude "lucene-*"
+        into "lib"
+      })
+
+      from ({
+        def projectLibs = configurations.runtimeLibs.copyRecursive { dep ->
+          (dep instanceof org.gradle.api.artifacts.ProjectDependency)
+        }
+        return projectLibs - configurations.solrPlatformLibs
+      }, {
+        include "lucene-*"
+        into "lucene-libs"
+      })
+
+      into deps
+    }
+
+    task syncLib(type: Sync) {
+      dependsOn assemblePackaging
+
+      from(file("${deps}/lib"), {
+        include "**"
+      })
+      into file("${projectDir}/lib")
+    }
+
+    task syncTestLib(type: Sync) {
+      // From test runtime classpath exclude:
+      // 1) project dependencies (and their dependencies)
+      // 2) runtime dependencies
+      // What remains is this module's "own" test dependency.
+      from({
+        def testRuntimeLibs = configurations.testRuntimeClasspath.copyRecursive { dep ->
+          !(dep instanceof org.gradle.api.artifacts.ProjectDependency)
+        }
+
+        return testRuntimeLibs - configurations.runtimeLibs - configurations.solrTestPlatformLibs
+      })
+
+      into file("${projectDir}/test-lib")
+    }
+
+    task resolve() {
+      dependsOn syncLib, syncTestLib
+    }
+
+    // Contrib packaging currently depends on internal resolve.
+    artifacts {
+      packaging packagingDir, {
+        builtBy assemblePackaging
+      }
+    }
+  }
+}
+
+configure(project(":solr:example")) {
+  evaluationDependsOn(":solr:example") // explicitly wait for other configs to be applied
+
+  task resolve(type: Copy) {
+    from(configurations.postJar, {
+      into "exampledocs/"
+    })
+
+    from(configurations.dih, {
+      into "example-DIH/solr/db/lib"
+    })
+
+    into projectDir
+  }
+}
+
+configure(project(":solr:server")) {
+  evaluationDependsOn(":solr:server")
+
+  task resolve(type: Copy) {
+    dependsOn assemblePackaging
+
+    from({ packagingDir }, {
+      include "**/*.jar"
+      include "solr-webapp/webapp/**"
+      includeEmptyDirs false
+    })
+
+    into projectDir
+  }
+}
+
+configure(project(":solr:core")) {
+  evaluationDependsOn(":solr:core")
+
+  configurations {
+    runtimeLibs {
+      extendsFrom runtimeElements
+    }
+  }
+
+  task resolve(type: Sync) {
+    from({
+      def ownDeps = configurations.runtimeLibs.copyRecursive { dep ->
+        if (dep instanceof org.gradle.api.artifacts.ProjectDependency) {
+          return !dep.dependencyProject.path.startsWith(":solr")
+        } else {
+          return true
+        }
+      }
+      return ownDeps
+    }, {
+      exclude "lucene-*"
+    })
+
+    into "lib"
+  }
+}
+
+configure(project(":solr:solrj")) {
+  evaluationDependsOn(":solr:solrj")
+
+  task resolve(type: Sync) {
+    from({ configurations.runtimeClasspath }, {
+    })
+
+    into "lib"
+  }
+}
