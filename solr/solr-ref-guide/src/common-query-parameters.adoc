@@ -276,7 +276,7 @@ fq=quantity_in_stock:[5 TO *]
 fq={!frange l=10 u=100}mul(popularity,price)
 fq={!frange cost=200 l=0}pow(mul(sum(1, query('tag:smartphone')), div(1,avg_rating)), 2.3)
 
-These are the same filters run w/o caching.  The simple range query on the `quantity_in_stock` field will be run in parallel with the main query like a traditional lucene filter, while the 2 `frange` filters will only be checked against each document has already matched the main query and the `quantity_in_stock` range query -- first the simpler `mul(popularity,price)` will be checked (because of it's implicit `cost=100`) and only if it matches will the final very complex filter (with it's higher `cost=200`) be checked.
+These are the same filters run w/o caching.  The simple range query on the `quantity_in_stock` field will be run in parallel with the main query like a traditional lucene filter, while the 2 `frange` filters will only be checked against each document has already matched the main query and the `quantity_in_stock` range query -- first the simpler `mul(popularity,price)` will be checked (because of its implicit `cost=100`) and only if it matches will the final very complex filter (with its higher `cost=200`) be checked.
 
 [source,text]
 q=some keywords
