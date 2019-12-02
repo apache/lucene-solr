@@ -103,7 +103,6 @@ public class ClusterState implements JSONWriter.Writable {
    * Implementation note: This method resolves the collection reference by calling
    * {@link CollectionRef#get()} which can make a call to ZooKeeper. This is necessary
    * because the semantics of how collection list is loaded have changed in SOLR-6629.
-   * Please see javadocs in {@link ZkStateReader#refreshCollectionList(Watcher)}
    */
   public boolean hasCollection(String collectionName) {
     return getCollectionOrNull(collectionName) != null;
@@ -140,7 +139,6 @@ public class ClusterState implements JSONWriter.Writable {
    * Implementation note: This method resolves the collection reference by calling
    * {@link CollectionRef#get()} which may make a call to ZooKeeper. This is necessary
    * because the semantics of how collection list is loaded have changed in SOLR-6629.
-   * Please see javadocs in {@link ZkStateReader#refreshCollectionList(Watcher)}
    */
   public DocCollection getCollectionOrNull(String collectionName, boolean allowCached) {
     CollectionRef ref = collectionStates.get(collectionName);
@@ -153,7 +151,6 @@ public class ClusterState implements JSONWriter.Writable {
    * Implementation note: This method resolves the collection reference by calling
    * {@link CollectionRef#get()} which can make a call to ZooKeeper. This is necessary
    * because the semantics of how collection list is loaded have changed in SOLR-6629.
-   * Please see javadocs in {@link ZkStateReader#refreshCollectionList(Watcher)}
    *
    * @return a map of collection name vs DocCollection object
    */
