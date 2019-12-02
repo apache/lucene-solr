@@ -29,6 +29,7 @@ import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.ConfigOverlay;
 import org.apache.solr.core.RequestParams;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.xml.sax.InputSource;
@@ -53,6 +54,12 @@ public class ConfigSetResourceUtil {
     String path = ZkConfigManager.CONFIGS_ZKNODE + "/" + configSetName + "/" + RequestParams.RESOURCE;
     if (!ZkController.isResourceExists(client, path)) {
       requestParams = new RequestParams(Collections.EMPTY_MAP, -1);
+      try {
+        client.create(path, requestParams.toByteArray(), CreateMode.PERSISTENT, true);
+      } catch (KeeperException | InterruptedException e) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Failed to create path:" + path, e);
+      }
+      return requestParams;
     }
     InputSource is = ConfigSetResourceUtil.populate(client, path, new Stat());
     requestParams = RequestParams.getFreshRequestParams(is.getByteStream());
@@ -64,6 +71,12 @@ public class ConfigSetResourceUtil {
     String path = ZkConfigManager.CONFIGS_ZKNODE + "/" + configSetName + "/" + ConfigOverlay.RESOURCE_NAME;
     if (!ZkController.isResourceExists(client, path)) {
       overlay = new ConfigOverlay(Collections.EMPTY_MAP, -1);
+      try {
+        client.create(path, overlay.toByteArray(), CreateMode.PERSISTENT, true);
+      } catch (KeeperException | InterruptedException e) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Failed to create path:" + path, e);
+      }
+      return overlay;
     }
     Stat stat = new Stat();
     InputSource inputSource = ConfigSetResourceUtil.populate(client, path, stat);

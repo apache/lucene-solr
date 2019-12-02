@@ -131,7 +131,7 @@ public class SolrConfigManager {
       RequestParams params = RequestParams.getFreshRequestParams(
           req.getCore().getResourceLoader(), req.getCore().getSolrConfig().getRequestParams());
       ConfigOverlay overlay = SolrConfig.getConfigOverlay(req.getCore().getResourceLoader());
-      command.handlePOST("", overlay, params, false, null);
+      command.handlePOST("", overlay, params, false, null, null);
     } finally {
       RequestHandlerUtils.addExperimentalFormatWarning(rsp);
     }
@@ -148,7 +148,7 @@ public class SolrConfigManager {
     try {
       Command command = new Command(req, rsp, "POST");
       SolrConfig config = getSolrConfig(configSet, client);
-      command.handlePOST(configSet, config.getOverlay(), config.getRequestParams(), true, client);
+      command.handlePOST(configSet, config.getOverlay(), config.getRequestParams(), true, client, config);
     } finally {
       RequestHandlerUtils.addExperimentalFormatWarning(rsp);
     }
@@ -356,7 +356,8 @@ public class SolrConfigManager {
       return pluginInfo;
     }
 
-    private void handlePOST(String configSet, ConfigOverlay overlay, RequestParams requestParams, Boolean nocore, SolrZkClient client) throws IOException {
+    private void handlePOST(String configSet, ConfigOverlay overlay, RequestParams requestParams, Boolean nocore, SolrZkClient client, SolrConfig config)
+        throws IOException {
       List<CommandOperation> ops = CommandOperation.readCommands(req.getContentStreams(), resp.getValues());
       if (ops == null) return;
       try {
@@ -372,9 +373,9 @@ public class SolrConfigManager {
               }
             } else {
               if (nocore) {
-                handleCommands(opsCopy, overlay, nocore, null, configSet, client);
+                handleCommands(opsCopy, overlay, nocore, null, configSet, client, config);
               } else {
-                handleCommands(opsCopy, overlay, nocore, req.getCore().getResourceLoader(), configSet, client);
+                handleCommands(opsCopy, overlay, nocore, req.getCore().getResourceLoader(), configSet, client, null);
               }
             }
             break;//succeeded . so no need to go over the loop again
@@ -500,7 +501,7 @@ public class SolrConfigManager {
     }
 
     private void handleCommands(List<CommandOperation> ops, ConfigOverlay overlay,
-                                Boolean noCore, SolrResourceLoader loader, String configSet, SolrZkClient client) throws IOException {
+                                Boolean noCore, SolrResourceLoader loader, String configSet, SolrZkClient client, SolrConfig config) throws IOException {
       for (CommandOperation op : ops) {
         switch (op.name) {
           case SET_PROPERTY:
@@ -527,7 +528,7 @@ public class SolrConfigManager {
                 if ("delete".equals(prefix)) {
                   overlay = deleteNamedComponent(op, overlay, info.getCleanTag());
                 } else {
-                  overlay = updateNamedPlugin(info, op, overlay, prefix.equals("create") || prefix.equals("add"));
+                  overlay = updateNamedPlugin(info, op, overlay, prefix.equals("create") || prefix.equals("add"), config);
                 }
               } else {
                 op.unknownOperation();
@@ -582,7 +583,8 @@ public class SolrConfigManager {
       }
     }
 
-    private ConfigOverlay updateNamedPlugin(SolrConfig.SolrPluginInfo info, CommandOperation op, ConfigOverlay overlay, boolean isCeate) {
+    private ConfigOverlay updateNamedPlugin(SolrConfig.SolrPluginInfo info, CommandOperation op, ConfigOverlay overlay, boolean isCeate
+        , SolrConfig config) {
       String name = op.getStr(NAME);
       String clz = info.options.contains(REQUIRE_CLASS) ? op.getStr(CLASS_NAME) : op.getStr(CLASS_NAME, null);
       op.getMap(DEFAULTS, null);
@@ -603,7 +605,10 @@ public class SolrConfigManager {
         }
       }
       if (!verifyClass(op, clz, info.clazz)) return overlay;
-      if (pluginExists(info, overlay, name)) {
+      if (req.getCore() != null) {
+        config = req.getCore().getSolrConfig();
+      }
+      if (pluginExists(info, overlay, name, config)) {
         if (isCeate) {
           op.addError(formatString(" ''{0}'' already exists . Do an ''{1}'' , if you want to change it ", name, "update-" + info.getTagCleanLower()));
           return overlay;
@@ -620,8 +625,8 @@ public class SolrConfigManager {
       }
     }
 
-    private boolean pluginExists(SolrConfig.SolrPluginInfo info, ConfigOverlay overlay, String name) {
-      List<PluginInfo> l = req.getCore().getSolrConfig().getPluginInfos(info.clazz.getName());
+    private boolean pluginExists(SolrConfig.SolrPluginInfo info, ConfigOverlay overlay, String name, SolrConfig config) {
+      List<PluginInfo> l = config.getPluginInfos(info.clazz.getName());
       for (PluginInfo pluginInfo : l) if (name.equals(pluginInfo.name)) return true;
       return overlay.getNamedPlugins(info.getCleanTag()).containsKey(name);
     }
@@ -631,7 +636,9 @@ public class SolrConfigManager {
       if (!"true".equals(String.valueOf(op.getStr("runtimeLib", null)))) {
         //this is not dynamically loaded so we can verify the class right away
         try {
-          req.getCore().createInitInstance(new PluginInfo(SolrRequestHandler.TYPE, op.getDataMap()), expected, clz, "");
+          if (req.getCore() != null) {
+            req.getCore().createInitInstance(new PluginInfo(SolrRequestHandler.TYPE, op.getDataMap()), expected, clz, "");
+          }
         } catch (Exception e) {
           log.error("Error checking plugin : ", e);
           op.addError(e.getMessage());
