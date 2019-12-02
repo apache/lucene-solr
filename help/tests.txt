@@ -81,3 +81,26 @@ within the same JVM; it also works in IDEs):
 
 gradlew -p lucene/core test --tests TestDemo -Ptests.iters=5
 
+Tests tasks will be (by default) re-executed on each invocation because
+we pick a random global tests.seed. If you run the same tests twice
+with the same seed, the test task will be skipped (as it is up-to-date
+with respect to source code):
+
+gradlew -p lucene/core test -Ptests.seed=deadbeef
+
+to force re-execution of tests, even for the same master seed, apply
+cleanTest task:
+
+gradlew -p lucene/core cleanTest test -Ptests.seed=deadbeef
+
+
+
+
+
+
+
+
+
+
+
+
