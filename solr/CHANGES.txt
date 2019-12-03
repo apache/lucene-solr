@@ -219,6 +219,9 @@ Other Changes
 
 * SOLR-13992: Code refactored to have collection name, slice name in Replica, Slice (noble)
 
+* SOLR-13998: Add thread safety annotations to Solr. This only introduces the annotations and doesn't add these to
+  existing classes. (Anshum Gupta, Mark Miller)
+
 ==================  8.3.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
