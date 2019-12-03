@@ -1237,18 +1237,34 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
      *
      *  We also need to check for isLeader here because a peer can also receive commit message if the request was directly send to the peer.
      */
-    if ( updateCommand != null &&
+    if (updateCommand != null &&
         updateCommand.getClass() == CommitUpdateCommand.class &&
         isLeader && replicaType.equals(Replica.Type.SHARED)
         && !((CommitUpdateCommand) updateCommand).softCommit) {
-      /*
-       * TODO SPLITSHARD triggers soft commits.
-       * We don't persist on softCommit because there is nothing to so we should ignore those kinds of commits.
-       * Configuring behavior based on soft/hard commit seems like we're getting into an abstraction deeper then
-       * what the DUP is concerned about so we may want to consider moving this code somewhere more appropriate
-       * in the future (deeper in the stack)
-       */
-      writeToSharedStore();
+      if (corePullLock == null) {
+        // Since corePullLock is null, this update request has no document to add or delete i.e. it is an isolated commit.
+        // Few ways isolated commit can manifest:
+        // 1. Client does indexing for while before issuing a separate commit.
+        // 2. SolrJ client issuing a separate follow up commit command to affected shards than actual indexing request
+        //    even when SolrJ client's caller issued a single update command with commit=true.
+        // Shared replica has a hard requirement of processing each indexing batch with a hard commit(either explicit or
+        // implicit) because that is how, at the end of an indexing batch, synchronous push to shared store gets hold
+        // of the segment files on local disk.
+        // Therefore, isolated commits are meaningless for SHARED replicas and we can ignore writing to shared store. 
+        // If we ever need an isolated commit to write to shared store for some scenario, we should first understand if a 
+        // pull from shared store was done or not(why not) and push should happen under corePullLock.readLock()
+        log.info("Isolated commit encountered for a SHARED replica, ignoring writing to shared store. collection="
+            + cloudDesc.getCollectionName() + " shard=" + cloudDesc.getShardId() + " core=" + req.getCore().getName());
+      } else {
+        /*
+         * TODO SPLITSHARD triggers soft commits.
+         * We don't persist on softCommit because there is nothing to so we should ignore those kinds of commits.
+         * Configuring behavior based on soft/hard commit seems like we're getting into an abstraction deeper then
+         * what the DUP is concerned about so we may want to consider moving this code somewhere more appropriate
+         * in the future (deeper in the stack)
+         */
+        writeToSharedStore();
+      }
     }
 
     // TODO: if not a forward and replication req is not specified, we could
