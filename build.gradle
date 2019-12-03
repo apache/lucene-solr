@@ -53,4 +53,4 @@ apply from: file('gradle/ant-compat/post-jar.gradle')
 apply from: file('gradle/ant-compat/test-classes-cross-deps.gradle')
 apply from: file('gradle/ant-compat/artifact-naming.gradle')
 apply from: file('gradle/ant-compat/solr-forbidden-apis.gradle')
-
+apply from: file('gradle/ant-compat/forbidden-api-rules-in-sync.gradle')

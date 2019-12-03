@@ -1,0 +1,37 @@
+
+// Just make sure the forbidden API rules are in sync between gradle and ant versions until
+// we get rid of ant build.
+
+def linesOf(FileTree ftree) {
+  return ftree.collectMany { path ->
+    path.readLines("UTF-8")
+      .collect { line -> line.trim() }
+      .findAll { line -> !line.startsWith("#") }
+      .unique()
+      .collect { line -> [path: path, line: line] }
+  }.groupBy { e -> e.line }
+}
+
+configure(rootProject) {
+  task verifyForbiddenApiRulesInSync() {
+    doFirst {
+      // Read all rules line by line from ant, gradle, remove comments, uniq.
+      // Rule sets should be identical.
+      def gradleRules = linesOf(fileTree("gradle/validation/forbidden-apis", { include "**/*.txt" }))
+      def antRules = linesOf(project(":lucene").fileTree("tools/forbiddenApis", { include "**/*.txt" }))
+
+      def antOnlyLines = antRules.keySet() - gradleRules.keySet()
+      def gradleOnlyLines = gradleRules.keySet() - antRules.keySet()
+
+      if (!gradleOnlyLines.isEmpty() || !antOnlyLines.isEmpty()) {
+        project.logger.log(LogLevel.ERROR, "The following rules don't have counterparts:\n" +
+          (gradleRules.findAll { gradleOnlyLines.contains(it.key) } + antRules.findAll { antOnlyLines.contains(it.key)})
+            .collectMany { it.value }
+            .join("\n"))
+        throw new GradleException("Forbidden APIs rules out of sync.")
+      }
+    }
+  }
+
+  check.dependsOn verifyForbiddenApiRulesInSync
+}
