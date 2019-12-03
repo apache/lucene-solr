@@ -16,8 +16,8 @@ allprojects {
 // eagerly).
 
 // CI systems.
-apply from: file('gradle/buildscan.gradle')
-apply from: file('gradle/travis.gradle')
+apply from: file('gradle/ci/buildscan.gradle')
+apply from: file('gradle/ci/travis.gradle')
 
 // Set up defaults and configure aspects for certain modules or functionality
 // (java, tests)
@@ -26,13 +26,15 @@ apply from: file('gradle/defaults-java.gradle')
 apply from: file('gradle/testing/defaults-tests.gradle')
 apply from: file('gradle/testing/defaults-tests-solr.gradle')
 apply from: file('gradle/testing/randomization.gradle')
-apply from: file('gradle/defaults-maven.gradle')
+
+// Maven publishing.
+apply from: file('gradle/maven/defaults-maven.gradle')
 
 // IDE settings and specials.
 apply from: file('gradle/defaults-idea.gradle')
 
 // Additional development aids.
-apply from: file('gradle/maven-local.gradle')
+apply from: file('gradle/maven/maven-local.gradle')
 apply from: file('gradle/testing/per-project-summary.gradle')
 apply from: file('gradle/testing/slowest-tests-at-end.gradle')
 apply from: file('gradle/help.gradle')
