@@ -115,7 +115,6 @@ public final class ManagedIndexSchema extends IndexSchema {
     this.isMutable = true;
     this.managedSchemaResourceName = name;
     this.schemaZkVersion = schemaZkVersion;
-    //@todo maybe remove lock
     this.schemaUpdateLock = schemaUpdateLock;
   }
   
@@ -1156,7 +1155,6 @@ public final class ManagedIndexSchema extends IndexSchema {
   
   @Override
   protected void postReadInform() {
-    //@todo check exclusive
     if (loader instanceof ZkSolrResourceLoader) {
       super.postReadInform();
       for (FieldType fieldType : fieldTypes.values()) {

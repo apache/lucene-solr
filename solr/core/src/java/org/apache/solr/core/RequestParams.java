@@ -174,7 +174,6 @@ public class RequestParams implements MapSerializable {
     try {
       Object[] o = getMapAndVersion(inputStream, RequestParams.RESOURCE);
       RequestParams requestParams = new RequestParams((Map) o[0], (Integer) o[1]);
-      //@todo check skipped version > check
       log.info("request params refreshed to version {}", requestParams.getZnodeVersion());
       return requestParams;
     } finally {

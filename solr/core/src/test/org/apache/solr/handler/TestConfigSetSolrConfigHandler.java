@@ -26,7 +26,6 @@ import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.V2Response;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase;
 import org.apache.solr.common.util.Utils;
-import org.junit.Before;
 import org.junit.Test;
 
 public class TestConfigSetSolrConfigHandler extends AbstractFullDistribZkTestBase {

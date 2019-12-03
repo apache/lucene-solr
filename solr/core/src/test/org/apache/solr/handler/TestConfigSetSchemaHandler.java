@@ -20,7 +20,6 @@ package org.apache.solr.handler;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 import org.apache.solr.client.solrj.SolrRequest;
