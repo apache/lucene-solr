@@ -18,16 +18,6 @@
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
 
-import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.CLUSTER_PREFERENCES;
-import static org.apache.solr.client.solrj.cloud.autoscaling.TestPolicy2.loadFromResource;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.CORES;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.FREEDISK;
-import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.REPLICA;
-import static org.apache.solr.common.cloud.ZkStateReader.CLUSTER_STATE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOVEREPLICA;
-
 import java.io.IOException;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
@@ -45,6 +35,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
@@ -83,8 +75,15 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.CLUSTER_PREFERENCES;
+import static org.apache.solr.client.solrj.cloud.autoscaling.TestPolicy2.loadFromResource;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.CORES;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.FREEDISK;
+import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.REPLICA;
+import static org.apache.solr.common.cloud.ZkStateReader.CLUSTER_STATE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.ADDREPLICA;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.MOVEREPLICA;
 
 public class TestPolicy extends SolrTestCaseJ4 {
   boolean useNodeset ;
@@ -2595,13 +2594,13 @@ public class TestPolicy extends SolrTestCaseJ4 {
             if (node.equals("node1")) {
               Map m = Utils.makeMap("newColl",
                   Utils.makeMap("shard1", Collections.singletonList(new ReplicaInfo("r1", "shard1",
-                      new Replica("r1", Utils.makeMap(ZkStateReader.NODE_NAME_PROP, "node1")),
+                      new Replica("r1", Utils.makeMap(ZkStateReader.NODE_NAME_PROP, "node1"), "newColl", "shard1"),
                       Utils.makeMap(FREEDISK.perReplicaValue, 200)))));
               return m;
             } else if (node.equals("node2")) {
               Map m = Utils.makeMap("newColl",
                   Utils.makeMap("shard2", Collections.singletonList(new ReplicaInfo("r1", "shard2",
-                      new Replica("r1", Utils.makeMap(ZkStateReader.NODE_NAME_PROP, "node2")),
+                      new Replica("r1", Utils.makeMap(ZkStateReader.NODE_NAME_PROP, "node2"),"newColl", "shard2"),
                       Utils.makeMap(FREEDISK.perReplicaValue, 200)))));
               return m;
             }
@@ -2624,9 +2623,9 @@ public class TestPolicy extends SolrTestCaseJ4 {
               @Override
               public Replica getLeader(String sliceName) {
                 if (sliceName.equals("shard1"))
-                  return new Replica("r1", Utils.makeMap(ZkStateReader.NODE_NAME_PROP, "node1"));
+                  return new Replica("r1", Utils.makeMap(ZkStateReader.NODE_NAME_PROP, "node1"), name, "shard1");
                 if (sliceName.equals("shard2"))
-                  return new Replica("r2", Utils.makeMap(ZkStateReader.NODE_NAME_PROP, "node2"));
+                  return new Replica("r2", Utils.makeMap(ZkStateReader.NODE_NAME_PROP, "node2"),name, "shard2");
                 return null;
               }
             };
@@ -2643,20 +2642,20 @@ public class TestPolicy extends SolrTestCaseJ4 {
   public void testMoveReplicaLeaderlast() {
 
     List<Pair<ReplicaInfo, Row>> validReplicas = new ArrayList<>();
-    Replica replica = new Replica("r1", Utils.makeMap("leader", "true"));
-    ReplicaInfo replicaInfo = new ReplicaInfo("c1", "s1", replica, new HashMap<>());
+    Replica replica = new Replica("r1", Utils.makeMap("leader", "true"), "c1", "s1");
+    ReplicaInfo replicaInfo = new ReplicaInfo(replica.collection, replica.slice ,replica, new HashMap<>());
     validReplicas.add(new Pair<>(replicaInfo, null));
 
     replicaInfo = new ReplicaInfo("r4", "c1_s2_r1", "c1", "s2", Replica.Type.NRT, "n1", Collections.singletonMap("leader", "true"));
     validReplicas.add(new Pair<>(replicaInfo, null));
 
 
-    replica = new Replica("r2", Utils.makeMap("leader", false));
-    replicaInfo = new ReplicaInfo("c1", "s1", replica, new HashMap<>());
+    replica = new Replica("r2", Utils.makeMap("leader", false),"c1","s1");
+    replicaInfo = new ReplicaInfo(replica.collection, replica.slice, replica, new HashMap<>());
     validReplicas.add(new Pair<>(replicaInfo, null));
 
-    replica = new Replica("r3", Utils.makeMap("leader", false));
-    replicaInfo = new ReplicaInfo("c1", "s1", replica, new HashMap<>());
+    replica = new Replica("r3", Utils.makeMap("leader", false),"c1","s1");
+    replicaInfo = new ReplicaInfo(replica.collection,replica.slice, replica, new HashMap<>());
     validReplicas.add(new Pair<>(replicaInfo, null));
 
 

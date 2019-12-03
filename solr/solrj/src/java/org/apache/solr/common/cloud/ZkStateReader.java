@@ -946,6 +946,11 @@ public class ZkStateReader implements SolrCloseable {
     return null;
   }
 
+  public boolean isNodeLive(String node) {
+    return liveNodes.contains(node);
+
+  }
+
   /**
    * Get shard leader properties, with retry if none exist.
    */

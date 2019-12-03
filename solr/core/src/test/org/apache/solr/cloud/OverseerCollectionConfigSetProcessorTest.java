@@ -309,12 +309,12 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
         String slice = replica.getStr(ZkStateReader.SHARD_ID_PROP);
         if (!slices.containsKey(slice)) slices.put(slice, new HashMap<>());
         String replicaName = replica.getStr(ZkStateReader.CORE_NAME_PROP);
-        slices.get(slice).put(replicaName, new Replica(replicaName, replica.getProperties()));
+        slices.get(slice).put(replicaName, new Replica(replicaName, replica.getProperties(), docCollection.getName(), slice));
       }
 
       Map<String, Slice> slicesMap = new HashMap<>();
       for (Map.Entry<String, Map<String, Replica>> entry : slices.entrySet()) {
-        slicesMap.put(entry.getKey(), new Slice(entry.getKey(), entry.getValue(), null));
+        slicesMap.put(entry.getKey(), new Slice(entry.getKey(), entry.getValue(), null,docCollection.getName()));
       }
 
       return docCollection.copyWithSlices(slicesMap);
