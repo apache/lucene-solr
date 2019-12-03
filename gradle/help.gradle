@@ -3,7 +3,7 @@
 configure(rootProject) {
   def helpFiles = [
       ["Workflow", "help/workflow.txt", "Typical workflow commands."],
-      ["Ant", "help/ant-gradle.txt", "Ant-gradle migration help."],
+      ["Ant", "help/ant.txt", "Ant-gradle migration help."],
       ["Tests", "help/tests.txt", "Tests, filtering, beasting, etc."],
   ]
 
@@ -22,9 +22,21 @@ configure(rootProject) {
       println ""
       println "This is an experimental Lucene/Solr gradle build. See some"
       println "guidelines, ant-equivalent commands etc. under help/*; or type:"
-      helpFiles.each { entry ->
-        println "  gradlew :help${entry[0]}  # ${entry[2]}"
+      helpFiles.each { section, path, sectionInfo ->
+        println "  gradlew :help${section}  # ${sectionInfo}"
       }
     }
   }
+
+  task allHelpFilesExit() {
+    doFirst {
+      helpFiles.each { section, path, sectionInfo ->
+        if (!rootProject.file(path).exists()) {
+          throw new GradleException("Help file missing: ${path} (correct help.gradle)")
+        }
+      }
+    }
+  }
+
+  check.dependsOn allHelpFilesExit
 }
