@@ -85,6 +85,7 @@ public class DimensionalRoutedAliasUpdateProcessorTest extends RoutedAliasUpdate
   @AfterClass
   public static void finish() throws Exception {
     IOUtils.close(solrClient);
+    solrClient = null;
   }
   @Test
   public void testTimeCat() throws Exception {
