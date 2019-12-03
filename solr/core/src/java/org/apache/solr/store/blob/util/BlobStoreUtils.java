@@ -125,8 +125,8 @@ public class BlobStoreUtils {
             return;
           }
 
-          // Get local metadata + resolve with blob metadata
-          ServerSideMetadata serverMetadata = new ServerSideMetadata(coreName, coreContainer);
+          // Get local metadata + resolve with blob metadata. Given we're doing a pull, don't need to reserve commit point
+          ServerSideMetadata serverMetadata = new ServerSideMetadata(coreName, coreContainer, false);
           SharedMetadataResolutionResult resolutionResult = SharedStoreResolutionUtil.resolveMetadata(serverMetadata, blobstoreMetadata);
           PushPullData pushPullData = new PushPullData.Builder()
               .setCollectionName(collectionName)

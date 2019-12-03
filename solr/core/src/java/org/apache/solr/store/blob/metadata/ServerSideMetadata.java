@@ -27,6 +27,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 import com.google.common.collect.ImmutableCollection;
 import com.google.common.collect.ImmutableCollection.Builder;
@@ -60,6 +61,13 @@ public class ServerSideMetadata {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  /**
+   * When an instance of this class is created for pushing data to the Blob store, reserve the commit point for a short
+   * while to give the caller time to save it while it works on it. Can't save it here directly as it would be awkward to
+   * try to release it on all execution paths.
+   */
+  private static final long RESERVE_COMMIT_DURATION = TimeUnit.SECONDS.toMillis(1L);
+
   private static final int MAX_ATTEMPTS_TO_CAPTURE_COMMIT_POINT = 5;
   /**
    * Files composing the core. They are are referenced from the core's current commit point's segments_N file
@@ -84,29 +92,22 @@ public class ServerSideMetadata {
    * This generation number is only meant to identify a scenario where local index generation number is higher than
    * what we have in blob. In that scenario we would switch index to a new directory when pulling contents from blob. 
    * Because in the presence of higher generation number locally, blob contents cannot establish their legitimacy.
+   * It is also used for saving (reserving) local commit while doing pushes.
    */
   private final long generation;
   private final SolrCore core;
   private final String coreName;
   private final CoreContainer container;
-  /**
-   * path of snapshot directory if we are supposed to take snapshot of the active segment files, otherwise, null
-   */
-  private final String snapshotDirPath;
-
-  public ServerSideMetadata(String coreName, CoreContainer container) throws Exception {
-    this(coreName, container, false);
-  }
 
   /**
    * Given a core name, builds the local metadata
    *
-   * @param takeSnapshot whether to take snapshot of active segments or not. If true then the snapshot directory path can be 
-   *                     found through {@link #getSnapshotDirPath()}.
+   * @param reserveCommit if <code>true</code>, latest commit is reserved for a short while ({@link #RESERVE_COMMIT_DURATION})
+   *                      to (reasonably) allow the caller to save it while it pushes files to Blob.
    *
    * @throws Exception if core corresponding to <code>coreName</code> can't be found.
    */
-  public ServerSideMetadata(String coreName, CoreContainer container, boolean takeSnapshot) throws Exception {
+  public ServerSideMetadata(String coreName, CoreContainer container, boolean reserveCommit) throws Exception {
     this.coreName = coreName;
     this.container = container;
     this.core = container.getCore(coreName);
@@ -119,12 +120,6 @@ public class ServerSideMetadata {
       Directory coreDir = core.getDirectoryFactory().get(core.getIndexDir(), DirectoryFactory.DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
       try {
 
-        if (takeSnapshot) {
-          snapshotDirPath = core.getDataDir() + "index.snapshot." + System.nanoTime();
-        } else {
-          snapshotDirPath = null;
-        }
-
         ImmutableCollection.Builder<CoreFileData> latestCommitBuilder;
         IndexCommit latestCommit;
         int attempt = 1;
@@ -136,7 +131,7 @@ public class ServerSideMetadata {
             // Work around possible bug returning same file multiple times by using a set here
             // See org.apache.solr.handler.ReplicationHandler.getFileList()
             latestCommitBuilder = new ImmutableSet.Builder<>();
-            latestCommit = tryCapturingLatestCommit(coreDir, latestCommitBuilder);
+            latestCommit = tryCapturingLatestCommit(coreDir, latestCommitBuilder, reserveCommit);
             break;
           } catch (FileNotFoundException | NoSuchFileException ex) {
             attempt++;
@@ -168,53 +163,30 @@ public class ServerSideMetadata {
     }
   }
 
-  private IndexCommit tryCapturingLatestCommit(Directory coreDir, Builder<CoreFileData> latestCommitBuilder) throws BlobException, IOException {
+  private IndexCommit tryCapturingLatestCommit(Directory coreDir, Builder<CoreFileData> latestCommitBuilder, boolean reserveCommit) throws BlobException, IOException {
     IndexDeletionPolicyWrapper deletionPolicy = core.getDeletionPolicy();
     IndexCommit latestCommit = deletionPolicy.getLatestCommit();
     if (latestCommit == null) {
       throw new BlobException("Core " + core.getName() + " has no available commit point");
     }
 
-    deletionPolicy.saveCommitPoint(latestCommit.getGeneration());
-    try {
-      buildCommitFiles(coreDir, latestCommit, latestCommitBuilder);
-      return latestCommit;
-    } finally {
-      deletionPolicy.releaseCommitPoint(latestCommit.getGeneration());
+    if (reserveCommit) {
+      // Caller will save the commit point shortly. See CorePushPull.pushToBlobStore()
+      deletionPolicy.setReserveDuration(latestCommit.getGeneration(), RESERVE_COMMIT_DURATION);
     }
+
+    for (String fileName : latestCommit.getFileNames()) {
+      // Note we add here all segment related files as well as the commit point's segments_N file
+      // Commit points do not contain lock (write.lock) files.
+      try (final IndexInput indexInput = coreDir.openInput(fileName, IOContext.READONCE)) {
+        long length = indexInput.length();
+        long checksum = CodecUtil.retrieveChecksum(indexInput);
+        latestCommitBuilder.add(new CoreFileData(fileName, length, checksum));
+      }
+    }
+    return latestCommit;
   }
 
-  private void buildCommitFiles(Directory coreDir, IndexCommit commit, ImmutableCollection.Builder<CoreFileData> builder) throws IOException {
-    Directory snapshotDir = null;
-    try {
-      if (snapshotDirPath != null) {
-        snapshotDir = core.getDirectoryFactory().get(snapshotDirPath, DirectoryFactory.DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
-      }
-      for (String fileName : commit.getFileNames()) {
-        // Note we add here all segment related files as well as the commit point's segments_N file
-        // Note commit points do not contain lock (write.lock) files.
-        try (final IndexInput indexInput = coreDir.openInput(fileName, IOContext.READONCE)) {
-          long length = indexInput.length();
-          long checksum = CodecUtil.retrieveChecksum(indexInput);
-          builder.add(new CoreFileData(fileName, length, checksum));
-        }
-        if (snapshotDir != null) {
-          // take snapshot of the file
-          snapshotDir.copyFrom(coreDir, fileName, fileName, DirectoryFactory.IOCONTEXT_NO_CACHE);
-        }
-      }
-    } catch (Exception ex) {
-      if (snapshotDir != null) {
-        core.getDirectoryFactory().doneWithDirectory(snapshotDir);
-        core.getDirectoryFactory().remove(snapshotDir);
-      }
-      throw ex;
-    } finally {
-      if (snapshotDir != null) {
-        core.getDirectoryFactory().release(snapshotDir);
-      }
-    }
-  }
 
   public String getCoreName() {
     return this.coreName;
@@ -238,10 +210,6 @@ public class ServerSideMetadata {
 
   public ImmutableSet<String> getAllFiles() {
     return this.allFiles;
-  }
-
-  public String getSnapshotDirPath() {
-    return snapshotDirPath;
   }
 
   /**
@@ -338,5 +306,4 @@ public class ServerSideMetadata {
       return Objects.hash(fileName, fileSize, checksum);
     }
   }
-
 }

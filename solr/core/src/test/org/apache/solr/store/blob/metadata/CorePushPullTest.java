@@ -308,7 +308,7 @@ public class CorePushPullTest extends SolrTestCaseJ4 {
   
   private SharedMetadataResolutionResult doPull(SolrCore core, BlobCoreMetadata bcm) throws Exception {
     // build the require metadata
-    ServerSideMetadata solrServerMetadata = new ServerSideMetadata(core.getName(), h.getCoreContainer());
+    ServerSideMetadata solrServerMetadata = new ServerSideMetadata(core.getName(), h.getCoreContainer(), false);
     
     PushPullData ppd = new PushPullData.Builder()
         .setCollectionName(collectionName)

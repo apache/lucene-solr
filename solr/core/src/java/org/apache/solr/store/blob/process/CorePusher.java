@@ -17,19 +17,16 @@
 
 package org.apache.solr.store.blob.process;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Locale;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexNotFoundException;
-import org.apache.lucene.store.Directory;
 import org.apache.solr.client.solrj.cloud.autoscaling.BadVersionException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.core.CoreContainer;
-import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.store.blob.client.BlobCoreMetadata;
 import org.apache.solr.store.blob.client.CoreStorageClient;
@@ -78,7 +75,6 @@ public class CorePusher {
       String coreName = pushPullData.getCoreName();
       SharedCoreConcurrencyController concurrencyController = coreContainer.getSharedStoreManager().getSharedCoreConcurrencyController();
       ReentrantLock corePushLock = concurrencyController.getCorePushLock(collectionName, shardName, coreName);
-      String snapshotDirPath = null;
       // TODO: Timebox the following push logic, in case we are stuck for long time. We would also need to respect any
       //       time constraints that comes with indexing request since we will be doing wasteful work if the client has already 
       //       bailed on us. This might be better done as part of bigger work item where we spike out how to allocate/configure
@@ -132,10 +128,9 @@ public class CorePusher {
           }
 
           log.info("Push to shared store initiating with PushPullData= " + pushPullData.toString());
-          // Resolve the differences between the local shard index data and shard index data on shared store
-          // if there is any
-          ServerSideMetadata localCoreMetadata = new ServerSideMetadata(coreName, coreContainer, /* takeSnapshot */true);
-          snapshotDirPath = localCoreMetadata.getSnapshotDirPath();
+          // Resolve the differences (if any) between the local shard index data and shard index data on shared store
+          // Reserving the commit point so it can be saved while pushing files to Blob store.
+          ServerSideMetadata localCoreMetadata = new ServerSideMetadata(coreName, coreContainer, true);
           SharedMetadataResolutionResult resolutionResult = SharedStoreResolutionUtil.resolveMetadata(
               localCoreMetadata, coreVersionMetadata.getBlobCoreMetadata());
 
@@ -184,15 +179,8 @@ public class CorePusher {
           log.info(String.format(Locale.ROOT,
               "Successfully pushed to shared store, pushLockTime=%s pushPullData=%s", lockAcquisitionTime, pushPullData.toString()));
         } finally {
-          try {
             concurrencyController.recordState(collectionName, shardName, coreName, SharedCoreStage.BLOB_PUSH_FINISHED);
-            if (snapshotDirPath != null) {
-              // we are done with push we can now remove the snapshot directory
-              removeSnapshotDirectory(core, snapshotDirPath);
-            }
-          } finally {
             core.close();
-          }
         }
       } finally {
         corePushLock.unlock();
@@ -213,18 +201,6 @@ public class CorePusher {
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "CorePusher failed to push shard index for "
           + pushPullData.getShardName() + " due to unexpected exception", e);
-    }
-  }
-
-  private void removeSnapshotDirectory(SolrCore core, String snapshotDirPath) throws IOException {
-    Directory snapshotDir = core.getDirectoryFactory().get(snapshotDirPath, DirectoryFactory.DirContext.DEFAULT, core.getSolrConfig().indexConfig.lockType);
-    try {
-      core.getDirectoryFactory().doneWithDirectory(snapshotDir);
-      core.getDirectoryFactory().remove(snapshotDir);
-    } catch (Exception e) {
-      log.warn("Cannot remove snapshot directory " + snapshotDirPath, e);
-    } finally {
-      core.getDirectoryFactory().release(snapshotDir);
     }
   }
 }
