@@ -1,0 +1,2 @@
+@defaultMessage Use java.nio.charset.StandardCharsets instead
+org.apache.commons.codec.Charsets

@@ -1,0 +1,1 @@
+junit.framework.TestCase @ All classes should derive from LuceneTestCase

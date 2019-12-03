@@ -5,6 +5,7 @@ configure(rootProject) {
       ["Workflow", "help/workflow.txt", "Typical workflow commands."],
       ["Ant", "help/ant.txt", "Ant-gradle migration help."],
       ["Tests", "help/tests.txt", "Tests, filtering, beasting, etc."],
+      ["ForbiddenApis", "help/forbiddenApis.txt", "How to add/apply rules for forbidden APIs."],
   ]
 
   helpFiles.each { section, path, sectionInfo ->

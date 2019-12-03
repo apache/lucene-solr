@@ -1,0 +1,3 @@
+@defaultMessage Use slf4j classes instead
+org.apache.log4j.**
+org.apache.logging.log4j.**

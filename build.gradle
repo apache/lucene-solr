@@ -2,6 +2,7 @@ plugins {
   id "base"
   id "com.palantir.consistent-versions" version "1.12.4"
   id "com.gradle.build-scan" version "3.0"
+  id 'de.thetaphi.forbiddenapis' version '2.7' apply false
 }
 
 // Project version and main properties. Applies to all projects.
@@ -33,6 +34,9 @@ apply from: file('gradle/maven/defaults-maven.gradle')
 // IDE settings and specials.
 apply from: file('gradle/defaults-idea.gradle')
 
+// Validation tasks
+apply from: file('gradle/validation/forbidden-apis.gradle')
+
 // Additional development aids.
 apply from: file('gradle/maven/maven-local.gradle')
 apply from: file('gradle/testing/per-project-summary.gradle')
@@ -48,4 +52,5 @@ apply from: file('gradle/ant-compat/resolve.gradle')
 apply from: file('gradle/ant-compat/post-jar.gradle')
 apply from: file('gradle/ant-compat/test-classes-cross-deps.gradle')
 apply from: file('gradle/ant-compat/artifact-naming.gradle')
+apply from: file('gradle/ant-compat/solr-forbidden-apis.gradle')
 
