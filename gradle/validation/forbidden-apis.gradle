@@ -102,5 +102,16 @@ allprojects { prj ->
         doFirst dynamicSignatures.curry(configurations.testCompileClasspath, "solr")
       }
     }
+
+    // We rely on resolved configurations to compute the relevant set of rule
+    // files for forbiddenApis. Since we don't want to resolve these configurations until
+    // the task is executed, we can't really use them as task inputs properly. This is a
+    // chicken-and-egg problem.
+    //
+    // This is the simplest workaround possible: just point at all the rule files and indicate
+    // them as inputs. This way if a rule is modified, checks will be reapplied.
+    configure([forbiddenApisMain, forbiddenApisTest]) { task ->
+      task.inputs.dir(rootProject.file("gradle/validation/forbidden-apis"))
+    }
   })
 }
