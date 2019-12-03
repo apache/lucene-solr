@@ -156,7 +156,7 @@ public class CorePushPull {
 
         // When we build solrServerMetadata we requested to reserve the commit point for some short duration. Assumption is
         // it took less than this duration to get here (didn't do anything blocking) and now we actually save the commit
-        // point for the (pontentially long) time it takes to push all files to the Blob store.
+        // point for the (potentially long) time it takes to push all files to the Blob store.
         Directory coreIndexDir = solrCore.getDirectoryFactory().get(solrCore.getIndexDir(), DirectoryFactory.DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
         solrCore.getDeletionPolicy().saveCommitPoint(solrServerMetadata.getGeneration());
         try {
