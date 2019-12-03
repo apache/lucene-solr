@@ -28,6 +28,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -231,6 +232,8 @@ public class SharedStorageSplitTest extends SolrCloudSharedStoreTestCase  {
     final AtomicBoolean doIndex = new AtomicBoolean(true);
     final AtomicInteger docsIndexed = new AtomicInteger();
     final AtomicInteger failures = new AtomicInteger();
+    // allows waiting for a given number of updates
+    final AtomicReference<CountDownLatch> updateLatch = new AtomicReference<>(new CountDownLatch(random().nextInt(4)));
     Thread[] indexThreads = new Thread[nThreads];
     try {
 
@@ -248,6 +251,7 @@ public class SharedStorageSplitTest extends SolrCloudSharedStoreTestCase  {
               UpdateResponse ursp = updateReq.commit(client, collectionName);  // uncomment this if you want a commit each time
               // UpdateResponse ursp = updateReq.process(client, collectionName);
 
+              updateLatch.get().countDown();
               if (ursp.getStatus() == 0) {
                 model.put(docId, 1L);  // in the future, keep track of a version per document and reuse ids to keep index from growing too large
               } else {
@@ -261,6 +265,7 @@ public class SharedStorageSplitTest extends SolrCloudSharedStoreTestCase  {
                 fail(e.getMessage());
                 break;
               }
+              updateLatch.get().countDown();  // do this on exception as well so we don't get stuck
               failures.incrementAndGet();
             }
           }
@@ -271,8 +276,7 @@ public class SharedStorageSplitTest extends SolrCloudSharedStoreTestCase  {
         thread.start();
       }
 
-      Thread.sleep(100);  // wait for a few docs to be indexed before invoking split
-      int docCount = model.size();
+      updateLatch.get().await(); // wait for some documents to be indexed
 
       if (doSplit) {
         CollectionAdminRequest.SplitShard splitShard = CollectionAdminRequest.splitShard(collectionName)
@@ -281,13 +285,14 @@ public class SharedStorageSplitTest extends SolrCloudSharedStoreTestCase  {
         waitForState("Timed out waiting for sub shards to be active.",
             collectionName, activeClusterShape(2, 3 * repFactor));  // 2 repFactor for the new split shards, 1 repFactor for old replicas
       } else {
+        // The sleep here is fine since this code is only executed manually while debugging
+        // this test.
         Thread.sleep(10 * 1000);
       }
 
-      // make sure that docs were able to be indexed during the split
-      assertTrue(model.size() > docCount);
-
-      Thread.sleep(100);  // wait for a few more docs to be indexed after split
+      // wait for a few more docs to be indexed after split
+      updateLatch.set(new CountDownLatch(random().nextInt(4)));
+      updateLatch.get().await();
 
     } finally {
       // shut down the indexers
