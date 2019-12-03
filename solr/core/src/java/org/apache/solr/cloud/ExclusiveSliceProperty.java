@@ -296,7 +296,7 @@ class ExclusiveSliceProperty {
     if (newSlice != null) {
       replica = newSlice.getReplica(replicaName);
     } else {
-      newSlice = new Slice(origSlice.getName(), origSlice.getReplicasCopy(), origSlice.shallowCopy());
+      newSlice = new Slice(origSlice.getName(), origSlice.getReplicasCopy(), origSlice.shallowCopy(), origSlice.collection);
       changedSlices.put(origSlice.getName(), newSlice);
       replica = newSlice.getReplica(replicaName);
     }

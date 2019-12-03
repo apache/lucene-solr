@@ -1,4 +1,6 @@
 <!--
+_(If you are a project committer then you may remove some/all of the following template.)_
+
 Before creating a pull request, please file an issue in the ASF Jira system for Lucene or Solr:
 
 * https://issues.apache.org/jira/projects/LUCENE

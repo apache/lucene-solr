@@ -93,6 +93,8 @@ Improvements
   that match a class of terms to pass a ByteRunAutomaton matching those that class
   back to the visitor. (Alan Woodward, David Smiley)
 
+* LUCENE-9073: IntervalQuery to respond field on toString() and explain() (Mikhail Khludnev)
+
 Optimizations
 
 * LUCENE-8928: When building a kd-tree for dimensions n > 2, compute exact bounds for an inner node every N splits
@@ -249,7 +251,7 @@ Optimizations
   non-competitive hits. (Adrien Grand)
 
 * LUCENE-8935: BooleanQuery with no scoring clause can now early terminate the query when
-the total hits is not requested.
+  the total hits is not requested. (Jim Ferenczi)
 
 * LUCENE-8941: Matches on wildcard queries will defer building their full
   disjunction until a MatchesIterator is pulled (Alan Woodward)

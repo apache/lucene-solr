@@ -92,7 +92,7 @@ When building the Guide, the `solr-root-path` attribute will be automatically se
 
 In order for editors (such as ATOM) to be able to offer "live preview" of the `*.adoc` files using these includes, the `solr-root-path` attribute must also be set as a document level attribute in each file, with the correct relative path.
 
-For example, `using-solrj.adoc` sets `solr-root-path` in it's header, along with an `example-source-dir` attribute (that depends on `solr-root-path`) in order to reduce redundancy in the many `include::` directives it specifies...
+For example, `using-solrj.adoc` sets `solr-root-path` in its header, along with an `example-source-dir` attribute (that depends on `solr-root-path`) in order to reduce redundancy in the many `include::` directives it specifies...
 
 [source]
 --

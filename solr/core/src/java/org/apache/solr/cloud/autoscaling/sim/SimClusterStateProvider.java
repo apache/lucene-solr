@@ -2386,7 +2386,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
                 props.put(ZkStateReader.CORE_NAME_PROP, ri.getCore());
                 props.put(ZkStateReader.REPLICA_TYPE, ri.getType().toString());
                 props.put(ZkStateReader.STATE_PROP, ri.getState().toString());
-                Replica r = new Replica(ri.getName(), props);
+                Replica r = new Replica(ri.getName(), props, ri.getCollection(), ri.getShard());
                 collMap.computeIfAbsent(ri.getCollection(), c -> new HashMap<>())
                   .computeIfAbsent(ri.getShard(), s -> new HashMap<>())
                   .put(ri.getName(), r);
@@ -2410,7 +2410,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         Map<String, Slice> slices = new HashMap<>();
         shards.forEach((s, replicas) -> {
           Map<String, Object> sliceProps = sliceProperties.computeIfAbsent(coll, c -> new ConcurrentHashMap<>()).computeIfAbsent(s, sl -> new ConcurrentHashMap<>());
-          Slice slice = new Slice(s, replicas, sliceProps);
+          Slice slice = new Slice(s, replicas, sliceProps, coll);
           slices.put(s, slice);
         });
         Map<String, Object> collProps = collProperties.computeIfAbsent(coll, c -> new ConcurrentHashMap<>());

@@ -97,6 +97,9 @@ public final class IntervalQuery extends Query {
   }
 
   private IntervalQuery(String field, IntervalsSource intervalsSource, IntervalScoreFunction scoreFunction) {
+    Objects.requireNonNull(field, "null field aren't accepted");
+    Objects.requireNonNull(intervalsSource, "null intervalsSource aren't accepted");
+    Objects.requireNonNull(scoreFunction, "null scoreFunction aren't accepted");
     this.field = field;
     this.intervalsSource = intervalsSource;
     this.scoreFunction = scoreFunction;
@@ -111,7 +114,7 @@ public final class IntervalQuery extends Query {
 
   @Override
   public String toString(String field) {
-    return intervalsSource.toString();
+    return (!getField().equals(field) ? getField() + ":" : "") + intervalsSource.toString();
   }
 
   @Override
@@ -158,7 +161,7 @@ public final class IntervalQuery extends Query {
         int newDoc = scorer.iterator().advance(doc);
         if (newDoc == doc) {
           float freq = scorer.freq();
-          return scoreFunction.explain(intervalsSource.toString(), boost, freq);
+          return scoreFunction.explain(IntervalQuery.this.toString(), boost, freq);
         }
       }
       return Explanation.noMatch("no matching intervals");

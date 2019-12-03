@@ -20,6 +20,7 @@ package org.apache.solr.cloud;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.apache.solr.client.solrj.cloud.ShardTerms;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.core.SolrCore;
@@ -44,7 +45,7 @@ public class RecoveringCoreTermWatcher implements ZkShardTerms.CoreTermWatcher {
   }
 
   @Override
-  public boolean onTermChanged(ZkShardTerms.Terms terms) {
+  public boolean onTermChanged(ShardTerms terms) {
     if (coreContainer.isShutDown()) return false;
 
     try (SolrCore solrCore = coreContainer.getCore(coreDescriptor.getName())) {

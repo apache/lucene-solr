@@ -110,6 +110,10 @@ Upgrade Notes
 * SOLR-13817: Deprecate legacy SolrCache implementations. Users are encouraged to transition their
   configurations to use org.apache.solr.search.CaffeineCache instead. (ab)
 
+* SOLR-13982: Some security-related http headers such as Content-Security-Policy are now set. If you have custom html served
+  up by Solr's http server that contains inline javascript, it will no longer execute in modern browsers. You can fix your JS
+  code to not run inline anymore, or edit etc/jetty.xml and weaken the CSP, or remove/alter the headers with a reverse proxy. (rmuir)
+
 New Features
 ---------------------
 * SOLR-13821: A Package store to store and load package artifacts (noble, Ishan Chattopadhyaya)
@@ -214,6 +218,10 @@ Other Changes
 * SOLR-13782: Solr Ref Guide no longer published in PDF format. (Cassandra Targett)
 
 * SOLR-12193: Move some log messages to TRACE level (gezapeti, janhoy)
+
+* SOLR-13885: Typos in the documentation. (KoenDG via Cassandra Targett)
+
+* SOLR-13992: Code refactored to have collection name, slice name in Replica, Slice (noble)
 
 ==================  8.3.1 ==================
 
