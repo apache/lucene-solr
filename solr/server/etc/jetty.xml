@@ -82,13 +82,52 @@
   </New>
 
     <!-- =========================================================== -->
-    <!-- RewriteHandle to redirect root to Solr                      -->
+    <!-- RewriteHandle to set headers, redirect root to Solr         -->
     <!-- =========================================================== -->
      <New id="RewriteHandler" class="org.eclipse.jetty.rewrite.handler.RewriteHandler">
       <Set name="rewriteRequestURI">true</Set>
       <Set name="rewritePathInfo">false</Set>
       <Set name="originalPathAttribute">requestedPath</Set>
 
+      <!-- security-related headers -->
+      <Call name="addRule">
+        <Arg>
+          <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
+            <Set name="pattern">*</Set>
+            <Set name="name">Content-Security-Policy</Set>
+            <Set name="value">default-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-eval'; img-src 'self'; media-src 'self'; font-src 'self'; connect-src 'self';</Set>
+          </New>
+        </Arg>
+      </Call>
+      <Call name="addRule">
+        <Arg>
+          <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
+            <Set name="pattern">*</Set>
+            <Set name="name">X-Content-Type-Options</Set>
+            <Set name="value">nosniff</Set>
+          </New>
+        </Arg>
+      </Call>
+      <Call name="addRule">
+        <Arg>
+          <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
+            <Set name="pattern">*</Set>
+            <Set name="name">X-Frame-Options</Set>
+            <Set name="value">SAMEORIGIN</Set>
+          </New>
+        </Arg>
+      </Call>
+      <Call name="addRule">
+        <Arg>
+          <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
+            <Set name="pattern">*</Set>
+            <Set name="name">X-XSS-Protection</Set>
+            <Set name="value">1; mode=block</Set>
+          </New>
+        </Arg>
+      </Call>
+
+      <!-- redirect root to solr -->
       <Call name="addRule">
         <Arg>
           <New class="org.eclipse.jetty.rewrite.handler.RedirectRegexRule">
