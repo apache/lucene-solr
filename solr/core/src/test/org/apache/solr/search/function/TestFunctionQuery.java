@@ -576,44 +576,49 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
 
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", "1");
-    doc.setField("vals_dpss", new String[]{"A|USD", "B|GBP", "C|EUR", "D|CHF", "D|AUD"});
+    doc.setField("vals_dpss", new String[]{"A|USD", "C|EUR", "SORT|A"});
     assertU(adoc(doc));
 
     doc = new SolrInputDocument();
     doc.setField("id", "2");
-    doc.setField("vals_dpss", new String[]{"A|usd", "B|gbp", "C|eur", "D|chf", "D|aud"});
+    doc.setField("vals_dpss", new String[]{"A|usd", "C|eur", "SORT|B"});
     assertU(adoc(doc));
 
     doc = new SolrInputDocument();
     doc.setField("id", "3");
-    doc.setField("vals_dpss", new String[]{"A|Usd", "B|Gbp", "C|Eur", "D|Chf", "D|Aud"});
+    doc.setField("vals_dpss", new String[]{"A|Usd", "C|Eur", "SORT|C"});
     assertU(adoc(doc));
 
     assertU(commit());
 
-    assertQ(req("q", "id:1", "fl", "*,score,field_a:payload(vals_dpss,A)"), "//str[@name='field_a']='USD'");
-    assertQ(req("q", "id:2", "fl", "*,score,field_a:payload(vals_dpss,C)"), "//str[@name='field_a']='eur'");
+    assertQ(req("q", "id:1", "fl", "*,score,field_test:payload(vals_dpss,A)"), "//str[@name='field_test']='USD'");
+    assertQ(req("q", "id:2", "fl", "*,score,field_test:payload(vals_dpss,C)"), "//str[@name='field_test']='eur'");
     assertQ(req("q", "*:*",
        "rows", "1",
        "sort", "payload(vals_dpss,C) asc",
-       "fl", "*,score,field_a:payload(vals_dpss,C)"), "//str[@name='field_a']='EUR'");
+       "fl", "*,score,field_test:payload(vals_dpss,C)"), "//str[@name='field_test']='EUR'");
 
     doc = new SolrInputDocument();
     doc.setField("id", "4");
-    doc.setField("vals_dpss", new String[]{"A|Usd", "B|Gbp", "D|Chf", "D|Aud"});
+    doc.setField("vals_dpss", new String[]{"A|Usd"});
     assertU(adoc(doc));
 
     assertU(commit());
 
     assertQ(req("q", "*:*",
         "rows", "1",
-        "sort", "payload(vals_dpss,C) asc",
-        "fl", "*,score,field_a:payload(vals_dpss,C)"), "//str[@name='field_a']=''");
+        "sort", "payload(vals_dpss,SORT) asc",
+        "fl", "*,score,field_test:payload(vals_dpss,SORT)"), "//str[@name='field_test']=''");
 
     assertQ(req("q", "*:*",
         "rows", "1",
-        "sort", "payload(vals_dpss,C) desc",
-        "fl", "*,score,field_a:payload(vals_dpss,C)"), "//str[@name='field_a']='Eur'");
+        "sort", "payload(vals_dpss,SORT) desc",
+        "fl", "*,score,field_test:payload(vals_dpss,SORT)"), "//str[@name='field_test']='C'");
+
+//    assertQ(req("q", "{!func}payload(vals_dpss,A):USD",
+//        "rows", "1",
+//        "fl", "*,score"), "//str[@name='id']='1'");
+
   }
 
   @Test
