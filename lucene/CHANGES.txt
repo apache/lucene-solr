@@ -251,7 +251,7 @@ Optimizations
   non-competitive hits. (Adrien Grand)
 
 * LUCENE-8935: BooleanQuery with no scoring clause can now early terminate the query when
-the total hits is not requested.
+  the total hits is not requested. (Jim Ferenczi)
 
 * LUCENE-8941: Matches on wildcard queries will defer building their full
   disjunction until a MatchesIterator is pulled (Alan Woodward)
