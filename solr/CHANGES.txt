@@ -217,6 +217,8 @@ Other Changes
 
 * SOLR-13885: Typos in the documentation. (KoenDG via Cassandra Targett)
 
+* SOLR-13992: Code refactored to have collection name, slice name in Replica, Slice
+
 ==================  8.3.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
