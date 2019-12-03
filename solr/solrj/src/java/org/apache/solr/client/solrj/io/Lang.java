@@ -303,6 +303,7 @@ public class Lang {
         .withFunctionName("cosine", CosineDistanceEvaluator.class)
         .withFunctionName("trunc", TruncEvaluator.class)
         .withFunctionName("dbscan", DbscanEvaluator.class)
+        .withFunctionName("parseSolrLog", SolrLogStream.class)
         // Boolean Stream Evaluators
 
         .withFunctionName("and", AndEvaluator.class)
