@@ -108,6 +108,11 @@ public class MetricsHistoryHandlerTest extends SolrCloudTestCase {
     if (simulated) {
       cloudManager.close();
     }
+    handler = null;
+    metricsHandler = null;
+    cloudManager = null;
+    metricManager = null;
+    solrClient = null;
   }
 
   @Test
