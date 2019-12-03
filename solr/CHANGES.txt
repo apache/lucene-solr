@@ -217,7 +217,7 @@ Other Changes
 
 * SOLR-13885: Typos in the documentation. (KoenDG via Cassandra Targett)
 
-* SOLR-13992: Code refactored to have collection name, slice name in Replica, Slice
+* SOLR-13992: Code refactored to have collection name, slice name in Replica, Slice (noble)
 
 ==================  8.3.1 ==================
 
