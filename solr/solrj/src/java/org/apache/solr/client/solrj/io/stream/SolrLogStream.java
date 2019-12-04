@@ -137,6 +137,10 @@ public class SolrLogStream extends TupleStream implements Expressible {
 
         if (line.contains("QTime=")) {
           t = parseQueryRecord(line);
+        } else if(line.contains("Registered new searcher")) {
+          t = parseNewSearch(line);
+        } else if(line.contains("path=/update")) {
+          t = parseUpdate(line);
         } else {
           continue;
         }
@@ -203,11 +207,43 @@ public class SolrLogStream extends TupleStream implements Expressible {
     return tuple;
   }
 
+  private Tuple parseNewSearch(String line) {
+
+    String[] parts = line.split("\\s+");
+    Tuple tuple = new Tuple();
+    tuple.put("date_dt", parts[0]);
+    tuple.put("core_s", parseNewSearcherCollection(line));
+    tuple.put("new_searcher", "true");
+
+    return tuple;
+  }
+
   private String parseCollection(String line) {
     char[] ca = {',', '}'};
     String parts[] = line.split("collection=c:");
     if(parts.length == 2) {
       return readUntil(parts[1], ca);
+    } else {
+      return null;
+    }
+  }
+
+  private Tuple parseUpdate(String line) {
+    String[] parts = line.split("\\s+");
+    Tuple tuple = new Tuple();
+    tuple.put("date_dt", parts[0]);
+    tuple.put("update_s", "true");
+    tuple.put("collection_s", parseCollection(line));
+    tuple.put("core_s", parseCore(line));
+    tuple.put("node_s", parseNode(line));
+    return tuple;
+  }
+
+  private String parseNewSearcherCollection(String line) {
+    char[] ca = {']'};
+    String parts[] = line.split("\\[");
+    if(parts.length > 3) {
+      return readUntil(parts[2], ca);
     } else {
       return null;
     }
