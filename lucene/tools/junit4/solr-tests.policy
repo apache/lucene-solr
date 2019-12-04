@@ -79,6 +79,8 @@ grant {
   permission java.lang.RuntimePermission "getFileSystemAttributes";
   // needed by hadoop auth (TODO: there is a cleaner way to handle this)
   permission java.lang.RuntimePermission "loadLibrary.jaas";
+  permission java.lang.RuntimePermission "loadLibrary.jaas_unix";
+  permission java.lang.RuntimePermission "loadLibrary.jaas_nt";
   // needed by hadoop hdfs
   permission java.lang.RuntimePermission "readFileDescriptor";
   permission java.lang.RuntimePermission "writeFileDescriptor";
