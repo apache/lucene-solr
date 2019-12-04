@@ -87,7 +87,7 @@ public class TestIndexSearcher extends LuceneTestCase {
 
     IndexSearcher searchers[] = new IndexSearcher[] {
         new IndexSearcher(reader),
-        new IndexSearcher(reader, service)
+        new IndexSearcher(reader, new QueueSizeBasedCircuitBreaker(service))
     };
     Query queries[] = new Query[] {
         new MatchAllDocsQuery(),
@@ -238,7 +238,7 @@ public class TestIndexSearcher extends LuceneTestCase {
     ExecutorService service = new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS,
                                    new LinkedBlockingQueue<Runnable>(),
                                    new NamedThreadFactory("TestIndexSearcher"));
-    IndexSearcher s = new IndexSearcher(r, service);
+    IndexSearcher s = new IndexSearcher(r, new QueueSizeBasedCircuitBreaker(service));
     IndexSearcher.LeafSlice[] slices = s.getSlices();
     assertNotNull(slices);
     assertEquals(1, slices.length);
@@ -251,10 +251,10 @@ public class TestIndexSearcher extends LuceneTestCase {
   public void testOneSegmentExecutesOnTheCallerThread() throws IOException {
     List<LeafReaderContext> leaves = reader.leaves();
     AtomicInteger numExecutions = new AtomicInteger(0);
-    IndexSearcher searcher = new IndexSearcher(reader, task -> {
+    IndexSearcher searcher = new IndexSearcher(reader, new QueueSizeBasedCircuitBreaker(task -> {
       numExecutions.incrementAndGet();
       task.run();
-    }) {
+    })) {
       @Override
       protected LeafSlice[] slices(List<LeafReaderContext> leaves) {
         ArrayList<LeafSlice> slices = new ArrayList<>();
@@ -275,7 +275,7 @@ public class TestIndexSearcher extends LuceneTestCase {
   public void testRejectedExecution() throws IOException {
     ExecutorService service = new RejectingMockExecutor();
 
-    IndexSearcher searcher = new IndexSearcher(reader, service) {
+    IndexSearcher searcher = new IndexSearcher(reader, new QueueSizeBasedCircuitBreaker(service)) {
       @Override
       protected LeafSlice[] slices(List<LeafReaderContext> leaves) {
         ArrayList<LeafSlice> slices = new ArrayList<>();

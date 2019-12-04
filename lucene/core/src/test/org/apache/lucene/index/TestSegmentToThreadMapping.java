@@ -20,6 +20,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -30,7 +31,8 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.SliceAllocationCircuitBreaker;
+import org.apache.lucene.search.QueueSizeBasedCircuitBreaker;
+import org.apache.lucene.search.SliceExecutionControlPlane;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
@@ -231,7 +233,7 @@ public class TestSegmentToThreadMapping extends LuceneTestCase {
     ExecutorService service = new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS,
         new LinkedBlockingQueue<Runnable>(),
         new NamedThreadFactory("TestSegmentToThreadMapping"));
-    IndexSearcher s = new IndexSearcher(r, service);
+    IndexSearcher s = new IndexSearcher(r, new QueueSizeBasedCircuitBreaker(service));
     Query query = new MatchAllDocsQuery();
 
     s.search(query, Integer.MAX_VALUE);
@@ -274,8 +276,8 @@ public class TestSegmentToThreadMapping extends LuceneTestCase {
         new NamedThreadFactory("TestIndexSearcher"));
 
     LeafReader reader = dummyIndexReader(290_000);
-    SliceAllocationCircuitBreaker sliceAllocationCircuitBreaker = new BlockingSliceAllocationCircuitBreaker();
-    IndexSearcher searcher = new IndexSearcher(reader, service, sliceAllocationCircuitBreaker);
+    SliceExecutionControlPlane sliceExecutionControlPlane = new BlockingSliceExecutionControlPlane();
+    IndexSearcher searcher = new IndexSearcher(reader, sliceExecutionControlPlane);
     Query query = new MatchAllDocsQuery();
 
     searcher.search(query, Integer.MAX_VALUE);
@@ -301,19 +303,25 @@ public class TestSegmentToThreadMapping extends LuceneTestCase {
     leafReaderContexts.add(new LeafReaderContext(thirdReader));
     leafReaderContexts.add(new LeafReaderContext(fourthReader));
 
-    SliceAllocationCircuitBreaker sliceAllocationCircuitBreaker = new BlockingSliceAllocationCircuitBreaker();
+    SliceExecutionControlPlane sliceExecutionControlPlane = new BlockingSliceExecutionControlPlane();
     IndexSearcher.LeafSlice[] resultSlices = IndexSearcher.slices(leafReaderContexts, 250_000, 5,
-        sliceAllocationCircuitBreaker);
+        sliceExecutionControlPlane);
 
     assertNotNull(resultSlices);
     assertTrue(resultSlices.length == 1);
   }
 
-  private class BlockingSliceAllocationCircuitBreaker implements SliceAllocationCircuitBreaker {
+  private class BlockingSliceExecutionControlPlane implements SliceExecutionControlPlane {
     @Override
-    public boolean shouldProceed() {
+    public boolean hasCircuitBreakerTriggered() {
       return false;
     }
+
+    @Override
+    public void execute(Runnable command) {}
+
+    @Override
+    public Executor getExecutor() { return null; }
   }
 
   public void testRandomBlockingCircuitBreakerWithLargeSegments() throws Exception {
@@ -329,9 +337,9 @@ public class TestSegmentToThreadMapping extends LuceneTestCase {
     leafReaderContexts.add(new LeafReaderContext(thirdReader));
     leafReaderContexts.add(new LeafReaderContext(fourthReader));
 
-    SliceAllocationCircuitBreaker sliceAllocationCircuitBreaker = new RandomBlockingSliceAllocationCircuitBreaker();
+    SliceExecutionControlPlane sliceExecutionControlPlane = new RandomBlockingSliceExecutionControlPlane();
     IndexSearcher.LeafSlice[] resultSlices = IndexSearcher.slices(leafReaderContexts, 250_000, 5,
-        sliceAllocationCircuitBreaker);
+        sliceExecutionControlPlane);
 
     assertNotNull(resultSlices);
   }
@@ -349,9 +357,9 @@ public class TestSegmentToThreadMapping extends LuceneTestCase {
     leafReaderContexts.add(new LeafReaderContext(thirdReader));
     leafReaderContexts.add(new LeafReaderContext(fourthReader));
 
-    SliceAllocationCircuitBreaker sliceAllocationCircuitBreaker = new RandomBlockingSliceAllocationCircuitBreaker();
+    SliceExecutionControlPlane sliceExecutionControlPlane = new RandomBlockingSliceExecutionControlPlane();
     IndexSearcher.LeafSlice[] resultSlices = IndexSearcher.slices(leafReaderContexts, 250_000, 5,
-        sliceAllocationCircuitBreaker);
+        sliceExecutionControlPlane);
 
     assertNotNull(resultSlices);
   }
@@ -373,21 +381,29 @@ public class TestSegmentToThreadMapping extends LuceneTestCase {
     leafReaderContexts.add(new LeafReaderContext(fifthReader));
     leafReaderContexts.add(new LeafReaderContext(sixthReader));
 
-    SliceAllocationCircuitBreaker sliceAllocationCircuitBreaker = new RandomBlockingSliceAllocationCircuitBreaker();
+    SliceExecutionControlPlane sliceExecutionControlPlane = new RandomBlockingSliceExecutionControlPlane();
     IndexSearcher.LeafSlice[] resultSlices = IndexSearcher.slices(leafReaderContexts, 250_000, 5,
-        sliceAllocationCircuitBreaker);
+        sliceExecutionControlPlane);
 
     assertNotNull(resultSlices);
   }
 
-  private class RandomBlockingSliceAllocationCircuitBreaker implements SliceAllocationCircuitBreaker {
+  private class RandomBlockingSliceExecutionControlPlane implements SliceExecutionControlPlane {
     @Override
-    public boolean shouldProceed() {
+    public boolean hasCircuitBreakerTriggered() {
       if (random().nextBoolean()) {
         return false;
       }
 
       return true;
+    }
+
+    @Override
+    public void execute(Runnable command) {}
+
+    @Override
+    public Executor getExecutor() {
+      return null;
     }
   }
 }

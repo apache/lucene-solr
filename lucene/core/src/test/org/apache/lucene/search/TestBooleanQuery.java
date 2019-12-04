@@ -247,7 +247,7 @@ public class TestBooleanQuery extends LuceneTestCase {
     assertEquals(0, searcher.search(query.build(), 10).totalHits.value);
 
     final ExecutorService es = Executors.newCachedThreadPool(new NamedThreadFactory("NRT search threads"));
-    searcher = new IndexSearcher(multireader, es);
+    searcher = new IndexSearcher(multireader, new QueueSizeBasedCircuitBreaker(es));
     if (VERBOSE)
       System.out.println("rewritten form: " + searcher.rewrite(query.build()));
     assertEquals(0, searcher.search(query.build(), 10).totalHits.value);

@@ -23,7 +23,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 /**
  * Blocks allocation based on size of waiting queue for passed in ExecutorService
  */
-public class QueueSizeBasedCircuitBreaker implements SliceAllocationCircuitBreaker {
+public class QueueSizeBasedCircuitBreaker implements SliceExecutionControlPlane {
   private final Executor executor;
   private static final int NUMBER_OF_PROCESSORS = Runtime.getRuntime().availableProcessors();
   private static final double LIMITING_FACTOR = 1.5;
@@ -33,8 +33,8 @@ public class QueueSizeBasedCircuitBreaker implements SliceAllocationCircuitBreak
   }
 
   @Override
-  public boolean shouldProceed() {
-    if (!(executor instanceof ThreadPoolExecutor)) {
+  public boolean hasCircuitBreakerTriggered() {
+    if ((executor instanceof ThreadPoolExecutor) == false) {
       // No effect
       return true;
     }
@@ -42,5 +42,19 @@ public class QueueSizeBasedCircuitBreaker implements SliceAllocationCircuitBreak
     ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor) executor;
 
     return threadPoolExecutor.getQueue().size() < (NUMBER_OF_PROCESSORS * LIMITING_FACTOR);
+  }
+
+  @Override
+  public void execute(Runnable command) {
+    if (command == null) {
+      throw new IllegalArgumentException("Null input passed in");
+    }
+
+    executor.execute(command);
+  }
+
+  @Override
+  public Executor getExecutor() {
+    return executor;
   }
 }

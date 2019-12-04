@@ -86,7 +86,7 @@ public class TestTopFieldCollector extends LuceneTestCase {
         new LinkedBlockingQueue<Runnable>(),
         new NamedThreadFactory("TestTopDocsCollector"));
     try {
-      IndexSearcher searcher = new IndexSearcher(indexReader, service);
+      IndexSearcher searcher = new IndexSearcher(indexReader, new QueueSizeBasedCircuitBreaker(service));
 
       CollectorManager collectorManager = TopFieldCollector.createSharedManager(sort, numResults,
           null, threshold);
@@ -145,7 +145,7 @@ public class TestTopFieldCollector extends LuceneTestCase {
         new LinkedBlockingQueue<Runnable>(),
         new NamedThreadFactory("TestTopFieldCollector"));
 
-    IndexSearcher concurrentSearcher = new IndexSearcher(ir, service);
+    IndexSearcher concurrentSearcher = new IndexSearcher(ir, new QueueSizeBasedCircuitBreaker(service));
 
     // Two Sort criteria to instantiate the multi/single comparators.
     Sort[] sort = new Sort[] {new Sort(SortField.FIELD_DOC), new Sort() };

@@ -86,8 +86,8 @@ public class TestMultiSliceMerge extends LuceneTestCase {
     Executor executor2 = runnable -> runnable.run();
 
     IndexSearcher searchers[] = new IndexSearcher[] {
-        new IndexSearcher(reader1, executor1),
-        new IndexSearcher(reader2, executor2)
+        new IndexSearcher(reader1, new QueueSizeBasedCircuitBreaker((executor1))),
+        new IndexSearcher(reader2, new QueueSizeBasedCircuitBreaker(executor2))
     };
 
     Query query = new MatchAllDocsQuery();
@@ -103,8 +103,8 @@ public class TestMultiSliceMerge extends LuceneTestCase {
     Executor executor2 = runnable -> runnable.run();
 
     IndexSearcher searchers[] = new IndexSearcher[] {
-        new IndexSearcher(reader1, executor1),
-        new IndexSearcher(reader2, executor2)
+        new IndexSearcher(reader1, new QueueSizeBasedCircuitBreaker(executor1)),
+        new IndexSearcher(reader2, new QueueSizeBasedCircuitBreaker(executor2))
     };
 
     Query query = new MatchAllDocsQuery();

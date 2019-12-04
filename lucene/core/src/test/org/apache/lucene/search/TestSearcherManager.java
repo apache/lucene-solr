@@ -81,7 +81,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     final SearcherFactory factory = new SearcherFactory() {
       @Override
       public IndexSearcher newSearcher(IndexReader r, IndexReader previous) throws IOException {
-        IndexSearcher s = new IndexSearcher(r, es);
+        IndexSearcher s = new IndexSearcher(r, new QueueSizeBasedCircuitBreaker(es));
         TestSearcherManager.this.warmCalled = true;
         s.search(new TermQuery(new Term("body", "united")), 10);
         return s;
@@ -228,7 +228,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
         } catch (InterruptedException e) {
           //
         }
-        return new IndexSearcher(r, es);
+        return new IndexSearcher(r, new QueueSizeBasedCircuitBreaker(es));
       }
     };
     final SearcherManager searcherManager = random().nextBoolean() 

@@ -224,7 +224,7 @@ public class TestControlledRealTimeReopenThread extends ThreadedIndexingAndSearc
         @Override
         public IndexSearcher newSearcher(IndexReader r, IndexReader previous) throws IOException {
           TestControlledRealTimeReopenThread.this.warmCalled = true;
-          IndexSearcher s = new IndexSearcher(r, es);
+          IndexSearcher s = new IndexSearcher(r, new QueueSizeBasedCircuitBreaker(es));
           s.search(new TermQuery(new Term("body", "united")), 10);
           return s;
         }

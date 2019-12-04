@@ -42,12 +42,12 @@ public class AssertingIndexSearcher extends IndexSearcher {
   }
   
   public  AssertingIndexSearcher(Random random, IndexReader r, ExecutorService ex) {
-    super(r, ex);
+    super(r, new QueueSizeBasedCircuitBreaker(ex));
     this.random = new Random(random.nextLong());
   }
   
   public  AssertingIndexSearcher(Random random, IndexReaderContext context, ExecutorService ex) {
-    super(context, ex);
+    super(context, new QueueSizeBasedCircuitBreaker(ex));
     this.random = new Random(random.nextLong());
   }
 

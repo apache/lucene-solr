@@ -86,6 +86,7 @@ import org.apache.lucene.search.LRUQueryCache;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryCache;
 import org.apache.lucene.search.QueryCachingPolicy;
+import org.apache.lucene.search.QueueSizeBasedCircuitBreaker;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
@@ -1957,7 +1958,7 @@ public abstract class LuceneTestCase extends Assert {
       } else if (random.nextBoolean()) {
         int maxDocPerSlice = 1 + random.nextInt(100000);
         int maxSegmentsPerSlice = 1 + random.nextInt(20);
-        ret = new IndexSearcher(r, ex) {
+        ret = new IndexSearcher(r, new QueueSizeBasedCircuitBreaker(ex)) {
           @Override
           protected LeafSlice[] slices(List<LeafReaderContext> leaves) {
             return slices(leaves, maxDocPerSlice, maxSegmentsPerSlice, null);
@@ -1965,8 +1966,8 @@ public abstract class LuceneTestCase extends Assert {
         };
       } else {
         ret = random.nextBoolean()
-            ? new IndexSearcher(r, ex)
-            : new IndexSearcher(r.getContext(), ex);
+            ? new IndexSearcher(r, new QueueSizeBasedCircuitBreaker(ex))
+            : new IndexSearcher(r.getContext(), new QueueSizeBasedCircuitBreaker(ex));
       }
       ret.setSimilarity(classEnvRule.similarity);
       ret.setQueryCachingPolicy(MAYBE_CACHE_POLICY);
