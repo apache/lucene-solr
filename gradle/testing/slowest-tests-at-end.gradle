@@ -8,7 +8,7 @@ allprojects {
       def duration = (result.getEndTime() - result.getStartTime())
 
       allTests << [
-        name    : "${desc.className.replaceAll('.+\\.', "")}.${desc.name} (${project.name})",
+        name    : "${desc.className.replaceAll('.+\\.', "")}.${desc.name} (${project.path})",
         duration: duration
       ]
     }

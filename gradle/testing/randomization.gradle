@@ -1,23 +1,6 @@
 
 // Configure test randomization seeds and derived test properties.
 
-allprojects {
-  ext {
-    // Support passing overrides via -P or -D.
-    propertyOrDefault = { propName, defValue ->
-      def result
-      if (project.hasProperty(propName)) {
-        result = project.getProperty(propName)
-      } else if (System.properties.containsKey(propName)) {
-        result = System.properties.get(propName)
-      } else {
-        result = defValue
-      }
-      return result
-    }
-  }
-}
-
 // Pick the "root" seed from which everything else is derived.
 configure(rootProject) {
   ext {

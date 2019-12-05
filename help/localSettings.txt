@@ -1,0 +1,46 @@
+Local developer settings
+========================
+
+The first invocation of any task in Lucene/Solr gradle build will generate
+and save a project-local 'gradle.properties' file. This file contains
+the defaults you may (but don't have to) tweak for your particular hardware
+(or taste).
+
+This is an overview of some of these settings.
+
+Parallelism
+-----------
+
+Gradle build can run tasks in parallel but by default it consumes all CPU cores which
+is too optimistic a default for Lucene/Solr tests. You can disable the parallelism
+entirely or assign it a 'low' priority with these properties:
+
+org.gradle.parallel=[true, false]
+org.gradle.priority=[normal, low]
+
+The default level of parallelism is computed based on the number of cores on
+your machine (on the first run of gradle build). By default these are fairly conservative
+settings (half the number of cores for workers, for example):
+
+org.gradle.workers.max=[X]
+tests.jvms=[N <= X]
+
+The number of test JVMs can be lower than the number of workers: this just means
+that two projects can run tests in parallel to saturate all the workers. The I/O and memory
+bandwidth limits will kick in quickly so even if you have a very beefy machine bumping
+it too high may not help.
+
+You can always override these settings locally using command line as well:
+gradlew -Ptests.jvms=N --max-workers=X
+
+Gradle Daemon
+-------------
+
+The gradle daemon is a background process that keeps an evaluated copy of the project
+structure, some caches, etc. It speeds up repeated builds quite a bit but if you don't
+like the idea of having a (sizeable) background process running in the background,
+disable it.
+
+org.gradle.daemon=[true, false]
+org.gradle.jvmargs=...
+

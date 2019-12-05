@@ -16,6 +16,8 @@ allprojects {
 // if the build file is incorrectly written and evaluates something
 // eagerly).
 
+apply from: file('gradle/generate-defaults.gradle')
+
 // CI systems.
 apply from: file('gradle/ci/buildscan.gradle')
 apply from: file('gradle/ci/travis.gradle')

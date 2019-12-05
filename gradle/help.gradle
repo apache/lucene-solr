@@ -6,6 +6,7 @@ configure(rootProject) {
       ["Ant", "help/ant.txt", "Ant-gradle migration help."],
       ["Tests", "help/tests.txt", "Tests, filtering, beasting, etc."],
       ["ForbiddenApis", "help/forbiddenApis.txt", "How to add/apply rules for forbidden APIs."],
+      ["LocalSettings", "help/localSettings.txt", "Local settings, overrides and build performance tweaks."]
   ]
 
   helpFiles.each { section, path, sectionInfo ->
@@ -24,7 +25,8 @@ configure(rootProject) {
       println "This is an experimental Lucene/Solr gradle build. See some"
       println "guidelines, ant-equivalent commands etc. under help/*; or type:"
       helpFiles.each { section, path, sectionInfo ->
-        println "  gradlew :help${section}  # ${sectionInfo}"
+        println String.format(Locale.ROOT,
+            "  gradlew :help%-14s # %s", section, sectionInfo)
       }
     }
   }

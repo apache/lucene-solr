@@ -33,3 +33,6 @@ __pycache__
 build/
 .gradle/
 .idea/
+
+# Ignore the generated local settings file.
+gradle.properties
