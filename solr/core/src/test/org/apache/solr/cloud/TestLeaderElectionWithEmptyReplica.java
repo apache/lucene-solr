@@ -94,7 +94,7 @@ public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
 
     // wait until everyone is active
     solrClient.waitForState(COLLECTION_NAME, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
-        (n, c, rsp) -> DocCollection.isFullyActive(n, c, 1, 2));
+        (n, c, ssp) -> DocCollection.isFullyActive(ssp, c, 1, 2));
 
     // now query each replica and check for consistency
     assertConsistentReplicas(solrClient, solrClient.getZkStateReader().getClusterState().getCollection(COLLECTION_NAME).getSlice("shard1"));

@@ -1412,7 +1412,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         + (checkLeaderOnly ? "leaders" : "replicas"));
 
     try {
-      cc.getZkController().getZkStateReader().waitForState(collectionName, seconds, TimeUnit.SECONDS, (n, c, rsp) -> {
+      cc.getZkController().getZkStateReader().waitForState(collectionName, seconds, TimeUnit.SECONDS, (n, c, ssp) -> {
 
         if (c == null) {
           // the collection was not created, don't wait

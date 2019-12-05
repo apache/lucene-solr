@@ -149,7 +149,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
       throws Exception {
     log.info("Wait for recoveries to finish - collection: " + collection + " failOnTimeout:" + failOnTimeout + " timeout (sec):" + timeoutSeconds);
     try {
-      zkStateReader.waitForState(collection, timeoutSeconds, TimeUnit.SECONDS, (liveNodes, docCollection, rsp) -> {
+      zkStateReader.waitForState(collection, timeoutSeconds, TimeUnit.SECONDS, (liveNodes, docCollection, ssp) -> {
         if (docCollection == null)
           return false;
         boolean sawLiveRecovering = false;
@@ -170,7 +170,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
                 + shard.getValue().getStr(ZkStateReader.STATE_PROP)
                 + " live:"
                 + liveNodes.contains(shard.getValue().getNodeName()));
-            final Replica.State state = rsp.getState(shard.getValue());
+            final Replica.State state = ssp.getState(shard.getValue());
             if ((state == Replica.State.RECOVERING || state == Replica.State.DOWN
                 || state == Replica.State.RECOVERY_FAILED)
                 && liveNodes.contains(shard.getValue().getStr(ZkStateReader.NODE_NAME_PROP))) {

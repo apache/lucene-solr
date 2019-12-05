@@ -23,7 +23,7 @@ import org.apache.solr.common.cloud.Slice;
  * and it also provides the leader of shards
  *
  */
-public interface ReplicaStateProvider {
+public interface ShardStateProvider {
 
   Replica.State getState(Replica replica);
 

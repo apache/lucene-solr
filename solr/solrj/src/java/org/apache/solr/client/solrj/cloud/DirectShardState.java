@@ -25,11 +25,11 @@ import org.apache.solr.common.cloud.Slice;
 /**Reads the state from state.json
  *
  */
-public class DirectReplicaState implements ReplicaStateProvider {
+public class DirectShardState implements ShardStateProvider {
 
   private final Predicate<String> isNodeLive;
 
-  public DirectReplicaState(Predicate<String> isNodeLive) {
+  public DirectShardState(Predicate<String> isNodeLive) {
     this.isNodeLive = isNodeLive;
   }
 

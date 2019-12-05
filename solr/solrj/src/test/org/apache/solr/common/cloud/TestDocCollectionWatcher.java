@@ -143,13 +143,13 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
       .processAndWait(client, MAX_WAIT_TIMEOUT);
 
     client.waitForState("waitforstate", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
-                        (n, c, rsp) -> DocCollection.isFullyActive(n, c, 1, 1));
+                        (n, c, ssp) -> DocCollection.isFullyActive(ssp, c, 1, 1));
 
     // several goes, to check that we're not getting delayed state changes
     for (int i = 0; i < 10; i++) {
       try {
         client.waitForState("waitforstate", 1, TimeUnit.SECONDS,
-                            (n, c, rsp) -> DocCollection.isFullyActive(n, c, 1, 1));
+                            (n, c, ssp) -> DocCollection.isFullyActive(ssp, c, 1, 1));
       } catch (TimeoutException e) {
         fail("waitForState should return immediately if the predicate is already satisfied");
       }
@@ -175,7 +175,7 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
     CloudSolrClient client = cluster.getSolrClient();
     expectThrows(TimeoutException.class, () -> {
       client.waitForState("nosuchcollection", 1, TimeUnit.SECONDS,
-                          ((liveNodes, collectionState, rsp) -> false));
+                          ((liveNodes, collectionState, ssp) -> false));
     });
     waitFor("Watchers for collection should be removed after timeout",
             MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
@@ -192,7 +192,7 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
 
     // create collection with 1 shard 1 replica...
     client.waitForState("falsepredicate", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
-                        (n, c, rsp) -> DocCollection.isFullyActive(n, c, 1, 1));
+                        (n, c, ssp) -> DocCollection.isFullyActive(ssp, c, 1, 1));
 
     // set watcher waiting for at least 3 replicas (will fail initially)
     final AtomicInteger runCount = new AtomicInteger(0);
@@ -213,7 +213,7 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
     CollectionAdminRequest.addReplicaToShard("falsepredicate", "shard1")
       .processAndWait(client, MAX_WAIT_TIMEOUT);
     client.waitForState("falsepredicate", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
-                        (n, c, rsp) -> DocCollection.isFullyActive(n, c, 1, 2));
+                        (n, c, ssp) -> DocCollection.isFullyActive(ssp, c, 1, 2));
 
     // confirm watcher has run at least once and has been retained...
     final int runCountSnapshot = runCount.get();
@@ -255,7 +255,7 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection("tobedeleted", "config", 1, 1).process(client);
       
     client.waitForState("tobedeleted", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
-                        (n, c, rsp) -> DocCollection.isFullyActive(n, c, 1, 1));
+                        (n, c, ssp) -> DocCollection.isFullyActive(ssp, c, 1, 1));
    
     Future<Boolean> future = waitInBackground("tobedeleted", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
                                               (c) -> c == null);
@@ -276,7 +276,7 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection("stateformat1", "config", 1, 1).setStateFormat(1)
       .processAndWait(client, MAX_WAIT_TIMEOUT);
     client.waitForState("stateformat1", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
-                         (n, c, rsp) -> DocCollection.isFullyActive(n, c, 1, 1));
+                         (n, c, ssp) -> DocCollection.isFullyActive(ssp, c, 1, 1));
     
     assertTrue("DocCollectionWatcher not notified of stateformat=1 collection creation",
                future.get());

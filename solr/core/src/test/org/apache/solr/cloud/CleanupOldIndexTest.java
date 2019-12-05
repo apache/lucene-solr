@@ -112,7 +112,7 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
     indexThread.join();
 
     cluster.getSolrClient().waitForState(COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
-        (n, c, rsp) -> DocCollection.isFullyActive(n, c, 1, 2));
+        (n, c, ssp) -> DocCollection.isFullyActive(ssp, c, 1, 2));
 
     assertTrue(!oldIndexDir1.isDirectory());
     assertTrue(!oldIndexDir2.isDirectory());

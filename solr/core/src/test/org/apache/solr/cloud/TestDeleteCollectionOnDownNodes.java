@@ -58,7 +58,7 @@ public class TestDeleteCollectionOnDownNodes extends SolrCloudTestCase {
 
     // delete the collection
     CollectionAdminRequest.deleteCollection("halfdeletedcollection2").process(cluster.getSolrClient());
-    waitForState("Timed out waiting for collection to be deleted", "halfdeletedcollection2", (n, c, rsp) -> c == null);
+    waitForState("Timed out waiting for collection to be deleted", "halfdeletedcollection2", (n, c, ssp) -> c == null);
 
     assertFalse("Still found collection that should be gone",
         cluster.getSolrClient().getZkStateReader().getClusterState().hasCollection("halfdeletedcollection2"));

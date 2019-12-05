@@ -302,7 +302,7 @@ public class TestSimComputePlanAction extends SimSolrCloudTestCase {
     create.process(solrClient);
 
     CloudUtil.waitForState(cluster, "Timed out waiting for replicas of new collection to be active",
-        "testNodeAdded", (liveNodes, collectionState, rsp) -> collectionState.getReplicas().stream().allMatch(replica -> replica.isActive(liveNodes)));
+        "testNodeAdded", (liveNodes, collectionState, ssp) -> collectionState.getReplicas().stream().allMatch(replica -> replica.isActive(liveNodes)));
 
     // reset to the original policy which has only 1 replica per shard per node
     setClusterPolicyCommand = "{" +

@@ -169,10 +169,10 @@ public class CloudUtil {
     AtomicReference<DocCollection> state = new AtomicReference<>();
     AtomicReference<Set<String>> liveNodesLastSeen = new AtomicReference<>();
     try {
-      return waitForState(cloudManager, collection, DEFAULT_TIMEOUT, TimeUnit.SECONDS, (n, c, rsp) -> {
+      return waitForState(cloudManager, collection, DEFAULT_TIMEOUT, TimeUnit.SECONDS, (n, c, ssp) -> {
         state.set(c);
         liveNodesLastSeen.set(n);
-        return predicate.matches(n, c, rsp);
+        return predicate.matches(n, c, ssp);
       });
     } catch (Exception e) {
       throw new AssertionError(message + "\n" + "Live Nodes: " + liveNodesLastSeen.get() + "\nLast available state: " + state.get(), e);
@@ -242,7 +242,7 @@ public class CloudUtil {
    */
   public static CollectionStatePredicate clusterShape(int expectedShards, int expectedReplicas, boolean withInactive,
                                                       boolean requireLeaders) {
-    return (liveNodes, collectionState, rsp) -> {
+    return (liveNodes, collectionState, ssp) -> {
       if (collectionState == null) {
         log.debug("-- null collection");
         return false;

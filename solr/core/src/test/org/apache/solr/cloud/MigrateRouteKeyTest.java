@@ -162,7 +162,7 @@ public class MigrateRouteKeyTest extends SolrCloudTestCase {
       log.info("Response from target collection: " + response);
       assertEquals("DocCount on target collection does not match", splitKeyCount[0], response.getResults().getNumFound());
 
-      waitForState("Expected to find routing rule for split key " + splitKey, "sourceCollection", (n, c, rsp) -> {
+      waitForState("Expected to find routing rule for split key " + splitKey, "sourceCollection", (n, c, ssp) -> {
         if (c == null)
           return false;
         Slice shard = c.getSlice("shard2");

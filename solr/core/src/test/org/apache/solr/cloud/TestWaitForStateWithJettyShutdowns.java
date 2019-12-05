@@ -26,7 +26,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.client.solrj.cloud.ReplicaStateProvider;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.CollectionStatePredicate;
@@ -143,8 +143,8 @@ public class TestWaitForStateWithJettyShutdowns extends SolrTestCaseJ4 {
     }
 
     @Override
-    public boolean matches(Set<String> liveNodes, DocCollection collectionState, ReplicaStateProvider rsp) {
-      final boolean result = inner.matches(liveNodes, collectionState, rsp);
+    public boolean matches(Set<String> liveNodes, DocCollection collectionState, ShardStateProvider ssp) {
+      final boolean result = inner.matches(liveNodes, collectionState, ssp);
       log.info("Predicate called: result={}, (pre)latch={}, liveNodes={}, state={}",
                result, latch.getCount(), liveNodes, collectionState);
       latch.countDown();

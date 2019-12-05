@@ -239,7 +239,7 @@ public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
   @SuppressWarnings("WeakerAccess")
   void waitCol(int slices, String collection) {
     waitForState("waiting for collections to be created", collection,
-        (liveNodes, collectionState, rsp) -> {
+        (liveNodes, collectionState, ssp) -> {
           if (collectionState == null) {
             // per predicate javadoc, this is what we get if the collection doesn't exist at all.
             return false;

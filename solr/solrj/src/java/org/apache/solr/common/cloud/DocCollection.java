@@ -25,10 +25,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiPredicate;
 
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -315,16 +315,15 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
    *
    * @see CollectionStatePredicate
    */
-  public static boolean isFullyActive(Set<String> liveNodes, DocCollection collectionState,
+  public static boolean isFullyActive(ShardStateProvider ssp, DocCollection collectionState,
                                       int expectedShards, int expectedReplicas) {
-    Objects.requireNonNull(liveNodes);
     if (collectionState == null)
       return false;
     int activeShards = 0;
     for (Slice slice : collectionState) {
       int activeReplicas = 0;
       for (Replica replica : slice) {
-        if (replica.isActive(liveNodes) == false)
+        if (!ssp.isActive(replica))
           return false;
         activeReplicas++;
       }

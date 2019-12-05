@@ -460,7 +460,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
     cluster.getSolrClient().request(request);
     String propLC = prop.toLowerCase(Locale.ROOT);
     waitForState("Expecting property '" + prop + "'to appear on replica " + rep.getName(), COLLECTION_NAME,
-        (n, c, rsp) -> "true".equals(c.getReplica(rep.getName()).getProperty(propLC)));
+        (n, c, ssp) -> "true".equals(c.getReplica(rep.getName()).getProperty(propLC)));
 
   }
 
@@ -475,7 +475,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
     assertEquals(0, resp.getStatus());
     String propLC = prop.toLowerCase(Locale.ROOT);
     waitForState("Expecting property '" + prop + "'to appear on replica " + rep.getName(), COLLECTION_NAME,
-        (n, c, rsp) -> "true".equals(c.getReplica(rep.getName()).getProperty(propLC)));
+        (n, c, ssp) -> "true".equals(c.getReplica(rep.getName()).getProperty(propLC)));
 
   }
 
@@ -485,7 +485,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     assertEquals("Admin request failed; ", 0, resp.getStatus());
     waitForState("Expecting property '" + prop + "' to be removed from replica " + rep.getName(), COLLECTION_NAME,
-        (n, c, rsp) -> c.getReplica(rep.getName()).getProperty(prop) == null);
+        (n, c, ssp) -> c.getReplica(rep.getName()).getProperty(prop) == null);
   }
 
   // Intentionally un-balance the property to insure that BALANCESHARDUNIQUE does its job. There was an odd case

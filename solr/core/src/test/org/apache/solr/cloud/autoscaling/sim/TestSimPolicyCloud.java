@@ -134,7 +134,7 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
     CollectionAdminRequest.addReplicaToShard(collectionName, "shard1").process(solrClient);
     CloudUtil.waitForState(cluster,
         collectionName, 120l, TimeUnit.SECONDS,
-        (liveNodes, collectionState, rsp) -> collectionState.getReplicas().size() == 2);
+        (liveNodes, collectionState, ssp) -> collectionState.getReplicas().size() == 2);
 
     getCollectionState(collectionName).forEachReplica((s, replica) -> assertEquals(nodeId, replica.getNodeName()));
   }
@@ -175,7 +175,7 @@ public class TestSimPolicyCloud extends SimSolrCloudTestCase {
     CollectionAdminRequest.splitShard(collectionName).setShardName("shard1").process(solrClient);
 
     CloudUtil.waitForState(cluster, "Timed out waiting to see 6 replicas for collection: " + collectionName,
-        collectionName, (liveNodes, collectionState, rsp) -> collectionState.getReplicas().size() == 6);
+        collectionName, (liveNodes, collectionState, ssp) -> collectionState.getReplicas().size() == 6);
 
     docCollection = getCollectionState(collectionName);
     list = docCollection.getReplicas(firstNode);

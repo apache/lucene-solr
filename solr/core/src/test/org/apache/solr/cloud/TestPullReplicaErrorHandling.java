@@ -325,7 +325,7 @@ public void testCantConnectToPullReplica() throws Exception {
   }
   
   private CollectionStatePredicate activeReplicaCount(int numWriter, int numActive, int numPassive) {
-    return (liveNodes, collectionState, rsp) -> {
+    return (liveNodes, collectionState, ssp) -> {
       int writersFound = 0, activesFound = 0, passivesFound = 0;
       if (collectionState == null)
         return false;

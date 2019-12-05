@@ -49,7 +49,7 @@ public class ManagedSchemaRoundRobinCloudTest extends SolrCloudTestCase {
         .setMaxShardsPerNode(1)
         .process(cluster.getSolrClient());
     cluster.getSolrClient().waitForState(COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
-        (n, c, rsp) -> DocCollection.isFullyActive(n, c, NUM_SHARDS, 1));
+        (n, c, ssp) -> DocCollection.isFullyActive(ssp, c, NUM_SHARDS, 1));
   }
 
   @AfterClass

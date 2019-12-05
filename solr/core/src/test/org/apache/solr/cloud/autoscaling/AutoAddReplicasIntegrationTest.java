@@ -426,8 +426,8 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
   
   private static CollectionStatePredicate clusterShapeNoDownReplicas(final int expectedShards,
                                                                      final int expectedReplicas) {
-    return (liveNodes, collectionState, rsp)
-      -> (clusterShape(expectedShards, expectedReplicas).matches(liveNodes, collectionState, rsp)
+    return (liveNodes, collectionState, ssp)
+      -> (clusterShape(expectedShards, expectedReplicas).matches(liveNodes, collectionState, ssp)
           && collectionState.getReplicas().size() == expectedReplicas);
   }
   

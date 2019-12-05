@@ -85,7 +85,7 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
       List<String> addedIds = new ArrayList<>();
       Replica oldLeader = corruptLeader(collection, addedIds);
 
-      waitForState("Timeout waiting for new replica become leader", collection, (liveNodes, collectionState, rsp) -> {
+      waitForState("Timeout waiting for new replica become leader", collection, (liveNodes, collectionState, ssp) -> {
         Slice slice = collectionState.getSlice("shard1");
 
         if (slice.getReplicas().size() != 2) return false;
@@ -181,7 +181,7 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
         log.info("Stop jetty node : {} state:{}", otherReplicaJetty.getBaseUrl(), getCollectionState(collection));
         otherReplicaJetty.stop();
         cluster.waitForJettyToStop(otherReplicaJetty);
-        waitForState("Timeout waiting for replica get down", collection, (liveNodes, collectionState, rsp) -> getNonLeader(collectionState.getSlice("shard1")).getState() != Replica.State.ACTIVE);
+        waitForState("Timeout waiting for replica get down", collection, (liveNodes, collectionState, ssp) -> getNonLeader(collectionState.getSlice("shard1")).getState() != Replica.State.ACTIVE);
       }
 
       Replica oldLeader = corruptLeader(collection, new ArrayList<>());

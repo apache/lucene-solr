@@ -596,14 +596,14 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     log.info("Waiting to see {} active replicas in collection: {}", expectedNumReplicas, collection);
     AtomicInteger nReplicas = new AtomicInteger();
     try {
-      client.getZkStateReader().waitForState(collection, 30, TimeUnit.SECONDS, (liveNodes, collectionState, rsp) -> {
+      client.getZkStateReader().waitForState(collection, 30, TimeUnit.SECONDS, (liveNodes, collectionState, ssp) -> {
           if (collectionState == null) {
             return false;
           }
           int activeReplicas = 0;
           for (Slice slice : collectionState) {
             for (Replica replica : slice) {
-              if (rsp.isActive(replica)) {
+              if (ssp.isActive(replica)) {
                 activeReplicas++;
               }
             }

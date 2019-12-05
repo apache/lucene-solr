@@ -58,7 +58,7 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
     try (HttpSolrClient client1 = getHttpSolrClient(node1.getBaseUrl().toString())) {
 
       node2.stop();
-      waitForState("", COLLECTION, (liveNodes, collectionState, rsp) -> liveNodes.size() == 1);
+      waitForState("", COLLECTION, (liveNodes, collectionState, ssp) -> liveNodes.size() == 1);
 
       UpdateRequest req = new UpdateRequest();
       for (int i = 0; i < 100; i++) {
@@ -88,7 +88,7 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
 
       //
       node2.stop();
-      waitForState("", COLLECTION, (liveNodes, collectionState, rsp) -> liveNodes.size() == 1);
+      waitForState("", COLLECTION, (liveNodes, collectionState, ssp) -> liveNodes.size() == 1);
 
       new UpdateRequest().add("id", "1", "num", "20")
           .commit(client1, COLLECTION);
@@ -103,7 +103,7 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
       }
 
       node2.stop();
-      waitForState("", COLLECTION, (liveNodes, collectionState, rsp) -> liveNodes.size() == 1);
+      waitForState("", COLLECTION, (liveNodes, collectionState, ssp) -> liveNodes.size() == 1);
 
       new UpdateRequest().add("id", "1", "num", "30")
           .commit(client1, COLLECTION);
@@ -122,7 +122,7 @@ public class TestCloudRecovery2 extends SolrCloudTestCase {
     }
 
     node1.stop();
-    waitForState("", COLLECTION, (liveNodes, collectionState, rsp) -> {
+    waitForState("", COLLECTION, (liveNodes, collectionState, ssp) -> {
       Replica leader = collectionState.getLeader("shard1");
       return leader != null && leader.getNodeName().equals(node2.getNodeName());
     });

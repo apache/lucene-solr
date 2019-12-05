@@ -597,7 +597,7 @@ public class TestPullReplica extends SolrCloudTestCase {
    * passes only if all replicas are active or down, and the "liveNodes" reflect the same status
    */
   private CollectionStatePredicate clusterStateReflectsActiveAndDownReplicas() {
-    return (liveNodes, collectionState, rsp) -> {
+    return (liveNodes, collectionState, ssp) -> {
       for (Replica r:collectionState.getReplicas()) {
         if (r.getState() != Replica.State.DOWN && r.getState() != Replica.State.ACTIVE) {
           return false;
@@ -615,7 +615,7 @@ public class TestPullReplica extends SolrCloudTestCase {
 
 
   private CollectionStatePredicate activeReplicaCount(int numNrtReplicas, int numTlogReplicas, int numPullReplicas) {
-    return (liveNodes, collectionState, rsp) -> {
+    return (liveNodes, collectionState, ssp) -> {
       int nrtFound = 0, tlogFound = 0, pullFound = 0;
       if (collectionState == null)
         return false;

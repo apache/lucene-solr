@@ -76,14 +76,14 @@ public class DeleteShardTest extends SolrCloudTestCase {
 
     // Can delete an INATIVE shard
     CollectionAdminRequest.deleteShard(collection, "shard1").process(cluster.getSolrClient());
-    waitForState("Expected 'shard1' to be removed", collection, (n, c, rsp) -> {
+    waitForState("Expected 'shard1' to be removed", collection, (n, c, ssp) -> {
       return c.getSlice("shard1") == null;
     });
 
     // Can delete a shard under construction
     setSliceState(collection, "shard2", Slice.State.CONSTRUCTION);
     CollectionAdminRequest.deleteShard(collection, "shard2").process(cluster.getSolrClient());
-    waitForState("Expected 'shard2' to be removed", collection, (n, c, rsp) -> {
+    waitForState("Expected 'shard2' to be removed", collection, (n, c, ssp) -> {
       return c.getSlice("shard2") == null;
     });
 
@@ -102,7 +102,7 @@ public class DeleteShardTest extends SolrCloudTestCase {
     ZkNodeProps m = new ZkNodeProps(propMap);
     inQueue.offer(Utils.toJSON(m));
 
-    waitForState("Expected shard " + slice + " to be in state " + state.toString(), collection, (n, c, rsp) -> {
+    waitForState("Expected shard " + slice + " to be in state " + state.toString(), collection, (n, c, ssp) -> {
       return c.getSlice(slice).getState() == state;
     });
 
@@ -131,7 +131,7 @@ public class DeleteShardTest extends SolrCloudTestCase {
     // Delete shard 'a'
     CollectionAdminRequest.deleteShard(collection, "a").process(cluster.getSolrClient());
     
-    waitForState("Expected 'a' to be removed", collection, (n, c, rsp) -> {
+    waitForState("Expected 'a' to be removed", collection, (n, c, ssp) -> {
       return c.getSlice("a") == null;
     });
 
@@ -148,7 +148,7 @@ public class DeleteShardTest extends SolrCloudTestCase {
         .setDeleteInstanceDir(false)
         .process(cluster.getSolrClient());
 
-    waitForState("Expected 'b' to be removed", collection, (n, c, rsp) -> {
+    waitForState("Expected 'b' to be removed", collection, (n, c, ssp) -> {
       return c.getSlice("b") == null;
     });
     

@@ -156,7 +156,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     cluster.waitForJettyToStop(j1);
     cluster.waitForJettyToStop(j2);
     
-    waitForState("", collection, (liveNodes, collectionState, rsp) ->
+    waitForState("", collection, (liveNodes, collectionState, ssp) ->
       collectionState.getSlice("shard1").getReplicas().stream()
           .filter(replica -> replica.getState() == Replica.State.DOWN).count() == 2);
 
@@ -164,7 +164,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     JettySolrRunner j3 = cluster.getJettySolrRunner(0);
     j3.stop();
     cluster.waitForJettyToStop(j3);
-    waitForState("", collection, (liveNodes, collectionState, rsp) -> collectionState.getReplica(leader.getName()).getState() == Replica.State.DOWN);
+    waitForState("", collection, (liveNodes, collectionState, ssp) -> collectionState.getReplica(leader.getName()).getState() == Replica.State.DOWN);
 
     cluster.getJettySolrRunner(1).start();
     cluster.getJettySolrRunner(2).start();
@@ -187,7 +187,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     // waitForNode not solid yet?
     cluster.waitForAllNodes(30);
     
-    waitForState("Timeout waiting for leader", collection, (liveNodes, collectionState, rsp) -> {
+    waitForState("Timeout waiting for leader", collection, (liveNodes, collectionState, ssp) -> {
       Replica newLeader = collectionState.getLeader("shard1");
       return newLeader != null && newLeader.getName().equals(leader.getName());
     });
@@ -211,7 +211,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     for (int i = 1; i < 3; i++) {
       proxies.get(cluster.getJettySolrRunner(i)).reopen();
     }
-    waitForState("Timeout waiting for leader goes DOWN", collection, (liveNodes, collectionState, rsp)
+    waitForState("Timeout waiting for leader goes DOWN", collection, (liveNodes, collectionState, ssp)
         -> collectionState.getReplica(leader.getName()).getState() == Replica.State.DOWN);
 
     TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
@@ -225,7 +225,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     proxies.get(cluster.getJettySolrRunner(0)).reopen();
     cluster.getJettySolrRunner(0).start();
     cluster.waitForAllNodes(30);;
-    waitForState("Timeout waiting for leader", collection, (liveNodes, collectionState, rsp) -> {
+    waitForState("Timeout waiting for leader", collection, (liveNodes, collectionState, ssp) -> {
       Replica newLeader = collectionState.getLeader("shard1");
       return newLeader != null && newLeader.getName().equals(leader.getName());
     });

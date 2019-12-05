@@ -131,13 +131,13 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
     j.stop();
     cluster.waitForJettyToStop(j);
     
-    cluster.getSolrClient().getZkStateReader().waitForState(collectionName, 10, TimeUnit.SECONDS, (liveNodes, collectionState, rsp) -> !liveNodes.contains(nodeName));
+    cluster.getSolrClient().getZkStateReader().waitForState(collectionName, 10, TimeUnit.SECONDS, (liveNodes, collectionState, ssp) -> !liveNodes.contains(nodeName));
 
     CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
         .setNode(cluster.getJettySolrRunner(1).getNodeName())
         .process(cluster.getSolrClient());
 
-    waitForState("Timeout waiting for replica win the election", collectionName, (liveNodes, collectionState, rsp) -> {
+    waitForState("Timeout waiting for replica win the election", collectionName, (liveNodes, collectionState, ssp) -> {
       Replica newLeader = collectionState.getSlice("shard1").getLeader();
       if (newLeader == null) {
         return false;
@@ -232,7 +232,7 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
 
     try {
       // even replica2 joined election at the end of the queue, but it is the one with highest term
-      waitForState("Timeout waiting for new leader", collectionName, (liveNodes, collectionState, rsp) -> {
+      waitForState("Timeout waiting for new leader", collectionName, (liveNodes, collectionState, ssp) -> {
         Replica newLeader = collectionState.getSlice("shard1").getLeader();
         if (newLeader == null) {
           return false;

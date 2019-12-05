@@ -29,6 +29,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.DirectShardState;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
@@ -42,7 +44,7 @@ import org.apache.solr.common.util.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.client.solrj.impl.BaseHttpSolrClient.*;
+import static org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
 
 public abstract class BaseHttpClusterStateProvider implements ClusterStateProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -325,5 +327,11 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
 
   // This exception is not meant to escape this class it should be caught and wrapped.
   private class NotACollectionException extends Exception {
+  }
+
+  private ShardStateProvider shardStateProvider = new DirectShardState(s -> getLiveNodes().contains(s));
+  @Override
+  public ShardStateProvider getReplicaStateProvider(String coll) {
+    return shardStateProvider;
   }
 }

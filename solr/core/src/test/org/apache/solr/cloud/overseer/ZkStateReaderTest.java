@@ -100,7 +100,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
         if (explicitRefresh) {
           reader.forceUpdateCollection("c1");
         } else {
-          reader.waitForState("c1", TIMEOUT, TimeUnit.SECONDS, (n, c, rsp) -> c != null);
+          reader.waitForState("c1", TIMEOUT, TimeUnit.SECONDS, (n, c, ssp) -> c != null);
         }
 
         DocCollection collection = reader.getClusterState().getCollection("c1");
@@ -124,7 +124,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
           reader.forceUpdateCollection("c1");
         } else {
           reader.waitForState("c1", TIMEOUT, TimeUnit.SECONDS,
-              (n, c, rsp) -> c != null && c.getStateFormat() == 2);
+              (n, c, ssp) -> c != null && c.getStateFormat() == 2);
         }
 
         DocCollection collection = reader.getClusterState().getCollection("c1");
@@ -200,7 +200,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       writer.enqueueUpdate(reader.getClusterState(), Collections.singletonList(wc), null);
       writer.writePendingUpdates();
       assertTrue(zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", true));
-      reader.waitForState("c1", 1, TimeUnit.SECONDS, (liveNodes, collectionState, rsp) -> collectionState != null);
+      reader.waitForState("c1", 1, TimeUnit.SECONDS, (liveNodes, collectionState, ssp) -> collectionState != null);
 
       state = new DocCollection("c1", new HashMap<>(), Collections.singletonMap("x", "y"), DocRouter.DEFAULT, 0, ZkStateReader.CLUSTER_STATE + "/c1/state.json");
       wc = new ZkWriteCommand("c1", state);
@@ -262,7 +262,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
       assertTrue(zkClient.exists(ZkStateReader.COLLECTIONS_ZKNODE + "/c1/state.json", true));
 
       //reader.forceUpdateCollection("c1");
-      reader.waitForState("c1", TIMEOUT, TimeUnit.SECONDS, (n, c, rsp) -> c != null);
+      reader.waitForState("c1", TIMEOUT, TimeUnit.SECONDS, (n, c, ssp) -> c != null);
       ClusterState.CollectionRef ref = reader.getClusterState().getCollectionRef("c1");
       assertNotNull(ref);
       assertFalse(ref.isLazilyLoaded());

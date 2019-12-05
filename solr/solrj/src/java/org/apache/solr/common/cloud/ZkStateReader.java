@@ -45,8 +45,8 @@ import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 
-import org.apache.solr.client.solrj.cloud.DirectReplicaState;
-import org.apache.solr.client.solrj.cloud.ReplicaStateProvider;
+import org.apache.solr.client.solrj.cloud.DirectShardState;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.Callable;
@@ -219,7 +219,7 @@ public class ZkStateReader implements SolrCloseable {
 
   private Set<ClusterPropertiesListener> clusterPropertiesListeners = ConcurrentHashMap.newKeySet();
 
-  private final ReplicaStateProvider directReplicaState = new DirectReplicaState(s -> liveNodes.contains(s));
+  private final ShardStateProvider directReplicaState = new DirectShardState(s -> liveNodes.contains(s));
 
   /**
    * Used to submit notifications to Collection Properties watchers in order
@@ -967,7 +967,7 @@ public class ZkStateReader implements SolrCloseable {
 
     AtomicReference<Replica> leader = new AtomicReference<>();
     try {
-      waitForState(collection, timeout, TimeUnit.MILLISECONDS, (n, c, rsp) -> {
+      waitForState(collection, timeout, TimeUnit.MILLISECONDS, (n, c, ssp) -> {
         if (c == null)
           return false;
         Replica l = getLeader(n, c, shard);
@@ -1747,7 +1747,7 @@ public class ZkStateReader implements SolrCloseable {
     AtomicReference<DocCollection> docCollection = new AtomicReference<>();
     CollectionStateWatcher watcher = (n, c) -> {
       docCollection.set(c);
-      boolean matches = predicate.matches(n, c, getReplicaStateProvider(collection));
+      boolean matches = predicate.matches(n, c, getShardStateProvider(collection));
       if (matches)
         latch.countDown();
 
@@ -2334,7 +2334,7 @@ public class ZkStateReader implements SolrCloseable {
       return result;
     }
   }
-  public ReplicaStateProvider getReplicaStateProvider(String coll){
+  public ShardStateProvider getShardStateProvider(String coll){
     return directReplicaState;
   }
 }

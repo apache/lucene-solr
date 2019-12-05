@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.solr.client.solrj.cloud.ReplicaStateProvider;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -244,8 +244,8 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
   }
 
   @Override
-  public ReplicaStateProvider getReplicaStateProvider(String coll) {
-    return zkStateReader.getReplicaStateProvider(coll);
+  public ShardStateProvider getReplicaStateProvider(String coll) {
+    return zkStateReader.getShardStateProvider(coll);
   }
 
   @Override

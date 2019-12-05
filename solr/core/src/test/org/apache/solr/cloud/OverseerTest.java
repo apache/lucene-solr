@@ -221,7 +221,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       if (startElection && collection.length() > 0) {
         zkStateReader.waitForState(collection, 45000, TimeUnit.MILLISECONDS,
-            (liveNodes, collectionState, rsp) -> getShardId(collectionState, coreNodeName) != null);
+            (liveNodes, collectionState, ssp) -> getShardId(collectionState, coreNodeName) != null);
         String shardId = getShardId(collection, coreNodeName);
         if (shardId != null) {
           ElectionContext prevContext = electionContext.get(coreName);
@@ -545,7 +545,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       Set<String> availableCollections = state.getCollectionsMap().keySet();
       int availableCount = 0;
       for(String requiredCollection: collections) {
-        stateReader.waitForState(requiredCollection, 30000, TimeUnit.MILLISECONDS, (liveNodes, collectionState, rsp) ->  collectionState != null);
+        stateReader.waitForState(requiredCollection, 30000, TimeUnit.MILLISECONDS, (liveNodes, collectionState, ssp) ->  collectionState != null);
         if(availableCollections.contains(requiredCollection)) {
           availableCount++;
         }
@@ -621,7 +621,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       throws InterruptedException, KeeperException, TimeoutException {
 
     reader.waitForState(collection, 15000, TimeUnit.MILLISECONDS,
-        (liveNodes, collectionState, rsp) -> collectionState != null
+        (liveNodes, collectionState, ssp) -> collectionState != null
             && expectedCore.equals((collectionState.getLeader(shard) != null)
                 ? collectionState.getLeader(shard).getStr(ZkStateReader.CORE_NAME_PROP) : null));
 
@@ -689,7 +689,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       mockController.publishState(COLLECTION, core, core_node, "shard1", null, numShards, true, overseers.get(1));
 
       reader.waitForState(COLLECTION, 5000,
-            TimeUnit.MILLISECONDS, (liveNodes, collectionState, rsp) -> collectionState != null && collectionState.getReplica(core_node) == null);
+            TimeUnit.MILLISECONDS, (liveNodes, collectionState, ssp) -> collectionState != null && collectionState.getReplica(core_node) == null);
 
       reader.forceUpdateCollection(COLLECTION);
       // as of SOLR-5209 core removal does not cascade to remove the slice and collection
@@ -1138,7 +1138,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
         overseerClient = electNewOverseer(server.getZkAddress());
         assertTrue(overseers.size() > 0);
 
-        reader.waitForState("perf_sentinel", 15000, TimeUnit.MILLISECONDS, (liveNodes, collectionState, rsp) -> collectionState != null);
+        reader.waitForState("perf_sentinel", 15000, TimeUnit.MILLISECONDS, (liveNodes, collectionState, ssp) -> collectionState != null);
 
       } finally {
         context.stop();
@@ -1248,7 +1248,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       queue.offer(Utils.toJSON(m));
 
       reader.waitForState(COLLECTION, 1000, TimeUnit.MILLISECONDS,
-          (liveNodes, collectionState, rsp) -> collectionState != null && collectionState.getSlice("shard1") != null
+          (liveNodes, collectionState, ssp) -> collectionState != null && collectionState.getSlice("shard1") != null
               && collectionState.getSlice("shard1").getReplicas().size() == 3);
 
       assertNotNull(reader.getClusterState().getCollection(COLLECTION).getSlice("shard1"));
@@ -1542,7 +1542,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
           {
             String shard = "shard"+ss;
-            zkStateReader.waitForState(COLLECTION, 15000, TimeUnit.MILLISECONDS, (liveNodes, collectionState, rsp) -> collectionState != null && (collectionState.getSlice(shard) == null || collectionState.getSlice(shard).getReplicasMap().get("core_node"+N) == null));
+            zkStateReader.waitForState(COLLECTION, 15000, TimeUnit.MILLISECONDS, (liveNodes, collectionState, ssp) -> collectionState != null && (collectionState.getSlice(shard) == null || collectionState.getSlice(shard).getReplicasMap().get("core_node"+N) == null));
           }
 
           final DocCollection docCollection = zkStateReader.getClusterState().getCollection(COLLECTION);

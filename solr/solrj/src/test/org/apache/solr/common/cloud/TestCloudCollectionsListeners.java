@@ -99,7 +99,7 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection("testcollection1", "config", 4, 1)
         .processAndWait(client, MAX_WAIT_TIMEOUT);
     client.waitForState("testcollection1", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
-        (n, c, rsp) -> DocCollection.isFullyActive(n, c, 4, 1));
+        (n, c, ssp) -> DocCollection.isFullyActive(ssp, c, 4, 1));
 
     assertFalse("CloudCollectionsListener has new collection in old set of collections", oldResults.get(1).contains("testcollection1"));
     assertFalse("CloudCollectionsListener has new collection in old set of collections", oldResults.get(2).contains("testcollection1"));

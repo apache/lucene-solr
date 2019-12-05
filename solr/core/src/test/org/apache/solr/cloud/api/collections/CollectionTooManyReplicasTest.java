@@ -108,7 +108,7 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
         e2.getMessage().contains("given the current number of eligible live nodes"));
 
     // wait for recoveries to finish, for a clean shutdown - see SOLR-9645
-    waitForState("Expected to see all replicas active", collectionName, (n, c, rsp) -> {
+    waitForState("Expected to see all replicas active", collectionName, (n, c, ssp) -> {
       for (Replica r : c.getReplicas()) {
         if (r.getState() != Replica.State.ACTIVE)
           return false;
@@ -159,8 +159,8 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
 
     // And finally, ensure that there are all the replicas we expect. We should have shards 1, 2 and 4 and each
     // should have exactly two replicas
-    waitForState("Expected shards shardstart, 1, 2 and 4, each with two active replicas", collectionName, (n, c, rsp) -> {
-      return DocCollection.isFullyActive(n, c, 4, 2);
+    waitForState("Expected shards shardstart, 1, 2 and 4, each with two active replicas", collectionName, (n, c, ssp) -> {
+      return DocCollection.isFullyActive(ssp, c, 4, 2);
     });
     Map<String, Slice> slices = getCollectionState(collectionName).getSlicesMap();
     assertEquals("There should be exaclty four slices", slices.size(), 4);
