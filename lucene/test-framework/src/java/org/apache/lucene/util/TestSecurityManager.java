@@ -106,6 +106,30 @@ public final class TestSecurityManager extends SecurityManager {
 
   /**
    * {@inheritDoc}
+   * <p>This method implements hacks to workaround hadoop's garbage FileUtil code
+   */
+  @Override
+  public void checkRead(String file) {
+    for (StackTraceElement element : Thread.currentThread().getStackTrace()) {
+      // hadoop "createPermissionsDiagnosisString" method doesn't handle securityexception and fails completely.
+      // it insists on climbing up full directory tree!
+      // so, lie to it, and tell it we will happily read, so it does not crash.
+      if ("org.apache.hadoop.hdfs.MiniDFSCluster".equals(element.getClassName()) &&
+          "createPermissionsDiagnosisString".equals(element.getMethodName())) {
+        return;
+      }
+      // hadoop "canRead" method doesn't handle securityexception and fails completely.
+      // so, lie to it, and tell it we will happily read, so it does not crash.
+      if ("org.apache.hadoop.fs.FileUtil".equals(element.getClassName()) &&
+          "canRead".equals(element.getMethodName())) {
+        return;
+      }
+    }
+    super.checkRead(file);
+  }
+
+  /**
+   * {@inheritDoc}
    * <p>This method inspects the stack trace and checks who is calling
    * {@link System#exit(int)} and similar methods
    * @throws SecurityException if the caller of this method is not the test runner itself.
