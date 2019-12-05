@@ -163,6 +163,8 @@ Improvements
 * SOLR-11706: Add support for aggregation on multivalued fields in JSON facets. min, max, avg, sum, sumsq, stddev,
   variance, percentile aggregations now have support for multivalued fields. (hossman, Munendra S N)
 
+* SOLR-13990: Switch out woodstox-core-asl with aalto-xml and upgrade woodstox stax-2 API (Anshum Gupta, Mark Miller)
+
 Optimizations
 ---------------------
 (No changes)
