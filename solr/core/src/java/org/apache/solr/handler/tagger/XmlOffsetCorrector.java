@@ -47,6 +47,7 @@ public class XmlOffsetCorrector extends OffsetCorrector {
 
   private static final XMLInputFactory XML_INPUT_FACTORY;
   static {
+    // TODO disable DTD?
     XML_INPUT_FACTORY = XMLInputFactory2.newFactory();
     XML_INPUT_FACTORY.setXMLResolver(EmptyEntityResolver.STAX_INSTANCE);
   }
