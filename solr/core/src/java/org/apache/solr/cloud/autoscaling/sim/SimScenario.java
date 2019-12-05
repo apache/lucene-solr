@@ -301,7 +301,7 @@ public class SimScenario implements AutoCloseable {
           log.info("        -- abortLoop requested, aborting after " + i + " iterations.");
           return;
         }
-        scenario.context.put(LOOP_ITER_PROP, i);
+        scenario.context.put(LOOP_ITER_PROP, String.valueOf(i));
         log.info("   * iter " + (i + 1) + ":");
         for (SimOp op : ops) {
           op.prepareCurrentParams(scenario);
