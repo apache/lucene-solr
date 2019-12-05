@@ -166,4 +166,6 @@ grant {
   // java 8 accessibility requires this perm - should not after 8 I believe (rrd4j is the root reason we hit an accessibility code path)
   permission java.awt.AWTPermission "*";
 
+  // used by solr to create sandboxes (e.g. script execution)
+  permission java.security.SecurityPermission "createAccessControlContext";
 };
