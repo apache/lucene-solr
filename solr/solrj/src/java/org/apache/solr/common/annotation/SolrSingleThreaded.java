@@ -14,29 +14,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.common.cloud;
+package org.apache.solr.common.annotation;
 
-import java.util.Collection;
-import java.util.function.Predicate;
+import static java.lang.annotation.ElementType.TYPE;
+import static java.lang.annotation.RetentionPolicy.SOURCE;
 
-import org.apache.solr.common.util.Pair;
+import java.lang.annotation.Documented;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-public interface DistributedQueue {
-  byte[] peek() throws Exception;
+/**
+ * Annotation for classes in Solr that are not thread safe. This provides a clear indication of the thread safety of the class.
+ */
+@Documented
+@Retention(SOURCE)
+@Target(TYPE)
+public @interface SolrSingleThreaded {
 
-  byte[] peek(boolean block) throws Exception;
-
-  byte[] peek(long wait) throws Exception;
-
-  byte[] poll() throws Exception;
-
-  byte[] remove() throws Exception;
-
-  byte[] take() throws Exception;
-
-  void offer(byte[] data) throws Exception;
-
-  Collection<Pair<String, byte[]>> peekElements(int max, long waitMillis, Predicate<String> acceptFilter) throws Exception;
-
-  void remove(Collection<String> paths) throws Exception;
 }

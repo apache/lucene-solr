@@ -56,6 +56,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.LogLevel;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -166,6 +167,11 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     log.debug("* Live nodes: " + cloudManager.getClusterStateProvider().getLiveNodes());
     ClusterState state = cloudManager.getClusterStateProvider().getClusterState();
     state.forEachCollection(coll -> log.debug("* Collection " + coll.getName() + " state: " + coll));
+  }
+
+  @AfterClass
+  public static void cleanUpAfterClass() throws Exception {
+    cloudManager = null;
   }
 
   @Test

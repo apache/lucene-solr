@@ -160,6 +160,9 @@ Improvements
 
 * SOLR-13968: Support postingsFormat and docValuesFormat in schema fields. (Bruno Roustant)
 
+* SOLR-11706: Add support for aggregation on multivalued fields in JSON facets. min, max, avg, sum, sumsq, stddev,
+  variance, percentile aggregations now have support for multivalued fields. (hossman, Munendra S N)
+
 Optimizations
 ---------------------
 (No changes)
@@ -222,6 +225,9 @@ Other Changes
 * SOLR-13885: Typos in the documentation. (KoenDG via Cassandra Targett)
 
 * SOLR-13992: Code refactored to have collection name, slice name in Replica, Slice (noble)
+
+* SOLR-13998: Add thread safety annotations to Solr. This only introduces the annotations and doesn't add these to
+  existing classes. (Anshum Gupta, Mark Miller)
 
 ==================  8.3.1 ==================
 
