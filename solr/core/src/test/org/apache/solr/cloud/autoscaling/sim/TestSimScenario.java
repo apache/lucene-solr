@@ -76,12 +76,15 @@ public class TestSimScenario extends SimSolrCloudTestCase {
       "loop_end\n" +
       "loop_start iterations=${justCalc}\n" +
       "  calculate_suggestions\n" +
+      "  save_snapshot path=${snapshotPath}/${_loop_iter_}\n" +
       "loop_end\n" +
       "dump redact=true";
 
   @Test
   public void testSuggestions() throws Exception {
+    String snapshotPath = createTempDir() + "/snapshot";
     try (SimScenario scenario = SimScenario.load(testSuggestionsScenario)) {
+      scenario.context.put("snapshotPath", snapshotPath);
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
       PrintStream ps = new PrintStream(baos, true, "UTF-8");
       scenario.console = ps;
@@ -100,14 +103,14 @@ public class TestSimScenario extends SimSolrCloudTestCase {
       List<Map<String, Object>> snapSuggestions = (List<Map<String, Object>>)autoscalingState.get("suggestions");
       assertEquals(snapSuggestions.toString(), 1, snapSuggestions.size());
       // _loop_iter_ should be present and 0 (first iteration)
-      assertEquals(0, scenario.context.get(SimScenario.LOOP_ITER_PROP));
+      assertEquals("0", scenario.context.get(SimScenario.LOOP_ITER_PROP));
     }
     // try looping more times
     try (SimScenario scenario = SimScenario.load(testSuggestionsScenario)) {
       scenario.context.put("iterative", "10");
       scenario.context.put("justCalc", "0");
       scenario.run();
-      assertEquals(9, scenario.context.get(SimScenario.LOOP_ITER_PROP));
+      assertEquals("9", scenario.context.get(SimScenario.LOOP_ITER_PROP));
     }
 
   }
