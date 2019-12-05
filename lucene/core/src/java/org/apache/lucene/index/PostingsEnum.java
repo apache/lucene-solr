@@ -68,6 +68,58 @@ public abstract class PostingsEnum extends DocIdSetIterator {
   }
 
   /**
+   * Returns an empty PostingsEnum object.
+   */
+  public static PostingsEnum getEmptyInstance() {
+    return new PostingsEnum() {
+      @Override
+      public int freq() {
+        return 0;
+      }
+
+      @Override
+      public int nextPosition() throws IOException {
+        return -1;
+      }
+
+      @Override
+      public int startOffset() throws IOException {
+        return -1;
+      }
+
+      @Override
+      public int endOffset() throws IOException {
+        return -1;
+      }
+
+      @Override
+      public BytesRef getPayload() throws IOException {
+        return null;
+      }
+
+      @Override
+      public int docID() {
+        return DocIdSetIterator.NO_MORE_DOCS;
+      }
+
+      @Override
+      public int nextDoc() {
+        return DocIdSetIterator.NO_MORE_DOCS;
+      }
+
+      @Override
+      public int advance(int target) {
+        return DocIdSetIterator.NO_MORE_DOCS;
+      }
+
+      @Override
+      public long cost() {
+        return 0;
+      }
+    };
+  }
+
+  /**
    * Returns term frequency in the current document, or 1 if the field was
    * indexed with {@link IndexOptions#DOCS}. Do not call this before
    * {@link #nextDoc} is first called, nor after {@link #nextDoc} returns

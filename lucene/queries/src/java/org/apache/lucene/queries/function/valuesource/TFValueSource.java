@@ -25,7 +25,6 @@ import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
 import org.apache.lucene.util.BytesRef;
@@ -56,7 +55,7 @@ public class TFValueSource extends TermFreqValueSource {
       throw new UnsupportedOperationException("requires a TFIDFSimilarity (such as ClassicSimilarity)");
     }
 
-    return new FloatDocValues(this) {
+      return new FloatDocValues(this) {
       PostingsEnum docs ;
       int atDoc;
       int lastDocRequested = -1;
@@ -78,52 +77,7 @@ public class TFValueSource extends TermFreqValueSource {
         }
 
         if (docs == null) {
-          docs = new PostingsEnum() {
-            @Override
-            public int freq() {
-              return 0;
-            }
-
-            @Override
-            public int nextPosition() throws IOException {
-              return -1;
-            }
-
-            @Override
-            public int startOffset() throws IOException {
-              return -1;
-            }
-
-            @Override
-            public int endOffset() throws IOException {
-              return -1;
-            }
-
-            @Override
-            public BytesRef getPayload() throws IOException {
-              return null;
-            }
-
-            @Override
-            public int docID() {
-              return DocIdSetIterator.NO_MORE_DOCS;
-            }
-
-            @Override
-            public int nextDoc() {
-              return DocIdSetIterator.NO_MORE_DOCS;
-            }
-
-            @Override
-            public int advance(int target) {
-              return DocIdSetIterator.NO_MORE_DOCS;
-            }
-
-            @Override
-            public long cost() {
-              return 0;
-            }
-          };
+          docs = PostingsEnum.getEmptyInstance();
         }
         atDoc = -1;
       }

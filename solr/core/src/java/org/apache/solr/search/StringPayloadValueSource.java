@@ -27,7 +27,6 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.docvalues.StrDocValues;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldComparator;
 import org.apache.lucene.search.FieldComparatorSource;
 import org.apache.lucene.search.IndexSearcher;
@@ -80,52 +79,7 @@ public class StringPayloadValueSource extends PayloadValueSource {
         if (docs == null) {
           // dummy PostingsEnum so floatVal() can work
           // when would this be called?  if field/val did not match?  this is called for every doc?  create once and cache?
-          docs = new PostingsEnum() {
-            @Override
-            public int freq() {
-              return 0;
-            }
-
-            @Override
-            public int nextPosition() throws IOException {
-              return -1;
-            }
-
-            @Override
-            public int startOffset() throws IOException {
-              return -1;
-            }
-
-            @Override
-            public int endOffset() throws IOException {
-              return -1;
-            }
-
-            @Override
-            public BytesRef getPayload() throws IOException {
-              return null;
-            }
-
-            @Override
-            public int docID() {
-              return DocIdSetIterator.NO_MORE_DOCS;
-            }
-
-            @Override
-            public int nextDoc() {
-              return DocIdSetIterator.NO_MORE_DOCS;
-            }
-
-            @Override
-            public int advance(int target) {
-              return DocIdSetIterator.NO_MORE_DOCS;
-            }
-
-            @Override
-            public long cost() {
-              return 0;
-            }
-          };
+          docs = PostingsEnum.getEmptyInstance();
         }
         atDoc = -1;
       }
@@ -170,7 +124,7 @@ public class StringPayloadValueSource extends PayloadValueSource {
       }
     };
   }
-  
+
   // TODO: should this be formalized at the ValueSource level?  Seems to be the convention
   public String name() {
     return "payload";
