@@ -68,9 +68,9 @@ public abstract class PostingsEnum extends DocIdSetIterator {
   }
 
   /**
-   * Returns an empty PostingsEnum object.
+   * Returns an dummy PostingsEnum object.
    */
-  public static PostingsEnum getEmptyInstance() {
+  public static PostingsEnum getDummyInstance() {
     return new PostingsEnum() {
       @Override
       public int freq() {

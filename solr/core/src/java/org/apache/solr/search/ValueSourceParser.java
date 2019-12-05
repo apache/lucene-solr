@@ -728,12 +728,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         final String payloadEncoder = PayloadUtils.getPayloadEncoder(fieldType);
         if (payloadEncoder.equals("identity")) {
 
-          ValueSource defaultValueSource;
-          if (fp.hasMoreArguments()) {
-            defaultValueSource = fp.parseValueSource();
-          } else {
-            defaultValueSource = new LiteralValueSource("");
-          }
+          ValueSource defaultValueSource = (fp.hasMoreArguments()) ? fp.parseValueSource() : new LiteralValueSource("");
 
           if (fp.hasMoreArguments()) {
               // functions are not supported with strings
@@ -748,12 +743,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
               defaultValueSource);
         }
 
-        ValueSource defaultValueSource;
-        if (fp.hasMoreArguments()) {
-          defaultValueSource = fp.parseValueSource();
-        } else {
-          defaultValueSource = new ConstValueSource(0.0f);
-        }
+        ValueSource defaultValueSource = (fp.hasMoreArguments()) ? fp.parseValueSource() : new ConstValueSource(0.0f);
 
         PayloadFunction payloadFunction = null;
         String func = "average";

@@ -65,21 +65,19 @@ public class StringPayloadValueSource extends PayloadValueSource {
       public void reset() throws IOException {
         // no one should call us for deleted docs?
 
+        docs = null;
+
         if (terms != null) {
           final TermsEnum termsEnum = terms.iterator();
           if (termsEnum.seekExact(indexedBytes)) {
             docs = termsEnum.postings(null, PostingsEnum.ALL);
-          } else {
-            docs = null;
           }
-        } else {
-          docs = null;
         }
 
         if (docs == null) {
           // dummy PostingsEnum so floatVal() can work
           // when would this be called?  if field/val did not match?  this is called for every doc?  create once and cache?
-          docs = PostingsEnum.getEmptyInstance();
+          docs = PostingsEnum.getDummyInstance();
         }
         atDoc = -1;
       }

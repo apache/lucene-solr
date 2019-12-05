@@ -77,7 +77,7 @@ public class TFValueSource extends TermFreqValueSource {
         }
 
         if (docs == null) {
-          docs = PostingsEnum.getEmptyInstance();
+          docs = PostingsEnum.getDummyInstance();
         }
         atDoc = -1;
       }
