@@ -40,6 +40,7 @@ import java.util.concurrent.Future;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.auth.AuthSchemeProvider;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.config.Lookup;
@@ -657,6 +658,7 @@ public class CoreContainer {
 
     securityConfHandler = isZooKeeperAware() ? new SecurityConfHandlerZk(this) : new SecurityConfHandlerLocal(this);
     reloadSecurityProperties();
+    warnUsersIfSecurityDisabled();
     this.backupRepoFactory = new BackupRepositoryFactory(cfg.getBackupRepositoryPlugins());
 
     createHandler(ZK_PATH, ZookeeperInfoHandler.class.getName(), ZookeeperInfoHandler.class);
@@ -895,6 +897,20 @@ public class CoreContainer {
     initializeAuthorizationPlugin((Map<String, Object>) securityConfig.getData().get("authorization"));
     initializeAuthenticationPlugin((Map<String, Object>) securityConfig.getData().get("authentication"));
     initializeAuditloggerPlugin((Map<String, Object>) securityConfig.getData().get("auditlogging"));
+  }
+
+  private void warnUsersIfSecurityDisabled() {
+    if (authenticationPlugin == null || authorizationPlugin == null) {
+      log.warn("Not all security plugins configured!  authentication={} authorization={}.  Solr is only as secure as " +
+          "you make it. Consider configuring authentication/authorization before exposing Solr to users internal or " +
+          "external.  See https://lucene.apache.org/solr/guide/authentication-and-authorization-plugins.html for more info",
+          (authenticationPlugin != null) ? "enabled" : "disabled",
+          (authorizationPlugin != null) ? "enabled" : "disabled");
+    }
+
+    if (authenticationPlugin !=null && StringUtils.isNotEmpty(System.getProperty("solr.jetty.https.port"))) {
+      log.warn("Solr authentication is enabled, but SSL is off.  Consider enabling SSL to protect user credentials and data with encryption.");
+    }
   }
 
   private static void checkForDuplicateCoreNames(List<CoreDescriptor> cds) {

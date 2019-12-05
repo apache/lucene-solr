@@ -2096,18 +2096,6 @@ function start_solr() {
   SOLR_ADDL_ARGS="$2"
   SOLR_JETTY_ADDL_CONFIG="$3"
 
-  if [[ -z "${AUTHC_OPTS// }" ]]; then
-    echo "*** [WARN] *** Solr has no authentication enabled.  If you intend to expose Solr directly to users,"
-    echo " consider enabling authentication with a command such as: "
-    echo "  bin/solr auth enable -type basicAuth -credentials firstUser:firstUserPass -blockUnknown true"
-    echo " Run 'bin/solr auth --help' for more authentication options"
-  else
-    if [[ "false" == "$SOLR_SSL_ENABLED" ]]; then
-      echo "*** [WARN] *** Solr authentication is enabled, but SSL is off.  Credentials sent to Solr will be unencrypted"
-      echo " If Solr is not in a secured network, consider enabling SSL to protect request credentials and user data."
-    fi
-  fi
-
   # define default GC_TUNE
   if [ -z ${GC_TUNE+x} ]; then
       GC_TUNE=('-XX:+UseG1GC' \
