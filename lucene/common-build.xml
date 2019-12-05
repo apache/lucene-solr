@@ -1174,6 +1174,8 @@
 
             <!-- Restrict access to certain Java features and install security manager: -->
             <sysproperty key="common.dir" file="${common.dir}" />
+            <sysproperty key="common-solr.dir" file="${common.dir}/../solr" />
+            <sysproperty key="ant.library.dir" file="${ant.library.dir}" />
             <sysproperty key="clover.db.dir" file="${clover.db.dir}" />
             <syspropertyset>
                 <propertyref prefix="java.security.manager"/>
