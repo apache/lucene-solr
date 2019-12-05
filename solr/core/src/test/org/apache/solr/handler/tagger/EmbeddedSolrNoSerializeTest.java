@@ -42,6 +42,7 @@ import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -60,6 +61,11 @@ public class EmbeddedSolrNoSerializeTest extends SolrTestCaseJ4 {
     initCore("solrconfig-tagger.xml", "schema-tagger.xml");
     solrServer = new EmbeddedSolrServer(h.getCoreContainer(), "collection1");
     //we don't need to close the EmbeddedSolrServer because SolrTestCaseJ4 closes the core
+  }
+
+  @AfterClass
+  public static void cleanUpAfterClass() throws Exception {
+    solrServer = null;
   }
 
   @Before

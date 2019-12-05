@@ -204,6 +204,7 @@ public class OverseerCollectionConfigSetProcessorTest extends SolrTestCaseJ4 {
     zkControllerMock = null;
     cloudDataProviderMock = null;
     clusterStateProviderMock = null;
+    stateManagerMock = null;;
     cloudManagerMock = null;
     distribStateManagerMock = null;
     coreContainerMock = null;

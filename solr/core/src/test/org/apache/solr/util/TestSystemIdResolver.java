@@ -87,6 +87,7 @@ public class TestSystemIdResolver extends SolrTestCaseJ4 {
         resolver.resolveEntity(null, null, "solrres:/solrconfig.xml", path);
       });
       assertTrue(ioe.getMessage().startsWith("Can't find resource")
+          || ioe.getMessage().contains("access denied")
           || ioe.getMessage().contains("is outside resource loader dir"));
     }
   }
