@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import javax.servlet.Filter;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.Charset;
@@ -43,8 +44,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import javax.servlet.Filter;
-
+import com.codahale.metrics.MetricRegistry;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
@@ -76,8 +76,6 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.codahale.metrics.MetricRegistry;
 
 /**
  * "Mini" SolrCloud cluster to be used for testing
@@ -750,11 +748,11 @@ public class MiniSolrCloudCluster {
     AtomicReference<DocCollection> state = new AtomicReference<>();
     AtomicReference<Set<String>> liveNodesLastSeen = new AtomicReference<>();
     try {
-      getSolrClient().waitForState(collection, wait, unit, (n, c) -> {
+      getSolrClient().waitForState(collection, wait, unit, (n, c, rsp) -> {
         state.set(c);
         liveNodesLastSeen.set(n);
 
-        return predicate.matches(n, c);
+        return predicate.matches(n, c, rsp);
       });
     } catch (TimeoutException | InterruptedException e) {
       throw new RuntimeException("Failed while waiting for active collection" + "\n" + e.getMessage() + "\nLive Nodes: " + Arrays.toString(liveNodesLastSeen.get().toArray())
@@ -768,7 +766,7 @@ public class MiniSolrCloudCluster {
   }
   
   public static CollectionStatePredicate expectedShardsAndActiveReplicas(int expectedShards, int expectedReplicas) {
-    return (liveNodes, collectionState) -> {
+    return (liveNodes, collectionState, rsp) -> {
       if (collectionState == null)
         return false;
       if (collectionState.getSlices().size() != expectedShards) {
@@ -778,7 +776,7 @@ public class MiniSolrCloudCluster {
       int activeReplicas = 0;
       for (Slice slice : collectionState) {
         for (Replica replica : slice) {
-          if (replica.isActive(liveNodes)) {
+          if (rsp.isActive(replica)) {
             activeReplicas++;
           }
         }

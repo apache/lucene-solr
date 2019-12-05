@@ -21,6 +21,8 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 
+import org.apache.solr.client.solrj.cloud.ReplicaStateProvider;
+
 /**
  * Interface to determine if a set of liveNodes and a collection's state matches some expecatations.
  *
@@ -41,6 +43,7 @@ public interface CollectionStatePredicate {
    *                        does not exist
    * @return true if the input matches the requirements of this predicate
    */
-  boolean matches(Set<String> liveNodes, DocCollection collectionState);
+  boolean matches(Set<String> liveNodes, DocCollection collectionState, ReplicaStateProvider rsp);
+
 
 }

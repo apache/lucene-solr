@@ -312,10 +312,10 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     AtomicReference<DocCollection> state = new AtomicReference<>();
     AtomicReference<Set<String>> liveNodesLastSeen = new AtomicReference<>();
     try {
-      cluster.getSolrClient().waitForState(collection, timeout, timeUnit, (n, c) -> {
+      cluster.getSolrClient().waitForState(collection, timeout, timeUnit, (n, c, rsp) -> {
         state.set(c);
         liveNodesLastSeen.set(n);
-        return predicate.matches(n, c);
+        return predicate.matches(n, c, rsp);
       });
     } catch (Exception e) {
       fail(message + "\n" + e.getMessage() + "\nLive Nodes: " + Arrays.toString(liveNodesLastSeen.get().toArray()) + "\nLast available state: " + state.get());
@@ -327,7 +327,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    * number of shards and active replicas
    */
   public static CollectionStatePredicate clusterShape(int expectedShards, int expectedReplicas) {
-    return (liveNodes, collectionState) -> {
+    return (liveNodes, collectionState, rsp) -> {
       if (collectionState == null)
         return false;
       if (collectionState.getSlices().size() != expectedShards)
@@ -341,7 +341,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    * number of active shards and active replicas
    */
   public static CollectionStatePredicate activeClusterShape(int expectedShards, int expectedReplicas) {
-    return (liveNodes, collectionState) -> {
+    return (liveNodes, collectionState, rsp) -> {
       if (collectionState == null)
         return false;
       log.info("active slice count: " + collectionState.getActiveSlices().size() + " expected:" + expectedShards);

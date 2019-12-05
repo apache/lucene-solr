@@ -1377,7 +1377,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
 
     boolean success = false;
     try {
-      CloudUtil.waitForState(cloudManager, collectionName, 30, TimeUnit.SECONDS, (liveNodes, state) -> {
+      CloudUtil.waitForState(cloudManager, collectionName, 30, TimeUnit.SECONDS, (liveNodes, state, rsp) -> {
         for (String subSlice : subSlices) {
           Slice s = state.getSlice(subSlice);
           if (s.getLeader() == null) {

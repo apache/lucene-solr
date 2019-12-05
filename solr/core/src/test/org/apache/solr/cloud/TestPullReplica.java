@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
@@ -64,8 +65,6 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.carrotsearch.randomizedtesting.annotations.Repeat;
 
 @Slow
 @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
@@ -598,7 +597,7 @@ public class TestPullReplica extends SolrCloudTestCase {
    * passes only if all replicas are active or down, and the "liveNodes" reflect the same status
    */
   private CollectionStatePredicate clusterStateReflectsActiveAndDownReplicas() {
-    return (liveNodes, collectionState) -> {
+    return (liveNodes, collectionState, rsp) -> {
       for (Replica r:collectionState.getReplicas()) {
         if (r.getState() != Replica.State.DOWN && r.getState() != Replica.State.ACTIVE) {
           return false;
@@ -616,7 +615,7 @@ public class TestPullReplica extends SolrCloudTestCase {
 
 
   private CollectionStatePredicate activeReplicaCount(int numNrtReplicas, int numTlogReplicas, int numPullReplicas) {
-    return (liveNodes, collectionState) -> {
+    return (liveNodes, collectionState, rsp) -> {
       int nrtFound = 0, tlogFound = 0, pullFound = 0;
       if (collectionState == null)
         return false;

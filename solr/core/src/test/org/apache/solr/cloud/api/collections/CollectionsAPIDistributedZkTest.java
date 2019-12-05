@@ -16,9 +16,9 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
-
+import javax.management.MBeanServer;
+import javax.management.MBeanServerFactory;
+import javax.management.ObjectName;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.lang.management.ManagementFactory;
@@ -38,10 +38,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import javax.management.MBeanServer;
-import javax.management.MBeanServerFactory;
-import javax.management.ObjectName;
-
+import com.google.common.collect.ImmutableList;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -81,7 +78,8 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.collect.ImmutableList;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 
 /**
  * Tests the Cloud Collections API.
@@ -335,7 +333,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection("acollectionafterbaddelete", "conf", 1, 2)
         .process(cluster.getSolrClient());
     waitForState("Collection creation after a bad delete failed", "acollectionafterbaddelete",
-        (n, c) -> DocCollection.isFullyActive(n, c, 1, 2));
+        (n, c, rsp) -> DocCollection.isFullyActive(n, c, 1, 2));
   }
 
   @Test
@@ -468,7 +466,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
       String collectionName = "awhollynewcollection_" + i;
       final int j = i;
       waitForState("Expected to see collection " + collectionName, collectionName,
-          (n, c) -> {
+          (n, c, rsp) -> {
             CollectionAdminRequest.Create req = createRequests[j];
             return DocCollection.isFullyActive(n, c, req.getNumShards(), req.getReplicationFactor());
           });

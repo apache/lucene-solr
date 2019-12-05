@@ -36,10 +36,10 @@ import org.apache.http.conn.routing.HttpRoute;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.message.BasicHttpRequest;
+import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.util.TestInjection;
@@ -65,7 +65,7 @@ public class ConnectionReuseTest extends SolrCloudTestCase {
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
 
     cluster.getSolrClient().waitForState(COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
-        (n, c) -> DocCollection.isFullyActive(n, c, 1, 1));
+        (n, c, rsp) -> DocCollection.isFullyActive(n, c, 1, 1));
   }
 
   private SolrClient buildClient(CloseableHttpClient httpClient, URL url) {

@@ -108,7 +108,7 @@ public class RulesTest extends SolrCloudTestCase {
     CollectionAdminRequest.addReplicaToShard(rulesColl, "shard2").process(cluster.getSolrClient());
 
     waitForState("Should have found shard1 w/2active replicas + shard2 w/1active replica",
-                 rulesColl, (liveNodes, collection) -> {
+                 rulesColl, (liveNodes, collection, rsp) -> {
                    // short circut if collection is deleted
                    // or we don't yet have the correct number of slices
                    if (null == collection || 2 != collection.getSlices().size()) {
@@ -179,7 +179,7 @@ public class RulesTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     
     waitForState("Collection should have followed port rule w/ImplicitSnitch, not cluster policy",
-                 rulesColl, (liveNodes, rulesCollection) -> {
+                 rulesColl, (liveNodes, rulesCollection, rsp) -> {
                    // first sanity check that the collection exists & the rules/snitch are listed
                    if (null == rulesCollection) {
                      return false;
@@ -223,7 +223,7 @@ public class RulesTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
 
     waitForState("Collection should have followed port rule w/ImplicitSnitch, not cluster policy",
-                 rulesColl, (liveNodes, rulesCollection) -> {
+                 rulesColl, (liveNodes, rulesCollection, rsp) -> {
                    // first sanity check that the collection exists & the rules/snitch are listed
                    if (null == rulesCollection) {
                      return false;
@@ -351,7 +351,7 @@ public class RulesTest extends SolrCloudTestCase {
     cluster.getSolrClient().request(new GenericSolrRequest(POST, COLLECTIONS_HANDLER_PATH, p));
 
     waitForState("Should have found updated rules in DocCollection",
-                 rulesColl, (liveNodes, rulesCollection) -> {
+                 rulesColl, (liveNodes, rulesCollection, rsp) -> {
                    if (null == rulesCollection) {
                      return false;
                    } 

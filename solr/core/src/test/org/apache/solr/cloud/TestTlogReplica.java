@@ -678,7 +678,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
 
   private void waitForLeaderChange(JettySolrRunner oldLeaderJetty, String shardName) {
     waitForState("Expect new leader", collectionName,
-        (liveNodes, collectionState) -> {
+        (liveNodes, collectionState, rsp) -> {
           Replica leader = collectionState.getLeader(shardName);
           if (leader == null || !leader.isActive(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes())) {
             return false;
@@ -831,7 +831,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
    * passes only if all replicas are active or down, and the "liveNodes" reflect the same status
    */
   private CollectionStatePredicate clusterStateReflectsActiveAndDownReplicas() {
-    return (liveNodes, collectionState) -> {
+    return (liveNodes, collectionState, rsp) -> {
       for (Replica r:collectionState.getReplicas()) {
         if (r.getState() != Replica.State.DOWN && r.getState() != Replica.State.ACTIVE) {
           return false;
@@ -849,7 +849,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
 
 
   private CollectionStatePredicate activeReplicaCount(int numNrtReplicas, int numTlogReplicas, int numPullReplicas) {
-    return (liveNodes, collectionState) -> {
+    return (liveNodes, collectionState, rsp) -> {
       int nrtFound = 0, tlogFound = 0, pullFound = 0;
       if (collectionState == null)
         return false;

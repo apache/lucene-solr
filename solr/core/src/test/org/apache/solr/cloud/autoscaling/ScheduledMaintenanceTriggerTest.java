@@ -29,8 +29,8 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -309,7 +309,7 @@ public class ScheduledMaintenanceTriggerTest extends SolrCloudTestCase {
 
     ClusterState state = cloudManager.getClusterStateProvider().getClusterState();
 
-    CloudUtil.clusterShape(2, 1).matches(state.getLiveNodes(), state.getCollection(collection1));
+    CloudUtil.clusterShape(2, 1).matches(state.getLiveNodes(), state.getCollection(collection1), cloudManager.getClusterStateProvider().getReplicaStateProvider(collection1));
   }
 
   public static CountDownLatch getTriggerFired() {

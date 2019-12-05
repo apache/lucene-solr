@@ -16,10 +16,8 @@
  */
 package org.apache.solr.cloud.autoscaling;
 
-import static org.apache.solr.common.util.Utils.makeMap;
-
-import java.lang.invoke.MethodHandles;
 import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -34,8 +32,8 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
-import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.ClusterStateUtil;
+import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -48,9 +46,10 @@ import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.util.Utils.makeMap;
 
 @org.apache.solr.util.LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.cloud.autoscaling.NodeLostTrigger=TRACE;org.apache.solr.cloud.Overseer=DEBUG;org.apache.solr.cloud.overseer=DEBUG")
 public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
@@ -394,7 +393,7 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
 
   /** 
    * {@link MiniSolrCloudCluster#waitForNode} Doesn't check isRunning first, and we don't want to 
-   * use {@link MiniSolrCloudCluster#waitForAllNodes} because we don't want to waste cycles checking 
+   * use {@link MiniSolrCloudCluster#waitForAllNodes(int)} because we don't want to waste cycles checking
    * nodes we aren't messing with  
    */
   private void waitForNodeLive(final JettySolrRunner jetty)
@@ -427,8 +426,8 @@ public class AutoAddReplicasIntegrationTest extends SolrCloudTestCase {
   
   private static CollectionStatePredicate clusterShapeNoDownReplicas(final int expectedShards,
                                                                      final int expectedReplicas) {
-    return (liveNodes, collectionState)
-      -> (clusterShape(expectedShards, expectedReplicas).matches(liveNodes, collectionState)
+    return (liveNodes, collectionState, rsp)
+      -> (clusterShape(expectedShards, expectedReplicas).matches(liveNodes, collectionState, rsp)
           && collectionState.getReplicas().size() == expectedReplicas);
   }
   

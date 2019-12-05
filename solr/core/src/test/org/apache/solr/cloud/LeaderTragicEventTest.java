@@ -17,9 +17,6 @@
 
 package org.apache.solr.cloud;
 
-import static org.hamcrest.CoreMatchers.anyOf;
-import static org.hamcrest.CoreMatchers.is;
-
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -27,6 +24,7 @@ import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
@@ -49,6 +47,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.hamcrest.CoreMatchers.anyOf;
+import static org.hamcrest.CoreMatchers.is;
 
 @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13237")
 public class LeaderTragicEventTest extends SolrCloudTestCase {
@@ -84,7 +85,7 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
       List<String> addedIds = new ArrayList<>();
       Replica oldLeader = corruptLeader(collection, addedIds);
 
-      waitForState("Timeout waiting for new replica become leader", collection, (liveNodes, collectionState) -> {
+      waitForState("Timeout waiting for new replica become leader", collection, (liveNodes, collectionState, rsp) -> {
         Slice slice = collectionState.getSlice("shard1");
 
         if (slice.getReplicas().size() != 2) return false;
@@ -180,7 +181,7 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
         log.info("Stop jetty node : {} state:{}", otherReplicaJetty.getBaseUrl(), getCollectionState(collection));
         otherReplicaJetty.stop();
         cluster.waitForJettyToStop(otherReplicaJetty);
-        waitForState("Timeout waiting for replica get down", collection, (liveNodes, collectionState) -> getNonLeader(collectionState.getSlice("shard1")).getState() != Replica.State.ACTIVE);
+        waitForState("Timeout waiting for replica get down", collection, (liveNodes, collectionState, rsp) -> getNonLeader(collectionState.getSlice("shard1")).getState() != Replica.State.ACTIVE);
       }
 
       Replica oldLeader = corruptLeader(collection, new ArrayList<>());

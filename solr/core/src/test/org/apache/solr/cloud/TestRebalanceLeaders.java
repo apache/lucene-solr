@@ -18,7 +18,15 @@ package org.apache.solr.cloud;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.LuceneTestCase;
@@ -452,7 +460,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
     cluster.getSolrClient().request(request);
     String propLC = prop.toLowerCase(Locale.ROOT);
     waitForState("Expecting property '" + prop + "'to appear on replica " + rep.getName(), COLLECTION_NAME,
-        (n, c) -> "true".equals(c.getReplica(rep.getName()).getProperty(propLC)));
+        (n, c, rsp) -> "true".equals(c.getReplica(rep.getName()).getProperty(propLC)));
 
   }
 
@@ -467,7 +475,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
     assertEquals(0, resp.getStatus());
     String propLC = prop.toLowerCase(Locale.ROOT);
     waitForState("Expecting property '" + prop + "'to appear on replica " + rep.getName(), COLLECTION_NAME,
-        (n, c) -> "true".equals(c.getReplica(rep.getName()).getProperty(propLC)));
+        (n, c, rsp) -> "true".equals(c.getReplica(rep.getName()).getProperty(propLC)));
 
   }
 
@@ -477,7 +485,7 @@ public class TestRebalanceLeaders extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     assertEquals("Admin request failed; ", 0, resp.getStatus());
     waitForState("Expecting property '" + prop + "' to be removed from replica " + rep.getName(), COLLECTION_NAME,
-        (n, c) -> c.getReplica(rep.getName()).getProperty(prop) == null);
+        (n, c, rsp) -> c.getReplica(rep.getName()).getProperty(prop) == null);
   }
 
   // Intentionally un-balance the property to insure that BALANCESHARDUNIQUE does its job. There was an odd case

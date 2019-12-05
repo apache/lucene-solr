@@ -193,7 +193,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     waitForState("The collection should have 1 shard and 1 replica", collectionName, clusterShape(1, 1));
     // the above call is not enough because we want to assert that the down'ed replica is not active
     // but clusterShape will also return true if replica is not live -- which we don't want
-    CollectionStatePredicate collectionStatePredicate = (liveNodes, collectionState) -> {
+    CollectionStatePredicate collectionStatePredicate = (liveNodes, collectionState, rsp) -> {
       for (Replica r : collectionState.getReplicas()) {
         if (r.getNodeName().equals(oldNodeName.get())) {
           return r.getState() == Replica.State.DOWN;

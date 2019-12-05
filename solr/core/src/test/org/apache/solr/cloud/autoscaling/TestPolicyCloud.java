@@ -180,7 +180,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
      final int expectedSliceCount,
      final int expectedReplicaCount) {
 
-    return (liveNodes, collection) -> {
+    return (liveNodes, collection, rsp) -> {
       if (null == collection || expectedSliceCount != collection.getSlices().size()) {
         return false;
       }
@@ -263,7 +263,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
                    
     waitForState("Should have found exactly 1 slice w/2 live Replicas, one on each expected jetty: " +
                  firstNodeName + "/" + firstNodePort + " & " +  secondNodeName + "/" + secondNodePort,
-                 collectionName, (liveNodes, collection) -> {
+                 collectionName, (liveNodes, collection, rsp) -> {
                    // short circut if collection is deleted
                    // or we some how have the wrong number of slices
                    if (null == collection || 1 != collection.getSlices().size()) {
@@ -300,7 +300,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
     waitForState("Should have found exactly 3 shards (1 inactive) each w/two live Replicas, " +
                  "one on each expected jetty: " +
                  firstNodeName + "/" + firstNodePort + " & " +  secondNodeName + "/" + secondNodePort,
-                 collectionName, (liveNodes, collection) -> {
+                 collectionName, (liveNodes, collection, rsp) -> {
                    // short circut if collection is deleted
                    // or we some how have the wrong number of (active) slices
                    if (null == collection

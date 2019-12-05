@@ -361,7 +361,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     create.process(solrClient);
 
     waitForState("Timed out waiting for replicas of new collection to be active",
-        "testNodeAdded", (liveNodes, collectionState) -> collectionState.getReplicas().stream().allMatch(replica -> replica.isActive(liveNodes)));
+        "testNodeAdded", (liveNodes, collectionState, rsp) -> collectionState.getReplicas().stream().allMatch(replica -> replica.isActive(liveNodes)));
 
     // reset to the original policy which has only 1 replica per shard per node
     setClusterPolicyCommand = "{" +
@@ -608,7 +608,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     create.process(solrClient);
 
     waitForState("Timed out waiting for replicas of new collection to be active",
-        collectionNamePrefix + "_0", (liveNodes, collectionState) ->
+        collectionNamePrefix + "_0", (liveNodes, collectionState, rsp) ->
             collectionState.getReplicas().stream().allMatch(replica -> replica.isActive(liveNodes)));
 
     JettySolrRunner newNode = cluster.startJettySolrRunner();
@@ -635,7 +635,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
       create.process(solrClient);
 
       waitForState("Timed out waiting for replicas of new collection to be active",
-          collectionNamePrefix + "_" + i, (liveNodes, collectionState) ->
+          collectionNamePrefix + "_" + i, (liveNodes, collectionState,rsp) ->
               collectionState.getReplicas().stream().allMatch(replica -> replica.isActive(liveNodes)));
     }
 
@@ -706,7 +706,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     create.process(solrClient);
 
     waitForState("Timed out waiting for replicas of new collection to be active",
-        collectionNamePrefix + "_0", (liveNodes, collectionState) ->
+        collectionNamePrefix + "_0", (liveNodes, collectionState,rsp) ->
             collectionState.getReplicas().stream().allMatch(replica -> replica.isActive(liveNodes)));
 
     cluster.stopJettySolrRunner(newNode);

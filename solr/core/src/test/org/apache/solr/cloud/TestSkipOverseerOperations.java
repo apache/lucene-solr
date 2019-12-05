@@ -109,7 +109,7 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
     });
     
     waitForState("Expected single liveNode", collection,
-        (liveNodes, collectionState) -> liveNodes.size() == 1);
+        (liveNodes, collectionState, rsp) -> liveNodes.size() == 1);
 
     CollectionAdminResponse resp = CollectionAdminRequest.getOverseerStatus().process(cluster.getSolrClient());
     for (JettySolrRunner solrRunner : notOverseerNodes) {
@@ -177,7 +177,7 @@ public class TestSkipOverseerOperations extends SolrCloudTestCase {
     });
     
     waitForState("Expected single liveNode", collection,
-        (liveNodes, collectionState) -> liveNodes.size() == 1);
+        (liveNodes, collectionState, rsp) -> liveNodes.size() == 1);
 
     CollectionAdminResponse resp = CollectionAdminRequest.getOverseerStatus().process(cluster.getSolrClient());
     for (JettySolrRunner solrRunner : notOverseerNodes) {

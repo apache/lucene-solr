@@ -16,8 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import static org.apache.solr.common.util.Utils.makeMap;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -107,6 +105,8 @@ import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.util.Utils.makeMap;
 
 /**
  * TODO: we should still test this works as a custom update chain as well as
@@ -596,14 +596,14 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     log.info("Waiting to see {} active replicas in collection: {}", expectedNumReplicas, collection);
     AtomicInteger nReplicas = new AtomicInteger();
     try {
-      client.getZkStateReader().waitForState(collection, 30, TimeUnit.SECONDS, (liveNodes, collectionState) -> {
+      client.getZkStateReader().waitForState(collection, 30, TimeUnit.SECONDS, (liveNodes, collectionState, rsp) -> {
           if (collectionState == null) {
             return false;
           }
           int activeReplicas = 0;
           for (Slice slice : collectionState) {
             for (Replica replica : slice) {
-              if (replica.isActive(liveNodes)) {
+              if (rsp.isActive(replica)) {
                 activeReplicas++;
               }
             }

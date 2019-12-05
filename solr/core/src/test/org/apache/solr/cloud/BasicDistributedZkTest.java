@@ -548,7 +548,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       throws Exception {
     AtomicLong total = new AtomicLong(-1);
     try {
-      getCommonCloudSolrClient().getZkStateReader().waitForState(DEFAULT_COLLECTION, waitMillis, TimeUnit.MILLISECONDS, (n, c) -> {
+      getCommonCloudSolrClient().getZkStateReader().waitForState(DEFAULT_COLLECTION, waitMillis, TimeUnit.MILLISECONDS, (n, c, rsp) -> {
         long docTotal;
         try {
           docTotal = checkSlicesSameCounts(c);
@@ -1044,7 +1044,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
       });
 
       try {
-        getCommonCloudSolrClient().getZkStateReader().waitForState(oneInstanceCollection2, 20000, TimeUnit.MILLISECONDS, (n, c) -> {
+        getCommonCloudSolrClient().getZkStateReader().waitForState(oneInstanceCollection2, 20000, TimeUnit.MILLISECONDS, (n, c, rsp) -> {
           
  
           try {

@@ -16,15 +16,7 @@
  */
 package org.apache.solr.cloud;
 
-import static org.apache.solr.cloud.AbstractDistribZkTestBase.verifyReplicaStatus;
-import static org.mockito.Mockito.anyBoolean;
-import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.anyString;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
@@ -44,8 +36,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.xml.parsers.ParserConfigurationException;
-
+import com.codahale.metrics.Snapshot;
+import com.codahale.metrics.Timer;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
@@ -103,8 +95,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.xml.sax.SAXException;
 
-import com.codahale.metrics.Snapshot;
-import com.codahale.metrics.Timer;
+import static org.apache.solr.cloud.AbstractDistribZkTestBase.verifyReplicaStatus;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @Slow
 public class OverseerTest extends SolrTestCaseJ4 {
@@ -223,7 +221,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
       if (startElection && collection.length() > 0) {
         zkStateReader.waitForState(collection, 45000, TimeUnit.MILLISECONDS,
-            (liveNodes, collectionState) -> getShardId(collectionState, coreNodeName) != null);
+            (liveNodes, collectionState, rsp) -> getShardId(collectionState, coreNodeName) != null);
         String shardId = getShardId(collection, coreNodeName);
         if (shardId != null) {
           ElectionContext prevContext = electionContext.get(coreName);
@@ -547,7 +545,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       Set<String> availableCollections = state.getCollectionsMap().keySet();
       int availableCount = 0;
       for(String requiredCollection: collections) {
-        stateReader.waitForState(requiredCollection, 30000, TimeUnit.MILLISECONDS, (liveNodes, collectionState) ->  collectionState != null);
+        stateReader.waitForState(requiredCollection, 30000, TimeUnit.MILLISECONDS, (liveNodes, collectionState, rsp) ->  collectionState != null);
         if(availableCollections.contains(requiredCollection)) {
           availableCount++;
         }
@@ -623,7 +621,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       throws InterruptedException, KeeperException, TimeoutException {
 
     reader.waitForState(collection, 15000, TimeUnit.MILLISECONDS,
-        (liveNodes, collectionState) -> collectionState != null
+        (liveNodes, collectionState, rsp) -> collectionState != null
             && expectedCore.equals((collectionState.getLeader(shard) != null)
                 ? collectionState.getLeader(shard).getStr(ZkStateReader.CORE_NAME_PROP) : null));
 
@@ -691,7 +689,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       mockController.publishState(COLLECTION, core, core_node, "shard1", null, numShards, true, overseers.get(1));
 
       reader.waitForState(COLLECTION, 5000,
-            TimeUnit.MILLISECONDS, (liveNodes, collectionState) -> collectionState != null && collectionState.getReplica(core_node) == null);
+            TimeUnit.MILLISECONDS, (liveNodes, collectionState, rsp) -> collectionState != null && collectionState.getReplica(core_node) == null);
 
       reader.forceUpdateCollection(COLLECTION);
       // as of SOLR-5209 core removal does not cascade to remove the slice and collection
@@ -1140,7 +1138,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
         overseerClient = electNewOverseer(server.getZkAddress());
         assertTrue(overseers.size() > 0);
 
-        reader.waitForState("perf_sentinel", 15000, TimeUnit.MILLISECONDS, (liveNodes, collectionState) -> collectionState != null);
+        reader.waitForState("perf_sentinel", 15000, TimeUnit.MILLISECONDS, (liveNodes, collectionState, rsp) -> collectionState != null);
 
       } finally {
         context.stop();
@@ -1250,7 +1248,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
       queue.offer(Utils.toJSON(m));
 
       reader.waitForState(COLLECTION, 1000, TimeUnit.MILLISECONDS,
-          (liveNodes, collectionState) -> collectionState != null && collectionState.getSlice("shard1") != null
+          (liveNodes, collectionState, rsp) -> collectionState != null && collectionState.getSlice("shard1") != null
               && collectionState.getSlice("shard1").getReplicas().size() == 3);
 
       assertNotNull(reader.getClusterState().getCollection(COLLECTION).getSlice("shard1"));
@@ -1544,7 +1542,7 @@ public class OverseerTest extends SolrTestCaseJ4 {
 
           {
             String shard = "shard"+ss;
-            zkStateReader.waitForState(COLLECTION, 15000, TimeUnit.MILLISECONDS, (liveNodes, collectionState) -> collectionState != null && (collectionState.getSlice(shard) == null || collectionState.getSlice(shard).getReplicasMap().get("core_node"+N) == null));
+            zkStateReader.waitForState(COLLECTION, 15000, TimeUnit.MILLISECONDS, (liveNodes, collectionState, rsp) -> collectionState != null && (collectionState.getSlice(shard) == null || collectionState.getSlice(shard).getReplicasMap().get("core_node"+N) == null));
           }
 
           final DocCollection docCollection = zkStateReader.getClusterState().getCollection(COLLECTION);

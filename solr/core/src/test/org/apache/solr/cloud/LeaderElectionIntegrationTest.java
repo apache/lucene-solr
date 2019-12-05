@@ -108,7 +108,7 @@ public class LeaderElectionIntegrationTest extends SolrCloudTestCase {
       runner.start();
     }
     waitForState("Expected to see nodes come back " + collection, collection,
-        (n, c) -> {
+        (n, c, rsp) -> {
           return n.size() == 6;
         });
     CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
