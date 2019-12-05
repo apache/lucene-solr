@@ -165,32 +165,4 @@ public final class MathUtil {
     return (numValues - 1) * u;
   }
 
-  /**
-   * If this returns {@code true} then it means that the sum {@code x + y}
-   * doesn't need rounding to fit in a float. This method assumes two positive
-   * floats. No assumptions can be made if this method returns {@code false}.
-   */
-  public static boolean isSumAccurate(float x, float y) {
-    assert x >= 0;
-    assert y >= 0;
-    int xBits = Float.floatToRawIntBits(x);
-    int yBits = Float.floatToRawIntBits(y);
-    int minBits = Math.min(xBits, yBits);
-    int maxBits = Math.max(xBits, yBits);
-    int maxBiasedExp = maxBits >>> 23;
-    int minBiasedExp = minBits >>> 23;
-    // The result of the sum will have an exponent that is equal to the
-    // exponent of the maximum value, or the exponent of the maximum value plus
-    // one. So if we can do a lossless conversion of both numbers to a float
-    // that has the maximum exponent plus one as an exponent, then the sum is
-    // accurate.
-    int expDelta = maxBiasedExp - minBiasedExp;
-    final boolean accurate = (maxBits & 0x01) == 0 &&
-        // beware of overflows, a biased exponent of 254 is the greatest exponent that is not Infinity or NaN
-        maxBiasedExp < 254 &&
-        expDelta <= 22 &&
-        Integer.numberOfTrailingZeros(minBits) > expDelta;
-    return accurate;
-  }
-
 }

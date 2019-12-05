@@ -178,37 +178,4 @@ public class TestMathUtil extends LuceneTestCase {
     assertEquals(Double.POSITIVE_INFINITY, MathUtil.atanh(1), 0);
   }
 
-  public void testIsSumAccurate() {
-    assertTrue(doTestIsSumAccurate(1f, 1f));
-    assertTrue(doTestIsSumAccurate(1f, 2f));
-    assertFalse(doTestIsSumAccurate(1f, Float.MAX_VALUE));
-    assertFalse(doTestIsSumAccurate(1f, Float.MIN_VALUE));
-    assertFalse(doTestIsSumAccurate(1f, Float.MIN_NORMAL));
-    assertFalse(doTestIsSumAccurate(1f, 0.1f));
-    assertTrue(doTestIsSumAccurate(1f, 0.125f));
-    assertFalse(doTestIsSumAccurate(Float.MIN_NORMAL, Float.MIN_VALUE));
-    // The below numbers have lots of trailing zeros but the sum overflows
-    assertFalse(doTestIsSumAccurate(Float.intBitsToFloat(0xFE << 23), Float.intBitsToFloat(0xFE << 23)));
-    // Lots of trailing zeros in both cases, but the exponents differ by too much
-    assertFalse(doTestIsSumAccurate(Float.intBitsToFloat(0xFE << 23), 1f));
-
-    for (int iter = 0; iter < 10000; ++iter) {
-      final int exp1 = random().nextInt(255);
-      final int exp2 = random().nextInt(255);
-      final int ntz1 = random().nextInt(22);
-      final int ntz2 = random().nextInt(22);
-      float f1 = Float.intBitsToFloat((exp1 << 23) | ((random().nextInt(1 << (23 - ntz1)) | 1) << ntz1));
-      float f2 = Float.intBitsToFloat((exp2 << 23) | ((random().nextInt(1 << (23 - ntz2)) | 1) << ntz2));
-      doTestIsSumAccurate(f1, f2);
-    }
-  }
-
-  private boolean doTestIsSumAccurate(float x, float y) {
-    boolean ret = MathUtil.isSumAccurate(x, y);
-    assertEquals(ret, MathUtil.isSumAccurate(y, x));
-    if (ret) {
-      assertEquals(x + " + " + y, x + y, (double) x + y, 0d);
-    }
-    return ret;
-  }
 }
