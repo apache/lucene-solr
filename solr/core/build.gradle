@@ -90,6 +90,12 @@ dependencies {
   implementation ('org.apache.hadoop:hadoop-common') { transitive = false }
   implementation ('org.apache.hadoop:hadoop-hdfs-client') { transitive = false }
 
+  // Adding this temporarily until it's fixed on master.
+  api('org.codehaus.woodstox:woodstox-core-asl', {
+    exclude group: "javax.xml.stream", module: "stax-api"
+  })
+
+
   implementation ('net.hydromatic:eigenbase-properties') { transitive = false }
 
   runtimeOnly ('org.apache.curator:curator-recipes') { transitive = false }
