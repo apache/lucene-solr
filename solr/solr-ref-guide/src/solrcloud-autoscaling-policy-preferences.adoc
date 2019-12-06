@@ -530,7 +530,7 @@ updated to contain the current values for the following properties:
 * `_collections_` - a list of existing collections, or absent if there are no collections (or no live nodes)
 * `_suggestions_` - a list of autoscaling suggestions generated using CREATE_SUGGESTIONS command.
 * `_responses_` - a list of SolrResponse-s resulting from SOLR_REQUEST commands.
-* `_loop_iter_` - current loop iteration, or absent outside of loop.
+* `_loop_iter_` - current loop iteration (as a string), or absent outside of loop.
 * `_trigger_event_<triggerName>` - last trigger event captured by WAIT_EVENT
 
 Command parameters support variable expansion using string values from the current context (non-string values, including numeric, are ignored)
