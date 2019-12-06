@@ -2,6 +2,7 @@
 // Configure test randomization seeds and derived test properties.
 //
 
+import java.nio.file.*
 import org.apache.tools.ant.taskdefs.condition.Os
 import com.carrotsearch.randomizedtesting.SeedUtils
 import com.carrotsearch.randomizedtesting.generators.RandomPicks
@@ -58,11 +59,13 @@ allprojects {
           [propName: 'tests.multiplier', value: 1, description: "Value multiplier for randomized tests."],
           [propName: 'tests.maxfailures', value: null, description: "Skip tests after a given number of failures."],
           [propName: 'tests.timeoutSuite', value: null, description: "Timeout (in millis) for an entire suite."],
+          [propName: 'tests.failfast', value: "false", description: "Stop the build early on failure.", buildOnly: true],
           // asserts, debug output.
           [propName: 'tests.asserts', value: "true", description: "Enables or disables assertions mode."],
           [propName: 'tests.verbose', value: false, description: "Emit verbose debug information from tests."],
           [propName: 'tests.infostream', value: null, description: "Enables or disables infostream logs."],
           [propName: 'tests.leaveTemporary', value: null, description: "Leave temporary directories after tests complete."],
+          [propName: 'tests.useSecurityManager', value: false, description: "Enable security manager in tests.", buildOnly: true],
           // component randomization
           [propName: 'tests.codec', value: "random", description: "Sets the codec tests should run with."],
           [propName: 'tests.directory', value: "random", description: "Sets the Directory implementation tests should run with."],
@@ -77,7 +80,7 @@ allprojects {
           [propName: 'tests.weekly', value: false, description: "Enables or disables @Weekly tests."],
           [propName: 'tests.monster', value: false, description: "Enables or disables @Monster tests."],
           [propName: 'tests.awaitsfix', value: null, description: "Enables or disables @AwaitsFix tests."],
-          [propName: 'tests.file.encoding', value: "random", description: "Sets the default file.encoding on test JVM."],
+          [propName: 'tests.file.encoding', value: "random", description: "Sets the default file.encoding on test JVM.", buildOnly: true],
           // test data
           [propName: 'tests.linedocsfile', value: 'europarl.lines.txt.gz', description: "Test data file path."],
           // miscellaneous; some of them very weird.
@@ -111,7 +114,7 @@ allprojects {
       ext.testOptionsResolved = testOptions.findAll { opt ->
         propertyOrDefault(opt.propName, opt.value) != null
       }.collectEntries { opt ->
-        [(opt.propName): propertyOrDefault(opt.propName, opt.value)]
+        [(opt.propName): Objects.toString(propertyOrDefault(opt.propName, opt.value))]
       }
 
       // These are not official options or dynamically seed-derived options.
@@ -132,17 +135,50 @@ allprojects {
       ].find { prop ->
         Boolean.parseBoolean(propertyOrDefault(prop, "false"))
       }) {
-        testOptionsResolved['tests.leaveTemporary'] = true
+        testOptionsResolved['tests.leaveTemporary'] = "true"
       }
 
       // Append resolved test properties to the test task.
       test {
+        // TODO: we could remove opts with "buildOnly: true" (?)
         systemProperties testOptionsResolved
 
         if (Boolean.parseBoolean(testOptionsResolved['tests.asserts'])) {
           jvmArgs("-ea", "-esa")
         } else {
           enableAssertions = false
+        }
+
+        if (Boolean.parseBoolean(testOptionsResolved["tests.failfast"])) {
+          failFast true
+        }
+
+        // Enable security manager, if requested. We could move the selection of security manager and security policy
+        // to each project's build/ configuration but it seems compact enough to keep it here for now.
+        if (Boolean.parseBoolean(testOptionsResolved["tests.useSecurityManager"])) {
+          if (project.path == ":lucene:replicator") {
+            // systemProperty 'java.security.manager', "org.apache.lucene.util.TestSecurityManager"
+            // systemProperty 'java.security.policy', file("${commonDir}/tools/junit4/replicator-tests.policy")
+            doFirst {
+              logger.log(LogLevel.WARN, "Running with security manager not implemented for: ${project.path}")
+            }
+          } else if (project.path.startsWith(":lucene")) {
+            systemProperty 'java.security.manager', "org.apache.lucene.util.TestSecurityManager"
+            systemProperty 'java.security.policy', rootProject.file("gradle/testing/policies/tests.policy")
+          } else {
+            // systemProperty 'java.security.manager', "org.apache.solr.util.SolrSecurityManager"
+            // systemProperty 'java.security.policy', file("${commonDir}/tools/junit4/solr-tests.policy")
+            doFirst {
+              logger.log(LogLevel.WARN, "Running with security manager not implemented for: ${project.path}")
+            }
+          }
+
+          systemProperty 'common.dir', commonDir
+
+          def gradleUserHome = project.gradle.getGradleUserHomeDir()
+          systemProperty 'gradle.lib.dir', Paths.get(project.class.location.toURI()).parent.toAbsolutePath().toString().replace('\\', '/')
+          systemProperty 'gradle.worker.jar', Paths.get("${gradleUserHome}/caches/${gradle.gradleVersion}/workerMain/gradle-worker.jar").toAbsolutePath().toString()
+          systemProperty 'gradle.user.home', gradleUserHome.toPath().toAbsolutePath().toString()
         }
 
         doFirst {
