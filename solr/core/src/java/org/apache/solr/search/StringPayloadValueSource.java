@@ -77,7 +77,7 @@ public class StringPayloadValueSource extends PayloadValueSource {
         if (docs == null) {
           // dummy PostingsEnum so floatVal() can work
           // when would this be called?  if field/val did not match?  this is called for every doc?  create once and cache?
-          docs = PostingsEnum.getDummyInstance();
+          docs = PostingsEnum.DUMMY_INSTANCE;
         }
         atDoc = -1;
       }

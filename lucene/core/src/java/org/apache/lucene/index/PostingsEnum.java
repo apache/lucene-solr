@@ -68,10 +68,9 @@ public abstract class PostingsEnum extends DocIdSetIterator {
   }
 
   /**
-   * Returns an dummy PostingsEnum object.
+   * Dummy PostingsEnum object.
    */
-  public static PostingsEnum getDummyInstance() {
-    return new PostingsEnum() {
+  public static PostingsEnum DUMMY_INSTANCE = new PostingsEnum() {
       @Override
       public int freq() {
         return 0;
@@ -117,7 +116,6 @@ public abstract class PostingsEnum extends DocIdSetIterator {
         return 0;
       }
     };
-  }
 
   /**
    * Returns term frequency in the current document, or 1 if the field was
