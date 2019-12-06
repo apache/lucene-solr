@@ -157,11 +157,8 @@ allprojects {
         // to each project's build/ configuration but it seems compact enough to keep it here for now.
         if (Boolean.parseBoolean(testOptionsResolved["tests.useSecurityManager"])) {
           if (project.path == ":lucene:replicator") {
-            // systemProperty 'java.security.manager', "org.apache.lucene.util.TestSecurityManager"
-            // systemProperty 'java.security.policy', file("${commonDir}/tools/junit4/replicator-tests.policy")
-            doFirst {
-              logger.log(LogLevel.WARN, "Running with security manager not implemented for: ${project.path}")
-            }
+            systemProperty 'java.security.manager', "org.apache.lucene.util.TestSecurityManager"
+            systemProperty 'java.security.policy', rootProject.file("gradle/testing/policies/replicator-tests.policy")
           } else if (project.path.startsWith(":lucene")) {
             systemProperty 'java.security.manager', "org.apache.lucene.util.TestSecurityManager"
             systemProperty 'java.security.policy', rootProject.file("gradle/testing/policies/tests.policy")

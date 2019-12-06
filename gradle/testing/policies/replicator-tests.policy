@@ -81,6 +81,21 @@ grant {
 
   // used by nested tests? (e.g. TestLeaveFilesIfTestFails). TODO: look into this
   permission java.util.PropertyPermission "tests.runnested", "write";
+
+  // this section is replicator-specific (jetty)
+
+  // write access to all system properties
+  permission java.util.PropertyPermission "*", "write";
+
+  // replicator: jetty tests require some network permissions:
+  // all possibilities of accepting/binding/connecting on localhost with ports >= 1024:
+  permission java.net.SocketPermission "localhost:1024-", "accept,listen,connect,resolve";
+  permission java.net.SocketPermission "127.0.0.1:1024-", "accept,listen,connect,resolve";
+  permission java.net.SocketPermission "[::1]:1024-", "accept,listen,connect,resolve";
+  
+  // SSL related properties for jetty
+  permission java.security.SecurityPermission "getProperty.ssl.KeyManagerFactory.algorithm";
+  permission java.security.SecurityPermission "getProperty.ssl.TrustManagerFactory.algorithm";
 };
 
 
