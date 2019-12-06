@@ -163,11 +163,9 @@ allprojects {
             systemProperty 'java.security.manager', "org.apache.lucene.util.TestSecurityManager"
             systemProperty 'java.security.policy', rootProject.file("gradle/testing/policies/tests.policy")
           } else {
-            // systemProperty 'java.security.manager', "org.apache.solr.util.SolrSecurityManager"
-            // systemProperty 'java.security.policy', file("${commonDir}/tools/junit4/solr-tests.policy")
-            doFirst {
-              logger.log(LogLevel.WARN, "Running with security manager not implemented for: ${project.path}")
-            }
+            systemProperty 'common-solr.dir', commonSolrDir
+            systemProperty 'java.security.manager', "org.apache.solr.util.SolrSecurityManager"
+            systemProperty 'java.security.policy', rootProject.file("gradle/testing/policies/solr-tests.policy")
           }
 
           systemProperty 'common.dir', commonDir

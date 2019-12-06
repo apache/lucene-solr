@@ -4,9 +4,10 @@ import org.gradle.api.tasks.testing.logging.*
 allprojects {
   plugins.withType(JavaPlugin) {
     project.ext {
-      commonDir = project(":lucene").projectDir
       testsWorkDir = file("${buildDir}/tmp/tests-cwd")
       testsTmpDir = file("${buildDir}/tmp/tests-tmp")
+      commonDir = project(":lucene").projectDir
+      commonSolrDir = project(":solr").projectDir
     }
 
     test {

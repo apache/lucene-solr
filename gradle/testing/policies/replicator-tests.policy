@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-// Policy file for lucene tests. Please keep minimal and avoid wildcards.
+// Policy file for :lucene:replicator tests. Please keep minimal and avoid wildcards.
 
 grant {
   // 3rd party jar resources (where symlinks are not supported), test-files/ resources
