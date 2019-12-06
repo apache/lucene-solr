@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.common.SolrCloseableLatch;
 import org.apache.solr.common.cloud.CollectionStateWatcher;
 import org.apache.solr.common.cloud.DocCollection;
@@ -32,7 +33,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Watch for replicas to become {@link org.apache.solr.common.cloud.Replica.State#ACTIVE}. Watcher is
- * terminated (its {@link #onStateChanged(Set, DocCollection)} method returns false) when all listed
+ * terminated (its {@link #onStateChanged(ShardStateProvider, Set, DocCollection)} method returns false) when all listed
  * replicas become active.
  * <p>Additionally, the provided {@link SolrCloseableLatch} instance can be used to await
  * for all listed replicas to become active.</p>
@@ -114,7 +115,7 @@ public class ActiveReplicaWatcher implements CollectionStateWatcher {
 
   // synchronized due to SOLR-11535
   @Override
-  public synchronized boolean onStateChanged(Set<String> liveNodes, DocCollection collectionState) {
+  public synchronized boolean onStateChanged(ShardStateProvider ssp, Set<String> liveNodes, DocCollection collectionState) {
     log.debug("-- onStateChanged@" + Long.toHexString(hashCode()) + ": replicaIds=" + replicaIds + ", solrCoreNames=" + solrCoreNames +
         (latch != null ? "\nlatch count=" + latch.getCount() : "") +
         "\ncollectionState=" + collectionState);
@@ -142,7 +143,7 @@ public class ActiveReplicaWatcher implements CollectionStateWatcher {
     for (Slice slice : collectionState.getSlices()) {
       for (Replica replica : slice.getReplicas()) {
         if (replicaIds.contains(replica.getName())) {
-          if (replica.isActive(liveNodes)) {
+          if (ssp.isActive(replica)) {
             activeReplicas.add(replica);
             replicaIds.remove(replica.getName());
             if (latch != null) {
@@ -150,7 +151,7 @@ public class ActiveReplicaWatcher implements CollectionStateWatcher {
             }
           }
         } else if (solrCoreNames.contains(replica.getStr(ZkStateReader.CORE_NAME_PROP))) {
-          if (replica.isActive(liveNodes)) {
+          if (ssp.isActive(replica)) {
             activeReplicas.add(replica);
             solrCoreNames.remove(replica.getStr(ZkStateReader.CORE_NAME_PROP));
             if (latch != null) {

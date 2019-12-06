@@ -123,7 +123,7 @@ public class RulesTest extends SolrCloudTestCase {
                      if (slice.getName().equals("shard1")) {
                        // for shard1, we should have 2 fully live replicas
                        final List<Replica> liveReplicas = slice.getReplicas
-                         ((r) -> r.isActive(liveNodes));
+                         (ssp::isActive);
                        if (2 != liveReplicas.size()) {
                          return false;
                        }
@@ -131,8 +131,7 @@ public class RulesTest extends SolrCloudTestCase {
                                            (Replica::getNodeName).collect(Collectors.toList()));
                      } else if (slice.getName().equals("shard2")) {
                        // for shard2, we should have 3 fully live replicas
-                       final List<Replica> liveReplicas = slice.getReplicas
-                         ((r) -> r.isActive(liveNodes));
+                       final List<Replica> liveReplicas = slice.getReplicas(ssp::isActive);
                        if (3 != liveReplicas.size()) {
                          return false;
                        }
@@ -206,7 +205,7 @@ public class RulesTest extends SolrCloudTestCase {
                    // (and the contradictory policy was ignored)
                    return rulesCollection.getReplicas().stream().allMatch
                      (replica -> (replica.getNodeName().contains(port) &&
-                                  replica.isActive(liveNodes)));
+                                  ssp.isActive(replica)));
                  });
   }
 
@@ -249,7 +248,7 @@ public class RulesTest extends SolrCloudTestCase {
                    // now sanity check that the rules were *obeyed*
                    return rulesCollection.getReplicas().stream().allMatch
                      (replica -> (replica.getNodeName().contains(port) &&
-                                  replica.isActive(liveNodes)));
+                                  ssp.isActive(replica)));
                  });
   }
 

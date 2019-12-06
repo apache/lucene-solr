@@ -187,7 +187,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
       int actualReplicaCount = 0;
       for (Slice slice : collection) {
         for (Replica replica : slice) {
-          if ( ! (replica.isActive(liveNodes)
+          if ( ! (ssp.isActive(replica)
                   && expectedNodeName.equals(replica.getNodeName())) ) {
             return false;
           }
@@ -278,7 +278,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
                      }
                      // make sure our replicas are fully live...
                      final List<Replica> liveReplicas = slice.getReplicas
-                       ((r) -> r.isActive(liveNodes));
+                       (ssp::isActive);
                      if (2 != liveReplicas.size()) {
                        return false;
                      }
@@ -316,7 +316,7 @@ public class TestPolicyCloud extends SolrCloudTestCase {
                      }
                      // make sure our replicas are fully live...
                      final List<Replica> liveReplicas = slice.getReplicas
-                       ((r) -> r.isActive(liveNodes));
+                       (ssp::isActive);
                      if (2 != liveReplicas.size()) {
                        return false;
                      }

@@ -46,6 +46,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -2224,10 +2225,11 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     StringBuilder builder = new StringBuilder();
     zkStateReader.forceUpdateCollection(collectionName);
     DocCollection collection = zkStateReader.getClusterState().getCollection(collectionName);
+    ShardStateProvider ssp = zkStateReader.getShardStateProvider(collectionName);
     for(Slice s:collection.getSlices()) {
       Replica leader = s.getLeader();
       for (Replica r:s.getReplicas()) {
-        if (!r.isActive(zkStateReader.getClusterState().getLiveNodes())) {
+        if (!ssp.isActive(r)) {
           builder.append(String.format(Locale.ROOT, "Replica %s not in liveNodes or is not active%s", r.getName(), System.lineSeparator()));
           continue;
         }

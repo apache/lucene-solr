@@ -27,6 +27,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.StringUtils;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.cloud.LeaderElector;
 import org.apache.solr.cloud.OverseerTaskProcessor;
 import org.apache.solr.cloud.overseer.SliceMutator;
@@ -191,9 +192,10 @@ class RebalanceLeaders {
       ClusterState clusterState = coreContainer.getZkController().getClusterState();
       Set<String> liveNodes = clusterState.getLiveNodes();
       DocCollection dc = clusterState.getCollection(collectionName);
+      ShardStateProvider ssp = coreContainer.getZkController().getZkStateReader().getShardStateProvider(collectionName);
       for (Slice slice : dc.getSlices()) {
         for (Replica replica : slice.getReplicas()) {
-          if (replica.isActive(liveNodes) && replica.getBool(SliceMutator.PREFERRED_LEADER_PROP, false)) {
+          if (ssp.isActive(replica)&& replica.getBool(SliceMutator.PREFERRED_LEADER_PROP, false)) {
             if (replica.getBool(LEADER_PROP, false)) {
               if (pendingOps.containsKey(slice.getName())) {
                 // Record for return that the leader changed successfully
@@ -231,8 +233,9 @@ class RebalanceLeaders {
         return; // already the leader, do nothing.
       }
       ZkStateReader zkStateReader = coreContainer.getZkController().getZkStateReader();
+      ShardStateProvider ssp = zkStateReader.getShardStateProvider(slice.getCollection());
       // We're the preferred leader, but someone else is leader. Only become leader if we're active.
-      if (replica.isActive(zkStateReader.getClusterState().getLiveNodes()) == false) {
+      if (ssp.isActive(replica) == false) {
         addInactiveToResults(slice, replica);
         return; // Don't try to become the leader if we're not active!
       }

@@ -50,6 +50,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.V2RequestSupport;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
@@ -617,6 +618,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   }
 
   private Map<String,List<String>> buildUrlMap(DocCollection col) {
+    ShardStateProvider ssp = getClusterStateProvider().getShardStateProvider(col.getName());
     Map<String, List<String>> urlMap = new HashMap<>();
     Slice[] slices = col.getActiveSlicesArr();
     for (Slice slice : slices) {
@@ -625,7 +627,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       Replica leader = slice.getLeader();
       if (directUpdatesToLeadersOnly && leader == null) {
         for (Replica replica : slice.getReplicas(
-            replica -> replica.isActive(getClusterStateProvider().getLiveNodes())
+            replica -> ssp.isActive(replica)
                 && replica.getType() == Replica.Type.NRT)) {
           leader = replica;
           break;

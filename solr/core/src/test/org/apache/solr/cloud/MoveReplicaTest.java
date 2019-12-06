@@ -29,6 +29,7 @@ import java.util.Set;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -154,6 +155,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     boolean recovered = false;
     for (int i = 0; i < 300; i++) {
       DocCollection collState = getCollectionState(coll);
+      ShardStateProvider ssp = cloudClient.getClusterStateProvider().getShardStateProvider(coll);
       log.debug("###### " + collState);
       Collection<Replica> replicas = collState.getSlice(shardId).getReplicas();
       boolean allActive = true;
@@ -163,7 +165,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
           if (!r.getNodeName().equals(targetNode)) {
             continue;
           }
-          if (!r.isActive(Collections.singleton(targetNode))) {
+          if (!ssp.isActive(r)) {
             log.info("Not active: " + r);
             allActive = false;
           }
@@ -198,6 +200,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
     recovered = false;
     for (int i = 0; i < 300; i++) {
       DocCollection collState = getCollectionState(coll);
+      ShardStateProvider ssp = cloudClient.getClusterStateProvider().getShardStateProvider(coll);
       log.debug("###### " + collState);
       Collection<Replica> replicas = collState.getSlice(shardId).getReplicas();
       boolean allActive = true;
@@ -207,7 +210,7 @@ public class MoveReplicaTest extends SolrCloudTestCase {
           if (!r.getNodeName().equals(replica.getNodeName())) {
             continue;
           }
-          if (!r.isActive(Collections.singleton(replica.getNodeName()))) {
+          if (!ssp.isActive(replica)) {
             log.info("Not active yet: " + r);
             allActive = false;
           }

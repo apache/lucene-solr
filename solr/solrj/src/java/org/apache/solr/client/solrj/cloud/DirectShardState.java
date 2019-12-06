@@ -50,4 +50,8 @@ public class DirectShardState implements ShardStateProvider {
         isNodeLive.test(replica.getNodeName());
   }
 
+  @Override
+  public boolean isActive(Slice slice) {
+    return slice.getState() == Slice.State.ACTIVE;
+  }
 }

@@ -172,6 +172,7 @@ public class Replica extends ZkNodeProps {
     return state;
   }
 
+  @Deprecated
   public boolean isActive(Set<String> liveNodes) {
     return this.nodeName != null && liveNodes.contains(this.nodeName) && this.state == State.ACTIVE;
   }

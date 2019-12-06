@@ -331,7 +331,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
 
   private ShardStateProvider shardStateProvider = new DirectShardState(s -> getLiveNodes().contains(s));
   @Override
-  public ShardStateProvider getReplicaStateProvider(String coll) {
+  public ShardStateProvider getShardStateProvider(String coll) {
     return shardStateProvider;
   }
 }

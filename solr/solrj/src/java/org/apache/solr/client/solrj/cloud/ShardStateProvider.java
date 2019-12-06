@@ -30,4 +30,6 @@ public interface ShardStateProvider {
   Replica getLeader(Slice slice);
 
   boolean isActive(Replica replica);
+
+  boolean isActive(Slice slice);
 }

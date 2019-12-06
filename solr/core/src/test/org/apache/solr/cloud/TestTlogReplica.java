@@ -43,6 +43,7 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -679,8 +680,8 @@ public class TestTlogReplica extends SolrCloudTestCase {
   private void waitForLeaderChange(JettySolrRunner oldLeaderJetty, String shardName) {
     waitForState("Expect new leader", collectionName,
         (liveNodes, collectionState, ssp) -> {
-          Replica leader = collectionState.getLeader(shardName);
-          if (leader == null || !leader.isActive(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes())) {
+          Replica leader = ssp.getLeader(collectionState.getSlice(shardName));
+          if (leader == null || !ssp.isActive(leader)) {
             return false;
           }
           return oldLeaderJetty == null || !leader.getNodeName().equals(oldLeaderJetty.getNodeName());
@@ -775,7 +776,8 @@ public class TestTlogReplica extends SolrCloudTestCase {
   private void waitForNumDocsInAllReplicas(int numDocs, Collection<Replica> replicas, String query, int timeout) throws IOException, SolrServerException, InterruptedException {
     TimeOut t = new TimeOut(timeout, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     for (Replica r:replicas) {
-      if (!r.isActive(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes())) {
+      ShardStateProvider ssp = cluster.getSolrClient().getZkStateReader().getShardStateProvider(r.collection);
+      if (!ssp.isActive(r)) {
         continue;
       }
       try (HttpSolrClient replicaClient = getHttpSolrClient(r.getCoreUrl())) {
@@ -855,7 +857,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
         return false;
       for (Slice slice : collectionState) {
         for (Replica replica : slice) {
-          if (replica.isActive(liveNodes))
+          if (ssp.isActive(replica))
             switch (replica.getType()) {
               case TLOG:
                 tlogFound++;

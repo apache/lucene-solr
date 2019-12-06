@@ -113,7 +113,7 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
       .processAndWait(client, MAX_WAIT_TIMEOUT);
 
     final CountDownLatch latch = new CountDownLatch(1);
-    client.registerDocCollectionWatcher("currentstate", (c) -> {
+    client.registerDocCollectionWatcher("currentstate", (c, ssp) -> {
       latch.countDown();
       return false;
     });
@@ -124,7 +124,7 @@ public class TestDocCollectionWatcher extends SolrCloudTestCase {
                  1, client.getZkStateReader().getStateWatchers("currentstate").size());
 
     final CountDownLatch latch2 = new CountDownLatch(1);
-    client.registerDocCollectionWatcher("currentstate", (c) -> {
+    client.registerDocCollectionWatcher("currentstate", (c, ssp) -> {
       latch2.countDown();
       return true;
     });

@@ -39,6 +39,7 @@ import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -326,7 +327,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     waitForState("Replica not added", collectionName, activeReplicaCount(1, 0, 0));
     addDocs(500);
     List<Replica.State> statesSeen = new ArrayList<>(3);
-    cluster.getSolrClient().registerCollectionStateWatcher(collectionName, (liveNodes, collectionState) -> {
+    cluster.getSolrClient().registerCollectionStateWatcher(collectionName, (ssp, liveNodes, collectionState) -> {
       Replica r = collectionState.getSlice("shard1").getReplica("core_node2");
       log.info("CollectionStateWatcher state change: {}", r);
       if (r == null) {
@@ -428,13 +429,14 @@ public class TestPullReplica extends SolrCloudTestCase {
     }
     docCollection = assertNumberOfReplicas(0, 0, 1, true, true);
 
+    ShardStateProvider ssp = cluster.getSolrClient().getClusterStateProvider().getShardStateProvider(collectionName);
     // Check that there is no leader for the shard
-    Replica leader = docCollection.getSlice("shard1").getLeader();
-    assertTrue(leader == null || !leader.isActive(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes()));
+    Replica leader = ssp.getLeader(docCollection.getSlice("shard1"));
+    assertTrue(leader == null || !ssp.isActive(leader));
 
     // Pull replica on the other hand should be active
     Replica pullReplica = docCollection.getSlice("shard1").getReplicas(EnumSet.of(Replica.Type.PULL)).get(0);
-    assertTrue(pullReplica.isActive(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes()));
+    assertTrue(ssp.isActive(pullReplica));
 
     long highestTerm = 0L;
     try (ZkShardTerms zkShardTerms = new ZkShardTerms(collectionName, "shard1", zkClient())) {
@@ -478,8 +480,8 @@ public class TestPullReplica extends SolrCloudTestCase {
     // Validate that the new nrt replica is the leader now
     cluster.getSolrClient().getZkStateReader().forceUpdateCollection(collectionName);
     docCollection = getCollectionState(collectionName);
-    leader = docCollection.getSlice("shard1").getLeader();
-    assertTrue(leader != null && leader.isActive(cluster.getSolrClient().getZkStateReader().getClusterState().getLiveNodes()));
+    leader = ssp.getLeader(docCollection.getSlice("shard1"));
+    assertTrue(leader != null && ssp.isActive(leader));
 
     // If jetty is restarted, the replication is not forced, and replica doesn't replicate from leader until new docs are added. Is this the correct behavior? Why should these two cases be different?
     if (removeReplica) {
@@ -621,7 +623,7 @@ public class TestPullReplica extends SolrCloudTestCase {
         return false;
       for (Slice slice : collectionState) {
         for (Replica replica : slice) {
-          if (replica.isActive(liveNodes))
+          if (ssp.isActive(replica))
             switch (replica.getType()) {
               case TLOG:
                 tlogFound++;

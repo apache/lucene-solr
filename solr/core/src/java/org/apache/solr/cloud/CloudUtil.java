@@ -208,7 +208,7 @@ public class CloudUtil {
         timeout.sleep(100);
         continue;
       }
-      if (predicate.matches(state.getLiveNodes(), coll, cloudManager.getClusterStateProvider().getReplicaStateProvider(collection))) {
+      if (predicate.matches(state.getLiveNodes(), coll, cloudManager.getClusterStateProvider().getShardStateProvider(collection))) {
         log.trace("-- predicate matched with state {}", state);
         return timeout.timeElapsed(TimeUnit.MILLISECONDS);
       }
@@ -264,7 +264,7 @@ public class CloudUtil {
           continue;
         }
         for (Replica replica : slice) {
-          if (replica.isActive(liveNodes))
+          if (ssp.isActive(replica))
             activeReplicas++;
         }
         if (activeReplicas != expectedReplicas) {

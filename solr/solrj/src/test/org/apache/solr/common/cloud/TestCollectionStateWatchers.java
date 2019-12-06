@@ -135,12 +135,12 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
     
     // shutdown a node and check that we get notified about the change
     final CountDownLatch latch = new CountDownLatch(1);
-    client.registerCollectionStateWatcher("testcollection", (liveNodes, collectionState) -> {
+    client.registerCollectionStateWatcher("testcollection", (ssp, liveNodes, collectionState) -> {
       int nodesWithActiveReplicas = 0;
       log.info("State changed: {}", collectionState);
       for (Slice slice : collectionState) {
         for (Replica replica : slice) {
-          if (replica.isActive(liveNodes))
+          if (ssp.isActive(replica))
             nodesWithActiveReplicas++;
         }
       }
@@ -172,7 +172,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
       .processAndWait(client, MAX_WAIT_TIMEOUT);
 
     final CountDownLatch latch = new CountDownLatch(1);
-    client.registerCollectionStateWatcher("currentstate", (n, c) -> {
+    client.registerCollectionStateWatcher("currentstate", (ssp,n, c) -> {
       latch.countDown();
       return false;
     });
@@ -183,7 +183,7 @@ public class TestCollectionStateWatchers extends SolrCloudTestCase {
                  1, client.getZkStateReader().getStateWatchers("currentstate").size());
 
     final CountDownLatch latch2 = new CountDownLatch(1);
-    client.registerCollectionStateWatcher("currentstate", (n, c) -> {
+    client.registerCollectionStateWatcher("currentstate", (ssp,n, c) -> {
       latch2.countDown();
       return true;
     });

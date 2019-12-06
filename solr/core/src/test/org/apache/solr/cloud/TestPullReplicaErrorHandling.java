@@ -331,7 +331,7 @@ public void testCantConnectToPullReplica() throws Exception {
         return false;
       for (Slice slice : collectionState) {
         for (Replica replica : slice) {
-          if (replica.isActive(liveNodes))
+          if (ssp.isActive(replica))
             switch (replica.getType()) {
               case TLOG:
                 activesFound++;

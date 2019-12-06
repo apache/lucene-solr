@@ -361,7 +361,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
     create.process(solrClient);
 
     waitForState("Timed out waiting for replicas of new collection to be active",
-        "testNodeAdded", (liveNodes, collectionState, ssp) -> collectionState.getReplicas().stream().allMatch(replica -> replica.isActive(liveNodes)));
+        "testNodeAdded", (liveNodes, collectionState, ssp) -> collectionState.getReplicas().stream().allMatch(replica -> ssp.isActive(replica)));
 
     // reset to the original policy which has only 1 replica per shard per node
     setClusterPolicyCommand = "{" +
@@ -609,7 +609,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
 
     waitForState("Timed out waiting for replicas of new collection to be active",
         collectionNamePrefix + "_0", (liveNodes, collectionState, ssp) ->
-            collectionState.getReplicas().stream().allMatch(replica -> replica.isActive(liveNodes)));
+            collectionState.getReplicas().stream().allMatch(ssp::isActive));
 
     JettySolrRunner newNode = cluster.startJettySolrRunner();
     cluster.waitForAllNodes(30);
@@ -636,7 +636,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
 
       waitForState("Timed out waiting for replicas of new collection to be active",
           collectionNamePrefix + "_" + i, (liveNodes, collectionState, ssp) ->
-              collectionState.getReplicas().stream().allMatch(replica -> replica.isActive(liveNodes)));
+              collectionState.getReplicas().stream().allMatch(ssp::isActive));
     }
 
     reset();
@@ -707,7 +707,7 @@ public class ComputePlanActionTest extends SolrCloudTestCase {
 
     waitForState("Timed out waiting for replicas of new collection to be active",
         collectionNamePrefix + "_0", (liveNodes,  collectionState, ssp) ->
-            collectionState.getReplicas().stream().allMatch(replica -> replica.isActive(liveNodes)));
+            collectionState.getReplicas().stream().allMatch(ssp::isActive));
 
     cluster.stopJettySolrRunner(newNode);
     assertTrue(triggerFiredLatch.await(30, TimeUnit.SECONDS));

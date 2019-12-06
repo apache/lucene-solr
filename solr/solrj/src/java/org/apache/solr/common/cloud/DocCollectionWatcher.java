@@ -17,6 +17,8 @@
 
 package org.apache.solr.common.cloud;
 
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
+
 /**
  * Callback registered with {@link ZkStateReader#registerDocCollectionWatcher(String, DocCollectionWatcher)}
  * and called whenever the DocCollection changes.
@@ -35,6 +37,6 @@ public interface DocCollectionWatcher {
    * @param collection the new collection state (may be null if the collection has been deleted)
    * @return true if the watcher should be removed
    */
-  boolean onStateChanged(DocCollection collection);
+  boolean onStateChanged(DocCollection collection, ShardStateProvider ssp);
 
 }

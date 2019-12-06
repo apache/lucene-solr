@@ -18,6 +18,7 @@ package org.apache.solr.cloud.api.collections;
 
 import java.util.Set;
 
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.common.SolrCloseableLatch;
 import org.apache.solr.common.cloud.CollectionStateWatcher;
 import org.apache.solr.common.cloud.DocCollection;
@@ -53,7 +54,7 @@ public class LeaderRecoveryWatcher implements CollectionStateWatcher {
   }
 
   @Override
-  public boolean onStateChanged(Set<String> liveNodes, DocCollection collectionState) {
+  public boolean onStateChanged(ShardStateProvider ssp, Set<String> liveNodes, DocCollection collectionState) {
     if (collectionState == null) { // collection has been deleted - don't wait
       latch.countDown();
       return true;
@@ -76,7 +77,7 @@ public class LeaderRecoveryWatcher implements CollectionStateWatcher {
         if (targetCore != null && !targetCore.equals(coreName)) {
           continue;
         }
-        if (replica.isActive(liveNodes)) { // recovered - stop waiting
+        if (ssp.isActive(replica)) { // recovered - stop waiting
           latch.countDown();
           return true;
         }

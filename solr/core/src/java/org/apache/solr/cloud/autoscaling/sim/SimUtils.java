@@ -32,6 +32,7 @@ import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.Cell;
@@ -135,13 +136,14 @@ public class SimUtils {
     allReplicaInfos.keySet().forEach(collection -> {
       Set<String> infosCores = allReplicaInfos.getOrDefault(collection, Collections.emptyMap()).keySet();
       Map<String, Replica> replicas = allReplicas.getOrDefault(collection, Collections.emptyMap());
+      ShardStateProvider ssp = solrCloudManager.getClusterStateProvider().getShardStateProvider(collection);
       Set<String> csCores = replicas.keySet();
       if (!infosCores.equals(csCores)) {
         Set<String> notInClusterState = infosCores.stream()
             .filter(k -> !csCores.contains(k))
             .collect(Collectors.toSet());
         Set<String> notInNodeProvider = csCores.stream()
-            .filter(k -> !infosCores.contains(k) && replicas.get(k).isActive(solrCloudManager.getClusterStateProvider().getLiveNodes()))
+            .filter(k -> !infosCores.contains(k) && ssp.isActive(replicas.get(k)))
             .collect(Collectors.toSet());
         if (!notInClusterState.isEmpty() || !notInNodeProvider.isEmpty()) {
           throw new RuntimeException("Mismatched replica data for collection " + collection + " between ClusterState and NodeStateProvider:\n\t" +

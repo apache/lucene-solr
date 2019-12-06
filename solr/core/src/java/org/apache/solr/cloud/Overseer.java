@@ -16,8 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import static org.apache.solr.common.params.CommonParams.ID;
-
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -31,8 +29,10 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
+import com.codahale.metrics.Timer;
 import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
@@ -54,6 +54,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ConnectionManager;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -76,7 +77,7 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.codahale.metrics.Timer;
+import static org.apache.solr.common.params.CommonParams.ID;
 
 /**
  * Cluster leader. Responsible for processing state updates, node assignments, creating/deleting
@@ -610,10 +611,12 @@ public class Overseer implements SolrCloseable {
     if (coll == null) {
       return;
     }
+    ShardStateProvider ssp = zkController.getZkStateReader().getShardStateProvider(coll.getName());
     // check that all shard leaders are active
     boolean allActive = true;
     for (Slice s : coll.getActiveSlices()) {
-      if (s.getLeader() == null || !s.getLeader().isActive(clusterState.getLiveNodes())) {
+      Replica leader = ssp.getLeader(s);
+      if (leader == null || !ssp.isActive(leader)) {
         allActive = false;
         break;
       }
@@ -622,13 +625,14 @@ public class Overseer implements SolrCloseable {
       doCompatCheck(consumer);
     } else {
       // wait for all leaders to become active and then check
-      zkController.zkStateReader.registerCollectionStateWatcher(CollectionAdminParams.SYSTEM_COLL, (liveNodes, state) -> {
+      zkController.zkStateReader.registerCollectionStateWatcher(CollectionAdminParams.SYSTEM_COLL, (stateProvider, liveNodes, state) -> {
         boolean active = true;
         if (state == null || liveNodes.isEmpty()) {
           return true;
         }
         for (Slice s : state.getActiveSlices()) {
-          if (s.getLeader() == null || !s.getLeader().isActive(liveNodes)) {
+          Replica leader = stateProvider.getLeader(s);
+          if (leader == null || !stateProvider.isActive(leader)) {
             active = false;
             break;
           }

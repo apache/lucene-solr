@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -247,7 +248,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
   private CollectionStateWatcher createActiveReplicaSearcherWatcher(AtomicInteger expectedDocs, AtomicReference<String> failingCoreNodeName) {
     return new CollectionStateWatcher() {
       @Override
-      public boolean onStateChanged(Set<String> liveNodes, DocCollection collectionState) {
+      public boolean onStateChanged(ShardStateProvider ssp, Set<String> liveNodes, DocCollection collectionState) {
         try {
           String coreNodeName = coreNodeNameRef.get();
           String coreName = coreNameRef.get();
@@ -255,7 +256,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
           Replica replica = collectionState.getReplica(coreNodeName);
           if (replica == null) return false;
           log.info("Collection state: {}", collectionState);
-          if (replica.isActive(liveNodes)) {
+          if (ssp.isActive(replica)) {
             log.info("Active replica: {}", coreNodeName);
             for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
               JettySolrRunner jettySolrRunner = cluster.getJettySolrRunner(i);

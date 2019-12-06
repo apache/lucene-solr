@@ -26,6 +26,7 @@ import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -354,8 +355,9 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
       systemLeaderNodes = Collections.emptySet();
     }
     String nodeToKill = null;
+    ShardStateProvider ssp = cluster.getSolrClient().getZkStateReader().getShardStateProvider(coll.getName());
     for (Replica r : coll.getReplicas()) {
-      if (r.isActive(state.getLiveNodes()) &&
+      if (ssp.isActive(r)&&
           !r.getNodeName().equals(overseerLeader)) {
         if (systemLeaderNodes.contains(r.getNodeName())) {
           log.info("--skipping .system leader replica {}", r);
@@ -420,6 +422,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
     boolean allActive = true;
     boolean hasLeaders = true;
     DocCollection collState = null;
+    ShardStateProvider ssp = solrClient.getZkStateReader().getShardStateProvider(collection);
     for (int i = 0; i < 300; i++) {
       ClusterState state = solrClient.getZkStateReader().getClusterState();
       collState = getCollectionState(collection);
@@ -430,7 +433,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
       if (replicas != null && !replicas.isEmpty()) {
         for (Replica r : replicas) {
           if (state.getLiveNodes().contains(r.getNodeName())) {
-            if (!r.isActive(state.getLiveNodes())) {
+            if (!ssp.isActive(r)) {
               log.info("Not active: " + r);
               allActive = false;
             }

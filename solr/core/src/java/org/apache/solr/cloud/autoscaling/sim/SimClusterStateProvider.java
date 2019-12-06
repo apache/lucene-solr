@@ -48,6 +48,7 @@ import java.util.stream.Collectors;
 import com.google.common.util.concurrent.AtomicDouble;
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.Policy;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
@@ -749,6 +750,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     
     log.trace("Attempting leader election ({} / {})", collection, slice);
     final AtomicBoolean stateChanged = new AtomicBoolean(Boolean.FALSE);
+    ShardStateProvider ssp = getShardStateProvider(collection);
     
     lock.lockInterruptibly();
     try {
@@ -776,14 +778,14 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         return;
       }
       
-      final Replica leader = s.getLeader();
+      final Replica leader = ssp.getLeader(s) ;
       if (null != leader && liveNodes.contains(leader.getNodeName())) {
         log.trace("-- already has livenode leader, skipping leader election {} / {}",
                   collection, slice);
         return;
       }
       
-      if (s.getState() != Slice.State.ACTIVE) {
+      if (ssp.isActive(s)) {
         log.trace("-- slice state is {}, but I will run leader election anyway ({} / {})",
                   s.getState(), collection, slice);
       }
@@ -801,7 +803,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
               throw new IllegalStateException("-- could not find ReplicaInfo for replica " + r);
             }
             synchronized (ri) {
-              if (r.isActive(liveNodes.get())) {
+              if (ssp.isActive(r)) {
                 if (ri.getVariables().get(ZkStateReader.LEADER_PROP) != null) {
                   log.trace("-- found existing leader {} / {}: {}, {}", collection, s.getName(), ri, r);
                   alreadyHasLeader.set(true);

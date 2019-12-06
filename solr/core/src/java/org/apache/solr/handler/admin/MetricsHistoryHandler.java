@@ -59,6 +59,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.NodeStateProvider;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.Variable;
@@ -258,9 +259,10 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
           factory.setPersistent(false);
           return;
         } else {
+          ShardStateProvider ssp = cloudManager.getClusterStateProvider().getShardStateProvider(systemColl.getName());
           boolean ready = false;
           for (Replica r : systemColl.getReplicas()) {
-            if (r.isActive(clusterState.getLiveNodes())) {
+            if (ssp.isActive(r)) {
               ready = true;
               break;
             }
@@ -532,6 +534,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
     try {
       ClusterState state = cloudManager.getClusterStateProvider().getClusterState();
       state.forEachCollection(coll -> {
+        ShardStateProvider ssp = cloudManager.getClusterStateProvider().getShardStateProvider(coll.getName());
         String registry = SolrMetricManager.getRegistryName(Group.collection, coll.getName());
         Map<String, Number> perReg = totals
             .computeIfAbsent(Group.collection, g -> new HashMap<>())
@@ -541,7 +544,7 @@ public class MetricsHistoryHandler extends RequestHandlerBase implements Permiss
         DoubleAdder numActiveReplicas = new DoubleAdder();
         for (Slice s : slices) {
           s.forEach(r -> {
-            if (r.isActive(state.getLiveNodes())) {
+            if (ssp.isActive(r)) {
               numActiveReplicas.add(1.0);
             }
           });

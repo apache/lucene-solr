@@ -244,7 +244,7 @@ public class ZkClientClusterStateProvider implements ClusterStateProvider {
   }
 
   @Override
-  public ShardStateProvider getReplicaStateProvider(String coll) {
+  public ShardStateProvider getShardStateProvider(String coll) {
     return zkStateReader.getShardStateProvider(coll);
   }
 

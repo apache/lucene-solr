@@ -542,7 +542,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         props.put(COLLECTION_PROP, props.get(CoreAdminParams.NAME));
       }
       new ColStatus(h.coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
-          h.coreContainer.getZkController().getZkStateReader().getClusterState(), new ZkNodeProps(props))
+          h.coreContainer.getZkController().getZkStateReader(), new ZkNodeProps(props))
           .getColStatus(rsp.getValues());
       return null;
     }),

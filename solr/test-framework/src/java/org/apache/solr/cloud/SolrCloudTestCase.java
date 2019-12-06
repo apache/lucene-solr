@@ -38,6 +38,7 @@ import java.util.function.Predicate;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -332,7 +333,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
         return false;
       if (collectionState.getSlices().size() != expectedShards)
         return false;
-      return compareActiveReplicaCountsForShards(expectedReplicas, liveNodes, collectionState);
+      return compareActiveReplicaCountsForShards(ssp, expectedReplicas, liveNodes, collectionState);
     };
   }
 
@@ -347,7 +348,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
       log.info("active slice count: " + collectionState.getActiveSlices().size() + " expected:" + expectedShards);
       if (collectionState.getActiveSlices().size() != expectedShards)
         return false;
-      return compareActiveReplicaCountsForShards(expectedReplicas, liveNodes, collectionState);
+      return compareActiveReplicaCountsForShards(ssp, expectedReplicas, liveNodes, collectionState);
     };
   }
 
@@ -376,11 +377,11 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     };
   }
 
-  private static boolean compareActiveReplicaCountsForShards(int expectedReplicas, Set<String> liveNodes, DocCollection collectionState) {
+  private static boolean compareActiveReplicaCountsForShards(ShardStateProvider ssp, int expectedReplicas, Set<String> liveNodes, DocCollection collectionState) {
     int activeReplicas = 0;
     for (Slice slice : collectionState) {
       for (Replica replica : slice) {
-        if (replica.isActive(liveNodes)) {
+        if (ssp.isActive(replica)) {
           activeReplicas++;
         }
       }

@@ -19,6 +19,8 @@ package org.apache.solr.common.cloud;
 
 import java.util.Set;
 
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
+
 /**
  * Callback registered with {@link ZkStateReader#registerCollectionStateWatcher(String, CollectionStateWatcher)}
  * and called whenever there is a change in the collection state <em>or</em> in the list of liveNodes.
@@ -41,6 +43,6 @@ public interface CollectionStateWatcher {
    *                        deleted)
    * @return true if the watcher should be removed
    */
-  boolean onStateChanged(Set<String> liveNodes, DocCollection collectionState);
+  boolean onStateChanged(ShardStateProvider ssp,  Set<String> liveNodes, DocCollection collectionState);
 
 }

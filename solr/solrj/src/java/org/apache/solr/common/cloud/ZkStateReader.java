@@ -263,6 +263,10 @@ public class ZkStateReader implements SolrCloseable {
     return new AutoScalingConfig(map);
   }
 
+  public DocCollection getCollection(String coll) {
+    return clusterState.getCollectionOrNull(coll);
+  }
+
   private static class CollectionWatch<T> {
 
     int coreRefCount = 0;
@@ -1678,7 +1682,7 @@ public class ZkStateReader implements SolrCloseable {
     registerLiveNodesListener(wrapper);
 
     DocCollection state = clusterState.getCollectionOrNull(collection);
-    if (stateWatcher.onStateChanged(liveNodes, state) == true) {
+    if (stateWatcher.onStateChanged(getShardStateProvider(collection), liveNodes, state) == true) {
       removeCollectionStateWatcher(collection, stateWatcher);
     }
   }
@@ -1707,7 +1711,7 @@ public class ZkStateReader implements SolrCloseable {
     }
 
     DocCollection state = clusterState.getCollectionOrNull(collection);
-    if (stateWatcher.onStateChanged(state) == true) {
+    if (stateWatcher.onStateChanged(state, getShardStateProvider(collection)) == true) {
       removeDocCollectionWatcher(collection, stateWatcher);
     }
   }
@@ -1745,9 +1749,9 @@ public class ZkStateReader implements SolrCloseable {
     final CountDownLatch latch = new CountDownLatch(1);
     waitLatches.add(latch);
     AtomicReference<DocCollection> docCollection = new AtomicReference<>();
-    CollectionStateWatcher watcher = (n, c) -> {
+    CollectionStateWatcher watcher = (ssp, n, c) -> {
       docCollection.set(c);
-      boolean matches = predicate.matches(n, c, getShardStateProvider(collection));
+      boolean matches = predicate.matches(n, c, ssp);
       if (matches)
         latch.countDown();
 
@@ -1791,7 +1795,7 @@ public class ZkStateReader implements SolrCloseable {
     final CountDownLatch latch = new CountDownLatch(1);
     waitLatches.add(latch);
     AtomicReference<DocCollection> docCollection = new AtomicReference<>();
-    DocCollectionWatcher watcher = (c) -> {
+    DocCollectionWatcher watcher = (c, ssp) -> {
       docCollection.set(c);
       boolean matches = predicate.test(c);
       if (matches)
@@ -2046,7 +2050,7 @@ public class ZkStateReader implements SolrCloseable {
       });
       for (DocCollectionWatcher watcher : watchers) {
         try {
-          if (watcher.onStateChanged(collectionState)) {
+          if (watcher.onStateChanged(collectionState, getShardStateProvider(collection))) {
             removeDocCollectionWatcher(collection, watcher);
           }
         } catch (Exception exception) {
@@ -2313,8 +2317,8 @@ public class ZkStateReader implements SolrCloseable {
     }
 
     @Override
-    public boolean onStateChanged(DocCollection collectionState) {
-      final boolean result = delegate.onStateChanged(ZkStateReader.this.liveNodes,
+    public boolean onStateChanged(DocCollection collectionState, ShardStateProvider ssp) {
+      final boolean result = delegate.onStateChanged(ssp, ZkStateReader.this.liveNodes,
           collectionState);
       if (result) {
         // it might be a while before live nodes changes, so proactively remove ourselves
@@ -2326,13 +2330,16 @@ public class ZkStateReader implements SolrCloseable {
     @Override
     public boolean onChange(SortedSet<String> oldLiveNodes, SortedSet<String> newLiveNodes) {
       final DocCollection collection = ZkStateReader.this.clusterState.getCollectionOrNull(collectionName);
-      final boolean result = delegate.onStateChanged(newLiveNodes, collection);
+      final boolean result = delegate.onStateChanged(getShardStateProvider(collectionName), newLiveNodes, collection);
       if (result) {
         // it might be a while before collection changes, so proactively remove ourselves
         removeDocCollectionWatcher(collectionName, this);
       }
       return result;
     }
+  }
+  public Set<String> getCollections(){
+    return clusterState.getCollectionStates().keySet();
   }
   public ShardStateProvider getShardStateProvider(String coll){
     return directReplicaState;

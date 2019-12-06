@@ -456,7 +456,7 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
       if (c.getSlice("shard1").getState() == Slice.State.ACTIVE)
         return false;
       for (Replica r : c.getReplicas()) {
-        if (r.isActive(n) == false)
+        if (!ssp.isActive(r))
           return false;
       }
       return true;
