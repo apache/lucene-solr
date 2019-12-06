@@ -62,7 +62,7 @@ if (!hasDefaults) {
     }
   }
 
-  // Make all tasks depend on local setup to make sure it'll run though.
+  // Make all tasks depend on local setup to make sure it'll run.
   allprojects {
     tasks.all { task ->
       if (task != rootProject.setupLocalDefaultsOnce) {

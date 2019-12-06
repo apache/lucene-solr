@@ -4,6 +4,7 @@ import org.gradle.api.tasks.testing.logging.*
 allprojects {
   plugins.withType(JavaPlugin) {
     project.ext {
+      commonDir = project(":lucene").projectDir
       testsWorkDir = file("${buildDir}/tmp/tests-cwd")
       testsTmpDir = file("${buildDir}/tmp/tests-tmp")
     }
@@ -15,9 +16,14 @@ allprojects {
 
       maxParallelForks = propertyOrDefault("tests.jvms", (int) Math.max(1, Math.min(Runtime.runtime.availableProcessors() / 2.0, 4.0)))
 
+      if (Boolean.parseBoolean(propertyOrDefault("tests.failfast", 'false'))) {
+        failFast true
+      }
+
       minHeapSize = "256m"
       maxHeapSize = "512m"
 
+      systemProperty 'java.util.logging.config.file', file("${commonDir}/tools/junit4/logging.properties")
       systemProperty 'java.awt.headless', 'true'
       systemProperty 'jdk.map.althashing.threshold', '0'
 
@@ -25,8 +31,16 @@ allprojects {
         systemProperty 'java.security.egd', 'file:/dev/./urandom'
       }
 
+      // jetty-related.
+      systemProperty 'jetty.testMode', '1'
+      systemProperty 'jetty.insecurerandom', '1'
+
+      // Turn jenkins blood red for hashmap bugs, even on jdk7
+      systemProperty 'jdk.map.althashing.threshold', '0'
+
       // Set up cwd and temp locations.
       systemProperty("java.io.tmpdir", testsTmpDir)
+      systemProperty("tempDir", testsTmpDir)
       doFirst {
         testsWorkDir.mkdirs()
         testsTmpDir.mkdirs()
