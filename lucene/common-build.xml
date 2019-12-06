@@ -86,8 +86,8 @@
   <!-- Needed in case a module needs the original build, also for compile-tools to be called from a module -->
   <property name="common.build.dir" location="${common.dir}/build"/>
 
-  <property name="ivy.bootstrap.version" value="2.4.0" /> <!-- UPGRADE NOTE: update disallowed_ivy_jars_regex below -->
-  <property name="disallowed_ivy_jars_regex" value="ivy-2\.[0123].*\.jar"/>
+  <property name="ivy.bootstrap.version" value="2.5.0" /> <!-- UPGRADE NOTE: update disallowed_ivy_jars_regex below -->
+  <property name="disallowed_ivy_jars_regex" value="ivy-2\.[01234].*\.jar"/>
 
   <property name="ivy.default.configuration" value="*"/>
 
@@ -417,7 +417,7 @@
   <property name="ivy_install_path" location="${user.home}/.ant/lib" />
   <property name="ivy_bootstrap_url1" value="https://repo1.maven.org/maven2"/>
   <property name="ivy_bootstrap_url2" value="https://repo2.maven.org/maven2"/>
-  <property name="ivy_checksum_sha1" value="5abe4c24bbe992a9ac07ca563d5bd3e8d569e9ed"/>
+  <property name="ivy_checksum_sha1" value="7cd93e73e91acb868717ebf2410f966f53ae5897"/>
 
   <target name="ivy-availability-check" unless="ivy.available">
     <path id="disallowed.ivy.jars">
