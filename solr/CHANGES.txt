@@ -134,6 +134,8 @@ Bug Fixes
 
 * SOLR-13805: NPE when calling /solr/admin/info/health on standalone solr (Nicholas DiPiazza, shalin)
 
+* SOLR-13954: Embedded ZooKeeper in Solr now does not try to load JettyAdminServer (janhoy)
+
 Other Changes
 ---------------------
 
