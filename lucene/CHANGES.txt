@@ -455,8 +455,6 @@ Other
 * LUCENE-8886: Fix TestMutablePointsReaderUtils tests. (Ignacio Vera)
 
 ======================= Lucene 8.1.1 =======================
-(No Changes)
-
 Improvements
 
 * LUCENE-8781: FST lookup performance has been improved in many cases by
@@ -9411,7 +9409,7 @@ Changes in backwards compatibility policy
     To prevent this slowdown, use oal.index.IndexUpgrader
     to upgrade your indexes to latest file format (LUCENE-3082).
 
-    Mixed flex/pre-flex indexes are perfectly fine -- the two
+  - Mixed flex/pre-flex indexes are perfectly fine -- the two
     emulation layers (flex API on pre-flex index, and pre-flex API on
     flex index) will remap the access as required.  So on upgrading to
     4.0 you can start indexing new documents into an existing index.

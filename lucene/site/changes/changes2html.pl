@@ -254,7 +254,8 @@ print<<"__HTML_HEADER__";
 * limitations under the License.
 ****************************************************************************
 -->
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
   <title>$title</title>
   <link rel="stylesheet" href="ChangesFancyStyle.css" title="Fancy">
@@ -289,7 +290,9 @@ print<<"__HTML_HEADER__";
       }
       var orderedLists = document.getElementsByTagName("ol");
       for (var i = 0; i < orderedLists.length; i++)
-        orderedLists[i].style.display = "none"; 
+        orderedLists[i].style.display = "none";
+      var olderList = document.getElementById("older.list");
+      olderList.style.display = "none";
       var anchors = document.getElementsByTagName("a");
       for (var i = 0 ; i < anchors.length; i++) {
         if (anchors[i].id != '')
@@ -308,6 +311,8 @@ print<<"__HTML_HEADER__";
       var orderedLists = document.getElementsByTagName("ol");
       for (var i = 0; i < orderedLists.length; i++)
         orderedLists[i].style.display = "block"; 
+      var olderList = document.getElementById("older.list");
+      olderList.style.display = "block";
       var anchors = document.getElementsByTagName("a");
       for (var i = 0 ; i < anchors.length; i++) {
         if (anchors[i].id != '')
@@ -368,6 +373,8 @@ print<<"__HTML_HEADER__";
           list.style.display = "none";
         }
       }
+      var olderList = document.getElementById("older.list");
+      olderList.style.display = "none";
       /* Add "Click to collapse/expand" tooltips to the release/section headings */
       var anchors = document.getElementsByTagName("a");
       for (var i = 0 ; i < anchors.length; i++) {
@@ -418,7 +425,7 @@ for my $rel (@releases) {
     print "<h2><a id=\"older\" href=\"javascript:toggleList('older')\">";
     print "Older Releases";
     print "</a></h2>\n";
-    print "<ul id=\"older.list\">\n"
+    print "<div id=\"older.list\">\n"
   }
 
   ($release, $reldate, $relinfo, $sections) = @$rel;
@@ -442,6 +449,7 @@ for my $rel (@releases) {
       if ($has_release_sections);
   }
 
+  my $licnt = 0;
   for my $section (@$sections) {
     ($heading, $items) = @$section;
     (my $sectid = lc($heading)) =~ s/\s+/_/g;
@@ -456,7 +464,8 @@ for my $rel (@releases) {
         } elsif ($has_release_sections) {
           print "  <li><a id=\"$relid.$sectid\"",
                 " href=\"javascript:toggleList('$relid.$sectid')\">$heading</a>",
-                "&nbsp;&nbsp;&nbsp;$numItemsStr\n"
+                "&nbsp;&nbsp;&nbsp;$numItemsStr\n";
+          ++$licnt;
         }
       }
     } else { # $release is not defined
@@ -480,7 +489,7 @@ for my $rel (@releases) {
                   my $prefix = $1; 
                   my $code = $2;
                   $code =~ s/\s+$//;
-                  "$prefix<code><pre>$code</pre></code>"
+                  "$prefix<pre><code>$code></code></pre>"
                 }gise;
 
       $item = markup_trailing_attribution($item) unless ($item =~ /\n[ ]*-/);
@@ -551,7 +560,9 @@ for my $rel (@releases) {
                   }
                 }sge;
 
-      $item =~ s:\n{2,}:\n<p/>\n:g;                   # Keep paragraph breaks
+      $item =~ s:\n{2,}:\n<p>\n:g;                   # Keep paragraph breaks
+      $item =~ s:</li>\n<p>\n<li:</li>\n<li\n:g;
+      $item =~ s:</li>\n<p>\n(.*)\n:</li></ul><p>\n$1\n<ul>:g;
       # Link LUCENE-XXX, SOLR-XXX and INFRA-XXX to JIRA
       $item =~ s{(?:${jira_url_prefix})?((?:LUCENE|SOLR|INFRA)-\d+)}
                 {<a href="${jira_url_prefix}$1">$1</a>}g;
@@ -602,16 +613,19 @@ for my $rel (@releases) {
       # Linkify URLs, except Bugzilla links, which don't work anymore
       $item =~ s~(?<![">])(https?://(?!(?:nagoya|issues)\.apache\.org/bugzilla)[^\s\)]+)~<a href="$1">$1</a>~g;
 
-      $item =~ s~</ul>\s+<p/>\s+<br\s*/>~</ul>~;
+      $item =~ s~</ul>\s+<p>\s+<br\s*/>~</ul>~;
 
       print "      <$list_item>$item</$list_item>\n";
     }
     print "    </$list>\n" unless (not $release or ($has_release_sections and not $heading));
-    print "  </li>\n" if ($release and $has_release_sections);
+    if ($release and $has_release_sections and $licnt>0) {
+        print "  </li>\n";
+        --$licnt;
+    }
   }
   print "</ul>\n" if ($release and $has_release_sections);
 }
-print "</ul>\n" if ($relcnt > 3);
+print "</div>\n" if ($relcnt > 3);
 print "</body>\n</html>\n";
 
 
@@ -708,7 +722,6 @@ sub markup_trailing_attribution {
 sub has_release_sections {
   my $sections = shift;
   my $has_release_sections = 0;
-  my $first_titled_section_num = -1;
   for my $section_num (0 .. $#{$sections}) {
     if ($sections->[$section_num][0]) {
       $has_release_sections = 1;
