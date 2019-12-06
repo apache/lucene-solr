@@ -36,8 +36,10 @@ dependencies {
     exclude group: "org.slf4j", module: "slf4j-log4j12"
   })
 
-  api('org.codehaus.woodstox:woodstox-core-asl', {
-    exclude group: "javax.xml.stream", module: "stax-api"
+  api('com.fasterxml:aalto-xml', {
+  })
+
+  api('com.fasterxml.staxmate:staxmate', {
   })
 
   testImplementation project(':solr:test-framework')
