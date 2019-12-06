@@ -222,7 +222,7 @@ public abstract class CodecReader extends LeafReader implements Accountable {
   }
 
   @Override
-  public KnnGraphValues getKnnGraphValues(String field) throws IOException {
+  public final KnnGraphValues getKnnGraphValues(String field) throws IOException {
     ensureOpen();
     FieldInfo fi = getFieldInfos().fieldInfo(field);
     if (fi == null || fi.getVectorNumDimensions() == 0) {

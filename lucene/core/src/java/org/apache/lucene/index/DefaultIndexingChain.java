@@ -308,7 +308,7 @@ final class DefaultIndexingChain extends DocConsumer {
     KnnGraphWriter knnGraphWriter = null;
     boolean success = false;
     try {
-      for (int i=0;i<fieldHash.length;i++) {
+      for (int i = 0; i<fieldHash.length; i++) {
         PerField perField = fieldHash[i];
         while (perField != null) {
           if (perField.knnGraphValuesWriter != null) {
@@ -325,7 +325,7 @@ final class DefaultIndexingChain extends DocConsumer {
               knnGraphWriter = fmt.fieldsWriter(state);
             }
 
-            perField.knnGraphValuesWriter.flush(state, sortMap, knnGraphWriter);
+            perField.knnGraphValuesWriter.flush(sortMap, knnGraphWriter);
             perField.knnGraphValuesWriter = null;
           } else if (perField.fieldInfo.getVectorNumDimensions() != 0) {
             // BUG

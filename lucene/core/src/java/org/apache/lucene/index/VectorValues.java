@@ -18,9 +18,12 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
 import java.util.Arrays;
 
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.BytesRef;
 
 /**
  * Access to per-document vector value.
@@ -46,7 +49,7 @@ public abstract class VectorValues extends DocIdSetIterator {
    * returned {@code false}.
    * @return binary value
    */
-  public byte[] binaryValue() throws IOException {
+  public BytesRef binaryValue() throws IOException {
     return encode(vectorValue());
   }
 
@@ -69,7 +72,7 @@ public abstract class VectorValues extends DocIdSetIterator {
   /**
    * Encodes float array to byte array.
    */
-  public static byte[] encode(float[] value) {
+  public static BytesRef encode(float[] value) {
     byte[] bytes = new byte[Float.BYTES * value.length];
     for (int i = 0; i < value.length; i++) {
       int bits = Float.floatToIntBits(value[i]);
@@ -78,14 +81,14 @@ public abstract class VectorValues extends DocIdSetIterator {
       bytes[i * Float.BYTES + 2] = (byte)(bits >> 8);
       bytes[i * Float.BYTES + 3] = (byte)(bits);
     }
-    return bytes;
+    return new BytesRef(bytes);
   }
 
-  public static boolean verifyNumDimensions(byte[] bytes, int numDims) {
-    if (bytes.length % Float.BYTES != 0) {
-      throw new IllegalArgumentException("Cannot decode bytes array to float array. Reason: invalid length: " + bytes.length);
+  public static boolean verifyNumDimensions(int numBytes, int numDims) {
+    if (numBytes % Float.BYTES != 0) {
+      throw new IllegalArgumentException("Cannot decode bytes array to float array. Reason: invalid length: " + numBytes);
     }
-    int dims = bytes.length / Float.BYTES;
+    int dims = numBytes / Float.BYTES;
     if (dims != numDims) {
       throw new IllegalArgumentException("Invalid dimensions: " + dims + " (the number of dimensions should be " + numDims + ")");
     }
@@ -93,18 +96,13 @@ public abstract class VectorValues extends DocIdSetIterator {
   }
 
   /**
-   * Decodes float array from byte array.
+   * Decodes float array from byte array. TODO: allow caller to supply the array so they control allocation.
    */
-  public static float[] decode(byte[] bytes, int numDims) {
-    verifyNumDimensions(bytes, numDims);
+  public static float[] decode(BytesRef bytes, int numDims) {
+    verifyNumDimensions(bytes.length, numDims);
     float[] value = new float[numDims];
-    for (int i = 0; i < numDims; i++) {
-      int bits = ((bytes[i * Float.BYTES] & 0xFF) << 24) |
-          ((bytes[i * Float.BYTES + 1] & 0xFF) << 16) |
-          ((bytes[i * Float.BYTES + 2] & 0xFF) << 8) |
-          (bytes[i * Float.BYTES + 3] & 0xFF);
-      value[i] = Float.intBitsToFloat(bits);
-    }
+    ByteBuffer buffer = ByteBuffer.wrap(bytes.bytes, bytes.offset, bytes.length);
+    buffer.asFloatBuffer().get(value);
     return value;
   }
 

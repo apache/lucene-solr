@@ -54,7 +54,9 @@ public abstract class KnnGraphWriter implements Closeable {
     }
 
     for (FieldInfo fieldInfo : mergeState.mergeFieldInfos) {
-      mergeOneField(fieldInfo, mergeState);
+      if (fieldInfo.hasVectorValues()) {
+        mergeOneField(fieldInfo, mergeState);
+      }
     }
     finish();
   }
@@ -86,6 +88,8 @@ public abstract class KnnGraphWriter implements Closeable {
         }
       }
     }
+    assert vectorSubs.isEmpty() == false;
+    assert graphSubs.isEmpty() == false;
 
     final DocIDMerger<VectorValuesSub> vectorDocIdMerger = DocIDMerger.of(vectorSubs, mergeState.needsIndexSort);
     final DocIDMerger<KnnGraphValuesSub> graphDocIdMerger = DocIDMerger.of(graphSubs, mergeState.needsIndexSort);
@@ -195,6 +199,9 @@ public abstract class KnnGraphWriter implements Closeable {
         }
         // make links to other graphs
         if (enterPoints.stream().anyMatch(ep -> ep.docId == docID)) {
+            // this docid is a mapped enter point (mapped from the first enter points of each segment's graph).
+            // add all the other mapped enter points as its friends. The result is that segments' graphs are linked all-to-all
+            // by N*(N+1)/2 links
           enterPoints.stream().filter(ep -> ep.docId != docID && ep.topLevel >= level).forEach(ep -> {
             mappedFriends.append(ep.docId);
           });

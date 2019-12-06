@@ -71,7 +71,6 @@ public class KnnGraphQuery extends Query implements Accountable {
    * @param ef number of per-segment candidates to be scored/collected. the collector does not return results exceeding {@code ef}.
    *           increasing this value leads higher recall at the expense of the search speed.
    * @param reader index reader
-   * @throws IOException
    */
   public KnnGraphQuery(String field, float[] queryVector, int ef, IndexReader reader) throws IOException {
     this.field = field;
