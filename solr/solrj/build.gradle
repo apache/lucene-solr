@@ -36,11 +36,8 @@ dependencies {
     exclude group: "org.slf4j", module: "slf4j-log4j12"
   })
 
-  api('com.fasterxml:aalto-xml', {
-  })
-
-  api('com.fasterxml.staxmate:staxmate', {
-  })
+  api('com.fasterxml:aalto-xml')
+  api('com.fasterxml.staxmate:staxmate')
 
   testImplementation project(':solr:test-framework')
   testImplementation 'org.eclipse.jetty:jetty-webapp'

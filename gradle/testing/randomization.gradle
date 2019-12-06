@@ -22,6 +22,15 @@ configure(rootProject) {
     rootSeed = propertyOrDefault('tests.seed', String.format("%08X", new Random().nextLong()))
     rootSeedLong = SeedUtils.parseSeedChain(rootSeed)[0]
     projectSeedLong = rootSeedLong ^ project.path.hashCode()
+
+    // "base" version is stripped of the qualifier. Compute it.
+    baseVersion = {
+      def m = (rootProject.version =~ /^(\d+\.\d+\.\d+)(-(.+))?/)
+      if (!m) {
+        throw GradleException("Can't strip version to just x.y.z: " + rootProject.version)
+      }
+      return m[0][1]
+    }()
   }
 
   task randomizationInfo() {
@@ -72,7 +81,7 @@ allprojects {
           // test data
           [propName: 'tests.linedocsfile', value: 'europarl.lines.txt.gz', description: "Test data file path."],
           // miscellaneous; some of them very weird.
-          [propName: 'tests.LUCENE_VERSION', value: rootProject.version, description: "Base Lucene version."],
+          [propName: 'tests.LUCENE_VERSION', value: baseVersion, description: "Base Lucene version."],
           [propName: 'tests.bwcdir', value: null, description: "Data for backward-compatibility indexes."],
       ]
     }
@@ -85,7 +94,7 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr") }) {
     ext {
       testOptions += [
           [propName: 'tests.disableHdfs', value: Os.isFamily(Os.FAMILY_WINDOWS) ? 'true' : 'false', description: "Enables or disables @HDFS tests."],
-          [propName: 'tests.luceneMatchVersion', value: rootProject.version, description: "Base Lucene version."],
+          [propName: 'tests.luceneMatchVersion', value: baseVersion, description: "Base Lucene version."],
           [propName: 'common-solr.dir', value: file("${commonDir}/../solr").path, description: "Solr base dir."],
           [propName: 'solr.directoryFactory', value: "org.apache.solr.core.MockDirectoryFactory", description: "Solr directory factory."],
           [propName: 'tests.src.home', value: null, description: "See SOLR-14023."],
