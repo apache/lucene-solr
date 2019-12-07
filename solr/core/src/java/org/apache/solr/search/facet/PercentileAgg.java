@@ -31,7 +31,6 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.SolrException;
@@ -313,8 +312,8 @@ public class PercentileAgg extends SimpleAggValueSource {
     }
 
     @Override
-    protected DocIdSetIterator docIdSetIterator() {
-      return values;
+    protected boolean advanceExact(int doc) throws IOException {
+      return values.advanceExact(doc);
     }
 
     /**
@@ -366,8 +365,8 @@ public class PercentileAgg extends SimpleAggValueSource {
     }
 
     @Override
-    protected DocIdSetIterator docIdSetIterator() {
-      return values;
+    protected boolean advanceExact(int doc) throws IOException {
+      return values.advanceExact(doc);
     }
   }
 

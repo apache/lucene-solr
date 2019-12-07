@@ -190,9 +190,13 @@ public class HLLAgg extends StrAggValueSource {
       values = DocValues.getNumeric(readerContext.reader(),  sf.getName());
     }
 
-    @Override
     protected DocIdSetIterator docIdSetIterator() {
       return values;
+    }
+
+    @Override
+    protected boolean advanceExact(int doc) throws IOException {
+      return values.advanceExact(doc);
     }
 
     @Override
@@ -216,9 +220,13 @@ public class HLLAgg extends StrAggValueSource {
       values = DocValues.getSortedNumeric(readerContext.reader(),  sf.getName());
     }
 
-    @Override
     protected DocIdSetIterator docIdSetIterator() {
       return values;
+    }
+
+    @Override
+    protected boolean advanceExact(int doc) throws IOException {
+      return values.advanceExact(doc);
     }
 
     @Override

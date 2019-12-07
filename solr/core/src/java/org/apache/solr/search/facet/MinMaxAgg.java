@@ -27,7 +27,6 @@ import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.queries.function.ValueSource;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LongValues;
@@ -522,8 +521,8 @@ public class MinMaxAgg extends SimpleAggValueSource {
     }
 
     @Override
-    protected DocIdSetIterator docIdSetIterator() {
-      return subDv;
+    protected boolean advanceExact(int doc) throws IOException {
+      return subDv.advanceExact(doc);
     }
   }
 }
