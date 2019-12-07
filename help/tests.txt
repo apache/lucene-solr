@@ -94,13 +94,11 @@ cleanTest task:
 gradlew -p lucene/core cleanTest test -Ptests.seed=deadbeef
 
 
+Verbose mode and debugging
+--------------------------
 
+The "tests.verbose" mode switch enables standard streams from tests
+to be dumped directly to the console. Run your verbose tests explicitly
+specifying the project and test task or a fully qualified task path. Example:
 
-
-
-
-
-
-
-
-
+gradlew -p lucene/core test -Ptests.verbose=true --tests "TestDemo"

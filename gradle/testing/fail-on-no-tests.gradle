@@ -22,8 +22,12 @@ gradle.taskGraph.whenReady { graph ->
     // ... and there are some test tasks in the execution graph.
     if (!testTasks.isEmpty()) {
       def executedTests = 0
+      def executedTasks = 0
 
       testTasks.each { task ->
+        task.doFirst {
+          executedTasks++
+        }
         task.afterSuite { desc, result ->
           executedTests += result.testCount
         }
@@ -31,7 +35,7 @@ gradle.taskGraph.whenReady { graph ->
 
       // After the build is finished, check the test count.
       gradle.buildFinished {
-        if (executedTests == 0) {
+        if (executedTests == 0 && executedTasks > 0) {
           throw new GradleException("No tests found for the given filters?")
         }
       }

@@ -1,8 +1,12 @@
 import org.apache.tools.ant.taskdefs.condition.Os
 import org.gradle.api.tasks.testing.logging.*
 
+def verboseModeHookInstalled = false
+
 allprojects {
   plugins.withType(JavaPlugin) {
+    def verboseMode = propertyOrDefault("tests.verbose", "false")
+
     project.ext {
       testsWorkDir = file("${buildDir}/tmp/tests-cwd")
       testsTmpDir = file("${buildDir}/tmp/tests-tmp")
@@ -10,12 +14,32 @@ allprojects {
       commonSolrDir = project(":solr").projectDir
     }
 
+    // If we're running in verbose mode and:
+    // 1) worker count > 1
+    // 2) number of 'test' tasks in the build is > 1
+    // then the output would very likely be mangled on the
+    // console. Fail and let the user know what to do.
+    if (verboseMode && !verboseModeHookInstalled) {
+      verboseModeHookInstalled = true
+      if (gradle.startParameter.maxWorkerCount > 1) {
+        gradle.taskGraph.whenReady { graph ->
+          def testTasks = graph.allTasks.findAll { task -> task instanceof Test }
+          if (testTasks.size() > 1) {
+            throw new GradleException("Run your tests in verbose mode only with --max-workers=1 option passed to gradle.")
+          }
+        }
+      }
+    }
+
     test {
+      if (verboseMode) {
+        maxParallelForks = 1
+      } else {
+        maxParallelForks = propertyOrDefault("tests.jvms", (int) Math.max(1, Math.min(Runtime.runtime.availableProcessors() / 2.0, 4.0)))
+      }
+
       workingDir testsWorkDir
-
       useJUnit()
-
-      maxParallelForks = propertyOrDefault("tests.jvms", (int) Math.max(1, Math.min(Runtime.runtime.availableProcessors() / 2.0, 4.0)))
 
       minHeapSize = "256m"
       maxHeapSize = "512m"
@@ -44,12 +68,26 @@ allprojects {
       }
 
       // Set up logging.
-      testLogging {
-        events TestLogEvent.FAILED
-        exceptionFormat TestExceptionFormat.FULL
-        showExceptions true
-        showCauses true
-        showStackTraces true
+      if (verboseMode) {
+        testLogging {
+          events TestLogEvent.FAILED
+          exceptionFormat TestExceptionFormat.FULL
+          showExceptions true
+          showCauses true
+          showStackTraces true
+          showStandardStreams = false
+        }
+        onOutput { td, event ->
+          print event.message
+        }
+      } else {
+        testLogging {
+          events TestLogEvent.FAILED
+          exceptionFormat TestExceptionFormat.FULL
+          showExceptions true
+          showCauses true
+          showStackTraces true
+        }
       }
 
       doFirst {
