@@ -95,7 +95,19 @@
           <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
             <Set name="pattern">*</Set>
             <Set name="name">Content-Security-Policy</Set>
-            <Set name="value">default-src 'none'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-eval'; img-src 'self'; media-src 'self'; font-src 'self'; connect-src 'self';</Set>
+            <Set name="value">
+              default-src 'none';
+              base-uri 'none';
+              connect-src 'self';
+              form-action 'self';
+              font-src 'self';
+              frame-ancestors 'none';
+              img-src 'self';
+              media-src 'self';
+              style-src 'self' 'unsafe-inline';
+              script-src 'self';
+              worker-src 'self';
+            </Set>
           </New>
         </Arg>
       </Call>
