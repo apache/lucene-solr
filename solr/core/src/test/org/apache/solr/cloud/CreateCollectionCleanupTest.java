@@ -21,6 +21,7 @@ import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
@@ -78,7 +79,8 @@ public class CreateCollectionCleanupTest extends SolrCloudTestCase {
 
     Properties properties = new Properties();
     Path tmpDir = createTempDir();
-    tmpDir.toFile().setWritable(false);
+    tmpDir = tmpDir.resolve("foo");
+    Files.createFile(tmpDir);
     properties.put(CoreAdminParams.DATA_DIR, tmpDir.toString());
     create.setProperties(properties);
     expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
@@ -102,7 +104,8 @@ public class CreateCollectionCleanupTest extends SolrCloudTestCase {
 
     Properties properties = new Properties();
     Path tmpDir = createTempDir();
-    tmpDir.toFile().setWritable(false);
+    tmpDir = tmpDir.resolve("foo");
+    Files.createFile(tmpDir);
     properties.put(CoreAdminParams.DATA_DIR, tmpDir.toString());
     create.setProperties(properties);
     create.setAsyncId("testAsyncCreateCollectionCleanup");
