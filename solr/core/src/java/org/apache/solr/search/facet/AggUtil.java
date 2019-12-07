@@ -34,20 +34,32 @@ public class AggUtil {
   /**
    * Computes and returns uncorrected standard deviation for given values
    */
-  public static double stdDev(double sumSq, double sum, long count) {
-    // todo: switch to corrected stddev SOLR-11725
+  public static double uncorrectedStdDev(double sumSq, double sum, long count) {
     // todo: should we return NAN when count==0?
-    double val = count == 0 ? 0 : Math.sqrt((sumSq / count) - Math.pow(sum / count, 2));
-    return val;
+    return count == 0 ? 0 : Math.sqrt((sumSq / count) - Math.pow(sum / count, 2));
+  }
+
+  /**
+   * Computes and returns corrected standard deviation for given values
+   */
+  public static double stdDev(double sumSq, double sum, long count) {
+    // todo: should we return NAN when count==0?
+    return count == 0 ? 0 : Math.sqrt(((count * sumSq) - (sum * sum)) / (count * (count - 1.0D)));
   }
 
   /**
    * Computes and returns uncorrected variance for given values
    */
-  public static double variance(double sumSq, double sum, long count) {
-    // todo: switch to corrected variance SOLR-11725
+  public static double uncorrectedVariance(double sumSq, double sum, long count) {
     // todo: should we return NAN when count==0?
-    double val = count == 0 ? 0 : (sumSq / count) - Math.pow(sum / count, 2);
-    return val;
+    return count == 0 ? 0 : (sumSq / count) - Math.pow(sum / count, 2);
+  }
+
+  /**
+   * Computes and returns corrected variance for given values
+   */
+  public static double variance(double sumSq, double sum, long count) {
+    // todo: should we return NAN when count==0?
+    return count == 0 ? 0 : ((count * sumSq) - (sum * sum)) / (count * (count - 1.0D));
   }
 }

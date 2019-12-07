@@ -29,7 +29,6 @@ import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.index.SortedNumericDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.schema.SchemaField;
@@ -47,21 +46,18 @@ public abstract class DocValuesAcc extends SlotAcc {
 
   @Override
   public void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
-    int valuesDocID = docIdSetIterator().docID();
-    if (valuesDocID < doc) {
-      valuesDocID = docIdSetIterator().advance(doc);
+    if (advanceExact(doc)) {
+      collectValues(doc, slot);
     }
-    if (valuesDocID > doc) {
-      // missing
-      return;
-    }
-    assert valuesDocID == doc;
-    collectValues(doc, slot);
   }
 
   protected abstract void collectValues(int doc, int slot) throws IOException;
 
-  protected abstract DocIdSetIterator docIdSetIterator();
+  /**
+   * Wrapper to {@code org.apache.lucene.index.DocValuesIterator#advanceExact(int)}
+   * returns whether or not given {@code doc} has value
+   */
+  protected abstract boolean advanceExact(int doc) throws IOException;
 }
 
 /**
@@ -81,8 +77,8 @@ abstract class NumericDVAcc extends DocValuesAcc {
   }
 
   @Override
-  protected DocIdSetIterator docIdSetIterator() {
-    return values;
+  protected boolean advanceExact(int doc) throws IOException {
+    return values.advanceExact(doc);
   }
 }
 
@@ -103,8 +99,8 @@ abstract class SortedNumericDVAcc extends DocValuesAcc {
   }
 
   @Override
-  protected DocIdSetIterator docIdSetIterator() {
-    return values;
+  protected boolean advanceExact(int doc) throws IOException {
+    return values.advanceExact(doc);
   }
 }
 
@@ -272,8 +268,8 @@ abstract class SortedDVAcc extends DocValuesAcc {
   }
 
   @Override
-  protected DocIdSetIterator docIdSetIterator() {
-    return values;
+  protected boolean advanceExact(int doc) throws IOException {
+    return values.advanceExact(doc);
   }
 }
 
@@ -294,8 +290,8 @@ abstract class SortedSetDVAcc extends DocValuesAcc {
   }
 
   @Override
-  protected DocIdSetIterator docIdSetIterator() {
-    return values;
+  protected boolean advanceExact(int doc) throws IOException {
+    return values.advanceExact(doc);
   }
 }
 
