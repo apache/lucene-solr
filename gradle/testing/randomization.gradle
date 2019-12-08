@@ -63,7 +63,7 @@ allprojects {
           // asserts, debug output.
           [propName: 'tests.asserts', value: "true", description: "Enables or disables assertions mode."],
           [propName: 'tests.verbose', value: false, description: "Emit verbose debug information from tests."],
-          [propName: 'tests.infostream', value: null, description: "Enables or disables infostream logs."],
+          [propName: 'tests.infostream', value: false, description: "Enables or disables infostream logs."],
           [propName: 'tests.leaveTemporary', value: null, description: "Leave temporary directories after tests complete."],
           [propName: 'tests.useSecurityManager', value: false, description: "Enable security manager in tests.", buildOnly: true],
           // component randomization
@@ -118,7 +118,6 @@ allprojects {
       }
 
       // These are not official options or dynamically seed-derived options.
-      testOptionsResolved['tests.infostream'] = propertyOrDefault('tests.infostream', testOptionsResolved['tests.verbose'])
       if (testOptionsResolved['tests.file.encoding'] == 'random') {
         testOptionsResolved['tests.file.encoding'] = RandomPicks.randomFrom(
             new Random(projectSeedLong), [
@@ -188,7 +187,7 @@ allprojects {
 // and descriptions.
 allprojects {
   plugins.withType(JavaPlugin) {
-    task helpTestOpts() {
+    task testOpts() {
       group = 'Help (developer guides and hints)'
       description = "Display values of randomization settings for a given seed"
 
@@ -196,7 +195,7 @@ allprojects {
         println "Test options for project ${project.path} and seed \"${rootSeed}\":"
 
         testOptions.sort { a, b -> a.propName.compareTo(b.propName) }.each { opt ->
-          def defValue = opt.value
+          def defValue = Objects.toString(opt.value, null)
           def value = testOptionsResolved[opt.propName]
           println String.format(Locale.ROOT,
               "%s%-23s = %-8s # %s",

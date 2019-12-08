@@ -30,9 +30,17 @@ gradlew -p lucene/core check   # By folder designation + task
 Randomization
 -------------
 
-Run tests with the given starting seed:
+To run tests with the given starting seed pass 'tests.seed'
+property:
 
 gradlew :lucene:misc:test -Ptests.seed=DEADBEEF
+
+There are a lot of other test randomization properties
+available. To list them, their defaults and current values
+run the testOpts task against a project that has tests.
+For example:
+
+gradlew -p lucene/core testOpts
 
 
 Filtering
