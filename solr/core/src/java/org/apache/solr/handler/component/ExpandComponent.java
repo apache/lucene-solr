@@ -281,7 +281,6 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
         currentValues = sortedDocValues[currentContext];
         segmentOrdinalMap = ordinalMap.getGlobalOrds(currentContext);
       }
-      int count = 0;
 
       ordBytes = new IntObjectHashMap<>();
 
@@ -303,12 +302,12 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
             currentValues.advance(contextDoc);
           }
           if (contextDoc == currentValues.docID()) {
-            int ord = currentValues.ordValue();
-            ++count;
-            BytesRef ref = currentValues.lookupOrd(ord);
-            ord = (int)segmentOrdinalMap.get(ord);
-            ordBytes.put(ord, BytesRef.deepCopyOf(ref));
-            groupBits.set(ord);
+            int contextOrd = currentValues.ordValue();
+            int ord = (int)segmentOrdinalMap.get(contextOrd);
+            if (!groupBits.getAndSet(ord)) {
+              BytesRef ref = currentValues.lookupOrd(contextOrd);
+              ordBytes.put(ord, BytesRef.deepCopyOf(ref));
+            }
             collapsedSet.add(globalDoc);
           }
         } else {
@@ -317,22 +316,22 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
           }
           if (globalDoc == values.docID()) {
             int ord = values.ordValue();
-            ++count;
-            BytesRef ref = values.lookupOrd(ord);
-            ordBytes.put(ord, BytesRef.deepCopyOf(ref));
-            groupBits.set(ord);
+            if (!groupBits.getAndSet(ord)) {
+              BytesRef ref = values.lookupOrd(ord);
+              ordBytes.put(ord, BytesRef.deepCopyOf(ref));
+            }
             collapsedSet.add(globalDoc);
           }
         }
       }
 
+      int count = ordBytes.size();
       if(count > 0 && count < 200) {
         groupQuery = getGroupQuery(field, count, ordBytes);
       }
     } else {
       groupSet = new LongHashSet(docList.size());
       NumericDocValues collapseValues = contexts.get(currentContext).reader().getNumericDocValues(field);
-      int count = 0;
       for(int i=0; i<globalDocs.length; i++) {
         int globalDoc = globalDocs[i];
         while(globalDoc >= nextDocBase) {
@@ -353,12 +352,12 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
           value = 0;
         }
         if(value != nullValue) {
-          ++count;
           groupSet.add(value);
           collapsedSet.add(globalDoc);
         }
       }
 
+      int count = groupSet.size();
       if(count > 0 && count < 200) {
         if (fieldType.isPointField()) {
           groupQuery = getPointGroupQuery(schemaField, count, groupSet);
@@ -685,7 +684,8 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
                            int size,
                            LongHashSet groupSet) {
 
-    List<BytesRef> bytesRefs = new ArrayList<>(size);
+    BytesRef[] bytesRefs = new BytesRef[size];
+    int index = -1;
     BytesRefBuilder term = new BytesRefBuilder();
     Iterator<LongCursor> it = groupSet.iterator();
 
@@ -693,7 +693,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       LongCursor cursor = it.next();
       String stringVal = numericToString(ft, cursor.value);
       ft.readableToIndexed(stringVal, term);
-      bytesRefs.add(term.toBytesRef());
+      bytesRefs[++index] = term.toBytesRef();
     }
 
     return new TermInSetQuery(fname, bytesRefs);
@@ -734,11 +734,12 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
   private Query getGroupQuery(String fname,
                               int size,
                               IntObjectHashMap<BytesRef> ordBytes) {
-    List<BytesRef> bytesRefs = new ArrayList<>(size);
+    BytesRef[] bytesRefs = new BytesRef[size];
+    int index = -1;
     Iterator<IntObjectCursor<BytesRef>>it = ordBytes.iterator();
     while (it.hasNext()) {
       IntObjectCursor<BytesRef> cursor = it.next();
-      bytesRefs.add(cursor.value);
+      bytesRefs[++index] = cursor.value;
     }
     return new TermInSetQuery(fname, bytesRefs);
   }
