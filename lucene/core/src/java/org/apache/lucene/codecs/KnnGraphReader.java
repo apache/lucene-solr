@@ -47,4 +47,12 @@ public abstract class KnnGraphReader implements Closeable, Accountable {
   /** Returns the {@link KnnGraphValues} for the given {@code field} */
   public abstract KnnGraphValues getGraphValues(String field) throws IOException;
 
+  /**
+   * Returns an instance optimized for merging. This instance may only be
+   * consumed in the thread that called {@link #getMergeInstance()}.
+   * <p>
+   * The default implementation returns {@code this} */
+  public KnnGraphReader getMergeInstance() {
+    return this;
+  }
 }

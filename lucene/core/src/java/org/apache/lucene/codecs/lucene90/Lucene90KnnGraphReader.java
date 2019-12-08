@@ -346,6 +346,11 @@ public final class Lucene90KnnGraphReader extends KnnGraphReader {
     }
 
     @Override
+    public int[] getEnterPoints() {
+      return entry.enterPoints;
+    }
+
+    @Override
     public int getMaxLevel() {
       return maxLevel;
     }
@@ -392,7 +397,7 @@ public final class Lucene90KnnGraphReader extends KnnGraphReader {
       }
       dataIn.seek(offset);
       int maxLevel = dataIn.readInt();
-      assert maxLevel > 0;
+      assert maxLevel >= 0;
       this.maxLevel = maxLevel;
       this.friendsRef = readFriends(maxLevel);
       return doc;

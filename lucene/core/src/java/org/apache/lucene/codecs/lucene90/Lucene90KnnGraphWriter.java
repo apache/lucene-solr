@@ -18,10 +18,8 @@
 package org.apache.lucene.codecs.lucene90;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.codecs.CodecUtil;
@@ -79,7 +77,6 @@ public final class Lucene90KnnGraphWriter extends KnnGraphWriter {
   @Override
   public void writeField(FieldInfo fieldInfo, KnnGraphReader values) throws IOException {
     Map<Integer, Long> docToOffset = new HashMap<>();
-    List<Integer> enterPoints = new ArrayList<>();
     long vectorDataOffset = vectorData.getFilePointer();
     long graphDataOffset = graphData.getFilePointer();
 
@@ -100,13 +97,13 @@ public final class Lucene90KnnGraphWriter extends KnnGraphWriter {
 
       // write knn graph value
       docToOffset.put(docG, graphData.getFilePointer() - graphDataOffset);
-      if (graph.isEnterPoint()) {
-        enterPoints.add(docG);
-      }
-      graphData.writeInt(graph.getMaxLevel());
+
+      int maxLevel = graph.getMaxLevel();
+      assert maxLevel >= 0;
+      graphData.writeInt(maxLevel);
       for (int l = graph.getMaxLevel(); l >= 0; l--) {
         IntsRef friends = graph.getFriends(l);
-        assert friends.length > 0;
+        assert friends.length > 0 : "doc " + docG + " has empty friends list at level=" + l;
         graphData.writeInt(friends.length);
         int stop = friends.offset + friends.length;
         // sort friend ids
@@ -121,24 +118,22 @@ public final class Lucene90KnnGraphWriter extends KnnGraphWriter {
         }
       }
     }
-    assert vectors.nextDoc() == DocIdSetIterator.NO_MORE_DOCS;  // must be exhausted
-    assert graph.nextDoc() == DocIdSetIterator.NO_MORE_DOCS;    // must be exhausted
 
     long vectorDataLength = vectorData.getFilePointer() - vectorDataOffset;
     long graphDataLength = graphData.getFilePointer() - graphDataOffset;
 
-    writeMeta(fieldInfo, vectorDataOffset, vectorDataLength, graphDataOffset, graphDataLength, graph.getTopLevel(), enterPoints, docToOffset);
+    writeMeta(fieldInfo, vectorDataOffset, vectorDataLength, graphDataOffset, graphDataLength, graph.getTopLevel(), graph.getEnterPoints(), docToOffset);
   }
 
   private void writeMeta(FieldInfo field, long vectorDataOffset, long vectorDataLength, long graphDataOffset, long graphDataLength,
-                         int topLevel, List<Integer> eps, Map<Integer, Long> docToOffset) throws IOException {
+                         int topLevel, int[] eps, Map<Integer, Long> docToOffset) throws IOException {
     meta.writeInt(field.number);
     meta.writeVLong(vectorDataOffset);
     meta.writeVLong(vectorDataLength);
     meta.writeVLong(graphDataOffset);
     meta.writeVLong(graphDataLength);
     meta.writeInt(topLevel);
-    meta.writeInt(eps.size());
+    meta.writeInt(eps.length);
     for (Integer ep : eps) {
       meta.writeVInt(ep);
     }

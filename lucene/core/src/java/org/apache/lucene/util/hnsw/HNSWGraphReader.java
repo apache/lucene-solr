@@ -47,7 +47,7 @@ public final class HNSWGraphReader {
 
   public Neighbors searchNeighbors(float[] query, int ef, VectorValues vectorValues) throws IOException {
     HNSWGraph hnsw = get(field, context, false);
-    int enterPoint = hnsw.getEnterPoint();
+    int enterPoint = hnsw.getFirstEnterPoint();
     if (!vectorValues.seek(enterPoint)) {
       throw new IllegalStateException("enterPoint=" + enterPoint + " has no vector value");
     }
@@ -101,6 +101,10 @@ public final class HNSWGraphReader {
     VectorValues.DistanceFunction distFunc = fi.getVectorDistFunc();
 
     KnnGraphValues graphValues = context.reader().getKnnGraphValues(field);
+    return load(field, distFunc, graphValues);
+  }
+
+  public static HNSWGraph load(String field, VectorValues.DistanceFunction distFunc, KnnGraphValues graphValues) throws IOException {
     HNSWGraph hnsw = new HNSWGraph(distFunc);
     for (int doc = graphValues.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = graphValues.nextDoc()) {
       int maxLevel = graphValues.getMaxLevel();
@@ -112,7 +116,6 @@ public final class HNSWGraphReader {
       }
     }
     hnsw.finish();
-
     return hnsw;
   }
 

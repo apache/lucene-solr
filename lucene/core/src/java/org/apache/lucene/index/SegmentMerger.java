@@ -24,6 +24,7 @@ import java.util.List;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.FieldsConsumer;
+import org.apache.lucene.codecs.KnnGraphWriter;
 import org.apache.lucene.codecs.NormsConsumer;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PointsWriter;
@@ -166,6 +167,17 @@ final class SegmentMerger {
       mergeState.infoStream.message("SM", ((t1-t0)/1000000) + " msec to merge points [" + numMerged + " docs]");
     }
 
+    if (mergeState.infoStream.isEnabled("SM")) {
+      t0 = System.nanoTime();
+    }
+    if (mergeState.mergeFieldInfos.hasVectorValues()) {
+      mergeKnnGraphValues(segmentWriteState);
+    }
+    if (mergeState.infoStream.isEnabled("SM")) {
+      long t1 = System.nanoTime();
+      mergeState.infoStream.message("SM", ((t1-t0)/1000000) + " msec to merge knn graph [" + numMerged + " docs]");
+    }
+
     if (mergeState.mergeFieldInfos.hasVectors()) {
       if (mergeState.infoStream.isEnabled("SM")) {
         t0 = System.nanoTime();
@@ -245,4 +257,11 @@ final class SegmentMerger {
       consumer.merge(mergeState, norms);
     }
   }
+
+  private void mergeKnnGraphValues(SegmentWriteState segmentWriteState) throws IOException {
+    try (KnnGraphWriter writer = codec.knnGraphFormat().fieldsWriter(segmentWriteState)) {
+      writer.merge(mergeState);
+    }
+  }
+
 }

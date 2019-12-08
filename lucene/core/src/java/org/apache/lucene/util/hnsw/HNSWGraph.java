@@ -68,13 +68,12 @@ public final class HNSWGraph implements Accountable {
     }
 
     Set<Integer> visited = new HashSet<>(ep.docId());
-    NearestNeighbors candidates = new NearestNeighbors(layer.size() + 1, ep);
-    FurthestNeighbors results = new FurthestNeighbors(layer.size() + 1, ep);
+    NearestNeighbors candidates = new NearestNeighbors(ef, ep);
+    FurthestNeighbors results = new FurthestNeighbors(ef, ep);
 
     if (ep.isDeferred()) {
       ep.prepareQuery(query, vectorValues, distFunc);
     }
-    float upperBound = ep.distance();
 
     while (candidates.size() > 0) {
       Neighbor c = candidates.pop();
@@ -100,18 +99,19 @@ public final class HNSWGraph implements Accountable {
           f.prepareQuery(query, vectorValues, distFunc);
         }
         float dist = distance(query, e.docId(), vectorValues);
-        if ((dist < upperBound && dist < f.distance()) || results.size() < ef) {
-          Neighbor n = new ImmutableNeighbor(e.docId(), dist);
-          candidates.add(n);
-          results.add(n);
-          if (results.size() > ef) {
+        if (dist < f.distance() || results.size() < ef) {
+          if (results.size() == ef) {
             results.pop();
           }
+          Neighbor n = new ImmutableNeighbor(e.docId(), dist);
+          candidates.insertWithOverflow(n);
+          results.add(n);
         }
       }
     }
 
-    return pickNearestNeighbor(results, ef);
+    //System.out.println("level=" + level + ", visited nodes=" + visited.size());
+    return pickNearestNeighbor(results);
   }
 
   private float distance(float[] query, int docId, VectorValues vectorValues) throws IOException {
@@ -122,10 +122,10 @@ public final class HNSWGraph implements Accountable {
     return VectorValues.distance(query, other, distFunc);
   }
 
-  private NearestNeighbors pickNearestNeighbor(FurthestNeighbors queue, int ef) {
-    NearestNeighbors nearests = new NearestNeighbors(ef);
+  private NearestNeighbors pickNearestNeighbor(FurthestNeighbors queue) {
+    NearestNeighbors nearests = new NearestNeighbors(queue.size());
     Set<Integer> addedDocs = new HashSet<>();
-    for (int i = 0; i < ef && queue.size() > 0; i++) {
+    while (queue.size() > 0) {
       Neighbor c = queue.pop();
       if (!addedDocs.contains(c.docId())) {
         nearests.add(c);
@@ -158,7 +158,7 @@ public final class HNSWGraph implements Accountable {
     return layers.isEmpty() || layers.get(0).getNodes().isEmpty();
   }
 
-  public int getEnterPoint() {
+  public int getFirstEnterPoint() {
     if (layers.isEmpty()) {
       throw new IllegalStateException("the graph has no layers!");
     }
@@ -167,6 +167,17 @@ public final class HNSWGraph implements Accountable {
       throw new IllegalStateException("the max level of this graph is empty!");
     }
     return nodesAtMaxLevel.get(0);
+  }
+
+  public List<Integer> getEnterPoints() {
+    if (layers.isEmpty()) {
+      throw new IllegalStateException("the graph has no layers!");
+    }
+    List<Integer> nodesAtMaxLevel = layers.get(topLevel).getNodes();
+    if (nodesAtMaxLevel.isEmpty()) {
+      throw new IllegalStateException("the max level of this graph is empty!");
+    }
+    return List.copyOf(nodesAtMaxLevel);
   }
 
   public boolean hasNodes(int level) {

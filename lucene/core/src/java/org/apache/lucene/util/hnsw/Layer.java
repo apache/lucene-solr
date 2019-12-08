@@ -17,6 +17,7 @@
 
 package org.apache.lucene.util.hnsw;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -75,8 +76,14 @@ final class Layer implements Accountable {
     }
     if (friends.size() > maxFriends) {
       TreeSet<Neighbor> newFriends = new TreeSet<>();
-      for (Iterator<Neighbor> itr = friends.iterator(); itr.hasNext() && newFriends.size() < maxFriends; ) {
-        newFriends.add(itr.next());
+      Iterator<Neighbor> itr = friends.iterator();
+      while(itr.hasNext()) {
+        Neighbor n = itr.next();
+        if (newFriends.size() < maxFriends || friendsMap.get(n.docId()).size() == 1) {
+          newFriends.add(n);
+        } else {
+          friendsMap.get(n.docId()).removeIf(n2 -> n2.docId() == node);
+        }
       }
       friendsMap.put(node, newFriends);
     }

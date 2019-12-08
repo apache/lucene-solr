@@ -18,24 +18,17 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 
 import org.apache.lucene.codecs.KnnGraphReader;
 import org.apache.lucene.codecs.KnnGraphWriter;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.store.ByteBuffersDataInput;
-import org.apache.lucene.store.ByteBuffersDataOutput;
-import org.apache.lucene.store.DataInput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.Counter;
 import org.apache.lucene.util.IntsRef;
-import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.hnsw.HNSWGraph;
-import org.apache.lucene.util.hnsw.HNSWGraphBuilder;
+import org.apache.lucene.util.hnsw.HNSWGraphWriter;
 
 /** Buffers up pending vector value(s) and knn graph per doc, then flushes when segment flushes. */
 public class KnnGraphValuesWriter implements Accountable {
@@ -44,31 +37,26 @@ public class KnnGraphValuesWriter implements Accountable {
   private final Counter iwBytesUsed;
   private final DocsWithFieldSet docsWithFieldVec;
   private final DocsWithFieldSet docsWithFieldGrp;
-  private final IntsRefBuilder docsRef;
-  private final List<float[]> buffer;
-  private final ByteBuffersDataOutput bufferOut;
-  private final int numDimensions;
-  private final VectorValues.DistanceFunction distFunc;
-  private final HNSWGraphBuilder hnswBuilder;
+  private final HNSWGraphWriter hnswGraphWriter;
 
-  private int addedDocs = 0;
   private int lastDocID = -1;
 
   private long bytesUsed = 0L;
 
-  public KnnGraphValuesWriter(DocumentsWriterPerThread docWriter, FieldInfo fieldInfo) {
+  public KnnGraphValuesWriter(FieldInfo fieldInfo) {
+    this(fieldInfo, null);
+  }
+
+  public KnnGraphValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
     this.fieldInfo = fieldInfo;
-    this.iwBytesUsed = docWriter.bytesUsed;
+    this.iwBytesUsed = iwBytesUsed;
     this.docsWithFieldVec = new DocsWithFieldSet();
     this.docsWithFieldGrp = new DocsWithFieldSet();
-    this.docsRef = new IntsRefBuilder();
-    this.buffer = new ArrayList<>();
-    this.bufferOut = new ByteBuffersDataOutput();
-    this.numDimensions = fieldInfo.getVectorNumDimensions();
-    this.distFunc = fieldInfo.getVectorDistFunc();
-    this.hnswBuilder = new HNSWGraphBuilder(distFunc);
-    this.bytesUsed = docsWithFieldGrp.ramBytesUsed() + docsWithFieldGrp.ramBytesUsed() + RamUsageEstimator.shallowSizeOf(hnswBuilder);
-    iwBytesUsed.addAndGet(bytesUsed);
+    this.hnswGraphWriter = new HNSWGraphWriter(fieldInfo.getVectorNumDimensions(), fieldInfo.getVectorDistFunc());
+    this.bytesUsed = docsWithFieldGrp.ramBytesUsed() + docsWithFieldGrp.ramBytesUsed() + RamUsageEstimator.shallowSizeOf(hnswGraphWriter);
+    if (iwBytesUsed != null) {
+      iwBytesUsed.addAndGet(bytesUsed);
+    }
   }
 
   public void addValue(int docID, BytesRef binaryValue) throws IOException {
@@ -79,23 +67,9 @@ public class KnnGraphValuesWriter implements Accountable {
       throw new IllegalArgumentException("field=\"" + fieldInfo.name + "\": null value not allowed");
     }
 
-    // write the vector
-    bufferOut.writeBytes(binaryValue.bytes);
+    hnswGraphWriter.insert(docID, binaryValue);
     docsWithFieldVec.add(docID);
-    docsRef.grow(docID + 1);
-    docsRef.setIntAt(docID, addedDocs++);
-    docsRef.setLength(docID + 1);
-    if (docID > lastDocID + 1) {
-      Arrays.fill(docsRef.ints(), lastDocID + 1, docID, -1);
-    }
-
-    // write the graph
-    buffer.add(VectorValues.decode(binaryValue.bytes, numDimensions));
-    if (distFunc != VectorValues.DistanceFunction.NONE) {
-      float[] query = VectorValues.decode(binaryValue.bytes, numDimensions);
-      hnswBuilder.insert(docID, query, getVectorValues());
-      docsWithFieldGrp.add(docID);
-    }
+    docsWithFieldGrp.add(docID);
 
     updateBytesUsed();
 
@@ -103,18 +77,17 @@ public class KnnGraphValuesWriter implements Accountable {
   }
 
   private void updateBytesUsed() {
-    final long newBytesUsed = docsWithFieldVec.ramBytesUsed() + docsWithFieldGrp.ramBytesUsed() +
-        bufferOut.ramBytesUsed() +
-        RamUsageEstimator.sizeOf(docsRef.ints()) +
-        RamUsageEstimator.shallowSizeOf(buffer) +
-        RamUsageEstimator.shallowSizeOf(hnswBuilder);
-    iwBytesUsed.addAndGet(newBytesUsed - bytesUsed);
+    final long newBytesUsed = docsWithFieldVec.ramBytesUsed() + docsWithFieldGrp.ramBytesUsed() + hnswGraphWriter.ramBytesUsed();
+    if (iwBytesUsed != null) {
+      iwBytesUsed.addAndGet(newBytesUsed - bytesUsed);
+    }
     bytesUsed = newBytesUsed;
   }
 
   public void flush(SegmentWriteState state, Sorter.DocMap sortMap, KnnGraphWriter graphWriter) throws IOException {
-    VectorValues vectors = new BufferedVectorValues(numDimensions, bufferOut.toDataInput(), docsWithFieldVec.iterator());
-    KnnGraphValues graph = new BufferedKnnGraphValues(hnswBuilder.build(), docsWithFieldGrp.iterator());
+    hnswGraphWriter.finish();
+    VectorValues vectors = new BufferedVectorValues(docsWithFieldVec.iterator(), hnswGraphWriter.rawVectorsArray());
+    KnnGraphValues graph = new BufferedKnnGraphValues(docsWithFieldGrp.iterator(), hnswGraphWriter.hnswGraph());
 
     final VectorValues vectorValues;
     final KnnGraphValues graphValues;
@@ -154,57 +127,6 @@ public class KnnGraphValuesWriter implements Accountable {
         });
   }
 
-  private VectorValues getVectorValues() {
-    return new VectorValues() {
-      int docID = -1;
-      float[] value = new float[0];
-
-      @Override
-      public float[] vectorValue() throws IOException {
-        return value;
-      }
-
-      @Override
-      public boolean seek(int target) throws IOException {
-        if (target < 0) {
-          throw new IllegalArgumentException("target must be a positive integer: " + target);
-        }
-        if (target >= KnnGraphValuesWriter.this.docsRef.length()) {
-          docID = NO_MORE_DOCS;
-          return false;
-        }
-        docID = target;
-
-        int position = docsRef.ints()[target];
-        if (position < 0) {
-          throw new IllegalArgumentException("no vector value for doc: " + target);
-        }
-        value = KnnGraphValuesWriter.this.buffer.get(position);
-        return true;
-      }
-
-      @Override
-      public int docID() {
-        return docID;
-      }
-
-      @Override
-      public int nextDoc() throws IOException {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
-      public int advance(int target) throws IOException {
-        throw new UnsupportedOperationException();
-      }
-
-      @Override
-      public long cost() {
-        return KnnGraphValuesWriter.this.docsRef.length();
-      }
-    };
-  }
-
   @Override
   public long ramBytesUsed() {
     return bytesUsed;
@@ -213,30 +135,19 @@ public class KnnGraphValuesWriter implements Accountable {
   private static class BufferedVectorValues extends VectorValues {
 
     final DocIdSetIterator docsWithField;
-    final DataInput bytesIterator;
-    final byte[] value;
-    final int numDims;
+    final float[][] vectorsArray;
 
-    BufferedVectorValues(int numDims, DataInput bytesIterator, DocIdSetIterator docsWithField) {
-      this.numDims = numDims;
-      this.value = new byte[Float.BYTES * numDims];
-      this.bytesIterator = bytesIterator;
+    float[] value = new float[0];
+    int bufferPos = 0;
+
+    BufferedVectorValues(DocIdSetIterator docsWithField, float[][] vectorsArray) {
       this.docsWithField = docsWithField;
+      this.vectorsArray = vectorsArray;
     }
 
     @Override
     public float[] vectorValue() throws IOException {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public byte[] binaryValue() throws IOException {
       return value;
-    }
-
-    @Override
-    public boolean seek(int target) throws IOException {
-      throw new UnsupportedOperationException();
     }
 
     @Override
@@ -248,13 +159,18 @@ public class KnnGraphValuesWriter implements Accountable {
     public int nextDoc() throws IOException {
       int docID = docsWithField.nextDoc();
       if (docID != NO_MORE_DOCS) {
-        bytesIterator.readBytes(value, 0, value.length);
+        value = vectorsArray[bufferPos++];
       }
       return docID;
     }
 
     @Override
     public int advance(int target) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public boolean seek(int target) throws IOException {
       throw new UnsupportedOperationException();
     }
 
@@ -266,19 +182,24 @@ public class KnnGraphValuesWriter implements Accountable {
 
   private static class BufferedKnnGraphValues extends KnnGraphValues {
 
-    final HNSWGraph hnswGraph;
     final DocIdSetIterator docsWithField;
+    final HNSWGraph hnswGraph;
 
     private int maxLevel = -1;
 
-    BufferedKnnGraphValues(HNSWGraph hnsw, DocIdSetIterator docsWithField) {
-      this.hnswGraph = hnsw;
+    BufferedKnnGraphValues(DocIdSetIterator docsWithField, HNSWGraph hnsw) {
       this.docsWithField = docsWithField;
+      this.hnswGraph = hnsw;
     }
 
     @Override
     public int getTopLevel() {
       return hnswGraph.topLevel();
+    }
+
+    @Override
+    public int[] getEnterPoints() {
+      return hnswGraph.getEnterPoints().stream().mapToInt(Integer::intValue).toArray();
     }
 
     @Override

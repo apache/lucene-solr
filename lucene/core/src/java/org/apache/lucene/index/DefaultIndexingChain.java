@@ -692,7 +692,7 @@ final class DefaultIndexingChain extends DocConsumer {
     }
   }
 
-  /** Called from processDocument to index one field's doc value */
+  /** Called from processDocument to index one field's vector value */
   private void indexVector(PerField fp, IndexableField field) throws IOException {
     int numDimensions = field.fieldType().vectorNumDimensions();
     VectorValues.DistanceFunction distFunc = field.fieldType().vectorDistFunc();
@@ -705,7 +705,7 @@ final class DefaultIndexingChain extends DocConsumer {
     fp.fieldInfo.setVectorDimensionsAndDistanceFunction(numDimensions, distFunc);
 
     if (fp.knnGraphValuesWriter == null) {
-      fp.knnGraphValuesWriter = new KnnGraphValuesWriter(docWriter, fp.fieldInfo);
+      fp.knnGraphValuesWriter = new KnnGraphValuesWriter(fp.fieldInfo, docWriter.bytesUsed);
     }
     fp.knnGraphValuesWriter.addValue(docState.docID, field.binaryValue());
   }

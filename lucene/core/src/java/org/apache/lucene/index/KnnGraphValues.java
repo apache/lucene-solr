@@ -37,14 +37,10 @@ public abstract class KnnGraphValues extends DocIdSetIterator {
   public abstract int getTopLevel();
 
   /**
-   * Returns true if the current document ID is the enter point of the graph;
-   * this means {@link #getMaxLevel()} is equal to {@link #getTopLevel()}.
-   * It is illegal to call this method after {@link #advanceExact(int)}
-   * returned {@code false}.
+   * Returns the enter points of the graph.
+   * @return enter points
    */
-  public boolean isEnterPoint() {
-    return getMaxLevel() == getTopLevel();
-  }
+  public abstract int[] getEnterPoints();
 
   /**
    * Returns the max level (height) for the current document ID.
@@ -76,6 +72,11 @@ public abstract class KnnGraphValues extends DocIdSetIterator {
     @Override
     public int getTopLevel() {
       return -1;
+    }
+
+    @Override
+    public int[] getEnterPoints() {
+      return new int[0];
     }
 
     @Override
