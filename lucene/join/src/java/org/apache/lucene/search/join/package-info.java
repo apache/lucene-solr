@@ -74,13 +74,13 @@
  * </p>
  * <p>Query time joining has the following input:</p>
  * <ul>
- *   <li><code>fromField</code>: The from field to join from.
- *   <li><code>fromQuery</code>:  The query executed to collect the from terms. This is usually the user specified query.
- *   <li><code>multipleValuesPerDocument</code>:  Whether the fromField contains more than one value per document
+ *   <li><code>fromField</code>: The from field to join from.</li>
+ *   <li><code>fromQuery</code>:  The query executed to collect the from terms. This is usually the user specified query.</li>
+ *   <li><code>multipleValuesPerDocument</code>:  Whether the fromField contains more than one value per document.</li>
  *   <li><code>scoreMode</code>:  Defines how scores are translated to the other join side. If you don't care about scoring
  *   use {@link org.apache.lucene.search.join.ScoreMode#None} mode. This will disable scoring and is therefore more
- *   efficient (requires less memory and is faster).
- *   <li><code>toField</code>: The to field to join to
+ *   efficient (requires less memory and is faster).</li>
+ *   <li><code>toField</code>: The to field to join to</li>
  * </ul>
  * <p>
  *   Basically the query-time joining is accessible from one static method. The user of this method supplies the method
