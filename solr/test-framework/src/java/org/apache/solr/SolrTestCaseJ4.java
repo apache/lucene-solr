@@ -332,6 +332,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       
       if (null != testExecutor) {
         ExecutorUtil.shutdownAndAwaitTermination(testExecutor);
+        testExecutor = null;
       }
 
       resetExceptionIgnores();
@@ -490,6 +491,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     changedFactory = false;
     if (savedFactory != null) {
       System.setProperty("solr.directoryFactory", savedFactory);
+      savedFactory = null;
     } else {
       System.clearProperty("solr.directoryFactory");
     }
@@ -896,6 +898,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     lrf = null;
     configString = schemaString = null;
     initCoreDataDir = null;
+    hdfsDataDir = null;
   }
 
   /**

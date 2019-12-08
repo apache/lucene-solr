@@ -20,8 +20,7 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 
 /**
- * A {@link SecurityManager} that prevents tests calling {@link System#exit(int)},
- * and implements some hacks for hadoop.
+ * A {@link SecurityManager} that prevents tests calling {@link System#exit(int)}.
  * Only the test runner itself is allowed to exit the JVM.
  * All other security checks are handled by the default security policy.
  * <p>
@@ -40,93 +39,6 @@ public final class SolrSecurityManager extends SecurityManager {
    */
   public SolrSecurityManager() {
     super();
-  }
-
-  // TODO: move this stuff into a Solr (non-test) SecurityManager!
-  /**
-   * {@inheritDoc}
-   * <p>This method implements hacks to workaround hadoop's garbage Shell and FileUtil code
-   */
-  @Override
-  public void checkExec(String cmd) {
-    // NOTE: it would be tempting to just allow anything from hadoop's Shell class, but then
-    // that would just give an easy vector for RCE (use hadoop Shell instead of e.g. ProcessBuilder)
-    // so we whitelist actual caller impl methods instead.
-    for (StackTraceElement element : Thread.currentThread().getStackTrace()) {
-      // hadoop insists on shelling out to get the user's supplementary groups?
-      if ("org.apache.hadoop.security.ShellBasedUnixGroupsMapping".equals(element.getClassName()) &&
-          "getGroups".equals(element.getMethodName())) {
-        return;
-      }
-      // hadoop insists on shelling out to parse 'df' command instead of using FileStore?
-      if ("org.apache.hadoop.fs.DF".equals(element.getClassName()) &&
-          "getFilesystem".equals(element.getMethodName())) {
-        return;
-      }
-      // hadoop insists on shelling out to parse 'du' command instead of using FileStore?
-      if ("org.apache.hadoop.fs.DU".equals(element.getClassName()) &&
-          "refresh".equals(element.getMethodName())) {
-        return;
-      }
-      // hadoop insists on shelling out to parse 'ls' command instead of java nio apis?
-      if ("org.apache.hadoop.util.DiskChecker".equals(element.getClassName()) &&
-          "checkDir".equals(element.getMethodName())) {
-        return;
-      }
-      // hadoop insists on shelling out to parse 'stat' command instead of Files.getAttributes?
-      if ("org.apache.hadoop.fs.HardLink".equals(element.getClassName()) &&
-          "getLinkCount".equals(element.getMethodName())) {
-        return;
-      }
-      // hadoop "canExecute" method doesn't handle securityexception and fails completely.
-      // so, lie to it, and tell it we will happily execute, so it does not crash.
-      if ("org.apache.hadoop.fs.FileUtil".equals(element.getClassName()) &&
-          "canExecute".equals(element.getMethodName())) {
-        return;
-      }
-    }
-    super.checkExec(cmd);
-  }
-
-  /**
-   * {@inheritDoc}
-   * <p>This method implements hacks to workaround hadoop's garbage FileUtil code
-   */
-  @Override
-  public void checkWrite(String file) {
-    for (StackTraceElement element : Thread.currentThread().getStackTrace()) {
-      // hadoop "canWrite" method doesn't handle securityexception and fails completely.
-      // so, lie to it, and tell it we will happily write, so it does not crash.
-      if ("org.apache.hadoop.fs.FileUtil".equals(element.getClassName()) &&
-          "canWrite".equals(element.getMethodName())) {
-        return;
-      }
-    }
-    super.checkWrite(file);
-  }
-
-  /**
-   * {@inheritDoc}
-   * <p>This method implements hacks to workaround hadoop's garbage FileUtil code
-   */
-  @Override
-  public void checkRead(String file) {
-    for (StackTraceElement element : Thread.currentThread().getStackTrace()) {
-      // hadoop "createPermissionsDiagnosisString" method doesn't handle securityexception and fails completely.
-      // it insists on climbing up full directory tree!
-      // so, lie to it, and tell it we will happily read, so it does not crash.
-      if ("org.apache.hadoop.hdfs.MiniDFSCluster".equals(element.getClassName()) &&
-          "createPermissionsDiagnosisString".equals(element.getMethodName())) {
-        return;
-      }
-      // hadoop "canRead" method doesn't handle securityexception and fails completely.
-      // so, lie to it, and tell it we will happily read, so it does not crash.
-      if ("org.apache.hadoop.fs.FileUtil".equals(element.getClassName()) &&
-          "canRead".equals(element.getMethodName())) {
-        return;
-      }
-    }
-    super.checkRead(file);
   }
 
   /**
