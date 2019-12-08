@@ -20,11 +20,11 @@ import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinWorkerThread;
 import java.util.regex.Pattern;
@@ -56,7 +56,8 @@ public class HdfsTestUtil {
 
   private static final boolean HA_TESTING_ENABLED = false; // SOLR-XXX
 
-  private static Map<MiniDFSCluster,Timer> timers = new ConcurrentHashMap<>();
+  private static Map<MiniDFSCluster,Timer> timers = new HashMap<>();
+  private static final Object TIMERS_LOCK = new Object();
 
   private static FSDataOutputStream badTlogOutStream;
 
@@ -145,7 +146,12 @@ public class HdfsTestUtil {
 
       int rnd = random().nextInt(10000);
       Timer timer = new Timer();
-      timers.put(dfsCluster, timer);
+      synchronized (TIMERS_LOCK) {
+        if (timers == null) {
+          timers = new HashMap<>();
+        }
+        timers.put(dfsCluster, timer);
+      }
       timer.schedule(new TimerTask() {
 
         @Override
@@ -156,7 +162,12 @@ public class HdfsTestUtil {
     } else if (haTesting && rndMode == 2) {
       int rnd = random().nextInt(30000);
       Timer timer = new Timer();
-      timers.put(dfsCluster, timer);
+      synchronized (TIMERS_LOCK) {
+        if (timers == null) {
+          timers = new HashMap<>();
+        }
+        timers.put(dfsCluster, timer);
+      }
       timer.schedule(new TimerTask() {
 
         @Override
@@ -196,19 +207,23 @@ public class HdfsTestUtil {
 
   public static Configuration getClientConfiguration(MiniDFSCluster dfsCluster) {
     Configuration conf = getBasicConfiguration(dfsCluster.getConfiguration(0));
-    if (dfsCluster.getNameNodeInfos().length > 1) {
+    if (dfsCluster.getNumNameNodes() > 1) {
       HATestUtil.setFailoverConfigurations(dfsCluster, conf);
     }
     return conf;
   }
 
   public static void teardownClass(MiniDFSCluster dfsCluster) throws Exception {
+    HdfsUtil.TEST_CONF = null;
+
     if (badTlogOutStream != null) {
       IOUtils.closeQuietly(badTlogOutStream);
+      badTlogOutStream = null;
     }
 
     if (badTlogOutStreamFs != null) {
       IOUtils.closeQuietly(badTlogOutStreamFs);
+      badTlogOutStreamFs = null;
     }
 
     try {
@@ -218,9 +233,16 @@ public class HdfsTestUtil {
         log.error("Exception trying to reset solr.directoryFactory", e);
       }
       if (dfsCluster != null) {
-        Timer timer = timers.remove(dfsCluster);
-        if (timer != null) {
-          timer.cancel();
+        synchronized (TIMERS_LOCK) {
+          if (timers != null) {
+            Timer timer = timers.remove(dfsCluster);
+            if (timer != null) {
+              timer.cancel();
+            }
+            if (timers.isEmpty()) {
+              timers = null;
+            }
+          }
         }
         try {
           dfsCluster.shutdown(true);
