@@ -1407,19 +1407,17 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     // Same thing for dates
     // test min/max of string field
-    if (date.equals("date_dt") || date.equals("date_dtd")) {  // supports only single valued currently... see SOLR-11706
-      client.testJQ(params(p, "q", "*:*"
-          , "json.facet", "{" +
-              " f3:{${terms}  type:field, field:${num_is}, facet:{a:'min(${date})'}, sort:'a desc' }" +
-              ",f4:{${terms}  type:field, field:${num_is}, facet:{a:'max(${date})'}, sort:'a asc' }" +
-              "}"
-          )
-          , "facets=={count:6 " +
-              ",f3:{ buckets:[{val:-1,count:2,a:'2002-02-02T02:02:02Z'},{val:3,count:2,a:'2002-02-02T02:02:02Z'},{val:0,count:2,a:'2001-02-03T01:02:03Z'},{val:-5,count:1,a:'2001-01-01T01:01:01Z'},{val:2,count:1,a:'2001-01-01T01:01:01Z'} ] } " +
-              ",f4:{ buckets:[{val:-5,count:1,a:'2001-01-01T01:01:01Z'},{val:2,count:1,a:'2001-01-01T01:01:01Z'},{val:-1,count:2,a:'2002-03-01T03:02:01Z'},{val:0,count:2,a:'2003-03-03T03:03:03Z'},{val:3,count:2,a:'2003-03-03T03:03:03Z'} ] } " +
-              "}"
-      );
-    }
+    client.testJQ(params(p, "q", "*:*"
+        , "json.facet", "{" +
+            " f3:{${terms}  type:field, field:${num_is}, facet:{a:'min(${date})'}, sort:'a desc' }" +
+            ",f4:{${terms}  type:field, field:${num_is}, facet:{a:'max(${date})'}, sort:'a asc' }" +
+            "}"
+        )
+        , "facets=={count:6 " +
+            ",f3:{ buckets:[{val:-1,count:2,a:'2002-02-02T02:02:02Z'},{val:3,count:2,a:'2002-02-02T02:02:02Z'},{val:0,count:2,a:'2001-02-03T01:02:03Z'},{val:-5,count:1,a:'2001-01-01T01:01:01Z'},{val:2,count:1,a:'2001-01-01T01:01:01Z'} ] } " +
+            ",f4:{ buckets:[{val:-5,count:1,a:'2001-01-01T01:01:01Z'},{val:2,count:1,a:'2001-01-01T01:01:01Z'},{val:-1,count:2,a:'2002-03-01T03:02:01Z'},{val:0,count:2,a:'2003-03-03T03:03:03Z'},{val:3,count:2,a:'2003-03-03T03:03:03Z'} ] } " +
+            "}"
+    );
 
     // test field faceting on date field
     client.testJQ(params(p, "q", "*:*"
@@ -1784,17 +1782,15 @@ public class TestJsonFacets extends SolrTestCaseHS {
             " } }"
     );
 
-    if (where_s.equals("where_s") || where_s.equals("where_sd")) {  // min/max only supports only single valued currently... see SOLR-11706
-      client.testJQ(params(p, "q", "*:*"
-          , "json.facet", "{f:{type:range, field:${num_d}, start:-5, end:10, gap:5, other:all,   facet:{ wmin:'min(${where_s})', wmax:'max(${where_s})'    }   }}"
-          )
-          , "facets=={count:6, f:{buckets:[ {val:-5.0,count:1,wmin:NY,wmax:NY}, {val:0.0,count:2,wmin:NJ,wmax:NY}, {val:5.0,count:0}]" +
-              " ,before:{count:1,wmin:NJ,wmax:NJ}" +
-              " ,after:{count:1,wmin:NJ,wmax:NJ} " +
-              " ,between:{count:3,wmin:NJ,wmax:NY} " +
-              " } }"
-      );
-    }
+    client.testJQ(params(p, "q", "*:*"
+        , "json.facet", "{f:{type:range, field:${num_d}, start:-5, end:10, gap:5, other:all,   facet:{ wmin:'min(${where_s})', wmax:'max(${where_s})'    }   }}"
+        )
+        , "facets=={count:6, f:{buckets:[ {val:-5.0,count:1,wmin:NY,wmax:NY}, {val:0.0,count:2,wmin:NJ,wmax:NY}, {val:5.0,count:0}]" +
+            " ,before:{count:1,wmin:NJ,wmax:NJ}" +
+            " ,after:{count:1,wmin:NJ,wmax:NJ} " +
+            " ,between:{count:3,wmin:NJ,wmax:NY} " +
+            " } }"
+    );
 
     // stats at top level
     client.testJQ(params(p, "q", "*:*"

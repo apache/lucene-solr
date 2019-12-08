@@ -42,9 +42,8 @@ import org.junit.Test;
  */
 public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistributedSearchTestCase {
 
-  // TODO: add hll & variance - update all assertions to test their values (right after any mention of 'stddev')
   private static List<String> ALL_STATS = Arrays.asList("min", "max", "sum", "stddev", "avg", "sumsq", "unique",
-      "missing", "countvals", "percentile");
+      "missing", "countvals", "percentile", "variance", "hll");
                                                         
   private final String STAT_FIELD;
   private String ALL_STATS_JSON = "";
@@ -236,8 +235,12 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
       assertEquals(1.0D, bucket.get("percentile"));
       assertEquals(0.475247524752475D, (double) bucket.get("avg"), 0.1E-7);
       assertEquals(54.0D, (double) bucket.get("sumsq"), 0.1E-7);
-      // assertEquals(0.55846323792D, bucket.getStddev(), 0.1E-7); // TODO: SOLR-11725
+      // assertEquals(0.55846323792D, (double) bucket.get("stddev"), 0.1E-7); // TODO: SOLR-11725
+      // assertEquals(0.3118811881D, (double) bucket.get("variance"), 0.1E-7); // TODO: SOLR-11725
       assertEquals(0.55569169111D, (double) bucket.get("stddev"), 0.1E-7); // json.facet is using the "uncorrected stddev"
+      assertEquals(0.3087932556D, (double) bucket.get("variance"), 0.1E-7); // json.facet is using the "uncorrected variance"
+      assertEquals(3L, bucket.get("unique"));
+      assertEquals(3L, bucket.get("hll"));
     }
 
 
@@ -397,7 +400,11 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
     assertEquals(115.5D, (double) aaa0_Bucket.get("avg"), 0.1E-7);
     assertEquals(1.674585E7D, (double) aaa0_Bucket.get("sumsq"), 0.1E-7);
     // assertEquals(206.4493184076D, (double) aaa0_Bucket.get("stddev"), 0.1E-7); // TODO: SOLR-11725
+    // assertEquals(42621.32107023412D, (double) aaa0_Bucket.get("variance"), 0.1E-7);  // TODO: SOLR-11725
     assertEquals(206.1049489944D, (double) aaa0_Bucket.get("stddev"), 0.1E-7); // json.facet is using the "uncorrected stddev"
+    assertEquals(42479.25D, (double) aaa0_Bucket.get("variance"), 0.1E-7); // json.facet is using the "uncorrected variance"
+    assertEquals(284L, aaa0_Bucket.get("unique"));
+    assertEquals(284L, aaa0_Bucket.get("hll"));
 
     NamedList tail_Bucket = foo_buckets.get(5);
     assertEquals(ALL_STATS.size() + 3, tail_Bucket.size()); // val,count,facet
@@ -412,7 +419,11 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
     assertEquals(22.0D, (double) tail_Bucket.get("avg"), 0.1E-7);
     assertEquals(58740.0D, (double) tail_Bucket.get("sumsq"), 0.1E-7);
     // assertEquals(13.0599310011D, (double) tail_Bucket.get("stddev"), 0.1E-7); // TODO: SOLR-11725
+    // assertEquals(170.5617977535D, (double) tail_Bucket.get("variance"), 0.1E-7); // TODO: SOLR-11725
     assertEquals(12.9871731592D, (double) tail_Bucket.get("stddev"), 0.1E-7); // json.facet is using the "uncorrected stddev"
+    assertEquals(168.666666667D, (double) tail_Bucket.get("variance"), 0.1E-7); // json.facet is using the "uncorrected variance"
+    assertEquals(45L, tail_Bucket.get("unique"));
+    assertEquals(45L, tail_Bucket.get("hll"));
 
     List<NamedList> tail_bar_buckets = (List) ((NamedList)tail_Bucket.get("bar")).get("buckets");
    
@@ -429,7 +440,11 @@ public class DistributedFacetSimpleRefinementLongTailTest extends BaseDistribute
     assertEquals(37.5D, (double) tailB_Bucket.get("avg"), 0.1E-7);
     assertEquals(16910.0D, (double) tailB_Bucket.get("sumsq"), 0.1E-7);
     // assertEquals(1.78376517D, (double) tailB_Bucket.get("stddev"), 0.1E-7); // TODO: SOLR-11725
+    // assertEquals(3.1818181817D, (double) tailB_Bucket.get("variance"), 0.1E-7); // TODO: SOLR-11725
     assertEquals(1.70782513D, (double) tailB_Bucket.get("stddev"), 0.1E-7); // json.facet is using the "uncorrected stddev"
+    assertEquals(2.9166666747D, (double) tailB_Bucket.get("variance"), 0.1E-7); // json.facet is using the "uncorrected variance"
+    assertEquals(6L, tailB_Bucket.get("unique"));
+    assertEquals(6L, tailB_Bucket.get("hll"));
 
     // check the SKG stats on our tailB bucket
     NamedList tailB_skg = (NamedList) tailB_Bucket.get("skg");

@@ -57,12 +57,18 @@ public class MinMaxAgg extends SimpleAggValueSource {
 
       if (sf.multiValued() || sf.getType().multiValuedFieldCache()) {
         if (sf.hasDocValues()) {
-          if(sf.getType().getNumberType() != null) {
+          if (sf.getType().isPointField()) {
             FieldType.MultiValueSelector choice = minmax == 1 ? FieldType.MultiValueSelector.MIN : FieldType.MultiValueSelector.MAX;
             vs = sf.getType().getSingleValueSource(choice, sf, null);
           } else {
-            // multi-valued strings
-            return new MinMaxSortedSetDVAcc(fcontext, sf, numSlots);
+            NumberType numberType = sf.getType().getNumberType();
+            if (numberType != null && numberType != NumberType.DATE) {
+              // TrieDate doesn't support selection of single value
+              FieldType.MultiValueSelector choice = minmax == 1 ? FieldType.MultiValueSelector.MIN : FieldType.MultiValueSelector.MAX;
+              vs = sf.getType().getSingleValueSource(choice, sf, null);
+            } else {
+              return new MinMaxSortedSetDVAcc(fcontext, sf, numSlots);
+            }
           }
         } else {
           if (sf.getType().isPointField()) {
