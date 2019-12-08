@@ -5,7 +5,7 @@ def verboseModeHookInstalled = false
 
 allprojects {
   plugins.withType(JavaPlugin) {
-    def verboseMode = propertyOrDefault("tests.verbose", "false")
+    def verboseMode = Boolean.parseBoolean(propertyOrDefault("tests.verbose", "false"))
 
     project.ext {
       testsWorkDir = file("${buildDir}/tmp/tests-cwd")

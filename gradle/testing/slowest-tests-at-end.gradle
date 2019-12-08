@@ -15,8 +15,8 @@ allprojects {
   }
 }
 
-gradle.buildFinished {
-  if (allTests) {
+gradle.buildFinished { result ->
+  if (allTests && result.getFailure() == null) {
     def slowest = allTests
       .sort { a, b -> b.duration.compareTo(a.duration) }
       .take(10)
