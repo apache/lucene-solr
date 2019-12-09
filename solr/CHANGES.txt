@@ -111,6 +111,8 @@ New Features
 * SOLR-13822: A Package management system with the following features. A packages.json in ZK to store
   the configuration, APIs to read/edit them and isolated classloaders to load the classes from
   hose packages if the 'class' attribute is prefixed with `<package-name>:` (noble, Ishan Chattopadhyaya)
+  
+* SOLR-12217: Support shards.preference in SolrJ for single shard collections. The parameter is now used by the CloudSolrClient and Streaming Expressions. (Houston Putman, Tomas Fernandez-Lobbe)
 
 Improvements
 ---------------------
