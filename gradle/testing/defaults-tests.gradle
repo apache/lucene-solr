@@ -59,6 +59,10 @@ allprojects {
       // Turn jenkins blood red for hashmap bugs, even on jdk7
       systemProperty 'jdk.map.althashing.threshold', '0'
 
+      // Pass these to RandomizedRunner so that it doesn't attempt to set them.
+      systemProperty 'junit4.childvm.count', '1'
+      systemProperty 'junit4.childvm.id', '0'
+
       // Set up cwd and temp locations.
       systemProperty("java.io.tmpdir", testsTmpDir)
       systemProperty("tempDir", testsTmpDir)
