@@ -160,7 +160,7 @@ Solr allows you to pass an optional string parameter named `shards.preference` t
 
 The syntax is: `shards.preference=_property_:__value__`. The order of the properties and the values are significant: the first one is the primary sort, the second is secondary, etc.
 
-IMPORTANT: `shards.preference` only works for distributed queries, i.e., queries targeting multiple shards. Single shard scenarios are not supported.
+IMPORTANT: `shards.preference` is supported for single shard scenarios when using the SolrJ clients.
 
 The properties that can be specified are as follows:
 

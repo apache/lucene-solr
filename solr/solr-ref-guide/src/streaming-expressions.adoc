@@ -114,6 +114,15 @@ unless the jvm has been started with `-DStreamingExpressionMacros=true` (usually
 
 Because streaming expressions relies on the `/export` handler, many of the field and field type requirements to use `/export` are also requirements for `/stream`, particularly for `sort` and `fl` parameters. Please see the section <<exporting-result-sets.adoc#exporting-result-sets,Exporting Result Sets>> for details.
 
+=== Request Routing
+
+Streaming Expressions respect the <<distributed-requests.adoc#shards-preference-parameter,shards.preference parameter>> for any call to Solr.
+
+The value of `shards.preference` that is used to route requests is determined in the following order. The first option available is used.
+- Provided as a parameter in the streaming expression (e.g. `search(...., shards.preference="replica.type:PULL")`)
+- Provided in the URL Params of the streaming expression (e.g. `http://solr_url:8983/solr/stream?expr=....&shards.preference=replica.type:PULL`)
+- Set as a default in the Cluster properties.
+
 === Adding Custom Expressions
 
 Creating your own custom expressions can be easily done by implementing the {solr-javadocs}/solr-solrj/org/apache/solr/client/solrj/io/stream/expr/Expressible.html[Expressible] interface.   To add a custom expression to the
