@@ -9,7 +9,9 @@ adds standard configurations such as "api", "implementation",
 "testImplementation" and others. These configurations can also inherit
 from each other; more about this typic can be found here:
 
-[TODO: add conigurations link, java plugin configs]
+https://docs.gradle.org/current/userguide/dependency_management_for_java_projects.html#dependency_management_for_java_projects
+https://docs.gradle.org/current/userguide/java_library_plugin.html#sec:java_library_separation
+https://docs.gradle.org/current/userguide/java_plugin.html#sec:java_plugin_and_dependency_management
 
 For the needs of Lucene and Solr we will typically focus on three
 configurations and attach project dependencies to them:
@@ -21,8 +23,7 @@ implementation - makes a dependency available for main classes, tests
   but will *not* export the dependency for other modules (so their
   compilation classpath won't contain it).
 
-testImplementation - makes a dependency only available for test
-  classes.
+testImplementation - makes a dependency only available for test  classes.
 
 
 Adding a library dependency
@@ -59,7 +60,24 @@ gradlew --write-locks
 
 IMPORTANT: The versions.lock file will contain the actual version
 of the dependency picked based on other project dependencies and
-their transitive dependencies.
+their transitive dependencies. This selected version may be
+different from what each of these actually requires (the highest
+version number will be typically selected). To see which dependencies
+require which version of the library use:
+
+gradlew why --hash=...
+
+where the hash code comes from versions.lock file. For example, at
+the time of writing, jackson-databind has the following entry:
+
+com.fasterxml.jackson.core:jackson-databind:2.10.0 (3 constraints: 931a7796)
+
+and gradlew why --hash=931a7796 prints:
+
+com.fasterxml.jackson.core:jackson-databind:2.10.0
+        projects -> 2.10.0
+        net.thisptr:jackson-jq -> 2.7.0
+        org.carrot2:carrot2-mini -> 2.9.9.3
 
 Once the dependency is added it always makes sense to see the
 tree of all module dependencies and maybe exclude transitive
