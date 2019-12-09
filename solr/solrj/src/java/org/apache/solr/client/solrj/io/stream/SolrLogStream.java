@@ -37,9 +37,8 @@ public class SolrLogStream extends TupleStream implements Expressible {
   private static final long serialVersionUID = 1;
   private String currentFile;
   private int lineNumber;
-  private Pattern handler;
 
-  protected TupleStream originalStream;
+  protected PushBackStream originalStream;
 
   public SolrLogStream(StreamExpression expression,StreamFactory factory) throws IOException {
     // grab all parameters out
@@ -58,8 +57,7 @@ public class SolrLogStream extends TupleStream implements Expressible {
   }
 
   private void init(TupleStream stream) throws IOException{
-    handler = Pattern.compile("collection=c:([A-Za-z]),");
-    this.originalStream = stream;
+    this.originalStream = new PushBackStream(stream);
   }
 
   @Override
@@ -141,6 +139,10 @@ public class SolrLogStream extends TupleStream implements Expressible {
           t = parseNewSearch(line);
         } else if(line.contains("path=/update")) {
           t = parseUpdate(line);
+        } else if(line.contains(" ERROR ")) {
+          t = parseError(line);
+        } else if(line.contains("start commit")) {
+          t=parseCommit(line);
         } else {
           continue;
         }
@@ -164,6 +166,67 @@ public class SolrLogStream extends TupleStream implements Expressible {
     }
   }
 
+
+  private Tuple parseError(String line) throws IOException {
+    String[] parts = line.split("\\s+");
+    Tuple tuple = new Tuple();
+    tuple.put("date_dt", parts[0]);
+    tuple.put("type_s", "error");
+    tuple.put("line_t", line);
+    StringBuilder buf = new StringBuilder("%html ");
+    //Check to see if there is a stack trace;
+    while(true) {
+      Tuple  t = originalStream.read();
+      if(t.EOF) {
+        originalStream.pushBack(t);
+        break;
+      } else{
+        if(t.getString("line").startsWith("\t")) {
+          buf.append(t.getString("line").replace("\t", "")+"<br/>");
+        } else {
+          originalStream.pushBack(t);
+          break;
+        }
+      }
+    }
+
+    if(buf.length() > 7) {
+      tuple.put("stack_t", buf.toString());
+    }
+
+    tuple.put("collection_s", parseCollection(line));
+    tuple.put("core_s", parseCore(line));
+    tuple.put("node_s", parseNode(line));
+
+    return tuple;
+  }
+
+
+  private Tuple parseCommit(String line) throws IOException {
+    String[] parts = line.split("\\s+");
+    Tuple tuple = new Tuple();
+    tuple.put("date_dt", parts[0]);
+    tuple.put("type_s", "commit");
+    tuple.put("line_t", line);
+    if(line.contains("softCommit=true")) {
+      tuple.put("soft_commit_s", "true");
+    } else {
+      tuple.put("soft_commit_s", "false");
+    }
+
+    if(line.contains("openSearcher=true")) {
+      tuple.put("open_searcher_s", "true");
+    } else {
+      tuple.put("open_searcher_s", "false");
+    }
+
+    tuple.put("collection_s", parseCollection(line));
+    tuple.put("core_s", parseCore(line));
+    tuple.put("node_s", parseNode(line));
+
+    return tuple;
+  }
+
   private Tuple parseQueryRecord(String line) {
 
     String[] parts = line.split("\\s+");
@@ -171,7 +234,7 @@ public class SolrLogStream extends TupleStream implements Expressible {
     tuple.put("date_dt", parts[0]);
     String qtime = parts[parts.length-1];
     tuple.put("qtime_i", qtime.split("=")[1]);
-
+    tuple.put("type_s", "query");
     String status = parts[parts.length-2];
     tuple.put("status_s", status.split("=")[1]);
 
@@ -182,7 +245,6 @@ public class SolrLogStream extends TupleStream implements Expressible {
       String params = parts[parts.length-4];
       tuple.put("params_t", params.substring(7));
       addParams(tuple, params);
-
     }
 
 
@@ -203,6 +265,13 @@ public class SolrLogStream extends TupleStream implements Expressible {
     tuple.put("collection_s", parseCollection(line));
     tuple.put("core_s", parseCore(line));
     tuple.put("node_s", parseNode(line));
+    String path = parsePath(line);
+    tuple.put("path_s", path);
+    if(path != null && path.contains("/admin")) {
+      tuple.put("type_s", "admin");
+    } else {
+      tuple.put("type_s", "query");
+    }
 
     return tuple;
   }
@@ -213,7 +282,7 @@ public class SolrLogStream extends TupleStream implements Expressible {
     Tuple tuple = new Tuple();
     tuple.put("date_dt", parts[0]);
     tuple.put("core_s", parseNewSearcherCollection(line));
-    tuple.put("new_searcher", "true");
+    tuple.put("type_s", "newSearcher");
 
     return tuple;
   }
@@ -232,7 +301,7 @@ public class SolrLogStream extends TupleStream implements Expressible {
     String[] parts = line.split("\\s+");
     Tuple tuple = new Tuple();
     tuple.put("date_dt", parts[0]);
-    tuple.put("update_s", "true");
+    tuple.put("type_s", "update");
     tuple.put("collection_s", parseCollection(line));
     tuple.put("core_s", parseCore(line));
     tuple.put("node_s", parseNode(line));
@@ -252,6 +321,16 @@ public class SolrLogStream extends TupleStream implements Expressible {
   private String parseCore(String line) {
     char[] ca = {',', '}'};
     String parts[] = line.split("core=x:");
+    if(parts.length == 2) {
+      return readUntil(parts[1], ca);
+    } else {
+      return null;
+    }
+  }
+
+  private String parsePath(String line) {
+    char[] ca = {' '};
+    String parts[] = line.split(" path=");
     if(parts.length == 2) {
       return readUntil(parts[1], ca);
     } else {
