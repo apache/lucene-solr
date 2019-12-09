@@ -94,6 +94,20 @@ The table below shows the metric names and attributes to request:
 `UPDATE./update.handlerStart` |Epoch time when the handler was registered.
 |===
 
+*Distributed vs. Local Request Times*
+
+Processing of a single distributed request in SolrCloud usually requires making several requests to
+other nodes and other replicas. The common statistics listed above lump these timings together, even though
+they are very different in nature, thus making it difficult to measure the latency of distributed and
+local requests separately. Solr 8.4 introduced additional statistics that help to do this.
+
+These metrics are structured the same as `requestTimes` and `totalTime` metrics above but they use
+different full names, eg. `QUERY./select.distrib.requestTimes` and `QUERY./select.local.requestTimes`.
+The metrics under the `distrib` path correspond to the time it takes for a (potentially) distributed
+request to complete all remote calls plus any local processing, and return the result to the caller.
+The metrics under the `local` path correspond to the time it takes for a local call (non-distributed,
+i.e. being processed only by the Solr core where the handler operates) to complete.
+
 == Update Handler
 
 This section has information on the total number of adds and how many commits have been fired against a Solr core.

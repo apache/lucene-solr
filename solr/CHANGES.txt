@@ -93,6 +93,8 @@ Improvements
 
 * SOLR-13987: Admin UI should not rely on javascript eval() (rmuir, Kevin Risden)
 
+* SOLR-13979: Expose separate metrics for distributed and non-distributed requests. (ab)
+
 Optimizations
 ---------------------
 (No changes)
