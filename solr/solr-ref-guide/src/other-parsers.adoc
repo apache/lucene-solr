@@ -204,23 +204,37 @@ A list of queries that *must* appear in matching documents. However, unlike `mus
 
 == Boost Query Parser
 
-`BoostQParser` extends the `QParserPlugin` and creates a boosted query from the input value. The main value is the query to be boosted. Parameter `b` is the function query to use as the boost. The query to be boosted may be of any type.
+`BoostQParser` extends the `QParserPlugin` and creates a boosted query from the input value. The main value is any query to be "wrapped" and "boosted" -- only documents which match that query will match the final query produced by this parter.  Parameter `b` is a <<function-queries.adoc#available-functions,function>> to be evaluted against each document that matches the original query, and the result of the function will be multiplied into into the final score for that document.
 
 === Boost Query Parser Examples
 
-Creates a query "foo" which is boosted (scores are multiplied) by the function query `log(popularity)`:
+Creates a query `name:foo` which is boosted (scores are multiplied) by the function query `log(popularity)`:
 
 [source,text]
 ----
-{!boost b=log(popularity)}foo
+q={!boost b=log(popularity)}name:foo
 ----
 
-Creates a query "foo" which is boosted by the date boosting function referenced in `ReciprocalFloatFunction`:
+Creates a query `name:foo` which has it's scores multiplied by the _inverse_ of the numeric `price` field -- effectively "demoting" documents which have a high `price` by lowering their final score:
 
 [source,text]
 ----
-{!boost b=recip(ms(NOW,mydatefield),3.16e-11,1,1)}foo
+// NOTE: we "add 1" to the denominator to prevent divide by zero
+q={!boost b=div(1,add(1,price))}name:foo
 ----
+
+The `<<function-queries.adoc#query-function,query(...)>>` function is particularly useful for situations where you want to multiply (or divide) the score for each document matching your main query by the score that document would have from another query.
+
+This example uses <<local-parameters-in-queries.adoc#parameter-dereferencing,local parameter variables>> to create a query for `name:foo` which is boosted by the scores from the independently specified query `category:electronics`:
+
+[source,text]
+----
+q={!boost b=query($my_boost)}name:foo
+my_boost=category:electronics
+----
+
+
+
 
 [[other-collapsing]]
 == Collapsing Query Parser
