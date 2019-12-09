@@ -76,6 +76,9 @@ Bug Fixes
 
 * LUCENE-9031: UnsupportedOperationException on MatchesIterator.getQuery() (Alan Woodward, Mikhail Khludnev)
 
+* LUCENE-8996: maxScore was sometimes missing from distributed grouped responses.
+  (Julien Massenet, Diego Ceccarelli, Munendra S N, Christine Poerschke)
+
 Other
 
 * LUCENE-8979: Code Cleanup: Use entryset for map iteration wherever possible. - Part 2 (Koen De Groote)
