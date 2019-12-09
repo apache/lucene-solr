@@ -35,7 +35,7 @@ public class ShufflingReplicaListTransformerTest extends SolrTestCase {
   public void testTransformReplicas() throws Exception {
     final List<Replica> replicas = new ArrayList<>();
     for (final String url : createRandomUrls()) {
-      replicas.add(new Replica(url, new HashMap<String,Object>()));
+      replicas.add(new Replica(url, new HashMap<String,Object>(),"c1","s1"));
     }
     implTestTransform(replicas);
   }

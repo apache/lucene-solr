@@ -217,14 +217,22 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
   public void indexSimple(Client client) throws Exception {
     client.deleteByQuery("*:*", null);
-    client.add(sdoc("id", "1", "cat_s", "A", "where_s", "NY", "num_d", "4", "num_i", "2", "val_b", "true", "sparse_s", "one"), null);
-    client.add(sdoc("id", "2", "cat_s", "B", "where_s", "NJ", "num_d", "-9", "num_i", "-5", "val_b", "false"), null);
+    client.add(sdoc("id", "1", "cat_s", "A", "where_s", "NY", "num_d", "4", "num_i", "2",
+        "num_is", "4", "num_is", "2",
+        "val_b", "true", "sparse_s", "one"), null);
+    client.add(sdoc("id", "2", "cat_s", "B", "where_s", "NJ", "num_d", "-9", "num_i", "-5",
+        "num_is", "-9", "num_is", "-5",
+        "val_b", "false"), null);
     client.add(sdoc("id", "3"), null);
     client.commit();
-    client.add(sdoc("id", "4", "cat_s", "A", "where_s", "NJ", "num_d", "2", "num_i", "3"), null);
-    client.add(sdoc("id", "5", "cat_s", "B", "where_s", "NJ", "num_d", "11", "num_i", "7", "sparse_s", "two"),null);
+    client.add(sdoc("id", "4", "cat_s", "A", "where_s", "NJ", "num_d", "2", "num_i", "3",
+        "num_is", "2", "num_is", "3"), null);
+    client.add(sdoc("id", "5", "cat_s", "B", "where_s", "NJ", "num_d", "11", "num_i", "7",
+        "num_is", "11", "num_is", "7",
+        "sparse_s", "two"),null);
     client.commit();
-    client.add(sdoc("id", "6", "cat_s", "B", "where_s", "NY", "num_d", "-5", "num_i", "-5"),null);
+    client.add(sdoc("id", "6", "cat_s", "B", "where_s", "NY", "num_d", "-5", "num_i", "-5",
+        "num_is", "-5"),null);
     client.commit();
   }
 
@@ -874,12 +882,20 @@ public class TestJsonFacets extends SolrTestCaseHS {
     Client client = Client.localClient();
     indexSimple(client);
 
+    assertJQ(req("q", "*:*", "rows", "0", "json.facet", "{x:'sum(num_is)'}")
+        , "facets=={count:6 , x:,10.0}"
+    );
+    assertJQ(req("q", "*:*", "rows", "0", "json.facet", "{x:'min(num_is)'}")
+        , "facets=={count:6 , x:,-9}"
+    );
+
     // test multiple json.facet commands
     assertJQ(req("q", "*:*", "rows", "0"
-            , "json.facet", "{x:'sum(num_d)'}"
-            , "json.facet", "{y:'min(num_d)'}"
+        , "json.facet", "{x:'sum(num_d)'}"
+        , "json.facet", "{y:'min(num_d)'}"
+        , "json.facet", "{z:'min(num_is)'}"
         )
-        , "facets=={count:6 , x:3.0, y:-9.0 }"
+        , "facets=={count:6 , x:3.0, y:-9.0, z:-9 }"
     );
 
 
@@ -922,10 +938,11 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     // test nested streaming with stats under streaming
     assertJQ(req("q", "*:*", "rows", "0"
-            , "json.facet", "{   cat:{terms:{field:'cat_s', method:stream,sort:'index asc', facet:{  where:{terms:{field:where_s,method:stream,sort:'index asc',sort:'index asc', facet:{x:'max(num_d)'}     }}}   }}}"
+            , "json.facet", "{   cat:{terms:{field:'cat_s', method:stream,sort:'index asc', facet:{  where:{terms:{field:where_s,method:stream,sort:'index asc',sort:'index asc', facet:{x:'max(num_d)', y:'sum(num_is)'}     }}}   }}}"
         )
         , "facets=={count:6 " +
-            ", cat :{buckets:[{val:A, count:2, where:{buckets:[{val:NJ,count:1,x:2.0},{val:NY,count:1,x:4.0}]}   },{val:B, count:3, where:{buckets:[{val:NJ,count:2,x:11.0},{val:NY,count:1,x:-5.0}]}    }]}"
+            ", cat :{buckets:[{val:A, count:2, where:{buckets:[{val:NJ,count:1,x:2.0,y:5.0},{val:NY,count:1,x:4.0,y:6.0}]}   }," +
+            "{val:B, count:3, where:{buckets:[{val:NJ,count:2,x:11.0,y:4.0},{val:NY,count:1,x:-5.0,y:-5.0}]}    }]}"
             + "}"
     );
 
@@ -1125,8 +1142,6 @@ public class TestJsonFacets extends SolrTestCaseHS {
     client.commit();
 
 
-
-
     // test for presence of debugging info
     ModifiableSolrParams debugP = params(p);
     debugP.set("debugQuery","true");
@@ -1256,12 +1271,14 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     // test sorting by other stats
     client.testJQ(params(p, "q", "*:*"
-            , "json.facet", "{f1:{${terms} type:terms, field:'${cat_s}', sort:'x desc', facet:{x:'min(${num_d})'}  }" +
-                " , f2:{${terms} type:terms, field:'${cat_s}', sort:'x desc', facet:{x:'max(${num_d})'}  } " +
-                " , f3:{${terms} type:terms, field:'${cat_s}', sort:'x desc', facet:{x:'unique(${where_s})'}  } " +
-                " , f4:{${terms} type:terms, field:'${cat_s}', sort:'x desc', facet:{x:'hll(${where_s})'}  } " +
-                " , f5:{${terms} type:terms, field:'${cat_s}', sort:'x desc', facet:{x:'variance(${num_d})'}  } " +
-                " , f6:{type:terms, field:${num_d}, limit:1, sort:'x desc', facet:{x:'hll(${num_i})'}  } " +  // facet on a field that will cause hashing and exercise hll.resize on numeric field
+        , "json.facet", "{f1:{${terms} type:terms, field:'${cat_s}', sort:'x desc', facet:{x:'min(${num_d})'}  }" +
+            " , f2:{${terms} type:terms, field:'${cat_s}', sort:'x desc', facet:{x:'max(${num_d})'}  } " +
+            " , f3:{${terms} type:terms, field:'${cat_s}', sort:'x desc', facet:{x:'unique(${where_s})'}  } " +
+            " , f4:{${terms} type:terms, field:'${cat_s}', sort:'x desc', facet:{x:'hll(${where_s})'}  } " +
+            " , f5:{${terms} type:terms, field:'${cat_s}', sort:'x desc', facet:{x:'variance(${num_d})'}  } " +
+            " , f6:{type:terms, field:${num_d}, limit:1, sort:'x desc', facet:{x:'hll(${num_i})'}  } " +  // facet on a field that will cause hashing and exercise hll.resize on numeric field
+            " , f7:{type:terms, field:${cat_s}, limit:2, sort:'x desc', facet:{x:'missing(${sparse_num_d})'}  } " +
+            " , f8:{type:terms, field:${cat_s}, limit:2, sort:'x desc', facet:{x:'countvals(${sparse_num_d})'}  } " +
             "}"
         )
         , "facets=={ 'count':6, " +
@@ -1271,6 +1288,8 @@ public class TestJsonFacets extends SolrTestCaseHS {
             ", f4:{  'buckets':[{ val:'A', count:2, x:2 },    { val:'B', count:3, x:2 }]} " +
             ", f5:{  'buckets':[{ val:'B', count:3, x:74.6666666666666 },    { val:'A', count:2, x:1.0 }]} " +
             ", f6:{  buckets:[{ val:-9.0, count:1, x:1 }]} " +
+            ", f7:{  buckets:[{ val:B, count:3, x:3 },{ val:A, count:2, x:0 }]} " +
+            ", f8:{  buckets:[{ val:A, count:2, x:2 },{ val:B, count:3, x:0 }]} " +
             "}"
     );
 
@@ -1282,6 +1301,94 @@ public class TestJsonFacets extends SolrTestCaseHS {
         , "facets=={ 'count':6, " +
             "  f1:{  'buckets':[{ val:'A', count:2, n1:6.0 }, { val:'B', count:3, n1:-2.0}]}" +
             ", f2:{  'buckets':[{ val:'B', count:3, n1:-2.0}, { val:'A', count:2, n1:6.0 }]} }"
+    );
+
+    // test sorting by missing stat with function
+    client.testJQ(params(p, "q", "*:*"
+        , "json.facet", "{f1:{terms:{${terms} field:'${cat_s}', sort:'n1 desc', facet:{n1:'missing(field(${sparse_num_d}))'}  }}" +
+            " , f2:{terms:{${terms} field:'${cat_s}', sort:'n1 asc', facet:{n1:'missing(field(${sparse_num_d}))'}  }} }"
+        )
+        , "facets=={ 'count':6, " +
+            "  f1:{  'buckets':[{ val:'B', count:3, n1:3 }, { val:'A', count:2, n1:0}]}" +
+            ", f2:{  'buckets':[{ val:'A', count:2, n1:0}, { val:'B', count:3, n1:3 }]} }"
+    );
+
+    // test sorting by missing stat with domain query
+    client.testJQ(params(p, "q", "-id:*"
+        , "json.facet", "{f1:{terms:{${terms} field:'${cat_s}', domain:{query:'*:*'},  sort:'n1 desc', facet:{n1:'missing(field(${sparse_num_d}))'}  }}" +
+            " , f2:{terms:{${terms} field:'${cat_s}', domain:{query:'*:*'}, sort:'n1 asc', facet:{n1:'missing(field(${sparse_num_d}))'}  }} }"
+        )
+        , "facets=={ 'count':0, " +
+            "  f1:{  'buckets':[{ val:'B', count:3, n1:3 }, { val:'A', count:2, n1:0}]}" +
+            ", f2:{  'buckets':[{ val:'A', count:2, n1:0}, { val:'B', count:3, n1:3 }]} }"
+    );
+
+    // test with sub-facet aggregation with stat on field
+    client.testJQ(params(p, "q", "*:*"
+        , "json.facet", " {f1:{terms:{${terms}, field:'${cat_s}', " +
+            "facet:{f2:{terms:{${terms}, field:${where_s}, sort:'index asc', " +
+            "facet:{n1:'missing(${sparse_num_d})'}}}}}}}"
+        )
+        , "facets=={ 'count':6, " +
+            "  f1:{  'buckets':[{ val:'B', count:3, f2:{'buckets':[{val:'NJ', count:2, n1:2},{val:'NY', count:1, n1:1}]} }," +
+            " { val:'A', count:2, f2:{'buckets':[{val:'NJ', count:1, n1:0},{val:'NY', count:1, n1:0}]}}]}" +
+            "}"
+    );
+
+    // test with sub-facet aggregation with stat on func
+    client.testJQ(params(p, "q", "*:*"
+        , "json.facet", " {f1:{terms:{${terms}, field:'${cat_s}', " +
+            "facet:{f2:{terms:{${terms}, field:${where_s}, sort:'index asc', " +
+            "facet:{n1:'missing(field(${sparse_num_d}))'}}}}}}}"
+        )
+        , "facets=={ 'count':6, " +
+            "  f1:{  'buckets':[{ val:'B', count:3, f2:{'buckets':[{val:'NJ', count:2, n1:2},{val:'NY', count:1, n1:1}]} }," +
+            " { val:'A', count:2, f2:{'buckets':[{val:'NJ', count:1, n1:0},{val:'NY', count:1, n1:0}]}}]}" +
+            "}"
+    );
+
+    // test sorting by countvals stat with function
+    client.testJQ(params(p, "q", "*:*"
+        , "json.facet", "{f1:{terms:{${terms} field:'${cat_s}', sort:'n1 asc', facet:{n1:'countvals(field(${sparse_num_d}))'}  }}" +
+            " , f2:{terms:{${terms} field:'${cat_s}', sort:'n1 desc', facet:{n1:'countvals(field(${sparse_num_d}))'}  }} }"
+        )
+        , "facets=={ 'count':6, " +
+            "  f1:{  'buckets':[{ val:'B', count:3, n1:0 }, { val:'A', count:2, n1:2}]}" +
+            ", f2:{  'buckets':[{ val:'A', count:2, n1:2}, { val:'B', count:3, n1:0 }]} }"
+    );
+
+    // test sorting by countvals stat with domain query
+    client.testJQ(params(p, "q", "-id:*"
+        , "json.facet", "{f1:{terms:{${terms} field:'${cat_s}', domain:{query:'*:*'},  sort:'n1 asc', facet:{n1:'countvals(field(${sparse_num_d}))'}  }}" +
+            " , f2:{terms:{${terms} field:'${cat_s}', domain:{query:'*:*'}, sort:'n1 desc', facet:{n1:'countvals(field(${sparse_num_d}))'}  }} }"
+        )
+        , "facets=={ 'count':0, " +
+            "  f1:{  'buckets':[{ val:'B', count:3, n1:0 }, { val:'A', count:2, n1:2}]}" +
+            ", f2:{  'buckets':[{ val:'A', count:2, n1:2}, { val:'B', count:3, n1:0 }]} }"
+    );
+
+    // test with sub-facet aggregation with stat on field
+    client.testJQ(params(p, "q", "*:*"
+        , "json.facet", " {f1:{terms:{${terms}, field:'${cat_s}', " +
+            "facet:{f2:{terms:{${terms}, field:${where_s}, sort:'index asc', " +
+            "facet:{n1:'countvals(${sparse_num_d})'}}}}}}}"
+        )
+        , "facets=={ 'count':6, " +
+            "  f1:{  'buckets':[{ val:'B', count:3, f2:{'buckets':[{val:'NJ', count:2, n1:0},{val:'NY', count:1, n1:0}]} }," +
+            " { val:'A', count:2, f2:{'buckets':[{val:'NJ', count:1, n1:1},{val:'NY', count:1, n1:1}]}}]}" +
+            "}"
+    );
+
+    // test with sub-facet aggregation with stat on func
+    client.testJQ(params(p, "q", "*:*"
+        , "json.facet", " {f1:{terms:{${terms}, field:'${cat_s}', " +
+            "facet:{f2:{terms:{${terms}, field:${where_s}, sort:'index asc', " +
+            "facet:{n1:'countvals(field(${sparse_num_d}))'}}}}}}}"
+        )
+        , "facets=={ 'count':6, " +
+            "  f1:{  'buckets':[{ val:'B', count:3, f2:{'buckets':[{val:'NJ', count:2, n1:0},{val:'NY', count:1, n1:0}]} }," +
+            " { val:'A', count:2, f2:{'buckets':[{val:'NJ', count:1, n1:1},{val:'NY', count:1, n1:1}]}}]}" +
+            "}"
     );
 
     // facet on numbers to test resize from hashing (may need to be sorting by the metric to test that)
@@ -1300,19 +1407,17 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     // Same thing for dates
     // test min/max of string field
-    if (date.equals("date_dt") || date.equals("date_dtd")) {  // supports only single valued currently... see SOLR-11706
-      client.testJQ(params(p, "q", "*:*"
-          , "json.facet", "{" +
-              " f3:{${terms}  type:field, field:${num_is}, facet:{a:'min(${date})'}, sort:'a desc' }" +
-              ",f4:{${terms}  type:field, field:${num_is}, facet:{a:'max(${date})'}, sort:'a asc' }" +
-              "}"
-          )
-          , "facets=={count:6 " +
-              ",f3:{ buckets:[{val:-1,count:2,a:'2002-02-02T02:02:02Z'},{val:3,count:2,a:'2002-02-02T02:02:02Z'},{val:0,count:2,a:'2001-02-03T01:02:03Z'},{val:-5,count:1,a:'2001-01-01T01:01:01Z'},{val:2,count:1,a:'2001-01-01T01:01:01Z'} ] } " +
-              ",f4:{ buckets:[{val:-5,count:1,a:'2001-01-01T01:01:01Z'},{val:2,count:1,a:'2001-01-01T01:01:01Z'},{val:-1,count:2,a:'2002-03-01T03:02:01Z'},{val:0,count:2,a:'2003-03-03T03:03:03Z'},{val:3,count:2,a:'2003-03-03T03:03:03Z'} ] } " +
-              "}"
-      );
-    }
+    client.testJQ(params(p, "q", "*:*"
+        , "json.facet", "{" +
+            " f3:{${terms}  type:field, field:${num_is}, facet:{a:'min(${date})'}, sort:'a desc' }" +
+            ",f4:{${terms}  type:field, field:${num_is}, facet:{a:'max(${date})'}, sort:'a asc' }" +
+            "}"
+        )
+        , "facets=={count:6 " +
+            ",f3:{ buckets:[{val:-1,count:2,a:'2002-02-02T02:02:02Z'},{val:3,count:2,a:'2002-02-02T02:02:02Z'},{val:0,count:2,a:'2001-02-03T01:02:03Z'},{val:-5,count:1,a:'2001-01-01T01:01:01Z'},{val:2,count:1,a:'2001-01-01T01:01:01Z'} ] } " +
+            ",f4:{ buckets:[{val:-5,count:1,a:'2001-01-01T01:01:01Z'},{val:2,count:1,a:'2001-01-01T01:01:01Z'},{val:-1,count:2,a:'2002-03-01T03:02:01Z'},{val:0,count:2,a:'2003-03-03T03:03:03Z'},{val:3,count:2,a:'2003-03-03T03:03:03Z'} ] } " +
+            "}"
+    );
 
     // test field faceting on date field
     client.testJQ(params(p, "q", "*:*"
@@ -1677,19 +1782,15 @@ public class TestJsonFacets extends SolrTestCaseHS {
             " } }"
     );
 
-    if (where_s.equals("where_s") || where_s.equals("where_sd")) {  // min/max only supports only single valued currently... see SOLR-11706
-      client.testJQ(params(p, "q", "*:*"
-          , "json.facet", "{f:{type:range, field:${num_d}, start:-5, end:10, gap:5, other:all,   facet:{ wmin:'min(${where_s})', wmax:'max(${where_s})'    }   }}"
-          )
-          , "facets=={count:6, f:{buckets:[ {val:-5.0,count:1,wmin:NY,wmax:NY}, {val:0.0,count:2,wmin:NJ,wmax:NY}, {val:5.0,count:0}]" +
-              " ,before:{count:1,wmin:NJ,wmax:NJ}" +
-              " ,after:{count:1,wmin:NJ,wmax:NJ} " +
-              " ,between:{count:3,wmin:NJ,wmax:NY} " +
-              " } }"
-      );
-    }
-
-
+    client.testJQ(params(p, "q", "*:*"
+        , "json.facet", "{f:{type:range, field:${num_d}, start:-5, end:10, gap:5, other:all,   facet:{ wmin:'min(${where_s})', wmax:'max(${where_s})'    }   }}"
+        )
+        , "facets=={count:6, f:{buckets:[ {val:-5.0,count:1,wmin:NY,wmax:NY}, {val:0.0,count:2,wmin:NJ,wmax:NY}, {val:5.0,count:0}]" +
+            " ,before:{count:1,wmin:NJ,wmax:NJ}" +
+            " ,after:{count:1,wmin:NJ,wmax:NJ} " +
+            " ,between:{count:3,wmin:NJ,wmax:NY} " +
+            " } }"
+    );
 
     // stats at top level
     client.testJQ(params(p, "q", "*:*"
@@ -1697,7 +1798,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
                 ", numwhere:'unique(${where_s})', unique_num_i:'unique(${num_i})', unique_num_d:'unique(${num_d})', unique_date:'unique(${date})'" +
                 ", where_hll:'hll(${where_s})', hll_num_i:'hll(${num_i})', hll_num_d:'hll(${num_d})', hll_date:'hll(${date})'" +
                 ", med:'percentile(${num_d},50)', perc:'percentile(${num_d},0,50.0,100)', variance:'variance(${num_d})', stddev:'stddev(${num_d})'" +
-                ", mini:'min(${num_i})', maxi:'max(${num_i})'" +
+                ", mini:'min(${num_i})', maxi:'max(${num_i})', missing:'missing(${sparse_num_d})', vals:'countvals(${sparse_num_d})'" +
             " }"
         )
         , "facets=={ 'count':6, " +
@@ -1705,7 +1806,74 @@ public class TestJsonFacets extends SolrTestCaseHS {
             ", numwhere:2, unique_num_i:4, unique_num_d:5, unique_date:5" +
             ", where_hll:2, hll_num_i:4, hll_num_d:5, hll_date:5" +
             ", med:2.0, perc:[-9.0,2.0,11.0], variance:49.04, stddev:7.002856560004639" +
-            ", mini:-5, maxi:7" +
+            ", mini:-5, maxi:7, missing:4, vals:2" +
+            "}"
+    );
+
+    // stats at top level on multi-valued fields
+    client.testJQ(params(p, "q", "*:*"
+        , "json.facet", "{ sum1:'sum(${num_fs})', sumsq1:'sumsq(${num_fs})', avg1:'avg(${num_fs})', mind:'min(${num_fs})', maxd:'max(${num_fs})'" +
+            ", mini:'min(${num_is})', maxi:'max(${num_is})', mins:'min(${multi_ss})', maxs:'max(${multi_ss})'" +
+            ", stddev:'stddev(${num_fs})', variance:'variance(${num_fs})', median:'percentile(${num_fs}, 50)'" +
+            ", perc:'percentile(${num_fs}, 0,75,100)'" +
+            " }"
+        )
+        , "facets=={ 'count':6, " +
+            "sum1:0.0, sumsq1:51.5, avg1:0.0, mind:-5.0, maxd:3.0" +
+            ", mini:-5, maxi:3, mins:'a', maxs:'b'" +
+            ", stddev:2.537222891273055, variance:6.4375, median:0.0, perc:[-5.0,2.25,3.0]" +
+            "}"
+    );
+
+    // test sorting by multi-valued
+    client.testJQ(params(p, "q", "*:*"
+        , "json.facet", "{f1:{terms:{${terms} field:'${cat_s}', sort:'n1 desc', facet:{n1:'avg(${num_is})'}  }}" +
+            " , f2:{terms:{${terms} field:'${cat_s}', sort:'n1 asc', facet:{n1:'avg(${num_is})'}  }} }"
+        )
+        , "facets=={ 'count':6, " +
+            "  f1:{  'buckets':[{ val:'B', count:3, n1: 0.25}, { val:'A', count:2, n1:0.0}]}" +
+            ", f2:{  'buckets':[{ val:'A', count:2, n1:0.0}, { val:'B', count:3, n1:0.25 }]} }"
+    );
+
+    // test sorting by percentile
+    client.testJQ(params(p, "q", "*:*"
+        , "json.facet", "{f1:{terms:{${terms} field:'${cat_s}', sort:'n1 asc', facet:{n1:'percentile(${num_is}, 50)'}  }}" +
+            " , f2:{terms:{${terms} field:'${cat_s}', sort:'n1 desc', facet:{n1:'percentile(${num_is}, 50)'}  }} }"
+        )
+        , "facets=={ 'count':6, " +
+            "  f1:{  'buckets':[{ val:'B', count:3, n1: -0.50}, { val:'A', count:2, n1:1.0}]}" +
+            ", f2:{  'buckets':[{ val:'A', count:2, n1:1.0}, { val:'B', count:3, n1:-0.50 }]} }"
+    );
+
+    // test sorting by multi-valued field with domain query
+    client.testJQ(params(p, "q", "-id:*"
+        , "json.facet", "{f1:{terms:{${terms} field:'${cat_s}', domain:{query:'*:*'},  sort:'n1 desc', facet:{n1:'sum(${num_is})'}  }}" +
+            " , f2:{terms:{${terms} field:'${cat_s}', domain:{query:'*:*'}, sort:'n1 asc', facet:{n1:'sum(${num_is})'}  }} }"
+        )
+        , "facets=={ 'count':0, " +
+            "  f1:{  'buckets':[{ val:'B', count:3, n1:1.0 }, { val:'A', count:2, n1:0.0}]}" +
+            ", f2:{  'buckets':[{ val:'A', count:2, n1:0.0}, { val:'B', count:3, n1:1.0 }]} }"
+    );
+
+    client.testJQ(params(p, "q", "*:*"
+        , "json.facet", " {f1:{terms:{${terms}, field:'${cat_s}', " +
+            "facet:{f2:{terms:{${terms}, field:${where_s}, sort:'index asc', " +
+            "facet:{n1:'min(${multi_ss})'}}}}}}}"
+        )
+        , "facets=={ 'count':6, " +
+            "  f1:{  'buckets':[{ val:'B', count:3, f2:{'buckets':[{val:'NJ', count:2, n1:'a'},{val:'NY', count:1, n1:'a'}]} }," +
+            " { val:'A', count:2, f2:{'buckets':[{val:'NJ', count:1, n1:'b'},{val:'NY', count:1}]}}]}" +
+            "}"
+    );
+
+    client.testJQ(params(p, "q", "*:*"
+        , "json.facet", " {f1:{terms:{${terms}, field:'${cat_s}', " +
+            "facet:{f2:{terms:{${terms}, field:${where_s}, sort:'index asc', " +
+            "facet:{n1:'max(${multi_ss})'}}}}}}}"
+        )
+        , "facets=={ 'count':6, " +
+            "  f1:{  'buckets':[{ val:'B', count:3, f2:{'buckets':[{val:'NJ', count:2, n1:'b'},{val:'NY', count:1, n1:'b'}]} }," +
+            " { val:'A', count:2, f2:{'buckets':[{val:'NJ', count:1, n1:'b'},{val:'NY', count:1}]}}]}" +
             "}"
     );
 
@@ -1762,16 +1930,23 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     // test unique on multi-valued field
     client.testJQ(params(p, "q", "*:*"
-            , "json.facet", "{" +
-                "x:'unique(${multi_ss})'" +
-                ",y:{query:{q:'id:2', facet:{x:'unique(${multi_ss})'} }}  " +
-                ",x2:'hll(${multi_ss})'" +
-                ",y2:{query:{q:'id:2', facet:{x:'hll(${multi_ss})'} }}  " +
-
-                " }"
+        , "json.facet", "{" +
+            "x:'unique(${multi_ss})'" +
+            ",z:'missing(${multi_ss})'" +
+            ",z1:'missing(${num_is})'" +
+            ",v:'countvals(${multi_ss})'" +
+            ",v1:'countvals(${num_is})'" +
+            ",y:{query:{q:'id:2', facet:{x:'unique(${multi_ss})'} }}  " +
+            ",x2:'hll(${multi_ss})'" +
+            ",y2:{query:{q:'id:2', facet:{x:'hll(${multi_ss})'} }}  " +
+            " }"
         )
         , "facets=={count:6 " +
             ",x:2" +
+            ",z:2" +
+            ",z1:1" +
+            ",v:6" +
+            ",v1:8" +
             ",y:{count:1, x:2}" +  // single document should yield 2 unique values
             ",x2:2" +
             ",y2:{count:1, x:2}" +  // single document should yield 2 unique values
@@ -2049,12 +2224,13 @@ public class TestJsonFacets extends SolrTestCaseHS {
     // multi-valued integer
     client.testJQ(params(p, "q", "*:*"
         , "json.facet", "{ " +
-            " c1:'unique(${num_is})', c2:'hll(${num_is})'" +
+            " c1:'unique(${num_is})', c2:'hll(${num_is})', c3:'missing(${num_is})'" +
+            ", c4:'countvals(${num_is})', c5:'agg(countvals(${num_is}))'" +
             ",f1:{${terms} type:terms, field:${num_is} }  " +
             "}"
         )
         , "facets=={ count:6 " +
-            ", c1:5, c2:5" +
+            ", c1:5, c2:5, c3:1, c4:8, c5:8" +
             ", f1:{ buckets:[ {val:-1,count:2},{val:0,count:2},{val:3,count:2},{val:-5,count:1},{val:2,count:1}  ] } " +
             "} "
     );
@@ -2062,12 +2238,12 @@ public class TestJsonFacets extends SolrTestCaseHS {
     // multi-valued float
     client.testJQ(params(p, "q", "*:*"
         , "json.facet", "{ " +
-            " c1:'unique(${num_fs})', c2:'hll(${num_fs})'" +
+            " c1:'unique(${num_fs})', c2:'hll(${num_fs})', c3:'missing(${num_fs})', c4:'agg(missing(${num_fs}))', c5:'countvals(${num_fs})'" +
             ",f1:{${terms} type:terms, field:${num_fs} }  " +
             "}"
         )
         , "facets=={ count:6 " +
-            ", c1:5, c2:5" +
+            ", c1:5, c2:5, c3:1, c4:1, c5:8" +
             ", f1:{ buckets:[ {val:-1.5,count:2},{val:0.0,count:2},{val:3.0,count:2},{val:-5.0,count:1},{val:2.0,count:1}  ] } " +
             "} "
     );
@@ -2119,11 +2295,11 @@ public class TestJsonFacets extends SolrTestCaseHS {
     // currently non-sorting stats.
     client.testJQ(params(p, "q", "*:*"
         , "json.facet", "{f1:{type:terms, field:'${cat_s}', facet:{h:'hll(${where_s})' , u:'unique(${where_s})', mind:'min(${num_d})', maxd:'max(${num_d})', mini:'min(${num_i})', maxi:'max(${num_i})'" +
-            ", sumd:'sum(${num_d})', avgd:'avg(${num_d})', variance:'variance(${num_d})', stddev:'stddev(${num_d})'         }   }}"
+            ", sumd:'sum(${num_d})', avgd:'avg(${num_d})', variance:'variance(${num_d})', stddev:'stddev(${num_d})', missing:'missing(${multi_ss})', vals:'countvals(${multi_ss})'}   }}"
         )
         , "facets=={ 'count':6, " +
-            "'f1':{  buckets:[{val:B, count:3, h:2, u:2, mind:-9.0, maxd:11.0, mini:-5, maxi:7,  sumd:-3.0, avgd:-1.0, variance:74.66666666666667, stddev:8.640987597877148}," +
-            "                 {val:A, count:2, h:2, u:2, mind:2.0, maxd:4.0,  mini:2, maxi:3, sumd:6.0, avgd:3.0, variance:1.0, stddev:1.0}] } } "
+            "'f1':{  buckets:[{val:B, count:3, h:2, u:2, mind:-9.0, maxd:11.0, mini:-5, maxi:7,  sumd:-3.0, avgd:-1.0, variance:74.66666666666667, stddev:8.640987597877148, missing:0, vals:5}," +
+            "                 {val:A, count:2, h:2, u:2, mind:2.0, maxd:4.0,  mini:2, maxi:3, sumd:6.0, avgd:3.0, variance:1.0, stddev:1.0, missing:1, vals:1}] } } "
 
     );
 

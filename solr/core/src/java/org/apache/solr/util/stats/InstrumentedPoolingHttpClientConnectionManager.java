@@ -44,14 +44,24 @@ public class InstrumentedPoolingHttpClientConnectionManager extends PoolingHttpC
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     this.solrMetricsContext = parentContext.getChildContext(this);
-    parentContext.gauge(null, () -> getTotalStats().getAvailable(),
+    solrMetricsContext.gauge(() -> getTotalStats().getAvailable(),
         true, SolrMetricManager.mkName("availableConnections", scope));
     // this acquires a lock on the connection pool; remove if contention sucks
-    parentContext.gauge(null, () -> getTotalStats().getLeased(),
+    solrMetricsContext.gauge(() -> getTotalStats().getLeased(),
         true, SolrMetricManager.mkName("leasedConnections", scope));
-    parentContext.gauge(null, () -> getTotalStats().getMax(),
+    solrMetricsContext.gauge(() -> getTotalStats().getMax(),
         true, SolrMetricManager.mkName("maxConnections", scope));
-    parentContext.gauge(null, () -> getTotalStats().getPending(),
+    solrMetricsContext.gauge(() -> getTotalStats().getPending(),
         true, SolrMetricManager.mkName("pendingConnections", scope));
+  }
+
+  @Override
+  public void close() {
+    super.close();
+    try {
+      SolrMetricProducer.super.close();
+    } catch (Exception e) {
+      throw new RuntimeException("Exception closing.", e);
+    }
   }
 }

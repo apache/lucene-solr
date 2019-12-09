@@ -26,18 +26,16 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import com.codahale.metrics.MetricRegistry;
 import org.apache.hadoop.fs.BlockLocation;
 import org.apache.hadoop.fs.FileStatus;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class HdfsLocalityReporter implements SolrInfoBean, SolrMetricProducer {
+public class HdfsLocalityReporter implements SolrInfoBean {
   public static final String LOCALITY_BYTES_TOTAL = "locality.bytes.total";
   public static final String LOCALITY_BYTES_LOCAL = "locality.bytes.local";
   public static final String LOCALITY_BYTES_RATIO = "locality.bytes.ratio";
@@ -78,16 +76,6 @@ public class HdfsLocalityReporter implements SolrInfoBean, SolrMetricProducer {
   @Override
   public Category getCategory() {
     return Category.OTHER;
-  }
-
-  @Override
-  public Set<String> getMetricNames() {
-    return metricNames;
-  }
-
-  @Override
-  public MetricRegistry getMetricRegistry() {
-    return solrMetricsContext != null ? solrMetricsContext.getMetricRegistry() : null;
   }
 
   @Override
@@ -150,7 +138,7 @@ public class HdfsLocalityReporter implements SolrInfoBean, SolrMetricProducer {
         map.put(LOCALITY_BLOCKS_RATIO, localCount / (double) totalCount);
       }
     });
-    solrMetricsContext.gauge(this, metricsMap, true, "hdfsLocality", getCategory().toString(), scope);
+    solrMetricsContext.gauge(metricsMap, true, "hdfsLocality", getCategory().toString(), scope);
   }
 
   /**

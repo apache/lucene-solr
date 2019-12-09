@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.search.SolrCacheBase;
 
@@ -31,7 +30,7 @@ import org.apache.solr.search.SolrCacheBase;
  *
  * @lucene.experimental
  */
-public class Metrics extends SolrCacheBase implements SolrInfoBean, SolrMetricProducer {
+public class Metrics extends SolrCacheBase implements SolrInfoBean {
 
 
   public AtomicLong blockCacheSize = new AtomicLong(0);
@@ -103,7 +102,7 @@ public class Metrics extends SolrCacheBase implements SolrInfoBean, SolrMetricPr
       previous = now;
 
     });
-    solrMetricsContext.gauge(this, metricsMap, true, getName(), getCategory().toString(), scope);
+    solrMetricsContext.gauge(metricsMap, true, getName(), getCategory().toString(), scope);
   }
 
   private float getPerSecond(long value, double seconds) {
@@ -120,11 +119,6 @@ public class Metrics extends SolrCacheBase implements SolrInfoBean, SolrMetricPr
   @Override
   public String getDescription() {
     return "Provides metrics for the HdfsDirectoryFactory BlockCache.";
-  }
-
-  @Override
-  public Set<String> getMetricNames() {
-    return metricNames;
   }
 
   @Override

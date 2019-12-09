@@ -27,6 +27,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -261,6 +262,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
         SolrIndexSearcher searcher = searchHolder.get();
         Directory dir = core.getDirectoryFactory().get(core.getIndexDir(), DirContext.META_DATA, null);
         try {
+          final IndexCommit commit = core.getDeletionPolicy().getLatestCommit();
           log.debug(core.getCoreContainer()
               .getZkController().getNodeName()
               + " replicated "
@@ -268,8 +270,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
               + " from "
               + leaderUrl
               + " gen:"
-              + (core.getDeletionPolicy().getLatestCommit() != null ? "null"
-                  : core.getDeletionPolicy().getLatestCommit().getGeneration())
+              + (null == commit ? "null" : commit.getGeneration())
               + " data:" + core.getDataDir()
               + " index:" + core.getIndexDir()
               + " newIndex:" + core.getNewIndexDir()

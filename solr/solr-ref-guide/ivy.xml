@@ -25,7 +25,6 @@
     <dependency org="org.asciidoctor" name="asciidoctor-ant" rev="${/org.asciidoctor/asciidoctor-ant}" conf="compile" />
     <dependency org="com.vaadin.external.google" name="android-json" rev="${/com.vaadin.external.google/android-json}" conf="compile" />
     <dependency org="org.jsoup" name="jsoup" rev="${/org.jsoup/jsoup}" conf="compile" />
-    <dependency org="org.apache.pdfbox" name="pdfbox" rev="${/org.apache.pdfbox/pdfbox}" conf="compile"/>
     <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="compile"/>
     <dependency org="org.slf4j" name="slf4j-api" rev="${/org.slf4j/slf4j-api}" conf="compile"/>
     <dependency org="org.slf4j" name="slf4j-simple" rev="${/org.slf4j/slf4j-simple}" conf="compile"/>

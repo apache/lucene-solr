@@ -44,7 +44,7 @@ public class MockQuerySenderListenerReqHandler extends RequestHandlerBase {
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     super.initializeMetrics(parentContext, scope);
-    solrMetricsContext.gauge(this, () -> initCounter.intValue(), true, "initCount", getCategory().toString(), scope);
+    solrMetricsContext.gauge(() -> initCounter.intValue(), true, "initCount", getCategory().toString(), scope);
   }
 
   @Override

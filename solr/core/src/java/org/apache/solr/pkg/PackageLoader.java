@@ -36,23 +36,24 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
+
 /**
  * The class that holds a mapping of various packages and classloaders
  */
-public class PackageLoader implements AutoCloseable {
+public class PackageLoader implements Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final CoreContainer coreContainer;
   private final Map<String, Package> packageClassLoaders = new ConcurrentHashMap<>();
 
-  private PackageAPI.Packages myCopy;
+  private PackageAPI.Packages myCopy =  new PackageAPI.Packages();
 
   private PackageAPI packageAPI;
 
@@ -60,7 +61,7 @@ public class PackageLoader implements AutoCloseable {
   public PackageLoader(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
     packageAPI = new PackageAPI(coreContainer, this);
-    myCopy = packageAPI.pkgs;
+    refreshPackageConf();
 
   }
 
@@ -93,16 +94,17 @@ public class PackageLoader implements AutoCloseable {
       } else {
         Package p = packageClassLoaders.remove(e.getKey());
         if (p != null) {
-          //other classes are holding to a reference to this objecec
+          //other classes are holding to a reference to this object
           // they should know that this is removed
           p.markDeleted();
-          IOUtils.closeQuietly((Closeable) p);
+          closeWhileHandlingException(p);
         }
       }
     }
     for (SolrCore core : coreContainer.getCores()) {
       core.getPackageListeners().packagesUpdated(updated);
     }
+    myCopy = packageAPI.pkgs;
   }
 
   public Map<String, List<PackageAPI.PkgVersion>> getModified(PackageAPI.Packages old, PackageAPI.Packages newPkgs) {
@@ -144,7 +146,7 @@ public class PackageLoader implements AutoCloseable {
   /**
    * represents a package definition in the packages.json
    */
-  public class Package implements AutoCloseable {
+  public class Package implements Closeable {
     final String name;
     final Map<String, Version> myVersions = new ConcurrentHashMap<>();
     private List<String> sortedVersions = new CopyOnWriteArrayList<>();
@@ -181,7 +183,7 @@ public class PackageLoader implements AutoCloseable {
           sortedVersions.remove(s);
           Version removed = myVersions.remove(s);
           if (removed != null) {
-            IOUtils.closeQuietly((Closeable) removed);
+            closeWhileHandlingException(removed);
           }
         }
       }
@@ -226,11 +228,11 @@ public class PackageLoader implements AutoCloseable {
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() throws IOException {
       for (Version v : myVersions.values()) v.close();
     }
 
-    public class Version implements MapWriter, AutoCloseable {
+    public class Version implements MapWriter, Closeable {
       private final Package parent;
       private SolrResourceLoader loader;
 
@@ -247,6 +249,8 @@ public class PackageLoader implements AutoCloseable {
         this.version = v;
         List<Path> paths = new ArrayList<>();
         for (String file : version.files) {
+          //ensure that the files are downloaded and available
+          coreContainer.getPackageStoreAPI().getPackageStore().fetch(file,null);
           paths.add(coreContainer.getPackageStoreAPI().getPackageStore().getRealpath(file));
         }
 
@@ -274,9 +278,9 @@ public class PackageLoader implements AutoCloseable {
       }
 
       @Override
-      public void close() throws Exception {
+      public void close() throws IOException {
         if (loader != null) {
-          loader.close();
+          closeWhileHandlingException(loader);
         }
       }
     }
@@ -293,7 +297,7 @@ public class PackageLoader implements AutoCloseable {
   }
 
   @Override
-  public void close() throws Exception {
-    for (Package p : packageClassLoaders.values()) p.close();
+  public void close()  {
+    for (Package p : packageClassLoaders.values()) closeWhileHandlingException(p);
   }
 }

@@ -31,6 +31,7 @@ public final class TestSecurityManager extends SecurityManager {
   static final String JUNIT4_TEST_RUNNER_PACKAGE = "com.carrotsearch.ant.tasks.junit4.";
   static final String ECLIPSE_TEST_RUNNER_PACKAGE = "org.eclipse.jdt.internal.junit.runner.";
   static final String IDEA_TEST_RUNNER_PACKAGE = "com.intellij.rt.execution.junit.";
+  static final String GRADLE_TEST_RUNNER_PACKAGE = "worker.org.gradle.process.internal.worker";
 
   /**
    * Creates a new TestSecurityManager. This ctor is called on JVM startup,
@@ -68,7 +69,8 @@ public final class TestSecurityManager extends SecurityManager {
           if (exitMethodHit != null) {
             if (className.startsWith(JUNIT4_TEST_RUNNER_PACKAGE) || 
                 className.startsWith(ECLIPSE_TEST_RUNNER_PACKAGE) ||
-                className.startsWith(IDEA_TEST_RUNNER_PACKAGE)) {
+                className.startsWith(IDEA_TEST_RUNNER_PACKAGE) ||
+                className.startsWith(GRADLE_TEST_RUNNER_PACKAGE)) {
               // this exit point is allowed, we return normally from closure:
               return /*void*/ null;
             } else {

@@ -23,14 +23,13 @@ import com.codahale.metrics.Counter;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 
 /**
  * 
  * @since solr 1.3
  */
-public abstract class HighlightingPluginBase implements SolrInfoBean, SolrMetricProducer
+public abstract class HighlightingPluginBase implements SolrInfoBean
 {
   protected Counter numRequests;
   protected SolrParams defaults;
@@ -63,11 +62,6 @@ public abstract class HighlightingPluginBase implements SolrInfoBean, SolrMetric
   }
 
   @Override
-  public Set<String> getMetricNames() {
-    return metricNames;
-  }
-
-  @Override
   public SolrMetricsContext getSolrMetricsContext() {
     return solrMetricsContext;
   }
@@ -75,7 +69,7 @@ public abstract class HighlightingPluginBase implements SolrInfoBean, SolrMetric
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
     solrMetricsContext = parentContext.getChildContext(this);
-    numRequests = solrMetricsContext.counter(this, "requests", getCategory().toString(), scope);
+    numRequests = solrMetricsContext.counter("requests", getCategory().toString(), scope);
   }
 }
 

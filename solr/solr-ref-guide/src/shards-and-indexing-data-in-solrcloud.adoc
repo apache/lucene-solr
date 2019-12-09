@@ -46,7 +46,7 @@ These issues are not a problem for most users. However, some use cases would per
 
 Solr accomplishes this by allowing you to set the replica type when creating a new collection or when adding a replica. The available types are:
 
-* *NRT*: This is the default. A NRT replica (NRT = NearRealTime) maintains a transaction log and writes new documents to it's indexes locally. Any replica of this type is eligible to become a leader. Traditionally, this was the only type supported by Solr.
+* *NRT*: This is the default. A NRT replica (NRT = NearRealTime) maintains a transaction log and writes new documents to its indexes locally. Any replica of this type is eligible to become a leader. Traditionally, this was the only type supported by Solr.
 * *TLOG*: This type of replica maintains a transaction log but does not index document changes locally. This type helps speed up indexing since no commits need to occur in the replicas. When this type of replica needs to update its index, it does so by replicating the index from the leader. This type of replica is also eligible to become a shard leader; it would do so by first processing its transaction log. If it does become a leader, it will behave the same as if it was a NRT type of replica.
 * *PULL*: This type of replica does not maintain a transaction log nor index document changes locally. It only replicates the index from the shard leader. It is not eligible to become a shard leader and doesn't participate in shard leader election at all.
 

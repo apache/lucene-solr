@@ -72,6 +72,7 @@ import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -133,6 +134,12 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     
     shutdownCluster();
     super.tearDown();
+  }
+
+  @AfterClass
+  public static void cleanUpAfterClass() throws Exception {
+    httpBasedCloudSolrClient = null;
+    zkBasedCloudSolrClient = null;
   }
 
   /**

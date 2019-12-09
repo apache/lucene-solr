@@ -151,7 +151,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
     }
 
     public Replica getReplica(String node) {
-      return new Replica(replicaName, Utils.makeMap("core", replicaName, "node_name", node));
+      return new Replica(replicaName, Utils.makeMap("core", replicaName, "node_name", node), cd.getCollectionName(), cd.getShardId());
     }
 
     public boolean equals(String coll, String slice) {

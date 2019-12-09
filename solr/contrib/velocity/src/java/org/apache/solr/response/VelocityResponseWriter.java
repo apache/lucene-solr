@@ -17,6 +17,7 @@
 package org.apache.solr.response;
 
 import java.io.File;
+import java.io.FilePermission;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -24,11 +25,18 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.security.AccessControlContext;
+import java.security.AccessController;
+import java.security.Permissions;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
+import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
+import java.util.PropertyPermission;
 import java.util.ResourceBundle;
 
 import org.apache.solr.client.solrj.SolrResponse;
@@ -62,9 +70,11 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
   // init param names, these are _only_ loaded at init time (no per-request control of these)
   //   - multiple different named writers could be created with different init params
   public static final String TEMPLATE_BASE_DIR = "template.base.dir";
-  public static final String PARAMS_RESOURCE_LOADER_ENABLED = "params.resource.loader.enabled";
-  public static final String SOLR_RESOURCE_LOADER_ENABLED = "solr.resource.loader.enabled";
   public static final String PROPERTIES_FILE = "init.properties.file";
+
+  // System property names, these are _only_ loaded at node startup (no per-request control of these)
+  public static final String PARAMS_RESOURCE_LOADER_ENABLED = "velocity.resourceloader.params.enabled";
+  public static final String SOLR_RESOURCE_LOADER_ENABLED = "velocity.resourceloader.solr.enabled";
 
   // request param names
   public static final String TEMPLATE = "v.template";
@@ -106,12 +116,10 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
     }
 
     // params resource loader: off by default
-    Boolean prle = args.getBooleanArg(PARAMS_RESOURCE_LOADER_ENABLED);
-    paramsResourceLoaderEnabled = (null == prle ? false : prle);
+    paramsResourceLoaderEnabled = Boolean.getBoolean(PARAMS_RESOURCE_LOADER_ENABLED);
 
-    // solr resource loader: on by default
-    Boolean srle = args.getBooleanArg(SOLR_RESOURCE_LOADER_ENABLED);
-    solrResourceLoaderEnabled = (null == srle ? true : srle);
+    // solr resource loader: off by default
+    solrResourceLoaderEnabled = Boolean.getBoolean(SOLR_RESOURCE_LOADER_ENABLED);
 
     initPropertiesFileName = (String) args.get(PROPERTIES_FILE);
 
@@ -147,6 +155,39 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
 
   @Override
   public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response) throws IOException {
+    // run doWrite() with the velocity sandbox
+    try {
+      AccessController.doPrivileged(new PrivilegedExceptionAction<Void>() {
+        @Override
+        public Void run() throws IOException {
+          doWrite(writer, request, response);
+          return null;
+        }
+      }, VELOCITY_SANDBOX);
+    } catch (PrivilegedActionException e) {
+      throw (IOException) e.getException();
+    }
+  }
+
+  // sandbox for velocity code
+  // TODO: we could read in a policy file instead, in case someone needs to tweak it?
+  private static final AccessControlContext VELOCITY_SANDBOX;
+  static {
+    Permissions permissions = new Permissions();
+    // TODO: restrict the scope of this! we probably only need access to classpath
+    permissions.add(new FilePermission("<<ALL FILES>>", "read,readlink"));
+    // properties needed by SolrResourceLoader (called from velocity code)
+    permissions.add(new PropertyPermission("jetty.testMode", "read"));
+    permissions.add(new PropertyPermission("solr.allow.unsafe.resourceloading", "read"));
+    // properties needed by log4j (called from velocity code)
+    permissions.add(new PropertyPermission("java.version", "read"));
+    // needed by velocity duck-typing
+    permissions.add(new RuntimePermission("accessDeclaredMembers"));
+    permissions.setReadOnly();
+    VELOCITY_SANDBOX = new AccessControlContext(new ProtectionDomain[] { new ProtectionDomain(null, permissions) });
+  }
+
+  private void doWrite(Writer writer, SolrQueryRequest request, SolrQueryResponse response) throws IOException {
     VelocityEngine engine = createEngine(request);  // TODO: have HTTP headers available for configuring engine
 
     Template template = getTemplate(engine, request);
