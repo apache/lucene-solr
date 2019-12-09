@@ -163,6 +163,8 @@ Improvements
 * SOLR-11706: Add support for aggregation on multivalued fields in JSON facets. min, max, avg, sum, sumsq, stddev,
   variance, percentile aggregations now have support for multivalued fields. (hossman, Munendra S N)
 
+* SOLR-13987: Admin UI should not rely on javascript eval() (rmuir, Kevin Risden)
+
 Optimizations
 ---------------------
 (No changes)
@@ -179,7 +181,7 @@ Bug Fixes
 * SOLR-12393: Compute score if requested even when expanded docs not sorted by score in ExpandComponent.
   (David Smiley, Munendra S N)
 
-* SOLR-13877: Fix NPE in expand component when matched docs have fewer unique values. (Munendra S N)
+* SOLR-13877, SOLR-7798: Robust support for ExpandComponent when used independently of CollapsingPostFilter. (Jörg Rathlev, Michael Gibney, Munendra S N)
 
 * SOLR-13823: Fix ClassCastEx when score is requested with group.query. This also fixes score not being generated
   for distributed group.query case. (Uwe Jäger, Munendra S N)
@@ -210,6 +212,7 @@ Bug Fixes
 
 * SOLR-13087: Use EUID instead of whoami to check for root in the bin/solr script (Martijn Koster via Jason Gerlowski)
 
+* SOLR-13977: solr create -c not working under Windows 10 (janhoy)
 
 Other Changes
 ---------------------
@@ -233,6 +236,8 @@ Other Changes
 
 * SOLR-13998: Add thread safety annotations to Solr. This only introduces the annotations and doesn't add these to
   existing classes. (Anshum Gupta, Mark Miller)
+
+* SOLR-13818: Upgrade jackson to 2.10.0 (marungo, Andras Salamon via Kevin Risden)
 
 ==================  8.3.1 ==================
 
@@ -267,8 +272,6 @@ Bug Fixes
 * SOLR-13905: Make findRequestType in AuditEvent more robust (janhoy)
 
 * SOLR-13941: Tests configure Jetty differently than when running via start.jar (janhoy, Uwe Schindler)
-
-* SOLR-13977: solr create -c not working under Windows 10 (janhoy)
 
 ==================  8.3.0 ==================
 
