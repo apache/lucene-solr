@@ -40,7 +40,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * A simple end-to-end push test for collections using a shared store 
+ * A simple end-to-end push tests for collections using a shared store 
  */
 public class SimpleSharedStoreEndToEndPushTest extends SolrCloudSharedStoreTestCase {
   
@@ -62,11 +62,24 @@ public class SimpleSharedStoreEndToEndPushTest extends SolrCloudSharedStoreTestC
   }
   
   /**
-   * Verify that doing sending a single update with commit=true pushes to the shared store on a 
-   * shared-based collection
+   * Verify that doing a single update to shared collection with commit=true pushes to the shared store. 
    */
   @Test
-  public void testUpdatePushesToBlobSuccess() throws Exception {
+  public void testUpdatePushesToBlobWithCommit() throws Exception {
+    testUpdatePushesToBlob(true);
+  }
+
+  /**
+   * Verify that doing a single update to shared collection even without commit pushes to the shared store. 
+   * This will work because Solr will implicitly add commit=true for a shared collection
+   */
+  @Test
+  public void testUpdatePushesToBlobWithoutCommit() throws Exception {
+    testUpdatePushesToBlob(false);
+  }
+
+  public void testUpdatePushesToBlob(boolean withCommit) throws Exception {
+
     setupCluster(1);
     CloudSolrClient cloudClient = cluster.getSolrClient();
     
@@ -85,7 +98,11 @@ public class SimpleSharedStoreEndToEndPushTest extends SolrCloudSharedStoreTestC
     // send an update to the cluster
     UpdateRequest updateReq = new UpdateRequest();
     updateReq.add("id", "1");
-    updateReq.commit(cloudClient, collectionName);
+    if (withCommit) {
+      updateReq.commit(cloudClient, collectionName);
+    } else {
+      updateReq.process(cloudClient, collectionName);
+    }
     
     // verify we can find the document
     QueryRequest queryReq = new QueryRequest(new SolrQuery("*:*"));

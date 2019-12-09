@@ -96,7 +96,16 @@ public class CorePullerThread implements Runnable {
             corePullLock.writeLock().unlock();
           }
         } else {
-          log.info(String.format("Could not acquire pull write lock, going back to task queue, pullCoreInfo=%s", task.getPullCoreInfo().toString()));
+          /**
+           * TODO: We need to add this back to task queue with some delay otherwise, on a non-leader node, a core being
+           *       queried back to back will keep hitting this very frequently.
+           *       {@link CorePullTask#pullCoreFromBlob(boolean)} too on re-attempts, sleeps the thread, instead of adding back 
+           *       to task queue with delay. Both of these places would need re-enqueue-with-delay functionality. 
+           *       {@link CorePullTask#getLastAttemptTimestamp()} also talks about that need.
+           *
+           *       Commenting out the log line for now to at least avoid the flooding in the logs.
+           */
+          // log.info(String.format("Could not acquire pull write lock, going back to task queue, pullCoreInfo=%s", task.getPullCoreInfo().toString()));
           workQueue.addDeduplicated(task, true);
         }
       } catch (InterruptedException ie) {
