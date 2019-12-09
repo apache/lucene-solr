@@ -88,10 +88,6 @@ public class RandomStream extends TupleStream implements Expressible  {
       throw new IOException(String.format(Locale.ROOT,"invalid expression %s - collectionName expected as first operand",expression));
     }
 
-    // Named parameters - passed directly to solr as solrparams
-    if(0 == namedParams.size()){
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - at least one named parameter expected. eg. 'q=*:*'",expression));
-    }
 
     // pull out known named params
     Map<String,String> params = new HashMap<String,String>();
@@ -100,6 +96,7 @@ public class RandomStream extends TupleStream implements Expressible  {
         params.put(namedParam.getName(), namedParam.getParameter().toString().trim());
       }
     }
+
 
     // zkHost, optional - if not provided then will look into factory list to get
     String zkHost = null;
