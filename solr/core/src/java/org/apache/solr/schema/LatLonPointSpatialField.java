@@ -17,6 +17,8 @@
 
 package org.apache.solr.schema;
 
+import static java.math.RoundingMode.CEILING;
+
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -27,6 +29,7 @@ import org.apache.lucene.document.LatLonDocValuesField;
 import org.apache.lucene.document.LatLonPoint;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.DoubleValues;
@@ -48,8 +51,6 @@ import org.locationtech.spatial4j.shape.Circle;
 import org.locationtech.spatial4j.shape.Point;
 import org.locationtech.spatial4j.shape.Rectangle;
 import org.locationtech.spatial4j.shape.Shape;
-
-import static java.math.RoundingMode.CEILING;
 
 /**
  * A spatial implementation based on Lucene's {@code LatLonPoint} and {@code LatLonDocValuesField}. The
@@ -298,9 +299,14 @@ public class LatLonPointSpatialField extends AbstractSpatialFieldType implements
         }
         return LatLonDocValuesField.newDistanceSort(fieldName, queryPoint.getY(), queryPoint.getX());
       }
-
     }
-
   }
-
+  
+  @Override
+  public String toExternal(IndexableField f) {
+    if (f.numericValue() != null) {
+      return LatLonPointSpatialField.decodeDocValueToString(f.numericValue().longValue());
+    }
+    return super.toExternal(f);
+  };
 }
