@@ -221,8 +221,15 @@ public class BM25Similarity extends Similarity {
 
     @Override
     public float score(float freq, long encodedNorm) {
-      // In order to guarantee monotonicity with both freq and norm, we rewrite
-      // freq / (freq + norm) to 1 - 1 / (1 + freq / norm).
+      // In order to guarantee monotonicity with both freq and norm without
+      // promoting to doubles, we rewrite freq / (freq + norm) to
+      // 1 - 1 / (1 + freq * 1/norm).
+      // freq * 1/norm is guaranteed to be monotonic for both freq and norm due
+      // to the fact that multiplication and division round to the nearest
+      // float. And then monotonicity is preserved through composition via
+      // x -> 1 + x and x -> 1 - 1/x.
+      // Finally we expand weight * (1 - 1 / (1 + freq * 1/norm)) to
+      // weight - weight / (1 + freq * 1/norm), which runs slightly faster.
       float normInverse = cache[((byte) encodedNorm) & 0xFF];
       return weight - weight / (1f + freq * normInverse);
     }
