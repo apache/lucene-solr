@@ -140,6 +140,7 @@ Bug Fixes
 
 * SOLR-13087: Use EUID instead of whoami to check for root in the bin/solr script (Martijn Koster via Jason Gerlowski)
 
+* SOLR-13977: solr create -c not working under Windows 10 (janhoy)
 
 Other Changes
 ---------------------
@@ -197,8 +198,6 @@ Bug Fixes
 
 * SOLR-13971: Velocity response writer's resource loading now possible only through startup parameters.
   (Ishan Chattopadhyaya, David Smiley)
-
-* SOLR-13977: solr create -c not working under Windows 10 (janhoy)
 
 ==================  8.3.0 ==================
 
