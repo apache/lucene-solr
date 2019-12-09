@@ -102,7 +102,7 @@ public class Replica extends ZkNodeProps {
     PULL;
 
     public static Type get(String name){
-      return name == null ? Type.NRT : Type.valueOf(name);
+      return name == null ? Type.NRT : Type.valueOf(name.toUpperCase(Locale.ROOT));
     }
   }
 
