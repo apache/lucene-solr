@@ -658,7 +658,7 @@ public class CoreContainer {
 
     securityConfHandler = isZooKeeperAware() ? new SecurityConfHandlerZk(this) : new SecurityConfHandlerLocal(this);
     reloadSecurityProperties();
-    warnUsersIfSecurityDisabled();
+    warnUsersOfInsecureSettings();
     this.backupRepoFactory = new BackupRepositoryFactory(cfg.getBackupRepositoryPlugins());
 
     createHandler(ZK_PATH, ZookeeperInfoHandler.class.getName(), ZookeeperInfoHandler.class);
@@ -899,17 +899,18 @@ public class CoreContainer {
     initializeAuditloggerPlugin((Map<String, Object>) securityConfig.getData().get("auditlogging"));
   }
 
-  private void warnUsersIfSecurityDisabled() {
+  private void warnUsersOfInsecureSettings() {
     if (authenticationPlugin == null || authorizationPlugin == null) {
       log.warn("Not all security plugins configured!  authentication={} authorization={}.  Solr is only as secure as " +
           "you make it. Consider configuring authentication/authorization before exposing Solr to users internal or " +
-          "external.  See https://lucene.apache.org/solr/guide/authentication-and-authorization-plugins.html for more info",
+          "external.  See https://s.apache.org/solrsecurity for more info",
           (authenticationPlugin != null) ? "enabled" : "disabled",
           (authorizationPlugin != null) ? "enabled" : "disabled");
     }
 
     if (authenticationPlugin !=null && StringUtils.isNotEmpty(System.getProperty("solr.jetty.https.port"))) {
-      log.warn("Solr authentication is enabled, but SSL is off.  Consider enabling SSL to protect user credentials and data with encryption.");
+      log.warn("Solr authentication is enabled, but SSL is off.  Consider enabling SSL to protect user credentials and " +
+          "data with encryption.");
     }
   }
 
