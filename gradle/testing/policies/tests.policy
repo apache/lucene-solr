@@ -81,6 +81,12 @@ grant {
 
   // used by nested tests? (e.g. TestLeaveFilesIfTestFails). TODO: look into this
   permission java.util.PropertyPermission "tests.runnested", "write";
+
+  // Used by LuceneTestCase to set up TestRuleRestoreSystemProperties.
+  // TODO: move it to Solr or modify TestRuleRestoreSystemProperties not to fail on inaccessible properties?
+  permission java.util.PropertyPermission "solr.data.dir", "write";
+  permission java.util.PropertyPermission "solr.solr.home", "write";
+  permission java.util.PropertyPermission "solr.directoryFactory", "write";
 };
 
 
