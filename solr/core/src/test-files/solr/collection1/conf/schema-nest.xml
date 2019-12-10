@@ -54,6 +54,10 @@
   <field name="signatureField" type="string" indexed="true" stored="false"/>
   <dynamicField name="*_sS" type="string" indexed="true" stored="true" multiValued="true"/>
 
+  <!-- Fields required for LatLonDocValuesField test -->
+  <fieldType name="latlon" class="solr.LatLonPointSpatialField" docValues="true"/>
+  <field name="latlon" type="latlon" indexed="true" stored="false"/>
+
   <uniqueKey>id</uniqueKey>
 
 </schema>
