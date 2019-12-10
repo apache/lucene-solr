@@ -691,7 +691,7 @@ public class NestedAtomicUpdateTest extends SolrTestCaseJ4 {
         "=={\"doc\":{'id':\"1\", \"latlon\":\"0,0\"" +
             ", cat_ss:[\"aaa\",\"ccc\"], child1:[{\"id\":\"2\",\"cat_ss\":[\"child\"]}, {\"id\":\"3\",\"cat_ss\":[\"child\"]}]}}");
 
-    doc = sdoc("id", "1", "child1", Collections.singletonMap("set", null));
+    doc = sdoc("id", "1", "child1", Collections.singletonMap("set", empty ? new ArrayList<>() : null));
     addAndGetVersion(doc, params("wt", "json"));
 
     assertJQ(req("qt", "/get", "id", "1", "fl", "id, latlon, cat_ss, child1, [child]"),
