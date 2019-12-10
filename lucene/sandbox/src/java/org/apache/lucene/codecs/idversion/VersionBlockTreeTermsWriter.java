@@ -350,9 +350,8 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
         }
       }
 
-      final Builder<Pair<BytesRef,Long>> indexBuilder = new Builder<>(FST.INPUT_TYPE.BYTE1,
-                                                                      0, 0, true, false, Integer.MAX_VALUE,
-                                                                      FST_OUTPUTS, true, 15);
+      final Builder<Pair<BytesRef,Long>> indexBuilder = Builder.construct(FST.INPUT_TYPE.BYTE1, FST_OUTPUTS)
+          .shouldShareNonSingletonNodes(false).create();
       //if (DEBUG) {
       //  System.out.println("  compile index for prefix=" + prefix);
       //}

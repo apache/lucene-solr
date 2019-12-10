@@ -126,8 +126,9 @@ public class TestFstDirectAddressing extends LuceneTestCase {
   }
 
   private static Builder<Object> createBuilder(float directAddressingMaxOversizingFactor) {
-    return new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, NoOutputs.getSingleton(), true, 15)
-        .setDirectAddressingMaxOversizingFactor(directAddressingMaxOversizingFactor);
+    return Builder.construct(FST.INPUT_TYPE.BYTE1, NoOutputs.getSingleton())
+        .directAddressingMaxOversizingFactor(directAddressingMaxOversizingFactor)
+        .create();
   }
 
   private FST<Object> buildFST(List<BytesRef> entries) throws Exception {

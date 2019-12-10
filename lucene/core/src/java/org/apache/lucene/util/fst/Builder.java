@@ -51,29 +51,7 @@ import org.apache.lucene.util.fst.FST.INPUT_TYPE; // javadoc
 
 public class Builder<T> {
 
-  /**
-   * Default oversizing factor used to decide whether to encode a node with direct addressing or binary search.
-   * Default is 1: ensure no oversizing on average.
-   * <p>
-   * This factor does not determine whether to encode a node with a list of variable length arcs or with
-   * fixed length arcs. It only determines the effective encoding of a node that is already known to be
-   * encoded with fixed length arcs.
-   * See {@code FST.shouldExpandNodeWithFixedLengthArcs()}
-   * and {@code FST.shouldExpandNodeWithDirectAddressing()}.
-   * <p>
-   * For English words we measured 217K nodes, only 3.27% nodes are encoded with fixed length arcs,
-   * and 99.99% of them with direct addressing. Overall FST memory reduced by 1.67%.
-   * <p>
-   * For worst case we measured 168K nodes, 50% of them are encoded with fixed length arcs,
-   * and 14% of them with direct encoding. Overall FST memory reduced by 0.8%.
-   * <p>
-   * Use {@code TestFstDirectAddressing.main()}
-   * and {@code TestFstDirectAddressing.testWorstCaseForDirectAddressing()}
-   * to evaluate a change.
-   *
-   * @see #setDirectAddressingMaxOversizingFactor
-   */
-  static final float DIRECT_ADDRESSING_MAX_OVERSIZING_FACTOR = 1.0f;
+  static final float DIRECT_ADDRESSING_MAX_OVERSIZING_FACTOR = 1f;
 
   private final NodeHash<T> dedupHash;
   final FST<T> fst;
@@ -117,75 +95,48 @@ public class Builder<T> {
   long binarySearchNodeCount;
   long directAddressingNodeCount;
 
-  boolean allowFixedLengthArcs;
-  float directAddressingMaxOversizingFactor = DIRECT_ADDRESSING_MAX_OVERSIZING_FACTOR;
+  final boolean allowFixedLengthArcs;
+  final float directAddressingMaxOversizingFactor;
   long directAddressingExpansionCredit;
 
-  BytesStore bytes;
+  final BytesStore bytes;
 
   /**
-   * Instantiates an FST/FSA builder without any pruning. A shortcut to {@link
-   * #Builder(FST.INPUT_TYPE, int, int, boolean, boolean, int, Outputs, boolean, int)} with
-   * pruning options turned off.
+   * Instantiates an FST/FSA builder with default settings and pruning options turned off.
+   * For more tuning and tweaking, see {@link #construct(INPUT_TYPE, Outputs)}.
    */
   public Builder(FST.INPUT_TYPE inputType, Outputs<T> outputs) {
-    this(inputType, 0, 0, true, true, Integer.MAX_VALUE, outputs, true, 15);
+    this(inputType, 0, 0, true, true, Integer.MAX_VALUE, outputs, true, 15, 1f);
   }
 
   /**
-   * Instantiates an FST/FSA builder with all the possible tuning and construction
-   * tweaks. Read parameter documentation carefully.
-   * 
-   * @param inputType 
-   *    The input type (transition labels). Can be anything from {@link INPUT_TYPE}
-   *    enumeration. Shorter types will consume less memory. Strings (character sequences) are 
-   *    represented as {@link INPUT_TYPE#BYTE4} (full unicode codepoints). 
-   *     
-   * @param minSuffixCount1
-   *    If pruning the input graph during construction, this threshold is used for telling
-   *    if a node is kept or pruned. If transition_count(node) &gt;= minSuffixCount1, the node
-   *    is kept. 
-   *    
-   * @param minSuffixCount2
-   *    (Note: only Mike McCandless knows what this one is really doing...) 
-   * 
-   * @param doShareSuffix 
-   *    If <code>true</code>, the shared suffixes will be compacted into unique paths.
-   *    This requires an additional RAM-intensive hash map for lookups in memory. Setting this parameter to
-   *    <code>false</code> creates a single suffix path for all input sequences. This will result in a larger
-   *    FST, but requires substantially less memory and CPU during building.  
-   *
-   * @param doShareNonSingletonNodes
-   *    Only used if doShareSuffix is true.  Set this to
-   *    true to ensure FST is fully minimal, at cost of more
-   *    CPU and more RAM during building.
-   *
-   * @param shareMaxTailLength
-   *    Only used if doShareSuffix is true.  Set this to
-   *    Integer.MAX_VALUE to ensure FST is fully minimal, at cost of more
-   *    CPU and more RAM during building.
-   *
-   * @param outputs The output type for each input sequence. Applies only if building an FST. For
-   *    FSA, use {@link NoOutputs#getSingleton()} and {@link NoOutputs#getNoOutput()} as the
-   *    singleton output object.
-   *
-   * @param allowFixedLengthArcs Pass false to disable the fixed length arc optimization (binary search or
-   *    direct addressing) while building the FST; this will make the resulting FST smaller but slower to
-   *    traverse.
-   *
-   * @param bytesPageBits How many bits wide to make each
-   *    byte[] block in the BytesStore; if you know the FST
-   *    will be large then make this larger.  For example 15
-   *    bits = 32768 byte pages.
+   * @deprecated Use the fluent {@link Constructor} instead.
+   * @see #construct(INPUT_TYPE, Outputs)
    */
   public Builder(FST.INPUT_TYPE inputType, int minSuffixCount1, int minSuffixCount2, boolean doShareSuffix,
                  boolean doShareNonSingletonNodes, int shareMaxTailLength, Outputs<T> outputs,
                  boolean allowFixedLengthArcs, int bytesPageBits) {
+    this(inputType, minSuffixCount1, minSuffixCount2, doShareSuffix, doShareNonSingletonNodes, shareMaxTailLength,
+        outputs, allowFixedLengthArcs, bytesPageBits, 1f);
+  }
+
+  /**
+   * Fluent-style constructor to tune and tweak parameters.
+   * @see Constructor#Constructor(INPUT_TYPE, Outputs)
+   */
+  public static <T> Constructor<T> construct(FST.INPUT_TYPE inputType, Outputs<T> outputs) {
+    return new Constructor<>(inputType, outputs);
+  }
+
+  private Builder(FST.INPUT_TYPE inputType, int minSuffixCount1, int minSuffixCount2, boolean doShareSuffix,
+                 boolean doShareNonSingletonNodes, int shareMaxTailLength, Outputs<T> outputs,
+                 boolean allowFixedLengthArcs, int bytesPageBits, float directAddressingMaxOversizingFactor) {
     this.minSuffixCount1 = minSuffixCount1;
     this.minSuffixCount2 = minSuffixCount2;
     this.doShareNonSingletonNodes = doShareNonSingletonNodes;
     this.shareMaxTailLength = shareMaxTailLength;
     this.allowFixedLengthArcs = allowFixedLengthArcs;
+    this.directAddressingMaxOversizingFactor = directAddressingMaxOversizingFactor;
     fst = new FST<>(inputType, outputs, bytesPageBits);
     bytes = fst.bytes;
     assert bytes != null;
@@ -205,22 +156,145 @@ public class Builder<T> {
   }
 
   /**
-   * Overrides the default the maximum oversizing of fixed array allowed to enable direct addressing
-   * of arcs instead of binary search.
+   * Fluent-style constructor for FST {@link Builder}.
    * <p>
-   * Setting this factor to a negative value (e.g. -1) effectively disables direct addressing,
-   * only binary search nodes will be created.
-   *
-   * @see #DIRECT_ADDRESSING_MAX_OVERSIZING_FACTOR
+   * Creates an FST/FSA builder with all the possible tuning and construction tweaks.
+   * Read parameter documentation carefully.
    */
-  public Builder<T> setDirectAddressingMaxOversizingFactor(float factor) {
-    directAddressingMaxOversizingFactor = factor;
-    return this;
+  public static class Constructor<T> {
+
+    private final INPUT_TYPE inputType;
+    private final Outputs<T> outputs;
+    private int minSuffixCount1;
+    private int minSuffixCount2;
+    private boolean shouldShareSuffix = true;
+    private boolean shouldShareNonSingletonNodes = true;
+    private int shareMaxTailLength = Integer.MAX_VALUE;
+    private boolean allowFixedLengthArcs = true;
+    private int bytesPageBits = 15;
+    private float directAddressingMaxOversizingFactor = DIRECT_ADDRESSING_MAX_OVERSIZING_FACTOR;
+
+    /**
+     * @param inputType The input type (transition labels). Can be anything from {@link INPUT_TYPE}
+     *                  enumeration. Shorter types will consume less memory. Strings (character sequences) are
+     *                  represented as {@link INPUT_TYPE#BYTE4} (full unicode codepoints).
+     * @param outputs   The output type for each input sequence. Applies only if building an FST. For
+     *                  FSA, use {@link NoOutputs#getSingleton()} and {@link NoOutputs#getNoOutput()} as the
+     *                  singleton output object.
+     */
+    public Constructor(FST.INPUT_TYPE inputType, Outputs<T> outputs) {
+      this.inputType = inputType;
+      this.outputs = outputs;
+    }
+
+    /**
+     * If pruning the input graph during construction, this threshold is used for telling if a node is kept
+     * or pruned. If transition_count(node) &gt;= minSuffixCount1, the node is kept.
+     * <p>
+     * Default = 0.
+     */
+    public Constructor<T> minSuffixCount1(int minSuffixCount1) {
+      this.minSuffixCount1 = minSuffixCount1;
+      return this;
+    }
+
+    /**
+     * Better pruning: we prune node (and all following nodes) if the prior node has less than this number
+     * of terms go through it.
+     * <p>
+     * Default = 0.
+     */
+    public Constructor<T> minSuffixCount2(int minSuffixCount2) {
+      this.minSuffixCount2 = minSuffixCount2;
+      return this;
+    }
+
+    /**
+     * If {@code true}, the shared suffixes will be compacted into unique paths.
+     * This requires an additional RAM-intensive hash map for lookups in memory. Setting this parameter to
+     * {@code false} creates a single suffix path for all input sequences. This will result in a larger
+     * FST, but requires substantially less memory and CPU during building.
+     * <p>
+     * Default = {@code true}.
+     */
+    public Constructor<T> shouldShareSuffix(boolean shouldShareSuffix) {
+      this.shouldShareSuffix = shouldShareSuffix;
+      return this;
+    }
+
+    /**
+     * Only used if {@code shouldShareSuffix} is true. Set this to true to ensure FST is fully minimal,
+     * at cost of more CPU and more RAM during building.
+     * <p>
+     * Default = {@code true}.
+     */
+    public Constructor<T> shouldShareNonSingletonNodes(boolean shouldShareNonSingletonNodes) {
+      this.shouldShareNonSingletonNodes = shouldShareNonSingletonNodes;
+      return this;
+    }
+
+    /**
+     * Only used if {@code shouldShareSuffix} is true. Set this to Integer.MAX_VALUE to ensure FST is
+     * fully minimal, at cost of more CPU and more RAM during building.
+     * <p>
+     * Default = {@link Integer#MAX_VALUE}.
+     */
+    public Constructor<T> shareMaxTailLength(int shareMaxTailLength) {
+      this.shareMaxTailLength = shareMaxTailLength;
+      return this;
+    }
+
+    /**
+     * Pass {@code false} to disable the fixed length arc optimization (binary search or direct addressing)
+     * while building the FST; this will make the resulting FST smaller but slower to traverse.
+     * <p>
+     * Default = {@code true}.
+     */
+    public Constructor<T> allowFixedLengthArcs(boolean allowFixedLengthArcs) {
+      this.allowFixedLengthArcs = allowFixedLengthArcs;
+      return this;
+    }
+
+    /**
+     * How many bits wide to make each byte[] block in the BytesStore; if you know the FST
+     * will be large then make this larger.  For example 15 bits = 32768 byte pages.
+     * <p>
+     * Default = 15.
+     */
+    public Constructor<T> bytesPageBits(int bytesPageBits) {
+      this.bytesPageBits = bytesPageBits;
+      return this;
+    }
+
+    /**
+     * Overrides the default the maximum oversizing of fixed array allowed to enable direct addressing
+     * of arcs instead of binary search.
+     * <p>
+     * Setting this factor to a negative value (e.g. -1) effectively disables direct addressing,
+     * only binary search nodes will be created.
+     * <p>
+     * This factor does not determine whether to encode a node with a list of variable length arcs or with
+     * fixed length arcs. It only determines the effective encoding of a node that is already known to be
+     * encoded with fixed length arcs.
+     * <p>
+     * Default = 1.
+     */
+    public Constructor<T> directAddressingMaxOversizingFactor(float factor) {
+      this.directAddressingMaxOversizingFactor = factor;
+      return this;
+    }
+
+    /**
+     * Creates a new {@link Builder}.
+     */
+    public Builder<T> create() {
+      Builder<T> builder =  new Builder<>(inputType, minSuffixCount1, minSuffixCount2, shouldShareSuffix,
+          shouldShareNonSingletonNodes, shareMaxTailLength, outputs, allowFixedLengthArcs, bytesPageBits,
+          directAddressingMaxOversizingFactor);
+      return builder;
+    }
   }
 
-  /**
-   * @see #setDirectAddressingMaxOversizingFactor(float)
-   */
   public float getDirectAddressingMaxOversizingFactor() {
     return directAddressingMaxOversizingFactor;
   }

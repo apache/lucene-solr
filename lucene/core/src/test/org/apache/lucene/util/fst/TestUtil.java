@@ -83,10 +83,12 @@ public class TestUtil extends LuceneTestCase {
 
   private FST<Object> buildFST(List<String> words, boolean allowArrayArcs, boolean allowDirectAddressing) throws Exception {
     final Outputs<Object> outputs = NoOutputs.getSingleton();
-    final Builder<Object> b = new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs, allowArrayArcs, 15);
+    final Builder.Constructor<Object> c = Builder.construct(FST.INPUT_TYPE.BYTE1, outputs)
+        .allowFixedLengthArcs(allowArrayArcs);
     if (!allowDirectAddressing) {
-      b.setDirectAddressingMaxOversizingFactor(-1f);
+      c.directAddressingMaxOversizingFactor(-1f);
     }
+    final Builder<Object> b = c.create();
 
     for (String word : words) {
       b.add(Util.toIntsRef(new BytesRef(word), new IntsRefBuilder()), outputs.getNoOutput());

@@ -234,10 +234,9 @@ public class FSTCompletionBuilder {
     // Build the automaton.
     final Outputs<Object> outputs = NoOutputs.getSingleton();
     final Object empty = outputs.getNoOutput();
-    final Builder<Object> builder = new Builder<>(
-        FST.INPUT_TYPE.BYTE1, 0, 0, true, true, 
-        shareMaxTailLength, outputs, true, 15);
-    
+    final Builder<Object> builder = Builder.construct(FST.INPUT_TYPE.BYTE1, outputs)
+        .shareMaxTailLength(shareMaxTailLength).create();
+
     BytesRefBuilder scratch = new BytesRefBuilder();
     BytesRef entry;
     final IntsRefBuilder scratchIntsRef = new IntsRefBuilder();

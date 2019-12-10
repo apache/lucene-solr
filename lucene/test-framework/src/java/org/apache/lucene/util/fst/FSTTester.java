@@ -272,14 +272,13 @@ public class FSTTester<T> {
       System.out.println("\nTEST: prune1=" + prune1 + " prune2=" + prune2);
     }
 
-    final Builder<T> builder = new Builder<>(inputMode == 0 ? FST.INPUT_TYPE.BYTE1 : FST.INPUT_TYPE.BYTE4,
-                                              prune1, prune2,
-                                              prune1==0 && prune2==0,
-                                              allowRandomSuffixSharing ? random.nextBoolean() : true,
-                                              allowRandomSuffixSharing ? TestUtil.nextInt(random, 1, 10) : Integer.MAX_VALUE,
-                                              outputs,
-                                              true,
-                                              15);
+    final Builder<T> builder = Builder.construct(inputMode == 0 ? FST.INPUT_TYPE.BYTE1 : FST.INPUT_TYPE.BYTE4, outputs)
+        .minSuffixCount1(prune1)
+        .minSuffixCount2(prune2)
+        .shouldShareSuffix(prune1==0 && prune2==0)
+        .shouldShareNonSingletonNodes(allowRandomSuffixSharing ? random.nextBoolean() : true)
+        .shareMaxTailLength(allowRandomSuffixSharing ? TestUtil.nextInt(random, 1, 10) : Integer.MAX_VALUE)
+        .create();
 
     for(InputOutput<T> pair : pairs) {
       if (pair.output instanceof List) {
