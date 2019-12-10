@@ -5464,6 +5464,32 @@ public class MathExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testPrecisionMatrix() throws Exception {
+    String cexpr = "let(a=matrix(array(1.3333999, 2.4444445), array(2.333333, 10.10009)), b=precision(a, 4))";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", cexpr);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+COLLECTIONORALIAS;
+    TupleStream solrStream = new SolrStream(url, paramsLoc);
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+    assertTrue(tuples.size() == 1);
+
+    List<List<Number>> rows = (List<List<Number>>)tuples.get(0).get("b");
+    assertTrue(rows.size() == 2);
+    List<Number> row1 = rows.get(0);
+    assertTrue(row1.size() == 2);
+    assertEquals(row1.get(0).doubleValue(), 1.3334, 0);
+    assertEquals(row1.get(1).doubleValue(),  2.4444, 0);
+
+    List<Number> row2 = rows.get(1);
+    assertTrue(row2.size() == 2);
+    assertEquals(row2.get(0).doubleValue(), 2.3333, 0);
+    assertEquals(row2.get(1).doubleValue(),  10.1001, 0);
+  }
+
+  @Test
   public void testMinMaxScale() throws Exception {
     String cexpr = "let(echo=true, a=minMaxScale(matrix(array(1,2,3,4,5), array(10,20,30,40,50))), " +
                                   "b=minMaxScale(matrix(array(1,2,3,4,5), array(10,20,30,40,50)), 0, 100)," +
