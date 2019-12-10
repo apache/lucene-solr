@@ -218,6 +218,9 @@ Bug Fixes
 
 * SOLR-13977: solr create -c not working under Windows 10 (janhoy)
 
+* SOLR-13966: LatLonPointSpatialField wasn't working correctly with atomic/partial updates or RTG.
+  (Thomas Wöckinger via David Smiley)
+
 Other Changes
 ---------------------
 
