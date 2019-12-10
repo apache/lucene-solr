@@ -134,6 +134,8 @@ New Features
 
 * SOLR-13912: Add 'countvals' aggregation in JSON FacetModule (hossman, Munendra S N)
 
+* SOLR-12217: Support shards.preference in SolrJ for single shard collections. The parameter is now used by the CloudSolrClient and Streaming Expressions. (Houston Putman, Tomas Fernandez-Lobbe)
+
 Improvements
 ---------------------
 
@@ -215,6 +217,11 @@ Bug Fixes
 * SOLR-13087: Use EUID instead of whoami to check for root in the bin/solr script (Martijn Koster via Jason Gerlowski)
 
 * SOLR-13977: solr create -c not working under Windows 10 (janhoy)
+
+* SOLR-13966: LatLonPointSpatialField wasn't working correctly with atomic/partial updates or RTG.
+  (Thomas Wöckinger via David Smiley)
+
+* SOLR-13563: SPLITSHARD using LINK method fails on disk usage checks. (Andrew Kettmann, ab)
 
 Other Changes
 ---------------------
