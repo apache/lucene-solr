@@ -35,7 +35,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.LuceneTestCase;
 
-public class TestFstDirectAddressing extends LuceneTestCase {
+public class TestFSTDirectAddressing extends LuceneTestCase {
 
   public void testDenseWithGap() throws Exception {
     List<String> words = Arrays.asList("ah", "bi", "cj", "dk", "fl", "gm");
@@ -86,13 +86,13 @@ public class TestFstDirectAddressing extends LuceneTestCase {
     Collections.sort(wordList);
 
     // Disable direct addressing and measure the FST size.
-    Builder<Object> builder = createBuilder(-1f);
-    FST<Object> fst = buildFST(wordList, builder);
+    FSTCompiler<Object> fstCompiler = createFSTCompiler(-1f);
+    FST<Object> fst = buildFST(wordList, fstCompiler);
     long ramBytesUsedNoDirectAddressing = fst.ramBytesUsed();
 
     // Enable direct addressing and measure the FST size.
-    builder = createBuilder(Builder.DIRECT_ADDRESSING_MAX_OVERSIZING_FACTOR);
-    fst = buildFST(wordList, builder);
+    fstCompiler = createFSTCompiler(FSTCompiler.DIRECT_ADDRESSING_MAX_OVERSIZING_FACTOR);
+    fst = buildFST(wordList, fstCompiler);
     long ramBytesUsed = fst.ramBytesUsed();
 
     // Compute the size increase in percents.
@@ -107,42 +107,43 @@ public class TestFstDirectAddressing extends LuceneTestCase {
         directAddressingMemoryIncreasePercent < MEMORY_INCREASE_LIMIT_PERCENT);
   }
 
-  private static void printStats(Builder<Object> builder, long ramBytesUsed, double directAddressingMemoryIncreasePercent) {
-    System.out.println("directAddressingMaxOversizingFactor = " + builder.getDirectAddressingMaxOversizingFactor());
+  private static void printStats(FSTCompiler<Object> fstCompiler, long ramBytesUsed, double directAddressingMemoryIncreasePercent) {
+    System.out.println("directAddressingMaxOversizingFactor = " + fstCompiler.getDirectAddressingMaxOversizingFactor());
     System.out.println("ramBytesUsed = "
         + String.format(Locale.ENGLISH, "%.2f MB", ramBytesUsed / 1024d / 1024d)
         + String.format(Locale.ENGLISH, " (%.2f %% increase with direct addressing)", directAddressingMemoryIncreasePercent));
-    System.out.println("num nodes = " + builder.nodeCount);
-    long fixedLengthArcNodeCount = builder.directAddressingNodeCount + builder.binarySearchNodeCount;
+    System.out.println("num nodes = " + fstCompiler.nodeCount);
+    long fixedLengthArcNodeCount = fstCompiler.directAddressingNodeCount + fstCompiler.binarySearchNodeCount;
     System.out.println("num fixed-length-arc nodes = " + fixedLengthArcNodeCount
         + String.format(Locale.ENGLISH, " (%.2f %% of all nodes)",
-        ((double) fixedLengthArcNodeCount / builder.nodeCount * 100)));
-    System.out.println("num binary-search nodes = " + (builder.binarySearchNodeCount)
+        ((double) fixedLengthArcNodeCount / fstCompiler.nodeCount * 100)));
+    System.out.println("num binary-search nodes = " + (fstCompiler.binarySearchNodeCount)
         + String.format(Locale.ENGLISH, " (%.2f %% of fixed-length-arc nodes)",
-        ((double) (builder.binarySearchNodeCount) / fixedLengthArcNodeCount * 100)));
-    System.out.println("num direct-addressing nodes = " + (builder.directAddressingNodeCount)
+        ((double) (fstCompiler.binarySearchNodeCount) / fixedLengthArcNodeCount * 100)));
+    System.out.println("num direct-addressing nodes = " + (fstCompiler.directAddressingNodeCount)
         + String.format(Locale.ENGLISH, " (%.2f %% of fixed-length-arc nodes)",
-        ((double) (builder.directAddressingNodeCount) / fixedLengthArcNodeCount * 100)));
+        ((double) (fstCompiler.directAddressingNodeCount) / fixedLengthArcNodeCount * 100)));
   }
 
-  private static Builder<Object> createBuilder(float directAddressingMaxOversizingFactor) {
-    return new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, NoOutputs.getSingleton(), true, 15)
-        .setDirectAddressingMaxOversizingFactor(directAddressingMaxOversizingFactor);
+  private static FSTCompiler<Object> createFSTCompiler(float directAddressingMaxOversizingFactor) {
+    return new FSTCompiler.Builder<>(FST.INPUT_TYPE.BYTE1, NoOutputs.getSingleton())
+        .directAddressingMaxOversizingFactor(directAddressingMaxOversizingFactor)
+        .build();
   }
 
   private FST<Object> buildFST(List<BytesRef> entries) throws Exception {
-    return buildFST(entries, createBuilder(Builder.DIRECT_ADDRESSING_MAX_OVERSIZING_FACTOR));
+    return buildFST(entries, createFSTCompiler(FSTCompiler.DIRECT_ADDRESSING_MAX_OVERSIZING_FACTOR));
   }
 
-  private static FST<Object> buildFST(List<BytesRef> entries, Builder<Object> builder) throws Exception {
+  private static FST<Object> buildFST(List<BytesRef> entries, FSTCompiler<Object> fstCompiler) throws Exception {
     BytesRef last = null;
     for (BytesRef entry : entries) {
       if (entry.equals(last) == false) {
-        builder.add(Util.toIntsRef(entry, new IntsRefBuilder()), NoOutputs.getSingleton().getNoOutput());
+        fstCompiler.add(Util.toIntsRef(entry, new IntsRefBuilder()), NoOutputs.getSingleton().getNoOutput());
       }
       last = entry;
     }
-    return builder.finish();
+    return fstCompiler.compile();
   }
 
   public static void main(String... args) throws Exception {
@@ -195,18 +196,18 @@ public class TestFstDirectAddressing extends LuceneTestCase {
     Collections.sort(wordList);
 
     // Disable direct addressing and measure the FST size.
-    Builder<Object> builder = createBuilder(-1f);
-    FST<Object> fst = buildFST(wordList, builder);
+    FSTCompiler<Object> fstCompiler = createFSTCompiler(-1f);
+    FST<Object> fst = buildFST(wordList, fstCompiler);
     long ramBytesUsedNoDirectAddressing = fst.ramBytesUsed();
 
     // Enable direct addressing and measure the FST size.
-    builder = createBuilder(Builder.DIRECT_ADDRESSING_MAX_OVERSIZING_FACTOR);
-    fst = buildFST(wordList, builder);
+    fstCompiler = createFSTCompiler(FSTCompiler.DIRECT_ADDRESSING_MAX_OVERSIZING_FACTOR);
+    fst = buildFST(wordList, fstCompiler);
     long ramBytesUsed = fst.ramBytesUsed();
 
     // Compute the size increase in percents.
     double directAddressingMemoryIncreasePercent = ((double) ramBytesUsed / ramBytesUsedNoDirectAddressing - 1) * 100;
 
-    printStats(builder, ramBytesUsed, directAddressingMemoryIncreasePercent);
+    printStats(fstCompiler, ramBytesUsed, directAddressingMemoryIncreasePercent);
   }
 }

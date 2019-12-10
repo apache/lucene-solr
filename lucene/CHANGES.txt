@@ -38,6 +38,9 @@ API Changes
 * LUCENE-8905: Better defence against malformed arguments in TopDocsCollector
   (Atri Sharma)
 
+* LUCENE-9089: FST Builder renamed FSTCompiler with fluent-style Builder.
+  (Bruno Roustant)
+
 Improvements
 
 * LUCENE-8757: When provided with an ExecutorService to run queries across
