@@ -180,8 +180,14 @@ public class JapaneseNumberFilter extends TokenFilter {
     int endOffset = 0;
     State preCompositionState = captureState();
     String term = termAttr.toString();
+    // while iterating over further incoming token, we want to keep track of the last numeral we see
+    // in order to restore its state when we emit the the joined numeral token
+    State lastNumeralTokenState = null;
     boolean numeralTerm = isNumeral(term);
-    
+    if (numeralTerm) {
+      lastNumeralTokenState = captureState();
+    }
+
     while (moreTokens && numeralTerm) {
 
       if (!composedNumberToken) {
@@ -190,6 +196,7 @@ public class JapaneseNumberFilter extends TokenFilter {
       }
 
       endOffset = offsetAttr.endOffset();
+
       moreTokens = input.incrementToken();
       if (moreTokens == false) {
         exhausted = true;
@@ -209,6 +216,9 @@ public class JapaneseNumberFilter extends TokenFilter {
       if (moreTokens) {
         term = termAttr.toString();
         numeralTerm = isNumeral(term) || isNumeralPunctuation(term);
+        if (isNumeral(term)) {
+          // lastNumeralTokenState = captureState();
+        }
       }
     }
 
@@ -217,6 +227,11 @@ public class JapaneseNumberFilter extends TokenFilter {
         // We have read past all numerals and there are still tokens left, so
         // capture the state of this token and emit it on our next incrementToken()
         state = captureState();
+      }
+      // we restore state to when we read the last numeral token to get its attributes (e.g. part-of-speech)
+      if (lastNumeralTokenState != null) {
+        restoreState(lastNumeralTokenState);
+        lastNumeralTokenState = null;
       }
 
       String normalizedNumber = normalizeNumber(numeral.toString());

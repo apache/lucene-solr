@@ -30,6 +30,8 @@ import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.ja.tokenattributes.PartOfSpeechAttribute;
+import org.apache.lucene.analysis.ja.tokenattributes.PartOfSpeechAttributeImpl;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.junit.Ignore;
@@ -269,6 +271,35 @@ public class TestJapaneseNumberFilter extends BaseTokenStreamTestCase {
     BaseTokenStreamTestCase.checkAnalysisConsistency(
         random(), analyzer, true, "〇〇\u302f\u3029\u3039\u3023\u3033\u302bB", true
     );
+  }
+
+  /**
+   * This test checks that the PartOfSpeechAttribute attribute on joined numerical terms is "noun-numeric"
+   */
+  @Test
+  public void testPartOfSpeechAttribute() throws IOException {
+    TokenStream ts = analyzer.tokenStream("dummy", "家60万円,2008, 2009 一,〇〇〇.");
+    ts.addAttribute(PartOfSpeechAttribute.class);
+    ts.addAttribute(CharTermAttribute.class);
+    ts.reset();
+    final String commonNoun = "partOfSpeech=名詞-一般,partOfSpeech (en)=noun-common";
+    final String nounVerbal = "partOfSpeech=名詞-サ変接続,partOfSpeech (en)=noun-verbal";
+    final String nounNumeric = "partOfSpeech=名詞-数,partOfSpeech (en)=noun-numeric";
+    final String symbolSpace = "partOfSpeech=記号-空白,partOfSpeech (en)=symbol-space";
+    final String nounSuffix = "partOfSpeech=名詞-接尾-助数詞,partOfSpeech (en)=noun-suffix-classifier";
+    final String[] expectedTerm = new String[]{ "家", "600000", "円", "," , "2008", " ", "2009", " ", "1000" };
+    final String[] expectedPos = new String[]{ commonNoun, nounNumeric, nounSuffix, nounVerbal, nounNumeric,
+        symbolSpace, nounNumeric, symbolSpace, nounNumeric };
+
+    int i = 0;
+    while (ts.incrementToken()) {
+      PartOfSpeechAttributeImpl pos = (PartOfSpeechAttributeImpl) ts.getAttribute(PartOfSpeechAttribute.class);
+      assertEquals("unexpected pos in position " + i, expectedPos[i], pos.reflectAsString(false));
+      assertEquals("unexpected term in position " + i, expectedTerm[i], ts.getAttribute(CharTermAttribute.class).toString());
+      i++;
+    }
+    ts.end();
+    ts.close();
   }
 
   @Ignore("This test is used during development when analyze normalizations in large amounts of text")
