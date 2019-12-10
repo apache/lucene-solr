@@ -230,6 +230,8 @@ Bug Fixes
 
 * SOLR-13806: SolrJ QueryResponse._explainMap is incorrectly typed. (Guna Sekhar Dorai, ab)
 
+* SOLR-13975, SOLR-13896: ConcurrentUpdateSolrClient connection stall prevention. (ab, caomanhdat)
+
 Other Changes
 ---------------------
 
