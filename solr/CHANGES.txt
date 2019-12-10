@@ -149,6 +149,8 @@ Bug Fixes
 * SOLR-13966: LatLonPointSpatialField wasn't working correctly with atomic/partial updates or RTG.
   (Thomas Wöckinger via David Smiley)
 
+* SOLR-13563: SPLITSHARD using LINK method fails on disk usage checks. (Andrew Kettmann, ab)
+
 Other Changes
 ---------------------
 
