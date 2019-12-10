@@ -138,4 +138,29 @@ public class TestSimScenario extends SimSolrCloudTestCase {
       scenario.run();
     }
   }
+
+  String splitShardScenario =
+      "create_cluster numNodes=2\n" +
+          "solr_request /admin/collections?action=CREATE&name=testCollection&numShards=2&replicationFactor=2&maxShardsPerNode=5\n" +
+          "wait_collection collection=testCollection&shards=2&replicas=2\n" +
+          "set_shard_metrics collection=testCollection&shard=shard1&INDEX.sizeInBytes=1000000000\n" +
+          "set_node_metrics nodeset=#ANY&freedisk=1.5\n" +
+          "solr_request /admin/collection?action=SPLITSHARD&collection=testCollection&shard=shard1&splitMethod=${method}\n" +
+          "wait_collection collection=testCollection&shards=4&&withInactive=true&replicas=2&requireLeaders=true\n"
+      ;
+  @Test
+  public void testSplitShard() throws Exception {
+    try (SimScenario scenario = SimScenario.load(splitShardScenario)) {
+      scenario.context.put("method", "REWRITE");
+      scenario.run();
+    } catch (Exception e) {
+      assertTrue(e.toString(), e.toString().contains("not enough free disk"));
+    }
+    try (SimScenario scenario = SimScenario.load(splitShardScenario)) {
+      scenario.context.put("method", "LINK");
+      scenario.run();
+    } catch (Exception e) {
+      fail("should have succeeded with method LINK, but failed: " + e.toString());
+    }
+  }
 }
