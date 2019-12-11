@@ -89,6 +89,7 @@ dependencies {
   implementation ('org.apache.hadoop:hadoop-auth') { transitive = false }
   implementation ('org.apache.hadoop:hadoop-common') { transitive = false }
   implementation ('org.apache.hadoop:hadoop-hdfs-client') { transitive = false }
+  testImplementation 'org.apache.commons:commons-compress' // required for customized hadoop classes
 
   implementation ('net.hydromatic:eigenbase-properties') { transitive = false }
 
@@ -107,7 +108,6 @@ dependencies {
   testImplementation ('org.apache.hadoop:hadoop-hdfs') { transitive = false }
   testImplementation ('org.apache.hadoop:hadoop-hdfs::tests') { transitive = false }
   testImplementation ('org.apache.hadoop:hadoop-minikdc') { transitive = false }
-  runtimeOnly 'org.apache.commons:commons-compress'
 
   testImplementation ('org.apache.kerby:kerb-client') { transitive = false }
   testImplementation ('org.apache.kerby:kerb-common') { transitive = false }
