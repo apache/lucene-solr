@@ -25,7 +25,8 @@ import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Tessellator;
-import org.apache.lucene.index.PointValues;
+
+import org.apache.lucene.index.PointValues; // javadoc
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;

@@ -17,6 +17,10 @@
 
 package org.apache.solr.cloud;
 
+import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;

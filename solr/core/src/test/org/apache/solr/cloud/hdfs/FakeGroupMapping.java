@@ -15,30 +15,12 @@
  * limitations under the License.
  */
 
+
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 
-<<<<<<<HEAD:solr/solrj/src/java/org/apache/solr/client/solrj/cloud/ShardStateProvider.java
 
-    package org.apache.solr.client.solrj.cloud;
-/**An implementation that fetches the state of each replica in a collection
- * and it also provides the leader of shards
- *
- */
-public interface ShardStateProvider {
 
-  Replica.State getState(Replica replica);
-
-  Replica getLeader(Slice slice);
-
-  /**Gete the leader of the slice. Wait for one if there is no leader
-   */
-  Replica getLeader(Slice slice, int timeout) throws InterruptedException;
-
-  boolean isActive(Replica replica);
-
-  boolean isActive(Slice slice);
-=======
 package org.apache.solr.cloud.hdfs;
 
 import java.util.Collections;
@@ -62,5 +44,5 @@ public class FakeGroupMapping implements GroupMappingServiceProvider {
   @Override
   public void cacheGroupsAdd(List<String> groups) {
   }
->>>>>>> origin/master:solr/core/src/test/org/apache/solr/cloud/hdfs/FakeGroupMapping.java
+
 }

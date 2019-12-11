@@ -24,6 +24,7 @@ import org.apache.lucene.document.ShapeField.Triangle;
 import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.geo.XYLine;
 import org.apache.lucene.geo.XYPolygon;
+
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;

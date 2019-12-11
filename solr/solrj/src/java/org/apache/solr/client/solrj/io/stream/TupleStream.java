@@ -147,6 +147,7 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
       ClusterState clusterState = zkStateReader.getClusterState();
       Slice[] slices = CloudSolrStream.getSlices(collection, zkStateReader, true);
       Set<String> liveNodes = clusterState.getLiveNodes();
+
       ShardStateProvider ssp = zkStateReader.getShardStateProvider(collection);
 
 
@@ -161,7 +162,9 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
       for(Slice slice : slices) {
         List<Replica> sortedReplicas = new ArrayList<>();
         for(Replica replica : slice.getReplicas()) {
+
           if(ssp.getState(replica) == Replica.State.ACTIVE && liveNodes.contains(replica.getNodeName())) {
+
             sortedReplicas.add(replica);
           }
         }
