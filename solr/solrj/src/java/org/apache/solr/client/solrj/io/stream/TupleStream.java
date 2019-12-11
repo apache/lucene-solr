@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import org.apache.solr.client.solrj.cloud.ShardStateProvider;
@@ -37,6 +38,7 @@ import org.apache.solr.client.solrj.routing.ReplicaListTransformer;
 import org.apache.solr.client.solrj.routing.RequestReplicaListTransformerGenerator;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -142,11 +144,13 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
       CloudSolrClient cloudSolrClient =
           Optional.ofNullable(streamContext.getSolrClientCache()).orElseGet(SolrClientCache::new).getCloudSolrClient(zkHost);
       ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
+      ClusterState clusterState = zkStateReader.getClusterState();
       Slice[] slices = CloudSolrStream.getSlices(collection, zkStateReader, true);
+      Set<String> liveNodes = clusterState.getLiveNodes();
       ShardStateProvider ssp = zkStateReader.getShardStateProvider(collection);
 
 
-          ModifiableSolrParams solrParams = new ModifiableSolrParams(streamContext.getRequestParams());
+      ModifiableSolrParams solrParams = new ModifiableSolrParams(streamContext.getRequestParams());
       solrParams.add(requestParams);
 
       RequestReplicaListTransformerGenerator requestReplicaListTransformerGenerator =
@@ -157,7 +161,7 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
       for(Slice slice : slices) {
         List<Replica> sortedReplicas = new ArrayList<>();
         for(Replica replica : slice.getReplicas()) {
-          if(ssp.isActive(replica)) {
+          if(ssp.getState(replica) == Replica.State.ACTIVE && liveNodes.contains(replica.getNodeName())) {
             sortedReplicas.add(replica);
           }
         }
