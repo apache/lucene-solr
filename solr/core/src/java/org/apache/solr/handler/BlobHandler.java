@@ -94,7 +94,7 @@ public class BlobHandler extends RequestHandlerBase implements PluginInfoInitial
         rsp.add("error", "Name not found");
         return;
       }
-      String err = SolrConfigHandler.validateName(blobName);
+      String err = SolrConfigManager.validateName(blobName);
       if (err != null) {
         log.warn("no blob name");
         rsp.add("error", err);
