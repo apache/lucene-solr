@@ -22,6 +22,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -35,6 +36,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
@@ -60,7 +62,16 @@ import org.slf4j.LoggerFactory;
  * &lt;expressible name="count" class="org.apache.solr.client.solrj.io.stream.RecordCountStream" /&gt;
  * }
  * </p>
- * 
+ * <p>
+ * The @deprecated configuration method as of Solr 8.4 is
+  * {@code
+ *  &lt;lst name="streamFunctions"&gt;
+ *    &lt;str name="group"&gt;org.apache.solr.client.solrj.io.stream.ReducerStream&lt;/str&gt;
+ *    &lt;str name="count"&gt;org.apache.solr.client.solrj.io.stream.RecordCountStream&lt;/str&gt;
+ *  &lt;/lst&gt;
+  * }
+ *</p>
+ *
  * @since 6.1.0
  */
 public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
@@ -88,11 +99,22 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     }
 
     // This pulls all the overrides and additions from the config
+    Object functionMappingsObj = initArgs.get("streamFunctions");
+    if(null != functionMappingsObj){
+      NamedList<?> functionMappings = (NamedList<?>)functionMappingsObj;
+      for(Entry<String,?> functionMapping : functionMappings){
+        Class<? extends Expressible> clazz = core.getResourceLoader().findClass((String)functionMapping.getValue(),
+        Expressible.class);
+        streamFactory.withFunctionName(functionMapping.getKey(), clazz);
+      }
+    }
     List<PluginInfo> pluginInfos = core.getSolrConfig().getPluginInfos(Expressible.class.getName());
     for (PluginInfo pluginInfo : pluginInfos) {
       Class<? extends Expressible> clazz = core.getMemClassLoader().findClass(pluginInfo.className, Expressible.class);
       streamFactory.withFunctionName(pluginInfo.name, clazz);
     }
+
+    log.warn("solrconfig.xml: <HashDocSet> is deprecated and no longer recommended used.");
   }
 
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
