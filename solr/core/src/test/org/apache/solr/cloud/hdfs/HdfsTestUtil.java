@@ -38,12 +38,14 @@ import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.MiniDFSNNTopology;
 import org.apache.hadoop.hdfs.server.namenode.NameNodeAdapter;
 import org.apache.hadoop.hdfs.server.namenode.ha.HATestUtil;
+import org.apache.hadoop.io.nativeio.NativeIO;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.util.HdfsUtil;
+import org.junit.AssumptionViolatedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -94,9 +96,6 @@ public class HdfsTestUtil {
   }
 
   public static MiniDFSCluster setupClass(String dir, boolean safeModeTesting, boolean haTesting) throws Exception {
-    LuceneTestCase.assumeFalse("HDFS tests were disabled by -Dtests.disableHdfs",
-      Boolean.parseBoolean(System.getProperty("tests.disableHdfs", "false")));
-
     checkFastDateFormat();
     checkGeneratedIdMatches();
 
@@ -132,6 +131,11 @@ public class HdfsTestUtil {
     if (haTesting) {
       dfsClusterBuilder.nnTopology(MiniDFSNNTopology.simpleHATopology());
     }
+
+    if (!NativeIO.isAvailable()) {
+      throw new AssumptionViolatedException("NativeIO not available for HDFS.");
+    }
+
     MiniDFSCluster dfsCluster = dfsClusterBuilder.build();
     HdfsUtil.TEST_CONF = getClientConfiguration(dfsCluster);
     System.setProperty("solr.hdfs.home", getDataDir(dfsCluster, "solr_hdfs_home"));

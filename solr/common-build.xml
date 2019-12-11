@@ -157,14 +157,6 @@
     <istrue value="${tests.useSecurityManager}"/>
   </condition>
 
-  <!--
-    We don't want to run HDFS tests on Windows by default, because they require Cygwin.
-    Cygwin users can explicitly set -Dtests.disableHdfs=false to enable Hdfs related testing.
-  -->
-  <condition property="tests.disableHdfs" value="true">
-    <os family="windows"/>
-  </condition>
-
   <target name="validate" depends="compile-tools">
   </target>
 
