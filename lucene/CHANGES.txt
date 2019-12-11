@@ -73,7 +73,7 @@ API Changes
 
 New Features
 
-* LUCENE-8620: Add CONTAINS support for LatLonShape. (Ignacio Vera)
+* LUCENE-8620: Add CONTAINS support for LatLonShape and XYShape. (Ignacio Vera)
 
 Improvements
 
