@@ -752,7 +752,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void testShutdown() throws IOException {
-    try (CloudSolrClient client = getCloudSolrClient("[ff01::114]:33332")) {
+    try (CloudSolrClient client = getCloudSolrClient(DEAD_HOST_1)) {
       client.setZkConnectTimeout(100);
       client.connect();
       fail("Expected exception");

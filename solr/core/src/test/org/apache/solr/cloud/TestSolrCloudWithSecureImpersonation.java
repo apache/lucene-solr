@@ -77,7 +77,7 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
     filterProps.put(KerberosPlugin.IMPERSONATOR_PREFIX + "noGroups.hosts", "*");
     filterProps.put(KerberosPlugin.IMPERSONATOR_PREFIX + "anyHostAnyUser.groups", "*");
     filterProps.put(KerberosPlugin.IMPERSONATOR_PREFIX + "anyHostAnyUser.hosts", "*");
-    filterProps.put(KerberosPlugin.IMPERSONATOR_PREFIX + "wrongHost.hosts", "1.1.1.1.1.1");
+    filterProps.put(KerberosPlugin.IMPERSONATOR_PREFIX + "wrongHost.hosts", DEAD_HOST_1);
     filterProps.put(KerberosPlugin.IMPERSONATOR_PREFIX + "wrongHost.groups", "*");
     filterProps.put(KerberosPlugin.IMPERSONATOR_PREFIX + "noHosts.groups", "*");
     filterProps.put(KerberosPlugin.IMPERSONATOR_PREFIX + "localHostAnyGroup.groups", "*");
@@ -290,7 +290,7 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
   public void testProxyInvalidRemote() throws Exception {
     HttpSolrClient.RemoteSolrException e = expectThrows(HttpSolrClient.RemoteSolrException.class,
         () -> {
-          String invalidIpAddress = "-127.-128";
+          String invalidIpAddress = DEAD_HOST_2;
           solrClient.request(getProxyRequest("localHostAnyGroup","bar", "[ff01::114]", invalidIpAddress));
     });
     assertTrue(e.getMessage().contains(getExpectedHostExMsg("localHostAnyGroup")));
