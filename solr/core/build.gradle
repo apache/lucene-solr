@@ -107,6 +107,7 @@ dependencies {
   testImplementation ('org.apache.hadoop:hadoop-hdfs') { transitive = false }
   testImplementation ('org.apache.hadoop:hadoop-hdfs::tests') { transitive = false }
   testImplementation ('org.apache.hadoop:hadoop-minikdc') { transitive = false }
+  runtimeOnly 'org.apache.commons:commons-compress'
 
   testImplementation ('org.apache.kerby:kerb-client') { transitive = false }
   testImplementation ('org.apache.kerby:kerb-common') { transitive = false }
