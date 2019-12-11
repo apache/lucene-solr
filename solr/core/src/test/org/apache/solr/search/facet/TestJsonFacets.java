@@ -2971,7 +2971,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
   public void testTolerant() throws Exception {
     initServers();
     Client client = servers.getClient(random().nextInt());
-    client.queryDefaults().set("shards", servers.getShards() + ",[ff01::114]:33332/ignore_exception");
+    client.queryDefaults().set("shards", servers.getShards() + "," + DEAD_HOST_1 + "/ignore_exception");
     indexSimple(client);
 
     try {

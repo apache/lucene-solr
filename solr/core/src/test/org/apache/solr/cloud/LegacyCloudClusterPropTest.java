@@ -29,6 +29,7 @@ import java.nio.file.Paths;
 import java.util.Properties;
 
 import org.apache.solr.client.solrj.cloud.ShardStateProvider;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.ClusterProperties;
@@ -41,7 +42,7 @@ import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-
+@SolrTestCaseJ4.SuppressSSL
 public class LegacyCloudClusterPropTest extends SolrCloudTestCase {
 
   @BeforeClass

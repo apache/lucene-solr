@@ -63,7 +63,7 @@ public class TestImpersonationWithHadoopAuth  extends SolrCloudTestCase {
     proxyUserConfigs.put("proxyuser.noGroups.hosts", "*");
     proxyUserConfigs.put("proxyuser.anyHostAnyUser.hosts", "*");
     proxyUserConfigs.put("proxyuser.anyHostAnyUser.groups", "*");
-    proxyUserConfigs.put("proxyuser.wrongHost.hosts", "1.1.1.1.1.1");
+    proxyUserConfigs.put("proxyuser.wrongHost.hosts", DEAD_HOST_1);
     proxyUserConfigs.put("proxyuser.wrongHost.groups", "*");
     proxyUserConfigs.put("proxyuser.noHosts.groups", "*");
     proxyUserConfigs.put("proxyuser.localHostAnyGroup.hosts",

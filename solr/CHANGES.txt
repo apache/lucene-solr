@@ -87,7 +87,7 @@ Other Changes
 
 * SOLR-13655:Upgrade Collections.unModifiableSet to Set.of and Set.copyOf (Atri Sharma via Tomás Fernández Löbbe)
 
-* SOLR-13797: SolrResourceLoader no longer caches bad results when asked for wrong type (Mike Drob)
+* SOLR-13797: SolrResourceLoader no longer caches bad results when asked for wrong type (Mike Drob) 
 
 ==================  8.4.0 ==================
 
@@ -119,6 +119,11 @@ Upgrade Notes
   third-party components will work the same as before due to type erasure but source code changes may be
   required.
 
+* SOLR-14025: VelocityResponseWriter has been hardened - only trusted configsets can render configset provided
+  templates and rendering templates from request parameters has been removed.
+
+* SOLR-13904: timeAllowed parameter is allowed to have 0 value (Houston Putman, Mikhail Khludnev)
+
 New Features
 ---------------------
 * SOLR-13821: A Package store to store and load package artifacts (noble, Ishan Chattopadhyaya)
@@ -139,7 +144,10 @@ New Features
 
 * SOLR-13912: Add 'countvals' aggregation in JSON FacetModule (hossman, Munendra S N)
 
-* SOLR-12217: Support shards.preference in SolrJ for single shard collections. The parameter is now used by the CloudSolrClient and Streaming Expressions. (Houston Putman, Tomas Fernandez-Lobbe)
+* SOLR-12217: Support shards.preference in SolrJ for single shard collections. The parameter 
+  is now used by the CloudSolrClient and Streaming Expressions. (Houston Putman, Tomas Fernandez-Lobbe)
+
+* SOLR-14043: Allow the precision Stream Evaluator to operate on matrices (Joel bernstein)
 
 Improvements
 ---------------------
@@ -173,6 +181,12 @@ Improvements
 * SOLR-13987: Admin UI should not rely on javascript eval() (rmuir, Kevin Risden)
 
 * SOLR-13979: Expose separate metrics for distributed and non-distributed requests. (ab)
+
+* SOLR-13957: Add sensible defaults for the facet, random, facet2D, timeseries, stats
+  and update Streaming Expressions (Joel Bernstein)
+
+* SOLR-13904: Analytic component abandon requests exceedig limit passed via timeAllowed parameter 
+  (Houston Putman, Mikhail Khludnev).
 
 Optimizations
 ---------------------
@@ -258,6 +272,8 @@ Other Changes
   existing classes. (Anshum Gupta, Mark Miller)
 
 * SOLR-13818: Upgrade jackson to 2.10.0 (marungo, Andras Salamon via Kevin Risden)
+
+* SOLR-13999: Document zkHost param on topic() stream (Vergil Cheynov via Jason Gerlowski)
 
 ==================  8.3.1 ==================
 
