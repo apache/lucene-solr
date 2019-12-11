@@ -232,6 +232,8 @@ Bug Fixes
 
 * SOLR-13975, SOLR-13896: ConcurrentUpdateSolrClient connection stall prevention. (ab, caomanhdat)
 
+* SOLR-13953: Prometheus exporter in SolrCloud mode limited to 100 nodes (Alex Jablonski via Erick Erickson)
+
 Other Changes
 ---------------------
 
