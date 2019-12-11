@@ -101,6 +101,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     // This pulls all the overrides and additions from the config
     Object functionMappingsObj = initArgs.get("streamFunctions");
     if(null != functionMappingsObj){
+      log.warn("solrconfig.xml: <streamFunctions> is deprecated for adding additional streaming functions to GraphHandler.");
       NamedList<?> functionMappings = (NamedList<?>)functionMappingsObj;
       for(Entry<String,?> functionMapping : functionMappings){
         Class<? extends Expressible> clazz = core.getResourceLoader().findClass((String)functionMapping.getValue(),
@@ -113,8 +114,6 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
       Class<? extends Expressible> clazz = core.getMemClassLoader().findClass(pluginInfo.className, Expressible.class);
       streamFactory.withFunctionName(pluginInfo.name, clazz);
     }
-
-    log.warn("solrconfig.xml: <HashDocSet> is deprecated and no longer recommended used.");
   }
 
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
