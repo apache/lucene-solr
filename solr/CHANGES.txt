@@ -103,6 +103,9 @@ Improvements
 
 * SOLR-13979: Expose separate metrics for distributed and non-distributed requests. (ab)
 
+* SOLR-13957: Add sensible defaults for the facet, random, facet2D, timeseries, stats
+  and update Streaming Expressions (Joel Bernstein)
+
 Optimizations
 ---------------------
 (No changes)
