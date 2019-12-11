@@ -23,6 +23,8 @@ import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.geo.XYPolygon;
+import org.apache.lucene.geo.XYRectangle;
+import org.apache.lucene.geo.XYRectangle2D;
 
 /** random cartesian bounding box, line, and polygon query tests for random indexed arrays of cartesian {@link XYPolygon} types */
 public class TestXYMultiPolygonShapeQueries extends BaseXYShapeTestCase {
@@ -33,23 +35,48 @@ public class TestXYMultiPolygonShapeQueries extends BaseXYShapeTestCase {
 
   @Override
   protected XYPolygon[] nextShape() {
-
     int n = random().nextInt(4) + 1;
     XYPolygon[] polygons = new XYPolygon[n];
     for (int i =0; i < n; i++) {
+      int  repetitions =0;
       while (true) {
         // if we can't tessellate; then random polygon generator created a malformed shape
         XYPolygon p = (XYPolygon) getShapeType().nextShape();
         try {
           Tessellator.tessellate(p);
-          polygons[i] = p;
-          break;
+          //polygons are disjoint so CONTAINS works. Note that if we intersect
+          //any shape then contains return false.
+          if (isDisjoint(polygons, p, i)) {
+            polygons[i] = p;
+            break;
+          }
+          repetitions++;
+          if (repetitions > 50) {
+            //try again
+            return nextShape();
+          }
         } catch (IllegalArgumentException e) {
           continue;
         }
       }
     }
     return polygons;
+  }
+
+  private boolean isDisjoint(XYPolygon[] polygons, XYPolygon check, int totalPolygons) {
+    // we use bounding boxes so we do not get polygons with shared points.
+    for (XYPolygon polygon : polygons) {
+      if (polygon != null) {
+        if (getEncoder().quantizeY(polygon.minY) > getEncoder().quantizeY(check.maxY)
+            || getEncoder().quantizeY(polygon.maxY) < getEncoder().quantizeY(check.minY)
+            || getEncoder().quantizeX(polygon.minX) > getEncoder().quantizeX(check.maxX)
+            || getEncoder().quantizeX(polygon.maxX) < getEncoder().quantizeX(check.minX)) {
+          continue;
+        }
+        return false;
+      }
+    }
+    return true;
   }
 
   @Override
@@ -85,19 +112,9 @@ public class TestXYMultiPolygonShapeQueries extends BaseXYShapeTestCase {
     }
 
     @Override
-    public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
-      XYPolygon[] polygons = (XYPolygon[])shape;
-      for (XYPolygon p : polygons) {
-        boolean b = POLYGONVALIDATOR.testBBoxQuery(minLat, maxLat, minLon, maxLon, p);
-        if (b == true && queryRelation == QueryRelation.INTERSECTS) {
-          return true;
-        } else if (b == false && queryRelation == QueryRelation.DISJOINT) {
-          return false;
-        } else if (b == false && queryRelation == QueryRelation.WITHIN) {
-          return false;
-        }
-      }
-      return queryRelation != QueryRelation.INTERSECTS;
+    public boolean testBBoxQuery(double minY, double maxY, double minX, double maxX, Object shape) {
+      Component2D rectangle2D = XYRectangle2D.create(new XYRectangle(minX, maxX, minY, maxY));
+      return testComponentQuery(rectangle2D, shape);
     }
 
     @Override
@@ -107,13 +124,15 @@ public class TestXYMultiPolygonShapeQueries extends BaseXYShapeTestCase {
         boolean b = POLYGONVALIDATOR.testComponentQuery(query, p);
         if (b == true && queryRelation == QueryRelation.INTERSECTS) {
           return true;
+        } else if (b == true && queryRelation == QueryRelation.CONTAINS) {
+          return true;
         } else if (b == false && queryRelation == QueryRelation.DISJOINT) {
           return false;
         } else if (b == false && queryRelation == QueryRelation.WITHIN) {
           return false;
         }
       }
-      return queryRelation != QueryRelation.INTERSECTS;
+      return queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS;
     }
   }
 
