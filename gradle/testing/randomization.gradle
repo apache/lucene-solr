@@ -3,7 +3,6 @@
 //
 
 import java.nio.file.*
-import org.apache.tools.ant.taskdefs.condition.Os
 import com.carrotsearch.randomizedtesting.SeedUtils
 import com.carrotsearch.randomizedtesting.generators.RandomPicks
 

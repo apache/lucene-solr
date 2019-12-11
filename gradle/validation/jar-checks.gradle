@@ -1,0 +1,113 @@
+
+// This adds validation of project dependencies:
+// 1) license file
+// 2) notice file
+// 3) checksum validation/ generation.
+
+import org.apache.commons.codec.digest.DigestUtils
+import org.apache.commons.codec.digest.MessageDigestAlgorithms
+
+buildscript {
+  repositories {
+    mavenCentral()
+  }
+
+  dependencies {
+    classpath 'commons-codec:commons-codec:1.13'
+  }
+}
+
+// Configure license checksum folder for top-level projects.
+// (The file("licenses") inside the configure scope resolves
+// relative to the current project so they're not the same).
+configure(project(":lucene")) {
+  ext.licensesDir = file("licenses")
+}
+configure(project(":solr")) {
+  ext.licensesDir = file("licenses")
+}
+
+subprojects {
+  // Configure jarValidation configuration for all projects. Any dependency
+  // declared on this configuration (or any configuration it extends from) will
+  // be verified.
+  configurations {
+    jarValidation
+  }
+
+  // For Java projects, add runtime and classpath to jarValidation
+  plugins.withType(JavaPlugin) {
+    configurations {
+      jarValidation {
+        extendsFrom runtimeClasspath
+        extendsFrom compileClasspath
+      }
+    }
+  }
+
+  task collectJarInfos() {
+    dependsOn configurations.jarValidation
+
+    doFirst {
+      // We only care about this module's direct dependencies. Anything imported
+      // from other modules will be taken care of over there.
+      def ownDeps = configurations.detachedConfiguration()
+          .extendsFrom(configurations.jarValidation)
+          .copyRecursive { dep ->
+            !(dep instanceof org.gradle.api.artifacts.ProjectDependency)
+          }
+
+      project.ext.jarInfos = ownDeps.resolvedConfiguration.resolvedArtifacts.collect { resolvedArtifact ->
+        def file = resolvedArtifact.file
+        return [
+            name: resolvedArtifact.name,
+            jarName: file.toPath().getFileName().toString(),
+            path: file,
+            module: resolvedArtifact.moduleVersion,
+            checksum: new DigestUtils(MessageDigestAlgorithms.SHA_1).digestAsHex(file)
+        ]
+      }
+    }
+  }
+
+  task validateJarChecksums() {
+    group = 'Dependency validation'
+    description = "Validate project dependency checksums"
+
+    dependsOn configurations.jarValidation
+    dependsOn collectJarInfos
+
+    // TODO: validation should fail the build but we're out of sync with master.
+    def fail = false
+
+    doLast {
+      def errors = []
+      jarInfos.each { dep ->
+        def expectedChecksumFile = file("${licensesDir}/${dep.jarName}.sha1")
+        if (!expectedChecksumFile.exists()) {
+          errors << "Dependency checksum missing ('${dep.module}'), expected it at: ${expectedChecksumFile}"
+        } else {
+          def expected = expectedChecksumFile.getText("UTF-8").trim()
+          def actual = dep.checksum.trim()
+          if (expected.compareToIgnoreCase(actual) != 0) {
+            errors << "Dependency checksum mismatch ('${dep.module}'), expected it to be: ${expected}, but was: ${actual}"
+          }
+        }
+      }
+
+      if (errors) {
+        def msg = "Dependency checksum validation failed:\n  - " + errors.join("\n  - ")
+        if (fail) {
+          throw new GradleException(msg)
+        } else {
+          logger.log(LogLevel.WARN, "WARNING: ${msg}")
+        }
+      }
+    }
+  }
+}
+
+// Disable validation for these projects.
+configure(project(":solr:solr-ref-guide")) {
+  validateJarChecksums.enabled = false
+}
