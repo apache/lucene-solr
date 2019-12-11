@@ -119,6 +119,9 @@ Upgrade Notes
   third-party components will work the same as before due to type erasure but source code changes may be
   required.
 
+* SOLR-14025: VelocityResponseWriter has been hardened - only trusted configsets can render configset provided
+  templates and rendering templates from request parameters has been removed.
+
 New Features
 ---------------------
 * SOLR-13821: A Package store to store and load package artifacts (noble, Ishan Chattopadhyaya)
