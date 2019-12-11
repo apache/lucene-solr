@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.solr.cloud.hdfs;
 
 import java.util.Collections;
@@ -38,5 +37,4 @@ public class FakeGroupMapping implements GroupMappingServiceProvider {
   @Override
   public void cacheGroupsAdd(List<String> groups) {
   }
-
 }

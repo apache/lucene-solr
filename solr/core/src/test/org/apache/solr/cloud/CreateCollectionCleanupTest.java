@@ -24,7 +24,6 @@ import static org.hamcrest.CoreMatchers.not;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Properties;
-
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -32,10 +31,6 @@ import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.hamcrest.CoreMatchers.hasItem;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
 
 public class CreateCollectionCleanupTest extends SolrCloudTestCase {
 

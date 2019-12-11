@@ -18,41 +18,32 @@
 
 package org.apache.hadoop.fs;
 
-
 import com.google.common.annotations.VisibleForTesting;
 
 import java.io.BufferedOutputStream;
 import java.io.DataOutput;
 import java.io.EOFException;
 import java.io.File;
-
-import java.io.FileDescriptor;
-
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-
 import java.io.FileDescriptor;
-
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Paths;
-
-import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.BasicFileAttributes;
-
+import java.nio.file.attribute.BasicFileAttributeView;
 import java.nio.file.attribute.FileTime;
 import java.nio.file.attribute.PosixFileAttributes;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Optional;
-
 
 import org.apache.hadoop.classification.InterfaceAudience;
 import org.apache.hadoop.classification.InterfaceStability;

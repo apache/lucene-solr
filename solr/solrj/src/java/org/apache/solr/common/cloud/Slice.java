@@ -258,7 +258,6 @@ public class Slice extends ZkNodeProps implements Iterable<Replica> {
   }
 
   /**use {@link org.apache.solr.client.solrj.cloud.ShardStateProvider#getLeader(Slice)} instead
-   * @return
    */
   @Deprecated
   public Replica getLeader() {
