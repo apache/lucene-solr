@@ -37,23 +37,25 @@ import com.ibm.icu.text.UnicodeSet;
 public class TestICUTransformCharFilter extends BaseTokenStreamTestCase {
   
   public void testBasicFunctionality() throws Exception {
-    checkToken(Transliterator.getInstance("Traditional-Simplified"), 
+    checkToken(getTransliterator("Traditional-Simplified"),
         "簡化字", "简化字"); 
-    checkToken(Transliterator.getInstance("Katakana-Hiragana"), 
+    checkToken(getTransliterator("Katakana-Hiragana"),
         "ヒラガナ", "ひらがな");
-    checkToken(Transliterator.getInstance("Fullwidth-Halfwidth"), 
+    checkToken(getTransliterator("Fullwidth-Halfwidth"),
         "アルアノリウ", "ｱﾙｱﾉﾘｳ");
-    checkToken(Transliterator.getInstance("Any-Latin"), 
-        "Αλφαβητικός Κατάλογος", "Alphabētikós Katálogos");
+    checkToken(Transliterator.getInstance("Any-Latin"),
+        "Αλφαβητικός Κατάλογος", "alphabētikós̱ katálogos̱");
     checkToken(Transliterator.getInstance("NFD; [:Nonspacing Mark:] Remove"), 
-        "Alphabētikós Katálogos", "Alphabetikos Katalogos");
-    checkToken(Transliterator.getInstance("Han-Latin"),
+        "Alphabētikós Katálogos", "alphabetikos katalogos");
+    checkToken(getTransliterator("Han-Latin"),
         "中国", "zhōng guó");
   }
-  
+
   public void testRollbackBuffer() throws Exception {
     checkToken(Transliterator.getInstance("Cyrillic-Latin"),
         "яяяяя", "âââââ"); // final NFC transform applied
+    checkToken(getTransliterator("Cyrillic-Latin", true),
+        "яяяяя", "âââââ"); // final NFC transform *not* applied
     checkToken(Transliterator.getInstance("Cyrillic-Latin"), 0, false,
         "яяяяя", "a\u0302a\u0302a\u0302a\u0302a\u0302"); // final NFC transform never applied
     checkToken(Transliterator.getInstance("Cyrillic-Latin"), 2, false,
@@ -90,7 +92,7 @@ public class TestICUTransformCharFilter extends BaseTokenStreamTestCase {
   }
   
   public void testOptimizer2() throws Exception {
-    checkToken(Transliterator.getInstance("Traditional-Simplified; CaseFold"), 
+    checkToken(getTransliterator("Traditional-Simplified; CaseFold"),
         "ABCDE", "abcde");
   }
   
@@ -108,18 +110,18 @@ public class TestICUTransformCharFilter extends BaseTokenStreamTestCase {
 
   private void checkToken(Transliterator transform, int maxRollbackBufferCapacity, boolean failOnRollbackBufferOverflow, String input, String expected) throws IOException {
     final KeywordTokenizer input1 = new KeywordTokenizer();
-    input1.setReader(new ICUTransformCharFilter(new StringReader(input), transform, maxRollbackBufferCapacity, failOnRollbackBufferOverflow));
+    input1.setReader(new ICUTransformCharFilter(new ICUNormalizer2CharFilter(new StringReader(input)), transform, maxRollbackBufferCapacity, failOnRollbackBufferOverflow));
     assertTokenStreamContents(input1, new String[] { expected });
   }
   
   public void testRandomStringsLatinToKatakana() throws Exception {
     // this Transliterator often decreases character length wrt input
-    testRandomStrings(Transliterator.getInstance("Latin-Katakana"));
+    testRandomStrings(getTransliterator("Latin-Katakana"));
   }
 
   public void testRandomStringsAnyToLatin() throws Exception {
     // this Transliterator often increases character length wrt input
-    testRandomStrings(Transliterator.getInstance("Any-Latin"));
+    testRandomStrings(getTransliterator("Any-Latin"));
   }
 
   /** blast some random strings through the analyzer */
@@ -147,7 +149,7 @@ public class TestICUTransformCharFilter extends BaseTokenStreamTestCase {
   }
   
   public void testEmptyTerm() throws IOException {
-    final Transliterator transform = Transliterator.getInstance("Any-Latin");
+    final Transliterator transform = getTransliterator("Any-Latin");
     Analyzer a = new Analyzer() {
       @Override
       protected TokenStreamComponents createComponents(String fieldName) {
@@ -165,5 +167,18 @@ public class TestICUTransformCharFilter extends BaseTokenStreamTestCase {
     };
     checkOneTerm(a, "", "");
     a.close();
+  }
+
+  private Transliterator getTransliterator(String id) {
+    return getTransliterator(id, random().nextBoolean());
+  }
+
+  private Transliterator getTransliterator(String id, Boolean stripNormalization) {
+    Transliterator transliterator = Transliterator.getInstance(id);
+    if (stripNormalization) {
+      return ICUTransformCharFilter.withoutUnicodeNormalization(transliterator);
+    } else {
+      return transliterator;
+    }
   }
 }
