@@ -19,21 +19,33 @@ package org.apache.solr.client.solrj.cloud;
 
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-/**An implementation that fetches the state of each replica in a collection
- * and it also provides the leader of shards
+/**An implementation that fetches the state of each replica/slice and leaders of shards in a collection.
+ * The state is embedded with other topology information in state.json in the original SolrCLoud design.
+ * But, it is possible to have another implementation where the state and leader information can be stored and read
+ * from other places.
  *
  */
 public interface ShardStateProvider {
 
+  /**Get the state of  a given {@link Replica}
+   */
   Replica.State getState(Replica replica);
 
+  /**Get the leader {@link Replica} of the shard
+   */
   Replica getLeader(Slice slice);
 
-  /**Gete the leader of the slice. Wait for one if there is no leader
+  /**Get the leader of the slice. Wait for one if there is no leader
+   * Throws an {@link InterruptedException} if interrupted in between
    */
   Replica getLeader(Slice slice, int timeout) throws InterruptedException;
 
+  /**CHeck if the replica is active
+   *
+   */
   boolean isActive(Replica replica);
 
+  /**Check if the slice is active
+   */
   boolean isActive(Slice slice);
 }
