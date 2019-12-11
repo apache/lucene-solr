@@ -51,6 +51,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.V2RequestSupport;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
@@ -414,7 +415,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   public void waitForState(String collection, long wait, TimeUnit unit, Predicate<DocCollection> predicate)
       throws InterruptedException, TimeoutException {
     getClusterStateProvider().connect();
-    assertZKStateProvider().zkStateReader.waitForState(collection, wait, unit, predicate);
+    assertZKStateProvider().zkStateReader.waitForState(collection, wait, unit, (doc, ssp) -> predicate.test(doc));
   }
 
   /**
@@ -1102,11 +1103,12 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       List<Replica> sortedReplicas = new ArrayList<>();
       List<Replica> replicas = new ArrayList<>();
       for (Slice slice : slices.values()) {
-        Replica leader = slice.getLeader();
+        ShardStateProvider ssp = getClusterStateProvider().getShardStateProvider(slice.getCollection());
+        Replica leader = ssp.getLeader(slice) ;
         for (Replica replica : slice.getReplicas()) {
           String node = replica.getNodeName();
           if (!liveNodes.contains(node) // Must be a live node to continue
-              || replica.getState() != Replica.State.ACTIVE) // Must be an ACTIVE replica to continue
+              || ssp.getState(replica) != Replica.State.ACTIVE) // Must be an ACTIVE replica to continue
             continue;
           if (sendToLeaders && replica.equals(leader)) {
             sortedReplicas.add(replica); // put leaders here eagerly (if sendToLeader mode)
