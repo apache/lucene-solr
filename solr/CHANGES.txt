@@ -68,6 +68,8 @@ New Features
 
 * SOLR-12217: Support shards.preference in SolrJ for single shard collections. The parameter is now used by the CloudSolrClient and Streaming Expressions. (Houston Putman, Tomas Fernandez-Lobbe)
 
+* SOLR-14043: Allow the precision Stream Evaluator to operate on matrices (Joel bernstein)
+
 Improvements
 ---------------------
 
