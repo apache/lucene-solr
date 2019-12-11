@@ -415,7 +415,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
   boolean waitForCoreNodeGone(String collectionName, String shard, String replicaName, int timeoutms) throws InterruptedException {
     try {
-      zkStateReader.waitForState(collectionName, timeoutms, TimeUnit.MILLISECONDS, (c) -> {
+      zkStateReader.waitForState(collectionName, timeoutms, TimeUnit.MILLISECONDS, (c,ssp) -> {
           if (c == null)
             return true;
           Slice slice = c.getSlice(shard);

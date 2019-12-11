@@ -31,7 +31,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -49,6 +48,7 @@ import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
@@ -287,7 +287,7 @@ public final class ManagedIndexSchema extends IndexSchema {
     List<String> activeReplicaCoreUrls = new ArrayList<>();
     ZkStateReader zkStateReader = zkController.getZkStateReader();
     ClusterState clusterState = zkStateReader.getClusterState();
-    Set<String> liveNodes = clusterState.getLiveNodes();
+    ShardStateProvider ssp = zkController.getZkStateReader().getShardStateProvider(collection);
     final DocCollection docCollection = clusterState.getCollectionOrNull(collection);
     if (docCollection != null && docCollection.getActiveSlicesArr().length > 0) {
       final Slice[] activeSlices = docCollection.getActiveSlicesArr();
@@ -297,8 +297,7 @@ public final class ManagedIndexSchema extends IndexSchema {
           for (Map.Entry<String, Replica> entry : replicasMap.entrySet()) {
             Replica replica = entry.getValue();
             if (!localCoreNodeName.equals(replica.getName()) &&
-                replica.getState() == Replica.State.ACTIVE &&
-                liveNodes.contains(replica.getNodeName())) {
+                ssp.isActive(replica)) {
               ZkCoreNodeProps replicaCoreProps = new ZkCoreNodeProps(replica);
               activeReplicaCoreUrls.add(replicaCoreProps.getCoreUrl());
             }

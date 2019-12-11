@@ -23,6 +23,7 @@ import java.util.Map;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
@@ -74,9 +75,10 @@ public class TestQueryingOnDownCollection extends SolrCloudTestCase {
     downAllReplicas();
 
     // assert all replicas are in down state
+    ShardStateProvider ssp = cluster.getSolrClient().getClusterStateProvider().getShardStateProvider(COLLECTION_NAME);
     List<Replica> replicas = getCollectionState(COLLECTION_NAME).getReplicas();
     for (Replica replica: replicas){
-      assertEquals(replica.getState(), Replica.State.DOWN);
+      assertEquals(ssp.getState(replica), Replica.State.DOWN);
     }
 
     // assert all nodes as active

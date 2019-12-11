@@ -24,11 +24,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
-import java.util.Map;
 
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
@@ -132,6 +133,7 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
       //SolrCloud Sharding
       CloudSolrClient cloudSolrClient = streamContext.getSolrClientCache().getCloudSolrClient(zkHost);
       ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
+      ShardStateProvider ssp = zkStateReader.getShardStateProvider(collection);
       ClusterState clusterState = zkStateReader.getClusterState();
       Slice[] slices = CloudSolrStream.getSlices(collection, zkStateReader, true);
       Set<String> liveNodes = clusterState.getLiveNodes();
@@ -139,7 +141,7 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
         Collection<Replica> replicas = slice.getReplicas();
         List<Replica> shuffler = new ArrayList<>();
         for(Replica replica : replicas) {
-          if(replica.getState() == Replica.State.ACTIVE && liveNodes.contains(replica.getNodeName()))
+          if(ssp.isActive(replica))
             shuffler.add(replica);
         }
 

@@ -54,4 +54,9 @@ public class DirectShardState implements ShardStateProvider {
   public boolean isActive(Slice slice) {
     return slice.getState() == Slice.State.ACTIVE;
   }
+
+  @Override
+  public Replica getLeader(Slice slice, int timeout) throws InterruptedException {
+    throw new RuntimeException("Not implemented");//TODO
+  }
 }

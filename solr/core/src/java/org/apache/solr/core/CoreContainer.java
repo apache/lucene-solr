@@ -49,6 +49,7 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.api.AnnotatedApi;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.embedded.EmbeddedSolrServer;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -69,6 +70,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
+import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
@@ -1342,12 +1344,13 @@ public class CoreContainer {
       case fromleader: // Recovery from leader on a CorruptedIndexException
         if (isZooKeeperAware()) {
           CloudDescriptor desc = dcore.getCloudDescriptor();
+          ShardStateProvider ssp = getZkController().getZkStateReader().getShardStateProvider(desc.getCollectionName());
           try {
-            Replica leader = getZkController().getClusterState()
+            Slice slice = getZkController().getClusterState()
                 .getCollection(desc.getCollectionName())
-                .getSlice(desc.getShardId())
-                .getLeader();
-            if (leader != null && leader.getState() == State.ACTIVE) {
+                .getSlice(desc.getShardId());
+            Replica leader = ssp.getLeader(slice);
+            if (leader != null && ssp.getState(leader) == State.ACTIVE) {
               log.info("Found active leader, will attempt to create fresh core and recover.");
               resetIndexDirectory(dcore, coreConfig);
               // the index of this core is emptied, its term should be set to 0

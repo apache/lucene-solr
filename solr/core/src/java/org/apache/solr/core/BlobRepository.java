@@ -38,6 +38,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -238,6 +239,7 @@ public class BlobRepository {
     DocCollection coll = cs.getCollectionOrNull(CollectionAdminParams.SYSTEM_COLL);
     if (coll == null)
       throw new SolrException(SERVICE_UNAVAILABLE, CollectionAdminParams.SYSTEM_COLL + " collection not available");
+    ShardStateProvider ssp = zkStateReader.getShardStateProvider(CollectionAdminParams.SYSTEM_COLL);
     ArrayList<Slice> slices = new ArrayList<>(coll.getActiveSlices());
     if (slices.isEmpty())
       throw new SolrException(SERVICE_UNAVAILABLE, "No active slices for " + CollectionAdminParams.SYSTEM_COLL + " collection");
@@ -248,7 +250,7 @@ public class BlobRepository {
       List<Replica> replicas = new ArrayList<>(slice.getReplicasMap().values());
       Collections.shuffle(replicas, RANDOM);
       for (Replica r : replicas) {
-        if (r.getState() == Replica.State.ACTIVE) {
+        if (ssp.getState(r) == Replica.State.ACTIVE) {
           if (zkStateReader.getClusterState().getLiveNodes().contains(r.get(ZkStateReader.NODE_NAME_PROP))) {
             replica = r;
             break;

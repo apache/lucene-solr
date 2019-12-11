@@ -43,8 +43,8 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
-import org.apache.solr.client.solrj.routing.ReplicaListTransformer;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.routing.ReplicaListTransformer;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
@@ -473,7 +473,7 @@ public class HttpShardHandler extends ShardHandler {
             }
           };
 
-          final List<Replica> eligibleSliceReplicas = collectEligibleReplicas(slice, clusterState, onlyNrtReplicas, isShardLeader);
+          final List<Replica> eligibleSliceReplicas = collectEligibleReplicas(rb, slice, clusterState, onlyNrtReplicas, isShardLeader);
 
           final List<String> shardUrls = transformReplicasToShardUrls(replicaListTransformer, eligibleSliceReplicas);
 
@@ -514,12 +514,12 @@ public class HttpShardHandler extends ShardHandler {
     }
   }
 
-  private static List<Replica> collectEligibleReplicas(Slice slice, ClusterState clusterState, boolean onlyNrtReplicas, Predicate<Replica> isShardLeader) {
+  private static List<Replica> collectEligibleReplicas(ResponseBuilder rb, Slice slice, ClusterState clusterState, boolean onlyNrtReplicas, Predicate<Replica> isShardLeader) {
     final Collection<Replica> allSliceReplicas = slice.getReplicasMap().values();
     final List<Replica> eligibleSliceReplicas = new ArrayList<>(allSliceReplicas.size());
     for (Replica replica : allSliceReplicas) {
       if (!clusterState.liveNodesContain(replica.getNodeName())
-          || replica.getState() != Replica.State.ACTIVE
+          || rb.req.getCore().getShardStateProvider().getState(replica) != Replica.State.ACTIVE
           || (onlyNrtReplicas && replica.getType() == Replica.Type.PULL)) {
         continue;
       }

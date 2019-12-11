@@ -25,15 +25,15 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Random;
-import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -50,7 +50,6 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
@@ -397,16 +396,13 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
 
     Slice[] slices = CloudSolrStream.getSlices(this.collection, zkStateReader, false);
 
-    ClusterState clusterState = zkStateReader.getClusterState();
-    Set<String> liveNodes = clusterState.getLiveNodes();
-
     for(Slice slice : slices) {
       String sliceName = slice.getName();
       long checkpoint;
       if(initialCheckpoint > -1) {
         checkpoint = initialCheckpoint;
       } else {
-        checkpoint = getCheckpoint(slice, liveNodes);
+        checkpoint = getCheckpoint(zkStateReader.getShardStateProvider(this.collection), slice);
       }
 
       this.checkpoints.put(sliceName, checkpoint);
@@ -414,7 +410,7 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
   }
 
   //Gets the highest version number for the slice.
-  private long getCheckpoint(Slice slice, Set<String> liveNodes) throws IOException {
+  private long getCheckpoint(ShardStateProvider ssp,  Slice slice) throws IOException {
     Collection<Replica> replicas = slice.getReplicas();
     long checkpoint = -1;
     ModifiableSolrParams params = new ModifiableSolrParams();
@@ -423,7 +419,7 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
     params.set(DISTRIB, "false");
     params.set("rows", 1);
     for(Replica replica : replicas) {
-      if(replica.getState() == Replica.State.ACTIVE && liveNodes.contains(replica.getNodeName())) {
+      if(ssp.isActive(replica)) {
         String coreUrl = replica.getCoreUrl();
         SolrStream solrStream = new SolrStream(coreUrl, params);
 
@@ -476,14 +472,12 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
     ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
     Slice[] slices = CloudSolrStream.getSlices(checkpointCollection, zkStateReader, false);
 
-    ClusterState clusterState = zkStateReader.getClusterState();
-    Set<String> liveNodes = clusterState.getLiveNodes();
-
+    ShardStateProvider ssp = zkStateReader.getShardStateProvider(checkpointCollection);
     OUTER:
     for(Slice slice : slices) {
       Collection<Replica> replicas = slice.getReplicas();
       for(Replica replica : replicas) {
-        if(replica.getState() == Replica.State.ACTIVE && liveNodes.contains(replica.getNodeName())){
+        if(ssp.isActive(replica)){
           HttpSolrClient httpClient = streamContext.getSolrClientCache().getHttpSolrClient(replica.getCoreUrl());
           try {
             SolrDocument doc = httpClient.getById(id);
@@ -518,10 +512,7 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
       mParams.set("fl", fl);
 
       Random random = new Random();
-
-      ClusterState clusterState = zkStateReader.getClusterState();
-      Set<String> liveNodes = clusterState.getLiveNodes();
-
+      ShardStateProvider ssp = zkStateReader.getShardStateProvider(this.collection);
       for(Slice slice : slices) {
         ModifiableSolrParams localParams = new ModifiableSolrParams(mParams);
         long checkpoint = checkpoints.get(slice.getName());
@@ -529,7 +520,7 @@ public class TopicStream extends CloudSolrStream implements Expressible  {
         Collection<Replica> replicas = slice.getReplicas();
         List<Replica> shuffler = new ArrayList<>();
         for(Replica replica : replicas) {
-          if(replica.getState() == Replica.State.ACTIVE && liveNodes.contains(replica.getNodeName()))
+          if(ssp.isActive(replica))
             shuffler.add(replica);
         }
 

@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -89,6 +90,7 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     cluster.waitForActiveCollection(coll, 5, 5 * (create.getNumNrtReplicas() + create.getNumPullReplicas() + create.getNumTlogReplicas()));
     
     DocCollection collection = cloudClient.getZkStateReader().getClusterState().getCollection(coll);
+    ShardStateProvider ssp = cloudClient.getZkStateReader().getShardStateProvider(coll);
     log.debug("### Before decommission: " + collection);
     log.info("excluded_node : {}  ", emptyNode);
     createReplaceNodeRequest(node2bdecommissioned, emptyNode, null).processAsync("000", cloudClient);
@@ -159,13 +161,13 @@ public class ReplaceNodeTest extends SolrCloudTestCase {
     });
     assertFalse(newReplicas.isEmpty());
     for (Replica r : newReplicas) {
-      assertEquals(r.toString(), Replica.State.ACTIVE, r.getState());
+      assertEquals(r.toString(), Replica.State.ACTIVE, ssp.getState(r));
     }
     // make sure all replicas on emptyNode are not active
     replicas = collection.getReplicas(emptyNode);
     if (replicas != null) {
       for (Replica r : replicas) {
-        assertFalse(r.toString(), Replica.State.ACTIVE.equals(r.getState()));
+        assertFalse(r.toString(), Replica.State.ACTIVE.equals(ssp.getState(r)));
       }
     }
   }

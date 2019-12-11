@@ -32,6 +32,7 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -273,13 +274,14 @@ public void testCantConnectToPullReplica() throws Exception {
       cluster.getSolrClient().getZkStateReader().forceUpdateCollection(collectionName);
     }
     DocCollection docCollection = getCollectionState(collectionName);
+    ShardStateProvider ssp = cluster.getSolrClient().getClusterStateProvider().getShardStateProvider(collectionName);
     assertNotNull(docCollection);
     assertEquals("Unexpected number of writer replicas: " + docCollection, numWriter, 
-        docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).stream().filter(r->!activeOnly || r.getState() == Replica.State.ACTIVE).count());
+        docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).stream().filter(r->!activeOnly || ssp.getState(r)  == Replica.State.ACTIVE).count());
     assertEquals("Unexpected number of pull replicas: " + docCollection, numPassive, 
-        docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).stream().filter(r->!activeOnly || r.getState() == Replica.State.ACTIVE).count());
+        docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).stream().filter(r->!activeOnly || ssp.getState(r) == Replica.State.ACTIVE).count());
     assertEquals("Unexpected number of active replicas: " + docCollection, numActive, 
-        docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)).stream().filter(r->!activeOnly || r.getState() == Replica.State.ACTIVE).count());
+        docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)).stream().filter(r->!activeOnly || ssp.getState(r) == Replica.State.ACTIVE).count());
     return docCollection;
   }
   

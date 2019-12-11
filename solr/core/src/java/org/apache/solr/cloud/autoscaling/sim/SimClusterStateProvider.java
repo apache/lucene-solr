@@ -2216,6 +2216,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       collectionsStatesRef.set(null);
       ClusterState state = getClusterState();
       state.forEachCollection(coll -> {
+        ShardStateProvider ssp = cloudManager.getClusterStateProvider().getShardStateProvider(coll.getName());
         Map<String, Object> perColl = new LinkedHashMap<>();
         stats.put(coll.getName(), perColl);
         perColl.put("shardsTotal", coll.getSlices().size());
@@ -2258,11 +2259,11 @@ public class SimClusterStateProvider implements ClusterStateProvider {
           }
 
           for (Replica r : s.getReplicas()) {
-            if (r.getState() == Replica.State.ACTIVE) {
+            if (ssp.getState(r) == Replica.State.ACTIVE) {
               activeReplicas++;
             }
           }
-          Replica leader = s.getLeader();
+          Replica leader = ssp.getLeader(s);
           if (leader == null) {
             noLeader++;
             if (!s.getReplicas().isEmpty()) {

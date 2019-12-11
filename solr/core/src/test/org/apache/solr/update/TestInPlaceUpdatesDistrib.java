@@ -37,6 +37,7 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -994,10 +995,11 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       Thread.sleep(10);
       cloudClient.getZkStateReader().forceUpdateCollection(DEFAULT_COLLECTION);
       ClusterState state = cloudClient.getZkStateReader().getClusterState();
+      ShardStateProvider ssp = cloudClient.getZkStateReader().getShardStateProvider(DEFAULT_COLLECTION);
 
       int numActiveReplicas = 0;
       for (Replica rep: state.getCollection(DEFAULT_COLLECTION).getSlice(SHARD1).getReplicas())
-        if (rep.getState().equals(Replica.State.ACTIVE))
+        if (ssp.getState(rep).equals(Replica.State.ACTIVE))
           numActiveReplicas++;
 
       assertEquals("The replica receiving reordered updates must not have gone down", 3, numActiveReplicas);
@@ -1066,11 +1068,12 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
           Thread.sleep(10);
           cloudClient.getZkStateReader().forceUpdateCollection(DEFAULT_COLLECTION);
           ClusterState state = cloudClient.getZkStateReader().getClusterState();
+          ShardStateProvider ssp = cloudClient.getZkStateReader().getShardStateProvider(DEFAULT_COLLECTION);
 
           int numActiveReplicas = 0;
           for (Replica rep: state.getCollection(DEFAULT_COLLECTION).getSlice(SHARD1).getReplicas()) {
             assertTrue(zkShardTerms.canBecomeLeader(rep.getName()));
-            if (rep.getState().equals(Replica.State.ACTIVE))
+            if (ssp.getState(rep).equals(Replica.State.ACTIVE))
               numActiveReplicas++;
           }
           assertEquals("The replica receiving reordered updates must not have gone down", 3, numActiveReplicas);
@@ -1320,10 +1323,11 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
       Thread.sleep(10);
       cloudClient.getZkStateReader().forceUpdateCollection(DEFAULT_COLLECTION);
       ClusterState state = cloudClient.getZkStateReader().getClusterState();
+      ShardStateProvider ssp = cloudClient.getZkStateReader().getShardStateProvider(DEFAULT_COLLECTION);
 
       int numActiveReplicas = 0;
       for (Replica rep: state.getCollection(DEFAULT_COLLECTION).getSlice(SHARD1).getReplicas())
-        if (rep.getState().equals(Replica.State.ACTIVE))
+        if (ssp.getState(rep).equals(Replica.State.ACTIVE))
           numActiveReplicas++;
 
       assertEquals("The replica receiving reordered updates must not have gone down", 3, numActiveReplicas);

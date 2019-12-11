@@ -16,12 +16,6 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
-import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-import static org.apache.solr.common.params.CommonParams.NAME;
-
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Date;
@@ -31,16 +25,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkNodeProps;
-import org.apache.solr.common.cloud.Replica.State;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -52,6 +47,12 @@ import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.handler.component.ShardHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CommonParams.NAME;
 
 /**
  * This class implements the functionality of creating a collection level snapshot.
@@ -94,12 +95,13 @@ public class CreateSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
 
     NamedList shardRequestResults = new NamedList();
     Map<String, Slice> shardByCoreName = new HashMap<>();
+    ShardStateProvider ssp = ocmh.cloudManager.getClusterStateProvider().getShardStateProvider(collectionName);
     ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient());
 
     final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
     for (Slice slice : ocmh.zkStateReader.getClusterState().getCollection(collectionName).getSlices()) {
       for (Replica replica : slice.getReplicas()) {
-        if (replica.getState() != State.ACTIVE) {
+        if (ssp.getState(replica) != State.ACTIVE) {
           log.info("Replica {} is not active. Hence not sending the createsnapshot request", replica.getCoreName());
           continue; // Since replica is not active - no point sending a request.
         }

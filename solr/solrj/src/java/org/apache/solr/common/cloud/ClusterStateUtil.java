@@ -17,12 +17,12 @@
 package org.apache.solr.common.cloud;
 
 import java.lang.invoke.MethodHandles;
-
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.slf4j.Logger;
@@ -61,6 +61,7 @@ public class ClusterStateUtil {
     long timeout = System.nanoTime()
         + TimeUnit.NANOSECONDS.convert(timeoutInMs, TimeUnit.MILLISECONDS);
     boolean success = false;
+    ShardStateProvider ssp = zkStateReader.getShardStateProvider(collection);
     while (!success && System.nanoTime() < timeout) {
       success = true;
       ClusterState clusterState = zkStateReader.getClusterState();
@@ -81,7 +82,7 @@ public class ClusterStateUtil {
               for (Replica replica : replicas) {
                 // on a live node?
                 final boolean live = clusterState.liveNodesContain(replica.getNodeName());
-                final boolean isActive = replica.getState() == Replica.State.ACTIVE;
+                final boolean isActive = ssp.getState(replica) == Replica.State.ACTIVE;
                 if (!live || !isActive) {
                   // fail
                   success = false;
@@ -219,11 +220,12 @@ public class ClusterStateUtil {
   public static int getLiveAndActiveReplicaCount(ZkStateReader zkStateReader, String collection) {
     Slice[] slices;
     slices = zkStateReader.getClusterState().getCollection(collection).getActiveSlicesArr();
+    ShardStateProvider ssp = zkStateReader.getShardStateProvider(collection);
     int liveAndActive = 0;
     for (Slice slice : slices) {
       for (Replica replica : slice.getReplicas()) {
         boolean live = zkStateReader.getClusterState().liveNodesContain(replica.getNodeName());
-        boolean active = replica.getState() == Replica.State.ACTIVE;
+        boolean active = ssp.getState(replica)== Replica.State.ACTIVE;
         if (live && active) {
           liveAndActive++;
         }

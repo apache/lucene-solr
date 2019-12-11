@@ -28,6 +28,7 @@ import java.util.List;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.RemoteSolrException;
@@ -97,7 +98,7 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
       ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), collection, 120000);
       Slice shard = getCollectionState(collection).getSlice("shard1");
       assertNotSame(shard.getLeader().getNodeName(), oldLeader.getNodeName());
-      assertEquals(getNonLeader(shard).getNodeName(), oldLeader.getNodeName());
+      assertEquals(getNonLeader(shard, cluster.getSolrClient().getClusterStateProvider().getShardStateProvider(collection) ).getNodeName(), oldLeader.getNodeName());
 
       for (String id : addedIds) {
         assertNotNull(cluster.getSolrClient().getById(collection,id));
@@ -157,9 +158,9 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
     return oldLeader;
   }
 
-  private Replica getNonLeader(Slice slice) {
+  private Replica getNonLeader(Slice slice, ShardStateProvider ssp) {
     if (slice.getReplicas().size() <= 1) return null;
-    return slice.getReplicas(rep -> !rep.getName().equals(slice.getLeader().getName())).get(0);
+    return slice.getReplicas(rep -> !rep.getName().equals(ssp.getLeader(slice).getName())).get(0);
   }
 
   @Test
@@ -177,11 +178,11 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
       JettySolrRunner otherReplicaJetty = null;
       if (numReplicas == 2) {
         Slice shard = getCollectionState(collection).getSlice("shard1");
-        otherReplicaJetty = cluster.getReplicaJetty(getNonLeader(shard));
+        otherReplicaJetty = cluster.getReplicaJetty(getNonLeader(shard, cluster.getSolrClient().getClusterStateProvider().getShardStateProvider(collection)));
         log.info("Stop jetty node : {} state:{}", otherReplicaJetty.getBaseUrl(), getCollectionState(collection));
         otherReplicaJetty.stop();
         cluster.waitForJettyToStop(otherReplicaJetty);
-        waitForState("Timeout waiting for replica get down", collection, (liveNodes, collectionState, ssp) -> getNonLeader(collectionState.getSlice("shard1")).getState() != Replica.State.ACTIVE);
+        waitForState("Timeout waiting for replica get down", collection, (liveNodes, collectionState, ssp) -> ssp.getState(getNonLeader(collectionState.getSlice("shard1"), ssp)) != Replica.State.ACTIVE);
       }
 
       Replica oldLeader = corruptLeader(collection, new ArrayList<>());

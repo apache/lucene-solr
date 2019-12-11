@@ -322,7 +322,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
             CollectionAdminParams.COLOCATED_WITH, collectionName);
         ocmh.overseer.offerStateUpdate(Utils.toJSON(props));
         try {
-          zkStateReader.waitForState(withCollection, 5, TimeUnit.SECONDS, (collectionState) -> collectionName.equals(collectionState.getStr(COLOCATED_WITH)));
+          zkStateReader.waitForState(withCollection, 5, TimeUnit.SECONDS, (collectionState,ssp) -> collectionName.equals(collectionState.getStr(COLOCATED_WITH)));
         } catch (TimeoutException e) {
           log.warn("Timed out waiting to see the " + COLOCATED_WITH + " property set on collection: " + withCollection);
           // maybe the overseer queue is backed up, we don't want to fail the create request

@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.cloud.AbstractFullDistribZkTestBase.CloudJettyRunner;
 import org.apache.solr.common.cloud.DocCollection;
@@ -650,6 +651,7 @@ public class ChaosMonkey {
     if (docCollection == null) {
       monkeyLog("Could not find collection {}", collectionName);
     }
+    ShardStateProvider ssp = zkStateReader.getShardStateProvider(collectionName);
     StringBuilder builder = new StringBuilder();
     builder.append("Collection status: {");
     for (Slice slice:docCollection.getSlices()) {
@@ -660,7 +662,7 @@ public class ChaosMonkey {
         m.find();
         String jettyPort = m.group(1);
         builder.append(String.format(Locale.ROOT, "%s(%s): {state: %s, type: %s, leader: %s, Live: %s}, ", 
-            replica.getName(), jettyPort, replica.getState(), replica.getType(), (replica.get("leader")!= null), zkStateReader.getClusterState().liveNodesContain(replica.getNodeName())));
+            replica.getName(), jettyPort, ssp.getState(replica), replica.getType(), (replica.get("leader")!= null), zkStateReader.getClusterState().liveNodesContain(replica.getNodeName())));
       }
       if (slice.getReplicas().size() > 0) {
         builder.setLength(builder.length() - 2);

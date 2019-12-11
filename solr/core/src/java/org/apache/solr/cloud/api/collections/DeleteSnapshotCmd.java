@@ -16,12 +16,6 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
-import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-import static org.apache.solr.common.params.CommonParams.NAME;
-
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -29,6 +23,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -50,6 +45,12 @@ import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.handler.component.ShardHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CommonParams.NAME;
 
 /**
  * This class implements the functionality of deleting a collection level snapshot.
@@ -101,9 +102,10 @@ public class DeleteSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
 
     final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
     log.info("Existing cores with snapshot for collection={} are {}", collectionName, existingCores);
+    ShardStateProvider ssp = ocmh.zkStateReader.getShardStateProvider(collectionName);
     for (Slice slice : ocmh.zkStateReader.getClusterState().getCollection(collectionName).getSlices()) {
       for (Replica replica : slice.getReplicas()) {
-        if (replica.getState() == State.DOWN) {
+        if (ssp.getState(replica) == State.DOWN) {
           continue; // Since replica is down - no point sending a request.
         }
 

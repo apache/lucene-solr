@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -155,16 +156,16 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     j2.stop();
     cluster.waitForJettyToStop(j1);
     cluster.waitForJettyToStop(j2);
-    
+
     waitForState("", collection, (liveNodes, collectionState, ssp) ->
       collectionState.getSlice("shard1").getReplicas().stream()
-          .filter(replica -> replica.getState() == Replica.State.DOWN).count() == 2);
+          .filter(replica -> ssp.getState(replica) == Replica.State.DOWN).count() == 2);
 
     addDocs(collection, 1, docId);
     JettySolrRunner j3 = cluster.getJettySolrRunner(0);
     j3.stop();
     cluster.waitForJettyToStop(j3);
-    waitForState("", collection, (liveNodes, collectionState, ssp) -> collectionState.getReplica(leader.getName()).getState() == Replica.State.DOWN);
+    waitForState("", collection, (liveNodes, collectionState, ssp) -> ssp.getState(collectionState.getReplica(leader.getName())) == Replica.State.DOWN);
 
     cluster.getJettySolrRunner(1).start();
     cluster.getJettySolrRunner(2).start();
@@ -173,9 +174,11 @@ public class TestCloudConsistency extends SolrCloudTestCase {
     cluster.waitForNode(j2, 30);
     
     TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    ShardStateProvider shardStateProvider = cluster.getSolrClient().getClusterStateProvider().getShardStateProvider(collection);
+
     while (!timeOut.hasTimedOut()) {
-      Replica newLeader = getCollectionState(collection).getSlice("shard1").getLeader();
-      if (newLeader != null && !newLeader.getName().equals(leader.getName()) && newLeader.getState() == Replica.State.ACTIVE) {
+      Replica newLeader = shardStateProvider.getLeader(getCollectionState(collection).getSlice("shard1"));
+      if (newLeader != null && !newLeader.getName().equals(leader.getName()) && shardStateProvider.getState(newLeader) == Replica.State.ACTIVE) {
         fail("Out of sync replica became leader " + newLeader);
       }
     }
@@ -212,12 +215,13 @@ public class TestCloudConsistency extends SolrCloudTestCase {
       proxies.get(cluster.getJettySolrRunner(i)).reopen();
     }
     waitForState("Timeout waiting for leader goes DOWN", collection, (liveNodes, collectionState, ssp)
-        -> collectionState.getReplica(leader.getName()).getState() == Replica.State.DOWN);
+        -> ssp.getState(collectionState.getReplica(leader.getName())) == Replica.State.DOWN);
 
+    ShardStateProvider shardStateProvider = cluster.getSolrClient().getClusterStateProvider().getShardStateProvider(collection);
     TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while (!timeOut.hasTimedOut()) {
-      Replica newLeader = getCollectionState(collection).getLeader("shard1");
-      if (newLeader != null && !newLeader.getName().equals(leader.getName()) && newLeader.getState() == Replica.State.ACTIVE) {
+      Replica newLeader = shardStateProvider.getLeader( getCollectionState(collection).getSlice("shard1"));
+      if (newLeader != null && !newLeader.getName().equals(leader.getName()) && shardStateProvider.getState(newLeader) == Replica.State.ACTIVE) {
         fail("Out of sync replica became leader " + newLeader);
       }
     }

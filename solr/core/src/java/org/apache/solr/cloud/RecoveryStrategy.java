@@ -31,6 +31,7 @@ import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.HttpUriRequestResponse;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
@@ -772,9 +773,9 @@ public class RecoveryStrategy implements Runnable, Closeable {
     while (true) {
       CloudDescriptor cloudDesc = coreDesc.getCloudDescriptor();
       DocCollection docCollection = zkStateReader.getClusterState().getCollection(cloudDesc.getCollectionName());
+      ShardStateProvider ssp = zkStateReader.getShardStateProvider(docCollection.getName());
       if (!isClosed() && mayPutReplicaAsDown && numTried == 1 &&
-          docCollection.getReplica(coreDesc.getCloudDescriptor().getCoreNodeName())
-              .getState() == Replica.State.ACTIVE) {
+          ssp.getState(docCollection.getReplica(coreDesc.getCloudDescriptor().getCoreNodeName()))== Replica.State.ACTIVE) {
         // this operation may take a long time, by putting replica into DOWN state, client won't query this replica
         zkController.publish(coreDesc, Replica.State.DOWN);
       }

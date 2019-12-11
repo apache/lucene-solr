@@ -44,6 +44,7 @@ import org.apache.solr.api.ApiBag;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
@@ -823,6 +824,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     ClusterState clusterState = zkController.getZkStateReader().getClusterState();
     Set<String> liveNodes = clusterState.getLiveNodes();
     final DocCollection docCollection = clusterState.getCollectionOrNull(collection);
+    ShardStateProvider ssp = zkController.getZkStateReader().getShardStateProvider(collection);
     if (docCollection != null && docCollection.getActiveSlices() != null && docCollection.getActiveSlices().size() > 0) {
       final Collection<Slice> activeSlices = docCollection.getActiveSlices();
       for (Slice next : activeSlices) {
@@ -830,7 +832,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
         if (replicasMap != null) {
           for (Map.Entry<String, Replica> entry : replicasMap.entrySet()) {
             Replica replica = entry.getValue();
-            if (replica.getState() == Replica.State.ACTIVE && liveNodes.contains(replica.getNodeName())) {
+            if (ssp.isActive(replica)) {
               activeReplicaCoreUrls.add(replica.getCoreUrl());
             }
           }

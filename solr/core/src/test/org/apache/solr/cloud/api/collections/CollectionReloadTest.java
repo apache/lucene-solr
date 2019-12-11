@@ -23,6 +23,7 @@ import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.RetryUtil;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -53,8 +54,12 @@ public class CollectionReloadTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(testCollectionName, "conf", 1, 1)
         .process(cluster.getSolrClient());
 
+
+    ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
     Replica leader
-        = cluster.getSolrClient().getZkStateReader().getLeaderRetry(testCollectionName, "shard1", DEFAULT_TIMEOUT);
+        = zkStateReader.getShardStateProvider(testCollectionName)
+        .getLeader(zkStateReader.getCollection(testCollectionName)
+            .getSlice("shard1"), DEFAULT_TIMEOUT);
 
     long coreStartTime = getCoreStatus(leader).getCoreStartTime().getTime();
     CollectionAdminRequest.reloadCollection(testCollectionName).process(cluster.getSolrClient());
@@ -77,7 +82,7 @@ public class CollectionReloadTest extends SolrCloudTestCase {
     waitForState("Timed out waiting for core to re-register as ACTIVE after session expiry", testCollectionName, (n, c, ssp) -> {
       log.info("Collection state: {}", c.toString());
       Replica expiredReplica = c.getReplica(leader.getName());
-      return expiredReplica.getState() == Replica.State.ACTIVE && c.getZNodeVersion() > initialStateVersion;
+      return ssp.getState(expiredReplica) == Replica.State.ACTIVE && c.getZNodeVersion() > initialStateVersion;
     });
 
     log.info("testReloadedLeaderStateAfterZkSessionLoss succeeded ... shutting down now!");

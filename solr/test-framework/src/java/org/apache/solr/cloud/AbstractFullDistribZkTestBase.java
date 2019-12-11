@@ -2118,13 +2118,14 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       assertNotNull(cs);
       final DocCollection docCollection = cs.getCollectionOrNull(testCollectionName);
       assertNotNull("No collection found for " + testCollectionName, docCollection);
+      ShardStateProvider ssp = cloudClient.getZkStateReader().getShardStateProvider(testCollectionName);
       Slice shard = docCollection.getSlice(shardId);
       assertNotNull("No Slice for "+shardId, shard);
       allReplicasUp = true; // assume true
       Collection<Replica> replicas = shard.getReplicas();
       assertTrue("Did not find correct number of replicas. Expected:" + rf + " Found:" + replicas.size(), replicas.size() == rf);
       
-      leader = shard.getLeader();
+      leader = ssp.getLeader(shard);
       assertNotNull(leader);
       log.info("Found "+replicas.size()+" replicas and leader on "+
         leader.getNodeName()+" for "+shardId+" in "+testCollectionName);
@@ -2132,8 +2133,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       // ensure all replicas are "active" and identify the non-leader replica
       for (Replica replica : replicas) {
         if (!zkShardTerms.canBecomeLeader(replica.getName()) ||
-            replica.getState() != Replica.State.ACTIVE) {
-          log.info("Replica {} is currently {}", replica.getName(), replica.getState());
+            ssp.getState(replica) != Replica.State.ACTIVE) {
+          log.info("Replica {} is currently {}", replica.getName(), ssp.getState(replica));
           allReplicasUp = false;
         }
 

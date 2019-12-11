@@ -16,10 +16,18 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
@@ -32,13 +40,6 @@ import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams.CollectionAction;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
 /**
  * Test sync phase that occurs when Leader goes down and a new Leader is
@@ -217,11 +218,13 @@ public class SyncSliceTest extends AbstractFullDistribZkTestBase {
       ZkStateReader zkStateReader = cloudClient.getZkStateReader();
       ClusterState clusterState = zkStateReader.getClusterState();
       DocCollection collection1 = clusterState.getCollection("collection1");
+      ShardStateProvider ssp = zkStateReader.getShardStateProvider(collection1.getName());
+
       Slice slice = collection1.getSlice("shard1");
       Collection<Replica> replicas = slice.getReplicas();
       boolean allActive = true;
       for (Replica replica : replicas) {
-        if (!clusterState.liveNodesContain(replica.getNodeName()) || replica.getState() != Replica.State.ACTIVE) {
+        if (!clusterState.liveNodesContain(replica.getNodeName()) || ssp.getState(replica)!= Replica.State.ACTIVE) {
           allActive = false;
           break;
         }

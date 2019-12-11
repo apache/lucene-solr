@@ -107,7 +107,7 @@ public class CustomCollectionTest extends SolrCloudTestCase {
       if (c.getSlice("x") == null)
         return false;
       for (Replica r : c.getSlice("x")) {
-        if (r.getState() != Replica.State.ACTIVE)
+        if (ssp.getState(r) != Replica.State.ACTIVE)
           return false;
       }
       return true;

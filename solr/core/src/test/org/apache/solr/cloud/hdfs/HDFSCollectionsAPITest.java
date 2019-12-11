@@ -79,7 +79,7 @@ public class HDFSCollectionsAPITest extends SolrCloudTestCase {
     jettySolrRunner.stop();
     waitForState("", collection, (liveNodes, collectionState, ssp) -> {
       Replica replica = collectionState.getSlice("shard1").getReplicas().iterator().next();
-      return replica.getState() == Replica.State.DOWN;
+      return ssp.getState(replica) == Replica.State.DOWN;
     });
     CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
 

@@ -385,7 +385,7 @@ public class Overseer implements SolrCloseable {
           case DELETEREPLICAPROP:
             return Collections.singletonList(new ReplicaMutator(getSolrCloudManager()).deleteReplicaProperty(clusterState, message));
           case BALANCESHARDUNIQUE:
-            ExclusiveSliceProperty dProp = new ExclusiveSliceProperty(clusterState, message);
+            ExclusiveSliceProperty dProp = new ExclusiveSliceProperty(reader, clusterState, message);
             if (dProp.balanceProperty()) {
               String collName = message.getStr(ZkStateReader.COLLECTION_PROP);
               return Collections.singletonList(new ZkWriteCommand(collName, dProp.getDocCollection()));

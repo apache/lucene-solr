@@ -32,6 +32,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.ZkTestServer.LimitViolationAction;
 import org.apache.solr.common.SolrInputDocument;
@@ -207,6 +208,7 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
       ZkStateReader zkStateReader = cloudClient.getZkStateReader();
       ClusterState clusterState = zkStateReader.getClusterState();
       DocCollection collection1 = clusterState.getCollection("collection1");
+      ShardStateProvider ssp = zkStateReader.getShardStateProvider(collection1.getName());
       Slice slice = collection1.getSlice("shard1");
       Collection<Replica> replicas = slice.getReplicas();
       boolean allActive = true;
@@ -221,7 +223,7 @@ public class LeaderFailureAfterFreshStartTest extends AbstractFullDistribZkTestB
           .collect(Collectors.toList());
 
       for (Replica replica : replicasToCheck) {
-        if (!clusterState.liveNodesContain(replica.getNodeName()) || replica.getState() != Replica.State.ACTIVE) {
+        if (!clusterState.liveNodesContain(replica.getNodeName()) || ssp.getState(replica) != Replica.State.ACTIVE) {
           allActive = false;
           break;
         }

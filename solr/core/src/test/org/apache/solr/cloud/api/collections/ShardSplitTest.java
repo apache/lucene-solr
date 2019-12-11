@@ -227,7 +227,7 @@ public class ShardSplitTest extends BasicDistributedZkTest {
               }
               Slice slice = collectionState.getSlice(SHARD1_0);
               if (slice.getReplicas().size() == 2)  {
-                if (slice.getReplicas().stream().noneMatch(r -> r.getState() == Replica.State.RECOVERING)) {
+                if (slice.getReplicas().stream().noneMatch(r -> ssp.getState(r)  == Replica.State.RECOVERING)) {
                   // we see replicas and none of them are recovering
                   newReplicaLatch.countDown();
                   return true;

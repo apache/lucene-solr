@@ -766,7 +766,8 @@ public class TestTlogReplica extends SolrCloudTestCase {
 
   private void waitForNumDocsInAllActiveReplicas(int numDocs, int timeout) throws IOException, SolrServerException, InterruptedException {
     DocCollection docCollection = getCollectionState(collectionName);
-    waitForNumDocsInAllReplicas(numDocs, docCollection.getReplicas().stream().filter(r -> r.getState() == Replica.State.ACTIVE).collect(Collectors.toList()), timeout);
+    ShardStateProvider ssp = cluster.getSolrClient().getClusterStateProvider().getShardStateProvider(collectionName);
+    waitForNumDocsInAllReplicas(numDocs, docCollection.getReplicas().stream().filter(r -> ssp.getState(r) == Replica.State.ACTIVE).collect(Collectors.toList()), timeout);
   }
 
   private void waitForNumDocsInAllReplicas(int numDocs, Collection<Replica> replicas, int timeout) throws IOException, SolrServerException, InterruptedException {
@@ -815,17 +816,19 @@ public class TestTlogReplica extends SolrCloudTestCase {
   }
 
   private DocCollection assertNumberOfReplicas(int numNrtReplicas, int numTlogReplicas, int numPullReplicas, boolean updateCollection, boolean activeOnly) throws KeeperException, InterruptedException {
+
     if (updateCollection) {
       cluster.getSolrClient().getZkStateReader().forceUpdateCollection(collectionName);
     }
+    ShardStateProvider ssp = cluster.getSolrClient().getZkStateReader().getShardStateProvider(collectionName);
     DocCollection docCollection = getCollectionState(collectionName);
     assertNotNull(docCollection);
     assertEquals("Unexpected number of nrt replicas: " + docCollection, numNrtReplicas,
-        docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).stream().filter(r->!activeOnly || r.getState() == Replica.State.ACTIVE).count());
+        docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).stream().filter(r->!activeOnly || ssp.getState(r) == Replica.State.ACTIVE).count());
     assertEquals("Unexpected number of pull replicas: " + docCollection, numPullReplicas,
-        docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).stream().filter(r->!activeOnly || r.getState() == Replica.State.ACTIVE).count());
+        docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).stream().filter(r->!activeOnly || ssp.getState(r) == Replica.State.ACTIVE).count());
     assertEquals("Unexpected number of tlog replicas: " + docCollection, numTlogReplicas,
-        docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)).stream().filter(r->!activeOnly || r.getState() == Replica.State.ACTIVE).count());
+        docCollection.getReplicas(EnumSet.of(Replica.Type.TLOG)).stream().filter(r->!activeOnly || ssp.getState(r) == Replica.State.ACTIVE).count());
     return docCollection;
   }
 
@@ -835,13 +838,14 @@ public class TestTlogReplica extends SolrCloudTestCase {
   private CollectionStatePredicate clusterStateReflectsActiveAndDownReplicas() {
     return (liveNodes, collectionState, ssp) -> {
       for (Replica r:collectionState.getReplicas()) {
-        if (r.getState() != Replica.State.DOWN && r.getState() != Replica.State.ACTIVE) {
+        if (ssp.getState(r) != Replica.State.DOWN && ssp.getState(r) != Replica.State.ACTIVE) {
           return false;
         }
-        if (r.getState() == Replica.State.DOWN && liveNodes.contains(r.getNodeName())) {
+        if (ssp.getState(r) == Replica.State.DOWN && liveNodes.contains(r.getNodeName())) {
           return false;
         }
-        if (r.getState() == Replica.State.ACTIVE && !liveNodes.contains(r.getNodeName())) {
+        if (ssp.getState(r)  == Replica.State.ACTIVE && !liveNodes.contains(r.getNodeName())) {
+
           return false;
         }
       }

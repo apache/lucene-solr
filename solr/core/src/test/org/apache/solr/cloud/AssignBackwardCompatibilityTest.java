@@ -23,6 +23,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.cloud.DocCollection;
@@ -63,6 +64,7 @@ public class AssignBackwardCompatibilityTest extends SolrCloudTestCase {
 
     int numOperations = random().nextInt(15) + 15;
     int numLiveReplicas = 4;
+    ShardStateProvider ssp = cluster.getSolrClient().getClusterStateProvider().getShardStateProvider(COLLECTION);
 
     boolean clearedCounter = false;
     for (int i = 0; i < numOperations; i++) {
@@ -78,7 +80,7 @@ public class AssignBackwardCompatibilityTest extends SolrCloudTestCase {
       if (deleteReplica) {
         cluster.waitForActiveCollection(COLLECTION, 1, numLiveReplicas);
         DocCollection dc = getCollectionState(COLLECTION);
-        Replica replica = getRandomReplica(dc.getSlice("shard1"), (r) -> r.getState() == Replica.State.ACTIVE);
+        Replica replica = getRandomReplica(dc.getSlice("shard1"), (r) -> ssp.getState(r)== Replica.State.ACTIVE);
         CollectionAdminRequest.deleteReplica(COLLECTION, "shard1", replica.getName()).process(cluster.getSolrClient());
         coreNames.remove(replica.getCoreName());
         numLiveReplicas--;

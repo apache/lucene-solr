@@ -41,6 +41,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
@@ -158,8 +159,7 @@ public class ZkStateReader implements SolrCloseable {
   protected volatile ClusterState clusterState;
 
   private static final int GET_LEADER_RETRY_INTERVAL_MS = 50;
-  private static final int GET_LEADER_RETRY_DEFAULT_TIMEOUT = Integer.parseInt(System.getProperty("zkReaderGetLeaderRetryTimeoutMs", "4000"));
-  ;
+  public static final int GET_LEADER_RETRY_DEFAULT_TIMEOUT = Integer.parseInt(System.getProperty("zkReaderGetLeaderRetryTimeoutMs", "4000"));
 
   public static final String LEADER_ELECT_ZKNODE = "leader_elect";
 
@@ -219,7 +219,12 @@ public class ZkStateReader implements SolrCloseable {
 
   private Set<ClusterPropertiesListener> clusterPropertiesListeners = ConcurrentHashMap.newKeySet();
 
-  private final ShardStateProvider directReplicaState = new DirectShardState(s -> liveNodes.contains(s));
+  private final ShardStateProvider directReplicaState = new DirectShardState(s -> liveNodes.contains(s)) {
+    @Override
+    public Replica getLeader(Slice slice, int timeout) throws InterruptedException {
+      return getLeaderRetry(slice.collection, slice.getName(), timeout);
+    }
+  };
 
   /**
    * Used to submit notifications to Collection Properties watchers in order
@@ -1736,7 +1741,7 @@ public class ZkStateReader implements SolrCloseable {
    * @param predicate  the predicate to call on state changes
    * @throws InterruptedException on interrupt
    * @throws TimeoutException     on timeout
-   * @see #waitForState(String, long, TimeUnit, Predicate)
+   * @see #waitForState(String, long, TimeUnit, BiPredicate)
    * @see #registerCollectionStateWatcher
    */
   public void waitForState(final String collection, long wait, TimeUnit unit, CollectionStatePredicate predicate)
@@ -1785,7 +1790,7 @@ public class ZkStateReader implements SolrCloseable {
    * @throws InterruptedException on interrupt
    * @throws TimeoutException     on timeout
    */
-  public void waitForState(final String collection, long wait, TimeUnit unit, Predicate<DocCollection> predicate)
+  public void waitForState(final String collection, long wait, TimeUnit unit, BiPredicate<DocCollection, ShardStateProvider> predicate)
       throws InterruptedException, TimeoutException {
 
     if (closed) {
@@ -1797,7 +1802,7 @@ public class ZkStateReader implements SolrCloseable {
     AtomicReference<DocCollection> docCollection = new AtomicReference<>();
     DocCollectionWatcher watcher = (c, ssp) -> {
       docCollection.set(c);
-      boolean matches = predicate.test(c);
+      boolean matches = predicate.test(c, getShardStateProvider(collection));
       if (matches)
         latch.countDown();
 

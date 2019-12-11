@@ -168,6 +168,7 @@ public class Replica extends ZkNodeProps {
   }
   
   /** Returns the {@link State} of this replica. */
+  @Deprecated
   public State getState() {
     return state;
   }

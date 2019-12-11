@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.cloud.api.collections.ShardSplitTest;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
@@ -224,9 +225,10 @@ public class ChaosMonkeyShardSplitTest extends ShardSplitTest {
       DocCollection collection1 = clusterState.getCollection("collection1");
       Slice slice = collection1.getSlice("shard1");
       Collection<Replica> replicas = slice.getReplicas();
+      ShardStateProvider ssp = zkStateReader.getShardStateProvider(collection1.getName());
       boolean allActive = true;
       for (Replica replica : replicas) {
-        if (!clusterState.liveNodesContain(replica.getNodeName()) || replica.getState() != Replica.State.ACTIVE) {
+        if (!ssp.isActive(replica)) {
           allActive = false;
           break;
         }

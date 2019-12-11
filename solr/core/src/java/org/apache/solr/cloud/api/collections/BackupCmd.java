@@ -16,12 +16,6 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
-import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-import static org.apache.solr.common.params.CommonParams.NAME;
-
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.time.Instant;
@@ -31,6 +25,7 @@ import java.util.Optional;
 import java.util.Properties;
 
 import org.apache.lucene.util.Version;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -55,6 +50,12 @@ import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.handler.component.ShardHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.CORE_NAME_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CommonParams.NAME;
 
 public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -143,16 +144,17 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     Collection<CoreSnapshotMetaData> snapshots = snapshotMeta.getReplicaSnapshotsForShard(slice.getName());
 
     Optional<CoreSnapshotMetaData> leaderCore = snapshots.stream().filter(x -> x.isLeader()).findFirst();
+    ShardStateProvider ssp = ocmh.cloudManager.getClusterStateProvider().getShardStateProvider(slice.collection);
     if (leaderCore.isPresent()) {
       log.info("Replica {} was the leader when snapshot {} was created.", leaderCore.get().getCoreName(), snapshotMeta.getName());
       Replica r = slice.getReplica(leaderCore.get().getCoreName());
-      if ((r != null) && !r.getState().equals(State.DOWN)) {
+      if ((r != null) && ssp.getState(r) != State.DOWN) {
         return r;
       }
     }
 
     Optional<Replica> r = slice.getReplicas().stream()
-                               .filter(x -> x.getState() != State.DOWN && snapshotMeta.isSnapshotExists(slice.getName(), x))
+                               .filter(it -> ssp.getState(it) != State.DOWN && snapshotMeta.isSnapshotExists(slice.getName(), it))
                                .findFirst();
 
     if (!r.isPresent()) {

@@ -29,6 +29,10 @@ public interface ShardStateProvider {
 
   Replica getLeader(Slice slice);
 
+  /**Gete the leader of the slice. Wait for one if there is no leader
+   */
+  Replica getLeader(Slice slice, int timeout) throws InterruptedException;
+
   boolean isActive(Replica replica);
 
   boolean isActive(Slice slice);

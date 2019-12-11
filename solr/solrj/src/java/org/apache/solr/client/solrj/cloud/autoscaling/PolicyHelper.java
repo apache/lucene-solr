@@ -37,6 +37,7 @@ import java.util.function.BiPredicate;
 
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester.Hint;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
@@ -295,10 +296,11 @@ public class PolicyHelper {
 
   private static void addMissingReplicas(SolrCloudManager cloudManager, Suggestion.Ctx ctx) throws IOException {
     cloudManager.getClusterStateProvider().getClusterState().forEachCollection(coll -> coll.forEach(slice -> {
+      ShardStateProvider ssp = cloudManager.getClusterStateProvider().getShardStateProvider(coll.getName());
       if (!ctx.needMore()) return;
           ReplicaCount replicaCount = new ReplicaCount();
           slice.forEach(replica -> {
-            if (replica.getState() == Replica.State.ACTIVE || replica.getState() == Replica.State.RECOVERING) {
+            if (ssp.getState(replica) == Replica.State.ACTIVE || ssp.getState(replica) == Replica.State.RECOVERING) {
               replicaCount.increment(replica.getType());
             }
           });

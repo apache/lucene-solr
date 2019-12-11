@@ -129,7 +129,7 @@ public class ColStatus {
             downReplicas++;
             continue;
           }
-          switch (r.getState()) {
+          switch (ssp.getState(r)) {
             case ACTIVE:
               activeReplicas++;
               break;

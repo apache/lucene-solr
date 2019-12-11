@@ -26,6 +26,7 @@ import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.Weight;
 import org.apache.lucene.search.join.JoinUtil;
 import org.apache.lucene.search.join.ScoreMode;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Aliases;
@@ -306,6 +307,7 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
     String fromReplica = null;
 
     String nodeName = zkController.getNodeName();
+    ShardStateProvider ssp = zkController.getZkStateReader().getShardStateProvider(fromIndex);
     for (Slice slice : zkController.getClusterState().getCollection(fromIndex).getActiveSlicesArr()) {
       if (fromReplica != null)
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
@@ -315,10 +317,10 @@ public class ScoreJoinQParserPlugin extends QParserPlugin {
         if (replica.getNodeName().equals(nodeName)) {
           fromReplica = replica.getStr(ZkStateReader.CORE_NAME_PROP);
           // found local replica, but is it Active?
-          if (replica.getState() != Replica.State.ACTIVE)
+          if (ssp.getState(replica) != Replica.State.ACTIVE)
             throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                 "SolrCloud join: "+fromIndex+" has a local replica ("+fromReplica+
-                    ") on "+nodeName+", but it is "+replica.getState());
+                    ") on "+nodeName+", but it is "+ssp.getState(replica));
 
           break;
         }

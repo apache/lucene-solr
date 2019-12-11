@@ -110,7 +110,7 @@ public class CollectionTooManyReplicasTest extends SolrCloudTestCase {
     // wait for recoveries to finish, for a clean shutdown - see SOLR-9645
     waitForState("Expected to see all replicas active", collectionName, (n, c, ssp) -> {
       for (Replica r : c.getReplicas()) {
-        if (r.getState() != Replica.State.ACTIVE)
+        if (ssp.getState(r) != Replica.State.ACTIVE)
           return false;
       }
       return true;

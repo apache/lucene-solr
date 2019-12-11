@@ -197,7 +197,7 @@ public class TestCloudSearcherWarming extends SolrCloudTestCase {
     CollectionStatePredicate collectionStatePredicate = (liveNodes, collectionState, ssp) -> {
       for (Replica r : collectionState.getReplicas()) {
         if (r.getNodeName().equals(oldNodeName.get())) {
-          return r.getState() == Replica.State.DOWN;
+          return ssp.getState(r) == Replica.State.DOWN;
         }
       }
       return false;

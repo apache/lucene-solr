@@ -26,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.BaseDistributedSearchTestCase;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -205,7 +206,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
       throws Exception {
     log.info("Wait for collection to disappear - collection: " + collection + " failOnTimeout:" + failOnTimeout + " timeout (sec):" + timeoutSeconds);
 
-    zkStateReader.waitForState(collection, timeoutSeconds, TimeUnit.SECONDS, (docCollection) -> {
+    zkStateReader.waitForState(collection, timeoutSeconds, TimeUnit.SECONDS, (docCollection, ssp) -> {
       if (docCollection == null)
         return true;
       return false;
@@ -219,12 +220,15 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
     zkStateReader.forceUpdateCollection(DEFAULT_COLLECTION);
 
+    ShardStateProvider ssp = zkStateReader.getShardStateProvider(DEFAULT_COLLECTION);
     for (; ; ) {
       ClusterState clusterState = zkStateReader.getClusterState();
       DocCollection coll = clusterState.getCollection("collection1");
       Slice slice = coll.getSlice(shardName);
-      if (slice.getLeader() != null && !slice.getLeader().equals(oldLeader) && slice.getLeader().getState() == Replica.State.ACTIVE) {
-        log.info("Old leader {}, new leader {}. New leader got elected in {} ms", oldLeader, slice.getLeader(),timeOut.timeElapsed(MILLISECONDS) );
+
+      Replica leader = ssp.getLeader(slice);
+      if (leader != null && !leader.equals(oldLeader) && ssp.getState(leader) == Replica.State.ACTIVE) {
+        log.info("Old leader {}, new leader {}. New leader got elected in {} ms", oldLeader, leader,timeOut.timeElapsed(MILLISECONDS) );
         break;
       }
 
@@ -237,12 +241,13 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
       Thread.sleep(100);
     }
 
-    zkStateReader.waitForState("collection1", timeOut.timeLeft(SECONDS), TimeUnit.SECONDS, (docCollection) -> {
+    zkStateReader.waitForState("collection1", timeOut.timeLeft(SECONDS), TimeUnit.SECONDS, (docCollection, sp) -> {
       if (docCollection == null)
         return false;
 
       Slice slice = docCollection.getSlice(shardName);
-      if (slice != null && slice.getLeader() != null && !slice.getLeader().equals(oldLeader) && slice.getLeader().getState() == Replica.State.ACTIVE) {
+      Replica leader = sp.getLeader(slice);
+      if (slice != null && leader!= null && !leader.equals(oldLeader) && sp.getState(leader) == Replica.State.ACTIVE) {
         log.info("Old leader {}, new leader {}. New leader got elected in {} ms", oldLeader, slice.getLeader(), timeOut.timeElapsed(MILLISECONDS) );
         return true;
       }
@@ -254,9 +259,9 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
       Replica.State expectedState) throws InterruptedException, TimeoutException {
     log.info("verifyReplicaStatus ({}) shard={} coreNodeName={}", collection, shard, coreNodeName);
     reader.waitForState(collection, 15000, TimeUnit.MILLISECONDS,
-        (collectionState) -> collectionState != null && collectionState.getSlice(shard) != null
+        (collectionState,ssp) -> collectionState != null && collectionState.getSlice(shard) != null
             && collectionState.getSlice(shard).getReplicasMap().get(coreNodeName) != null
-            && collectionState.getSlice(shard).getReplicasMap().get(coreNodeName).getState() == expectedState);
+            &&  ssp.getState(  collectionState.getSlice(shard).getReplicasMap().get(coreNodeName)) == expectedState);
   }
 
   protected static void assertAllActive(String collection, ZkStateReader zkStateReader)
@@ -268,8 +273,8 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
       if (docCollection == null || docCollection.getSlices() == null) {
         throw new IllegalArgumentException("Cannot find collection:" + collection);
       }
-
-      Map<String,Slice> slices = docCollection.getSlicesMap();
+    ShardStateProvider ssp = zkStateReader.getShardStateProvider(collection);
+    Map<String,Slice> slices = docCollection.getSlicesMap();
       for (Map.Entry<String,Slice> entry : slices.entrySet()) {
         Slice slice = entry.getValue();
         if (slice.getState() != Slice.State.ACTIVE) {
@@ -278,8 +283,8 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
         Map<String,Replica> shards = slice.getReplicasMap();
         for (Map.Entry<String,Replica> shard : shards.entrySet()) {
           Replica replica = shard.getValue();
-          if (replica.getState() != Replica.State.ACTIVE) {
-            fail("Not all replicas are ACTIVE - found a replica " + replica.getName() + " that is: " + replica.getState());
+          if (ssp.getState(replica) != Replica.State.ACTIVE) {
+            fail("Not all replicas are ACTIVE - found a replica " + replica.getName() + " that is: " + ssp.getState(replica));
           }
         }
       }

@@ -655,6 +655,7 @@ public class ZkController implements Closeable {
     assert cd != null;
     DocCollection dc = getClusterState().getCollectionOrNull(cd.getCollectionName());
     if (dc == null) return;
+    ShardStateProvider ssp = zkStateReader.getShardStateProvider(cd.getCollectionName());
 
     Slice shard = dc.getSlice(cd.getCloudDescriptor().getShardId());
     if (shard == null) return;
@@ -663,7 +664,7 @@ public class ZkController implements Closeable {
     if (shard.getReplica(cd.getCloudDescriptor().getCoreNodeName()) != shard.getLeader()) return;
 
     int numActiveReplicas = shard.getReplicas(
-        rep -> rep.getState() == Replica.State.ACTIVE
+        rep -> ssp.getState(rep) == Replica.State.ACTIVE
             && rep.getType() != Type.PULL
             && getClusterState().getLiveNodes().contains(rep.getNodeName())
     ).size();
@@ -1038,7 +1039,7 @@ public class ZkController implements Closeable {
         for (CoreDescriptor coreDescriptor : cc.getCoreDescriptors()) {
           if (coreDescriptor.getCloudDescriptor().getCollectionName().equals(collectionWithLocalReplica))  {
             Replica replica = collectionState.getReplica(coreDescriptor.getCloudDescriptor().getCoreNodeName());
-            if (replica == null || replica.getState() != Replica.State.DOWN) {
+            if (replica == null || ssp.getState(replica) != Replica.State.DOWN) {
               foundStates = false;
             }
           }
@@ -1174,7 +1175,7 @@ public class ZkController implements Closeable {
       // check replica's existence in clusterstate first
       try {
         zkStateReader.waitForState(collection, Overseer.isLegacy(zkStateReader) ? 60000 : 100,
-            TimeUnit.MILLISECONDS, (collectionState) -> getReplicaOrNull(collectionState, shardId, coreZkNodeName) != null);
+            TimeUnit.MILLISECONDS, (collectionState, ssp) -> getReplicaOrNull(collectionState, shardId, coreZkNodeName) != null);
       } catch (TimeoutException e) {
         throw new SolrException(ErrorCode.SERVER_ERROR, "Error registering SolrCore, timeout waiting for replica present in clusterstate");
       }
@@ -1825,7 +1826,7 @@ public class ZkController implements Closeable {
       AtomicReference<String> errorMessage = new AtomicReference<>();
       AtomicReference<DocCollection> collectionState = new AtomicReference<>();
       try {
-        zkStateReader.waitForState(cd.getCollectionName(), 10, TimeUnit.SECONDS, (c) -> {
+        zkStateReader.waitForState(cd.getCollectionName(), 10, TimeUnit.SECONDS, (c,ssp) -> {
           collectionState.set(c);
           if (c == null)
             return false;

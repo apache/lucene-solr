@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -102,7 +103,8 @@ public class RecoveryZkTest extends SolrCloudTestCase {
      
     // bring shard replica down
     DocCollection state = getCollectionState(collection);
-    Replica leader = state.getLeader("shard1");
+    ShardStateProvider ssp = cluster.getSolrClient().getClusterStateProvider().getShardStateProvider(collection);
+    Replica leader = ssp.getLeader(state.getSlice("shard1"));
     Replica replica = getRandomReplica(state.getSlice("shard1"), (r) -> leader != r);
 
     JettySolrRunner jetty = cluster.getReplicaJetty(replica);
@@ -131,12 +133,13 @@ public class RecoveryZkTest extends SolrCloudTestCase {
 
     // test that leader and replica have same doc count
     state = getCollectionState(collection);
-    assertShardConsistency(state.getSlice("shard1"), true);
+
+    assertShardConsistency(ssp, state.getSlice("shard1"), true);
 
   }
 
-  private void assertShardConsistency(Slice shard, boolean expectDocs) throws Exception {
-    List<Replica> replicas = shard.getReplicas(r -> r.getState() == Replica.State.ACTIVE);
+  private void assertShardConsistency(ShardStateProvider ssp, Slice shard, boolean expectDocs) throws Exception {
+    List<Replica> replicas = shard.getReplicas(r -> ssp.getState(r)== Replica.State.ACTIVE);
     long[] numCounts = new long[replicas.size()];
     int i = 0;
     for (Replica replica : replicas) {

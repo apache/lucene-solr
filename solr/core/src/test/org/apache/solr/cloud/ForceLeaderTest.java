@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -98,7 +99,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
       waitForState(testCollectionName, leader.getName(), State.DOWN, 60000);
       cloudClient.getZkStateReader().forceUpdateCollection(testCollectionName);
       ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
-      int numActiveReplicas = getNumberOfActiveReplicas(clusterState, testCollectionName, SHARD1);
+      int numActiveReplicas = getNumberOfActiveReplicas(cloudClient.getZkStateReader().getShardStateProvider(testCollectionName), clusterState, testCollectionName, SHARD1);
       assertEquals("Expected only 0 active replica but found " + numActiveReplicas +
           "; clusterState: " + printClusterStateInfo(), 0, numActiveReplicas);
 
@@ -129,9 +130,10 @@ public class ForceLeaderTest extends HttpPartitionTest {
       Replica newLeader = clusterState.getCollectionOrNull(testCollectionName).getSlice(SHARD1).getLeader();
       assertNotNull(newLeader);
       // leader is active
-      assertEquals(State.ACTIVE, newLeader.getState());
+      ShardStateProvider shardStateProvider = cloudClient.getZkStateReader().getShardStateProvider(testCollectionName);
+      assertEquals(State.ACTIVE, shardStateProvider.getState(newLeader));
 
-      numActiveReplicas = getNumberOfActiveReplicas(clusterState, testCollectionName, SHARD1);
+      numActiveReplicas = getNumberOfActiveReplicas(shardStateProvider, clusterState, testCollectionName, SHARD1);
       assertEquals(2, numActiveReplicas);
 
       // Assert that indexing works again
@@ -204,7 +206,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
       ClusterState clusterState = zkController.getZkStateReader().getClusterState();
       boolean allDown = true;
       for (Replica replica : clusterState.getCollection(collectionName).getSlice(shard).getReplicas()) {
-        if (replica.getState() != State.DOWN) {
+        if (zkController.getZkStateReader().getShardStateProvider(collectionName).getState(replica) != State.DOWN) {
           allDown = false;
         }
       }
@@ -244,7 +246,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
     cloudClient.getZkStateReader().forceUpdateCollection(collection);
     ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
     log.info("After bringing back leader: " + clusterState.getCollection(collection).getSlice(SHARD1));
-    int numActiveReplicas = getNumberOfActiveReplicas(clusterState, collection, SHARD1);
+    int numActiveReplicas = getNumberOfActiveReplicas(cloudClient.getZkStateReader().getShardStateProvider(collection), clusterState, collection, SHARD1);
     assertEquals(1+notLeaders.size(), numActiveReplicas);
     log.info("Sending doc "+docid+"...");
     sendDoc(docid);
@@ -271,11 +273,11 @@ public class ForceLeaderTest extends HttpPartitionTest {
     }
   }
 
-  private int getNumberOfActiveReplicas(ClusterState clusterState, String collection, String sliceId) {
+  private int getNumberOfActiveReplicas(ShardStateProvider ssp, ClusterState clusterState, String collection, String sliceId) {
     int numActiveReplicas = 0;
     // Assert all replicas are active
     for (Replica rep : clusterState.getCollection(collection).getSlice(sliceId).getReplicas()) {
-      if (rep.getState().equals(State.ACTIVE)) {
+      if (ssp.getState(rep)== State.ACTIVE) {
         numActiveReplicas++;
       }
     }

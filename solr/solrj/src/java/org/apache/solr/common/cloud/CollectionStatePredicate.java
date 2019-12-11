@@ -19,7 +19,7 @@ package org.apache.solr.common.cloud;
 
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Predicate;
+import java.util.function.BiPredicate;
 
 import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 
@@ -27,7 +27,7 @@ import org.apache.solr.client.solrj.cloud.ShardStateProvider;
  * Interface to determine if a set of liveNodes and a collection's state matches some expecatations.
  *
  * @see ZkStateReader#waitForState(String, long, TimeUnit, CollectionStatePredicate)
- * @see ZkStateReader#waitForState(String, long, TimeUnit, Predicate)
+ * @see ZkStateReader#waitForState(String, long, TimeUnit, BiPredicate)
  */
 public interface CollectionStatePredicate {
 

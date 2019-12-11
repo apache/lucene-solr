@@ -70,15 +70,16 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.cloud.CloudDescriptor;
-import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -384,13 +385,17 @@ public class IndexFetcher {
     try {
       if (fetchFromLeader) {
         assert !solrCore.isClosed(): "Replication should be stopped before closing the core";
-        Replica replica = getLeaderReplica();
         CloudDescriptor cd = solrCore.getCoreDescriptor().getCloudDescriptor();
+        ZkStateReader zkStateReader = solrCore.getCoreContainer().getZkController().getZkStateReader();
+        ShardStateProvider ssp = zkStateReader.getShardStateProvider(cd.getCollectionName());
+        Replica replica = ssp
+            .getLeader(zkStateReader.getCollection(cd.getCollectionName()).getSlice(cd.getShardId()));
+
         if (cd.getCoreNodeName().equals(replica.getName())) {
           return IndexFetchResult.EXPECTING_NON_LEADER;
         }
-        if (replica.getState() != Replica.State.ACTIVE) {
-          log.info("Replica {} is leader but it's state is {}, skipping replication", replica.getName(), replica.getState());
+        if (ssp.getState(replica) != Replica.State.ACTIVE) {
+          log.info("Replica {} is leader but it's state is {}, skipping replication", replica.getName(), ssp.getState(replica));
           return IndexFetchResult.LEADER_IS_NOT_ACTIVE;
         }
         if (!solrCore.getCoreContainer().getZkController().getClusterState().liveNodesContain(replica.getNodeName())) {
@@ -690,14 +695,6 @@ public class IndexFetcher {
         cleanup(solrCore, tmpIndexDir, indexDir, deleteTmpIdxDir, tmpTlogDir, successfulInstall);
       }
     }
-  }
-
-  private Replica getLeaderReplica() throws InterruptedException {
-    ZkController zkController = solrCore.getCoreContainer().getZkController();
-    CloudDescriptor cd = solrCore.getCoreDescriptor().getCloudDescriptor();
-    Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(
-        cd.getCollectionName(), cd.getShardId());
-    return leaderReplica;
   }
 
   private void cleanup(final SolrCore core, Directory tmpIndexDir,

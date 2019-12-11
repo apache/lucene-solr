@@ -96,7 +96,7 @@ class PrepRecoveryOp implements CoreAdminHandler.CoreAdminOp {
         if (slice != null) {
           final Replica replica = slice.getReplicasMap().get(coreNodeName);
           if (replica != null) {
-            state = replica.getState();
+            state = ssp.getState(replica);
             live = n.contains(nodeName);
 
             final Replica.State localState = cloudDescriptor.getLastPublished();

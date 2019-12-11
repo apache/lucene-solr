@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.solr.SolrTestCaseJ4Test;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.cloud.overseer.NodeMutator;
 import org.apache.solr.cloud.overseer.ZkWriteCommand;
 import org.apache.solr.common.cloud.ClusterState;
@@ -48,6 +49,7 @@ public class NodeMutatorTest extends SolrTestCaseJ4Test {
     //Collection2: 1 shard X 1 replica = replica1 on node2
     ZkStateReader reader = ClusterStateMockUtil.buildClusterState("csrr2rDcsr2", 1, 1, NODE1, NODE2);
     ClusterState clusterState = reader.getClusterState();
+    ShardStateProvider ssp = reader.getShardStateProvider("collection1");
     assertEquals(clusterState.getCollection("collection1").getReplica("replica1").getBaseUrl(), NODE1_URL);
     assertEquals(clusterState.getCollection("collection1").getReplica("replica2").getBaseUrl(), NODE2_URL);
     assertEquals(clusterState.getCollection("collection2").getReplica("replica4").getBaseUrl(), NODE2_URL);
@@ -56,8 +58,8 @@ public class NodeMutatorTest extends SolrTestCaseJ4Test {
     List<ZkWriteCommand> writes = nm.downNode(clusterState, props);
     assertEquals(writes.size(), 1);
     assertEquals(writes.get(0).name, "collection1");
-    assertEquals(writes.get(0).collection.getReplica("replica1").getState(), Replica.State.DOWN);
-    assertEquals(writes.get(0).collection.getReplica("replica2").getState(), Replica.State.ACTIVE);
+    assertEquals(ssp.getState(writes.get(0).collection.getReplica("replica1")), Replica.State.DOWN);
+    assertEquals(ssp.getState(writes.get(0).collection.getReplica("replica2")), Replica.State.ACTIVE);
     reader.close();
 
     //We use 3 nodes with maxShardsPerNode as 1
@@ -68,6 +70,7 @@ public class NodeMutatorTest extends SolrTestCaseJ4Test {
     clusterState = reader.getClusterState();
     assertEquals(clusterState.getCollection("collection1").getReplica("replica1").getBaseUrl(), NODE1_URL);
     assertEquals(clusterState.getCollection("collection1").getReplica("replica2").getBaseUrl(), NODE2_URL);
+    ssp = reader.getShardStateProvider("collection2");
 
     assertEquals(clusterState.getCollection("collection2").getReplica("replica4").getBaseUrl(), NODE2_URL);
 
@@ -79,12 +82,12 @@ public class NodeMutatorTest extends SolrTestCaseJ4Test {
     assertEquals(writes.size(), 2);
     for (ZkWriteCommand write : writes) {
       if (write.name.equals("collection1")) {
-        assertEquals(write.collection.getReplica("replica1").getState(), Replica.State.DOWN);
-        assertEquals(write.collection.getReplica("replica2").getState(), Replica.State.ACTIVE);
+        assertEquals(ssp.getState(write.collection.getReplica("replica1")), Replica.State.DOWN);
+        assertEquals(ssp.getState(write.collection.getReplica("replica2")), Replica.State.ACTIVE);
       } else if (write.name.equals("collection3")) {
-        assertEquals(write.collection.getReplica("replica5").getState(), Replica.State.DOWN);
-        assertEquals(write.collection.getReplica("replica6").getState(), Replica.State.ACTIVE);
-        assertEquals(write.collection.getReplica("replica7").getState(), Replica.State.ACTIVE);
+        assertEquals(ssp.getState(write.collection.getReplica("replica5")), Replica.State.DOWN);
+        assertEquals(ssp.getState(write.collection.getReplica("replica6")), Replica.State.ACTIVE);
+        assertEquals(ssp.getState(write.collection.getReplica("replica7")), Replica.State.ACTIVE);
       } else {
         fail("No other collection needs to be changed");
       }

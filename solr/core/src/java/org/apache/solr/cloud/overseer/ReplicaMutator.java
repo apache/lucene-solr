@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.cloud.CloudUtil;
@@ -380,16 +381,17 @@ public class ReplicaMutator {
   private DocCollection checkAndCompleteShardSplit(ClusterState prevState, DocCollection collection, String coreNodeName, String sliceName, Replica replica) {
     Slice slice = collection.getSlice(sliceName);
     Map<String, Object> sliceProps = slice.getProperties();
+    ShardStateProvider ssp = cloudManager.getClusterStateProvider().getShardStateProvider(collection.getName());
     if (slice.getState() == Slice.State.RECOVERY) {
       log.info("Shard: {} is in recovery state", sliceName);
       // is this replica active?
-      if (replica.getState() == Replica.State.ACTIVE) {
+      if (ssp.getState(replica) == Replica.State.ACTIVE) {
         log.info("Shard: {} is in recovery state and coreNodeName: {} is active", sliceName, coreNodeName);
         // are all other replicas also active?
         boolean allActive = true;
         for (Map.Entry<String, Replica> entry : slice.getReplicasMap().entrySet()) {
           if (coreNodeName.equals(entry.getKey())) continue;
-          if (entry.getValue().getState() != Replica.State.ACTIVE) {
+          if (ssp.getState(entry.getValue()) != Replica.State.ACTIVE) {
             allActive = false;
             break;
           }
@@ -409,7 +411,7 @@ public class ReplicaMutator {
                 log.info("Shard: {} - Fellow sub-shard: {} found", sliceName, otherSlice.getName());
                 // this is a fellow sub shard so check if all replicas are active
                 for (Map.Entry<String, Replica> sliceEntry : otherSlice.getReplicasMap().entrySet()) {
-                  if (sliceEntry.getValue().getState() != Replica.State.ACTIVE) {
+                  if (ssp.getState(sliceEntry.getValue()) != Replica.State.ACTIVE) {
                     allActive = false;
                     break outer;
                   }

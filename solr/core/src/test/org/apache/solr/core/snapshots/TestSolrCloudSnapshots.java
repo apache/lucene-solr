@@ -16,8 +16,6 @@
  */
 package org.apache.solr.core.snapshots;
 
-import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
-
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -27,10 +25,11 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.CoreAdminRequest.ListSnapshots;
@@ -52,6 +51,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 
 @SolrTestCaseJ4.SuppressSSL // Currently unknown why SSL does not work with this test
 @Slow
@@ -112,9 +113,10 @@ public class TestSolrCloudSnapshots extends SolrCloudTestCase {
 
       // Figure out if at-least one replica is "down".
       DocCollection collState = solrClient.getZkStateReader().getClusterState().getCollection(collectionName);
+      ShardStateProvider ssp = solrClient.getZkStateReader().getShardStateProvider(collectionName);
       for (Slice s : collState.getSlices()) {
         for (Replica replica : s.getReplicas()) {
-          if (replica.getState() == State.DOWN) {
+          if (ssp.getState(replica) == State.DOWN) {
             stoppedCoreName = Optional.of(replica.getCoreName());
           }
         }

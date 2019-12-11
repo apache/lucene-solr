@@ -31,6 +31,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.Overseer;
@@ -71,6 +72,7 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.cloud.ZkStateReader.GET_LEADER_RETRY_DEFAULT_TIMEOUT;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
@@ -641,14 +643,15 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     try {
       // Not equivalent to getLeaderProps, which  retries to find a leader.
       // Replica leader = slice.getLeader();
-      Replica leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, shardId);
+      ShardStateProvider ssp = zkController.getZkStateReader().getShardStateProvider(collection);
+      Replica leaderReplica = ssp.getLeader(slice, GET_LEADER_RETRY_DEFAULT_TIMEOUT);
       isLeader = leaderReplica.getName().equals(cloudDesc.getCoreNodeName());
 
       if (!isLeader) {
         isSubShardLeader = amISubShardLeader(coll, slice, id, doc);
         if (isSubShardLeader) {
           shardId = cloudDesc.getShardId();
-          leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, shardId);
+          leaderReplica = ssp.getLeader(slice, GET_LEADER_RETRY_DEFAULT_TIMEOUT);
         }
       }
 
@@ -694,7 +697,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           } else if(zkShardTerms.registered(coreNodeName) && zkShardTerms.skipSendingUpdatesTo(coreNodeName)) {
             log.debug("skip url:{} cause its term is less than leader", replica.getCoreUrl());
             skippedCoreNodeNames.add(replica.getName());
-          } else if (!clusterState.getLiveNodes().contains(replica.getNodeName()) || replica.getState() == Replica.State.DOWN) {
+          } else if ( !clusterState.getLiveNodes().contains(replica.getNodeName()) || ssp.getState(replica) == Replica.State.DOWN) {
             skippedCoreNodeNames.add(replica.getName());
           } else {
             nodes.add(new SolrCmdDistributor.StdNode(new ZkCoreNodeProps(replica), collection, shardId, maxRetriesToFollowers));
@@ -818,6 +821,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   }
 
   protected List<SolrCmdDistributor.Node> getReplicaNodesForLeader(String shardId, Replica leaderReplica) {
+    ShardStateProvider ssp = zkController.getZkStateReader().getShardStateProvider(leaderReplica.collection);
     String leaderCoreNodeName = leaderReplica.getName();
     List<Replica> replicas = clusterState.getCollection(collection)
         .getSlice(shardId)
@@ -847,7 +851,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         log.debug("skip url:{} cause its term is less than leader", replica.getCoreUrl());
         skippedCoreNodeNames.add(replica.getName());
       } else if (!clusterState.getLiveNodes().contains(replica.getNodeName())
-          || replica.getState() == Replica.State.DOWN) {
+          || ssp.getState(replica) == Replica.State.DOWN) {
         skippedCoreNodeNames.add(replica.getName());
       } else {
         nodes.add(new SolrCmdDistributor.StdNode(new ZkCoreNodeProps(replica), collection, shardId));

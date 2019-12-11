@@ -16,9 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import static org.apache.solr.common.cloud.Replica.State.DOWN;
-import static org.apache.solr.common.cloud.Replica.State.RECOVERING;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -32,11 +29,13 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -64,6 +63,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.cloud.Replica.State.DOWN;
+import static org.apache.solr.common.cloud.Replica.State.RECOVERING;
 
 /**
  * Simulates HTTP partitions between a leader and replica but the replica does
@@ -320,7 +322,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
       Collection<Slice> slices = cs.getCollection(collection).getActiveSlices();
       Slice slice = slices.iterator().next();
       Replica partitionedReplica = slice.getReplica(replicaName);
-      replicaState = partitionedReplica.getState();
+      replicaState = cloudClient.getZkStateReader().getShardStateProvider(collection).getState(partitionedReplica);
       if (replicaState == state) return;
     }
     assertEquals("Timeout waiting for state "+ state +" of replica " + replicaName + ", current state " + replicaState,
@@ -469,10 +471,11 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     ZkStateReader zkr = cloudClient.getZkStateReader();
     ClusterState cs = zkr.getClusterState();
     assertNotNull(cs);
+    ShardStateProvider ssp = zkr.getShardStateProvider(testCollectionName);
     for (Slice shard : cs.getCollection(testCollectionName).getActiveSlices()) {
       if (shard.getName().equals(shardId)) {
         for (Replica replica : shard.getReplicas()) {
-          final Replica.State state = replica.getState();
+          final Replica.State state =  ssp.getState(replica);
           if (state == Replica.State.ACTIVE || state == Replica.State.RECOVERING) {
             activeReplicas.put(replica.getName(), replica);
           }
@@ -593,6 +596,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     boolean allReplicasUp = false;
     long waitMs = 0L;
     long maxWaitMs = maxWaitSecs * 1000L;
+    ShardStateProvider ssp = zkr.getShardStateProvider(testCollectionName);
     while (waitMs < maxWaitMs && !allReplicasUp) {
       cs = cloudClient.getZkStateReader().getClusterState();
       assertNotNull(cs);
@@ -607,7 +611,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
         if (!replicasToCheck.contains(replica.getName()))
           continue;
 
-        final Replica.State state = replica.getState();
+        final Replica.State state = ssp.getState(replica);
         if (state != Replica.State.ACTIVE) {
           log.info("Replica " + replica.getName() + " is currently " + state);
           allReplicasUp = false;

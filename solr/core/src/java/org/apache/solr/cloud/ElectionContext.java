@@ -580,7 +580,7 @@ final class ShardLeaderElectionContext extends ShardLeaderElectionContextBase {
         ClusterState clusterState = zkStateReader.getClusterState();
         Replica rep = getReplica(clusterState, collection, leaderProps.getStr(ZkStateReader.CORE_NODE_NAME_PROP));
         if (rep == null) return;
-        if (rep.getState() != Replica.State.ACTIVE || core.getCoreDescriptor().getCloudDescriptor().getLastPublished() != Replica.State.ACTIVE) {
+        if (zkStateReader.getShardStateProvider(collection).getState(rep) != Replica.State.ACTIVE || core.getCoreDescriptor().getCloudDescriptor().getLastPublished() != Replica.State.ACTIVE) {
           log.debug("We have become the leader after core registration but are not in an ACTIVE state - publishing ACTIVE");
           zkController.publish(core.getCoreDescriptor(), Replica.State.ACTIVE);
         }

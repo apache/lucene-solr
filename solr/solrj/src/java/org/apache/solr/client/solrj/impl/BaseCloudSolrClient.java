@@ -411,7 +411,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   public void waitForState(String collection, long wait, TimeUnit unit, Predicate<DocCollection> predicate)
       throws InterruptedException, TimeoutException {
     getClusterStateProvider().connect();
-    assertZKStateProvider().zkStateReader.waitForState(collection, wait, unit, predicate);
+    assertZKStateProvider().zkStateReader.waitForState(collection, wait, unit, (d, ssp) -> predicate.test(d));
   }
 
   /**

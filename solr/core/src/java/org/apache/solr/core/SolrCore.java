@@ -74,6 +74,7 @@ import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.store.LockObtainFailedException;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.RecoveryStrategy;
@@ -238,6 +239,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   public volatile boolean searchEnabled = true;
   public volatile boolean indexEnabled = true;
   public volatile boolean readOnly = false;
+  private ShardStateProvider shardStateProvider;
 
   private PackageListeners packageListeners = new PackageListeners(this);
 
@@ -3199,6 +3201,14 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       }
     });
     return blobRef;
+  }
+  public ShardStateProvider getShardStateProvider(){
+    if(this.shardStateProvider == null) {
+      if(coreContainer.getZkController() != null){
+        this.shardStateProvider = coreContainer.getZkController().getZkStateReader().getShardStateProvider(this.getCoreDescriptor().getCloudDescriptor().getCollectionName());
+      }
+    }
+    return shardStateProvider;
   }
 
   /**

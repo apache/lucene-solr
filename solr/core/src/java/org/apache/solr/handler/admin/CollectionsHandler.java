@@ -41,6 +41,7 @@ import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.solr.api.Api;
 import org.apache.solr.client.solrj.SolrResponse;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient.Builder;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -1340,11 +1341,12 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       throw new SolrException(ErrorCode.BAD_REQUEST,
           "No shard with name " + sliceId + " exists for collection " + collectionName);
     }
+    ShardStateProvider ssp = handler.coreContainer.getZkController().getZkStateReader().getShardStateProvider(collectionName);
 
     try (ZkShardTerms zkShardTerms = new ZkShardTerms(collectionName, slice.getName(), zkController.getZkClient())) {
       // if an active replica is the leader, then all is fine already
-      Replica leader = slice.getLeader();
-      if (leader != null && leader.getState() == State.ACTIVE) {
+      Replica leader = ssp.getLeader(slice);
+      if (leader != null && ssp.getState(leader) == State.ACTIVE) {
         throw new SolrException(ErrorCode.SERVER_ERROR,
             "The shard already has an active leader. Force leader is not applicable. State: " + slice);
       }
@@ -1369,7 +1371,8 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         clusterState = handler.coreContainer.getZkController().getClusterState();
         collection = clusterState.getCollection(collectionName);
         slice = collection.getSlice(sliceId);
-        if (slice.getLeader() != null && slice.getLeader().getState() == State.ACTIVE) {
+        Replica ldr = ssp.getLeader(slice);
+        if (ldr != null && ssp.getState(ldr) == State.ACTIVE) {
           success = true;
           break;
         }

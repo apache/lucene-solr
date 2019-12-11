@@ -55,6 +55,7 @@ class ExclusiveSliceProperty {
   private final String property;
   private final DocCollection collection;
   private final String collectionName;
+  private final ZkStateReader zkStateReader;
 
   // Key structure. For each node, list all replicas on it regardless of whether they have the property or not.
   private final Map<String, List<SliceReplica>> nodesHostingReplicas = new HashMap<>();
@@ -71,8 +72,9 @@ class ExclusiveSliceProperty {
 
   private int assigned = 0;
 
-  ExclusiveSliceProperty(ClusterState clusterState, ZkNodeProps message) {
+  ExclusiveSliceProperty(ZkStateReader reader, ClusterState clusterState, ZkNodeProps message) {
     this.clusterState = clusterState;
+    this.zkStateReader = reader;
     String tmp = message.getStr(ZkStateReader.PROPERTY_PROP);
     if (StringUtils.startsWith(tmp, OverseerCollectionMessageHandler.COLL_PROP_PREFIX) == false) {
       tmp = OverseerCollectionMessageHandler.COLL_PROP_PREFIX + tmp;
@@ -109,7 +111,7 @@ class ExclusiveSliceProperty {
   }
 
   private boolean isActive(Replica replica) {
-    return replica.getState() == Replica.State.ACTIVE;
+    return zkStateReader.getShardStateProvider(collectionName).getState(replica) == Replica.State.ACTIVE;
   }
 
   // Collect a list of all the nodes that _can_ host the indicated property. Along the way, also collect any of

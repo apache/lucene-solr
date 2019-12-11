@@ -28,6 +28,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Properties;
 
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.ClusterProperties;
@@ -124,10 +125,12 @@ public class LegacyCloudClusterPropTest extends SolrCloudTestCase {
   }
 
   private void checkCollectionActive(String coll) {
-    assertTrue(ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), 120000));
+    ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
+    assertTrue(ClusterStateUtil.waitForAllActiveAndLiveReplicas(zkStateReader, 120000));
     DocCollection docColl = getCollectionState(coll);
+    ShardStateProvider ssp = zkStateReader.getShardStateProvider(coll);
     for (Replica rep : docColl.getReplicas()) {
-      if (rep.getState() == Replica.State.ACTIVE) return;
+      if (ssp.getState(rep) == Replica.State.ACTIVE) return;
     }
     fail("Replica was not active for collection " + coll);
   }

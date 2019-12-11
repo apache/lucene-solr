@@ -16,14 +16,12 @@
  */
 package org.apache.solr.cloud;
 
-import static org.apache.solr.client.solrj.response.RequestStatusState.COMPLETED;
-import static org.apache.solr.client.solrj.response.RequestStatusState.FAILED;
-
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
 
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.RequestStatusState;
@@ -35,6 +33,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.client.solrj.response.RequestStatusState.COMPLETED;
+import static org.apache.solr.client.solrj.response.RequestStatusState.FAILED;
 
 /**
  *
@@ -137,6 +138,7 @@ public class AddReplicaTest extends SolrCloudTestCase {
 
     ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
     DocCollection coll = clusterState.getCollection(collection);
+    ShardStateProvider ssp = cloudClient.getZkStateReader().getShardStateProvider(collection);
     String sliceName = coll.getSlices().iterator().next().getName();
     Collection<Replica> replicas = coll.getSlice(sliceName).getReplicas();
     CollectionAdminRequest.AddReplica addReplica = CollectionAdminRequest.addReplicaToShard(collection, sliceName);
@@ -192,7 +194,7 @@ public class AddReplicaTest extends SolrCloudTestCase {
       if (replica.getName().equals(replica2)) {
         continue; // may be still recovering
       }
-      assertSame(coll.toString() + "\n" + replica.toString(), replica.getState(), Replica.State.ACTIVE);
+      assertSame(coll.toString() + "\n" + replica.toString(),ssp.getState(replica), Replica.State.ACTIVE);
     }
   }
 }

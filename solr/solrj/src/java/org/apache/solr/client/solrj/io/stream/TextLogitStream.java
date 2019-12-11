@@ -34,6 +34,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.ClassificationEvaluation;
@@ -346,12 +347,14 @@ public class TextLogitStream extends TupleStream implements Expressible {
       ClusterState clusterState = zkStateReader.getClusterState();
       Set<String> liveNodes = clusterState.getLiveNodes();
 
+      ShardStateProvider ssp = zkStateReader.getShardStateProvider(this.collection);
+
       List<String> baseUrls = new ArrayList<>();
       for(Slice slice : slices) {
         Collection<Replica> replicas = slice.getReplicas();
         List<Replica> shuffler = new ArrayList<>();
         for(Replica replica : replicas) {
-          if(replica.getState() == Replica.State.ACTIVE && liveNodes.contains(replica.getNodeName())) {
+          if(ssp.isActive(replica)) {
             shuffler.add(replica);
           }
         }

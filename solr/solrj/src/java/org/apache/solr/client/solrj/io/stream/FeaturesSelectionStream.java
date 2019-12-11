@@ -28,12 +28,12 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.io.SolrClientCache;
@@ -260,16 +260,16 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
       ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
 
       Slice[] slices = CloudSolrStream.getSlices(this.collection, zkStateReader, false);
+      ShardStateProvider ssp = zkStateReader.getShardStateProvider(this.collection);
 
       ClusterState clusterState = zkStateReader.getClusterState();
-      Set<String> liveNodes = clusterState.getLiveNodes();
 
       List<String> baseUrls = new ArrayList<>();
       for(Slice slice : slices) {
         Collection<Replica> replicas = slice.getReplicas();
         List<Replica> shuffler = new ArrayList<>();
         for(Replica replica : replicas) {
-          if(replica.getState() == Replica.State.ACTIVE && liveNodes.contains(replica.getNodeName())) {
+          if(ssp.isActive(replica)) {
             shuffler.add(replica);
           }
         }

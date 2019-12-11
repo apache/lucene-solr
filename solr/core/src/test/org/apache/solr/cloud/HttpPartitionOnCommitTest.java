@@ -16,21 +16,24 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.File;
+import java.lang.invoke.MethodHandles;
+import java.util.List;
+
 import org.apache.http.NoHttpResponseException;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.RTimer;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.File;
-import java.lang.invoke.MethodHandles;
-import java.util.List;
 
 public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
 
@@ -75,6 +78,7 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
     String testCollectionName = "c8n_2x2_commits";
     createCollection(testCollectionName, "conf1", 2, 2, 1);
     cloudClient.setDefaultCollection(testCollectionName);
+    DocCollection coll = cloudClient.getClusterStateProvider().getCollection(testCollectionName);
 
     List<Replica> notLeaders =
         ensureAllReplicasAreActive(testCollectionName, "shard1", 2, 2, 30);
@@ -85,6 +89,7 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
 
     log.info("All replicas active for "+testCollectionName);
 
+    ShardStateProvider shardStateProvider = cloudClient.getZkStateReader().getShardStateProvider(testCollectionName);
     // let's put the leader in its own partition, no replicas can contact it now
     Replica leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1");
     log.info("Creating partition to leader at "+leader.getCoreUrl());
@@ -98,8 +103,9 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
     Thread.sleep(sleepMsBeforeHealPartition);
 
     cloudClient.getZkStateReader().forceUpdateCollection(testCollectionName); // get the latest state
-    leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1");
-    assertSame("Leader was not active", Replica.State.ACTIVE, leader.getState());
+
+    leader = shardStateProvider.getLeader(coll.getSlice("shard1"), ZkStateReader.GET_LEADER_RETRY_DEFAULT_TIMEOUT) ;
+    assertSame("Leader was not active", Replica.State.ACTIVE, shardStateProvider.getState(leader));
 
     log.info("Healing partitioned replica at "+leader.getCoreUrl());
     leaderProxy.reopen();
@@ -118,6 +124,9 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
     String testCollectionName = "c8n_1x3_commits";
     createCollection(testCollectionName, "conf1", 1, 3, 1);
     cloudClient.setDefaultCollection(testCollectionName);
+    DocCollection coll = cloudClient.getZkStateReader().getCollection(testCollectionName);
+
+    ShardStateProvider ssp = cloudClient.getZkStateReader().getShardStateProvider(testCollectionName);
 
     List<Replica> notLeaders =
         ensureAllReplicasAreActive(testCollectionName, "shard1", 1, 3, 30);
@@ -129,7 +138,7 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
     log.info("All replicas active for "+testCollectionName);
 
     // let's put the leader in its own partition, no replicas can contact it now
-    Replica leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1");
+    Replica leader = ssp.getLeader(coll.getSlice("shard1"));
     log.info("Creating partition to leader at "+leader.getCoreUrl());
 
     SocketProxy leaderProxy = getProxyForReplica(leader);
@@ -141,7 +150,7 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
 
     cloudClient.getZkStateReader().forceUpdateCollection(testCollectionName); // get the latest state
     leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1");
-    assertSame("Leader was not active", Replica.State.ACTIVE, leader.getState());
+    assertSame("Leader was not active", Replica.State.ACTIVE, ssp.getState(leader));
 
     log.info("Healing partitioned replica at "+leader.getCoreUrl());
     leaderProxy.reopen();

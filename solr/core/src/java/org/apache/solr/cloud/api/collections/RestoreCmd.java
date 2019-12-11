@@ -36,6 +36,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
@@ -114,6 +115,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
     final List<String> nodeList = Assign.getLiveOrLiveAndCreateNodeSetList(
         zkStateReader.getClusterState().getLiveNodes(), message, OverseerCollectionMessageHandler.RANDOM);
 
+    ShardStateProvider ssp = ocmh.cloudManager.getClusterStateProvider().getShardStateProvider(restoreCollectionName);
     int numShards = backupCollectionState.getActiveSlices().size();
 
     int numNrtReplicas;
@@ -339,7 +341,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
           for (Replica r : s.getReplicas()) {
             String nodeName = r.getNodeName();
             String coreNodeName = r.getCoreName();
-            Replica.State stateRep = r.getState();
+            Replica.State stateRep = ssp.getState(r);
 
             log.debug("Calling REQUESTAPPLYUPDATES on: nodeName={}, coreNodeName={}, state={}", nodeName, coreNodeName,
                 stateRep.name());
