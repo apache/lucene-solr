@@ -179,7 +179,7 @@ public class Polygon2D implements Component2D {
 
     // if any of the points is inside the polygon, the polygon cannot be within this indexed
     // shape because points belong to the original indexed shape.
-    if (contains(ay, ax) || contains(by, bx) || contains(cy, cx)) {
+    if (contains(ax, ay) || contains(bx, by) || contains(cx, cy)) {
       return WithinRelation.NOTWITHIN;
     }
 
