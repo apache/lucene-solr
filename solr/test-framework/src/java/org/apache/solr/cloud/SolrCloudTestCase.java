@@ -275,9 +275,12 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   @AfterClass
   public static void shutdownCluster() throws Exception {
     if (cluster != null) {
-      cluster.shutdown();
+      try {
+        cluster.shutdown();
+      } finally {
+        cluster = null;
+      }
     }
-    cluster = null;
   }
 
   @Before

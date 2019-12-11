@@ -37,7 +37,7 @@ public class FSHDFSUtils {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   // internal, for tests
-  public static AtomicLong RECOVER_LEASE_SUCCESS_COUNT = new AtomicLong();
+  public static final AtomicLong RECOVER_LEASE_SUCCESS_COUNT = new AtomicLong();
 
   public interface CallerInfo {
     boolean isCallerClosed();

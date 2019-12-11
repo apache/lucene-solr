@@ -114,6 +114,11 @@ Upgrade Notes
   up by Solr's http server that contains inline javascript, it will no longer execute in modern browsers. You can fix your JS
   code to not run inline anymore, or edit etc/jetty.xml and weaken the CSP, or remove/alter the headers with a reverse proxy. (rmuir)
 
+* SOLR-13806: QueryResponse.getExplainMap() type has changed from Map<String, String> to Map<String, Object>
+  in order to accommodate structured explanations. This is a partially back-compatible change - compiled
+  third-party components will work the same as before due to type erasure but source code changes may be
+  required.
+
 New Features
 ---------------------
 * SOLR-13821: A Package store to store and load package artifacts (noble, Ishan Chattopadhyaya)
@@ -222,6 +227,12 @@ Bug Fixes
   (Thomas Wöckinger via David Smiley)
 
 * SOLR-13563: SPLITSHARD using LINK method fails on disk usage checks. (Andrew Kettmann, ab)
+
+* SOLR-13806: SolrJ QueryResponse._explainMap is incorrectly typed. (Guna Sekhar Dorai, ab)
+
+* SOLR-13975, SOLR-13896: ConcurrentUpdateSolrClient connection stall prevention. (ab, caomanhdat)
+
+* SOLR-13953: Prometheus exporter in SolrCloud mode limited to 100 nodes (Alex Jablonski via Erick Erickson)
 
 Other Changes
 ---------------------

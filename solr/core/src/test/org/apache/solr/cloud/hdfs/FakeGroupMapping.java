@@ -14,17 +14,27 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package org.apache.solr.cloud.hdfs;
 
-package runtimecode;
+import java.util.Collections;
+import java.util.List;
 
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.update.AddUpdateCommand;
-import org.apache.solr.update.processor.SimpleUpdateProcessorFactory;
+import org.apache.hadoop.security.GroupMappingServiceProvider;
 
-public class TestVersionedURP extends SimpleUpdateProcessorFactory {
+/**
+ * Fake mapping for Hadoop to prevent falling back to Shell group provider
+ */
+public class FakeGroupMapping implements GroupMappingServiceProvider {
   @Override
-  protected void process(AddUpdateCommand cmd, SolrQueryRequest req, SolrQueryResponse rsp) {
-    cmd.solrDoc.addField("TestVersionedURP.Ver_s", "Version 2");
+  public List<String> getGroups(String user) {
+    return Collections.singletonList("supergroup");
+  }
+
+  @Override
+  public void cacheGroupsRefresh() {
+  }
+
+  @Override
+  public void cacheGroupsAdd(List<String> groups) {
   }
 }
