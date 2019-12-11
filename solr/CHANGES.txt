@@ -48,7 +48,6 @@ Upgrade Notes
 
 New Features
 ---------------------
-
 * SOLR-13821: A Package store to store and load package artifacts (noble, Ishan Chattopadhyaya)
 
 * SOLR-13822: A Package management system with the following features:
@@ -157,6 +156,10 @@ Bug Fixes
 * SOLR-13563: SPLITSHARD using LINK method fails on disk usage checks. (Andrew Kettmann, ab)
 
 * SOLR-13806: SolrJ QueryResponse._explainMap is incorrectly typed. (Guna Sekhar Dorai, ab)
+
+* SOLR-13975, SOLR-13896: ConcurrentUpdateSolrClient connection stall prevention. (ab, caomanhdat)
+
+* SOLR-13953: Prometheus exporter in SolrCloud mode limited to 100 nodes (Alex Jablonski via Erick Erickson)
 
 Other Changes
 ---------------------
