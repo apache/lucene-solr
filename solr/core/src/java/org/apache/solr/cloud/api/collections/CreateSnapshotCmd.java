@@ -138,7 +138,7 @@ public class CreateSnapshotCmd implements OverseerCollectionMessageHandler.Cmd {
         // to have latest state.
         String coreName = (String)resp.get(CoreAdminParams.CORE);
         Slice slice = shardByCoreName.remove(coreName);
-        boolean leader = (slice.getLeader() != null && slice.getLeader().getCoreName().equals(coreName));
+        boolean leader = (ssp.getLeader(slice)!= null && ssp.getLeader(slice).getCoreName().equals(coreName));
         resp.add(SolrSnapshotManager.SHARD_ID, slice.getName());
         resp.add(SolrSnapshotManager.LEADER, leader);
 

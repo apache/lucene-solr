@@ -41,6 +41,7 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -48,8 +49,8 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
-import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
+import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
@@ -779,10 +780,11 @@ public class CloudSolrClientTest extends SolrCloudTestCase {
 
     // determine the coreNodeName of only current replica
     Collection<Slice> slices = cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(COL).getSlices();
+    ShardStateProvider ssp = cluster.getSolrClient().getZkStateReader().getShardStateProvider(COL);
     assertEquals(1, slices.size()); // sanity check
     Slice slice = slices.iterator().next();
     assertEquals(1, slice.getReplicas().size()); // sanity check
-    final String old_leader_core_node_name = slice.getLeader().getName();
+    final String old_leader_core_node_name = ssp.getLeader(slice).getName();
 
     // NOTE: creating our own CloudSolrClient whose settings we can muck with...
     try (CloudSolrClient stale_client = new CloudSolrClientBuilder

@@ -44,6 +44,8 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.cloud.ZkStateReader.GET_LEADER_RETRY_DEFAULT_TIMEOUT;
+
 @Nightly // this test is currently too slow for non nightly
 public class ForceLeaderTest extends HttpPartitionTest {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -86,7 +88,8 @@ public class ForceLeaderTest extends HttpPartitionTest {
           + " but found " + notLeaders.size() + "; clusterState: "
           + printClusterStateInfo(testCollectionName), 2, notLeaders.size());
 
-      Replica leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, SHARD1);
+      ShardStateProvider ssp = cloudClient.getZkStateReader().getShardStateProvider(testCollectionName);
+      Replica leader = ssp.getLeader(cloudClient.getClusterStateProvider().getCollection(testCollectionName).getSlice(SHARD1), GET_LEADER_RETRY_DEFAULT_TIMEOUT);
       JettySolrRunner notLeader0 = getJettyOnPort(getReplicaPort(notLeaders.get(0)));
       ZkController zkController = notLeader0.getCoreContainer().getZkController();
 
@@ -113,7 +116,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
       log.info("Before forcing leader: " + printClusterStateInfo());
       // Assert there is no leader yet
       assertNull("Expected no leader right now. State: " + clusterState.getCollection(testCollectionName).getSlice(SHARD1),
-          clusterState.getCollection(testCollectionName).getSlice(SHARD1).getLeader());
+          ssp.getLeader(clusterState.getCollection(testCollectionName).getSlice(SHARD1)));
 
       assertSendDocFails(3);
 
@@ -127,7 +130,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
       clusterState = cloudClient.getZkStateReader().getClusterState();
       log.info("After forcing leader: " + clusterState.getCollection(testCollectionName).getSlice(SHARD1));
       // we have a leader
-      Replica newLeader = clusterState.getCollectionOrNull(testCollectionName).getSlice(SHARD1).getLeader();
+      Replica newLeader = ssp.getLeader(clusterState.getCollectionOrNull(testCollectionName).getSlice(SHARD1));
       assertNotNull(newLeader);
       // leader is active
       ShardStateProvider shardStateProvider = cloudClient.getZkStateReader().getShardStateProvider(testCollectionName);
@@ -205,12 +208,13 @@ public class ForceLeaderTest extends HttpPartitionTest {
     for (int i = 0; i < 20; i++) {
       ClusterState clusterState = zkController.getZkStateReader().getClusterState();
       boolean allDown = true;
+      ShardStateProvider ssp = zkController.getZkStateReader().getShardStateProvider(collectionName);
       for (Replica replica : clusterState.getCollection(collectionName).getSlice(shard).getReplicas()) {
-        if (zkController.getZkStateReader().getShardStateProvider(collectionName).getState(replica) != State.DOWN) {
+        if (ssp.getState(replica) != State.DOWN) {
           allDown = false;
         }
       }
-      if (allDown && clusterState.getCollection(collectionName).getSlice(shard).getLeader() == null) {
+      if (allDown &&  ssp.getLeader(clusterState.getCollection(collectionName).getSlice(shard)) == null) {
         break;
       }
       Thread.sleep(1000);

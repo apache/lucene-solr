@@ -24,14 +24,15 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.Locale;
 
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
@@ -271,13 +272,14 @@ public class IndexSizeTrigger extends TriggerBase {
           }
           DocCollection docCollection = clusterState.getCollection(coll);
 
+          ShardStateProvider ssp = cloudManager.getClusterStateProvider().getShardStateProvider(coll);
           shards.forEach((sh, replicas) -> {
             // check only the leader replica in an active shard
             Slice s = docCollection.getSlice(sh);
             if (s.getState() != Slice.State.ACTIVE) {
               return;
             }
-            Replica r = s.getLeader();
+            Replica r = ssp.getLeader(s);
             // no leader - don't do anything
             if (r == null) {
               return;

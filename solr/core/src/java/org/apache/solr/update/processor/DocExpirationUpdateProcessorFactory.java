@@ -481,7 +481,7 @@ public final class DocExpirationUpdateProcessorFactory
     }
     List<Slice> slices = new ArrayList<>(Arrays.asList(docCollection.getActiveSlicesArr()));
     Collections.sort(slices, COMPARE_SLICES_BY_NAME);
-    Replica firstSliceLeader = slices.get(0).getLeader();
+    Replica firstSliceLeader = core.getShardStateProvider().getLeader(slices.get(0));
     if (null == firstSliceLeader) {
       log.warn("Slice in charge of periodic deletes for {} does not currently have a leader",
                col);

@@ -115,6 +115,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
         .setNode(cluster.getJettySolrRunner(0).getNodeName())
         .process(cluster.getSolrClient());
     waitForState("Timeout waiting for shard leader", collectionName, clusterShape(1, 1));
+    ShardStateProvider ssp = cluster.getSolrClient().getClusterStateProvider().getShardStateProvider(collectionName);
 
     CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
         .setNode(cluster.getJettySolrRunner(1).getNodeName())
@@ -129,7 +130,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
 
     addDocs(collectionName, 3, 1);
 
-    final Replica oldLeader = getCollectionState(collectionName).getSlice("shard1").getLeader();
+    final Replica oldLeader = ssp.getLeader(getCollectionState(collectionName).getSlice("shard1"));
     assertEquals(cluster.getJettySolrRunner(0).getNodeName(), oldLeader.getNodeName());
 
     if (onRestart) {

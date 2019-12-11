@@ -192,6 +192,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
     while (true) {
       DocCollection docCollection = getCollectionState(collectionName);
       assertNotNull(docCollection);
+      ShardStateProvider ssp = cluster.getSolrClient().getClusterStateProvider().getShardStateProvider(collectionName);
       assertEquals("Expecting 2 shards",
           2, docCollection.getSlices().size());
       assertEquals("Expecting 4 relpicas per shard",
@@ -203,7 +204,7 @@ public class TestTlogReplica extends SolrCloudTestCase {
       assertEquals("Expecting no pull replicas",
           0, docCollection.getReplicas(EnumSet.of(Replica.Type.PULL)).size());
       for (Slice s:docCollection.getSlices()) {
-        assertTrue(s.getLeader().getType() == Replica.Type.TLOG);
+        assertTrue(ssp.getLeader(s).getType() == Replica.Type.TLOG);
         List<String> shardElectionNodes = cluster.getZkClient().getChildren(ZkStateReader.getShardLeadersElectPath(collectionName, s.getName()), null, true);
         assertEquals("Unexpected election nodes for Shard: " + s.getName() + ": " + Arrays.toString(shardElectionNodes.toArray()),
             4, shardElectionNodes.size());
@@ -226,13 +227,14 @@ public class TestTlogReplica extends SolrCloudTestCase {
   public void testAddDocs() throws Exception {
     int numTlogReplicas = 1 + random().nextInt(3);
     DocCollection docCollection = createAndWaitForCollection(1, 0, numTlogReplicas, 0);
+    ShardStateProvider ssp = cluster.getSolrClient().getClusterStateProvider().getShardStateProvider(docCollection.getName());
     assertEquals(1, docCollection.getSlices().size());
 
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "1", "foo", "bar"));
     cluster.getSolrClient().commit(collectionName);
 
     Slice s = docCollection.getSlices().iterator().next();
-    try (HttpSolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
+    try (HttpSolrClient leaderClient = getHttpSolrClient(ssp.getLeader(s).getCoreUrl())) {
       assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
 
@@ -376,11 +378,12 @@ public class TestTlogReplica extends SolrCloudTestCase {
   private void doReplaceLeader(boolean removeReplica) throws Exception {
     DocCollection docCollection = createAndWaitForCollection(1, 0, 2, 0);
 
+    ShardStateProvider ssp = cluster.getSolrClient().getClusterStateProvider().getShardStateProvider(docCollection.getName());
     // Add a document and commit
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "1", "foo", "bar"));
     cluster.getSolrClient().commit(collectionName);
     Slice s = docCollection.getSlices().iterator().next();
-    try (HttpSolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
+    try (HttpSolrClient leaderClient = getHttpSolrClient(ssp.getLeader(s).getCoreUrl())) {
       assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
 
@@ -392,10 +395,10 @@ public class TestTlogReplica extends SolrCloudTestCase {
       CollectionAdminRequest.deleteReplica(
           collectionName,
           "shard1",
-          s.getLeader().getName())
+          ssp.getLeader(s).getName())
       .process(cluster.getSolrClient());
     } else {
-      leaderJetty = cluster.getReplicaJetty(s.getLeader());
+      leaderJetty = cluster.getReplicaJetty(ssp.getLeader(s));
       leaderJetty.stop();
       waitForState("Leader replica not removed", collectionName, clusterShape(1, 1));
       // Wait for cluster state to be updated
@@ -746,8 +749,9 @@ public class TestTlogReplica extends SolrCloudTestCase {
 
   private String getBaseUrl() {
     DocCollection collection = cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(collectionName);
+    ShardStateProvider ssp = cluster.getSolrClient().getClusterStateProvider().getShardStateProvider(collectionName);
     Slice slice = collection.getSlice("shard1");
-    return slice.getLeader().getCoreUrl();
+    return ssp.getLeader( slice).getCoreUrl();
   }
 
   private DocCollection createAndWaitForCollection(int numShards, int numNrtReplicas, int numTlogReplicas, int numPullReplicas) throws SolrServerException, IOException, KeeperException, InterruptedException {
@@ -886,16 +890,16 @@ public class TestTlogReplica extends SolrCloudTestCase {
 
     CloudSolrClient cloudClient = cluster.getSolrClient();
     DocCollection docCollection = cloudClient.getZkStateReader().getClusterState().getCollection(collectionName);
-
+    ShardStateProvider ssp = cloudClient.getClusterStateProvider().getShardStateProvider(collectionName);
     for (JettySolrRunner solrRunner : cluster.getJettySolrRunners()) {
       if (solrRunner.getCoreContainer() == null) continue;
       for (SolrCore solrCore : solrRunner.getCoreContainer().getCores()) {
         CloudDescriptor cloudDescriptor = solrCore.getCoreDescriptor().getCloudDescriptor();
         Slice slice = docCollection.getSlice(cloudDescriptor.getShardId());
         Replica replica = docCollection.getReplica(cloudDescriptor.getCoreNodeName());
-        if (slice.getLeader().equals(replica) && isLeader) {
+        if (ssp.getLeader(slice).equals(replica) && isLeader) {
           rs.add(solrCore);
-        } else if (!slice.getLeader().equals(replica) && !isLeader) {
+        } else if (!ssp.getLeader(slice).equals(replica) && !isLeader) {
           rs.add(solrCore);
         }
       }
@@ -922,15 +926,16 @@ public class TestTlogReplica extends SolrCloudTestCase {
     List<JettySolrRunner> rs = new ArrayList<>();
     CloudSolrClient cloudClient = cluster.getSolrClient();
     DocCollection docCollection = cloudClient.getZkStateReader().getClusterState().getCollection(collectionName);
+    ShardStateProvider ssp = cloudClient.getClusterStateProvider().getShardStateProvider(collectionName);
     for (JettySolrRunner solrRunner : cluster.getJettySolrRunners()) {
       if (solrRunner.getCoreContainer() == null) continue;
       for (SolrCore solrCore : solrRunner.getCoreContainer().getCores()) {
         CloudDescriptor cloudDescriptor = solrCore.getCoreDescriptor().getCloudDescriptor();
         Slice slice = docCollection.getSlice(cloudDescriptor.getShardId());
         Replica replica = docCollection.getReplica(cloudDescriptor.getCoreNodeName());
-        if (slice.getLeader() == replica && isLeader) {
+        if (ssp.getLeader(slice) == replica && isLeader) {
           rs.add(solrRunner);
-        } else if (slice.getLeader() != replica && !isLeader) {
+        } else if (ssp.getLeader(slice) != replica && !isLeader) {
           rs.add(solrRunner);
         }
       }

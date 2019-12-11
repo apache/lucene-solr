@@ -1430,7 +1430,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
             if (!checkLeaderOnly) replicas = shard.getReplicas();
             else {
               replicas = new ArrayList<Replica>();
-              replicas.add(shard.getLeader());
+              replicas.add(ssp.getLeader(shard));
             }
             for (Replica replica : replicas) {
               String state = replica.getStr(ZkStateReader.STATE_PROP);

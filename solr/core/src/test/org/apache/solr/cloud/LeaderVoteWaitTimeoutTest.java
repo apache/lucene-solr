@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -138,15 +139,16 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
 
     waitForState("Timeout waiting for replica win the election", collectionName, (liveNodes, collectionState, ssp) -> {
-      Replica newLeader = collectionState.getSlice("shard1").getLeader();
+      Replica newLeader = ssp.getLeader(collectionState.getSlice("shard1"));
       if (newLeader == null) {
         return false;
       }
       return newLeader.getNodeName().equals(cluster.getJettySolrRunner(1).getNodeName());
     });
+    ShardStateProvider ssp = cluster.getSolrClient().getClusterStateProvider().getShardStateProvider(collectionName);
 
     try (ZkShardTerms zkShardTerms = new ZkShardTerms(collectionName, "shard1", cluster.getZkClient())) {
-      Replica newLeader = getCollectionState(collectionName).getSlice("shard1").getLeader();
+      Replica newLeader = ssp.getLeader(getCollectionState(collectionName).getSlice("shard1"));
       assertEquals(2, zkShardTerms.getTerms().size());
       assertEquals(1L, zkShardTerms.getTerm(newLeader.getName()));
     }
@@ -168,9 +170,9 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     
     cluster.waitForActiveCollection(collectionName, 1, 1);
-    
+    ShardStateProvider ssp = cluster.getSolrClient().getClusterStateProvider().getShardStateProvider(collectionName);
     waitForState("Timeout waiting for shard leader", collectionName, clusterShape(1, 1));
-    Replica leader = getCollectionState(collectionName).getSlice("shard1").getLeader();
+    Replica leader = ssp.getLeader(getCollectionState(collectionName).getSlice("shard1"));
 
     // this replica will ahead of election queue
     CollectionAdminRequest.addReplicaToShard(collectionName, "shard1")
@@ -232,8 +234,8 @@ public class LeaderVoteWaitTimeoutTest extends SolrCloudTestCase {
 
     try {
       // even replica2 joined election at the end of the queue, but it is the one with highest term
-      waitForState("Timeout waiting for new leader", collectionName, (liveNodes, collectionState, ssp) -> {
-        Replica newLeader = collectionState.getSlice("shard1").getLeader();
+      waitForState("Timeout waiting for new leader", collectionName, (liveNodes, collectionState, sp) -> {
+        Replica newLeader = ssp.getLeader(collectionState.getSlice("shard1"));
         if (newLeader == null) {
           return false;
         }

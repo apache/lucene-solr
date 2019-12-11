@@ -826,6 +826,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     ClusterState clusterState = zkStateReader.getClusterState();
     DocCollection coll = clusterState.getCollection(DEFAULT_COLLECTION);
+    ShardStateProvider ssp = zkStateReader.getShardStateProvider(DEFAULT_COLLECTION);
 
     List<CloudSolrServerClient> theClients = new ArrayList<>();
     for (SolrClient client : clients) {
@@ -869,7 +870,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
               list = new ArrayList<>();
               shardToJetty.put(slice.getName(), list);
             }
-            boolean isLeader = slice.getLeader() == replica;
+            boolean isLeader = ssp.getLeader(slice) == replica;
             CloudJettyRunner cjr = new CloudJettyRunner();
             cjr.jetty = jetty;
             cjr.info = replica;
@@ -2228,7 +2229,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     DocCollection collection = zkStateReader.getClusterState().getCollection(collectionName);
     ShardStateProvider ssp = zkStateReader.getShardStateProvider(collectionName);
     for(Slice s:collection.getSlices()) {
-      Replica leader = s.getLeader();
+      Replica leader = ssp.getLeader(s);
       for (Replica r:s.getReplicas()) {
         if (!ssp.isActive(r)) {
           builder.append(String.format(Locale.ROOT, "Replica %s not in liveNodes or is not active%s", r.getName(), System.lineSeparator()));

@@ -16,9 +16,6 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-import static org.hamcrest.CoreMatchers.hasItem;
-import static org.hamcrest.CoreMatchers.not;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -32,6 +29,7 @@ import java.util.TreeMap;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -51,6 +49,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.not;
 
 /**
  * This class implements the logic required to test Solr cloud backup/restore capability.
@@ -440,10 +441,11 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
   }
 
   private Map<String, Integer> getShardToDocCountMap(CloudSolrClient client, DocCollection docCollection) throws SolrServerException, IOException {
+    ShardStateProvider ssp = client.getClusterStateProvider().getShardStateProvider(docCollection.getName());
     Map<String,Integer> shardToDocCount = new TreeMap<>();
     for (Slice slice : docCollection.getActiveSlices()) {
       String shardName = slice.getName();
-      try (HttpSolrClient leaderClient = new HttpSolrClient.Builder(slice.getLeader().getCoreUrl()).withHttpClient(client.getHttpClient()).build()) {
+      try (HttpSolrClient leaderClient = new HttpSolrClient.Builder(ssp.getLeader(slice).getCoreUrl()).withHttpClient(client.getHttpClient()).build()) {
         long docsInShard = leaderClient.query(new SolrQuery("*:*").setParam("distrib", "false"))
             .getResults().getNumFound();
         shardToDocCount.put(shardName, (int) docsInShard);

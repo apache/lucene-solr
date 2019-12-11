@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -36,6 +37,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -142,9 +144,11 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
       urlMap.put(nodeKey, jettyURL.toString());
     }
     ClusterState clusterState = zkStateReader.getClusterState();
-    for (Slice slice : clusterState.getCollection(COLLECTION_NAME).getSlices()) {
+    DocCollection collection = clusterState.getCollection(COLLECTION_NAME);
+    ShardStateProvider ssp = zkStateReader.getShardStateProvider(COLLECTION_NAME);
+    for (Slice slice : collection.getSlices()) {
       String shardName = slice.getName();
-      Replica leader = slice.getLeader();
+      Replica leader = ssp.getLeader(slice);
       assertNotNull("slice has null leader: " + slice.toString(), leader);
       assertNotNull("slice leader has null node name: " + slice.toString(), leader.getNodeName());
       String leaderUrl = urlMap.remove(leader.getNodeName());

@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.cloud.ActiveReplicaWatcher;
 import org.apache.solr.common.SolrCloseableLatch;
@@ -81,7 +82,7 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
     if (target != null && !clusterState.liveNodesContain(target)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Target Node: " + target + " is not live");
     }
-    List<ZkNodeProps> sourceReplicas = getReplicasOfNode(source, clusterState);
+    List<ZkNodeProps> sourceReplicas = getReplicasOfNode(ocmh.zkStateReader, source, clusterState);
     // how many leaders are we moving? for these replicas we have to make sure that either:
     // * another existing replica can become a leader, or
     // * we wait until the newly created replica completes recovery (and can become the new leader)
@@ -228,9 +229,10 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
     results.add("success", "REPLACENODE action completed successfully from  : " + source + " to : " + target);
   }
 
-  static List<ZkNodeProps> getReplicasOfNode(String source, ClusterState state) {
+  static List<ZkNodeProps> getReplicasOfNode(ZkStateReader zkStateReader, String source, ClusterState state) {
     List<ZkNodeProps> sourceReplicas = new ArrayList<>();
     for (Map.Entry<String, DocCollection> e : state.getCollectionsMap().entrySet()) {
+      ShardStateProvider ssp = zkStateReader.getShardStateProvider(e.getValue().getName());
       for (Slice slice : e.getValue().getSlices()) {
         for (Replica replica : slice.getReplicas()) {
           if (source.equals(replica.getNodeName())) {
@@ -240,7 +242,7 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
                 ZkStateReader.CORE_NAME_PROP, replica.getCoreName(),
                 ZkStateReader.REPLICA_PROP, replica.getName(),
                 ZkStateReader.REPLICA_TYPE, replica.getType().name(),
-                ZkStateReader.LEADER_PROP, String.valueOf(replica.equals(slice.getLeader())),
+                ZkStateReader.LEADER_PROP, String.valueOf(replica.equals(ssp.getLeader(slice))),
                 CoreAdminParams.NODE, source);
             sourceReplicas.add(props);
           }

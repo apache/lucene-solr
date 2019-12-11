@@ -38,6 +38,7 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
@@ -1038,7 +1039,8 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
 
     // get the size of the leader's index
     DocCollection coll = cloudManager.getClusterStateProvider().getCollection(collectionName);
-    Replica leader = coll.getSlice("shard1").getLeader();
+    ShardStateProvider ssp = cloudManager.getClusterStateProvider().getShardStateProvider(collectionName);
+    Replica leader = ssp.getLeader(coll.getSlice("shard1"));
     String replicaName = Utils.parseMetricsReplicaName(collectionName, leader.getCoreName());
     assertNotNull("replicaName could not be constructed from " + leader, replicaName);
     final String registry = SolrCoreMetricManager.createRegistryName(true, collectionName, "shard1", replicaName, null);
@@ -1157,7 +1159,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
 
     for (String parentShard : parentShards) {
       for (String subShard : Arrays.asList(parentShard + "_0", parentShard + "_1")) {
-        leader = coll.getSlice(subShard).getLeader();
+        leader = ssp.getLeader(coll.getSlice(subShard));
         if (leader == null) {
           // no leader yet - skip it
         }

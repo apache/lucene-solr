@@ -196,9 +196,10 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
     cloudClient.getZkStateReader().forceUpdateCollection(DEFAULT_COLLECTION);
     ClusterState clusterState = cloudClient.getZkStateReader().getClusterState();
+    ShardStateProvider ssp = cloudClient.getZkStateReader().getShardStateProvider(DEFAULT_COLLECTION);
     Replica leader = null;
     Slice shard1 = clusterState.getCollection(DEFAULT_COLLECTION).getSlice(SHARD1);
-    leader = shard1.getLeader();
+    leader = ssp.getLeader(shard1);
 
     String leaderBaseUrl = zkStateReader.getBaseUrlForNodeName(leader.getNodeName());
     for (int i=0; i<clients.size(); i++) {
@@ -1181,8 +1182,9 @@ public class TestInPlaceUpdatesDistrib extends AbstractFullDistribZkTestBase {
 
   private String getBaseUrl(String id) {
     DocCollection collection = cloudClient.getZkStateReader().getClusterState().getCollection(DEFAULT_COLLECTION);
+    ShardStateProvider ssp = cloudClient.getZkStateReader().getShardStateProvider(DEFAULT_COLLECTION);
     Slice slice = collection.getRouter().getTargetSlice(id, null, null, null, collection);
-    String baseUrl = slice.getLeader().getCoreUrl();
+    String baseUrl = ssp.getLeader(slice).getCoreUrl();
     return baseUrl;
   }
 

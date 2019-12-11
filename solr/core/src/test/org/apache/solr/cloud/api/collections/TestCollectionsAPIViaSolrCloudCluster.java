@@ -29,6 +29,7 @@ import java.util.Set;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -135,6 +136,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
     // remove a server not hosting any replicas
     ZkStateReader zkStateReader = client.getZkStateReader();
     zkStateReader.forceUpdateCollection(collectionName);
+    ShardStateProvider ssp = zkStateReader.getShardStateProvider(collectionName);
     ClusterState clusterState = zkStateReader.getClusterState();
     Map<String,JettySolrRunner> jettyMap = new HashMap<>();
     for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
@@ -144,7 +146,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
     Collection<Slice> slices = clusterState.getCollection(collectionName).getSlices();
     // track the servers not host replicas
     for (Slice slice : slices) {
-      jettyMap.remove(slice.getLeader().getNodeName().replace("_solr", "/solr"));
+      jettyMap.remove(ssp.getLeader(slice).getNodeName().replace("_solr", "/solr"));
       for (Replica replica : slice.getReplicas()) {
         jettyMap.remove(replica.getNodeName().replace("_solr", "/solr"));
       }
@@ -245,6 +247,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
     // the test itself
     zkStateReader.forceUpdateCollection(collectionName);
     final ClusterState clusterState = zkStateReader.getClusterState();
+    ShardStateProvider ssp = zkStateReader.getShardStateProvider(collectionName);
 
     final Set<Integer> leaderIndices = new HashSet<>();
     final Set<Integer> followerIndices = new HashSet<>();
@@ -254,7 +257,7 @@ public class TestCollectionsAPIViaSolrCloudCluster extends SolrCloudTestCase {
         for (final Replica replica : slice.getReplicas()) {
           shardLeaderMap.put(replica.getNodeName().replace("_solr", "/solr"), Boolean.FALSE);
         }
-        shardLeaderMap.put(slice.getLeader().getNodeName().replace("_solr", "/solr"), Boolean.TRUE);
+        shardLeaderMap.put(ssp.getLeader(slice).getNodeName().replace("_solr", "/solr"), Boolean.TRUE);
       }
       for (int ii = 0; ii < jettys.size(); ++ii) {
         final URL jettyBaseUrl = jettys.get(ii).getBaseUrl();

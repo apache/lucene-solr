@@ -22,8 +22,10 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.HashMap;
+
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
@@ -94,7 +96,8 @@ public class BlobRepositoryCloudTest extends SolrCloudTestCase {
   // TODO: move this up to parent class?
   private static String findLiveNodeURI() {
     ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
-    return zkStateReader.getBaseUrlForNodeName(zkStateReader.getClusterState().getCollection(".system").getSlices().iterator().next().getLeader().getNodeName());
+    ShardStateProvider ssp = zkStateReader.getShardStateProvider(".system");
+    return zkStateReader.getBaseUrlForNodeName(ssp.getLeader(zkStateReader.getClusterState().getCollection(".system").getSlices().iterator().next()).getNodeName());
   }
 
   private void assertLastQueryToCollection(String collection) throws SolrServerException, IOException {

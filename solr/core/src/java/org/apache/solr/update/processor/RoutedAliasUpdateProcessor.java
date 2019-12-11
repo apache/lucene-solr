@@ -260,7 +260,7 @@ public class RoutedAliasUpdateProcessor extends UpdateRequestProcessor {
 
   private SolrCmdDistributor.Node getLeaderNode(String collection, Slice slice) {
     //TODO when should we do StdNode vs RetryNode?
-    final Replica leader = slice.getLeader();
+    final Replica leader =  req.getCore().getShardStateProvider().getLeader(slice);
     if (leader == null) {
       throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE,
           "No 'leader' replica available for shard " + slice.getName() + " of collection " + collection);

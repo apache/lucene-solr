@@ -30,6 +30,7 @@ import java.util.Map;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -137,6 +138,7 @@ public class TestExportTool extends SolrCloudTestCase {
       String url = cluster.getRandomJetty(random()).getBaseUrl() + "/" + COLLECTION_NAME;
 
 
+      ShardStateProvider ssp = cluster.getSolrClient().getClusterStateProvider().getShardStateProvider(COLLECTION_NAME);
       int docCount = 0;
 
       for (int j = 0; j < 4; j++) {
@@ -157,7 +159,7 @@ public class TestExportTool extends SolrCloudTestCase {
       HashMap<String, Long> docCounts = new HashMap<>();
       long totalDocsFromCores = 0;
       for (Slice slice : coll.getSlices()) {
-        Replica replica = slice.getLeader();
+        Replica replica = ssp.getLeader(slice);
         try (HttpSolrClient client = new HttpSolrClient.Builder(replica.getBaseUrl()).build()) {
           long count = ExportTool.getDocCount(replica.getCoreName(), client);
           docCounts.put(replica.getCoreName(), count);

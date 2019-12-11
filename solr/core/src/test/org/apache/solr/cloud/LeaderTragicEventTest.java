@@ -90,15 +90,16 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
         Slice slice = collectionState.getSlice("shard1");
 
         if (slice.getReplicas().size() != 2) return false;
-        if (slice.getLeader() == null) return false;
-        if (slice.getLeader().getName().equals(oldLeader.getName())) return false;
+        if (ssp.getLeader(slice)== null) return false;
+        if (ssp.getLeader(slice).getName().equals(oldLeader.getName())) return false;
 
         return true;
       });
       ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), collection, 120000);
       Slice shard = getCollectionState(collection).getSlice("shard1");
-      assertNotSame(shard.getLeader().getNodeName(), oldLeader.getNodeName());
-      assertEquals(getNonLeader(shard, cluster.getSolrClient().getClusterStateProvider().getShardStateProvider(collection) ).getNodeName(), oldLeader.getNodeName());
+      ShardStateProvider shardStateProvider = cluster.getSolrClient().getClusterStateProvider().getShardStateProvider(collection);
+      assertNotSame(shardStateProvider.getLeader(shard).getNodeName(), oldLeader.getNodeName());
+      assertEquals(getNonLeader(shard, shardStateProvider).getNodeName(), oldLeader.getNodeName());
 
       for (String id : addedIds) {
         assertNotNull(cluster.getSolrClient().getById(collection,id));
@@ -192,7 +193,7 @@ public class LeaderTragicEventTest extends SolrCloudTestCase {
         cluster.waitForNode(otherReplicaJetty, 30);
       }
 
-      Replica leader = getCollectionState(collection).getSlice("shard1").getLeader();
+      Replica leader = cluster.getSolrClient().getClusterStateProvider().getShardStateProvider(collection).getLeader(getCollectionState(collection).getSlice("shard1"));
       assertEquals(leader.getName(), oldLeader.getName());
     } finally {
       CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());

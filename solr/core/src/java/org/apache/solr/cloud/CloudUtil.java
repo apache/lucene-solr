@@ -255,7 +255,7 @@ public class CloudUtil {
       Set<String> leaderless = new HashSet<>();
       for (Slice slice : slices) {
         int activeReplicas = 0;
-        if (requireLeaders && slice.getState() != Slice.State.INACTIVE && slice.getLeader() == null) {
+        if (requireLeaders && slice.getState() != Slice.State.INACTIVE && ssp.getLeader(slice) == null) {
           leaderless.add(slice.getName());
           continue;
         }

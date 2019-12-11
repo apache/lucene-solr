@@ -445,7 +445,7 @@ public class AutoscalingHistoryHandlerTest extends SolrCloudTestCase {
         allActive = false;
       }
       for (Slice slice : collState.getSlices()) {
-        if (slice.getLeader() == null) {
+        if (ssp.getLeader(slice) == null) {
           hasLeaders = false;
         }
       }

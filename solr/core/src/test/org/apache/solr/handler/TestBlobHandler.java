@@ -31,6 +31,7 @@ import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -64,7 +65,8 @@ public class TestBlobHandler extends AbstractFullDistribZkTestBase {
       assertEquals(0, response1.getStatus());
       assertTrue(response1.isSuccess());
       DocCollection sysColl = cloudClient.getZkStateReader().getClusterState().getCollection(".system");
-      Replica replica = sysColl.getActiveSlicesMap().values().iterator().next().getLeader();
+      ShardStateProvider ssp = cloudClient.getZkStateReader().getShardStateProvider(sysColl.getName());
+      Replica replica = ssp.getLeader( sysColl.getActiveSlicesMap().values().iterator().next());
 
       String baseUrl = replica.getStr(ZkStateReader.BASE_URL_PROP);
       String url = baseUrl + "/.system/config/requestHandler";

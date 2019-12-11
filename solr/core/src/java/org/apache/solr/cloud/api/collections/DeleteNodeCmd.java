@@ -54,7 +54,7 @@ public class DeleteNodeCmd implements OverseerCollectionMessageHandler.Cmd {
   public void call(ClusterState state, ZkNodeProps message, NamedList results) throws Exception {
     ocmh.checkRequired(message, "node");
     String node = message.getStr("node");
-    List<ZkNodeProps> sourceReplicas = ReplaceNodeCmd.getReplicasOfNode(node, state);
+    List<ZkNodeProps> sourceReplicas = ReplaceNodeCmd.getReplicasOfNode(ocmh.zkStateReader, node, state);
     List<String> singleReplicas = verifyReplicaAvailability(sourceReplicas, state);
     if (!singleReplicas.isEmpty()) {
       results.add("failure", "Can't delete the only existing non-PULL replica(s) on node " + node + ": " + singleReplicas.toString());

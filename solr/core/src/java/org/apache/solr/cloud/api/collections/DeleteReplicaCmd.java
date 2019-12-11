@@ -169,7 +169,7 @@ public class DeleteReplicaCmd implements Cmd {
     validateReplicaAvailability(slice, shard, collectionName, count);
     Collection<Replica> allReplicas = slice.getReplicas();
     Set<String> replicasToBeRemoved = new HashSet<String>();
-    Replica leader = slice.getLeader();
+    Replica leader = ocmh.zkStateReader.getShardStateProvider(collectionName).getLeader(slice);
     for (Replica replica: allReplicas) {
       if (count == 0) {
         break;

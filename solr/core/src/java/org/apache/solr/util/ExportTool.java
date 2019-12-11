@@ -50,6 +50,7 @@ import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.StreamingResponseCallback;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ClusterStateProvider;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -360,7 +361,7 @@ public class ExportTool extends SolrCLI.ToolBase {
       CountDownLatch consumerlatch = new CountDownLatch(1);
       try {
         addConsumer(consumerlatch);
-        addProducers(m);
+        addProducers(stateProvider.getShardStateProvider(coll.getName()),  m);
         if (output != null) {
           output.println("NO of shards : " + corehandlers.size());
         }
@@ -393,10 +394,10 @@ public class ExportTool extends SolrCLI.ToolBase {
       }
     }
 
-    private void addProducers(Map<String, Slice> m) {
+    private void addProducers(ShardStateProvider ssp,  Map<String, Slice> m) {
       for (Map.Entry<String, Slice> entry : m.entrySet()) {
         Slice slice = entry.getValue();
-        Replica replica = slice.getLeader();
+        Replica replica = ssp.getLeader(slice);
         if (replica == null) replica = slice.getReplicas().iterator().next();// get a random replica
         CoreHandler coreHandler = new CoreHandler(replica);
         corehandlers.put(replica.getCoreName(), coreHandler);

@@ -24,6 +24,7 @@ import java.util.Set;
 
 import com.google.common.collect.ImmutableSet;
 import org.apache.solr.client.solrj.cloud.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.api.collections.Assign;
@@ -130,10 +131,11 @@ public class SliceMutator {
       return ZkStateWriter.NO_OP;
     }
 
+    ShardStateProvider ssp = cloudManager.getClusterStateProvider().getShardStateProvider(collectionName);
     Map<String, Slice> slices = coll.getSlicesMap();
     Slice slice = slices.get(sliceName);
 
-    Replica oldLeader = slice.getLeader();
+    Replica oldLeader = ssp.getLeader(slice);
     final Map<String, Replica> newReplicas = new LinkedHashMap<>();
     for (Replica replica : slice.getReplicas()) {
       // TODO: this should only be calculated once and cached somewhere?

@@ -195,6 +195,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
     }
 
     final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
+    ShardStateProvider ssp = ocmh.zkStateReader.getShardStateProvider(collectionName);
     for (Slice slice : ocmh.zkStateReader.getClusterState().getCollection(collectionName).getActiveSlices()) {
       Replica replica = null;
 
@@ -207,7 +208,7 @@ public class BackupCmd implements OverseerCollectionMessageHandler.Cmd {
         replica = selectReplicaWithSnapshot(snapshotMeta.get(), slice);
       } else {
         // Note - Actually this can return a null value when there is no leader for this shard.
-        replica = slice.getLeader();
+        replica = ssp.getLeader(slice);
         if (replica == null) {
           throw new SolrException(ErrorCode.SERVER_ERROR, "No 'leader' replica available for shard " + slice.getName() + " of collection " + collectionName);
         }

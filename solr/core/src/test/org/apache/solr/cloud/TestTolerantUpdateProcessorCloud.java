@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -131,10 +132,11 @@ public class TestTolerantUpdateProcessorCloud extends SolrCloudTestCase {
       urlMap.put(nodeKey, jettyURL.toString());
     }
     zkStateReader.forceUpdateCollection(COLLECTION_NAME);
+    ShardStateProvider ssp = zkStateReader.getShardStateProvider(COLLECTION_NAME);
     ClusterState clusterState = zkStateReader.getClusterState();
     for (Slice slice : clusterState.getCollection(COLLECTION_NAME).getSlices()) {
       String shardName = slice.getName();
-      Replica leader = slice.getLeader();
+      Replica leader = ssp.getLeader(slice);
       assertNotNull("slice has null leader: " + slice.toString(), leader);
       assertNotNull("slice leader has null node name: " + slice.toString(), leader.getNodeName());
       String leaderUrl = urlMap.remove(leader.getNodeName());

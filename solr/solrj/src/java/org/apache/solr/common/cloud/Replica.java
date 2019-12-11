@@ -167,12 +167,14 @@ public class Replica extends ZkNodeProps {
     return nodeName;
   }
   
-  /** Returns the {@link State} of this replica. */
+  /** Returns the {@link State} of this replica. use {@link org.apache.solr.client.solrj.cloud.ShardStateProvider#getState(Replica)}  instead*/
   @Deprecated
   public State getState() {
     return state;
   }
 
+  /**Use {@link org.apache.solr.client.solrj.cloud.ShardStateProvider#isActive(Replica)} instead
+   */
   @Deprecated
   public boolean isActive(Set<String> liveNodes) {
     return this.nodeName != null && liveNodes.contains(this.nodeName) && this.state == State.ACTIVE;

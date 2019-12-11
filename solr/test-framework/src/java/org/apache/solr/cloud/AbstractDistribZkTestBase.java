@@ -248,7 +248,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
       Slice slice = docCollection.getSlice(shardName);
       Replica leader = sp.getLeader(slice);
       if (slice != null && leader!= null && !leader.equals(oldLeader) && sp.getState(leader) == Replica.State.ACTIVE) {
-        log.info("Old leader {}, new leader {}. New leader got elected in {} ms", oldLeader, slice.getLeader(), timeOut.timeElapsed(MILLISECONDS) );
+        log.info("Old leader {}, new leader {}. New leader got elected in {} ms", oldLeader, sp.getLeader(slice), timeOut.timeElapsed(MILLISECONDS) );
         return true;
       }
       return false;

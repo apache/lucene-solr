@@ -624,7 +624,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     for (Slice slice : slices) {
       String name = slice.getName();
       List<String> urls = new ArrayList<>();
-      Replica leader = slice.getLeader();
+      Replica leader = ssp.getLeader(slice);
       if (directUpdatesToLeadersOnly && leader == null) {
         for (Replica replica : slice.getReplicas(
             replica -> ssp.isActive(replica)
@@ -1255,9 +1255,10 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     if (resp instanceof RouteResponse) {
       NamedList routes = ((RouteResponse)resp).getRouteResponses();
       DocCollection coll = getDocCollection(collection, null);
+      ShardStateProvider ssp = getClusterStateProvider().getShardStateProvider(collection);
       Map<String,String> leaders = new HashMap<String,String>();
       for (Slice slice : coll.getActiveSlicesArr()) {
-        Replica leader = slice.getLeader();
+        Replica leader = ssp.getLeader(slice);
         if (leader != null) {
           ZkCoreNodeProps zkProps = new ZkCoreNodeProps(leader);
           String leaderUrl = zkProps.getBaseUrl() + "/" + zkProps.getCoreName();

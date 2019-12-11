@@ -26,6 +26,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -134,6 +135,7 @@ public class CdcrTestsUtil extends SolrTestCaseJ4 {
   protected static boolean assertShardInSync(String collection, String shard, CloudSolrClient client) throws IOException, SolrServerException {
     TimeOut waitTimeOut = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     DocCollection docCollection = client.getZkStateReader().getClusterState().getCollection(collection);
+    ShardStateProvider ssp = client.getZkStateReader().getShardStateProvider(collection);
     Slice correctSlice = null;
     for (Slice slice : docCollection.getSlices()) {
       if (shard.equals(slice.getName())) {
@@ -144,7 +146,7 @@ public class CdcrTestsUtil extends SolrTestCaseJ4 {
     assertNotNull(correctSlice);
 
     long leaderDocCount;
-    try (HttpSolrClient leaderClient = new HttpSolrClient.Builder(correctSlice.getLeader().getCoreUrl()).withHttpClient(client.getHttpClient()).build()) {
+    try (HttpSolrClient leaderClient = new HttpSolrClient.Builder(ssp.getLeader(correctSlice).getCoreUrl()).withHttpClient(client.getHttpClient()).build()) {
       leaderDocCount = leaderClient.query(new SolrQuery("*:*").setParam("distrib", "false")).getResults().getNumFound();
     }
 

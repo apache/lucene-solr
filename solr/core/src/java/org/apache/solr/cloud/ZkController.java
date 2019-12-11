@@ -661,7 +661,7 @@ public class ZkController implements Closeable {
     if (shard == null) return;
 
     // if this replica is not a leader, it will be put in recovery state by the leader
-    if (shard.getReplica(cd.getCloudDescriptor().getCoreNodeName()) != shard.getLeader()) return;
+    if (shard.getReplica(cd.getCloudDescriptor().getCoreNodeName()) != ssp.getLeader(shard)) return;
 
     int numActiveReplicas = shard.getReplicas(
         rep -> ssp.getState(rep) == Replica.State.ACTIVE

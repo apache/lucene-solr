@@ -41,6 +41,7 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.ShardStateProvider;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.AbstractUpdateRequest;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -78,7 +79,7 @@ import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.client.solrj.impl.BaseCloudSolrClient.*;
+import static org.apache.solr.client.solrj.impl.BaseCloudSolrClient.RouteResponse;
 
 
 /**
@@ -804,10 +805,11 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
     // determine the coreNodeName of only current replica
     Collection<Slice> slices = cluster.getSolrClient().getZkStateReader().getClusterState().getCollection(COL).getSlices();
+    ShardStateProvider ssp = cluster.getSolrClient().getClusterStateProvider().getShardStateProvider(COL);
     assertEquals(1, slices.size()); // sanity check
     Slice slice = slices.iterator().next();
     assertEquals(1, slice.getReplicas().size()); // sanity check
-    final String old_leader_core_node_name = slice.getLeader().getName();
+    final String old_leader_core_node_name = ssp.getLeader(slice).getName();
 
     // NOTE: creating our own CloudSolrClient whose settings we can muck with...
     try (CloudSolrClient stale_client = new CloudSolrClientBuilder

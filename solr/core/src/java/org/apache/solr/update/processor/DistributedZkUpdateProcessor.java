@@ -873,7 +873,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         if (isSubset &&
             (docId == null // in case of deletes
                 || coll.getRouter().isTargetSlice(docId, doc, req.getParams(), aslice.getName(), coll))) {
-          Replica sliceLeader = aslice.getLeader();
+          Replica sliceLeader =  req.getCore().getShardStateProvider().getLeader(aslice);
           // slice leader can be null because node/shard is created zk before leader election
           if (sliceLeader != null && clusterState.liveNodesContain(sliceLeader.getNodeName()))  {
             if (nodes == null) nodes = new ArrayList<>();
@@ -906,7 +906,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
               final Slice[] activeSlices = docCollection.getActiveSlicesArr();
               Slice any = activeSlices[0];
               if (nodes == null) nodes = new ArrayList<>();
-              nodes.add(new SolrCmdDistributor.StdNode(new ZkCoreNodeProps(any.getLeader())));
+              nodes.add(new SolrCmdDistributor.StdNode(new ZkCoreNodeProps(req.getCore().getShardStateProvider().getLeader(any))));
             }
           }
           return nodes;

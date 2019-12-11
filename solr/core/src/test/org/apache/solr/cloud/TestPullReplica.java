@@ -171,6 +171,7 @@ public class TestPullReplica extends SolrCloudTestCase {
       while (true) {
         DocCollection docCollection = getCollectionState(collectionName);
         assertNotNull(docCollection);
+        ShardStateProvider ssp = cluster.getSolrClient().getClusterStateProvider().getShardStateProvider(collectionName);
         assertEquals("Expecting 4 relpicas per shard",
             8, docCollection.getReplicas().size());
         assertEquals("Expecting 6 pull replicas, 3 per shard",
@@ -179,7 +180,7 @@ public class TestPullReplica extends SolrCloudTestCase {
             2, docCollection.getReplicas(EnumSet.of(Replica.Type.NRT)).size());
         for (Slice s:docCollection.getSlices()) {
           // read-only replicas can never become leaders
-          assertFalse(s.getLeader().getType() == Replica.Type.PULL);
+          assertFalse(ssp.getLeader(s).getType() == Replica.Type.PULL);
           List<String> shardElectionNodes = cluster.getZkClient().getChildren(ZkStateReader.getShardLeadersElectPath(collectionName, s.getName()), null, true);
           assertEquals("Unexpected election nodes for Shard: " + s.getName() + ": " + Arrays.toString(shardElectionNodes.toArray()),
               1, shardElectionNodes.size());
@@ -241,7 +242,7 @@ public class TestPullReplica extends SolrCloudTestCase {
       cluster.getSolrClient().commit(collectionName);
 
       Slice s = docCollection.getSlices().iterator().next();
-      try (HttpSolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
+      try (HttpSolrClient leaderClient = getHttpSolrClient(cluster.getSolrClient().getClusterStateProvider().getShardStateProvider(collectionName).getLeader(s).getCoreUrl())) {
         assertEquals(numDocs, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
       }
 
@@ -399,12 +400,13 @@ public class TestPullReplica extends SolrCloudTestCase {
       .process(cluster.getSolrClient());
     waitForState("Expected collection to be created with 1 shard and 2 replicas", collectionName, clusterShape(1, 2));
     DocCollection docCollection = assertNumberOfReplicas(1, 0, 1, false, true);
+    ShardStateProvider ssp = cluster.getSolrClient().getClusterStateProvider().getShardStateProvider(collectionName);
 
     // Add a document and commit
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "1", "foo", "bar"));
     cluster.getSolrClient().commit(collectionName);
     Slice s = docCollection.getSlices().iterator().next();
-    try (HttpSolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
+    try (HttpSolrClient leaderClient = getHttpSolrClient(ssp.getLeader(s).getCoreUrl())) {
       assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     }
 
@@ -417,10 +419,10 @@ public class TestPullReplica extends SolrCloudTestCase {
       CollectionAdminRequest.deleteReplica(
           collectionName,
           "shard1",
-          s.getLeader().getName())
+          ssp.getLeader(s).getName())
       .process(cluster.getSolrClient());
     } else {
-      leaderJetty = cluster.getReplicaJetty(s.getLeader());
+      leaderJetty = cluster.getReplicaJetty(ssp.getLeader(s));
       leaderJetty.stop();
       waitForState("Leader replica not removed", collectionName, clusterShape(1, 1));
       // Wait for cluster state to be updated
@@ -429,7 +431,6 @@ public class TestPullReplica extends SolrCloudTestCase {
     }
     docCollection = assertNumberOfReplicas(0, 0, 1, true, true);
 
-    ShardStateProvider ssp = cluster.getSolrClient().getClusterStateProvider().getShardStateProvider(collectionName);
     // Check that there is no leader for the shard
     Replica leader = ssp.getLeader(docCollection.getSlice("shard1"));
     assertTrue(leader == null || !ssp.isActive(leader));
@@ -492,7 +493,7 @@ public class TestPullReplica extends SolrCloudTestCase {
     // add docs agin
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "2", "foo", "zoo"));
     s = docCollection.getSlices().iterator().next();
-    try (HttpSolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
+    try (HttpSolrClient leaderClient = getHttpSolrClient(ssp.getLeader(s).getCoreUrl())) {
       leaderClient.commit();
       assertEquals(1, leaderClient.query(new SolrQuery("*:*")).getResults().getNumFound());
     }

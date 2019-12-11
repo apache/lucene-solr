@@ -146,6 +146,7 @@ public void testCantConnectToPullReplica() throws Exception {
       .setMaxShardsPerNode(1)
       .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(collectionName, numShards, numShards * 2);
+  ShardStateProvider ssp = cluster.getSolrClient().getClusterStateProvider().getShardStateProvider(collectionName);
     addDocs(10);
     DocCollection docCollection = assertNumberOfReplicas(numShards, 0, numShards, false, true);
     Slice s = docCollection.getSlices().iterator().next();
@@ -154,7 +155,7 @@ public void testCantConnectToPullReplica() throws Exception {
       proxy.close();
       for (int i = 1; i <= 10; i ++) {
         addDocs(10 + i);
-        try (HttpSolrClient leaderClient = getHttpSolrClient(s.getLeader().getCoreUrl())) {
+        try (HttpSolrClient leaderClient = getHttpSolrClient(ssp.getLeader(s).getCoreUrl())) {
           assertNumDocs(10 + i, leaderClient);
         }
       }
@@ -189,10 +190,11 @@ public void testCantConnectToPullReplica() throws Exception {
       .setMaxShardsPerNode(1)
       .process(cluster.getSolrClient());
     cluster.waitForActiveCollection(collectionName, numShards, numShards * 2);
+    ShardStateProvider ssp = cluster.getSolrClient().getClusterStateProvider().getShardStateProvider(collectionName);
     addDocs(10);
     DocCollection docCollection = assertNumberOfReplicas(numShards, 0, numShards, false, true);
     Slice s = docCollection.getSlices().iterator().next();
-    SocketProxy proxy = getProxyForReplica(s.getLeader());
+    SocketProxy proxy = getProxyForReplica(ssp.getLeader(s));
     try {
       // wait for replication
       try (HttpSolrClient pullReplicaClient = getHttpSolrClient(s.getReplicas(EnumSet.of(Replica.Type.PULL)).get(0).getCoreUrl())) {

@@ -304,6 +304,9 @@ public class DocCollection extends ZkNodeProps implements Iterable<Slice> {
     return null;
   }
 
+  /**Use {@link ShardStateProvider#getLeader(Slice)} instead
+   */
+  @Deprecated
   public Replica getLeader(String sliceName) {
     Slice slice = getSlice(sliceName);
     if (slice == null) return null;

@@ -223,12 +223,13 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         createEphemeralLiveNode(nodeId);
       }
       initialState.forEachCollection(dc -> {
+        ShardStateProvider ssp = cloudManager.getClusterStateProvider().getShardStateProvider(dc.getName());
         collProperties.computeIfAbsent(dc.getName(), name -> new ConcurrentHashMap<>()).putAll(dc.getProperties());
         opDelays.computeIfAbsent(dc.getName(), Utils.NEW_HASHMAP_FUN).putAll(defaultOpDelays);
         dc.getSlices().forEach(s -> {
           sliceProperties.computeIfAbsent(dc.getName(), name -> new ConcurrentHashMap<>())
               .computeIfAbsent(s.getName(), Utils.NEW_HASHMAP_FUN).putAll(s.getProperties());
-          Replica leader = s.getLeader();
+          Replica leader = ssp.getLeader(s);
           s.getReplicas().forEach(r -> {
             Map<String, Object> props = new HashMap<>(r.getProperties());
             if (leader != null && r.getName().equals(leader.getName())) {
@@ -1281,7 +1282,8 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     ClusterState clusterState = getClusterState();
     DocCollection collection = clusterState.getCollection(collectionName);
     Slice parentSlice = SplitShardCmd.getParentSlice(clusterState, collectionName, sliceName, splitKey);
-    Replica leader = parentSlice.getLeader();
+    ShardStateProvider ssp = cloudManager.getClusterStateProvider().getShardStateProvider(collectionName);
+    Replica leader = ssp.getLeader(parentSlice);
     // XXX leader election may not have happened yet - should we require it?
     if (leader == null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Shard " + collectionName +
@@ -1379,10 +1381,10 @@ public class SimClusterStateProvider implements ClusterStateProvider {
 
     boolean success = false;
     try {
-      CloudUtil.waitForState(cloudManager, collectionName, 30, TimeUnit.SECONDS, (liveNodes, state, ssp) -> {
+      CloudUtil.waitForState(cloudManager, collectionName, 30, TimeUnit.SECONDS, (liveNodes, state, sp) -> {
         for (String subSlice : subSlices) {
           Slice s = state.getSlice(subSlice);
-          if (s.getLeader() == null) {
+          if (sp.getLeader(s) == null) {
             log.debug("** no leader in {} / {}", collectionName, s);
             return false;
           }
@@ -1543,6 +1545,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     }
     ensureSystemCollection(collection);
     DocCollection coll = getClusterState().getCollection(collection);
+    ShardStateProvider ssp = cloudManager.getClusterStateProvider().getShardStateProvider(collection);
     DocRouter router = coll.getRouter();
     List<String> deletes = req.getDeleteById();
     Map<String, AtomicLong> freediskDeltaPerNode = new HashMap<>();
@@ -1551,7 +1554,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       Map<String, Number> indexSizePerShard = new HashMap<>();
       for (String id : deletes) {
         Slice s = router.getTargetSlice(id, null, null, req.getParams(), coll);
-        Replica leader = s.getLeader();
+        Replica leader = ssp.getLeader(s);
         if (leader == null) {
           throw new IOException("-- no leader in " + s);
         }
@@ -1559,7 +1562,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         ReplicaInfo ri = getReplicaInfo(leader);
         Number numDocs = (Number)ri.getVariable("SEARCHER.searcher.numDocs");
         if (numDocs == null || numDocs.intValue() <= 0) {
-          log.debug("-- attempting to delete nonexistent doc " + id + " from " + s.getLeader());
+          log.debug("-- attempting to delete nonexistent doc " + id + " from " + ssp.getLeader(s));
           continue;
         }
 
@@ -1574,7 +1577,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
           if (bufferedUpdates.get() > 0) {
             bufferedUpdates.decrementAndGet();
           } else {
-            log.debug("-- attempting to delete nonexistent buffered doc " + id + " from " + s.getLeader());
+            log.debug("-- attempting to delete nonexistent buffered doc " + id + " from " + ssp.getLeader(s));
           }
           continue;
         }
@@ -1621,7 +1624,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         }
         //log.debug("-- req delByQ " + collection);
         for (Slice s : coll.getSlices()) {
-          Replica leader = s.getLeader();
+          Replica leader = ssp.getLeader(s);
           if (leader == null) {
             throw new IOException("-- no leader in " + s);
           }
@@ -1718,7 +1721,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
           }
           for (int i = 0; i < slices.length; i++) {
             Slice s = slices[i];
-            Replica leader = s.getLeader();
+            Replica leader = ssp.getLeader(s);
             if (leader == null) {
               throw new IOException("-- no leader in " + s);
             }
@@ -1746,7 +1749,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
               throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Document without id: " + doc);
             }
             Slice s = coll.getRouter().getTargetSlice(id, doc, null, null, coll);
-            Replica leader = s.getLeader();
+            Replica leader = ssp.getLeader(s);
             if (leader == null) {
               throw new IOException("-- no leader in " + s);
             }
@@ -1825,7 +1828,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       lock.lockInterruptibly();
       try {
         coll.getSlices().forEach(s -> {
-          Replica leader = s.getLeader();
+          Replica leader = ssp.getLeader(s);
           ReplicaInfo ri = getReplicaInfo(leader);
           Number numDocs = (Number)ri.getVariable("SEARCHER.searcher.numDocs");
           if (numDocs == null || numDocs.intValue() == 0) {
@@ -1863,7 +1866,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     DocCollection coll = clusterState.getCollection(collection);
     AtomicLong count = new AtomicLong();
     for (Slice s : coll.getActiveSlicesArr()) {
-      Replica r = s.getLeader();
+      Replica r = cloudManager.getClusterStateProvider().getShardStateProvider(collection).getLeader(s);
       if (r == null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, collection + "/" + s.getName() + " has no leader");
       }
