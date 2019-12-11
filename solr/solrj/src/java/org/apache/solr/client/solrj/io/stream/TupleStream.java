@@ -142,11 +142,11 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
       CloudSolrClient cloudSolrClient =
           Optional.ofNullable(streamContext.getSolrClientCache()).orElseGet(SolrClientCache::new).getCloudSolrClient(zkHost);
       ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
-      ShardStateProvider ssp = zkStateReader.getShardStateProvider(collection);
       Slice[] slices = CloudSolrStream.getSlices(collection, zkStateReader, true);
+      ShardStateProvider ssp = zkStateReader.getShardStateProvider(collection);
 
 
-      ModifiableSolrParams solrParams = new ModifiableSolrParams(streamContext.getRequestParams());
+          ModifiableSolrParams solrParams = new ModifiableSolrParams(streamContext.getRequestParams());
       solrParams.add(requestParams);
 
       RequestReplicaListTransformerGenerator requestReplicaListTransformerGenerator =
@@ -157,7 +157,7 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
       for(Slice slice : slices) {
         List<Replica> sortedReplicas = new ArrayList<>();
         for(Replica replica : slice.getReplicas()) {
-          if(ssp.isActive(replica) ) {
+          if(ssp.isActive(replica)) {
             sortedReplicas.add(replica);
           }
         }
