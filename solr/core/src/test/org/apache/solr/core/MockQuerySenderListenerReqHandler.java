@@ -17,7 +17,7 @@
 package org.apache.solr.core;
 
 import org.apache.solr.handler.RequestHandlerBase;
-import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.common.util.NamedList;
@@ -42,9 +42,9 @@ public class MockQuerySenderListenerReqHandler extends RequestHandlerBase {
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
-    super.initializeMetrics(manager, registryName, tag, scope);
-    manager.registerGauge(this, registryName, () -> initCounter.intValue(), tag, true, "initCount", getCategory().toString(), scope);
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    super.initializeMetrics(parentContext, scope);
+    solrMetricsContext.gauge(() -> initCounter.intValue(), true, "initCount", getCategory().toString(), scope);
   }
 
   @Override

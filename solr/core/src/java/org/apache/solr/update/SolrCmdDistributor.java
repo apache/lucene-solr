@@ -93,10 +93,12 @@ public class SolrCmdDistributor implements Closeable {
   
   public void finish() {    
     try {
-      assert ! finished : "lifecycle sanity check";
+      assert !finished : "lifecycle sanity check";
       finished = true;
-      
+
       blockAndDoRetries();
+    } catch (IOException e) {
+      log.warn("Unable to finish sending updates", e);
     } finally {
       clients.shutdown();
     }
@@ -106,7 +108,7 @@ public class SolrCmdDistributor implements Closeable {
     clients.shutdown();
   }
 
-  private void doRetriesIfNeeded() {
+  private void doRetriesIfNeeded() throws IOException {
     // NOTE: retries will be forwards to a single url
     
     List<Error> errors = new ArrayList<>(this.errors);
@@ -259,7 +261,7 @@ public class SolrCmdDistributor implements Closeable {
     
   }
 
-  public void blockAndDoRetries() {
+  public void blockAndDoRetries() throws IOException {
     clients.blockUntilFinished();
     
     // wait for any async commits to complete
@@ -284,7 +286,7 @@ public class SolrCmdDistributor implements Closeable {
         : AbstractUpdateRequest.ACTION.COMMIT, false, cmd.waitSearcher, cmd.maxOptimizeSegments, cmd.softCommit, cmd.expungeDeletes, cmd.openSearcher);
   }
 
-  private void submit(final Req req, boolean isCommit) {
+  private void submit(final Req req, boolean isCommit) throws IOException {
     // Copy user principal from the original request to the new update request, for later authentication interceptor use
     if (SolrRequestInfo.getRequestInfo() != null) {
       req.uReq.setUserPrincipal(SolrRequestInfo.getRequestInfo().getReq().getUserPrincipal());

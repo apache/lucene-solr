@@ -1843,7 +1843,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         "            'freedisk':918005641216}," +
         "      '127.0.0.1:60089_solr':{" +
         "        'cores':2," +
-        "            'freedisk':918005641216}}}");
+        "            'freedisk':918005641216}}");
 
     Policy policy = new Policy((Map<String, Object>) Utils.fromJSONString(autoscaleJson));
     Policy.Session session = policy.createSession(new DelegatingCloudManager(null) {
@@ -2594,13 +2594,13 @@ public class TestPolicy extends SolrTestCaseJ4 {
             if (node.equals("node1")) {
               Map m = Utils.makeMap("newColl",
                   Utils.makeMap("shard1", Collections.singletonList(new ReplicaInfo("r1", "shard1",
-                      new Replica("r1", Utils.makeMap(ZkStateReader.NODE_NAME_PROP, "node1")),
+                      new Replica("r1", Utils.makeMap(ZkStateReader.NODE_NAME_PROP, "node1"), "newColl", "shard1"),
                       Utils.makeMap(FREEDISK.perReplicaValue, 200)))));
               return m;
             } else if (node.equals("node2")) {
               Map m = Utils.makeMap("newColl",
                   Utils.makeMap("shard2", Collections.singletonList(new ReplicaInfo("r1", "shard2",
-                      new Replica("r1", Utils.makeMap(ZkStateReader.NODE_NAME_PROP, "node2")),
+                      new Replica("r1", Utils.makeMap(ZkStateReader.NODE_NAME_PROP, "node2"),"newColl", "shard2"),
                       Utils.makeMap(FREEDISK.perReplicaValue, 200)))));
               return m;
             }
@@ -2623,9 +2623,9 @@ public class TestPolicy extends SolrTestCaseJ4 {
               @Override
               public Replica getLeader(String sliceName) {
                 if (sliceName.equals("shard1"))
-                  return new Replica("r1", Utils.makeMap(ZkStateReader.NODE_NAME_PROP, "node1"));
+                  return new Replica("r1", Utils.makeMap(ZkStateReader.NODE_NAME_PROP, "node1"), name, "shard1");
                 if (sliceName.equals("shard2"))
-                  return new Replica("r2", Utils.makeMap(ZkStateReader.NODE_NAME_PROP, "node2"));
+                  return new Replica("r2", Utils.makeMap(ZkStateReader.NODE_NAME_PROP, "node2"),name, "shard2");
                 return null;
               }
             };
@@ -2642,20 +2642,20 @@ public class TestPolicy extends SolrTestCaseJ4 {
   public void testMoveReplicaLeaderlast() {
 
     List<Pair<ReplicaInfo, Row>> validReplicas = new ArrayList<>();
-    Replica replica = new Replica("r1", Utils.makeMap("leader", "true"));
-    ReplicaInfo replicaInfo = new ReplicaInfo("c1", "s1", replica, new HashMap<>());
+    Replica replica = new Replica("r1", Utils.makeMap("leader", "true"), "c1", "s1");
+    ReplicaInfo replicaInfo = new ReplicaInfo(replica.collection, replica.slice ,replica, new HashMap<>());
     validReplicas.add(new Pair<>(replicaInfo, null));
 
     replicaInfo = new ReplicaInfo("r4", "c1_s2_r1", "c1", "s2", Replica.Type.NRT, "n1", Collections.singletonMap("leader", "true"));
     validReplicas.add(new Pair<>(replicaInfo, null));
 
 
-    replica = new Replica("r2", Utils.makeMap("leader", false));
-    replicaInfo = new ReplicaInfo("c1", "s1", replica, new HashMap<>());
+    replica = new Replica("r2", Utils.makeMap("leader", false),"c1","s1");
+    replicaInfo = new ReplicaInfo(replica.collection, replica.slice, replica, new HashMap<>());
     validReplicas.add(new Pair<>(replicaInfo, null));
 
-    replica = new Replica("r3", Utils.makeMap("leader", false));
-    replicaInfo = new ReplicaInfo("c1", "s1", replica, new HashMap<>());
+    replica = new Replica("r3", Utils.makeMap("leader", false),"c1","s1");
+    replicaInfo = new ReplicaInfo(replica.collection,replica.slice, replica, new HashMap<>());
     validReplicas.add(new Pair<>(replicaInfo, null));
 
 
@@ -2780,11 +2780,15 @@ public class TestPolicy extends SolrTestCaseJ4 {
     StringWriter writer = new StringWriter();
     NamedList<Object> val = new NamedList<>();
     val.add("violations", violations);
-    new SolrJSONWriter(writer)
-        .writeObj(val)
-        .close();
-    JSONWriter.write(writer, true, JsonTextWriter.JSON_NL_MAP, val);
-
+    
+    if (random().nextBoolean()) {
+      new SolrJSONWriter(writer)
+          .writeObj(val)
+          .close();
+    } else {
+      JSONWriter.write(writer, true, JsonTextWriter.JSON_NL_MAP, val);
+    }
+    
     Object root = Utils.fromJSONString(writer.toString());
     assertEquals(2l,
         Utils.getObjectByPath(root, true, "violations[0]/violation/replica/NRT"));

@@ -186,17 +186,13 @@ public class HttpSolrCall {
     this.response = response;
     this.retry = retry;
     this.requestType = RequestType.UNKNOWN;
+    req.setAttribute(HttpSolrCall.class.getName(), this);
     queryParams = SolrRequestParsers.parseQueryString(req.getQueryString());
     // set a request timer which can be reused by requests if needed
     req.setAttribute(SolrRequestParsers.REQUEST_TIMER_SERVLET_ATTRIBUTE, new RTimerTree());
     // put the core container in request attribute
     req.setAttribute("org.apache.solr.CoreContainer", cores);
-    path = req.getServletPath();
-    if (req.getPathInfo() != null) {
-      // this lets you handle /update/commit when /update is a servlet
-      path += req.getPathInfo();
-    }
-    req.setAttribute(HttpSolrCall.class.getName(), this);
+    path = ServletUtils.getPathAfterContext(req);
   }
 
   public String getPath() {
@@ -474,22 +470,36 @@ public class HttpSolrCall {
     AuthorizationContext context = getAuthCtx();
     log.debug("AuthorizationContext : {}", context);
     AuthorizationResponse authResponse = cores.getAuthorizationPlugin().authorize(context);
-    if (authResponse.statusCode == AuthorizationResponse.PROMPT.statusCode) {
+    int statusCode = authResponse.statusCode;
+    
+    if (statusCode == AuthorizationResponse.PROMPT.statusCode) {
       Map<String, String> headers = (Map) getReq().getAttribute(AuthenticationPlugin.class.getName());
       if (headers != null) {
         for (Map.Entry<String, String> e : headers.entrySet()) response.setHeader(e.getKey(), e.getValue());
       }
       log.debug("USER_REQUIRED "+req.getHeader("Authorization")+" "+ req.getUserPrincipal());
+      sendError(statusCode,
+          "Authentication failed, Response code: " + statusCode);
       if (shouldAudit(EventType.REJECTED)) {
         cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.REJECTED, req, context));
       }
+      return RETURN;
     }
-    if (!(authResponse.statusCode == HttpStatus.SC_ACCEPTED) && !(authResponse.statusCode == HttpStatus.SC_OK)) {
-      log.info("USER_REQUIRED auth header {} context : {} ", req.getHeader("Authorization"), context);
-      sendError(authResponse.statusCode,
-          "Unauthorized request, Response code: " + authResponse.statusCode);
+    if (statusCode == AuthorizationResponse.FORBIDDEN.statusCode) {
+      log.debug("UNAUTHORIZED auth header {} context : {}, msg: {}", req.getHeader("Authorization"), context, authResponse.getMessage());
+      sendError(statusCode,
+          "Unauthorized request, Response code: " + statusCode);
       if (shouldAudit(EventType.UNAUTHORIZED)) {
         cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.UNAUTHORIZED, req, context));
+      }
+      return RETURN;
+    }
+    if (!(statusCode == HttpStatus.SC_ACCEPTED) && !(statusCode == HttpStatus.SC_OK)) {
+      log.warn("ERROR {} during authentication: {}", statusCode, authResponse.getMessage());
+      sendError(statusCode,
+          "ERROR during authorization, Response code: " + statusCode);
+      if (shouldAudit(EventType.ERROR)) {
+        cores.getAuditLoggerPlugin().doAudit(new AuditEvent(EventType.ERROR, req, context));
       }
       return RETURN;
     }
@@ -498,7 +508,7 @@ public class HttpSolrCall {
     }
     return null;
   }
-  
+
   /**
    * This method processes the request.
    */

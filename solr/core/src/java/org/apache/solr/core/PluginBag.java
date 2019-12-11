@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -43,6 +44,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.handler.component.SearchComponent;
+import org.apache.solr.pkg.PackagePluginHolder;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
@@ -97,7 +99,7 @@ public class PluginBag<T> implements AutoCloseable {
     this(klass, core, false);
   }
 
-  static void initInstance(Object inst, PluginInfo info) {
+  public static void initInstance(Object inst, PluginInfo info) {
     if (inst instanceof PluginInfoInitialized) {
       ((PluginInfoInitialized) inst).init(info);
     } else if (inst instanceof NamedListInitializedPlugin) {
@@ -138,14 +140,21 @@ public class PluginBag<T> implements AutoCloseable {
       log.debug("{} : '{}' created with startup=lazy ", meta.getCleanTag(), info.name);
       return new LazyPluginHolder<T>(meta, info, core, core.getResourceLoader(), false);
     } else {
-      T inst = core.createInstance(info.className, (Class<T>) meta.clazz, meta.getCleanTag(), null, core.getResourceLoader());
-      initInstance(inst, info);
-      return new PluginHolder<>(info, inst);
+      if (info.pkgName != null) {
+        PackagePluginHolder<T> holder = new PackagePluginHolder<>(info, core, meta);
+        return holder;
+      } else {
+        T inst = core.createInstance(info.className, (Class<T>) meta.clazz, meta.getCleanTag(), null, core.getResourceLoader(info.pkgName));
+        initInstance(inst, info);
+        return new PluginHolder<>(info, inst);
+      }
     }
   }
 
-  /** make a plugin available in an alternate name. This is an internal API and not for public use
-   * @param src key in which the plugin is already registered
+  /**
+   * make a plugin available in an alternate name. This is an internal API and not for public use
+   *
+   * @param src    key in which the plugin is already registered
    * @param target the new key in which the plugin should be aliased to. If target exists already, the alias fails
    * @return flag if the operation is successful or not
    */
@@ -195,7 +204,7 @@ public class PluginBag<T> implements AutoCloseable {
     return old == null ? null : old.get();
   }
 
-  PluginHolder<T> put(String name, PluginHolder<T> plugin) {
+  public PluginHolder<T> put(String name, PluginHolder<T> plugin) {
     Boolean registerApi = null;
     Boolean disableHandler = null;
     if (plugin.pluginInfo != null) {
@@ -231,11 +240,15 @@ public class PluginBag<T> implements AutoCloseable {
           apiBag.registerLazy((PluginHolder<SolrRequestHandler>) plugin, plugin.pluginInfo);
       }
     }
-    if(disableHandler == null) disableHandler = Boolean.FALSE;
+    if (disableHandler == null) disableHandler = Boolean.FALSE;
     PluginHolder<T> old = null;
-    if(!disableHandler) old = registry.put(name, plugin);
+    if (!disableHandler) old = registry.put(name, plugin);
     if (plugin.pluginInfo != null && plugin.pluginInfo.isDefault()) setDefault(name);
     if (plugin.isLoaded()) registerMBean(plugin.get(), core, name);
+    // old instance has been replaced - close it to prevent mem leaks
+    if (old != null && old != plugin) {
+      closeQuietly(old);
+    }
     return old;
   }
 
@@ -324,12 +337,20 @@ public class PluginBag<T> implements AutoCloseable {
     }
   }
 
+  public static void closeQuietly(Object inst)  {
+    try {
+      if (inst != null && inst instanceof AutoCloseable) ((AutoCloseable) inst).close();
+    } catch (Exception e) {
+      log.error("Error closing "+ inst , e);
+    }
+  }
+
   /**
    * An indirect reference to a plugin. It just wraps a plugin instance.
    * subclasses may choose to lazily load the plugin
    */
-  public static class PluginHolder<T> implements AutoCloseable {
-    private T inst;
+  public static class PluginHolder<T> implements Supplier<T>,  AutoCloseable {
+    protected T inst;
     protected final PluginInfo pluginInfo;
     boolean registerAPI = false;
 

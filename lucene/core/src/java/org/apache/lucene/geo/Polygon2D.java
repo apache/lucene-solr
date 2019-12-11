@@ -16,8 +16,6 @@
  */
 package org.apache.lucene.geo;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.apache.lucene.index.PointValues.Relation;
 
 /**
@@ -41,8 +39,6 @@ public class Polygon2D implements Component2D {
   final protected Component2D holes;
   /** Edges of the polygon represented as a 2-d interval tree.*/
   final EdgeTree tree;
-  /** helper boolean for points on boundary */
-  final private AtomicBoolean containsBoundary = new AtomicBoolean(false);
 
   protected Polygon2D(final double minX, final double maxX, final double minY, final double maxY, double[] x, double[] y, Component2D holes) {
     this.minY = minY;
@@ -92,8 +88,7 @@ public class Polygon2D implements Component2D {
   }
 
   private boolean internalContains(double x, double y) {
-    containsBoundary.set(false);
-    if (tree.contains(x, y, containsBoundary)) {
+    if (tree.contains(x, y)) {
       if (holes != null && holes.contains(x, y)) {
         return false;
       }

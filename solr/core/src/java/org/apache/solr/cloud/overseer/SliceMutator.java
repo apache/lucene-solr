@@ -80,7 +80,7 @@ public class SliceMutator {
             ZkStateReader.BASE_URL_PROP, message.getStr(ZkStateReader.BASE_URL_PROP),
             ZkStateReader.STATE_PROP, message.getStr(ZkStateReader.STATE_PROP),
             ZkStateReader.NODE_NAME_PROP, message.getStr(ZkStateReader.NODE_NAME_PROP), 
-            ZkStateReader.REPLICA_TYPE, message.get(ZkStateReader.REPLICA_TYPE)));
+            ZkStateReader.REPLICA_TYPE, message.get(ZkStateReader.REPLICA_TYPE)), coll, slice);
     return new ZkWriteCommand(coll, updateReplica(collection, sl, replica.getName(), replica));
   }
 
@@ -103,7 +103,7 @@ public class SliceMutator {
       if (replica != null && (baseUrl == null || baseUrl.equals(replica.getBaseUrl()))) {
         Map<String, Replica> newReplicas = slice.getReplicasCopy();
         newReplicas.remove(cnn);
-        slice = new Slice(slice.getName(), newReplicas, slice.getProperties());
+        slice = new Slice(slice.getName(), newReplicas, slice.getProperties(),collection);
       }
       newSlices.put(slice.getName(), slice);
     }
@@ -150,7 +150,7 @@ public class SliceMutator {
 
     Map<String, Object> newSliceProps = slice.shallowCopy();
     newSliceProps.put(Slice.REPLICAS, newReplicas);
-    slice = new Slice(slice.getName(), newReplicas, slice.getProperties());
+    slice = new Slice(slice.getName(), newReplicas, slice.getProperties(), collectionName);
     return new ZkWriteCommand(collectionName, CollectionMutator.updateSlice(collectionName, coll, slice));
   }
 
@@ -180,7 +180,7 @@ public class SliceMutator {
       props.put(ZkStateReader.STATE_PROP, message.getStr(key));
       // we need to use epoch time so that it's comparable across Overseer restarts
       props.put(ZkStateReader.STATE_TIMESTAMP_PROP, String.valueOf(cloudManager.getTimeSource().getEpochTimeNs()));
-      Slice newSlice = new Slice(slice.getName(), slice.getReplicasCopy(), props);
+      Slice newSlice = new Slice(slice.getName(), slice.getReplicasCopy(), props,collectionName);
       slicesCopy.put(slice.getName(), newSlice);
     }
 
@@ -224,7 +224,7 @@ public class SliceMutator {
     Map<String, Object> props = slice.shallowCopy();
     props.put("routingRules", routingRules);
 
-    Slice newSlice = new Slice(slice.getName(), slice.getReplicasCopy(), props);
+    Slice newSlice = new Slice(slice.getName(), slice.getReplicasCopy(), props,collectionName);
     return new ZkWriteCommand(collectionName,
         CollectionMutator.updateSlice(collectionName, collection, newSlice));
   }
@@ -249,7 +249,7 @@ public class SliceMutator {
       routingRules.remove(routeKeyStr); // no rules left
       Map<String, Object> props = slice.shallowCopy();
       props.put("routingRules", routingRules);
-      Slice newSlice = new Slice(slice.getName(), slice.getReplicasCopy(), props);
+      Slice newSlice = new Slice(slice.getName(), slice.getReplicasCopy(), props,collectionName);
       return new ZkWriteCommand(collectionName,
           CollectionMutator.updateSlice(collectionName, collection, newSlice));
     }
@@ -264,7 +264,7 @@ public class SliceMutator {
     } else {
       replicasCopy.put(replica.getName(), replica);
     }
-    Slice newSlice = new Slice(slice.getName(), replicasCopy, slice.getProperties());
+    Slice newSlice = new Slice(slice.getName(), replicasCopy, slice.getProperties(), collection.getName());
     log.debug("Old Slice: {}", slice);
     log.debug("New Slice: {}", newSlice);
     return CollectionMutator.updateSlice(collection.getName(), collection, newSlice);

@@ -118,6 +118,7 @@ public class ZkStateReader implements SolrCloseable {
   public static final String SOLR_AUTOSCALING_TRIGGER_STATE_PATH = "/autoscaling/triggerState";
   public static final String SOLR_AUTOSCALING_NODE_ADDED_PATH = "/autoscaling/nodeAdded";
   public static final String SOLR_AUTOSCALING_NODE_LOST_PATH = "/autoscaling/nodeLost";
+  public static final String SOLR_PKGS_PATH = "/packages.json";
 
   public static final String DEFAULT_SHARD_PREFERENCES = "defaultShardPreferences";
   public static final String REPLICATION_FACTOR = "replicationFactor";
@@ -943,6 +944,11 @@ public class ZkStateReader implements SolrCloseable {
     return null;
   }
 
+  public boolean isNodeLive(String node) {
+    return liveNodes.contains(node);
+
+  }
+
   /**
    * Get shard leader properties, with retry if none exist.
    */
@@ -967,7 +973,7 @@ public class ZkStateReader implements SolrCloseable {
         }
         return false;
       });
-    } catch (TimeoutException | InterruptedException e) {
+    } catch (TimeoutException e) {
       throw new SolrException(ErrorCode.SERVICE_UNAVAILABLE, "No registered leader was found after waiting for "
           + timeout + "ms " + ", collection: " + collection + " slice: " + shard + " saw state=" + clusterState.getCollectionOrNull(collection)
           + " with live_nodes=" + clusterState.getLiveNodes());

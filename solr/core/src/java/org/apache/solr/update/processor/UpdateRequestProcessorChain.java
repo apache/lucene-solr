@@ -23,6 +23,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import com.google.common.collect.ImmutableMap;
 import org.apache.solr.common.SolrException;
@@ -33,9 +34,12 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.pkg.PackagePluginHolder;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.update.processor.UpdateRequestProcessorChain.LazyUpdateProcessorFactoryHolder.LazyUpdateRequestProcessorFactory;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
@@ -126,8 +130,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
 
     // wrap in an ArrayList so we know we know we can do fast index lookups 
     // and that add(int,Object) is supported
-    List<UpdateRequestProcessorFactory> list = new ArrayList<>
-      (solrCore.initPlugins(info.getChildren("processor"),UpdateRequestProcessorFactory.class,null));
+    List<UpdateRequestProcessorFactory> list = createProcessors(info);
 
     if(list.isEmpty()){
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
@@ -169,6 +172,23 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
     chain = newChain.chain;
 
   }
+
+  private List<UpdateRequestProcessorFactory> createProcessors(PluginInfo info) {
+    List<PluginInfo> processors = info.getChildren("processor");
+    return processors.stream().map(it -> {
+      if(it.pkgName == null){
+        return solrCore.createInitInstance(it, UpdateRequestProcessorFactory.class,
+            UpdateRequestProcessorFactory.class.getSimpleName(), null);
+
+      } else {
+        return new LazyUpdateRequestProcessorFactory(new PackagePluginHolder(
+            it,
+            solrCore,
+            SolrConfig.classVsSolrPluginInfo.get(UpdateRequestProcessorFactory.class.getName())));
+      }
+    }).collect(Collectors.toList());
+  }
+
 
   /**
    * Creates a chain backed directly by the specified list. Modifications to
@@ -276,7 +296,13 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
     for (String s : names) {
       s = s.trim();
       if (s.isEmpty()) continue;
-      UpdateRequestProcessorFactory p = core.getUpdateProcessors().get(s);
+      UpdateRequestProcessorFactory p = null;
+      PluginBag.PluginHolder<UpdateRequestProcessorFactory> holder = core.getUpdateProcessors().getRegistry().get(s);
+      if (holder instanceof PackagePluginHolder) {
+        p = new LazyUpdateRequestProcessorFactory(holder);
+      } else {
+        p = core.getUpdateProcessors().get(s);
+      }
       if (p == null) {
         Class<UpdateRequestProcessorFactory> factoryClass = implicits.get(s);
         if(factoryClass != null) {
@@ -328,7 +354,7 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
   public static class LazyUpdateProcessorFactoryHolder extends PluginBag.PluginHolder<UpdateRequestProcessorFactory> {
     private volatile UpdateRequestProcessorFactory lazyFactory;
 
-    public LazyUpdateProcessorFactoryHolder(final PluginBag.LazyPluginHolder holder) {
+    public LazyUpdateProcessorFactoryHolder(final PluginBag.PluginHolder holder) {
       super(holder.getPluginInfo());
       lazyFactory = new LazyUpdateRequestProcessorFactory(holder);
     }
@@ -339,27 +365,20 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
       return lazyFactory;
     }
 
-    public class LazyUpdateRequestProcessorFactory extends UpdateRequestProcessorFactory {
-      private final PluginBag.LazyPluginHolder holder;
-      UpdateRequestProcessorFactory delegate;
+    public static class LazyUpdateRequestProcessorFactory extends UpdateRequestProcessorFactory {
+      private final PluginBag.PluginHolder<UpdateRequestProcessorFactory> holder;
 
-      public LazyUpdateRequestProcessorFactory(PluginBag.LazyPluginHolder holder) {
+      public LazyUpdateRequestProcessorFactory(PluginBag.PluginHolder holder) {
         this.holder = holder;
       }
 
       public UpdateRequestProcessorFactory getDelegate() {
-        return delegate;
+        return holder.get();
       }
 
       @Override
       public UpdateRequestProcessor getInstance(SolrQueryRequest req, SolrQueryResponse rsp, UpdateRequestProcessor next) {
-        if (delegate != null) return delegate.getInstance(req, rsp, next);
-
-        synchronized (this) {
-          if (delegate == null)
-            delegate = (UpdateRequestProcessorFactory) holder.get();
-        }
-        return delegate.getInstance(req, rsp, next);
+        return holder.get().getInstance(req, rsp, next);
       }
     }
   }

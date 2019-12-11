@@ -102,7 +102,7 @@ fq=+popularity:[10 TO *] +section:0
 ----
 
 * The document sets from each filter query are cached independently. Thus, concerning the previous examples: use a single `fq` containing two mandatory clauses if those clauses appear together often, and use two separate `fq` parameters if they are relatively independent. (To learn about tuning cache sizes and making sure a filter cache actually exists, see <<the-well-configured-solr-instance.adoc#the-well-configured-solr-instance,The Well-Configured Solr Instance>>.)
-* It is also possible to use <<the-standard-query-parser.adoc#differences-between-lucene-s-classic-query-parser-and-solr-s-standard-query-parser,filter(condition) syntax>> inside the `fq` to cache clauses individually and - among other things - to achieve union of cached filter queries.
+* It is also possible to use <<the-standard-query-parser.adoc#differences-between-lucenes-classic-query-parser-and-solrs-standard-query-parser,filter(condition) syntax>> inside the `fq` to cache clauses individually and - among other things - to achieve union of cached filter queries.
 
 * As with all parameters: special characters in an URL need to be properly escaped and encoded as hex values. Online tools are available to help you with URL-encoding. For example: http://meyerweb.com/eric/tools/dencoder/.
 
@@ -276,7 +276,7 @@ fq=quantity_in_stock:[5 TO *]
 fq={!frange l=10 u=100}mul(popularity,price)
 fq={!frange cost=200 l=0}pow(mul(sum(1, query('tag:smartphone')), div(1,avg_rating)), 2.3)
 
-These are the same filters run w/o caching.  The simple range query on the `quantity_in_stock` field will be run in parallel with the main query like a traditional lucene filter, while the 2 `frange` filters will only be checked against each document has already matched the main query and the `quantity_in_stock` range query -- first the simpler `mul(popularity,price)` will be checked (because of it's implicit `cost=100`) and only if it matches will the final very complex filter (with it's higher `cost=200`) be checked.
+These are the same filters run w/o caching.  The simple range query on the `quantity_in_stock` field will be run in parallel with the main query like a traditional lucene filter, while the 2 `frange` filters will only be checked against each document has already matched the main query and the `quantity_in_stock` range query -- first the simpler `mul(popularity,price)` will be checked (because of its implicit `cost=100`) and only if it matches will the final very complex filter (with its higher `cost=200`) be checked.
 
 [source,text]
 q=some keywords

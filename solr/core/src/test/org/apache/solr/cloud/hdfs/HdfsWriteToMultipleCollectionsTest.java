@@ -73,6 +73,7 @@ public class HdfsWriteToMultipleCollectionsTest extends BasicDistributedZkTest {
       HdfsTestUtil.teardownClass(dfsCluster);
     } finally {
       dfsCluster = null;
+      schemaString = null;
     }
   }
   

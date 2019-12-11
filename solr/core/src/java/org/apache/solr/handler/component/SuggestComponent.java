@@ -48,8 +48,8 @@ import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.spelling.suggest.SolrSuggester;
 import org.apache.solr.spelling.suggest.SuggesterOptions;
@@ -88,9 +88,8 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
   @SuppressWarnings("unchecked")
   protected NamedList initParams;
 
-  protected SolrMetricManager metricManager;
-  protected String registryName;
-  
+  protected SolrMetricsContext metricsContext;
+
   /**
    * Key is the dictionary name used in SolrConfig, value is the corresponding {@link SolrSuggester}
    */
@@ -351,18 +350,22 @@ public class SuggestComponent extends SearchComponent implements SolrCoreAware, 
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
-    this.registryName = registryName;
-    this.metricManager = manager;
-    registry = manager.registry(registryName);
-    manager.registerGauge(this, registryName, () -> ramBytesUsed(), tag, true, "totalSizeInBytes", getCategory().toString(), scope);
+  public SolrMetricsContext getSolrMetricsContext() {
+    return metricsContext;
+  }
+
+  @Override
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    this.metricsContext = parentContext.getChildContext(this);
+
+    this.metricsContext.gauge(() -> ramBytesUsed(), true, "totalSizeInBytes", getCategory().toString());
     MetricsMap suggestersMap = new MetricsMap((detailed, map) -> {
       for (Map.Entry<String, SolrSuggester> entry : suggesters.entrySet()) {
         SolrSuggester suggester = entry.getValue();
         map.put(entry.getKey(), suggester.toString());
       }
     });
-    manager.registerGauge(this, registryName, suggestersMap, tag, true, "suggesters", getCategory().toString(), scope);
+    this.metricsContext.gauge(suggestersMap, true, "suggesters", getCategory().toString(), scope);
   }
 
   @Override

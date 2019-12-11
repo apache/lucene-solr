@@ -78,6 +78,7 @@ import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.DocSlice;
 import org.apache.solr.search.QParser;
+import org.apache.solr.search.ReturnFields;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SortSpecParsing;
 import org.apache.solr.search.SyntaxError;
@@ -280,7 +281,6 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
         currentValues = sortedDocValues[currentContext];
         segmentOrdinalMap = ordinalMap.getGlobalOrds(currentContext);
       }
-      int count = 0;
 
       ordBytes = new IntObjectHashMap<>();
 
@@ -302,12 +302,12 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
             currentValues.advance(contextDoc);
           }
           if (contextDoc == currentValues.docID()) {
-            int ord = currentValues.ordValue();
-            ++count;
-            BytesRef ref = currentValues.lookupOrd(ord);
-            ord = (int)segmentOrdinalMap.get(ord);
-            ordBytes.put(ord, BytesRef.deepCopyOf(ref));
-            groupBits.set(ord);
+            int contextOrd = currentValues.ordValue();
+            int ord = (int)segmentOrdinalMap.get(contextOrd);
+            if (!groupBits.getAndSet(ord)) {
+              BytesRef ref = currentValues.lookupOrd(contextOrd);
+              ordBytes.put(ord, BytesRef.deepCopyOf(ref));
+            }
             collapsedSet.add(globalDoc);
           }
         } else {
@@ -316,26 +316,22 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
           }
           if (globalDoc == values.docID()) {
             int ord = values.ordValue();
-            ++count;
-            BytesRef ref = values.lookupOrd(ord);
-            ordBytes.put(ord, BytesRef.deepCopyOf(ref));
-            groupBits.set(ord);
+            if (!groupBits.getAndSet(ord)) {
+              BytesRef ref = values.lookupOrd(ord);
+              ordBytes.put(ord, BytesRef.deepCopyOf(ref));
+            }
             collapsedSet.add(globalDoc);
           }
         }
       }
 
+      int count = ordBytes.size();
       if(count > 0 && count < 200) {
-        try {
-          groupQuery = getGroupQuery(field, count, ordBytes);
-        } catch(Exception e) {
-          throw new IOException(e);
-        }
+        groupQuery = getGroupQuery(field, count, ordBytes);
       }
     } else {
       groupSet = new LongHashSet(docList.size());
       NumericDocValues collapseValues = contexts.get(currentContext).reader().getNumericDocValues(field);
-      int count = 0;
       for(int i=0; i<globalDocs.length; i++) {
         int globalDoc = globalDocs[i];
         while(globalDoc >= nextDocBase) {
@@ -356,12 +352,12 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
           value = 0;
         }
         if(value != nullValue) {
-          ++count;
           groupSet.add(value);
           collapsedSet.add(globalDoc);
         }
       }
 
+      int count = groupSet.size();
       if(count > 0 && count < 200) {
         if (fieldType.isPointField()) {
           groupQuery = getPointGroupQuery(schemaField, count, groupSet);
@@ -406,15 +402,15 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       collector = groupExpandCollector;
     }
 
-    if (pfilter.filter == null) {
-      searcher.search(query, collector);
-    } else {
-      Query q = new BooleanQuery.Builder()
+    if (pfilter.filter != null) {
+      query = new BooleanQuery.Builder()
           .add(query, Occur.MUST)
           .add(pfilter.filter, Occur.FILTER)
           .build();
-      searcher.search(q, collector);
     }
+    searcher.search(query, collector);
+
+    ReturnFields returnFields = rb.rsp.getReturnFields();
     LongObjectMap<Collector> groups = ((GroupCollector) groupExpandCollector).getGroups();
     NamedList outMap = new SimpleOrderedMap();
     CharsRefBuilder charsRef = new CharsRefBuilder();
@@ -424,6 +420,9 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
       TopDocs topDocs = topDocsCollector.topDocs();
       ScoreDoc[] scoreDocs = topDocs.scoreDocs;
       if (scoreDocs.length > 0) {
+        if (returnFields.wantsScore() && sort != null) {
+          TopFieldCollector.populateScores(scoreDocs, searcher, query);
+        }
         int[] docs = new int[scoreDocs.length];
         float[] scores = new float[scoreDocs.length];
         for (int i = 0; i < docs.length; i++) {
@@ -686,9 +685,9 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
                            LongHashSet groupSet) {
 
     BytesRef[] bytesRefs = new BytesRef[size];
+    int index = -1;
     BytesRefBuilder term = new BytesRefBuilder();
     Iterator<LongCursor> it = groupSet.iterator();
-    int index = -1;
 
     while (it.hasNext()) {
       LongCursor cursor = it.next();
@@ -734,7 +733,7 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
 
   private Query getGroupQuery(String fname,
                               int size,
-                              IntObjectHashMap<BytesRef> ordBytes) throws Exception {
+                              IntObjectHashMap<BytesRef> ordBytes) {
     BytesRef[] bytesRefs = new BytesRef[size];
     int index = -1;
     Iterator<IntObjectCursor<BytesRef>>it = ordBytes.iterator();

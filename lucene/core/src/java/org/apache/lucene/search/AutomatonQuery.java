@@ -162,8 +162,8 @@ public class AutomatonQuery extends MultiTermQuery implements Accountable {
 
   @Override
   public void visit(QueryVisitor visitor) {
-    if (visitor.acceptField(getField())) {
-      visitor.visitLeaf(this);
+    if (visitor.acceptField(field)) {
+      compiled.visit(visitor, this, field);
     }
   }
 
