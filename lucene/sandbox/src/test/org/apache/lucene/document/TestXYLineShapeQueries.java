@@ -76,26 +76,16 @@ public class TestXYLineShapeQueries extends BaseXYShapeTestCase {
 
     @Override
     public boolean testBBoxQuery(double minY, double maxY, double minX, double maxX, Object shape) {
-      XYLine line = (XYLine)shape;
-      XYRectangle2D rectangle2D = XYRectangle2D.create(new XYRectangle(minX, maxX, minY, maxY));
-      for (int i = 0, j = 1; j < line.numPoints(); ++i, ++j) {
-        ShapeField.DecodedTriangle decoded = encoder.encodeDecodeTriangle(line.getX(i), line.getY(i), true, line.getX(j), line.getY(j), true, line.getX(i), line.getY(i), true);
-        if (queryRelation == QueryRelation.WITHIN) {
-          if (rectangle2D.containsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) == false) {
-            return false;
-          }
-        } else {
-          if (rectangle2D.intersectsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) == true) {
-            return queryRelation == QueryRelation.INTERSECTS;
-          }
-        }
-      }
-      return queryRelation != QueryRelation.INTERSECTS;
+      Component2D rectangle2D = XYRectangle2D.create(new XYRectangle(minX, maxX, minY, maxY));
+      return testComponentQuery(rectangle2D, shape);
     }
 
     @Override
     public boolean testComponentQuery(Component2D query, Object shape) {
       XYLine line = (XYLine) shape;
+      if (queryRelation == QueryRelation.CONTAINS) {
+        return testWithinLine(query, (XYLine) shape);
+      }
       for (int i = 0, j = 1; j < line.numPoints(); ++i, ++j) {
         double[] qTriangle = encoder.quantizeTriangle(line.getX(i), line.getY(i), true, line.getX(j), line.getY(j), true, line.getX(i), line.getY(i), true);
         Relation r = query.relateTriangle(qTriangle[1], qTriangle[0], qTriangle[3], qTriangle[2], qTriangle[5], qTriangle[4]);
@@ -108,6 +98,20 @@ public class TestXYLineShapeQueries extends BaseXYShapeTestCase {
         }
       }
       return queryRelation == QueryRelation.INTERSECTS ? false : true;
+    }
+
+    private boolean testWithinLine(Component2D tree, XYLine line) {
+      Component2D.WithinRelation answer = Component2D.WithinRelation.DISJOINT;
+      for (int i = 0, j = 1; j < line.numPoints(); ++i, ++j) {
+        double[] qTriangle = encoder.quantizeTriangle(line.getX(i), line.getY(i), true, line.getX(j), line.getY(j), true, line.getX(i), line.getY(i), true);
+        Component2D.WithinRelation relation = tree.withinTriangle(qTriangle[1], qTriangle[0], true, qTriangle[3], qTriangle[2], true, qTriangle[5], qTriangle[4], true);
+        if (relation == Component2D.WithinRelation.NOTWITHIN) {
+          return false;
+        } else if (relation == Component2D.WithinRelation.CANDIDATE) {
+          answer = Component2D.WithinRelation.CANDIDATE;
+        }
+      }
+      return answer == Component2D.WithinRelation.CANDIDATE;
     }
   }
 }

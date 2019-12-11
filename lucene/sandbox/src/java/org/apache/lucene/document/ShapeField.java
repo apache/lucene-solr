@@ -88,7 +88,7 @@ public final class ShapeField {
 
   /** Query Relation Types **/
   public enum QueryRelation {
-    INTERSECTS, WITHIN, DISJOINT
+    INTERSECTS, WITHIN, DISJOINT, CONTAINS
   }
 
   private static final int MINY_MINX_MAXY_MAXX_Y_X = 0;
