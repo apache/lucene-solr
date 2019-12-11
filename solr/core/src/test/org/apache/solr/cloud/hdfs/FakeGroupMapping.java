@@ -15,12 +15,6 @@
  * limitations under the License.
  */
 
-
-import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
-
-
-
 package org.apache.solr.cloud.hdfs;
 
 import java.util.Collections;
