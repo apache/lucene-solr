@@ -186,6 +186,8 @@ Other Changes
 
 * SOLR-13818: Upgrade jackson to 2.10.0 (marungo, Andras Salamon via Kevin Risden)
 
+* SOLR-13999: Document zkHost param on topic() stream (Vergil Cheynov via Jason Gerlowski)
+
 ==================  8.3.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
