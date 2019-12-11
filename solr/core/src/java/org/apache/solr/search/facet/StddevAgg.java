@@ -21,6 +21,9 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.function.FieldNameValueSource;
 
 
 public class StddevAgg extends SimpleAggValueSource {
@@ -30,7 +33,31 @@ public class StddevAgg extends SimpleAggValueSource {
 
   @Override
   public SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) throws IOException {
-    return new StddevSlotAcc(getArg(), fcontext, numSlots);
+    ValueSource vs = getArg();
+
+    if (vs instanceof FieldNameValueSource) {
+      String field = ((FieldNameValueSource) vs).getFieldName();
+      SchemaField sf = fcontext.qcontext.searcher().getSchema().getField(field);
+      if (sf.getType().getNumberType() == null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            name() + " aggregation not supported for " + sf.getType().getTypeName());
+      }
+      if (sf.multiValued() || sf.getType().multiValuedFieldCache()) {
+        if (sf.hasDocValues()) {
+          if (sf.getType().isPointField()) {
+            return new StddevSortedNumericAcc(fcontext, sf, numSlots);
+          }
+          return new StddevSortedSetAcc(fcontext, sf, numSlots);
+        }
+        if (sf.getType().isPointField()) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+              name() + " aggregation not supported for PointField w/o docValues");
+        }
+        return new StddevUnInvertedFieldAcc(fcontext, sf, numSlots);
+      }
+      vs = sf.getType().getValueSource(sf, null);
+    }
+    return new StddevSlotAcc(vs, fcontext, numSlots);
   }
 
   @Override
@@ -58,9 +85,44 @@ public class StddevAgg extends SimpleAggValueSource {
     }
     
     @Override
-    protected double getDouble() {      
-      double val = count == 0 ? 0.0d : Math.sqrt((sumSq/count)-Math.pow(sum/count, 2));
-      return val;
+    protected double getDouble() {
+      return AggUtil.uncorrectedStdDev(sumSq, sum, count);
     }    
-  };
+  }
+
+  class StddevSortedNumericAcc extends SDVSortedNumericAcc {
+
+    public StddevSortedNumericAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+      super(fcontext, sf, numSlots);
+    }
+
+    @Override
+    protected double computeVal(int slot) {
+      return AggUtil.uncorrectedStdDev(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
+    }
+  }
+
+  class StddevSortedSetAcc extends SDVSortedSetAcc {
+
+    public StddevSortedSetAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+      super(fcontext, sf, numSlots);
+    }
+
+    @Override
+    protected double computeVal(int slot) {
+      return AggUtil.uncorrectedStdDev(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
+    }
+  }
+
+  class StddevUnInvertedFieldAcc extends SDVUnInvertedFieldAcc {
+
+    public StddevUnInvertedFieldAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+      super(fcontext, sf, numSlots);
+    }
+
+    @Override
+    protected double computeVal(int slot) {
+      return AggUtil.uncorrectedStdDev(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
+    }
+  }
 }

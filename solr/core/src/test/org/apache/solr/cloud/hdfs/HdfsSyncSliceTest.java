@@ -18,15 +18,14 @@ package org.apache.solr.cloud.hdfs;
 
 import java.io.IOException;
 
+import com.carrotsearch.randomizedtesting.annotations.Nightly;
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.cloud.SyncSliceTest;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-
-import com.carrotsearch.randomizedtesting.annotations.Nightly;
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 
 @Slow
 @Nightly
@@ -44,8 +43,11 @@ public class HdfsSyncSliceTest extends SyncSliceTest {
   
   @AfterClass
   public static void teardownClass() throws Exception {
-    HdfsTestUtil.teardownClass(dfsCluster);
-    dfsCluster = null;
+    try {
+      HdfsTestUtil.teardownClass(dfsCluster);
+    } finally {
+      dfsCluster = null;
+    }
   }
 
   @Override

@@ -17,8 +17,6 @@
 
 package org.apache.solr.cloud;
 
-import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTION;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -48,10 +46,13 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTION;
 
 /**
  * Tests for co-locating a collection with another collection such that any Collection API
@@ -90,6 +91,11 @@ public class TestWithCollection extends SolrCloudTestCase {
   @After
   public void teardownCluster() throws Exception {
     shutdownCluster();
+  }
+
+  @AfterClass
+  public static void cleanUpAfterClass() throws Exception {
+    cloudManager = null;
   }
 
   private void deleteChildrenRecursively(String path) throws Exception {

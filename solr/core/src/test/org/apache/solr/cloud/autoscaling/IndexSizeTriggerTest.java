@@ -154,6 +154,7 @@ public class IndexSizeTriggerTest extends SolrCloudTestCase {
     }
     solrClient = null;
     cloudManager = null;
+    loader = null;
   }
 
   @Test

@@ -1141,7 +1141,7 @@ if [[ "$SCRIPT_CMD" == "create" || "$SCRIPT_CMD" == "create_core" || "$SCRIPT_CM
     echo "         To turn off: bin/solr config -c $CREATE_NAME -p $CREATE_PORT -action set-user-property -property update.autoCreateFields -value false"
   fi
 
-  if [[ "$(whoami)" == "root" ]] && [[ "$FORCE" == "false" ]] ; then
+  if [[ $EUID -eq 0 ]] && [[ "$FORCE" == "false" ]] ; then
     echo "WARNING: Creating cores as the root user can cause Solr to fail and is not advisable. Exiting."
     echo "         If you started Solr as root (not advisable either), force core creation by adding argument -force"
     exit 1
@@ -1877,7 +1877,7 @@ if [ -z "$STOP_PORT" ]; then
 fi
 
 if [ "$SCRIPT_CMD" == "start" ] || [ "$SCRIPT_CMD" == "restart" ] ; then
-  if [[ "$(whoami)" == "root" ]] && [[ "$FORCE" == "false" ]] ; then
+  if [[ $EUID -eq 0 ]] && [[ "$FORCE" == "false" ]] ; then
     echo "WARNING: Starting Solr as the root user is a security risk and not considered best practice. Exiting."
     echo "         Please consult the Reference Guide. To override this check, start with argument '-force'"
     exit 1

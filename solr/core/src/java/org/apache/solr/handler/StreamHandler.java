@@ -33,7 +33,10 @@ import org.apache.solr.client.solrj.io.ModelCache;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
-import org.apache.solr.client.solrj.io.stream.*;
+import org.apache.solr.client.solrj.io.stream.DaemonStream;
+import org.apache.solr.client.solrj.io.stream.ExceptionStream;
+import org.apache.solr.client.solrj.io.stream.StreamContext;
+import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
@@ -42,7 +45,10 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.client.solrj.routing.RequestReplicaListTransformerGenerator;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -162,10 +168,29 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       return;
     }
 
+
+    final SolrCore core = req.getCore(); // explicit check for null core (temporary?, for tests)
+    ZkController zkController = core == null ? null : core.getCoreContainer().getZkController();
+    RequestReplicaListTransformerGenerator requestReplicaListTransformerGenerator;
+    if (zkController != null) {
+      requestReplicaListTransformerGenerator = new RequestReplicaListTransformerGenerator(
+          zkController.getZkStateReader().getClusterProperties()
+              .getOrDefault(ZkStateReader.DEFAULT_SHARD_PREFERENCES, "")
+              .toString(),
+          zkController.getNodeName(),
+          zkController.getBaseUrl(),
+          zkController.getSysPropsCacher()
+      );
+    } else {
+      requestReplicaListTransformerGenerator = new RequestReplicaListTransformerGenerator();
+    }
+
     int worker = params.getInt("workerID", 0);
     int numWorkers = params.getInt("numWorkers", 1);
     boolean local = params.getBool("streamLocalOnly", false);
     StreamContext context = new StreamContext();
+    context.setRequestParams(params);
+    context.setRequestReplicaListTransformerGenerator(requestReplicaListTransformerGenerator);
     context.put("shards", getCollectionShards(params));
     context.workerID = worker;
     context.numWorkers = numWorkers;

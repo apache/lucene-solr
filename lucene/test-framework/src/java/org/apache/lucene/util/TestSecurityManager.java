@@ -31,6 +31,7 @@ public final class TestSecurityManager extends SecurityManager {
   static final String JUNIT4_TEST_RUNNER_PACKAGE = "com.carrotsearch.ant.tasks.junit4.";
   static final String ECLIPSE_TEST_RUNNER_PACKAGE = "org.eclipse.jdt.internal.junit.runner.";
   static final String IDEA_TEST_RUNNER_PACKAGE = "com.intellij.rt.execution.junit.";
+  static final String GRADLE_TEST_RUNNER_PACKAGE = "worker.org.gradle.process.internal.worker";
 
   /**
    * Creates a new TestSecurityManager. This ctor is called on JVM startup,
@@ -39,69 +40,6 @@ public final class TestSecurityManager extends SecurityManager {
    */
   public TestSecurityManager() {
     super();
-  }
-
-  // TODO: move this stuff into a Solr (non-test) SecurityManager!
-  /**
-   * {@inheritDoc}
-   * <p>This method implements hacks to workaround hadoop's garbage Shell and FileUtil code
-   */
-  @Override
-  public void checkExec(String cmd) {
-    // NOTE: it would be tempting to just allow anything from hadoop's Shell class, but then
-    // that would just give an easy vector for RCE (use hadoop Shell instead of e.g. ProcessBuilder)
-    // so we whitelist actual caller impl methods instead.
-    for (StackTraceElement element : Thread.currentThread().getStackTrace()) {
-      // hadoop insists on shelling out to get the user's supplementary groups?
-      if ("org.apache.hadoop.security.ShellBasedUnixGroupsMapping".equals(element.getClassName()) &&
-          "getGroups".equals(element.getMethodName())) {
-        return;
-      }
-      // hadoop insists on shelling out to parse 'df' command instead of using FileStore?
-      if ("org.apache.hadoop.fs.DF".equals(element.getClassName()) &&
-          "getFilesystem".equals(element.getMethodName())) {
-        return;
-      }
-      // hadoop insists on shelling out to parse 'du' command instead of using FileStore?
-      if ("org.apache.hadoop.fs.DU".equals(element.getClassName()) &&
-          "refresh".equals(element.getMethodName())) {
-        return;
-      }
-      // hadoop insists on shelling out to parse 'ls' command instead of java nio apis?
-      if ("org.apache.hadoop.util.DiskChecker".equals(element.getClassName()) &&
-          "checkDir".equals(element.getMethodName())) {
-        return;
-      }
-      // hadoop insists on shelling out to parse 'stat' command instead of Files.getAttributes?
-      if ("org.apache.hadoop.fs.HardLink".equals(element.getClassName()) &&
-          "getLinkCount".equals(element.getMethodName())) {
-        return;
-      }
-      // hadoop "canExecute" method doesn't handle securityexception and fails completely.
-      // so, lie to it, and tell it we will happily execute, so it does not crash.
-      if ("org.apache.hadoop.fs.FileUtil".equals(element.getClassName()) &&
-          "canExecute".equals(element.getMethodName())) {
-        return;
-      }
-    }
-    super.checkExec(cmd);
-  }
-
-  /**
-   * {@inheritDoc}
-   * <p>This method implements hacks to workaround hadoop's garbage FileUtil code
-   */
-  @Override
-  public void checkWrite(String file) {
-    for (StackTraceElement element : Thread.currentThread().getStackTrace()) {
-      // hadoop "canWrite" method doesn't handle securityexception and fails completely.
-      // so, lie to it, and tell it we will happily write, so it does not crash.
-      if ("org.apache.hadoop.fs.FileUtil".equals(element.getClassName()) &&
-          "canWrite".equals(element.getMethodName())) {
-        return;
-      }
-    }
-    super.checkWrite(file);
   }
 
   /**
@@ -131,7 +69,8 @@ public final class TestSecurityManager extends SecurityManager {
           if (exitMethodHit != null) {
             if (className.startsWith(JUNIT4_TEST_RUNNER_PACKAGE) || 
                 className.startsWith(ECLIPSE_TEST_RUNNER_PACKAGE) ||
-                className.startsWith(IDEA_TEST_RUNNER_PACKAGE)) {
+                className.startsWith(IDEA_TEST_RUNNER_PACKAGE) ||
+                className.startsWith(GRADLE_TEST_RUNNER_PACKAGE)) {
               // this exit point is allowed, we return normally from closure:
               return /*void*/ null;
             } else {

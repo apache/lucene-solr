@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.List;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -73,6 +72,7 @@ public class HdfsWriteToMultipleCollectionsTest extends BasicDistributedZkTest {
       HdfsTestUtil.teardownClass(dfsCluster);
     } finally {
       dfsCluster = null;
+      schemaString = null;
     }
   }
   

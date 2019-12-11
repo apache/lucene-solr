@@ -19,12 +19,14 @@ package org.apache.lucene.document;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.document.ShapeField.QueryRelation; // javadoc
+import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.document.ShapeField.Triangle;
 import org.apache.lucene.geo.Tessellator;
-import org.apache.lucene.index.PointValues; // javadoc
 import org.apache.lucene.geo.XYLine;
 import org.apache.lucene.geo.XYPolygon;
+import org.apache.lucene.index.PointValues;
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 
 import static org.apache.lucene.geo.XYEncodingUtils.encode;
@@ -93,11 +95,25 @@ public class XYShape {
 
   /** create a query to find all cartesian shapes that intersect a provided linestring (or array of linestrings) **/
   public static Query newLineQuery(String field, QueryRelation queryRelation, XYLine... lines) {
+    if (queryRelation == QueryRelation.CONTAINS && lines.length > 1) {
+      BooleanQuery.Builder builder = new BooleanQuery.Builder();
+      for (int i =0; i < lines.length; i++) {
+        builder.add(newLineQuery(field, queryRelation, lines[i]), BooleanClause.Occur.MUST);
+      }
+      return builder.build();
+    }
     return new XYShapeLineQuery(field, queryRelation, lines);
   }
 
   /** create a query to find all cartesian shapes that intersect a provided polygon (or array of polygons) **/
   public static Query newPolygonQuery(String field, QueryRelation queryRelation, XYPolygon... polygons) {
+    if (queryRelation == QueryRelation.CONTAINS && polygons.length > 1) {
+      BooleanQuery.Builder builder = new BooleanQuery.Builder();
+      for (int i =0; i < polygons.length; i++) {
+        builder.add(newPolygonQuery(field, queryRelation, polygons[i]), BooleanClause.Occur.MUST);
+      }
+      return builder.build();
+    }
     return new XYShapePolygonQuery(field, queryRelation, polygons);
   }
 }

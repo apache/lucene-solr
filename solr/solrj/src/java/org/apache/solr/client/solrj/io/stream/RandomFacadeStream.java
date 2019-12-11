@@ -53,17 +53,26 @@ public class RandomFacadeStream extends TupleStream implements Expressible  {
       throw new IOException(String.format(Locale.ROOT,"invalid expression %s - collectionName expected as first operand",expression));
     }
 
-    // Named parameters - passed directly to solr as solrparams
-    if(0 == namedParams.size()){
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - at least one named parameter expected. eg. 'q=*:*'",expression));
-    }
-
     // pull out known named params
     Map<String,String> params = new HashMap<String,String>();
     for(StreamExpressionNamedParameter namedParam : namedParams){
       if(!namedParam.getName().equals("zkHost") && !namedParam.getName().equals("buckets") && !namedParam.getName().equals("bucketSorts") && !namedParam.getName().equals("limit")){
         params.put(namedParam.getName(), namedParam.getParameter().toString().trim());
       }
+    }
+
+    //Add sensible defaults
+
+    if(!params.containsKey("q")) {
+      params.put("q", "*:*");
+    }
+
+    if(!params.containsKey("fl")) {
+      params.put("fl", "*");
+    }
+
+    if(!params.containsKey("rows")) {
+      params.put("rows", "500");
     }
 
     // zkHost, optional - if not provided then will look into factory list to get

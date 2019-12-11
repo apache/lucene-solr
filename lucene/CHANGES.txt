@@ -72,8 +72,8 @@ API Changes
   (Jack Conradson via Adrien Grand)
 
 New Features
----------------------
-(No changes)
+
+* LUCENE-8620: Add CONTAINS support for LatLonShape and XYShape. (Ignacio Vera)
 
 Improvements
 
@@ -136,6 +136,9 @@ Bug Fixes
 * LUCENE-9054: Fix reproduceJenkinsFailures.py to not overwrite junit XML files when retrying (hossman)
 
 * LUCENE-9031: UnsupportedOperationException on MatchesIterator.getQuery() (Alan Woodward, Mikhail Khludnev)
+
+* LUCENE-8996: maxScore was sometimes missing from distributed grouped responses.
+  (Julien Massenet, Diego Ceccarelli, Munendra S N, Christine Poerschke)
 
 Other
 

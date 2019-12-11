@@ -21,17 +21,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
-import java.util.Random;
-import java.util.LinkedList;
 
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.io.Tuple;
@@ -309,12 +309,12 @@ public class DeepRandomStream extends TupleStream implements Expressible {
 
   protected void constructStreams() throws IOException {
     try {
-
-      List<String> shardUrls = getShards(this.zkHost, this.collection, this.streamContext);
-
       ModifiableSolrParams mParams = new ModifiableSolrParams(params);
       mParams = adjustParams(mParams);
       mParams.set(DISTRIB, "false"); // We are the aggregator.
+
+      List<String> shardUrls = getShards(this.zkHost, this.collection, this.streamContext, mParams);
+
       String rows = mParams.get(ROWS);
       int r = Integer.parseInt(rows);
       int newRows = r/shardUrls.size();

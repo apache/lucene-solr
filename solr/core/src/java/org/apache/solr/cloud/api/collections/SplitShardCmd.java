@@ -153,7 +153,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
     }
 
     RTimerTree t = timings.sub("checkDiskSpace");
-    checkDiskSpace(collectionName, slice.get(), parentShardLeader);
+    checkDiskSpace(collectionName, slice.get(), parentShardLeader, splitMethod, ocmh.cloudManager);
     t.stop();
 
     // let's record the ephemeralOwner of the parent leader node
@@ -617,10 +617,12 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       throw new SolrException(ErrorCode.SERVER_ERROR, msgOnError);
     }
   }
-  private void checkDiskSpace(String collection, String shard, Replica parentShardLeader) throws SolrException {
+
+  // public and static to facilitate reuse in the simulation framework and in tests
+  public static void checkDiskSpace(String collection, String shard, Replica parentShardLeader, SolrIndexSplitter.SplitMethod method, SolrCloudManager cloudManager) throws SolrException {
     // check that enough disk space is available on the parent leader node
     // otherwise the actual index splitting will always fail
-    NodeStateProvider nodeStateProvider = ocmh.cloudManager.getNodeStateProvider();
+    NodeStateProvider nodeStateProvider = cloudManager.getNodeStateProvider();
     Map<String, Object> nodeValues = nodeStateProvider.getNodeValues(parentShardLeader.getNodeName(),
         Collections.singletonList(ImplicitSnitch.DISK));
     Map<String, Map<String, List<ReplicaInfo>>> infos = nodeStateProvider.getReplicaInfo(parentShardLeader.getNodeName(),
@@ -648,9 +650,11 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
     if (freeSize == null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "missing node disk space information for parent shard leader");
     }
-    if (freeSize.doubleValue() < 2.0 * indexSize) {
+    // 100% more for REWRITE, 5% more for LINK
+    double neededSpace = method == SolrIndexSplitter.SplitMethod.REWRITE ? 2.0 * indexSize : 1.05 * indexSize;
+    if (freeSize.doubleValue() < neededSpace) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "not enough free disk space to perform index split on node " +
-          parentShardLeader.getNodeName() + ", required: " + (2 * indexSize) + ", available: " + freeSize);
+          parentShardLeader.getNodeName() + ", required: " + neededSpace + ", available: " + freeSize);
     }
   }
 

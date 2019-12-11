@@ -36,6 +36,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -118,6 +119,11 @@ public class TestCloudNestedDocsSort extends SolrCloudTestCase {
       client.add(docs);
       client.commit();
     }
+  }
+
+  @AfterClass
+  public static void cleanUpAfterClass() throws Exception {
+    client = null;
   }
 
   @Test 

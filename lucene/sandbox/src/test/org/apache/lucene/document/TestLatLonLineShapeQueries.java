@@ -80,11 +80,19 @@ public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
     public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
       Line line = (Line)shape;
       Rectangle2D rectangle2D = Rectangle2D.create(new Rectangle(minLat, maxLat, minLon, maxLon));
+      Component2D.WithinRelation withinRelation = Component2D.WithinRelation.DISJOINT;
       for (int i = 0, j = 1; j < line.numPoints(); ++i, ++j) {
         ShapeField.DecodedTriangle decoded = encoder.encodeDecodeTriangle(line.getLon(i), line.getLat(i), true, line.getLon(j), line.getLat(j), true, line.getLon(i), line.getLat(i), true);
         if (queryRelation == QueryRelation.WITHIN) {
           if (rectangle2D.containsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) == false) {
             return false;
+          }
+        } else if (queryRelation == QueryRelation.CONTAINS) {
+          Component2D.WithinRelation relation = rectangle2D.withinTriangle(decoded.aX, decoded.aY, decoded.ab, decoded.bX, decoded.bY, decoded.bc, decoded.cX, decoded.cY, decoded.ca);
+          if (relation == Component2D.WithinRelation.NOTWITHIN) {
+            return false;
+          } else if (relation == Component2D.WithinRelation.CANDIDATE) {
+            withinRelation = Component2D.WithinRelation.CANDIDATE;
           }
         } else {
           if (rectangle2D.intersectsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) == true) {
@@ -92,12 +100,18 @@ public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
           }
         }
       }
+      if (queryRelation == QueryRelation.CONTAINS) {
+        return withinRelation == Component2D.WithinRelation.CANDIDATE;
+      }
       return queryRelation != QueryRelation.INTERSECTS;
     }
 
     @Override
     public boolean testComponentQuery(Component2D component2D, Object shape) {
       Line line = (Line) shape;
+      if (queryRelation == QueryRelation.CONTAINS) {
+        return testWithinLine(component2D, (Line) shape);
+      }
       for (int i = 0, j = 1; j < line.numPoints(); ++i, ++j) {
         double[] qTriangle = encoder.quantizeTriangle(line.getLon(i), line.getLat(i), true, line.getLon(j), line.getLat(j), true, line.getLon(i), line.getLat(i), true);
         Relation r = component2D.relateTriangle(qTriangle[1], qTriangle[0], qTriangle[3], qTriangle[2], qTriangle[5], qTriangle[4]);
@@ -110,6 +124,20 @@ public class TestLatLonLineShapeQueries extends BaseLatLonShapeTestCase {
         }
       }
       return queryRelation == QueryRelation.INTERSECTS ? false : true;
+    }
+
+    private boolean testWithinLine(Component2D component2D, Line line) {
+      Component2D.WithinRelation answer = Component2D.WithinRelation.DISJOINT;
+      for (int i = 0, j = 1; j < line.numPoints(); ++i, ++j) {
+        double[] qTriangle = encoder.quantizeTriangle(line.getLon(i), line.getLat(i), true, line.getLon(j), line.getLat(j), true, line.getLon(i), line.getLat(i), true);
+        Component2D.WithinRelation relation = component2D.withinTriangle(qTriangle[1], qTriangle[0], true, qTriangle[3], qTriangle[2], true, qTriangle[5], qTriangle[4], true);
+        if (relation == Component2D.WithinRelation.NOTWITHIN) {
+          return false;
+        } else if (relation == Component2D.WithinRelation.CANDIDATE) {
+          answer = Component2D.WithinRelation.CANDIDATE;
+        }
+      }
+      return answer == Component2D.WithinRelation.CANDIDATE;
     }
   }
 }

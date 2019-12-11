@@ -18,6 +18,7 @@ package org.apache.solr.index.hdfs;
 
 import java.io.IOException;
 
+import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -37,8 +38,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 
 @ThreadLeakFilters(defaultFilters = true, filters = {
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
@@ -71,6 +70,7 @@ public class CheckHdfsIndexTest extends AbstractFullDistribZkTestBase {
       HdfsTestUtil.teardownClass(dfsCluster);
     } finally {
       dfsCluster = null;
+      path = null;
     }
   }
 

@@ -58,11 +58,11 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 import com.carrotsearch.randomizedtesting.RandomizedContext;
@@ -71,7 +71,6 @@ import com.carrotsearch.randomizedtesting.TraceFormatting;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakLingering;
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.http.client.HttpClient;
 import org.apache.logging.log4j.Level;
@@ -331,6 +330,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       
       if (null != testExecutor) {
         ExecutorUtil.shutdownAndAwaitTermination(testExecutor);
+        testExecutor = null;
       }
 
       resetExceptionIgnores();
@@ -489,6 +489,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     changedFactory = false;
     if (savedFactory != null) {
       System.setProperty("solr.directoryFactory", savedFactory);
+      savedFactory = null;
     } else {
       System.clearProperty("solr.directoryFactory");
     }
@@ -895,6 +896,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     lrf = null;
     configString = schemaString = null;
     initCoreDataDir = null;
+    hdfsDataDir = null;
   }
 
   /** Validates an update XML String is successful

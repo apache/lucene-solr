@@ -301,7 +301,7 @@ public class SimScenario implements AutoCloseable {
           log.info("        -- abortLoop requested, aborting after " + i + " iterations.");
           return;
         }
-        scenario.context.put(LOOP_ITER_PROP, i);
+        scenario.context.put(LOOP_ITER_PROP, String.valueOf(i));
         log.info("   * iter " + (i + 1) + ":");
         for (SimOp op : ops) {
           op.prepareCurrentParams(scenario);
@@ -788,7 +788,19 @@ public class SimScenario implements AutoCloseable {
       Map<String, Object> values = new HashMap<>();
       params.remove(Clause.NODESET);
       for (String key : params.getParameterNames()) {
-        values.put(key, params.get(key));
+        String strVal = params.get(key);
+        Object val;
+        // try auto-converting to a number
+        try {
+          val = Long.parseLong(strVal);
+        } catch (NumberFormatException nfe) {
+          try {
+            val = Double.parseDouble(strVal);
+          } catch (NumberFormatException nfe1) {
+            val = strVal;
+          }
+        }
+        values.put(key, val);
       }
       for (String node : nodes) {
         scenario.cluster.getSimNodeStateProvider().simSetNodeValues(node, values);
@@ -812,11 +824,16 @@ public class SimScenario implements AutoCloseable {
       for (String key : params.getParameterNames()) {
         // try guessing if it's a number
         try {
-          Double d = Double.valueOf(params.get(key));
-          values.put(key, d);
+          Integer i = Integer.valueOf(params.get(key));
+          values.put(key, i);
         } catch (NumberFormatException nfe) {
-          // not a number
-          values.put(key, params.get(key));
+          try {
+            Double d = Double.valueOf(params.get(key));
+            values.put(key, d);
+          } catch (NumberFormatException nfe1) {
+            // not a number
+            values.put(key, params.get(key));
+          }
         }
       }
       values.forEach((k, v) -> {

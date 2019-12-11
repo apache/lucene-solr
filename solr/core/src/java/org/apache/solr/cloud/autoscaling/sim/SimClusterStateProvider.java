@@ -97,6 +97,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.update.SolrIndexSplitter;
 import org.apache.zookeeper.CreateMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1278,6 +1279,12 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     AtomicReference<String> sliceName = new AtomicReference<>();
     sliceName.set(message.getStr(SHARD_ID_PROP));
     String splitKey = message.getStr("split.key");
+    String methodStr = message.getStr(CommonAdminParams.SPLIT_METHOD, SolrIndexSplitter.SplitMethod.REWRITE.toLower());
+    SolrIndexSplitter.SplitMethod splitMethod = SolrIndexSplitter.SplitMethod.get(methodStr);
+    if (splitMethod == null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown value '" + CommonAdminParams.SPLIT_METHOD +
+          ": " + methodStr);
+    }
 
     ClusterState clusterState = getClusterState();
     DocCollection collection = clusterState.getCollection(collectionName);
@@ -1289,6 +1296,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Shard " + collectionName +
           " /  " + sliceName.get() + " has no leader and can't be split");
     }
+    SplitShardCmd.checkDiskSpace(collectionName, sliceName.get(), leader, splitMethod, cloudManager);
     SplitShardCmd.lockForSplit(cloudManager, collectionName, sliceName.get());
     // start counting buffered updates
     Map<String, Object> props = sliceProperties.computeIfAbsent(collectionName, c -> new ConcurrentHashMap<>())

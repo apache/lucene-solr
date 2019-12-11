@@ -16,6 +16,7 @@
  */
 package org.apache.solr.update;
 
+import javax.xml.parsers.ParserConfigurationException;
 import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -24,9 +25,10 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.xml.parsers.ParserConfigurationException;
+
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -56,6 +58,7 @@ import org.apache.solr.update.SolrCmdDistributor.StdNode;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.LeaderRequestReplicationTracker;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.RollupRequestReplicationTracker;
+import org.apache.solr.util.TestInjection;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -73,11 +76,13 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     // we can't use the Randomized merge policy because the test depends on
     // being able to call optimize to have all deletes expunged.
     systemSetPropertySolrTestsMergePolicyFactory(LogDocMergePolicyFactory.class.getName());
+    System.setProperty("solr.cloud.client.pollQueueTime", "2000");
   }
 
   @AfterClass
   public static void afterClass() {
     systemClearPropertySolrTestsMergePolicyFactory();
+    System.clearProperty("solr.cloud.client.pollQueueTime");
   }
 
   private UpdateShardHandler updateShardHandler;
@@ -356,6 +361,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
     testDeletes(true, true);
     testDeletes(true, false);
     getRfFromResponseShouldNotCloseTheInputStream();
+    testStuckUpdates();
   }
   
   private void testDeletes(boolean dbq, boolean withFailures) throws Exception {
@@ -857,6 +863,38 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
       cmdDistrib.addCommit(updateRequest, ccmd);
       openSearcher = updateRequest.getParams().getBool(UpdateParams.OPEN_SEARCHER, true);
       assertFalse(openSearcher);
+    }
+  }
+
+  private void testStuckUpdates() throws Exception {
+    TestInjection.directUpdateLatch = new CountDownLatch(1);
+    List<Node> nodes = new ArrayList<>();
+    ModifiableSolrParams params;
+    try (SolrCmdDistributor cmdDistrib = new SolrCmdDistributor(updateShardHandler)) {
+      for (int i = 0; i < 3; i++) {
+        nodes.clear();
+        for (SolrClient c : clients) {
+          if (random().nextBoolean()) {
+            continue;
+          }
+          HttpSolrClient httpClient = (HttpSolrClient) c;
+          ZkNodeProps nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP,
+              httpClient.getBaseURL(), ZkStateReader.CORE_NAME_PROP, "");
+          StdNode node = new StdNode(new ZkCoreNodeProps(nodeProps));
+          nodes.add(node);
+        }
+        AddUpdateCommand c = new AddUpdateCommand(null);
+        c.solrDoc = sdoc("id", id.incrementAndGet());
+        if (nodes.size() > 0) {
+          params = new ModifiableSolrParams();
+          cmdDistrib.distribAdd(c, nodes, params, false);
+        }
+      }
+      cmdDistrib.blockAndDoRetries();
+    } catch (IOException e) {
+      assertTrue(e.toString(), e.toString().contains("processing has stalled"));
+    } finally {
+      TestInjection.directUpdateLatch.countDown();
     }
   }
 }

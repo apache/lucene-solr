@@ -16,6 +16,15 @@
  */
 package org.apache.solr.core;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -32,15 +41,6 @@ import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 public class SolrCoreTest extends SolrTestCaseJ4 {
   private static final String COLLECTION1 = "collection1";
@@ -192,7 +192,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     final CoreContainer cores = h.getCoreContainer();
     for (int i = 0; i < MT; ++i) {
       Callable<Integer> call = new Callable<Integer>() {
-        void yield(int n) {
+        void yieldInt(int n) {
           try {
             Thread.sleep(0, (n % 13 + 1) * 10);
           } catch (InterruptedException xint) {
@@ -208,16 +208,16 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
               r += 1;
               core = cores.getCore(SolrTestCaseJ4.DEFAULT_TEST_CORENAME);
               // sprinkle concurrency hinting...
-              yield(l);
+              yieldInt(l);
               assertTrue("Refcount < 1", core.getOpenCount() >= 1);              
-              yield(l);
+              yieldInt(l);
               assertTrue("Refcount > 17", core.getOpenCount() <= 17);             
-              yield(l);
+              yieldInt(l);
               assertTrue("Handler is closed", handler1.closed == false);
-              yield(l);
+              yieldInt(l);
               core.close();
               core = null;
-              yield(l);
+              yieldInt(l);
             }
             return r;
           } finally {

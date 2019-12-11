@@ -17,6 +17,7 @@
 package org.apache.solr.response;
 
 import java.io.File;
+import java.io.FilePermission;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -24,11 +25,18 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.security.AccessControlContext;
+import java.security.AccessController;
+import java.security.Permissions;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
+import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
+import java.util.PropertyPermission;
 import java.util.ResourceBundle;
 
 import org.apache.solr.client.solrj.SolrResponse;
@@ -147,6 +155,39 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
 
   @Override
   public void write(Writer writer, SolrQueryRequest request, SolrQueryResponse response) throws IOException {
+    // run doWrite() with the velocity sandbox
+    try {
+      AccessController.doPrivileged(new PrivilegedExceptionAction<Void>() {
+        @Override
+        public Void run() throws IOException {
+          doWrite(writer, request, response);
+          return null;
+        }
+      }, VELOCITY_SANDBOX);
+    } catch (PrivilegedActionException e) {
+      throw (IOException) e.getException();
+    }
+  }
+
+  // sandbox for velocity code
+  // TODO: we could read in a policy file instead, in case someone needs to tweak it?
+  private static final AccessControlContext VELOCITY_SANDBOX;
+  static {
+    Permissions permissions = new Permissions();
+    // TODO: restrict the scope of this! we probably only need access to classpath
+    permissions.add(new FilePermission("<<ALL FILES>>", "read,readlink"));
+    // properties needed by SolrResourceLoader (called from velocity code)
+    permissions.add(new PropertyPermission("jetty.testMode", "read"));
+    permissions.add(new PropertyPermission("solr.allow.unsafe.resourceloading", "read"));
+    // properties needed by log4j (called from velocity code)
+    permissions.add(new PropertyPermission("java.version", "read"));
+    // needed by velocity duck-typing
+    permissions.add(new RuntimePermission("accessDeclaredMembers"));
+    permissions.setReadOnly();
+    VELOCITY_SANDBOX = new AccessControlContext(new ProtectionDomain[] { new ProtectionDomain(null, permissions) });
+  }
+
+  private void doWrite(Writer writer, SolrQueryRequest request, SolrQueryResponse response) throws IOException {
     VelocityEngine engine = createEngine(request);  // TODO: have HTTP headers available for configuring engine
 
     Template template = getTemplate(engine, request);

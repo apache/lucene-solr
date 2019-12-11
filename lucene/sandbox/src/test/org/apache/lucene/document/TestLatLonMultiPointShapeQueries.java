@@ -79,13 +79,15 @@ public class TestLatLonMultiPointShapeQueries extends BaseLatLonShapeTestCase {
         boolean b = POINTVALIDATOR.testBBoxQuery(minLat, maxLat, minLon, maxLon, p);
         if (b == true && queryRelation == QueryRelation.INTERSECTS) {
           return true;
+        } else if (b == true && queryRelation == QueryRelation.CONTAINS) {
+          return true;
         } else if (b == false && queryRelation == QueryRelation.DISJOINT) {
           return false;
         } else if (b == false && queryRelation == QueryRelation.WITHIN) {
           return false;
         }
       }
-      return queryRelation != QueryRelation.INTERSECTS;
+      return queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS;
     }
 
     @Override
@@ -95,13 +97,15 @@ public class TestLatLonMultiPointShapeQueries extends BaseLatLonShapeTestCase {
         boolean b = POINTVALIDATOR.testComponentQuery(query, p);
         if (b == true && queryRelation == QueryRelation.INTERSECTS) {
           return true;
+        } else if (b == true && queryRelation == QueryRelation.CONTAINS) {
+          return true;
         } else if (b == false && queryRelation == QueryRelation.DISJOINT) {
           return false;
         } else if (b == false && queryRelation == QueryRelation.WITHIN) {
           return false;
         }
       }
-      return queryRelation != QueryRelation.INTERSECTS;
+      return queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS;
     }
   }
 
