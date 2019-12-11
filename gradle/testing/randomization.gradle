@@ -96,7 +96,6 @@ configure(allprojects.findAll {project -> project.path.startsWith(":solr") }) {
   plugins.withType(JavaPlugin) {
     ext {
       testOptions += [
-          [propName: 'tests.disableHdfs', value: Os.isFamily(Os.FAMILY_WINDOWS) ? 'true' : 'false', description: "Enables or disables @HDFS tests."],
           [propName: 'tests.luceneMatchVersion', value: baseVersion, description: "Base Lucene version."],
           [propName: 'common-solr.dir', value: file("${commonDir}/../solr").path, description: "Solr base dir."],
           [propName: 'solr.directoryFactory', value: "org.apache.solr.core.MockDirectoryFactory", description: "Solr directory factory."],
