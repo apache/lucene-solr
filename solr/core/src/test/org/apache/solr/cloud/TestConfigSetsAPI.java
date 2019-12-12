@@ -530,15 +530,6 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     }
   }
   
-  public void scriptRequest(String collection) throws SolrServerException, IOException {
-    SolrClient client = solrCluster.getSolrClient();
-    SolrInputDocument doc = sdoc("id", "4055", "subject", "Solr");
-    client.add(collection, doc);
-    client.commit(collection);
-
-    assertEquals("42", client.query(collection, params("q", "*:*")).getResults().get(0).get("script_added_i"));
-  }
-
   protected CollectionAdminResponse createCollection(String collectionName, String confSetName, int numShards,
       int replicationFactor, SolrClient client)  throws SolrServerException, IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
