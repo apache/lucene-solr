@@ -91,7 +91,7 @@ Upgrade Notes
   would cause inconsistent behavior and NPEs.
 
 * SOLR-13978: The default configset no longer has the following:
-    - Library inclusions (<lib ../>) for extraction, solr-cell libs, clustering, velocity and language identifier
+    - Library inclusions (<lib ../>) for extraction, solr-cell libs, clustering, velocity, LTR and language identifier
     - /browse, /tvrh and /update/extract handlers
     - TermVector component (if someone wants it, can be added using config APIs)
     - XSLT response writer
