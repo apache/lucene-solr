@@ -63,6 +63,7 @@ import org.apache.lucene.util.LongValues;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ExpandParams;
+import org.apache.solr.common.params.GroupParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
@@ -113,6 +114,9 @@ public class ExpandComponent extends SearchComponent implements PluginInfoInitia
   @Override
   public void prepare(ResponseBuilder rb) throws IOException {
     if (rb.req.getParams().getBool(ExpandParams.EXPAND, false)) {
+      if (rb.req.getParams().getBool(GroupParams.GROUP, false)) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Can not use expand with Grouping enabled");
+      }
       rb.doExpand = true;
     }
   }

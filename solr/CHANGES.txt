@@ -51,6 +51,9 @@ Upgrade Notes
 
 * SOLR-13904: timeAllowed parameter is allowed to have 0 value (Houston Putman, Mikhail Khludnev)
 
+* SOLR-13970: Using Collapse filter or expand component with grouping is explicitly disallowed as the combination
+  would cause inconsistent behavior and NPEs.
+
 New Features
 ---------------------
 * SOLR-13821: A Package store to store and load package artifacts (noble, Ishan Chattopadhyaya)
@@ -116,6 +119,8 @@ Improvements
 
 * SOLR-13904: Analytic component abandons requests exceedig a limit passed via timeAllowed parameter. 
   (Houston Putman, Mikhail Khludnev).
+
+* SOLR-13970: Fail the request when collapsing or expand is used with Grouping. (Erick Erickson, Joel Bernstein, Munendra S N)
 
 Optimizations
 ---------------------
