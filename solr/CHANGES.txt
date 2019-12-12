@@ -82,6 +82,7 @@ Improvements
 
 Other Changes
 ----------------------
+* SOLR-14054: Upgrade to Tika 1.19.1 when available (Tim Allison)
 
 * SOLR-10288: Remove non-minified JavaScript from the webapp. (Erik Hatcher, marcussorealheis)
 
@@ -97,7 +98,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 Versions of Major Components
 ---------------------
-Apache Tika 1.19.1
+Apache Tika 1.23
 Carrot2 3.16.0
 Velocity 2.0 and Velocity Tools 3.0
 Apache ZooKeeper 3.5.5
