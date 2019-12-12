@@ -74,9 +74,25 @@ public class HdfsTestUtil {
   }
 
   public static void checkAssumptions() {
+    ensureHadoopHomeNotSet();
     checkHadoopWindows();
     checkFastDateFormat();
     checkGeneratedIdMatches();
+  }
+
+  /**
+   * If Hadoop home is set via environment variable HADOOP_HOME or Java system property
+   * hadoop.home.dir, the behavior of test is undefined. Ensure that these are not set
+   * before starting. It is not possible to easily unset environment variables so better
+   * to bail out early instead of trying to test.
+   */
+  private static void ensureHadoopHomeNotSet() {
+    if (System.getenv("HADOOP_HOME") != null) {
+      LuceneTestCase.fail("Ensure that HADOOP_HOME environment variable is not set.");
+    }
+    if (System.getProperty("hadoop.home.dir") != null) {
+      LuceneTestCase.fail("Ensure that \"hadoop.home.dir\" Java property is not set.");
+    }
   }
 
   /**
