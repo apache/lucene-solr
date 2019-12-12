@@ -152,6 +152,9 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
     this.streamDeletes = builder.streamDeletes;
     this.basePath = builder.baseSolrUrl;
     this.stallTime = Integer.getInteger("solr.cloud.client.stallTime", 15000);
+    if (stallTime < pollQueueTime * 2) {
+      throw new RuntimeException("Invalid stallTime: " + stallTime + "ms, must be 2x > pollQueueTime " + pollQueueTime);
+    }
 
     if (builder.executorService != null) {
       this.scheduler = builder.executorService;
@@ -214,7 +217,6 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
           try {
             Update update;
             notifyQueueAndRunnersIfEmptyQueue();
-            //log.info("-- polling 1");
             update = queue.poll(pollQueueTime, TimeUnit.MILLISECONDS);
 
             if (update == null) {
@@ -662,7 +664,12 @@ public class ConcurrentUpdateHttp2SolrClient extends SolrClient {
    */
   public void setPollQueueTime(int pollQueueTime) {
     this.pollQueueTime = pollQueueTime;
-    this.stallTime = this.pollQueueTime * 3 / 2;
+    // make sure the stall time is larger than the polling time
+    // to give a chance for the queue to change
+    int minimalStallTime = pollQueueTime * 2;
+    if (minimalStallTime > this.stallTime) {
+      this.stallTime = minimalStallTime;
+    }
   }
 
   /**
