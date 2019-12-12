@@ -662,6 +662,9 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       SolrStream solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
       List<Tuple> tuples4 = getTuples(solrStream);
       assert (tuples4.size() == 1);
+      //Assert no x-axis
+      assertNull(tuples4.get(0).get("x"));
+
 
       sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream"));
       sParams.add("expr", "random(" + COLLECTIONORALIAS + ")");
@@ -674,6 +677,11 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       assert(fields.containsKey("a_f"));
       assert(fields.containsKey("a_i"));
       assert(fields.containsKey("a_s"));
+      //Assert the x-axis:
+      for(int i=0; i<tuples4.size(); i++) {
+        assertEquals(tuples4.get(i).getLong("x").longValue(), i);
+      }
+
     } finally {
       cache.close();
     }
