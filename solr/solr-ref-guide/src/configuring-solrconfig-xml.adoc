@@ -1,6 +1,5 @@
 = Configuring solrconfig.xml
 :page-children: datadir-and-directoryfactory-in-solrconfig, \
-    resource-loading, \
     schema-factory-definition-in-solrconfig, \
     indexconfig-in-solrconfig, \
     requesthandlers-and-searchcomponents-in-solrconfig, \
@@ -58,6 +57,9 @@ We've covered the options in the following sections:
 * <<requestdispatcher-in-solrconfig.adoc#requestdispatcher-in-solrconfig,RequestDispatcher in SolrConfig>>
 * <<update-request-processors.adoc#update-request-processors,Update Request Processors>>
 * <<codec-factory.adoc#codec-factory,Codec Factory>>
+
+Some SolrConfig aspects are covered in other sections.
+See <<libs.adoc#lib-directives-in-solrconfig,lib directives in SolrConfig>>, which can be used for both Plugins and Resources.
 
 == Substituting Properties in Solr Config Files
 

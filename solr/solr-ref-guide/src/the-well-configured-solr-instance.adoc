@@ -1,6 +1,7 @@
 = The Well-Configured Solr Instance
 :page-children: configuring-solrconfig-xml, \
     solr-cores-and-solr-xml, \
+    resource-loading, \
     configuration-apis, \
     implicit-requesthandlers, \
     jvm-settings, \
@@ -30,6 +31,8 @@ This section covers the following topics:
 <<configuring-solrconfig-xml.adoc#configuring-solrconfig-xml,Configuring solrconfig.xml>>: Describes how to work with the main configuration file for Solr, `solrconfig.xml`, covering the major sections of the file.
 
 <<solr-cores-and-solr-xml.adoc#solr-cores-and-solr-xml,Solr Cores and solr.xml>>: Describes how to work with `solr.xml` and `core.properties` to configure your Solr core, or multiple Solr cores within a single instance.
+
+<<resource-loading.adoc#resource-loading,Resource Loading>>: Describes how word lists, model files, and other related data are resolved by the components that need them.
 
 <<configuration-apis.adoc#configuration-apis,Configuration APIs>>: Describes several APIs used to configure Solr: Blob Store, Config, Request Parameters and Managed Resources.
 
