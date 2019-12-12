@@ -32,6 +32,8 @@ import org.apache.hadoop.conf.Configuration;
  */
 @InterfaceAudience.Private
 public class NameNodeResourceChecker {
+  public static final Object SOLR_HACK_FOR_CLASS_VERIFICATION = new Object();
+
   /**
    * Create a NameNodeResourceChecker, which will check the edits dirs and any
    * additional dirs to check set in <code>conf</code>.

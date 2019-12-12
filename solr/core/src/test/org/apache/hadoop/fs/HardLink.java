@@ -38,6 +38,7 @@ import static java.nio.file.Files.createLink;
  * efficient - and minimizes the impact of the extra buffer creations.
  */
 public class HardLink {
+  public static final Object SOLR_HACK_FOR_CLASS_VERIFICATION = new Object();
 
   public final LinkStats linkStats; //not static
 
