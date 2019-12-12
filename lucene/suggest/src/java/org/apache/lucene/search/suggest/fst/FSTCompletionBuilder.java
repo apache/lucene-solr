@@ -250,6 +250,6 @@ public class FSTCompletionBuilder {
       }
     }
     
-    return count == 0 ? null : fstCompiler.finish();
+    return count == 0 ? null : fstCompiler.compile();
   }
 }

@@ -119,7 +119,7 @@ final class NRTSuggesterBuilder {
    * {@link NRTSuggester#load(IndexInput, CompletionPostingsFormat.FSTLoadMode)})}
    */
   public boolean store(DataOutput output) throws IOException {
-    final FST<PairOutputs.Pair<Long, BytesRef>> fst = fstCompiler.finish();
+    final FST<PairOutputs.Pair<Long, BytesRef>> fst = fstCompiler.compile();
     if (fst == null) {
       return false;
     }

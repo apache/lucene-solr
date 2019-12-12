@@ -569,7 +569,7 @@ public class FSTCompiler<T> {
 
   /** Returns final FST.  NOTE: this will return null if
    *  nothing is accepted by the FST. */
-  public FST<T> finish() throws IOException {
+  public FST<T> compile() throws IOException {
 
     final UnCompiledNode<T> root = frontier[0];
 

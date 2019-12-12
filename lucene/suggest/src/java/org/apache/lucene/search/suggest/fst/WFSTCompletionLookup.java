@@ -131,7 +131,7 @@ public class WFSTCompletionLookup extends Lookup implements Accountable {
       previous.copyBytes(scratch);
       count++;
     }
-    fst = fstCompiler.finish();
+    fst = fstCompiler.compile();
   }
 
   

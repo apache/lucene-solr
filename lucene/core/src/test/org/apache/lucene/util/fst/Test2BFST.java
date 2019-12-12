@@ -76,7 +76,7 @@ public class Test2BFST extends LuceneTestCase {
           nextInput(r, ints2);
         }
 
-        FST<Object> fst = fstCompiler.finish();
+        FST<Object> fst = fstCompiler.compile();
 
         for(int verify=0;verify<2;verify++) {
           System.out.println("\nTEST: now verify [fst size=" + fst.ramBytesUsed() + "; nodeCount=" + fstCompiler.getNodeCount() + "; arcCount=" + fstCompiler.getArcCount() + "]");
@@ -159,7 +159,7 @@ public class Test2BFST extends LuceneTestCase {
           nextInput(r, ints);
         }
 
-        FST<BytesRef> fst = fstCompiler.finish();
+        FST<BytesRef> fst = fstCompiler.compile();
         for(int verify=0;verify<2;verify++) {
 
           System.out.println("\nTEST: now verify [fst size=" + fst.ramBytesUsed() + "; nodeCount=" + fstCompiler.getNodeCount() + "; arcCount=" + fstCompiler.getArcCount() + "]");
@@ -238,7 +238,7 @@ public class Test2BFST extends LuceneTestCase {
           nextInput(r, ints);
         }
 
-        FST<Long> fst = fstCompiler.finish();
+        FST<Long> fst = fstCompiler.compile();
 
         for(int verify=0;verify<2;verify++) {
 

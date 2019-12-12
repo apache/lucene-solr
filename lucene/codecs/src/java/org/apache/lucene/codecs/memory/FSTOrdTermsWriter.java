@@ -365,7 +365,7 @@ public class FSTOrdTermsWriter extends FieldsConsumer {
         metadata.statsOut = statsOut;
         metadata.metaLongsOut = metaLongsOut;
         metadata.metaBytesOut = metaBytesOut;
-        metadata.dict = fstCompiler.finish();
+        metadata.dict = fstCompiler.compile();
         fields.add(metadata);
       }
     }

@@ -143,7 +143,7 @@ public class TestFSTDirectAddressing extends LuceneTestCase {
       }
       last = entry;
     }
-    return fstCompiler.finish();
+    return fstCompiler.compile();
   }
 
   public static void main(String... args) throws Exception {

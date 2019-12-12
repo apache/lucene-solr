@@ -121,7 +121,7 @@ class TokenInfoDictionaryBuilder {
       dictionary.addMapping((int) ord, offset);
       offset = next;
     }
-    dictionary.setFST(fstCompiler.finish());
+    dictionary.setFST(fstCompiler.compile());
     return dictionary;
   }
 }

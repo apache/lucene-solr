@@ -216,7 +216,7 @@ public final class StemmerOverrideFilter extends TokenFilter {
         intsSpare.copyUTF8Bytes(bytesRef);
         fstCompiler.add(intsSpare.get(), new BytesRef(outputValues.get(id)));
       }
-      return new StemmerOverrideMap(fstCompiler.finish(), ignoreCase);
+      return new StemmerOverrideMap(fstCompiler.compile(), ignoreCase);
     }
     
   }

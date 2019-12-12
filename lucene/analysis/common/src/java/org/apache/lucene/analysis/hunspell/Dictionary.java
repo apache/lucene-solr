@@ -233,7 +233,7 @@ public class Dictionary {
       IntSequenceOutputs o = IntSequenceOutputs.getSingleton();
       FSTCompiler<IntsRef> fstCompiler = new FSTCompiler<>(FST.INPUT_TYPE.BYTE4, o);
       readDictionaryFiles(tempDir, tempFileNamePrefix, dictionaries, decoder, fstCompiler);
-      words = fstCompiler.finish();
+      words = fstCompiler.compile();
       aliases = null; // no longer needed
       morphAliases = null; // no longer needed
       success = true;
@@ -425,7 +425,7 @@ public class Dictionary {
       }
       fstCompiler.add(scratch.get(), output);
     }
-    return fstCompiler.finish();
+    return fstCompiler.compile();
   }
   
   static String escapeDash(String re) {
@@ -615,7 +615,7 @@ public class Dictionary {
       fstCompiler.add(scratchInts.get(), new CharsRef(entry.getValue()));
     }
     
-    return fstCompiler.finish();
+    return fstCompiler.compile();
   }
   
   /** pattern accepts optional BOM + SET + any whitespace */

@@ -371,7 +371,7 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
         }
       }
 
-      index = fstCompiler.finish();
+      index = fstCompiler.compile();
 
       assert subIndices == null;
 

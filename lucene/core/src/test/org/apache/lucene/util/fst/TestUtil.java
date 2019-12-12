@@ -93,7 +93,7 @@ public class TestUtil extends LuceneTestCase {
     for (String word : words) {
       fstCompiler.add(Util.toIntsRef(new BytesRef(word), new IntsRefBuilder()), outputs.getNoOutput());
     }
-    return fstCompiler.finish();
+    return fstCompiler.compile();
   }
 
   private List<String> createRandomDictionary(int width, int depth) {

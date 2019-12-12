@@ -225,7 +225,7 @@ public class FSTDictionary implements IndexDictionary {
     @Override
     public FSTDictionary build() {
       try {
-        return new FSTDictionary(fstCompiler.finish());
+        return new FSTDictionary(fstCompiler.compile());
       } catch (IOException e) {
         // Should never happen.
         throw new RuntimeException(e);

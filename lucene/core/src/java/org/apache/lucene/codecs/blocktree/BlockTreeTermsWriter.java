@@ -474,7 +474,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
         }
       }
 
-      index = fstCompiler.finish();
+      index = fstCompiler.compile();
 
       assert subIndices == null;
 

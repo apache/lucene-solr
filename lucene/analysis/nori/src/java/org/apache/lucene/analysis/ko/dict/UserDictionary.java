@@ -133,7 +133,7 @@ public final class UserDictionary implements Dictionary {
       lastToken = token;
       ord ++;
     }
-    this.fst = new TokenInfoFST(fstCompiler.finish());
+    this.fst = new TokenInfoFST(fstCompiler.compile());
     this.segmentations = segmentations.toArray(new int[segmentations.size()][]);
     this.rightIds = new short[rightIds.size()];
     for (int i = 0; i < rightIds.size(); i++) {

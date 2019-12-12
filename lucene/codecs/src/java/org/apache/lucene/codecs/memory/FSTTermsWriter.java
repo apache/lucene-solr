@@ -283,7 +283,7 @@ public class FSTTermsWriter extends FieldsConsumer {
     public void finish(long sumTotalTermFreq, long sumDocFreq, int docCount) throws IOException {
       // save FST dict
       if (numTerms > 0) {
-        final FST<FSTTermOutputs.TermData> fst = fstCompiler.finish();
+        final FST<FSTTermOutputs.TermData> fst = fstCompiler.compile();
         fields.add(new FieldMetaData(fieldInfo, numTerms, sumTotalTermFreq, sumDocFreq, docCount, longsSize, fst));
       }
     }

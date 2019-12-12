@@ -215,7 +215,7 @@ public class TestDictionary extends LuceneTestCase {
     Util.toUTF16("def", scratchInts);
     fstCompiler.add(scratchInts.get(), new CharsRef("gh"));
     
-    FST<CharsRef> fst = fstCompiler.finish();
+    FST<CharsRef> fst = fstCompiler.compile();
     
     StringBuilder sb = new StringBuilder("atestanother");
     Dictionary.applyMappings(fst, sb);

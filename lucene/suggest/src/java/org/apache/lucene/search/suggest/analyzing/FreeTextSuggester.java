@@ -323,7 +323,7 @@ public class FreeTextSuggester extends Lookup implements Accountable {
         fstCompiler.add(Util.toIntsRef(term, scratchInts), encodeWeight(termsEnum.totalTermFreq()));
       }
 
-      fst = fstCompiler.finish();
+      fst = fstCompiler.compile();
       if (fst == null) {
         throw new IllegalArgumentException("need at least one suggestion");
       }

@@ -113,7 +113,7 @@ public class NormalizeCharMap {
           fstCompiler.add(Util.toUTF16(ent.getKey(), scratch),
                       new CharsRef(ent.getValue()));
         }
-        map = fstCompiler.finish();
+        map = fstCompiler.compile();
         pendingPairs.clear();
       } catch (IOException ioe) {
         // Bogus FST IOExceptions!!  (will never happen)

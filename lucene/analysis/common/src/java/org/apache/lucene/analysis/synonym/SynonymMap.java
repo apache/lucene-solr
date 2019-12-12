@@ -282,7 +282,7 @@ public class SynonymMap {
         fstCompiler.add(Util.toUTF32(input, scratchIntsRef), scratch.toBytesRef());
       }
       
-      FST<BytesRef> fst = fstCompiler.finish();
+      FST<BytesRef> fst = fstCompiler.compile();
       return new SynonymMap(fst, words, maxHorizontalContext);
     }
   }

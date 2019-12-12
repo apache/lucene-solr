@@ -582,7 +582,7 @@ public class AnalyzingSuggester extends Lookup implements Accountable {
           fstCompiler.add(scratchInts.get(), outputs.newPair(cost, br));
         }
       }
-      fst = fstCompiler.finish();
+      fst = fstCompiler.compile();
 
       //Util.dotToFile(fst, "/tmp/suggest.dot");
     } finally {

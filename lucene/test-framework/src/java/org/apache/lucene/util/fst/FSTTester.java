@@ -291,7 +291,7 @@ public class FSTTester<T> {
         fstCompiler.add(pair.input, pair.output);
       }
     }
-    FST<T> fst = fstCompiler.finish();
+    FST<T> fst = fstCompiler.compile();
 
     if (random.nextBoolean() && fst != null) {
       IOContext context = LuceneTestCase.newIOContext(random);
