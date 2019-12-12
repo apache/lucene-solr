@@ -224,6 +224,12 @@ public class ZkStateReader implements SolrCloseable {
     public Replica getLeader(Slice slice, int timeout) throws InterruptedException {
       return getLeaderRetry(slice.collection, slice.getName(), timeout);
     }
+
+    @Override
+    public Replica getLeader(String collection, String slice, int timeout) throws InterruptedException {
+      if(timeout == -1 ) timeout = GET_LEADER_RETRY_DEFAULT_TIMEOUT;
+      return  getLeaderRetry(collection, slice, timeout);
+    }
   };
 
   /**
@@ -933,8 +939,9 @@ public class ZkStateReader implements SolrCloseable {
     return closed;
   }
 
+  @Deprecated
   public String getLeaderUrl(String collection, String shard, int timeout) throws InterruptedException {
-    ZkCoreNodeProps props = new ZkCoreNodeProps(getLeaderRetry(collection, shard, timeout));
+    ZkCoreNodeProps props = new ZkCoreNodeProps(getShardStateProvider(collection).getLeader(collection, shard, timeout));
     return props.getCoreUrl();
   }
 
@@ -969,9 +976,11 @@ public class ZkStateReader implements SolrCloseable {
     return getLeaderRetry(collection, shard, GET_LEADER_RETRY_DEFAULT_TIMEOUT);
   }
 
-  /**
+
+  /** use {@link ShardStateProvider#getLeader(Slice, int)} instead
    * Get shard leader properties, with retry if none exist.
    */
+  @Deprecated
   public Replica getLeaderRetry(String collection, String shard, int timeout) throws InterruptedException {
 
     AtomicReference<Replica> leader = new AtomicReference<>();

@@ -16,6 +16,14 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Random;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrQuery;
@@ -38,14 +46,6 @@ import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.TimeOut;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Random;
-import java.util.concurrent.SynchronousQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
 
 /**
  * This test simply does a bunch of basic things in solrcloud mode and asserts things
@@ -252,7 +252,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
     }
 
     // ensure there is a leader
-    zkStateReader.getLeaderRetry("unloadcollection", "shard1", 15000);
+    zkStateReader.getShardStateProvider("unloadcollection").getLeader("unloadcollection", "shard1", 15000);
 
     try (HttpSolrClient addClient = getHttpSolrClient(jettys.get(1).getBaseUrl() + "/unloadcollection_shard1_replica2", 30000, 90000)) {
 
@@ -288,7 +288,7 @@ public class UnloadDistributedZkTest extends BasicDistributedZkTest {
       }
     }
 
-    zkStateReader.getLeaderRetry("unloadcollection", "shard1", 15000);
+    zkStateReader. getShardStateProvider("unloadcollection"). getLeader("unloadcollection", "shard1", 15000);
 
     // set this back
     DirectUpdateHandler2.commitOnClose = true;

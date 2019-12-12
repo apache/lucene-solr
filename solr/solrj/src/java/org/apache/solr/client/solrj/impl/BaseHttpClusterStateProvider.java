@@ -256,7 +256,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   }
 
   @Override
-  public ClusterState getClusterState() throws IOException {
+  public ClusterState getClusterState() {
     for (String nodeName: liveNodes) {
       String baseUrl = Utils.getBaseUrlForNodeName(nodeName, urlScheme);
       try (SolrClient client = getSolrClient(baseUrl)) {

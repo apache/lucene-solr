@@ -258,7 +258,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
   private void assertDocsExistInAllReplicas(List<Replica> notLeaders,
                                               String testCollectionName, int firstDocId, int lastDocId) throws Exception {
     Replica leader =
-        cluster.getSolrClient().getZkStateReader().getLeaderRetry(testCollectionName, "shard1", 10000);
+        cluster.getSolrClient().getZkStateReader().getShardStateProvider(testCollectionName).getLeader(testCollectionName, "shard1", 10000);
     HttpSolrClient leaderSolr = getHttpSolrClient(leader, testCollectionName);
     List<HttpSolrClient> replicas =
         new ArrayList<HttpSolrClient>(notLeaders.size());

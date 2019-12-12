@@ -253,7 +253,7 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
     public void close() throws IOException {
       closed = true;
       try {
-        Replica leader = state.getClient().getZkStateReader().getLeaderRetry(targetCollection, shard, 30000); // assume same shard exists on target
+        Replica leader = state.getClient().getZkStateReader().getShardStateProvider(targetCollection).getLeader(targetCollection, shard, 30000); // assume same shard exists on target
         String leaderCoreUrl = leader.getCoreUrl();
         HttpClient httpClient = state.getClient().getLbClient().getHttpClient();
         try (HttpSolrClient client = new HttpSolrClient.Builder(leaderCoreUrl).withHttpClient(httpClient).build()) {
@@ -349,7 +349,7 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
     }
 
     private BootstrapStatus sendBootstrapCommand() throws InterruptedException {
-      Replica leader = state.getClient().getZkStateReader().getLeaderRetry(targetCollection, shard, 30000); // assume same shard exists on target
+      Replica leader = state.getClient().getZkStateReader().getShardStateProvider(targetCollection).getLeader(targetCollection, shard, 30000); // assume same shard exists on target
       String leaderCoreUrl = leader.getCoreUrl();
       HttpClient httpClient = state.getClient().getLbClient().getHttpClient();
       try (HttpSolrClient client = new HttpSolrClient.Builder(leaderCoreUrl).withHttpClient(httpClient).build()) {
@@ -371,7 +371,7 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
 
     private BootstrapStatus getBoostrapStatus() throws InterruptedException {
       try {
-        Replica leader = state.getClient().getZkStateReader().getLeaderRetry(targetCollection, shard, 30000); // assume same shard exists on target
+        Replica leader = state.getClient().getZkStateReader().getShardStateProvider(targetCollection).getLeader(targetCollection, shard, 30000); // assume same shard exists on target
         String leaderCoreUrl = leader.getCoreUrl();
         HttpClient httpClient = state.getClient().getLbClient().getHttpClient();
         try (HttpSolrClient client = new HttpSolrClient.Builder(leaderCoreUrl).withHttpClient(httpClient).build()) {

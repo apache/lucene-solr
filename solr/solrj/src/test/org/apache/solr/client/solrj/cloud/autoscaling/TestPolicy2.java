@@ -189,7 +189,7 @@ public class TestPolicy2 extends SolrTestCaseJ4 {
 
     DelegatingClusterStateProvider delegatingClusterStateProvider = new DelegatingClusterStateProvider(null) {
       @Override
-      public ClusterState getClusterState() throws IOException {
+      public ClusterState getClusterState()  {
         return clusterState;
       }
 

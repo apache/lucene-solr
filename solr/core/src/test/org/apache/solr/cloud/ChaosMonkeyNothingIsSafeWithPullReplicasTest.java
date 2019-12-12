@@ -169,7 +169,7 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
       ZkStateReader zkStateReader = cloudClient.getZkStateReader();
       // make sure we have leaders for each shard
       for (int j = 1; j < sliceCount; j++) {
-        zkStateReader.getLeaderRetry(DEFAULT_COLLECTION, "shard" + j, 10000);
+        zkStateReader.getShardStateProvider(DEFAULT_COLLECTION).getLeader(DEFAULT_COLLECTION, "shard" + j, 10000);
       }      // make sure we again have leaders for each shard
       
       waitForRecoveriesToFinish(false);
@@ -254,7 +254,7 @@ public class ChaosMonkeyNothingIsSafeWithPullReplicasTest extends AbstractFullDi
       
       // make sure we again have leaders for each shard
       for (int j = 1; j < sliceCount; j++) {
-        zkStateReader.getLeaderRetry(DEFAULT_COLLECTION, "shard" + j, 30000);
+        zkStateReader.getShardStateProvider(DEFAULT_COLLECTION). getLeader(DEFAULT_COLLECTION, "shard" + j, 30000);
       }
       
       commit();

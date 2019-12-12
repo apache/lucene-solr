@@ -28,7 +28,6 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.util.RTimer;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -104,7 +103,7 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
 
     cloudClient.getZkStateReader().forceUpdateCollection(testCollectionName); // get the latest state
 
-    leader = shardStateProvider.getLeader(coll.getSlice("shard1"), ZkStateReader.GET_LEADER_RETRY_DEFAULT_TIMEOUT) ;
+    leader = shardStateProvider.getLeader(coll.getSlice("shard1"), -1) ;
     assertSame("Leader was not active", Replica.State.ACTIVE, shardStateProvider.getState(leader));
 
     log.info("Healing partitioned replica at "+leader.getCoreUrl());

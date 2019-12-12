@@ -145,7 +145,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         ImmutableSet.of("node1", "node2", "node3", "node4", "node5"), CLUSTER_STATE);
     DelegatingClusterStateProvider clusterStateProvider = new DelegatingClusterStateProvider(null) {
       @Override
-      public ClusterState getClusterState() throws IOException {
+      public ClusterState getClusterState()  {
         return clusterState;
       }
 
@@ -237,7 +237,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
             ImmutableSet.of("node1", "node2", "node3", "node4", "node5"), CLUSTER_STATE);
     DelegatingClusterStateProvider clusterStateProvider = new DelegatingClusterStateProvider(null) {
       @Override
-      public ClusterState getClusterState() throws IOException {
+      public ClusterState getClusterState() {
         return clusterState;
       }
 
@@ -436,7 +436,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         ImmutableSet.of("node2", "node3", "node4", "node5"), CLUSTER_STATE);
     DelegatingClusterStateProvider clusterStateProvider = new DelegatingClusterStateProvider(null) {
       @Override
-      public ClusterState getClusterState() throws IOException {
+      public ClusterState getClusterState() {
         return clusterState;
       }
 
@@ -811,7 +811,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
         ImmutableSet.of("node1", "node2", "node3", "node4", "node5"));
     DelegatingClusterStateProvider clusterStateProvider = new DelegatingClusterStateProvider(null) {
       @Override
-      public ClusterState getClusterState() throws IOException {
+      public ClusterState getClusterState() {
         return clusterState;
       }
 
@@ -1188,7 +1188,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
       public ClusterStateProvider getClusterStateProvider() {
         return new DelegatingClusterStateProvider(null) {
           @Override
-          public ClusterState getClusterState() throws IOException {
+          public ClusterState getClusterState()  {
             return ClusterState.load(0, new HashMap<>(), getLiveNodes(), CLUSTER_STATE);
           }
 
@@ -2878,7 +2878,7 @@ public class TestPolicy extends SolrTestCaseJ4 {
           }
 
           @Override
-          public ClusterState getClusterState() throws IOException {
+          public ClusterState getClusterState() {
             return ClusterState.load(0, clusterState, getLiveNodes(), ZkStateReader.getCollectionPath("c1"));
           }
 

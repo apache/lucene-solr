@@ -91,7 +91,7 @@ public class SystemCollectionCompatTest extends SolrCloudTestCase {
     solrClient.commit(CollectionAdminParams.SYSTEM_COLL);
 
     Replica leader
-        = solrClient.getZkStateReader().getLeaderRetry(CollectionAdminParams.SYSTEM_COLL, "shard1", DEFAULT_TIMEOUT);
+        = solrClient.getZkStateReader().getShardStateProvider(CollectionAdminParams.SYSTEM_COLL).getLeader(CollectionAdminParams.SYSTEM_COLL, "shard1", DEFAULT_TIMEOUT);
     final AtomicReference<Long> coreStartTime = new AtomicReference<>(getCoreStatus(leader).getCoreStartTime().getTime());
     // trigger compat report by changing the schema
     SchemaRequest req = new SchemaRequest();

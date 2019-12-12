@@ -568,7 +568,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
     // make sure we have a leader for each shard
     for (int i = 1; i <= sliceCount; i++) {
-      zkStateReader.getLeaderRetry(DEFAULT_COLLECTION, "shard" + i, 10000);
+      zkStateReader.getShardStateProvider(DEFAULT_COLLECTION). getLeader(DEFAULT_COLLECTION, "shard" + i, 10000);
     }
 
     if (sliceCount > 0) {
@@ -2256,7 +2256,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       containers.put(runner.getNodeName(), runner.getCoreContainer());
     }
     for(Slice s:collection.getSlices()) {
-      Replica leader = zkStateReader.getLeaderRetry(collectionName, s.getName(), (int)timeout.timeLeft(TimeUnit.MILLISECONDS));
+      Replica leader = zkStateReader.getShardStateProvider(collectionName). getLeader(collectionName, s.getName(), (int)timeout.timeLeft(TimeUnit.MILLISECONDS));
       long leaderIndexVersion = -1;
       while (!timeout.hasTimedOut()) {
         leaderIndexVersion = getIndexVersion(leader);

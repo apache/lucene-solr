@@ -600,7 +600,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
 
     // now wait till we see the leader for each shard
     for (int i = 1; i <= shardCount; i++) {
-      zkStateReader.getLeaderRetry(temporaryCollection, "shard" + i, 15000);
+      zkStateReader.getShardStateProvider(temporaryCollection). getLeader(temporaryCollection, "shard" + i, 15000);
     }
 
     // store the node names

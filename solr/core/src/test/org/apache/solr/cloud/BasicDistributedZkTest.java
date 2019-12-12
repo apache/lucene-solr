@@ -196,7 +196,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     ZkStateReader zkStateReader = cloudClient.getZkStateReader();
     // make sure we have leaders for each shard
     for (int j = 1; j < sliceCount; j++) {
-      zkStateReader.getLeaderRetry(DEFAULT_COLLECTION, "shard" + j, 10000);
+      zkStateReader.getShardStateProvider(DEFAULT_COLLECTION).getLeader(DEFAULT_COLLECTION, "shard" + j, 10000);
     }      // make sure we again have leaders for each shard
     
     waitForRecoveriesToFinish(false);
@@ -727,7 +727,7 @@ public class BasicDistributedZkTest extends AbstractFullDistribZkTestBase {
     cloudJettys.get(0).jetty.start();
     cloudClient.getZkStateReader().forceUpdateCollection("multiunload2");
     try {
-      cloudClient.getZkStateReader().getLeaderRetry("multiunload2", "shard1", 30000);
+      cloudClient.getZkStateReader().getShardStateProvider("multiunload2").getLeader("multiunload2", "shard1", 30000);
     } catch (SolrException e) {
       printLayout();
       throw e;

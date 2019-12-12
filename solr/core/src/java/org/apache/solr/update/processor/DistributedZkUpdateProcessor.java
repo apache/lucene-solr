@@ -72,7 +72,6 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.cloud.ZkStateReader.GET_LEADER_RETRY_DEFAULT_TIMEOUT;
 import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
@@ -644,14 +643,14 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       // Not equivalent to getLeaderProps, which  retries to find a leader.
       // Replica leader = slice.getLeader();
       ShardStateProvider ssp = zkController.getZkStateReader().getShardStateProvider(collection);
-      Replica leaderReplica = ssp.getLeader(slice, GET_LEADER_RETRY_DEFAULT_TIMEOUT);
+      Replica leaderReplica = ssp.getLeader(slice, -1);
       isLeader = leaderReplica.getName().equals(cloudDesc.getCoreNodeName());
 
       if (!isLeader) {
         isSubShardLeader = amISubShardLeader(coll, slice, id, doc);
         if (isSubShardLeader) {
           shardId = cloudDesc.getShardId();
-          leaderReplica = ssp.getLeader(slice, GET_LEADER_RETRY_DEFAULT_TIMEOUT);
+          leaderReplica = ssp.getLeader(slice, -1);
         }
       }
 

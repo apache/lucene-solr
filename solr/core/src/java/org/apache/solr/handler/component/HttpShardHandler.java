@@ -457,7 +457,7 @@ public class HttpShardHandler extends ShardHandler {
             public boolean test(Replica replica) {
               if (shardLeader == null) {
                 try {
-                  shardLeader = zkController.getZkStateReader().getLeaderRetry(cloudDescriptor.getCollectionName(), slice.getName());
+                  shardLeader = req.getCore().getShardStateProvider().getLeader(slice, -1);
                 } catch (InterruptedException e) {
                   throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Exception finding leader for shard " + slice.getName() + " in collection " 
                       + cloudDescriptor.getCollectionName(), e);

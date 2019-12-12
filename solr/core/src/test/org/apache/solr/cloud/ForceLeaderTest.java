@@ -44,8 +44,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.common.cloud.ZkStateReader.GET_LEADER_RETRY_DEFAULT_TIMEOUT;
-
 @Nightly // this test is currently too slow for non nightly
 public class ForceLeaderTest extends HttpPartitionTest {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -89,7 +87,7 @@ public class ForceLeaderTest extends HttpPartitionTest {
           + printClusterStateInfo(testCollectionName), 2, notLeaders.size());
 
       ShardStateProvider ssp = cloudClient.getZkStateReader().getShardStateProvider(testCollectionName);
-      Replica leader = ssp.getLeader(cloudClient.getClusterStateProvider().getCollection(testCollectionName).getSlice(SHARD1), GET_LEADER_RETRY_DEFAULT_TIMEOUT);
+      Replica leader = ssp.getLeader(cloudClient.getClusterStateProvider().getCollection(testCollectionName).getSlice(SHARD1), -1);
       JettySolrRunner notLeader0 = getJettyOnPort(getReplicaPort(notLeaders.get(0)));
       ZkController zkController = notLeader0.getCoreContainer().getZkController();
 

@@ -474,7 +474,7 @@ public class CollectionsAPIDistributedZkTest extends SolrCloudTestCase {
       ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
       // make sure we have leaders for each shard
       for (int z = 1; z < createRequests[j].getNumShards(); z++) {
-        zkStateReader.getLeaderRetry(collectionName, "shard" + z, 10000);
+        zkStateReader. getShardStateProvider(collectionName).getLeader(collectionName, "shard" + z, 10000);
       }      // make sure we again have leaders for each shard
     }
   }

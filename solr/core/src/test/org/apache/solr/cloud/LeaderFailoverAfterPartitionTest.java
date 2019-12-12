@@ -16,6 +16,13 @@
  */
 package org.apache.solr.cloud;
 
+import java.lang.invoke.MethodHandles;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.cloud.SocketProxy;
@@ -26,13 +33,6 @@ import org.apache.solr.common.cloud.Replica;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.lang.invoke.MethodHandles;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
 
 /**
  * Tests leader-initiated recovery scenarios after a leader node fails
@@ -148,7 +148,7 @@ public class LeaderFailoverAfterPartitionTest extends HttpPartitionTest {
     Thread.sleep(10000); // give chance for new leader to be elected.
     
     Replica newLeader = 
-        cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1", 60000);
+        cloudClient.getZkStateReader().getShardStateProvider(testCollectionName).getLeader(testCollectionName, "shard1", 60000);
         
     assertNotNull("No new leader was elected after 60 seconds; clusterState: "+
       printClusterStateInfo(testCollectionName),newLeader);

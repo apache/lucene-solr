@@ -59,4 +59,10 @@ public class DirectShardState implements ShardStateProvider {
   public Replica getLeader(Slice slice, int timeout) throws InterruptedException {
     throw new RuntimeException("Not implemented");//TODO
   }
+
+  @Override
+  public Replica getLeader(String collection, String slice, int timeout) throws InterruptedException {
+    throw new RuntimeException("Not implemented");
+  }
+
 }

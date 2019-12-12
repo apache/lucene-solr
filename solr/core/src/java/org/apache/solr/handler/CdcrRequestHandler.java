@@ -413,7 +413,7 @@ public class CdcrRequestHandler extends RequestHandlerBase implements SolrCoreAw
     try {
       List<Callable<Long>> callables = new ArrayList<>();
       for (Slice shard : shards) {
-        ZkNodeProps leaderProps = zkController.getZkStateReader().getLeaderRetry(collection, shard.getName());
+        ZkNodeProps leaderProps = zkController.getZkStateReader().getShardStateProvider(collection).getLeader(shard, -1);
         ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(leaderProps);
         callables.add(new SliceCheckpointCallable(nodeProps.getCoreUrl(), path));
       }

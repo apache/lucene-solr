@@ -146,7 +146,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
     // find the leader for the shard
     Replica parentShardLeader;
     try {
-      parentShardLeader = zkStateReader.getLeaderRetry(collectionName, slice.get(), 10000);
+      parentShardLeader = zkStateReader.getShardStateProvider(collectionName).getLeader(collectionName, slice.get(), 10000);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Interrupted.");

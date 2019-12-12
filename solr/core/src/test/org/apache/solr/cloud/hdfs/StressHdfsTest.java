@@ -16,9 +16,17 @@
  */
 package org.apache.solr.cloud.hdfs;
 
+import java.io.IOException;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.concurrent.TimeUnit;
+
 import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
-
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.Path;
@@ -43,15 +51,6 @@ import org.apache.solr.util.TimeOut;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.concurrent.TimeUnit;
 
 @Slow
 @Nightly
@@ -171,7 +170,7 @@ public class StressHdfsTest extends BasicDistributedZkTest {
     cloudClient.getZkStateReader().forceUpdateCollection(DELETE_DATA_DIR_COLLECTION);
     
     for (int i = 1; i < nShards + 1; i++) {
-      cloudClient.getZkStateReader().getLeaderRetry(DELETE_DATA_DIR_COLLECTION, "shard" + i, 30000);
+      cloudClient.getZkStateReader().getShardStateProvider(DELETE_DATA_DIR_COLLECTION).getLeader(DELETE_DATA_DIR_COLLECTION, "shard" + i, 30000);
     }
     
     // collect the data dirs

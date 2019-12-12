@@ -40,6 +40,10 @@ public interface ShardStateProvider {
    */
   Replica getLeader(Slice slice, int timeout) throws InterruptedException;
 
+
+  Replica getLeader(String collection, String slice, int timeout) throws InterruptedException;
+
+
   /**CHeck if the replica is active
    *
    */
