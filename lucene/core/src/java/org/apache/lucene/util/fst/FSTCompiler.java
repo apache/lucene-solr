@@ -609,19 +609,19 @@ public class FSTCompiler<T> {
   }
 
   /** Expert: holds a pending (seen but not yet serialized) arc. */
-  public static class Arc<T> {
-    public int label;                             // really an "unsigned" byte
-    public Node target;
-    public boolean isFinal;
-    public T output;
-    public T nextFinalOutput;
+  static class Arc<T> {
+    int label;                             // really an "unsigned" byte
+    Node target;
+    boolean isFinal;
+    T output;
+    T nextFinalOutput;
   }
 
   // NOTE: not many instances of Node or CompiledNode are in
   // memory while the FST is being built; it's only the
   // current "frontier":
 
-  static interface Node {
+  interface Node {
     boolean isCompiled();
   }
 
@@ -638,20 +638,20 @@ public class FSTCompiler<T> {
   }
 
   /** Expert: holds a pending (seen but not yet serialized) Node. */
-  public static final class UnCompiledNode<T> implements Node {
+  static final class UnCompiledNode<T> implements Node {
     final FSTCompiler<T> owner;
-    public int numArcs;
-    public Arc<T>[] arcs;
+    int numArcs;
+    Arc<T>[] arcs;
     // TODO: instead of recording isFinal/output on the
     // node, maybe we should use -1 arc to mean "end" (like
     // we do when reading the FST).  Would simplify much
     // code here...
-    public T output;
-    public boolean isFinal;
-    public long inputCount;
+    T output;
+    boolean isFinal;
+    long inputCount;
 
     /** This node's depth, starting from the automaton root. */
-    public final int depth;
+    final int depth;
 
     /**
      * @param depth
@@ -660,7 +660,7 @@ public class FSTCompiler<T> {
      *          fanout size).
      */
     @SuppressWarnings({"rawtypes","unchecked"})
-    public UnCompiledNode(FSTCompiler<T> owner, int depth) {
+    UnCompiledNode(FSTCompiler<T> owner, int depth) {
       this.owner = owner;
       arcs = (Arc<T>[]) new Arc[1];
       arcs[0] = new Arc<>();
@@ -673,7 +673,7 @@ public class FSTCompiler<T> {
       return false;
     }
 
-    public void clear() {
+    void clear() {
       numArcs = 0;
       isFinal = false;
       output = owner.NO_OUTPUT;
@@ -683,13 +683,13 @@ public class FSTCompiler<T> {
       // for nodes on the frontier (even when reused).
     }
 
-    public T getLastOutput(int labelToMatch) {
+    T getLastOutput(int labelToMatch) {
       assert numArcs > 0;
       assert arcs[numArcs-1].label == labelToMatch;
       return arcs[numArcs-1].output;
     }
 
-    public void addArc(int label, Node target) {
+    void addArc(int label, Node target) {
       assert label >= 0;
       assert numArcs == 0 || label > arcs[numArcs-1].label: "arc[numArcs-1].label=" + arcs[numArcs-1].label + " new label=" + label + " numArcs=" + numArcs;
       if (numArcs == arcs.length) {
@@ -706,7 +706,7 @@ public class FSTCompiler<T> {
       arc.isFinal = false;
     }
 
-    public void replaceLast(int labelToMatch, Node target, T nextFinalOutput, boolean isFinal) {
+    void replaceLast(int labelToMatch, Node target, T nextFinalOutput, boolean isFinal) {
       assert numArcs > 0;
       final Arc<T> arc = arcs[numArcs-1];
       assert arc.label == labelToMatch: "arc.label=" + arc.label + " vs " + labelToMatch;
@@ -716,14 +716,14 @@ public class FSTCompiler<T> {
       arc.isFinal = isFinal;
     }
 
-    public void deleteLast(int label, Node target) {
+    void deleteLast(int label, Node target) {
       assert numArcs > 0;
       assert label == arcs[numArcs-1].label;
       assert target == arcs[numArcs-1].target;
       numArcs--;
     }
 
-    public void setLastOutput(int labelToMatch, T newOutput) {
+    void setLastOutput(int labelToMatch, T newOutput) {
       assert owner.validOutput(newOutput);
       assert numArcs > 0;
       final Arc<T> arc = arcs[numArcs-1];
@@ -732,7 +732,7 @@ public class FSTCompiler<T> {
     }
 
     // pushes an output prefix forward onto all arcs
-    public void prependOutput(T outputPrefix) {
+    void prependOutput(T outputPrefix) {
       assert owner.validOutput(outputPrefix);
 
       for(int arcIdx=0;arcIdx<numArcs;arcIdx++) {
