@@ -39,13 +39,13 @@ import org.apache.hadoop.hdfs.MiniDFSNNTopology;
 import org.apache.hadoop.hdfs.server.namenode.NameNodeAdapter;
 import org.apache.hadoop.hdfs.server.namenode.ha.HATestUtil;
 import org.apache.hadoop.io.nativeio.NativeIO;
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.util.HdfsUtil;
-import org.junit.AssumptionViolatedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,6 +73,20 @@ public class HdfsTestUtil {
     return setupClass(dir, haTesting, true);
   }
 
+  public static void checkAssumptions() {
+    checkHadoopWindows();
+    checkFastDateFormat();
+    checkGeneratedIdMatches();
+  }
+
+  /**
+   * Hadoop integration tests fail on Windows without Hadoop NativeIO
+   */
+  private static void checkHadoopWindows() {
+    LuceneTestCase.assumeTrue("Hadoop does not work on Windows without Hadoop NativeIO",
+        !Constants.WINDOWS || NativeIO.isAvailable());
+  }
+
   /**
    * Checks that commons-lang3 FastDateFormat works with configured locale
    */
@@ -96,8 +110,7 @@ public class HdfsTestUtil {
   }
 
   public static MiniDFSCluster setupClass(String dir, boolean safeModeTesting, boolean haTesting) throws Exception {
-    checkFastDateFormat();
-    checkGeneratedIdMatches();
+    checkAssumptions();
 
     if (!HA_TESTING_ENABLED) haTesting = false;
 
@@ -130,10 +143,6 @@ public class HdfsTestUtil {
         .numDataNodes(dataNodes).format(true);
     if (haTesting) {
       dfsClusterBuilder.nnTopology(MiniDFSNNTopology.simpleHATopology());
-    }
-
-    if (!NativeIO.isAvailable()) {
-      throw new AssumptionViolatedException("NativeIO not available for HDFS.");
     }
 
     MiniDFSCluster dfsCluster = dfsClusterBuilder.build();
