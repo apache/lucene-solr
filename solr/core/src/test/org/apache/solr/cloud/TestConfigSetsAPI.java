@@ -88,6 +88,7 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.noggit.JSONParser;
 import org.slf4j.Logger;
@@ -348,7 +349,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   @Test
   public void testUploadWithScriptUpdateProcessor() throws Exception {
       // Authorization off
-      unprotectConfigsHandler();
+      // unprotectConfigsHandler(); // TODO Enable this back when testUploadWithLibDirective() is re-enabled
       final String untrustedSuffix = "-untrusted";
       uploadConfigSetWithAssertions("with-script-processor", untrustedSuffix, null, null);
       // try to create a collection with the uploaded configset
@@ -371,6 +372,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   }
 
   @Test
+  @Ignore // enable this back when the sleep is removed from protectConfigsHandler() call
   public void testUploadWithLibDirective() throws Exception {
     // Authorization off
     unprotectConfigsHandler();
