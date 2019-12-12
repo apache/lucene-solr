@@ -275,9 +275,12 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   @AfterClass
   public static void shutdownCluster() throws Exception {
     if (cluster != null) {
-      cluster.shutdown();
+      try {
+        cluster.shutdown();
+      } finally {
+        cluster = null;
+      }
     }
-    cluster = null;
   }
 
   @Before
@@ -490,4 +493,21 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
     cluster.waitForAllNodes(timeoutSeconds);
   }
 
+  public static Map<String, String> mapReplicasToReplicaType(DocCollection collection) {
+    Map<String, String> replicaTypeMap = new HashMap<>();
+    for (Slice slice : collection.getSlices()) {
+      for (Replica replica : slice.getReplicas()) {
+        String coreUrl = replica.getCoreUrl();
+        // It seems replica reports its core URL with a trailing slash while shard
+        // info returned from the query doesn't. Oh well. We will include both, just in case
+        replicaTypeMap.put(coreUrl, replica.getType().toString());
+        if (coreUrl.endsWith("/")) {
+          replicaTypeMap.put(coreUrl.substring(0, coreUrl.length() - 1), replica.getType().toString());
+        }else {
+          replicaTypeMap.put(coreUrl + "/", replica.getType().toString());
+        }
+      }
+    }
+    return replicaTypeMap;
+  }
 }

@@ -17,15 +17,15 @@
 package org.apache.solr.search;
 
 import org.apache.solr.core.SolrInfoBean;
-import org.apache.solr.metrics.SolrMetricProducer;
 
 import java.util.Map;
+import java.util.function.Function;
 
 
 /**
  * Primary API for dealing with Solr's internal caches.
  */
-public interface SolrCache<K,V> extends SolrInfoBean, SolrMetricProducer {
+public interface SolrCache<K,V> extends SolrInfoBean {
 
   String HIT_RATIO_PARAM = "hitratio";
   String HITS_PARAM = "hits";
@@ -94,6 +94,19 @@ public interface SolrCache<K,V> extends SolrInfoBean, SolrMetricProducer {
   /** :TODO: copy from Map */
   public V get(K key);
 
+  public V remove(K key);
+
+  /**
+   * Get an existing element or atomically compute it if missing.
+   * @param key key
+   * @param mappingFunction function to compute the element. If the function returns a null
+   *                        result the cache mapping will not be created. NOTE: this function
+   *                        must NOT attempt to modify any mappings in the cache.
+   * @return existing or newly computed value, null if there was no existing value and
+   * it was not possible to compute a new value (in which case the new mapping won't be created).
+   */
+  public V computeIfAbsent(K key, Function<? super K, ? extends V> mappingFunction);
+
   /** :TODO: copy from Map */
   public void clear();
 
@@ -138,7 +151,7 @@ public interface SolrCache<K,V> extends SolrInfoBean, SolrMetricProducer {
 
   /** Frees any non-memory resources */
   default void close() throws Exception {
-    SolrMetricProducer.super.close();
+    SolrInfoBean.super.close();
   }
 
   /** Returns maximum size limit (number of items) if set and supported, -1 otherwise. */

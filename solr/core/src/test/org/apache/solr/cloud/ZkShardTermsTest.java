@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.cloud.ShardTerms;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TimeOut;
@@ -131,7 +132,7 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
 
   @Test
   public void testCoreRemovalWhileRecovering() {
-    String collection = "recoveringFlag";
+    String collection = "recoveringFlagRemoval";
     try (ZkShardTerms zkShardTerms = new ZkShardTerms(collection, "shard1", cluster.getZkClient())) {
       // List all possible orders of ensureTermIsHigher, startRecovering, doneRecovering
       zkShardTerms.registerTerm("replica1_rem");
@@ -267,7 +268,7 @@ public class ZkShardTermsTest extends SolrCloudTestCase {
   public void testEnsureTermsIsHigher() {
     Map<String, Long> map = new HashMap<>();
     map.put("leader", 0L);
-    ZkShardTerms.Terms terms = new ZkShardTerms.Terms(map, 0);
+    ShardTerms terms = new ShardTerms(map, 0);
     terms = terms.increaseTerms("leader", Collections.singleton("replica"));
     assertEquals(1L, terms.getTerm("leader").longValue());
   }

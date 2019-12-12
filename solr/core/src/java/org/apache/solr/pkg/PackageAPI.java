@@ -18,6 +18,7 @@
 package org.apache.solr.pkg;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -26,7 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.solr.api.Command;
 import org.apache.solr.api.EndPoint;
@@ -34,8 +34,8 @@ import org.apache.solr.api.PayloadObj;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.request.beans.Package;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.annotation.JsonProperty;
 import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.common.util.CommandOperation;
 import org.apache.solr.common.util.ReflectMapWriter;
@@ -44,6 +44,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.util.SolrJacksonAnnotationInspector;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
@@ -55,13 +56,16 @@ import static org.apache.solr.common.cloud.ZkStateReader.SOLR_PKGS_PATH;
 import static org.apache.solr.security.PermissionNameProvider.Name.PACKAGE_EDIT_PERM;
 import static org.apache.solr.security.PermissionNameProvider.Name.PACKAGE_READ_PERM;
 
+/**This implements the public end points (/api/cluster/package) of package API.
+ *
+ */
 public class PackageAPI {
   public static final String PACKAGES = "packages";
   public final boolean enablePackages = Boolean.parseBoolean(System.getProperty("enable.packages", "false"));
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   final CoreContainer coreContainer;
-  private ObjectMapper mapper = new ObjectMapper();
+  private final ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
   private final PackageLoader packageLoader;
   Packages pkgs;
 
@@ -73,6 +77,12 @@ public class PackageAPI {
     this.packageLoader = loader;
     pkgs = new Packages();
     SolrZkClient zkClient = coreContainer.getZkController().getZkClient();
+    try {
+      pkgs = readPkgsFromZk(null, null);
+    } catch (KeeperException |InterruptedException e ) {
+      pkgs = new Packages();
+      //ignore
+    }
     try {
       registerListener(zkClient);
     } catch (KeeperException | InterruptedException e) {
@@ -124,7 +134,7 @@ public class PackageAPI {
     if (data == null || stat == null) {
       stat = new Stat();
       data = coreContainer.getZkController().getZkClient()
-          .getData(ZkStateReader.CLUSTER_PROPS, null, stat, true);
+          .getData(SOLR_PKGS_PATH, null, stat, true);
 
     }
     Packages packages = null;
@@ -170,14 +180,21 @@ public class PackageAPI {
     @JsonProperty
     public List<String> files;
 
+    @JsonProperty
+    public String manifest;
+
+    @JsonProperty
+    public String manifestSHA512;
+
     public PkgVersion() {
     }
 
     public PkgVersion(Package.AddVersion addVersion) {
       this.version = addVersion.version;
       this.files = addVersion.files;
+      this.manifest = addVersion.manifest;
+      this.manifestSHA512 = addVersion.manifestSHA512;
     }
-
 
     @Override
     public boolean equals(Object obj) {
@@ -188,6 +205,15 @@ public class PackageAPI {
 
       }
       return false;
+    }
+
+    @Override
+    public String toString() {
+      try {
+        return Utils.writeJson(this, new StringWriter(), false).toString() ;
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
     }
   }
 
@@ -209,7 +235,8 @@ public class PackageAPI {
         payload.addError("No such package: " + p);
         return;
       }
-
+      //first refresh my own
+      packageLoader.notifyListeners(p);
       for (String s : coreContainer.getPackageStoreAPI().shuffledNodes()) {
         Utils.executeGET(coreContainer.getUpdateShardHandler().getDefaultHttpClient(),
             coreContainer.getZkController().zkStateReader.getBaseUrlForNodeName(s).replace("/solr", "/api") + "/cluster/package?wt=javabin&omitHeader=true&refreshPackage=" + p,
@@ -242,7 +269,17 @@ public class PackageAPI {
             log.error("Error deserializing packages.json", e);
             packages = new Packages();
           }
-          packages.packages.computeIfAbsent(add.pkg, Utils.NEW_ARRAYLIST_FUN).add(new PkgVersion(add));
+          List list = packages.packages.computeIfAbsent(add.pkg, Utils.NEW_ARRAYLIST_FUN);
+          for (Object o : list) {
+            if (o instanceof PkgVersion) {
+              PkgVersion version = (PkgVersion) o;
+              if (Objects.equals(version.version, add.version)) {
+                payload.addError("Version '" + add.version + "' exists already");
+                return null;
+              }
+            }
+          }
+          list.add(new PkgVersion(add));
           packages.znodeVersion = stat.getVersion() + 1;
           finalState[0] = packages;
           return Utils.toJSON(packages);

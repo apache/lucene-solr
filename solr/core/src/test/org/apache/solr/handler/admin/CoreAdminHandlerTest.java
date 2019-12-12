@@ -346,7 +346,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
         runner.stop();
       }
     });
-    assertTrue(rse.getMessage().contains("Can not find: /solr/corex/select"));
+    assertTrue(rse.getMessage(), rse.getMessage().contains("Problem accessing /solr/corex/select"));
   }
   
   @Test

@@ -449,13 +449,18 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       }
     };
 
-    solrMetricsContext.gauge(null, bufferedOpsGauge, true, "ops", scope, "buffered");
-    solrMetricsContext.gauge(null, () -> logs.size(), true, "logs", scope, "replay", "remaining");
-    solrMetricsContext.gauge(null, () -> getTotalLogsSize(), true, "bytes", scope, "replay", "remaining");
-    applyingBufferedOpsMeter = solrMetricsContext.meter(null, "ops", scope, "applyingBuffered");
-    replayOpsMeter = solrMetricsContext.meter(null, "ops", scope, "replay");
-    copyOverOldUpdatesMeter = solrMetricsContext.meter(null, "ops", scope, "copyOverOldUpdates");
-    solrMetricsContext.gauge(null, () -> state.getValue(), true, "state", scope);
+    solrMetricsContext.gauge(bufferedOpsGauge, true, "ops", scope, "buffered");
+    solrMetricsContext.gauge(() -> logs.size(), true, "logs", scope, "replay", "remaining");
+    solrMetricsContext.gauge(() -> getTotalLogsSize(), true, "bytes", scope, "replay", "remaining");
+    applyingBufferedOpsMeter = solrMetricsContext.meter("ops", scope, "applyingBuffered");
+    replayOpsMeter = solrMetricsContext.meter("ops", scope, "replay");
+    copyOverOldUpdatesMeter = solrMetricsContext.meter("ops", scope, "copyOverOldUpdates");
+    solrMetricsContext.gauge(() -> state.getValue(), true, "state", scope);
+  }
+
+  @Override
+  public SolrMetricsContext getSolrMetricsContext() {
+    return solrMetricsContext;
   }
 
   /**

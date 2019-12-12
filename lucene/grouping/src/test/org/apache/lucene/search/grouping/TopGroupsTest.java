@@ -21,16 +21,12 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TotalHits;
 import org.apache.lucene.util.LuceneTestCase;
 
-import org.junit.Ignore;
-
 public class TopGroupsTest extends LuceneTestCase {
 
-  @Ignore // https://issues.apache.org/jira/browse/LUCENE-8996
   public void testAllGroupsEmptyInSecondPass() {
     narrativeMergeTestImplementation(false, false, false, false);
   }
 
-  @Ignore // https://issues.apache.org/jira/browse/LUCENE-8996
   public void testSomeGroupsEmptyInSecondPass() {
     narrativeMergeTestImplementation(false, false, false, true);
     narrativeMergeTestImplementation(false, false, true, false);
@@ -166,13 +162,13 @@ public class TopGroupsTest extends LuceneTestCase {
     {
       assertEquals(blueGroupValue, mergedTopGroups.groups[0].groupValue);
       final float expectedBlueMaxScore =
-          (haveBlueWhale ? blueWhaleScore : (haveBlueDragonfly ? blueDragonflyScore : Float.MIN_VALUE));
+          (haveBlueWhale ? blueWhaleScore : (haveBlueDragonfly ? blueDragonflyScore : Float.NaN));
       checkMaxScore(expectedBlueMaxScore, mergedTopGroups.groups[0].maxScore);
     }
     {
       assertEquals(redGroupValue, mergedTopGroups.groups[1].groupValue);
       final float expectedRedMaxScore =
-          (haveRedSquirrel ? redSquirrelScore : (haveRedAnt ? redAntScore : Float.MIN_VALUE));
+          (haveRedSquirrel ? redSquirrelScore : (haveRedAnt ? redAntScore : Float.NaN));
       checkMaxScore(expectedRedMaxScore, mergedTopGroups.groups[1].maxScore);
     }
 
@@ -181,7 +177,7 @@ public class TopGroupsTest extends LuceneTestCase {
             : (haveRedSquirrel ? redSquirrelScore
                 : (haveBlueDragonfly ? blueDragonflyScore
                     : (haveRedAnt ? redAntScore
-                        : Float.MIN_VALUE))));
+                        : Float.NaN))));
     checkMaxScore(expectedMaxScore, mergedTopGroups.maxScore);
   }
 

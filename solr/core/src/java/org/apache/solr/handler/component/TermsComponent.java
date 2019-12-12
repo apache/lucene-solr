@@ -96,7 +96,7 @@ public class TermsComponent extends SearchComponent {
         (String) args.get(HttpShardHandlerFactory.INIT_SHARDS_WHITELIST), 
         !HttpShardHandlerFactory.doGetDisableShardsWhitelist());
   }
-  
+
   @Override
   public void prepare(ResponseBuilder rb) throws IOException {
     SolrParams params = rb.req.getParams();

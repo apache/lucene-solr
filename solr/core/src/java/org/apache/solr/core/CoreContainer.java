@@ -40,6 +40,7 @@ import java.util.concurrent.Future;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.auth.AuthSchemeProvider;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.config.Lookup;
@@ -206,7 +207,7 @@ public class CoreContainer {
 
   private volatile SecurityPluginHolder<AuthenticationPlugin> authenticationPlugin;
 
-  private SecurityPluginHolder<AuditLoggerPlugin> auditloggerPlugin;
+  private volatile SecurityPluginHolder<AuditLoggerPlugin> auditloggerPlugin;
 
   private volatile BackupRepositoryFactory backupRepoFactory;
 
@@ -657,6 +658,7 @@ public class CoreContainer {
 
     securityConfHandler = isZooKeeperAware() ? new SecurityConfHandlerZk(this) : new SecurityConfHandlerLocal(this);
     reloadSecurityProperties();
+    warnUsersOfInsecureSettings();
     this.backupRepoFactory = new BackupRepositoryFactory(cfg.getBackupRepositoryPlugins());
 
     createHandler(ZK_PATH, ZookeeperInfoHandler.class.getName(), ZookeeperInfoHandler.class);
@@ -694,20 +696,20 @@ public class CoreContainer {
 
     // initialize gauges for reporting the number of cores and disk total/free
 
-    solrMetricsContext.gauge(null, () -> solrCores.getCores().size(),
+    solrMetricsContext.gauge(() -> solrCores.getCores().size(),
         true, "loaded", SolrInfoBean.Category.CONTAINER.toString(), "cores");
-    solrMetricsContext.gauge(null, () -> solrCores.getLoadedCoreNames().size() - solrCores.getCores().size(),
+    solrMetricsContext.gauge(() -> solrCores.getLoadedCoreNames().size() - solrCores.getCores().size(),
         true, "lazy", SolrInfoBean.Category.CONTAINER.toString(), "cores");
-    solrMetricsContext.gauge(null, () -> solrCores.getAllCoreNames().size() - solrCores.getLoadedCoreNames().size(),
+    solrMetricsContext.gauge(() -> solrCores.getAllCoreNames().size() - solrCores.getLoadedCoreNames().size(),
         true, "unloaded", SolrInfoBean.Category.CONTAINER.toString(), "cores");
     Path dataHome = cfg.getSolrDataHome() != null ? cfg.getSolrDataHome() : cfg.getCoreRootDirectory();
-    solrMetricsContext.gauge(null, () -> dataHome.toFile().getTotalSpace(),
+    solrMetricsContext.gauge(() -> dataHome.toFile().getTotalSpace(),
         true, "totalSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs");
-    solrMetricsContext.gauge(null, () -> dataHome.toFile().getUsableSpace(),
+    solrMetricsContext.gauge(() -> dataHome.toFile().getUsableSpace(),
         true, "usableSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs");
-    solrMetricsContext.gauge(null, () -> dataHome.toAbsolutePath().toString(),
+    solrMetricsContext.gauge(() -> dataHome.toAbsolutePath().toString(),
         true, "path", SolrInfoBean.Category.CONTAINER.toString(), "fs");
-    solrMetricsContext.gauge(null, () -> {
+    solrMetricsContext.gauge(() -> {
           try {
             return org.apache.lucene.util.IOUtils.spins(dataHome.toAbsolutePath());
           } catch (IOException e) {
@@ -716,13 +718,13 @@ public class CoreContainer {
           }
         },
         true, "spins", SolrInfoBean.Category.CONTAINER.toString(), "fs");
-    solrMetricsContext.gauge(null, () -> cfg.getCoreRootDirectory().toFile().getTotalSpace(),
+    solrMetricsContext.gauge(() -> cfg.getCoreRootDirectory().toFile().getTotalSpace(),
         true, "totalSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
-    solrMetricsContext.gauge(null, () -> cfg.getCoreRootDirectory().toFile().getUsableSpace(),
+    solrMetricsContext.gauge(() -> cfg.getCoreRootDirectory().toFile().getUsableSpace(),
         true, "usableSpace", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
-    solrMetricsContext.gauge(null, () -> cfg.getCoreRootDirectory().toAbsolutePath().toString(),
+    solrMetricsContext.gauge(() -> cfg.getCoreRootDirectory().toAbsolutePath().toString(),
         true, "path", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
-    solrMetricsContext.gauge(null, () -> {
+    solrMetricsContext.gauge(() -> {
           try {
             return org.apache.lucene.util.IOUtils.spins(cfg.getCoreRootDirectory().toAbsolutePath());
           } catch (IOException e) {
@@ -732,9 +734,9 @@ public class CoreContainer {
         },
         true, "spins", SolrInfoBean.Category.CONTAINER.toString(), "fs", "coreRoot");
     // add version information
-    solrMetricsContext.gauge(null, () -> this.getClass().getPackage().getSpecificationVersion(),
+    solrMetricsContext.gauge(() -> this.getClass().getPackage().getSpecificationVersion(),
         true, "specification", SolrInfoBean.Category.CONTAINER.toString(), "version");
-    solrMetricsContext.gauge(null, () -> this.getClass().getPackage().getImplementationVersion(),
+    solrMetricsContext.gauge(() -> this.getClass().getPackage().getImplementationVersion(),
         true, "implementation", SolrInfoBean.Category.CONTAINER.toString(), "version");
 
     SolrFieldCacheBean fieldCacheBean = new SolrFieldCacheBean();
@@ -895,6 +897,21 @@ public class CoreContainer {
     initializeAuthorizationPlugin((Map<String, Object>) securityConfig.getData().get("authorization"));
     initializeAuthenticationPlugin((Map<String, Object>) securityConfig.getData().get("authentication"));
     initializeAuditloggerPlugin((Map<String, Object>) securityConfig.getData().get("auditlogging"));
+  }
+
+  private void warnUsersOfInsecureSettings() {
+    if (authenticationPlugin == null || authorizationPlugin == null) {
+      log.warn("Not all security plugins configured!  authentication={} authorization={}.  Solr is only as secure as " +
+          "you make it. Consider configuring authentication/authorization before exposing Solr to users internal or " +
+          "external.  See https://s.apache.org/solrsecurity for more info",
+          (authenticationPlugin != null) ? "enabled" : "disabled",
+          (authorizationPlugin != null) ? "enabled" : "disabled");
+    }
+
+    if (authenticationPlugin !=null && StringUtils.isNotEmpty(System.getProperty("solr.jetty.https.port"))) {
+      log.warn("Solr authentication is enabled, but SSL is off.  Consider enabling SSL to protect user credentials and " +
+          "data with encryption.");
+    }
   }
 
   private static void checkForDuplicateCoreNames(List<CoreDescriptor> cds) {

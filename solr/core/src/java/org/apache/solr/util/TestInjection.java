@@ -126,6 +126,8 @@ public class TestInjection {
 
   public volatile static CountDownLatch splitLatch = null;
 
+  public volatile static CountDownLatch directUpdateLatch = null;
+
   public volatile static CountDownLatch reindexLatch = null;
 
   public volatile static String reindexFailure = null;
@@ -164,6 +166,7 @@ public class TestInjection {
     splitFailureBeforeReplicaCreation = null;
     splitFailureAfterReplicaCreation = null;
     splitLatch = null;
+    directUpdateLatch = null;
     reindexLatch = null;
     reindexFailure = null;
     prepRecoveryOpPauseForever = null;
@@ -428,6 +431,18 @@ public class TestInjection {
       try {
         log.info("Waiting in ReplicaMutator for up to 60s");
         return splitLatch.await(60, TimeUnit.SECONDS);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+    }
+    return true;
+  }
+
+  public static boolean injectDirectUpdateLatch() {
+    if (directUpdateLatch != null) {
+      try {
+        log.info("Waiting in DirectUpdateHandler2 for up to 60s");
+        return directUpdateLatch.await(60, TimeUnit.SECONDS);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
       }

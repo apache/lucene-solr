@@ -292,11 +292,14 @@ public abstract class MultiTermQuery extends Query {
    */
   protected abstract TermsEnum getTermsEnum(Terms terms, AttributeSource atts) throws IOException;
 
-  /** Convenience method, if no attributes are needed:
-   * This simply passes empty attributes and is equal to:
-   * <code>getTermsEnum(terms, new AttributeSource())</code>
+  /**
+   * Constructs an enumeration that expands the pattern term.
+   * This method should only be called if the field exists (ie,
+   * implementations can assume the field does exist).
+   * This method never returns null.
+   * The returned TermsEnum is positioned to the first matching term.
    */
-  protected final TermsEnum getTermsEnum(Terms terms) throws IOException {
+  public final TermsEnum getTermsEnum(Terms terms) throws IOException {
     return getTermsEnum(terms, new AttributeSource());
   }
 

@@ -193,7 +193,7 @@ class SimpleGeoJSONPolygonParser {
           // OK, we recurse
         } else {
           upto = uptoStart;
-          throw newParseException("can only handle type FeatureCollection (if it has a single polygon geometry), Feature, Polygon or MutiPolygon, but got " + type);
+          throw newParseException("can only handle type FeatureCollection (if it has a single polygon geometry), Feature, Polygon or MultiPolygon, but got " + type);
         }
       } else if (key.equals("coordinates") && isValidGeometryPath(path)) {
         if (o instanceof List == false) {

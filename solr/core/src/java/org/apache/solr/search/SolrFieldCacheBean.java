@@ -16,12 +16,8 @@
  */
 package org.apache.solr.search;
 
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.uninverting.UninvertingReader;
 
@@ -29,13 +25,12 @@ import org.apache.solr.uninverting.UninvertingReader;
  * A SolrInfoBean that provides introspection of the Solr FieldCache
  *
  */
-public class SolrFieldCacheBean implements SolrInfoBean, SolrMetricProducer {
+public class SolrFieldCacheBean implements SolrInfoBean {
 
   private boolean disableEntryList = Boolean.getBoolean("disableSolrFieldCacheMBeanEntryList");
   private boolean disableJmxEntryList = Boolean.getBoolean("disableSolrFieldCacheMBeanEntryListJmx");
 
   private SolrMetricsContext solrMetricsContext;
-  private Set<String> metricNames = ConcurrentHashMap.newKeySet();
 
   @Override
   public String getName() { return this.getClass().getName(); }
@@ -45,10 +40,6 @@ public class SolrFieldCacheBean implements SolrInfoBean, SolrMetricProducer {
   }
   @Override
   public Category getCategory() { return Category.CACHE; }
-  @Override
-  public Set<String> getMetricNames() {
-    return metricNames;
-  }
 
   @Override
   public SolrMetricsContext getSolrMetricsContext() {
@@ -72,6 +63,6 @@ public class SolrFieldCacheBean implements SolrInfoBean, SolrMetricProducer {
         map.put("entries_count", UninvertingReader.getUninvertedStatsSize());
       }
     });
-    solrMetricsContext.gauge(this, metricsMap, true, "fieldCache", Category.CACHE.toString(), scope);
+    solrMetricsContext.gauge(metricsMap, true, "fieldCache", Category.CACHE.toString(), scope);
   }
 }

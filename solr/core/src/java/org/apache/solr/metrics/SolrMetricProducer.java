@@ -51,14 +51,12 @@ public interface SolrMetricProducer extends AutoCloseable {
   void initializeMetrics(SolrMetricsContext parentContext, String scope);
 
   /**
-   * Implementations should override this method to return the context used in
+   * Implementations should return the context used in
    * {@link #initializeMetrics(SolrMetricsContext, String)} to ensure proper cleanup of metrics
-   * at the end of the life-cycle of this component. This should be the child context if one was created.
-   * <p>The default implementation returns null, which disables unregistration of metrics on {@link #close()}.</p>
+   * at the end of the life-cycle of this component. This should be the child context if one was created,
+   * or null if the parent context was used.
    */
-  default SolrMetricsContext getSolrMetricsContext() {
-    return null;
-  }
+  SolrMetricsContext getSolrMetricsContext();
 
   /**
    * Implementations should always call <code>SolrMetricProducer.super.close()</code> to ensure that

@@ -678,11 +678,11 @@ public class SolrPluginUtils {
       spec = spaceAroundLessThanPattern.matcher(spec).replaceAll("<");
       for (String s : spacePattern.split(spec)) {
         String[] parts = lessThanPattern.split(s,0);
-        if (parts.length == 0) {
+        if (parts.length < 2) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "Operator < must be followed by a number");
+              "Invalid 'mm' spec: '" + s + "'. Expecting values before and after '<'");
         }
-        int upperBound = checkedParseInt(parts[0], "Operator < must be followed by a number");
+        int upperBound = checkedParseInt(parts[0], "Invalid 'mm' spec. Expecting an integer.");
         if (optionalClauseCount <= upperBound) {
           return result;
         } else {
@@ -699,11 +699,11 @@ public class SolrPluginUtils {
       /* percentage - assume the % was the last char.  If not, let Integer.parseInt fail. */
       spec = spec.substring(0,spec.length()-1);
       int percent = checkedParseInt(spec,
-          "% must be preceded by a number and not combined with other operators");
+          "Invalid 'mm' spec. Expecting an integer.");
       float calc = (result * percent) * (1/100f);
       result = calc < 0 ? result + (int)calc : (int)calc;
     } else {
-      int calc = checkedParseInt(spec, "Input should be a number");
+      int calc = checkedParseInt(spec, "Invalid 'mm' spec. Expecting an integer.");
       result = calc < 0 ? result + calc : calc;
     }
 

@@ -155,7 +155,7 @@ public class CustomTermsComponentTest extends ShardsWhitelistTest {
     // this case should fail
     findAndCheckTerms(cluster, collection,
         defaultHandlerName,
-        shards + ",http://[ff01::114]:33332", // ... with specified shards with one invalid
+        shards + ",http://" + DEAD_HOST_1, // ... with specified shards with one invalid
         (random().nextBoolean() ? null : f1), v1,
         (random().nextBoolean() ? null : f2), v2,
         "No live SolrServers available to handle this request");

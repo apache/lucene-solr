@@ -855,7 +855,7 @@ public class PackedInts {
       case PACKED_SINGLE_BLOCK:
         return new DirectPacked64SingleBlockReader(bitsPerValue, valueCount, in);
       default:
-        throw new AssertionError("Unknwown format: " + format);
+        throw new AssertionError("Unknown format: " + format);
     }
   }
 

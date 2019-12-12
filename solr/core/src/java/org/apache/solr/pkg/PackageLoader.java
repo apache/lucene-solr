@@ -53,7 +53,7 @@ public class PackageLoader implements Closeable {
   private final CoreContainer coreContainer;
   private final Map<String, Package> packageClassLoaders = new ConcurrentHashMap<>();
 
-  private PackageAPI.Packages myCopy;
+  private PackageAPI.Packages myCopy =  new PackageAPI.Packages();
 
   private PackageAPI packageAPI;
 
@@ -61,7 +61,7 @@ public class PackageLoader implements Closeable {
   public PackageLoader(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
     packageAPI = new PackageAPI(coreContainer, this);
-    myCopy = packageAPI.pkgs;
+    refreshPackageConf();
 
   }
 
@@ -94,7 +94,7 @@ public class PackageLoader implements Closeable {
       } else {
         Package p = packageClassLoaders.remove(e.getKey());
         if (p != null) {
-          //other classes are holding to a reference to this objecec
+          //other classes are holding to a reference to this object
           // they should know that this is removed
           p.markDeleted();
           closeWhileHandlingException(p);
@@ -104,6 +104,7 @@ public class PackageLoader implements Closeable {
     for (SolrCore core : coreContainer.getCores()) {
       core.getPackageListeners().packagesUpdated(updated);
     }
+    myCopy = packageAPI.pkgs;
   }
 
   public Map<String, List<PackageAPI.PkgVersion>> getModified(PackageAPI.Packages old, PackageAPI.Packages newPkgs) {
@@ -248,6 +249,8 @@ public class PackageLoader implements Closeable {
         this.version = v;
         List<Path> paths = new ArrayList<>();
         for (String file : version.files) {
+          //ensure that the files are downloaded and available
+          coreContainer.getPackageStoreAPI().getPackageStore().fetch(file,null);
           paths.add(coreContainer.getPackageStoreAPI().getPackageStore().getRealpath(file));
         }
 

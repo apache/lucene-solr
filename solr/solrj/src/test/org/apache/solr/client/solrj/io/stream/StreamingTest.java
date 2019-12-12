@@ -48,11 +48,13 @@ import org.apache.solr.client.solrj.io.stream.metrics.MinMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.SumMetric;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.routing.RequestReplicaListTransformerGenerator;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.ShardParams;
 import org.apache.solr.common.params.SolrParams;
 import org.junit.Assume;
 import org.junit.Before;
@@ -71,6 +73,7 @@ import org.junit.Test;
 public class StreamingTest extends SolrCloudTestCase {
 
 public static final String COLLECTIONORALIAS = "streams";
+public static final String MULTI_REPLICA_COLLECTIONORALIAS = "streams-multi-replica";
 
 private static final StreamFactory streamFactory = new StreamFactory()
     .withFunctionName("search", CloudSolrStream.class)
@@ -103,7 +106,8 @@ public static void configureCluster() throws Exception {
   } else {
     collection = COLLECTIONORALIAS;
   }
-  CollectionAdminRequest.createCollection(collection, "conf", numShards, 1).process(cluster.getSolrClient());
+  CollectionAdminRequest.createCollection(collection, "conf", numShards, 1)
+      .process(cluster.getSolrClient());
   cluster.waitForActiveCollection(collection, numShards, numShards);
   if (useAlias) {
     CollectionAdminRequest.createAlias(COLLECTIONORALIAS, collection).process(cluster.getSolrClient());
@@ -111,6 +115,20 @@ public static void configureCluster() throws Exception {
 
   zkHost = cluster.getZkServer().getZkAddress();
   streamFactory.withCollectionZkHost(COLLECTIONORALIAS, zkHost);
+
+  // Set up multi-replica collection
+  if (useAlias) {
+    collection = MULTI_REPLICA_COLLECTIONORALIAS + "_collection";
+  } else {
+    collection = MULTI_REPLICA_COLLECTIONORALIAS;
+  }
+  CollectionAdminRequest.createCollection(collection, "conf", numShards, 1, 1, 1)
+      .setMaxShardsPerNode(numShards * 3)
+      .process(cluster.getSolrClient());
+  cluster.waitForActiveCollection(collection, numShards, numShards * 3);
+  if (useAlias) {
+    CollectionAdminRequest.createAlias(MULTI_REPLICA_COLLECTIONORALIAS, collection).process(cluster.getSolrClient());
+  }
 }
 
 private static final String id = "id";
@@ -2554,6 +2572,43 @@ public void testParallelRankStream() throws Exception {
     }
 
   }
+
+  @Test
+  public void testTupleStreamGetShardsPreference() throws Exception {
+    StreamContext streamContext = new StreamContext();
+    streamContext.setSolrClientCache(new SolrClientCache());
+    streamContext.setRequestReplicaListTransformerGenerator(new RequestReplicaListTransformerGenerator(ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":TLOG", null, null, null));
+
+    streamContext.setRequestParams(mapParams(ShardParams.SHARDS_PREFERENCE, ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":nrt"));
+
+    try {
+      ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
+      List<String> strings = zkStateReader.aliasesManager.getAliases().resolveAliases(MULTI_REPLICA_COLLECTIONORALIAS);
+      String collName = strings.size() > 0 ? strings.get(0) : MULTI_REPLICA_COLLECTIONORALIAS;
+      Map<String, String> replicaTypeMap = mapReplicasToReplicaType(zkStateReader.getClusterState().getCollectionOrNull(collName));
+
+      // Test from extra params
+      SolrParams sParams = mapParams("q", "*:*", ShardParams.SHARDS_PREFERENCE, ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":pull");
+      testTupleStreamSorting(streamContext, sParams, "PULL", replicaTypeMap);
+
+      // Test defaults from streamContext.getParams()
+      testTupleStreamSorting(streamContext, new ModifiableSolrParams(), "NRT", replicaTypeMap);
+
+      // Test defaults from the RLTG
+      streamContext.setRequestParams(new ModifiableSolrParams());
+      testTupleStreamSorting(streamContext, new ModifiableSolrParams(), "TLOG", replicaTypeMap);
+    } finally {
+      streamContext.getSolrClientCache().close();
+    }
+  }
+
+  public void testTupleStreamSorting(StreamContext streamContext, SolrParams solrParams, String replicaType, Map<String, String> replicaTypeMap) throws Exception {
+    List<String> shards = TupleStream.getShards(cluster.getZkClient().getZkServerAddress(), MULTI_REPLICA_COLLECTIONORALIAS, streamContext, solrParams);
+    for (String shard : shards) {
+      assertEquals(shard, replicaType.toUpperCase(Locale.ROOT), replicaTypeMap.getOrDefault(shard, "").toUpperCase(Locale.ROOT));
+    }
+  }
+
   protected List<Tuple> getTuples(TupleStream tupleStream) throws IOException {
     tupleStream.open();
     List<Tuple> tuples = new ArrayList();

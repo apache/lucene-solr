@@ -95,7 +95,7 @@ public class QueryResponse extends SolrResponseBase
   
   // Debug Info
   private Map<String,Object> _debugMap = null;
-  private Map<String,String> _explainMap = null;
+  private Map<String,Object> _explainMap = null;
 
   // utility variable used for automatic binding -- it should not be serialized
   private transient final SolrClient solrClient;
@@ -239,9 +239,9 @@ public class QueryResponse extends SolrResponseBase
 
     // Parse out interesting bits from the debug info
     _explainMap = new HashMap<>();
-    NamedList<String> explain = (NamedList<String>)_debugMap.get( "explain" );
+    NamedList<Object> explain = (NamedList<Object>)_debugMap.get( "explain" );
     if( explain != null ) {
-      for( Map.Entry<String, String> info : explain ) {
+      for( Map.Entry<String, Object> info : explain ) {
         String key = info.getKey();
         _explainMap.put( key, info.getValue() );
       }
@@ -522,7 +522,7 @@ public class QueryResponse extends SolrResponseBase
     return _debugMap;
   }
 
-  public Map<String, String> getExplainMap() {
+  public Map<String, Object> getExplainMap() {
     return _explainMap;
   }
 
