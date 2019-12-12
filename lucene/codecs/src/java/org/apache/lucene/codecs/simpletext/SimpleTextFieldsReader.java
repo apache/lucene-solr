@@ -52,7 +52,7 @@ import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.StringHelper;
-import org.apache.lucene.util.fst.Builder;
+import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PairOutputs;
@@ -539,11 +539,11 @@ class SimpleTextFieldsReader extends FieldsProducer {
 
     private void loadTerms() throws IOException {
       PositiveIntOutputs posIntOutputs = PositiveIntOutputs.getSingleton();
-      final Builder<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>> b;
+      final FSTCompiler<PairOutputs.Pair<Long,PairOutputs.Pair<Long,Long>>> b;
       final PairOutputs<Long,Long> outputsInner = new PairOutputs<>(posIntOutputs, posIntOutputs);
       final PairOutputs<Long,PairOutputs.Pair<Long,Long>> outputs = new PairOutputs<>(posIntOutputs,
           outputsInner);
-      b = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
+      b = new FSTCompiler<>(FST.INPUT_TYPE.BYTE1, outputs);
       IndexInput in = SimpleTextFieldsReader.this.in.clone();
       in.seek(termsStart);
       final BytesRefBuilder lastTerm = new BytesRefBuilder();

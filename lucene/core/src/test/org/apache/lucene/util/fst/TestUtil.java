@@ -83,17 +83,17 @@ public class TestUtil extends LuceneTestCase {
 
   private FST<Object> buildFST(List<String> words, boolean allowArrayArcs, boolean allowDirectAddressing) throws Exception {
     final Outputs<Object> outputs = NoOutputs.getSingleton();
-    final Builder.Constructor<Object> c = Builder.construct(FST.INPUT_TYPE.BYTE1, outputs)
+    final FSTCompiler.Constructor<Object> builder = FSTCompiler.construct(FST.INPUT_TYPE.BYTE1, outputs)
         .allowFixedLengthArcs(allowArrayArcs);
     if (!allowDirectAddressing) {
-      c.directAddressingMaxOversizingFactor(-1f);
+      builder.directAddressingMaxOversizingFactor(-1f);
     }
-    final Builder<Object> b = c.create();
+    final FSTCompiler<Object> fstCompiler = builder.create();
 
     for (String word : words) {
-      b.add(Util.toIntsRef(new BytesRef(word), new IntsRefBuilder()), outputs.getNoOutput());
+      fstCompiler.add(Util.toIntsRef(new BytesRef(word), new IntsRefBuilder()), outputs.getNoOutput());
     }
-    return b.finish();
+    return fstCompiler.finish();
   }
 
   private List<String> createRandomDictionary(int width, int depth) {

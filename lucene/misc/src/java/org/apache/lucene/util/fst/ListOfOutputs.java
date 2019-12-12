@@ -30,7 +30,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  * more of its output values.  You can use this when a single
  * input may need to map to more than one output,
  * maintaining order: pass the same input with a different
- * output by calling {@link Builder#add(IntsRef,Object)} multiple
+ * output by calling {@link FSTCompiler#add(IntsRef,Object)} multiple
  * times.  The builder will then combine the outputs using
  * the {@link Outputs#merge(Object,Object)} method.
  *
@@ -41,7 +41,7 @@ import org.apache.lucene.util.RamUsageEstimator;
  * <p>NOTE: the only way to create multiple outputs is to
  * add the same input to the FST multiple times in a row.  This is
  * how the FST maps a single input to multiple outputs (e.g. you
- * cannot pass a List&lt;Object&gt; to {@link Builder#add}).  If
+ * cannot pass a List&lt;Object&gt; to {@link FSTCompiler#add}).  If
  * your outputs are longs, and you need at most 2, then use
  * {@link UpToTwoPositiveIntOutputs} instead since it stores
  * the outputs more compactly (by stealing a bit from each

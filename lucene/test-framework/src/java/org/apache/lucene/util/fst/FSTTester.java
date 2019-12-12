@@ -272,7 +272,7 @@ public class FSTTester<T> {
       System.out.println("\nTEST: prune1=" + prune1 + " prune2=" + prune2);
     }
 
-    final Builder<T> builder = Builder.construct(inputMode == 0 ? FST.INPUT_TYPE.BYTE1 : FST.INPUT_TYPE.BYTE4, outputs)
+    final FSTCompiler<T> fstCompiler = FSTCompiler.construct(inputMode == 0 ? FST.INPUT_TYPE.BYTE1 : FST.INPUT_TYPE.BYTE4, outputs)
         .minSuffixCount1(prune1)
         .minSuffixCount2(prune2)
         .shouldShareSuffix(prune1==0 && prune2==0)
@@ -283,15 +283,15 @@ public class FSTTester<T> {
     for(InputOutput<T> pair : pairs) {
       if (pair.output instanceof List) {
         @SuppressWarnings("unchecked") List<Long> longValues = (List<Long>) pair.output;
-        @SuppressWarnings("unchecked") final Builder<Object> builderObject = (Builder<Object>) builder;
+        @SuppressWarnings("unchecked") final FSTCompiler<Object> fstCompilerObject = (FSTCompiler<Object>) fstCompiler;
         for(Long value : longValues) {
-          builderObject.add(pair.input, value);
+          fstCompilerObject.add(pair.input, value);
         }
       } else {
-        builder.add(pair.input, pair.output);
+        fstCompiler.add(pair.input, pair.output);
       }
     }
-    FST<T> fst = builder.finish();
+    FST<T> fst = fstCompiler.finish();
 
     if (random.nextBoolean() && fst != null) {
       IOContext context = LuceneTestCase.newIOContext(random);
@@ -319,7 +319,7 @@ public class FSTTester<T> {
       if (fst == null) {
         System.out.println("  fst has 0 nodes (fully pruned)");
       } else {
-        System.out.println("  fst has " + builder.getNodeCount() + " nodes and " + builder.getArcCount() + " arcs");
+        System.out.println("  fst has " + fstCompiler.getNodeCount() + " nodes and " + fstCompiler.getArcCount() + " arcs");
       }
     }
 
@@ -329,8 +329,8 @@ public class FSTTester<T> {
       verifyPruned(inputMode, fst, prune1, prune2);
     }
 
-    nodeCount = builder.getNodeCount();
-    arcCount = builder.getArcCount();
+    nodeCount = fstCompiler.getNodeCount();
+    arcCount = fstCompiler.getArcCount();
 
     return fst;
   }

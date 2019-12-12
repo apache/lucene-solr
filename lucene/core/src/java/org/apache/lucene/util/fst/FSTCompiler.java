@@ -49,7 +49,7 @@ import org.apache.lucene.util.fst.FST.INPUT_TYPE; // javadoc
  * @lucene.experimental
  */
 
-public class Builder<T> {
+public class FSTCompiler<T> {
 
   static final float DIRECT_ADDRESSING_MAX_OVERSIZING_FACTOR = 1f;
 
@@ -105,7 +105,7 @@ public class Builder<T> {
    * Instantiates an FST/FSA builder with default settings and pruning options turned off.
    * For more tuning and tweaking, see {@link #construct(INPUT_TYPE, Outputs)}.
    */
-  public Builder(FST.INPUT_TYPE inputType, Outputs<T> outputs) {
+  public FSTCompiler(FST.INPUT_TYPE inputType, Outputs<T> outputs) {
     this(inputType, 0, 0, true, true, Integer.MAX_VALUE, outputs, true, 15, 1f);
   }
 
@@ -113,9 +113,9 @@ public class Builder<T> {
    * @deprecated Use the fluent {@link Constructor} instead.
    * @see #construct(INPUT_TYPE, Outputs)
    */
-  public Builder(FST.INPUT_TYPE inputType, int minSuffixCount1, int minSuffixCount2, boolean doShareSuffix,
-                 boolean doShareNonSingletonNodes, int shareMaxTailLength, Outputs<T> outputs,
-                 boolean allowFixedLengthArcs, int bytesPageBits) {
+  public FSTCompiler(FST.INPUT_TYPE inputType, int minSuffixCount1, int minSuffixCount2, boolean doShareSuffix,
+                     boolean doShareNonSingletonNodes, int shareMaxTailLength, Outputs<T> outputs,
+                     boolean allowFixedLengthArcs, int bytesPageBits) {
     this(inputType, minSuffixCount1, minSuffixCount2, doShareSuffix, doShareNonSingletonNodes, shareMaxTailLength,
         outputs, allowFixedLengthArcs, bytesPageBits, 1f);
   }
@@ -128,9 +128,9 @@ public class Builder<T> {
     return new Constructor<>(inputType, outputs);
   }
 
-  private Builder(FST.INPUT_TYPE inputType, int minSuffixCount1, int minSuffixCount2, boolean doShareSuffix,
-                 boolean doShareNonSingletonNodes, int shareMaxTailLength, Outputs<T> outputs,
-                 boolean allowFixedLengthArcs, int bytesPageBits, float directAddressingMaxOversizingFactor) {
+  private FSTCompiler(FST.INPUT_TYPE inputType, int minSuffixCount1, int minSuffixCount2, boolean doShareSuffix,
+                      boolean doShareNonSingletonNodes, int shareMaxTailLength, Outputs<T> outputs,
+                      boolean allowFixedLengthArcs, int bytesPageBits, float directAddressingMaxOversizingFactor) {
     this.minSuffixCount1 = minSuffixCount1;
     this.minSuffixCount2 = minSuffixCount2;
     this.doShareNonSingletonNodes = doShareNonSingletonNodes;
@@ -156,7 +156,7 @@ public class Builder<T> {
   }
 
   /**
-   * Fluent-style constructor for FST {@link Builder}.
+   * Fluent-style constructor for FST {@link FSTCompiler}.
    * <p>
    * Creates an FST/FSA builder with all the possible tuning and construction tweaks.
    * Read parameter documentation carefully.
@@ -285,13 +285,13 @@ public class Builder<T> {
     }
 
     /**
-     * Creates a new {@link Builder}.
+     * Creates a new {@link FSTCompiler}.
      */
-    public Builder<T> create() {
-      Builder<T> builder =  new Builder<>(inputType, minSuffixCount1, minSuffixCount2, shouldShareSuffix,
+    public FSTCompiler<T> create() {
+      FSTCompiler<T> fstCompiler =  new FSTCompiler<>(inputType, minSuffixCount1, minSuffixCount2, shouldShareSuffix,
           shouldShareNonSingletonNodes, shareMaxTailLength, outputs, allowFixedLengthArcs, bytesPageBits,
           directAddressingMaxOversizingFactor);
-      return builder;
+      return fstCompiler;
     }
   }
 
@@ -658,7 +658,7 @@ public class Builder<T> {
 
   /** Expert: holds a pending (seen but not yet serialized) Node. */
   public static final class UnCompiledNode<T> implements Node {
-    final Builder<T> owner;
+    final FSTCompiler<T> owner;
     public int numArcs;
     public Arc<T>[] arcs;
     // TODO: instead of recording isFinal/output on the
@@ -679,7 +679,7 @@ public class Builder<T> {
      *          fanout size).
      */
     @SuppressWarnings({"rawtypes","unchecked"})
-    public UnCompiledNode(Builder<T> owner, int depth) {
+    public UnCompiledNode(FSTCompiler<T> owner, int depth) {
       this.owner = owner;
       arcs = (Arc<T>[]) new Arc[1];
       arcs[0] = new Arc<>();

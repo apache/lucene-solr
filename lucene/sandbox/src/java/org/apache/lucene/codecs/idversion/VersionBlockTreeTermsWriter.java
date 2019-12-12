@@ -43,7 +43,7 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.StringHelper;
-import org.apache.lucene.util.fst.Builder;
+import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.FST;
@@ -350,7 +350,7 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
         }
       }
 
-      final Builder<Pair<BytesRef,Long>> indexBuilder = Builder.construct(FST.INPUT_TYPE.BYTE1, FST_OUTPUTS)
+      final FSTCompiler<Pair<BytesRef,Long>> fstCompiler = FSTCompiler.construct(FST.INPUT_TYPE.BYTE1, FST_OUTPUTS)
           .shouldShareNonSingletonNodes(false).create();
       //if (DEBUG) {
       //  System.out.println("  compile index for prefix=" + prefix);
@@ -358,20 +358,20 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
       //indexBuilder.DEBUG = false;
       final byte[] bytes = scratchBytes.toArrayCopy();
       assert bytes.length > 0;
-      indexBuilder.add(Util.toIntsRef(prefix, scratchIntsRef), FST_OUTPUTS.newPair(new BytesRef(bytes, 0, bytes.length), Long.MAX_VALUE - maxVersionIndex));
+      fstCompiler.add(Util.toIntsRef(prefix, scratchIntsRef), FST_OUTPUTS.newPair(new BytesRef(bytes, 0, bytes.length), Long.MAX_VALUE - maxVersionIndex));
       scratchBytes.reset();
 
       // Copy over index for all sub-blocks
       for(PendingBlock block : blocks) {
         if (block.subIndices != null) {
           for(FST<Pair<BytesRef,Long>> subIndex : block.subIndices) {
-            append(indexBuilder, subIndex, scratchIntsRef);
+            append(fstCompiler, subIndex, scratchIntsRef);
           }
           block.subIndices = null;
         }
       }
 
-      index = indexBuilder.finish();
+      index = fstCompiler.finish();
 
       assert subIndices == null;
 
@@ -386,14 +386,14 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
     // TODO: maybe we could add bulk-add method to
     // Builder?  Takes FST and unions it w/ current
     // FST.
-    private void append(Builder<Pair<BytesRef,Long>> builder, FST<Pair<BytesRef,Long>> subIndex, IntsRefBuilder scratchIntsRef) throws IOException {
+    private void append(FSTCompiler<Pair<BytesRef,Long>> fstCompiler, FST<Pair<BytesRef,Long>> subIndex, IntsRefBuilder scratchIntsRef) throws IOException {
       final BytesRefFSTEnum<Pair<BytesRef,Long>> subIndexEnum = new BytesRefFSTEnum<>(subIndex);
       BytesRefFSTEnum.InputOutput<Pair<BytesRef,Long>> indexEnt;
       while((indexEnt = subIndexEnum.next()) != null) {
         //if (DEBUG) {
         //  System.out.println("      add sub=" + indexEnt.input + " " + indexEnt.input + " output=" + indexEnt.output);
         //}
-        builder.add(Util.toIntsRef(indexEnt.input, scratchIntsRef), indexEnt.output);
+        fstCompiler.add(Util.toIntsRef(indexEnt.input, scratchIntsRef), indexEnt.output);
       }
     }
   }
