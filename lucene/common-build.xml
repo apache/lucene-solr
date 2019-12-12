@@ -2640,7 +2640,6 @@ The following arguments can be provided to ant to alter its behaviour and target
         <path id="pitest.classpath">
             <path refid="junit.classpath"/>
             <path refid="pitest.framework.classpath"/>
-            <pathelement path="${java.class.path}"/>
         </path>
 
         <junit4:pickseed property="pitest.seed" />
