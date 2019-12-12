@@ -149,6 +149,8 @@ New Features
 
 * SOLR-14043: Allow the precision Stream Evaluator to operate on matrices (Joel bernstein)
 
+* SOLR-14060: Allow the random Streaming Expression to create the x-axis (Joel Bernstein)
+
 Improvements
 ---------------------
 
