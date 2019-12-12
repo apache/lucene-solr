@@ -101,6 +101,8 @@ Upgrade Notes
 * SOLR-14071: Untrusted configsets (ones that are uploaded via unsecured configset API) cannot use <lib> directive.
   Consider enabling authentication/authorization so that the uploaded configsets are trusted.
 
+* SOLR-14065: VelocityResponseWriter has been deprecated and may be removed in a future version.
+
 New Features
 ---------------------
 * SOLR-13821: A Package store to store and load package artifacts (noble, Ishan Chattopadhyaya)

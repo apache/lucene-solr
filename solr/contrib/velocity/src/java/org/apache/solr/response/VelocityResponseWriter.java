@@ -96,6 +96,7 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
 
   @Override
   public void init(NamedList args) {
+    log.warn("VelocityResponseWriter is deprecated. This may be removed in future Solr releases. Please SOLR-14065.");
     fileResourceLoaderBaseDir = null;
     String templateBaseDir = (String) args.get(TEMPLATE_BASE_DIR);
 
