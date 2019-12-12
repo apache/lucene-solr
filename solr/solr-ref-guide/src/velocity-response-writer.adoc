@@ -18,6 +18,11 @@
 
 The VelocityResponseWriter is an optional plugin available in the `contrib/velocity` directory. It powers the /browse user interfaces when using some example configurations such as "techproducts" and "example/files".
 
+[IMPORTANT]
+====
+The VelocityResponseWriter has been deprecated and may be removed in a future version of Solr.
+====
+
 Its JAR and dependencies must be added (via `<lib>` or solr/home lib inclusion), and must be registered in `solrconfig.xml` like this:
 
 [source,xml]
