@@ -89,7 +89,7 @@ This and some demonstration ones remain on the file system but Solr does not use
 When you create a collection in SolrCloud, you can specify a named configset -- possibly shared.
 If you don't, then the `_default` will be copied and given a unique name for use by this collection.
 
-A configset can be uploaded to ZooKeeper either via the <<configsets-api.adoc#configsets-api,Configsets API>> or more directly via <<solr-control-script-reference.adoc#upload-a-configuration-set,`bin/solr zk upload`>>.
+A configset can be uploaded to ZooKeeper either via the <<configsets-api.adoc#configsets-api,Configsets API>> or more directly via <<solr-control-script-reference.adoc#upload-a-configuration-set,`bin/solr zk upconfig`>>.
 The Configsets API has some other operations as well, and likewise, so does the CLI.
 
 To upload a file to a configset already stored on ZooKeeper, you can use <<solr-control-script-reference.adoc#copy-between-local-files-and-zookeeper-znodes,`bin/solr zk cp`>>.
