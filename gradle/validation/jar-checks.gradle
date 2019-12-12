@@ -27,6 +27,23 @@ configure(project(":solr")) {
   ext.licensesDir = file("licenses")
 }
 
+// All known license types. If 'noticeOptional' is true then
+// the notice file must accompany the license.
+def licenseTypes = [
+    "ASL": [name: "Apache Software License 2.0"],
+    "BSD": [name: "Berkeley Software Distribution"],
+    //BSD like just means someone has taken the BSD license and put in their name, copyright, or it's a very similar license.
+    "BSD_LIKE": [name: "BSD like license"],
+    "CDDL": [name: "Common Development and Distribution License", noticeOptional: true],
+    "CPL": [name: "Common Public License"],
+    "EPL": [name: "Eclipse Public License Version 1.0", noticeOptional: true],
+    "MIT": [name: "Massachusetts Institute of Tech. License", noticeOptional: true],
+    "MPL": [name: "Mozilla Public License", noticeOptional: true /* NOT SURE on the required notice */],
+    "PD": [name: "Public Domain", noticeOptional: true],
+    "SUN": [name: "Sun Open Source License", noticeOptional: true],
+    "COMPOUND": [name: "Compound license (details in NOTICE file)."],
+]
+
 subprojects {
   // Configure jarValidation configuration for all projects. Any dependency
   // declared on this configuration (or any configuration it extends from) will
@@ -45,6 +62,10 @@ subprojects {
     }
   }
 
+  // Collects dependency JAR information for a project and saves it in
+  // project.ext.jarInfos. Each dependency has a map of attributes
+  // which make it easier to process it later on (name, hash, origin module,
+  // see the code below for details).
   task collectJarInfos() {
     dependsOn configurations.jarValidation
 
@@ -70,15 +91,13 @@ subprojects {
     }
   }
 
+  def failOnError = false
+
+  // Verifies that each JAR has a corresponding checksum and that it matches actual JAR available for this dependency.
   task validateJarChecksums() {
     group = 'Dependency validation'
-    description = "Validate project dependency checksums"
-
-    dependsOn configurations.jarValidation
+    description = "Validate checksums of dependencies"
     dependsOn collectJarInfos
-
-    // TODO: validation should fail the build but we're out of sync with master.
-    def fail = false
 
     doLast {
       def errors = []
@@ -91,13 +110,15 @@ subprojects {
           def actual = dep.checksum.trim()
           if (expected.compareToIgnoreCase(actual) != 0) {
             errors << "Dependency checksum mismatch ('${dep.module}'), expected it to be: ${expected}, but was: ${actual}"
+          } else {
+            logger.log(LogLevel.INFO, "Dependency checksum OK ('${dep.module}')")
           }
         }
       }
 
       if (errors) {
         def msg = "Dependency checksum validation failed:\n  - " + errors.join("\n  - ")
-        if (fail) {
+        if (failOnError) {
           throw new GradleException(msg)
         } else {
           logger.log(LogLevel.WARN, "WARNING: ${msg}")
@@ -105,9 +126,82 @@ subprojects {
       }
     }
   }
+
+  // Locate the set of license file candidates for this dependency. We
+  // search for [jar-or-prefix]-LICENSE-[type].txt
+  // where 'jar-or-prefix' can be any '-'-delimited prefix of the dependency JAR's name.
+  // So for 'commons-io' it can be 'commons-io-LICENSE-foo.txt' or
+  // 'commons-LICENSE.txt'
+  task validateJarLicenses() {
+    group = 'Dependency validation'
+    description = "Validate license and notice files of dependencies"
+    dependsOn collectJarInfos
+
+    doLast {
+      def errors = []
+      jarInfos.each { dep ->
+        def baseName = dep.name
+        def found = []
+        def candidates = []
+        while (true) {
+          candidates += file("${licensesDir}/${baseName}-LICENSE-[type].txt")
+          found += fileTree(dir: licensesDir, include: "${baseName}-LICENSE-*.txt").files
+          def prefix = baseName.replaceAll(/[\-][^-]+$/, "")
+          if (found || prefix == baseName) {
+            break
+          }
+          baseName = prefix
+        }
+
+        if (found.size() == 0) {
+          errors << "License file missing ('${dep.module}'), expected it at: ${candidates.join(" or ")}," +
+              " where [type] can be any of ${licenseTypes.keySet()}."
+        } else if (found.size() > 1) {
+          errors << "Multiple license files matching for ('${dep.module}'): ${found.join(", ")}"
+        } else {
+          def licenseFile = found.get(0)
+          def m = (licenseFile.name =~ /LICENSE-(.+)\.txt$/)
+          if (!m) throw new GradleException("License file name doesn't contain license type?: ${licenseFile.name}")
+
+          def licenseName = m[0][1]
+          def licenseType = licenseTypes[licenseName]
+          if (!licenseType) {
+            errors << "Unknown license type suffix for ('${dep.module}'): ${licenseFile} (must be one of ${licenseTypes.keySet()})"
+          } else {
+            logger.log(LogLevel.INFO, "Dependency license file OK ('${dep.module}'): " + licenseName)
+
+            // Look for sibling NOTICE file.
+            def noticeFile = file(licenseFile.path.replaceAll(/\-LICENSE-.+/, "-NOTICE.txt"))
+            if (noticeFile.exists()) {
+              logger.log(LogLevel.INFO, "Dependency notice file OK ('${dep.module}'): " + noticeFile)
+            } else if (!licenseType.noticeOptional) {
+              errors << "Notice file missing for ('${dep.module}'), expected it at: ${noticeFile}"
+            }
+          }
+        }
+      }
+
+      if (errors) {
+        def msg = "Certain license/ notice files are missing:\n  - " + errors.join("\n  - ")
+        if (failOnError) {
+          throw new GradleException(msg)
+        } else {
+          logger.log(LogLevel.WARN, "WARNING: ${msg}")
+        }
+      }
+    }
+  }
+
+  task validateJars() {
+    dependsOn validateJarChecksums, validateJarLicenses
+  }
+
+  check.dependsOn(validateJars)
 }
 
-// Disable validation for these projects.
+// Disable validation for these projects (should it be disabled?)
 configure(project(":solr:solr-ref-guide")) {
-  validateJarChecksums.enabled = false
+  [validateJarLicenses, validateJarChecksums].each { task ->
+    task.enabled = false
+  }
 }
