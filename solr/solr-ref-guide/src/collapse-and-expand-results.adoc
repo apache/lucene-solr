@@ -18,7 +18,7 @@
 
 The Collapsing query parser and the Expand component combine to form an approach to grouping documents for field collapsing in search results.
 
-The Collapsing query parser groups documents (collapsing the result set) according to your parameters, while the Expand component provides access to documents in the collapsed group for use in results display or other processing by a client application. Collapse & Expand can together do what the older <<result-grouping.adoc#result-grouping,Result Grouping>> (`group=true`) does for _most_ use-cases but not all. Generally, you should prefer Collapse & Expand.
+The Collapsing query parser groups documents (collapsing the result set) according to your parameters, while the Expand component provides access to documents in the collapsed group for use in results display or other processing by a client application. Collapse & Expand can together do what the older <<result-grouping.adoc#result-grouping,Result Grouping>> (`group=true`) does for _most_ use-cases but not all. Collapse and Expand are not supported when Result Grouping is enabled. Generally, you should prefer Collapse & Expand.
 
 [IMPORTANT]
 ====

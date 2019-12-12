@@ -542,6 +542,12 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       // always gets a chance to execute. See SOLR-7673
 
       if (repFactor == 1) {
+        // A commit is needed so that documents are visible when the sub-shard replicas come up
+        // (Note: This commit used to be after the state switch, but was brought here before the state switch
+        //  as per SOLR-13945 so that sub shards don't come up empty, momentarily, after being marked active) 
+        t = timings.sub("finalCommit");
+        ocmh.commit(results, slice.get(), parentShardLeader);
+        t.stop();
         // switch sub shard states to 'active'
         log.info("Replication factor is 1 so switching shard states");
         Map<String, Object> propMap = new HashMap<>();
@@ -583,9 +589,14 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
       log.info("Successfully created all replica shards for all sub-slices " + subSlices);
 
-      t = timings.sub("finalCommit");
-      ocmh.commit(results, slice.get(), parentShardLeader);
-      t.stop();
+      // The final commit was added in SOLR-4997 so that documents are visible
+      // when the sub-shard replicas come up
+      if (repFactor > 1) {
+        t = timings.sub("finalCommit");
+        ocmh.commit(results, slice.get(), parentShardLeader);
+        t.stop();
+      }
+
       if (withTiming) {
         results.add(CommonParams.TIMING, timings.asNamedList());
       }
@@ -673,6 +684,21 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
     if (coll == null) { // may have been deleted
       return;
+    }
+
+    // If parent is inactive and all sub shards are active, then rolling back
+    // to make the parent active again will cause data loss.
+    if (coll.getSlice(parentShard).getState() == Slice.State.INACTIVE) {
+      boolean allSubSlicesActive = true;
+      for (String sub: subSlices) {
+        if (coll.getSlice(sub).getState() != Slice.State.ACTIVE) {
+          allSubSlicesActive = false;
+          break;
+        }
+      }
+      if (allSubSlicesActive) {
+        return;
+      }
     }
 
     // set already created sub shards states to CONSTRUCTION - this prevents them

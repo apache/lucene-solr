@@ -377,6 +377,22 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
   }
   
+  /**
+   * a "dead" host, if you try to connect to it, it will likely fail fast
+   * please consider using mocks and not real networking to simulate failure
+   */
+  public static final String DEAD_HOST_1 = "[::1]:4";
+  /**
+   * a "dead" host, if you try to connect to it, it will likely fail fast
+   * please consider using mocks and not real networking to simulate failure
+   */
+  public static final String DEAD_HOST_2 = "[::1]:6";
+  /**
+   * a "dead" host, if you try to connect to it, it will likely fail fast
+   * please consider using mocks and not real networking to simulate failure
+   */
+  public static final String DEAD_HOST_3 = "[::1]:8";
+
   /** Assumes that Mockito/Bytebuddy is available and can be used to mock classes (e.g., fails if Java version is too new). */
   public static void assumeWorkingMockito() {
     // we use reflection here, because we do not have ByteBuddy/Mockito in all modules and the test framework!

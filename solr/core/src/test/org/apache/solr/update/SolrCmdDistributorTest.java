@@ -795,7 +795,7 @@ public class SolrCmdDistributorTest extends BaseDistributedSearchTestCase {
 
       ArrayList<Node> nodes = new ArrayList<>();
 
-      ZkNodeProps nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, "[ff01::114]:33332" + context, ZkStateReader.CORE_NAME_PROP, "");
+      ZkNodeProps nodeProps = new ZkNodeProps(ZkStateReader.BASE_URL_PROP, DEAD_HOST_1 + context, ZkStateReader.CORE_NAME_PROP, "");
       ForwardNode retryNode = new ForwardNode(new ZkCoreNodeProps(nodeProps), null, "collection1", "shard1", 5) {
         @Override
         public boolean checkRetry(Error err) {
