@@ -177,6 +177,9 @@ Bug Fixes
 
 * SOLR-13953: Prometheus exporter in SolrCloud mode limited to 100 nodes (Alex Jablonski via Erick Erickson)
 
+* SOLR-13945: Fix: SPLITSHARD can cause data loss on a failure to commit after the sub-shards are active and a rollback
+  is done to make parent shard active again (Ishan Chattopadhyaya, ab)
+
 Other Changes
 ---------------------
 
