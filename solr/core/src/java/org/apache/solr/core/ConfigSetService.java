@@ -87,7 +87,7 @@ public abstract class ConfigSetService {
               && !flags.getBooleanArg("trusted")
               ) ? false: true;
 
-      SolrConfig solrConfig = createSolrConfig(dcore, coreLoader);
+      SolrConfig solrConfig = createSolrConfig(dcore, coreLoader, trusted);
       IndexSchema schema = createIndexSchema(dcore, solrConfig);
       return new ConfigSet(configName(dcore), solrConfig, schema, properties, trusted);
     } catch (Exception e) {
@@ -102,10 +102,11 @@ public abstract class ConfigSetService {
    * Create a SolrConfig object for a core
    * @param cd the core's CoreDescriptor
    * @param loader the core's resource loader
+   * @param isTrusted is the configset trusted?
    * @return a SolrConfig object
    */
-  protected SolrConfig createSolrConfig(CoreDescriptor cd, SolrResourceLoader loader) {
-    return SolrConfig.readFromResourceLoader(loader, cd.getConfigName());
+  protected SolrConfig createSolrConfig(CoreDescriptor cd, SolrResourceLoader loader, boolean isTrusted) {
+    return SolrConfig.readFromResourceLoader(loader, cd.getConfigName(), isTrusted);
   }
 
   /**
