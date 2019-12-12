@@ -309,6 +309,8 @@ Bug Fixes
 
 * SOLR-14071: Untrusted configsets cannot use <lib> directive (Ishan Chattopadhyaya)
 
+* SOLR-14013: FIX: javabin performance regressions (noble, yonik, Houston Putman)
+
 Other Changes
 ---------------------
 
