@@ -171,6 +171,9 @@ Upgrade Notes
     - Velocity response writer
   If you want to use them in your collections, please add them to your configset manually or through the Config APIs.
 
+* SOLR-14071: Untrusted configsets (ones that are uploaded via unsecured configset API) cannot use <lib> directive.
+  Consider enabling authentication/authorization so that the uploaded configsets are trusted.
+
 New Features
 ---------------------
 * SOLR-13821: A Package store to store and load package artifacts (noble, Ishan Chattopadhyaya)
@@ -301,6 +304,8 @@ Bug Fixes
 
 * SOLR-13945: Fix: SPLITSHARD can cause data loss on a failure to commit after the sub-shards are active and a rollback
   is done to make parent shard active again (Ishan Chattopadhyaya, ab)
+
+* SOLR-14071: Untrusted configsets cannot use <lib> directive (Ishan Chattopadhyaya)
 
 Other Changes
 ---------------------
