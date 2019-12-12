@@ -35,7 +35,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.LuceneTestCase;
 
-public class TestFstDirectAddressing extends LuceneTestCase {
+public class TestFSTDirectAddressing extends LuceneTestCase {
 
   public void testDenseWithGap() throws Exception {
     List<String> words = Arrays.asList("ah", "bi", "cj", "dk", "fl", "gm");
@@ -126,9 +126,9 @@ public class TestFstDirectAddressing extends LuceneTestCase {
   }
 
   private static FSTCompiler<Object> createFSTCompiler(float directAddressingMaxOversizingFactor) {
-    return FSTCompiler.construct(FST.INPUT_TYPE.BYTE1, NoOutputs.getSingleton())
+    return new FSTCompiler.Builder<>(FST.INPUT_TYPE.BYTE1, NoOutputs.getSingleton())
         .directAddressingMaxOversizingFactor(directAddressingMaxOversizingFactor)
-        .create();
+        .build();
   }
 
   private FST<Object> buildFST(List<BytesRef> entries) throws Exception {

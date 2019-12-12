@@ -169,7 +169,7 @@ public class FSTCompletionBuilder {
    * @param shareMaxTailLength
    *          Max shared suffix sharing length.
    *          
-   *          See the description of this parameter in {@link FSTCompiler.Constructor}.
+   *          See the description of this parameter in {@link FSTCompiler.Builder}.
    *          In general, for very large inputs you'll want to construct a non-minimal
    *          automaton which will be larger, but the construction will take far less ram.
    *          For minimal automata, set it to {@link Integer#MAX_VALUE}.
@@ -234,8 +234,8 @@ public class FSTCompletionBuilder {
     // Build the automaton.
     final Outputs<Object> outputs = NoOutputs.getSingleton();
     final Object empty = outputs.getNoOutput();
-    final FSTCompiler<Object> fstCompiler = FSTCompiler.construct(FST.INPUT_TYPE.BYTE1, outputs)
-        .shareMaxTailLength(shareMaxTailLength).create();
+    final FSTCompiler<Object> fstCompiler = new FSTCompiler.Builder<>(FST.INPUT_TYPE.BYTE1, outputs)
+        .shareMaxTailLength(shareMaxTailLength).build();
 
     BytesRefBuilder scratch = new BytesRefBuilder();
     BytesRef entry;

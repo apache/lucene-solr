@@ -454,7 +454,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
       }
 
       final ByteSequenceOutputs outputs = ByteSequenceOutputs.getSingleton();
-      final FSTCompiler<BytesRef> fstCompiler = FSTCompiler.construct(FST.INPUT_TYPE.BYTE1, outputs).shouldShareNonSingletonNodes(false).create();
+      final FSTCompiler<BytesRef> fstCompiler = new FSTCompiler.Builder<>(FST.INPUT_TYPE.BYTE1, outputs).shouldShareNonSingletonNodes(false).build();
       //if (DEBUG) {
       //  System.out.println("  compile index for prefix=" + prefix);
       //}

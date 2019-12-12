@@ -103,29 +103,10 @@ public class FSTCompiler<T> {
 
   /**
    * Instantiates an FST/FSA builder with default settings and pruning options turned off.
-   * For more tuning and tweaking, see {@link #construct(INPUT_TYPE, Outputs)}.
+   * For more tuning and tweaking, see {@link Builder}.
    */
   public FSTCompiler(FST.INPUT_TYPE inputType, Outputs<T> outputs) {
     this(inputType, 0, 0, true, true, Integer.MAX_VALUE, outputs, true, 15, 1f);
-  }
-
-  /**
-   * @deprecated Use the fluent {@link Constructor} instead.
-   * @see #construct(INPUT_TYPE, Outputs)
-   */
-  public FSTCompiler(FST.INPUT_TYPE inputType, int minSuffixCount1, int minSuffixCount2, boolean doShareSuffix,
-                     boolean doShareNonSingletonNodes, int shareMaxTailLength, Outputs<T> outputs,
-                     boolean allowFixedLengthArcs, int bytesPageBits) {
-    this(inputType, minSuffixCount1, minSuffixCount2, doShareSuffix, doShareNonSingletonNodes, shareMaxTailLength,
-        outputs, allowFixedLengthArcs, bytesPageBits, 1f);
-  }
-
-  /**
-   * Fluent-style constructor to tune and tweak parameters.
-   * @see Constructor#Constructor(INPUT_TYPE, Outputs)
-   */
-  public static <T> Constructor<T> construct(FST.INPUT_TYPE inputType, Outputs<T> outputs) {
-    return new Constructor<>(inputType, outputs);
   }
 
   private FSTCompiler(FST.INPUT_TYPE inputType, int minSuffixCount1, int minSuffixCount2, boolean doShareSuffix,
@@ -161,7 +142,7 @@ public class FSTCompiler<T> {
    * Creates an FST/FSA builder with all the possible tuning and construction tweaks.
    * Read parameter documentation carefully.
    */
-  public static class Constructor<T> {
+  public static class Builder<T> {
 
     private final INPUT_TYPE inputType;
     private final Outputs<T> outputs;
@@ -182,7 +163,7 @@ public class FSTCompiler<T> {
      *                  FSA, use {@link NoOutputs#getSingleton()} and {@link NoOutputs#getNoOutput()} as the
      *                  singleton output object.
      */
-    public Constructor(FST.INPUT_TYPE inputType, Outputs<T> outputs) {
+    public Builder(FST.INPUT_TYPE inputType, Outputs<T> outputs) {
       this.inputType = inputType;
       this.outputs = outputs;
     }
@@ -193,7 +174,7 @@ public class FSTCompiler<T> {
      * <p>
      * Default = 0.
      */
-    public Constructor<T> minSuffixCount1(int minSuffixCount1) {
+    public Builder<T> minSuffixCount1(int minSuffixCount1) {
       this.minSuffixCount1 = minSuffixCount1;
       return this;
     }
@@ -204,7 +185,7 @@ public class FSTCompiler<T> {
      * <p>
      * Default = 0.
      */
-    public Constructor<T> minSuffixCount2(int minSuffixCount2) {
+    public Builder<T> minSuffixCount2(int minSuffixCount2) {
       this.minSuffixCount2 = minSuffixCount2;
       return this;
     }
@@ -217,7 +198,7 @@ public class FSTCompiler<T> {
      * <p>
      * Default = {@code true}.
      */
-    public Constructor<T> shouldShareSuffix(boolean shouldShareSuffix) {
+    public Builder<T> shouldShareSuffix(boolean shouldShareSuffix) {
       this.shouldShareSuffix = shouldShareSuffix;
       return this;
     }
@@ -228,7 +209,7 @@ public class FSTCompiler<T> {
      * <p>
      * Default = {@code true}.
      */
-    public Constructor<T> shouldShareNonSingletonNodes(boolean shouldShareNonSingletonNodes) {
+    public Builder<T> shouldShareNonSingletonNodes(boolean shouldShareNonSingletonNodes) {
       this.shouldShareNonSingletonNodes = shouldShareNonSingletonNodes;
       return this;
     }
@@ -239,7 +220,7 @@ public class FSTCompiler<T> {
      * <p>
      * Default = {@link Integer#MAX_VALUE}.
      */
-    public Constructor<T> shareMaxTailLength(int shareMaxTailLength) {
+    public Builder<T> shareMaxTailLength(int shareMaxTailLength) {
       this.shareMaxTailLength = shareMaxTailLength;
       return this;
     }
@@ -250,7 +231,7 @@ public class FSTCompiler<T> {
      * <p>
      * Default = {@code true}.
      */
-    public Constructor<T> allowFixedLengthArcs(boolean allowFixedLengthArcs) {
+    public Builder<T> allowFixedLengthArcs(boolean allowFixedLengthArcs) {
       this.allowFixedLengthArcs = allowFixedLengthArcs;
       return this;
     }
@@ -261,7 +242,7 @@ public class FSTCompiler<T> {
      * <p>
      * Default = 15.
      */
-    public Constructor<T> bytesPageBits(int bytesPageBits) {
+    public Builder<T> bytesPageBits(int bytesPageBits) {
       this.bytesPageBits = bytesPageBits;
       return this;
     }
@@ -279,7 +260,7 @@ public class FSTCompiler<T> {
      * <p>
      * Default = 1.
      */
-    public Constructor<T> directAddressingMaxOversizingFactor(float factor) {
+    public Builder<T> directAddressingMaxOversizingFactor(float factor) {
       this.directAddressingMaxOversizingFactor = factor;
       return this;
     }
@@ -287,7 +268,7 @@ public class FSTCompiler<T> {
     /**
      * Creates a new {@link FSTCompiler}.
      */
-    public FSTCompiler<T> create() {
+    public FSTCompiler<T> build() {
       FSTCompiler<T> fstCompiler =  new FSTCompiler<>(inputType, minSuffixCount1, minSuffixCount2, shouldShareSuffix,
           shouldShareNonSingletonNodes, shareMaxTailLength, outputs, allowFixedLengthArcs, bytesPageBits,
           directAddressingMaxOversizingFactor);

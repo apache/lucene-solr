@@ -350,8 +350,8 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
         }
       }
 
-      final FSTCompiler<Pair<BytesRef,Long>> fstCompiler = FSTCompiler.construct(FST.INPUT_TYPE.BYTE1, FST_OUTPUTS)
-          .shouldShareNonSingletonNodes(false).create();
+      final FSTCompiler<Pair<BytesRef,Long>> fstCompiler = new FSTCompiler.Builder<>(FST.INPUT_TYPE.BYTE1, FST_OUTPUTS)
+          .shouldShareNonSingletonNodes(false).build();
       //if (DEBUG) {
       //  System.out.println("  compile index for prefix=" + prefix);
       //}

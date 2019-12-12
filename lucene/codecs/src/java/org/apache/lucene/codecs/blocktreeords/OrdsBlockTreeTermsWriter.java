@@ -361,7 +361,7 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
         }
       }
 
-      final FSTCompiler<Output> fstCompiler = FSTCompiler.construct(FST.INPUT_TYPE.BYTE1, FST_OUTPUTS).shouldShareNonSingletonNodes(false).create();
+      final FSTCompiler<Output> fstCompiler = new FSTCompiler.Builder<>(FST.INPUT_TYPE.BYTE1, FST_OUTPUTS).shouldShareNonSingletonNodes(false).build();
       //if (DEBUG) {
       //  System.out.println("  compile index for prefix=" + prefix);
       //}

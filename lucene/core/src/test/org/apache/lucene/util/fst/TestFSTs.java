@@ -468,11 +468,11 @@ public class TestFSTs extends LuceneTestCase {
       this.inputMode = inputMode;
       this.outputs = outputs;
 
-      fstCompiler = FSTCompiler.construct(inputMode == 0 ? FST.INPUT_TYPE.BYTE1 : FST.INPUT_TYPE.BYTE4, outputs)
+      fstCompiler = new FSTCompiler.Builder<>(inputMode == 0 ? FST.INPUT_TYPE.BYTE1 : FST.INPUT_TYPE.BYTE4, outputs)
           .minSuffixCount2(prune)
           .shouldShareSuffix(prune == 0)
           .allowFixedLengthArcs(!noArcArrays)
-          .create();
+          .build();
     }
 
     protected abstract T getOutput(IntsRef input, int ord) throws IOException;
@@ -1114,7 +1114,7 @@ public class TestFSTs extends LuceneTestCase {
   public void testFinalOutputOnEndState() throws Exception {
     final PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
 
-    final FSTCompiler<Long> fstCompiler = FSTCompiler.construct(FST.INPUT_TYPE.BYTE4, outputs).minSuffixCount1(2).create();
+    final FSTCompiler<Long> fstCompiler = new FSTCompiler.Builder<>(FST.INPUT_TYPE.BYTE4, outputs).minSuffixCount1(2).build();
     fstCompiler.add(Util.toUTF32("stat", new IntsRefBuilder()), 17L);
     fstCompiler.add(Util.toUTF32("station", new IntsRefBuilder()), 10L);
     final FST<Long> fst = fstCompiler.finish();
