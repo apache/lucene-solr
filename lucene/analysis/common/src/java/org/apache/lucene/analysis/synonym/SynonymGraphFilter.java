@@ -106,7 +106,7 @@ public final class SynonymGraphFilter extends TokenFilter {
   private int captureCount;
 
 
-  static class BufferedToken{
+  static class BufferedToken {
     final char[] term;
     final State state;
     int startNode;
@@ -163,7 +163,7 @@ public final class SynonymGraphFilter extends TokenFilter {
 
   @Override
   public boolean incrementToken() throws IOException {
-      if (!tokenQueue.isEmpty()){
+      if (!tokenQueue.isEmpty()) {
         BufferedToken token = tokenQueue.poll();
         releaseBufferedToken(token);
         return true;
@@ -248,8 +248,8 @@ public final class SynonymGraphFilter extends TokenFilter {
           break;
         }
         pendingOutput = termMatch(token.term, pendingOutput, token.term.length);
-      }else{
-        if (inputFinished){
+      } else {
+        if (inputFinished) {
           break;
         }
         if (!restored && lastInputToken != null) {
@@ -257,7 +257,7 @@ public final class SynonymGraphFilter extends TokenFilter {
           restoreState(lastInputToken.state);
         }
         restored = true;
-        if(!input.incrementToken()){
+        if (!input.incrementToken()) {
           inputFinished = true;
           break;
         }
