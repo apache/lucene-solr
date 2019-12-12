@@ -392,8 +392,15 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     ignoreException("Can't determine a Sort Order");
     ignoreException("Expand not supported for fieldType:'text'");
 
+    // expand with grouping
+    SolrException e = expectThrows(SolrException.class, () -> {
+      h.query(req("q", "*:*", "expand", "true", "expand.field", "id", "group", "true", "group.field", "id"));
+    });
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertEquals("Can not use expand with Grouping enabled", e.getMessage());
+
     // no expand field
-    SolrException e = expectThrows(SolrException.class,  () -> h.query(req("q", "*:*", "expand", "true")));
+    e = expectThrows(SolrException.class,  () -> h.query(req("q", "*:*", "expand", "true")));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
     assertEquals("missing expand field", e.getMessage());
 
