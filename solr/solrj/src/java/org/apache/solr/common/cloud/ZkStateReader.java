@@ -227,7 +227,6 @@ public class ZkStateReader implements SolrCloseable {
 
     @Override
     public Replica getLeader(String collection, String slice, int timeout) throws InterruptedException {
-      if(timeout == -1 ) timeout = GET_LEADER_RETRY_DEFAULT_TIMEOUT;
       return  getLeaderRetry(collection, slice, timeout);
     }
   };
@@ -982,7 +981,7 @@ public class ZkStateReader implements SolrCloseable {
    */
   @Deprecated
   public Replica getLeaderRetry(String collection, String shard, int timeout) throws InterruptedException {
-
+    if(timeout == -1 ) timeout = GET_LEADER_RETRY_DEFAULT_TIMEOUT;
     AtomicReference<Replica> leader = new AtomicReference<>();
     try {
       waitForState(collection, timeout, TimeUnit.MILLISECONDS, (n, c, ssp) -> {
