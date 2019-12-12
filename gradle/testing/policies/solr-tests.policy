@@ -49,13 +49,14 @@ grant {
 
   permission java.nio.file.LinkPermission "hard";
 
-  // all possibilities of accepting/binding connections on localhost with ports >=1024:
-  permission java.net.SocketPermission "localhost:1024-", "accept,listen";
-  permission java.net.SocketPermission "127.0.0.1:1024-", "accept,listen";
-  permission java.net.SocketPermission "[::1]:1024-", "accept,listen";
-  
-  // Allow connecting to the internet anywhere
-  permission java.net.SocketPermission "*", "connect,resolve";
+  // all possibilities of accepting/binding/connections on localhost with ports >=1024:
+  permission java.net.SocketPermission "localhost:1024-", "accept,listen,connect,resolve";
+  permission java.net.SocketPermission "127.0.0.1:1024-", "accept,listen,connect,resolve";
+  permission java.net.SocketPermission "[::1]:1024-", "accept,listen,connect,resolve";
+  // "dead hosts", we try to keep it fast
+  permission java.net.SocketPermission "[::1]:4", "connect,resolve";
+  permission java.net.SocketPermission "[::1]:6", "connect,resolve";
+  permission java.net.SocketPermission "[::1]:8", "connect,resolve";
   
   // Basic permissions needed for Lucene to work:
   permission java.util.PropertyPermission "*", "read,write";
