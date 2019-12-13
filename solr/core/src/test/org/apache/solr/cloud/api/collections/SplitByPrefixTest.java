@@ -148,6 +148,10 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
 
   @Test
   public void doTest() throws IOException, SolrServerException {
+    // SPLITSHARD is recommended to be run in async mode, so we default to that.
+    // Also, autoscale triggers use async with splits as well.
+    boolean doAsync = true;
+
     CollectionAdminRequest
         .createCollection(COLLECTION_NAME, "conf", 1, 1)
         .setMaxShardsPerNode(100)
@@ -165,6 +169,9 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
         .setNumSubShards(2)
         .setSplitByPrefix(true)
         .setShardName("shard1");
+    if (doAsync) {
+      splitShard.setAsyncId("SPLIT1");
+    }
     splitShard.process(client);
     waitForState("Timed out waiting for sub shards to be active.",
         COLLECTION_NAME, activeClusterShape(2, 3));  // expectedReplicas==3 because original replica still exists (just inactive)
@@ -187,6 +194,9 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
     splitShard = CollectionAdminRequest.splitShard(COLLECTION_NAME)
         .setSplitByPrefix(true)
         .setShardName("shard1_1");  // should start out with the range of 0-7fffffff
+    if (doAsync) {
+      splitShard.setAsyncId("SPLIT2");
+    }
     splitShard.process(client);
     waitForState("Timed out waiting for sub shards to be active.",
         COLLECTION_NAME, activeClusterShape(3, 5));
@@ -216,6 +226,9 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
     splitShard = CollectionAdminRequest.splitShard(COLLECTION_NAME)
         .setSplitByPrefix(true)
         .setShardName(slice1.getName());
+    if (doAsync) {
+      splitShard.setAsyncId("SPLIT3");
+    }
     splitShard.process(client);
     waitForState("Timed out waiting for sub shards to be active.",
         COLLECTION_NAME, activeClusterShape(4, 7));
@@ -236,6 +249,9 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
     splitShard = CollectionAdminRequest.splitShard(COLLECTION_NAME)
         .setSplitByPrefix(true)
         .setShardName(slice1.getName());
+    if (doAsync) {
+      splitShard.setAsyncId("SPLIT4");
+    }
     splitShard.process(client);
     waitForState("Timed out waiting for sub shards to be active.",
         COLLECTION_NAME, activeClusterShape(5, 9));
@@ -252,6 +268,9 @@ public class SplitByPrefixTest extends SolrCloudTestCase {
     splitShard = CollectionAdminRequest.splitShard(COLLECTION_NAME)
         .setSplitByPrefix(true)
         .setShardName(slice1.getName());
+    if (doAsync) {
+      splitShard.setAsyncId("SPLIT5");
+    }
     splitShard.process(client);
     waitForState("Timed out waiting for sub shards to be active.",
         COLLECTION_NAME, activeClusterShape(6, 11));
