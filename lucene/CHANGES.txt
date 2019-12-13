@@ -67,6 +67,8 @@ Other
 
 * LUCENE-8768: Fix Javadocs build in Java 11. (Namgyu Kim)
 
+* LUCENE-9092: upgrade randomizedtesting to 2.7.5 (Dawid Weiss)
+
 ======================= Lucene 8.5.0 =======================
 
 API Changes

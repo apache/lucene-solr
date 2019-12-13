@@ -23,7 +23,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 Versions of Major Components
 ---------------------
 Apache Tika 1.19.1
-Carrot2 3.16.0
+Carrot2 3.16.2
 Velocity 2.0 and Velocity Tools 3.0
 Apache ZooKeeper 3.5.5
 Jetty 9.4.19.v20190610
@@ -88,6 +88,8 @@ Other Changes
 * SOLR-13655:Upgrade Collections.unModifiableSet to Set.of and Set.copyOf (Atri Sharma via Tomás Fernández Löbbe)
 
 * SOLR-13797: SolrResourceLoader no longer caches bad results when asked for wrong type (Mike Drob) 
+
+* LUCENE-9092: Upgrade Carrot2 to 3.16.2 (Dawid Weiss).
 
 ==================  8.5.0 ==================
 
