@@ -366,7 +366,7 @@ In this example the distribution of daily stock price changes for two stock tick
 The example first creates an array of values representing the percentiles that will be calculated and sets this array
 to variable *p*. Then random samples of the *change_d* field are drawn for the tickers *amzn* and *goog*. The *change_d* field
 represents the change in stock price for one day. Then the *change_d* field is vectorized for both samples and placed
-in the variable *amzn* and *goog*. The `percentile` function is then used to calculate the percentiles for both vectors. Notice that
+in the variables *amzn* and *goog*. The `percentile` function is then used to calculate the percentiles for both vectors. Notice that
 the variable *p* is used to specify the list of percentiles that are calculated.
 
 Finally `zplot` is used to plot the percentiles sequence on the *x-axis* and the calculated
