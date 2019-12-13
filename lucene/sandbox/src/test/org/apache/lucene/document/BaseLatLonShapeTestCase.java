@@ -30,7 +30,7 @@ import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
 import org.apache.lucene.geo.Circle;
-import org.apache.lucene.geo.Circle2D;
+import org.apache.lucene.geo.WGS84Circle2D;
 
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
@@ -85,7 +85,7 @@ public abstract class BaseLatLonShapeTestCase extends BaseShapeTestCase {
 
   @Override
   protected Component2D toCircle2D(Object circle) {
-    return Circle2D.create((Circle) circle);
+    return WGS84Circle2D.create((Circle) circle);
   }
 
   @Override

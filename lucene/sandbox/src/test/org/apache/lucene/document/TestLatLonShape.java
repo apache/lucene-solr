@@ -19,7 +19,7 @@ package org.apache.lucene.document;
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Circle;
-import org.apache.lucene.geo.Circle2D;
+import org.apache.lucene.geo.WGS84Circle2D;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Line;
@@ -685,7 +685,7 @@ public class TestLatLonShape extends LuceneTestCase {
       radiusMeters = random().nextDouble() * Circle.MAXRADIUS;
     }
     Circle circle = new Circle(lat, lon, radiusMeters);
-    Circle2D circle2D = Circle2D.create(circle);
+    WGS84Circle2D circle2D = WGS84Circle2D.create(circle);
     int expected;
     int expectedDisjoint;
     if (circle2D.contains(p.lon, p.lat))  {

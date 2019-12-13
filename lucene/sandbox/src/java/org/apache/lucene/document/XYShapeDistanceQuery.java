@@ -28,7 +28,7 @@ import org.apache.lucene.util.NumericUtils;
  * Finds all previously indexed shapes that intersect the specified distance query.
  *
  * <p>The field must be indexed using
- * {@link LatLonShape#createIndexableFields} added per document.
+ * {@link XYShape#createIndexableFields} added per document.
  *
  *  @lucene.experimental
  **/
@@ -46,30 +46,30 @@ final class XYShapeDistanceQuery extends ShapeQuery {
   protected Relation relateRangeBBoxToQuery(int minXOffset, int minYOffset, byte[] minTriangle,
                                             int maxXOffset, int maxYOffset, byte[] maxTriangle) {
 
-    double minLat = XYEncodingUtils.decode(NumericUtils.sortableBytesToInt(minTriangle, minYOffset));
-    double minLon = XYEncodingUtils.decode(NumericUtils.sortableBytesToInt(minTriangle, minXOffset));
-    double maxLat = XYEncodingUtils.decode(NumericUtils.sortableBytesToInt(maxTriangle, maxYOffset));
-    double maxLon = XYEncodingUtils.decode(NumericUtils.sortableBytesToInt(maxTriangle, maxXOffset));
+    double minY = XYEncodingUtils.decode(NumericUtils.sortableBytesToInt(minTriangle, minYOffset));
+    double minX = XYEncodingUtils.decode(NumericUtils.sortableBytesToInt(minTriangle, minXOffset));
+    double maxY = XYEncodingUtils.decode(NumericUtils.sortableBytesToInt(maxTriangle, maxYOffset));
+    double maxX = XYEncodingUtils.decode(NumericUtils.sortableBytesToInt(maxTriangle, maxXOffset));
 
     // check internal node against query
-    return circle2D.relate(minLon, maxLon, minLat, maxLat);
+    return circle2D.relate(minX, maxX, minY, maxY);
   }
 
   @Override
   protected boolean queryMatches(byte[] t, ShapeField.DecodedTriangle scratchTriangle, ShapeField.QueryRelation queryRelation) {
     ShapeField.decodeTriangle(t, scratchTriangle);
 
-    double alat = XYEncodingUtils.decode(scratchTriangle.aY);
-    double alon = XYEncodingUtils.decode(scratchTriangle.aX);
-    double blat = XYEncodingUtils.decode(scratchTriangle.bY);
-    double blon = XYEncodingUtils.decode(scratchTriangle.bX);
-    double clat = XYEncodingUtils.decode(scratchTriangle.cY);
-    double clon = XYEncodingUtils.decode(scratchTriangle.cX);
+    double aY = XYEncodingUtils.decode(scratchTriangle.aY);
+    double aX = XYEncodingUtils.decode(scratchTriangle.aX);
+    double bY = XYEncodingUtils.decode(scratchTriangle.bY);
+    double bX = XYEncodingUtils.decode(scratchTriangle.bX);
+    double cY = XYEncodingUtils.decode(scratchTriangle.cY);
+    double cX = XYEncodingUtils.decode(scratchTriangle.cX);
 
     switch (queryRelation) {
-      case INTERSECTS: return circle2D.relateTriangle(alon, alat, blon, blat, clon, clat) != Relation.CELL_OUTSIDE_QUERY;
-      case WITHIN: return circle2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_INSIDE_QUERY;
-      case DISJOINT: return circle2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_OUTSIDE_QUERY;
+      case INTERSECTS: return circle2D.relateTriangle(aX, aY, bX, bY, cX, cY) != Relation.CELL_OUTSIDE_QUERY;
+      case WITHIN: return circle2D.relateTriangle(aX, aY, bX, bY, cX, cY) == Relation.CELL_INSIDE_QUERY;
+      case DISJOINT: return circle2D.relateTriangle(aX, aY, bX, bY, cX, cY) == Relation.CELL_OUTSIDE_QUERY;
       default: throw new IllegalArgumentException("Unsupported query type :[" + queryRelation + "]");
     }
   }
@@ -78,14 +78,14 @@ final class XYShapeDistanceQuery extends ShapeQuery {
   protected Component2D.WithinRelation queryWithin(byte[] t, ShapeField.DecodedTriangle scratchTriangle) {
     ShapeField.decodeTriangle(t, scratchTriangle);
 
-    double alat = XYEncodingUtils.decode(scratchTriangle.aY);
-    double alon = XYEncodingUtils.decode(scratchTriangle.aX);
-    double blat = XYEncodingUtils.decode(scratchTriangle.bY);
-    double blon = XYEncodingUtils.decode(scratchTriangle.bX);
-    double clat = XYEncodingUtils.decode(scratchTriangle.cY);
-    double clon = XYEncodingUtils.decode(scratchTriangle.cX);
+    double aY = XYEncodingUtils.decode(scratchTriangle.aY);
+    double aX = XYEncodingUtils.decode(scratchTriangle.aX);
+    double bY = XYEncodingUtils.decode(scratchTriangle.bY);
+    double bX = XYEncodingUtils.decode(scratchTriangle.bX);
+    double cY = XYEncodingUtils.decode(scratchTriangle.cY);
+    double cX = XYEncodingUtils.decode(scratchTriangle.cX);
 
-    return circle2D.withinTriangle(alon, alat, scratchTriangle.ab, blon, blat, scratchTriangle.bc, clon, clat, scratchTriangle.ca);
+    return circle2D.withinTriangle(aX, aY, scratchTriangle.ab, bX, bY, scratchTriangle.bc, cX, cY, scratchTriangle.ca);
   }
 
   @Override

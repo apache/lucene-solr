@@ -19,13 +19,12 @@ package org.apache.lucene.geo;
 
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.NumericUtils;
 
-public class TestCircle2D extends LuceneTestCase {
+public class TestWGS84Circle2D extends LuceneTestCase {
 
   public void testTriangleDisjoint() {
     Circle circle = new Circle(0, 0, 100);
-    Component2D circle2D = Circle2D.create(circle);
+    Component2D circle2D = WGS84Circle2D.create(circle);
     double ax = 4;
     double ay = 4;
     double bx = 5;
@@ -38,7 +37,7 @@ public class TestCircle2D extends LuceneTestCase {
 
   public void testTriangleIntersects() {
     Circle circle = new Circle(0, 0, 1000000);
-    Circle2D circle2D = Circle2D.create(circle);
+    WGS84Circle2D circle2D = WGS84Circle2D.create(circle);
     double ax = -20;
     double ay = 1;
     double bx = 20;
@@ -51,7 +50,7 @@ public class TestCircle2D extends LuceneTestCase {
 
   public void testTriangleContains() {
     Circle circle = new Circle(0, 0, 1000000);
-    Circle2D circle2D = Circle2D.create(circle);
+    WGS84Circle2D circle2D = WGS84Circle2D.create(circle);
     double ax = 0.25;
     double ay = 0.25;
     double bx = 0.5;
@@ -64,7 +63,7 @@ public class TestCircle2D extends LuceneTestCase {
 
   public void testTriangleWithin() {
     Circle circle = new Circle(0, 0, 1000);
-    Circle2D circle2D = Circle2D.create(circle);
+    WGS84Circle2D circle2D = WGS84Circle2D.create(circle);
     double ax = -20;
     double ay = -20;
     double bx = 20;
@@ -83,7 +82,7 @@ public class TestCircle2D extends LuceneTestCase {
       radiusMeters = random().nextDouble() * Circle.MAXRADIUS;
     }
     Circle circle = new Circle(centerLat, centerLon, radiusMeters);
-    Circle2D circle2D = Circle2D.create(circle);
+    WGS84Circle2D circle2D = WGS84Circle2D.create(circle);
 
     for (int i =0; i < 100; i++) {
       double ax = GeoTestUtil.nextLongitude();

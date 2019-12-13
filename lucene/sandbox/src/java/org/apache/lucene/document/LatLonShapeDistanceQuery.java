@@ -17,7 +17,7 @@
 package org.apache.lucene.document;
 
 import org.apache.lucene.geo.Circle;
-import org.apache.lucene.geo.Circle2D;
+import org.apache.lucene.geo.WGS84Circle2D;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.index.PointValues.Relation;
@@ -38,7 +38,7 @@ final class LatLonShapeDistanceQuery extends ShapeQuery {
   public LatLonShapeDistanceQuery(String field, ShapeField.QueryRelation queryRelation, Circle circle) {
     super(field, queryRelation);
     this.circle = circle;
-    this.circle2D = Circle2D.create(circle);
+    this.circle2D = WGS84Circle2D.create(circle);
   }
 
   @Override
