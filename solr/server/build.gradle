@@ -63,6 +63,14 @@ dependencies {
   })
 }
 
+// Add the following non-standard configurations to JAR validation.
+afterEvaluate {
+  configurations {
+    jarValidation.extendsFrom startJar
+    jarValidation.extendsFrom libExt
+  }
+}
+
 ext {
   packagingDir = file("${buildDir}/packaging")
 }

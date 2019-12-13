@@ -27,7 +27,7 @@ configure(project(":lucene")) {
   ext.licensesDir = file("licenses")
 }
 configure(project(":solr")) {
-  ext.licensesDir = file("licenses")
+  ext.licensesDir = file("licenses-gradle")
 }
 
 // All known license types. If 'noticeOptional' is true then
@@ -135,6 +135,30 @@ subprojects {
     }
   }
 
+  // Update dependency checksums
+  task updateChecksums() {
+    group = 'Dependency validation'
+    description = "Write or update checksums of dependencies"
+    dependsOn collectJarInfos
+
+    doLast {
+      licensesDir.mkdirs()
+      jarInfos.each { dep ->
+        def expectedChecksumFile = file("${licensesDir}/${dep.jarName}.sha1")
+        if (expectedChecksumFile.exists()) {
+          def expected = expectedChecksumFile.getText("UTF-8").trim()
+          def actual = dep.checksum.trim()
+          if (expected.compareToIgnoreCase(actual) == 0) {
+            return;
+          }
+        }
+
+        logger.log(LogLevel.LIFECYCLE, "Updating checksum ('${dep.module}'): ${expectedChecksumFile}")
+        expectedChecksumFile.write(dep.checksum.trim(), "UTF-8")
+      }
+    }
+  }
+
   // Locate the set of license file candidates for this dependency. We
   // search for [jar-or-prefix]-LICENSE-[type].txt
   // where 'jar-or-prefix' can be any '-'-delimited prefix of the dependency JAR's name.
@@ -202,19 +226,26 @@ subprojects {
     }
   }
 
-  task validateJars() {
+  task licenses() {
+    group = 'Dependency validation'
+    description = "Apply all dependency/ license checks."
+
     dependsOn validateJarChecksums, validateJarLicenses
   }
 
-  check.dependsOn(validateJars)
+  check.dependsOn(licenses)
 }
 
 // Check for dangling files in the licenses folder.
 configure([project(":solr"), project(":lucene"), ]) {
-  def validationTasks = subprojects.collect { it.tasks.matching { it.name == "validateJars" } }
+  def validationTasks = subprojects.collect { it.tasks.matching { it.name == "licenses" } }
 
-  task validateUnusedLicenseFiles() {
+  task checkDanglingLicenseFiles() {
     dependsOn validationTasks
+
+    ext {
+      exclude = []
+    }
 
     doFirst {
       def allReferenced = validationTasks.collectMany { task ->
@@ -222,9 +253,10 @@ configure([project(":solr"), project(":lucene"), ]) {
         }
         .collect { it.toString() }
 
-      def allExisting = licensesDir.listFiles()
-          .collect { it.toString() }
-          .collect { it.toString() }
+      def patterns = ext.exclude
+      def allExisting = fileTree(licensesDir, {
+        exclude patterns
+      }).files.collect { it.toString() }
 
       def dangling = (allExisting - allReferenced).sort()
 
@@ -234,6 +266,29 @@ configure([project(":solr"), project(":lucene"), ]) {
         }
       }
     }
+  }
+
+  check.dependsOn checkDanglingLicenseFiles
+}
+
+// Exclude files that are not a result of direct dependencies but have to be there.
+// It would be probably better to move non-dependency licenses into the actual project
+// where they're used and only assemble them for the distribution package.
+configure(project(":lucene")) {
+  checkDanglingLicenseFiles {
+    exclude += [
+        "elegant-icon-font-*",
+        "ant-*",
+        "ivy-*",
+    ]
+  }
+}
+
+configure(project(":solr")) {
+  checkDanglingLicenseFiles {
+    exclude += [
+        "README.committers.txt",
+    ]
   }
 }
 
