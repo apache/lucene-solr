@@ -47,6 +47,14 @@ def licenseTypes = [
     "COMPOUND": [name: "Compound license (details in NOTICE file)."],
 ]
 
+allprojects {
+  task licenses() {
+    group = 'Dependency validation'
+    description = "Apply all dependency/ license checks."
+  }
+  check.dependsOn(licenses)
+}
+
 subprojects {
   // Configure jarValidation configuration for all projects. Any dependency
   // declared on this configuration (or any configuration it extends from) will
@@ -226,14 +234,7 @@ subprojects {
     }
   }
 
-  task licenses() {
-    group = 'Dependency validation'
-    description = "Apply all dependency/ license checks."
-
-    dependsOn validateJarChecksums, validateJarLicenses
-  }
-
-  check.dependsOn(licenses)
+  licenses.dependsOn validateJarChecksums, validateJarLicenses
 }
 
 // Check for dangling files in the licenses folder.
@@ -268,7 +269,7 @@ configure([project(":solr"), project(":lucene"), ]) {
     }
   }
 
-  check.dependsOn checkDanglingLicenseFiles
+  licenses.dependsOn checkDanglingLicenseFiles
 }
 
 // Exclude files that are not a result of direct dependencies but have to be there.
@@ -294,7 +295,7 @@ configure(project(":solr")) {
 
 // Disable validation for these projects (should it be disabled?)
 configure(project(":solr:solr-ref-guide")) {
-  [validateJarLicenses, validateJarChecksums].each { task ->
+  [validateJarLicenses, validateJarChecksums, updateChecksums].each { task ->
     task.enabled = false
   }
 }
