@@ -27,16 +27,4 @@ configure(project(":lucene:benchmark")) {
   }
 }
 
-// lucene:replicator has httpclient dependency with transitive commons-logging:1.2 but currently
-// requires 1.1.2. This commons-logging should be removed entirely and replaced with slf4j-to-*
-// redirector.
-configure(project(":lucene:replicator")) {
-  plugins.withType(JavaPlugin) {
-    configurations.all {
-      resolutionStrategy {
-        force 'commons-logging:commons-logging:1.1.3'
-      }
-    }
-  }
-}
 

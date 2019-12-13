@@ -1,7 +1,7 @@
 
 plugins {
   id "base"
-  id "com.palantir.consistent-versions" version "1.12.4"
+  id "com.palantir.consistent-versions" version "1.13.1"
   id "com.gradle.build-scan" version "3.0"
   id 'de.thetaphi.forbiddenapis' version '2.7' apply false
 }
@@ -50,6 +50,7 @@ apply from: file('gradle/help.gradle')
 // Ant-compatibility layer. ALL OF THESE SHOULD BE GONE at some point. They are
 // here so that we can coexist with current ant build but they are indicative
 // of potential problems with the build conventions, dependencies, etc.
+apply from: file('gradle/ant-compat/force-versions.gradle')
 apply from: file('gradle/ant-compat/folder-layout.gradle')
 apply from: file('gradle/ant-compat/misc.gradle')
 apply from: file('gradle/ant-compat/resolve.gradle')

@@ -7,6 +7,9 @@
 import org.apache.commons.codec.digest.DigestUtils
 import org.apache.commons.codec.digest.MessageDigestAlgorithms
 
+// This should be true.
+def failOnError = false
+
 buildscript {
   repositories {
     mavenCentral()
@@ -90,8 +93,6 @@ subprojects {
       }
     }
   }
-
-  def failOnError = false
 
   // Verifies that each JAR has a corresponding checksum and that it matches actual JAR available for this dependency.
   task validateJarChecksums() {
