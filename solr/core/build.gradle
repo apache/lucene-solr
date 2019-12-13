@@ -108,6 +108,7 @@ dependencies {
   testImplementation ('org.apache.hadoop:hadoop-hdfs') { transitive = false }
   testImplementation ('org.apache.hadoop:hadoop-hdfs::tests') { transitive = false }
   testImplementation ('org.apache.hadoop:hadoop-minikdc') { transitive = false }
+  testImplementation 'org.apache.logging.log4j:log4j-1.2-api'
 
   testImplementation ('org.apache.kerby:kerb-client') { transitive = false }
   testImplementation ('org.apache.kerby:kerb-common') { transitive = false }
