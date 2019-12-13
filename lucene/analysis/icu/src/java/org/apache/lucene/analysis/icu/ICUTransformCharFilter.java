@@ -20,6 +20,9 @@ package org.apache.lucene.analysis.icu;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.Locale;
+import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.WeakHashMap;
 
 import com.ibm.icu.text.ReplaceableString;
 import com.ibm.icu.text.Transliterator;
@@ -435,19 +438,22 @@ public final class ICUTransformCharFilter extends BaseCharFilter {
    */
   private static String modifyRules(boolean escapeUnprintable, Transliterator t) {
     final Transliterator[] trans = t.getElements();
+    final String topLevelId = t.getID();
     final int start;
     final int limit;
     if (trans.length == 1) {
+      warnNestedUnicodeNormalization(trans[0], topLevelId, true);
       return null;
     } else {
       final int lastIndex;
       if (unicodeNormalizationType(trans[0].getID()) != null) {
         start = 1;
         limit = unicodeNormalizationType(trans[lastIndex = trans.length - 1].getID()) != null ? lastIndex : trans.length;
-      } else if (unicodeNormalizationType(trans[lastIndex = trans.length - 1].getID()) != null) {
+      } else if (warnNestedUnicodeNormalization(trans[0], topLevelId, true) && unicodeNormalizationType(trans[lastIndex = trans.length - 1].getID()) != null) {
         start = 0;
         limit = lastIndex;
       } else {
+        warnNestedUnicodeNormalization(trans[trans.length - 1], topLevelId, false);
         return null;
       }
     }
@@ -495,6 +501,58 @@ public final class ICUTransformCharFilter extends BaseCharFilter {
     }
     return hasAnonymousRBTs ? rulesSource.toString() : rulesSource.substring(globalFilterEnd);
   }
+
+  /**
+   * It is possible that leading and trailing (or singleton) Transliterators might apply nested Unicode
+   * normalization, thus acting in the capacity of a Normalizer, without qualifying as a top-level
+   * Normalizer as currently defined in {@link #unicodeNormalizationType(String)}. For now, we will
+   * emit a warning if users request stripping of i/o unicode normalization in such a case (to
+   * facilitate reporting and more nuanced handling in the future, if necessary).
+   * @param levelOne a level one component Transliterator to test for nested unicode normalization.
+   * @param topLevelId top level Transliterator parent id.
+   * @param leading true if leading component transliterator; false implies trailing component
+   * @return always return true, for easy integration with control flow.
+   */
+  private static boolean warnNestedUnicodeNormalization(Transliterator levelOne, String topLevelId, boolean leading) {
+    Transliterator[] topLevelElements = levelOne.getElements();
+    if (topLevelElements.length == 1 && levelOne == topLevelElements[0]) {
+      // A leaf Transliterator; shortcircuit
+      return true;
+    }
+    ArrayDeque<Transliterator> elements = new ArrayDeque<>(topLevelElements.length << 2); // oversize
+    elements.addAll(Arrays.asList(topLevelElements));
+    boolean warn = false;
+    do {
+      final Transliterator t = elements.removeFirst();
+      if (unicodeNormalizationType(t.getID()) != null) {
+        warn = true;
+        break;
+      }
+      Transliterator[] subElements = t.getElements();
+      if (subElements.length > 1 ||  t != subElements[0]) {
+        for (Transliterator sub : subElements) {
+          elements.addFirst(sub);
+        }
+      }
+    } while (!elements.isEmpty());
+    if (warn) {
+      if (leading) {
+        if (!WARNED_LEADING.containsKey(topLevelId)) {
+          WARNED_LEADING.put(topLevelId, null);
+          //TODO something other than System.err?
+          //System.err.println("WARN: nested normalization for leading component of transliterator id \""+topLevelId+"\" ("+levelOne.getID()+")!");
+        }
+      } else if (!WARNED_TRAILING.containsKey(topLevelId)) {
+        WARNED_TRAILING.put(topLevelId, null);
+        //TODO something other than System.err?
+        //System.err.println("WARN: nested normalization for trailing component of transliterator id \""+topLevelId+"\" ("+levelOne.getID()+")!");
+      }
+    }
+    return true;
+  }
+
+  private static final WeakHashMap<String,Void> WARNED_LEADING = new WeakHashMap<>();
+  private static final WeakHashMap<String,Void> WARNED_TRAILING = new WeakHashMap<>();
 
   private static final char ID_DELIM = ';';
 
