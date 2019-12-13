@@ -25,8 +25,9 @@ ant compile         => gradlew classes      [better: gradlew assemble]
 ant validate        => gradlew check
 ant test            => gradlew test
 
-ant jar-checksums   => TODO
-ant clean-jars      => NO REPLACEMENT
+ant jar-checksums   => gradlew updateChecksums
+ant check-licenses  => gradlew licenses     [better: gradlew check -x test]
+ant clean-jars      => (NO REPLACEMENT)
 
 ant precommit       => gradlew check -x test
 

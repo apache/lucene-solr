@@ -72,7 +72,7 @@ the time of writing, jackson-databind has the following entry:
 
 com.fasterxml.jackson.core:jackson-databind:2.10.0 (3 constraints: 931a7796)
 
-and gradlew why --hash=931a7796 prints:
+and "gradlew why --hash=931a7796" prints:
 
 com.fasterxml.jackson.core:jackson-databind:2.10.0
         projects -> 2.10.0
@@ -122,3 +122,17 @@ dependencies {
 
 Note the brackets - they are important and prevent accidental
 mistakes of applying the exclusion to the wrong scope.
+
+
+Updating dependency checksum and licenses
+-----------------------------------------
+
+The last step is to make sure the licenses, notice files and checksums
+are in place for any new dependencies. This command will print what's
+missing and where:
+
+gradlew licenses
+
+To update JAR checksums use:
+
+gradlew updateChecksums
