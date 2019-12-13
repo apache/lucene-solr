@@ -235,20 +235,22 @@ public class WGS84Circle2D implements Component2D {
   }
 
   private boolean intersectsLine(double aX, double aY, double bX, double bY) {
-    if (intersectsLine(centerLon, centerLat, aX, aY, bX, bY)) {
+    if (intersectsLine(aX, aY, bX, bY, centerLon, centerLat, sortKey)) {
       return true;
     }
     if (crossesDateline) {
       double newCenterLon = (centerLon > 0) ? centerLon - 360 : centerLon + 360;
-      return intersectsLine(newCenterLon, centerLat, aX, aY, bX, bY);
+      return intersectsLine(aX, aY, bX, bY, newCenterLon, centerLat, sortKey);
     }
     return false;
   }
 
+  // Move it to geo utils?
   /** Checks if the circle intersects the provided segment **/
-  private boolean intersectsLine(double lon ,double lat, double aX, double aY, double bX, double bY) {
+  private static boolean intersectsLine(double aX, double aY, double bX, double bY,
+                                 double centerLon, double centerLat, double distanceSortKey) {
     //Algorithm based on this thread : https://stackoverflow.com/questions/3120357/get-closest-point-to-a-line
-    double[] vectorAP = new double[] {lon - aX, lat - aY};
+    double[] vectorAP = new double[] {centerLon - aX, centerLat - aY};
     double[] vectorAB = new double[] {bX - aX, bY - aY};
 
     double magnitudeAB = vectorAB[0] * vectorAB[0] + vectorAB[1] * vectorAB[1];
@@ -270,7 +272,7 @@ public class WGS84Circle2D implements Component2D {
     double maxLat = StrictMath.max(aY, bY);
 
     if (pX >= minLon && pX <= maxLon && pY >= minLat && pY <= maxLat) {
-      return contains(pX, pY);
+      return SloppyMath.haversinSortKey(pY, pX, centerLat, centerLon) <= distanceSortKey;
     }
     return false;
   }
