@@ -43,10 +43,6 @@ public class KnnGraphValuesWriter implements Accountable {
 
   private long bytesUsed = 0L;
 
-  public KnnGraphValuesWriter(FieldInfo fieldInfo) {
-    this(fieldInfo, null);
-  }
-
   public KnnGraphValuesWriter(FieldInfo fieldInfo, Counter iwBytesUsed) {
     this.fieldInfo = fieldInfo;
     this.iwBytesUsed = iwBytesUsed;
@@ -84,7 +80,7 @@ public class KnnGraphValuesWriter implements Accountable {
     bytesUsed = newBytesUsed;
   }
 
-  public void flush(SegmentWriteState state, Sorter.DocMap sortMap, KnnGraphWriter graphWriter) throws IOException {
+  public void flush(Sorter.DocMap sortMap, KnnGraphWriter graphWriter) throws IOException {
     hnswGraphWriter.finish();
     VectorValues vectors = new BufferedVectorValues(docsWithFieldVec.iterator(), hnswGraphWriter.rawVectorsArray());
     KnnGraphValues graph = new BufferedKnnGraphValues(docsWithFieldGrp.iterator(), hnswGraphWriter.hnswGraph());
@@ -137,8 +133,8 @@ public class KnnGraphValuesWriter implements Accountable {
     final DocIdSetIterator docsWithField;
     final float[][] vectorsArray;
 
-    float[] value = new float[0];
     int bufferPos = 0;
+    float[] value;
 
     BufferedVectorValues(DocIdSetIterator docsWithField, float[][] vectorsArray) {
       this.docsWithField = docsWithField;
@@ -226,15 +222,14 @@ public class KnnGraphValuesWriter implements Accountable {
     public int nextDoc() throws IOException {
       int docId = docsWithField.nextDoc();
       if (docId != NO_MORE_DOCS) {
-        boolean levelFound = false;
-        for (int l = hnswGraph.topLevel(); l >= 0; l--) {
+        for (int l = hnswGraph.topLevel(); l > 0; l--) {
           if (hnswGraph.hasFriends(l, docId)) {
             maxLevel = l;
-            levelFound = true;
-            break;
+            return docId;
           }
         }
-        assert levelFound;
+        // A node in a singleton graph has no friends
+        maxLevel = 0;
       }
       return docId;
     }

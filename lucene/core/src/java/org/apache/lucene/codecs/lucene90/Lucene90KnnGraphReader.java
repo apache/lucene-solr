@@ -33,6 +33,7 @@ import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.store.ChecksumIndexInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -261,14 +262,14 @@ public final class Lucene90KnnGraphReader extends KnnGraphReader {
     final IndexInput dataIn;
 
     int doc = -1;
-    byte[] binaryValue;
+    BytesRef binaryValue;
 
     RandomAccessVectorValuesReader(int maxDoc, int numDims, KnnGraphEntry entry, IndexInput dataIn) {
       this.maxDoc = maxDoc;
       this.numDims = numDims;
       this.entry = entry;
       this.dataIn = dataIn;
-      this.binaryValue = new byte[Float.BYTES * numDims];
+      this.binaryValue = new BytesRef(new byte[Float.BYTES * numDims]);
     }
 
     @Override
@@ -277,6 +278,11 @@ public final class Lucene90KnnGraphReader extends KnnGraphReader {
         return null;
       }
       return VectorValues.decode(binaryValue, numDims);
+    }
+
+    @Override
+    public BytesRef binaryValue() {
+      return binaryValue;
     }
 
     @Override
@@ -293,7 +299,7 @@ public final class Lucene90KnnGraphReader extends KnnGraphReader {
       int offset = Float.BYTES * numDims * ord;
       assert offset >= 0;
       dataIn.seek(offset);
-      dataIn.readBytes(binaryValue, 0, binaryValue.length);
+      dataIn.readBytes(binaryValue.bytes, binaryValue.offset, binaryValue.length);
       return true;
     }
 
@@ -382,7 +388,8 @@ public final class Lucene90KnnGraphReader extends KnnGraphReader {
 
     @Override
     public int advance(int target) throws IOException {
-      if (doc > target || target > maxDoc) {
+      // enabled random access. Also I think maxDoc really means maxDoc + 1
+      if (target >= maxDoc) {
         return doc = NO_MORE_DOCS;
       }
       doc = target - 1;
@@ -397,7 +404,7 @@ public final class Lucene90KnnGraphReader extends KnnGraphReader {
       }
       dataIn.seek(offset);
       int maxLevel = dataIn.readInt();
-      assert maxLevel >= 0;
+      assert maxLevel >= 0 || entry.enterPoints.length == 0;
       this.maxLevel = maxLevel;
       this.friendsRef = readFriends(maxLevel);
       return doc;
@@ -407,17 +414,19 @@ public final class Lucene90KnnGraphReader extends KnnGraphReader {
       FriendsRef friendsRef = new FriendsRef(maxLevel);
       for (int l = maxLevel; l >= 0; l--) {
         int friendSize = dataIn.readInt();
-        assert friendSize > 0;
-        int[] frineds = new int[friendSize];
-        int friendId = dataIn.readVInt();  // first friend id
-        frineds[0] = friendId;
-        for (int i = 1; i < friendSize; i++) {
-          int delta = dataIn.readVInt();
-          assert delta > 0;
-          friendId += delta;
-          frineds[i] = friendId;
+        // assert friendSize > 0;
+        int[] friends = new int[friendSize];
+        if (friendSize > 0) {
+          int friendId = dataIn.readVInt();  // first friend id
+          friends[0] = friendId;
+          for (int i = 1; i < friendSize; i++) {
+            int delta = dataIn.readVInt();
+            assert delta > 0;
+            friendId += delta;
+            friends[i] = friendId;
+          }
         }
-        friendsRef.setFriendsAtLevel(l, frineds);
+        friendsRef.setFriendsAtLevel(l, friends);
       }
       return friendsRef;
     }

@@ -18,10 +18,10 @@
 package org.apache.lucene.util.hnsw;
 
 import java.io.IOException;
-import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.index.VectorValues;
@@ -37,14 +37,13 @@ import org.apache.lucene.util.RamUsageEstimator;
 public final class HNSWGraph implements Accountable {
 
   private final VectorValues.DistanceFunction distFunc;
-  private final Map<Integer, Layer> layers;
+  private final List<Layer> layers;
 
-  private boolean freeze = false;
-  private int topLevel = 0;
+  private boolean frozen = false;
 
   public HNSWGraph(VectorValues.DistanceFunction distFunc) {
     this.distFunc = distFunc;
-    this.layers = new HashMap<>();
+    this.layers = new ArrayList<>();
   }
 
   /**
@@ -55,10 +54,9 @@ public final class HNSWGraph implements Accountable {
    * @param level graph level
    * @param vectorValues vector values
    * @return nearest neighbors
-   * @throws IOException
    */
   public NearestNeighbors searchLayer(float[] query, Neighbor ep, int ef, int level, VectorValues vectorValues) throws IOException {
-    if (level > topLevel) {
+    if (level >= layers.size()) {
       throw new IllegalArgumentException("layer does not exist for the level: " + level);
     }
 
@@ -87,7 +85,6 @@ public final class HNSWGraph implements Accountable {
       if (c.distance() > f.distance()) {
         break;
       }
-
       for (Neighbor e : layer.getFriends(c.docId())) {
         if (visited.contains(e.docId())) {
           continue;
@@ -100,12 +97,12 @@ public final class HNSWGraph implements Accountable {
         }
         float dist = distance(query, e.docId(), vectorValues);
         if (dist < f.distance() || results.size() < ef) {
-          if (results.size() == ef) {
-            results.pop();
-          }
           Neighbor n = new ImmutableNeighbor(e.docId(), dist);
           candidates.insertWithOverflow(n);
-          results.add(n);
+          Neighbor popped = results.insertWithOverflow(n);
+          if (popped != null && popped != n) {
+            f = results.top();
+          }
         }
       }
     }
@@ -125,7 +122,8 @@ public final class HNSWGraph implements Accountable {
   private NearestNeighbors pickNearestNeighbor(FurthestNeighbors queue) {
     NearestNeighbors nearests = new NearestNeighbors(queue.size());
     Set<Integer> addedDocs = new HashSet<>();
-    while (queue.size() > 0) {
+    int ef = queue.size();
+    while (addedDocs.size() < ef && queue.size() > 0) {
       Neighbor c = queue.pop();
       if (!addedDocs.contains(c.docId())) {
         nearests.add(c);
@@ -136,22 +134,19 @@ public final class HNSWGraph implements Accountable {
   }
 
   public void ensureLevel(int level) {
-    if (freeze) {
+    if (frozen) {
       throw new IllegalStateException("graph is already freezed!");
     }
     if (level < 0) {
       throw new IllegalArgumentException("level must be a positive integer: " + level);
     }
-    for (int l = level; l >= 0; l--) {
-      layers.putIfAbsent(l, new Layer(l));
-    }
-    if (level > topLevel) {
-      topLevel = level;
+    for (int l = layers.size(); l <= level; l++) {
+      layers.add(new Layer(l));
     }
   }
 
   public int topLevel() {
-    return topLevel;
+    return layers.size() - 1;
   }
 
   public boolean isEmpty() {
@@ -162,7 +157,7 @@ public final class HNSWGraph implements Accountable {
     if (layers.isEmpty()) {
       throw new IllegalStateException("the graph has no layers!");
     }
-    List<Integer> nodesAtMaxLevel = layers.get(topLevel).getNodes();
+    List<Integer> nodesAtMaxLevel = layers.get(layers.size() - 1).getNodes();
     if (nodesAtMaxLevel.isEmpty()) {
       throw new IllegalStateException("the max level of this graph is empty!");
     }
@@ -173,7 +168,7 @@ public final class HNSWGraph implements Accountable {
     if (layers.isEmpty()) {
       throw new IllegalStateException("the graph has no layers!");
     }
-    List<Integer> nodesAtMaxLevel = layers.get(topLevel).getNodes();
+    List<Integer> nodesAtMaxLevel = layers.get(layers.size() - 1).getNodes();
     if (nodesAtMaxLevel.isEmpty()) {
       throw new IllegalStateException("the max level of this graph is empty!");
     }
@@ -202,11 +197,11 @@ public final class HNSWGraph implements Accountable {
     if (layer == null) {
       throw new IllegalArgumentException("layer does not exist for level: " + level);
     }
-    return layer.getFriends(node).size() > 0;
+    return layer.getFriends(node) != Layer.NO_FRIENDS;
   }
 
   void addNode(int level, int node) {
-    if (freeze) {
+    if (frozen) {
       throw new IllegalStateException("graph is already freezed!");
     }
     Layer layer = layers.get(level);
@@ -218,7 +213,7 @@ public final class HNSWGraph implements Accountable {
 
   /** Connects two nodes; this is supposed to be called when indexing */
   public void connectNodes(int level, int node1, int node2, float dist, int maxConnections) {
-    if (freeze) {
+    if (frozen) {
       throw new IllegalStateException("graph is already freezed!");
     }
     assert level >= 0;
@@ -230,15 +225,19 @@ public final class HNSWGraph implements Accountable {
       throw new IllegalArgumentException("layer does not exist for level: " + level);
     }
     layer.connectNodes(node1, node2, dist);
+    layer.connectNodes(node2, node1, dist);
+    /*
     // ensure friends size <= maxConnections
+    //
     if (maxConnections > 0) {
       layer.shrink(node2, maxConnections);
     }
+    */
   }
 
   /** Connects two nodes; this is supposed to be called when searching */
   public void connectNodes(int level, int node1, int node2) {
-    if (freeze) {
+    if (frozen) {
       throw new IllegalStateException("graph is already freezed!");
     }
     assert level >= 0;
@@ -253,12 +252,16 @@ public final class HNSWGraph implements Accountable {
   }
 
   public void finish() {
-    this.freeze = true;
+    while (layers.isEmpty() == false && layers.get(layers.size() - 1).size() == 0) {
+      // remove empty top layers
+      layers.remove(layers.size() - 1);
+    }
+    this.frozen = true;
   }
 
   @Override
   public long ramBytesUsed() {
-    return RamUsageEstimator.sizeOfMap(layers);
+    return RamUsageEstimator.sizeOfCollection(layers);
   }
 
 }

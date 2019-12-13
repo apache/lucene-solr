@@ -78,7 +78,7 @@ public class MergeState {
   /** Point readers to merge */
   public final PointsReader[] pointsReaders;
 
-  /** Knn graph readers to merge */
+  /** KNN Graph readers to merge */
   public final KnnGraphReader[] knnGraphReaders;
 
   /** Max docs per reader */

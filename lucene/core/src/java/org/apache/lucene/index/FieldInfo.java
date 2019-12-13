@@ -382,6 +382,13 @@ public final class FieldInfo {
   public boolean hasVectors() {
     return storeTermVector;
   }
+
+  /**
+   * @return true if any (numeric) vector values exist for this field
+   */
+  public boolean hasVectorValues() {
+    return vectorNumDimensions > 0;
+  }
   
   /**
    * Get a codec attribute value, or null if it does not exist

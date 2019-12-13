@@ -45,7 +45,7 @@ public abstract class KnnGraphFormat {
   public static KnnGraphFormat EMPTY = new KnnGraphFormat() {
     @Override
     public KnnGraphWriter fieldsWriter(SegmentWriteState state) throws IOException {
-      throw new UnsupportedOperationException();
+      throw new UnsupportedOperationException("Attempt to write EMPTY KnnGraphValues: maybe you forgot to use codec=Lucene90");
     }
 
     @Override

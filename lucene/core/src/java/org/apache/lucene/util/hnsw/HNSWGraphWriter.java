@@ -34,6 +34,8 @@ public final class HNSWGraphWriter implements Accountable {
   private static final int MAX_LEVEL_LIMIT = 5;
   // default random seed for level generation
   private static final long DEFAULT_RAND_SEED = System.currentTimeMillis();
+  // expose for testing. TODO: make a better way to initialize this
+  public static long RAND_SEED = DEFAULT_RAND_SEED;
   // default max connections per node
   public static final int DEFAULT_MAX_CONNECTIONS = 6;
   // default max connections per node at layer zero
@@ -56,7 +58,7 @@ public final class HNSWGraphWriter implements Accountable {
 
   /** Construct the builder with default configurations */
   public HNSWGraphWriter(int numDimensions, VectorValues.DistanceFunction distFunc) {
-    this(DEFAULT_MAX_CONNECTIONS, DEFAULT_MAX_CONNECTIONS_L0, DEFAULT_EF_CONST, DEFAULT_RAND_SEED, numDimensions, distFunc);
+    this(DEFAULT_MAX_CONNECTIONS, DEFAULT_MAX_CONNECTIONS_L0, DEFAULT_EF_CONST, RAND_SEED, numDimensions, distFunc);
   }
 
   /** Full constructor */
@@ -76,7 +78,7 @@ public final class HNSWGraphWriter implements Accountable {
   /** Inserts a doc with vector value to the graph */
   public void insert(int docId, BytesRef binaryValue) throws IOException {
     // add the vector value
-    float[] value = VectorValues.decode(binaryValue.bytes, numDimensions);
+    float[] value = VectorValues.decode(binaryValue, numDimensions);
     rawVectors.add(value);
     docsRef.grow(docId + 1);
     docsRef.setIntAt(docId, addedDocs++);

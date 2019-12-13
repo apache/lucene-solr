@@ -17,9 +17,10 @@
 
 package org.apache.lucene.util.hnsw;
 
-import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +31,10 @@ import org.apache.lucene.util.RamUsageEstimator;
 
 /** A knn graph that consists of connected friends (i.e. neighbors) lists. */
 final class Layer implements Accountable {
+
+  // Sentinel that indicates a document has no friends *ie does not participate in the graph*
+  // This is distinct from a document in a single-node graph, which has no friends *yet* (sad).
+  public static final Collection<Neighbor> NO_FRIENDS = Collections.unmodifiableSet(new HashSet<>());
 
   private final int level;
   private final Map<Integer, TreeSet<Neighbor>> friendsMap;
@@ -89,12 +94,13 @@ final class Layer implements Accountable {
     }
   }
 
-  List<Neighbor> getFriends(int node) {
-    TreeSet<Neighbor> friends = friendsMap.get(node);
-    if (friends == null) {
-      return Collections.emptyList();
+  Collection<Neighbor> getFriends(int node) {
+    Collection<Neighbor> friends = friendsMap.get(node);
+    if (friends != null) {
+      return friends;
+    } else {
+      return NO_FRIENDS;
     }
-    return List.copyOf(friends);
   }
 
   int size() {
