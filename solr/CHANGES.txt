@@ -193,6 +193,8 @@ Bug Fixes
 * SOLR-13945: Fix: SPLITSHARD can cause data loss on a failure to commit after the sub-shards are active and a rollback
   is done to make parent shard active again (Ishan Chattopadhyaya, ab)
 
+* SOLR-14013: FIX: javabin performance regressions (noble, yonik, Houston Putman)
+
 Other Changes
 ---------------------
 
