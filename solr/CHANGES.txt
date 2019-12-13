@@ -241,6 +241,10 @@ Bug Fixes
 
 * SOLR-14013: FIX: javabin performance regressions (noble, yonik, Houston Putman)
 
+* SOLR-14079: SPLITSHARD splitByPrefix doesn't work in async mode.  This also
+  affects splits triggered by the autoscale framework, which use async mode.
+  (Megan Carey, Andy Vuong, Bilal Waheed, Ilan Ginzburg, yonik)
+
 Other Changes
 ---------------------
 
