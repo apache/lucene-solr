@@ -17,8 +17,11 @@
 package org.apache.lucene.document;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
+import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.ShapeTestUtil;
 import org.apache.lucene.geo.Tessellator;
+import org.apache.lucene.geo.XYCircle;
+import org.apache.lucene.geo.XYCircle2D;
 import org.apache.lucene.geo.XYLine;
 import org.apache.lucene.geo.XYPolygon;
 import org.apache.lucene.geo.XYRectangle;
@@ -154,6 +157,50 @@ public class TestXYShape extends LuceneTestCase {
     assertEquals(1, searcher.count(q));
 
     IOUtils.close(reader, dir);
+  }
+
+  public void testPointIndexAndDistanceQuery() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document document = new Document();
+    float pX = (float) ShapeTestUtil.nextDouble();
+    float py = (float) ShapeTestUtil.nextDouble();
+    Field[] fields = XYShape.createIndexableFields(FIELDNAME, pX, py);
+    for (Field f : fields) {
+      document.add(f);
+    }
+    writer.addDocument(document);
+
+    //// search
+    IndexReader r = writer.getReader();
+    writer.close();
+    IndexSearcher s = newSearcher(r);
+
+    float x = (float) ShapeTestUtil.nextDouble();
+    float y = (float) ShapeTestUtil.nextDouble();
+    float radius = (float) (random().nextDouble() * Math.abs(ShapeTestUtil.nextDouble()));
+    XYCircle circle = new XYCircle(x, y, radius);
+    Component2D circle2D = XYCircle2D.create(circle);
+    int expected;
+    int expectedDisjoint;
+    if (circle2D.contains(pX, py))  {
+      expected = 1;
+      expectedDisjoint = 0;
+    } else {
+      expected = 0;
+      expectedDisjoint = 1;
+    }
+
+    Query q = XYShape.newDistanceQuery(FIELDNAME, QueryRelation.INTERSECTS, circle);
+    assertEquals(expected, s.count(q));
+
+    q = XYShape.newDistanceQuery(FIELDNAME, QueryRelation.WITHIN, circle);
+    assertEquals(expected, s.count(q));
+
+    q = XYShape.newDistanceQuery(FIELDNAME, QueryRelation.DISJOINT, circle);
+    assertEquals(expectedDisjoint, s.count(q));
+
+    IOUtils.close(r, dir);
   }
 
   private static boolean areBoxDisjoint(XYRectangle r1, XYRectangle r2) {
