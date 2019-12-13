@@ -20,60 +20,59 @@ package org.apache.lucene.geo;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.util.TestUtil;
 
 public class TestCircle2D extends LuceneTestCase {
 
   public void testTriangleDisjoint() {
     Circle circle = new Circle(0, 0, 100);
-    Circle2D circle2D = Circle2D.create(circle);
-    int ax = GeoEncodingUtils.encodeLongitude(4);
-    int ay = GeoEncodingUtils.encodeLatitude(4);
-    int bx = GeoEncodingUtils.encodeLongitude(5);
-    int by = GeoEncodingUtils.encodeLatitude(5);
-    int cx = GeoEncodingUtils.encodeLongitude(5);
-    int cy = GeoEncodingUtils.encodeLatitude(4);
-    assertFalse(circle2D.intersectsTriangle(ax, ay, bx, by , cx, cy));
-    assertFalse(circle2D.containsTriangle(ax, ay, bx, by , cx, cy));
+    Component2D circle2D = Circle2D.create(circle);
+    double ax = 4;
+    double ay = 4;
+    double bx = 5;
+    double by = 5;
+    double cx = 5;
+    double cy = 4;
+    assertEquals(PointValues.Relation.CELL_OUTSIDE_QUERY, circle2D.relateTriangle(ax, ay, bx, by , cx, cy));
+    assertEquals(Component2D.WithinRelation.DISJOINT, circle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
   }
 
   public void testTriangleIntersects() {
     Circle circle = new Circle(0, 0, 1000000);
     Circle2D circle2D = Circle2D.create(circle);
-    int ax = GeoEncodingUtils.encodeLongitude(-20);
-    int ay = GeoEncodingUtils.encodeLatitude(1);
-    int bx = GeoEncodingUtils.encodeLongitude(20);
-    int by = GeoEncodingUtils.encodeLatitude(1);
-    int cx = GeoEncodingUtils.encodeLongitude(0);
-    int cy = GeoEncodingUtils.encodeLatitude(90);
-    assertTrue(circle2D.intersectsTriangle(ax, ay, bx, by , cx, cy));
-    assertFalse(circle2D.containsTriangle(ax, ay, bx, by , cx, cy));
+    double ax = -20;
+    double ay = 1;
+    double bx = 20;
+    double by = 1;
+    double cx = 0;
+    double cy = 90;
+    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, circle2D.relateTriangle(ax, ay, bx, by , cx, cy));
+    assertEquals(Component2D.WithinRelation.NOTWITHIN, circle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
   }
 
   public void testTriangleContains() {
     Circle circle = new Circle(0, 0, 1000000);
     Circle2D circle2D = Circle2D.create(circle);
-    int ax = GeoEncodingUtils.encodeLongitude(0.25);
-    int ay = GeoEncodingUtils.encodeLatitude(0.25);
-    int bx = GeoEncodingUtils.encodeLongitude(0.5);
-    int by = GeoEncodingUtils.encodeLatitude(0.5);
-    int cx = GeoEncodingUtils.encodeLongitude(0.5);
-    int cy = GeoEncodingUtils.encodeLatitude(0.25);
-    assertTrue(circle2D.intersectsTriangle(ax, ay, bx, by , cx, cy));
-    assertTrue(circle2D.containsTriangle(ax, ay, bx, by , cx, cy));
+    double ax = 0.25;
+    double ay = 0.25;
+    double bx = 0.5;
+    double by = 0.5;
+    double cx = 0.5;
+    double cy = 0.25;
+    assertEquals(PointValues.Relation.CELL_INSIDE_QUERY, circle2D.relateTriangle(ax, ay, bx, by , cx, cy));
+    assertEquals(Component2D.WithinRelation.NOTWITHIN, circle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
   }
 
   public void testTriangleWithin() {
     Circle circle = new Circle(0, 0, 1000);
     Circle2D circle2D = Circle2D.create(circle);
-    int ax = GeoEncodingUtils.encodeLongitude(-20);
-    int ay = GeoEncodingUtils.encodeLatitude(-20);
-    int bx = GeoEncodingUtils.encodeLongitude(20);
-    int by = GeoEncodingUtils.encodeLatitude(-20);
-    int cx = GeoEncodingUtils.encodeLongitude(20);
-    int cy = GeoEncodingUtils.encodeLatitude(20);
-    assertTrue(circle2D.intersectsTriangle(ax, ay, bx, by , cx, cy));
-    assertFalse(circle2D.containsTriangle(ax, ay, bx, by , cx, cy));
+    double ax = -20;
+    double ay = -20;
+    double bx = 20;
+    double by = -20;
+    double cx = 0;
+    double cy = 20;
+    assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, circle2D.relateTriangle(ax, ay, bx, by , cx, cy));
+    assertEquals(Component2D.WithinRelation.CANDIDATE, circle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
   }
 
   public void testRandomTriangles() {
@@ -85,40 +84,27 @@ public class TestCircle2D extends LuceneTestCase {
     }
     Circle circle = new Circle(centerLat, centerLon, radiusMeters);
     Circle2D circle2D = Circle2D.create(circle);
-    //System.out.println("CIRCLE(" + 0 + " " + 0+ "," + radius + "))");
+
     for (int i =0; i < 100; i++) {
-      double aLon = GeoTestUtil.nextLongitude();
-      double aLat = GeoTestUtil.nextLatitude();
-      double bLon = GeoTestUtil.nextLongitude();
-      double bLat = GeoTestUtil.nextLatitude();
-      double cLon = GeoTestUtil.nextLongitude();
-      double cLat = GeoTestUtil.nextLatitude();
-      int ax = GeoEncodingUtils.encodeLongitude(aLon);
-      int ay = GeoEncodingUtils.encodeLatitude(aLat);
-      int bx = GeoEncodingUtils.encodeLongitude(bLon);
-      int by = GeoEncodingUtils.encodeLatitude(bLat);
-      int cx = GeoEncodingUtils.encodeLongitude(cLon);
-      int cy = GeoEncodingUtils.encodeLatitude(cLat);
-      //System.out.println("POLYGON((" + aLon + " " + aLat + "," + bLon + " " + bLat + "," + cLon + " " + cLat + "))");
+      double ax = GeoTestUtil.nextLongitude();
+      double ay = GeoTestUtil.nextLatitude();
+      double bx = GeoTestUtil.nextLongitude();
+      double by = GeoTestUtil.nextLatitude();
+      double cx = GeoTestUtil.nextLongitude();
+      double cy = GeoTestUtil.nextLatitude();
 
-      int tMinX = StrictMath.min(StrictMath.min(ax, bx), cx);
-      int tMaxX = StrictMath.max(StrictMath.max(ax, bx), cx);
-      int tMinY = StrictMath.min(StrictMath.min(ay, by), cy);
-      int tMaxY = StrictMath.max(StrictMath.max(ay, by), cy);
+      double tMinX = StrictMath.min(StrictMath.min(ax, bx), cx);
+      double tMaxX = StrictMath.max(StrictMath.max(ax, bx), cx);
+      double tMinY = StrictMath.min(StrictMath.min(ay, by), cy);
+      double tMaxY = StrictMath.max(StrictMath.max(ay, by), cy);
 
-      byte[] triangle = new byte[4 * Integer.BYTES];
-      NumericUtils.intToSortableBytes(tMinY, triangle, 0);
-      NumericUtils.intToSortableBytes(tMinX, triangle, Integer.BYTES);
-      NumericUtils.intToSortableBytes(tMaxY, triangle, 2 * Integer.BYTES);
-      NumericUtils.intToSortableBytes(tMaxX, triangle, 3 * Integer.BYTES);
-
-      PointValues.Relation r = circle2D.relateRangeBBox(Integer.BYTES, 0, triangle, 3 * Integer.BYTES, 2 * Integer.BYTES, triangle);
+      PointValues.Relation r = circle2D.relate(tMinX, tMaxX, tMinY, tMaxY);
       if (r == PointValues.Relation.CELL_OUTSIDE_QUERY) {
-        assertFalse(circle2D.intersectsTriangle(ax, ay, bx, by , cx, cy));
-        assertFalse(circle2D.containsTriangle(ax, ay, bx, by , cx, cy));
-      }
-      else if (circle2D.containsTriangle(ax, ay, bx, by , cx, cy)) {
-        assertTrue(circle2D.intersectsTriangle(ax, ay, bx, by , cx, cy));
+        assertEquals(PointValues.Relation.CELL_OUTSIDE_QUERY, circle2D.relateTriangle(ax, ay, bx, by , cx, cy));
+        assertEquals(Component2D.WithinRelation.DISJOINT, circle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
+      } else if (r == PointValues.Relation.CELL_INSIDE_QUERY) {
+        assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, circle2D.relateTriangle(ax, ay, bx, by , cx, cy));
+        assertEquals(Component2D.WithinRelation.NOTWITHIN, circle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
       }
     }
   }

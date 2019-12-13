@@ -24,7 +24,7 @@ public class TestXYCircle2D extends LuceneTestCase {
 
   public void testTriangleDisjoint() {
     XYCircle circle = new XYCircle(0, 0, 1);
-    XYCircle2D circle2D = XYCircle2D.create(circle);
+    Component2D circle2D = XYCircle2D.create(circle);
     double ax = 4;
     double ay = 4;
     double bx = 5;
@@ -33,6 +33,7 @@ public class TestXYCircle2D extends LuceneTestCase {
     double cy = 4;
     PointValues.Relation rel = circle2D.relateTriangle(ax, ay, bx, by, cx, cy);
     assertEquals(PointValues.Relation.CELL_OUTSIDE_QUERY, rel);
+    assertEquals(Component2D.WithinRelation.DISJOINT, circle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
   }
 
   public void testTriangleIntersects() {
@@ -43,14 +44,15 @@ public class TestXYCircle2D extends LuceneTestCase {
     double by = 1;
     double cx = 0;
     double cy = 90;
-    XYCircle2D circle2D = XYCircle2D.create(circle);
+    Component2D circle2D = XYCircle2D.create(circle);
     PointValues.Relation rel = circle2D.relateTriangle(ax, ay, bx, by, cx, cy);
     assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
+    assertEquals(Component2D.WithinRelation.NOTWITHIN, circle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
   }
 
   public void testTriangleContains() {
     XYCircle circle = new XYCircle(0, 0, 1);
-    XYCircle2D circle2D = XYCircle2D.create(circle);
+    Component2D circle2D = XYCircle2D.create(circle);
     double ax = 0.25;
     double ay = 0.25;
     double bx = 0.5;
@@ -59,19 +61,21 @@ public class TestXYCircle2D extends LuceneTestCase {
     double cy = 0.25;
     PointValues.Relation rel = circle2D.relateTriangle(ax, ay, bx, by, cx, cy);
     assertEquals(PointValues.Relation.CELL_INSIDE_QUERY, rel);
+    assertEquals(Component2D.WithinRelation.NOTWITHIN, circle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
   }
 
   public void testTriangleWithin() {
     XYCircle circle = new XYCircle(0, 0, 1);
-    XYCircle2D circle2D = XYCircle2D.create(circle);
+    Component2D circle2D = XYCircle2D.create(circle);
     double ax = -20;
     double ay = -20;
     double bx = 20;
     double by = -20;
-    double cx = 20;
+    double cx = 0;
     double cy = 20;
     PointValues.Relation rel = circle2D.relateTriangle(ax, ay, bx, by, cx, cy);
     assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, rel);
+    assertEquals(Component2D.WithinRelation.CANDIDATE, circle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
   }
 
   public void testRandomTriangles() {
@@ -83,7 +87,7 @@ public class TestXYCircle2D extends LuceneTestCase {
       radiusMeters = (float)ShapeTestUtil.nextDouble();
     }
     XYCircle circle = new XYCircle(centerLat, centerLon, radiusMeters);
-    XYCircle2D circle2D = XYCircle2D.create(circle);
+    Component2D circle2D = XYCircle2D.create(circle);
     //System.out.println("CIRCLE(" + 0 + " " + 0+ "," + radius + "))");
     for (int i =0; i < 100; i++) {
       double ax = ShapeTestUtil.nextDouble();
@@ -92,8 +96,6 @@ public class TestXYCircle2D extends LuceneTestCase {
       double by = ShapeTestUtil.nextDouble();
       double cx = ShapeTestUtil.nextDouble();
       double cy = ShapeTestUtil.nextDouble();
-
-      //System.out.println("POLYGON((" + aLon + " " + aLat + "," + bLon + " " + bLat + "," + cLon + " " + cLat + "))");
 
       double tMinX = StrictMath.min(StrictMath.min(ax, bx), cx);
       double tMaxX = StrictMath.max(StrictMath.max(ax, bx), cx);
@@ -104,6 +106,10 @@ public class TestXYCircle2D extends LuceneTestCase {
       PointValues.Relation r = circle2D.relate(tMinX, tMaxX, tMinY, tMaxY);
       if (r == PointValues.Relation.CELL_OUTSIDE_QUERY) {
         assertEquals(circle.toString(), PointValues.Relation.CELL_OUTSIDE_QUERY, circle2D.relateTriangle(ax, ay, bx, by, cx, cy));
+        assertEquals(Component2D.WithinRelation.DISJOINT, circle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
+      } else if (r == PointValues.Relation.CELL_INSIDE_QUERY) {
+        assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, circle2D.relateTriangle(ax, ay, bx, by , cx, cy));
+        assertEquals(Component2D.WithinRelation.NOTWITHIN, circle2D.withinTriangle(ax, ay, true, bx, by, true, cx, cy, true));
       }
     }
   }

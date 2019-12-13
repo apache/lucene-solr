@@ -75,7 +75,7 @@ public class Circle2D implements Component2D {
 
   @Override
   public boolean contains(double x, double y) {
-    return SloppyMath.haversinSortKey(lat, lon, this.lat, this.lon) <= distance;
+    return SloppyMath.haversinSortKey(y, x, this.lat, this.lon) <= sortKey;
   }
 
   @Override

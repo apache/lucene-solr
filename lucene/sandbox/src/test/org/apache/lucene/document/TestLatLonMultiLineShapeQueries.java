@@ -108,23 +108,6 @@ public class TestLatLonMultiLineShapeQueries extends BaseLatLonShapeTestCase {
       }
       return queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS;
     }
-
-    @Override
-    public boolean testDistanceQuery(Object circle2D, Object shape) {
-      Line[] lines = (Line[])shape;
-      for (Line l : lines) {
-        boolean b = LINEVALIDATOR.testDistanceQuery(circle2D, l);
-        if (b == true && queryRelation == QueryRelation.INTERSECTS) {
-          return true;
-        } else if (b == false && queryRelation == QueryRelation.DISJOINT) {
-          return false;
-        } else if (b == false && queryRelation == QueryRelation.WITHIN) {
-          return false;
-        }
-      }
-      return queryRelation != QueryRelation.INTERSECTS;
-    }
-
   }
 
   @Slow

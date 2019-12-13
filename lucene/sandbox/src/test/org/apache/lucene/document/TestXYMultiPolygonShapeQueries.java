@@ -134,22 +134,6 @@ public class TestXYMultiPolygonShapeQueries extends BaseXYShapeTestCase {
       }
       return queryRelation != QueryRelation.INTERSECTS && queryRelation != QueryRelation.CONTAINS;
     }
-
-    @Override
-    public boolean testDistanceQuery(Object circle2D, Object shape) {
-      XYPolygon[] polygons = (XYPolygon[])shape;
-      for (XYPolygon p : polygons) {
-        boolean b = POLYGONVALIDATOR.testDistanceQuery(circle2D, p);
-        if (b == true && queryRelation == QueryRelation.INTERSECTS) {
-          return true;
-        } else if (b == false && queryRelation == QueryRelation.DISJOINT) {
-          return false;
-        } else if (b == false && queryRelation == QueryRelation.WITHIN) {
-          return false;
-        }
-      }
-      return queryRelation != QueryRelation.INTERSECTS;
-    }
   }
 
   @Slow

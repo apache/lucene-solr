@@ -689,9 +689,7 @@ public class TestLatLonShape extends LuceneTestCase {
     Circle2D circle2D = Circle2D.create(circle);
     int expected;
     int expectedDisjoint;
-    int encodedLat = GeoEncodingUtils.encodeLatitude(p.lat);
-    int encodedLon = GeoEncodingUtils.encodeLongitude(p.lon);
-    if (circle2D.queryContainsPoint(encodedLon, encodedLat))  {
+    if (circle2D.contains(p.lon, p.lat))  {
       expected = 1;
       expectedDisjoint = 0;
     } else {

@@ -98,19 +98,5 @@ public class TestXYPointShapeQueries extends BaseXYShapeTestCase {
       }
       return r != Relation.CELL_OUTSIDE_QUERY;
     }
-
-    @Override
-    public boolean testDistanceQuery(Object circle2D, Object shape) {
-      Point p = (BaseXYShapeTestCase.Point)shape;
-      double lat = encoder.quantizeY(p.y);
-      double lon = encoder.quantizeX(p.x);
-      Relation r = ((XYCircle2D)circle2D).relateTriangle(lon, lat, lon, lat, lon, lat);
-      if (queryRelation == QueryRelation.WITHIN) {
-        return r == Relation.CELL_INSIDE_QUERY;
-      } else if (queryRelation == QueryRelation.DISJOINT) {
-        return r == Relation.CELL_OUTSIDE_QUERY;
-      }
-      return r != Relation.CELL_OUTSIDE_QUERY;
-    }
   }
 }
