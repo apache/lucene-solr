@@ -89,6 +89,8 @@ Other Changes
 
 * SOLR-13797: SolrResourceLoader no longer caches bad results when asked for wrong type (Mike Drob) 
 
+* LUCENE-9092: Upgrade Carrot2 to 3.16.2 (Dawid Weiss).
+
 ==================  8.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

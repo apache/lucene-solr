@@ -41,7 +41,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRefBuilder;
-import org.apache.lucene.util.fst.Builder;
+import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
@@ -287,7 +287,7 @@ public class FSTOrdTermsWriter extends FieldsConsumer {
   }
 
   final class TermsWriter {
-    private final Builder<Long> builder;
+    private final FSTCompiler<Long> fstCompiler;
     private final PositiveIntOutputs outputs;
     private final FieldInfo fieldInfo;
     private final int longsSize;
@@ -311,7 +311,7 @@ public class FSTOrdTermsWriter extends FieldsConsumer {
       this.fieldInfo = fieldInfo;
       this.longsSize = postingsWriter.setField(fieldInfo);
       this.outputs = PositiveIntOutputs.getSingleton();
-      this.builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
+      this.fstCompiler = new FSTCompiler<>(FST.INPUT_TYPE.BYTE1, outputs);
 
       this.lastBlockStatsFP = 0;
       this.lastBlockMetaLongsFP = 0;
@@ -346,7 +346,7 @@ public class FSTOrdTermsWriter extends FieldsConsumer {
       }
       metaLongsOut.writeVLong(metaBytesOut.size() - lastMetaBytesFP);
 
-      builder.add(Util.toIntsRef(text, scratchTerm), numTerms);
+      fstCompiler.add(Util.toIntsRef(text, scratchTerm), numTerms);
       numTerms++;
 
       lastMetaBytesFP = metaBytesOut.size();
@@ -365,7 +365,7 @@ public class FSTOrdTermsWriter extends FieldsConsumer {
         metadata.statsOut = statsOut;
         metadata.metaLongsOut = metaLongsOut;
         metadata.metaBytesOut = metaBytesOut;
-        metadata.dict = builder.finish();
+        metadata.dict = fstCompiler.compile();
         fields.add(metadata);
       }
     }

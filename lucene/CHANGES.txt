@@ -38,6 +38,9 @@ API Changes
 * LUCENE-8905: Better defence against malformed arguments in TopDocsCollector
   (Atri Sharma)
 
+* LUCENE-9089: FST Builder renamed FSTCompiler with fluent-style Builder.
+  (Bruno Roustant)
+
 Improvements
 
 * LUCENE-8757: When provided with an ExecutorService to run queries across
@@ -63,6 +66,8 @@ Bug fixes
 Other
 
 * LUCENE-8768: Fix Javadocs build in Java 11. (Namgyu Kim)
+
+* LUCENE-9092: upgrade randomizedtesting to 2.7.5 (Dawid Weiss)
 
 ======================= Lucene 8.5.0 =======================
 
