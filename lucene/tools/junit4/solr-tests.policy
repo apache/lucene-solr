@@ -34,15 +34,8 @@ grant {
   permission java.io.FilePermission "${clover.db.dir}${/}-", "read,write,delete";
   permission java.io.FilePermission "${tests.linedocsfile}", "read";
   // hadoop
-  permission java.io.FilePermission "${ant.library.dir}${/}-", "read";
-  permission java.io.FilePermission "${user.home}${/}.ant${/}lib${/}-", "read";
   permission java.io.FilePermission "${user.home}${/}hadoop-metrics2.properties", "read";
   permission java.io.FilePermission "${user.home}${/}hadoop-metrics2-namenode.properties", "read";
-  // kerberos
-  permission java.io.FilePermission "${user.home}${/}.java.login.config", "read";
-  // SolrTestCaseJ4 explicitly uses these
-  permission java.io.FilePermission "/dev/./urandom", "read";
-  permission java.io.FilePermission "/dev/random", "read";
   // DirectoryFactoryTest messes with these (wtf?)
   permission java.io.FilePermission "/tmp/inst1/conf/solrcore.properties", "read";
   permission java.io.FilePermission "/path/to/myinst/conf/solrcore.properties", "read";
