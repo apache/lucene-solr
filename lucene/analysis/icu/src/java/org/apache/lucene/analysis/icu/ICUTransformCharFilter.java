@@ -19,6 +19,7 @@ package org.apache.lucene.analysis.icu;
 
 import java.io.IOException;
 import java.io.Reader;
+import java.util.Locale;
 
 import com.ibm.icu.text.ReplaceableString;
 import com.ibm.icu.text.Transliterator;
@@ -440,10 +441,10 @@ public final class ICUTransformCharFilter extends BaseCharFilter {
       return null;
     } else {
       final int lastIndex;
-      if (isUnicodeNormalizationId(trans[0].getID())) {
+      if (unicodeNormalizationType(trans[0].getID()) != null) {
         start = 1;
-        limit = isUnicodeNormalizationId(trans[lastIndex = trans.length - 1].getID()) ? lastIndex : trans.length;
-      } else if (isUnicodeNormalizationId(trans[lastIndex = trans.length - 1].getID())) {
+        limit = unicodeNormalizationType(trans[lastIndex = trans.length - 1].getID()) != null ? lastIndex : trans.length;
+      } else if (unicodeNormalizationType(trans[lastIndex = trans.length - 1].getID()) != null) {
         start = 0;
         limit = lastIndex;
       } else {
@@ -497,25 +498,43 @@ public final class ICUTransformCharFilter extends BaseCharFilter {
 
   private static final char ID_DELIM = ';';
 
-  private static final String[] NORM_ID_ARR = new String[] {"NFC", "NFD", "NFKC", "NFKD", "FCC", "FCD"};
+  static enum NormType { NFC, NFD, NFKC, NFKD, FCC, FCD };
+
+  private static final NormType[] NORM_TYPE_VALUES;
+  private static final String[] NORM_ID_PREFIXES;
+
+  static {
+    NORM_TYPE_VALUES = NormType.values();
+    NORM_ID_PREFIXES = new String[NORM_TYPE_VALUES.length];
+    int i = 0;
+    for (NormType n : NORM_TYPE_VALUES) {
+      NORM_ID_PREFIXES[i++] = n.name();
+    }
+  }
 
   /**
    * Return true if the specified String represents the id of a NormalizationTransliterator, otherwise false.
    */
-  private static boolean isUnicodeNormalizationId(String id) {
+  static NormType unicodeNormalizationType(String id) {
     if (id.indexOf(';') >= 0) {
       // it's compound
-      return false;
+      return null;
+    }
+    if (id.startsWith("[")) {
+      // remove filter serialization prefix
+      id = id.substring(id.lastIndexOf(']')).stripLeading();
     }
     if (id.startsWith("Any-")) {
       id = id.substring("Any-".length());
     }
-    for (String prefix : NORM_ID_ARR) {
-      if (id.startsWith(prefix)) {
-        return true;
+    id = id.toUpperCase(Locale.ENGLISH);
+    int i = NORM_ID_PREFIXES.length;
+    do {
+      if (id.startsWith(NORM_ID_PREFIXES[--i])) {
+        return NORM_TYPE_VALUES[i];
       }
-    }
-    return false;
+    } while (i > 0);
+    return null;
   }
 
   /**

@@ -57,7 +57,6 @@ public class ICUTransformCharFilterFactory extends CharFilterFactory {
     this.failOnRollbackBufferOverflow = getBoolean(args, "failOnRollbackBufferOverflow", ICUTransformCharFilter.DEFAULT_FAIL_ON_ROLLBACK_BUFFER_OVERFLOW);
     boolean assumeExternalUnicodeNormalization = getBoolean(args, "assumeExternalUnicodeNormalization", false);
     Transliterator stockTransliterator = Transliterator.getInstance(id, dir);
-    final String modifiedRules;
     if (assumeExternalUnicodeNormalization) {
       this.transliterator = ICUTransformCharFilter.withoutUnicodeNormalization(stockTransliterator);
     } else {
