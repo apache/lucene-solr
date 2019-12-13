@@ -33,9 +33,6 @@ grant {
   permission java.io.FilePermission "${junit4.tempDir}${/}*", "read,write,delete";
   permission java.io.FilePermission "${clover.db.dir}${/}-", "read,write,delete";
   permission java.io.FilePermission "${tests.linedocsfile}", "read";
-  // hadoop
-  permission java.io.FilePermission "${user.home}${/}hadoop-metrics2.properties", "read";
-  permission java.io.FilePermission "${user.home}${/}hadoop-metrics2-namenode.properties", "read";
   // DirectoryFactoryTest messes with these (wtf?)
   permission java.io.FilePermission "/tmp/inst1/conf/solrcore.properties", "read";
   permission java.io.FilePermission "/path/to/myinst/conf/solrcore.properties", "read";

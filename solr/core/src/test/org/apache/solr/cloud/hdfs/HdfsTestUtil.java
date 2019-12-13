@@ -47,6 +47,9 @@ import org.apache.hadoop.hdfs.server.namenode.NameNodeResourceChecker;
 import org.apache.hadoop.hdfs.server.namenode.ha.HATestUtil;
 import org.apache.hadoop.http.HttpServer2;
 import org.apache.hadoop.io.nativeio.NativeIO;
+import org.apache.hadoop.metrics2.MetricsSystem;
+import org.apache.hadoop.metrics2.impl.MetricsSystemImpl;
+import org.apache.hadoop.metrics2.lib.DefaultMetricsSystem;
 import org.apache.hadoop.util.DiskChecker;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase;
@@ -158,6 +161,8 @@ public class HdfsTestUtil {
     checkAssumptions();
 
     if (!HA_TESTING_ENABLED) haTesting = false;
+
+    DefaultMetricsSystem.setInstance(new FakeMetricsSystem());
 
     Configuration conf = getBasicConfiguration(new Configuration());
     conf.set("hdfs.minidfs.basedir", dir + File.separator + "hdfsBaseDir");
@@ -372,6 +377,17 @@ public class HdfsTestUtil {
   private static class SecurityManagerWorkerThread extends ForkJoinWorkerThread {
     SecurityManagerWorkerThread(ForkJoinPool pool) {
       super(pool);
+    }
+  }
+
+  /**
+   * Ensures that we don't try to initialize metrics and read files outside
+   * the source tree.
+   */
+  public static class FakeMetricsSystem extends MetricsSystemImpl {
+    @Override
+    public synchronized MetricsSystem init(String prefix) {
+      return this;
     }
   }
 }
