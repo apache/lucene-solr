@@ -226,7 +226,7 @@ configure([project(":solr"), project(":lucene"), ]) {
           .collect { it.toString() }
           .collect { it.toString() }
 
-      def dangling = (allExisting - allReferenced)
+      def dangling = (allExisting - allReferenced).sort()
 
       if (dangling) {
         gradle.buildFinished {
