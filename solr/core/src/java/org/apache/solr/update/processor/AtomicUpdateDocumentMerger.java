@@ -412,7 +412,7 @@ public class AtomicUpdateDocumentMerger {
    */
   public SolrInputDocument updateDocInSif(SolrInputField updateSif, SolrInputDocument cmdDocWChildren, SolrInputDocument updateDoc) {
     List sifToReplaceValues = (List) updateSif.getValues();
-    final boolean wasList = updateSif.getRawValue() instanceof Collection;
+    final boolean wasList = updateSif.getValue() instanceof Collection;
     int index = getDocIndexFromCollection(cmdDocWChildren, sifToReplaceValues);
     SolrInputDocument updatedDoc = merge(updateDoc, cmdDocWChildren);
     if(index == -1) {
