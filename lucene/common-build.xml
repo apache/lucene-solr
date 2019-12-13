@@ -266,7 +266,7 @@
   <property name="pitest.targetClasses" value="org.apache.*" />
 
   <!-- a reasonable default exclusion set, can be overridden for special cases -->
-  <property name="rat.excludes" value="**/TODO,**/*.txt,**/*.iml"/>
+  <property name="rat.excludes" value="**/TODO,**/*.txt,**/*.iml,**/*.gradle"/>
   
   <!-- These patterns can be defined to add additional files for checks, relative to module's home dir -->
   <property name="rat.additional-includes" value=""/>
