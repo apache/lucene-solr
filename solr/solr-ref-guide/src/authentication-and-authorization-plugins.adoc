@@ -149,7 +149,7 @@ All of the content in the `authorization` block of `security.json` would be pass
 
 [IMPORTANT]
 ====
-The authorization plugin is only supported in SolrCloud mode. Also, reloading the plugin isn't yet supported and requires a restart of the Solr installation (meaning, the JVM should be restarted, not simply a core reload).
+Reloading the plugin isn't yet supported and requires a restart of the Solr installation (meaning, the JVM should be restarted, not simply a core reload).
 ====
 
 Currently available authorization plugins are:
@@ -159,7 +159,9 @@ include::securing-solr.adoc[tag=list-of-authorization-plugins]
 [#configuring-audit-logging]
 == Audit Logging
 
-<<audit-logging.adoc#audit-logging,Audit logging>> plugins helps you keep an audit trail of events happening in your Solr cluster. Audit logging may e.g. ship data to an external audit service. A custom plugin can be implemented by extending the `AuditLoggerPlugin` class.
+<<audit-logging.adoc#audit-logging,Audit logging>> plugins help you keep an audit trail of events happening in your Solr cluster.
+Audit logging may e.g., ship data to an external audit service.
+A custom plugin can be implemented by extending the `AuditLoggerPlugin` class.
 
 == Authenticating in the Admin UI
 
@@ -169,14 +171,14 @@ When authentication is required the Admin UI will presented you with a login dia
 
 * <<basic-authentication-plugin.adoc#basic-authentication-plugin,Basic Authentication Plugin>>
 * <<jwt-authentication-plugin.adoc#jwt-authentication-plugin,JWT Authentication Plugin>>
- 
+
 If your plugin of choice is not supported, the Admin UI will still let you perform unrestricted operations, while for restricted operations you will need to interact with Solr by sending HTTP requests instead of through the graphical user interface of the Admin UI. All operations supported by Admin UI can be performed through Solr's RESTful APIs.
 
 == Securing Inter-Node Requests
 
-There are a lot of requests that originate from the Solr nodes itself. For example, requests from overseer to nodes, recovery threads, etc. We call these 'inter-node' request. Solr has a special built-in `PKIAuthenticationPlugin` (see below) that will always be available to secure inter-node traffic. 
+There are a lot of requests that originate from the Solr nodes itself. For example, requests from overseer to nodes, recovery threads, etc. We call these 'inter-node' request. Solr has a special built-in `PKIAuthenticationPlugin` (see below) that will always be available to secure inter-node traffic.
 
-Each Authentication plugin may also decide to secure inter-node requests on its own. They may do this through the so-called `HttpClientBuilder` mechanism, or they may alternatively choose on a per-request basis whether to delegate to PKI or not by overriding a `interceptInternodeRequest()` method from the base class, where any HTTP headers can be set. 
+Each Authentication plugin may also decide to secure inter-node requests on its own. They may do this through the so-called `HttpClientBuilder` mechanism, or they may alternatively choose on a per-request basis whether to delegate to PKI or not by overriding a `interceptInternodeRequest()` method from the base class, where any HTTP headers can be set.
 
 === PKIAuthenticationPlugin
 

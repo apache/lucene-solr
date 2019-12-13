@@ -17,24 +17,39 @@
 package org.apache.solr.velocity;
 
 import java.io.IOException;
+import java.io.StringReader;
 import java.io.StringWriter;
+import java.security.AccessControlException;
+import java.util.Properties;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.QueryResponseWriter;
-import org.apache.solr.response.SolrParamResourceLoader;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.response.VelocityResponseWriter;
+import org.apache.velocity.exception.MethodInvocationException;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class VelocityResponseWriterTest extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig.xml", "schema.xml", getFile("velocity/solr").getAbsolutePath());
-    System.out.println(getFile("velocity/solr").getAbsolutePath());
+  }
+
+  @AfterClass
+  public static void afterClass() throws Exception {
+  }
+
+  @Override
+  public void setUp() throws Exception {
+    // This test case toggles the configset used from trusted to untrusted - return to default of trusted for each test
+    h.getCoreContainer().getCoreDescriptor(h.coreName).setConfigSetTrusted(true);
+    super.setUp();
   }
 
   @Test
@@ -44,29 +59,58 @@ public class VelocityResponseWriterTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testCustomParamTemplate() throws Exception {
-    org.apache.solr.response.VelocityResponseWriter vrw = new VelocityResponseWriter();
+  public void testSecureUberspector() throws Exception {
+    VelocityResponseWriter vrw = new VelocityResponseWriter();
     NamedList<String> nl = new NamedList<>();
-    nl.add(VelocityResponseWriter.PARAMS_RESOURCE_LOADER_ENABLED, "true");
+    nl.add("template.base.dir", getFile("velocity").getAbsolutePath());
     vrw.init(nl);
-    SolrQueryRequest req = req(VelocityResponseWriter.TEMPLATE,"custom",
-        SolrParamResourceLoader.TEMPLATE_PARAM_PREFIX+"custom","$response.response.response_data");
+    SolrQueryRequest req = req(VelocityResponseWriter.TEMPLATE,"outside_the_box");
     SolrQueryResponse rsp = new SolrQueryResponse();
     StringWriter buf = new StringWriter();
-    rsp.add("response_data", "testing");
     vrw.write(buf, req, rsp);
-    assertEquals("testing", buf.toString());
+    assertEquals("$ex",buf.toString());  // $ex rendered literally because it is null, and thus did not succeed to break outside the box
   }
 
   @Test
-  public void testParamResourceLoaderDisabled() {
+  @Ignore("SOLR-14025: Velocity's SecureUberspector addresses this")
+  public void testTemplateSandbox() throws Exception {
+    assumeTrue("This test only works with security manager", System.getSecurityManager() != null);
     VelocityResponseWriter vrw = new VelocityResponseWriter();
-    // by default param resource loader is disabled, no need to set it here
-    SolrQueryRequest req = req(VelocityResponseWriter.TEMPLATE,"custom",
-        SolrParamResourceLoader.TEMPLATE_PARAM_PREFIX+"custom","$response.response.response_data");
+    NamedList<String> nl = new NamedList<>();
+    nl.add("template.base.dir", getFile("velocity").getAbsolutePath());
+    vrw.init(nl);
+    SolrQueryRequest req = req(VelocityResponseWriter.TEMPLATE,"outside_the_box");
     SolrQueryResponse rsp = new SolrQueryResponse();
     StringWriter buf = new StringWriter();
-    expectThrows(IOException.class, () -> vrw.write(buf, req, rsp));
+    try {
+      vrw.write(buf, req, rsp);
+      fail("template broke outside the box, retrieved: " + buf);
+    } catch (MethodInvocationException e) {
+      assertNotNull(e.getCause());
+      assertEquals(AccessControlException.class, e.getCause().getClass());
+      // expected failure, can't get outside the box
+    }
+  }
+
+  @Test
+  @Ignore("SOLR-14025: Velocity's SecureUberspector addresses this")
+  public void testSandboxIntersection() throws Exception {
+    assumeTrue("This test only works with security manager", System.getSecurityManager() != null);
+    VelocityResponseWriter vrw = new VelocityResponseWriter();
+    NamedList<String> nl = new NamedList<>();
+    nl.add("template.base.dir", getFile("velocity").getAbsolutePath());
+    vrw.init(nl);
+    SolrQueryRequest req = req(VelocityResponseWriter.TEMPLATE,"sandbox_intersection");
+    SolrQueryResponse rsp = new SolrQueryResponse();
+    StringWriter buf = new StringWriter();
+    try {
+      vrw.write(buf, req, rsp);
+      fail("template broke outside the box, retrieved: " + buf);
+    } catch (MethodInvocationException e) {
+      assertNotNull(e.getCause());
+      assertEquals(AccessControlException.class, e.getCause().getClass());
+      // expected failure, can't get outside the box
+    }
   }
 
   @Test
@@ -81,6 +125,28 @@ public class VelocityResponseWriterTest extends SolrTestCaseJ4 {
     vrw.write(buf, req, rsp);
     assertEquals("testing", buf.toString());
   }
+
+  @Test
+  public void testTemplateTrust() throws Exception {
+    // Try on trusted configset....
+    assertEquals("0", h.query(req("q","*:*", "wt","velocity",VelocityResponseWriter.TEMPLATE,"numFound")));
+
+    // Turn off trusted configset, which disables the Solr resource loader
+    h.getCoreContainer().getCoreDescriptor(h.coreName).setConfigSetTrusted(false);
+    assertFalse(h.getCoreContainer().getCoreDescriptor(coreName).isConfigSetTrusted());
+
+    try {
+      assertEquals("0", h.query(req("q","*:*", "wt","velocity",VelocityResponseWriter.TEMPLATE,"numFound")));
+      fail("template rendering should have failed, from an untrusted configset");
+    } catch (IOException e) {
+      // expected exception
+      assertEquals(IOException.class, e.getClass());
+    }
+
+    // set the harness back to the default of trusted
+    h.getCoreContainer().getCoreDescriptor(h.coreName).setConfigSetTrusted(true);
+  }
+
 
   @Test
   public void testSolrResourceLoaderTemplate() throws Exception {
@@ -112,31 +178,69 @@ public class VelocityResponseWriterTest extends SolrTestCaseJ4 {
 
     assertEquals("01", h.query(req("q","*:*", "wt","velocity",VelocityResponseWriter.TEMPLATE,"foreach")));
     assertEquals("", h.query(req("q","*:*", "wt","velocityWithInitProps",VelocityResponseWriter.TEMPLATE,"foreach")));
+
+    // Turn off trusted configset, which disables the init properties
+    h.getCoreContainer().getCoreDescriptor(h.coreName).setConfigSetTrusted(false);
+    assertFalse(h.getCoreContainer().getCoreDescriptor(coreName).isConfigSetTrusted());
+
+    assertEquals("01", h.query(req("q","*:*", "wt","velocityWithInitProps",VelocityResponseWriter.TEMPLATE,"foreach")));
+
+    // set the harness back to the default of trusted
+    h.getCoreContainer().getCoreDescriptor(h.coreName).setConfigSetTrusted(true);
   }
 
   @Test
   public void testCustomTools() throws Exception {
-    // custom_tool.vm responds with $!mytool.star("foo"), but $mytool is not defined (only in velocityWithCustomTools)
-    assertEquals("", h.query(req("q","*:*", "wt","velocity",VelocityResponseWriter.TEMPLATE,"custom_tool")));
+    // Render this template once without a custom tool defined, and once with it defined.  The tool has a `.star` method.
+    // The tool added as `mytool`, `log`, and `response`.  `log` is designed to be overridable, but not `response`
+    //    mytool.star=$!mytool.star("LATERALUS")
+    //    mytool.locale=$!mytool.locale
+    //    log.star=$!log.star("log overridden")
+    //    response.star=$!response.star("response overridden??")
 
-    assertEquals("** LATERALUS **", h.query(req("q","*:*", "wt","velocityWithCustomTools",VelocityResponseWriter.TEMPLATE,"t",
-            SolrParamResourceLoader.TEMPLATE_PARAM_PREFIX+"t", "$mytool.star(\"LATERALUS\")")));
+    // First without the tool defined, with `$!` turning null object/method references into empty string
+    Properties rendered_props = new Properties();
+    String rsp = h.query(req("q","*:*", "wt","velocity",VelocityResponseWriter.TEMPLATE,"custom_tool"));
+    rendered_props.load(new StringReader(rsp));
+    // ignore mytool.locale here, as it will be the random test one
+    assertEquals("",rendered_props.getProperty("mytool.star"));
+    assertEquals("",rendered_props.getProperty("log.star"));
+    assertEquals("",rendered_props.getProperty("response.star"));
 
-    // Does $log get overridden?
-    assertEquals("** log overridden **", h.query(req("q","*:*", "wt","velocityWithCustomTools",VelocityResponseWriter.TEMPLATE,"t",
-            SolrParamResourceLoader.TEMPLATE_PARAM_PREFIX+"t", "$log.star(\"log overridden\")")));
+    // Now with custom tools defined:
+    rsp = h.query(req("q","*:*", "wt","velocityWithCustomTools",VelocityResponseWriter.TEMPLATE,"custom_tool",VelocityResponseWriter.LOCALE, "de_DE"));
+    rendered_props.clear();
+    rendered_props.load(new StringReader(rsp));
+    assertEquals("** LATERALUS **",rendered_props.getProperty("mytool.star"));
+    assertEquals("** log overridden **",rendered_props.getProperty("log.star"));
+    assertEquals("",rendered_props.getProperty("response.star"));
+    assertEquals("de_DE",rendered_props.getProperty("mytool.locale"));
 
-    // Does $response get overridden?  actual blank response because of the bang on $! reference that silences bogus $-references
-    assertEquals("", h.query(req("q","*:*", "wt","velocityWithCustomTools",VelocityResponseWriter.TEMPLATE,"t",
-        SolrParamResourceLoader.TEMPLATE_PARAM_PREFIX+"t", "$!response.star(\"response overridden??\")")));
+
+    // Turn off trusted configset, which disables the custom tool injection
+    h.getCoreContainer().getCoreDescriptor(h.coreName).setConfigSetTrusted(false);
+    assertFalse(h.getCoreContainer().getCoreDescriptor(coreName).isConfigSetTrusted());
+
+    rsp = h.query(req("q","*:*", "wt","velocityWithCustomTools",VelocityResponseWriter.TEMPLATE,"custom_tool",VelocityResponseWriter.LOCALE, "de_DE"));
+    rendered_props.clear();
+    rendered_props.load(new StringReader(rsp));
+    assertEquals("",rendered_props.getProperty("mytool.star"));
+    assertEquals("",rendered_props.getProperty("log.star"));
+    assertEquals("",rendered_props.getProperty("response.star"));
+    assertEquals("",rendered_props.getProperty("mytool.locale"));
+
+    // set the harness back to the default of trusted
+    h.getCoreContainer().getCoreDescriptor(h.coreName).setConfigSetTrusted(true);
+
 
     // Custom tools can also have a SolrCore-arg constructor because they are instantiated with SolrCore.createInstance
     // TODO: do we really need to support this?  no great loss, as a custom tool could take a SolrCore object as a parameter to
     // TODO: any method, so one could do $mytool.my_method($request.core)
     // I'm currently inclined to make this feature undocumented/unsupported, as we may want to instantiate classes
     // in a different manner that only supports no-arg constructors, commented (passing) test case out
-//    assertEquals("collection1", h.query(req("q","*:*", "wt","velocityWithCustomTools",VelocityResponseWriter.TEMPLATE,"t",
-//        SolrParamResourceLoader.TEMPLATE_PARAM_PREFIX+"t", "$mytool.core.name")));
+    //    assertEquals("collection1", h.query(req("q","*:*", "wt","velocityWithCustomTools",VelocityResponseWriter.TEMPLATE,"t",
+    //        SolrParamResourceLoader.TEMPLATE_PARAM_PREFIX+"t", "$mytool.core.name")))
+    //           - NOTE: example uses removed inline param; convert to external template as needed
   }
 
   @Test
@@ -150,14 +254,10 @@ public class VelocityResponseWriterTest extends SolrTestCaseJ4 {
     assertEquals("Colour", h.query(req("q","*:*", "wt","velocity",VelocityResponseWriter.TEMPLATE,"resource_get")));
 
     // Test that $number tool uses the specified locale
-    assertEquals("2,112", h.query(req("q","*:*", "wt","velocityWithCustomTools",VelocityResponseWriter.TEMPLATE,"t",
-        SolrParamResourceLoader.TEMPLATE_PARAM_PREFIX+"t","$number.format(2112)", VelocityResponseWriter.LOCALE, "en_US")));
-    assertEquals("2.112", h.query(req("q","*:*", "wt","velocityWithCustomTools",VelocityResponseWriter.TEMPLATE,"t",
-        SolrParamResourceLoader.TEMPLATE_PARAM_PREFIX+"t","$number.format(2112)", VelocityResponseWriter.LOCALE, "de_DE")));
-
-    // Test that custom tool extending LocaleConfig gets the right locale
-    assertEquals("de_DE", h.query(req("q","*:*", "wt","velocityWithCustomTools",VelocityResponseWriter.TEMPLATE,"t",
-        SolrParamResourceLoader.TEMPLATE_PARAM_PREFIX+"t","$mytool.locale", VelocityResponseWriter.LOCALE, "de_DE")));
+    assertEquals("2,112", h.query(req("q","*:*", "wt","velocity",VelocityResponseWriter.TEMPLATE,"locale_number",
+        VelocityResponseWriter.LOCALE, "en_US")));
+    assertEquals("2.112", h.query(req("q","*:*", "wt","velocity",VelocityResponseWriter.TEMPLATE,"locale_number",
+        VelocityResponseWriter.LOCALE, "de_DE")));
   }
 
   @Test

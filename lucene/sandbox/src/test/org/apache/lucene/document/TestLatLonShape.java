@@ -20,6 +20,7 @@ import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Circle;
 import org.apache.lucene.geo.Circle2D;
+import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Line;
@@ -153,6 +154,49 @@ public class TestLatLonShape extends LuceneTestCase {
     IOUtils.close(reader, dir);
   }
 
+  public void testBasicContains() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+
+    // add a random polygon document
+    double[] polyLats = new double[] {-10, -10, 10, 10, -10};
+    double[] polyLons = new double[] {-10, 10, 10, -10, -10};
+    Polygon p = new Polygon(polyLats, polyLons);
+    Document document = new Document();
+    addPolygonsToDoc(FIELDNAME, document, p);
+    writer.addDocument(document);
+
+    // add a line document
+    document = new Document();
+    // add a line string
+    double lats[] = new double[p.numPoints() - 1];
+    double lons[] = new double[p.numPoints() - 1];
+    for (int i = 0; i < lats.length; ++i) {
+      lats[i] = p.getPolyLat(i);
+      lons[i] = p.getPolyLon(i);
+    }
+    Line l = new Line(lats, lons);
+    addLineToDoc(FIELDNAME, document, l);
+    writer.addDocument(document);
+
+    ////// search /////
+    // search a Polygon
+    IndexReader reader = writer.getReader();
+    writer.close();
+    IndexSearcher searcher = newSearcher(reader);
+    polyLats = new double[] {-5, -5, 5, 5, -5};
+    polyLons = new double[] {-5, 5, 5, -5, -5};
+    Polygon query =  new Polygon(polyLats, polyLons);
+    Query q = LatLonShape.newPolygonQuery(FIELDNAME, QueryRelation.CONTAINS, query);
+    assertEquals(1, searcher.count(q));
+
+    // search a bounding box
+    searcher = newSearcher(reader);
+    q = new LatLonShapeBoundingBoxQuery(FIELDNAME, QueryRelation.CONTAINS,0, 0, 0, 0);
+    assertEquals(1, searcher.count(q));
+    IOUtils.close(reader, dir);
+  }
+
   /** test random polygons with a single hole */
   public void testPolygonWithHole() throws Exception {
     int numVertices = TestUtil.nextInt(random(), 50, 100);
@@ -226,6 +270,134 @@ public class TestLatLonShape extends LuceneTestCase {
     IOUtils.close(reader, dir);
   }
 
+  public void testWithinDateLine() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+
+    Polygon indexPoly1 = new Polygon(
+        new double[] {-7.5d, 15d, 15d, 0d, -7.5d},
+        new double[] {-180d, -180d, -176d, -176d, -180d}
+    );
+
+    Polygon indexPoly2 = new Polygon(
+        new double[] {15d, -7.5d, -15d, -10d, 15d, 15d},
+        new double[] {180d, 180d, 176d, 174d, 176d, 180d}
+    );
+
+    Field[] fields = LatLonShape.createIndexableFields("test", indexPoly1);
+    for (Field f : fields) {
+      doc.add(f);
+    }
+    fields = LatLonShape.createIndexableFields("test", indexPoly2);
+    for (Field f : fields) {
+      doc.add(f);
+    }
+    w.addDocument(doc);
+    w.forceMerge(1);
+
+    ///// search //////
+    IndexReader reader = w.getReader();
+    w.close();
+    IndexSearcher searcher = newSearcher(reader);
+
+    Polygon[] searchPoly = new Polygon[] {
+        new Polygon(new double[] {-20d, 20d, 20d, -20d, -20d},
+            new double[] {-180d, -180d, -170d, -170d, -180d}),
+        new Polygon(new double[] {20d, -20d, -20d, 20d, 20d},
+            new double[] {180d, 180d, 170d, 170d, 180d})
+    };
+
+    Query q = LatLonShape.newPolygonQuery("test", QueryRelation.WITHIN, searchPoly);
+    assertEquals(1, searcher.count(q));
+
+    q = LatLonShape.newPolygonQuery("test", QueryRelation.INTERSECTS, searchPoly);
+    assertEquals(1, searcher.count(q));
+
+    q = LatLonShape.newPolygonQuery("test", QueryRelation.DISJOINT, searchPoly);
+    assertEquals(0, searcher.count(q));
+
+    q = LatLonShape.newPolygonQuery("test", QueryRelation.CONTAINS, searchPoly);
+    assertEquals(0, searcher.count(q));
+
+    q = LatLonShape.newBoxQuery("test", QueryRelation.WITHIN, -20, 20, 170, -170);
+    assertEquals(1, searcher.count(q));
+
+    q = LatLonShape.newBoxQuery("test", QueryRelation.INTERSECTS, -20, 20, 170, -170);
+    assertEquals(1, searcher.count(q));
+
+    q = LatLonShape.newBoxQuery("test", QueryRelation.DISJOINT, -20, 20, 170, -170);
+    assertEquals(0, searcher.count(q));
+
+    q = LatLonShape.newBoxQuery("test", QueryRelation.CONTAINS, -20, 20, 170, -170);
+    assertEquals(0, searcher.count(q));
+
+    IOUtils.close(w, reader, dir);
+  }
+
+  public void testContainsDateLine() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    Document doc = new Document();
+
+    Polygon indexPoly1 = new Polygon(
+        new double[] {-2d, -2d, 2d, 2d, -2d},
+        new double[] {178d, 180d, 180d, 178d, 178d}
+    );
+
+    Polygon indexPoly2 = new Polygon(
+        new double[] {-2d, -2d, 2d, 2d, -2d},
+        new double[] {-180d, -178d, -178d, -180d, -180d}
+    );
+
+    Field[] fields = LatLonShape.createIndexableFields("test", indexPoly1);
+    for (Field f : fields) {
+      doc.add(f);
+    }
+    fields = LatLonShape.createIndexableFields("test", indexPoly2);
+    for (Field f : fields) {
+      doc.add(f);
+    }
+    w.addDocument(doc);
+    w.forceMerge(1);
+
+    ///// search //////
+    IndexReader reader = w.getReader();
+    w.close();
+    IndexSearcher searcher = newSearcher(reader);
+
+    Polygon[] searchPoly = new Polygon[] {
+        new Polygon(new double[] {-1d, -1d, 1d, 1d, -1d},
+            new double[] {179d, 180d, 180d, 179d, 179d}),
+        new Polygon(new double[] {-1d, -1d, 1d, 1d, -1d},
+            new double[] {-180d, -179d, -179d, -180d, -180d})
+    };
+    Query q;
+    // Not supported due to encoding
+    //Query q = LatLonShape.newPolygonQuery("test", QueryRelation.CONTAINS, searchPoly);
+    //assertEquals(1, searcher.count(q));
+
+    q = LatLonShape.newPolygonQuery("test", QueryRelation.INTERSECTS, searchPoly);
+    assertEquals(1, searcher.count(q));
+
+    q = LatLonShape.newPolygonQuery("test", QueryRelation.DISJOINT, searchPoly);
+    assertEquals(0, searcher.count(q));
+
+    q = LatLonShape.newPolygonQuery("test", QueryRelation.WITHIN, searchPoly);
+    assertEquals(0, searcher.count(q));
+
+    q = LatLonShape.newBoxQuery("test", QueryRelation.INTERSECTS, -1, 1, 179, -179);
+    assertEquals(1, searcher.count(q));
+
+    q = LatLonShape.newBoxQuery("test", QueryRelation.WITHIN, -1, 1, 179, -179);
+    assertEquals(0, searcher.count(q));
+
+    q = LatLonShape.newBoxQuery("test", QueryRelation.DISJOINT, -1, 1, 179, -179);
+    assertEquals(0, searcher.count(q));
+
+    IOUtils.close(w, reader, dir);
+  }
+
   public void testLUCENE8454() throws Exception {
     Directory dir = newDirectory();
     RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
@@ -282,54 +454,6 @@ public class TestLatLonShape extends LuceneTestCase {
     // search by same point
     Query q = LatLonShape.newBoxQuery(FIELDNAME, QueryRelation.INTERSECTS, p.lat, p.lat, p.lon, p.lon);
     assertEquals(1, s.count(q));
-    IOUtils.close(r, dir);
-  }
-
-  public void testPointIndexAndDistanceQuery() throws Exception {
-    Directory dir = newDirectory();
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
-    Document document = new Document();
-    BaseLatLonShapeTestCase.Point p = (BaseLatLonShapeTestCase.Point) BaseLatLonShapeTestCase.ShapeType.POINT.nextShape();
-    Field[] fields = LatLonShape.createIndexableFields(FIELDNAME, p.lat,p.lon);
-    for (Field f : fields) {
-      document.add(f);
-    }
-    writer.addDocument(document);
-
-    //// search
-    IndexReader r = writer.getReader();
-    writer.close();
-    IndexSearcher s = newSearcher(r);
-
-    double lat = GeoTestUtil.nextLatitude();
-    double lon = GeoTestUtil.nextLongitude();
-    double radiusMeters = random().nextDouble() * Circle.MAXRADIUS;
-    while (radiusMeters == 0 || radiusMeters == Circle.MAXRADIUS) {
-      radiusMeters = random().nextDouble() * Circle.MAXRADIUS;
-    }
-    Circle circle = new Circle(lat, lon, radiusMeters);
-    Circle2D circle2D = Circle2D.create(circle);
-    int expected;
-    int expectedDisjoint;
-    int encodedLat = GeoEncodingUtils.encodeLatitude(p.lat);
-    int encodedLon = GeoEncodingUtils.encodeLongitude(p.lon);
-    if (circle2D.queryContainsPoint(encodedLon, encodedLat))  {
-      expected = 1;
-      expectedDisjoint = 0;
-    } else {
-      expected = 0;
-      expectedDisjoint = 1;
-    }
-
-    Query q = LatLonShape.newDistanceQuery(FIELDNAME, QueryRelation.INTERSECTS, circle);
-    assertEquals(expected, s.count(q));
-
-    q = LatLonShape.newDistanceQuery(FIELDNAME, QueryRelation.WITHIN, circle);
-    assertEquals(expected, s.count(q));
-
-    q = LatLonShape.newDistanceQuery(FIELDNAME, QueryRelation.DISJOINT, circle);
-    assertEquals(expectedDisjoint, s.count(q));
-
     IOUtils.close(r, dir);
   }
 
@@ -393,7 +517,7 @@ public class TestLatLonShape extends LuceneTestCase {
     double blon = -52.67048754768767;
     Polygon polygon = new Polygon(new double[] {-14.448264200949083, 0, 0, -14.448264200949083, -14.448264200949083},
         new double[] {0.9999999403953552, 0.9999999403953552, 124.50086371762484, 124.50086371762484, 0.9999999403953552});
-    Polygon2D polygon2D = Polygon2D.create(polygon);
+    Component2D polygon2D = Polygon2D.create(polygon);
     PointValues.Relation rel = polygon2D.relateTriangle(
         quantizeLon(alon), quantizeLat(blat),
         quantizeLon(blon), quantizeLat(blat),
@@ -411,7 +535,7 @@ public class TestLatLonShape extends LuceneTestCase {
 
   public void testTriangleTouchingEdges() {
     Polygon p = new Polygon(new double[] {0, 0, 1, 1, 0}, new double[] {0, 1, 1, 0, 0});
-    Polygon2D polygon2D = Polygon2D.create(p);
+    Component2D polygon2D = Polygon2D.create(p);
     //3 shared points
     PointValues.Relation rel = polygon2D.relateTriangle(
         quantizeLon(0.5), quantizeLat(0),
@@ -511,7 +635,7 @@ public class TestLatLonShape extends LuceneTestCase {
 
   public void testTriangleCrossingPolygonVertices() {
     Polygon p = new Polygon(new double[] {0, 0, -5, -10, -5, 0}, new double[] {-1, 1, 5, 0, -5, -1});
-    Polygon2D polygon2D = Polygon2D.create(p);
+    Component2D polygon2D = Polygon2D.create(p);
     PointValues.Relation rel = polygon2D.relateTriangle(
         quantizeLon(-5), quantizeLat(0),
         quantizeLon(10), quantizeLat(0),
@@ -521,7 +645,7 @@ public class TestLatLonShape extends LuceneTestCase {
 
   public void testLineCrossingPolygonVertices() {
     Polygon p = new Polygon(new double[] {0, -1, 0, 1, 0}, new double[] {-1, 0, 1, 0, -1});
-    Polygon2D polygon2D = Polygon2D.create(p);
+    Component2D polygon2D = Polygon2D.create(p);
     PointValues.Relation rel = polygon2D.relateTriangle(
         quantizeLon(-1.5), quantizeLat(0),
         quantizeLon(1.5), quantizeLat(0),
@@ -531,11 +655,59 @@ public class TestLatLonShape extends LuceneTestCase {
 
   public void testLineSharedLine() {
     Line l = new Line(new double[] {0, 0, 0, 0}, new double[] {-2, -1, 0, 1});
-    Line2D l2d = Line2D.create(l);
+    Component2D l2d = Line2D.create(l);
     PointValues.Relation r = l2d.relateTriangle(
         quantizeLon(-5), quantizeLat(0),
         quantizeLon(5), quantizeLat(0),
         quantizeLon(-5), quantizeLat(0));
     assertEquals(PointValues.Relation.CELL_CROSSES_QUERY, r);
+  }
+
+  public void testPointIndexAndDistanceQuery() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir);
+    Document document = new Document();
+    BaseLatLonShapeTestCase.Point p = (BaseLatLonShapeTestCase.Point) BaseLatLonShapeTestCase.ShapeType.POINT.nextShape();
+    Field[] fields = LatLonShape.createIndexableFields(FIELDNAME, p.lat,p.lon);
+    for (Field f : fields) {
+      document.add(f);
+    }
+    writer.addDocument(document);
+
+    //// search
+    IndexReader r = writer.getReader();
+    writer.close();
+    IndexSearcher s = newSearcher(r);
+
+    double lat = GeoTestUtil.nextLatitude();
+    double lon = GeoTestUtil.nextLongitude();
+    double radiusMeters = random().nextDouble() * Circle.MAXRADIUS;
+    while (radiusMeters == 0 || radiusMeters == Circle.MAXRADIUS) {
+      radiusMeters = random().nextDouble() * Circle.MAXRADIUS;
+    }
+    Circle circle = new Circle(lat, lon, radiusMeters);
+    Circle2D circle2D = Circle2D.create(circle);
+    int expected;
+    int expectedDisjoint;
+    int encodedLat = GeoEncodingUtils.encodeLatitude(p.lat);
+    int encodedLon = GeoEncodingUtils.encodeLongitude(p.lon);
+    if (circle2D.queryContainsPoint(encodedLon, encodedLat))  {
+      expected = 1;
+      expectedDisjoint = 0;
+    } else {
+      expected = 0;
+      expectedDisjoint = 1;
+    }
+
+    Query q = LatLonShape.newDistanceQuery(FIELDNAME, QueryRelation.INTERSECTS, circle);
+    assertEquals(expected, s.count(q));
+
+    q = LatLonShape.newDistanceQuery(FIELDNAME, QueryRelation.WITHIN, circle);
+    assertEquals(expected, s.count(q));
+
+    q = LatLonShape.newDistanceQuery(FIELDNAME, QueryRelation.DISJOINT, circle);
+    assertEquals(expectedDisjoint, s.count(q));
+
+    IOUtils.close(r, dir);
   }
 }

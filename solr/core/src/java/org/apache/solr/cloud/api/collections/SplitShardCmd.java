@@ -153,7 +153,7 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
     }
 
     RTimerTree t = timings.sub("checkDiskSpace");
-    checkDiskSpace(collectionName, slice.get(), parentShardLeader);
+    checkDiskSpace(collectionName, slice.get(), parentShardLeader, splitMethod, ocmh.cloudManager);
     t.stop();
 
     // let's record the ephemeralOwner of the parent leader node
@@ -310,11 +310,8 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
         ocmh.overseer.offerStateUpdate(Utils.toJSON(new ZkNodeProps(propMap)));
 
-        // wait until we are able to see the new shard in cluster state
-        ocmh.waitForNewShard(collectionName, subSlice);
-
-        // refresh cluster state
-        clusterState = zkStateReader.getClusterState();
+        // wait until we are able to see the new shard in cluster state and refresh the local view of the cluster state
+        clusterState = ocmh.waitForNewShard(collectionName, subSlice);
 
         log.debug("Adding first replica " + subShardName + " as part of slice " + subSlice + " of collection " + collectionName
             + " on " + nodeName);
@@ -545,6 +542,12 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       // always gets a chance to execute. See SOLR-7673
 
       if (repFactor == 1) {
+        // A commit is needed so that documents are visible when the sub-shard replicas come up
+        // (Note: This commit used to be after the state switch, but was brought here before the state switch
+        //  as per SOLR-13945 so that sub shards don't come up empty, momentarily, after being marked active) 
+        t = timings.sub("finalCommit");
+        ocmh.commit(results, slice.get(), parentShardLeader);
+        t.stop();
         // switch sub shard states to 'active'
         log.info("Replication factor is 1 so switching shard states");
         Map<String, Object> propMap = new HashMap<>();
@@ -586,9 +589,14 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
       log.info("Successfully created all replica shards for all sub-slices " + subSlices);
 
-      t = timings.sub("finalCommit");
-      ocmh.commit(results, slice.get(), parentShardLeader);
-      t.stop();
+      // The final commit was added in SOLR-4997 so that documents are visible
+      // when the sub-shard replicas come up
+      if (repFactor > 1) {
+        t = timings.sub("finalCommit");
+        ocmh.commit(results, slice.get(), parentShardLeader);
+        t.stop();
+      }
+
       if (withTiming) {
         results.add(CommonParams.TIMING, timings.asNamedList());
       }
@@ -620,10 +628,12 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
       throw new SolrException(ErrorCode.SERVER_ERROR, msgOnError);
     }
   }
-  private void checkDiskSpace(String collection, String shard, Replica parentShardLeader) throws SolrException {
+
+  // public and static to facilitate reuse in the simulation framework and in tests
+  public static void checkDiskSpace(String collection, String shard, Replica parentShardLeader, SolrIndexSplitter.SplitMethod method, SolrCloudManager cloudManager) throws SolrException {
     // check that enough disk space is available on the parent leader node
     // otherwise the actual index splitting will always fail
-    NodeStateProvider nodeStateProvider = ocmh.cloudManager.getNodeStateProvider();
+    NodeStateProvider nodeStateProvider = cloudManager.getNodeStateProvider();
     Map<String, Object> nodeValues = nodeStateProvider.getNodeValues(parentShardLeader.getNodeName(),
         Collections.singletonList(ImplicitSnitch.DISK));
     Map<String, Map<String, List<ReplicaInfo>>> infos = nodeStateProvider.getReplicaInfo(parentShardLeader.getNodeName(),
@@ -651,9 +661,11 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
     if (freeSize == null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "missing node disk space information for parent shard leader");
     }
-    if (freeSize.doubleValue() < 2.0 * indexSize) {
+    // 100% more for REWRITE, 5% more for LINK
+    double neededSpace = method == SolrIndexSplitter.SplitMethod.REWRITE ? 2.0 * indexSize : 1.05 * indexSize;
+    if (freeSize.doubleValue() < neededSpace) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "not enough free disk space to perform index split on node " +
-          parentShardLeader.getNodeName() + ", required: " + (2 * indexSize) + ", available: " + freeSize);
+          parentShardLeader.getNodeName() + ", required: " + neededSpace + ", available: " + freeSize);
     }
   }
 
@@ -672,6 +684,21 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
 
     if (coll == null) { // may have been deleted
       return;
+    }
+
+    // If parent is inactive and all sub shards are active, then rolling back
+    // to make the parent active again will cause data loss.
+    if (coll.getSlice(parentShard).getState() == Slice.State.INACTIVE) {
+      boolean allSubSlicesActive = true;
+      for (String sub: subSlices) {
+        if (coll.getSlice(sub).getState() != Slice.State.ACTIVE) {
+          allSubSlicesActive = false;
+          break;
+        }
+      }
+      if (allSubSlicesActive) {
+        return;
+      }
     }
 
     // set already created sub shards states to CONSTRUCTION - this prevents them

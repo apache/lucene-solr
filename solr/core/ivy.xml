@@ -38,6 +38,7 @@
     <dependency org="commons-codec" name="commons-codec" rev="${/commons-codec/commons-codec}" conf="compile"/>
     <dependency org="commons-io" name="commons-io" rev="${/commons-io/commons-io}" conf="compile"/>
     <dependency org="org.apache.commons" name="commons-exec" rev="${/org.apache.commons/commons-exec}" conf="compile"/>
+    <dependency org="org.apache.commons" name="commons-compress" rev="${/org.apache.commons/commons-compress}" conf="compile"/>
     <dependency org="commons-fileupload" name="commons-fileupload" rev="${/commons-fileupload/commons-fileupload}" conf="compile"/>
     <dependency org="commons-cli" name="commons-cli" rev="${/commons-cli/commons-cli}" conf="compile"/>
     <dependency org="org.apache.commons" name="commons-text" rev="${/org.apache.commons/commons-text}" conf="compile"/>
@@ -80,7 +81,6 @@
 
     <dependency org="org.apache.commons" name="commons-configuration2" rev="${/org.apache.commons/commons-configuration2}" conf="compile.hadoop"/>
     <dependency org="commons-collections" name="commons-collections" rev="${/commons-collections/commons-collections}" conf="compile.hadoop"/>
-    <dependency org="commons-beanutils" name="commons-beanutils" rev="${/commons-beanutils/commons-beanutils}" conf="compile.hadoop"/>
     <dependency org="com.github.ben-manes.caffeine" name="caffeine" rev="${/com.github.ben-manes.caffeine/caffeine}" conf="compile.hadoop"/>
     <dependency org="com.google.re2j" name="re2j" rev="${/com.google.re2j/re2j}" conf="compile"/>
     <dependency org="org.apache.commons" name="commons-lang3" rev="${/org.apache.commons/commons-lang3}" conf="compile.hadoop"/>
@@ -138,6 +138,9 @@
     <dependency org="org.codehaus.janino" name="commons-compiler" rev="${/org.codehaus.janino/commons-compiler}" conf="compile"/>
     <dependency org="com.google.protobuf" name="protobuf-java" rev="${/com.google.protobuf/protobuf-java}" conf="compile"/>
     <dependency org="com.jayway.jsonpath" name="json-path" rev="${/com.jayway.jsonpath/json-path}" conf="compile"/>
+
+    <!-- Package manager -->
+    <dependency org="com.github.zafarkhaja" name="java-semver" rev="${/com.github.zafarkhaja/java-semver}" conf="compile"/>
 
     <dependency org="org.rrd4j" name="rrd4j" rev="${/org.rrd4j/rrd4j}" conf="compile"/>
 

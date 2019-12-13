@@ -87,7 +87,6 @@ public class TermVectorsEvaluator extends RecursiveObjectEvaluator implements Ma
 
       List<Tuple> tuples = (List<Tuple>) objects[0];
       TreeMap<String, Integer> docFreqs = new TreeMap();
-      List<String> features = new ArrayList();
       List<String> rowLabels = new ArrayList();
 
       for (Tuple tuple : tuples) {
@@ -148,7 +147,7 @@ public class TermVectorsEvaluator extends RecursiveObjectEvaluator implements Ma
       }
       int totalTerms = docFreqs.size();
       Set<String> keys = docFreqs.keySet();
-      features.addAll(keys);
+      List<String> features = new ArrayList(keys);
       double[][] docVec = new double[tuples.size()][];
       for (int t = 0; t < tuples.size(); t++) {
         Tuple tuple = tuples.get(t);

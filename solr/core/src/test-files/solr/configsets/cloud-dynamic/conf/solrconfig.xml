@@ -29,6 +29,8 @@
 
   <luceneMatchVersion>${tests.luceneMatchVersion:LATEST}</luceneMatchVersion>
 
+  <statsCache class="${solr.statsCache:}"/>
+
   <updateHandler class="solr.DirectUpdateHandler2">
     <commitWithin>
       <softCommit>${solr.commitwithin.softcommit:true}</softCommit>

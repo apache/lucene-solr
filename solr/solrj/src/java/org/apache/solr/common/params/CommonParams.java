@@ -231,7 +231,7 @@ public interface CommonParams {
       }
       return null;
     }
-  };
+  }
 
   /** which parameters to log (if not supplied all parameters will be logged) **/
   String LOG_PARAMS_LIST = "logParamsList";
@@ -273,6 +273,7 @@ public interface CommonParams {
    * When querying a node, prefer local node's cores for distributed queries.
    * @deprecated Use {@code ShardParams.SHARDS_PREFERENCE}
    */
+  @Deprecated // SOLR-14035
   String PREFER_LOCAL_SHARDS = "preferLocalShards";
 
   String JAVABIN = "javabin";
@@ -293,7 +294,10 @@ public interface CommonParams {
 
   String JAVABIN_MIME = "application/javabin";
 
-  String PACKAGE = "package";
+  String FILE = "file";
+  String FILES = "files";
+
+  String CHILDDOC = "_childDocuments_";
 
 }
 

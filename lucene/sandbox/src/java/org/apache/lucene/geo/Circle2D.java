@@ -18,105 +18,220 @@
 package org.apache.lucene.geo;
 
 import org.apache.lucene.index.PointValues.Relation;
-import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.SloppyMath;
 
-import static org.apache.lucene.geo.GeoUtils.orient;
 
 /**
  * 2D circle implementation containing geo spatial logic.
  *
  * @lucene.internal
  */
-public class Circle2D {
+public class Circle2D implements Component2D {
   final GeoEncodingUtils.DistancePredicate distancePredicate;
-  final Rectangle2D rectangle2D;
+  final Rectangle rectangle;
   final double lat;
   final double lon;
   final double distance;
   final double sortKey;
   final double axisLat;
 
-  private Circle2D(double lat, double lon, double distance) {
+  private Circle2D(double lon, double lat, double distance) {
     this.lat = lat;
     this.lon = lon;
     this.distance = distance;
     this.distancePredicate  = GeoEncodingUtils.createDistancePredicate(lat, lon, distance);
-    Rectangle rectangle = Rectangle.fromPointDistance(lat, lon, distance);
-    rectangle2D = Rectangle2D.create(rectangle);
-    sortKey = GeoUtils.distanceQuerySortKey(distance);
-    axisLat = Rectangle.axisLat(lat, distance);
+    this.rectangle = Rectangle.fromPointDistance(lat, lon, distance);
+    this.sortKey = GeoUtils.distanceQuerySortKey(distance);
+    this.axisLat = Rectangle.axisLat(lat, distance);
   }
 
-  /** Builds a circle from  a point and a distance in meters */
-  public static Circle2D create(Circle circle) {
-    return new Circle2D(circle.getLat(), circle.getLon(), circle.getRadius());
-  }
-
-  /** Checks if the circle contains the provided point **/
-  public boolean queryContainsPoint(int x, int y) {
-    return distancePredicate.test(y, x);
-  }
-
-  /** compare this to a provided range bounding box **/
-  public Relation relateRangeBBox(int minXOffset, int minYOffset, byte[] minTriangle,
-                                  int maxXOffset, int maxYOffset, byte[] maxTriangle) {
-    //first we try the bounding box
-    Relation relation = rectangle2D.relateRangeBBox(minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
-    if (relation != Relation.CELL_OUTSIDE_QUERY) {
-      double minLat = GeoEncodingUtils.decodeLatitude(NumericUtils.sortableBytesToInt(minTriangle, minYOffset));
-      double minLon = GeoEncodingUtils.decodeLongitude(NumericUtils.sortableBytesToInt(minTriangle, minXOffset));
-      double maxLat = GeoEncodingUtils.decodeLatitude(NumericUtils.sortableBytesToInt(maxTriangle, maxYOffset));
-      double maxLon = GeoEncodingUtils.decodeLongitude(NumericUtils.sortableBytesToInt(maxTriangle, maxXOffset));
-      return GeoUtils.relate(minLat, maxLat, minLon, maxLon, lat, lon, sortKey, axisLat);
-    }
-    return relation;
-  }
-
-  /** Checks if the circle intersects the provided triangle **/
-  public boolean intersectsTriangle(int aX, int aY, int bX, int bY, int cX, int cY) {
-    // 1. query contains any triangle points
-    if (distancePredicate.test(aY, aX) || distancePredicate.test(bY, bX) || distancePredicate.test(cY, cX)) {
-      return true;
-    }
-
-    double aLon = GeoEncodingUtils.decodeLongitude(aX);
-    double aLat = GeoEncodingUtils.decodeLatitude(aY);
-    double bLon = GeoEncodingUtils.decodeLongitude(bX);
-    double bLat = GeoEncodingUtils.decodeLatitude(bY);
-    double cLon = GeoEncodingUtils.decodeLongitude(cX);
-    double cLat = GeoEncodingUtils.decodeLatitude(cY);
-    // 2.- Is center of the circle within the triangle
-    if (pointInTriangle(lon, lat, aLon, aLat, bLon, bLat , cLon, cLat)) {
-      return true;
-    }
-    // 3.- check intersections
-    if (intersectsLine(aLon, aLat, bLon, bLat) || intersectsLine(bLon, bLat, cLon, cLat) || intersectsLine(cLon, cLat, aLon, aLat)) {
+  /** Checks if the circle contains the provided triangle **/
+  public boolean containsTriangle(int ax, int ay, int bx, int by, int cx, int cy) {
+    if (distancePredicate.test(ay, ax) && distancePredicate.test(by, bx) && distancePredicate.test(cy, cx)) {
       return true;
     }
     return false;
   }
 
-  //This should be moved when LatLonShape is moved from sandbox!
-  /**
-   * Compute whether the given x, y point is in a triangle; uses the winding order method */
-  private static boolean pointInTriangle (double x, double y, double ax, double ay, double bx, double by, double cx, double cy) {
-    double minX = StrictMath.min(ax, StrictMath.min(bx, cx));
-    double minY = StrictMath.min(ay, StrictMath.min(by, cy));
-    double maxX = StrictMath.max(ax, StrictMath.max(bx, cx));
-    double maxY = StrictMath.max(ay, StrictMath.max(by, cy));
-    //check the bounding box because if the triangle is degenerated, e.g points and lines, we need to filter out
-    //coplanar points that are not part of the triangle.
-    if (x >= minX && x <= maxX && y >= minY && y <= maxY ) {
-      int a = orient(x, y, ax, ay, bx, by);
-      int b = orient(x, y, bx, by, cx, cy);
-      if (a == 0 || b == 0 || a < 0 == b < 0) {
-        int c = orient(x, y, cx, cy, ax, ay);
-        return c == 0 || (c < 0 == (b < 0 || a < 0));
-      }
-      return false;
-    } else {
-      return false;
+  @Override
+  public double getMinX() {
+    return rectangle.minLon;
+  }
+
+  @Override
+  public double getMaxX() {
+    return rectangle.maxLon;
+  }
+
+  @Override
+  public double getMinY() {
+    return rectangle.minLat;
+  }
+
+  @Override
+  public double getMaxY() {
+    return rectangle.maxLat;
+  }
+
+  @Override
+  public boolean contains(double x, double y) {
+    return SloppyMath.haversinSortKey(lat, lon, this.lat, this.lon) <= distance;
+  }
+
+  @Override
+  public Relation relate(double minX, double maxX, double minY, double maxY) {
+    if (Component2D.disjoint(rectangle.minLon, rectangle.maxLon, rectangle.minLat, rectangle.maxLat, minX, maxX, minY, maxY)) {
+      return Relation.CELL_OUTSIDE_QUERY;
     }
+    if (Component2D.within(rectangle.minLon, rectangle.maxLon, rectangle.minLat, rectangle.maxLat, minX, maxX, minY, maxY)) {
+      return Relation.CELL_CROSSES_QUERY;
+    }
+    return GeoUtils.relate(minY, maxY, minX, maxX, lat, lon, sortKey, axisLat);
+  }
+
+  @Override
+  public Relation relateTriangle(double minX, double maxX, double minY, double maxY, double ax, double ay, double bx, double by, double cx, double cy) {
+    if (Component2D.disjoint(rectangle.minLon, rectangle.maxLon, rectangle.minLat, rectangle.maxLat, minX, maxX, minY, maxY)) {
+      return Relation.CELL_OUTSIDE_QUERY;
+    }
+    if (ax == bx && bx == cx && ay == by && by == cy) {
+      // indexed "triangle" is a point: shortcut by checking contains
+      return contains(ax, ay) ? Relation.CELL_INSIDE_QUERY : Relation.CELL_OUTSIDE_QUERY;
+    } else if (ax == cx && ay == cy) {
+      // indexed "triangle" is a line segment: shortcut by calling appropriate method
+      return relateIndexedLineSegment(minX, maxX, minY, maxY, ax, ay, bx, by);
+    } else if (ax == bx && ay == by) {
+      // indexed "triangle" is a line segment: shortcut by calling appropriate method
+      return relateIndexedLineSegment(minX, maxX, minY, maxY, bx, by, cx, cy);
+    } else if (bx == cx && by == cy) {
+      // indexed "triangle" is a line segment: shortcut by calling appropriate method
+      return relateIndexedLineSegment(minX, maxX, minY, maxY, cx, cy, ax, ay);
+    }
+    // indexed "triangle" is a triangle:
+    return relateIndexedTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy);
+  }
+
+  @Override
+  public WithinRelation withinTriangle(double minX, double maxX, double minY, double maxY, double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
+    // short cut, lines and points cannot contain this type of shape
+    if ((ax == bx && ay == by) || (ax == cx && ay == cy) || (bx == cx && by == cy)) {
+      return WithinRelation.DISJOINT;
+    }
+
+    if (Component2D.disjoint(rectangle.minLon, rectangle.maxLon, rectangle.minLat, rectangle.maxLat, minX, maxX, minY, maxY)) {
+      return WithinRelation.DISJOINT;
+    }
+
+    // if any of the points is inside the polygon, the polygon cannot be within this indexed
+    // shape because points belong to the original indexed shape.
+    if (contains(ax, ay) || contains(bx, by) || contains(cx, cy)) {
+      return WithinRelation.NOTWITHIN;
+    }
+
+    WithinRelation relation = WithinRelation.DISJOINT;
+    // if any of the edges intersects an the edge belongs to the shape then it cannot be within.
+    // if it only intersects edges that do not belong to the shape, then it is a candidate
+    // we skip edges at the dateline to support shapes crossing it
+    if (intersectsLine(ax, ay, bx, by)) {
+      if (ab == true) {
+        return WithinRelation.NOTWITHIN;
+      } else {
+        relation = WithinRelation.CANDIDATE;
+      }
+    }
+
+    if (intersectsLine(bx, by, cx, cy)) {
+      if (bc == true) {
+        return WithinRelation.NOTWITHIN;
+      } else {
+        relation = WithinRelation.CANDIDATE;
+      }
+    }
+    if (intersectsLine(cx, cy, ax, ay)) {
+      if (ca == true) {
+        return WithinRelation.NOTWITHIN;
+      } else {
+        relation = WithinRelation.CANDIDATE;
+      }
+    }
+
+    // if any of the edges crosses and edge that does not belong to the shape
+    // then it is a candidate for within
+    if (relation == WithinRelation.CANDIDATE) {
+      return WithinRelation.CANDIDATE;
+    }
+
+    // Check if shape is within the triangle
+    if (Component2D.pointInTriangle(minX, maxX, minY, maxY, lon, lat, ax, ay, bx, by, cx, cy) == true) {
+      return WithinRelation.CANDIDATE;
+    }
+    return relation;
+  }
+
+  /** relates an indexed line segment (a "flat triangle") with the polygon */
+  private Relation relateIndexedLineSegment(double minX, double maxX, double minY, double maxY,
+                                            double a2x, double a2y, double b2x, double b2y) {
+    // check endpoints of the line segment
+    int numCorners = 0;
+    if (contains(a2x, a2y)) {
+      ++numCorners;
+    }
+    if (contains(b2x, b2y)) {
+      ++numCorners;
+    }
+
+    //intersectsLine(aX, aY, bX, bY) || intersectsLine(bX, bY, cX, cY) || intersectsLine(cX, cY, aX, aY)
+    if (numCorners == 2) {
+      if (intersectsLine(a2x, a2y, b2x, b2y)) {
+        return Relation.CELL_CROSSES_QUERY;
+      }
+      return Relation.CELL_INSIDE_QUERY;
+    } else if (numCorners == 0) {
+      if (intersectsLine(a2x, a2y, b2x, b2y)) {
+        return Relation.CELL_CROSSES_QUERY;
+      }
+      return Relation.CELL_OUTSIDE_QUERY;
+    }
+    return Relation.CELL_CROSSES_QUERY;
+  }
+
+  /** relates an indexed triangle with the polygon */
+  private Relation relateIndexedTriangle(double minX, double maxX, double minY, double maxY,
+                                         double ax, double ay, double bx, double by, double cx, double cy) {
+    // check each corner: if < 3 && > 0 are present, its cheaper than crossesSlowly
+    int numCorners = numberOfTriangleCorners(ax, ay, bx, by, cx, cy);
+    if (numCorners == 3) {
+      if (intersectsLine(ax, ay, bx, by) || intersectsLine(bx, by, cx, cy) || intersectsLine(cx, cy, ax, ay)) {
+        return Relation.CELL_CROSSES_QUERY;
+      }
+      return Relation.CELL_INSIDE_QUERY;
+    } else if (numCorners == 0) {
+      if (Component2D.pointInTriangle(minX, maxX, minY, maxY, lon, lat, ax, ay, bx, by, cx, cy) == true) {
+        return Relation.CELL_CROSSES_QUERY;
+      }
+      if (intersectsLine(ax, ay, bx, by) || intersectsLine(bx, by, cx, cy) || intersectsLine(cx, cy, ax, ay)) {
+        return Relation.CELL_CROSSES_QUERY;
+      }
+      return Relation.CELL_OUTSIDE_QUERY;
+    }
+    return Relation.CELL_CROSSES_QUERY;
+  }
+
+  private int numberOfTriangleCorners(double ax, double ay, double bx, double by, double cx, double cy) {
+    int containsCount = 0;
+    if (contains(ax, ay)) {
+      containsCount++;
+    }
+    if (contains(bx, by)) {
+      containsCount++;
+    }
+    if (containsCount == 1) {
+      return containsCount;
+    }
+    if (contains(cx, cy)) {
+      containsCount++;
+    }
+    return containsCount;
   }
 
   /** Checks if the circle intersects the provided segment **/
@@ -144,16 +259,14 @@ public class Circle2D {
     double maxLat = StrictMath.max(aY, bY);
 
     if (pX >= minLon && pX <= maxLon && pY >= minLat && pY <= maxLat) {
-      return distancePredicate.test(GeoEncodingUtils.encodeLatitude(pY), GeoEncodingUtils.encodeLongitude(pX));
+      return contains(pX, pY);
     }
     return false;
   }
 
-  /** Checks if the circle contains the provided triangle **/
-  public boolean containsTriangle(int ax, int ay, int bx, int by, int cx, int cy) {
-    if (distancePredicate.test(ay, ax) && distancePredicate.test(by, bx) && distancePredicate.test(cy, cx)) {
-      return true;
-    }
-    return false;
+  /** Builds a circle from  a point and a distance in meters */
+  public static Circle2D create(Circle circle) {
+    return new Circle2D(circle.getLon(), circle.getLat(), circle.getRadius());
   }
+
 }

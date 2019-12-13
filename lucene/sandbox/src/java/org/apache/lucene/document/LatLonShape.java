@@ -22,10 +22,13 @@ import java.util.List;
 import org.apache.lucene.document.ShapeField.QueryRelation; // javadoc
 import org.apache.lucene.document.ShapeField.Triangle;
 import org.apache.lucene.geo.Circle;
+import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.index.PointValues; // javadoc
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
@@ -94,6 +97,12 @@ public class LatLonShape {
 
   /** create a query to find all indexed geo shapes that intersect a defined bounding box **/
   public static Query newBoxQuery(String field, QueryRelation queryRelation, double minLatitude, double maxLatitude, double minLongitude, double maxLongitude) {
+    if (queryRelation == QueryRelation.CONTAINS && minLongitude > maxLongitude) {
+      BooleanQuery.Builder builder = new BooleanQuery.Builder();
+      builder.add(newBoxQuery(field, queryRelation, minLatitude, maxLatitude, minLongitude, GeoUtils.MAX_LON_INCL), BooleanClause.Occur.MUST);
+      builder.add(newBoxQuery(field, queryRelation, minLatitude, maxLatitude, GeoUtils.MIN_LON_INCL, maxLongitude), BooleanClause.Occur.MUST);
+      return builder.build();
+    }
     return new LatLonShapeBoundingBoxQuery(field, queryRelation, minLatitude, maxLatitude, minLongitude, maxLongitude);
   }
 
@@ -101,6 +110,13 @@ public class LatLonShape {
    *  note: does not support dateline crossing
    **/
   public static Query newLineQuery(String field, QueryRelation queryRelation, Line... lines) {
+    if (queryRelation == QueryRelation.CONTAINS && lines.length > 1) {
+      BooleanQuery.Builder builder = new BooleanQuery.Builder();
+      for (int i =0; i < lines.length; i++) {
+        builder.add(newLineQuery(field, queryRelation, lines[i]), BooleanClause.Occur.MUST);
+      }
+      return builder.build();
+    }
     return new LatLonShapeLineQuery(field, queryRelation, lines);
   }
 
@@ -108,6 +124,13 @@ public class LatLonShape {
    *  note: does not support dateline crossing
    **/
   public static Query newPolygonQuery(String field, QueryRelation queryRelation, Polygon... polygons) {
+    if (queryRelation == QueryRelation.CONTAINS && polygons.length > 1) {
+      BooleanQuery.Builder builder = new BooleanQuery.Builder();
+      for (int i =0; i < polygons.length; i++) {
+        builder.add(newPolygonQuery(field, queryRelation, polygons[i]), BooleanClause.Occur.MUST);
+      }
+      return builder.build();
+    }
     return new LatLonShapePolygonQuery(field, queryRelation, polygons);
   }
 

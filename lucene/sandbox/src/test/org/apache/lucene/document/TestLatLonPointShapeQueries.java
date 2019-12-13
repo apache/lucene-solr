@@ -18,13 +18,9 @@ package org.apache.lucene.document;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.document.ShapeField.QueryRelation;
-import org.apache.lucene.geo.Circle2D;
-import org.apache.lucene.geo.EdgeTree;
-import org.apache.lucene.geo.GeoEncodingUtils;
+import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Line;
-import org.apache.lucene.geo.Line2D;
-import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.index.PointValues.Relation;
 
 /** random bounding box, line, and polygon query tests for random generated {@code latitude, longitude} points */
@@ -78,6 +74,9 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
 
     @Override
     public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
+      if (queryRelation == QueryRelation.CONTAINS) {
+        return false;
+      }
       Point p = (Point)shape;
       double lat = encoder.quantizeY(p.lat);
       double lon = encoder.quantizeX(p.lon);
@@ -93,38 +92,21 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
     }
 
     @Override
-    public boolean testLineQuery(Line2D line2d, Object shape) {
-      return testPoint(line2d, (Point) shape);
-    }
-
-    @Override
-    public boolean testPolygonQuery(Object poly2d, Object shape) {
-      return testPoint((Polygon2D)poly2d, (Point) shape);
-    }
-
-    private boolean testPoint(EdgeTree tree, Point p) {
+    public boolean testComponentQuery(Component2D query, Object shape) {
+      if (queryRelation == QueryRelation.CONTAINS) {
+        return false;
+      }
+      Point p =  (Point) shape;
       double lat = encoder.quantizeY(p.lat);
       double lon = encoder.quantizeX(p.lon);
       // for consistency w/ the query we test the point as a triangle
-      Relation r = tree.relateTriangle(lon, lat, lon, lat, lon, lat);
+      Relation r = query.relateTriangle(lon, lat, lon, lat, lon, lat);
       if (queryRelation == QueryRelation.WITHIN) {
         return r == Relation.CELL_INSIDE_QUERY;
       } else if (queryRelation == QueryRelation.DISJOINT) {
         return r == Relation.CELL_OUTSIDE_QUERY;
       }
       return r != Relation.CELL_OUTSIDE_QUERY;
-    }
-
-    @Override
-    public boolean testDistanceQuery(Object circle2D, Object shape) {
-      Point p = (Point)shape;
-      int lat = GeoEncodingUtils.encodeLatitude(p.lat);
-      int lon = GeoEncodingUtils.encodeLongitude(p.lon);
-      boolean contains =  ((Circle2D)circle2D).queryContainsPoint(lon, lat);
-      if (queryRelation == QueryRelation.DISJOINT) {
-        return !contains;
-      }
-      return contains;
     }
   }
 }

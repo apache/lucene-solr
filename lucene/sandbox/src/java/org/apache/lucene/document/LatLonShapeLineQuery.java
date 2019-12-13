@@ -19,6 +19,7 @@ package org.apache.lucene.document;
 import java.util.Arrays;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
+import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Line2D;
@@ -45,7 +46,7 @@ import org.apache.lucene.util.NumericUtils;
  **/
 final class LatLonShapeLineQuery extends ShapeQuery {
   final Line[] lines;
-  final private Line2D line2D;
+  final private Component2D line2D;
 
   public LatLonShapeLineQuery(String field, QueryRelation queryRelation, Line... lines) {
     super(field, queryRelation);
@@ -73,14 +74,14 @@ final class LatLonShapeLineQuery extends ShapeQuery {
 
   @Override
   protected Relation relateRangeBBoxToQuery(int minXOffset, int minYOffset, byte[] minTriangle,
-                                                        int maxXOffset, int maxYOffset, byte[] maxTriangle) {
+                                            int maxXOffset, int maxYOffset, byte[] maxTriangle) {
     double minLat = GeoEncodingUtils.decodeLatitude(NumericUtils.sortableBytesToInt(minTriangle, minYOffset));
     double minLon = GeoEncodingUtils.decodeLongitude(NumericUtils.sortableBytesToInt(minTriangle, minXOffset));
     double maxLat = GeoEncodingUtils.decodeLatitude(NumericUtils.sortableBytesToInt(maxTriangle, maxYOffset));
     double maxLon = GeoEncodingUtils.decodeLongitude(NumericUtils.sortableBytesToInt(maxTriangle, maxXOffset));
 
     // check internal node against query
-    return line2D.relate(minLat, maxLat, minLon, maxLon);
+    return line2D.relate(minLon, maxLon, minLat, maxLat);
   }
 
   @Override
@@ -100,6 +101,20 @@ final class LatLonShapeLineQuery extends ShapeQuery {
       case DISJOINT: return line2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_OUTSIDE_QUERY;
       default: throw new IllegalArgumentException("Unsupported query type :[" + queryRelation + "]");
     }
+  }
+
+  @Override
+  protected Component2D.WithinRelation queryWithin(byte[] t, ShapeField.DecodedTriangle scratchTriangle) {
+    ShapeField.decodeTriangle(t, scratchTriangle);
+
+    double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle.aY);
+    double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle.aX);
+    double blat = GeoEncodingUtils.decodeLatitude(scratchTriangle.bY);
+    double blon = GeoEncodingUtils.decodeLongitude(scratchTriangle.bX);
+    double clat = GeoEncodingUtils.decodeLatitude(scratchTriangle.cY);
+    double clon = GeoEncodingUtils.decodeLongitude(scratchTriangle.cX);
+
+    return line2D.withinTriangle(alon, alat, scratchTriangle.ab, blon, blat, scratchTriangle.bc, clon, clat, scratchTriangle.ca);
   }
 
   @Override

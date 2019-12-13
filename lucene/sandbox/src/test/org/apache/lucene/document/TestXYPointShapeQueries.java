@@ -18,12 +18,12 @@ package org.apache.lucene.document;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.document.ShapeField.QueryRelation;
-import org.apache.lucene.geo.EdgeTree;
-import org.apache.lucene.geo.Line2D;
+import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.ShapeTestUtil;
 import org.apache.lucene.geo.XYCircle2D;
 import org.apache.lucene.geo.XYLine;
-import org.apache.lucene.geo.XYPolygon2D;
+import org.apache.lucene.geo.XYRectangle;
+import org.apache.lucene.geo.XYRectangle2D;
 import org.apache.lucene.index.PointValues.Relation;
 
 /** random cartesian bounding box, line, and polygon query tests for random generated {@code x, y} points */
@@ -76,36 +76,21 @@ public class TestXYPointShapeQueries extends BaseXYShapeTestCase {
     }
 
     @Override
-    public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
-      Point p = (Point)shape;
-      double lat = encoder.quantizeY(p.y);
-      double lon = encoder.quantizeX(p.x);
-      boolean isDisjoint = lat < minLat || lat > maxLat;
+    public boolean testBBoxQuery(double minY, double maxY, double minX, double maxX, Object shape) {
+      Component2D rectangle2D = XYRectangle2D.create(new XYRectangle(minX, maxX, minY, maxY));
+      return testComponentQuery(rectangle2D, shape);
+    }
 
-      isDisjoint = isDisjoint || ((minLon > maxLon)
-          ? lon < minLon && lon > maxLon
-          : lon < minLon || lon > maxLon);
-      if (queryRelation == QueryRelation.DISJOINT) {
-        return isDisjoint;
+    @Override
+    public boolean testComponentQuery(Component2D query, Object shape) {
+      if (queryRelation == QueryRelation.CONTAINS) {
+        return false;
       }
-      return isDisjoint == false;
-    }
-
-    @Override
-    public boolean testLineQuery(Line2D line2d, Object shape) {
-      return testPoint(line2d, (Point) shape);
-    }
-
-    @Override
-    public boolean testPolygonQuery(Object poly2d, Object shape) {
-      return testPoint((XYPolygon2D)poly2d, (Point) shape);
-    }
-
-    private boolean testPoint(EdgeTree tree, Point p) {
+      Point p = (Point) shape;
       double lat = encoder.quantizeY(p.y);
       double lon = encoder.quantizeX(p.x);
       // for consistency w/ the query we test the point as a triangle
-      Relation r = tree.relateTriangle(lon, lat, lon, lat, lon, lat);
+      Relation r = query.relateTriangle(lon, lat, lon, lat, lon, lat);
       if (queryRelation == QueryRelation.WITHIN) {
         return r == Relation.CELL_INSIDE_QUERY;
       } else if (queryRelation == QueryRelation.DISJOINT) {

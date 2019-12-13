@@ -85,20 +85,21 @@ public class BlockJoinParentQParser extends FiltersQParser {
   }
 
   public static BitDocIdSetFilterWrapper getCachedFilter(final SolrQueryRequest request, Query parentList) {
-    SolrCache parentCache = request.getSearcher().getCache(CACHE_NAME);
+    SolrCache<Query, Filter> parentCache = request.getSearcher().getCache(CACHE_NAME);
     // lazily retrieve from solr cache
-    Filter filter = null;
-    if (parentCache != null) {
-      filter = (Filter) parentCache.get(parentList);
-    }
     BitDocIdSetFilterWrapper result;
-    if (filter instanceof BitDocIdSetFilterWrapper) {
-      result = (BitDocIdSetFilterWrapper) filter;
-    } else {
-      result = new BitDocIdSetFilterWrapper(createParentFilter(parentList));
-      if (parentCache != null) {
+    if (parentCache != null) {
+      Filter filter = parentCache.computeIfAbsent(parentList,
+          query -> new BitDocIdSetFilterWrapper(createParentFilter(query)));
+      if (filter instanceof BitDocIdSetFilterWrapper) {
+        result = (BitDocIdSetFilterWrapper) filter;
+      } else {
+        result = new BitDocIdSetFilterWrapper(createParentFilter(parentList));
+        // non-atomic update of existing entry to ensure strong-typing
         parentCache.put(parentList, result);
       }
+    } else {
+      result = new BitDocIdSetFilterWrapper(createParentFilter(parentList));
     }
     return result;
   }

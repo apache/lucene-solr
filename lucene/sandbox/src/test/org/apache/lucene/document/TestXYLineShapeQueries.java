@@ -18,12 +18,9 @@ package org.apache.lucene.document;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 import org.apache.lucene.document.ShapeField.QueryRelation;
-import org.apache.lucene.geo.EdgeTree;
-import org.apache.lucene.geo.Line2D;
+import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.ShapeTestUtil;
-import org.apache.lucene.geo.XYCircle2D;
 import org.apache.lucene.geo.XYLine;
-import org.apache.lucene.geo.XYPolygon2D;
 import org.apache.lucene.geo.XYRectangle;
 import org.apache.lucene.geo.XYRectangle2D;
 import org.apache.lucene.index.PointValues.Relation;
@@ -79,38 +76,19 @@ public class TestXYLineShapeQueries extends BaseXYShapeTestCase {
 
     @Override
     public boolean testBBoxQuery(double minY, double maxY, double minX, double maxX, Object shape) {
-      XYLine line = (XYLine)shape;
-      XYRectangle2D rectangle2D = XYRectangle2D.create(new XYRectangle(minX, maxX, minY, maxY));
-      for (int i = 0, j = 1; j < line.numPoints(); ++i, ++j) {
-        ShapeField.DecodedTriangle decoded = encoder.encodeDecodeTriangle(line.getX(i), line.getY(i), true, line.getX(j), line.getY(j), true, line.getX(i), line.getY(i), true);
-        if (queryRelation == QueryRelation.WITHIN) {
-          if (rectangle2D.containsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) == false) {
-            return false;
-          }
-        } else {
-          if (rectangle2D.intersectsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) == true) {
-            return queryRelation == QueryRelation.INTERSECTS;
-          }
-        }
+      Component2D rectangle2D = XYRectangle2D.create(new XYRectangle(minX, maxX, minY, maxY));
+      return testComponentQuery(rectangle2D, shape);
+    }
+
+    @Override
+    public boolean testComponentQuery(Component2D query, Object shape) {
+      XYLine line = (XYLine) shape;
+      if (queryRelation == QueryRelation.CONTAINS) {
+        return testWithinLine(query, (XYLine) shape);
       }
-      return queryRelation != QueryRelation.INTERSECTS;
-    }
-
-    @Override
-    public boolean testLineQuery(Line2D line2d, Object shape) {
-      return testLine(line2d, (XYLine) shape);
-    }
-
-    @Override
-    public boolean testPolygonQuery(Object poly2d, Object shape) {
-      return testLine((XYPolygon2D)poly2d, (XYLine) shape);
-    }
-
-    private boolean testLine(EdgeTree queryPoly, XYLine line) {
-
       for (int i = 0, j = 1; j < line.numPoints(); ++i, ++j) {
         double[] qTriangle = encoder.quantizeTriangle(line.getX(i), line.getY(i), true, line.getX(j), line.getY(j), true, line.getX(i), line.getY(i), true);
-        Relation r = queryPoly.relateTriangle(qTriangle[1], qTriangle[0], qTriangle[3], qTriangle[2], qTriangle[5], qTriangle[4]);
+        Relation r = query.relateTriangle(qTriangle[1], qTriangle[0], qTriangle[3], qTriangle[2], qTriangle[5], qTriangle[4]);
         if (queryRelation == QueryRelation.DISJOINT) {
           if (r != Relation.CELL_OUTSIDE_QUERY) return false;
         } else if (queryRelation == QueryRelation.WITHIN) {
@@ -122,21 +100,18 @@ public class TestXYLineShapeQueries extends BaseXYShapeTestCase {
       return queryRelation == QueryRelation.INTERSECTS ? false : true;
     }
 
-    @Override
-    public boolean testDistanceQuery(Object circle2D, Object shape) {
-      XYLine line = (XYLine)shape;
+    private boolean testWithinLine(Component2D tree, XYLine line) {
+      Component2D.WithinRelation answer = Component2D.WithinRelation.DISJOINT;
       for (int i = 0, j = 1; j < line.numPoints(); ++i, ++j) {
         double[] qTriangle = encoder.quantizeTriangle(line.getX(i), line.getY(i), true, line.getX(j), line.getY(j), true, line.getX(i), line.getY(i), true);
-        Relation r = ((XYCircle2D)circle2D).relateTriangle((float)qTriangle[1], (float)qTriangle[0], (float)qTriangle[3], (float)qTriangle[2], (float)qTriangle[5], (float)qTriangle[4]);
-        if (queryRelation == QueryRelation.DISJOINT) {
-          if (r != Relation.CELL_OUTSIDE_QUERY) return false;
-        } else if (queryRelation == QueryRelation.WITHIN) {
-          if (r != Relation.CELL_INSIDE_QUERY) return false;
-        } else {
-          if (r != Relation.CELL_OUTSIDE_QUERY) return true;
+        Component2D.WithinRelation relation = tree.withinTriangle(qTriangle[1], qTriangle[0], true, qTriangle[3], qTriangle[2], true, qTriangle[5], qTriangle[4], true);
+        if (relation == Component2D.WithinRelation.NOTWITHIN) {
+          return false;
+        } else if (relation == Component2D.WithinRelation.CANDIDATE) {
+          answer = Component2D.WithinRelation.CANDIDATE;
         }
       }
-      return queryRelation == QueryRelation.INTERSECTS ? false : true;
+      return answer == Component2D.WithinRelation.CANDIDATE;
     }
   }
 }

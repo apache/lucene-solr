@@ -28,6 +28,6 @@ public interface TermFrequencyAttribute extends Attribute {
   /** Set the custom term frequency of the current term within one document. */
   public void setTermFrequency(int termFrequency);
 
-  /** Returns the custom term frequencey. */
+  /** Returns the custom term frequency. */
   public int getTermFrequency();
 }

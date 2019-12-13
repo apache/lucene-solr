@@ -262,7 +262,7 @@ public class XmlConfigFile { // formerly simply "Config"
         if (errIfMissing) {
           throw new RuntimeException(name + " missing "+path);
         } else {
-          log.debug(name + " missing optional " + path);
+          log.trace(name + " missing optional " + path);
           return null;
         }
       }
@@ -296,7 +296,7 @@ public class XmlConfigFile { // formerly simply "Config"
         if (errIfMissing) {
           throw new RuntimeException(name + " missing "+path);
         } else {
-          log.debug(name + " missing optional " + path);
+          log.trace(name + " missing optional " + path);
           return null;
         }
       }
@@ -385,14 +385,6 @@ public class XmlConfigFile { // formerly simply "Config"
 
     log.debug(name + ' '+path+'='+txt);
     return txt;
-
-    /******
-    short typ = nd.getNodeType();
-    if (typ==Node.ATTRIBUTE_NODE || typ==Node.TEXT_NODE) {
-      return nd.getNodeValue();
-    }
-    return nd.getTextContent();
-    ******/
   }
 
 

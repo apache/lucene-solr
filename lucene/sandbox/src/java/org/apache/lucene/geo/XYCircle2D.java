@@ -27,7 +27,7 @@ import org.apache.lucene.index.PointValues.Relation;
  *
  * @lucene.internal
  */
-public class XYCircle2D {
+public class XYCircle2D implements Component2D {
 
   private final double minX;
   private final double maxX;
@@ -48,20 +48,34 @@ public class XYCircle2D {
     this.distanceSquared = distance * distance;
   }
 
-  /** Builds a XYCircle2D from XYCircle */
-  public static XYCircle2D create(XYCircle circle) {
-    return new XYCircle2D(circle.getX(), circle.getY(), circle.getRadius());
+  @Override
+  public double getMinX() {
+    return minX;
   }
 
+  @Override
+  public double getMaxX() {
+    return maxX;
+  }
 
-  /** Checks if the rectangle contains the provided point **/
+  @Override
+  public double getMinY() {
+    return minY;
+  }
+
+  @Override
+  public double getMaxY() {
+    return maxY;
+  }
+
+  @Override
   public boolean contains(double x, double y) {
     final double diffX = this.x - x;
     final double diffY = this.y - y;
     return diffX * diffX + diffY * diffY <= distanceSquared;
   }
 
-  /** compare this to a provided rectangle bounding box **/
+  @Override
   public Relation relate(double minX, double maxX, double minY, double maxY) {
     if (this.minX > maxX || this.maxX < minX || this.minY > maxY || this.maxY < minY) {
       return Relation.CELL_OUTSIDE_QUERY;
@@ -72,16 +86,127 @@ public class XYCircle2D {
     return Relation.CELL_CROSSES_QUERY;
   }
 
-  /** compare this to a provided triangle **/
-  public Relation relateTriangle(double aX, double aY, double bX, double bY, double cX, double cY) {
-    final int numCorners = numberOfTriangleCorners(aX, aY, bX, bY, cX, cY);
-    if (numCorners == 3) {
+  @Override
+  public Relation relateTriangle(double minX, double maxX, double minY, double maxY, double ax, double ay, double bx, double by, double cx, double cy) {
+    if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
+      return Relation.CELL_OUTSIDE_QUERY;
+    }
+    if (ax == bx && bx == cx && ay == by && by == cy) {
+      // indexed "triangle" is a point: shortcut by checking contains
+      return contains(ax, ay) ? Relation.CELL_INSIDE_QUERY : Relation.CELL_OUTSIDE_QUERY;
+    } else if (ax == cx && ay == cy) {
+      // indexed "triangle" is a line segment: shortcut by calling appropriate method
+      return relateIndexedLineSegment(minX, maxX, minY, maxY, ax, ay, bx, by);
+    } else if (ax == bx && ay == by) {
+      // indexed "triangle" is a line segment: shortcut by calling appropriate method
+      return relateIndexedLineSegment(minX, maxX, minY, maxY, bx, by, cx, cy);
+    } else if (bx == cx && by == cy) {
+      // indexed "triangle" is a line segment: shortcut by calling appropriate method
+      return relateIndexedLineSegment(minX, maxX, minY, maxY, cx, cy, ax, ay);
+    }
+    // indexed "triangle" is a triangle:
+    return relateIndexedTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy);
+  }
+
+  @Override
+  public WithinRelation withinTriangle(double minX, double maxX, double minY, double maxY, double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
+    // short cut, lines and points cannot contain this type of shape
+    if ((ax == bx && ay == by) || (ax == cx && ay == cy) || (bx == cx && by == cy)) {
+      return WithinRelation.DISJOINT;
+    }
+
+    if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
+      return WithinRelation.DISJOINT;
+    }
+
+    // if any of the points is inside the polygon, the polygon cannot be within this indexed
+    // shape because points belong to the original indexed shape.
+    if (contains(ax, ay) || contains(bx, by) || contains(cx, cy)) {
+      return WithinRelation.NOTWITHIN;
+    }
+
+    WithinRelation relation = WithinRelation.DISJOINT;
+    // if any of the edges intersects an the edge belongs to the shape then it cannot be within.
+    // if it only intersects edges that do not belong to the shape, then it is a candidate
+    // we skip edges at the dateline to support shapes crossing it
+    if (intersectsLine(ax, ay, bx, by)) {
+      if (ab == true) {
+        return WithinRelation.NOTWITHIN;
+      } else {
+        relation = WithinRelation.CANDIDATE;
+      }
+    }
+
+    if (intersectsLine(bx, by, cx, cy)) {
+      if (bc == true) {
+        return WithinRelation.NOTWITHIN;
+      } else {
+        relation = WithinRelation.CANDIDATE;
+      }
+    }
+    if (intersectsLine(cx, cy, ax, ay)) {
+      if (ca == true) {
+        return WithinRelation.NOTWITHIN;
+      } else {
+        relation = WithinRelation.CANDIDATE;
+      }
+    }
+
+    // if any of the edges crosses and edge that does not belong to the shape
+    // then it is a candidate for within
+    if (relation == WithinRelation.CANDIDATE) {
+      return WithinRelation.CANDIDATE;
+    }
+
+    // Check if shape is within the triangle
+    if (Component2D.pointInTriangle(minX, maxX, minY, maxY, x, y, ax, ay, bx, by, cx, cy) == true) {
+      return WithinRelation.CANDIDATE;
+    }
+    return relation;
+  }
+
+  /** relates an indexed line segment (a "flat triangle") with the polygon */
+  private Relation relateIndexedLineSegment(double minX, double maxX, double minY, double maxY,
+                                            double a2x, double a2y, double b2x, double b2y) {
+    // check endpoints of the line segment
+    int numCorners = 0;
+    if (contains(a2x, a2y)) {
+      ++numCorners;
+    }
+    if (contains(b2x, b2y)) {
+      ++numCorners;
+    }
+
+    //intersectsLine(aX, aY, bX, bY) || intersectsLine(bX, bY, cX, cY) || intersectsLine(cX, cY, aX, aY)
+    if (numCorners == 2) {
+      if (intersectsLine(a2x, a2y, b2x, b2y)) {
+        return Relation.CELL_CROSSES_QUERY;
+      }
       return Relation.CELL_INSIDE_QUERY;
     } else if (numCorners == 0) {
-      if (Tessellator.pointInTriangle(x, y, aX, aY, bX, bY, cX, cY) ||
-          intersectsLine(aX, aY, bX, bY) ||
-          intersectsLine(bX, bY, cX, cY) ||
-          intersectsLine(cX, cY, aX, aY)) {
+      if (intersectsLine(a2x, a2y, b2x, b2y)) {
+        return Relation.CELL_CROSSES_QUERY;
+      }
+      return Relation.CELL_OUTSIDE_QUERY;
+    }
+    return Relation.CELL_CROSSES_QUERY;
+  }
+
+  /** relates an indexed triangle with the polygon */
+  private Relation relateIndexedTriangle(double minX, double maxX, double minY, double maxY,
+                                         double ax, double ay, double bx, double by, double cx, double cy) {
+    // check each corner: if < 3 && > 0 are present, its cheaper than crossesSlowly
+    int numCorners = numberOfTriangleCorners(ax, ay, bx, by, cx, cy);
+    if (numCorners == 3) {
+      if (intersectsLine(ax, ay, bx, by) || intersectsLine(bx, by, cx, cy) || intersectsLine(cx, cy, ax, ay)) {
+        return Relation.CELL_CROSSES_QUERY;
+      }
+      return Relation.CELL_INSIDE_QUERY;
+    } else if (numCorners == 0) {
+      if (Component2D.pointInTriangle(minX, maxX, minY, maxY, x, y, ax, ay, bx, by, cx, cy) == true) {
+        return Relation.CELL_CROSSES_QUERY;
+      }
+      if (intersectsLine(ax, ay, bx, by) || intersectsLine(bx, by, cx, cy) || intersectsLine(cx, cy, ax, ay)) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_OUTSIDE_QUERY;
@@ -151,4 +276,10 @@ public class XYCircle2D {
     int result = Objects.hash(x, y, distanceSquared);
     return result;
   }
+
+  /** Builds a XYCircle2D from XYCircle */
+  public static Component2D create(XYCircle circle) {
+    return new XYCircle2D(circle.getX(), circle.getY(), circle.getRadius());
+  }
+
 }

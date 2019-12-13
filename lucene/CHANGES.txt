@@ -52,6 +52,8 @@ Improvements
 
 * LUCENE-8937: Avoid agressive stemming on numbers in the FrenchMinimalStemmer.
   (Adrien Gallou via Tomoko Uchida)
+  
+* LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
 
 Bug fixes
 
@@ -61,6 +63,136 @@ Bug fixes
 Other
 
 * LUCENE-8768: Fix Javadocs build in Java 11. (Namgyu Kim)
+
+======================= Lucene 8.5.0 =======================
+
+API Changes
+---------------------
+(No changes)
+
+New Features
+---------------------
+(No changes)
+
+Improvements
+---------------------
+(No changes)
+
+Optimizations
+---------------------
+(No changes)
+
+Bug Fixes
+---------------------
+(No changes)
+
+Other
+---------------------
+(No changes)
+
+======================= Lucene 8.4.0 =======================
+
+API Changes
+
+* LUCENE-9029: Deprecate SloppyMath toRadians/toDegrees in favor of Java Math.
+  (Jack Conradson via Adrien Grand)
+
+New Features
+
+* LUCENE-8620: Add CONTAINS support for LatLonShape and XYShape. (Ignacio Vera)
+
+Improvements
+
+* LUCENE-9002: Skip costly caching clause in LRUQueryCache if it makes the query
+  many times slower. (Guoqiang Jiang)
+
+* LUCENE-9006: WordDelimiterGraphFilter's catenateAll token is now ordered before any token parts, like WDF did.
+  (David Smiley)
+
+* LUCENE-9028: introducing Intervals.multiterm() (Mikhail Khludnev)
+
+* LUCENE-9018: ConcatenateGraphFilter now has a configurable separator. (Stanislav Mikulchik, David Smiley)
+
+* LUCENE-9036: ExitableDirectoryReader may interupt scaning over DocValues (Mikhail Khludnev)
+
+* LUCENE-9062: QueryVisitor now has a consumeTermsMatching() method, allowing queries
+  that match a class of terms to pass a ByteRunAutomaton matching those that class
+  back to the visitor. (Alan Woodward, David Smiley)
+
+* LUCENE-9073: IntervalQuery to respond field on toString() and explain() (Mikhail Khludnev)
+
+Optimizations
+
+* LUCENE-8928: When building a kd-tree for dimensions n > 2, compute exact bounds for an inner node every N splits
+  to improve the quality of the tree. N is defined by SPLITS_BEFORE_EXACT_BOUNDS which is set to 4.
+  (Ignacio Vera, Adrien Grand)
+
+* BaseDirectoryReader no longer sums up the `LeafReader#numDocs` of its leaves
+  eagerly. This especially helps when creating views of readers that hide
+  documents, since computing the number of live documents is an expensive
+  operation. (Adrien Grand)
+
+* LUCENE-8992: TopFieldCollector and TopScoreDocCollector can now share minimum scores across leaves
+  concurrently. (Adrien Grand, Atri Sharma, Jim Ferenczi)
+
+* LUCENE-8932: BKDReader's index is now stored off-heap when the IndexInput is
+  an instance of ByteBufferIndexInput. (Jack Conradson via Adrien Grand)
+
+* LUCENE-9024: IntroSelector now falls back to the median of medians algorithm
+  instead of sorting when the maximum recursion level is exceeded, providing
+  better worst-case runtime. (Paul Sanwald via Adrien Grand)
+
+* LUCENE-8920: The denser arcs of FST now index labels with a bitset in order
+  to provide near constant time access. (Bruno Roustant, Mike Sokolov via Adrien Grand)
+
+* LUCENE-9027: Use SIMD instructions to decode postings. (Adrien Grand)
+
+* LUCENE-9049: Remove FST cached root arcs now redundant with labels indexed by bitset.
+  This frees some on-heap FST space. (Jack Conradson via Bruno Roustant)
+
+* LUCENE-9045: Do not use TreeMap/TreeSet in BlockTree and PerFieldPostingsFormat. (Bruno Roustant)
+
+Bug Fixes
+
+* LUCENE-9001: Fix race condition in SetOnce. (Przemko Robakowski)
+
+* LUCENE-9030: Fix WordnetSynonymParser behaviour so it behaves similar to
+  SolrSynonymParser. (Christoph Buescher via Alan Woodward)
+
+* LUCENE-9054: Fix reproduceJenkinsFailures.py to not overwrite junit XML files when retrying (hossman)
+
+* LUCENE-9031: UnsupportedOperationException on MatchesIterator.getQuery() (Alan Woodward, Mikhail Khludnev)
+
+* LUCENE-8996: maxScore was sometimes missing from distributed grouped responses.
+  (Julien Massenet, Diego Ceccarelli, Munendra S N, Christine Poerschke)
+
+Other
+
+* LUCENE-8979: Code Cleanup: Use entryset for map iteration wherever possible. - Part 2 (Koen De Groote)
+
+* LUCENE-8994: Code Cleanup - Pass values to list constructor instead of empty constructor followed by addAll(). (Koen De Groote)
+
+* LUCENE-8746: Refactor EdgeTree - Introduce a Component tree that represents the tree of components (e.g polygons).
+  Edge tree is now just a tree of edges. (Ignacio Vera)
+
+* LUCENE-9046: Fix wrong example in Javadoc of TermInSetQuery (Namgyu Kim)
+
+* LUCENE-8983: Add sandbox PhraseWildcardQuery to control multi-terms expansions in a phrase. (Bruno Roustant)
+
+* LUCENE-9067: Polygon2D#contains() is now thread safe. (Ignacio Vera)
+
+Build
+
+* Upgrade forbiddenapis to version 2.7; upgrade Groovy to 2.4.17.  (Uwe Schindler)
+
+* LUCENE-9041: Upgrade ecj to 3.19.0 to fix sporadic precommit javadoc issues (Kevin Risden)
+
+======================= Lucene 8.3.1 =======================
+
+Bug Fixes
+
+* LUCENE-9050: MultiTermIntervalsSource.visit() was not calling back to its
+  visitor. (Alan Woodward)
 
 ======================= Lucene 8.3.0 =======================
 
@@ -80,6 +212,10 @@ API Changes
 * LUCENE-8921: IndexSearcher.termStatistics() no longer takes a TermStates; it takes the docFreq and totalTermFreq.
   And don't call if docFreq <= 0.  The previous implementation survives as deprecated and final.  It's removed in 9.0.
   (Bruno Roustant, David Smiley, Alan Woodward)
+
+* LUCENE-8990: PointValues#estimateDocCount(visitor) estimates the number of documents that would be matched by
+  the given IntersectVisitor. THe method is used to compute the cost() of ScorerSuppliers instead of
+  PointValues#estimatePointCount(visitor). (Ignacio Vera, Adrien Grand)
 
 New Features
 
@@ -144,7 +280,7 @@ Optimizations
   non-competitive hits. (Adrien Grand)
 
 * LUCENE-8935: BooleanQuery with no scoring clause can now early terminate the query when
-the total hits is not requested.
+  the total hits is not requested. (Jim Ferenczi)
 
 * LUCENE-8941: Matches on wildcard queries will defer building their full
   disjunction until a MatchesIterator is pulled (Alan Woodward)
@@ -152,16 +288,28 @@ the total hits is not requested.
 * LUCENE-8755: spatial-extras quad and packed quad prefix trees now index points faster.
   (Chongchen Chen, David Smiley)
 
+* LUCENE-8860: add additional leaf node level optimizations in LatLonShapeBoundingBoxQuery.
+  (Igor Motov via Ignacio Vera)
+  
 * LUCENE-8968: Improve performance of WITHIN and DISJOINT queries for Shape queries by
   doing just one pass whenever possible. (Ignacio Vera)
 
 * LUCENE-8939: Introduce shared count based early termination across multiple slices
   (Atri Sharma)
 
+* LUCENE-8980: Blocktree's seekExact now short-circuits false if the term isn't in the min-max range of the segment.
+  Large perf gain for ID/time like data when populated sequentially.  (Guoqiang Jiang)
+
 Bug Fixes
 
 * LUCENE-8755: spatial-extras quad and packed quad prefix trees could throw a
   NullPointerException for certain cell edge coordinates (Chongchen Chen, David Smiley)
+
+* LUCENE-9005: BooleanQuery.visit() would pull subVisitors from its parent visitor, rather
+  than from a visitor for its own specific query.  This could cause problems when BQ was
+  nested under another BQ. Instead, we now pull a MUST subvisitor, pass it to any MUST
+  subclauses, and then pull SHOULD, MUST_NOT and FILTER visitors from it rather than from
+  the parent.  (Alan Woodward)
 
 Other
 
@@ -170,7 +318,17 @@ Other
 
 * LUCENE-8758: QuadPrefixTree: removed levelS and levelN fields which weren't used. (Amish Shah)
 
-* LUCENE-8975: Code Cleanup: Use entryset for map iteration wherever possible.
+* LUCENE-8975: Code Cleanup: Use entryset for map iteration wherever possible. (Koen De Groote)
+
+* LUCENE-8993, LUCENE-8807: Changed all repository and download references in build files
+  to HTTPS. (Uwe Schindler)
+
+* LUCENE-8998: Fix OverviewImplTest.testIsOptimized reproducible failure. (Tomoko Uchida)
+
+* LUCENE-8999: LuceneTestCase.expectThrows now propogates assert/assumption failures up to the test
+  w/o wrapping in a new assertion failure unless the caller has explicitly expected them (hossman)
+
+* LUCENE-8062: GlobalOrdinalsWithScoreQuery is no longer eligible for query caching. (Jim Ferenczi)
 
 ======================= Lucene 8.2.0 =======================
 

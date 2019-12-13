@@ -20,7 +20,7 @@ import java.util.Arrays;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.document.ShapeField.QueryRelation;
-import org.apache.lucene.geo.Circle2D;
+import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.ShapeTestUtil;
 import org.apache.lucene.geo.XYCircle;
@@ -67,23 +67,32 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
   }
 
   @Override
-  protected Line2D toLine2D(Object... lines) {
+  protected Component2D toLine2D(Object... lines) {
     return Line2D.create(Arrays.stream(lines).toArray(XYLine[]::new));
   }
 
   @Override
-  protected XYPolygon2D toPolygon2D(Object... polygons) {
+  protected Component2D toPolygon2D(Object... polygons) {
     return XYPolygon2D.create(Arrays.stream(polygons).toArray(XYPolygon[]::new));
   }
 
   @Override
-  protected Object toCircle2D(Object circle) {
+  protected Component2D toCircle2D(Object circle) {
     return XYCircle2D.create((XYCircle) circle);
   }
 
   @Override
   public XYRectangle randomQueryBox() {
     return ShapeTestUtil.nextBox();
+  }
+
+  @Override
+  protected Object nextCircle() {
+    float radius = (float) TestUtil.nextInt(random(), 1, 1000);//Math.abs(ShapeTestUtil.nextDouble());
+    while (radius == 0 || radius > 1000) {
+      radius = (float) Math.abs(ShapeTestUtil.nextDouble());
+    }
+    return new XYCircle((float)ShapeTestUtil.nextDouble(), (float)ShapeTestUtil.nextDouble(), radius);
   }
 
   @Override
@@ -135,17 +144,17 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
   }
 
   @Override
-  protected Object nextCircle() {
-    float radius = (float) TestUtil.nextInt(random(), 1, 1000);//Math.abs(ShapeTestUtil.nextDouble());
-    while (radius == 0 || radius > 1000) {
-      radius = (float) Math.abs(ShapeTestUtil.nextDouble());
-    }
-    return new XYCircle((float)ShapeTestUtil.nextDouble(), (float)ShapeTestUtil.nextDouble(), radius);
-  }
-
-  @Override
   protected Encoder getEncoder() {
     return new Encoder() {
+      @Override
+      double decodeX(int encoded) {
+        return decode(encoded);
+      }
+
+      @Override
+      double decodeY(int encoded) {
+        return decode(encoded);
+      }
       @Override
       double quantizeX(double raw) {
         return decode(encode(raw));

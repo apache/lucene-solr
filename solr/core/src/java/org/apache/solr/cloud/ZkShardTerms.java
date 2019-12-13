@@ -18,15 +18,14 @@
 package org.apache.solr.cloud;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.apache.solr.client.solrj.cloud.ShardTerms;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -74,12 +73,12 @@ public class ZkShardTerms implements AutoCloseable{
   private final Set<CoreTermWatcher> listeners = new HashSet<>();
   private final AtomicBoolean isClosed = new AtomicBoolean(false);
 
-  private Terms terms;
+  private ShardTerms terms;
 
   // Listener of a core for shard's term change events
   interface CoreTermWatcher {
     // return true if the listener wanna to be triggered in the next time
-    boolean onTermChanged(Terms terms);
+    boolean onTermChanged(ShardTerms terms);
   }
 
   public ZkShardTerms(String collection, String shard, SolrZkClient zkClient) {
@@ -101,12 +100,15 @@ public class ZkShardTerms implements AutoCloseable{
   public void ensureTermsIsHigher(String leader, Set<String> replicasNeedingRecovery) {
     if (replicasNeedingRecovery.isEmpty()) return;
 
-    Terms newTerms;
+    ShardTerms newTerms;
     while( (newTerms = terms.increaseTerms(leader, replicasNeedingRecovery)) != null) {
       if (forceSaveTerms(newTerms)) return;
     }
   }
 
+  public ShardTerms getShardTerms() {
+    return terms;
+  }
   /**
    * Can this replica become leader?
    * @param coreNodeName of the replica
@@ -146,7 +148,7 @@ public class ZkShardTerms implements AutoCloseable{
   // package private for testing, only used by tests
   Map<String, Long> getTerms() {
     synchronized (writingLock) {
-      return new HashMap<>(terms.values);
+      return terms.getTerms();
     }
   }
 
@@ -176,7 +178,7 @@ public class ZkShardTerms implements AutoCloseable{
   // package private for testing, only used by tests
   // return true if this object should not be reused
   boolean removeTerm(String coreNodeName) {
-    Terms newTerms;
+    ShardTerms newTerms;
     while ( (newTerms = terms.removeTerm(coreNodeName)) != null) {
       try {
         if (saveTerms(newTerms)) return false;
@@ -193,7 +195,7 @@ public class ZkShardTerms implements AutoCloseable{
    * @param coreNodeName of the replica
    */
   void registerTerm(String coreNodeName) {
-    Terms newTerms;
+    ShardTerms newTerms;
     while ( (newTerms = terms.registerTerm(coreNodeName)) != null) {
       if (forceSaveTerms(newTerms)) break;
     }
@@ -205,14 +207,14 @@ public class ZkShardTerms implements AutoCloseable{
    * @param coreNodeName of the replica
    */
   public void setTermEqualsToLeader(String coreNodeName) {
-    Terms newTerms;
+    ShardTerms newTerms;
     while ( (newTerms = terms.setTermEqualsToLeader(coreNodeName)) != null) {
       if (forceSaveTerms(newTerms)) break;
     }
   }
 
   public void setTermToZero(String coreNodeName) {
-    Terms newTerms;
+    ShardTerms newTerms;
     while ( (newTerms = terms.setTermToZero(coreNodeName)) != null) {
       if (forceSaveTerms(newTerms)) break;
     }
@@ -222,7 +224,7 @@ public class ZkShardTerms implements AutoCloseable{
    * Mark {@code coreNodeName} as recovering
    */
   public void startRecovering(String coreNodeName) {
-    Terms newTerms;
+    ShardTerms newTerms;
     while ( (newTerms = terms.startRecovering(coreNodeName)) != null) {
       if (forceSaveTerms(newTerms)) break;
     }
@@ -232,23 +234,22 @@ public class ZkShardTerms implements AutoCloseable{
    * Mark {@code coreNodeName} as finished recovering
    */
   public void doneRecovering(String coreNodeName) {
-    Terms newTerms;
+    ShardTerms newTerms;
     while ( (newTerms = terms.doneRecovering(coreNodeName)) != null) {
       if (forceSaveTerms(newTerms)) break;
     }
   }
 
   public boolean isRecovering(String name) {
-    return terms.values.containsKey(name + "_recovering");
+    return terms.isRecovering(name);
   }
-
 
   /**
    * When first updates come in, all replicas have some data now,
    * so we must switch from term 0 (registered) to 1 (have some data)
    */
   public void ensureHighestTermsAreNotZero() {
-    Terms newTerms;
+    ShardTerms newTerms;
     while ( (newTerms = terms.ensureHighestTermsAreNotZero()) != null) {
       if (forceSaveTerms(newTerms)) break;
     }
@@ -276,7 +277,7 @@ public class ZkShardTerms implements AutoCloseable{
    * @param newTerms to be set
    * @return true if terms is saved successfully to ZK, false if otherwise
    */
-  private boolean forceSaveTerms(Terms newTerms) {
+  private boolean forceSaveTerms(ShardTerms newTerms) {
     try {
       return saveTerms(newTerms);
     } catch (KeeperException.NoNodeException e) {
@@ -291,11 +292,11 @@ public class ZkShardTerms implements AutoCloseable{
    * @return true if terms is saved successfully to ZK, false if otherwise
    * @throws KeeperException.NoNodeException correspond ZK term node is not created
    */
-  private boolean saveTerms(Terms newTerms) throws KeeperException.NoNodeException {
-    byte[] znodeData = Utils.toJSON(newTerms.values);
+  private boolean saveTerms(ShardTerms newTerms) throws KeeperException.NoNodeException {
+    byte[] znodeData = Utils.toJSON(newTerms);
     try {
-      Stat stat = zkClient.setData(znodePath, znodeData, newTerms.version, true);
-      setNewTerms(new Terms(newTerms.values, stat.getVersion()));
+      Stat stat = zkClient.setData(znodePath, znodeData, newTerms.getVersion(), true);
+      setNewTerms(new ShardTerms(newTerms, stat.getVersion()));
       log.info("Successful update of terms at {} to {}", znodePath, newTerms);
       return true;
     } catch (KeeperException.BadVersionException e) {
@@ -338,11 +339,11 @@ public class ZkShardTerms implements AutoCloseable{
    * Fetch latest terms from ZK
    */
   public void refreshTerms() {
-    Terms newTerms;
+    ShardTerms newTerms;
     try {
       Stat stat = new Stat();
       byte[] data = zkClient.getData(znodePath, null, stat, true);
-      newTerms = new Terms((Map<String, Long>) Utils.fromJSON(data), stat.getVersion());
+      newTerms = new ShardTerms((Map<String, Long>) Utils.fromJSON(data), stat.getVersion());
     } catch (KeeperException e) {
       Thread.interrupted();
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error updating shard term for collection: " + collection, e);
@@ -405,10 +406,10 @@ public class ZkShardTerms implements AutoCloseable{
    * Atomically update {@link ZkShardTerms#terms} and call listeners
    * @param newTerms to be set
    */
-  private void setNewTerms(Terms newTerms) {
+  private void setNewTerms(ShardTerms newTerms) {
     boolean isChanged = false;
     synchronized (writingLock) {
-      if (terms == null || newTerms.version > terms.version) {
+      if (terms == null || newTerms.getVersion() > terms.getVersion()) {
         terms = newTerms;
         isChanged = true;
       }
@@ -416,207 +417,9 @@ public class ZkShardTerms implements AutoCloseable{
     if (isChanged) onTermUpdates(newTerms);
   }
 
-  private void onTermUpdates(Terms newTerms) {
+  private void onTermUpdates(ShardTerms newTerms) {
     synchronized (listeners) {
       listeners.removeIf(coreTermWatcher -> !coreTermWatcher.onTermChanged(newTerms));
-    }
-  }
-
-  /**
-   * Hold values of terms, this class is immutable
-   */
-  static class Terms {
-    private final Map<String, Long> values;
-    private final long maxTerm;
-    // ZK node version
-    private final int version;
-
-    public Terms () {
-      this(new HashMap<>(), 0);
-    }
-
-    public Terms(Map<String, Long> values, int version) {
-      this.values = values;
-      this.version = version;
-      if (values.isEmpty()) this.maxTerm = 0;
-      else this.maxTerm = Collections.max(values.values());
-    }
-
-    /**
-     * Can {@code coreNodeName} become leader?
-     * @param coreNodeName of the replica
-     * @return true if {@code coreNodeName} can become leader, false if otherwise
-     */
-    boolean canBecomeLeader(String coreNodeName) {
-      return haveHighestTermValue(coreNodeName) && !values.containsKey(coreNodeName + "_recovering");
-    }
-
-    /**
-     * Is {@code coreNodeName}'s term highest?
-     * @param coreNodeName of the replica
-     * @return true if term of {@code coreNodeName} is highest
-     */
-    boolean haveHighestTermValue(String coreNodeName) {
-      if (values.isEmpty()) return true;
-      long maxTerm = Collections.max(values.values());
-      return values.getOrDefault(coreNodeName, 0L) == maxTerm;
-    }
-
-    Long getTerm(String coreNodeName) {
-      return values.get(coreNodeName);
-    }
-
-    /**
-     * Return a new {@link Terms} in which term of {@code leader} is higher than {@code replicasNeedingRecovery}
-     * @param leader coreNodeName of leader
-     * @param replicasNeedingRecovery set of replicas in which their terms should be lower than leader's term
-     * @return null if term of {@code leader} is already higher than {@code replicasNeedingRecovery}
-     */
-    Terms increaseTerms(String leader, Set<String> replicasNeedingRecovery) {
-      if (!values.containsKey(leader)) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Can not find leader's term " + leader);
-      }
-
-      boolean changed = false;
-      boolean foundReplicasInLowerTerms = false;
-
-      HashMap<String, Long> newValues = new HashMap<>(values);
-      long leaderTerm = newValues.get(leader);
-      for (String key : newValues.keySet()) {
-        if (replicasNeedingRecovery.contains(key)) foundReplicasInLowerTerms = true;
-        if (Objects.equals(newValues.get(key), leaderTerm)) {
-          if(skipIncreaseTermOf(key, replicasNeedingRecovery)) {
-            changed = true;
-          } else {
-            newValues.put(key, leaderTerm+1);
-          }
-        }
-      }
-
-      // We should skip the optimization if there are no replicasNeedingRecovery present in local terms,
-      // this may indicate that the current value is stale
-      if (!changed && foundReplicasInLowerTerms) return null;
-      return new Terms(newValues, version);
-    }
-
-    private boolean skipIncreaseTermOf(String key, Set<String> replicasNeedingRecovery) {
-      if (key.endsWith("_recovering")) {
-        key = key.substring(0, key.length() - "_recovering".length());
-        return replicasNeedingRecovery.contains(key);
-      }
-      return replicasNeedingRecovery.contains(key);
-    }
-
-    /**
-     * Return a new {@link Terms} in which highest terms are not zero
-     * @return null if highest terms are already larger than zero
-     */
-    Terms ensureHighestTermsAreNotZero() {
-      if (maxTerm > 0) return null;
-      else {
-        HashMap<String, Long> newValues = new HashMap<>(values);
-        for (String replica : values.keySet()) {
-          newValues.put(replica, 1L);
-        }
-        return new Terms(newValues, version);
-      }
-    }
-
-    /**
-     * Return a new {@link Terms} in which term of {@code coreNodeName} is removed
-     * @param coreNodeName of the replica
-     * @return null if term of {@code coreNodeName} is already not exist
-     */
-    Terms removeTerm(String coreNodeName) {
-      if (!values.containsKey(coreNodeName)) return null;
-
-      HashMap<String, Long> newValues = new HashMap<>(values);
-      newValues.remove(coreNodeName);
-      return new Terms(newValues, version);
-    }
-
-    /**
-     * Return a new {@link Terms} in which the associate term of {@code coreNodeName} is not null
-     * @param coreNodeName of the replica
-     * @return null if term of {@code coreNodeName} is already exist
-     */
-    Terms registerTerm(String coreNodeName) {
-      if (values.containsKey(coreNodeName)) return null;
-
-      HashMap<String, Long> newValues = new HashMap<>(values);
-      newValues.put(coreNodeName, 0L);
-      return new Terms(newValues, version);
-    }
-
-    Terms setTermToZero(String coreNodeName) {
-      if (values.getOrDefault(coreNodeName, -1L) == 0) {
-        return null;
-      }
-      HashMap<String, Long> newValues = new HashMap<>(values);
-      newValues.put(coreNodeName, 0L);
-      return new Terms(newValues, version);
-    }
-
-    /**
-     * Return a new {@link Terms} in which the term of {@code coreNodeName} is max
-     * @param coreNodeName of the replica
-     * @return null if term of {@code coreNodeName} is already maximum
-     */
-    Terms setTermEqualsToLeader(String coreNodeName) {
-      long maxTerm = getMaxTerm();
-      if (values.get(coreNodeName) == maxTerm) return null;
-
-      HashMap<String, Long> newValues = new HashMap<>(values);
-      newValues.put(coreNodeName, maxTerm);
-      newValues.remove(coreNodeName+"_recovering");
-      return new Terms(newValues, version);
-    }
-
-    long getMaxTerm() {
-      return maxTerm;
-    }
-
-    /**
-     * Mark {@code coreNodeName} as recovering
-     * @param coreNodeName of the replica
-     * @return null if {@code coreNodeName} is already marked as doing recovering
-     */
-    Terms startRecovering(String coreNodeName) {
-      long maxTerm = getMaxTerm();
-      if (values.get(coreNodeName) == maxTerm)
-        return null;
-
-      HashMap<String, Long> newValues = new HashMap<>(values);
-      if (!newValues.containsKey(coreNodeName+"_recovering")) {
-        long currentTerm = newValues.getOrDefault(coreNodeName, 0L);
-        // by keeping old term, we will have more information in leader election
-        newValues.put(coreNodeName+"_recovering", currentTerm);
-      }
-      newValues.put(coreNodeName, maxTerm);
-      return new Terms(newValues, version);
-    }
-
-    /**
-     * Mark {@code coreNodeName} as finished recovering
-     * @param coreNodeName of the replica
-     * @return null if term of {@code coreNodeName} is already finished doing recovering
-     */
-    Terms doneRecovering(String coreNodeName) {
-      if (!values.containsKey(coreNodeName+"_recovering")) {
-        return null;
-      }
-
-      HashMap<String, Long> newValues = new HashMap<>(values);
-      newValues.remove(coreNodeName+"_recovering");
-      return new Terms(newValues, version);
-    }
-
-    @Override
-    public String toString() {
-      return "Terms{" +
-          "values=" + values +
-          ", version=" + version +
-          '}';
     }
   }
 }

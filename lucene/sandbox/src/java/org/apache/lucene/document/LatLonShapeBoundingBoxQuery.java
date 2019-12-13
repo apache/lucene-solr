@@ -17,6 +17,7 @@
 package org.apache.lucene.document;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
+import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.geo.Rectangle2D;
 import org.apache.lucene.index.PointValues.Relation;
@@ -42,6 +43,9 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
   @Override
   protected Relation relateRangeBBoxToQuery(int minXOffset, int minYOffset, byte[] minTriangle,
                                             int maxXOffset, int maxYOffset, byte[] maxTriangle) {
+    if (queryRelation == QueryRelation.INTERSECTS || queryRelation == QueryRelation.DISJOINT) {
+      return rectangle2D.intersectRangeBBox(minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
+    }
     return rectangle2D.relateRangeBBox(minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
   }
 
@@ -64,6 +68,16 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
       case DISJOINT: return rectangle2D.intersectsTriangle(aX, aY, bX, bY, cX, cY) == false;
       default: throw new IllegalArgumentException("Unsupported query type :[" + queryRelation + "]");
     }
+  }
+
+  @Override
+  protected Component2D.WithinRelation queryWithin(byte[] t, ShapeField.DecodedTriangle scratchTriangle) {
+    // decode indexed triangle
+    ShapeField.decodeTriangle(t, scratchTriangle);
+
+    return rectangle2D.withinTriangle(scratchTriangle.aX, scratchTriangle.aY, scratchTriangle.ab,
+                                      scratchTriangle.bX, scratchTriangle.bY, scratchTriangle.bc,
+                                      scratchTriangle.cX, scratchTriangle.cY, scratchTriangle.ca);
   }
 
   @Override

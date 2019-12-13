@@ -39,7 +39,6 @@
 
   <path id="junit.classpath">
     <path refid="test.classpath"/>
-    <pathelement path="${java.class.path}"/>
   </path>
 
   <!-- 

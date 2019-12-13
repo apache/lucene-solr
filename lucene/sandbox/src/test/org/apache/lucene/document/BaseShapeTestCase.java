@@ -23,6 +23,8 @@ import java.util.Set;
 
 import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.document.ShapeField.QueryRelation;
+import org.apache.lucene.geo.Component2D;
+import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
@@ -60,7 +62,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
   protected static final String FIELD_NAME = "shape";
   public final Encoder ENCODER;
   public final Validator VALIDATOR;
-  protected static final QueryRelation[] POINT_LINE_RELATIONS = {QueryRelation.INTERSECTS, QueryRelation.DISJOINT};
+  protected static final QueryRelation[] POINT_LINE_RELATIONS = {QueryRelation.INTERSECTS, QueryRelation.DISJOINT, QueryRelation.CONTAINS};
 
   public BaseShapeTestCase() {
     ENCODER = getEncoder();
@@ -197,11 +199,11 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
   /** factory method to create a new polygon query */
   protected abstract Query newDistanceQuery(String field, QueryRelation queryRelation, Object circle);
 
-  protected abstract Line2D toLine2D(Object... line);
+  protected abstract Component2D toLine2D(Object... line);
 
-  protected abstract Object toPolygon2D(Object... polygon);
+  protected abstract Component2D toPolygon2D(Object... polygon);
 
-  protected abstract Object toCircle2D(Object circle);
+  protected abstract Component2D toCircle2D(Object circle);
 
   private void verify(Object... shapes) throws Exception {
     IndexWriterConfig iwc = newIndexWriterConfig();
@@ -261,8 +263,6 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
     verifyRandomLineQueries(reader, shapes);
     // test random polygon queries
     verifyRandomPolygonQueries(reader, shapes);
-    // test random distance queries
-    verifyRandomDistanceQueries(reader, shapes);
   }
 
   /** test random generated bounding boxes */
@@ -325,17 +325,25 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
         } else if (shapes[id] == null) {
           expected = false;
         } else {
-          // check quantized poly against quantized query
-          if (qMinLon > qMaxLon && rectCrossesDateline(rect) == false) {
-            // if the quantization creates a false dateline crossing (because of encodeCeil):
-            // then do not use encodeCeil
-            qMinLon = ENCODER.quantizeX(rectMinX(rect));
-          }
-
           if (qMinLat > qMaxLat) {
             qMinLat = ENCODER.quantizeY(rectMaxY(rect));
           }
-          expected = VALIDATOR.setRelation(queryRelation).testBBoxQuery(qMinLat, qMaxLat, qMinLon, qMaxLon, shapes[id]);
+          if (queryRelation == QueryRelation.CONTAINS && rectCrossesDateline(rect)) {
+            //For contains we need to call the validator for each section. It is only expected
+            //if both sides are contained.
+            expected = VALIDATOR.setRelation(queryRelation).testBBoxQuery(qMinLat, qMaxLat, qMinLon, GeoUtils.MAX_LON_INCL, shapes[id]);
+            if (expected) {
+              expected = VALIDATOR.setRelation(queryRelation).testBBoxQuery(qMinLat, qMaxLat, GeoUtils.MIN_LON_INCL, qMaxLon, shapes[id]);
+            }
+          } else {
+            // check quantized poly against quantized query
+            if (qMinLon > qMaxLon && rectCrossesDateline(rect) == false) {
+              // if the quantization creates a false dateline crossing (because of encodeCeil):
+              // then do not use encodeCeil
+              qMinLon = ENCODER.quantizeX(rectMinX(rect));
+            }
+            expected = VALIDATOR.setRelation(queryRelation).testBBoxQuery(qMinLat, qMaxLat, qMinLon, qMaxLon, shapes[id]);
+          }
         }
 
         if (hits.get(docID) != expected) {
@@ -385,7 +393,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
 
       // line
       Object queryLine = randomQueryLine(shapes);
-      Line2D queryLine2D = toLine2D(queryLine);
+      Component2D queryLine2D = toLine2D(queryLine);
       QueryRelation queryRelation = RandomPicks.randomFrom(random(), POINT_LINE_RELATIONS);
       Query query = newLineQuery(FIELD_NAME, queryRelation, queryLine);
 
@@ -426,7 +434,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
         } else if (shapes[id] == null) {
           expected = false;
         } else {
-          expected = VALIDATOR.setRelation(queryRelation).testLineQuery(queryLine2D, shapes[id]);
+          expected = VALIDATOR.setRelation(queryRelation).testComponentQuery(queryLine2D, shapes[id]);
         }
 
         if (hits.get(docID) != expected) {
@@ -476,7 +484,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
 
       // Polygon
       Object queryPolygon = randomQueryPolygon();
-      Object queryPoly2D = toPolygon2D(queryPolygon);
+      Component2D queryPoly2D = toPolygon2D(queryPolygon);
       QueryRelation queryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
       Query query = newPolygonQuery(FIELD_NAME, queryRelation, queryPolygon);
 
@@ -501,7 +509,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
 
         @Override
         public void collect(int doc) throws IOException {
-          hits.set(docBase + doc);
+          hits.set(docBase+doc);
         }
       });
 
@@ -517,7 +525,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
         } else if (shapes[id] == null) {
           expected = false;
         } else {
-          expected = VALIDATOR.setRelation(queryRelation).testPolygonQuery(queryPoly2D, shapes[id]);
+          expected = VALIDATOR.setRelation(queryRelation).testComponentQuery(queryPoly2D, shapes[id]);
         }
 
         if (hits.get(docID) != expected) {
@@ -567,7 +575,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
 
       // Polygon
       Object queryCircle = randomQueryCircle();
-      Object queryCircle2D = toCircle2D(queryCircle);
+      Component2D queryCircle2D = toCircle2D(queryCircle);
       QueryRelation queryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
       Query query = newDistanceQuery(FIELD_NAME, queryRelation, queryCircle);
 
@@ -608,7 +616,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
         } else if (shapes[id] == null) {
           expected = false;
         } else {
-          expected = VALIDATOR.setRelation(queryRelation).testDistanceQuery(queryCircle2D, shapes[id]);
+          expected = VALIDATOR.setRelation(queryRelation).testComponentQuery(queryCircle2D, shapes[id]);
         }
 
         if (hits.get(docID) != expected) {
@@ -645,6 +653,8 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
   protected abstract Validator getValidator();
 
   protected static abstract class Encoder {
+    abstract double decodeX(int encoded);
+    abstract double decodeY(int encoded);
     abstract double quantizeX(double raw);
     abstract double quantizeXCeil(double raw);
     abstract double quantizeY(double raw);
@@ -674,9 +684,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
 
     protected QueryRelation queryRelation = QueryRelation.INTERSECTS;
     public abstract boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape);
-    public abstract boolean testLineQuery(Line2D line2d, Object shape);
-    public abstract boolean testPolygonQuery(Object poly2d, Object shape);
-    public abstract boolean testDistanceQuery(Object circle2D, Object shape);
+    public abstract boolean testComponentQuery(Component2D line2d, Object shape);
 
     public Validator setRelation(QueryRelation relation) {
       this.queryRelation = relation;

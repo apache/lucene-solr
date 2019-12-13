@@ -19,12 +19,9 @@ package org.apache.lucene.document;
 import java.util.List;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
-import org.apache.lucene.geo.EdgeTree;
-import org.apache.lucene.geo.Line2D;
+import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.Tessellator;
-import org.apache.lucene.geo.XYCircle2D;
 import org.apache.lucene.geo.XYPolygon;
-import org.apache.lucene.geo.XYPolygon2D;
 import org.apache.lucene.geo.XYRectangle;
 import org.apache.lucene.geo.XYRectangle2D;
 import org.apache.lucene.index.PointValues.Relation;
@@ -69,63 +66,22 @@ public class TestXYPolygonShapeQueries extends BaseXYShapeTestCase {
 
     @Override
     public boolean testBBoxQuery(double minY, double maxY, double minX, double maxX, Object shape) {
-      XYPolygon p = (XYPolygon)shape;
-      XYRectangle2D rectangle2D = XYRectangle2D.create(new XYRectangle(minX, maxX, minY, maxY));
-      List<Tessellator.Triangle> tessellation = Tessellator.tessellate(p);
-      for (Tessellator.Triangle t : tessellation) {
-        ShapeField.DecodedTriangle decoded = encoder.encodeDecodeTriangle(t.getX(0), t.getY(0), t.isEdgefromPolygon(0),
-                                                                          t.getX(1), t.getY(1), t.isEdgefromPolygon(1),
-                                                                          t.getX(2), t.getY(2), t.isEdgefromPolygon(2));
-        if (queryRelation == QueryRelation.WITHIN) {
-          if (rectangle2D.containsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) == false) {
-            return false;
-          }
-        } else {
-          if (rectangle2D.intersectsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) == true) {
-            return queryRelation == QueryRelation.INTERSECTS;
-          }
-        }
+      Component2D rectangle2D = XYRectangle2D.create(new XYRectangle(minX, maxX, minY, maxY));
+      return testComponentQuery(rectangle2D, shape);
+    }
+
+    @Override
+    public boolean testComponentQuery(Component2D query, Object o) {
+      XYPolygon shape = (XYPolygon) o;
+      if (queryRelation == QueryRelation.CONTAINS) {
+        return testWithinPolygon(query, (XYPolygon) shape);
       }
-      return queryRelation != QueryRelation.INTERSECTS;
-    }
-
-    @Override
-    public boolean testLineQuery(Line2D query, Object shape) {
-      return testPolygon(query, (XYPolygon) shape);
-    }
-
-    @Override
-    public boolean testPolygonQuery(Object query, Object shape) {
-      return testPolygon((XYPolygon2D)query, (XYPolygon) shape);
-    }
-
-    private boolean testPolygon(EdgeTree tree, XYPolygon shape) {
       List<Tessellator.Triangle> tessellation = Tessellator.tessellate(shape);
-      for (Tessellator.Triangle t : tessellation) {
-        double[] qTriangle = encoder.quantizeTriangle(t.getX(0), t.getY(0), t.isEdgefromPolygon(0),
-                                                      t.getX(1), t.getY(1), t.isEdgefromPolygon(1),
-                                                      t.getX(2), t.getY(2), t.isEdgefromPolygon(2));
-        Relation r = tree.relateTriangle(qTriangle[1], qTriangle[0], qTriangle[3], qTriangle[2], qTriangle[5], qTriangle[4]);
-        if (queryRelation == QueryRelation.DISJOINT) {
-          if (r != Relation.CELL_OUTSIDE_QUERY) return false;
-        } else if (queryRelation == QueryRelation.WITHIN) {
-          if (r != Relation.CELL_INSIDE_QUERY) return false;
-        } else {
-          if (r != Relation.CELL_OUTSIDE_QUERY) return true;
-        }
-      }
-      return queryRelation == QueryRelation.INTERSECTS ? false : true;
-    }
-
-    @Override
-    public boolean testDistanceQuery(Object circle2D, Object shape) {
-      XYPolygon p = (XYPolygon) shape;
-      List<Tessellator.Triangle> tessellation = Tessellator.tessellate(p);
       for (Tessellator.Triangle t : tessellation) {
         double[] qTriangle = encoder.quantizeTriangle(t.getX(0), t.getY(0), t.isEdgefromPolygon(0),
             t.getX(1), t.getY(1), t.isEdgefromPolygon(1),
             t.getX(2), t.getY(2), t.isEdgefromPolygon(2));
-        Relation r = ((XYCircle2D)circle2D).relateTriangle((float)qTriangle[1], (float)qTriangle[0], (float)qTriangle[3], (float)qTriangle[2], (float)qTriangle[5], (float)qTriangle[4]);
+        Relation r = query.relateTriangle(qTriangle[1], qTriangle[0], qTriangle[3], qTriangle[2], qTriangle[5], qTriangle[4]);
         if (queryRelation == QueryRelation.DISJOINT) {
           if (r != Relation.CELL_OUTSIDE_QUERY) return false;
         } else if (queryRelation == QueryRelation.WITHIN) {
@@ -135,6 +91,25 @@ public class TestXYPolygonShapeQueries extends BaseXYShapeTestCase {
         }
       }
       return queryRelation == QueryRelation.INTERSECTS ? false : true;
+    }
+
+    private boolean testWithinPolygon(Component2D tree, XYPolygon shape) {
+      List<Tessellator.Triangle> tessellation = Tessellator.tessellate(shape);
+      Component2D.WithinRelation answer = Component2D.WithinRelation.DISJOINT;
+      for (Tessellator.Triangle t : tessellation) {
+        ShapeField.DecodedTriangle qTriangle = encoder.encodeDecodeTriangle(t.getX(0), t.getY(0), t.isEdgefromPolygon(0),
+            t.getX(1), t.getY(1), t.isEdgefromPolygon(1),
+            t.getX(2), t.getY(2), t.isEdgefromPolygon(2));
+        Component2D.WithinRelation relation = tree.withinTriangle(encoder.decodeX(qTriangle.aX), encoder.decodeY(qTriangle.aY), qTriangle.ab,
+            encoder.decodeX(qTriangle.bX), encoder.decodeY(qTriangle.bY), qTriangle.bc,
+            encoder.decodeX(qTriangle.cX), encoder.decodeY(qTriangle.cY), qTriangle.ca);
+        if (relation == Component2D.WithinRelation.NOTWITHIN) {
+          return false;
+        } else if (relation == Component2D.WithinRelation.CANDIDATE) {
+          answer = Component2D.WithinRelation.CANDIDATE;
+        }
+      }
+      return answer == Component2D.WithinRelation.CANDIDATE;
     }
   }
 

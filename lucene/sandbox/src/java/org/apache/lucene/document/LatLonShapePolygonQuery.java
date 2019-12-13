@@ -19,6 +19,7 @@ package org.apache.lucene.document;
 import java.util.Arrays;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
+import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Polygon2D;
@@ -40,7 +41,7 @@ import org.apache.lucene.util.NumericUtils;
  **/
 final class LatLonShapePolygonQuery extends ShapeQuery {
   final Polygon[] polygons;
-  final private Polygon2D poly2D;
+  final private Component2D poly2D;
 
   /**
    * Creates a query that matches all indexed shapes to the provided polygons
@@ -74,7 +75,7 @@ final class LatLonShapePolygonQuery extends ShapeQuery {
     double maxLon = GeoEncodingUtils.decodeLongitude(NumericUtils.sortableBytesToInt(maxTriangle, maxXOffset));
 
     // check internal node against query
-    return poly2D.relate(minLat, maxLat, minLon, maxLon);
+    return poly2D.relate(minLon, maxLon, minLat, maxLat);
   }
 
   @Override
@@ -94,6 +95,20 @@ final class LatLonShapePolygonQuery extends ShapeQuery {
       case DISJOINT: return poly2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_OUTSIDE_QUERY;
       default: throw new IllegalArgumentException("Unsupported query type :[" + queryRelation + "]");
     }
+  }
+
+  @Override
+  protected Component2D.WithinRelation queryWithin(byte[] t, ShapeField.DecodedTriangle scratchTriangle) {
+    ShapeField.decodeTriangle(t, scratchTriangle);
+
+    double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle.aY);
+    double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle.aX);
+    double blat = GeoEncodingUtils.decodeLatitude(scratchTriangle.bY);
+    double blon = GeoEncodingUtils.decodeLongitude(scratchTriangle.bX);
+    double clat = GeoEncodingUtils.decodeLatitude(scratchTriangle.cY);
+    double clon = GeoEncodingUtils.decodeLongitude(scratchTriangle.cX);
+
+    return poly2D.withinTriangle(alon, alat, scratchTriangle.ab, blon, blat, scratchTriangle.bc, clon, clat, scratchTriangle.ca);
   }
 
   @Override

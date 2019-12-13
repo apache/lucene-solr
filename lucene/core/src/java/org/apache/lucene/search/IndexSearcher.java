@@ -31,6 +31,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
+import java.util.concurrent.RejectedExecutionException;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
@@ -415,7 +416,7 @@ public class IndexSearcher {
       return count;
     }
 
-    // general case: create a collecor and count matches
+    // general case: create a collector and count matches
     final CollectorManager<TotalHitCountCollector, Integer> collectorManager = new CollectorManager<TotalHitCountCollector, Integer>() {
 
       @Override
@@ -468,9 +469,12 @@ public class IndexSearcher {
 
       private final HitsThresholdChecker hitsThresholdChecker = (executor == null || leafSlices.length <= 1) ? HitsThresholdChecker.create(TOTAL_HITS_THRESHOLD) :
           HitsThresholdChecker.createShared(TOTAL_HITS_THRESHOLD);
+
+      private final MaxScoreAccumulator minScoreAcc = (executor == null || leafSlices.length <= 1) ? null : new MaxScoreAccumulator();
+
       @Override
       public TopScoreDocCollector newCollector() throws IOException {
-        return TopScoreDocCollector.create(cappedNumHits, after, hitsThresholdChecker);
+        return TopScoreDocCollector.create(cappedNumHits, after, hitsThresholdChecker, minScoreAcc);
       }
 
       @Override
@@ -594,15 +598,17 @@ public class IndexSearcher {
     final int cappedNumHits = Math.min(numHits, limit);
     final Sort rewrittenSort = sort.rewrite(this);
 
-    final CollectorManager<TopFieldCollector, TopFieldDocs> manager = new CollectorManager<TopFieldCollector, TopFieldDocs>() {
+    final CollectorManager<TopFieldCollector, TopFieldDocs> manager = new CollectorManager<>() {
 
       private final HitsThresholdChecker hitsThresholdChecker = (executor == null || leafSlices.length <= 1) ? HitsThresholdChecker.create(TOTAL_HITS_THRESHOLD) :
           HitsThresholdChecker.createShared(TOTAL_HITS_THRESHOLD);
 
+      private final MaxScoreAccumulator minScoreAcc = (executor == null || leafSlices.length <= 1) ? null : new MaxScoreAccumulator();
+
       @Override
       public TopFieldCollector newCollector() throws IOException {
         // TODO: don't pay the price for accurate hit counts by default
-        return TopFieldCollector.create(rewrittenSort, cappedNumHits, after, hitsThresholdChecker);
+        return TopFieldCollector.create(rewrittenSort, cappedNumHits, after, hitsThresholdChecker, minScoreAcc);
       }
 
       @Override
@@ -664,8 +670,20 @@ public class IndexSearcher {
           search(Arrays.asList(leaves), weight, collector);
           return collector;
         });
-        executor.execute(task);
-        topDocsFutures.add(task);
+        boolean executedOnCallerThread = false;
+        try {
+          executor.execute(task);
+        } catch (RejectedExecutionException e) {
+          // Execute on caller thread
+          search(Arrays.asList(leaves), weight, collector);
+          topDocsFutures.add(CompletableFuture.completedFuture(collector));
+          executedOnCallerThread = true;
+        }
+
+        // Do not add the task's future if it was not used
+        if (executedOnCallerThread == false) {
+          topDocsFutures.add(task);
+        }
       }
       final LeafReaderContext[] leaves = leafSlices[leafSlices.length - 1].leaves;
       final C collector = collectors.get(leafSlices.length - 1);
