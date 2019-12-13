@@ -55,12 +55,15 @@ subprojects {
     jarValidation
   }
 
-  // For Java projects, add runtime and classpath to jarValidation
+  // For Java projects, add all dependencies from the following configurations
+  // to jar validation
   plugins.withType(JavaPlugin) {
     configurations {
       jarValidation {
         extendsFrom runtimeClasspath
         extendsFrom compileClasspath
+        extendsFrom testRuntimeClasspath
+        extendsFrom testCompileClasspath
       }
     }
   }
@@ -88,7 +91,10 @@ subprojects {
             jarName: file.toPath().getFileName().toString(),
             path: file,
             module: resolvedArtifact.moduleVersion,
-            checksum: new DigestUtils(MessageDigestAlgorithms.SHA_1).digestAsHex(file)
+            checksum: new DigestUtils(MessageDigestAlgorithms.SHA_1).digestAsHex(file),
+            // We keep count of the files referenced by this dependency (sha, license, notice, etc.)
+            // so that we can determine unused files later on.
+            referencedFiles: []
         ]
       }
     }
@@ -107,6 +113,7 @@ subprojects {
         if (!expectedChecksumFile.exists()) {
           errors << "Dependency checksum missing ('${dep.module}'), expected it at: ${expectedChecksumFile}"
         } else {
+          dep.referencedFiles += expectedChecksumFile
           def expected = expectedChecksumFile.getText("UTF-8").trim()
           def actual = dep.checksum.trim()
           if (expected.compareToIgnoreCase(actual) != 0) {
@@ -161,6 +168,7 @@ subprojects {
           errors << "Multiple license files matching for ('${dep.module}'): ${found.join(", ")}"
         } else {
           def licenseFile = found.get(0)
+          dep.referencedFiles += licenseFile
           def m = (licenseFile.name =~ /LICENSE-(.+)\.txt$/)
           if (!m) throw new GradleException("License file name doesn't contain license type?: ${licenseFile.name}")
 
@@ -174,6 +182,7 @@ subprojects {
             // Look for sibling NOTICE file.
             def noticeFile = file(licenseFile.path.replaceAll(/\-LICENSE-.+/, "-NOTICE.txt"))
             if (noticeFile.exists()) {
+              dep.referencedFiles += noticeFile
               logger.log(LogLevel.INFO, "Dependency notice file OK ('${dep.module}'): " + noticeFile)
             } else if (!licenseType.noticeOptional) {
               errors << "Notice file missing for ('${dep.module}'), expected it at: ${noticeFile}"
@@ -198,6 +207,34 @@ subprojects {
   }
 
   check.dependsOn(validateJars)
+}
+
+// Check for dangling files in the licenses folder.
+configure([project(":solr"), project(":lucene"), ]) {
+  def validationTasks = subprojects.collect { it.tasks.matching { it.name == "validateJars" } }
+
+  task validateUnusedLicenseFiles() {
+    dependsOn validationTasks
+
+    doFirst {
+      def allReferenced = validationTasks.collectMany { task ->
+          task.project.jarInfos.collectMany { it.referencedFiles }
+        }
+        .collect { it.toString() }
+
+      def allExisting = licensesDir.listFiles()
+          .collect { it.toString() }
+          .collect { it.toString() }
+
+      def dangling = (allExisting - allReferenced)
+
+      if (dangling) {
+        gradle.buildFinished {
+          logger.warn("WARNING: there were unreferenced files under license folder:\n  - ${dangling.join("\n  - ")}")
+        }
+      }
+    }
+  }
 }
 
 // Disable validation for these projects (should it be disabled?)

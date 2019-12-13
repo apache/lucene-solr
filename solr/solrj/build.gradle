@@ -42,7 +42,9 @@ dependencies {
 
   testImplementation project(':solr:test-framework')
   testImplementation 'org.eclipse.jetty:jetty-webapp'
-  testImplementation 'org.eclipse.jetty:jetty-alpn-java-server'
+  testImplementation ('org.eclipse.jetty:jetty-alpn-java-server', {
+    exclude group: "org.eclipse.jetty.alpn", module: "alpn-api"
+  })
   testImplementation 'org.restlet.jee:org.restlet.ext.servlet'
   testImplementation 'org.objenesis:objenesis'
   testImplementation('org.mockito:mockito-core', {

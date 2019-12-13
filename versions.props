@@ -22,7 +22,6 @@ com.lmax:disruptor=3.4.2
 com.pff:java-libpst=0.8.1
 com.rometools:*=1.5.1
 com.sun.jersey:*=1.19
-com.sun.jersey:jersey-json=1.19.4
 com.sun.mail:*=1.5.1
 com.tdunning:t-digest=3.1
 com.vaadin.external.google:android-json=0.0.20131108.vaadin1

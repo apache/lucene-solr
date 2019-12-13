@@ -117,14 +117,12 @@ dependencies {
   testImplementation ('org.apache.kerby:kerb-admin') { transitive = false }
   testImplementation ('org.apache.kerby:kerby-kdc') { transitive = false }
 
-  testImplementation ('com.sun.jersey:jersey-servlet:1.19.4') { transitive = false }
+  testImplementation ('com.sun.jersey:jersey-servlet') { transitive = false }
 
   testImplementation 'com.google.protobuf:protobuf-java'
   testImplementation 'commons-logging:commons-logging'
   testImplementation('org.mockito:mockito-core', {
     exclude group: "net.bytebuddy", module: "byte-buddy-agent"
   })
-
-  testRuntimeOnly 'org.slf4j:log4j-over-slf4j'
 }
 
