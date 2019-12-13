@@ -18,9 +18,9 @@ package org.apache.lucene.document;
 
 
 import org.apache.lucene.geo.Component2D;
-import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.XYCircle;
 import org.apache.lucene.geo.XYCircle2D;
+import org.apache.lucene.geo.XYEncodingUtils;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.NumericUtils;
 
@@ -46,10 +46,10 @@ final class XYShapeDistanceQuery extends ShapeQuery {
   protected Relation relateRangeBBoxToQuery(int minXOffset, int minYOffset, byte[] minTriangle,
                                             int maxXOffset, int maxYOffset, byte[] maxTriangle) {
 
-    double minLat = GeoEncodingUtils.decodeLatitude(NumericUtils.sortableBytesToInt(minTriangle, minYOffset));
-    double minLon = GeoEncodingUtils.decodeLongitude(NumericUtils.sortableBytesToInt(minTriangle, minXOffset));
-    double maxLat = GeoEncodingUtils.decodeLatitude(NumericUtils.sortableBytesToInt(maxTriangle, maxYOffset));
-    double maxLon = GeoEncodingUtils.decodeLongitude(NumericUtils.sortableBytesToInt(maxTriangle, maxXOffset));
+    double minLat = XYEncodingUtils.decode(NumericUtils.sortableBytesToInt(minTriangle, minYOffset));
+    double minLon = XYEncodingUtils.decode(NumericUtils.sortableBytesToInt(minTriangle, minXOffset));
+    double maxLat = XYEncodingUtils.decode(NumericUtils.sortableBytesToInt(maxTriangle, maxYOffset));
+    double maxLon = XYEncodingUtils.decode(NumericUtils.sortableBytesToInt(maxTriangle, maxXOffset));
 
     // check internal node against query
     return circle2D.relate(minLon, maxLon, minLat, maxLat);
@@ -59,12 +59,12 @@ final class XYShapeDistanceQuery extends ShapeQuery {
   protected boolean queryMatches(byte[] t, ShapeField.DecodedTriangle scratchTriangle, ShapeField.QueryRelation queryRelation) {
     ShapeField.decodeTriangle(t, scratchTriangle);
 
-    double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle.aY);
-    double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle.aX);
-    double blat = GeoEncodingUtils.decodeLatitude(scratchTriangle.bY);
-    double blon = GeoEncodingUtils.decodeLongitude(scratchTriangle.bX);
-    double clat = GeoEncodingUtils.decodeLatitude(scratchTriangle.cY);
-    double clon = GeoEncodingUtils.decodeLongitude(scratchTriangle.cX);
+    double alat = XYEncodingUtils.decode(scratchTriangle.aY);
+    double alon = XYEncodingUtils.decode(scratchTriangle.aX);
+    double blat = XYEncodingUtils.decode(scratchTriangle.bY);
+    double blon = XYEncodingUtils.decode(scratchTriangle.bX);
+    double clat = XYEncodingUtils.decode(scratchTriangle.cY);
+    double clon = XYEncodingUtils.decode(scratchTriangle.cX);
 
     switch (queryRelation) {
       case INTERSECTS: return circle2D.relateTriangle(alon, alat, blon, blat, clon, clat) != Relation.CELL_OUTSIDE_QUERY;
@@ -78,12 +78,12 @@ final class XYShapeDistanceQuery extends ShapeQuery {
   protected Component2D.WithinRelation queryWithin(byte[] t, ShapeField.DecodedTriangle scratchTriangle) {
     ShapeField.decodeTriangle(t, scratchTriangle);
 
-    double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle.aY);
-    double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle.aX);
-    double blat = GeoEncodingUtils.decodeLatitude(scratchTriangle.bY);
-    double blon = GeoEncodingUtils.decodeLongitude(scratchTriangle.bX);
-    double clat = GeoEncodingUtils.decodeLatitude(scratchTriangle.cY);
-    double clon = GeoEncodingUtils.decodeLongitude(scratchTriangle.cX);
+    double alat = XYEncodingUtils.decode(scratchTriangle.aY);
+    double alon = XYEncodingUtils.decode(scratchTriangle.aX);
+    double blat = XYEncodingUtils.decode(scratchTriangle.bY);
+    double blon = XYEncodingUtils.decode(scratchTriangle.bX);
+    double clat = XYEncodingUtils.decode(scratchTriangle.cY);
+    double clon = XYEncodingUtils.decode(scratchTriangle.cX);
 
     return circle2D.withinTriangle(alon, alat, scratchTriangle.ab, blon, blat, scratchTriangle.bc, clon, clat, scratchTriangle.ca);
   }

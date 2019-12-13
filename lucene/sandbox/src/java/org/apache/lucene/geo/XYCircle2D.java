@@ -77,11 +77,11 @@ public class XYCircle2D implements Component2D {
 
   @Override
   public Relation relate(double minX, double maxX, double minY, double maxY) {
-    if (this.minX > maxX || this.maxX < minX || this.minY > maxY || this.maxY < minY) {
+    if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return Relation.CELL_OUTSIDE_QUERY;
     }
-    if (minX >= this.minX && maxX <= this.maxX && minY >= this.minY && maxY <= this.maxY) {
-      return Relation.CELL_INSIDE_QUERY;
+    if (Component2D.within(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
+      return Relation.CELL_CROSSES_QUERY;
     }
     return Relation.CELL_CROSSES_QUERY;
   }

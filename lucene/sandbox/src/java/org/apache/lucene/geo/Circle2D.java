@@ -27,8 +27,8 @@ import org.apache.lucene.util.SloppyMath;
  * @lucene.internal
  */
 public class Circle2D implements Component2D {
-  final GeoEncodingUtils.DistancePredicate distancePredicate;
   final Rectangle rectangle;
+  final boolean crossesDateline;
   final double lat;
   final double lon;
   final double distance;
@@ -39,18 +39,13 @@ public class Circle2D implements Component2D {
     this.lat = lat;
     this.lon = lon;
     this.distance = distance;
-    this.distancePredicate  = GeoEncodingUtils.createDistancePredicate(lat, lon, distance);
     this.rectangle = Rectangle.fromPointDistance(lat, lon, distance);
     this.sortKey = GeoUtils.distanceQuerySortKey(distance);
     this.axisLat = Rectangle.axisLat(lat, distance);
-  }
-
-  /** Checks if the circle contains the provided triangle **/
-  public boolean containsTriangle(int ax, int ay, int bx, int by, int cx, int cy) {
-    if (distancePredicate.test(ay, ax) && distancePredicate.test(by, bx) && distancePredicate.test(cy, cx)) {
-      return true;
+    this.crossesDateline = rectangle.minLat > rectangle.maxLat;
+    if (crossesDateline) {
+      throw new IllegalArgumentException("crosses");
     }
-    return false;
   }
 
   @Override
