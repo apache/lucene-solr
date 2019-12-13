@@ -7,8 +7,8 @@
 import org.apache.commons.codec.digest.DigestUtils
 import org.apache.commons.codec.digest.MessageDigestAlgorithms
 
-// This should be true.
-def failOnError = false
+// This should be false only for debugging.
+def failOnError = true
 
 buildscript {
   repositories {
