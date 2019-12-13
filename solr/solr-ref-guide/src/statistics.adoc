@@ -172,7 +172,7 @@ Custom histograms can be defined and visualized by combining the output from mul
 `stats` functions into a single histogram. Instead of automatically binning a numeric
 field the custom histogram allows for comparision of bins based on queries.
 
-NOTE: The `stats` function is first discuss in the *Searching, Sampling and Aggregation* section of the
+NOTE: The `stats` function is first discussed in the *Searching, Sampling and Aggregation* section of the
 user guide.
 
 A simple example will illustrate how to define and visualize a custom histogram.
