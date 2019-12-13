@@ -178,7 +178,10 @@ public class TestXYShape extends LuceneTestCase {
 
     float x = (float) ShapeTestUtil.nextDouble();
     float y = (float) ShapeTestUtil.nextDouble();
-    float radius = (float) (random().nextDouble() * Math.abs(ShapeTestUtil.nextDouble()));
+    float radius;
+    do {
+      radius = (float) (random().nextDouble() * Math.abs(ShapeTestUtil.nextDouble()));
+    } while (radius == 0);
     XYCircle circle = new XYCircle(x, y, radius);
     Component2D circle2D = XYCircle2D.create(circle);
     int expected;
