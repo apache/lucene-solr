@@ -196,6 +196,8 @@ grant {
   permission java.io.FilePermission "${solr.log.dir}", "read,write,delete,readlink";
   permission java.io.FilePermission "${solr.log.dir}${/}-", "read,write,delete,readlink";
 
+  permission java.io.FilePermission "${log4j.configurationFile}", "read,write,delete,readlink";
+
   // expanded to a wildcard if set, allows all networking everywhere
   permission java.net.SocketPermission "${solr.internal.network.permission}", "accept,listen,connect,resolve";
 };

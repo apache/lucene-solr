@@ -175,3 +175,8 @@ REM For a visual indication in the Admin UI of what type of environment this clu
 REM a -Dsolr.environment property below. Valid values are prod, stage, test, dev, with an optional
 REM label or color, e.g. -Dsolr.environment=test,label=Functional+test,color=brown
 REM SOLR_OPTS="$SOLR_OPTS -Dsolr.environment=prod"
+
+REM Runs solr in a java security manager sandbox. This can protect against some attacks.
+REM Runtime properties are passed to the security policy file (server\etc\security.policy)
+REM This is experimental! It may not work at all with HDFS.
+REM set SOLR_SECURITY_MANAGER_ENABLED=false
