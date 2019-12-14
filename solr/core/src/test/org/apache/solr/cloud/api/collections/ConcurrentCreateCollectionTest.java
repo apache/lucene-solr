@@ -36,11 +36,12 @@ import org.apache.solr.common.cloud.Slice;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-
+@Ignore("SOLR-13884")
 public class ConcurrentCreateCollectionTest extends SolrCloudTestCase {
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -71,7 +72,7 @@ public class ConcurrentCreateCollectionTest extends SolrCloudTestCase {
 
   private CollectionAdminRequest.Create createCollectionRequest(String cname, int numShards, int numReplicas) throws Exception {
     CollectionAdminRequest.Create creq = CollectionAdminRequest
-        // nocommit .createCollection(cname, "conf", NODES - 1, NODES - 1)
+        //  .createCollection(cname, "conf", NODES - 1, NODES - 1)
         .createCollection(cname, "conf", numShards, numReplicas)
         .setMaxShardsPerNode(100);
     creq.setWaitForFinalState(true);
@@ -135,7 +136,7 @@ public class ConcurrentCreateCollectionTest extends SolrCloudTestCase {
 
       String cname = "STARTCOLLECTION";
       CollectionAdminRequest.Create creq = CollectionAdminRequest
-          // nocommit .createCollection(cname, "conf", NODES - 1, NODES - 1)
+          //  .createCollection(cname, "conf", NODES - 1, NODES - 1)
           .createCollection(cname, "conf", unbalancedSize, 1)
           .setMaxShardsPerNode(100);
       creq.setWaitForFinalState(true);
@@ -204,7 +205,7 @@ public class ConcurrentCreateCollectionTest extends SolrCloudTestCase {
         try {
           for (int j=0; j<createsPerThread; j++) {
             int num = collectionNum.incrementAndGet();
-            // Thread.sleep(num*1000); // nocommit
+            // Thread.sleep(num*1000);
             String collectionName = "collection" + num;
             CollectionAdminRequest.Create createReq = CollectionAdminRequest
                 .createCollection(collectionName, "conf", nShards, repFactor)
