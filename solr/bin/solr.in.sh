@@ -203,3 +203,8 @@
 # a -Dsolr.environment property below. Valid values are prod, stage, test, dev, with an optional
 # label or color, e.g. -Dsolr.environment=test,label=Functional+test,color=brown
 #SOLR_OPTS="$SOLR_OPTS -Dsolr.environment=prod"
+
+# Runs solr in java security manager sandbox. This can protect against some attacks.
+# Runtime properties are passed to the security policy file (server/etc/security.policy)
+# This is experimental! It may not work at all with HDFS.
+#SOLR_SECURITY_MANAGER_ENABLED=false

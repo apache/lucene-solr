@@ -2069,6 +2069,15 @@ else
   REMOTE_JMX_OPTS=()
 fi
 
+# Enable java security manager (limiting filesystem access and other things)
+if [ "$SOLR_SECURITY_MANAGER_ENABLED" == "true" ]; then
+  SECURITY_MANAGER_OPTS=('-Djava.security.manager' \
+    "-Djava.security.policy=${SOLR_SERVER_DIR}/etc/security.policy" \
+    '-Dsolr.internal.network.permission=*')
+else
+  SECURITY_MANAGER_OPTS=()
+fi
+
 JAVA_MEM_OPTS=()
 if [ -z "$SOLR_HEAP" ] && [ -n "$SOLR_JAVA_MEM" ]; then
   JAVA_MEM_OPTS=($SOLR_JAVA_MEM)
@@ -2178,7 +2187,7 @@ function start_solr() {
     "-Djetty.port=$SOLR_PORT" "-DSTOP.PORT=$stop_port" "-DSTOP.KEY=$STOP_KEY" \
     "${SOLR_HOST_ARG[@]}" "-Duser.timezone=$SOLR_TIMEZONE" \
     "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.data.home=$SOLR_DATA_HOME" "-Dsolr.install.dir=$SOLR_TIP" \
-    "-Dsolr.default.confdir=$DEFAULT_CONFDIR" "${LOG4J_CONFIG[@]}" "${SOLR_OPTS[@]}")
+    "-Dsolr.default.confdir=$DEFAULT_CONFDIR" "${LOG4J_CONFIG[@]}" "${SOLR_OPTS[@]}" "${SECURITY_MANAGER_OPTS[@]}")
 
   if [ "$SOLR_MODE" == "solrcloud" ]; then
     IN_CLOUD_MODE=" in SolrCloud mode"
