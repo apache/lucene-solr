@@ -17,7 +17,12 @@
 package org.apache.solr.search.join;
 
 /** this is just a stub refers to {@link BlockJoinDocSetFacetComponent} to avoid
- * changes in configs */
+ * changes in configs
+ * 
+ * @deprecated This functionality is considered deprecated and will be removed at 9.0
+ * Users are encouraged to use <code>"uniqueBlock(\_root_)"</code> aggregation 
+ * under <code>"terms"</code> facet and <code>"domain": { "blockChildren":...}</code>  */
+@Deprecated
 public class BlockJoinFacetComponent extends BlockJoinDocSetFacetComponent {
 
 }

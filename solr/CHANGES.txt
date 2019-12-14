@@ -33,6 +33,8 @@ Upgrade Notes
 
 * SOLR-14026: Upgrade Jetty to 9.4.24.v20191120 and dropwizard to 4.1.2 (Erick Erickson)
 
+* SOLR-14092: BlockJoinFacetComponent is marked for deprecation and will be removed in 9.0.
+  Users are encouraged to migrate to uniqueBlock() in JSON Facet API.  (Mikhail Khludnev)
 
 New Features
 ---------------------

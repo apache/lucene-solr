@@ -40,7 +40,11 @@ import org.apache.solr.search.join.BlockJoinFieldFacetAccumulator.AggregatableDo
  * Calculates facets on children documents and aggregates hits by parent documents.
  * Enables when child.facet.field parameter specifies a field name for faceting. 
  * So far it supports string fields only. It requires to search by {@link ToParentBlockJoinQuery}.
- * */
+ * 
+ * @deprecated This functionality is considered deprecated and will be removed at 9.0
+ * Users are encouraged to use <code>"uniqueBlock(\_root_)"</code> aggregation 
+ * under <code>"terms"</code> facet and <code>"domain": { "blockChildren":...}</code>  */
+@Deprecated
 public class BlockJoinDocSetFacetComponent extends BlockJoinFacetComponentSupport {
   
   private final String bjqKey = this.getClass().getSimpleName()+".bjq";
