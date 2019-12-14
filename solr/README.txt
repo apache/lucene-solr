@@ -78,9 +78,9 @@ Solr includes a few examples to help you get started. To run a specific example,
     schemaless   : Schema-less example (schema is inferred from data during indexing)
     techproducts : Kitchen sink example providing comprehensive examples of Solr features
 
-For instance, if you want to run the Solr Data Import Handler example, do:
+For instance, if you want to run the Solr Could example, do:
 
-  bin/solr -e dih
+  bin/solr -e cloud
 
 
 Indexing Documents

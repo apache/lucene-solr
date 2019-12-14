@@ -5,6 +5,12 @@ Introduction
 DataImportHandler is a data import tool for Solr which makes importing data from Databases, XML files and
 HTTP data sources quick and easy.
 
+Deprecation notice
+------------------
+This contrib module is deprecated as of v8.4 and may be removed in a futhre major version.
+The project hopes that the community will take over maintenance of DIH as a 3rd party plugin.
+Please reach out to us at dev@ mailing list if you can help.
+
 Important Note
 --------------
 Although Solr strives to be agnostic of the Locale where the server is

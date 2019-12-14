@@ -258,7 +258,8 @@ limitations under the License.
   background-image: url( ../../img/ico/information.png );
 }
 
-#content #dataimport #error
+#content #dataimport #error,
+#content #dataimport #deprecation_message
 {
   background-color: #f00;
   background-image: url( ../../img/ico/construction.png );

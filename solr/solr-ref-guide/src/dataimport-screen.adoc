@@ -16,6 +16,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
+WARNING: The Data Import Handler is deprecated and may be removed in a future release.
+
 The Dataimport screen shows the configuration of the DataImportHandler (DIH) and allows you start, and monitor the status of, import commands as defined by the options selected on the screen and defined in the configuration file.
 
 .The Dataimport Screen

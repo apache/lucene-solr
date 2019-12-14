@@ -180,6 +180,9 @@ Upgrade Notes
 
 * SOLR-14065: VelocityResponseWriter has been deprecated and may be removed in a future version.
 
+* SOLR-14066: Data Import Handler (DIH) has been deprecated, scheduled for removal in version 9.0.
+  The project hopes that the community will take over maintenance of DIH as a 3rd party plugin.
+
 New Features
 ---------------------
 * SOLR-13821: A Package store to store and load package artifacts (noble, Ishan Chattopadhyaya)

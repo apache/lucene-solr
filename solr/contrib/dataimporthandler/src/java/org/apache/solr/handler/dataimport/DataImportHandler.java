@@ -63,8 +63,10 @@ import static org.apache.solr.handler.dataimport.DataImporter.IMPORT_CMD;
  * <p>
  * <b>This API is experimental and subject to change</b>
  *
+ * @deprecated since 8.4
  * @since solr 1.3
  */
+@Deprecated(since = "8.4", forRemoval = true)
 public class DataImportHandler extends RequestHandlerBase implements
         SolrCoreAware {
 
@@ -95,6 +97,7 @@ public class DataImportHandler extends RequestHandlerBase implements
     Map<String,String> macro = new HashMap<>();
     macro.put("expandMacros", "false");
     defaults = SolrParams.wrapDefaults(defaults, new MapSolrParams(macro));
+    log.warn("Data Import Handler is deprecated as of Solr 8.4. See CHANGES.txt for advice.");
   }
 
   @Override
