@@ -2070,9 +2070,11 @@ else
 fi
 
 # Enable java security manager (limiting filesystem access and other things)
+# Don't cache DNS lookups forever, set the value back to the original JDK default.
 if [ "$SOLR_SECURITY_MANAGER_ENABLED" == "true" ]; then
   SECURITY_MANAGER_OPTS=('-Djava.security.manager' \
     "-Djava.security.policy=${SOLR_SERVER_DIR}/etc/security.policy" \
+    '-Dsun.net.inetaddr.ttl=30' \
     '-Dsolr.internal.network.permission=*')
 else
   SECURITY_MANAGER_OPTS=()
