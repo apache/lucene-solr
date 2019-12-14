@@ -432,7 +432,16 @@ for examining and visualizing the clusters and centroids.
 
 ==== Clustered Scatter Plot
 
-In this example the `random` function draws a sample of records from the nyc311 (complaints database) collection where
+In this example we'll again be clustering 2D lat/lon points of rat sightings. But unlike the DBSCAN example, K-Means clustering
+does not on its own
+perform any noise reduction. So in order to reduce the noise a smaller random sample is selected from the data than was used
+for the DBSCAN example.
+
+We'll see that sampling itself is a powerful noise reduction tool which helps visualize the cluster density.
+This is because there is a higher probability that samples will be drawn from higher density clusters and a lower
+probability that samples will be drawn from lower density clusters.
+
+In this example the `random` function draws a sample of 1500 records from the nyc311 (complaints database) collection where
 the complaint description matches "rat sighting" and latitude is populated in the record. The latitude and longitude fields
 are then vectorized and added as rows to a matrix. The matrix is transposed so each row contains a single latitude, longitude
 point. The `kmeans` function is then used to cluster the latitude and longitude points into 21 clusters.
@@ -443,10 +452,14 @@ image::images/math-expressions/2DCluster1.png[]
 
 The scatter plot above shows each lat/lon point plotted on a Euclidean plain with longitude on the
 *x* axis and
-latitude on *y* axis. Each cluster is shown in a different color. This plot provides interesting
-insight into the clusters of rat sightings throughout the five boroughs of New York City. For
-example it highlights a cluster of dense sightings in Brooklyn at cluster5 and cluster17,
-surrounded by less dense clusters.
+latitude on *y* axis. The plot is dense enough so the outlines of the different boroughs are visible
+if you know the boroughs of New York City.
+
+
+Each cluster is shown in a different color. This plot provides interesting
+insight into the densities of rat sightings throughout the five boroughs of New York City. For
+example it highlights a cluster of dense sightings in Brooklyn at cluster1
+surrounded by less dense but still high activity clusters.
 
 ==== Plotting the Centroids
 
