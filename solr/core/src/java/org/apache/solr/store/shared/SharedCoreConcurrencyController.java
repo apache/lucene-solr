@@ -390,43 +390,47 @@ public class SharedCoreConcurrencyController {
     /**
      * Necessary locks have been acquired and we have started to pull from the shared store.
      */
-    BlobPullStarted,
+    BLOB_PULL_STARTED,
     /**
      * Pull(either successful or failed) has ended and we are about to release the necessary locks.
      */
-    BlobPullFinished,
+    BLOB_PULL_FINISHED,
     /**
      * We have received an indexing batch but necessary locks have not been acquired yet.
      */
-    IndexingBatchReceived,
+    INDEXING_BATCH_RECEIVED,
     /**
      * We are passed the shared store pull stage(if applicable) and are in sync with shared store.
      * Now we will proceed with local indexing.
      */
-    LocalIndexingStarted,
+    LOCAL_INDEXING_STARTED,
     /**
      * Local indexing finished but not have been pushed to shared store.
      */
-    LocalIndexingFinished,
+    LOCAL_INDEXING_FINISHED,
     /**
      * Necessary locks have been acquired and push to shared store has started.
      */
-    BlobPushStarted,
+    BLOB_PUSH_STARTED,
     /**
      * Files have been pushed to blob.
      */
-    BlobPushed,
+    BLOB_PUSHED,
     /**
      * Zookeeper has been successfully updated with new metadata.
      */
-    ZkUpdateFinished,
+    ZK_UPDATE_FINISHED,
     /**
      * Local cache {@link #coresVersionMetadata} has been successfully updated with new metadata.
      */
-    LocalCacheUpdateFinished,
+    LOCAL_CACHE_UPDATE_FINISHED,
     /**
      * Push(either successful or failed) has ended and we are about to release the necessary locks.
      */
-    BlobPushFinished
+    BLOB_PUSH_FINISHED,
+    /**
+     * Indexing batch(either successful or failed) has ended and we are about to release the necessary locks.
+     */
+    INDEXING_BATCH_FINISHED
   }
 }

@@ -1071,6 +1071,7 @@ public class CoreContainer {
         
         if (sharedStoreManager != null) {
           sharedStoreManager.getBlobProcessManager().shutdown();
+          sharedStoreManager.getBlobDeleteManager().shutdown();
         }
       }
 

@@ -1067,6 +1067,14 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   @Override
   protected void doClose() {
     if (corePullLock != null) {
+      try {
+        SharedCoreConcurrencyController concurrencyController =
+            req.getCore().getCoreContainer().getSharedStoreManager().getSharedCoreConcurrencyController();
+        concurrencyController.recordState(cloudDesc.getCollectionName(), cloudDesc.getShardId(), req.getCore().getName(),
+            SharedCoreStage.INDEXING_BATCH_FINISHED);
+      } catch (Exception ex) {
+        SolrException.log(log, "Error recording the finish of SHARED core indexing batch", ex);
+      }
       // release read lock
       corePullLock.readLock().unlock();
     }
@@ -1097,12 +1105,13 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   }
 
 
+  // TODO: Refactor most of shared replica logic out into a separate class.
   private void writeToSharedStore() {
     String collectionName = cloudDesc.getCollectionName();
     String shardName = cloudDesc.getShardId();
     String coreName = req.getCore().getName();
     SharedCoreConcurrencyController concurrencyController = req.getCore().getCoreContainer().getSharedStoreManager().getSharedCoreConcurrencyController();
-    concurrencyController.recordState(collectionName, shardName, coreName, SharedCoreStage.LocalIndexingFinished);
+    concurrencyController.recordState(collectionName, shardName, coreName, SharedCoreStage.LOCAL_INDEXING_FINISHED);
 
     log.info("Attempting to initiate index update write to shared store for collection=" + collectionName +
         " and shard=" + shardName + " using core=" + coreName);
@@ -1134,7 +1143,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
 
     CoreContainer coreContainer = req.getCore().getCoreContainer();
     SharedCoreConcurrencyController concurrencyController = coreContainer.getSharedStoreManager().getSharedCoreConcurrencyController();
-    concurrencyController.recordState(collectionName, shardName, coreName, SharedCoreStage.IndexingBatchReceived);
+    concurrencyController.recordState(collectionName, shardName, coreName, SharedCoreStage.INDEXING_BATCH_RECEIVED);
     corePullLock = concurrencyController.getCorePullLock(collectionName, shardName, coreName);
     // from this point on wards we should always exit this method with read lock (no matter failure or what)
     try {
@@ -1155,7 +1164,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       // acquire lock for the whole duration of update
       // we should always leave with read lock acquired(failure or success), since it is the job of close method to release it
       corePullLock.readLock().lock();
-      concurrencyController.recordState(collectionName, shardName, coreName, SharedCoreStage.LocalIndexingStarted);
+      concurrencyController.recordState(collectionName, shardName, coreName, SharedCoreStage.LOCAL_INDEXING_STARTED);
     }
   }
 
