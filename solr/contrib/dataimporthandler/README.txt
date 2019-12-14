@@ -7,9 +7,12 @@ HTTP data sources quick and easy.
 
 Deprecation notice
 ------------------
-This contrib module is deprecated as of v8.4 and may be removed in a futhre major version.
+This contrib module is deprecated as of v8.4, scheduled for removal in Solr 9.0.
+The reason is that DIH is no longer being maintained in a manner we feel is necessary in order to keep it
+healthy and secure. Also it was not designed to work with Solr Cloud and does not meet current performance requirements.
+
 The project hopes that the community will take over maintenance of DIH as a 3rd party plugin.
-Please reach out to us at dev@ mailing list if you can help.
+Please reach out to us at the dev@ mailing list if you want to help.
 
 Important Note
 --------------
