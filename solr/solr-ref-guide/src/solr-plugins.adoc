@@ -21,6 +21,7 @@
 // under the License.
 
 One of Solr's strengths is providing a rich platform of functionality with the option of adding your own custom components running within Solr.
+
 Solr calls such components *plugins* when the implementation is configurable.
 Surely you have seen many already throughout Solr's configuration via the "class" reference.
 Common examples are Request Handlers, Search Components, and Query Parsers to process your searches, and Token Filters for processing text.

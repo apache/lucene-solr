@@ -17,7 +17,9 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr components can be configured using *resources*: data stored in external files that may be referred to in a location-independent fashion. Examples include: files needed by schema components, e.g., a stopword list for <<filter-descriptions.adoc#stop-filter,Stop Filter>>; and machine-learned models for <<learning-to-rank.adoc#learning-to-rank,Learning to Rank>>.
+Solr components can be configured using *resources*: data stored in external files that may be referred to in a location-independent fashion.
+
+Examples of resources include: files needed by schema components, e.g., a stopword list for <<filter-descriptions.adoc#stop-filter,Stop Filter>>; and machine-learned models for <<learning-to-rank.adoc#learning-to-rank,Learning to Rank>>.
 _Resources are typically resolved from the configSet_ but there are other options too.
 
 Solr's resources are generally only loaded initially when the Solr collection or Solr core is loaded.

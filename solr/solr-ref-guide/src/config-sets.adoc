@@ -16,7 +16,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Configsets are made up of the configuration files used in a Solr installation: `solrconfig.xml`, the schema, and then <<resource-loading.adoc#resource-loading,resources>> like language files, `synonyms.txt`, DIH-related configuration, and others that are referenced from the config or schema.
+Configsets are a set of configuration files used in a Solr installation: `solrconfig.xml`, the schema, and then <<resource-loading.adoc#resource-loading,resources>> like language files, `synonyms.txt`, DIH-related configuration, and others that are referenced from the config or schema.
+
 Such configuration, _configsets_, can be named and then referenced by collections or cores, possibly with the intent to share them to avoid duplication.
 
 Solr ships with two example configsets located in `server/solr/configsets`, which can be used as a base for your own. These example configsets are named `_default` and `sample_techproducts_configs`.

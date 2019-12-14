@@ -17,7 +17,8 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Here we describe a simple method to to make the `.jar` files for Solr plugins visible to Solr.
+Here we describe two simple and effective methods to make the `.jar` files for Solr plugins visible to Solr.
+
 Such files are sometimes called "libraries" or "libs" for short.
 Essentially you can put them in some special places or explicitly tell Solr about them from your config.
 
