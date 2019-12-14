@@ -308,10 +308,12 @@ public class RepositoryManager {
       installPackage(packageName, version);
     }
 
-    SolrPackageInstance updatedPackage = packageManager.getPackageInstance(packageName, PackageUtils.LATEST);
-    boolean res = packageManager.verify(updatedPackage, peggedToLatest);
-    PackageUtils.printGreen("Verifying version " + updatedPackage.version + 
-        " on " + peggedToLatest + ", result: " + res);
-    if (!res) throw new SolrException(ErrorCode.BAD_REQUEST, "Failed verification after deployment");
+    if (peggedToLatest.isEmpty() == false) {
+      SolrPackageInstance updatedPackage = packageManager.getPackageInstance(packageName, PackageUtils.LATEST);
+      boolean res = packageManager.verify(updatedPackage, peggedToLatest);
+      PackageUtils.printGreen("Verifying version " + updatedPackage.version + 
+          " on " + peggedToLatest + ", result: " + res);
+      if (!res) throw new SolrException(ErrorCode.BAD_REQUEST, "Failed verification after deployment");
+    }
   }
 }
