@@ -710,7 +710,7 @@ function jetty_port() {
 function run_tool() {
 
   "$JAVA" $SOLR_SSL_OPTS $AUTHC_OPTS $SOLR_ZK_CREDS_AND_ACLS -Dsolr.install.dir="$SOLR_TIP" \
-    -Dlog4j.configurationFile="file:$DEFAULT_SERVER_DIR/resources/log4j2-console.xml" \
+    -Dlog4j.configurationFile="$DEFAULT_SERVER_DIR/resources/log4j2-console.xml" \
     -classpath "$DEFAULT_SERVER_DIR/solr-webapp/webapp/WEB-INF/lib/*:$DEFAULT_SERVER_DIR/lib/ext/*:$DEFAULT_SERVER_DIR/lib/*" \
     org.apache.solr.util.SolrCLI "$@"
 
@@ -1944,7 +1944,7 @@ fi
 
 LOG4J_CONFIG=()
 if [ -n "$LOG4J_PROPS" ]; then
-  LOG4J_CONFIG+=("-Dlog4j.configurationFile=file:$LOG4J_PROPS")
+  LOG4J_CONFIG+=("-Dlog4j.configurationFile=$LOG4J_PROPS")
 fi
 
 if [ "$SCRIPT_CMD" == "stop" ]; then
