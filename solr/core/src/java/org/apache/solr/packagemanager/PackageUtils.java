@@ -59,6 +59,9 @@ public class PackageUtils {
    * Represents a version which denotes the latest version available at the moment.
    */
   public static String LATEST = "latest";
+  
+  public static String PACKAGE_PATH = "/api/cluster/package";
+  public static String REPOSITORIES_ZK_PATH = "/repositories.json";
  
   public static Configuration jsonPathConfiguration() {
     MappingProvider provider = new JacksonMappingProvider();
@@ -247,5 +250,9 @@ public class PackageUtils {
       // TODO: handle multi-valued map?
     }
     return ret;
+  }
+
+  public static String getCollectionParamsPath(String collection) {
+    return "/api/collections/" + collection + "/config/params";
   }
 }
