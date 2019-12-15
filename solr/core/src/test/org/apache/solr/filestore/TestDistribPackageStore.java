@@ -55,6 +55,7 @@ import static org.apache.solr.core.TestDynamicLoading.getFileContent;
 public class TestDistribPackageStore extends SolrCloudTestCase {
 
   public void testPackageStoreManagement() throws Exception {
+    System.setProperty("enable.packages", "true");
     MiniSolrCloudCluster cluster =
         configureCluster(4)
         .withJettyConfig(jetty -> jetty.enableV2(true))
