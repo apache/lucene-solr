@@ -90,16 +90,26 @@ and Machine Learning sections of the user guide.
 
 === Univariate Scatter Plots
 
-In the example below the `random` function is used to draw 500 random samples
-from the *logs* collection. The query matches all log records and
-the *filesize_d* field is returned with each sample.
+In the example below the `random` function is called in its simplest form with just a collection name as the parameter.
 
-The visualization below shows the *filesize_d* field plotted on both the *x* and *y*
-axis which produces a diagonal line with a slope of 1. By studying the scatter plot
-we can learn a number of things about the distribution of the *filesize_d*
-variable:
 
-* The sample set ranges from 34,070 to 46,456.
+When called with no other parameters the `random` function returns a random sample
+of 500 records with all fields from
+the collection. When called without the *field list* parameter the `random` function also generates
+a sequence, 0-499 in this case, which can be used
+for plotting the `x` axis. This sequence is
+returned in a field called `x`.
+
+The visualization below shows a scatter plot with the *filesize_d* field
+plotted on the `y` axis and the `x` sequence
+plotted on the `x` axis. The effect of this is to spread the
+*filesize_d* samples across the length
+of the plot so they can be more easily studied.
+
+By studying the scatter plot we can learn a number of things about the
+distribution of the *filesize_d* variable:
+
+* The sample set ranges from 34,875 to 45,902.
 * The highest density appears to be at about 40,000.
 * The sample seems to have a balanced number of observations above and below
 40,000. Based on this the *mean* and *mode* would appear to be around 40,000.
@@ -113,7 +123,11 @@ image::images/math-expressions/univariate.png[]
 
 === Bivariate Scatter Plots
 
-In the next example two fields are returned with each sample: *filesize_d* and *response_d*.
+In the next example parameters have been added to the `random` function. The field list (*fl*)
+now specifies two fields to be
+returned with each sample: *filesize_d* and *response_d*. The `q` and `rows` parameters are the same
+as the defaults but are included as an example of how to set these parameters.
+
 By plotting *filesize_d* on the *x* axis and *response_d* on the y axis we can begin to study
 the relationship between the two variables.
 
@@ -125,7 +139,7 @@ be used to model the relationship.
 * The points appear to cluster more densely along a straight line through the middle
 and become less dense as they move away from the line.
 * The variance of the data at each *filesize_d* point seems fairly consistent. This means
-a predictive model would have consistent error across the range of predictor values.
+a predictive model would have consistent error across the range of predictions.
 
 image::images/math-expressions/bivariate.png[]
 
