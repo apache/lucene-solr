@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.solr.common.SolrException;
@@ -82,8 +83,8 @@ public class DefaultPackageRepository extends PackageRepository {
   public Path download(String artifactName) throws SolrException, IOException {
     Path tmpDirectory = Files.createTempDirectory("solr-packages");
     tmpDirectory.toFile().deleteOnExit();
-    URL url = new URL(new URL(repositoryURL), artifactName);
-    String fileName = url.getPath().substring(url.getPath().lastIndexOf('/') + 1);
+    URL url = new URL(new URL(repositoryURL.endsWith("/")? repositoryURL: repositoryURL+"/"), artifactName);
+    String fileName = FilenameUtils.getName(url.getPath());
     Path destination = tmpDirectory.resolve(fileName);
 
     switch (url.getProtocol()) {

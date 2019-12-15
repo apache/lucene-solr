@@ -122,23 +122,23 @@ public class RepositoryManager {
 
     List<PackageRepository> repos = getMapper().readValue(existingRepositoriesJson, List.class);
     repos.add(new DefaultPackageRepository(name, uri));
-    if (packageManager.zkClient.exists("/repositories.json", true) == false) {
-      packageManager.zkClient.create("/repositories.json", getMapper().writeValueAsString(repos).getBytes("UTF-8"), CreateMode.PERSISTENT, true);
+    if (packageManager.zkClient.exists(PackageUtils.REPOSITORIES_ZK_PATH, true) == false) {
+      packageManager.zkClient.create(PackageUtils.REPOSITORIES_ZK_PATH, getMapper().writeValueAsString(repos).getBytes("UTF-8"), CreateMode.PERSISTENT, true);
     } else {
-      packageManager.zkClient.setData("/repositories.json", getMapper().writeValueAsString(repos).getBytes("UTF-8"), true);
+      packageManager.zkClient.setData(PackageUtils.REPOSITORIES_ZK_PATH, getMapper().writeValueAsString(repos).getBytes("UTF-8"), true);
     }
 
     if (packageManager.zkClient.exists("/keys", true)==false) packageManager.zkClient.create("/keys", new byte[0], CreateMode.PERSISTENT, true);
     if (packageManager.zkClient.exists("/keys/exe", true)==false) packageManager.zkClient.create("/keys/exe", new byte[0], CreateMode.PERSISTENT, true);
-    if (packageManager.zkClient.exists("/keys/exe/"+name+".der", true)==false) {
-      packageManager.zkClient.create("/keys/exe/"+name+".der", new byte[0], CreateMode.PERSISTENT, true);
+    if (packageManager.zkClient.exists("/keys/exe/" + name + ".der", true)==false) {
+      packageManager.zkClient.create("/keys/exe/" + name + ".der", new byte[0], CreateMode.PERSISTENT, true);
     }
-    packageManager.zkClient.setData("/keys/exe/"+name+".der", IOUtils.toByteArray(new URL(uri+"/publickey.der").openStream()), true);
+    packageManager.zkClient.setData("/keys/exe/" + name + ".der", IOUtils.toByteArray(new URL(uri + "/publickey.der").openStream()), true);
   }
 
   private String getRepositoriesJson(SolrZkClient zkClient) throws UnsupportedEncodingException, KeeperException, InterruptedException {
-    if (zkClient.exists("/repositories.json", true)) {
-      return new String(zkClient.getData("/repositories.json", null, null, true), "UTF-8");
+    if (zkClient.exists(PackageUtils.REPOSITORIES_ZK_PATH, true)) {
+      return new String(zkClient.getData(PackageUtils.REPOSITORIES_ZK_PATH, null, null, true), "UTF-8");
     }
     return "[]";
   }
@@ -195,7 +195,7 @@ public class RepositoryManager {
       add.manifest = "/package/" + packageName + "/" + version + "/manifest.json";
       add.manifestSHA512 = manifestSHA512;
 
-      V2Request req = new V2Request.Builder("/api/cluster/package")
+      V2Request req = new V2Request.Builder(PackageUtils.PACKAGE_PATH)
           .forceV2(true)
           .withMethod(SolrRequest.METHOD.POST)
           .withPayload(Collections.singletonMap("add", add))
@@ -308,10 +308,12 @@ public class RepositoryManager {
       installPackage(packageName, version);
     }
 
-    SolrPackageInstance updatedPackage = packageManager.getPackageInstance(packageName, PackageUtils.LATEST);
-    boolean res = packageManager.verify(updatedPackage, peggedToLatest);
-    PackageUtils.printGreen("Verifying version " + updatedPackage.version + 
-        " on " + peggedToLatest + ", result: " + res);
-    if (!res) throw new SolrException(ErrorCode.BAD_REQUEST, "Failed verification after deployment");
+    if (peggedToLatest.isEmpty() == false) {
+      SolrPackageInstance updatedPackage = packageManager.getPackageInstance(packageName, PackageUtils.LATEST);
+      boolean res = packageManager.verify(updatedPackage, peggedToLatest);
+      PackageUtils.printGreen("Verifying version " + updatedPackage.version + 
+          " on " + peggedToLatest + ", result: " + res);
+      if (!res) throw new SolrException(ErrorCode.BAD_REQUEST, "Failed verification after deployment");
+    }
   }
 }
