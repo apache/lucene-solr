@@ -178,5 +178,5 @@ REM SOLR_OPTS="$SOLR_OPTS -Dsolr.environment=prod"
 
 REM Runs solr in a java security manager sandbox. This can protect against some attacks.
 REM Runtime properties are passed to the security policy file (server\etc\security.policy)
-REM This is experimental! It may not work at all with HDFS.
+REM This is experimental! It may not work at all with Hadoop/HDFS features.
 REM set SOLR_SECURITY_MANAGER_ENABLED=false
