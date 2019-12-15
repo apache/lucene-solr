@@ -17,9 +17,6 @@
 
 package org.apache.solr.filestore;
 
-import static org.apache.solr.common.util.Utils.JAVABINCONSUMER;
-import static org.apache.solr.core.TestDynamicLoading.getFileContent;
-
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -30,6 +27,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.function.Predicate;
 
+import com.google.common.collect.ImmutableSet;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -50,12 +48,14 @@ import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.server.ByteBufferInputStream;
 
-import com.google.common.collect.ImmutableSet;
+import static org.apache.solr.common.util.Utils.JAVABINCONSUMER;
+import static org.apache.solr.core.TestDynamicLoading.getFileContent;
 
 @LogLevel("org.apache.solr.filestore.PackageStoreAPI=DEBUG;org.apache.solr.filestore.DistribPackageStore=DEBUG")
 public class TestDistribPackageStore extends SolrCloudTestCase {
 
   public void testPackageStoreManagement() throws Exception {
+    System.setProperty("enable.packages", "true");
     MiniSolrCloudCluster cluster =
         configureCluster(4)
         .withJettyConfig(jetty -> jetty.enableV2(true))

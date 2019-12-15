@@ -47,6 +47,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.BlobRepository;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.PermissionNameProvider;
@@ -64,7 +65,7 @@ import static org.apache.solr.handler.ReplicationHandler.FILE_STREAM;
 
 public class PackageStoreAPI {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static final String PACKAGESTORE_DIRECTORY = "filestore";
+  public static final String PACKAGESTORE_DIRECTORY = "$filestore";
 
 
   private final CoreContainer coreContainer;
@@ -135,6 +136,9 @@ public class PackageStoreAPI {
 
     @Command
     public void upload(SolrQueryRequest req, SolrQueryResponse rsp) {
+      if(!coreContainer.getPackageLoader().getPackageAPI().isEnabled()) {
+        throw new RuntimeException(PackageAPI.ERR_MSG);
+      }
       try {
         coreContainer.getZkController().getZkClient().create(TMP_ZK_NODE, "true".getBytes(UTF_8),
             CreateMode.EPHEMERAL, true);
