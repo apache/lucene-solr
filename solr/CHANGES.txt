@@ -64,6 +64,9 @@ Upgrade Notes
 
 * SOLR-14071: Untrusted configsets (ones that are uploaded via unsecured configset API) cannot use <lib> directive.
   Consider enabling authentication/authorization so that the uploaded configsets are trusted.
+  Note: If you already have a collection using untrusted configset that uses <lib> directive, it will not load after
+  upgrading to 8.4. You can re-upload your configset using "bin/solr zk -upconfig .." or place your libraries in the
+  classpath and restart Solr.
 
 * SOLR-14065: VelocityResponseWriter has been deprecated and may be removed in a future version.
 
@@ -198,9 +201,9 @@ Bug Fixes
 * SOLR-13945: Fix: SPLITSHARD can cause data loss on a failure to commit after the sub-shards are active and a rollback
   is done to make parent shard active again (Ishan Chattopadhyaya, ab)
 
-* SOLR-14013: FIX: javabin performance regressions (noble, yonik, Houston Putman)
+* SOLR-14071: Untrusted configsets cannot use <lib> directive due to security reasons (Ishan Chattopadhyaya)
 
-* SOLR-14071: Untrusted configsets cannot use <lib> directive (Ishan Chattopadhyaya)
+* SOLR-14013: FIX: javabin performance regressions (noble, yonik, Houston Putman)
 
 * SOLR-14079: SPLITSHARD splitByPrefix doesn't work in async mode.  This also
   affects splits triggered by the autoscale framework, which use async mode.
