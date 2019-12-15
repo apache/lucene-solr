@@ -432,7 +432,7 @@ for examining and visualizing the clusters and centroids.
 
 ==== Clustered Scatter Plot
 
-In this example we'll again be clustering 2D lat/lon points of rat sightings. But unlike the DBSCAN example, K-means clustering
+In this example we'll again be clustering 2D lat/lon points of rat sightings. But unlike the DBSCAN example, k-means clustering
 does not on its own
 perform any noise reduction. So in order to reduce the noise a smaller random sample is selected from the data than was used
 for the DBSCAN example.
