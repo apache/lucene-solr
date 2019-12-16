@@ -64,7 +64,7 @@ allprojects {
           [propName: 'tests.verbose', value: false, description: "Emit verbose debug information from tests."],
           [propName: 'tests.infostream', value: false, description: "Enables or disables infostream logs."],
           [propName: 'tests.leaveTemporary', value: null, description: "Leave temporary directories after tests complete."],
-          [propName: 'tests.useSecurityManager', value: false, description: "Enable security manager in tests.", buildOnly: true],
+          [propName: 'tests.useSecurityManager', value: true, description: "Control security manager in tests.", buildOnly: true],
           // component randomization
           [propName: 'tests.codec', value: "random", description: "Sets the codec tests should run with."],
           [propName: 'tests.directory', value: "random", description: "Sets the Directory implementation tests should run with."],
