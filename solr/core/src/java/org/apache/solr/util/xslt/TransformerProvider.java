@@ -21,7 +21,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.util.TimeOut;
+import org.apache.solr.common.util.TimeOut;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.commons.io.IOUtils;

@@ -29,7 +29,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.util.TimeOut;
+import org.apache.solr.common.util.TimeOut;
 import org.apache.solr.util.tracing.GlobalTracer;
 import org.junit.Test;
 

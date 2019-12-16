@@ -63,7 +63,7 @@ import org.apache.solr.update.UpdateShardHandler;
 import org.apache.solr.update.VersionBucket;
 import org.apache.solr.update.VersionInfo;
 import org.apache.solr.util.TestInjection;
-import org.apache.solr.util.TimeOut;
+import org.apache.solr.common.util.TimeOut;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

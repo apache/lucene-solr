@@ -74,7 +74,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean.Category;
 import org.apache.solr.util.TestInjection;
-import org.apache.solr.util.TimeOut;
+import org.apache.solr.common.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

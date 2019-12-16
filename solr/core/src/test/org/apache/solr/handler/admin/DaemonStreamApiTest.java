@@ -35,7 +35,7 @@ import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.handler.TestSQLHandler;
-import org.apache.solr.util.TimeOut;
+import org.apache.solr.common.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;

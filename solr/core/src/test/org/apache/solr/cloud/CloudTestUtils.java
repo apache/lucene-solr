@@ -32,7 +32,7 @@ import org.apache.solr.client.solrj.request.RequestWriter.StringPayloadContentWr
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.util.TimeOut;
+import org.apache.solr.common.util.TimeOut;
 import org.junit.Assert;
 
 import static org.apache.solr.common.params.CommonParams.JSON_MIME;

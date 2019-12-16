@@ -52,7 +52,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.params.UpdateParams;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.util.TimeOut;
+import org.apache.solr.common.util.TimeOut;
 import org.apache.solr.util.LogLevel;
 import org.junit.After;
 import org.junit.Before;

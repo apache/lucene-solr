@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.solr.util;
+package org.apache.solr.common.util;
 
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;

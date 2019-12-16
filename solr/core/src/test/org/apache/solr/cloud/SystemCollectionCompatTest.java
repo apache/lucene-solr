@@ -44,7 +44,7 @@ import org.apache.solr.common.util.RetryUtil;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.util.IdUtils;
-import org.apache.solr.util.TimeOut;
+import org.apache.solr.common.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
