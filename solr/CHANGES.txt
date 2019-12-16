@@ -62,6 +62,9 @@ Other Changes
 * SOLR-14047: Make sure tests don't pickup other Hadoop installs (Kevin Risden)
 
 * SOLR-14054: Upgrade to Tika 1.23 when available (Tim Allison)
+
+* SOLR-14091: Remove deprecated soLingerTime when configuring Jetty connector (Matthias Krueger via Kevin Risden)
+
 ==================  8.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

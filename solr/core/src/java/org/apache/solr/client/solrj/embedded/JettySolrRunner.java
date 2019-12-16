@@ -319,7 +319,6 @@ public class JettySolrRunner {
       }
 
       connector.setReuseAddress(true);
-      connector.setSoLingerTime(-1);
       connector.setPort(port);
       connector.setHost("127.0.0.1");
       connector.setIdleTimeout(THREAD_POOL_MAX_IDLE_TIME_MS);
@@ -330,7 +329,6 @@ public class JettySolrRunner {
       HttpConfiguration configuration = new HttpConfiguration();
       ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(configuration));
       connector.setPort(port);
-      connector.setSoLingerTime(-1);
       connector.setIdleTimeout(THREAD_POOL_MAX_IDLE_TIME_MS);
       server.setConnectors(new Connector[] {connector});
     }
