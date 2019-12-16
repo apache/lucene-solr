@@ -58,3 +58,7 @@ java.lang.Float#<init>(double)
 java.lang.Float#<init>(java.lang.String)
 java.lang.Double#<init>(double)
 java.lang.Double#<init>(java.lang.String)
+
+@defaultMessage Java deserialization is unsafe when the data is untrusted. The java developer is powerless: no checks or casts help, exploitation can happen in places such as clinit or finalize!
+java.io.ObjectInputStream
+java.io.ObjectOutputStream
