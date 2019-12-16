@@ -16,8 +16,6 @@
  */
 package org.apache.lucene.geo;
 
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import org.apache.lucene.index.PointValues.Relation;
 
 /**
@@ -41,8 +39,6 @@ public class Polygon2D implements Component2D {
   final protected Component2D holes;
   /** Edges of the polygon represented as a 2-d interval tree.*/
   final EdgeTree tree;
-  /** helper boolean for points on boundary */
-  final private AtomicBoolean containsBoundary = new AtomicBoolean(false);
 
   protected Polygon2D(final double minX, final double maxX, final double minY, final double maxY, double[] x, double[] y, Component2D holes) {
     this.minY = minY;
@@ -92,8 +88,7 @@ public class Polygon2D implements Component2D {
   }
 
   private boolean internalContains(double x, double y) {
-    containsBoundary.set(false);
-    if (tree.contains(x, y, containsBoundary)) {
+    if (tree.contains(x, y)) {
       if (holes != null && holes.contains(x, y)) {
         return false;
       }
@@ -168,6 +163,64 @@ public class Polygon2D implements Component2D {
     }
     // indexed "triangle" is a triangle:
     return relateIndexedTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy);
+  }
+
+  @Override
+  public WithinRelation withinTriangle(double minX, double maxX, double minY, double maxY,
+                                          double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
+    // short cut, lines and points cannot contain this type of shape
+    if ((ax == bx && ay == by) || (ax == cx && ay == cy) || (bx == cx && by == cy)) {
+      return WithinRelation.DISJOINT;
+    }
+
+    if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
+      return WithinRelation.DISJOINT;
+    }
+
+    // if any of the points is inside the polygon, the polygon cannot be within this indexed
+    // shape because points belong to the original indexed shape.
+    if (contains(ax, ay) || contains(bx, by) || contains(cx, cy)) {
+      return WithinRelation.NOTWITHIN;
+    }
+
+    WithinRelation relation = WithinRelation.DISJOINT;
+    // if any of the edges intersects an the edge belongs to the shape then it cannot be within.
+    // if it only intersects edges that do not belong to the shape, then it is a candidate
+    // we skip edges at the dateline to support shapes crossing it
+    if (tree.crossesLine(minX, maxX, minY, maxY, ax, ay, bx, by)) {
+      if (ab == true) {
+        return WithinRelation.NOTWITHIN;
+      } else {
+        relation = WithinRelation.CANDIDATE;
+      }
+    }
+
+    if (tree.crossesLine(minX, maxX, minY, maxY, bx, by, cx, cy)) {
+      if (bc == true) {
+        return WithinRelation.NOTWITHIN;
+      } else {
+        relation = WithinRelation.CANDIDATE;
+      }
+    }
+    if (tree.crossesLine(minX, maxX, minY, maxY, cx, cy, ax, ay)) {
+      if (ca == true) {
+        return WithinRelation.NOTWITHIN;
+      } else {
+        relation = WithinRelation.CANDIDATE;
+      }
+    }
+
+    // if any of the edges crosses and edge that does not belong to the shape
+    // then it is a candidate for within
+    if (relation == WithinRelation.CANDIDATE) {
+      return WithinRelation.CANDIDATE;
+    }
+
+    // Check if shape is within the triangle
+    if (Component2D.pointInTriangle(minX, maxX, minY, maxY, tree.x1, tree.y1, ax, ay, bx, by, cx, cy) == true) {
+      return WithinRelation.CANDIDATE;
+    }
+    return relation;
   }
 
   /** relates an indexed line segment (a "flat triangle") with the polygon */

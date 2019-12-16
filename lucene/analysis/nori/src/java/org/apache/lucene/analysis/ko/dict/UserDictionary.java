@@ -25,7 +25,7 @@ import java.util.List;
 
 import org.apache.lucene.analysis.ko.POS;
 import org.apache.lucene.util.IntsRefBuilder;
-import org.apache.lucene.util.fst.Builder;
+import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 
@@ -83,7 +83,7 @@ public final class UserDictionary implements Dictionary {
     entries.sort(Comparator.comparing(e -> e.split("\\s+")[0]));
 
     PositiveIntOutputs fstOutput = PositiveIntOutputs.getSingleton();
-    Builder<Long> fstBuilder = new Builder<>(FST.INPUT_TYPE.BYTE2, fstOutput);
+    FSTCompiler<Long> fstCompiler = new FSTCompiler<>(FST.INPUT_TYPE.BYTE2, fstOutput);
     IntsRefBuilder scratch = new IntsRefBuilder();
 
     String lastToken = null;
@@ -129,11 +129,11 @@ public final class UserDictionary implements Dictionary {
       for (int i = 0; i < token.length(); i++) {
         scratch.setIntAt(i, token.charAt(i));
       }
-      fstBuilder.add(scratch.get(), ord);
+      fstCompiler.add(scratch.get(), ord);
       lastToken = token;
       ord ++;
     }
-    this.fst = new TokenInfoFST(fstBuilder.finish());
+    this.fst = new TokenInfoFST(fstCompiler.compile());
     this.segmentations = segmentations.toArray(new int[segmentations.size()][]);
     this.rightIds = new short[rightIds.size()];
     for (int i = 0; i < rightIds.size(); i++) {

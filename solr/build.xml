@@ -333,7 +333,7 @@
         <exclude name="package/**"/>
       </additional-excludes>
       <additional-filters>
-        <replaceregex pattern="jetty([^/]+)$" replace="jetty" flags="gi" />
+        <replaceregex pattern="^jetty([^/]+)$" replace="jetty" flags="gi" />
         <!-- start.jar comes from jetty, .jar already stripped by checker defaults --> 
         <replaceregex pattern="^start$" replace="jetty" flags="gi" />
         <replaceregex pattern="slf4j-([^/]+)$" replace="slf4j" flags="gi" />

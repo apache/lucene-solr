@@ -72,7 +72,7 @@ public class ReplicaMutator {
 
     Map<String, Object> replicaProps = new LinkedHashMap<>(replica.getProperties());
     replicaProps.put(key, value);
-    return new Replica(replica.getName(), replicaProps);
+    return new Replica(replica.getName(), replicaProps, replica.getCollection(), replica.getSlice());
   }
 
   protected Replica unsetProperty(Replica replica, String key) {
@@ -81,7 +81,7 @@ public class ReplicaMutator {
     if (!replica.containsKey(key)) return replica;
     Map<String, Object> replicaProps = new LinkedHashMap<>(replica.getProperties());
     replicaProps.remove(key);
-    return new Replica(replica.getName(), replicaProps);
+    return new Replica(replica.getName(), replicaProps, replica.getCollection(), replica.getSlice());
   }
 
   protected Replica setLeader(Replica replica) {
@@ -144,10 +144,11 @@ public class ReplicaMutator {
     }
     log.info("Setting property {} with value {} for collection {}", property, propVal, collectionName);
     log.debug("Full message: {}", message);
-    if (StringUtils.equalsIgnoreCase(replica.getStr(property), propVal)) return ZkStateWriter.NO_OP; // already the value we're going to set
+    if (StringUtils.equalsIgnoreCase(replica.getStr(property), propVal))
+      return ZkStateWriter.NO_OP; // already the value we're going to set
 
     // OK, there's no way we won't change the cluster state now
-    Map<String,Replica> replicas = collection.getSlice(sliceName).getReplicasCopy();
+    Map<String, Replica> replicas = collection.getSlice(sliceName).getReplicasCopy();
     if (isUnique == false) {
       replicas.get(replicaName).getProperties().put(property, propVal);
     } else { // Set prop for this replica, but remove it for all others.
@@ -159,7 +160,7 @@ public class ReplicaMutator {
         }
       }
     }
-    Slice newSlice = new Slice(sliceName, replicas, collection.getSlice(sliceName).shallowCopy());
+    Slice newSlice = new Slice(sliceName, replicas, collection.getSlice(sliceName).shallowCopy(),collectionName);
     DocCollection newCollection = CollectionMutator.updateSlice(collectionName, collection,
         newSlice);
     return new ZkWriteCommand(collectionName, newCollection);
@@ -326,8 +327,8 @@ public class ReplicaMutator {
     String shardParent = (String) replicaProps.remove(ZkStateReader.SHARD_PARENT_PROP);
 
 
-    Replica replica = new Replica(coreNodeName, replicaProps);
-    
+    Replica replica = new Replica(coreNodeName, replicaProps, collectionName, sliceName);
+
     log.debug("Will update state for replica: {}", replica);
 
     Map<String, Object> sliceProps = null;
@@ -347,7 +348,7 @@ public class ReplicaMutator {
       sliceProps.put(Slice.PARENT, shardParent);
     }
     replicas.put(replica.getName(), replica);
-    slice = new Slice(sliceName, replicas, sliceProps);
+    slice = new Slice(sliceName, replicas, sliceProps, collectionName);
 
     DocCollection newCollection = CollectionMutator.updateSlice(collectionName, collection, slice);
     log.debug("Collection is now: {}", newCollection);
@@ -424,10 +425,10 @@ public class ReplicaMutator {
             String parentSliceName = (String) sliceProps.remove(Slice.PARENT);
             // now lets see if the parent leader is still the same or else there's a chance of data loss
             // see SOLR-9438 for details
-            String shardParentZkSession  = (String) sliceProps.remove("shard_parent_zk_session");
+            String shardParentZkSession = (String) sliceProps.remove("shard_parent_zk_session");
             String shardParentNode = (String) sliceProps.remove("shard_parent_node");
             boolean isLeaderSame = true;
-            if (shardParentNode != null && shardParentZkSession != null)  {
+            if (shardParentNode != null && shardParentZkSession != null) {
               log.info("Checking whether sub-shard leader node is still the same one at {} with ZK session id {}", shardParentNode, shardParentZkSession);
               try {
                 VersionedData leaderZnode = null;
@@ -437,7 +438,7 @@ public class ReplicaMutator {
                 } catch (NoSuchElementException e) {
                   // ignore
                 }
-                if (leaderZnode == null)  {
+                if (leaderZnode == null) {
                   log.error("The shard leader node: {} is not live anymore!", shardParentNode);
                   isLeaderSame = false;
                 } else if (!shardParentZkSession.equals(leaderZnode.getOwner())) {
@@ -471,7 +472,7 @@ public class ReplicaMutator {
                   log.info("TIMINGS Sub-shard " + subShardSlice.getName() + " not available: " + subShardSlice);
                 }
               }
-            } else  {
+            } else {
               // we must mark the shard split as failed by switching sub-shards to recovery_failed state
               propMap.put(sliceName, Slice.State.RECOVERY_FAILED.toString());
               for (Slice subShardSlice : subShardSlices) {

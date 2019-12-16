@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -71,6 +72,7 @@ import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.handler.admin.ConfigSetsHandler;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -132,6 +134,12 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
     
     shutdownCluster();
     super.tearDown();
+  }
+
+  @AfterClass
+  public static void cleanUpAfterClass() throws Exception {
+    httpBasedCloudSolrClient = null;
+    zkBasedCloudSolrClient = null;
   }
 
   /**
@@ -481,6 +489,74 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
         shardAddresses.size() > 1 && ports.size()==1);
   }
 
+
+
+  /**
+   * Tests if the 'shards.preference' parameter works with single-sharded collections.
+   */
+  @Test
+  public void singleShardedPreferenceRules() throws Exception {
+    String collectionName = "singleShardPreferenceTestColl";
+
+    int liveNodes = cluster.getJettySolrRunners().size();
+
+    // For testing replica.type, we want to have all replica types available for the collection
+    CollectionAdminRequest.createCollection(collectionName, "conf", 1, liveNodes/3, liveNodes/3, liveNodes/3)
+        .setMaxShardsPerNode(liveNodes)
+        .processAndWait(cluster.getSolrClient(), TIMEOUT);
+    cluster.waitForActiveCollection(collectionName, 1, liveNodes);
+
+    // Add some new documents
+    new UpdateRequest()
+        .add(id, "0", "a_t", "hello1")
+        .add(id, "2", "a_t", "hello2")
+        .add(id, "3", "a_t", "hello2")
+        .commit(getRandomClient(), collectionName);
+
+    // Run the actual test for 'queryReplicaType'
+    queryReplicaType(getRandomClient(), Replica.Type.PULL, collectionName);
+    queryReplicaType(getRandomClient(), Replica.Type.TLOG, collectionName);
+    queryReplicaType(getRandomClient(), Replica.Type.NRT, collectionName);
+  }
+
+  private void queryReplicaType(CloudHttp2SolrClient cloudClient,
+                                Replica.Type typeToQuery,
+                                String collectionName)
+      throws Exception
+  {
+    SolrQuery qRequest = new SolrQuery("*:*");
+
+    ModifiableSolrParams qParams = new ModifiableSolrParams();
+    qParams.add(ShardParams.SHARDS_PREFERENCE, ShardParams.SHARDS_PREFERENCE_REPLICA_TYPE + ":" + typeToQuery.toString());
+    qParams.add(ShardParams.SHARDS_INFO, "true");
+    qRequest.add(qParams);
+
+    Map<String, String> replicaTypeToReplicas = mapReplicasToReplicaType(getCollectionState(collectionName));
+
+    QueryResponse qResponse = cloudClient.query(collectionName, qRequest);
+
+    Object shardsInfo = qResponse.getResponse().get(ShardParams.SHARDS_INFO);
+    assertNotNull("Unable to obtain "+ShardParams.SHARDS_INFO, shardsInfo);
+
+    // Iterate over shards-info and check what cores responded
+    SimpleOrderedMap<?> shardsInfoMap = (SimpleOrderedMap<?>)shardsInfo;
+    Iterator<Map.Entry<String, ?>> itr = shardsInfoMap.asMap(100).entrySet().iterator();
+    List<String> shardAddresses = new ArrayList<String>();
+    while (itr.hasNext()) {
+      Map.Entry<String, ?> e = itr.next();
+      assertTrue("Did not find map-type value in "+ShardParams.SHARDS_INFO, e.getValue() instanceof Map);
+      String shardAddress = (String)((Map)e.getValue()).get("shardAddress");
+      if (shardAddress.endsWith("/")) {
+        shardAddress = shardAddress.substring(0, shardAddress.length() - 1);
+      }
+      assertNotNull(ShardParams.SHARDS_INFO+" did not return 'shardAddress' parameter", shardAddress);
+      shardAddresses.add(shardAddress);
+    }
+    assertEquals("Shard addresses must be of size 1, since there is only 1 shard in the collection", 1, shardAddresses.size());
+
+    assertEquals("Make sure that the replica queried was the replicaType desired", typeToQuery.toString().toUpperCase(Locale.ROOT), replicaTypeToReplicas.get(shardAddresses.get(0)).toUpperCase(Locale.ROOT));
+  }
+
   private Long getNumRequests(String baseUrl, String collectionName) throws
       SolrServerException, IOException {
     return getNumRequests(baseUrl, collectionName, "QUERY", "/select", null, false);
@@ -676,7 +752,7 @@ public class CloudHttp2SolrClientTest extends SolrCloudTestCase {
 
   @Test
   public void testShutdown() throws IOException {
-    try (CloudSolrClient client = getCloudSolrClient("[ff01::114]:33332")) {
+    try (CloudSolrClient client = getCloudSolrClient(DEAD_HOST_1)) {
       client.setZkConnectTimeout(100);
       client.connect();
       fail("Expected exception");

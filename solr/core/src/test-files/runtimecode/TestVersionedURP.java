@@ -19,6 +19,7 @@ package runtimecode;
 
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.SimpleUpdateProcessorFactory;
 
 public class TestVersionedURP extends SimpleUpdateProcessorFactory {

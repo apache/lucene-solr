@@ -38,6 +38,13 @@ public class AuditLoggerPluginTest extends SolrTestCaseJ4 {
       .setMessage("Anonymous")
       .setResource("/collection1")
       .setDate(SAMPLE_DATE);
+  protected static final AuditEvent EVENT_WITH_URL = new AuditEvent(AuditEvent.EventType.ANONYMOUS)
+      .setHttpMethod("GET")
+      .setMessage("Anonymous")
+      .setResource("/collection1")
+      .setBaseUrl("http://myserver/mypath")
+      .setHttpQueryString("a=b&c=d")
+      .setDate(SAMPLE_DATE);
   protected static final AuditEvent EVENT_ANONYMOUS_REJECTED = new AuditEvent(AuditEvent.EventType.ANONYMOUS_REJECTED)
       .setHttpMethod("GET")
       .setMessage("Anonymous rejected")
@@ -194,6 +201,18 @@ public class AuditLoggerPluginTest extends SolrTestCaseJ4 {
         plugin.formatter.formatEvent(EVENT_ANONYMOUS));
     assertEquals("{\"message\":\"Authenticated\",\"level\":\"INFO\",\"date\":" + SAMPLE_DATE.getTime() + ",\"username\":\"Jan\",\"solrParams\":{},\"solrPort\":0,\"resource\":\"/collection1\",\"httpMethod\":\"GET\",\"eventType\":\"AUTHENTICATED\",\"status\":-1,\"qtime\":-1.0}", 
         plugin.formatter.formatEvent(EVENT_AUTHENTICATED));
-  } 
-  
+  }
+
+  @Test
+  public void getBaseUrl() {
+    assertEquals("http://myserver/mypath", EVENT_WITH_URL.getBaseUrl());
+    // Deprecated
+    assertEquals("http://myserver/mypath", EVENT_WITH_URL.getRequestUrl().toString());
+  }
+
+  @Test
+  public void getUrl() {
+    assertEquals("http://myserver/mypath?a=b&c=d",
+        EVENT_WITH_URL.getUrl());
+  }
 }

@@ -24,9 +24,8 @@ import java.util.List;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Assert;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
-
 
 public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloudTest {
   public static final int INT = 71;
@@ -85,8 +84,8 @@ public class LegacyFieldFacetCloudTest extends LegacyAbstractAnalyticsFacetCloud
   private static ArrayList<ArrayList<Integer>> multiDateTestStart;
   private static ArrayList<Long> multiDateTestMissing;
 
-  @Before
-  public void beforeTest() throws Exception {
+  @BeforeClass
+  public static void beforeTest() throws Exception {
 
     //INT
     intDateTestStart = new ArrayList<>();

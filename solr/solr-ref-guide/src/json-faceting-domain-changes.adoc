@@ -235,7 +235,7 @@ Example:
 
 A `graph` domain change option works similarly to the `join` domain option, but can do traversal multiple hops `from` the existing domain `to` other documents.
 
-This works very similar to the <<other-parsers.adoc#graph-query-parser,Graph Query Parser>>, supporting all of it's optional parameters, and has the same limitations when dealing with multi-shard collections.
+This works very similar to the <<other-parsers.adoc#graph-query-parser,Graph Query Parser>>, supporting all of its optional parameters, and has the same limitations when dealing with multi-shard collections.
 
 Example:
 [source,json]
