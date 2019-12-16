@@ -143,6 +143,7 @@ Other Changes
 
 * SOLR-14054: Upgrade to Tika 1.23 when available (Tim Allison)
 
+* SOLR-14091: Remove deprecated soLingerTime when configuring Jetty connector (Matthias Krueger via Kevin Risden)
 
 ==================  8.4.0 ==================
 
