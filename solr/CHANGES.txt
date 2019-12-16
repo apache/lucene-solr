@@ -183,8 +183,8 @@ Upgrade Notes
 
 * SOLR-14065: VelocityResponseWriter has been deprecated and may be removed in a future version.
 
-* SOLR-14072: The "Blob Store" API and "runtimeLib" plugin mechanism that uses it is now considered deprecated.  The
-  replacement to it is the "Package Manager" system, which includes a "File Store".  These are experimental currently
+* SOLR-14072: The "Blob Store" API and "runtimeLib" plugin mechanism that uses it is now considered deprecated. The
+  replacement to it is the "Package Management" system, which includes a "File Store". These are experimental currently
   but will grow/stabalize/mature.
 
 New Features
