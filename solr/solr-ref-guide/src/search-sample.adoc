@@ -163,9 +163,9 @@ over a result set and are displayed in a table:
 
 image::images/math-expressions/stats-table.png[]
 
-The `stats` function can also be visualized using the *Number* visualization which is
+The `stats` function can also be visualized using the *number* visualization which is
 used to highlight important numbers. The example below shows the `count(*)` aggregation
-displayed in the Number visualization:
+displayed in the number visualization:
 
 image::images/math-expressions/stats.png[]
 
