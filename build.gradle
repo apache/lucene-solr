@@ -11,6 +11,9 @@ allprojects {
   version = "9.0.0-SNAPSHOT"
 }
 
+// Make sure the build environment is consistent.
+apply from: file('gradle/validation/check-environment.gradle')
+
 // Include smaller chunks configuring dedicated build areas.
 // Some of these intersect or add additional functionality.
 // The order of inclusion of these files shouldn't matter (but may
