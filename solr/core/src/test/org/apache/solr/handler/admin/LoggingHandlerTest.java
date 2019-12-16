@@ -51,11 +51,18 @@ public class LoggingHandlerTest extends SolrTestCaseJ4 {
     LoggerConfig loggerConfig = ctx.getConfiguration().getLoggerConfig(tst.getName());
     loggerConfig.setLevel(Level.INFO);
     ctx.updateLoggers();
+
+    // HACK: work around for SOLR-14099...
+    Logger apache = LogManager.getLogger("org.apache");
+    final String apache_level = null == apache.getLevel()
+      ? "null[@name='level']"
+      : "str[@name='level'][.='"+apache.getLevel()+"']";
+
     
     assertQ("Show Log Levels OK",
             req(CommonParams.QT,"/admin/logging")
             ,"//arr[@name='loggers']/lst/str[.='"+tst.getName()+"']/../str[@name='level'][.='"+tst.getLevel()+"']"
-            ,"//arr[@name='loggers']/lst/str[.='org.apache']/../null[@name='level']"
+            ,"//arr[@name='loggers']/lst/str[.='org.apache']/../" + apache_level
             );
 
     assertQ("Set a level",
