@@ -50,6 +50,8 @@ import org.apache.solr.filestore.TestDistribPackageStore;
 import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.Stat;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.solr.common.cloud.ZkStateReader.SOLR_PKGS_PATH;
@@ -63,9 +65,18 @@ import static org.apache.solr.filestore.TestDistribPackageStore.waitForAllNodesH
 //@org.apache.lucene.util.LuceneTestCase.AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13822") // leaks files
 public class TestPackages extends SolrCloudTestCase {
 
+  @Before
+  public void setup() {
+    System.setProperty("enable.packages", "true");
+  }
+  
+  @After
+  public void teardown() {
+    System.clearProperty("enable.packages");
+  }
+  
   @Test
   public void testPluginLoading() throws Exception {
-    System.setProperty("enable.packages", "true");
     MiniSolrCloudCluster cluster =
         configureCluster(4)
             .withJettyConfig(jetty -> jetty.enableV2(true))
