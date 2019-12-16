@@ -52,7 +52,6 @@ public class TestSolrCachePerf extends SolrTestCaseJ4 {
   }
 
   @Test
-  @BadApple(bugUrl = "https://issues.apache.org/jira/browse/SOLR-14094")
   public void testGetPutCompute() throws Exception {
     Map<String, SummaryStatistics> getPutRatio = new HashMap<>();
     Map<String, SummaryStatistics> computeRatio = new HashMap<>();
