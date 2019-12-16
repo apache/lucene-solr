@@ -680,9 +680,9 @@ public class TestLatLonShape extends LuceneTestCase {
 
     double lat = GeoTestUtil.nextLatitude();
     double lon = GeoTestUtil.nextLongitude();
-    double radiusMeters = random().nextDouble() * Circle.MAXRADIUS;
-    while (radiusMeters == 0 || radiusMeters == Circle.MAXRADIUS) {
-      radiusMeters = random().nextDouble() * Circle.MAXRADIUS;
+    double radiusMeters = random().nextDouble() * Circle.MAX_RADIUS;
+    while (radiusMeters == 0 || radiusMeters == Circle.MAX_RADIUS) {
+      radiusMeters = random().nextDouble() * Circle.MAX_RADIUS;
     }
     Circle circle = new Circle(lat, lon, radiusMeters);
     WGS84Circle2D circle2D = WGS84Circle2D.create(circle);

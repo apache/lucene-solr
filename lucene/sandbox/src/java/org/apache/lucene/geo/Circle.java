@@ -34,13 +34,13 @@ public class Circle {
   /** Center longitude */
   private final double lon;
   /** radius in meters */
-  private final double distance;
+  private final double radiusMeters;
   /** Max radius allowed, half of the earth mean radius.*/
-  public static double MAXRADIUS = GeoUtils.EARTH_MEAN_RADIUS_METERS / 2.0;
+  public static double MAX_RADIUS = GeoUtils.EARTH_MEAN_RADIUS_METERS / 2.0;
 
 
   /**
-   * Creates a new circle from the supplied latitude/longitude center and distance in meters..
+   * Creates a new circle from the supplied latitude/longitude center and a radius in meters..
    */
   public Circle(double lat, double lon, double radiusMeters) {
     GeoUtils.checkLatitude(lat);
@@ -48,12 +48,12 @@ public class Circle {
     if (radiusMeters <= 0) {
        throw new IllegalArgumentException("Radius must be bigger than 0, got " + radiusMeters);
     }
-    if (radiusMeters >= MAXRADIUS) {
-      throw new IllegalArgumentException("Radius must be lower than " + MAXRADIUS + ", got " + radiusMeters);
+    if (radiusMeters < MAX_RADIUS == false) {
+      throw new IllegalArgumentException("Radius must be lower than " + MAX_RADIUS + ", got " + radiusMeters);
     }
     this.lat = lat;
     this.lon = lon;
-    this.distance = radiusMeters;
+    this.radiusMeters = radiusMeters;
   }
 
   /** Returns the center's latitude */
@@ -68,7 +68,7 @@ public class Circle {
 
   /** Returns the radius in meters */
   public double getRadius() {
-    return distance;
+    return radiusMeters;
   }
 
   @Override
@@ -76,14 +76,14 @@ public class Circle {
     if (this == o) return true;
     if (!(o instanceof Circle)) return false;
     Circle circle = (Circle) o;
-    return lat == circle.lat && lon == circle.lon && distance == circle.distance ;
+    return lat == circle.lat && lon == circle.lon && radiusMeters == circle.radiusMeters;
   }
 
   @Override
   public int hashCode() {
     int result = Double.hashCode(lat);
     result = 31 * result + Double.hashCode(lon);
-    result = 31 * result + Double.hashCode(distance);
+    result = 31 * result + Double.hashCode(radiusMeters);
     return result;
   }
 
@@ -92,7 +92,7 @@ public class Circle {
     StringBuilder sb = new StringBuilder();
     sb.append("CIRCLE(");
     sb.append("[" + lat + "," + lon + "]");
-    sb.append(" radius = " + distance + " meters");
+    sb.append(" radius = " + radiusMeters + " meters");
     sb.append(')');
     return sb.toString();
   }

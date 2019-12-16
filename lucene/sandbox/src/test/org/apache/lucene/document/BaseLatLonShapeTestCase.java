@@ -90,7 +90,7 @@ public abstract class BaseLatLonShapeTestCase extends BaseShapeTestCase {
 
   @Override
   protected Circle nextCircle() {
-    return new Circle(nextLatitude(), nextLongitude(), random().nextDouble() * Circle.MAXRADIUS);
+    return new Circle(nextLatitude(), nextLongitude(), random().nextDouble() * Circle.MAX_RADIUS);
   }
 
   @Override

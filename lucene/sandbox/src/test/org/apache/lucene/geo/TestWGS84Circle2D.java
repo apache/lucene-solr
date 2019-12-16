@@ -77,9 +77,9 @@ public class TestWGS84Circle2D extends LuceneTestCase {
   public void testRandomTriangles() {
     final double centerLat = GeoTestUtil.nextLatitude();
     final double centerLon = GeoTestUtil.nextLongitude();
-    double radiusMeters = random().nextDouble() * Circle.MAXRADIUS;
-    while (radiusMeters == 0 || radiusMeters == Circle.MAXRADIUS) {
-      radiusMeters = random().nextDouble() * Circle.MAXRADIUS;
+    double radiusMeters = random().nextDouble() * Circle.MAX_RADIUS;
+    while (radiusMeters == 0 || radiusMeters == Circle.MAX_RADIUS) {
+      radiusMeters = random().nextDouble() * Circle.MAX_RADIUS;
     }
     Circle circle = new Circle(centerLat, centerLon, radiusMeters);
     WGS84Circle2D circle2D = WGS84Circle2D.create(circle);
