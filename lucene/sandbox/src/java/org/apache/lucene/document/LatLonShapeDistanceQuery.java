@@ -29,7 +29,6 @@ import org.apache.lucene.util.NumericUtils;
  * <p>The field must be indexed using
  * {@link LatLonShape#createIndexableFields} added per document.
  *
- *  @lucene.experimental
  **/
 final class LatLonShapeDistanceQuery extends ShapeQuery {
   final Circle circle;

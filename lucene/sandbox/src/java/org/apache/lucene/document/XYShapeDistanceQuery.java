@@ -30,7 +30,6 @@ import org.apache.lucene.util.NumericUtils;
  * <p>The field must be indexed using
  * {@link XYShape#createIndexableFields} added per document.
  *
- *  @lucene.experimental
  **/
 final class XYShapeDistanceQuery extends ShapeQuery {
   final XYCircle circle;

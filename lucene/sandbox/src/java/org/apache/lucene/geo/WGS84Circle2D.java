@@ -208,6 +208,8 @@ public class WGS84Circle2D implements Component2D {
       containsCount++;
     }
     if (containsCount == 1) {
+      // if one point is inside and the other outside, we know
+      // already that the triangle intersect.
       return containsCount;
     }
     if (contains(cx, cy)) {
@@ -258,8 +260,7 @@ public class WGS84Circle2D implements Component2D {
 
     double distance = dotProduct / magnitudeAB;
 
-    if (distance < 0 || distance > dotProduct)
-    {
+    if (distance < 0 || distance > dotProduct) {
       return false;
     }
 
