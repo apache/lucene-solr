@@ -42,10 +42,14 @@ public interface ShardStateProvider {
   Replica getLeader(Slice slice, int timeout) throws InterruptedException;
 
 
+  /** Same as {@link #getLeader(Slice, int)}. But without the Slice Object
+   *
+   */
   Replica getLeader(String collection, String slice, int timeout) throws InterruptedException;
 
 
-  /**CHeck if the replica is active
+  /**Check if the replica is active.
+   * The implementation may also check if the node is a member of /live_nodes
    *
    */
   boolean isActive(Replica replica);
