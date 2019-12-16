@@ -18,6 +18,12 @@
 
 In SolrCloud mode, custom plugins need to be shared across all nodes of the cluster.
 
+.Deprecated
+[IMPORTANT]
+====
+The functionality here is a subset of the <<package-manager.adoc#package-manager,Package Management>> system.  It will no longer be supported in Solr 9.
+====
+
 When running Solr in SolrCloud mode and you want to use custom code (such as custom analyzers, tokenizers, query parsers, and other plugins), it can be cumbersome to add jars to the classpath on all nodes in your cluster. Using the <<blob-store-api.adoc#blob-store-api,Blob Store API>> and special commands with the <<config-api.adoc#config-api,Config API>>, you can upload jars to a special system-level collection and dynamically load plugins from them at runtime without needing to restart any nodes.
 
 .This Feature is Disabled By Default
