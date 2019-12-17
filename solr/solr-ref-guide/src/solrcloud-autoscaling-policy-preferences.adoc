@@ -500,7 +500,7 @@ Number of iterations of the simulation loop. Default is 10.
 Results of the simulation contain the initial suggestions, suggestions at each step of the
 simulation and the final simulated state of the cluster.
 
-=== Simulation scenario tool
+=== Simulation Scenario Tool
 The autoscaling command-line tool supports also the execution of end-to-end simulation scenarios consisting of
 several cluster- and collection-level operations and events.
 
@@ -520,7 +520,7 @@ Keys and values additionally use www-urlencoded format to avoid meta-characters 
 The `params` part of the line closely follows a regular Solr params representation on purpose - in many cases
 the content of this part of the command is passed directly to the respective collection- or cluster-level API.
 
-==== Scenario context
+==== Scenario Context
 Scenario has a context, which is simply a map of key-value pairs. Before executing each command the context is
 updated to contain the current values for the following properties:
 
@@ -543,7 +543,7 @@ For example, assuming a system property is set 'foo=bar', the following command 
 load_snapshot path=/tmp/${foo}
 ----
 
-==== Scenario commands
+==== Scenario Commands
 The following commands are supported (command names are case insensitive, but params aren't):
 
 * `create_cluster numNodes=N[&disableMetricsHistory=false&timeSourcee=simTime:50]` - create a simulated cluster with N nodes
@@ -569,7 +569,7 @@ The following commands are supported (command names are case insensitive, but pa
 * `index_docs numDocs=NNN[&start=XXX]` - simulate bulk indexing of a large number of documents.
 * `assert condition=(equals | not_equals | null | not_null)&(key=objectPath | value=myValue)[&expected=value]` - assert a condition. When `key` is specified then it can be an object path to complex values present in the scenario's context.
 
-==== Example scenarios
+==== Example Scenarios
 Example scenario testing the behavior of `.autoAddReplicas` trigger:
 [source,text]
 ----
