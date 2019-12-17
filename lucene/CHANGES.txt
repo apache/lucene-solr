@@ -23,7 +23,9 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+
+* LUCENE-9055: Fix the detection of lines crossing triangles through edge points.
+  (Ignacio Vera)
 
 Other
 ---------------------
