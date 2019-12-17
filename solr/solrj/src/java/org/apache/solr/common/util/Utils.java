@@ -16,6 +16,34 @@
  */
 package org.apache.solr.common.util;
 
+import org.apache.http.HttpEntity;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.util.EntityUtils;
+import org.apache.solr.client.solrj.cloud.DistribStateManager;
+import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
+import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
+import org.apache.solr.common.IteratorWriter;
+import org.apache.solr.common.LinkedHashMapWriter;
+import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.MapWriterMap;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SpecProvider;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkOperation;
+import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.server.ByteBufferInputStream;
+import org.noggit.CharArr;
+import org.noggit.JSONParser;
+import org.noggit.JSONWriter;
+import org.noggit.ObjectBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -53,34 +81,6 @@ import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.util.EntityUtils;
-import org.apache.solr.client.solrj.cloud.DistribStateManager;
-import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
-import org.apache.solr.client.solrj.impl.BinaryRequestWriter;
-import org.apache.solr.common.IteratorWriter;
-import org.apache.solr.common.LinkedHashMapWriter;
-import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.MapWriterMap;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SpecProvider;
-import org.apache.solr.common.cloud.SolrZkClient;
-import org.apache.solr.common.cloud.ZkOperation;
-import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.common.params.CommonParams;
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.server.ByteBufferInputStream;
-import org.noggit.CharArr;
-import org.noggit.JSONParser;
-import org.noggit.JSONWriter;
-import org.noggit.ObjectBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.slf4j.MDC;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.singletonList;
@@ -173,6 +173,12 @@ public class Utils {
       BinaryRequestWriter.BAOS baos = new BinaryRequestWriter.BAOS();
       jbc.marshal(o, baos);
       return new ByteBufferInputStream(ByteBuffer.wrap(baos.getbuf(), 0, baos.size()));
+    }
+  }
+  
+  public static Object fromJavabin(byte[] bytes) throws IOException {
+    try (JavaBinCodec jbc = new JavaBinCodec()) {
+      return jbc.unmarshal(bytes);
     }
   }
 
@@ -294,7 +300,6 @@ public class Utils {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parse error", e);
     }
   }
-
 
   public static final Function<JSONParser, ObjectBuilder> STANDARDOBJBUILDER = jsonParser -> {
     try {
