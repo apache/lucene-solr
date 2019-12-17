@@ -28,7 +28,7 @@ $ bin/solr -c -Denable.packages=true
 ----
 
 === Upload Your Keys
-Package binaries must be signed with your private keys and ensure your public keys are published in Zookeeper
+Package binaries must be signed with your private keys and ensure your public keys are published in ZooKeeper.
 
 *Example*
 [source,bash]
@@ -36,7 +36,7 @@ Package binaries must be signed with your private keys and ensure your public ke
 $ openssl genrsa -out my_key.pem 512
 # create the public key in .der format
 $ openssl rsa -in my_key.pem -pubout -outform DER -out my_key.der
-# upload to Zookeeper
+# upload to ZooKeeper
 $ server/scripts/cloud-scripts/zkcli.sh -zkhost 127.0.0.1:9983 -cmd makepath /keys/exe/
 $ server/scripts/cloud-scripts/zkcli.sh -zkhost 127.0.0.1:9983 -cmd putfile /keys/exe/my_key.der my_key.der
 ----
@@ -118,7 +118,7 @@ For every package / version in the packages definition, there is a unique `SolrR
 
 === packages.json
 
-The package configurations live in a file called /packages.json in Zookeeper. At any given moment we can have multiple versions of a given package in the package configuration. The system will always use the latest version . Versions are sorted by their numeric value and the biggest is the latest.
+The package configurations live in a file called /packages.json in ZooKeeper. At any given moment we can have multiple versions of a given package in the package configuration. The system will always use the latest version . Versions are sorted by their numeric value and the biggest is the latest.
 
 *example:*
 

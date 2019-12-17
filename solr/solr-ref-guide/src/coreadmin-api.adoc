@@ -60,7 +60,7 @@ Your CREATE call must be able to find a configuration, or it will not succeed.
 
 When you are running SolrCloud and create a new core for a collection, the configuration will be inherited from the collection. Each collection is linked to a configName, which is stored in ZooKeeper. This satisfies the configuration requirement. There is something to note, though: if you're running SolrCloud, you should *NOT* use the CoreAdmin API at all. Use the <<collections-api.adoc#collections-api,Collections API>>.
 
-When you are not running SolrCloud, if you have <<config-sets.adoc#config-sets,Config Sets>> defined, you can use the `configSet` parameter as documented below. If there are no configsets, then the `instanceDir` specified in the CREATE call must already exist, and it must contain a `conf` directory which in turn must contain `solrconfig.xml`, your schema (usually named either `managed-schema` or `schema.xml`), and any files referenced by those configs.
+When you are not running SolrCloud, if you have <<config-sets.adoc#config-sets,Configsets>> defined, you can use the `configSet` parameter as documented below. If there are no configsets, then the `instanceDir` specified in the CREATE call must already exist, and it must contain a `conf` directory which in turn must contain `solrconfig.xml`, your schema (usually named either `managed-schema` or `schema.xml`), and any files referenced by those configs.
 
 The config and schema filenames can be specified with the `config` and `schema` parameters, but these are expert options. One thing you could do to avoid creating the `conf` directory is use `config` and `schema` parameters that point at absolute paths, but this can lead to confusing configurations unless you fully understand what you are doing.
 ====
@@ -89,7 +89,7 @@ Name of the schema file to use for the core. Please note that if you are using a
 Name of the data directory relative to `instanceDir`.
 
 `configSet`::
-Name of the configset to use for this core. For more information, see the section <<config-sets.adoc#config-sets,Config Sets>>.
+Name of the configset to use for this core. For more information, see the section <<config-sets.adoc#config-sets,Configsets>>.
 
 `collection`::
 The name of the collection to which this core belongs. The default is the name of the core. `collection._param_=_value_` causes a property of `_param_=_value_` to be set if a new collection is being created. Use `collection.configName=_config-name_` to point to the configuration for a new collection.
