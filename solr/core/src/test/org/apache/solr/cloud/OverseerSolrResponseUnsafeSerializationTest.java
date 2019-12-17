@@ -23,14 +23,14 @@ public class OverseerSolrResponseUnsafeSerializationTest extends OverseerSolrRes
   
   @BeforeClass
   public static void setUpClass() {
-    System.setProperty("solr.unsafeOverseerResponseSerilization", "true");
-    System.setProperty("solr.unsafeOverseerResponseDeserilization", "true");
+    System.setProperty("solr.unsafeOverseerResponseSerialization", "true");
+    System.setProperty("solr.unsafeOverseerResponseDeserialization", "true");
   }
   
   @AfterClass
   public static void tearDownClass() {
-    System.clearProperty("solr.unsafeOverseerResponseSerilization");
-    System.clearProperty("solr.unsafeOverseerResponseDeserilization");
+    System.clearProperty("solr.unsafeOverseerResponseSerialization");
+    System.clearProperty("solr.unsafeOverseerResponseDeserialization");
   }
 
 }

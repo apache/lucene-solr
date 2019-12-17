@@ -59,13 +59,13 @@ public class OverseerSolrResponse extends SolrResponse {
    * This method serializes the content of an {@code OverseerSolrResponse}. Note that:
    * <ul>
    * <li>The elapsed time is not serialized</li>
-   * <li>"Unknown" elements for the Jababin format will be serialized as Strings. See {@link org.apache.solr.common.util.JavaBinCodec#writeVal}</li>
+   * <li>"Unknown" elements for the Javabin format will be serialized as Strings. See {@link org.apache.solr.common.util.JavaBinCodec#writeVal}</li>
    * </ul>
    */
   @SuppressWarnings("deprecation")
   public static byte[] serialize(OverseerSolrResponse responseObject) {
     Objects.requireNonNull(responseObject);
-    if (Boolean.getBoolean("solr.unsafeOverseerResponseSerilization")) {
+    if (Boolean.getBoolean("solr.unsafeOverseerResponseSerialization")) {
       return SolrResponse.serializable(responseObject);
     }
     try {
@@ -83,7 +83,7 @@ public class OverseerSolrResponse extends SolrResponse {
       NamedList<Object> response = (NamedList<Object>) Utils.fromJavabin(responseBytes);
       return new OverseerSolrResponse(response);
     } catch (IOException|RuntimeException e) {
-      if (Boolean.getBoolean("solr.unsafeOverseerResponseDeserilization")) {
+      if (Boolean.getBoolean("solr.unsafeOverseerResponseDeserialization")) {
         return (OverseerSolrResponse) SolrResponse.deserialize(responseBytes);
       }
       throw new SolrException(ErrorCode.SERVER_ERROR, "Exception deserializing response from Javabin", e);
