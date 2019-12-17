@@ -32,17 +32,17 @@ public class XYCircle2D implements Component2D {
   private final double maxY;
   private final double centerX;
   private final double centerY;
-  private final double distanceSquared;
+  private final double radiusSquared;
 
 
-  protected XYCircle2D(double centerX, double centerY, double distance) {
+  protected XYCircle2D(double centerX, double centerY, double radius) {
     this.centerX = centerX;
     this.centerY = centerY;
-    this.minX = centerX - distance;
-    this.maxX = centerX + distance;
-    this.minY = centerY - distance;
-    this.maxY = centerY + distance;
-    this.distanceSquared = distance * distance;
+    this.minX = centerX - radius;
+    this.maxX = centerX + radius;
+    this.minY = centerY - radius;
+    this.maxY = centerY + radius;
+    this.radiusSquared = radius * radius;
   }
 
   @Override
@@ -67,7 +67,7 @@ public class XYCircle2D implements Component2D {
 
   @Override
   public boolean contains(double x, double y) {
-    return cartesianDistanceSquared(x, y, this.centerX, this.centerY) <= distanceSquared;
+    return cartesianDistanceSquared(x, y, this.centerX, this.centerY) <= radiusSquared;
   }
 
   @Override
@@ -78,11 +78,12 @@ public class XYCircle2D implements Component2D {
     if (Component2D.within(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return Relation.CELL_CROSSES_QUERY;
     }
-    return relate(minX, maxX, minY, maxY, this.centerX, this.centerY, this.distanceSquared);
+    return relate(minX, maxX, minY, maxY, this.centerX, this.centerY, this.radiusSquared);
   }
 
   @Override
-  public Relation relateTriangle(double minX, double maxX, double minY, double maxY, double ax, double ay, double bx, double by, double cx, double cy) {
+  public Relation relateTriangle(double minX, double maxX, double minY, double maxY,
+                                 double ax, double ay, double bx, double by, double cx, double cy) {
     if (Component2D.disjoint(this.minX, this.maxX, this.minY, this.maxY, minX, maxX, minY, maxY)) {
       return Relation.CELL_OUTSIDE_QUERY;
     }
@@ -104,7 +105,8 @@ public class XYCircle2D implements Component2D {
   }
 
   @Override
-  public WithinRelation withinTriangle(double minX, double maxX, double minY, double maxY, double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
+  public WithinRelation withinTriangle(double minX, double maxX, double minY, double maxY,
+                                       double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca) {
     // short cut, lines and points cannot contain this type of shape
     if ((ax == bx && ay == by) || (ax == cx && ay == cy) || (bx == cx && by == cy)) {
       return WithinRelation.DISJOINT;
@@ -124,7 +126,7 @@ public class XYCircle2D implements Component2D {
     // if any of the edges intersects an the edge belongs to the shape then it cannot be within.
     // if it only intersects edges that do not belong to the shape, then it is a candidate
     // we skip edges at the dateline to support shapes crossing it
-    if (intersectsLine(ax, ay, bx, by, this.centerX, this.centerY, this.distanceSquared)) {
+    if (intersectsLine(ax, ay, bx, by, this.centerX, this.centerY, this.radiusSquared)) {
       if (ab == true) {
         return WithinRelation.NOTWITHIN;
       } else {
@@ -132,14 +134,14 @@ public class XYCircle2D implements Component2D {
       }
     }
 
-    if (intersectsLine(bx, by, cx, cy, this.centerX, this.centerY, this.distanceSquared)) {
+    if (intersectsLine(bx, by, cx, cy, this.centerX, this.centerY, this.radiusSquared)) {
       if (bc == true) {
         return WithinRelation.NOTWITHIN;
       } else {
         relation = WithinRelation.CANDIDATE;
       }
     }
-    if (intersectsLine(cx, cy, ax, ay, this.centerX, this.centerY, this.distanceSquared)) {
+    if (intersectsLine(cx, cy, ax, ay, this.centerX, this.centerY, this.radiusSquared)) {
       if (ca == true) {
         return WithinRelation.NOTWITHIN;
       } else {
@@ -174,7 +176,7 @@ public class XYCircle2D implements Component2D {
     if (numCorners == 2) {
       return Relation.CELL_INSIDE_QUERY;
     } else if (numCorners == 0) {
-      if (intersectsLine(a2x, a2y, b2x, b2y, this.centerX, this.centerY, this.distanceSquared)) {
+      if (intersectsLine(a2x, a2y, b2x, b2y, this.centerX, this.centerY, this.radiusSquared)) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_OUTSIDE_QUERY;
@@ -193,9 +195,9 @@ public class XYCircle2D implements Component2D {
       if (Component2D.pointInTriangle(minX, maxX, minY, maxY, centerX, centerY, ax, ay, bx, by, cx, cy) == true) {
         return Relation.CELL_CROSSES_QUERY;
       }
-      if (intersectsLine(ax, ay, bx, by, this.centerX, this.centerY, this.distanceSquared) ||
-          intersectsLine(bx, by, cx, cy, this.centerX, this.centerY, this.distanceSquared) ||
-          intersectsLine(cx, cy, ax, ay, this.centerX, this.centerY, this.distanceSquared)) {
+      if (intersectsLine(ax, ay, bx, by, this.centerX, this.centerY, this.radiusSquared) ||
+          intersectsLine(bx, by, cx, cy, this.centerX, this.centerY, this.radiusSquared) ||
+          intersectsLine(cx, cy, ax, ay, this.centerX, this.centerY, this.radiusSquared)) {
         return Relation.CELL_CROSSES_QUERY;
       }
       return Relation.CELL_OUTSIDE_QUERY;
@@ -224,7 +226,7 @@ public class XYCircle2D implements Component2D {
 
   // This methods in a new helper class XYUtil?
   private static boolean intersectsLine(double aX, double aY, double bX, double bY,
-                                 double centerX, double centerY, double distanceSquared) {
+                                 double centerX, double centerY, double radiusSquared) {
     //Algorithm based on this thread : https://stackoverflow.com/questions/3120357/get-closest-point-to-a-line
     final double[] vectorAP = new double[] {centerX - aX, centerY - aY};
     final double[] vectorAB = new double[] {bX - aX, bY - aY};
@@ -247,7 +249,7 @@ public class XYCircle2D implements Component2D {
     final double maxY = StrictMath.max(aY, bY);
 
     if (pX >= minX && pX <= maxX && pY >= minY && pY <= maxY) {
-      return cartesianDistanceSquared(pX, pY, centerX, centerY) <= distanceSquared;
+      return cartesianDistanceSquared(pX, pY, centerX, centerY) <= radiusSquared;
     }
     return false;
   }

@@ -34,12 +34,12 @@ public class WGS84Circle2D implements Component2D {
   final double sortKey;
   final double axisLat;
 
-  private WGS84Circle2D(double centerLon, double centerLat, double distance) {
+  private WGS84Circle2D(double centerLon, double centerLat, double radius) {
     this.centerLat = centerLat;
     this.centerLon = centerLon;
-    this.rectangle = Rectangle.fromPointDistance(centerLat, centerLon, distance);
-    this.sortKey = GeoUtils.distanceQuerySortKey(distance);
-    this.axisLat = Rectangle.axisLat(centerLat, distance);
+    this.rectangle = Rectangle.fromPointDistance(centerLat, centerLon, radius);
+    this.sortKey = GeoUtils.distanceQuerySortKey(radius);
+    this.axisLat = Rectangle.axisLat(centerLat, radius);
     this.crossesDateline = rectangle.minLon > rectangle.maxLon;
   }
 

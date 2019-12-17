@@ -23,7 +23,7 @@ package org.apache.lucene.geo;
  * NOTES:
  * <ol>
  *   <li> X/Y precision is float.
- *   <li> Radius  recision is float.
+ *   <li> Radius precision is float.
  * </ol>
  * @lucene.experimental
  */
@@ -33,10 +33,10 @@ public class XYCircle {
   /** Center y */
   private final float y;
   /** radius */
-  private final float distance;
+  private final float radius;
 
   /**
-   * Creates a new circle from the supplied latitude/longitude center and distance in meters..
+   * Creates a new circle from the supplied x/y center and radius.
    */
   public XYCircle(float x, float y, float radius) {
     if (radius <= 0) {
@@ -45,7 +45,7 @@ public class XYCircle {
 
     this.x = x;
     this.y = y;
-    this.distance = radius;
+    this.radius = radius;
   }
 
   /** Returns the center's x */
@@ -60,7 +60,7 @@ public class XYCircle {
 
   /** Returns the radius */
   public float getRadius() {
-    return distance;
+    return radius;
   }
 
   @Override
@@ -68,14 +68,14 @@ public class XYCircle {
     if (this == o) return true;
     if (!(o instanceof XYCircle)) return false;
     XYCircle circle = (XYCircle) o;
-    return x == circle.x && y == circle.y && distance == circle.distance ;
+    return x == circle.x && y == circle.y && radius == circle.radius;
   }
 
   @Override
   public int hashCode() {
     int result = Float.hashCode(x);
     result = 31 * result + Float.hashCode(y);
-    result = 31 * result + Float.hashCode(distance);
+    result = 31 * result + Float.hashCode(radius);
     return result;
   }
 
@@ -84,7 +84,7 @@ public class XYCircle {
     StringBuilder sb = new StringBuilder();
     sb.append("CIRCLE(");
     sb.append("[" + x + "," + y + "]");
-    sb.append(" radius = " + distance);
+    sb.append(" radius = " + radius);
     sb.append(')');
     return sb.toString();
   }
