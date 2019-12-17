@@ -148,9 +148,15 @@ public class TestLatLonMultiPolygonShapeQueries extends BaseLatLonShapeTestCase 
   }
 
   @Slow
+  @Override
+  public void testRandomMedium() throws Exception {
+    doTestRandom(250);
+  }
+
+  @Slow
   @Nightly
   @Override
   public void testRandomBig() throws Exception {
-    doTestRandom(10000);
+    doTestRandom(2500);
   }
 }
