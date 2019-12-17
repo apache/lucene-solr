@@ -164,7 +164,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     Replica leaderReplica = null;
     zkCheck();
     try {
-      leaderReplica = zkController.getZkStateReader().getLeaderRetry(collection, cloudDesc.getShardId());
+      leaderReplica = zkController.getZkStateReader().getShardStateProvider(collection).getLeader(collection, cloudDesc.getShardId(), -1);// getLeaderRetry(collection, cloudDesc.getShardId());
     } catch (InterruptedException e) {
       Thread.interrupted();
       throw new SolrException(SolrException.ErrorCode.SERVICE_UNAVAILABLE, "Exception finding leader for shard " + cloudDesc.getShardId(), e);
@@ -760,7 +760,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     for (Map.Entry<String,Slice> sliceEntry : slices.entrySet()) {
       Slice replicas = slices.get(sliceEntry.getKey());
       if (onlyLeaders) {
-        Replica replica = docCollection.getLeader(replicas.getName());
+        Replica replica =  req.getCore().getShardStateProvider().getLeader(replicas);// docCollection.getLeader(replicas.getName());
         if (replica != null) {
           ZkCoreNodeProps nodeProps = new ZkCoreNodeProps(replica);
           urls.add(new SolrCmdDistributor.StdNode(nodeProps, collection, replicas.getName()));
