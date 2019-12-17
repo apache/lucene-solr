@@ -347,32 +347,7 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
   }
   
   @Test
-  public void testUploadWithScriptUpdateProcessor() throws Exception {
-      // Authorization off
-      // unprotectConfigsHandler(); // TODO Enable this back when testUploadWithLibDirective() is re-enabled
-      final String untrustedSuffix = "-untrusted";
-      uploadConfigSetWithAssertions("with-script-processor", untrustedSuffix, null, null);
-      // try to create a collection with the uploaded configset
-      Throwable thrown = expectThrows(HttpSolrClient.RemoteSolrException.class, () -> {
-        createCollection("newcollection2", "with-script-processor" + untrustedSuffix,
-      1, 1, solrCluster.getSolrClient());
-      });
-
-    assertThat(thrown.getMessage(), containsString("Underlying core creation failed"));
-
-    // Authorization on
-    final String trustedSuffix = "-trusted";
-    protectConfigsHandler();
-    uploadConfigSetWithAssertions("with-script-processor", trustedSuffix, "solr", "SolrRocks");
-    // try to create a collection with the uploaded configset
-    CollectionAdminResponse resp = createCollection("newcollection2", "with-script-processor" + trustedSuffix,
-    1, 1, solrCluster.getSolrClient());
-    scriptRequest("newcollection2");
-
-  }
-
-  @Test
-  @Ignore // enable this back when the sleep is removed from protectConfigsHandler() call
+  @Ignore // enable this back when the sleep is removed from unprotectConfigsHandler() and protectConfigsHandler() calls
   public void testUploadWithLibDirective() throws Exception {
     // Authorization off
     unprotectConfigsHandler();
@@ -555,15 +530,6 @@ public class TestConfigSetsAPI extends SolrTestCaseJ4 {
     }
   }
   
-  public void scriptRequest(String collection) throws SolrServerException, IOException {
-    SolrClient client = solrCluster.getSolrClient();
-    SolrInputDocument doc = sdoc("id", "4055", "subject", "Solr");
-    client.add(collection, doc);
-    client.commit(collection);
-
-    assertEquals("42", client.query(collection, params("q", "*:*")).getResults().get(0).get("script_added_i"));
-  }
-
   protected CollectionAdminResponse createCollection(String collectionName, String confSetName, int numShards,
       int replicationFactor, SolrClient client)  throws SolrServerException, IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();

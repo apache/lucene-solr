@@ -187,6 +187,10 @@ Upgrade Notes
   replacement to it is the "Package Management" system, which includes a "File Store". These are experimental currently
   but will grow/stabalize/mature.
 
+* SOLR-14067: StatelessScriptUpdateProcessor has been removed due to security concerns. If you want to apply custom transformations
+  to the documents, consider writing an UpdateRequestProcessor for it or handling the transformation outside of Solr before indexing
+  the documents.
+
 New Features
 ---------------------
 * SOLR-13821: A Package store to store and load package artifacts (noble, Ishan Chattopadhyaya)
@@ -254,6 +258,8 @@ Improvements
   (Houston Putman, Mikhail Khludnev).
 
 * SOLR-13970: Fail the request when collapsing or expand is used with Grouping. (Erick Erickson, Joel Bernstein, Munendra S N)
+
+* SOLR-14067: StatelessScriptUpdateProcessor has been removed due to security concerns (Ishan Chattopadhyaya)
 
 Optimizations
 ---------------------

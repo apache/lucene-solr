@@ -16,10 +16,6 @@
  */
 package org.apache.solr.core;
 
-import javax.script.ScriptEngineManager;
-
-import org.junit.Assume;
-
 public class TestBadConfig extends AbstractBadConfigTestBase {
 
   public void testUnsetSysProperty() throws Exception {
@@ -51,28 +47,6 @@ public class TestBadConfig extends AbstractBadConfigTestBase {
     } finally {
       System.clearProperty("enable.update.log");
     }
-  }
-
-  public void testBogusScriptEngine() throws Exception {
-    // sanity check
-    Assume.assumeTrue(null == (new ScriptEngineManager()).getEngineByName("giberish"));
-                      
-    assertConfigs("bad-solrconfig-bogus-scriptengine-name.xml",
-                  "schema.xml","giberish");
-  }
-
-  public void testMissingScriptFile() throws Exception {
-    // sanity check
-    Assume.assumeNotNull((new ScriptEngineManager()).getEngineByExtension("js"));
-    assertConfigs("bad-solrconfig-missing-scriptfile.xml",
-                  "schema.xml","a-file-name-that-does-not-exist.js");
-  }
-
-  public void testInvalidScriptFile() throws Exception {
-    // sanity check
-    Assume.assumeNotNull((new ScriptEngineManager()).getEngineByName("javascript"));
-    assertConfigs("bad-solrconfig-invalid-scriptfile.xml",
-                  "schema.xml","currency.xml");
   }
 
   public void testBogusMergePolicy() throws Exception {
