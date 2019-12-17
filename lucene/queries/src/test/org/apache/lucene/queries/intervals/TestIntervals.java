@@ -120,6 +120,7 @@ public class TestIntervals extends LuceneTestCase {
         continue;
       for (int doc = 0; doc < ctx.reader().maxDoc(); doc++) {
         ids.advance(doc);
+        MatchesIterator mi = source.matches(field, ctx, doc);
         int id = (int) ids.longValue();
         if (intervals.docID() == doc ||
             (intervals.docID() < doc && intervals.advance(doc) == doc)) {
@@ -134,15 +135,23 @@ public class TestIntervals extends LuceneTestCase {
             assertEquals("start() != pos returned from nextInterval()", expected[id][i], intervals.start());
             assertEquals("Wrong end value in doc " + id, expected[id][i + 1], intervals.end());
             i += 2;
+            assertTrue(mi.next());
+            assertEquals(source + ": wrong start value in match in doc " + id, intervals.start(), mi.startPosition());
+            assertEquals(source + ": wrong end value in match in doc " + id, intervals.end(), mi.endPosition());
           }
           assertEquals(source + ": wrong number of endpoints in doc " + id, expected[id].length, i);
           assertEquals(IntervalIterator.NO_MORE_INTERVALS, intervals.start());
           assertEquals(IntervalIterator.NO_MORE_INTERVALS, intervals.end());
-          if (i > 0)
+          if (i > 0) {
             matchedDocs++;
+            assertFalse(mi.next());
+          } else {
+            assertNull("Expected null matches iterator on doc " + id, mi);
+          }
         }
         else {
           assertEquals(0, expected[id].length);
+          assertNull(mi);
         }
       }
     }
@@ -270,6 +279,24 @@ public class TestIntervals extends LuceneTestCase {
     assertEquals(2, source.minExtent());
 
     checkVisits(source, 3, "pease", "hot");
+  }
+
+  public void testOrderedNearWithDuplicates() throws IOException {
+    IntervalsSource source = Intervals.ordered(Intervals.term("pease"), Intervals.term("pease"), Intervals.term("porridge"));
+    checkIntervals(source, "field1", 3, new int[][]{
+        {}, { 0, 4, 3, 7 }, { 0, 4, 3, 7 }, {}, { 0, 4, 3, 7 }, {}
+    });
+    assertGaps(source, 1, "field1", new int[]{ 2, 2 });
+
+    MatchesIterator mi = getMatches(source, 1, "field1");
+    assertMatch(mi, 0, 4, 0, 34);
+    MatchesIterator sub = mi.getSubMatches();
+    assertNotNull(sub);
+    assertMatch(sub, 0, 0, 0, 5);
+    assertMatch(sub, 3, 3, 20, 25);
+    assertMatch(sub, 4, 4, 26, 34);
+    assertMatch(mi, 3, 7, 20, 55);
+    assertFalse(mi.next());
   }
 
   public void testPhraseIntervals() throws IOException {
@@ -622,6 +649,15 @@ public class TestIntervals extends LuceneTestCase {
 
     assertEquals(3, source.minExtent());
 
+  }
+
+  public void testMaxGapsWithRepeats() throws IOException {
+    IntervalsSource source = Intervals.maxgaps(11,
+        Intervals.ordered(Intervals.term("pease"), Intervals.term("pease"), Intervals.term("hot")));
+    checkIntervals(source, "field1", 1, new int[][]{
+        {}, {}, { 0, 5 }, {}, {}, {}
+    });
+    assertGaps(source, 2, "field1", new int[]{ 3 });
   }
 
   public void testNestedMaxGaps() throws IOException {

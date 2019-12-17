@@ -35,4 +35,6 @@ interface IntervalMatchesIterator extends MatchesIterator {
    */
   int gaps();
 
+  int width();
+
 }

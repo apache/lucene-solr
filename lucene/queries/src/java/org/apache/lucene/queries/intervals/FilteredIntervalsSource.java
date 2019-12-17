@@ -108,8 +108,8 @@ public abstract class FilteredIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public MatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
-    MatchesIterator mi = in.matches(field, ctx, doc);
+  public IntervalMatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
+    IntervalMatchesIterator mi = in.matches(field, ctx, doc);
     if (mi == null) {
       return null;
     }

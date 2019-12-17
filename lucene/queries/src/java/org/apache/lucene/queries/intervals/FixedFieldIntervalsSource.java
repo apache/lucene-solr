@@ -43,7 +43,7 @@ class FixedFieldIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public MatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
+  public IntervalMatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
     return source.matches(this.field, ctx, doc);
   }
 

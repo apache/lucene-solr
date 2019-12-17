@@ -63,10 +63,10 @@ class MinimumShouldMatchIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public MatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
+  public IntervalMatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
     Map<IntervalIterator, CachingMatchesIterator> lookup = new IdentityHashMap<>();
     for (IntervalsSource source : sources) {
-      MatchesIterator mi = source.matches(field, ctx, doc);
+      IntervalMatchesIterator mi = source.matches(field, ctx, doc);
       if (mi != null) {
         CachingMatchesIterator cmi = new CachingMatchesIterator(mi);
         lookup.put(IntervalMatches.wrapMatches(cmi, doc), cmi);
@@ -387,6 +387,11 @@ class MinimumShouldMatchIntervalsSource extends IntervalsSource {
     @Override
     public int gaps() {
       return iterator.gaps();
+    }
+
+    @Override
+    public int width() {
+      return iterator.width();
     }
 
     @Override

@@ -65,10 +65,10 @@ abstract class ConjunctionIntervalsSource extends IntervalsSource {
   protected abstract IntervalIterator combine(List<IntervalIterator> iterators);
 
   @Override
-  public final MatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
-    List<MatchesIterator> subs = new ArrayList<>();
+  public final IntervalMatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
+    List<IntervalMatchesIterator> subs = new ArrayList<>();
     for (IntervalsSource source : subSources) {
-      MatchesIterator mi = source.matches(field, ctx, doc);
+      IntervalMatchesIterator mi = source.matches(field, ctx, doc);
       if (mi == null) {
         return null;
       }
@@ -87,13 +87,13 @@ abstract class ConjunctionIntervalsSource extends IntervalsSource {
     return isMinimizing ? new MinimizingConjunctionMatchesIterator(it, subs) : new ConjunctionMatchesIterator(it, subs);
   }
 
-  private static class ConjunctionMatchesIterator implements MatchesIterator {
+  private static class ConjunctionMatchesIterator implements IntervalMatchesIterator {
 
     final IntervalIterator iterator;
-    final List<MatchesIterator> subs;
+    final List<IntervalMatchesIterator> subs;
     boolean cached = true;
 
-    private ConjunctionMatchesIterator(IntervalIterator iterator, List<MatchesIterator> subs) {
+    private ConjunctionMatchesIterator(IntervalIterator iterator, List<IntervalMatchesIterator> subs) {
       this.iterator = iterator;
       this.subs = subs;
     }
@@ -152,9 +152,19 @@ abstract class ConjunctionIntervalsSource extends IntervalsSource {
     public Query getQuery() {
       throw new UnsupportedOperationException();
     }
+
+    @Override
+    public int gaps() {
+      return iterator.gaps();
+    }
+
+    @Override
+    public int width() {
+      return iterator.width();
+    }
   }
 
-  private static class SingletonMatchesIterator extends FilterMatchesIterator {
+  static class SingletonMatchesIterator extends FilterMatchesIterator {
 
     boolean exhausted = false;
 

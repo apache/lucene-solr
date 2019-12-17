@@ -48,12 +48,12 @@ abstract class DifferenceIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public final MatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
-    MatchesIterator minIt = minuend.matches(field, ctx, doc);
+  public final IntervalMatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
+    IntervalMatchesIterator minIt = minuend.matches(field, ctx, doc);
     if (minIt == null) {
       return null;
     }
-    MatchesIterator subIt = subtrahend.matches(field, ctx, doc);
+    IntervalMatchesIterator subIt = subtrahend.matches(field, ctx, doc);
     if (subIt == null) {
       return minIt;
     }

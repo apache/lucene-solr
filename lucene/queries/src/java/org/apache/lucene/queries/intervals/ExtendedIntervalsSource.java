@@ -49,8 +49,8 @@ class ExtendedIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public MatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
-    MatchesIterator in = source.matches(field, ctx, doc);
+  public IntervalMatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
+    IntervalMatchesIterator in = source.matches(field, ctx, doc);
     if (in == null) {
       return null;
     }

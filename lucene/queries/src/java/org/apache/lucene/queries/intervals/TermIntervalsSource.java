@@ -139,7 +139,7 @@ class TermIntervalsSource extends IntervalsSource {
   }
 
   @Override
-  public MatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
+  public IntervalMatchesIterator matches(String field, LeafReaderContext ctx, int doc) throws IOException {
     Terms terms = ctx.reader().terms(field);
     if (terms == null)
       return null;
@@ -153,13 +153,23 @@ class TermIntervalsSource extends IntervalsSource {
     return matches(te, doc, field);
   }
 
-  static MatchesIterator matches(TermsEnum te, int doc, String field) throws IOException {
+  static IntervalMatchesIterator matches(TermsEnum te, int doc, String field) throws IOException {
     TermQuery query = new TermQuery(new Term(field, te.term()));
     PostingsEnum pe = te.postings(null, PostingsEnum.OFFSETS);
     if (pe.advance(doc) != doc) {
       return null;
     }
-    return new MatchesIterator() {
+    return new IntervalMatchesIterator() {
+
+      @Override
+      public int gaps() {
+        return 0;
+      }
+
+      @Override
+      public int width() {
+        return 1;
+      }
 
       int upto = pe.freq();
       int pos = -1;
