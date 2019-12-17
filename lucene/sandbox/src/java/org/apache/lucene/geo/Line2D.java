@@ -126,7 +126,7 @@ public final class Line2D implements Component2D {
       }
       return Relation.CELL_OUTSIDE_QUERY;
     } else if (Component2D.pointInTriangle(minX, maxX, minY, maxY, tree.x1, tree.y1, ax, ay, bx, by, cx, cy) == true ||
-        tree.crossesTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy)) {
+        tree.crossesTriangle(minX, maxX, minY, maxY, ax, ay, bx, by, cx, cy, true)) {
       // indexed "triangle" is a triangle:
       return Relation.CELL_CROSSES_QUERY;
     }
