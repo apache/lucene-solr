@@ -1,4 +1,3 @@
-
 // This adds validation of project dependencies:
 // 1) license file
 // 2) notice file
@@ -10,6 +9,7 @@ import org.apache.commons.codec.digest.MessageDigestAlgorithms
 // This should be false only for debugging.
 def failOnError = true
 
+// We're using commons-codec for computing checksums.
 buildscript {
   repositories {
     mavenCentral()
@@ -33,17 +33,17 @@ configure(project(":solr")) {
 // All known license types. If 'noticeOptional' is true then
 // the notice file must accompany the license.
 def licenseTypes = [
-    "ASL": [name: "Apache Software License 2.0"],
-    "BSD": [name: "Berkeley Software Distribution"],
+    "ASL"     : [name: "Apache Software License 2.0"],
+    "BSD"     : [name: "Berkeley Software Distribution"],
     //BSD like just means someone has taken the BSD license and put in their name, copyright, or it's a very similar license.
     "BSD_LIKE": [name: "BSD like license"],
-    "CDDL": [name: "Common Development and Distribution License", noticeOptional: true],
-    "CPL": [name: "Common Public License"],
-    "EPL": [name: "Eclipse Public License Version 1.0", noticeOptional: true],
-    "MIT": [name: "Massachusetts Institute of Tech. License", noticeOptional: true],
-    "MPL": [name: "Mozilla Public License", noticeOptional: true /* NOT SURE on the required notice */],
-    "PD": [name: "Public Domain", noticeOptional: true],
-    "SUN": [name: "Sun Open Source License", noticeOptional: true],
+    "CDDL"    : [name: "Common Development and Distribution License", noticeOptional: true],
+    "CPL"     : [name: "Common Public License"],
+    "EPL"     : [name: "Eclipse Public License Version 1.0", noticeOptional: true],
+    "MIT"     : [name: "Massachusetts Institute of Tech. License", noticeOptional: true],
+    "MPL"     : [name: "Mozilla Public License", noticeOptional: true /* NOT SURE on the required notice */],
+    "PD"      : [name: "Public Domain", noticeOptional: true],
+    "SUN"     : [name: "Sun Open Source License", noticeOptional: true],
     "COMPOUND": [name: "Compound license (details in NOTICE file)."],
 ]
 
@@ -95,13 +95,13 @@ subprojects {
       project.ext.jarInfos = ownDeps.resolvedConfiguration.resolvedArtifacts.collect { resolvedArtifact ->
         def file = resolvedArtifact.file
         return [
-            name: resolvedArtifact.name,
-            jarName: file.toPath().getFileName().toString(),
-            path: file,
-            module: resolvedArtifact.moduleVersion,
-            checksum: new DigestUtils(MessageDigestAlgorithms.SHA_1).digestAsHex(file),
-            // We keep count of the files referenced by this dependency (sha, license, notice, etc.)
-            // so that we can determine unused files later on.
+            name           : resolvedArtifact.name,
+            jarName        : file.toPath().getFileName().toString(),
+            path           : file,
+            module         : resolvedArtifact.moduleVersion,
+            checksum       : new DigestUtils(MessageDigestAlgorithms.SHA_1).digestAsHex(file),
+            // We keep track of the files referenced by this dependency (sha, license, notice, etc.)
+            // so that we can determine unused dangling files later on.
             referencedFiles: []
         ]
       }
@@ -139,30 +139,6 @@ subprojects {
         } else {
           logger.log(LogLevel.WARN, "WARNING: ${msg}")
         }
-      }
-    }
-  }
-
-  // Update dependency checksums
-  task updateChecksums() {
-    group = 'Dependency validation'
-    description = "Write or update checksums of dependencies"
-    dependsOn collectJarInfos
-
-    doLast {
-      licensesDir.mkdirs()
-      jarInfos.each { dep ->
-        def expectedChecksumFile = file("${licensesDir}/${dep.jarName}.sha1")
-        if (expectedChecksumFile.exists()) {
-          def expected = expectedChecksumFile.getText("UTF-8").trim()
-          def actual = dep.checksum.trim()
-          if (expected.compareToIgnoreCase(actual) == 0) {
-            return;
-          }
-        }
-
-        logger.log(LogLevel.LIFECYCLE, "Updating checksum ('${dep.module}'): ${expectedChecksumFile}")
-        expectedChecksumFile.write(dep.checksum.trim(), "UTF-8")
       }
     }
   }
@@ -237,10 +213,11 @@ subprojects {
   licenses.dependsOn validateJarChecksums, validateJarLicenses
 }
 
-// Check for dangling files in the licenses folder.
-configure([project(":solr"), project(":lucene"), ]) {
+configure([project(":solr"), project(":lucene"),]) {
   def validationTasks = subprojects.collect { it.tasks.matching { it.name == "licenses" } }
+  def jarInfoTasks = subprojects.collect { it.tasks.matching { it.name == "collectJarInfos" } }
 
+  // Check for dangling files in the licenses folder.
   task checkDanglingLicenseFiles() {
     dependsOn validationTasks
 
@@ -250,9 +227,8 @@ configure([project(":solr"), project(":lucene"), ]) {
 
     doFirst {
       def allReferenced = validationTasks.collectMany { task ->
-          task.project.jarInfos.collectMany { it.referencedFiles }
-        }
-        .collect { it.toString() }
+        task.project.jarInfos.collectMany { it.referencedFiles }
+      }.collect { it.toString() }
 
       def patterns = ext.exclude
       def allExisting = fileTree(licensesDir, {
@@ -270,6 +246,43 @@ configure([project(":solr"), project(":lucene"), ]) {
   }
 
   licenses.dependsOn checkDanglingLicenseFiles
+
+  // Update dependency checksums.
+  task updateChecksums() {
+    group = 'Dependency validation'
+    description = "Write or update checksums of dependencies"
+    dependsOn jarInfoTasks
+
+    doLast {
+      licensesDir.mkdirs()
+
+      // Clean any previous checksums. In theory we wouldn't have to do it --
+      // dangling files from any previous JARs would be reported;
+      // it automates the process of updating versions and makes it easier though so
+      // why not.
+      project.delete fileTree(licensesDir, {
+        include "*.sha1"
+        exclude checkDanglingLicenseFiles.ext.exclude
+      })
+
+      def updated = []
+      jarInfoTasks.collectMany { task -> task.project.jarInfos }.each { dep ->
+        def expectedChecksumFile = file("${licensesDir}/${dep.jarName}.sha1")
+        if (expectedChecksumFile.exists()) {
+          def expected = expectedChecksumFile.getText("UTF-8").trim()
+          def actual = dep.checksum.trim()
+          if (expected.compareToIgnoreCase(actual) == 0) {
+            return;
+          }
+        }
+
+        updated += "Updated checksum ('${dep.module}'): ${expectedChecksumFile}"
+        expectedChecksumFile.write(dep.checksum.trim() + "\n", "UTF-8")
+      }
+
+      updated.sort().each { line -> logger.log(LogLevel.LIFECYCLE, line) }
+    }
+  }
 }
 
 // Exclude files that are not a result of direct dependencies but have to be there.
@@ -293,9 +306,11 @@ configure(project(":solr")) {
   }
 }
 
-// Disable validation for these projects (should it be disabled?)
+// solr-ref-guide doesn't contribute any JARs to dependency checks.
 configure(project(":solr:solr-ref-guide")) {
-  [validateJarLicenses, validateJarChecksums, updateChecksums].each { task ->
-    task.enabled = false
+  configurations {
+    jarValidation {
+      exclude group: "*"
+    }
   }
 }
