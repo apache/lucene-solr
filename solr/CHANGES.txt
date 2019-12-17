@@ -22,7 +22,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 Versions of Major Components
 ---------------------
-Apache Tika 1.19.1
+Apache Tika 1.23
 Carrot2 3.16.2
 Velocity 2.0 and Velocity Tools 3.0
 Apache ZooKeeper 3.5.5
@@ -82,8 +82,6 @@ Improvements
 
 Other Changes
 ----------------------
-* SOLR-14054: Upgrade to Tika 1.19.1 when available (Tim Allison)
-
 * SOLR-10288: Remove non-minified JavaScript from the webapp. (Erik Hatcher, marcussorealheis)
 
 * SOLR-13655:Upgrade Collections.unModifiableSet to Set.of and Set.copyOf (Atri Sharma via Tomás Fernández Löbbe)
@@ -128,7 +126,10 @@ Bug Fixes
 Other Changes
 ---------------------
 
-SOLR-14047: Make sure tests don't pickup other Hadoop installs (Kevin Risden)
+* SOLR-14047: Make sure tests don't pickup other Hadoop installs (Kevin Risden)
+
+* SOLR-14054: Upgrade to Tika 1.23 when available (Tim Allison)
+
 
 ==================  8.4.0 ==================
 
