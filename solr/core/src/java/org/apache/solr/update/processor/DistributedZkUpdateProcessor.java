@@ -820,7 +820,6 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
   }
 
   protected List<SolrCmdDistributor.Node> getReplicaNodesForLeader(String shardId, Replica leaderReplica) {
-    ShardStateProvider ssp = zkController.getZkStateReader().getShardStateProvider(leaderReplica.collection);
     String leaderCoreNodeName = leaderReplica.getName();
     List<Replica> replicas = clusterState.getCollection(collection)
         .getSlice(shardId)
@@ -850,7 +849,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         log.debug("skip url:{} cause its term is less than leader", replica.getCoreUrl());
         skippedCoreNodeNames.add(replica.getName());
       } else if (!clusterState.getLiveNodes().contains(replica.getNodeName())
-          || ssp.getState(replica) == Replica.State.DOWN) {
+          || req.getCore().getShardStateProvider().getState(replica) == Replica.State.DOWN) {
         skippedCoreNodeNames.add(replica.getName());
       } else {
         nodes.add(new SolrCmdDistributor.StdNode(new ZkCoreNodeProps(replica), collection, shardId));
@@ -927,7 +926,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
                       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
                           "No active slices serving " + id + " found for target collection: " + rule.getTargetCollectionName());
                     }
-                    Replica targetLeader = targetColl.getLeader(activeSlices.iterator().next().getName());
+                    Replica targetLeader = req.getCore().getShardStateProvider().getLeader(activeSlices.iterator().next());
                     nodes = new ArrayList<>(1);
                     nodes.add(new SolrCmdDistributor.StdNode(new ZkCoreNodeProps(targetLeader)));
                     break;
