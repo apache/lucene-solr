@@ -270,7 +270,7 @@ include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-ipod-query-bool]
 ====
 --
 
-If lucene is the default query parser, the example above can be simplified to:
+If `lucene` is the default query parser, the example above can be simplified to:
 
 [.dynamic-tabs]
 --
