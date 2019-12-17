@@ -506,7 +506,7 @@ public final class HttpServer2 implements FilterContainer {
       httpConfig.addCustomizer(new SecureRequestCustomizer());
       ServerConnector conn = createHttpChannelConnector(server, httpConfig);
 
-      SslContextFactory sslContextFactory = new SslContextFactory();
+      SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
       sslContextFactory.setNeedClientAuth(needsClientAuth);
       sslContextFactory.setKeyManagerPassword(keyPassword);
       if (keyStore != null) {
