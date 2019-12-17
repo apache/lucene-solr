@@ -220,7 +220,7 @@ public class CatStream extends TupleStream implements Expressible {
     return Paths.get(chroot, pathRelativeToChroot).toString();
   }
 
-  private void closeCurrentFileIfSet() {
+  private void closeCurrentFileIfSet() throws IOException {
     if (currentFilePath != null) {
       currentFileLines.close();
       currentFilePath = null;
