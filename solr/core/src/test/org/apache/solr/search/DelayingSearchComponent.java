@@ -16,10 +16,11 @@
  */
 package org.apache.solr.search;
 
+import java.io.IOException;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.SearchComponent;
-
-import java.io.IOException;
 
 /**
  * Search component used to add delay to each request.
@@ -33,13 +34,27 @@ public class DelayingSearchComponent extends SearchComponent{
 
   @Override
   public void process(ResponseBuilder rb) throws IOException {
-    int sleep = rb.req.getParams().getInt("sleep",0);
-    try {
-      if (sleep > 0) {
-        Thread.sleep(sleep);
+    final long totalSleepMillis = rb.req.getParams().getLong("sleep",0);
+    if (totalSleepMillis > 0) {
+      final long totalSleepNanos = TimeUnit.NANOSECONDS.convert(totalSleepMillis, TimeUnit.MILLISECONDS);
+      final long startNanos = System.nanoTime();
+      try {
+        // Thread.sleep() (and derivatives) are not garunteed to sleep the full amount:
+        //   "subject to the precision and accuracy of system timers and schedulers."
+        // This is particularly problematic on Windows VMs, so we do a retry loop
+        // to ensure we sleep a total of at least as long as requested
+        //
+        // (Tests using this component do so explicitly to ensure 'timeAllowed'
+        // has exceeded in order to get their expected results, we would rather over-sleep
+        // then under sleep)
+        for (long sleepNanos = totalSleepNanos;
+             0 < sleepNanos;
+             sleepNanos = totalSleepNanos - (System.nanoTime() - startNanos)) {
+          TimeUnit.NANOSECONDS.sleep(sleepNanos);
+        }
+      } catch (InterruptedException e) {
+        // Do nothing?
       }
-    } catch (InterruptedException e) {
-      // Do nothing?
     }
   }
 
