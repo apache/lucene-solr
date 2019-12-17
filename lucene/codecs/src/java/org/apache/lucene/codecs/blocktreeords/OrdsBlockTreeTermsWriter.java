@@ -45,7 +45,7 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.StringHelper;
-import org.apache.lucene.util.fst.Builder;
+import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.Util;
@@ -361,16 +361,14 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
         }
       }
 
-      final Builder<Output> indexBuilder = new Builder<>(FST.INPUT_TYPE.BYTE1,
-                                                         0, 0, true, false, Integer.MAX_VALUE,
-                                                         FST_OUTPUTS, true, 15);
+      final FSTCompiler<Output> fstCompiler = new FSTCompiler.Builder<>(FST.INPUT_TYPE.BYTE1, FST_OUTPUTS).shouldShareNonSingletonNodes(false).build();
       //if (DEBUG) {
       //  System.out.println("  compile index for prefix=" + prefix);
       //}
       //indexBuilder.DEBUG = false;
       final byte[] bytes = scratchBytes.toArrayCopy();
       assert bytes.length > 0;
-      indexBuilder.add(Util.toIntsRef(prefix, scratchIntsRef),
+      fstCompiler.add(Util.toIntsRef(prefix, scratchIntsRef),
                        FST_OUTPUTS.newOutput(new BytesRef(bytes, 0, bytes.length),
                                              0, Long.MAX_VALUE-(sumTotalTermCount-1)));
       scratchBytes.reset();
@@ -381,7 +379,7 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
       for(PendingBlock block : blocks) {
         if (block.subIndices != null) {
           for(SubIndex subIndex : block.subIndices) {
-            append(indexBuilder, subIndex.index, termOrdOffset + subIndex.termOrdStart, scratchIntsRef);
+            append(fstCompiler, subIndex.index, termOrdOffset + subIndex.termOrdStart, scratchIntsRef);
           }
           block.subIndices = null;
         }
@@ -391,7 +389,7 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
 
       assert sumTotalTermCount == totFloorTermCount;
 
-      index = indexBuilder.finish();
+      index = fstCompiler.compile();
       assert subIndices == null;
 
       /*
@@ -405,7 +403,7 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
     // TODO: maybe we could add bulk-add method to
     // Builder?  Takes FST and unions it w/ current
     // FST.
-    private void append(Builder<Output> builder, FST<Output> subIndex, long termOrdOffset, IntsRefBuilder scratchIntsRef) throws IOException {
+    private void append(FSTCompiler<Output> fstCompiler, FST<Output> subIndex, long termOrdOffset, IntsRefBuilder scratchIntsRef) throws IOException {
       final BytesRefFSTEnum<Output> subIndexEnum = new BytesRefFSTEnum<>(subIndex);
       BytesRefFSTEnum.InputOutput<Output> indexEnt;
       while ((indexEnt = subIndexEnum.next()) != null) {
@@ -416,7 +414,7 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
         //long blockTermCount = output.endOrd - output.startOrd + 1;
         Output newOutput = FST_OUTPUTS.newOutput(output.bytes, termOrdOffset+output.startOrd, output.endOrd-termOrdOffset);
         //System.out.println("  append sub=" + indexEnt.input + " output=" + indexEnt.output + " termOrdOffset=" + termOrdOffset + " blockTermCount=" + blockTermCount  + " newOutput=" + newOutput  + " endOrd=" + (termOrdOffset+Long.MAX_VALUE-output.endOrd));
-        builder.add(Util.toIntsRef(indexEnt.input, scratchIntsRef), newOutput);
+        fstCompiler.add(Util.toIntsRef(indexEnt.input, scratchIntsRef), newOutput);
       }
     }
   }

@@ -223,12 +223,11 @@ public class SplitShardCmd implements OverseerCollectionMessageHandler.Cmd {
         // params.set(NUM_SUB_SHARDS, Integer.toString(numSubShards));
 
         {
-          final ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
+          final ShardRequestTracker shardRequestTracker = ocmh.syncRequestTracker();
           shardRequestTracker.sendShardRequest(parentShardLeader.getNodeName(), params, shardHandler);
           SimpleOrderedMap<Object> getRangesResults = new SimpleOrderedMap<>();
           String msgOnError = "SPLITSHARD failed to invoke SPLIT.getRanges core admin command";
           shardRequestTracker.processResponses(getRangesResults, shardHandler, true, msgOnError);
-          handleFailureOnAsyncRequest(results, msgOnError);
 
           // Extract the recommended splits from the shard response (if it exists)
           // example response: getRangesResults={success={127.0.0.1:62086_solr={responseHeader={status=0,QTime=1},ranges=10-20,3a-3f}}}

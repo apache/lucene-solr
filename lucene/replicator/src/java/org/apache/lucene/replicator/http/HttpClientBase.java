@@ -37,6 +37,7 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.SuppressForbidden;
 
 /**
  * Base class for Http clients.
@@ -115,6 +116,7 @@ public abstract class HttpClientBase implements Closeable {
     }
   }
   
+  @SuppressForbidden(reason = "XXX: security hole")
   protected void throwKnownError(HttpResponse response, StatusLine statusLine) throws IOException {
     ObjectInputStream in = null;
     try {
