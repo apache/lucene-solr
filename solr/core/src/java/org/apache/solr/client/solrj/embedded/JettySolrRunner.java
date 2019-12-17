@@ -278,7 +278,7 @@ public class JettySolrRunner {
       // the server as well as any client actions taken by this JVM in
       // talking to that server, but for the purposes of testing that should
       // be good enough
-      final SslContextFactory sslcontext = SSLConfig.createContextFactory(config.sslConfig);
+      final SslContextFactory.Server sslcontext = SSLConfig.createContextFactory(config.sslConfig);
 
       HttpConfiguration configuration = new HttpConfiguration();
       ServerConnector connector;

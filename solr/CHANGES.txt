@@ -30,7 +30,8 @@ Jetty 9.4.19.v20190610
 
 Bug Fixes
 ---------------------
-(No changes)
+
+* SOLR-14106: Cleanup Jetty SslContextFactory usage (Ryan Rockenbaugh, Jan Hoydahl, Kevin Risden)
 
 ==================  8.4.0 ==================
 
