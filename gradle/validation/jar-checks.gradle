@@ -84,15 +84,36 @@ subprojects {
     dependsOn configurations.jarValidation
 
     doFirst {
+      def isSolr = project.path.startsWith(":solr")
+
       // We only care about this module's direct dependencies. Anything imported
       // from other modules will be taken care of over there.
+      //
+      // ... unless it's solr in which case we need to consider transitive deps from
+      // Lucene modules.
       def ownDeps = configurations.detachedConfiguration()
           .extendsFrom(configurations.jarValidation)
           .copyRecursive { dep ->
-            !(dep instanceof org.gradle.api.artifacts.ProjectDependency)
+            if (isSolr) {
+              if ((dep instanceof org.gradle.api.artifacts.ProjectDependency) &&
+                  dep.dependencyProject.path.startsWith(":solr")) {
+                return false
+              } else {
+                return true
+              }
+            } else {
+              return !(dep instanceof org.gradle.api.artifacts.ProjectDependency)
+            }
           }
 
-      project.ext.jarInfos = ownDeps.resolvedConfiguration.resolvedArtifacts.collect { resolvedArtifact ->
+      def resolved = ownDeps.resolvedConfiguration.resolvedArtifacts
+      if (isSolr) {
+        resolved = resolved.findAll { resolvedArtifact ->
+          return resolvedArtifact.moduleVersion.id.group != "org.apache.lucene"
+        }
+      }
+
+      project.ext.jarInfos = resolved.collect { resolvedArtifact ->
         def file = resolvedArtifact.file
         return [
             name           : resolvedArtifact.name,
