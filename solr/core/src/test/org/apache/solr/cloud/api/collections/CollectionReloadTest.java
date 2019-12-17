@@ -51,7 +51,7 @@ public class CollectionReloadTest extends SolrCloudTestCase {
     log.info("testReloadedLeaderStateAfterZkSessionLoss initialized OK ... running test logic");
 
     final String testCollectionName = "c8n_1x1";
-    CollectionAdminRequest.createCollection(testCollectionName, "conf", 1, 1).setExternalState(true)
+    CollectionAdminRequest.createCollection(testCollectionName, "conf", 1, 1)
         .process(cluster.getSolrClient());
 
 
