@@ -48,7 +48,8 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+
+* SOLR-14099: Fixed @LogLevel annotation in test-framework to correctly 'unset' Loggers after test (hossman)
 
 Other Changes
 ---------------------
