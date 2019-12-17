@@ -76,7 +76,7 @@ When adding data, you should usually direct documents to the alias (e.g., refere
 The Solr server and `CloudSolrClient` will direct an update request to the first collection that an alias points to.
 Once the server receives the data it will perform the necessary routing.
 
-WARNING: It's extremely important with all routed aliases that the route values NOT change. Re-indexing a document
+WARNING: It's extremely important with all routed aliases that the route values NOT change. Reindexing a document
 with a different route value for the same ID produces two distinct documents with the same ID accessible via the alias.
 All query time behavior of the routed alias is *_undefined_* and not easily predictable once duplicate ID's exist.
 

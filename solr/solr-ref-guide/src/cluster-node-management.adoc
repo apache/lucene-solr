@@ -168,7 +168,7 @@ http://localhost:8983/solr/admin/collections?action=CLUSTERPROP&name=urlScheme&v
 It is possible to set cluster-wide default values for certain attributes of a collection, using the `defaults` parameter.
 
 *Set/update default values*
-[source]
+[source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '
 {
@@ -186,7 +186,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '
 ----
 
 *Unset the only value of `nrtReplicas`*
-[source]
+[source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '
 {
@@ -201,7 +201,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '
 ----
 
 *Unset all values in `defaults`*
-[source]
+[source,bash]
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '
 { "set-obj-property" : {

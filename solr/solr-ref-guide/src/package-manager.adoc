@@ -48,7 +48,7 @@ Essentially, these are the phases in using the package manager:
 
 === Starting Solr with Package Management Support
 
-Start all Solr nodes with the `-Denable.packages=true` parameter. There are security consequences in doing so. At a minimum, no unauthorized user should have write access to Zookeeper instances, since it would then be possible to install packages from untrusted sources (e.g. malicious repositories).
+Start all Solr nodes with the `-Denable.packages=true` parameter. There are security consequences in doing so. At a minimum, no unauthorized user should have write access to ZooKeeper instances, since it would then be possible to install packages from untrusted sources (e.g. malicious repositories).
 
 [source,bash]
 ----
@@ -149,6 +149,6 @@ $ bin/solr package deploy mypackage:2.0.0 --update -collections mycollection
 You can run the `list-deployed` command to verify that this collection is using the newly added version.
 
 == Security
-Except the `add-repo` step, all other steps can be executed using a HTTP endpoint in Solr (see <<package-manager-internals.adoc#package-manager-internals,Package Manager internals>>). This step registers the public key of the trusted repository, and hence can only be executed using the package manager (CLI) having direct write access to Zookeeper. Hence, as you can imagine, it is important to protect Zookeeper from unauthorized write access.
+Except the `add-repo` step, all other steps can be executed using a HTTP endpoint in Solr (see <<package-manager-internals.adoc#package-manager-internals,Package Manager internals>>). This step registers the public key of the trusted repository, and hence can only be executed using the package manager (CLI) having direct write access to ZooKeeper. Hence, as you can imagine, it is important to protect ZooKeeper from unauthorized write access.
 
 Also, keep in mind, that it is possible to install any package from a trusted and an already added repository. Hence, if you want to use some packages in production, then it is better to setup your own repository and add that to Solr, instead of adding a generic third-party repository that is beyond your administrative control.
