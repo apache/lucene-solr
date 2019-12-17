@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
@@ -120,12 +121,14 @@ public class TestManagedResource extends SolrTestCaseJ4 {
   /**
    * Implements a Java serialization based storage format.
    */
+  @SuppressForbidden(reason = "XXX: security hole")
   private static class SerializableStorage extends ManagedResourceStorage {
     
     SerializableStorage(StorageIO storageIO, SolrResourceLoader loader) {
       super(storageIO, loader);
     }
 
+    @SuppressForbidden(reason = "XXX: security hole")
     @Override
     public Object load(String resourceId) throws IOException {
       String storedId = getStoredResourceId(resourceId);
@@ -151,6 +154,7 @@ public class TestManagedResource extends SolrTestCaseJ4 {
       return serialized;      
     }
 
+    @SuppressForbidden(reason = "XXX: security hole")
     @Override
     public void store(String resourceId, Object toStore) throws IOException {
       if (!(toStore instanceof Serializable))
@@ -305,6 +309,7 @@ public class TestManagedResource extends SolrTestCaseJ4 {
   /**
    * Converts the given Serializable object to bytes
    */
+  @SuppressForbidden(reason = "XXX: security hole")
   private BytesRef ser2bytes(Serializable ser) throws Exception {
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     ObjectOutputStream oos = null;

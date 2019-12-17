@@ -29,6 +29,7 @@ import java.nio.file.Paths;
 
 import org.apache.lucene.analysis.cn.smart.AnalyzerProfile;
 import org.apache.lucene.analysis.cn.smart.Utility;
+import org.apache.lucene.util.SuppressForbidden;
 
 /**
  * SmartChineseAnalyzer Word Dictionary
@@ -146,6 +147,7 @@ class WordDictionary extends AbstractDictionary {
     }
   }
 
+  @SuppressForbidden(reason = "TODO: fix code to serialize its own dictionary vs. a binary blob in the codebase")
   private void loadFromObjectInputStream(InputStream serialObjectInputStream)
       throws IOException, ClassNotFoundException {
     try (ObjectInputStream input = new ObjectInputStream(serialObjectInputStream)) {
@@ -157,6 +159,7 @@ class WordDictionary extends AbstractDictionary {
     }
   }
 
+  @SuppressForbidden(reason = "TODO: fix code to serialize its own dictionary vs. a binary blob in the codebase")
   private void saveToObj(Path serialObj) {
     try (ObjectOutputStream output = new ObjectOutputStream(Files.newOutputStream(serialObj))) {
       output.writeObject(wordIndexTable);
