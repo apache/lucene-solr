@@ -112,6 +112,8 @@ public class ClusterStateMockUtil {
     collectionProps.put(ZkStateReader.REPLICATION_FACTOR, Integer.toString(replicationFactor));
     Map<String,DocCollection> collectionStates = new HashMap<>();
     DocCollection docCollection = null;
+    String collName = null;
+    String sliceName = null;
     Slice slice = null;
     int replicaCount = 1;
 
@@ -121,12 +123,13 @@ public class ClusterStateMockUtil {
       switch (m.group(1)) {
         case "c":
           slices = new HashMap<>();
-          docCollection = new DocCollection("collection" + (collectionStates.size() + 1), slices, collectionProps, null);
+          docCollection = new DocCollection(collName = "collection" + (collectionStates.size() + 1), slices, collectionProps, null);
           collectionStates.put(docCollection.getName(), docCollection);
           break;
         case "s":
           replicas = new HashMap<>();
-          slice = new Slice("slice" + (slices.size() + 1), replicas, null);
+          if(collName == null) collName = "collection" + (collectionStates.size() + 1);
+          slice = new Slice(sliceName = "slice" + (slices.size() + 1), replicas, null,  collName);
           slices.put(slice.getName(), slice);
           break;
         case "r":
@@ -168,8 +171,9 @@ public class ClusterStateMockUtil {
           replicaPropMap.put(ZkStateReader.NODE_NAME_PROP, nodeName);
           replicaPropMap.put(ZkStateReader.BASE_URL_PROP, "http://baseUrl" + node);
           replicaPropMap.put(ZkStateReader.STATE_PROP, state.toString());
-
-          replica = new Replica(replicaName, replicaPropMap);
+          if(collName == null) collName = "collection" + (collectionStates.size() + 1);
+          if(sliceName == null) collName = "slice" + (slices.size() + 1);
+          replica = new Replica(replicaName, replicaPropMap, collName, sliceName);
 
           replicas.put(replica.getName(), replica);
           break;

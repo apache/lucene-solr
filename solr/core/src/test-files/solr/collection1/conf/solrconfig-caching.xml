@@ -21,19 +21,19 @@
   <schemaFactory class="ClassicIndexSchemaFactory"/>
   <query>
     <cache name="lfuCacheDecayFalse"
-           class="solr.search.LFUCache"
+           class="solr.search.CaffeineCache"
            size="10"
            initialSize="9"
            timeDecay="false" />
 
     <cache name="lfuCacheDecayTrue"
-           class="solr.search.LFUCache"
+           class="solr.search.CaffeineCache"
            size="10"
            initialSize="9"
            timeDecay="true" />
 
     <cache name="lfuCacheDecayDefault"
-           class="solr.search.LFUCache"
+           class="solr.search.CaffeineCache"
            size="10"
            initialSize="9" />
   </query>

@@ -51,6 +51,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.data.Stat;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -91,6 +92,11 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
     CloudTestUtils.waitForTriggerToBeScheduled(cloudManager, ".scheduled_maintenance");
     CloudTestUtils.suspendTrigger(cloudManager, ".scheduled_maintenance");
 
+  }
+
+  @AfterClass
+  public static void cleanUpAfterClass() throws Exception {
+    cloudManager = null;
   }
 
   @Before

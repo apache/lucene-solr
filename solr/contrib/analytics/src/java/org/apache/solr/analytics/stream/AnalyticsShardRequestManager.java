@@ -31,10 +31,11 @@ import java.util.concurrent.Future;
 
 import org.apache.solr.analytics.AnalyticsRequestManager;
 import org.apache.solr.analytics.AnalyticsRequestParser;
+import org.apache.solr.analytics.TimeExceededStubException;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
@@ -154,7 +155,11 @@ public class AnalyticsShardRequestManager {
       for (Future<SolrException> f : futures) {
         SolrException e = f.get();
         if (e != null) {
-          throw e;
+          if (TimeExceededStubException.isIt(e)) {
+            manager.setPartialResults(true);
+          } else {
+            throw e;
+          }
         }
       }
     } catch (InterruptedException e1) {
@@ -188,6 +193,7 @@ public class AnalyticsShardRequestManager {
     solrParams.add(CommonParams.WT, AnalyticsShardResponseWriter.NAME);
     solrParams.add(CommonParams.Q, paramsIn.get(CommonParams.Q));
     solrParams.add(CommonParams.FQ, paramsIn.getParams(CommonParams.FQ));
+    solrParams.add(CommonParams.TIME_ALLOWED, paramsIn.get(CommonParams.TIME_ALLOWED,"-1"));
     solrParams.add(AnalyticsRequestParser.analyticsParamName, analyticsRequest);
 
     return solrParams;

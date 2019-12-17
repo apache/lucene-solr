@@ -53,9 +53,9 @@ import org.apache.lucene.codecs.asserting.AssertingCodec;
 import org.apache.lucene.codecs.blockterms.LuceneFixedGap;
 import org.apache.lucene.codecs.blocktree.BlockTreeTermsReader;
 import org.apache.lucene.codecs.blocktreeords.BlockTreeOrdsPostingsFormat;
-import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
 import org.apache.lucene.codecs.lucene80.Lucene80DocValuesFormat;
-import org.apache.lucene.codecs.lucene80.Lucene80Codec;
+import org.apache.lucene.codecs.lucene84.Lucene84Codec;
+import org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat;
 import org.apache.lucene.codecs.perfield.PerFieldDocValuesFormat;
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat;
 import org.apache.lucene.document.BinaryDocValuesField;
@@ -64,7 +64,29 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedDocValuesField;
-import org.apache.lucene.index.*;
+import org.apache.lucene.index.CheckIndex;
+import org.apache.lucene.index.CodecReader;
+import org.apache.lucene.index.ConcurrentMergeScheduler;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.DocValuesType;
+import org.apache.lucene.index.FieldInfo;
+import org.apache.lucene.index.FilterLeafReader;
+import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.LogMergePolicy;
+import org.apache.lucene.index.MergePolicy;
+import org.apache.lucene.index.MergeScheduler;
+import org.apache.lucene.index.MultiTerms;
+import org.apache.lucene.index.PostingsEnum;
+import org.apache.lucene.index.SegmentReader;
+import org.apache.lucene.index.SlowCodecReaderWrapper;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.index.TieredMergePolicy;
 import org.apache.lucene.mockfile.FilterFileSystem;
 import org.apache.lucene.mockfile.VirusCheckingFS;
 import org.apache.lucene.mockfile.WindowsFS;
@@ -898,14 +920,14 @@ public final class TestUtil {
    * This may be different than {@link Codec#getDefault()} because that is randomized. 
    */
   public static Codec getDefaultCodec() {
-    return new Lucene80Codec();
+    return new Lucene84Codec();
   }
   
   /** 
    * Returns the actual default postings format (e.g. LuceneMNPostingsFormat for this version of Lucene.
    */
   public static PostingsFormat getDefaultPostingsFormat() {
-    return new Lucene50PostingsFormat();
+    return new Lucene84PostingsFormat();
   }
   
   /** 
@@ -913,7 +935,7 @@ public final class TestUtil {
    * @lucene.internal this may disappear at any time
    */
   public static PostingsFormat getDefaultPostingsFormat(int minItemsPerBlock, int maxItemsPerBlock, BlockTreeTermsReader.FSTLoadMode fstLoadMode) {
-    return new Lucene50PostingsFormat(minItemsPerBlock, maxItemsPerBlock, fstLoadMode);
+    return new Lucene84PostingsFormat(minItemsPerBlock, maxItemsPerBlock, fstLoadMode);
   }
   
   /** Returns a random postings format that supports term ordinals */

@@ -45,12 +45,14 @@ import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggestion;
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.cloud.CloudTestUtils;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -80,6 +82,14 @@ public class TestSnapshotCloudManager extends SolrCloudTestCase {
         .process(cluster.getSolrClient());
     realManager = cluster.getJettySolrRunner(cluster.getJettySolrRunners().size() - 1).getCoreContainer()
         .getZkController().getSolrCloudManager();
+    // disable .scheduled_maintenance (once it exists)
+    CloudTestUtils.waitForTriggerToBeScheduled(realManager, ".scheduled_maintenance");
+    CloudTestUtils.suspendTrigger(realManager, ".scheduled_maintenance");
+  }
+
+  @AfterClass
+  public static void cleanUpAfterClass() throws Exception {
+    realManager = null;
   }
 
   @Test

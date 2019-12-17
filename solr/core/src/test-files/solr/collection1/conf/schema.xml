@@ -694,6 +694,7 @@
   -->
   <dynamicField name="*_i" type="int" indexed="true" stored="true"/>
   <dynamicField name="*_i1" type="int" indexed="true" stored="true" multiValued="false" sortMissingLast="true"/>
+  <dynamicField name="*_is" type="int" indexed="true" stored="true" multiValued="true" sortMissingLast="true"/>
   <dynamicField name="*_idv" type="int" indexed="true" stored="true" docValues="true" multiValued="false"/>
 
 

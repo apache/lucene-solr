@@ -41,7 +41,7 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRefBuilder;
-import org.apache.lucene.util.fst.Builder;
+import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.Util;
 
@@ -247,7 +247,7 @@ public class FSTTermsWriter extends FieldsConsumer {
   }
 
   final class TermsWriter {
-    private final Builder<FSTTermOutputs.TermData> builder;
+    private final FSTCompiler<FSTTermOutputs.TermData> fstCompiler;
     private final FSTTermOutputs outputs;
     private final FieldInfo fieldInfo;
     private final int longsSize;
@@ -261,7 +261,7 @@ public class FSTTermsWriter extends FieldsConsumer {
       this.fieldInfo = fieldInfo;
       this.longsSize = postingsWriter.setField(fieldInfo);
       this.outputs = new FSTTermOutputs(fieldInfo, longsSize);
-      this.builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
+      this.fstCompiler = new FSTCompiler<>(FST.INPUT_TYPE.BYTE1, outputs);
     }
 
     public void finishTerm(BytesRef text, BlockTermState state) throws IOException {
@@ -276,14 +276,14 @@ public class FSTTermsWriter extends FieldsConsumer {
         meta.bytes = metaWriter.toArrayCopy();
         metaWriter.reset();
       }
-      builder.add(Util.toIntsRef(text, scratchTerm), meta);
+      fstCompiler.add(Util.toIntsRef(text, scratchTerm), meta);
       numTerms++;
     }
 
     public void finish(long sumTotalTermFreq, long sumDocFreq, int docCount) throws IOException {
       // save FST dict
       if (numTerms > 0) {
-        final FST<FSTTermOutputs.TermData> fst = builder.finish();
+        final FST<FSTTermOutputs.TermData> fst = fstCompiler.compile();
         fields.add(new FieldMetaData(fieldInfo, numTerms, sumTotalTermFreq, sumDocFreq, docCount, longsSize, fst));
       }
     }

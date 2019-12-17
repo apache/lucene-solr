@@ -49,8 +49,8 @@ import org.apache.solr.schema.TrieIntField;
 import org.apache.solr.schema.TrieLongField;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
-import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.ReturnFields;
+import org.apache.solr.search.SolrDocumentFetcher;
 import org.apache.solr.search.SolrReturnFields;
 
 /**
@@ -148,9 +148,10 @@ public class DocsStreamer implements Iterator<SolrDocument> {
     // because that doesn't include extra fields needed by transformers
     final Set<String> fieldNamesNeeded = fields.getLuceneFieldNames();
 
+    BinaryResponseWriter.MaskCharSeqSolrDocument masked = null;
     final SolrDocument out = ResultContext.READASBYTES.get() == null ?
         new SolrDocument() :
-        new BinaryResponseWriter.MaskCharSeqSolrDocument();
+        (masked = new BinaryResponseWriter.MaskCharSeqSolrDocument());
 
     // NOTE: it would be tempting to try and optimize this to loop over fieldNamesNeeded
     // when it's smaller then the IndexableField[] in the Document -- but that's actually *less* effecient
@@ -160,7 +161,7 @@ public class DocsStreamer implements Iterator<SolrDocument> {
       final String fname = f.name();
       if (null == fieldNamesNeeded || fieldNamesNeeded.contains(fname) ) {
         // Make sure multivalued fields are represented as lists
-        Object existing = out.get(fname);
+        Object existing = masked == null ? out.get(fname) : masked.getRaw(fname);
         if (existing == null) {
           SchemaField sf = schema.getFieldOrNull(fname);
           if (sf != null && sf.multiValued()) {

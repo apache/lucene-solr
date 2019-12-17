@@ -298,7 +298,7 @@ public class TestPolygon extends LuceneTestCase {
     b.append("}    \n");
 
     Exception e = expectThrows(ParseException.class, () -> Polygon.fromGeoJSON(b.toString()));
-    assertTrue(e.getMessage().contains("can only handle type FeatureCollection (if it has a single polygon geometry), Feature, Polygon or MutiPolygon, but got Point"));
+    assertTrue(e.getMessage().contains("can only handle type FeatureCollection (if it has a single polygon geometry), Feature, Polygon or MultiPolygon, but got Point"));
   }
 
   public void testPolygonPropertiesCanBeStringArrays() throws Exception {

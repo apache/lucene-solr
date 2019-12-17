@@ -32,6 +32,7 @@ import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.CoreStatus;
@@ -190,12 +191,12 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
            CoreAdminParams.CoreAdminAction.STATUS.toString(),
            CoreAdminParams.CORE, "bogus_dir_core"),
          resp);
-    Map<String,Exception> failures = 
+    @SuppressWarnings("unchecked")
+    Map<String,Exception> failures =
       (Map<String,Exception>) resp.getValues().get("initFailures");
     assertNotNull("core failures is null", failures);
 
-    NamedList<Object> status = 
-      (NamedList<Object>)resp.getValues().get("status");
+    NamedList status = (NamedList)resp.getValues().get("status");
     assertNotNull("core status is null", status);
 
     assertEquals("wrong number of core failures", 1, failures.size());
@@ -338,7 +339,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
       req.process(client);
     }
 
-    HttpSolrClient.RemoteSolrException rse = expectThrows(HttpSolrClient.RemoteSolrException.class, () -> {
+    BaseHttpSolrClient.RemoteSolrException rse = expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
       try (HttpSolrClient client = getHttpSolrClient(runner.getBaseUrl() + "/corex", DEFAULT_CONNECTION_TIMEOUT,
           DEFAULT_CONNECTION_TIMEOUT * 1000)) {
         client.query(new SolrQuery("id:*"));
@@ -346,7 +347,7 @@ public class CoreAdminHandlerTest extends SolrTestCaseJ4 {
         runner.stop();
       }
     });
-    assertTrue(rse.getMessage().contains("Can not find: /solr/corex/select"));
+    assertEquals("Should have received a 404 error", 404,  rse.code());
   }
   
   @Test

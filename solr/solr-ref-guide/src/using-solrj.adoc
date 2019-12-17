@@ -120,6 +120,20 @@ include::{example-source-dir}UsingSolrJRefGuideExamplesTest.java[tag=solrj-solrc
 
 When these values are not explicitly provided, SolrJ falls back to using the defaults for the OS/environment is running on.
 
+`ConcurrentUpdateSolrClient` and its counterpart `ConcurrentUpdateHttp2SolrClient` implement also a stall prevention
+timeout that allows requests to non-responsive nodes to fail quicker than waiting for a socket timeout.
+The default value of this timeout is set to 15000 ms and can be adjusted by a system property `solr.cloud.client.stallTime`.
+This value should be smaller than `solr.jetty.http.idleTimeout` (Which is 120000 ms by default) and greater than the
+processing time of the largest update request.
+
+=== Cloud Request Routing
+
+The SolrJ `CloudSolrClient` implementations (`CloudSolrClient` and `CloudHttp2SolrClient`) respect the <<distributed-requests.adoc#shards-preference-parameter,shards.preference parameter>>.
+Therefore requests sent to single-sharded collections, using either of the above clients, will route requests the same way that distributed requests are routed to individual shards.
+If no `shards.preference` parameter is provided, the clients will default to sorting replicas randomly.
+
+For update requests, while the replicas are sorted in the order defined by the request, leader replicas will always be sorted first.
+
 == Querying in SolrJ
 `SolrClient` has a number of `query()` methods for fetching results from Solr.  Each of these methods takes in a `SolrParams`,an object encapsulating arbitrary query-parameters.  And each method outputs a `QueryResponse`, a wrapper which can be used to access the result documents and other related metadata.
 

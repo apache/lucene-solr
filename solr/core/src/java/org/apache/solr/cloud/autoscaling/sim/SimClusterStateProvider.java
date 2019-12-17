@@ -96,6 +96,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.update.SolrIndexSplitter;
 import org.apache.zookeeper.CreateMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -1275,6 +1276,12 @@ public class SimClusterStateProvider implements ClusterStateProvider {
     AtomicReference<String> sliceName = new AtomicReference<>();
     sliceName.set(message.getStr(SHARD_ID_PROP));
     String splitKey = message.getStr("split.key");
+    String methodStr = message.getStr(CommonAdminParams.SPLIT_METHOD, SolrIndexSplitter.SplitMethod.REWRITE.toLower());
+    SolrIndexSplitter.SplitMethod splitMethod = SolrIndexSplitter.SplitMethod.get(methodStr);
+    if (splitMethod == null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown value '" + CommonAdminParams.SPLIT_METHOD +
+          ": " + methodStr);
+    }
 
     ClusterState clusterState = getClusterState();
     DocCollection collection = clusterState.getCollection(collectionName);
@@ -1285,6 +1292,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Shard " + collectionName +
           " /  " + sliceName.get() + " has no leader and can't be split");
     }
+    SplitShardCmd.checkDiskSpace(collectionName, sliceName.get(), leader, splitMethod, cloudManager);
     SplitShardCmd.lockForSplit(cloudManager, collectionName, sliceName.get());
     // start counting buffered updates
     Map<String, Object> props = sliceProperties.computeIfAbsent(collectionName, c -> new ConcurrentHashMap<>())
@@ -2386,7 +2394,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
                 props.put(ZkStateReader.CORE_NAME_PROP, ri.getCore());
                 props.put(ZkStateReader.REPLICA_TYPE, ri.getType().toString());
                 props.put(ZkStateReader.STATE_PROP, ri.getState().toString());
-                Replica r = new Replica(ri.getName(), props);
+                Replica r = new Replica(ri.getName(), props, ri.getCollection(), ri.getShard());
                 collMap.computeIfAbsent(ri.getCollection(), c -> new HashMap<>())
                   .computeIfAbsent(ri.getShard(), s -> new HashMap<>())
                   .put(ri.getName(), r);
@@ -2410,7 +2418,7 @@ public class SimClusterStateProvider implements ClusterStateProvider {
         Map<String, Slice> slices = new HashMap<>();
         shards.forEach((s, replicas) -> {
           Map<String, Object> sliceProps = sliceProperties.computeIfAbsent(coll, c -> new ConcurrentHashMap<>()).computeIfAbsent(s, sl -> new ConcurrentHashMap<>());
-          Slice slice = new Slice(s, replicas, sliceProps);
+          Slice slice = new Slice(s, replicas, sliceProps, coll);
           slices.put(s, slice);
         });
         Map<String, Object> collProps = collProperties.computeIfAbsent(coll, c -> new ConcurrentHashMap<>());

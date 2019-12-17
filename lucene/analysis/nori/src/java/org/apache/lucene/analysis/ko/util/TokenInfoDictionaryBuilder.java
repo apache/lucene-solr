@@ -30,7 +30,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.lucene.util.IntsRefBuilder;
-import org.apache.lucene.util.fst.Builder;
+import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.FST;
 
 import org.apache.lucene.util.fst.PositiveIntOutputs;
@@ -90,7 +90,7 @@ class TokenInfoDictionaryBuilder {
     lines.sort(Comparator.comparing(left -> left[0]));
 
     PositiveIntOutputs fstOutput = PositiveIntOutputs.getSingleton();
-    Builder<Long> fstBuilder = new Builder<>(FST.INPUT_TYPE.BYTE2, 0, 0, true, true, Integer.MAX_VALUE, fstOutput, true, 15);
+    FSTCompiler<Long> fstCompiler = new FSTCompiler<>(FST.INPUT_TYPE.BYTE2, fstOutput);
     IntsRefBuilder scratch = new IntsRefBuilder();
     long ord = -1; // first ord will be 0
     String lastValue = null;
@@ -116,12 +116,12 @@ class TokenInfoDictionaryBuilder {
         for (int i = 0; i < surfaceForm.length(); i++) {
           scratch.setIntAt(i, surfaceForm.charAt(i));
         }
-        fstBuilder.add(scratch.get(), ord);
+        fstCompiler.add(scratch.get(), ord);
       }
       dictionary.addMapping((int) ord, offset);
       offset = next;
     }
-    dictionary.setFST(fstBuilder.finish());
+    dictionary.setFST(fstCompiler.compile());
     return dictionary;
   }
 }

@@ -60,7 +60,7 @@ final class DocumentsWriterPerThread {
   private Throwable abortingException;
 
   final void onAbortingException(Throwable throwable) {
-    assert abortingException == null: "aborting excpetion has already been set";
+    assert abortingException == null: "aborting exception has already been set";
     abortingException = throwable;
   }
 

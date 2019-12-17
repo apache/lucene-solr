@@ -41,7 +41,6 @@
 
   <path id="junit.classpath">
     <path refid="test.classpath"/>
-    <pathelement path="${java.class.path}"/>
   </path>
 
   <target name="test-core" depends="common.test"/>

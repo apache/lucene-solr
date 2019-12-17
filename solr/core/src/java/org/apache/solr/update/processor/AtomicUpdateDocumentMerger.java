@@ -412,7 +412,7 @@ public class AtomicUpdateDocumentMerger {
    */
   public SolrInputDocument updateDocInSif(SolrInputField updateSif, SolrInputDocument cmdDocWChildren, SolrInputDocument updateDoc) {
     List sifToReplaceValues = (List) updateSif.getValues();
-    final boolean wasList = updateSif.getRawValue() instanceof Collection;
+    final boolean wasList = updateSif.getValue() instanceof Collection;
     int index = getDocIndexFromCollection(cmdDocWChildren, sifToReplaceValues);
     SolrInputDocument updatedDoc = merge(updateDoc, cmdDocWChildren);
     if(index == -1) {
@@ -552,7 +552,7 @@ public class AtomicUpdateDocumentMerger {
   }
 
   private Object getNativeFieldValue(String fieldName, Object val) {
-    if(isChildDoc(val)) {
+    if (isChildDoc(val) || val == null || (val instanceof Collection && ((Collection) val).isEmpty())) {
       return val;
     }
     SchemaField sf = schema.getField(fieldName);

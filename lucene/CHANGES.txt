@@ -38,6 +38,9 @@ API Changes
 * LUCENE-8905: Better defence against malformed arguments in TopDocsCollector
   (Atri Sharma)
 
+* LUCENE-9089: FST Builder renamed FSTCompiler with fluent-style Builder.
+  (Bruno Roustant)
+
 Improvements
 
 * LUCENE-8757: When provided with an ExecutorService to run queries across
@@ -64,6 +67,34 @@ Other
 
 * LUCENE-8768: Fix Javadocs build in Java 11. (Namgyu Kim)
 
+* LUCENE-9092: upgrade randomizedtesting to 2.7.5 (Dawid Weiss)
+
+======================= Lucene 8.5.0 =======================
+
+API Changes
+---------------------
+(No changes)
+
+New Features
+---------------------
+(No changes)
+
+Improvements
+---------------------
+(No changes)
+
+Optimizations
+---------------------
+(No changes)
+
+Bug Fixes
+---------------------
+(No changes)
+
+Other
+---------------------
+(No changes)
+
 ======================= Lucene 8.4.0 =======================
 
 API Changes
@@ -72,8 +103,8 @@ API Changes
   (Jack Conradson via Adrien Grand)
 
 New Features
----------------------
-(No changes)
+
+* LUCENE-8620: Add CONTAINS support for LatLonShape and XYShape. (Ignacio Vera)
 
 Improvements
 
@@ -84,6 +115,16 @@ Improvements
   (David Smiley)
 
 * LUCENE-9028: introducing Intervals.multiterm() (Mikhail Khludnev)
+
+* LUCENE-9018: ConcatenateGraphFilter now has a configurable separator. (Stanislav Mikulchik, David Smiley)
+
+* LUCENE-9036: ExitableDirectoryReader may interupt scaning over DocValues (Mikhail Khludnev)
+
+* LUCENE-9062: QueryVisitor now has a consumeTermsMatching() method, allowing queries
+  that match a class of terms to pass a ByteRunAutomaton matching those that class
+  back to the visitor. (Alan Woodward, David Smiley)
+
+* LUCENE-9073: IntervalQuery to respond field on toString() and explain() (Mikhail Khludnev)
 
 Optimizations
 
@@ -109,12 +150,26 @@ Optimizations
 * LUCENE-8920: The denser arcs of FST now index labels with a bitset in order
   to provide near constant time access. (Bruno Roustant, Mike Sokolov via Adrien Grand)
 
+* LUCENE-9027: Use SIMD instructions to decode postings. (Adrien Grand)
+
+* LUCENE-9049: Remove FST cached root arcs now redundant with labels indexed by bitset.
+  This frees some on-heap FST space. (Jack Conradson via Bruno Roustant)
+
+* LUCENE-9045: Do not use TreeMap/TreeSet in BlockTree and PerFieldPostingsFormat. (Bruno Roustant)
+
 Bug Fixes
 
 * LUCENE-9001: Fix race condition in SetOnce. (Przemko Robakowski)
 
 * LUCENE-9030: Fix WordnetSynonymParser behaviour so it behaves similar to
   SolrSynonymParser. (Christoph Buescher via Alan Woodward)
+
+* LUCENE-9054: Fix reproduceJenkinsFailures.py to not overwrite junit XML files when retrying (hossman)
+
+* LUCENE-9031: UnsupportedOperationException on MatchesIterator.getQuery() (Alan Woodward, Mikhail Khludnev)
+
+* LUCENE-8996: maxScore was sometimes missing from distributed grouped responses.
+  (Julien Massenet, Diego Ceccarelli, Munendra S N, Christine Poerschke)
 
 Other
 
@@ -125,11 +180,24 @@ Other
 * LUCENE-8746: Refactor EdgeTree - Introduce a Component tree that represents the tree of components (e.g polygons).
   Edge tree is now just a tree of edges. (Ignacio Vera)
 
+* LUCENE-9046: Fix wrong example in Javadoc of TermInSetQuery (Namgyu Kim)
+
+* LUCENE-8983: Add sandbox PhraseWildcardQuery to control multi-terms expansions in a phrase. (Bruno Roustant)
+
+* LUCENE-9067: Polygon2D#contains() is now thread safe. (Ignacio Vera)
+
 Build
 
 * Upgrade forbiddenapis to version 2.7; upgrade Groovy to 2.4.17.  (Uwe Schindler)
 
 * LUCENE-9041: Upgrade ecj to 3.19.0 to fix sporadic precommit javadoc issues (Kevin Risden)
+
+======================= Lucene 8.3.1 =======================
+
+Bug Fixes
+
+* LUCENE-9050: MultiTermIntervalsSource.visit() was not calling back to its
+  visitor. (Alan Woodward)
 
 ======================= Lucene 8.3.0 =======================
 
@@ -217,7 +285,7 @@ Optimizations
   non-competitive hits. (Adrien Grand)
 
 * LUCENE-8935: BooleanQuery with no scoring clause can now early terminate the query when
-the total hits is not requested.
+  the total hits is not requested. (Jim Ferenczi)
 
 * LUCENE-8941: Matches on wildcard queries will defer building their full
   disjunction until a MatchesIterator is pulled (Alan Woodward)

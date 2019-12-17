@@ -109,6 +109,7 @@
     <dependency org="com.sun.jersey" name="jersey-servlet" rev="${/com.sun.jersey/jersey-servlet}" conf="test.DfsMiniCluster"/>
     <dependency org="commons-logging" name="commons-logging" rev="${/commons-logging/commons-logging}" conf="test.DfsMiniCluster"/>
     <dependency org="io.netty" name="netty-all" rev="${/io.netty/netty-all}" conf="test.DfsMiniCluster"/>
+    <dependency org="org.apache.commons" name="commons-compress" rev="${/org.apache.commons/commons-compress}" conf="test.DfsMiniCluster"/>
     <dependency org="org.apache.commons" name="commons-text" rev="${/org.apache.commons/commons-text}" conf="test.DfsMiniCluster"/>
 
     <!-- Hadoop MiniKdc Dependencies-->
@@ -137,6 +138,9 @@
     <dependency org="org.codehaus.janino" name="commons-compiler" rev="${/org.codehaus.janino/commons-compiler}" conf="compile"/>
     <dependency org="com.google.protobuf" name="protobuf-java" rev="${/com.google.protobuf/protobuf-java}" conf="compile"/>
     <dependency org="com.jayway.jsonpath" name="json-path" rev="${/com.jayway.jsonpath/json-path}" conf="compile"/>
+
+    <!-- Package manager -->
+    <dependency org="com.github.zafarkhaja" name="java-semver" rev="${/com.github.zafarkhaja/java-semver}" conf="compile"/>
 
     <dependency org="org.rrd4j" name="rrd4j" rev="${/org.rrd4j/rrd4j}" conf="compile"/>
 

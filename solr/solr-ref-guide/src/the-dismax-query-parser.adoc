@@ -115,35 +115,68 @@ A value of "0.0" - the default - makes the query a pure "disjunction max query":
 
 === bq (Boost Query) Parameter
 
-The `bq` parameter specifies an additional, optional, query clause that will be added to the user's main query to influence the score. For example, if you wanted to add a relevancy boost for recent documents:
+The `bq` parameter specifies an additional, optional, query clause that will be _added_ to the user's main query as optional clauses that will influence the score. For example, if you wanted to add a boost for documents that are in a particular category you could use:
 
 [source,text]
 ----
 q=cheese
-bq=date:[NOW/DAY-1YEAR TO NOW/DAY]
+bq=category:food^10
 ----
 
-You can specify multiple `bq` parameters. If you want your query to be parsed as separate clauses with separate boosts, use multiple `bq` parameters.
+You can specify multiple `bq` parameters, which will each be added as separate clauses with separate boosts.
+
+[source,text]
+----
+q=cheese
+bq=category:food^10
+bq=category:deli^5
+----
+
+Using the `bq` parameter in this way is functionally equivilent to combining your `q` and `bq` params into a single larger boolean query, where the (original) `q` param is "mandatory" and the other clauses are optional:
+
+[source,text]
+----
+q=(+cheese category:food^10 category:deli^5)
+----
+
+The only difference between the above examples, is that using the `bq` param allows you to specify these extra clauses independently (ie: as configuration defaults) from the main query.
+
+
+[TIP]
+[[bq-bf-shortcomings]]
+.Additive Boosts vs Multiplicative Boosts
+====
+Generally speaking, using `bq` (or `bf`, below) is considered a poor way to "boost" documents by a secondary query because it has an "Additive" effect on the final score.  The overall impact a particular `bq` param will have on a given document can vary a lot depending on the _absolute_ values of the scores from the original query as well as the `bq` query, which in turn depends on the complexity of the original query, and various scoring factors (TF, IDF, average field length, etc.)
+
+"Multiplicative Boosting" is generally considered to be a more predictable method of influcing document score, because it acts as a "scaling factor" -- increasing (or decreasing) the scores of each document by a _relative_ amount.
+
+The <<other-parsers.adoc#boost-query-parser,`{!boost}` QParser>> provides a convinient wrapper for implementing multiplicitive boosting, and the <<the-extended-dismax-query-parser.adoc#extended-dismax-parameters,`{!edismax}` QParser>> offers a `boost` query param short cut for using it.
+====
 
 
 === bf (Boost Functions) Parameter
 
-The `bf` parameter specifies functions (with optional boosts) that will be used to construct FunctionQueries which will be added to the user's main query as optional clauses that will influence the score. Any function supported natively by Solr can be used, along with a boost value. For example:
+The `bf` parameter specifies functions (with optional <<the-standard-query-parser.adoc#boosting-a-term-with,query boost>>) that will be used to construct FunctionQueries which will be _added_ to the user's main query as optional clauses that will influence the score. Any <<function-queries.adoc#available-functions,function supported natively by Solr>> can be used, along with a boost value. For example:
 
 [source,text]
 ----
-recip(rord(myfield),1,2,3)^1.5
+q=cheese
+bf=div(1,sum(1,price))^1.5
 ----
 
-Specifying functions with the bf parameter is essentially just shorthand for using the `bq` parameter combined with the `{!func}` parser.
+Specifying functions with the bf parameter is essentially just shorthand for using the `bq` parameter (<<#bq-bf-shortcomings,with the same shortcomings>>) combined with the `{!func}` parser -- with the addition of the simplified "query boost" syntax.
 
-For example, if you want to show the most recent documents first, you could use either of the following:
+For example, the two `bf` params listed below, are completely equivilent to the two `bq` params below:
 
 [source,text]
 ----
-bf=recip(rord(creationDate),1,1000,1000)
-  ...or...
-bq={!func}recip(rord(creationDate),1,1000,1000)
+bf=div(sales_rank,ms(NOW,release_date))
+bf=div(1,sum(1,price))^1.5
+----
+[source,text]
+----
+bq={!func}div(sales_rank,ms(NOW,release_date))
+bq={!lucene}( {!func v='div(1,sum(1,price))'} )^1.5
 ----
 
 
