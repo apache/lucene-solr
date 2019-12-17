@@ -355,8 +355,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
                                                                                             // though
       try {
         CloudDescriptor cloudDesc = this.coreDescriptor.getCloudDescriptor();
-        ZkNodeProps leaderprops = zkStateReader.getLeaderRetry(
-            cloudDesc.getCollectionName(), cloudDesc.getShardId());
+        ZkNodeProps leaderprops = core.getShardStateProvider().getLeader(cloudDesc.getCollectionName(), cloudDesc.getShardId(), -1);
         final String leaderBaseUrl = leaderprops.getStr(ZkStateReader.BASE_URL_PROP);
         final String leaderCoreName = leaderprops.getStr(ZkStateReader.CORE_NAME_PROP);
 

@@ -399,7 +399,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
         notLeaders.size() == 1);
 
     Replica leader =
-        cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1");
+        cloudClient.getZkStateReader().getShardStateProvider(testCollectionName).getLeader(testCollectionName, "shard1", -1);
     String leaderNode = leader.getNodeName();
     assertNotNull("Could not find leader for shard1 of "+
         testCollectionName+"; clusterState: "+printClusterStateInfo(testCollectionName), leader);
@@ -419,7 +419,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
       String currentLeaderName = null;
       try {
         Replica currentLeader =
-            cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1");
+            cloudClient.getZkStateReader().getShardStateProvider(testCollectionName). getLeader(testCollectionName, "shard1", -1);
         currentLeaderName = currentLeader.getName();
       } catch (Exception exc) {}
 
@@ -430,7 +430,7 @@ public class HttpPartitionTest extends AbstractFullDistribZkTestBase {
     }
 
     Replica currentLeader =
-        cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1");
+        cloudClient.getZkStateReader().getShardStateProvider(testCollectionName).getLeader(testCollectionName, "shard1", -1);
     assertEquals(expectedNewLeaderCoreNodeName, currentLeader.getName());
 
     // TODO: This test logic seems to be timing dependent and fails on Jenkins

@@ -2083,7 +2083,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     while (System.nanoTime() < timeout) {
       Replica tmp = null;
       try {
-        tmp = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, shardId);
+        tmp = cloudClient.getZkStateReader().getShardStateProvider(testCollectionName).getLeader(testCollectionName, shardId, -1);
       } catch (Exception exc) {}
       if (tmp != null && "active".equals(tmp.getStr(ZkStateReader.STATE_PROP))) {
         leader = tmp;

@@ -115,8 +115,7 @@ public class BasicDistributedZk2Test extends AbstractFullDistribZkTestBase {
       // TODO: bring this to its own method?
       // try indexing to a leader that has no replicas up
       ZkStateReader zkStateReader = cloudClient.getZkStateReader();
-      ZkNodeProps leaderProps = zkStateReader.getLeaderRetry(
-          DEFAULT_COLLECTION, SHARD2);
+      ZkNodeProps leaderProps = zkStateReader.getShardStateProvider(DEFAULT_COLLECTION).getLeader(DEFAULT_COLLECTION, SHARD2, -1);
       
       String nodeName = leaderProps.getStr(ZkStateReader.NODE_NAME_PROP);
       chaosMonkey.stopShardExcept(SHARD2, nodeName);

@@ -970,7 +970,9 @@ public class ZkStateReader implements SolrCloseable {
 
   /**
    * Get shard leader properties, with retry if none exist.
+   * use {@link ShardStateProvider#getLeader(String, String, int)} instead
    */
+  @Deprecated
   public Replica getLeaderRetry(String collection, String shard) throws InterruptedException {
     return getLeaderRetry(collection, shard, GET_LEADER_RETRY_DEFAULT_TIMEOUT);
   }

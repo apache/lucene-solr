@@ -801,7 +801,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
     Slice mySlice = coll.getSlice(myShardId);
     final Slice.State state = mySlice.getState();
     if (state == Slice.State.CONSTRUCTION || state == Slice.State.RECOVERY) {
-      Replica myLeader = zkController.getZkStateReader().getLeaderRetry(collection, myShardId);
+      Replica myLeader = req.getCore().getShardStateProvider().getLeader(collection, myShardId, -1);
       boolean amILeader = myLeader.getName().equals(cloudDesc.getCoreNodeName());
       if (amILeader) {
         // Does the document belong to my hash range as well?

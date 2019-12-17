@@ -354,7 +354,7 @@ public class ChaosMonkey {
       
       ZkNodeProps leader = null;
       try {
-        leader = zkStateReader.getLeaderRetry(collection, slice);
+        leader = zkStateReader.getShardStateProvider(collection).getLeader(collection, slice, -1);
       } catch (Throwable t) {
         log.error("Could not get leader", t);
         return null;

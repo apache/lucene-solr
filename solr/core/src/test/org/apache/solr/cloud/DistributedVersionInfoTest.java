@@ -86,7 +86,7 @@ public class DistributedVersionInfoTest extends SolrCloudTestCase {
     stateReader.waitForState(COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
         (n, c, ssp) -> DocCollection.isFullyActive(ssp, c, 1, 3));
 
-    final Replica leader = stateReader.getLeaderRetry(COLLECTION, shardId);
+    final Replica leader = stateReader.getShardStateProvider(COLLECTION).getLeader(COLLECTION, shardId, -1);
 
     // start by reloading the empty collection so we try to calculate the max from an empty index
     reloadCollection(leader, COLLECTION);

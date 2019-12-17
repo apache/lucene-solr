@@ -25,18 +25,18 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.google.common.collect.Lists;
-import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
-import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient.RemoteSolrException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
-import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.cloud.ZkTestServer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
@@ -541,7 +541,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
   private void clusterStatusRolesTest() throws Exception  {
     try (CloudSolrClient client = createCloudClient(null)) {
       client.connect();
-      Replica replica = client.getZkStateReader().getLeaderRetry(DEFAULT_COLLECTION, SHARD1);
+      Replica replica = client.getZkStateReader().getShardStateProvider(DEFAULT_COLLECTION). getLeader(DEFAULT_COLLECTION, SHARD1, -1);
 
       ModifiableSolrParams params = new ModifiableSolrParams();
       params.set("action", CollectionParams.CollectionAction.ADDROLE.toString());

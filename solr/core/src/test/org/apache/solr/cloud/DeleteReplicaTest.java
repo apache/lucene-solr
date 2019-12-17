@@ -153,7 +153,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     final String collectionName = "deletereplica_test";
     CollectionAdminRequest.createCollection(collectionName, "conf", 1, 2).process(cluster.getSolrClient());
 
-    Replica leader = cluster.getSolrClient().getZkStateReader().getLeaderRetry(collectionName, "shard1");
+    Replica leader = cluster.getSolrClient().getZkStateReader().getShardStateProvider(collectionName). getLeader(collectionName, "shard1", -1);
 
     //Confirm that the instance and data directory exist
     CoreStatus coreStatus = getCoreStatus(leader);
@@ -163,7 +163,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     CollectionAdminRequest.deleteReplica(collectionName, "shard1",leader.getName())
         .process(cluster.getSolrClient());
 
-    Replica newLeader = cluster.getSolrClient().getZkStateReader().getLeaderRetry(collectionName, "shard1");
+    Replica newLeader = cluster.getSolrClient().getZkStateReader().getShardStateProvider(collectionName).getLeader(collectionName, "shard1", -1);
 
     assertFalse(leader.equals(newLeader));
 
