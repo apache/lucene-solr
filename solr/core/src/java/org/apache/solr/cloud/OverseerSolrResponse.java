@@ -55,6 +55,13 @@ public class OverseerSolrResponse extends SolrResponse {
     return responseList;
   }
 
+  /**
+   * This method serializes the content of an {@code OverseerSolrResponse}. Note that:
+   * <ul>
+   * <li>The elapsed time is not serialized</li>
+   * <li>"Unknown" elements for the Jababin format will be serialized as Strings. See {@link org.apache.solr.common.util.JavaBinCodec#writeVal}</li>
+   * </ul>
+   */
   @SuppressWarnings("deprecation")
   public static byte[] serialize(OverseerSolrResponse responseObject) {
     Objects.requireNonNull(responseObject);
