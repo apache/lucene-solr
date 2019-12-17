@@ -881,7 +881,7 @@ Examples of this command:
 `bin/solr zk mkroot /solr/production`
 
 
-== Exporting data to a file
+== Exporting Data to a File
 
 *Example*
 
@@ -897,7 +897,7 @@ Export all documents from a collection `gettingstarted` to a file called `gettin
 * `fields`: a comma separated list of fields to be exported.
 * `limit` : number of documents, default is 100, send `-1` to import all the documents.
 
-=== Importing the data to a collection
+=== Importing the Data to a Collection
 
 *Example: importing the `jsonl` files*
 
