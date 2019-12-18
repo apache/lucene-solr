@@ -19,15 +19,10 @@ package org.apache.lucene.queries.intervals;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
-
-import org.apache.lucene.search.MatchesIterator;
-import org.apache.lucene.search.MatchesUtils;
-import org.apache.lucene.search.Query;
 
 class OrderedIntervalsSource extends ConjunctionIntervalsSource {
 
@@ -63,12 +58,15 @@ class OrderedIntervalsSource extends ConjunctionIntervalsSource {
         current.add(source);
       }
       else {
-        deduplicated.add(DuplicateIntervalsSource.build(current.get(0), current.size()));
+        deduplicated.add(RepeatingIntervalsSource.build(current.get(0), current.size()));
         current.clear();
         current.add(source);
       }
     }
-    deduplicated.add(DuplicateIntervalsSource.build(current.get(0), current.size()));
+    deduplicated.add(RepeatingIntervalsSource.build(current.get(0), current.size()));
+    if (deduplicated.size() == 1 && deduplicated.get(0) instanceof RepeatingIntervalsSource) {
+      ((RepeatingIntervalsSource)deduplicated.get(0)).setName("ORDERED");
+    }
     return deduplicated;
   }
 

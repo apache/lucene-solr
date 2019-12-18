@@ -682,6 +682,16 @@ public class TestIntervals extends LuceneTestCase {
     assertGaps(source, 2, "field1", new int[]{ 3 });
   }
 
+  public void testMaxGapsWithOnlyRepeats() throws IOException {
+    IntervalsSource source = Intervals.maxgaps(1, Intervals.ordered(
+        Intervals.or(Intervals.term("pease"), Intervals.term("hot")), Intervals.or(Intervals.term("pease"), Intervals.term("hot"))
+    ));
+    checkIntervals(source, "field1", 3, new int[][]{
+        {}, { 0, 2, 2, 3 }, { 3, 5, 5, 6 }, {}, { 0, 2, 2, 3 }, {}
+    });
+    assertGaps(source, 1, "field1", new int[]{ 1, 0 });
+  }
+
   public void testNestedMaxGaps() throws IOException {
     IntervalsSource source = Intervals.maxgaps(1,
         Intervals.unordered(

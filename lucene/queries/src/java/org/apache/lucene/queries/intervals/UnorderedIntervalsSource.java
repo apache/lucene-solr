@@ -19,9 +19,9 @@ package org.apache.lucene.queries.intervals;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -35,17 +35,24 @@ class UnorderedIntervalsSource extends ConjunctionIntervalsSource {
     if (sources.size() == 1) {
       return sources.get(0);
     }
-    return new UnorderedIntervalsSource(deduplicate(flatten(sources)));
+    List<IntervalsSource> rewritten = deduplicate(flatten(sources));
+    if (rewritten.size() == 1) {
+      return rewritten.get(0);
+    }
+    return new UnorderedIntervalsSource(rewritten);
   }
 
   private static List<IntervalsSource> deduplicate(List<IntervalsSource> sources) {
-    Map<IntervalsSource, Integer> counts = new HashMap<>();
+    Map<IntervalsSource, Integer> counts = new LinkedHashMap<>(); // preserve order for testing
     for (IntervalsSource source : sources) {
       counts.compute(source, (k, v) -> v == null ? 1 : v + 1);
     }
     List<IntervalsSource> deduplicated = new ArrayList<>();
     for (IntervalsSource source : counts.keySet()) {
-      deduplicated.add(DuplicateIntervalsSource.build(source, counts.get(source)));
+      deduplicated.add(RepeatingIntervalsSource.build(source, counts.get(source)));
+    }
+    if (deduplicated.size() == 1 && deduplicated.get(0) instanceof RepeatingIntervalsSource) {
+      ((RepeatingIntervalsSource)deduplicated.get(0)).setName("UNORDERED");
     }
     return deduplicated;
   }

@@ -72,6 +72,9 @@ public abstract class IntervalIterator extends DocIdSetIterator {
    */
   public abstract int gaps();
 
+  /**
+   * The width of the current interval
+   */
   public int width() {
     return end() - start() + 1;
   }

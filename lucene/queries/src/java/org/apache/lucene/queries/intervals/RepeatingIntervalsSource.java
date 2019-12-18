@@ -31,22 +31,38 @@ import org.apache.lucene.search.MatchesUtils;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 
-class DuplicateIntervalsSource extends IntervalsSource {
+/**
+ * Generates an iterator that spans repeating instances of a sub-iterator,
+ * avoiding minimization.  This is useful for repeated terms within an
+ * unordered interval, for example, ensuring that multiple iterators do
+ * not match on a single term.
+ *
+ * The generated iterators have a specialized {@link IntervalIterator#width()}
+ * implementation that sums up the widths of the individual sub-iterators,
+ * rather than just returning the full span of the iterator.
+ */
+class RepeatingIntervalsSource extends IntervalsSource {
 
   static IntervalsSource build(IntervalsSource in, int childCount) {
     if (childCount == 1) {
       return in;
     }
     assert childCount > 0;
-    return new DuplicateIntervalsSource(in, childCount);
+    return new RepeatingIntervalsSource(in, childCount);
   }
 
   final IntervalsSource in;
   final int childCount;
 
-  private DuplicateIntervalsSource(IntervalsSource in, int childCount) {
+  String name;
+
+  private RepeatingIntervalsSource(IntervalsSource in, int childCount) {
     this.in = in;
     this.childCount = childCount;
+  }
+
+  public void setName(String name) {
+    this.name = name;
   }
 
   @Override
@@ -93,8 +109,8 @@ class DuplicateIntervalsSource extends IntervalsSource {
 
   @Override
   public boolean equals(Object other) {
-    if (other instanceof DuplicateIntervalsSource == false) return false;
-    DuplicateIntervalsSource o = (DuplicateIntervalsSource) other;
+    if (other instanceof RepeatingIntervalsSource == false) return false;
+    RepeatingIntervalsSource o = (RepeatingIntervalsSource) other;
     return Objects.equals(this.in, o.in) && Objects.equals(this.childCount, o.childCount);
   }
 
@@ -104,6 +120,9 @@ class DuplicateIntervalsSource extends IntervalsSource {
     StringBuilder out = new StringBuilder(s);
     for (int i = 1; i < childCount; i++) {
       out.append(",").append(s);
+    }
+    if (name != null) {
+      return name + "(" + out.toString() + ")";
     }
     return out.toString();
   }
@@ -145,7 +164,7 @@ class DuplicateIntervalsSource extends IntervalsSource {
 
     @Override
     public int gaps() {
-      throw new UnsupportedOperationException();
+      return super.width() - width();
     }
 
     @Override
@@ -286,14 +305,18 @@ class DuplicateIntervalsSource extends IntervalsSource {
 
     @Override
     public int gaps() {
-      return 0;
+      int width = endPosition() - startPosition() + 1;
+      for (MatchesIterator mi : subs) {
+        width = width - (mi.endPosition() - mi.startPosition() + 1);
+      }
+      return width;
     }
 
     @Override
     public int width() {
-      int width = endPosition() - startPosition() + 1;
+      int width = 0;
       for (MatchesIterator mi : subs) {
-        width = width - (mi.endPosition() - mi.startPosition() + 1);
+        width += (mi.endPosition() - mi.startPosition() + 1);
       }
       return width;
     }
