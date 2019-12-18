@@ -16,6 +16,7 @@
  */
 package org.apache.solr.analytics.stream;
 
+import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.analytics.AnalyticsRequestManager;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.common.SolrException;
@@ -54,6 +55,7 @@ public class AnalyticsShardResponseParser extends ResponseParser {
   }
 
   @Override
+  @SuppressForbidden(reason = "XXX: security hole")
   public NamedList<Object> processResponse(InputStream body, String encoding) {
     DataInputStream input = new DataInputStream(body);
     //check to see if the response is an exception

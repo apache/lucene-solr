@@ -25,7 +25,7 @@ section for more details about schema and index configuration.
 
 [NOTE]
 This section does not show case faceting on nested documents. For nested document faceting, please refer to the
-<<blockjoin-faceting#blockjoin-faceting, Block Join Faceting>> section.
+<<json-facet-api#uniqueblock-and-block-join-counts, Block Join Facet Counts>> section.
 
 == Query Examples
 

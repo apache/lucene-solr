@@ -22,7 +22,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 Versions of Major Components
 ---------------------
-Apache Tika 1.19.1
+Apache Tika 1.23
 Carrot2 3.16.2
 Velocity 2.0 and Velocity Tools 3.0
 Apache ZooKeeper 3.5.5
@@ -75,19 +75,24 @@ Upgrade Notes
 * SOLR-13817: Legacy SolrCache implementations (LRUCache, LFUCache, FastLRUCache) have been removed.
   Users have to modify their existing configurations to use CaffeineCache instead. (ab)
 
+* SOLR-14092: Deprecated BlockJoinFacetComponent and BlockJoinDocSetFacetComponent are removed
+  Users are encouraged to migrate to uniqueBlock() in JSON Facet API.  (Mikhail Khludnev)
+  
 Improvements
 ----------------------
 
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
 
+* SOLR-13749: New cross collection join filter (XCJF) (Kevin Fox, Kevin Watters, via Gus Heck)
+
+
 Other Changes
 ----------------------
-
 * SOLR-10288: Remove non-minified JavaScript from the webapp. (Erik Hatcher, marcussorealheis)
 
 * SOLR-13655:Upgrade Collections.unModifiableSet to Set.of and Set.copyOf (Atri Sharma via Tomás Fernández Löbbe)
 
-* SOLR-13797: SolrResourceLoader no longer caches bad results when asked for wrong type (Mike Drob) 
+* SOLR-13797: SolrResourceLoader no longer caches bad results when asked for wrong type (Mike Drob)
 
 * LUCENE-9092: Upgrade Carrot2 to 3.16.2 (Dawid Weiss).
 
@@ -97,7 +102,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 Versions of Major Components
 ---------------------
-Apache Tika 1.19.1
+Apache Tika 1.23
 Carrot2 3.16.0
 Velocity 2.0 and Velocity Tools 3.0
 Apache ZooKeeper 3.5.5
@@ -107,6 +112,12 @@ Upgrade Notes
 ---------------------
 
 * SOLR-14026: Upgrade Jetty to 9.4.24.v20191120 and dropwizard to 4.1.2 (Erick Erickson)
+
+* SOLR-14092: BlockJoinFacetComponent is marked for deprecation and will be removed in 9.0.
+  Users are encouraged to migrate to uniqueBlock() in JSON Facet API.  (Mikhail Khludnev)
+
+* SOLR-13983: Process execution is removed from SystemInfoHandler. A best-effort attempt to
+  execute "uname -a" and "uptime" on non-Windows platforms is no longer made. (rmuir)
 
 New Features
 ---------------------
@@ -122,12 +133,16 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+
+* SOLR-14099: Fixed @LogLevel annotation in test-framework to correctly 'unset' Loggers after test (hossman)
 
 Other Changes
 ---------------------
 
-SOLR-14047: Make sure tests don't pickup other Hadoop installs (Kevin Risden)
+* SOLR-14047: Make sure tests don't pickup other Hadoop installs (Kevin Risden)
+
+* SOLR-14054: Upgrade to Tika 1.23 when available (Tim Allison)
+
 
 ==================  8.4.0 ==================
 
@@ -207,7 +222,7 @@ New Features
 
 * SOLR-13912: Add 'countvals' aggregation in JSON FacetModule (hossman, Munendra S N)
 
-* SOLR-12217: Support shards.preference in SolrJ for single shard collections. The parameter 
+* SOLR-12217: Support shards.preference in SolrJ for single shard collections. The parameter
   is now used by the CloudSolrClient and Streaming Expressions. (Houston Putman, Tomas Fernandez-Lobbe)
 
 * SOLR-14043: Allow the precision Stream Evaluator to operate on matrices (Joel bernstein)
@@ -250,7 +265,7 @@ Improvements
 * SOLR-13957: Add sensible defaults for the facet, random, facet2D, timeseries, stats
   and update Streaming Expressions (Joel Bernstein)
 
-* SOLR-13904: Analytic component abandon requests exceedig limit passed via timeAllowed parameter 
+* SOLR-13904: Analytic component abandon requests exceedig limit passed via timeAllowed parameter
   (Houston Putman, Mikhail Khludnev).
 
 * SOLR-13970: Fail the request when collapsing or expand is used with Grouping. (Erick Erickson, Joel Bernstein, Munendra S N)

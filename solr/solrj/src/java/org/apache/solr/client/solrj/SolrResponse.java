@@ -27,6 +27,7 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SuppressForbidden;
 
 
 /**
@@ -60,6 +61,7 @@ public abstract class SolrResponse implements Serializable, MapWriter {
     return new SolrException(errorCode, (String)exp.get("msg"));
   }
   
+  @SuppressForbidden(reason = "XXX: security hole")
   public static byte[] serializable(SolrResponse response) {
     try {
       ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
@@ -71,6 +73,7 @@ public abstract class SolrResponse implements Serializable, MapWriter {
     }
   }
   
+  @SuppressForbidden(reason = "XXX: security hole")
   public static SolrResponse deserialize(byte[] bytes) {
     try {
       ByteArrayInputStream byteStream = new ByteArrayInputStream(bytes);

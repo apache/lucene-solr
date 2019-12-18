@@ -109,7 +109,7 @@ Solr supports modifying, adding and removing child documents as part of atomic u
 Schema and configuration requirements are detailed in
 <<updating-parts-of-documents#field-storage, Field Storage>> and <<indexing-nested-documents#schema-configuration, Indexing Nested Documents>>. +
 Under the hood, Solr retrieves the whole nested structure, deletes the old documents,
-and re-indexes the structure after applying the atomic update. +
+and reindexes the structure after applying the atomic update. +
 Syntactically, nested/partial updates are very similar to a regular atomic update,
 as demonstrated by the examples below.
 
