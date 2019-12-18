@@ -329,7 +329,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   private class NotACollectionException extends Exception {
   }
 
-  private ShardStateProvider shardStateProvider = new DirectShardState(s -> getLiveNodes().contains(s));
+  private ShardStateProvider shardStateProvider = new DirectShardState(s -> getLiveNodes().contains(s), coll -> getClusterState().getCollectionOrNull(coll));
   @Override
   public ShardStateProvider getShardStateProvider(String coll) {
     return shardStateProvider;

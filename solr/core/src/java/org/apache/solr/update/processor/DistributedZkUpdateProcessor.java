@@ -1124,7 +1124,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         Exception getLeaderExc = null;
         Replica leaderProps = null;
         try {
-          leaderProps = zkController.getZkStateReader().getLeader(collection, shardId);
+          leaderProps = req.getCore().getShardStateProvider().getLeader(collection, shardId);
           if (leaderProps != null) {
             leaderCoreNodeName = leaderProps.getName();
           }

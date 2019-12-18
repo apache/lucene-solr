@@ -35,12 +35,13 @@ public interface ShardStateProvider {
    */
   Replica getLeader(Slice slice);
 
+  Replica getLeader(String coll, String slice);
+
   /**Get the leader of the slice. Wait for one if there is no leader
    * @param timeout how much time to wait for a leader to com eup. -1 means the default value will be used
    * Throws an {@link InterruptedException} if interrupted in between
    */
   Replica getLeader(Slice slice, int timeout) throws InterruptedException;
-
 
   /** Same as {@link #getLeader(Slice, int)}. But without the Slice Object
    *

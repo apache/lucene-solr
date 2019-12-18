@@ -219,7 +219,7 @@ public class ZkStateReader implements SolrCloseable {
 
   private Set<ClusterPropertiesListener> clusterPropertiesListeners = ConcurrentHashMap.newKeySet();
 
-  private final ShardStateProvider directReplicaState = new DirectShardState(s -> liveNodes.contains(s)) {
+  private final ShardStateProvider directReplicaState = new DirectShardState(s -> liveNodes.contains(s), s -> clusterState.getCollectionOrNull(s)) {
     @Override
     public Replica getLeader(Slice slice, int timeout) throws InterruptedException {
       return getLeaderRetry(slice.collection, slice.getName(), timeout);
@@ -952,6 +952,9 @@ public class ZkStateReader implements SolrCloseable {
     return null;
   }
 
+  /**Use {@link ShardStateProvider#getLeader(String, String)} instead
+   */
+  @Deprecated
   public Replica getLeader(String collection, String shard) {
     if (clusterState != null) {
       DocCollection docCollection = clusterState.getCollectionOrNull(collection);

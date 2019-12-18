@@ -110,7 +110,13 @@ public interface ClusterStateProvider extends SolrCloseable {
   String getPolicyNameByCollection(String coll);
 
   default ShardStateProvider getShardStateProvider(String coll) {
-    return new DirectShardState(s -> getLiveNodes().contains(s)) ;
+    return new DirectShardState(s -> getLiveNodes().contains(s), s -> {
+      try {
+        return getCollection(s);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }) ;
   }
 
   void connect();

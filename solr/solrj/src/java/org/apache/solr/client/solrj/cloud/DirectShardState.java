@@ -17,8 +17,10 @@
 
 package org.apache.solr.client.solrj.cloud;
 
+import java.util.function.Function;
 import java.util.function.Predicate;
 
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 
@@ -28,9 +30,11 @@ import org.apache.solr.common.cloud.Slice;
 public class DirectShardState implements ShardStateProvider {
 
   private final Predicate<String> isNodeLive;
+  private final Function<String , DocCollection> collectionProvider;
 
-  public DirectShardState(Predicate<String> isNodeLive) {
+  public DirectShardState(Predicate<String> isNodeLive, Function<String, DocCollection> collectionProvider) {
     this.isNodeLive = isNodeLive;
+    this.collectionProvider = collectionProvider;
   }
 
   @Override
@@ -41,6 +45,15 @@ public class DirectShardState implements ShardStateProvider {
   @Override
   public Replica getLeader(Slice slice) {
     return slice.getLeader();
+  }
+
+  @Override
+  public Replica getLeader(String coll, String slice) {
+    DocCollection c = collectionProvider.apply(coll);
+    if (c == null) return null;
+    Slice sl = c.getSlice(slice);
+    if (sl == null) return null;
+    return getLeader(sl);
   }
 
   @Override
