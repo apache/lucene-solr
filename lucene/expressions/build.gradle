@@ -14,6 +14,7 @@ dependencies {
   implementation 'org.ow2.asm:asm'
   implementation('org.ow2.asm:asm-commons', {
     exclude group: "org.ow2.asm", module: "asm-tree"
+    exclude group: "org.ow2.asm", module: "asm-analysis"
   })
 
   testImplementation project(':lucene:test-framework')
