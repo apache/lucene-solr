@@ -76,6 +76,7 @@ public class DirectSpellChecker {
   /** minimum length of a query word to return suggestions */
   private int minQueryLength = 4;
   /** maximum length of a query word to return suggestions */
+  /** TODO: tests, documentation update */
   private int maxQueryLength = 0;
   /** value in [0..1] (or absolute number &gt;= 1) representing the maximum
    *  number of documents (of the total) a query term can appear in to
