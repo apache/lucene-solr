@@ -217,7 +217,7 @@ public class JapaneseNumberFilter extends TokenFilter {
         term = termAttr.toString();
         numeralTerm = isNumeral(term) || isNumeralPunctuation(term);
         if (isNumeral(term)) {
-          // lastNumeralTokenState = captureState();
+          lastNumeralTokenState = captureState();
         }
       }
     }
