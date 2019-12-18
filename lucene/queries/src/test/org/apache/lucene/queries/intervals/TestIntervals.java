@@ -363,6 +363,28 @@ public class TestIntervals extends LuceneTestCase {
     checkVisits(source, 3, "pease", "hot");
   }
 
+  public void testUnorderedWithRepeats() throws IOException {
+    IntervalsSource source = Intervals.unordered(Intervals.term("pease"), Intervals.term("pease"), Intervals.term("hot"));
+    checkIntervals(source, "field1", 3, new int[][]{
+        {}, { 0, 3, 2, 6, 3, 17 }, { 0, 5, 3, 6 }, {}, { 0, 3, 2, 6, 3, 17 }, {}
+    });
+    MatchesIterator mi = getMatches(source, 1, "field1");
+    assertMatch(mi, 0, 3, 0, 25);
+    MatchesIterator sub = mi.getSubMatches();
+    assertNotNull(sub);
+    assertMatch(sub, 0, 0, 0, 5);
+    assertMatch(sub, 2, 2, 15, 18);
+    assertMatch(sub, 3, 3, 20, 25);
+  }
+
+  public void testUnorderedWithRepeatsAndMaxGaps() throws IOException {
+    IntervalsSource source = Intervals.maxgaps(2,
+        Intervals.unordered(Intervals.term("pease"), Intervals.term("pease"), Intervals.term("hot")));
+    checkIntervals(source, "field1", 3, new int[][]{
+        {}, { 0, 3, 2, 6 }, { 3, 6 }, {}, { 0, 3, 2, 6 }, {}
+    });
+  }
+
   public void testIntervalDisjunction() throws IOException {
     IntervalsSource source = Intervals.or(Intervals.term("pease"), Intervals.term("hot"), Intervals.term("notMatching"));
     checkIntervals(source, "field1", 4, new int[][]{

@@ -21,7 +21,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
@@ -33,7 +35,19 @@ class UnorderedIntervalsSource extends ConjunctionIntervalsSource {
     if (sources.size() == 1) {
       return sources.get(0);
     }
-    return new UnorderedIntervalsSource(flatten(sources));
+    return new UnorderedIntervalsSource(deduplicate(flatten(sources)));
+  }
+
+  private static List<IntervalsSource> deduplicate(List<IntervalsSource> sources) {
+    Map<IntervalsSource, Integer> counts = new HashMap<>();
+    for (IntervalsSource source : sources) {
+      counts.compute(source, (k, v) -> v == null ? 1 : v + 1);
+    }
+    List<IntervalsSource> deduplicated = new ArrayList<>();
+    for (IntervalsSource source : counts.keySet()) {
+      deduplicated.add(DuplicateIntervalsSource.build(source, counts.get(source)));
+    }
+    return deduplicated;
   }
 
   private static List<IntervalsSource> flatten(List<IntervalsSource> sources) {
@@ -94,9 +108,8 @@ class UnorderedIntervalsSource extends ConjunctionIntervalsSource {
 
     private final PriorityQueue<IntervalIterator> queue;
     private final IntervalIterator[] subIterators;
-    private final int[] innerPositions;
 
-    int start = -1, end = -1, firstEnd, queueEnd;
+    int start = -1, end = -1, slop, queueEnd;
 
     UnorderedIntervalIterator(List<IntervalIterator> subIterators) {
       super(subIterators);
@@ -107,7 +120,6 @@ class UnorderedIntervalsSource extends ConjunctionIntervalsSource {
         }
       };
       this.subIterators = new IntervalIterator[subIterators.size()];
-      this.innerPositions = new int[subIterators.size() * 2];
 
       for (int i = 0; i < subIterators.size(); i++) {
         this.subIterators[i] = subIterators.get(i);
@@ -146,8 +158,11 @@ class UnorderedIntervalsSource extends ConjunctionIntervalsSource {
       // then, minimize it
       do {
         start = queue.top().start();
-        firstEnd = queue.top().end();
         end = queueEnd;
+        slop = width();
+        for (IntervalIterator it : subIterators) {
+          slop -= it.width();
+        }
         if (queue.top().end() == end)
           return start;
         IntervalIterator it = queue.pop();
@@ -161,22 +176,7 @@ class UnorderedIntervalsSource extends ConjunctionIntervalsSource {
 
     @Override
     public int gaps() {
-      for (int i = 0; i < subIterators.length; i++) {
-        if (subIterators[i].end() > end) {
-          innerPositions[i * 2] = start;
-          innerPositions[i * 2 + 1] = firstEnd;
-        }
-        else {
-          innerPositions[i * 2] = subIterators[i].start();
-          innerPositions[i * 2 + 1] = subIterators[i].end();
-        }
-      }
-      Arrays.sort(innerPositions);
-      int gaps = 0;
-      for (int i = 1; i < subIterators.length; i++) {
-        gaps += (innerPositions[i * 2] - innerPositions[i * 2 - 1] - 1);
-      }
-      return gaps;
+      return slop;
     }
 
     @Override
