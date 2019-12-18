@@ -40,6 +40,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.Version;
 import org.junit.Ignore;
 
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
@@ -412,7 +413,7 @@ public class TestLatLonShape extends LuceneTestCase {
                                        encodeLatitude(t.getY(1)), encodeLongitude(t.getX(1)), t.isEdgefromPolygon(1),
                                        encodeLatitude(t.getY(2)), encodeLongitude(t.getX(2)), t.isEdgefromPolygon(2));
     ShapeField.DecodedTriangle decoded = new ShapeField.DecodedTriangle();
-    ShapeField.decodeTriangle(encoded, decoded);
+    ShapeField.decodeTriangle(encoded, decoded, Version.LATEST);
 
     int expected =rectangle2D.intersectsTriangle(decoded.aX, decoded.aY, decoded.bX, decoded.bY, decoded.cX, decoded.cY) ? 0 : 1;
 

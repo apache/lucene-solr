@@ -22,6 +22,7 @@ import org.apache.lucene.geo.XYRectangle;
 import org.apache.lucene.geo.XYRectangle2D;
 import org.apache.lucene.index.PointValues;
 import org.apache.lucene.util.NumericUtils;
+import org.apache.lucene.util.Version;
 
 import static org.apache.lucene.geo.XYEncodingUtils.decode;
 
@@ -78,9 +79,9 @@ public class XYShapeBoundingBoxQuery extends ShapeQuery {
 
   /** returns true if the query matches the encoded triangle */
   @Override
-  protected boolean queryMatches(byte[] t, ShapeField.DecodedTriangle scratchTriangle, QueryRelation queryRelation) {
+  protected boolean queryMatches(byte[] t, ShapeField.DecodedTriangle scratchTriangle, QueryRelation queryRelation, Version version) {
     // decode indexed triangle
-    ShapeField.decodeTriangle(t, scratchTriangle);
+    ShapeField.decodeTriangle(t, scratchTriangle, version);
 
     double aY = decode(scratchTriangle.aY);
     double aX = decode(scratchTriangle.aX);
@@ -98,8 +99,8 @@ public class XYShapeBoundingBoxQuery extends ShapeQuery {
   }
 
   @Override
-  protected Component2D.WithinRelation queryWithin(byte[] t, ShapeField.DecodedTriangle scratchTriangle) {
-    ShapeField.decodeTriangle(t, scratchTriangle);
+  protected Component2D.WithinRelation queryWithin(byte[] t, ShapeField.DecodedTriangle scratchTriangle, Version version) {
+    ShapeField.decodeTriangle(t, scratchTriangle, version);
 
     double aY = decode(scratchTriangle.aY);
     double aX = decode(scratchTriangle.aX);

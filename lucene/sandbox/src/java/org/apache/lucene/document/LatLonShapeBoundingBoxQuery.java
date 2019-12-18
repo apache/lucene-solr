@@ -21,6 +21,7 @@ import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.geo.Rectangle2D;
 import org.apache.lucene.index.PointValues.Relation;
+import org.apache.lucene.util.Version;
 
 /**
  * Finds all previously indexed geo shapes that intersect the specified bounding box.
@@ -51,9 +52,9 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
 
   /** returns true if the query matches the encoded triangle */
   @Override
-  protected boolean queryMatches(byte[] t, ShapeField.DecodedTriangle scratchTriangle, QueryRelation queryRelation) {
+  protected boolean queryMatches(byte[] t, ShapeField.DecodedTriangle scratchTriangle, QueryRelation queryRelation, Version version) {
     // decode indexed triangle
-    ShapeField.decodeTriangle(t, scratchTriangle);
+    ShapeField.decodeTriangle(t, scratchTriangle, version);
 
     int aY = scratchTriangle.aY;
     int aX = scratchTriangle.aX;
@@ -71,9 +72,9 @@ final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
   }
 
   @Override
-  protected Component2D.WithinRelation queryWithin(byte[] t, ShapeField.DecodedTriangle scratchTriangle) {
+  protected Component2D.WithinRelation queryWithin(byte[] t, ShapeField.DecodedTriangle scratchTriangle, Version version) {
     // decode indexed triangle
-    ShapeField.decodeTriangle(t, scratchTriangle);
+    ShapeField.decodeTriangle(t, scratchTriangle, version);
 
     return rectangle2D.withinTriangle(scratchTriangle.aX, scratchTriangle.aY, scratchTriangle.ab,
                                       scratchTriangle.bX, scratchTriangle.bY, scratchTriangle.bc,
