@@ -951,7 +951,7 @@ public class Http2SolrClient extends SolrClient {
       sslCheckPeerName = sslCheckPeerName || Boolean.getBoolean("tests.jettySsl.clientAuth");
     }
 
-    sslContextFactory.setNeedClientAuth(sslCheckPeerName);
+    sslContextFactory.setNeedClientAuth(Boolean.getBoolean("solr.jetty.ssl.needClientAuth"));
     return sslContextFactory;
   }
 
