@@ -120,7 +120,7 @@ subprojects {
             jarName        : file.toPath().getFileName().toString(),
             path           : file,
             module         : resolvedArtifact.moduleVersion,
-            checksum       : new DigestUtils(MessageDigestAlgorithms.SHA_1).digestAsHex(file),
+            checksum       : provider { new DigestUtils(MessageDigestAlgorithms.SHA_1).digestAsHex(file).trim() },
             // We keep track of the files referenced by this dependency (sha, license, notice, etc.)
             // so that we can determine unused dangling files later on.
             referencedFiles: []
@@ -144,7 +144,7 @@ subprojects {
         } else {
           dep.referencedFiles += expectedChecksumFile
           def expected = expectedChecksumFile.getText("UTF-8").trim()
-          def actual = dep.checksum.trim()
+          def actual = dep.checksum.get()
           if (expected.compareToIgnoreCase(actual) != 0) {
             errors << "Dependency checksum mismatch ('${dep.module}'), expected it to be: ${expected}, but was: ${actual}"
           } else {
@@ -234,9 +234,58 @@ subprojects {
   licenses.dependsOn validateJarChecksums, validateJarLicenses
 }
 
+// Add top-project level tasks validating dangling files
+// and regenerating dependency checksums.
 configure([project(":solr"), project(":lucene"),]) {
-  def validationTasks = subprojects.collect { it.tasks.matching { it.name == "licenses" } }
-  def jarInfoTasks = subprojects.collect { it.tasks.matching { it.name == "collectJarInfos" } }
+  def validationTasks = subprojects.collectMany { it.tasks.matching { it.name == "licenses" } }
+  def jarInfoTasks = subprojects.collectMany { it.tasks.matching { it.name == "collectJarInfos" } }
+
+  // Update dependency checksums.
+  task updateLicenses() {
+    group = 'Dependency validation'
+    description = "Write or update checksums of dependencies"
+    dependsOn jarInfoTasks
+
+    doLast {
+      licensesDir.mkdirs()
+
+      // Clean any previous checksums. In theory we wouldn't have to do it --
+      // dangling files from any previous JARs would be reported;
+      // it automates the process of updating versions and makes it easier though so
+      // why not.
+      project.delete fileTree(licensesDir, {
+        include "*.sha1"
+        exclude checkDanglingLicenseFiles.ext.exclude
+      })
+
+      def updated = []
+      jarInfoTasks.collectMany { task -> task.project.jarInfos }.each { dep ->
+        def expectedChecksumFile = file("${licensesDir}/${dep.jarName}.sha1")
+        def actual = dep.checksum.get()
+        if (expectedChecksumFile.exists()) {
+          def expected = expectedChecksumFile.getText("UTF-8").trim()
+          if (expected.compareToIgnoreCase(actual) == 0) {
+            return;
+          }
+        }
+
+        updated += "Updated checksum ('${dep.module}'): ${expectedChecksumFile}"
+        expectedChecksumFile.write(actual + "\n", "UTF-8")
+      }
+
+      updated.sort().each { line -> logger.log(LogLevel.LIFECYCLE, line) }
+    }
+  }
+
+  // Any validation task must run after all updates have been applied.
+  // We add an ordering constraint that any validation task (or its dependency subgraph)
+  // must run after updateLicenses
+  validationTasks
+      .collectMany { task -> [task, task.dependsOn]}
+      .flatten()
+      .each { task ->
+        task.mustRunAfter updateLicenses
+      }
 
   // Check for dangling files in the licenses folder.
   task checkDanglingLicenseFiles() {
@@ -267,43 +316,6 @@ configure([project(":solr"), project(":lucene"),]) {
   }
 
   licenses.dependsOn checkDanglingLicenseFiles
-
-  // Update dependency checksums.
-  task updateLicenses() {
-    group = 'Dependency validation'
-    description = "Write or update checksums of dependencies"
-    dependsOn jarInfoTasks
-
-    doLast {
-      licensesDir.mkdirs()
-
-      // Clean any previous checksums. In theory we wouldn't have to do it --
-      // dangling files from any previous JARs would be reported;
-      // it automates the process of updating versions and makes it easier though so
-      // why not.
-      project.delete fileTree(licensesDir, {
-        include "*.sha1"
-        exclude checkDanglingLicenseFiles.ext.exclude
-      })
-
-      def updated = []
-      jarInfoTasks.collectMany { task -> task.project.jarInfos }.each { dep ->
-        def expectedChecksumFile = file("${licensesDir}/${dep.jarName}.sha1")
-        if (expectedChecksumFile.exists()) {
-          def expected = expectedChecksumFile.getText("UTF-8").trim()
-          def actual = dep.checksum.trim()
-          if (expected.compareToIgnoreCase(actual) == 0) {
-            return;
-          }
-        }
-
-        updated += "Updated checksum ('${dep.module}'): ${expectedChecksumFile}"
-        expectedChecksumFile.write(dep.checksum.trim() + "\n", "UTF-8")
-      }
-
-      updated.sort().each { line -> logger.log(LogLevel.LIFECYCLE, line) }
-    }
-  }
 }
 
 // Exclude files that are not a result of direct dependencies but have to be there.
