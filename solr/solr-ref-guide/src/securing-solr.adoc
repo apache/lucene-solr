@@ -58,7 +58,7 @@ Authorization makes sure that only users with the necessary roles/permissions ca
 
 Audit logging will record an audit trail of incoming reqests to your cluster, such as users being denied access to admin APIs. Learn more about audit logging and how to implement an audit logger plugin here in the <<audit-logging.adoc#audit-logging,Audit Logging>> chapter.
 
-== Securing Zookeeper Traffic
+== Securing ZooKeeper Traffic
 
-Zookeeper is a central and important part of a SolrCloud cluster and understanding how to secure
+ZooKeeper is a central and important part of a SolrCloud cluster and understanding how to secure
 its content is covered in the <<zookeeper-access-control.adoc#zookeeper-access-control,ZooKeeper Access Control>> page.

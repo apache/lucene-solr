@@ -128,7 +128,7 @@ Using the boostrap command with a ZooKeeper chroot in the `-zkhost` parameter, e
 ./server/scripts/cloud-scripts/zkcli.sh -zkhost 127.0.0.1:9983 -cmd putfile /my_zk_file.txt /tmp/my_local_file.txt
 ----
 
-=== Link a Collection to a ConfigSet
+=== Link a Collection to a Configset
 
 [source,bash]
 ----

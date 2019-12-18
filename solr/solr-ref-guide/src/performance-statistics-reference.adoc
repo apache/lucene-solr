@@ -102,11 +102,11 @@ they are very different in nature, thus making it difficult to measure the laten
 local requests separately. Solr 8.4 introduced additional statistics that help to do this.
 
 These metrics are structured the same as `requestTimes` and `totalTime` metrics above but they use
-different full names, eg. `QUERY./select.distrib.requestTimes` and `QUERY./select.local.requestTimes`.
+different full names, e.g., `QUERY./select.distrib.requestTimes` and `QUERY./select.local.requestTimes`.
 The metrics under the `distrib` path correspond to the time it takes for a (potentially) distributed
 request to complete all remote calls plus any local processing, and return the result to the caller.
 The metrics under the `local` path correspond to the time it takes for a local call (non-distributed,
-i.e. being processed only by the Solr core where the handler operates) to complete.
+i.e., being processed only by the Solr core where the handler operates) to complete.
 
 == Update Handler
 

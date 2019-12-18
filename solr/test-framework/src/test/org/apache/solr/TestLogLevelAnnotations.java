@@ -17,27 +17,122 @@
 
 package org.apache.solr;
 
+import java.util.Map;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.Configuration;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.util.LogLevel;
-import org.junit.Test;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 @SuppressForbidden(reason="We need to use log4J2 classes to access the log levels")
-@LogLevel("org.apache.solr.ClassLogLevel=error;org.apache.solr.MethodLogLevel=warn")
+@LogLevel("org.apache.solr.bogus_logger.ClassLogLevel=error;org.apache.solr.bogus_logger.MethodLogLevel=warn")
 public class TestLogLevelAnnotations extends SolrTestCaseJ4 {
 
-  @Test
+  private static final String bogus_logger_prefix = "org.apache.solr.bogus_logger";
+  
+  /** 
+   * We don't want a hardocded assumption here because it may change based on how the user runs the test.
+   */
+  public static final Level DEFAULT_LOG_LEVEL = LogManager.getRootLogger().getLevel();
+  
+  /** 
+   * Sanity check that our <code>AfterClass</code> logic is valid, and isn't broken right from the start
+   *
+   * @see #checkLogLevelsAfterClass
+   */
+  @BeforeClass
+  public static void checkLogLevelsBeforeClass() {
+    final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+    final Configuration config = ctx.getConfiguration();
+
+    // NOTE: we're checking the CONFIGURATION of the loggers, not the "effective" value of the Logger
+    assertEquals(DEFAULT_LOG_LEVEL, config.getRootLogger().getLevel());
+    assertEquals("Your Logger conf sets a level on a bogus package that breaks this test: "
+                 + bogus_logger_prefix,
+                 config.getRootLogger(),
+                 config.getLoggerConfig(bogus_logger_prefix));
+    assertEquals(Level.ERROR, config.getLoggerConfig(bogus_logger_prefix + ".ClassLogLevel").getLevel());
+    assertEquals(Level.WARN, config.getLoggerConfig(bogus_logger_prefix + ".MethodLogLevel").getLevel());
+
+    // Now sanity check the EFFECTIVE Level of these loggers before the methods run...
+    assertEquals(DEFAULT_LOG_LEVEL, LogManager.getRootLogger().getLevel());
+    assertEquals(DEFAULT_LOG_LEVEL, LogManager.getLogger(bogus_logger_prefix).getLevel());
+    assertEquals(Level.ERROR, LogManager.getLogger(bogus_logger_prefix + ".ClassLogLevel").getLevel());
+    assertEquals(Level.WARN, LogManager.getLogger(bogus_logger_prefix + ".MethodLogLevel").getLevel());
+  }
+
+  /** 
+   * Check that the expected log level <em>configurations</em> have been reset after the test
+   * <p>
+   * <b>NOTE:</b> We only validate <code>@LogLevel</code> modifications made at the 
+   * {@link #testMethodLogLevels} level,  not at the 'class' level, because of the lifecycle of junit 
+   * methods: This <code>@AfterClass</code> will run before the <code>SolrTestCaseJ4</code> 
+   * <code>@AfterClass</code> method where the 'class' <code>@LogLevel</code> modifications will be reset.
+   * </p>
+   *
+   * @see #checkLogLevelsBeforeClass
+   * @see #testWhiteBoxMethods
+   */
+  @AfterClass
+  public static void checkLogLevelsAfterClass() {
+    final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+    final Configuration config = ctx.getConfiguration();
+    
+    // NOTE: we're checking the CONFIGURATION of the loggers, not the "effective" value of the Logger
+    assertEquals(DEFAULT_LOG_LEVEL, config.getRootLogger().getLevel());
+    assertEquals(bogus_logger_prefix
+                 + " should have had it's config unset; should now return the 'root' LoggerConfig",
+                 config.getRootLogger(),
+                 config.getLoggerConfig(bogus_logger_prefix));
+    assertEquals(Level.ERROR, config.getLoggerConfig(bogus_logger_prefix + ".ClassLogLevel").getLevel());
+    assertEquals(Level.WARN, config.getLoggerConfig(bogus_logger_prefix + ".MethodLogLevel").getLevel());
+
+    // Now sanity check the EFFECTIVE Level of these loggers...
+    assertEquals(DEFAULT_LOG_LEVEL, LogManager.getRootLogger().getLevel());
+    assertEquals(DEFAULT_LOG_LEVEL, LogManager.getLogger(bogus_logger_prefix).getLevel());
+    assertEquals(Level.ERROR, LogManager.getLogger(bogus_logger_prefix + ".ClassLogLevel").getLevel());
+    assertEquals(Level.WARN, LogManager.getLogger(bogus_logger_prefix + ".MethodLogLevel").getLevel());
+  }
+  
   public void testClassLogLevels() {
-    assertEquals(Level.ERROR, LogManager.getLogger("org.apache.solr.ClassLogLevel").getLevel());
-    assertEquals(Level.WARN, LogManager.getLogger("org.apache.solr.MethodLogLevel").getLevel());
+    assertEquals(DEFAULT_LOG_LEVEL, LogManager.getLogger("org.apache.solr.bogus_logger").getLevel());
+    assertEquals(Level.ERROR, LogManager.getLogger(bogus_logger_prefix + ".ClassLogLevel").getLevel());
+    assertEquals(Level.WARN, LogManager.getLogger(bogus_logger_prefix + ".MethodLogLevel").getLevel());
   }
 
-  @Test
-  @LogLevel("org.apache.solr.MethodLogLevel=debug")
+  @LogLevel("org.apache.solr.bogus_logger.MethodLogLevel=debug;org.apache.solr.bogus_logger=INFO")
   public void testMethodLogLevels() {
-    assertEquals(Level.ERROR, LogManager.getLogger("org.apache.solr.ClassLogLevel").getLevel());
-    assertEquals(Level.DEBUG, LogManager.getLogger("org.apache.solr.MethodLogLevel").getLevel());
+    assertEquals(Level.INFO, LogManager.getLogger(bogus_logger_prefix + ".BogusClass").getLevel());
+    assertEquals(Level.ERROR, LogManager.getLogger(bogus_logger_prefix + ".ClassLogLevel").getLevel());
+    assertEquals(Level.DEBUG, LogManager.getLogger(bogus_logger_prefix + ".MethodLogLevel").getLevel());
   }
 
+  /**
+   * Directly test the methods in the {@link LogLevel} annotation class
+   */
+  @LogLevel("org.apache.solr.bogus_logger.MethodLogLevel=TRACE")
+  public void testWhiteBoxMethods() {
+    final LoggerContext ctx = (LoggerContext) LogManager.getContext(false);
+    final Configuration config = ctx.getConfiguration();
+
+    final Map<String,Level> oldLevels = LogLevel.Configurer.setLevels(bogus_logger_prefix + "=TRACE");
+    //
+    assertEquals(oldLevels.toString(), 1, oldLevels.size());
+    assertNull(oldLevels.get(bogus_logger_prefix));
+    //
+    assertEquals(Level.TRACE, config.getLoggerConfig(bogus_logger_prefix).getLevel());
+    assertEquals(Level.TRACE, LogManager.getLogger(bogus_logger_prefix).getLevel());
+    
+    // restore (to 'unset' values)...
+    LogLevel.Configurer.restoreLogLevels(oldLevels);
+    assertEquals(bogus_logger_prefix
+                 + " should have had it's config unset; should now return the 'root' LoggerConfig",
+                 config.getRootLogger(),
+                 config.getLoggerConfig(bogus_logger_prefix));
+    assertEquals(DEFAULT_LOG_LEVEL, LogManager.getLogger(bogus_logger_prefix).getLevel());
+    
+  }
 }

@@ -47,7 +47,7 @@ Logging:: Retrieve and modify registered loggers.
 v2: `api/node/logging` |{solr-javadocs}/solr-core/org/apache/solr/handler/admin/ShowFileRequestHandler.html[LoggingHandler] |`_ADMIN_LOGGING`
 |===
 
-Luke:: Expose the internal lucene index. This handler must have a collection name in the path to the endpoint.
+Luke:: Expose the internal Lucene index. This handler must have a collection name in the path to the endpoint.
 +
 *Documentation*: http://wiki.apache.org/solr/LukeRequestHandler
 +

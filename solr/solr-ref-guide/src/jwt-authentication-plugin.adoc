@@ -163,7 +163,7 @@ Let's comment on this config:
 
 == Editing JWT Authentication Plugin Configuration
 
-All properties mentioned above can be set or changed using the Config Edit API. You can thus start with a simple configuration with only `class` and `blockUnknown=false` configured and then configure the rest using the API.
+All properties mentioned above can be set or changed using the <<basic-authentication-plugin.adoc#editing-basic-authentication-plugin-configuration,Authentication API>>. You can thus start with a simple configuration with only `class` and `blockUnknown=false` configured and then configure the rest using the API.
 
 === Set a Configuration Property
 
