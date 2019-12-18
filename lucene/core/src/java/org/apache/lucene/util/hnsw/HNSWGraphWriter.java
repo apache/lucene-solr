@@ -20,7 +20,9 @@ package org.apache.lucene.util.hnsw;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.util.Accountable;
@@ -110,11 +112,10 @@ public final class HNSWGraphWriter implements Accountable {
     Neighbor ep = new ImmutableNeighbor(enterPoint, distFromEp);
 
     int level = levelGenerator.randomLevel();
-
+    FurthestNeighbors results = new FurthestNeighbors(efConst, ep);
     // down to the level from the hnsw's top level
     for (int l = hnsw.topLevel(); l > level; l--) {
-      NearestNeighbors neighbors = hnsw.searchLayer(value, ep, 1, l, vectorValues);
-      ep = neighbors.top();
+      hnsw.searchLayer(value, results, efConst, l, vectorValues);
     }
 
     // down to level 0 with placing the doc to each layer
@@ -125,14 +126,14 @@ public final class HNSWGraphWriter implements Accountable {
         continue;
       }
 
-      NearestNeighbors neighbors = hnsw.searchLayer(value, ep, efConst, l, vectorValues);
-      ep = neighbors.top();
+      hnsw.searchLayer(value, results, efConst, l, vectorValues);
       int maxConnections = l == 0 ? maxConn0 : maxConn;
-      for (int i = 0; i < maxConnections; i++) {
-        if (neighbors.size() == 0) {
-          break;
-        }
-        Neighbor n = neighbors.pop();
+      NearestNeighbors neighbors = new NearestNeighbors(maxConnections, results.top());
+      for (Neighbor n : results) {
+        neighbors.insertWithOverflow(n);
+      }
+      for (Neighbor n : neighbors) {
+        // TODO: limit *total* num connections by pruning (shrinking)
         hnsw.connectNodes(l, docId, n.docId(), n.distance(), maxConnections);
       }
     }

@@ -69,7 +69,27 @@ final class DeferredNeighbor extends Neighbor {
 
   @Override
   public int compareTo(Neighbor o) {
-    return this.docId() < o.docId() ? -1 : 1;
+    return this.docId() - o.docId();
   }
+
+  @Override
+  public boolean equals(Object o) {
+    return o instanceof Neighbor && this.docId() == ((Neighbor) o).docId();
+  }
+
+  @Override
+  public int hashCode() {
+    return 39 + 61 * docId;
+  }
+
+  @Override
+  public String toString() {
+    if (query != null) {
+      return "(" + docId() + ", " + distance() + ")";
+    } else {
+      return "(" + docId() + ", DEFERRED)";
+    }
+  }
+
 }
 

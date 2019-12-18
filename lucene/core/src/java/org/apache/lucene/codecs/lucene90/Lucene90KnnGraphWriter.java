@@ -165,7 +165,6 @@ public final class Lucene90KnnGraphWriter extends KnnGraphWriter {
     }
   }
 
-  /*
   @Override
   public void merge(MergeState mergeState) throws IOException {
     for (KnnGraphReader reader : mergeState.knnGraphReaders) {
@@ -180,7 +179,6 @@ public final class Lucene90KnnGraphWriter extends KnnGraphWriter {
     }
     finish();
   }
-  */
 
   /**
    * Merges the segment HNSW graphs by constructing a new merged graph using HNSWGraph

@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.util.Accountable;
@@ -50,39 +51,32 @@ public final class HNSWGraph implements Accountable {
   /**
    * Searches the nearest neighbors for a specified query at a level.
    * @param query search query vector
-   * @param ep enter point to fhe level
+   * @param results on entry, has enter points to this level. On exit, the nearest neighbors in this level
    * @param ef the number of nodes to be searched
    * @param level graph level
    * @param vectorValues vector values
    * @return nearest neighbors
    */
-  public NearestNeighbors searchLayer(float[] query, Neighbor ep, int ef, int level, VectorValues vectorValues) throws IOException {
+  void searchLayer(float[] query, FurthestNeighbors results, int ef, int level, VectorValues vectorValues) throws IOException {
     if (level >= layers.size()) {
       throw new IllegalArgumentException("layer does not exist for the level: " + level);
     }
 
     Layer layer = layers.get(level);
-    if (!layer.getNodes().contains(ep.docId())) {
-      throw new IllegalArgumentException("enter point " + ep.docId() + "does not exist at layer " + level);
+    TreeSet<Neighbor> candidates = new TreeSet<>();
+    for (Neighbor n : results) {
+      // TODO: candidates should get neighbors of neighbors
+      candidates.add(n);
     }
-
-    Set<Integer> visited = new HashSet<>(ep.docId());
-    NearestNeighbors candidates = new NearestNeighbors(ef, ep);
-    FurthestNeighbors results = new FurthestNeighbors(ef, ep);
-
-    if (ep.isDeferred()) {
-      ep.prepareQuery(query, vectorValues, distFunc);
-    }
-
+    // set of docids that have been visited by search on this layer, used to avoid backtracking
+    Set<Integer> visited = new HashSet<>();
+    // We want to efficiently pop the best (nearest, least distance) candidate, so use NearestNeighbors,
+    // but we don't want to overflow the heap and lose the best candidate!
     while (candidates.size() > 0) {
-      Neighbor c = candidates.pop();
+      Neighbor c = candidates.pollFirst();
       Neighbor f = results.top();
-      if (c.isDeferred()) {
-        c.prepareQuery(query, vectorValues, distFunc);
-      }
-      if (f.isDeferred()) {
-        f.prepareQuery(query, vectorValues, distFunc);
-      }
+      assert c.isDeferred() == false;
+      assert f.isDeferred() == false;
       if (c.distance() > f.distance()) {
         break;
       }
@@ -91,15 +85,11 @@ public final class HNSWGraph implements Accountable {
           continue;
         }
         visited.add(e.docId());
-
-        f = results.top();
-        if (f.isDeferred()) {
-          f.prepareQuery(query, vectorValues, distFunc);
-        }
+        assert f.isDeferred() == false;
         float dist = distance(query, e.docId(), vectorValues);
         if (dist < f.distance() || results.size() < ef) {
           Neighbor n = new ImmutableNeighbor(e.docId(), dist);
-          candidates.insertWithOverflow(n);
+          candidates.add(n);
           Neighbor popped = results.insertWithOverflow(n);
           if (popped != null && popped != n) {
             f = results.top();
@@ -109,7 +99,7 @@ public final class HNSWGraph implements Accountable {
     }
 
     //System.out.println("level=" + level + ", visited nodes=" + visited.size());
-    return pickNearestNeighbor(results);
+    //return pickNearestNeighbor(results);
   }
 
   private float distance(float[] query, int docId, VectorValues vectorValues) throws IOException {
@@ -120,7 +110,7 @@ public final class HNSWGraph implements Accountable {
     return VectorValues.distance(query, other, distFunc);
   }
 
-  private NearestNeighbors pickNearestNeighbor(FurthestNeighbors queue) {
+  static NearestNeighbors pickNearestNeighbor(Neighbors queue) {
     NearestNeighbors nearests = new NearestNeighbors(queue.size());
     Set<Integer> addedDocs = new HashSet<>();
     int ef = queue.size();
@@ -226,7 +216,6 @@ public final class HNSWGraph implements Accountable {
       throw new IllegalArgumentException("layer does not exist for level: " + level);
     }
     layer.connectNodes(node1, node2, dist);
-    layer.connectNodes(node2, node1, dist);
     /*
     // ensure friends size <= maxConnections
     //
