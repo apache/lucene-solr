@@ -181,6 +181,9 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
     return cache.get(key, k -> {
       inserts.increment();
       V value = mappingFunction.apply(k);
+      if (value == null) {
+        return null;
+      }
       ramBytes.add(RamUsageEstimator.sizeOfObject(key, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED) +
           RamUsageEstimator.sizeOfObject(value, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED));
       ramBytes.add(RamUsageEstimator.LINKED_HASHTABLE_RAM_BYTES_PER_ENTRY);

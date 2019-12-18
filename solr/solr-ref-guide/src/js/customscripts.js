@@ -56,7 +56,7 @@ $( document ).ready(function() {
       } else {
         // NOTE: using the "inner" HTML of the label...
         // so by default we can use "bold" (or whatever) in our asciidoc and have that
-        // be what people see in the PDF or when javascript is disabled,
+        // be what people see when javascript is disabled,
         // but when the pills+tabs get active, the pills won't all be bold (or whatever)
         pill_a.append( label.html() );
         // NOTE: Removing the label isn't strictly neccessary, but makes the pills/tabs less redundent

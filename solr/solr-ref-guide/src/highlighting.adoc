@@ -170,7 +170,7 @@ The "alternate" fallback options are more primitive.
 <<The Original Highlighter,Original Highlighter>>:: (`hl.method=original`, the default)
 +
 The Original Highlighter, sometimes called the "Standard Highlighter" or "Default Highlighter", is Lucene's original highlighter – a venerable option with a high degree of customization options.
-It's query accuracy is good enough for most needs, although it's not quite as good/perfect as the Unified Highlighter.
+Its query accuracy is good enough for most needs, although it's not quite as good/perfect as the Unified Highlighter.
 +
 The Original Highlighter will normally analyze stored text on the fly in order to highlight. It will use full term vectors if available.
 +

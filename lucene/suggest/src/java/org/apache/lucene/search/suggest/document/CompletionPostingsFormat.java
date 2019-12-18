@@ -90,7 +90,6 @@ import org.apache.lucene.util.fst.FST;
  */
 public abstract class CompletionPostingsFormat extends PostingsFormat {
 
-  static final String CODEC_NAME = "completion";
   static final int COMPLETION_CODEC_VERSION = 1;
   static final int COMPLETION_VERSION_CURRENT = COMPLETION_CODEC_VERSION;
   static final String INDEX_EXTENSION = "cmp";
@@ -121,8 +120,8 @@ public abstract class CompletionPostingsFormat extends PostingsFormat {
   /**
    * Used only by core Lucene at read-time via Service Provider instantiation
    */
-  public CompletionPostingsFormat() {
-    this(FSTLoadMode.ON_HEAP);
+  public CompletionPostingsFormat(String name) {
+    this(name, FSTLoadMode.ON_HEAP);
   }
 
   /**
@@ -130,8 +129,8 @@ public abstract class CompletionPostingsFormat extends PostingsFormat {
    * use the provided <code>fstLoadMode</code> to determine
    * if the completion FST should be loaded on or off heap.
    */
-  public CompletionPostingsFormat(FSTLoadMode fstLoadMode) {
-    super(CODEC_NAME);
+  public CompletionPostingsFormat(String name, FSTLoadMode fstLoadMode) {
+    super(name);
     this.fstLoadMode = fstLoadMode;
   }
 
@@ -147,11 +146,11 @@ public abstract class CompletionPostingsFormat extends PostingsFormat {
       throw new UnsupportedOperationException("Error - " + getClass().getName()
           + " has been constructed without a choice of PostingsFormat");
     }
-    return new CompletionFieldsConsumer(delegatePostingsFormat, state);
+    return new CompletionFieldsConsumer(getName(), delegatePostingsFormat, state);
   }
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    return new CompletionFieldsProducer(state, fstLoadMode);
+    return new CompletionFieldsProducer(getName(), state, fstLoadMode);
   }
 }

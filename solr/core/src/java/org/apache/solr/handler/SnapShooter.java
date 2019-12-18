@@ -207,13 +207,13 @@ public class SnapShooter {
   public void createSnapAsync(final int numberToKeep, Consumer<NamedList> result) throws IOException {
     //TODO should use Solr's ExecutorUtil
     new Thread(() -> {
+      NamedList snapShootDetails;
       try {
-        result.accept(createSnapshot());
+        snapShootDetails = createSnapshot();
       } catch (Exception e) {
         log.error("Exception while creating snapshot", e);
-        NamedList snapShootDetails = new NamedList<>();
+        snapShootDetails = new NamedList<>();
         snapShootDetails.add("exception", e.getMessage());
-        result.accept(snapShootDetails);
       }
       if (snapshotName == null) {
         try {
@@ -222,6 +222,7 @@ public class SnapShooter {
           log.warn("Unable to delete old snapshots ", e);
         }
       }
+      if (null != snapShootDetails) result.accept(snapShootDetails);
     }).start();
 
   }
@@ -260,8 +261,8 @@ public class SnapShooter {
       details.add("status", "success");
       details.add("snapshotCompletedAt", new Date().toString());//bad; should be Instant.now().toString()
       details.add("snapshotName", snapshotName);
-      log.info("Done creating backup snapshot: " + (snapshotName == null ? "<not named>" : snapshotName) +
-          " at " + baseSnapDirPath);
+      details.add("directoryName", directoryName);
+      log.info("Done creating backup snapshot: {} into {}", (snapshotName == null ? "<not named>" : snapshotName), snapshotDirPath);
       success = true;
       return details;
     } finally {
@@ -302,7 +303,8 @@ public class SnapShooter {
     log.info("Deleting snapshot: " + snapshotName);
 
     NamedList<Object> details = new NamedList<>();
-
+    details.add("snapshotName", snapshotName);
+      
     try {
       URI path = baseSnapDirPath.resolve("snapshot." + snapshotName);
       backupRepo.deleteDirectory(path);

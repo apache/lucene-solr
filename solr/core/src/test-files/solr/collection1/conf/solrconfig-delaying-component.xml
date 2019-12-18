@@ -41,19 +41,19 @@
 
   <query>
     <filterCache
-      class="solr.search.FastLRUCache"
+      class="solr.search.CaffeineCache"
       size="512"
       initialSize="512"
       autowarmCount="0"/>
 
     <queryResultCache
-      class="solr.search.LRUCache"
+      class="solr.search.CaffeineCache"
       size="512"
       initialSize="512"
       autowarmCount="0"/>
 
     <documentCache
-      class="solr.search.LRUCache"
+      class="solr.search.CaffeineCache"
       size="512"
       initialSize="512"
       autowarmCount="0"/>

@@ -152,12 +152,9 @@
     </sequential>
   </macrodef>
 
-  <!--
-    We don't want to run HDFS tests on Windows by default, because they require Cygwin.
-    Cygwin users can explicitly set -Dtests.disableHdfs=false to enable Hdfs related testing.
-  -->
-  <condition property="tests.disableHdfs" value="true">
-    <os family="windows"/>
+  <!-- turn on security manager? -->
+  <condition property="java.security.manager" value="org.apache.solr.util.SolrSecurityManager">
+    <istrue value="${tests.useSecurityManager}"/>
   </condition>
 
   <target name="validate" depends="compile-tools">

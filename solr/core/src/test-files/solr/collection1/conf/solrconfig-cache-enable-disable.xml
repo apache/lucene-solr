@@ -37,21 +37,21 @@
       -->
     <filterCache
       enabled="${filterCache.enabled}"
-      class="solr.search.FastLRUCache"
+      class="solr.search.CaffeineCache"
       size="512"
       initialSize="512"
       autowarmCount="2"/>
 
     <queryResultCache
       enabled="${queryResultCache.enabled}"
-      class="solr.search.LRUCache"
+      class="solr.search.CaffeineCache"
       size="512"
       initialSize="512"
       autowarmCount="2"/>
 
     <documentCache
       enabled="${documentCache.enabled}"
-      class="solr.search.LRUCache"
+      class="solr.search.CaffeineCache"
       size="512"
       initialSize="512"
       autowarmCount="0"/>

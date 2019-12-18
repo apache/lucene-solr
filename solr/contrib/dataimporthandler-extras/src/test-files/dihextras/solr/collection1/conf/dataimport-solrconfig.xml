@@ -58,10 +58,10 @@
          unordered sets of *all* documents that match a query.
          When a new searcher is opened, its caches may be prepopulated
          or "autowarmed" using data from caches in the old searcher.
-         autowarmCount is the number of items to prepopulate.  For LRUCache,
+         autowarmCount is the number of items to prepopulate.  For CaffeineCache,
          the autowarmed items will be the most recently accessed items.
        Parameters:
-         class - the SolrCache implementation (currently only LRUCache)
+         class - the SolrCache implementation (currently only CaffeineCache)
          size - the maximum number of entries in the cache
          initialSize - the initial capacity (number of entries) of
            the cache.  (seel java.util.HashMap)
@@ -69,7 +69,7 @@
            and old cache.
          -->
     <filterCache
-      class="solr.LRUCache"
+      class="solr.CaffeineCache"
       size="512"
       initialSize="512"
       autowarmCount="256"/>
@@ -78,7 +78,7 @@
          document ids (DocList) based on a query, a sort, and the range
          of documents requested.  -->
     <queryResultCache
-      class="solr.LRUCache"
+      class="solr.CaffeineCache"
       size="512"
       initialSize="512"
       autowarmCount="256"/>
@@ -86,7 +86,7 @@
   <!-- documentCache caches Lucene Document objects (the stored fields for each document).
        Since Lucene internal document ids are transient, this cache will not be autowarmed.  -->
     <documentCache
-      class="solr.LRUCache"
+      class="solr.CaffeineCache"
       size="512"
       initialSize="512"
       autowarmCount="0"/>
@@ -106,7 +106,7 @@
          of solr.search.CacheRegenerator if autowarming is desired.  -->
     <!--
     <cache name="myUserCache"
-      class="solr.LRUCache"
+      class="solr.CaffeineCache"
       size="4096"
       initialSize="1024"
       autowarmCount="1024"

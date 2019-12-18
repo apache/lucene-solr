@@ -228,6 +228,9 @@ public class AbstractAnalyticsFieldTest extends SolrTestCaseJ4 {
       ref.decref();
       ref = null;
     }
+    indexSchema = null;
+    searcher = null;
+    ref = null;
   }
 
   protected <T> void checkSingleFieldValues(Map<String,T> expected, Map<String,T> found, Set<String> missing) {

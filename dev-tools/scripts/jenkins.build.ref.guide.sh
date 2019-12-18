@@ -70,4 +70,4 @@ echoRun "gem install --force --version 1.1.5 concurrent-ruby"
 cd solr/solr-ref-guide
 
 set -x                                   # Re-enable command echoing
-ant clean build-site build-pdf
+ant clean build-site

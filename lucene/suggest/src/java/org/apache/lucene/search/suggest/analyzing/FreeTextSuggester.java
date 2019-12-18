@@ -66,7 +66,7 @@ import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
-import org.apache.lucene.util.fst.Builder;
+import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.FST.Arc;
 import org.apache.lucene.util.fst.FST.BytesReader;
@@ -304,7 +304,7 @@ public class FreeTextSuggester extends Lookup implements Accountable {
       TermsEnum termsEnum = terms.iterator();
 
       Outputs<Long> outputs = PositiveIntOutputs.getSingleton();
-      Builder<Long> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
+      FSTCompiler<Long> fstCompiler = new FSTCompiler<>(FST.INPUT_TYPE.BYTE1, outputs);
 
       IntsRefBuilder scratchInts = new IntsRefBuilder();
       while (true) {
@@ -320,10 +320,10 @@ public class FreeTextSuggester extends Lookup implements Accountable {
           totTokens += termsEnum.totalTermFreq();
         }
 
-        builder.add(Util.toIntsRef(term, scratchInts), encodeWeight(termsEnum.totalTermFreq()));
+        fstCompiler.add(Util.toIntsRef(term, scratchInts), encodeWeight(termsEnum.totalTermFreq()));
       }
 
-      fst = builder.finish();
+      fst = fstCompiler.compile();
       if (fst == null) {
         throw new IllegalArgumentException("need at least one suggestion");
       }

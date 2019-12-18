@@ -17,25 +17,25 @@
 
 package org.apache.lucene.codecs.uniformsplit;
 
+import static org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat.BLOCK_SIZE;
+
 import java.io.IOException;
 
 import org.apache.lucene.codecs.BlockTermState;
-import org.apache.lucene.codecs.lucene50.Lucene50PostingsReader;
-import org.apache.lucene.codecs.lucene50.Lucene50PostingsWriter;
+import org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat.IntBlockTermState;
+import org.apache.lucene.codecs.lucene84.Lucene84PostingsReader;
+import org.apache.lucene.codecs.lucene84.Lucene84PostingsWriter;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
-import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat.IntBlockTermState;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.RamUsageEstimator;
 
-import static org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat.BLOCK_SIZE;
-
 /**
  * {@link TermState} serializer which encodes each file pointer as a delta relative
- * to a base file pointer. It differs from {@link Lucene50PostingsWriter#encodeTerm}
+ * to a base file pointer. It differs from {@link Lucene84PostingsWriter#encodeTerm}
  * which encodes each file pointer as a delta relative to the previous file pointer.
  * <p>
  * It automatically sets the base file pointer to the first valid file pointer for
@@ -94,7 +94,7 @@ public class DeltaBaseTermStateSerializer implements Accountable {
   /**
    * Writes a {@link BlockTermState} to the provided {@link DataOutput}.
    * <p>
-   * Simpler variant of {@link Lucene50PostingsWriter#encodeTerm(long[], DataOutput, FieldInfo, BlockTermState, boolean)}.
+   * Simpler variant of {@link Lucene84PostingsWriter#encodeTerm(long[], DataOutput, FieldInfo, BlockTermState, boolean)}.
    */
   public void writeTermState(DataOutput termStatesOutput, FieldInfo fieldInfo, BlockTermState termState) throws IOException {
     IndexOptions indexOptions = fieldInfo.getIndexOptions();
@@ -143,7 +143,7 @@ public class DeltaBaseTermStateSerializer implements Accountable {
   /**
    * Reads a {@link BlockTermState} from the provided {@link DataInput}.
    * <p>
-   * Simpler variant of {@link Lucene50PostingsReader#decodeTerm(long[], DataInput, FieldInfo, BlockTermState, boolean)}.
+   * Simpler variant of {@link Lucene84PostingsReader#decodeTerm(long[], DataInput, FieldInfo, BlockTermState, boolean)}.
    *
    * @param reuse {@link BlockTermState} to reuse; or null to create a new one.
    */

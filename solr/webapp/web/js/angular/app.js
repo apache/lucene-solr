@@ -299,7 +299,7 @@ solrAdminApp.config([
             scope.$watch("data", function(newValue, oldValue) {
                 if (newValue) {
                   var treeConfig = {
-                      "plugins" : [ "themes", "json_data", "ui" ],
+                      "plugins" : [ "json_data", "ui" ],
                       "json_data" : {
                         "data" : scope.data,
                         "progressive_render" : true

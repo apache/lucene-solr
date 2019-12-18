@@ -39,8 +39,8 @@
   <!-- deep paging better play nice with caching -->
   <query>
     <!-- no wautowarming, it screws up our ability to sanity check cache stats in tests -->
-    <filterCache class="solr.FastLRUCache" size="50" initialSize="50" autowarmCount="0"/>
-    <queryResultCache class="solr.LRUCache" size="50" initialSize="50" autowarmCount="0"/>
+    <filterCache class="solr.CaffeineCache" size="50" initialSize="50" autowarmCount="0"/>
+    <queryResultCache class="solr.CaffeineCache" size="50" initialSize="50" autowarmCount="0"/>
     <queryResultWindowSize>50</queryResultWindowSize>
     <queryResultMaxDocsCached>500</queryResultMaxDocsCached>
     <!-- randomized so we excersize cursors using various paths in SolrIndexSearcher -->

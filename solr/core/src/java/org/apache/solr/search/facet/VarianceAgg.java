@@ -20,6 +20,9 @@ import java.io.IOException;
 import java.util.List;
 
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.schema.SchemaField;
+import org.apache.solr.search.function.FieldNameValueSource;
 
 
 public class VarianceAgg extends SimpleAggValueSource {
@@ -29,7 +32,31 @@ public class VarianceAgg extends SimpleAggValueSource {
 
   @Override
   public SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) throws IOException {
-    return new VarianceSlotAcc(getArg(), fcontext, numSlots);
+    ValueSource vs = getArg();
+
+    if (vs instanceof FieldNameValueSource) {
+      String field = ((FieldNameValueSource) vs).getFieldName();
+      SchemaField sf = fcontext.qcontext.searcher().getSchema().getField(field);
+      if (sf.getType().getNumberType() == null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            name() + " aggregation not supported for " + sf.getType().getTypeName());
+      }
+      if (sf.multiValued() || sf.getType().multiValuedFieldCache()) {
+        if (sf.hasDocValues()) {
+          if (sf.getType().isPointField()) {
+            return new VarianceSortedNumericAcc(fcontext, sf, numSlots);
+          }
+          return new VarianceSortedSetAcc(fcontext, sf, numSlots);
+        }
+        if (sf.getType().isPointField()) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+              name() + " aggregation not supported for PointField w/o docValues");
+        }
+        return new VarianceUnInvertedFieldAcc(fcontext, sf, numSlots);
+      }
+      vs = sf.getType().getValueSource(sf, null);
+    }
+    return new VarianceSlotAcc(vs, fcontext, numSlots);
   }
 
   @Override
@@ -57,9 +84,44 @@ public class VarianceAgg extends SimpleAggValueSource {
     }
     
     @Override
-    protected double getDouble() {      
-      double val = count == 0 ? 0.0d : (sumSq/count)-Math.pow(sum/count, 2);
-      return val;
+    protected double getDouble() {
+      return AggUtil.uncorrectedVariance(sumSq, sum, count);
     }    
-  };
+  }
+
+  class VarianceSortedNumericAcc extends SDVSortedNumericAcc {
+
+    public VarianceSortedNumericAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+      super(fcontext, sf, numSlots);
+    }
+
+    @Override
+    protected double computeVal(int slot) {
+      return AggUtil.uncorrectedVariance(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
+    }
+  }
+
+  class VarianceSortedSetAcc extends SDVSortedSetAcc {
+
+    public VarianceSortedSetAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+      super(fcontext, sf, numSlots);
+    }
+
+    @Override
+    protected double computeVal(int slot) {
+      return AggUtil.uncorrectedVariance(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
+    }
+  }
+
+  class VarianceUnInvertedFieldAcc extends SDVUnInvertedFieldAcc {
+
+    public VarianceUnInvertedFieldAcc(FacetContext fcontext, SchemaField sf, int numSlots) throws IOException {
+      super(fcontext, sf, numSlots);
+    }
+
+    @Override
+    protected double computeVal(int slot) {
+      return AggUtil.uncorrectedVariance(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
+    }
+  }
 }

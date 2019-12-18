@@ -60,6 +60,33 @@ public interface Component2D {
     return relateTriangle(minX, maxX, minY, maxY, aX, aY, bX, bY, cX, cY);
   }
 
+  /** Used by withinTriangle to check the within relationship between a triangle and the query shape
+   * (e.g. if the query shape is within the triangle). */
+  enum WithinRelation {
+    /** If the shape is a candidate for within. Typically this is return if the query shape is fully inside
+     * the triangle or if the query shape intersects only edges that do not belong to the original shape. */
+    CANDIDATE,
+    /** The query shape intersects an edge that does belong to the original shape or any point of
+     * the triangle is inside the shape. */
+    NOTWITHIN,
+    /** The query shape is disjoint with the triangle. */
+    DISJOINT
+  }
+
+  /** Compute the within relation of this component2D with a triangle **/
+  default WithinRelation withinTriangle(double aX, double aY, boolean ab, double bX, double bY, boolean bc, double cX, double cY, boolean ca) {
+    double minY = StrictMath.min(StrictMath.min(aY, bY), cY);
+    double minX = StrictMath.min(StrictMath.min(aX, bX), cX);
+    double maxY = StrictMath.max(StrictMath.max(aY, bY), cY);
+    double maxX = StrictMath.max(StrictMath.max(aX, bX), cX);
+    return withinTriangle(minX, maxX, minY, maxY, aX, aY, ab, bX, bY, bc, cX, cY, ca);
+  }
+
+  /** Compute the within relation of this component2D with a triangle **/
+  WithinRelation withinTriangle(double minX, double maxX, double minY, double maxY,
+                                double aX, double aY, boolean ab, double bX, double bY, boolean bc, double cX, double cY, boolean ca);
+
+
   /** Compute whether the bounding boxes are disjoint **/
   static  boolean disjoint(double minX1, double maxX1, double minY1, double maxY1, double minX2, double maxX2, double minY2, double maxY2) {
     return (maxY1 < minY2 || minY1 > maxY2 || maxX1 < minX2 || minX1 > maxX2);

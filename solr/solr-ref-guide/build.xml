@@ -55,16 +55,16 @@
 
        Basic nightly/local build of the 6.1 guide...
 
-       => ant build-pdf
+       => ant build-site
 
-       Official release build of the 6.1 guide...
+       Official build of the 6.1 guide...
 
-       => ant build-pdf -Dsolr-guide-version=6.1
+       => ant build-site -Dsolr-guide-version=6.1
 
        Release of a "6.1.1" ref guide, correcting some serious error in the docs
-       (even if there is no 6.1.1 version - or if we've alreayd released up to 6.1.5 - of Solr itself)
+       (even if there is no 6.1.1 version - or if we've already released up to 6.1.5 - of Solr itself)
 
-       => ant build-pdf -Dsolr-guide-version=6.1.1
+       => ant build-site -Dsolr-guide-version=6.1.1
 
   -->
   <property name="solr-guide-version" value="${solr-docs-version}-DRAFT" />
@@ -98,17 +98,13 @@
              else="https://lucene.apache.org/core/${solr-docs-version-path}/">
     <isset property="local.javadocs" />
   </condition>
-  <!-- for the PDF guide, we always use absolute javadoc urls -->
-  <property name="pdf-solr-javadocs" value="https://lucene.apache.org/solr/${solr-docs-version-path}/" />
-  <property name="pdf-lucene-javadocs" value="https://lucene.apache.org/core/${solr-docs-version-path}/" />
 
   <property name="build.content.dir" location="${build.dir}/content" />
   <property name="main-page" value="index" />
-  <property name="pdf-filename" value="apache-solr-ref-guide-${solr-guide-version}.pdf" />
   <!-- for pulling in versions of major deps -->
   <property prefix="ivyversions" file="${common.dir}/ivy-versions.properties"/>
 
-  <!-- ====== TOOLS FOR GENERATING/VALIDATING BITS OF THE SITE / PDF ======= -->
+  <!-- ====== TOOLS FOR GENERATING/VALIDATING BITS OF THE SITE ======= -->
   <property name="tools-jar-name" value="solr-ref-guide-tools.jar" />
   <path id="tools-compile-classpath">
     <fileset dir="lib">
@@ -169,9 +165,9 @@
     </copy>
   </target>
 
-  <target name="build-nav-data-files" depends="build-init,build-tools-jar" description="creates nav based data files needed by both the html and pdf artifacts">
+  <target name="build-nav-data-files" depends="build-init,build-tools-jar" description="creates nav based data files">
     <mkdir dir="${build.content.dir}/_data"/>
-    <java classname="BuildNavAndPDFBody"
+    <java classname="BuildNavDataFiles"
           failonerror="true"
           fork="true">
       <classpath refid="tools-run-classpath"/>
@@ -182,17 +178,16 @@
 
   <macrodef name="asciidoctor-convert">
     <!-- custom macro that fills in all the defaults we care about when running asciidoctor-ant
-         The primary purpose for this is to build the PDF, but we also use it to build a bare-bones
-         HTML version for validating the document structure (ie: duplicate anchors, links all point to valid anchors,
-         etc...) that we can't do with the generated PDF, and that we want to be able to validate
-         even if the current user doesn't have jekyll installed
+         The primary purpose for this is to build a bare-bones HTML version for validating the
+         document structure (ie: duplicate anchors, links all point to valid anchors,
+         etc...) that we want to be able to validate even if the current user doesn't have jekyll installed
     -->
     <attribute name="sourceDirectory"/>
     <attribute name="sourceDocumentName"/>
     <attribute name="outputDirectory"/>
     <attribute name="backend"/>
-    <attribute name="solr-javadocs" default="${pdf-solr-javadocs}" />
-    <attribute name="lucene-javadocs" default="${pdf-lucene-javadocs}" />
+    <attribute name="solr-javadocs" default="${html-solr-javadocs}" />
+    <attribute name="lucene-javadocs" default="${html-lucene-javadocs}" />
     <attribute name="headerFooter" default="true" />
     <sequential>
       <!-- NOTE: we have our own variant on the asciidoctor-ant task, so that sourceDocumentName=""
@@ -214,12 +209,9 @@
                    doctype="book"
                    safemode="unsafe">
         <attribute key="attribute-missing" value="warn" />
-        <attribute key="section-toc" value='' /><!-- we don't use these in the pdf -->
+        <attribute key="section-toc" value='' />
         <attribute key="icons" value="font" />
         <attribute key="icon-set" value="fa" />
-        <attribute key="pdf-stylesDir" value="./pdf/themes"/>
-        <attribute key="pdf-style" value="refguide"/>
-        <attribute key="pdf-fontsDir" value="./fonts"/>
         <attribute key="figure-caption!" value='' />
         <attribute key="idprefix" value='' />
         <attribute key="idseparator" value='-' />
@@ -248,36 +240,6 @@
   </macrodef>
 
 
-  <!-- ====== PDF Build ======= -->
-  <target name="build-pdf" depends="bare-bones-html-validation,-build-pdf-and-reduce-pdf"
-          description="Builds the PDF (after building &amp; validating a bare-bones html version)" />
-  <target name="-build-pdf-and-reduce-pdf" depends="-build-raw-pdf,-reduce-pdf-size">
-    <!-- NOTE: this does everything realted to building the PDF, but skips the bare-bones-html validation -->
-    <echo>Finished Building ${build.dir}/${pdf-filename}</echo>
-  </target>
-  <target name="-build-raw-pdf"
-          depends="build-nav-data-files,resolve">
-    <mkdir dir="${build.dir}/pdf-tmp"/>
-    <asciidoctor-convert sourceDirectory="${build.content.dir}/pdf"
-                         sourceDocumentName="SolrRefGuide-all.adoc"
-                         outputDirectory="${build.dir}/pdf-tmp"
-                         backend="pdf"
-                         />
-    <move file="${build.dir}/pdf-tmp/SolrRefGuide-all.pdf" tofile="${build.dir}/pdf-tmp/RAW-${pdf-filename}" />
-  </target>
-
-  <target name="-reduce-pdf-size" depends="build-init,build-tools-jar">
-    <java classname="ReducePDFSize"
-          failonerror="true"
-          fork="true">
-      <classpath refid="tools-run-classpath"/>
-      <arg value="${build.dir}/pdf-tmp/RAW-${pdf-filename}"/>
-      <arg value="${build.dir}/${pdf-filename}"/>
-    </java>
-  </target>
-
-
-
   <!-- ======= HTML Site Build =======
        Builds site with Jekyll.
        This (for now) assumes that Jekyll (http://jekyllrb.com) is installed locally. -->
@@ -297,7 +259,8 @@
           depends="build-init,build-nav-data-files" >
     <echo>Running Jekyll...</echo>
     <exec executable="jekyll" dir="${build.content.dir}" failonerror="true">
-      <arg value="build"/>
+      <arg value="build" />
+      <arg value="--verbose"/>
     </exec>
   </target>
 
@@ -305,7 +268,7 @@
        Does a very raw converstion of the adoc files to HTML for the purpose of link & anchor checking
 
        Unlike the "HTML Site Build" above, this does *NOT* require Jekyll, and can be done entirely
-       With ivy deps fetched automatically (just like the PDF)
+       With ivy deps fetched automatically.
        -->
   <target name="bare-bones-html-validation" depends="build-init,build-nav-data-files"
           description="Builds (w/o Jekyll) a very simple html version of the guide and runs link/anchor validation on it">
@@ -333,11 +296,8 @@
   </target>
 
   <target name="default"
-          description="Builds both a PDF and HTML versions of the ref guide"
-          depends="-build-pdf-and-reduce-pdf,build-site">
-    <!-- NOTE: we don't depend on build-pdf because then we'd also get the bare-bones HTML and do
-         link validation twice -->
-    <echo>PDF: ${build.dir}/${pdf-filename}</echo>
+          description="Builds an HTML versions of the ref guide"
+          depends="build-site">
     <echo>SITE: ${build.dir}/html-site/${main-page}.html</echo>
   </target>
 

@@ -534,6 +534,7 @@ The topic function should be considered in beta until https://issues.apache.org/
 * `q`: (Mandatory) The topic query.
 * `fl`: (Mandatory) The field list returned by the topic function.
 * `initialCheckpoint`: (Optional) Sets the initial Solr `\_version_` number to start reading from the queue. If not set, it defaults to the highest version in the index. Setting to 0 will process all records that match query in the index.
+* `zkHost`: (Optional) Only needs to be defined if the collection being searched is found in a different zkHost than the local stream handler.
 
 === topic Syntax
 

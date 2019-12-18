@@ -71,6 +71,7 @@ public class CheckHdfsIndexTest extends AbstractFullDistribZkTestBase {
       HdfsTestUtil.teardownClass(dfsCluster);
     } finally {
       dfsCluster = null;
+      path = null;
     }
   }
 

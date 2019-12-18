@@ -296,7 +296,13 @@ public final class UpdateRequestProcessorChain implements PluginInfoInitialized
     for (String s : names) {
       s = s.trim();
       if (s.isEmpty()) continue;
-      UpdateRequestProcessorFactory p = core.getUpdateProcessors().get(s);
+      UpdateRequestProcessorFactory p = null;
+      PluginBag.PluginHolder<UpdateRequestProcessorFactory> holder = core.getUpdateProcessors().getRegistry().get(s);
+      if (holder instanceof PackagePluginHolder) {
+        p = new LazyUpdateRequestProcessorFactory(holder);
+      } else {
+        p = core.getUpdateProcessors().get(s);
+      }
       if (p == null) {
         Class<UpdateRequestProcessorFactory> factoryClass = implicits.get(s);
         if(factoryClass != null) {

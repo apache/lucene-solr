@@ -515,7 +515,7 @@ final class IntersectTermsEnum extends BaseTermsEnum {
         assert savedStartTerm == null || term.compareTo(savedStartTerm) > 0: "saveStartTerm=" + savedStartTerm.utf8ToString() + " term=" + term.utf8ToString();
         return term;
       } else {
-        // This term is a prefix of a term accepted by the automaton, but is not itself acceptd
+        // This term is a prefix of a term accepted by the automaton, but is not itself accepted
       }
 
       isSubBlock = popPushNext();
