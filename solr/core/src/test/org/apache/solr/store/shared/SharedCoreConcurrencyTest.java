@@ -88,7 +88,7 @@ public class SharedCoreConcurrencyTest extends SolrCloudSharedStoreTestCase {
    */
   private static int MAX_NUM_OF_CONCURRENT_QUERY_REQUESTS_PER_ITERATION = 10;
   /**
-   * Indexing is faster than indexing, to pace it better with indexing, a delay is added between each query iteration.
+   * Querying is faster than indexing, to pace it better with indexing, a delay is added between each query iteration.
    */
   private static int DELAY_MS_BETWEEN_EACH_QUERY_ITERATION = 50;
   /**
@@ -304,6 +304,8 @@ public class SharedCoreConcurrencyTest extends SolrCloudSharedStoreTestCase {
 
   /**
    * Sends update request to the server, randomly choosing whether to send it with commit=true or not
+   * Shared replica does not need an explicit commit since it always does an implicit hard commit but
+   * still it is valid to send an update with or without a commit, therefore, testing both.
    */
   private void processUpdateRequest(UpdateRequest request) throws Exception {
     UpdateResponse response = random().nextBoolean()
@@ -473,7 +475,8 @@ public class SharedCoreConcurrencyTest extends SolrCloudSharedStoreTestCase {
   }
 
   /**
-   * Analyze core's concurrency stages to make sure no critical section was breached.
+   * Analyze core's concurrency stages to make sure no critical section was breached. Detail of those critical sections
+   * can be found in {@link SharedCoreConcurrencyController}.
    */
   private void analyzeCoreConcurrencyStagesForBreaches(String coreName, List<String> coreConcurrencyStages) {
     SharedCoreStage currentStage = null;
@@ -532,7 +535,8 @@ public class SharedCoreConcurrencyTest extends SolrCloudSharedStoreTestCase {
   }
 
   /**
-   * Directly query the {@code replica} and verify that all the docs indexed(after accounting for deletions) are found.
+   * Directly query a new {@code replica} and verifies that the empty replica is correctly hydrated from the shared store
+   * with all the indexed docs (after accounting for deletions).
    */
   private void queryNewReplicaAndVerifyAllDocsFound(Replica replica) throws Exception {
     try (SolrClient replicaDirectClient = getHttpSolrClient(replica.getBaseUrl() + "/" + replica.getCoreName())) {
