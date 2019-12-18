@@ -124,19 +124,19 @@ public abstract class ResourceManagerPool<T extends ManagedComponent> implements
 
   public abstract Map<String, Object> getMonitoredValues(T component) throws Exception;
 
-  public void setResourceLimits(T component, Map<String, Object> limits) throws Exception {
+  public void setResourceLimits(T component, Map<String, Object> limits, ChangeListener.Reason reason) throws Exception {
     if (limits == null || limits.isEmpty()) {
       return;
     }
     for (Map.Entry<String, Object> entry : limits.entrySet()) {
-      setResourceLimit(component, entry.getKey(), entry.getValue());
+      setResourceLimit(component, entry.getKey(), entry.getValue(), reason);
     }
   }
 
-  public Object setResourceLimit(T component, String limitName, Object value) throws Exception {
+  public Object setResourceLimit(T component, String limitName, Object value, ChangeListener.Reason reason) throws Exception {
     Object newActualLimit = doSetResourceLimit(component, limitName, value);
     for (ChangeListener listener : listeners) {
-      listener.changedLimit(getName(), component, limitName, value, newActualLimit);
+      listener.changedLimit(getName(), component, limitName, value, newActualLimit, reason);
     }
     return newActualLimit;
   }

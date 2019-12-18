@@ -55,6 +55,7 @@ public interface SolrCache<K,V> extends SolrInfoBean, ManagedComponent, Accounta
   /** Use a background thread for cache evictions and cleanup. */
   String CLEANUP_THREAD_PARAM = "cleanupThread";
 
+  long KB = 1024L;
   long MB = 1024L * 1024L;
 
   /**

@@ -378,6 +378,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
         map.put("warmupTime", warmupTime);
         map.put(RAM_BYTES_USED_PARAM, ramBytesUsed());
         map.put(MAX_RAM_MB_PARAM, getMaxRamMB());
+        map.put(MAX_SIZE_PARAM, getMaxSize());
 
         CacheStats cumulativeStats = priorStats.plus(stats);
         map.put("cumulative_lookups", cumulativeStats.requestCount());

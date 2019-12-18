@@ -17,10 +17,14 @@
 package org.apache.solr.managed.types;
 
 import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
+import org.apache.solr.managed.ChangeListener;
 import org.apache.solr.managed.ResourceManager;
 import org.apache.solr.managed.ResourceManagerPool;
 import org.apache.solr.metrics.SolrMetricsContext;
@@ -34,16 +38,53 @@ import org.slf4j.LoggerFactory;
  * <p>This plugin calculates the total size and maxRamMB of all registered cache instances
  * and adjusts each cache's limits so that the aggregated values again fit within the pool limits.</p>
  * <p>In order to avoid thrashing the plugin uses a dead band (by default {@link #DEFAULT_DEAD_BAND}),
- * which can be adjusted using configuration parameter {@link #DEAD_BAND}. If monitored values don't
- * exceed the limits +/- the dead band then no action is taken.</p>
+ * which can be adjusted using configuration parameter {@link #DEAD_BAND_PARAM}. If monitored values don't
+ * exceed the limits +/- the dead band then no forcible adjustment takes place.</p>
+ * <p>The management strategy consists of two distinct phases: soft optimization phase and then hard limit phase.</p>
+ * <p><b>Soft optimization</b> tries to adjust the resource consumption based on the cache hit ratio.
+ * This phase is executed only if there's no total limit exceeded. Also, hit ratio is considered a valid monitored
+ * variable only when at least N lookups occurred since the last adjustment (default value is {@link #DEFAULT_LOOKUP_DELTA}).
+ * If the hit ratio is higher than a threshold (default value is {@link #DEFAULT_TARGET_HITRATIO}) then the size
+ * of the cache can be reduced so that the resource consumption is minimized while still keeping acceptable hit
+ * ratio - and vice versa.</p>
+ * <p>This optimization phase can only adjust the limits within a {@link #DEFAULT_MAX_ADJUST_RATIO}, i.e. increased
+ * or decreased values may not be larger / smaller than this multiple / fraction of the initially configured limit.</p>
+ * <p><b>Hard limit</b> phase follows the soft optimization phase and it forcibly reduces resource consumption of all components
+ * if the total usage is still above the pool limit after the first phase has completed. Each component's limit is reduced
+ * by the same factor, regardless of the actual population or hit ratio.</p>
  */
 public class CacheManagerPool extends ResourceManagerPool<SolrCache> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static String TYPE = "cache";
 
-  public static final String DEAD_BAND = "deadBand";
+  /** Controller dead-band - changes smaller than this ratio will be ignored. */
+  public static final String DEAD_BAND_PARAM = "deadBand";
+  /** Target hit ratio - high enough to be useful, low enough to avoid excessive cache size. */
+  public static final String TARGET_HIT_RATIO_PARAM = "targetHitRatio";
+  /**
+   * Maximum allowed adjustment ratio from the initial configuration value. Adjusted value may not be
+   * higher than multiple of this factor, and not lower than divided by this factor.
+   */
+  public static final String MAX_ADJUST_RATIO_PARAM = "maxAdjustRatio";
+  /**
+   * Minimum number of lookups since last adjustment to consider the reported hitRatio
+   *  to be statistically valid.
+   */
+  public static final String MIN_LOOKUP_DELTA_PARAM = "minLookupDelta";
+  /** Default value of dead band (10%). */
   public static final double DEFAULT_DEAD_BAND = 0.1;
+  /** Default target hit ratio - a compromise between usefulness and limited resource usage. */
+  public static final double DEFAULT_TARGET_HITRATIO = 0.8;
+  /**
+   * Default minimum number of lookups since the last adjustment. This can be treated as Bernoulli trials
+   * that give a 5% confidence about the statistical validity of hit ratio (<code>0.5 / sqrt(lookups)</code>).
+   */
+  public static final long DEFAULT_LOOKUP_DELTA = 100;
+  /**
+   * Default maximum adjustment ratio from the initially configured values.
+   */
+  public static final double DEFAULT_MAX_ADJUST_RATIO = 2.0;
 
   protected static final Map<String, Function<Map<String, Object>, Double>> controlledToMonitored = new HashMap<>();
 
@@ -53,19 +94,37 @@ public class CacheManagerPool extends ResourceManagerPool<SolrCache> {
       return ramBytes != null ? ramBytes.doubleValue() / SolrCache.MB : 0.0;
     });
     controlledToMonitored.put(SolrCache.MAX_SIZE_PARAM, values ->
-        ((Number)values.getOrDefault(SolrCache.MAX_SIZE_PARAM, -1.0)).doubleValue());
+        ((Number)values.getOrDefault(SolrCache.SIZE_PARAM, -1.0)).doubleValue());
   }
 
   protected double deadBand = DEFAULT_DEAD_BAND;
+  protected double targetHitRatio = DEFAULT_TARGET_HITRATIO;
+  protected long lookupDelta = DEFAULT_LOOKUP_DELTA;
+  protected double maxAdjustRatio = DEFAULT_MAX_ADJUST_RATIO;
+  protected Map<String, Long> lookups = new HashMap<>();
+  protected Map<String, Map<String, Object>> initialComponentLimits = new HashMap<>();
 
   public CacheManagerPool(String name, String type, ResourceManager resourceManager, Map<String, Object> poolLimits, Map<String, Object> poolParams) {
     super(name, type, resourceManager, poolLimits, poolParams);
-    String deadBandStr = String.valueOf(poolParams.getOrDefault(DEAD_BAND, DEFAULT_DEAD_BAND));
+    String str = String.valueOf(poolParams.getOrDefault(DEAD_BAND_PARAM, DEFAULT_DEAD_BAND));
     try {
-      deadBand = Double.parseDouble(deadBandStr);
+      deadBand = Double.parseDouble(str);
     } catch (Exception e) {
-      log.warn("Invalid deadBand parameter value '" + deadBandStr + "', using default " + DEFAULT_DEAD_BAND);
+      log.warn("Invalid deadBand parameter value '" + str + "', using default " + DEFAULT_DEAD_BAND);
     }
+  }
+
+  @Override
+  public void registerComponent(SolrCache component) {
+    super.registerComponent(component);
+    initialComponentLimits.put(component.getManagedComponentId().toString(), getResourceLimits(component));
+  }
+
+  @Override
+  public boolean unregisterComponent(String componentId) {
+    lookups.remove(componentId);
+    initialComponentLimits.remove(componentId);
+    return super.unregisterComponent(componentId);
   }
 
   @Override
@@ -110,8 +169,10 @@ public class CacheManagerPool extends ResourceManagerPool<SolrCache> {
     SolrMetricsContext metricsContext = component.getSolrMetricsContext();
     if (metricsContext != null) {
       Map<String, Object> metrics = metricsContext.getMetricsSnapshot();
-      String hitRatioKey = component.getCategory().toString() + "." + metricsContext.getScope() + "." + SolrCache.HIT_RATIO_PARAM;
-      values.put(SolrCache.HIT_RATIO_PARAM, metrics.get(hitRatioKey));
+      String key = component.getCategory().toString() + "." + metricsContext.getScope() + "." + SolrCache.HIT_RATIO_PARAM;
+      values.put(SolrCache.HIT_RATIO_PARAM, metrics.get(key));
+      key = component.getCategory().toString() + "." + metricsContext.getScope() + "." + SolrCache.LOOKUPS_PARAM;
+      values.put(SolrCache.LOOKUPS_PARAM, metrics.get(key));
     }
     return values;
   }
@@ -145,8 +206,7 @@ public class CacheManagerPool extends ResourceManagerPool<SolrCache> {
         return;
       }
 
-      double changeRatio = poolLimitValue / totalValue.doubleValue();
-      // modify evenly every component's current limits by the changeRatio
+      List<SolrCache> adjustableComponents = new ArrayList<>();
       components.forEach((name, component) -> {
         Map<String, Object> resourceLimits = getResourceLimits((SolrCache) component);
         Object limit = resourceLimits.get(poolLimitName);
@@ -159,14 +219,111 @@ public class CacheManagerPool extends ResourceManagerPool<SolrCache> {
         if (currentResourceLimit <= 0) { // undefined or unsupported
           return;
         }
-        double newLimit = currentResourceLimit * changeRatio;
-        try {
-          setResourceLimit((SolrCache) component, poolLimitName, newLimit);
-        } catch (Exception e) {
-          log.warn("Failed to set managed limit " + poolLimitName +
-              " from " + currentResourceLimit + " to " + newLimit + " on " + component.getManagedComponentId(), e);
-        }
+        adjustableComponents.add(component);
       });
+      optimize(adjustableComponents, currentValues, poolLimitName, poolLimitValue, totalValue.doubleValue());
+    });
+  }
+
+  /**
+   * Manage all eligible components that support this pool limit.
+   */
+  private void optimize(List<SolrCache> components, Map<String, Map<String, Object>> currentValues, String limitName,
+                        double poolLimitValue, double totalValue) {
+    // changeRatio > 1.0 means there are available free resources
+    // changeRatio < 1.0 means there's shortage of resources
+    final AtomicReference<Double> changeRatio = new AtomicReference<>(poolLimitValue / totalValue);
+
+    // ========================== OPTIMIZATION ==============================
+    // if the situation is not critical (ie. total consumption is less than max)
+    // try to proactively optimize by reducing the size of caches with too high hitRatio
+    // (because a lower hit ratio is still acceptable if it means saving resources) and
+    // expand the size of caches with too low hitRatio
+    final AtomicReference<Double> newTotalValue = new AtomicReference<>(totalValue);
+    components.forEach(component -> {
+      long currentLookups = ((Number)currentValues.get(component.getManagedComponentId().toString()).get(SolrCache.LOOKUPS_PARAM)).longValue();
+      long lastLookups = lookups.computeIfAbsent(component.getManagedComponentId().toString(), k -> 0L);
+      if (currentLookups < lastLookups + lookupDelta) {
+        // too little data, skip the optimization
+        return;
+      }
+      Map<String, Object> resourceLimits = getResourceLimits(component);
+      double currentLimit = ((Number)resourceLimits.get(limitName)).doubleValue();
+      double currentHitRatio = ((Number)currentValues.get(component.getManagedComponentId().toString()).get(SolrCache.HIT_RATIO_PARAM)).doubleValue();
+      Number initialLimit = (Number)initialComponentLimits.get(component.getManagedComponentId().toString()).get(limitName);
+      if (initialLimit == null) {
+        // can't optimize because we don't know how far off we are from the initial setting
+        return;
+      }
+      if (currentHitRatio < targetHitRatio) {
+        if (changeRatio.get() < 1.0) {
+          // don't expand if we're already short on resources
+          return;
+        }
+        // expand to increase the hitRatio, but not more than maxAdjustRatio from the initialLimit
+        double newLimit = currentLimit * changeRatio.get();
+        if (newLimit > initialLimit.doubleValue() * maxAdjustRatio) {
+          // don't expand ad infinitum
+          newLimit = initialLimit.doubleValue() * maxAdjustRatio;
+        }
+        if (newLimit > poolLimitValue) {
+          // don't expand above the total pool limit
+          newLimit = poolLimitValue;
+        }
+        if (newLimit <= currentLimit) {
+          return;
+        }
+        lookups.put(component.getManagedComponentId().toString(), currentLookups);
+        try {
+          Number actualNewLimit = (Number)setResourceLimit(component, limitName, newLimit, ChangeListener.Reason.OPTIMIZATION);
+          newTotalValue.getAndUpdate(v -> v - currentLimit + actualNewLimit.doubleValue());
+        } catch (Exception e) {
+          log.warn("Failed to set managed limit " + limitName +
+              " from " + currentLimit + " to " + newLimit + " on " + component.getManagedComponentId(), e);
+        }
+      } else {
+        // shrink to release some resources but not more than maxAdjustRatio from the initialLimit
+        double newLimit = targetHitRatio / currentHitRatio * currentLimit;
+        if (newLimit * maxAdjustRatio < initialLimit.doubleValue()) {
+          // don't shrink ad infinitum
+          return;
+        }
+        lookups.put(component.getManagedComponentId().toString(), currentLookups);
+        try {
+          Number actualNewLimit = (Number)setResourceLimit(component, limitName, newLimit, ChangeListener.Reason.OPTIMIZATION);
+          newTotalValue.getAndUpdate(v -> v - currentLimit + actualNewLimit.doubleValue());
+        } catch (Exception e) {
+          log.warn("Failed to set managed limit " + limitName +
+              " from " + currentLimit + " to " + newLimit + " on " + component.getManagedComponentId(), e);
+        }
+      }
+    });
+
+    // ======================== HARD LIMIT ================
+    // now re-calculate the new changeRatio based on possible
+    // optimizations made above
+    double totalDelta = poolLimitValue - newTotalValue.get();
+
+    // dead band to avoid thrashing
+    if (Math.abs(totalDelta / poolLimitValue) < deadBand) {
+      return;
+    }
+
+    changeRatio.set(poolLimitValue / newTotalValue.get());
+    if (changeRatio.get() >= 1.0) { // there's no resource shortage
+      return;
+    }
+    // forcibly trim each resource limit (evenly) to fit within the total pool limit
+    components.forEach(component -> {
+      Map<String, Object> resourceLimits = getResourceLimits(component);
+      double currentLimit = ((Number)resourceLimits.get(limitName)).doubleValue();
+      double newLimit = currentLimit * changeRatio.get();
+      try {
+        setResourceLimit(component, limitName, newLimit, ChangeListener.Reason.ABOVE_TOTAL_LIMIT);
+      } catch (Exception e) {
+        log.warn("Failed to set managed limit " + limitName +
+            " from " + currentLimit + " to " + newLimit + " on " + component.getManagedComponentId(), e);
+      }
     });
   }
 }

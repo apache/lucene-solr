@@ -27,6 +27,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.managed.ChangeListener;
 import org.apache.solr.managed.ManagedComponent;
 import org.apache.solr.managed.ResourceManager;
 import org.apache.solr.managed.ResourceManagerPool;
@@ -295,7 +296,7 @@ public class ResourceManagerHandler extends RequestHandlerBase implements Permis
             }
           });
           try {
-            pool.setResourceLimits(managedComponent2, newLimits);
+            pool.setResourceLimits(managedComponent2, newLimits, ChangeListener.Reason.USER);
             result.add("success", newLimits);
           } catch (Exception e) {
             log.warn("Error setting resource limits of " + resName + "/" + poolName + " : " + e.toString(), e);

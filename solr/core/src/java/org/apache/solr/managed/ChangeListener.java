@@ -17,9 +17,27 @@
 package org.apache.solr.managed;
 
 /**
- *
+ * Listen to changes in resource limit settings caused by resource management framework
+ * (or by users via resource management API).
  */
 public interface ChangeListener {
+
+  enum Reason {
+    /** Administrative user action. */
+    USER,
+    /** Adjustment made to optimize the resource behavior. */
+    OPTIMIZATION,
+    /** Adjustment made due to total limit exceeded. */
+    ABOVE_TOTAL_LIMIT,
+    /** Adjustment made due to total limit underuse. */
+    BELOW_TOTAL_LIMIT,
+    /** Adjustment made due to individual resource limit exceeded. */
+    ABOVE_LIMIT,
+    /** Adjustment made due to individual resource limit underuse. */
+    BELOW_LIMIT,
+    /** Other unspecified reason. */
+    OTHER
+  }
 
   /**
    * Notify about changing a limit of a resource.
@@ -29,6 +47,7 @@ public interface ChangeListener {
    * @param newRequestedVal requested new value of the resource limit.
    * @param newActualVal actual value applied to the resource configuration. Note: this may differ from the
    *                     value requested due to internal logic of the component.
+   * @param reason reason of the change
    */
-  void changedLimit(String poolName, ManagedComponent component, String limitName, Object newRequestedVal, Object newActualVal);
+  void changedLimit(String poolName, ManagedComponent component, String limitName, Object newRequestedVal, Object newActualVal, Reason reason);
 }
