@@ -19,6 +19,12 @@ package org.apache.solr.handler.dataimport;
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.wrapAndThrow;
 import static org.apache.solr.handler.dataimport.DataImportHandlerException.SEVERE;
 
+import java.security.AccessControlContext;
+import java.security.AccessController;
+import java.security.PrivilegedAction;
+import java.security.PrivilegedActionException;
+import java.security.PrivilegedExceptionAction;
+import java.security.ProtectionDomain;
 import java.util.Map;
 
 import javax.script.Invocable;
@@ -46,7 +52,16 @@ public class ScriptTransformer extends Transformer {
  private String functionName;
 
   @Override
-  public Object transformRow(Map<String, Object> row, Context context) {
+  public Object transformRow(Map<String,Object> row, Context context) {
+    return AccessController.doPrivileged(new PrivilegedAction<Object>() {
+      @Override
+      public Object run() {
+        return transformRowUnsafe(row, context);
+      }
+    }, SCRIPT_SANDBOX);
+  }
+
+  public Object transformRowUnsafe(Map<String, Object> row, Context context) {
     try {
       if (engine == null)
         initEngine(context);
@@ -84,7 +99,17 @@ public class ScriptTransformer extends Transformer {
               + scriptEngine.getClass().getName());
     }
     try {
-      scriptEngine.eval(scriptText);
+      try {
+        AccessController.doPrivileged(new PrivilegedExceptionAction<Void>() {
+          @Override
+          public Void run() throws ScriptException  {
+            scriptEngine.eval(scriptText);
+            return null;
+          }
+        }, SCRIPT_SANDBOX);
+      } catch (PrivilegedActionException e) {
+        throw (ScriptException) e.getException();
+      }
     } catch (ScriptException e) {
       wrapAndThrow(SEVERE, e, "'eval' failed with language: " + scriptLang
           + " and script: \n" + scriptText);
@@ -98,5 +123,9 @@ public class ScriptTransformer extends Transformer {
   public String getFunctionName() {
     return functionName;
   }
+
+  // sandbox for script code: zero permissions
+  private static final AccessControlContext SCRIPT_SANDBOX =
+      new AccessControlContext(new ProtectionDomain[] { new ProtectionDomain(null, null) });
 
 }
