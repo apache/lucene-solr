@@ -116,6 +116,9 @@ Upgrade Notes
 * SOLR-14092: BlockJoinFacetComponent is marked for deprecation and will be removed in 9.0.
   Users are encouraged to migrate to uniqueBlock() in JSON Facet API.  (Mikhail Khludnev)
 
+* SOLR-13983: Process execution is removed from SystemInfoHandler. A best-effort attempt to
+  execute "uname -a" and "uptime" on non-Windows platforms is no longer made. (rmuir)
+
 New Features
 ---------------------
 (No changes)

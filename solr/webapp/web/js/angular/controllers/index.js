@@ -22,13 +22,7 @@ solrAdminApp.controller('IndexController', function($scope, System, Cores, Const
       $scope.system = data;
 
       // load average
-      var load_average = ( data.system.uptime || '' ).match( /load averages?: (\d+[.,]\d\d),? (\d+[.,]\d\d),? (\d+[.,]\d\d)/ );
-      if (load_average) {
-        for (var i=0;i<2;i++) {
-          load_average[i]=load_average[i].replace(",","."); // for European users
-        }
-        $scope.load_average = load_average.slice(1);
-      }
+      $scope.load_average = data.system.systemLoadAverage.toFixed(2);
 
       // physical memory
       var memoryMax = parse_memory_value(data.system.totalPhysicalMemorySize);
