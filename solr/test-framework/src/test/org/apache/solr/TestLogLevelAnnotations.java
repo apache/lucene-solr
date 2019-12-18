@@ -34,7 +34,24 @@ public class TestLogLevelAnnotations extends SolrTestCaseJ4 {
   private static final String bogus_logger_prefix = "org.apache.solr.bogus_logger";
   
   /** 
-   * We don't want a hardocded assumption here because it may change based on how the user runs the test.
+   * <p>
+   * The default log level of the root logger when this class is loaded by the JVM, Used to validate 
+   * some logger configurations when the tests are run.
+   * </p>
+   * <p>
+   * We don't want a hardcoded assumption here because it may change based on how the user runs the test.
+   * </p>
+   * <p>
+   * We also don't want to initialize this in a <code>@BeforeClass</code> method because that will run 
+   * <em>after</em> the <code>@BeforeClass</code> logic of our super class {@link SolrTestCaseJ4} 
+   * where the <code>@LogLevel</code> annotation on this class will be parsed and evaluated -- modifying the
+   * log4j run time configuration.  
+   * There is no reason why the <code>@LogLevel</code> configuration of this class <em>should</em> affect 
+   * the "root" Logger, but setting this in static class initialization protect us (as best we can) 
+   * against the possibility that it <em>might</em> due to an unforseen (future) bug.
+   * </p>
+   *
+   * @see #checkLogLevelsBeforeClass
    */
   public static final Level DEFAULT_LOG_LEVEL = LogManager.getRootLogger().getLevel();
   
@@ -49,7 +66,8 @@ public class TestLogLevelAnnotations extends SolrTestCaseJ4 {
     final Configuration config = ctx.getConfiguration();
 
     // NOTE: we're checking the CONFIGURATION of the loggers, not the "effective" value of the Logger
-    assertEquals(DEFAULT_LOG_LEVEL, config.getRootLogger().getLevel());
+    assertEquals("Somehow, the configured value of the root logger changed since this class was loaded",
+                 DEFAULT_LOG_LEVEL, config.getRootLogger().getLevel());
     assertEquals("Your Logger conf sets a level on a bogus package that breaks this test: "
                  + bogus_logger_prefix,
                  config.getRootLogger(),
