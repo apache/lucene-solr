@@ -44,10 +44,12 @@ import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.StringHelper;
-import org.apache.lucene.util.fst.FSTCompiler;
+import org.apache.lucene.util.compress.LZ4;
+import org.apache.lucene.util.compress.LowercaseAsciiCompression;
 import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.BytesRefFSTEnum;
 import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.Util;
 
 /*
@@ -707,8 +709,8 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
           //}
 
           // For leaf block we write suffix straight
-          suffixWriter.writeVInt(suffix);
-          suffixWriter.writeBytes(term.termBytes, prefixLength, suffix);
+          suffixLengthsWriter.writeVInt(suffix);
+          suffixWriter.append(term.termBytes, prefixLength, suffix);
           assert floorLeadLabel == -1 || (term.termBytes[prefixLength] & 0xff) >= floorLeadLabel;
 
           // Write term stats, to separate byte[] blob:
@@ -751,8 +753,8 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
             // it's a prefix term.  Terms cannot be larger than ~32 KB
             // so we won't run out of bits:
 
-            suffixWriter.writeVInt(suffix << 1);
-            suffixWriter.writeBytes(term.termBytes, prefixLength, suffix);
+            suffixLengthsWriter.writeVInt(suffix << 1);
+            suffixWriter.append(term.termBytes, prefixLength, suffix);
 
             // Write term stats, to separate byte[] blob:
             statsWriter.writeVInt(state.docFreq);
@@ -788,8 +790,8 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
 
             // For non-leaf block we borrow 1 bit to record
             // if entry is term or sub-block:f
-            suffixWriter.writeVInt((suffix<<1)|1);
-            suffixWriter.writeBytes(block.prefix.bytes, prefixLength, suffix);
+            suffixLengthsWriter.writeVInt((suffix<<1)|1);
+            suffixWriter.append(block.prefix.bytes, prefixLength, suffix);
 
             //if (DEBUG2) {
             //  BytesRef suffixBytes = new BytesRef(suffix);
@@ -801,7 +803,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
             assert floorLeadLabel == -1 || (block.prefix.bytes[prefixLength] & 0xff) >= floorLeadLabel: "floorLeadLabel=" + floorLeadLabel + " suffixLead=" + (block.prefix.bytes[prefixLength] & 0xff);
             assert block.fp < startFP;
 
-            suffixWriter.writeVLong(startFP - block.fp);
+            suffixLengthsWriter.writeVLong(startFP - block.fp);
             subIndices.add(block.index);
           }
         }
@@ -809,14 +811,40 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
         assert subIndices.size() != 0;
       }
 
-      // TODO: we could block-write the term suffix pointers;
-      // this would take more space but would enable binary
-      // search on lookup
+      // Write suffixes byte[] blob to terms dict output, either uncompressed, compressed with LZ4 or with LowercaseAsciiCompression.
+      LZ4.compress(suffixWriter.bytes(), 0, suffixWriter.length(), spareWriter, compressionHashTable);
+      long token = ((long) suffixWriter.length() << 3);
+      if (isLeafBlock) {
+        token |= 0x04;
+      }
+      boolean compressed = false;
+      if (spareWriter.size() < suffixWriter.length() - (suffixWriter.length() >>> 2)) {
+        // LZ4 saved more than 25%, go for it
+        token |= 0x02;
+        compressed = true;
+      } else {
+        spareWriter.reset();
+        if (spareBytes.length < suffixWriter.length()) {
+          spareBytes = new byte[ArrayUtil.oversize(suffixWriter.length(), 1)];
+        }
+        if (LowercaseAsciiCompression.compress(suffixWriter.bytes(), suffixWriter.length(), spareBytes, spareWriter)) {
+          token |= 0x01;
+          compressed = true;
+        }
+      }
+      termsOut.writeVLong(token);
+      if (compressed == false) {
+        termsOut.writeBytes(suffixWriter.bytes(), suffixWriter.length());
+      } else {
+        spareWriter.copyTo(termsOut);
+      }
+      suffixWriter.setLength(0);
+      spareWriter.reset();
 
-      // Write suffixes byte[] blob to terms dict output:
-      termsOut.writeVInt((int) (suffixWriter.size() << 1) | (isLeafBlock ? 1:0));
-      suffixWriter.copyTo(termsOut);
-      suffixWriter.reset();
+      // Write suffix lengths
+      termsOut.writeVInt((int) suffixLengthsWriter.size());
+      suffixLengthsWriter.copyTo(termsOut);
+      suffixLengthsWriter.reset();
 
       // Write term stats byte[] blob
       termsOut.writeVInt((int) statsWriter.size());
@@ -973,10 +1001,14 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
       }
     }
 
-    private final ByteBuffersDataOutput suffixWriter = ByteBuffersDataOutput.newResettableInstance();
+    private final ByteBuffersDataOutput suffixLengthsWriter = ByteBuffersDataOutput.newResettableInstance();
+    private final BytesRefBuilder suffixWriter = new BytesRefBuilder();
     private final ByteBuffersDataOutput statsWriter = ByteBuffersDataOutput.newResettableInstance();
     private final ByteBuffersDataOutput metaWriter = ByteBuffersDataOutput.newResettableInstance();
     private final ByteBuffersDataOutput bytesWriter = ByteBuffersDataOutput.newResettableInstance();
+    private final ByteBuffersDataOutput spareWriter = ByteBuffersDataOutput.newResettableInstance();
+    private byte[] spareBytes = BytesRef.EMPTY_BYTES;
+    private final LZ4.HighCompressionHashTable compressionHashTable = new LZ4.HighCompressionHashTable();
   }
 
   private boolean closed;

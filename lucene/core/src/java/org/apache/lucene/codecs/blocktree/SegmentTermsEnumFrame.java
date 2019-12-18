@@ -20,11 +20,14 @@ package org.apache.lucene.codecs.blocktree;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.BlockTermState;
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.compress.LZ4;
+import org.apache.lucene.util.compress.LowercaseAsciiCompression;
 import org.apache.lucene.util.fst.FST;
 
 final class SegmentTermsEnumFrame {
@@ -43,9 +46,13 @@ final class SegmentTermsEnumFrame {
   long fp;
   long fpOrig;
   long fpEnd;
+  long totalSuffixBytes; // for stats
 
   byte[] suffixBytes = new byte[128];
   final ByteArrayDataInput suffixesReader = new ByteArrayDataInput();
+
+  byte[] suffixLengthBytes;
+  final ByteArrayDataInput suffixLengthsReader;
 
   byte[] statBytes = new byte[64];
   final ByteArrayDataInput statsReader = new ByteArrayDataInput();
@@ -91,6 +98,7 @@ final class SegmentTermsEnumFrame {
   final ByteArrayDataInput bytesReader = new ByteArrayDataInput();
 
   private final SegmentTermsEnum ste;
+  private final int version;
 
   public SegmentTermsEnumFrame(SegmentTermsEnum ste, int ord) throws IOException {
     this.ste = ste;
@@ -98,6 +106,14 @@ final class SegmentTermsEnumFrame {
     this.state = ste.fr.parent.postingsReader.newTermState();
     this.state.totalTermFreq = -1;
     this.longs = new long[ste.fr.longsSize];
+    this.version = ste.fr.parent.version;
+    if (version >= BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
+      suffixLengthBytes = new byte[32];
+      suffixLengthsReader = new ByteArrayDataInput();
+    } else {
+      suffixLengthBytes = null;
+      suffixLengthsReader = suffixesReader;
+    }
   }
 
   public void setFloorData(ByteArrayDataInput in, BytesRef source) {
@@ -163,15 +179,48 @@ final class SegmentTermsEnumFrame {
     // instead of linear scan to find target term; eg
     // we could have simple array of offsets
 
+    final long startSuffixFP = ste.in.getFilePointer();
     // term suffixes:
-    code = ste.in.readVInt();
-    isLeafBlock = (code & 1) != 0;
-    int numBytes = code >>> 1;
-    if (suffixBytes.length < numBytes) {
-      suffixBytes = new byte[ArrayUtil.oversize(numBytes, 1)];
+    if (version >= BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
+      final long codeL = ste.in.readVLong();
+      isLeafBlock = (codeL & 0x04) != 0;
+      final int numSuffixBytes = (int) (codeL >>> 3);
+      if (suffixBytes.length < numSuffixBytes) {
+        suffixBytes = new byte[ArrayUtil.oversize(numSuffixBytes, 1)];
+      }
+      compressionAlg = (int) codeL & 0x03;
+      switch (compressionAlg) {
+        case 0x00: // no compression
+          ste.in.readBytes(suffixBytes, 0, numSuffixBytes);
+          break;
+        case 0x01: // lowercase ASCII
+          LowercaseAsciiCompression.decompress(ste.in, suffixBytes, numSuffixBytes);
+          break;
+        case 0x02: // LZ4
+          LZ4.decompress(ste.in, numSuffixBytes, suffixBytes, 0);
+          break;
+        default:
+          throw new CorruptIndexException("Illegal compression algorithm: " + compressionAlg, ste.in);
+      }
+      suffixesReader.reset(suffixBytes, 0, numSuffixBytes);
+
+      final int numSuffixLengthBytes = ste.in.readVInt();
+      if (suffixLengthBytes.length < numSuffixLengthBytes) {
+        suffixLengthBytes = new byte[ArrayUtil.oversize(numSuffixLengthBytes, 1)];
+      }
+      ste.in.readBytes(suffixLengthBytes, 0, numSuffixLengthBytes);
+      suffixLengthsReader.reset(suffixLengthBytes, 0, numSuffixLengthBytes);
+    } else {
+      code = ste.in.readVInt();
+      isLeafBlock = (code & 1) != 0;
+      int numBytes = code >>> 1;
+      if (suffixBytes.length < numBytes) {
+        suffixBytes = new byte[ArrayUtil.oversize(numBytes, 1)];
+      }
+      ste.in.readBytes(suffixBytes, 0, numBytes);
+      suffixesReader.reset(suffixBytes, 0, numBytes);
     }
-    ste.in.readBytes(suffixBytes, 0, numBytes);
-    suffixesReader.reset(suffixBytes, 0, numBytes);
+    totalSuffixBytes = ste.in.getFilePointer() - startSuffixFP;
 
     /*if (DEBUG) {
       if (arc == null) {
@@ -182,7 +231,7 @@ final class SegmentTermsEnumFrame {
       }*/
 
     // stats
-    numBytes = ste.in.readVInt();
+    int numBytes = ste.in.readVInt();
     if (statBytes.length < numBytes) {
       statBytes = new byte[ArrayUtil.oversize(numBytes, 1)];
     }
@@ -274,7 +323,7 @@ final class SegmentTermsEnumFrame {
     //if (DEBUG) System.out.println("  frame.next ord=" + ord + " nextEnt=" + nextEnt + " entCount=" + entCount);
     assert nextEnt != -1 && nextEnt < entCount: "nextEnt=" + nextEnt + " entCount=" + entCount + " fp=" + fp;
     nextEnt++;
-    suffix = suffixesReader.readVInt();
+    suffix = suffixLengthsReader.readVInt();
     startBytePos = suffixesReader.getPosition();
     ste.term.setLength(prefix + suffix);
     ste.term.grow(ste.term.length());
@@ -298,7 +347,7 @@ final class SegmentTermsEnumFrame {
         
       assert nextEnt != -1 && nextEnt < entCount: "nextEnt=" + nextEnt + " entCount=" + entCount + " fp=" + fp;
       nextEnt++;
-      final int code = suffixesReader.readVInt();
+      final int code = suffixLengthsReader.readVInt();
       suffix = code >>> 1;
       startBytePos = suffixesReader.getPosition();
       ste.term.setLength(prefix + suffix);
@@ -313,7 +362,7 @@ final class SegmentTermsEnumFrame {
       } else {
         // A sub-block; make sub-FP absolute:
         ste.termExists = false;
-        subCode = suffixesReader.readVLong();
+        subCode = suffixLengthsReader.readVLong();
         lastSubFP = fp - subCode;
         //if (DEBUG) {
         //System.out.println("    lastSubFP=" + lastSubFP);
@@ -463,10 +512,10 @@ final class SegmentTermsEnumFrame {
     while(true) {
       assert nextEnt < entCount;
       nextEnt++;
-      final int code = suffixesReader.readVInt();
+      final int code = suffixLengthsReader.readVInt();
       suffixesReader.skipBytes(code >>> 1);
       if ((code & 1) != 0) {
-        final long subCode = suffixesReader.readVLong();
+        final long subCode = suffixLengthsReader.readVLong();
         if (targetSubCode == subCode) {
           //if (DEBUG) System.out.println("        match!");
           lastSubFP = subFP;
@@ -486,6 +535,7 @@ final class SegmentTermsEnumFrame {
   private int startBytePos;
   private int suffix;
   private long subCode;
+  int compressionAlg;
 
   // for debugging
   /*
@@ -527,7 +577,7 @@ final class SegmentTermsEnumFrame {
     nextTerm: while (true) {
       nextEnt++;
 
-      suffix = suffixesReader.readVInt();
+      suffix = suffixLengthsReader.readVInt();
 
       // if (DEBUG) {
       //   BytesRef suffixBytesRef = new BytesRef();
@@ -635,7 +685,7 @@ final class SegmentTermsEnumFrame {
 
       nextEnt++;
 
-      final int code = suffixesReader.readVInt();
+      final int code = suffixLengthsReader.readVInt();
       suffix = code >>> 1;
 
       //if (DEBUG) {
@@ -654,7 +704,7 @@ final class SegmentTermsEnumFrame {
         state.termBlockOrd++;
         subCode = 0;
       } else {
-        subCode = suffixesReader.readVLong();
+        subCode = suffixLengthsReader.readVLong();
         lastSubFP = fp - subCode;
       }
 

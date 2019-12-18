@@ -14,14 +14,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.compressing;
+package org.apache.lucene.util.compress;
 
-public class TestFastDecompressionMode extends AbstractTestCompressionMode {
+import org.apache.lucene.util.compress.LZ4.HashTable;
+
+public class TestHighLZ4 extends LZ4TestCase {
 
   @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    mode = CompressionMode.FAST_DECOMPRESSION;
+  protected HashTable newHashTable() {
+    return new LZ4.HighCompressionHashTable();
   }
 
 }
