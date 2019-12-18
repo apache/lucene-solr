@@ -65,7 +65,7 @@ import static org.apache.solr.handler.ReplicationHandler.FILE_STREAM;
 
 public class PackageStoreAPI {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  public static final String PACKAGESTORE_DIRECTORY = ".filestore";
+  public static final String PACKAGESTORE_DIRECTORY = "filestore";
 
 
   private final CoreContainer coreContainer;

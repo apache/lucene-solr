@@ -53,6 +53,7 @@
     <dependency org="org.apache.poi" name="poi-ooxml-schemas" rev="${/org.apache.poi/poi-ooxml-schemas}" conf="compile"/>
     <dependency org="org.apache.xmlbeans" name="xmlbeans" rev="${/org.apache.xmlbeans/xmlbeans}" conf="compile"/>
     <dependency org="org.apache.commons" name="commons-collections4" rev="${/org.apache.commons/commons-collections4}" conf="compile"/>
+    <dependency org="org.apache.commons" name="commons-csv" rev="${/org.apache.commons/commons-csv}" conf="compile"/>
     <dependency org="com.github.virtuald" name="curvesapi" rev="${/com.github.virtuald/curvesapi}" conf="compile"/>
     <dependency org="org.ccil.cowan.tagsoup" name="tagsoup" rev="${/org.ccil.cowan.tagsoup/tagsoup}" conf="compile"/>
     <dependency org="com.googlecode.mp4parser" name="isoparser" rev="${/com.googlecode.mp4parser/isoparser}" conf="compile"/>

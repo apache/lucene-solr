@@ -47,6 +47,8 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.server.ByteBufferInputStream;
+import org.junit.After;
+import org.junit.Before;
 
 import static org.apache.solr.common.util.Utils.JAVABINCONSUMER;
 import static org.apache.solr.core.TestDynamicLoading.getFileContent;
@@ -54,8 +56,17 @@ import static org.apache.solr.core.TestDynamicLoading.getFileContent;
 @LogLevel("org.apache.solr.filestore.PackageStoreAPI=DEBUG;org.apache.solr.filestore.DistribPackageStore=DEBUG")
 public class TestDistribPackageStore extends SolrCloudTestCase {
 
-  public void testPackageStoreManagement() throws Exception {
+  @Before
+  public void setup() {
     System.setProperty("enable.packages", "true");
+  }
+
+  @After
+  public void teardown() {
+    System.clearProperty("enable.packages");
+  }
+  
+  public void testPackageStoreManagement() throws Exception {
     MiniSolrCloudCluster cluster =
         configureCluster(4)
         .withJettyConfig(jetty -> jetty.enableV2(true))
