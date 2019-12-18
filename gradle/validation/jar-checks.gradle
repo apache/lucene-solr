@@ -269,7 +269,7 @@ configure([project(":solr"), project(":lucene"),]) {
   licenses.dependsOn checkDanglingLicenseFiles
 
   // Update dependency checksums.
-  task updateChecksums() {
+  task updateLicenses() {
     group = 'Dependency validation'
     description = "Write or update checksums of dependencies"
     dependsOn jarInfoTasks

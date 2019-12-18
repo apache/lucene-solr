@@ -133,6 +133,6 @@ missing and where:
 
 gradlew licenses
 
-To update JAR checksums use:
+To update JAR checksums for licenses use:
 
-gradlew updateChecksums
+gradlew updateLicenses
