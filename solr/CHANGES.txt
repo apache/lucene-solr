@@ -133,6 +133,8 @@ Bug Fixes
 
 * SOLR-14099: Fixed @LogLevel annotation in test-framework to correctly 'unset' Loggers after test (hossman)
 
+* SOLR-14109: Always log to stdout from server/scripts/cloud-scripts/zkcli.{bat|sh} (janhoy)
+
 Other Changes
 ---------------------
 
