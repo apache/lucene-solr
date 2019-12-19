@@ -152,11 +152,6 @@
     </sequential>
   </macrodef>
 
-  <!-- turn on security manager? -->
-  <condition property="java.security.manager" value="org.apache.solr.util.SolrSecurityManager">
-    <istrue value="${tests.useSecurityManager}"/>
-  </condition>
-
   <target name="validate" depends="compile-tools">
   </target>
 
