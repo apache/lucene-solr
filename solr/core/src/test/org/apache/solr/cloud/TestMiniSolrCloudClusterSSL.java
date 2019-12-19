@@ -32,7 +32,6 @@ import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
-import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.TestRuleRestoreSystemProperties;
 
 import org.apache.solr.SolrTestCaseJ4;
@@ -127,8 +126,6 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
   }
 
   public void testSslAndClientAuth() throws Exception {
-    assumeFalse("SOLR-9039: SSL w/clientAuth does not work on MAC_OS_X", Constants.MAC_OS_X);
-    
     final SSLTestConfig sslConfig = new SSLTestConfig(true, true);
 
     HttpClientUtil.setSchemaRegistryProvider(sslConfig.buildClientSchemaRegistryProvider());
