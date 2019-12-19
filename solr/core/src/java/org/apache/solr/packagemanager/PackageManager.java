@@ -289,27 +289,27 @@ public class PackageManager implements Closeable {
   public boolean verify(SolrPackageInstance pkg, List<String> collections) {
     boolean success = true;
     for (Plugin plugin: pkg.plugins) {
-      for (String collection: collections) {
-        Map<String, String> collectionParameterOverrides = getPackageParams(pkg.name, collection);
-        Command cmd = plugin.verifyCommand;
+      Command cmd = plugin.verifyCommand;
+      if (plugin.verifyCommand != null && !Strings.isNullOrEmpty(cmd.path)) {
+        for (String collection: collections) {
+          Map<String, String> collectionParameterOverrides = getPackageParams(pkg.name, collection);
 
-        Map<String, String> systemParams = PackageUtils.map("collection", collection, "package-name", pkg.name, "package-version", pkg.version);
-        String url = solrBaseUrl + PackageUtils.resolve(cmd.path, pkg.parameterDefaults, collectionParameterOverrides, systemParams);
-        PackageUtils.printGreen("Executing " + url + " for collection:" + collection);
+          Map<String, String> systemParams = PackageUtils.map("collection", collection, "package-name", pkg.name, "package-version", pkg.version);
+          String url = solrBaseUrl + PackageUtils.resolve(cmd.path, pkg.parameterDefaults, collectionParameterOverrides, systemParams);
+          PackageUtils.printGreen("Executing " + url + " for collection:" + collection);
 
-        if ("GET".equalsIgnoreCase(cmd.method)) {
-          String response = PackageUtils.getJsonStringFromUrl(solrClient.getHttpClient(), url);
-          PackageUtils.printGreen(response);
-          String actualValue = JsonPath.parse(response, PackageUtils.jsonPathConfiguration())
-              .read(PackageUtils.resolve(cmd.condition, pkg.parameterDefaults, collectionParameterOverrides, systemParams));
-          String expectedValue = PackageUtils.resolve(cmd.expected, pkg.parameterDefaults, collectionParameterOverrides, systemParams);
-          PackageUtils.printGreen("Actual: "+actualValue+", expected: "+expectedValue);
-          if (!expectedValue.equals(actualValue)) {
-            PackageUtils.printRed("Failed to deploy plugin: " + plugin.name);
-            success = false;
+          if ("GET".equalsIgnoreCase(cmd.method)) {
+            String response = PackageUtils.getJsonStringFromUrl(solrClient.getHttpClient(), url);
+            PackageUtils.printGreen(response);
+            String actualValue = JsonPath.parse(response, PackageUtils.jsonPathConfiguration())
+                .read(PackageUtils.resolve(cmd.condition, pkg.parameterDefaults, collectionParameterOverrides, systemParams));
+            String expectedValue = PackageUtils.resolve(cmd.expected, pkg.parameterDefaults, collectionParameterOverrides, systemParams);
+            PackageUtils.printGreen("Actual: "+actualValue+", expected: "+expectedValue);
+            if (!expectedValue.equals(actualValue)) {
+              PackageUtils.printRed("Failed to deploy plugin: " + plugin.name);
+              success = false;
+            }
           }
-        } else {
-          throw new SolrException(ErrorCode.BAD_REQUEST, "Non-GET method not supported for setup commands");
         }
       }
     }
