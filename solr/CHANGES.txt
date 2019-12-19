@@ -125,7 +125,7 @@ New Features
 
 Improvements
 ---------------------
-(No changes)
+* SOLR-14042: Fix varargs precommit warnings (Andraas Salamon via Jason Gerlowski)
 
 Optimizations
 ---------------------
