@@ -80,8 +80,8 @@ Jetty 9.4.19.v20190610
 Upgrade Notes
 ---------------------
 
-* org.apache.solr.search.grouping.distributed.command.QueryCommand.Builder has new method 'setMainQuery' which is used
-  to set top-level query. build() would fail if called without setting mainQuery
+* SOLR-13823: org.apache.solr.search.grouping.distributed.command.QueryCommand.Builder has new method 'setMainQuery' which is used
+  to set top-level query. build() would fail if called without setting mainQuery.
 
 * SOLR-13817: Deprecate legacy SolrCache implementations. Users are encouraged to transition their
   configurations to use org.apache.solr.search.CaffeineCache instead.
@@ -190,10 +190,6 @@ Improvements
   (Houston Putman, Mikhail Khludnev).
 
 * SOLR-13970: Fail the request when collapsing or expand is used with Grouping. (Erick Erickson, Joel Bernstein, Munendra S N)
-
-Optimizations
----------------------
-(No changes)
 
 Bug Fixes
 ---------------------
