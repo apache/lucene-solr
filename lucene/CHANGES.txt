@@ -89,9 +89,7 @@ Optimizations
 
 Bug Fixes
 ---------------------
-
-* LUCENE-9055: Fix the detection of lines crossing triangles through edge points.
-  (Ignacio Vera)
+(No changes)
 
 Other
 ---------------------
@@ -172,6 +170,9 @@ Bug Fixes
 
 * LUCENE-8996: maxScore was sometimes missing from distributed grouped responses.
   (Julien Massenet, Diego Ceccarelli, Munendra S N, Christine Poerschke)
+
+* LUCENE-9055: Fix the detection of lines crossing triangles through edge points.
+  (Ignacio Vera)
 
 Other
 
