@@ -78,7 +78,6 @@ import org.apache.logging.log4j.Level;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase.SuppressFileSystems;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.apache.lucene.util.QuickPatchThreadsFilter;
@@ -513,16 +512,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   private static SSLTestConfig buildSSLConfig() {
-
     SSLRandomizer sslRandomizer =
       SSLRandomizer.getSSLRandomizerForClass(RandomizedContext.current().getTargetClass());
-    
-    if (Constants.MAC_OS_X) {
-      // see SOLR-9039
-      // If a solution is found to remove this, please make sure to also update
-      // TestMiniSolrCloudClusterSSL.testSslAndClientAuth as well.
-      sslRandomizer = new SSLRandomizer(sslRandomizer.ssl, 0.0D, (sslRandomizer.debug + " w/ MAC_OS_X supressed clientAuth"));
-    }
 
     SSLTestConfig result = sslRandomizer.createSSLTestConfig();
     log.info("Randomized ssl ({}) and clientAuth ({}) via: {}",
