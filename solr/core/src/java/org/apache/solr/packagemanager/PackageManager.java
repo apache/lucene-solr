@@ -309,6 +309,8 @@ public class PackageManager implements Closeable {
               PackageUtils.printRed("Failed to deploy plugin: " + plugin.name);
               success = false;
             }
+          } else {
+            throw new SolrException(ErrorCode.BAD_REQUEST, "Non-GET method not supported for verify commands");
           }
         }
       }
