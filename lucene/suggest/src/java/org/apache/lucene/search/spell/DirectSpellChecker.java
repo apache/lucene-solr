@@ -76,7 +76,7 @@ public class DirectSpellChecker {
   /** minimum length of a query word to return suggestions */
   private int minQueryLength = 4;
   /** maximum length of a query word to return suggestions */
-  private int maxQueryLength = 0;
+  private int maxQueryLength = Integer.MAX_VALUE;
   /** value in [0..1] (or absolute number &gt;= 1) representing the maximum
    *  number of documents (of the total) a query term can appear in to
    *  be corrected. */
@@ -206,8 +206,9 @@ public class DirectSpellChecker {
   }
 
   /** 
-   * Set the maximum length of a query term (default: 0, i.e. no maximum)
-   * to return suggestions. 
+   * Set the maximum length of a query term to return suggestions. 
+   * <p>
+   * Long queries can be expensive to process and/or trigger exceptions.
    */
   public void setMaxQueryLength(int maxQueryLength) {
     this.maxQueryLength = maxQueryLength;
@@ -334,9 +335,7 @@ public class DirectSpellChecker {
     String text = term.text();
 
     int textLength = text.codePointCount(0, text.length());
-    if (minQueryLength > 0 && textLength < minQueryLength)
-      return new SuggestWord[0];
-    if (maxQueryLength > 0 && textLength > maxQueryLength)
+    if (textLength < minQueryLength || textLength > maxQueryLength)
       return new SuggestWord[0];
     
     if (lowerCaseTerms) {
