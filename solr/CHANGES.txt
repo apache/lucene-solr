@@ -124,6 +124,8 @@ Bug Fixes
 
 * SOLR-14099: Fixed @LogLevel annotation in test-framework to correctly 'unset' Loggers after test (hossman)
 
+* SOLR-14017: Ensure bin/solr's -q and -v options work with examples (Andy Vuong via Jason Gerlowski)
+
 Other Changes
 ---------------------
 
