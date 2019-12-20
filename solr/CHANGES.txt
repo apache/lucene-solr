@@ -22,7 +22,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 Versions of Major Components
 ---------------------
-Apache Tika 1.19.1
+Apache Tika 1.23
 Carrot2 3.16.2
 Velocity 2.0 and Velocity Tools 3.0
 Apache ZooKeeper 3.5.5
@@ -75,19 +75,24 @@ Upgrade Notes
 * SOLR-13817: Legacy SolrCache implementations (LRUCache, LFUCache, FastLRUCache) have been removed.
   Users have to modify their existing configurations to use CaffeineCache instead. (ab)
 
+* SOLR-14092: Deprecated BlockJoinFacetComponent and BlockJoinDocSetFacetComponent are removed
+  Users are encouraged to migrate to uniqueBlock() in JSON Facet API.  (Mikhail Khludnev)
+  
 Improvements
 ----------------------
 
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
 
+* SOLR-13749: New cross collection join filter (XCJF) (Dan Fox, Kevin Watters, via Gus Heck)
+
+
 Other Changes
 ----------------------
-
 * SOLR-10288: Remove non-minified JavaScript from the webapp. (Erik Hatcher, marcussorealheis)
 
 * SOLR-13655:Upgrade Collections.unModifiableSet to Set.of and Set.copyOf (Atri Sharma via Tomás Fernández Löbbe)
 
-* SOLR-13797: SolrResourceLoader no longer caches bad results when asked for wrong type (Mike Drob) 
+* SOLR-13797: SolrResourceLoader no longer caches bad results when asked for wrong type (Mike Drob)
 
 * LUCENE-9092: Upgrade Carrot2 to 3.16.2 (Dawid Weiss).
 
@@ -97,7 +102,7 @@ Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this r
 
 Versions of Major Components
 ---------------------
-Apache Tika 1.19.1
+Apache Tika 1.23
 Carrot2 3.16.0
 Velocity 2.0 and Velocity Tools 3.0
 Apache ZooKeeper 3.5.5
@@ -108,13 +113,53 @@ Upgrade Notes
 
 * SOLR-14026: Upgrade Jetty to 9.4.24.v20191120 and dropwizard to 4.1.2 (Erick Erickson)
 
+* SOLR-14092: BlockJoinFacetComponent is marked for deprecation and will be removed in 9.0.
+  Users are encouraged to migrate to uniqueBlock() in JSON Facet API.  (Mikhail Khludnev)
+
+* SOLR-13983: Process execution is removed from SystemInfoHandler. A best-effort attempt to
+  execute "uname -a" and "uptime" on non-Windows platforms is no longer made. (rmuir)
+  
+* SOLR-14095 introduces a change in the format used for the elements in the Overseer queues and maps (see the Jira
+  issue for details on the reasons for the change). This queue is used internally by the Overseer to reliably handle
+  operations, to communicate operation results between the Overseer and the coordinator node, and by the
+  REQUESTSTATUS API for displaying information about async Collection operations. 
+  This change won’t require you to change any client-side code you should see no differences on the client side,
+  however, it does require some care when upgrading an existing SolrCloud cluster:
+  - If you are upgrading Solr with an atomic restart strategy:
+    - If you don’t use async or REQUESTSTATUS operations, you should be able to restart and not see any issues.
+    - If you do use Collection API operations:
+      1. pause Collection API operations
+      2. cleanup queues (https://lucene.apache.org/solr/guide/8_3/collections-api.html#examples-using-deletestatus)
+      if you use async operations
+      3. upgrade and restart the nodes
+  - If you are upgrading Solr with a rolling restart strategy:
+    - If you don’t use Collection API operations, you should be able to do a rolling restart and not see
+    any issues.
+    - If you do use Collection API operations, but you can pause their use during the restart the easiest
+    way is to:
+      1. pause Collection API operations
+      2. upgrade and restart all nodes
+      3. cleanup queues (https://lucene.apache.org/solr/guide/8_3/collections-api.html#examples-using-deletestatus)
+      if you use async operations
+      4. Resume all normal operations
+    - If you use Collection API operations and can’t pause them during the upgrade:
+      1. Start 8.5 nodes with the system property: `-Dsolr.useUnsafeOverseerResponse=deserialization`. Ensure the
+      Overseer node is upgraded last
+      2. Once all nodes are in 8.5 and once you don’t need to read old status anymore, restart again removing the
+      system property
+  If you prefer to keep the old (but insecure) serialization strategy, you can start your nodes using the
+  property: `-Dsolr.useUnsafeOverseerResponse=true`. Keep in mind that this will be removed in future version of Solr.
+ 
+
 New Features
 ---------------------
 (No changes)
 
 Improvements
 ---------------------
-(No changes)
+* SOLR-14042: Fix varargs precommit warnings (Andraas Salamon via Jason Gerlowski)
+
+* SOLR-14095: Replace Java serialization with Javabin in the Overseer queues (Tomás Fernández Löbbe)
 
 Optimizations
 ---------------------
@@ -122,12 +167,21 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+
+* SOLR-14099: Fixed @LogLevel annotation in test-framework to correctly 'unset' Loggers after test (hossman)
+
+* SOLR-14017: Ensure bin/solr's -q and -v options work with examples (Andy Vuong via Jason Gerlowski)
+
+* SOLR-14106: Cleanup Jetty SslContextFactory usage (Ryan Rockenbaugh, Jan Hoydahl, Kevin Risden)
 
 Other Changes
 ---------------------
 
-SOLR-14047: Make sure tests don't pickup other Hadoop installs (Kevin Risden)
+* SOLR-14047: Make sure tests don't pickup other Hadoop installs (Kevin Risden)
+
+* SOLR-14054: Upgrade to Tika 1.23 when available (Tim Allison)
+
+* SOLR-14091: Remove deprecated soLingerTime when configuring Jetty connector (Matthias Krueger via Kevin Risden)
 
 ==================  8.4.0 ==================
 
@@ -144,8 +198,8 @@ Jetty 9.4.19.v20190610
 Upgrade Notes
 ---------------------
 
-* org.apache.solr.search.grouping.distributed.command.QueryCommand.Builder has new method 'setMainQuery' which is used
-  to set top-level query. build() would fail if called without setting mainQuery
+* SOLR-13823: org.apache.solr.search.grouping.distributed.command.QueryCommand.Builder has new method 'setMainQuery' which is used
+  to set top-level query. build() would fail if called without setting mainQuery.
 
 * SOLR-13817: Deprecate legacy SolrCache implementations. Users are encouraged to transition their
   configurations to use org.apache.solr.search.CaffeineCache instead. (ab)
@@ -177,8 +231,15 @@ Upgrade Notes
 
 * SOLR-14071: Untrusted configsets (ones that are uploaded via unsecured configset API) cannot use <lib> directive.
   Consider enabling authentication/authorization so that the uploaded configsets are trusted.
+  Note: If you already have a collection using untrusted configset that uses <lib> directive, it will not load after
+  upgrading to 8.4. You can re-upload your configset using "bin/solr zk -upconfig .." or place your libraries in the
+  classpath and restart Solr.
 
 * SOLR-14065: VelocityResponseWriter has been deprecated and may be removed in a future version.
+
+* SOLR-14072: The "Blob Store" API and "runtimeLib" plugin mechanism that uses it is now considered deprecated. The
+  replacement to it is the "Package Management" system, which includes a "File Store". These are experimental currently
+  but will grow/stabalize/mature.
 
 New Features
 ---------------------
@@ -200,7 +261,7 @@ New Features
 
 * SOLR-13912: Add 'countvals' aggregation in JSON FacetModule (hossman, Munendra S N)
 
-* SOLR-12217: Support shards.preference in SolrJ for single shard collections. The parameter 
+* SOLR-12217: Support shards.preference in SolrJ for single shard collections. The parameter
   is now used by the CloudSolrClient and Streaming Expressions. (Houston Putman, Tomas Fernandez-Lobbe)
 
 * SOLR-14043: Allow the precision Stream Evaluator to operate on matrices (Joel bernstein)
@@ -243,14 +304,10 @@ Improvements
 * SOLR-13957: Add sensible defaults for the facet, random, facet2D, timeseries, stats
   and update Streaming Expressions (Joel Bernstein)
 
-* SOLR-13904: Analytic component abandon requests exceedig limit passed via timeAllowed parameter 
+* SOLR-13904: Analytic component abandon requests exceedig limit passed via timeAllowed parameter
   (Houston Putman, Mikhail Khludnev).
 
 * SOLR-13970: Fail the request when collapsing or expand is used with Grouping. (Erick Erickson, Joel Bernstein, Munendra S N)
-
-Optimizations
----------------------
-(No changes)
 
 Bug Fixes
 ---------------------
@@ -311,7 +368,7 @@ Bug Fixes
 * SOLR-13945: Fix: SPLITSHARD can cause data loss on a failure to commit after the sub-shards are active and a rollback
   is done to make parent shard active again (Ishan Chattopadhyaya, ab)
 
-* SOLR-14071: Untrusted configsets cannot use <lib> directive (Ishan Chattopadhyaya)
+* SOLR-14071: Untrusted configsets cannot use <lib> directive due to security reasons (Ishan Chattopadhyaya)
 
 * SOLR-14013: FIX: javabin performance regressions (noble, yonik, Houston Putman)
 

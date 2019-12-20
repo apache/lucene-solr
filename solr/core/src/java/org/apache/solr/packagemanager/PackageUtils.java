@@ -58,6 +58,9 @@ public class PackageUtils {
    * Represents a version which denotes the latest version available at the moment.
    */
   public static String LATEST = "latest";
+  
+  public static String PACKAGE_PATH = "/api/cluster/package";
+  public static String REPOSITORIES_ZK_PATH = "/repositories.json";
  
   public static Configuration jsonPathConfiguration() {
     MappingProvider provider = new JacksonMappingProvider();
@@ -168,8 +171,10 @@ public class PackageUtils {
     // TODO: Should perhaps use Matchers etc. instead of this clumsy replaceAll().
 
     if (str == null) return null;
-    for (String param: defaults.keySet()) {
-      str = str.replaceAll("\\$\\{"+param+"\\}", overrides.containsKey(param)? overrides.get(param): defaults.get(param));
+    if (defaults != null) {
+      for (String param: defaults.keySet()) {
+        str = str.replaceAll("\\$\\{"+param+"\\}", overrides.containsKey(param)? overrides.get(param): defaults.get(param));
+      }
     }
     for (String param: overrides.keySet()) {
       str = str.replaceAll("\\$\\{"+param+"\\}", overrides.get(param));
@@ -234,5 +239,9 @@ public class PackageUtils {
       }
     }
     return collections;
+  }
+  
+  public static String getCollectionParamsPath(String collection) {
+    return "/api/collections/" + collection + "/config/params";
   }
 }

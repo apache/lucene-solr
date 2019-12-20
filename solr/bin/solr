@@ -1737,10 +1737,12 @@ if [ $# -gt 0 ]; then
         ;;
         -v)
             SOLR_LOG_LEVEL=DEBUG
+            PASS_TO_RUN_EXAMPLE+=" -Dsolr.log.level=$SOLR_LOG_LEVEL"
             shift
         ;;
         -q)
             SOLR_LOG_LEVEL=WARN
+            PASS_TO_RUN_EXAMPLE+=" -Dsolr.log.level=$SOLR_LOG_LEVEL"
             shift
         ;;
         -all)

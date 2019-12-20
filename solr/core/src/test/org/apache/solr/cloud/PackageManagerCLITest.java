@@ -20,11 +20,9 @@ package org.apache.solr.cloud;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.core.config.Configurator;
-import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.core.TestSolrConfigHandler;
+import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.PackageTool;
 import org.apache.solr.util.SolrCLI;
 import org.eclipse.jetty.server.Handler;
@@ -39,6 +37,7 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@LogLevel("org.apache=INFO")
 public class PackageManagerCLITest extends SolrCloudTestCase {
 
   // Note for those who want to modify the jar files used in the packages used in this test:
@@ -70,13 +69,9 @@ public class PackageManagerCLITest extends SolrCloudTestCase {
   }
 
   @Test
-  @SuppressForbidden(reason = "Need to turn off logging, and SLF4J doesn't seem to provide for a way.")
   public void testPackageManager() throws Exception {
     PackageTool tool = new PackageTool();
     
-    // Enable the logger for this test. Need to do this since the tool disables logger.
-    Configurator.setRootLevel(Level.INFO);
-
     String solrUrl = cluster.getJettySolrRunner(0).getBaseUrl().toString();
 
     run(tool, new String[] {"-solrUrl", solrUrl, "list-installed"});

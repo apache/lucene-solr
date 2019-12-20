@@ -21,9 +21,13 @@
 
 The following notes describe changes to Solr in recent releases that you should be aware of before upgrading.
 
-These notes highlight the biggest changes that may impact the largest number of implementations. It is not a comprehensive list of all changes to Solr in any release.
+These notes highlight the biggest changes that may impact the largest number of
+implementations. It is not a comprehensive list of all changes to Solr in any release.
 
-When planning your Solr upgrade, consider the customizations you have made to your system and review the {solr-javadocs}/changes/Changes.html[`CHANGES.txt`] file found in your Solr package. That file includes all the changes and updates that may effect your existing implementation.
+When planning your Solr upgrade, consider the customizations you have made to
+your system and review the {solr-javadocs}/changes/Changes.html[`CHANGES.txt`]
+file found in your Solr package. That file includes all the changes and updates
+that may effect your existing implementation.
 
 Detailed steps for upgrading a Solr cluster are in the section <<upgrading-a-solr-cluster.adoc#upgrading-a-solr-cluster,Upgrading a Solr Cluster>>.
 
@@ -31,9 +35,133 @@ Detailed steps for upgrading a Solr cluster are in the section <<upgrading-a-sol
 
 If you are upgrading from 7.x, see the section <<Upgrading from 7.x Releases>> below.
 
+=== Solr 8.4
+
+See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote84[8.4 Release Notes]
+for an overview of the main new features of Solr 8.3.
+
+When upgrading to 8.4.x users should be aware of the following major changes from 8.3.
+
+*Package Management System*
+
+Version 8.4 introduces a package management system to Solr. The goals of the
+system are to allow hot (live) deployment of plugins, provide packaging
+guidelines for plugins, and standardize Solr's approach by following familiar
+concepts used in other package management systems.
+
+The system is designed to eventually replace use of the `<lib ../>` directive,
+the Blob Store, and other methods of deploying plugins and custom components
+to Solr.
+
+The system is currently considered experimental, so use with caution. It must
+be enabled with a system parameter passed at start up before it can be used.
+For details, please see the section <<package-manager.adoc#package-manager,Package Management>>.
+
+With this feature Solr's <<adding-custom-plugins-in-solrcloud-mode.adoc#adding-custom-plugins-in-solrcloud-mode,Blob Store>>
+functionality is now deprecated and will likely be removed in 9.0.
+
+*Security*
+
+The follow mix of changes were all made with the intention of making Solr more secure out of the box.
+
+* The `solrconfig.xml` file in Solr's `_default` configset has been trimmed of
+ the following previously pre-configured items:
++
+** All `<lib .../>` directives. This means that Solr Cell (aka Tika), Learning
+to Rank, Clustering (with Carrot2), language identification, and Velocity (for
+the `/browse` sample search interface) are no longer enabled out of the box.
+** The `/browse`, `/tvrh`, and `/update/extract` request handlers.
+** The Term Vector Component.
+** The XSLT and Velocity response writers.
++
+All of these items can be added to your Solr implementation by manually editing
+`solrconfig.xml` to add them back in, or use the <<config-api.adoc#config-api,Config API>>.
++
+The `sample_techproducts_configs` and the examples found in `./example` are unchanged.
+
+* Configsets that have been uploaded with an unsecured Configset API (i.e., when authentication is not enabled) are considered "Untrusted Configsets".
++
+In order to bolster Solr's out-of-the-box security, these untrusted configsets
+are no longer allowed to use the `<lib .../>` directive to implement contribs
+or custom Jars.
++
+When upgrading to 8.4, if you are using untrusted configsets that contain `<lib ../>`
+directives, their corresponding collections will not load (they will cease to
+work). You have a few options in this case:
+
+** You can secure your Solr instance with <<authentication-and-authorization-plugins.adoc#authentication-and-authorization-plugins,authentication>>
+and re-upload the configset (using the `bin/solr zk upconfig ...`
+<<solr-control-script-reference.adoc#solr-control-script-reference,Solr CLI>> command);
+** You can put your custom Jars in Solr's classpath instead of `lib` directories;
+** You can try the new package management system to manage your custom Jars.
++
+See the section <<configsets-api.adoc#configsets-upload,Upload a Configset>>
+ for more details about trusted vs. untrusted configsets.
+
+* Our default Jetty configuration has been updated to now set a
+Content-Security-Policy (CSP) by default. See `./server/etc/jetty.xml` for
+details about how it is configured.
++
+As a result of this change, any custom HTML served by Solr's HTTP server that contains inline Javascript will no longer execute in modern browsers. The options for you are:
+
+** Change your JavaScript code to not run inline any longer;
+** Edit `jetty.xml` to remove CSP (creating weaker security protection);
+** Remove/alter the headers with a reverse proxy.
+
+* Solr's Blob Store and runtime libs functionality are now deprecated and are planned to be removed from Solr in version 9.0. It has been replaced with the new package management system.
+
+* The Velocity response writer is also now deprecated and is planned to be removed from Solr in version 9.0.
+
+*Using Collapse with Group Disallowed*
+
+Using the <<collapse-and-expand-results.adoc#collapse-and-expand-results,CollapsingQueryParser>>
+with <<result-grouping.adoc#result-grouping,Result Grouping>> has never been
+supported as it causes inconsistent behavior and NullPointerException errors.
+We have now explicitly disallowed this combination to prevent these errors.
+If you are using these together, you will need to modify your queries.
+
+*SolrJ*
+
+* SolrJ now supports the `shards.preference` parameter for single-shard
+scenarios to ensure multi-shard and single-shard request routing works in the same way.
++
+See <<using-solrj.adoc#cloud-request-routing,Cloud Request Routing>> and
+<<distributed-requests.adoc#shards-preference-parameter,shards.preference Parameter>> for details.
+
+* `QueryResponse.getExplainMap()` type has changed from `Map<String, String>` to `Map<String, Object>` in order to support structured explanations.
++
+This change is expected to be mostly back-compatible. Compiled third-party
+components will work the same due to type erasure, but source code changes may
+be required.
+
+* Replica routing code has been moved to SolrJ, making those classes available
+to clients if necessary.
+
+*Streaming Expressions*
+
+* A new DBSCAN clustering streaming evaluator has been added.
+
+* The `precision` stream evaluator can now operate on matrices.
+
+* The `random` streaming expression can now create the x-axis.
+
+*JSON Facets*
+
+* Two new aggregations have been added: `missing` and `countvals`.
+
+* Several aggregations now support multi-valued fields: `min`, `max`, `avg`, `sum`, `sumsq`, `stddev`, `variance`, and `percentile`.
+
+*Caches*
+
+* After the addition of `CaffeineCache` in 8.3, legacy SolrCache
+implementations are deprecated and likely to be removed in 9.0.
++
+Users are encouraged to transition their cache configurations to use
+`org.apache.solr.search.CaffeineCache` as soon as feasible.
+
 === Solr 8.3
 
-See the 8.3 Release Notes for an overview of the main new features of Solr 8.3.
+See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote83[8.3 Release Notes] for an overview of the main new features of Solr 8.3.
 
 When upgrading to 8.3.x users should be aware of the following major changes from 8.2.
 

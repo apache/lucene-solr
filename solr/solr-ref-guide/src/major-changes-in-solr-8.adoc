@@ -403,7 +403,7 @@ See the https://wiki.apache.org/solr/ReleaseNote73[7.3 Release Notes] for an ove
 
 When upgrading to Solr 7.3, users should be aware of the following major changes from v7.2:
 
-*ConfigSets*
+*Configsets*
 
 * Collections created without specifying a configset name have used a copy of the `_default` configset since Solr 7.0. Before 7.3, the copied configset was named the same as the collection name, but from 7.3 onwards it will be named with a new ".AUTOCREATED" suffix. This is to prevent overwriting custom configset names.
 

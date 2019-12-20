@@ -16,17 +16,18 @@
  */
 package org.apache.solr.client.solrj;
 
+import org.apache.solr.common.MapWriter;
+import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SuppressForbidden;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-
-import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.SolrException;
-import org.apache.solr.common.SolrException.ErrorCode;
-import org.apache.solr.common.util.NamedList;
 
 
 /**
@@ -60,6 +61,8 @@ public abstract class SolrResponse implements Serializable, MapWriter {
     return new SolrException(errorCode, (String)exp.get("msg"));
   }
   
+  @SuppressForbidden(reason = "XXX: security hole")
+  @Deprecated
   public static byte[] serializable(SolrResponse response) {
     try {
       ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
@@ -71,6 +74,8 @@ public abstract class SolrResponse implements Serializable, MapWriter {
     }
   }
   
+  @SuppressForbidden(reason = "XXX: security hole")
+  @Deprecated
   public static SolrResponse deserialize(byte[] bytes) {
     try {
       ByteArrayInputStream byteStream = new ByteArrayInputStream(bytes);

@@ -27,9 +27,9 @@ After you update a resource, you'll typically need to _reload_ the affected coll
 Restarting all affected Solr nodes also works.
 <<managed-resources.adoc#managed-resources,Managed resources>> can be manipulated via APIs and do not need an explicit reload.
 
-== Resources in ConfigSets
+== Resources in Configsets
 
-<<config-sets.adoc#config-sets,ConfigSets>> are the directories containing solrconfig.xml, the schema, and resources referenced by them.
+<<config-sets.adoc#config-sets,Configsets>> are the directories containing solrconfig.xml, the schema, and resources referenced by them.
 In SolrCloud they are in ZooKeeper whereas in standalone they are on the file system.
 In either mode, configSets might be shared or might be dedicated to a configSet.
 Prefer to put resources here.
