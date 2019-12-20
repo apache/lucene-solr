@@ -105,6 +105,10 @@ public class FSTDictionary implements IndexDictionary {
     return new Browser();
   }
 
+  /**
+   * Stateful {@link Browser} to seek a term in this {@link FSTDictionary}
+   * and get its corresponding block file pointer in the block file.
+   */
   protected class Browser implements IndexDictionary.Browser {
 
     protected final BytesRefFSTEnum<Long> fstEnum = new BytesRefFSTEnum<>(dictionary);
@@ -187,6 +191,11 @@ public class FSTDictionary implements IndexDictionary {
     }
   }
 
+  /**
+   * Provides stateful {@link Browser} to seek in the {@link FSTDictionary}.
+   *
+   * @lucene.experimental
+   */
   public static class BrowserSupplier implements IndexDictionary.BrowserSupplier {
 
     protected final IndexInput dictionaryInput;

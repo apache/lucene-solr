@@ -19,7 +19,6 @@ package org.apache.lucene.codecs.uniformsplit;
 
 import java.io.IOException;
 
-import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
@@ -133,8 +132,9 @@ public interface IndexDictionary extends Accountable {
    * Supplier for a new stateful {@link Browser} created on the immutable {@link IndexDictionary}.
    * <p>
    * The immutable {@link IndexDictionary} is lazy loaded thread safely. This lazy loading allows
-   * us to load it only when {@link TermsEnum#seekCeil} or {@link TermsEnum#seekExact} are called
-   * (it is not loaded for a direct all-terms enumeration).
+   * us to load it only when {@link org.apache.lucene.index.TermsEnum#seekCeil} or
+   * {@link org.apache.lucene.index.TermsEnum#seekExact} are called (it is not loaded for a direct
+   * all-terms enumeration).
    */
   interface BrowserSupplier extends Accountable {
 
