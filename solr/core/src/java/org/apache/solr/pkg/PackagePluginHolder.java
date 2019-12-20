@@ -104,6 +104,10 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
     log.info("loading plugin: {} -> {} using  package {}:{}",
         pluginInfo.type, pluginInfo.name, pkg.name(), newest.getVersion());
 
+    initNewInstance(newest);
+  }
+
+  protected void initNewInstance(PackageLoader.Package.Version newest) {
     Object instance = SolrCore.createInstance(pluginInfo.className,
         pluginMeta.clazz, pluginMeta.getCleanTag(), core, newest.getLoader());
     PluginBag.initInstance(instance, pluginInfo);
