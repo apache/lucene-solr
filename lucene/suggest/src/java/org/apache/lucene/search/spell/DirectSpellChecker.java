@@ -197,6 +197,8 @@ public class DirectSpellChecker {
    * metric.
    */
   public void setMinQueryLength(int minQueryLength) {
+    if (minQueryLength > this.maxQueryLength)
+      throw new IllegalArgumentException("minQueryLength must not be greater than maxQueryLength");
     this.minQueryLength = minQueryLength;
   }
 
@@ -211,6 +213,8 @@ public class DirectSpellChecker {
    * Long queries can be expensive to process and/or trigger exceptions.
    */
   public void setMaxQueryLength(int maxQueryLength) {
+    if (maxQueryLength < this.minQueryLength)
+      throw new IllegalArgumentException("maxQueryLength must not be smaller than minQueryLength");
     this.maxQueryLength = maxQueryLength;
   }
 
