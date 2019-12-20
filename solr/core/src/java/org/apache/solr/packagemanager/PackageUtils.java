@@ -171,8 +171,10 @@ public class PackageUtils {
     // TODO: Should perhaps use Matchers etc. instead of this clumsy replaceAll().
 
     if (str == null) return null;
-    for (String param: defaults.keySet()) {
-      str = str.replaceAll("\\$\\{"+param+"\\}", overrides.containsKey(param)? overrides.get(param): defaults.get(param));
+    if (defaults != null) {
+      for (String param: defaults.keySet()) {
+        str = str.replaceAll("\\$\\{"+param+"\\}", overrides.containsKey(param)? overrides.get(param): defaults.get(param));
+      }
     }
     for (String param: overrides.keySet()) {
       str = str.replaceAll("\\$\\{"+param+"\\}", overrides.get(param));

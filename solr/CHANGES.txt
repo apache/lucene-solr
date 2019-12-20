@@ -83,7 +83,7 @@ Improvements
 
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
 
-* SOLR-13749: New cross collection join filter (XCJF) (Kevin Fox, Kevin Watters, via Gus Heck)
+* SOLR-13749: New cross collection join filter (XCJF) (Dan Fox, Kevin Watters, via Gus Heck)
 
 
 Other Changes
@@ -116,13 +116,16 @@ Upgrade Notes
 * SOLR-14092: BlockJoinFacetComponent is marked for deprecation and will be removed in 9.0.
   Users are encouraged to migrate to uniqueBlock() in JSON Facet API.  (Mikhail Khludnev)
 
+* SOLR-13983: Process execution is removed from SystemInfoHandler. A best-effort attempt to
+  execute "uname -a" and "uptime" on non-Windows platforms is no longer made. (rmuir)
+
 New Features
 ---------------------
 (No changes)
 
 Improvements
 ---------------------
-(No changes)
+* SOLR-14042: Fix varargs precommit warnings (Andraas Salamon via Jason Gerlowski)
 
 Optimizations
 ---------------------
@@ -133,6 +136,8 @@ Bug Fixes
 
 * SOLR-14099: Fixed @LogLevel annotation in test-framework to correctly 'unset' Loggers after test (hossman)
 
+* SOLR-14106: Cleanup Jetty SslContextFactory usage (Ryan Rockenbaugh, Jan Hoydahl, Kevin Risden)
+
 Other Changes
 ---------------------
 
@@ -140,6 +145,7 @@ Other Changes
 
 * SOLR-14054: Upgrade to Tika 1.23 when available (Tim Allison)
 
+* SOLR-14091: Remove deprecated soLingerTime when configuring Jetty connector (Matthias Krueger via Kevin Risden)
 
 ==================  8.4.0 ==================
 
@@ -156,8 +162,8 @@ Jetty 9.4.19.v20190610
 Upgrade Notes
 ---------------------
 
-* org.apache.solr.search.grouping.distributed.command.QueryCommand.Builder has new method 'setMainQuery' which is used
-  to set top-level query. build() would fail if called without setting mainQuery
+* SOLR-13823: org.apache.solr.search.grouping.distributed.command.QueryCommand.Builder has new method 'setMainQuery' which is used
+  to set top-level query. build() would fail if called without setting mainQuery.
 
 * SOLR-13817: Deprecate legacy SolrCache implementations. Users are encouraged to transition their
   configurations to use org.apache.solr.search.CaffeineCache instead. (ab)
@@ -266,10 +272,6 @@ Improvements
   (Houston Putman, Mikhail Khludnev).
 
 * SOLR-13970: Fail the request when collapsing or expand is used with Grouping. (Erick Erickson, Joel Bernstein, Munendra S N)
-
-Optimizations
----------------------
-(No changes)
 
 Bug Fixes
 ---------------------

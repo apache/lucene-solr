@@ -132,7 +132,7 @@
         <Arg>
           <New class="org.eclipse.jetty.rewrite.handler.RedirectRegexRule">
             <Set name="regex">^/$</Set>
-            <Set name="replacement">/solr/</Set>
+            <Set name="location">/solr/</Set>
           </New>
         </Arg>
       </Call>
