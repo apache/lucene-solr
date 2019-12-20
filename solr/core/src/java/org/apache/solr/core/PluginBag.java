@@ -129,9 +129,8 @@ public class PluginBag<T> implements AutoCloseable {
   public PluginHolder<T> createPlugin(PluginInfo info) {
     if ("true".equals(String.valueOf(info.attributes.get("runtimeLib")))) {
       log.debug(" {} : '{}'  created with runtimeLib=true ", meta.getCleanTag(), info.name);
-      LazyPluginHolder<T> holder = new LazyPluginHolder<>(meta, info, core, RuntimeLib.isEnabled() ?
-          core.getMemClassLoader() :
-          core.getResourceLoader(), true);
+      //nocommit breaking runtimeLib here
+      LazyPluginHolder<T> holder = new LazyPluginHolder<T>(meta, info, core, core.getResourceLoader(), true);
 
       return meta.clazz == UpdateRequestProcessorFactory.class ?
           (PluginHolder<T>) new UpdateRequestProcessorChain.LazyUpdateProcessorFactoryHolder(holder) :
@@ -140,11 +139,10 @@ public class PluginBag<T> implements AutoCloseable {
       log.debug("{} : '{}' created with startup=lazy ", meta.getCleanTag(), info.name);
       return new LazyPluginHolder<T>(meta, info, core, core.getResourceLoader(), false);
     } else {
-      if (info.pkgName != null) {
-        PackagePluginHolder<T> holder = new PackagePluginHolder<>(info, core, meta);
-        return holder;
+      if (core.getResourceLoader().getPackage(info.pkgName) != null) {
+        return new PackagePluginHolder<>(info, core, meta);
       } else {
-        T inst = core.createInstance(info.className, (Class<T>) meta.clazz, meta.getCleanTag(), null, core.getResourceLoader(info.pkgName));
+        T inst = core.newInstance(info, (Class<T>) meta.clazz, null, core.getResourceLoader());
         initInstance(inst, info);
         return new PluginHolder<>(info, inst);
       }
@@ -403,23 +401,16 @@ public class PluginBag<T> implements AutoCloseable {
     private final SolrConfig.SolrPluginInfo pluginMeta;
     protected SolrException solrException;
     private final SolrCore core;
-    protected ResourceLoader resourceLoader;
+    protected SolrResourceLoader resourceLoader; // nocommit breaking runtimeLib here
     private final boolean isRuntimeLib;
 
-
-    LazyPluginHolder(SolrConfig.SolrPluginInfo pluginMeta, PluginInfo pluginInfo, SolrCore core, ResourceLoader loader, boolean isRuntimeLib) {
+    LazyPluginHolder(SolrConfig.SolrPluginInfo pluginMeta, PluginInfo pluginInfo, SolrCore core, SolrResourceLoader loader, boolean isRuntimeLib) {
       super(pluginInfo);
       this.pluginMeta = pluginMeta;
       this.isRuntimeLib = isRuntimeLib;
       this.core = core;
       this.resourceLoader = loader;
-      if (loader instanceof MemClassLoader) {
-        if (!RuntimeLib.isEnabled()) {
-          String s = "runtime library loading is not enabled, start Solr with -Denable.runtime.lib=true";
-          log.warn(s);
-          solrException = new SolrException(SolrException.ErrorCode.SERVER_ERROR, s);
-        }
-      }
+      // nocommit breaking runtimeLib here
     }
 
     @Override
@@ -443,16 +434,15 @@ public class PluginBag<T> implements AutoCloseable {
     private synchronized boolean createInst() {
       if (lazyInst != null) return false;
       log.info("Going to create a new {} with {} ", pluginMeta.getCleanTag(), pluginInfo.toString());
-      if (resourceLoader instanceof MemClassLoader) {
-        MemClassLoader loader = (MemClassLoader) resourceLoader;
-        loader.loadJars();
-      }
+      // nocommit breaking runtimeLib here
+
       Class<T> clazz = (Class<T>) pluginMeta.clazz;
       T localInst = null;
       try {
-        localInst = core.createInstance(pluginInfo.className, clazz, pluginMeta.getCleanTag(), null, resourceLoader);
+        localInst = core.newInstance(pluginInfo, clazz, null, resourceLoader);
       } catch (SolrException e) {
-        if (isRuntimeLib && !(resourceLoader instanceof MemClassLoader)) {
+        // nocommit breaking runtimeLib here
+        if (isRuntimeLib) {
           throw new SolrException(SolrException.ErrorCode.getErrorCode(e.code()),
               e.getMessage() + ". runtime library loading is not enabled, start Solr with -Denable.runtime.lib=true",
               e.getCause());

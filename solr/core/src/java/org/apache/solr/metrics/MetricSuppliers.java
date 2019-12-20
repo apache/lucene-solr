@@ -197,7 +197,7 @@ public class MetricSuppliers {
     } else { // custom reservoir
       Reservoir reservoir;
       try {
-        reservoir = loader.newInstance(clazz, Reservoir.class);
+        reservoir = loader.newInstance(clazz, Reservoir.class); //nocommit use PluginInfo
         if (reservoir instanceof PluginInfoInitialized) {
           ((PluginInfoInitialized)reservoir).init(info);
         } else {
@@ -283,7 +283,7 @@ public class MetricSuppliers {
 
     MetricRegistry.MetricSupplier<Counter> supplier;
     try {
-      supplier = loader.newInstance(info.className, MetricRegistry.MetricSupplier.class);
+      supplier = loader.newInstance(info, MetricRegistry.MetricSupplier.class);
     } catch (Exception e) {
       log.warn("Error creating custom Counter supplier (will use default): " + info, e);
       supplier = new DefaultCounterSupplier();
@@ -308,7 +308,7 @@ public class MetricSuppliers {
       supplier = new DefaultMeterSupplier();
     } else {
       try {
-        supplier = loader.newInstance(info.className, MetricRegistry.MetricSupplier.class);
+        supplier = loader.newInstance(info, MetricRegistry.MetricSupplier.class);
       } catch (Exception e) {
         log.warn("Error creating custom Meter supplier (will use default): " + info, e);
         supplier = new DefaultMeterSupplier();
@@ -334,7 +334,7 @@ public class MetricSuppliers {
       supplier = new DefaultTimerSupplier(loader);
     } else {
       try {
-        supplier = loader.newInstance(info.className, MetricRegistry.MetricSupplier.class);
+        supplier = loader.newInstance(info, MetricRegistry.MetricSupplier.class);
       } catch (Exception e) {
         log.warn("Error creating custom Timer supplier (will use default): " + info, e);
         supplier = new DefaultTimerSupplier(loader);
@@ -359,7 +359,7 @@ public class MetricSuppliers {
       supplier = new DefaultHistogramSupplier(loader);
     } else {
       try {
-        supplier = loader.newInstance(info.className, MetricRegistry.MetricSupplier.class);
+        supplier = loader.newInstance(info, MetricRegistry.MetricSupplier.class);
       } catch (Exception e) {
         log.warn("Error creating custom Histogram supplier (will use default): " + info, e);
         supplier = new DefaultHistogramSupplier(loader);

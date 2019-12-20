@@ -59,7 +59,7 @@ public class CloudConfigSetService extends ConfigSetService {
     } catch (KeeperException ex) {
       throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "Specified config does not exist in ZooKeeper: " + cd.getCollectionName());
     }
-    return new ZkSolrResourceLoader(cd.getInstanceDir(), configName, parentLoader.getClassLoader(),
+    return new ZkSolrResourceLoader(cd.getInstanceDir(), configName, parentLoader,
         cd.getSubstitutableProperties(), zkController);
   }
 

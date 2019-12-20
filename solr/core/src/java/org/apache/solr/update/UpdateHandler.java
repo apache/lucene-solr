@@ -125,7 +125,7 @@ public abstract class UpdateHandler implements SolrInfoBean {
       DirectoryFactory dirFactory = core.getDirectoryFactory();
       if (dirFactory instanceof HdfsDirectoryFactory) {
         ulog = new HdfsUpdateLog(((HdfsDirectoryFactory)dirFactory).getConfDir());
-      } else {
+      } else { //nocommit use PluginInfo
         String className = ulogPluginInfo.className == null ? UpdateLog.class.getName() : ulogPluginInfo.className;
         ulog = core.getResourceLoader().newInstance(className, UpdateLog.class);
       }

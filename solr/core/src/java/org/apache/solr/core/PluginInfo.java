@@ -92,6 +92,11 @@ public class PluginInfo implements MapSerializable {
     isFromSolrConfig = true;
   }
 
+  // nocommit reconsider?
+  public PluginInfo(String type, String cName) {
+    this(type, Collections.singletonMap("class", cName));
+  }
+
   public PluginInfo(String type, Map<String,Object> map) {
     LinkedHashMap m = new LinkedHashMap<>(map);
     initArgs = new NamedList();
@@ -218,5 +223,10 @@ public class PluginInfo implements MapSerializable {
         initArgs != null ? initArgs.clone() : null, children);
     result.isFromSolrConfig = isFromSolrConfig;
     return result;
+  }
+
+  // TODO document
+  public String getOriginalClassName() {
+    return (pkgName == null) ? className : pkgName + ":" + className;
   }
 }

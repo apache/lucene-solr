@@ -43,8 +43,7 @@ public abstract class TracerConfigurator implements NamedListInitializedPlugin {
         GlobalTracer.get().setSamplePercentage(0.0);
       }
     } else {
-      TracerConfigurator configurator = loader
-          .newInstance(info.className, TracerConfigurator.class);
+      TracerConfigurator configurator = loader.newInstance(info, TracerConfigurator.class);
       configurator.init(info.initArgs);
 
       GlobalTracer.setup(configurator.getTracer());

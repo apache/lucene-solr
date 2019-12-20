@@ -62,7 +62,7 @@ public abstract class IndexSchemaFactory implements NamedListInitializedPlugin {
     PluginInfo info = config.getPluginInfo(IndexSchemaFactory.class.getName());
     IndexSchemaFactory factory;
     if (null != info) {
-      factory = config.getResourceLoader().newInstance(info.className, IndexSchemaFactory.class);
+      factory = config.getResourceLoader().newInstance(info, IndexSchemaFactory.class);
       factory.init(info.initArgs);
     } else {
       factory = config.getResourceLoader().newInstance(ManagedIndexSchemaFactory.class.getName(), IndexSchemaFactory.class);

@@ -260,6 +260,7 @@ public class PackageLoader implements Closeable {
               paths,
               coreContainer.getResourceLoader().getInstancePath(),
               coreContainer.getResourceLoader().getClassLoader());
+          loader.pkg = parent;
         } catch (MalformedURLException e) {
           log.error("Could not load classloader ", e);
         }

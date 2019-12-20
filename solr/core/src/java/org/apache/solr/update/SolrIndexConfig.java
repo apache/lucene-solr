@@ -271,7 +271,7 @@ public class SolrIndexConfig implements MapSerializable {
       mpfClassName = DEFAULT_MERGE_POLICY_FACTORY_CLASSNAME;
       mpfArgs = new MergePolicyFactoryArgs();
     } else {
-      mpfClassName = mergePolicyFactoryInfo.className;
+      mpfClassName = mergePolicyFactoryInfo.getOriginalClassName();
       mpfArgs = new MergePolicyFactoryArgs(mergePolicyFactoryInfo.initArgs);
     }
 
@@ -287,7 +287,10 @@ public class SolrIndexConfig implements MapSerializable {
 
   private MergeScheduler buildMergeScheduler(SolrResourceLoader resourceLoader) {
     String msClassName = mergeSchedulerInfo == null ? SolrIndexConfig.DEFAULT_MERGE_SCHEDULER_CLASSNAME : mergeSchedulerInfo.className;
-    MergeScheduler scheduler = resourceLoader.newInstance(msClassName, MergeScheduler.class);
+    MergeScheduler scheduler =
+        mergeSchedulerInfo == null
+            ? resourceLoader.newInstance(msClassName, MergeScheduler.class)
+            : resourceLoader.newInstance(mergeSchedulerInfo, MergeScheduler.class);
 
     if (mergeSchedulerInfo != null) {
       // LUCENE-5080: these two setters are removed, so we have to invoke setMaxMergesAndThreads

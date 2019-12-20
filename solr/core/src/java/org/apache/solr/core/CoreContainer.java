@@ -746,7 +746,9 @@ public class CoreContainer {
 
     if (isZooKeeperAware()) {
       metricManager.loadClusterReporters(metricReporters, this);
+      // TODO ought to create PackageLoader and attach to SolrResourceLoader *much* earlier to enable more plugins
       packageLoader = new PackageLoader(this);
+      loader.setPackageLoader(packageLoader);
       containerHandlers.getApiBag().register(new AnnotatedApi(packageLoader.getPackageAPI().editAPI), Collections.EMPTY_MAP);
       containerHandlers.getApiBag().register(new AnnotatedApi(packageLoader.getPackageAPI().readAPI), Collections.EMPTY_MAP);
     }

@@ -43,6 +43,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
@@ -64,9 +65,11 @@ import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardHandlerFactory;
+import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.rest.RestManager;
@@ -94,10 +97,11 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
       "spelling.suggest.", "spelling.suggest.fst.", "rest.schema.analysis.", "security.", "handler.admin.",
       "cloud.autoscaling."
   };
-  private static final java.lang.String SOLR_CORE_NAME = "solr.core.name";
+  private static final String SOLR_CORE_NAME = "solr.core.name";
   private static Set<String> loggedOnce = new ConcurrentSkipListSet<>();
   private static final Charset UTF_8 = StandardCharsets.UTF_8;
 
+  public PackageLoader.Package pkg; // nocommit hackday
 
   private String name = "";
   protected URLClassLoader classLoader;
@@ -109,6 +113,8 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
   private final List<ResourceLoaderAware> waitingForResources = Collections.synchronizedList(new ArrayList<ResourceLoaderAware>());
 
   private final Properties coreProperties;
+
+  private volatile PackageLoader packageLoader; // optional; some leaves don't have it
 
   private volatile boolean live;
   
@@ -513,6 +519,7 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
    * @return the loaded class. An exception is thrown if it fails
    */
   public <T> Class<? extends T> findClass(String cname, Class<T> expectedType, String... subpackages) {
+    // Try classNameCache
     if (subpackages == null || subpackages.length == 0 || subpackages == packages) {
       subpackages = packages;
       String c = classNameCache.get(cname);
@@ -529,6 +536,18 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
     
     Class<? extends T> clazz = null;
     try {
+      // If there is a package name prefix ...
+      Pair<String, String> pkgClassPair = PluginInfo.parseClassName(cname);
+      PackageLoader.Package pkg = getPackage(pkgClassPair.first());
+      if (pkg == null) {
+        // essentially, remove the package prefix and continue as normal.  Maybe it'll be found.
+        cname = pkgClassPair.second();
+      } else {
+        // TODO what version?
+        SolrResourceLoader loader = pkg.getLatest().getLoader();
+        return loader.findClass(pkgClassPair.second(), expectedType, subpackages);
+      }
+
       // first try legacy analysis patterns, now replaced by Lucene's Analysis package:
       final Matcher m = legacyAnalysisPattern.matcher(cname);
       if (m.matches()) {
@@ -589,9 +608,23 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
       }
     }
   }
-  
+
   static final String empty[] = new String[0];
-  
+
+  /** @see org.apache.lucene.analysis.util.ResourceLoader#newInstance(java.lang.String, java.lang.Class) */
+  public <T> T newInstance(PluginInfo pluginInfo, Class<T> expectedType) {
+    String className;
+    if (pkg != null && pkg.name().equals(pluginInfo.pkgName)) { // refers to ourself
+      className = pluginInfo.className;
+    } else {
+      if (pkg != null && pluginInfo.pkgName != null) { //nocommit
+        log.warn("Package " + pkg + " is trying to load " + pluginInfo.getOriginalClassName());
+      }
+      className = pluginInfo.getOriginalClassName();
+    }
+    return newInstance(className, expectedType);
+  }
+
   @Override
   public <T> T newInstance(String name, Class<T> expectedType) {
     return newInstance(name, expectedType, empty);
@@ -954,4 +987,46 @@ public class SolrResourceLoader implements ResourceLoader,Closeable
     }
   }
 
+  // TODO document these methods...
+  public void setPackageLoader(PackageLoader packageLoader) {
+    assert this.packageLoader == null;
+    this.packageLoader = packageLoader;
+  }
+
+  public PackageLoader getPackageLoader() {
+    return packageLoader;
+  }
+
+  public PackageLoader.Package getPackage(String pkgName) {
+    if (pkgName == null) {
+      return null;
+    }
+    PackageLoader packageLoader = this.packageLoader; // volatile read
+    if (packageLoader != null) {
+      PackageLoader.Package pkg = packageLoader.getPackage(pkgName);
+      if (pkg != null) {
+        return pkg;
+      }
+    }
+    handleUnresolvedPackage(packageLoader, pkgName);
+    return null;
+  }
+
+  private static Set<String> unresolvedPackages = Collections.synchronizedSet(new HashSet<>());
+
+  void handleUnresolvedPackage(PackageLoader packageLoader, String pkg) {
+    assert pkg != null;
+    boolean added = unresolvedPackages.add(pkg);
+    if (added) { // first time we've seen this pkg
+      String message = "Package '" + pkg + "' is not found";
+      if (packageLoader == null) {
+        message += "; no packageLoader";
+      }
+      if (Boolean.getBoolean("solr.lenientUnresolvedPackage")) {
+        log.warn(message);
+      } else {
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, message);
+      }
+    }
+  }
 }

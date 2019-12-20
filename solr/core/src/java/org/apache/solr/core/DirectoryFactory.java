@@ -420,7 +420,7 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
     final DirectoryFactory dirFactory;
     if (info != null) {
       log.debug(info.className);
-      dirFactory = config.getResourceLoader().newInstance(info.className, DirectoryFactory.class);
+      dirFactory = config.getResourceLoader().newInstance(info, DirectoryFactory.class);
       // allow DirectoryFactory instances to access the CoreContainer
       dirFactory.initCoreContainer(cc);
       dirFactory.init(info.initArgs);

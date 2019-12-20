@@ -71,7 +71,7 @@ public class BackupRepositoryFactory {
     PluginInfo repo = Objects.requireNonNull(backupRepoPluginByName.get(name),
         "Could not find a backup repository with name " + name);
 
-    BackupRepository result = loader.newInstance(repo.className, BackupRepository.class);
+    BackupRepository result = loader.newInstance(repo, BackupRepository.class);
     result.init(repo.initArgs);
     return result;
   }

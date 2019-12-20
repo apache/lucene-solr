@@ -45,6 +45,7 @@ import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -275,7 +276,7 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
         for (Map.Entry<String, String> entry : customTools.entrySet()) {
           String name = entry.getKey();
           // TODO: at least log a warning when one of the *fixed* tools classes is same name with a custom one, currently silently ignored
-          Object customTool = SolrCore.createInstance(entry.getValue(), Object.class, "VrW custom tool: " + name, request.getCore(), request.getCore().getResourceLoader());
+          Object customTool = SolrCore.newInstance(new PluginInfo(name, entry.getValue()), Object.class, request.getCore(), request.getCore().getResourceLoader());
           if (customTool instanceof LocaleConfig) {
             ((LocaleConfig) customTool).configure(toolConfig);
           }
