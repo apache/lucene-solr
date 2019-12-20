@@ -65,7 +65,7 @@ public class OverseerSolrResponse extends SolrResponse {
   @SuppressWarnings("deprecation")
   public static byte[] serialize(OverseerSolrResponse responseObject) {
     Objects.requireNonNull(responseObject);
-    if (Boolean.getBoolean("solr.unsafeOverseerResponseSerialization")) {
+    if (useUnsafeSerialization()) {
       return SolrResponse.serializable(responseObject);
     }
     try {
@@ -75,6 +75,16 @@ public class OverseerSolrResponse extends SolrResponse {
     }
   }
   
+  static boolean useUnsafeSerialization() {
+    String useUnsafeOverseerResponse = System.getProperty("solr.useUnsafeOverseerResponse");
+    return useUnsafeOverseerResponse != null && ("true".equals(useUnsafeOverseerResponse));
+  }
+  
+  static boolean useUnsafeDeserialization() {
+    String useUnsafeOverseerResponse = System.getProperty("solr.useUnsafeOverseerResponse");
+    return useUnsafeOverseerResponse != null && ("true".equals(useUnsafeOverseerResponse) || "deserialization".equals(useUnsafeOverseerResponse));
+  }
+
   @SuppressWarnings("deprecation")
   public static OverseerSolrResponse deserialize(byte[] responseBytes) {
     Objects.requireNonNull(responseBytes);
@@ -83,7 +93,7 @@ public class OverseerSolrResponse extends SolrResponse {
       NamedList<Object> response = (NamedList<Object>) Utils.fromJavabin(responseBytes);
       return new OverseerSolrResponse(response);
     } catch (IOException|RuntimeException e) {
-      if (Boolean.getBoolean("solr.unsafeOverseerResponseDeserialization")) {
+      if (useUnsafeDeserialization()) {
         return (OverseerSolrResponse) SolrResponse.deserialize(responseBytes);
       }
       throw new SolrException(ErrorCode.SERVER_ERROR, "Exception deserializing response from Javabin", e);

@@ -23,14 +23,39 @@ public class OverseerSolrResponseUnsafeSerializationTest extends OverseerSolrRes
   
   @BeforeClass
   public static void setUpClass() {
-    System.setProperty("solr.unsafeOverseerResponseSerialization", "true");
-    System.setProperty("solr.unsafeOverseerResponseDeserialization", "true");
+    System.setProperty("solr.useUnsafeOverseerResponse", "true");
   }
   
   @AfterClass
   public static void tearDownClass() {
-    System.clearProperty("solr.unsafeOverseerResponseSerialization");
-    System.clearProperty("solr.unsafeOverseerResponseDeserialization");
+    System.clearProperty("solr.useUnsafeOverseerResponse");
+  }
+  
+  
+  public void testUnsafeSerializartionToggles() {
+    assertToggles("true", true, true);
+    assertToggles("deserialization", false, true);
+    assertToggles(null, false, false); // By default, don't use unsafe
+    assertToggles("foo", false, false);
+    assertToggles("false", false, false);
+    assertToggles("serialization", false, false); // This is not an option
+  }
+
+  private void assertToggles(String propertyValue, boolean serializationEnabled, boolean deserializationEnabled) {
+    String previousValue = System.getProperty("solr.useUnsafeOverseerResponse");
+    try  {
+      if (propertyValue == null) {
+        System.clearProperty("solr.useUnsafeOverseerResponse");
+      } else {
+        System.setProperty("solr.useUnsafeOverseerResponse", propertyValue);
+      }
+      assertEquals("Unexpected serialization toggle for value: " + propertyValue, serializationEnabled, OverseerSolrResponse.useUnsafeSerialization());
+      assertEquals("Unexpected serialization toggle for value: " + propertyValue, deserializationEnabled, OverseerSolrResponse.useUnsafeDeserialization());
+    } finally {
+      if (previousValue != null) {
+        System.setProperty("solr.useUnsafeOverseerResponse", previousValue);
+      }
+    }
   }
 
 }

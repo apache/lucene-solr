@@ -119,7 +119,7 @@ Upgrade Notes
 * SOLR-13983: Process execution is removed from SystemInfoHandler. A best-effort attempt to
   execute "uname -a" and "uptime" on non-Windows platforms is no longer made. (rmuir)
   
-* SOLR-14095 introduces a change in the format used  for the elements in the Overseer queues and maps (see the Jira
+* SOLR-14095 introduces a change in the format used for the elements in the Overseer queues and maps (see the Jira
   issue for details on the reasons for the change). This queue is used internally by the Overseer to reliably handle
   operations, and by the REQUESTSTATUS API for displaying information about async Collection operations. 
   This change won’t require you to change any client-side code, even if you use async operations and REQUESTSTATUS,
@@ -141,13 +141,12 @@ Upgrade Notes
       3. cleanup queues (https://lucene.apache.org/solr/guide/8_3/collections-api.html#examples-using-deletestatus)
       4. Resume all normal operations
     - If you use REQUESTSTATUS and async operations and can’t pause them during the upgrade:
-      1. Start 8.5 nodes with the system property: `-Dsolr.unsafeOverseerResponseDeserialization=true`. Ensure the
+      1. Start 8.5 nodes with the system property: `-Dsolr.useUnsafeOverseerResponse=deserialization`. Ensure the
       Overseer node is upgraded last.
       2. Once all nodes are in 8.5 and once you don’t need to read old status anymore,  restart again removing the
       system property.
-  If you prefer to keep the old (but insecure) serialization strategy, you can start your nodes using both
-  properties: `-Dsolr.unsafeOverseerResponseSerialization=true` and `-Dsolr.unsafeOverseerResponseDeserialization=true`.
-  Keep in mind that this will be removed in future version of Solr.
+  If you prefer to keep the old (but insecure) serialization strategy, you can start your nodes using the
+  property: `-Dsolr.useUnsafeOverseerResponse=true`. Keep in mind that this will be removed in future version of Solr.
  
 
 New Features
