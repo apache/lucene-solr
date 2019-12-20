@@ -419,7 +419,7 @@ public final class FuzzyTermsEnum extends BaseTermsEnum {
    * but also possible with shorter terms consisting of UTF-32 code points.
    */
   public static class FuzzyTermsException extends RuntimeException {
-    private FuzzyTermsException(String term, Throwable cause) {
+    FuzzyTermsException(String term, Throwable cause) {
       super("Term too complex: " + term, cause);
     }
   }
