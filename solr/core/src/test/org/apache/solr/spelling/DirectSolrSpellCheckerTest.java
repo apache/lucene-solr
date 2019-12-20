@@ -57,6 +57,7 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
     spellchecker.add("classname", DirectSolrSpellChecker.class.getName());
     spellchecker.add(SolrSpellChecker.FIELD, "teststop");
     spellchecker.add(DirectSolrSpellChecker.MINQUERYLENGTH, 2); // we will try "fob"
+    spellchecker.add(DirectSolrSpellChecker.MAXQUERYLENGTH, 3);
 
     SolrCore core = h.getCore();
     checker.init(spellchecker, core);
