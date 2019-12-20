@@ -127,6 +127,8 @@ Improvements
 ---------------------
 * SOLR-14042: Fix varargs precommit warnings (Andraas Salamon via Jason Gerlowski)
 
+* SOLR-14129: Reuse Jackson ObjectMapper in AuditLoggerPlugin (janhoy)
+
 Optimizations
 ---------------------
 (No changes)
