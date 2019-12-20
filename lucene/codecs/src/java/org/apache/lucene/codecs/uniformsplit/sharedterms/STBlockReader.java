@@ -18,7 +18,6 @@
 package org.apache.lucene.codecs.uniformsplit.sharedterms;
 
 import java.io.IOException;
-import java.util.function.Supplier;
 
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.PostingsReaderBase;
@@ -40,7 +39,7 @@ public class STBlockReader extends BlockReader {
 
   protected final FieldInfos fieldInfos;
 
-  public STBlockReader(Supplier<IndexDictionary.Browser> dictionaryBrowserSupplier,
+  public STBlockReader(IndexDictionary.BrowserSupplier dictionaryBrowserSupplier,
                        IndexInput blockInput, PostingsReaderBase postingsReader,
                        FieldMetadata fieldMetadata, BlockDecoder blockDecoder, FieldInfos fieldInfos) throws IOException {
     super(dictionaryBrowserSupplier, blockInput, postingsReader, fieldMetadata, blockDecoder);

@@ -245,7 +245,7 @@ public class BlockWriter {
    * {@link IndexDictionary.Builder} .
    * The block key is the MDP (see {@link TermBytes}) of the block first term.
    */
-  protected void addBlockKey(List<BlockLine> blockLines, IndexDictionary.Builder dictionaryBuilder) {
+  protected void addBlockKey(List<BlockLine> blockLines, IndexDictionary.Builder dictionaryBuilder) throws IOException {
     assert !blockLines.isEmpty();
     assert dictionaryBuilder != null;
     TermBytes firstTerm = blockLines.get(0).getTermBytes();

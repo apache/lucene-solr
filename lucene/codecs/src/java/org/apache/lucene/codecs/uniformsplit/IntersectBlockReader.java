@@ -63,7 +63,7 @@ public class IntersectBlockReader extends BlockReader {
   protected boolean beyondCommonPrefix;
 
   public IntersectBlockReader(CompiledAutomaton compiled, BytesRef startTerm,
-                              DictionaryBrowserSupplier dictionaryBrowserSupplier, IndexInput blockInput, PostingsReaderBase postingsReader,
+                              IndexDictionary.BrowserSupplier dictionaryBrowserSupplier, IndexInput blockInput, PostingsReaderBase postingsReader,
                               FieldMetadata fieldMetadata, BlockDecoder blockDecoder) throws IOException {
     super(dictionaryBrowserSupplier, blockInput, postingsReader, fieldMetadata, blockDecoder);
     this.nextStringCalculator = new AutomatonNextTermCalculator(compiled);
