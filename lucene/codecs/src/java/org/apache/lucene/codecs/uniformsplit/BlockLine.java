@@ -106,7 +106,7 @@ public class BlockLine implements Accountable {
   }
 
   /**
-   * Reads block lines with terms encoded incrementally inside a block.
+   * Reads/writes block lines with terms encoded incrementally inside a block.
    * This class keeps a state of the previous term read to decode the next term.
    */
   public static class Serializer implements Accountable {
@@ -145,7 +145,7 @@ public class BlockLine implements Accountable {
      *                                  the incremental encoding. {@code true} for the first
      *                                  and middle term, {@code false} for other terms.
      */
-    public static void writeLine(DataOutput blockOutput, BlockLine line, BlockLine previousLine,
+    public void writeLine(DataOutput blockOutput, BlockLine line, BlockLine previousLine,
                                  int termStateRelativeOffset, boolean isIncrementalEncodingSeed) throws IOException {
       blockOutput.writeVInt(termStateRelativeOffset);
       writeIncrementallyEncodedTerm(line.getTermBytes(), previousLine == null ? null : previousLine.getTermBytes(),
@@ -157,13 +157,13 @@ public class BlockLine implements Accountable {
      *
      * @param termStatesOutput The output pointing to the details region.
      */
-    protected static void writeLineTermState(DataOutput termStatesOutput, BlockLine line,
+    protected void writeLineTermState(DataOutput termStatesOutput, BlockLine line,
                                    FieldInfo fieldInfo, DeltaBaseTermStateSerializer encoder) throws IOException {
       assert line.termState != null;
       encoder.writeTermState(termStatesOutput, fieldInfo, line.termState);
     }
 
-    protected static void writeIncrementallyEncodedTerm(TermBytes termBytes, TermBytes previousTermBytes,
+    protected void writeIncrementallyEncodedTerm(TermBytes termBytes, TermBytes previousTermBytes,
                                                       boolean isIncrementalEncodingSeed, DataOutput blockOutput) throws IOException {
       BytesRef term = termBytes.getTerm();
       assert term.offset == 0;
@@ -236,7 +236,7 @@ public class BlockLine implements Accountable {
      * Reads {@code length} bytes from the given {@link DataInput} and stores
      * them at {@code offset} in {@code bytes.bytes}.
      */
-    protected static void readBytes(DataInput input, BytesRef bytes, int offset, int length) throws IOException {
+    protected void readBytes(DataInput input, BytesRef bytes, int offset, int length) throws IOException {
       assert bytes.offset == 0;
       bytes.length = offset + length;
       bytes.bytes = ArrayUtil.grow(bytes.bytes, bytes.length);

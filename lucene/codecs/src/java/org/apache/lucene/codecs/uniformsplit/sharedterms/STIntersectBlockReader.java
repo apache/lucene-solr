@@ -91,6 +91,11 @@ public class STIntersectBlockReader extends IntersectBlockReader {
     return super.nextBlockMatchingPrefix() && blockHeader != null;
   }
 
+  @Override
+  protected STBlockLine.Serializer createBlockLineSerializer() {
+    return new STBlockLine.Serializer();
+  }
+
   /**
    * Reads the {@link BlockTermState} on the current line for the specific field
    * corresponding this this reader.
@@ -100,7 +105,7 @@ public class STIntersectBlockReader extends IntersectBlockReader {
   @Override
   protected BlockTermState readTermState() throws IOException {
     termStatesReadBuffer.setPosition(blockFirstLineStart + blockHeader.getTermStatesBaseOffset() + blockLine.getTermStateRelativeOffset());
-    return STBlockLine.Serializer.readTermStateForField(
+    return ((STBlockLine.Serializer) blockLineReader).readTermStateForField(
         fieldMetadata.getFieldInfo().number,
         termStatesReadBuffer,
         termStateSerializer,

@@ -60,6 +60,7 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
   protected final FieldMetadata fieldMetadata;
   protected final BlockDecoder blockDecoder;
 
+  protected BlockHeader.Serializer blockHeaderReader;
   protected BlockLine.Serializer blockLineReader;
   /**
    * In-memory read buffer for the current block.
@@ -396,12 +397,25 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
   protected void initializeBlockReadLazily() {
     if (blockStartFP == -1) {
       blockInput = blockInput.clone();
-      blockLineReader = new BlockLine.Serializer();
+      blockHeaderReader = createBlockHeaderSerializer();
+      blockLineReader = createBlockLineSerializer();
       blockReadBuffer = new ByteArrayDataInput();
       termStatesReadBuffer = new ByteArrayDataInput();
-      termStateSerializer = new DeltaBaseTermStateSerializer();
+      termStateSerializer = createDeltaBaseTermStateSerializer();
       scratchBlockBytes = new BytesRef();
     }
+  }
+
+  protected BlockHeader.Serializer createBlockHeaderSerializer() {
+    return new BlockHeader.Serializer();
+  }
+
+  protected BlockLine.Serializer createBlockLineSerializer() {
+    return new BlockLine.Serializer();
+  }
+
+  protected DeltaBaseTermStateSerializer createDeltaBaseTermStateSerializer() {
+    return new DeltaBaseTermStateSerializer();
   }
 
   /**
@@ -418,7 +432,7 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
     BytesRef blockBytesRef = decodeBlockBytesIfNeeded(numBlockBytes);
     blockReadBuffer.reset(blockBytesRef.bytes, blockBytesRef.offset, blockBytesRef.length);
     termStatesReadBuffer.reset(blockBytesRef.bytes, blockBytesRef.offset, blockBytesRef.length);
-    return blockHeader = BlockHeader.read(blockReadBuffer, blockHeader);
+    return blockHeader = blockHeaderReader.read(blockReadBuffer, blockHeader);
   }
 
   protected BytesRef decodeBlockBytesIfNeeded(int numBlockBytes) throws IOException {
