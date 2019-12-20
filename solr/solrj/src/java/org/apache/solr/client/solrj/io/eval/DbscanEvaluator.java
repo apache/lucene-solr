@@ -41,7 +41,7 @@ public class DbscanEvaluator extends RecursiveObjectEvaluator implements ManyVal
   }
 
   @Override
-  public Object doWork(Object values[]) throws IOException {
+  public Object doWork(Object... values) throws IOException {
 
     Matrix matrix = null;
     double e = 0;

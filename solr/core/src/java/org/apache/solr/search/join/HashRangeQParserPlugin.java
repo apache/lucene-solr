@@ -14,10 +14,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.solr.search.join;
 
-/** this is just a stub refers to {@link BlockJoinDocSetFacetComponent} to avoid
- * changes in configs */
-public class BlockJoinFacetComponent extends BlockJoinDocSetFacetComponent {
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.QParser;
+import org.apache.solr.search.QParserPlugin;
 
+/**
+ * Matches documents where the specified field hashes to a value within the given range.
+ * <br>Can be used to create a filter that will only match documents falling within a certain shard's hash range.
+ */
+public class HashRangeQParserPlugin extends QParserPlugin {
+
+  public static final String NAME = "hash_range";
+
+  @Override
+  public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+    return new HashRangeQParser(qstr, localParams, params, req);
+  }
+
+  @Override
+  public String getName() {
+    return NAME;
+  }
 }

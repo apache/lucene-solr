@@ -14,32 +14,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.solr.search.join;
 
-import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.search.Query;
+import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.search.QParser;
+import org.apache.solr.search.SyntaxError;
 
-class BitSetSlice {
-  private final FixedBitSet fbs;
-  private final int off;
-  private final int len;
+@SuppressWarnings("WeakerAccess")
+public class HashRangeQParser extends QParser {
 
-  BitSetSlice(FixedBitSet fbs, int off, int len) {
-    this.fbs = fbs;
-    this.off = off;
-    this.len = len;
+  public static final String FIELD = "f";
+  public static final String LOWER_BOUND = "l";
+  public static final String UPPER_BOUND = "u";
+
+  public HashRangeQParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+    super(qstr, localParams, params, req);
   }
 
-  public boolean get(int pos) {
-    return fbs.get(pos + off);
-  }
+  @Override
+  public Query parse() throws SyntaxError {
+    String field = localParams.get(FIELD);
+    int lower = localParams.getInt(LOWER_BOUND);
+    int upper = localParams.getInt(UPPER_BOUND);
 
-  public int prevSetBit(int pos) {
-    int result = fbs.prevSetBit(pos + off) - off;
-    return (result < 0) ? -1 : result;
-  }
-
-  public int nextSetBit(int pos) {
-    int result = fbs.nextSetBit(pos + off) - off;
-    return (result >= len) ? -1 : result;
+    return new HashRangeQuery(field, lower, upper);
   }
 }
