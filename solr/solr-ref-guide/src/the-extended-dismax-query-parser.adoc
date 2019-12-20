@@ -54,7 +54,7 @@ Note that relaxing `mm` may cause undesired side effects, such as hurting the pr
 `boost`::
 A multivalued list of strings parsed as <<function-queries.adoc#available-functions,functions>> whose results will be multiplied into the score from the main query for all matching documents. This parameter is shorthand for wrapping the query produced by eDisMax using the <<other-parsers.adoc#boost-query-parser,`BoostQParserPlugin`>>.
 
-These two examples are equivilent:
+These two examples are equivalent:
 [source,text]
 ----
 q={!edismax qf=name}ipod
@@ -65,7 +65,6 @@ boost=div(1,sum(1,price))
 q={!boost b=div(1,sum(1,price)) v=$qq}
 qq={!edismax qf=name}ipod
 ----
-
 
 `lowercaseOperators`::
 A Boolean parameter indicating if lowercase "and" and "or" should be treated the same as operators "AND" and "OR".
