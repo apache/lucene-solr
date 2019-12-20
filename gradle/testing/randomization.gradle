@@ -161,7 +161,7 @@ allprojects {
             systemProperty 'java.security.policy', rootProject.file("gradle/testing/policies/tests.policy")
           } else {
             systemProperty 'common-solr.dir', commonSolrDir
-            systemProperty 'java.security.manager', "org.apache.solr.util.SolrSecurityManager"
+            systemProperty 'java.security.manager', "org.apache.lucene.util.TestSecurityManager"
             systemProperty 'java.security.policy', rootProject.file("gradle/testing/policies/solr-tests.policy")
           }
 
