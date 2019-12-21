@@ -1167,11 +1167,10 @@ IF "%ENABLE_REMOTE_JMX_OPTS%"=="true" (
 )
 
 REM Enable java security manager (limiting filesystem access and other things)
-REM Don't cache DNS lookups forever, set the value back to the original JDK default.
 IF "%SOLR_SECURITY_MANAGER_ENABLED%"=="true" (
   set SECURITY_MANAGER_OPTS=-Djava.security.manager ^
 -Djava.security.policy="%SOLR_SERVER_DIR%\etc\security.policy" ^
--Dsun.net.inetaddr.ttl=30 ^
+-Djava.security.properties="%SOLR_SERVER_DIR%\etc\security.properties" ^
 -Dsolr.internal.network.permission=*
 )
 
