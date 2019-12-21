@@ -69,7 +69,7 @@ public class OverseerSolrResponse extends SolrResponse {
       return SolrResponse.serializable(responseObject);
     }
     try {
-      return Utils.toJavabin(responseObject.getResponse()).readAllBytes();
+      return Utils.toJavabin(responseObject.getResponse());
     } catch (IOException|RuntimeException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Exception serializing response to Javabin", e);
     }
