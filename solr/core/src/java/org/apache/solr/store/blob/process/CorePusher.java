@@ -85,7 +85,7 @@ public class CorePusher {
           throw new SolrException(ErrorCode.SERVER_ERROR, "Can't find core " + coreName);
         }
         try {
-          concurrencyController.recordState(collectionName, shardName, coreName, SharedCoreStage.BlobPushStarted);
+          concurrencyController.recordState(collectionName, shardName, coreName, SharedCoreStage.BLOB_PUSH_STARTED);
 
           IndexCommit latestCommit = core.getDeletionPolicy().getLatestCommit();
           if (latestCommit == null) {
@@ -130,7 +130,7 @@ public class CorePusher {
           // begin the push process 
           CorePushPull pushPull = new CorePushPull(blobClient, deleteManager, pushPullData, resolutionResult, localCoreMetadata, coreVersionMetadata.getBlobCoreMetadata());
           BlobCoreMetadata blobCoreMetadata = pushPull.pushToBlobStore(coreVersionMetadata.getMetadataSuffix(), newMetadataSuffix);
-          concurrencyController.recordState(collectionName, shardName, coreName, SharedCoreStage.BlobPushed);
+          concurrencyController.recordState(collectionName, shardName, coreName, SharedCoreStage.BLOB_PUSHED);
           // at this point we've pushed the new metadata file with the newMetadataSuffix and now need to write to zookeeper
           SharedShardMetadataController shardSharedMetadataController = coreContainer.getSharedStoreManager().getSharedShardMetadataController();
           SharedShardVersionMetadata newShardVersionMetadata = null;
@@ -154,17 +154,17 @@ public class CorePusher {
             }
             throw ex;
           }
-          concurrencyController.recordState(collectionName, shardName, coreName, SharedCoreStage.ZkUpdateFinished);
+          concurrencyController.recordState(collectionName, shardName, coreName, SharedCoreStage.ZK_UPDATE_FINISHED);
 
           assert newMetadataSuffix.equals(newShardVersionMetadata.getMetadataSuffix());
           // after successful update to zookeeper, update core version metadata with new version info
           // and we can also give soft guarantee that core is up to date w.r.to shared store, until unless failures happen and leadership changes 
           concurrencyController.updateCoreVersionMetadata(collectionName, shardName, coreName, newShardVersionMetadata, blobCoreMetadata, /* softGuaranteeOfEquality */ true);
-          concurrencyController.recordState(collectionName, shardName, coreName, SharedCoreStage.LocalCacheUpdateFinished);
+          concurrencyController.recordState(collectionName, shardName, coreName, SharedCoreStage.LOCAL_CACHE_UPDATE_FINISHED);
           log.info(String.format("Successfully pushed to shared store, pushLockTime=%s pushPullData=%s", lockAcquisitionTime, pushPullData.toString()));
         } finally {
           try {
-            concurrencyController.recordState(collectionName, shardName, coreName, SharedCoreStage.BlobPushFinished);
+            concurrencyController.recordState(collectionName, shardName, coreName, SharedCoreStage.BLOB_PUSH_FINISHED);
             if (snapshotDirPath != null) {
               // we are done with push we can now remove the snapshot directory
               removeSnapshotDirectory(core, snapshotDirPath);

@@ -83,7 +83,7 @@ public class BlobStoreUtils {
           log.info("sync successful, nothing to pull, collection=" + collectionName + " shard=" + shardName + " coreName=" + coreName);
           return;
         }
-        concurrencyController.recordState(collectionName, shardName, coreName, SharedCoreStage.BlobPullStarted);
+        concurrencyController.recordState(collectionName, shardName, coreName, SharedCoreStage.BLOB_PULL_STARTED);
         try {
           // Get blob metadata
           String blobCoreMetadataName = BlobStoreUtils.buildBlobStoreMetadataName(shardVersionMetadata.getMetadataSuffix());
@@ -128,7 +128,7 @@ public class BlobStoreUtils {
                 collectionName, shardName, coreName));
           }
         } finally {
-          concurrencyController.recordState(collectionName, shardName, coreName, SharedCoreStage.BlobPullFinished);
+          concurrencyController.recordState(collectionName, shardName, coreName, SharedCoreStage.BLOB_PULL_FINISHED);
         }
       } catch (Exception ex) {
         // wrap every thrown exception in a solr exception

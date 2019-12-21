@@ -243,7 +243,7 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
         return;
       }
 
-      concurrencyController.recordState(pullCoreInfo.getCollectionName(), pullCoreInfo.getShardName(), pullCoreInfo.getCoreName(), SharedCoreStage.BlobPullStarted);
+      concurrencyController.recordState(pullCoreInfo.getCollectionName(), pullCoreInfo.getShardName(), pullCoreInfo.getCoreName(), SharedCoreStage.BLOB_PULL_STARTED);
       // Get blob metadata
       String blobCoreMetadataName = BlobStoreUtils.buildBlobStoreMetadataName(shardVersionMetadata.getMetadataSuffix());
       blobMetadata = blobClient.pullCoreMetadata(pullCoreInfo.getSharedStoreName(), blobCoreMetadataName);
@@ -351,7 +351,7 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
       }
     }
     this.callback.finishedPull(this, blobMetadata, syncStatus, message);
-    concurrencyController.recordState(pullCoreInfo.getCollectionName(), pullCoreInfo.getShardName(), pullCoreInfo.getCoreName(), SharedCoreStage.BlobPullFinished);
+    concurrencyController.recordState(pullCoreInfo.getCollectionName(), pullCoreInfo.getShardName(), pullCoreInfo.getCoreName(), SharedCoreStage.BLOB_PULL_FINISHED);
   }
 
   void finishedPull(BlobCoreMetadata blobCoreMetadata, CoreSyncStatus syncStatus, String message) throws InterruptedException {
