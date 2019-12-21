@@ -153,8 +153,20 @@ public abstract class VectorValues extends DocIdSetIterator {
     COSINE(3) {
       @Override
       float distance(float[] v1, float[] v2) {
-        // TODO
-        return 0.0f;
+        assert v1.length == v2.length;
+        if (Arrays.equals(v1, v2)) {
+          return 0.0f;
+        }
+        float sum = 0.0f;
+        float squareSum1 = 0.0f;
+        float squareSum2 = 0.0f;
+        int dim = v1.length;
+        for (int i = 0; i < dim; i++) {
+          sum += v1[i] * v2[i];
+          squareSum1 += v1[i] * v1[i];
+          squareSum2 += v2[i] * v2[i];
+        }
+        return 1.0f - sum / ((float)Math.sqrt(squareSum1) * (float)Math.sqrt(squareSum2));
       }
     };
 

@@ -61,19 +61,19 @@ public final class HNSWGraphReader {
     return hnsw.searchLayer(query, ep, ef, 0, vectorValues);
   }
 
-  public static long reloadGraph(String field, IndexReader reader) throws IOException {
+  public static long loadGraphs(String field, IndexReader reader, boolean forceReload) throws IOException {
     long bytesUsed = 0L;
     for (LeafReaderContext ctx : reader.leaves()) {
-      HNSWGraph hnsw = get(field, ctx, true);
+      HNSWGraph hnsw = get(field, ctx, forceReload);
       bytesUsed += hnsw.ramBytesUsed();
     }
     return bytesUsed;
   }
 
-  private static HNSWGraph get(String field, LeafReaderContext context, boolean reload) throws IOException {
+  private static HNSWGraph get(String field, LeafReaderContext context, boolean forceReload) throws IOException {
     GraphKey key = new GraphKey(field, context.id());
     IOException[] exc = new IOException[]{null};
-    if (reload) {
+    if (forceReload) {
       cache.put(key, load(field, context));
     } else {
       cache.computeIfAbsent(key, (k -> {

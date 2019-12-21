@@ -107,7 +107,17 @@ class KnnScoreWeight extends ConstantScoreWeight {
                     score = 0.0f;
                   } else {
                     doc = next.docId();
-                    score = 1.0f / (next.distance() / numDimensions + 0.01f);
+                    switch (fi.getVectorDistFunc()) {
+                      case MANHATTAN:
+                      case EUCLIDEAN:
+                        score = 1.0f / (next.distance() / numDimensions + 0.01f);
+                        break;
+                      case COSINE:
+                        score = 1.0f - next.distance();
+                        break;
+                      default:
+                        break;
+                    }
                   }
                 }
                 return doc;

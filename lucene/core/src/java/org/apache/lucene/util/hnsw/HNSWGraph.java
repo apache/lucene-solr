@@ -40,6 +40,7 @@ public final class HNSWGraph implements Accountable {
   private final List<Layer> layers;
 
   private boolean frozen = false;
+  private long bytesUsed;
 
   public HNSWGraph(VectorValues.DistanceFunction distFunc) {
     this.distFunc = distFunc;
@@ -261,7 +262,10 @@ public final class HNSWGraph implements Accountable {
 
   @Override
   public long ramBytesUsed() {
-    return RamUsageEstimator.sizeOfCollection(layers);
+    if (bytesUsed == 0) {
+      bytesUsed = RamUsageEstimator.sizeOfCollection(layers);
+    }
+    return bytesUsed;
   }
 
 }

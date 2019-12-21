@@ -241,8 +241,8 @@ public final class Lucene90FieldInfosFormat extends FieldInfosFormat {
       case NONE:
       case MANHATTAN:
       case EUCLIDEAN:
-        return (byte)distFunc.getId();
       case COSINE:
+        return (byte)distFunc.getId();
       default:
         // BUG
         throw new AssertionError("unhandled DistanceFunction: " + distFunc);
