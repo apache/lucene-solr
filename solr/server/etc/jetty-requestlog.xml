@@ -23,29 +23,21 @@
 <!-- =========================================================== -->
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
-
-  <!-- =========================================================== -->
-  <!-- Configure Request Log                                       -->
-  <!-- =========================================================== -->
-  <Ref id="Handlers">
-    <Call name="addHandler">
+  <Set name="RequestLog">
+    <New id="RequestLog" class="org.eclipse.jetty.server.CustomRequestLog">
+      <!-- Writer -->
       <Arg>
-        <New id="RequestLog" class="org.eclipse.jetty.server.handler.RequestLogHandler">
-          <Set name="requestLog">
-            <New id="RequestLogImpl" class="org.eclipse.jetty.server.NCSARequestLog">
-              <Set name="filename">
-                 logs/request.yyyy_mm_dd.log
-              </Set>
-              <Set name="filenameDateFormat">yyyy_MM_dd</Set>
-              <Set name="retainDays">90</Set>
-              <Set name="append">true</Set>
-              <Set name="extended">false</Set>
-              <Set name="logCookies">false</Set>
-              <Set name="LogTimeZone">UTC</Set>
-            </New>
-          </Set>
+        <New class="org.eclipse.jetty.server.AsyncRequestLogWriter">
+          <Arg><Property name="solr.log.dir" default="logs"/>/yyyy_mm_dd.request.log</Arg>
+          <Set name="filenameDateFormat">yyyy_MM_dd</Set>
+          <Set name="retainDays">90</Set>
+          <Set name="append">true</Set>
+          <Set name="timeZone">UTC</Set>
         </New>
       </Arg>
-    </Call>
-  </Ref>
+
+      <!-- Format String -->
+      <Arg><Get class="org.eclipse.jetty.server.CustomRequestLog" name="NCSA_FORMAT"/></Arg>
+    </New>
+  </Set>
 </Configure>

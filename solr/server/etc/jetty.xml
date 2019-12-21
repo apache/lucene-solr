@@ -167,9 +167,6 @@
                    </Set>
                  </New>
                </Item>
-               <Item>
-                 <New id="RequestLog" class="org.eclipse.jetty.server.handler.RequestLogHandler"/>
-               </Item>
              </Array>
            </Set>
          </New>
