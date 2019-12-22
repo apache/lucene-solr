@@ -57,26 +57,38 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
     spellchecker.add("classname", DirectSolrSpellChecker.class.getName());
     spellchecker.add(SolrSpellChecker.FIELD, "teststop");
     spellchecker.add(DirectSolrSpellChecker.MINQUERYLENGTH, 2); // we will try "fob"
-    spellchecker.add(DirectSolrSpellChecker.MAXQUERYLENGTH, 3);
+    spellchecker.add(DirectSolrSpellChecker.MAXQUERYLENGTH, 6); // > super, < anothar
 
     SolrCore core = h.getCore();
     checker.init(spellchecker, core);
 
     h.getCore().withSearcher(searcher -> {
+
+      // "fob" should be corrected
       Collection<Token> tokens = queryConverter.convert("fob");
       SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.getIndexReader());
       SpellingResult result = checker.getSuggestions(spellOpts);
-      assertTrue("result is null and it shouldn't be", result != null);
+      assertTrue("result for 'fob' is null and it shouldn't be", result != null);
       Map<String, Integer> suggestions = result.get(tokens.iterator().next());
       Map.Entry<String, Integer> entry = suggestions.entrySet().iterator().next();
       assertTrue(entry.getKey() + " is not equal to " + "foo", entry.getKey().equals("foo") == true);
       assertFalse(entry.getValue() + " equals: " + SpellingResult.NO_FREQUENCY_INFO, entry.getValue() == SpellingResult.NO_FREQUENCY_INFO);
 
+      // "super" doesn't get corrected (edit distance of 3 from "solr")
       spellOpts.tokens = queryConverter.convert("super");
       result = checker.getSuggestions(spellOpts);
-      assertTrue("result is null and it shouldn't be", result != null);
+      assertTrue("result for 'super' is null and it shouldn't be", result != null);
       suggestions = result.get(tokens.iterator().next());
-      assertTrue("suggestions is not null and it should be", suggestions == null);
+      assertTrue("suggestions for 'super' is not null and it should be", suggestions == null);
+
+      // "anothar" is longer than maxQueryLength, should not be corrected
+      // TODO this test doesn't fail when maxQL is increased
+      spellOpts.tokens = queryConverter.convert("anothar");
+      result = checker.getSuggestions(spellOpts);
+      assertTrue("result for 'anothar' is null and it shouldn't be", result != null);
+      suggestions = result.get(tokens.iterator().next());
+      assertTrue("suggestions for 'anothar' is not null and it should be", suggestions == null);
+
       return null;
     });
   }
