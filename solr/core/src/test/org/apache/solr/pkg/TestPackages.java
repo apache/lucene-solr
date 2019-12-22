@@ -139,7 +139,7 @@ public class TestPackages extends SolrCloudTestCase {
           "'create-searchcomponent' : { 'name' : 'get', 'class': 'mypkg:org.apache.solr.core.RuntimeLibSearchComponent'  }," +
           "'create-queryResponseWriter' : { 'name' : 'json1', 'class': 'mypkg:org.apache.solr.core.RuntimeLibResponseWriter' }" +
           "'create-updateProcessor' : { 'name' : 'myurp', 'class': 'mypkg:org.apache.solr.update.TestVersionedURP' }," +
-          " add-expressible: {name: mincopy , class: 'mypkg:org.apache.solr.client.solrj.io.stream.metrics.MinCopyMetric'}" +
+          " create-expressible: {name: mincopy , class: 'mypkg:org.apache.solr.client.solrj.io.stream.metrics.MinCopyMetric'}" +
           "}";
       cluster.getSolrClient().request(new ConfigRequest(payload) {
         @Override
