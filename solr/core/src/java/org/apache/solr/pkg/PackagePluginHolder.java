@@ -105,6 +105,8 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
         pluginInfo.type, pluginInfo.name, pkg.name(), newest.getVersion());
 
     initNewInstance(newest);
+    pkgVersion = newest;
+
   }
 
   protected void initNewInstance(PackageLoader.Package.Version newest) {
@@ -113,7 +115,6 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
     PluginBag.initInstance(instance, pluginInfo);
     T old = inst;
     inst = (T) instance;
-    pkgVersion = newest;
     if (old instanceof AutoCloseable) {
       AutoCloseable closeable = (AutoCloseable) old;
       try {

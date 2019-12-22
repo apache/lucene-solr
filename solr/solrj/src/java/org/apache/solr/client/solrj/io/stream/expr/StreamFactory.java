@@ -83,7 +83,7 @@ public class StreamFactory implements Serializable {
     return functionNames;
   }
   public StreamFactory withFunctionName(String functionName, Class<? extends Expressible> clazz){
-    this.functionNames.put(functionName, (Supplier<Class<? extends Expressible>>) () -> clazz);
+    this.functionNames.put(functionName, () -> clazz);
     return this;
   }
 

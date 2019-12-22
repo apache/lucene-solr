@@ -19,6 +19,8 @@ package org.apache.solr.common.params;
 import java.util.Iterator;
 import java.util.Map;
 
+import org.apache.solr.common.util.Utils;
+
 /**
  *
  */
@@ -27,6 +29,9 @@ public class MapSolrParams extends SolrParams {
 
   public MapSolrParams(Map<String,String> map) {
     this.map = map;
+  }
+  public MapSolrParams(String... p) {
+    this.map= (Map)Utils.makeMap(p);
   }
 
   @Override
