@@ -37,6 +37,7 @@ import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
+import org.apache.lucene.util.automaton.TooComplexToDeterminizeException;
 
 /** Subclass of TermsEnum for enumerating all terms that are similar
  * to the specified filter term.
@@ -131,7 +132,11 @@ public final class FuzzyTermsEnum extends BaseTermsEnum {
       prevAutomata = new CompiledAutomaton[maxEdits+1];
       Automaton[] automata = buildAutomata(termText, prefixLength, transpositions, maxEdits);
       for (int i = 0; i <= maxEdits; i++) {
-        prevAutomata[i] = new CompiledAutomaton(automata[i], true, false);
+        try {
+          prevAutomata[i] = new CompiledAutomaton(automata[i], true, false);
+        } catch (TooComplexToDeterminizeException e) {
+          throw new FuzzyTermsException(term.text(), e);
+        }
       }
       // first segment computes the automata, and we share with subsequent segments via this Attribute:
       dfaAtt.setAutomata(prevAutomata);
@@ -405,6 +410,17 @@ public final class FuzzyTermsEnum extends BaseTermsEnum {
     @Override
     public void reflectWith(AttributeReflector reflector) {
       reflector.reflect(LevenshteinAutomataAttribute.class, "automata", automata);
+    }
+  }
+
+  /**
+   * Thrown to indicate that there was an issue creating a fuzzy query for a given term.
+   * Typically occurs with terms longer than 220 UTF-8 characters,
+   * but also possible with shorter terms consisting of UTF-32 code points.
+   */
+  public static class FuzzyTermsException extends RuntimeException {
+    FuzzyTermsException(String term, Throwable cause) {
+      super("Term too complex: " + term, cause);
     }
   }
 }

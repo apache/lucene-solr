@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.carrotsearch.randomizedtesting.RandomizedTest;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
@@ -35,6 +36,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.store.Directory;
@@ -43,6 +46,9 @@ import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
+import org.apache.lucene.util.automaton.Operations;
+
+import static org.hamcrest.CoreMatchers.containsString;
 
 /**
  * Tests {@link FuzzyQuery}.
@@ -492,7 +498,63 @@ public class TestFuzzyQuery extends LuceneTestCase {
     });
     assertTrue(expected.getMessage().contains("maxExpansions must be positive"));
   }
-  
+
+  public void testErrorMessage() {
+    // 45 states per vector from Lev2TParametricDescription
+    int length = (Operations.DEFAULT_MAX_DETERMINIZED_STATES / 45) + 10;
+
+    String value = RandomizedTest.randomRealisticUnicodeOfCodepointLength(length);
+    FuzzyTermsEnum.FuzzyTermsException expected = expectThrows(FuzzyTermsEnum.FuzzyTermsException.class, () -> {
+      new FuzzyQuery(new Term("field", value)).getTermsEnum(new Terms() {
+        @Override
+        public TermsEnum iterator() {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long size() {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long getSumTotalTermFreq() {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long getSumDocFreq() {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int getDocCount() {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean hasFreqs() {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean hasOffsets() {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean hasPositions() {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean hasPayloads() {
+          throw new UnsupportedOperationException();
+        }
+      });
+    });
+    assertThat(expected.getMessage(), containsString(value));
+  }
+
   private void addDoc(String text, RandomIndexWriter writer) throws IOException {
     Document doc = new Document();
     doc.add(newTextField("field", text, Field.Store.YES));
