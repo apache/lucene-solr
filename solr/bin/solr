@@ -2045,6 +2045,10 @@ else
   fi
 fi
 
+# IP-based access control
+IP_ACL_OPTS=("-Dsolr.jetty.inetaccess.includes=${SOLR_IP_WHITELIST}" \
+             "-Dsolr.jetty.inetaccess.excludes=${SOLR_IP_BLACKLIST}")
+
 # These are useful for attaching remote profilers like VisualVM/JConsole
 if [ "$ENABLE_REMOTE_JMX_OPTS" == "true" ]; then
 
@@ -2175,7 +2179,7 @@ function start_solr() {
     exit 1
   fi
 
-  SOLR_START_OPTS=('-server' "${JAVA_MEM_OPTS[@]}" "${GC_TUNE[@]}" "${GC_LOG_OPTS[@]}" \
+  SOLR_START_OPTS=('-server' "${JAVA_MEM_OPTS[@]}" "${GC_TUNE[@]}" "${GC_LOG_OPTS[@]}" "${IP_ACL_OPTS[@]}" \
     "${REMOTE_JMX_OPTS[@]}" "${CLOUD_MODE_OPTS[@]}" $SOLR_LOG_LEVEL_OPT -Dsolr.log.dir="$SOLR_LOGS_DIR" \
     "-Djetty.port=$SOLR_PORT" "-DSTOP.PORT=$stop_port" "-DSTOP.KEY=$STOP_KEY" \
     "${SOLR_HOST_ARG[@]}" "-Duser.timezone=$SOLR_TIMEZONE" \

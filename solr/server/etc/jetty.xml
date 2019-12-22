@@ -157,7 +157,25 @@
            <Set name="handlers">
              <Array type="org.eclipse.jetty.server.Handler">
                <Item>
-                 <New id="Contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection"/>
+                 <New class="org.eclipse.jetty.server.handler.InetAccessHandler">
+                   <Call name="include">
+                     <Arg>
+                       <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+                         <Arg><Property name="solr.jetty.inetaccess.includes" default=""/></Arg>
+                       </Call>
+                     </Arg>
+                   </Call>
+                   <Call name="exclude">
+                     <Arg>
+                       <Call class="org.eclipse.jetty.util.StringUtil" name="csvSplit">
+                         <Arg><Property name="solr.jetty.inetaccess.excludes" default=""/></Arg>
+                       </Call>
+                     </Arg>
+                   </Call>
+                   <Set name="handler">
+                     <New id="Contexts" class="org.eclipse.jetty.server.handler.ContextHandlerCollection"/>
+                   </Set>
+                 </New>
                </Item>
                <Item>
                  <New id="InstrumentedHandler" class="com.codahale.metrics.jetty9.InstrumentedHandler">
