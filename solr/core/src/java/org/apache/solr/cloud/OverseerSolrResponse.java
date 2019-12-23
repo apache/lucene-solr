@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -69,12 +70,12 @@ public class OverseerSolrResponse extends SolrResponse {
       return SolrResponse.serializable(responseObject);
     }
     try {
-      return Utils.toJavabin(responseObject.getResponse()).readAllBytes();
+      return IOUtils.toByteArray(Utils.toJavabin(responseObject.getResponse()));
     } catch (IOException|RuntimeException e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Exception serializing response to Javabin", e);
     }
   }
-  
+
   static boolean useUnsafeSerialization() {
     String useUnsafeOverseerResponse = System.getProperty("solr.useUnsafeOverseerResponse");
     return useUnsafeOverseerResponse != null && ("true".equals(useUnsafeOverseerResponse));
