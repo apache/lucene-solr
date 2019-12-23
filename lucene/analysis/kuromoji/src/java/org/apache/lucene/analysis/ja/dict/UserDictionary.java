@@ -29,8 +29,8 @@ import java.util.TreeMap;
 
 import org.apache.lucene.analysis.ja.util.CSVUtil;
 import org.apache.lucene.util.IntsRefBuilder;
-import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 
 /**

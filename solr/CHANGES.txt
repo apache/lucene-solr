@@ -161,6 +161,8 @@ Improvements
 
 * SOLR-14095: Replace Java serialization with Javabin in the Overseer queues (Tomás Fernández Löbbe)
 
+* SOLR-14125: Make <expressible> plugins work with packages (noble)
+
 Optimizations
 ---------------------
 (No changes)
