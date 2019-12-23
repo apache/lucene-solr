@@ -71,11 +71,46 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
       assertTrue(entry.getKey() + " is not equal to " + "foo", entry.getKey().equals("foo") == true);
       assertFalse(entry.getValue() + " equals: " + SpellingResult.NO_FREQUENCY_INFO, entry.getValue() == SpellingResult.NO_FREQUENCY_INFO);
 
+      // TODO what does this test do?
       spellOpts.tokens = queryConverter.convert("super");
       result = checker.getSuggestions(spellOpts);
       assertTrue("result is null and it shouldn't be", result != null);
       suggestions = result.get(tokens.iterator().next());
       assertTrue("suggestions is not null and it should be", suggestions == null);
+      return null;
+    });
+  }
+
+  @Test
+  public void testMaxQueryLength() throws Exception {
+    DirectSolrSpellChecker checker = new DirectSolrSpellChecker();
+    NamedList spellchecker = new NamedList();
+    spellchecker.add("classname", DirectSolrSpellChecker.class.getName());
+    spellchecker.add(SolrSpellChecker.FIELD, "teststop");
+    spellchecker.add(DirectSolrSpellChecker.MINQUERYLENGTH, 2);
+
+    SolrCore core = h.getCore();
+    checker.init(spellchecker, core);
+
+    // TODO this breaks the test
+    h.getCore().withSearcher(searcher -> {
+
+      // first we demonstrate that "anothar" is corrected
+      Collection<Token> tokens = queryConverter.convert("anothar");
+      SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.getIndexReader());
+      SpellingResult result = checker.getSuggestions(spellOpts);
+      assertTrue("result is null and it shouldn't be", result != null);
+      Map<String, Integer> suggestions = result.get(tokens.iterator().next());
+      Map.Entry<String, Integer> entry = suggestions.entrySet().iterator().next();
+      assertTrue(entry.getKey() + " is not equal to " + "another", entry.getKey().equals("another") == true);
+      assertFalse(entry.getValue() + " equals: " + SpellingResult.NO_FREQUENCY_INFO, entry.getValue() == SpellingResult.NO_FREQUENCY_INFO);
+
+      // then we deliberately stop it being corrected...
+      spellchecker.add(DirectSolrSpellChecker.MAXQUERYLENGTH, 4);
+      
+      // ... and try again - this time we should get no suggestions
+      // TODO because this whole test fails
+
       return null;
     });
   }
