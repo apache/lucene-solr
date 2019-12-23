@@ -16,14 +16,14 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.IOException;
-import java.util.Objects;
-
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
+
+import java.io.IOException;
+import java.util.Objects;
 
 public class OverseerSolrResponse extends SolrResponse {
   
