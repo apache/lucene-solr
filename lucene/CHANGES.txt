@@ -85,7 +85,8 @@ New Features
 
 Improvements
 ---------------------
-(No changes)
+
+* LUCENE-9102: Add maxQueryLength option to DirectSpellchecker. (Andy Webb via Bruno Roustant)
 
 Optimizations
 ---------------------
