@@ -102,6 +102,9 @@ REM start rotation of logs. This is false by default as log4j2 handles this for 
 REM framework that cannot do startup rotation, you may want to enable this to let Solr rotate logs on startup.
 REM set SOLR_LOG_PRESTART_ROTATION=false
 
+REM Enables jetty request log for all requests
+REM set SOLR_REQUESTLOG_ENABLED=false
+
 REM Set the host interface to listen on. Jetty will listen on all interfaces (0.0.0.0) by default.
 REM This must be an IPv4 ("a.b.c.d") or bracketed IPv6 ("[x::y]") address, not a hostname!
 REM set SOLR_JETTY_HOST=0.0.0.0
