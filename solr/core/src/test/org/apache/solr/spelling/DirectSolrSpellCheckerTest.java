@@ -78,6 +78,15 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
       suggestions = result.get(tokens.iterator().next());
       assertTrue("suggestions is not null and it should be", suggestions == null);
       return null;
+
+      // demonstrate that "anothar" is corrected (see testMaxQueryLength below)
+      spellOpts.tokens = queryConverter.convert("anothar");
+      result = checker.getSuggestions(spellOpts);
+      assertTrue("result is null and it shouldn't be", result != null);
+      suggestions = result.get(tokens.iterator().next());
+      entry = suggestions.entrySet().iterator().next();
+      assertTrue(entry.getKey() + " is not equal to " + "another", entry.getKey().equals("another") == true);
+      assertFalse(entry.getValue() + " equals: " + SpellingResult.NO_FREQUENCY_INFO, entry.getValue() == SpellingResult.NO_FREQUENCY_INFO);
     });
   }
 
@@ -88,33 +97,19 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
     spellchecker.add("classname", DirectSolrSpellChecker.class.getName());
     spellchecker.add(SolrSpellChecker.FIELD, "teststop");
     spellchecker.add(DirectSolrSpellChecker.MINQUERYLENGTH, 2);
+    spellchecker.add(DirectSolrSpellChecker.MAXQUERYLENGTH, 4);
 
     SolrCore core = h.getCore();
     checker.init(spellchecker, core);
 
     h.getCore().withSearcher(searcher -> {
-
-      // first we demonstrate that "anothar" is corrected
-      Collection<Token> tokens = queryConverter.convert("anothar");
-      SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.getIndexReader());
+      // this test should fail right now
       SpellingResult result = checker.getSuggestions(spellOpts);
       assertTrue("result is null and it shouldn't be", result != null);
       Map<String, Integer> suggestions = result.get(tokens.iterator().next());
       Map.Entry<String, Integer> entry = suggestions.entrySet().iterator().next();
       assertTrue(entry.getKey() + " is not equal to " + "another", entry.getKey().equals("another") == true);
-      assertFalse(entry.getValue() + " equals: " + SpellingResult.NO_FREQUENCY_INFO, entry.getValue() == SpellingResult.NO_FREQUENCY_INFO);
-
-      // then we deliberately stop it being corrected...
-      spellchecker.add(DirectSolrSpellChecker.MAXQUERYLENGTH, 4);
-      
-      // ... and try again - this time we should get no suggestions
-      // (NB this test should fail right now)
-      SpellingResult result2 = checker.getSuggestions(spellOpts);
-      assertTrue("result2 is null and it shouldn't be", result2 != null);
-      Map<String, Integer> suggestions2 = result2.get(tokens.iterator().next());
-      Map.Entry<String, Integer> entry2 = suggestions2.entrySet().iterator().next();
-      assertTrue(entry2.getKey() + " is not equal to " + "another", entry2.getKey().equals("another") == true);
-      assertFalse(entry2.getValue() + " equals: " + SpellingResult.NO_FREQUENCY_INFO, entry2.getValue() == SpellingResult.NO_FREQUENCY_INFO);
+      assertFalse(entry.getValue() + " equals: " + SpellingResult.NO_FREQUENCY_INFO, entry2.getValue() == SpellingResult.NO_FREQUENCY_INFO);
 
       return null;
     });
