@@ -86,6 +86,8 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
       entry = suggestions.entrySet().iterator().next();
       assertTrue(entry.getKey() + " is not equal to " + "another", entry.getKey().equals("another") == true);
       assertFalse(entry.getValue() + " equals: " + SpellingResult.NO_FREQUENCY_INFO, entry.getValue() == SpellingResult.NO_FREQUENCY_INFO);
+
+      return null;
     });
   }
 
