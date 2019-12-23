@@ -92,7 +92,6 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
     SolrCore core = h.getCore();
     checker.init(spellchecker, core);
 
-    // TODO this breaks the test
     h.getCore().withSearcher(searcher -> {
 
       // first we demonstrate that "anothar" is corrected
@@ -109,7 +108,13 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
       spellchecker.add(DirectSolrSpellChecker.MAXQUERYLENGTH, 4);
       
       // ... and try again - this time we should get no suggestions
-      // TODO because this whole test fails
+      // (NB this test should fail right now)
+      SpellingResult result2 = checker.getSuggestions(spellOpts);
+      assertTrue("result2 is null and it shouldn't be", result2 != null);
+      Map<String, Integer> suggestions2 = result2.get(tokens.iterator().next());
+      Map.Entry<String, Integer> entry2 = suggestions2.entrySet().iterator().next();
+      assertTrue(entry2.getKey() + " is not equal to " + "another", entry2.getKey().equals("another") == true);
+      assertFalse(entry2.getValue() + " equals: " + SpellingResult.NO_FREQUENCY_INFO, entry2.getValue() == SpellingResult.NO_FREQUENCY_INFO);
 
       return null;
     });
