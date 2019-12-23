@@ -77,8 +77,7 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
       assertTrue("result is null and it shouldn't be", result != null);
       suggestions = result.get(tokens.iterator().next());
       assertTrue("suggestions is not null and it should be", suggestions == null);
-      return null;
-
+      
       // demonstrate that "anothar" is corrected (see testMaxQueryLength below)
       spellOpts.tokens = queryConverter.convert("anothar");
       result = checker.getSuggestions(spellOpts);
@@ -97,13 +96,15 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
     spellchecker.add("classname", DirectSolrSpellChecker.class.getName());
     spellchecker.add(SolrSpellChecker.FIELD, "teststop");
     spellchecker.add(DirectSolrSpellChecker.MINQUERYLENGTH, 2);
-    spellchecker.add(DirectSolrSpellChecker.MAXQUERYLENGTH, 4);
+    spellchecker.add(DirectSolrSpellChecker.MAXQUERYLENGTH, 4); // so 'anothar' should not be corrected
 
     SolrCore core = h.getCore();
     checker.init(spellchecker, core);
 
     h.getCore().withSearcher(searcher -> {
       // this test should fail right now
+      Collection<Token> tokens = queryConverter.convert("anothar");
+      SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.getIndexReader());
       SpellingResult result = checker.getSuggestions(spellOpts);
       assertTrue("result is null and it shouldn't be", result != null);
       Map<String, Integer> suggestions = result.get(tokens.iterator().next());
