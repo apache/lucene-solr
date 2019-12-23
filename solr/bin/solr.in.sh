@@ -123,6 +123,9 @@
 # framework that cannot do startup rotation, you may want to enable this to let Solr rotate logs on startup.
 #SOLR_LOG_PRESTART_ROTATION=false
 
+# Enables jetty request log for all requests
+#SOLR_REQUESTLOG_ENABLED=false
+
 # Sets the port Solr binds to, default is 8983
 #SOLR_PORT=8983
 
