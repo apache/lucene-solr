@@ -83,6 +83,7 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
       result = checker.getSuggestions(spellOpts);
       assertTrue("result is null and it shouldn't be", result != null);
       suggestions = result.get(tokens.iterator().next());
+      assertTrue("suggestions is null and it should not be", suggestions != null);
       entry = suggestions.entrySet().iterator().next();
       assertTrue(entry.getKey() + " is not equal to " + "another", entry.getKey().equals("another") == true);
       assertFalse(entry.getValue() + " equals: " + SpellingResult.NO_FREQUENCY_INFO, entry.getValue() == SpellingResult.NO_FREQUENCY_INFO);
@@ -110,6 +111,7 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
       SpellingResult result = checker.getSuggestions(spellOpts);
       assertTrue("result is null and it shouldn't be", result != null);
       Map<String, Integer> suggestions = result.get(tokens.iterator().next());
+      assertTrue("suggestions is null and it should not be", suggestions != null);
       Map.Entry<String, Integer> entry = suggestions.entrySet().iterator().next();
       assertTrue(entry.getKey() + " is not equal to " + "another", entry.getKey().equals("another") == true);
       assertFalse(entry.getValue() + " equals: " + SpellingResult.NO_FREQUENCY_INFO, entry.getValue() == SpellingResult.NO_FREQUENCY_INFO);
