@@ -17,8 +17,8 @@
 package org.apache.solr.client.solrj.io;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -95,7 +95,7 @@ public class TestLang extends SolrTestCase {
     }
     StreamFactory factory = new StreamFactory();
     Lang.register(factory);
-    HashMap<String, Supplier<Class<? extends Expressible>>> registeredFunctions = factory.getFunctionNames();
+    Map<String, Supplier<Class<? extends Expressible>>> registeredFunctions = factory.getFunctionNames();
 
     //Check that each function that is expected is registered.
     for(String func : functions) {
