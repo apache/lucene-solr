@@ -212,7 +212,7 @@ public class ConfigSetsHandler extends RequestHandlerBase implements PermissionN
         .getOverseerConfigSetQueue()
         .offer(Utils.toJSON(m), timeout);
     if (event.getBytes() != null) {
-      SolrResponse response = SolrResponse.deserialize(event.getBytes());
+      SolrResponse response = OverseerSolrResponse.deserialize(event.getBytes());
       rsp.getValues().addAll(response.getResponse());
       SimpleOrderedMap exp = (SimpleOrderedMap) response.getResponse().get("exception");
       if (exp != null) {
