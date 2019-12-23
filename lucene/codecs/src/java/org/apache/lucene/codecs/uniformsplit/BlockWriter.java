@@ -73,7 +73,7 @@ public class BlockWriter {
   protected BlockWriter(IndexOutput blockOutput, int targetNumBlockLines, int deltaNumLines, BlockEncoder blockEncoder) {
     assert blockOutput != null;
     assert targetNumBlockLines > 0;
-    assert deltaNumLines > 0;
+    assert deltaNumLines >= 0;
     assert deltaNumLines < targetNumBlockLines;
     this.blockOutput = blockOutput;
     this.targetNumBlockLines = targetNumBlockLines;
