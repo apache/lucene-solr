@@ -62,6 +62,7 @@ public abstract class SolrResponse implements Serializable, MapWriter {
   }
   
   @SuppressForbidden(reason = "XXX: security hole")
+  @Deprecated
   public static byte[] serializable(SolrResponse response) {
     try {
       ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
@@ -74,6 +75,7 @@ public abstract class SolrResponse implements Serializable, MapWriter {
   }
   
   @SuppressForbidden(reason = "XXX: security hole")
+  @Deprecated
   public static SolrResponse deserialize(byte[] bytes) {
     try {
       ByteArrayInputStream byteStream = new ByteArrayInputStream(bytes);

@@ -175,6 +175,12 @@ public class Utils {
       return new ByteBufferInputStream(ByteBuffer.wrap(baos.getbuf(), 0, baos.size()));
     }
   }
+  
+  public static Object fromJavabin(byte[] bytes) throws IOException {
+    try (JavaBinCodec jbc = new JavaBinCodec()) {
+      return jbc.unmarshal(bytes);
+    }
+  }
 
   public static Collection getDeepCopy(Collection c, int maxDepth, boolean mutable) {
     return getDeepCopy(c, maxDepth, mutable, false);
@@ -294,7 +300,6 @@ public class Utils {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Parse error", e);
     }
   }
-
 
   public static final Function<JSONParser, ObjectBuilder> STANDARDOBJBUILDER = jsonParser -> {
     try {

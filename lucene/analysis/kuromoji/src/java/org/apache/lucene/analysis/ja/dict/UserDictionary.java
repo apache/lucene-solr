@@ -29,8 +29,8 @@ import java.util.TreeMap;
 
 import org.apache.lucene.analysis.ja.util.CSVUtil;
 import org.apache.lucene.util.IntsRefBuilder;
-import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 
 /**
@@ -65,7 +65,7 @@ public final class UserDictionary implements Dictionary {
     // text, segmentation, readings, POS
     while ((line = br.readLine()) != null) {
       // Remove comments
-      line = line.replaceAll("#.*$", "");
+      line = line.replaceAll("^#.*$", "");
 
       // Skip empty lines or comment lines
       if (line.trim().length() == 0) {

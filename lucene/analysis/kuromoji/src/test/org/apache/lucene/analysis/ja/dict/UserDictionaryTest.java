@@ -99,4 +99,16 @@ public class UserDictionaryTest extends LuceneTestCase {
     assertTrue(e.getMessage().contains("does not match the surface form"));
   }
 
+  @Test
+  public void testSharp() throws IOException {
+    String[] inputs = {"テスト#", "テスト#テスト"};
+    UserDictionary dictionary = TestJapaneseTokenizer.readDict();
+
+    for (String input: inputs) {
+      System.out.println(input);
+      int[][] result = dictionary.lookup(input.toCharArray(), 0, input.length());
+      assertEquals("カスタム名刺", dictionary.getPartOfSpeech(result[0][0]));
+    }
+  }
+
 }
