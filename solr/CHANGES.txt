@@ -49,6 +49,9 @@ Improvements
 
 * SOLR-14125: Make <expressible> plugins work with packages (noble)
 
+* SOLR-14138: Jetty's NCSA-formatted RequestLog can be enabled via environment variable,
+  SOLR_REQUESTLOG_ENABLED=true. This will respect SOLR_LOGS_DIR if it is set. (rmuir)
+
 Optimizations
 ---------------------
 (No changes)
