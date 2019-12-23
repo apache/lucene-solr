@@ -37,10 +37,6 @@ public final class TestSecurityManager extends SecurityManager {
   private static final String SYSTEM_CLASS_NAME = System.class.getName();
   private static final String RUNTIME_CLASS_NAME = Runtime.class.getName();
   
-  private static final Predicate<StackFrame> IS_EXIT_CALL = f -> 
-    ("exit".equals(f.getMethodName()) || "halt".equals(f.getMethodName())) &&
-    (SYSTEM_CLASS_NAME.equals(f.getClassName()) || RUNTIME_CLASS_NAME.equals(f.getClassName()));
-
   /**
    * Creates a new TestSecurityManager. This ctor is called on JVM startup,
    * when {@code -Djava.security.manager=org.apache.lucene.util.TestSecurityManager}
@@ -49,7 +45,7 @@ public final class TestSecurityManager extends SecurityManager {
   public TestSecurityManager() {
     super();
   }
-
+  
   /**
    * {@inheritDoc}
    * <p>This method inspects the stack trace and checks who is calling
@@ -59,9 +55,9 @@ public final class TestSecurityManager extends SecurityManager {
   @Override
   public void checkExit(final int status) {
     if (false == StackWalker.getInstance().walk(s -> s
-        .dropWhile(Predicate.not(IS_EXIT_CALL)) // skip any internal stack frames
-        .dropWhile(IS_EXIT_CALL)                // skip all stack frames which are the exit calls
-        .limit(1)                               // only look at one more frame (the caller who calls exit)
+        .dropWhile(Predicate.not(TestSecurityManager::isExitStackFrame)) // skip all internal stack frames
+        .dropWhile(TestSecurityManager::isExitStackFrame)                // skip all exit()/halt() stack frames
+        .limit(1)                                                        // only look at one more frame (caller of exit)
         .map(StackFrame::getClassName)
         .anyMatch(c -> c.startsWith(JUNIT4_TEST_RUNNER_PACKAGE) || 
             c.startsWith(ECLIPSE_TEST_RUNNER_PACKAGE) ||
@@ -75,4 +71,10 @@ public final class TestSecurityManager extends SecurityManager {
     super.checkExit(status);
   }
 
+  private static boolean isExitStackFrame(StackFrame f) {
+    final String methodName = f.getMethodName(), className = f.getClassName();
+    return ("exit".equals(methodName) || "halt".equals(methodName)) &&
+        (SYSTEM_CLASS_NAME.equals(className) || RUNTIME_CLASS_NAME.equals(className));
+  }
+  
 }
