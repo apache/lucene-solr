@@ -62,20 +62,25 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
     checker.init(spellchecker, core);
 
     h.getCore().withSearcher(searcher -> {
+
+      // check that 'fob' is corrected to 'foo'
       Collection<Token> tokens = queryConverter.convert("fob");
       SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.getIndexReader());
       SpellingResult result = checker.getSuggestions(spellOpts);
-      assertTrue("result is null and it shouldn't be", result != null);
+      assertNotNull("result shouldn't be null", result);
       Map<String, Integer> suggestions = result.get(tokens.iterator().next());
+      assertFalse("suggestions shouldn't be empty", suggestions.isEmpty());
       Map.Entry<String, Integer> entry = suggestions.entrySet().iterator().next();
-      assertTrue(entry.getKey() + " is not equal to " + "foo", entry.getKey().equals("foo") == true);
+      assertEquals(entry.getKey() + " is not equal to " + "foo", entry.getKey(), "foo");
       assertFalse(entry.getValue() + " equals: " + SpellingResult.NO_FREQUENCY_INFO, entry.getValue() == SpellingResult.NO_FREQUENCY_INFO);
 
+      // check that 'super' is *not* corrected
       spellOpts.tokens = queryConverter.convert("super");
       result = checker.getSuggestions(spellOpts);
-      assertTrue("result is null and it shouldn't be", result != null);
-      suggestions = result.get(tokens.iterator().next());
-      assertTrue("suggestions is not null and it should be", suggestions == null);
+      assertNotNull("result shouldn't be null", result);
+      suggestions = result.get(spellOpts.tokens.iterator().next());
+      assertNotNull("suggestions shouldn't be null", suggestions);
+      assertTrue("suggestions should be empty", suggestions.isEmpty());
       return null;
     });
   }
@@ -99,7 +104,7 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
   private void testMaxQueryLength(Boolean limitQueryLength) throws Exception {
 
     DirectSolrSpellChecker checker = new DirectSolrSpellChecker();
-    NamedList spellchecker = new NamedList();
+    NamedList spellchecker = new NamedList<>();
     spellchecker.add("classname", DirectSolrSpellChecker.class.getName());
     spellchecker.add(SolrSpellChecker.FIELD, "teststop");
     spellchecker.add(DirectSolrSpellChecker.MINQUERYLENGTH, 2);
@@ -114,15 +119,16 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
       Collection<Token> tokens = queryConverter.convert("anothar");
       SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.getIndexReader());
       SpellingResult result = checker.getSuggestions(spellOpts);
-      assertTrue("result should not be null", result != null);
+      assertNotNull("result shouldn't be null", result);
       Map<String, Integer> suggestions = result.get(tokens.iterator().next());
-      assertTrue("suggestions should not be null", suggestions != null);
+      assertNotNull("suggestions shouldn't be null", suggestions);
 
       if (limitQueryLength) {
         assertTrue("suggestions should be empty", suggestions.isEmpty());
       } else {
+        assertFalse("suggestions shouldn't be empty", suggestions.isEmpty());
         Map.Entry<String, Integer> entry = suggestions.entrySet().iterator().next();
-        assertTrue(entry.getKey() + " is not equal to 'another'", entry.getKey().equals("another") == true);
+        assertEquals(entry.getKey() + " is not equal to 'another'", entry.getKey(), "another");
       }
 
       return null;
