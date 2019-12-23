@@ -866,7 +866,7 @@ public class TestUnifiedHighlighterTermIntervals extends LuceneTestCase {
     assertEquals(1, topDocs.totalHits.value);
     String snippets[] = highlighter.highlight("body", query, topDocs);
     assertEquals(1, snippets.length);
-    assertEquals("Just&#32;a&#32;test&#32;<b>highlighting</b>&#32;from&#32;&lt;i&gt;postings&lt;&#x2F;i&gt;&#46;&#32;", snippets[0]);
+    assertEquals("Just a test <b>highlighting</b> from &lt;i&gt;postings&lt;&#x2F;i&gt;. ", snippets[0]);
     ir.close();
   }
 
