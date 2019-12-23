@@ -718,11 +718,13 @@ goto parse_args
 
 :set_debug
 set SOLR_LOG_LEVEL=DEBUG
+set "PASS_TO_RUN_EXAMPLE=!PASS_TO_RUN_EXAMPLE! -Dsolr.log.level=%SOLR_LOG_LEVEL%"
 SHIFT
 goto parse_args
 
 :set_warn
 set SOLR_LOG_LEVEL=WARN
+set "PASS_TO_RUN_EXAMPLE=!PASS_TO_RUN_EXAMPLE! -Dsolr.log.level=%SOLR_LOG_LEVEL%"
 SHIFT
 goto parse_args
 

@@ -58,6 +58,10 @@ Improvements
   
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
 
+* LUCENE-8596: Kuromoji user dictionary now accepts entries containing hash mark (#) that were
+  previously treated as beginning a line-ending comment (Satoshi Kato and Masaru Hasegawa via
+  Michael Sokolov)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
@@ -173,6 +177,8 @@ Bug Fixes
 
 * LUCENE-9055: Fix the detection of lines crossing triangles through edge points.
   (Ignacio Vera)
+
+* LUCENE-9103: Disjunctions can miss some hits in some rare conditions. (Adrien Grand)
 
 Other
 
