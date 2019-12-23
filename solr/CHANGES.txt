@@ -47,6 +47,8 @@ Improvements
 ---------------------
 * SOLR-14042: Fix varargs precommit warnings (Andraas Salamon via Jason Gerlowski)
 
+* SOLR-14125: Make <expressible> plugins work with packages (noble)
+
 Optimizations
 ---------------------
 (No changes)
