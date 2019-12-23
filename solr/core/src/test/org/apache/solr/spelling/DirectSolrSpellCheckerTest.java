@@ -79,7 +79,7 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
       return null;
     });
   }
-  
+
   @Test
   public void testOnlyMorePopularWithExtendedResults() throws Exception {
     assertQ(req("q", "teststop:fox", "qt", "/spellCheckCompRH", SpellCheckComponent.COMPONENT_NAME, "true", SpellingParams.SPELLCHECK_DICT, "direct", SpellingParams.SPELLCHECK_EXTENDED_RESULTS, "true", SpellingParams.SPELLCHECK_ONLY_MORE_POPULAR, "true"),
@@ -88,6 +88,45 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
         "//lst[@name='spellcheck']/lst[@name='suggestions']/lst[@name='fox']/arr[@name='suggestion']/lst/int[@name='freq']=2",
         "//lst[@name='spellcheck']/bool[@name='correctlySpelled']='true'"
     );
-  }  
+  }
+
+  @Test
+  public void testMaxQueryLength() throws Exception {
+    testMaxQueryLength(true);
+    testMaxQueryLength(false);
+  }
+
+  private void testMaxQueryLength(Boolean limitQueryLength) throws Exception {
+
+    DirectSolrSpellChecker checker = new DirectSolrSpellChecker();
+    NamedList spellchecker = new NamedList();
+    spellchecker.add("classname", DirectSolrSpellChecker.class.getName());
+    spellchecker.add(SolrSpellChecker.FIELD, "teststop");
+    spellchecker.add(DirectSolrSpellChecker.MINQUERYLENGTH, 2);
+
+    // demonstrate that "anothar" is not corrected when maxQueryLength is set to a small number
+    if (limitQueryLength) spellchecker.add(DirectSolrSpellChecker.MAXQUERYLENGTH, 4);
+
+    SolrCore core = h.getCore();
+    checker.init(spellchecker, core);
+
+    h.getCore().withSearcher(searcher -> {
+      Collection<Token> tokens = queryConverter.convert("anothar");
+      SpellingOptions spellOpts = new SpellingOptions(tokens, searcher.getIndexReader());
+      SpellingResult result = checker.getSuggestions(spellOpts);
+      assertTrue("result should not be null", result != null);
+      Map<String, Integer> suggestions = result.get(tokens.iterator().next());
+      assertTrue("suggestions should not be null", suggestions != null);
+
+      if (limitQueryLength) {
+        assertTrue("suggestions should be empty", suggestions.isEmpty());
+      } else {
+        Map.Entry<String, Integer> entry = suggestions.entrySet().iterator().next();
+        assertTrue(entry.getKey() + " is not equal to 'another'", entry.getKey().equals("another") == true);
+      }
+
+      return null;
+    });
+  }
   
 }
