@@ -79,14 +79,14 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
       assertTrue("suggestions is not null and it should be", suggestions == null);
       
       // demonstrate that "anothar" is corrected (see testMaxQueryLength below)
-      spellOpts.tokens = queryConverter.convert("anothar");
-      result = checker.getSuggestions(spellOpts);
-      assertTrue("result is null and it shouldn't be", result != null);
-      suggestions = result.get(tokens.iterator().next());
-      assertTrue("suggestions is null and it should not be", suggestions != null);
-      entry = suggestions.entrySet().iterator().next();
-      assertTrue(entry.getKey() + " is not equal to " + "another", entry.getKey().equals("another") == true);
-      assertFalse(entry.getValue() + " equals: " + SpellingResult.NO_FREQUENCY_INFO, entry.getValue() == SpellingResult.NO_FREQUENCY_INFO);
+      Collection<Token> tokens3 = queryConverter.convert("anothar");
+      SpellingOptions spellOpts3 = new SpellingOptions(tokens3, searcher.getIndexReader());
+      SpellingResult result3 = checker.getSuggestions(spellOpts3);
+      assertTrue("result3 is null and it shouldn't be", result3 != null);
+      Map<String, Integer> suggestions3 = result3.get(tokens3.iterator().next());
+      assertTrue("suggestions3 is null and it should not be", suggestions3 != null);
+      Map.Entry<String, Integer> entry3 = suggestions3.entrySet().iterator().next();
+      assertTrue(entry3.getKey() + " is not equal to " + "another", entry3.getKey().equals("another") == true);
 
       return null;
     });
