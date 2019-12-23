@@ -110,7 +110,9 @@ public class DirectSolrSpellCheckerTest extends SolrTestCaseJ4 {
       SpellingResult result = checker.getSuggestions(spellOpts);
       assertTrue("result is null and it shouldn't be", result != null);
       Map<String, Integer> suggestions = result.get(tokens.iterator().next());
-      assertTrue("suggestions is not null and it should be", suggestions == null);
+      ssertTrue("suggestions is null and it should not be", suggestions != null);
+      Map.Entry<String, Integer> entry = suggestions.entrySet().iterator().next();
+      assertTrue(entry.getKey() + " is not equal to 'anothar': " + entry.getKey(), entry.getKey().equals("anothar") == true);
       return null;
     });
   }
