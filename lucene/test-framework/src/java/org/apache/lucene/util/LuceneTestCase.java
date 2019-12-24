@@ -2723,7 +2723,7 @@ public abstract class LuceneTestCase extends Assert {
         .anyMatch(Set.of(methodNames)::contains));
   }
 
-  /** Inspects stack trace if the given class is called us. */
+  /** Inspects stack trace if the given class called us. */
   public static boolean callStackContains(Class<?> clazz) {
     return StackWalker.getInstance().walk(s -> s.skip(1) // exclude this utility method
         .map(StackFrame::getClassName)
