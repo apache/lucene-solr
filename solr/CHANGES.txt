@@ -170,6 +170,8 @@ Improvements
   SOLR_IP_WHITELIST and SOLR_IP_BLACKLIST. These variables can restrict access to
   Solr based on IP addresses/networks. (rmuir)
 
+* SOLR-14131: Add maxQueryLength option to DirectSolrSpellchecker. (Andy Webb via Bruno Roustant)
+
 Optimizations
 ---------------------
 (No changes)
