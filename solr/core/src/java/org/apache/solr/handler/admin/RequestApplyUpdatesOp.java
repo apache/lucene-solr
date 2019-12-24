@@ -18,6 +18,7 @@
 package org.apache.solr.handler.admin;
 
 import java.io.IOException;
+import java.util.Locale;
 import java.util.concurrent.Future;
 
 import org.apache.solr.cloud.CloudDescriptor;
@@ -106,7 +107,8 @@ class RequestApplyUpdatesOp implements CoreAdminHandler.CoreAdminOp {
       //       If that is not true, then we need to understand those other use cases and update following logic accordingly.
       if (!SharedShardMetadataController.METADATA_NODE_DEFAULT_VALUE.equals(shardVersionMetadata.getMetadataSuffix())) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            String.format("New sub shard has zk information that is not default, collection=%s, shard=%s, core=%s",
+            String.format(Locale.ROOT,
+                "New sub shard has zk information that is not default, collection=%s, shard=%s, core=%s",
                 collectionName, shardName, coreName));
       }
 

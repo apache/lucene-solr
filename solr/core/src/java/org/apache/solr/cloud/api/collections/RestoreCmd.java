@@ -60,6 +60,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Replica.Type;
 import org.apache.solr.common.cloud.ReplicaPosition;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -78,7 +79,7 @@ import org.apache.solr.handler.component.ShardHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-/** Restore is NOT working with Shared storage based collections (having replicas of type {@link Replica.Type#SHARED}).<br>
+/** Restore is NOT working with Shared storage based collections (having replicas of type {@link Type#SHARED}).<br>
     If/once we make it work, delete this comment. */
 
 public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {

@@ -1,7 +1,25 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.solr.store.blob.process;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Locale;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.lucene.index.IndexCommit;
@@ -76,10 +94,10 @@ public class CorePusher {
       // so there is no question of starvation.
       // One option could be to snapshot a queue of pusher threads, we are working on behalf of,
       // before we capture the commit point to push. Once finished pushing, we can dismiss all those threads together.
-      long startTimeMs = System.currentTimeMillis();
+      long startTimeMs = System.nanoTime();
       corePushLock.lock();
       try {
-        long lockAcquisitionTime = System.currentTimeMillis() - startTimeMs;
+        long lockAcquisitionTime = System.nanoTime() - startTimeMs;
         SolrCore core = coreContainer.getCore(coreName);
         if (core == null) {
           throw new SolrException(ErrorCode.SERVER_ERROR, "Can't find core " + coreName);
@@ -108,7 +126,8 @@ public class CorePusher {
             //        number after pull and on push blobCoreMetadata get generation number from local core.
             //        The reason it is important to call it out here is that BlobCoreMetadata' generation also gets
             //        persisted to shared store which is not the requirement for this optimization.
-            log.info(String.format("Nothing to push, pushLockTime=%s pushPullData=%s", lockAcquisitionTime, pushPullData.toString()));
+            log.info(String.format(Locale.ROOT,
+                "Nothing to push, pushLockTime=%s pushPullData=%s", lockAcquisitionTime, pushPullData.toString()));
             return;
           }
 
@@ -121,7 +140,8 @@ public class CorePusher {
               localCoreMetadata, coreVersionMetadata.getBlobCoreMetadata());
 
           if (resolutionResult.getFilesToPush().isEmpty()) {
-            log.warn(String.format("Why there is nothing to push even when there is a newer commit point since last push," +
+            log.warn(String.format(Locale.ROOT,
+                "Why there is nothing to push even when there is a newer commit point since last push," +
                 " pushLockTime=%s pushPullData=%s", lockAcquisitionTime, pushPullData.toString()));
             return;
           }
@@ -161,7 +181,8 @@ public class CorePusher {
           // and we can also give soft guarantee that core is up to date w.r.to shared store, until unless failures happen and leadership changes 
           concurrencyController.updateCoreVersionMetadata(collectionName, shardName, coreName, newShardVersionMetadata, blobCoreMetadata, /* softGuaranteeOfEquality */ true);
           concurrencyController.recordState(collectionName, shardName, coreName, SharedCoreStage.LOCAL_CACHE_UPDATE_FINISHED);
-          log.info(String.format("Successfully pushed to shared store, pushLockTime=%s pushPullData=%s", lockAcquisitionTime, pushPullData.toString()));
+          log.info(String.format(Locale.ROOT,
+              "Successfully pushed to shared store, pushLockTime=%s pushPullData=%s", lockAcquisitionTime, pushPullData.toString()));
         } finally {
           try {
             concurrencyController.recordState(collectionName, shardName, coreName, SharedCoreStage.BLOB_PUSH_FINISHED);

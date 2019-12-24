@@ -17,6 +17,7 @@
 package org.apache.solr.store.blob.process;
 
 import java.lang.invoke.MethodHandles;
+import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -121,7 +122,7 @@ public class CorePullerThread implements Runnable {
         String taskInfo = "";
         if (task != null) {
           try {
-            taskInfo = String.format("Attempt=%s to pull core %s ", task.getAttempts(), task.getPullCoreInfo().getCoreName());
+            taskInfo = String.format(Locale.ROOT, "Attempt=%s to pull core %s ", task.getAttempts(), task.getPullCoreInfo().getCoreName());
             task.finishedPull(null, CoreSyncStatus.FAILURE, Throwables.getStackTraceAsString(e));
           } catch (Exception fpe) {
             log.warn("Cleaning up of pull task encountered a failure.", fpe);
@@ -171,7 +172,7 @@ public class CorePullerThread implements Runnable {
     } catch (InterruptedException ie) {
       throw ie;
     } catch (Exception ex) {
-      log.warn(String.format("Could not establish if current replica is leader for the given core, collection=%s shard=%s core=%s",
+      log.warn(String.format(Locale.ROOT, "Could not establish if current replica is leader for the given core, collection=%s shard=%s core=%s",
           collectionName, shardName, coreName), ex);
       // we will proceed further as we are not a leader
     }

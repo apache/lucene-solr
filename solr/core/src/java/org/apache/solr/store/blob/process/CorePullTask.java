@@ -19,6 +19,7 @@ package org.apache.solr.store.blob.process;
 import java.io.File;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -49,7 +50,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Code for pulling updates on a specific core to the Blob store. see {@CorePushTask} for the push version of this.
+ * Code for pulling updates on a specific core to the Blob store.
  */
 public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -78,8 +79,7 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
   private final PullCoreCallback callback;
 
   CorePullTask(CoreContainer coreContainer, PullCoreInfo pullCoreInfo, PullCoreCallback callback, Set<String> coresCreatedNotPulledYet) {
-    this(coreContainer, pullCoreInfo, System.currentTimeMillis(), 0, 0L, 
-        callback, coresCreatedNotPulledYet);
+    this(coreContainer, pullCoreInfo, System.nanoTime(), 0, 0L, callback, coresCreatedNotPulledYet);
   }
 
   @VisibleForTesting
@@ -207,7 +207,7 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
     final long lastAttemptTimestampCopy = getLastAttemptTimestamp();
 
     if (attemptsCopy != 0) {
-      long now = System.currentTimeMillis();
+      long now = System.nanoTime();
       if (now - lastAttemptTimestampCopy < MIN_RETRY_DELAY_MS) {
         Thread.sleep(MIN_RETRY_DELAY_MS - now + lastAttemptTimestampCopy);
       }
@@ -300,7 +300,8 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
             shardVersionMetadata, blobMetadata, isLeaderPulling);
         syncStatus = CoreSyncStatus.SUCCESS;
       } else {
-        log.warn(String.format("Why there are no files to pull even when we do not match with the version in zk? collection=%s shard=%s core=%s",
+        log.warn(String.format(Locale.ROOT,
+            "Why there are no files to pull even when we do not match with the version in zk? collection=%s shard=%s core=%s",
             pullCoreInfo.getCollectionName(), pullCoreInfo.getShardName(), pullCoreInfo.getCoreName()));
         syncStatus = CoreSyncStatus.SUCCESS_EQUIVALENT;
       }

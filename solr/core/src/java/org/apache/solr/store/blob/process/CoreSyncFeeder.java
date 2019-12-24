@@ -19,6 +19,7 @@ package org.apache.solr.store.blob.process;
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -124,7 +125,7 @@ public abstract class CoreSyncFeeder implements Runnable, Closeable {
       Thread thread = this.executionThread;
       if (thread != null) {
         this.executionThread = null; // race to set to null but ok to try to interrupt twice
-        log.info(String.format("Closing CoreSyncFeeder; interrupting execution thread %s.", thread.getName()));
+        log.info(String.format(Locale.ROOT, "Closing CoreSyncFeeder; interrupting execution thread %s.", thread.getName()));
         thread.interrupt();
       } else {
         log.warn("Closing CoreSyncFeeder before any syncer thread was started. Weird.");

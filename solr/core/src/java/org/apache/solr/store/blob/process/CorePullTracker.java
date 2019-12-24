@@ -16,10 +16,7 @@
  */
 package org.apache.solr.store.blob.process;
 
-import javax.servlet.http.HttpServletRequest;
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.Map;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.solr.common.SolrException;
@@ -28,7 +25,6 @@ import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.servlet.SolrRequestParsers;
 import org.apache.solr.store.blob.metadata.PushPullData;
 import org.apache.solr.store.blob.process.CorePullerFeeder.PullCoreInfo;
 import org.apache.solr.store.blob.util.DeduplicatingList;
@@ -140,35 +136,6 @@ public class CorePullTracker {
 
   public PullCoreInfo getCoreToPull() throws InterruptedException {
     return coresToPull.removeFirst();
-  }
-
-  /**
-   * Get a set of request params for the given request
-   */
-  private Map<String, String[]> getRequestParams(HttpServletRequest request) {
-    Map<String, String[]> params;
-
-    // if this is a POST, calling request#getParameter(String) may cause the input stream (body) to be read, in
-    // search of that parameter. Any subsequent calls to read the request body will fail, as the stream is then
-    // empty.
-    String method = request.getMethod();
-    if ("POST".equals(method)) {
-      params = SolrRequestParsers.parseQueryString(request.getQueryString()).getMap();
-    } else {
-      params = request.getParameterMap();
-    }
-
-    return params;
-  }
-
-  /** @return the *first* value for the specified parameter or {@code defaultValue}, if not present. */
-  private String getParameterValue(Map<String, String[]> params, String parameterName, String defaultValue) {
-    String[] values = params.get(parameterName);
-    if (values != null && values.length == 1) {
-      return values[0];
-    } else {
-      return defaultValue;
-    }
   }
 
   /**

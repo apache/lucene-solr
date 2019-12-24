@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -60,8 +61,6 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
-import org.apache.solr.store.blob.metadata.PushPullData;
-import org.apache.solr.store.blob.process.CorePusher;
 import org.apache.solr.store.blob.process.CoreUpdateTracker;
 import org.apache.solr.store.blob.util.BlobStoreUtils;
 import org.apache.solr.store.shared.SharedCoreConcurrencyController;
@@ -139,7 +138,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
       readOnlyCollection = coll.isReadOnly();
       if (coll.getSharedIndex() && replicaType != Replica.Type.SHARED) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            String.format("Collections backed by shared store can only have replicas of type SHARED, " +
+            String.format(Locale.ROOT, "Collections backed by shared store can only have replicas of type SHARED, " +
                     "collection=%s, shard=%s core=%s replicaType=%s", 
                 collection, cloudDesc.getShardId(), req.getCore().getName(), replicaType.name()));
       }
@@ -1203,7 +1202,7 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           // we could not acquire write lock but see if some other thread has already done the pulling
           SharedCoreVersionMetadata coreVersionMetadata = concurrencyController.getCoreVersionMetadata(collectionName, shardName, coreName);
           if (coreVersionMetadata.isSoftGuaranteeOfEquality()) {
-            log.info(String.format("Indexing thread waited to acquire to write lock and could not. " +
+            log.info(String.format(Locale.ROOT, "Indexing thread waited to acquire to write lock and could not. " +
                     "But someone else has done the pulling so we are good. attempt=%s collection=%s shard=%s core=%s",
                 attempt, collectionName, shardName, coreName));
             break;
@@ -1211,7 +1210,8 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
           // no one else has pulled yet either, lets make another attempt ourselves
           attempt++;
           if (attempt > SharedCoreConcurrencyController.MAX_ATTEMPTS_INDEXING_PULL_WRITE_LOCK) {
-            throw new SolrException(ErrorCode.SERVER_ERROR, String.format("Indexing thread failed to acquire write lock for pull in %s seconds. " +
+            throw new SolrException(ErrorCode.SERVER_ERROR, String.format(Locale.ROOT, 
+                    "Indexing thread failed to acquire write lock for pull in %s seconds. " +
                     "And no one else either has done the pull during that time. collection=%s shard=%s core=%s",
                 Integer.toString(SharedCoreConcurrencyController.SECONDS_TO_WAIT_INDEXING_PULL_WRITE_LOCK * SharedCoreConcurrencyController.MAX_ATTEMPTS_INDEXING_PULL_WRITE_LOCK),
                 collectionName, shardName, coreName));
@@ -1219,7 +1219,8 @@ public class DistributedZkUpdateProcessor extends DistributedUpdateProcessor {
         }
       } catch (InterruptedException ie) {
         Thread.currentThread().interrupt();
-        throw new SolrException(ErrorCode.SERVER_ERROR, String.format("Indexing thread interrupted while trying to acquire pull write lock." +
+        throw new SolrException(ErrorCode.SERVER_ERROR, String.format(Locale.ROOT,
+            "Indexing thread interrupted while trying to acquire pull write lock." +
             " collection=%s shard=%s core=%s", collectionName, shardName, coreName), ie);
       }
     }
