@@ -58,6 +58,10 @@ Authorization makes sure that only users with the necessary roles/permissions ca
 
 Audit logging will record an audit trail of incoming reqests to your cluster, such as users being denied access to admin APIs. Learn more about audit logging and how to implement an audit logger plugin here in the <<audit-logging.adoc#audit-logging,Audit Logging>> chapter.
 
+== Request Logging
+
+Solr can optionally log every incoming HTTP(s) request in the standard https://en.wikipedia.org/wiki/Common_Log_Format[`NCSA format`]. You can enable request logging by setting `SOLR_REQUESTLOG_ENABLED=true` via environment variable or in `solr.in.sh`/`solr.in.cmd`.
+
 == Securing ZooKeeper Traffic
 
 ZooKeeper is a central and important part of a SolrCloud cluster and understanding how to secure
