@@ -172,6 +172,9 @@ Improvements
 
 * SOLR-14131: Add maxQueryLength option to DirectSolrSpellchecker. (Andy Webb via Bruno Roustant)
 
+* SOLR-13984: Java's SecurityManager sandbox can be enabled via environment variable,
+  SOLR_SECURITY_MANAGER_ENABLED=true. (rmuir)
+
 Optimizations
 ---------------------
 (No changes)
