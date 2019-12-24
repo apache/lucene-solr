@@ -62,6 +62,18 @@ Audit logging will record an audit trail of incoming reqests to your cluster, su
 
 Solr can optionally log every incoming HTTP(s) request in the standard https://en.wikipedia.org/wiki/Common_Log_Format[`NCSA format`]. You can enable request logging by setting `SOLR_REQUESTLOG_ENABLED=true` via environment variable or in `solr.in.sh`/`solr.in.cmd`.
 
+== Enable IP Access Control
+
+Restrict network access to specific hosts, by setting `SOLR_IP_WHITELIST`/`SOLR_IP_BLACKLIST` via environment variables or in `solr.in.sh`/`solr.in.cmd`.
+
+[source,bash]
+----
+# Allow IPv4/IPv6 localhost, the 192.168.0.x IPv4 network, and 2000:123:4:5:: IPv6 network.
+SOLR_IP_WHITELIST="127.0.0.1, [::1], 192.168.0.0/24, [2000:123:4:5::]/64"
+# Explicitly deny access to two problematic hosts.
+SOLR_IP_BLACKLIST="192.168.0.3, 192.168.0.4"
+----
+
 == Securing ZooKeeper Traffic
 
 ZooKeeper is a central and important part of a SolrCloud cluster and understanding how to secure
