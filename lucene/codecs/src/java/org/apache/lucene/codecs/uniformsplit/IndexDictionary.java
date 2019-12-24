@@ -22,6 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.IOSupplier;
 
 /**
  * Immutable stateless index dictionary kept in RAM.
@@ -136,11 +137,5 @@ public interface IndexDictionary extends Accountable {
    * {@link org.apache.lucene.index.TermsEnum#seekExact} are called (it is not loaded for a direct
    * all-terms enumeration).
    */
-  interface BrowserSupplier extends Accountable {
-
-    /**
-     * Gets or lazy loads the immutable {@link IndexDictionary} thread safely and creates a new {@link Browser}.
-     */
-    Browser get() throws IOException;
-  }
+  interface BrowserSupplier extends IOSupplier<Browser>, Accountable {}
 }
