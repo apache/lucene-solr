@@ -18,6 +18,7 @@ package org.apache.lucene.index;
 
 
 import java.io.IOException;
+import java.lang.StackWalker.StackFrame;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -407,7 +408,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
       dir.setAssertNoUnrefencedFilesOnClose(false);
 
       if (doFail) {
-        StackTraceElement[] trace = new Exception().getStackTrace();
+        StackFrame[] trace = LuceneTestCase.getCallStack();
         boolean sawAbortOrFlushDoc = false;
         boolean sawClose = false;
         boolean sawMerge = false;
@@ -473,15 +474,12 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
     @Override
     public void eval(MockDirectoryWrapper dir)  throws IOException {
       if (doFail) {
-        StackTraceElement[] trace = new Exception().getStackTrace();
-        for (int i = 0; i < trace.length; i++) {
-          if ("flush".equals(trace[i].getMethodName()) && DefaultIndexingChain.class.getName().equals(trace[i].getClassName())) {
-            if (onlyOnce)
-              doFail = false;
-            //System.out.println(Thread.currentThread().getName() + ": NOW FAIL: onlyOnce=" + onlyOnce);
-            //new Throwable().printStackTrace(System.out);
-            throw new IOException("now failing on purpose");
-          }
+        if (callStackContains(DefaultIndexingChain.class, "flush")) {
+          if (onlyOnce)
+            doFail = false;
+          //System.out.println(Thread.currentThread().getName() + ": NOW FAIL: onlyOnce=" + onlyOnce);
+          //new Throwable().printStackTrace(System.out);
+          throw new IOException("now failing on purpose");
         }
       }
     }

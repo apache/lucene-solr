@@ -18,6 +18,7 @@ package org.apache.lucene.index;
 
 
 import java.io.IOException;
+import java.lang.StackWalker.StackFrame;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.LiveDocsFormat;
@@ -478,7 +479,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
       if (!doFail) {
         return;
       }
-      StackTraceElement[] trace = new Exception().getStackTrace();
+      StackFrame[] trace = LuceneTestCase.getCallStack();
       for (int i = 0; i < trace.length; i++) {
         if (SegmentMerger.class.getName().equals(trace[i].getClassName()) && "mergeTerms".equals(trace[i].getMethodName()) && !didFail1) {
           didFail1 = true;

@@ -18,6 +18,7 @@ package org.apache.lucene.index;
 
 
 import java.io.IOException;
+import java.lang.StackWalker.StackFrame;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -56,7 +57,8 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
       if (doFail && isTestThread()) {
         boolean isDoFlush = false;
         boolean isClose = false;
-        StackTraceElement[] trace = new Exception().getStackTrace();
+        
+        StackFrame[] trace = LuceneTestCase.getCallStack();
         for (int i = 0; i < trace.length; i++) {
           if (isDoFlush && isClose) {
             break;
