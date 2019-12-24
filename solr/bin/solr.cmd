@@ -1001,7 +1001,7 @@ set "EXAMPLE_DIR=%SOLR_TIP%\example"
 set TMP_SOLR_HOME=!SOLR_HOME:%EXAMPLE_DIR%=!
 IF NOT "%TMP_SOLR_HOME%"=="%SOLR_HOME%" (
   set "SOLR_LOGS_DIR=%SOLR_HOME%\..\logs"
-  set "LOG4J_CONFIG=file:///%SOLR_SERVER_DIR%\resources\log4j2.xml"
+  set "LOG4J_CONFIG=%SOLR_SERVER_DIR%\resources\log4j2.xml"
 )
 
 set IS_RESTART=0
@@ -1175,6 +1175,14 @@ IF "%ENABLE_REMOTE_JMX_OPTS%"=="true" (
   set REMOTE_JMX_OPTS=
 )
 
+REM Enable java security manager (limiting filesystem access and other things)
+IF "%SOLR_SECURITY_MANAGER_ENABLED%"=="true" (
+  set SECURITY_MANAGER_OPTS=-Djava.security.manager ^
+-Djava.security.policy="%SOLR_SERVER_DIR%\etc\security.policy" ^
+-Djava.security.properties="%SOLR_SERVER_DIR%\etc\security.properties" ^
+-Dsolr.internal.network.permission=*
+)
+
 IF NOT "%SOLR_HEAP%"=="" set SOLR_JAVA_MEM=-Xms%SOLR_HEAP% -Xmx%SOLR_HEAP%
 IF "%SOLR_JAVA_MEM%"=="" set SOLR_JAVA_MEM=-Xms512m -Xmx512m
 IF "%SOLR_JAVA_STACK_SIZE%"=="" set SOLR_JAVA_STACK_SIZE=-Xss256k
@@ -1267,6 +1275,7 @@ IF NOT "%REMOTE_JMX_OPTS%"=="" set "START_OPTS=%START_OPTS% %REMOTE_JMX_OPTS%"
 IF NOT "%SOLR_ADDL_ARGS%"=="" set "START_OPTS=%START_OPTS% %SOLR_ADDL_ARGS%"
 IF NOT "%SOLR_HOST_ARG%"=="" set "START_OPTS=%START_OPTS% %SOLR_HOST_ARG%"
 IF NOT "%SOLR_OPTS%"=="" set "START_OPTS=%START_OPTS% %SOLR_OPTS%"
+IF NOT "!SECURITY_MANAGER_OPTS!"=="" set "START_OPTS=%START_OPTS% !SECURITY_MANAGER_OPTS!"
 IF "%SOLR_SSL_ENABLED%"=="true" (
   set "SSL_PORT_PROP=-Dsolr.jetty.https.port=%SOLR_PORT%"
   set "START_OPTS=%START_OPTS% %SOLR_SSL_OPTS% !SSL_PORT_PROP!"
@@ -1278,7 +1287,7 @@ set SOLR_DATA_HOME_QUOTED="%SOLR_DATA_HOME%"
 
 set "START_OPTS=%START_OPTS% -Dsolr.log.dir=%SOLR_LOGS_DIR_QUOTED%"
 IF NOT "%SOLR_DATA_HOME%"=="" set "START_OPTS=%START_OPTS% -Dsolr.data.home=%SOLR_DATA_HOME_QUOTED%"
-IF NOT DEFINED LOG4J_CONFIG set "LOG4J_CONFIG=file:///%SOLR_SERVER_DIR%\resources\log4j2.xml"
+IF NOT DEFINED LOG4J_CONFIG set "LOG4J_CONFIG=%SOLR_SERVER_DIR%\resources\log4j2.xml"
 
 cd /d "%SOLR_SERVER_DIR%"
 
