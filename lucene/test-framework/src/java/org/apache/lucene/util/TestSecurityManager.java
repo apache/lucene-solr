@@ -54,12 +54,12 @@ public final class TestSecurityManager extends SecurityManager {
    */
   @Override
   public void checkExit(final int status) {
-    if (false == StackWalker.getInstance().walk(s -> s
+    if (StackWalker.getInstance().walk(s -> s
         .dropWhile(Predicate.not(TestSecurityManager::isExitStackFrame)) // skip all internal stack frames
         .dropWhile(TestSecurityManager::isExitStackFrame)                // skip all exit()/halt() stack frames
         .limit(1)                                                        // only look at one more frame (caller of exit)
         .map(StackFrame::getClassName)
-        .anyMatch(c -> c.startsWith(JUNIT4_TEST_RUNNER_PACKAGE) || 
+        .noneMatch(c -> c.startsWith(JUNIT4_TEST_RUNNER_PACKAGE) || 
             c.startsWith(ECLIPSE_TEST_RUNNER_PACKAGE) ||
             c.startsWith(IDEA_TEST_RUNNER_PACKAGE) ||
             c.startsWith(GRADLE_TEST_RUNNER_PACKAGE)))) {
