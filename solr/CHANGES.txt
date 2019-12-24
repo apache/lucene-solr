@@ -77,6 +77,9 @@ New Features
 
 Improvements
 ---------------------
+* SOLR-14120: Define JavaScript methods 'includes' and 'startsWith' to ensure AdminUI can be displayed when using 
+  Internet Explorer 11 (jafurrer).
+
 * SOLR-14042: Fix varargs precommit warnings (Andraas Salamon via Jason Gerlowski)
 
 * SOLR-14095: Replace Java serialization with Javabin in the Overseer queues (Tomás Fernández Löbbe)
