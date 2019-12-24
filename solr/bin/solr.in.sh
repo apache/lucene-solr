@@ -129,6 +129,16 @@
 # Sets the port Solr binds to, default is 8983
 #SOLR_PORT=8983
 
+# Restrict access to solr by IP address.
+# Specify a comma-separated list of addresses or networks, for example:
+#   127.0.0.1, 192.168.0.0/24, [::1], [2000:123:4:5::]/64
+#SOLR_IP_WHITELIST=
+
+# Block access to solr from specific IP addresses.
+# Specify a comma-separated list of addresses or networks, for example:
+#   127.0.0.1, 192.168.0.0/24, [::1], [2000:123:4:5::]/64
+#SOLR_IP_BLACKLIST=
+
 # Enables HTTPS. It is implictly true if you set SOLR_SSL_KEY_STORE. Use this config
 # to enable https module with custom jetty configuration.
 #SOLR_SSL_ENABLED=true
