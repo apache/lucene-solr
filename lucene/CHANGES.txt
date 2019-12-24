@@ -43,6 +43,9 @@ API Changes
 
 Improvements
 
+* LUCENE-9093: Added hl.fragalign parameter to Unified highlighter which influences
+  how much text to include around a match on the left and the right.
+
 * LUCENE-8757: When provided with an ExecutorService to run queries across
   multiple threads, IndexSearcher now groups small segments together, up to
   250k docs per slice. (Atri Sharma via Adrien Grand)

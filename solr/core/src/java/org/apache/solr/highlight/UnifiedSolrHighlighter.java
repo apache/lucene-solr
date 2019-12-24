@@ -326,7 +326,8 @@ public class UnifiedSolrHighlighter extends SolrHighlighter implements PluginInf
       if (fragsize <= 1) { // no real minimum size
         return baseBI;
       }
-      return LengthGoalBreakIterator.createMinLength(baseBI, fragsize);
+      float fragalign = params.getFieldFloat(field, HighlightParams.FRAGALIGN, 0.f);
+      return LengthGoalBreakIterator.createMinLength(baseBI, fragsize, fragalign);
       // TODO option for using createClosestToLength()
     }
 

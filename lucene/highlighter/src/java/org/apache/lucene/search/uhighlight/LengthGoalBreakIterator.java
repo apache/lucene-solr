@@ -33,23 +33,32 @@ public class LengthGoalBreakIterator extends BreakIterator {
 
   private final BreakIterator baseIter;
   private final int lengthGoal;
+  private final float fragmentAlignment; // how much text to align before match-fragment, valid in range [0, 1]
   private final boolean isMinimumLength; // if false then is "closest to" length
+  private int fragmentEndFromPreceding; // store the match-break end for reuse in following()
+  private int fragmentEndFollowingLengthGoalFromPreceding; // store the remaining length to collect in following()
 
   /** Breaks will be at least {@code minLength} apart (to the extent possible). */
-  public static LengthGoalBreakIterator createMinLength(BreakIterator baseIter, int minLength) {
-    return new LengthGoalBreakIterator(baseIter, minLength, true);
+  public static LengthGoalBreakIterator createMinLength(BreakIterator baseIter, int minLength,
+                                                        float fragmentAlignment) {
+    return new LengthGoalBreakIterator(baseIter, minLength, fragmentAlignment,true);
   }
 
   /** Breaks will be on average {@code targetLength} apart; the closest break to this target (before or after)
    * is chosen. */
-  public static LengthGoalBreakIterator createClosestToLength(BreakIterator baseIter, int targetLength) {
-    return new LengthGoalBreakIterator(baseIter, targetLength, false);
+  public static LengthGoalBreakIterator createClosestToLength(BreakIterator baseIter, int targetLength,
+                                                              float fragmentAlignment) {
+    return new LengthGoalBreakIterator(baseIter, targetLength, fragmentAlignment, false);
   }
 
-  private LengthGoalBreakIterator(BreakIterator baseIter, int lengthGoal, boolean isMinimumLength) {
+  private LengthGoalBreakIterator(BreakIterator baseIter, int lengthGoal, float fragmentAlignment,
+                                  boolean isMinimumLength) {
     this.baseIter = baseIter;
     this.lengthGoal = lengthGoal;
+    this.fragmentAlignment = Math.max(Math.min(fragmentAlignment, 1.f), 0.f);
     this.isMinimumLength = isMinimumLength;
+    this.fragmentEndFromPreceding = 0;
+    this.fragmentEndFollowingLengthGoalFromPreceding = 0;
   }
 
   // note: the only methods that will get called are setText(txt), getText(),
@@ -60,12 +69,13 @@ public class LengthGoalBreakIterator extends BreakIterator {
   @Override
   public String toString() {
     String goalDesc = isMinimumLength ? "minLen" : "targetLen";
-    return getClass().getSimpleName() + "{" + goalDesc + "=" + lengthGoal + ", baseIter=" + baseIter + "}";
+    return getClass().getSimpleName() + "{" + goalDesc + "=" + lengthGoal + ", fragAlign=" + fragmentAlignment +
+        ", baseIter=" + baseIter + "}";
   }
 
   @Override
   public Object clone() {
-    return new LengthGoalBreakIterator((BreakIterator) baseIter.clone(), lengthGoal, isMinimumLength);
+    return new LengthGoalBreakIterator((BreakIterator) baseIter.clone(), lengthGoal, fragmentAlignment, isMinimumLength);
   }
 
   @Override
@@ -107,7 +117,9 @@ public class LengthGoalBreakIterator extends BreakIterator {
   // called by getSummaryPassagesNoHighlight to generate default summary.
   @Override
   public int next() {
-    return following(current());
+    this.fragmentEndFromPreceding = current();
+    this.fragmentEndFollowingLengthGoalFromPreceding = lengthGoal;
+    return following(this.fragmentEndFromPreceding);
   }
 
   @Override
@@ -116,28 +128,20 @@ public class LengthGoalBreakIterator extends BreakIterator {
     return baseIter.previous();
   }
 
-  // called while the current position is the start of a new passage; find end of passage
+  // NOTE: this.fragmentEndFromPreceding is used instead of the parameter!
+  // This is a big diversion from the API a BreakIterator should implement, but specifically this optimization is fine.
   @Override
   public int following(int followingIdx) {
-    final int startIdx = current();
-    if (followingIdx < startIdx) {
-      assert false : "Not supported";
-      return baseIter.following(followingIdx);
+    if (fragmentEndFollowingLengthGoalFromPreceding <= 0) {
+      return fragmentEndFromPreceding;
     }
-    final int targetIdx = startIdx + lengthGoal;
-    // When followingIdx >= targetIdx, we can simply delegate since it will be >= the target
-    if (followingIdx >= targetIdx - 1) {
-      return baseIter.following(followingIdx);
-    }
-    // If target exceeds the text length, return the last index.
+    final int targetIdx = fragmentEndFromPreceding + fragmentEndFollowingLengthGoalFromPreceding;
     if (targetIdx >= getText().getEndIndex()) {
       return baseIter.last();
     }
-
-    // Find closest break >= the target
     final int afterIdx = baseIter.following(targetIdx - 1);
-    if (afterIdx == DONE) { // we're at the end; can this happen?
-      return current();
+    if (afterIdx == DONE) {
+      return baseIter.current();
     }
     if (afterIdx == targetIdx) { // right on the money
       return afterIdx;
@@ -146,17 +150,14 @@ public class LengthGoalBreakIterator extends BreakIterator {
       return afterIdx;
     }
 
-    // note: it is a shame that we invoke preceding() *in addition to* following(); BI's are sometimes expensive.
+    // note: it is a shame that we invoke preceding() *one more time*; BI's are sometimes expensive.
 
-    // Find closest break < target
-    final int beforeIdx = baseIter.preceding(targetIdx); // or could do baseIter.previous() but we hope the BI implements preceding()
-    if (beforeIdx <= followingIdx) { // too far back
-      return moveToBreak(afterIdx);
-    }
-
-    if (targetIdx - beforeIdx <= afterIdx - targetIdx) {
+    // Find closest break to target
+    final int beforeIdx = baseIter.preceding(targetIdx);
+    if (targetIdx - beforeIdx < afterIdx - targetIdx) {
       return beforeIdx;
     }
+    // moveToBreak is necessary for when getSummaryPassagesNoHighlight calls next and current() is used
     return moveToBreak(afterIdx);
   }
 
@@ -174,7 +175,48 @@ public class LengthGoalBreakIterator extends BreakIterator {
   // called at start of new Passage given first word start offset
   @Override
   public int preceding(int offset) {
-    return baseIter.preceding(offset); // no change needed
+    final int fragmentStart = Math.max(baseIter.preceding(offset), 0); // convert DONE to 0
+    fragmentEndFromPreceding = baseIter.following(fragmentStart);
+    if (fragmentEndFromPreceding == DONE) {
+      fragmentEndFromPreceding = baseIter.last();
+    }
+    final int centerLength = fragmentEndFromPreceding - fragmentStart;
+    final int extraPrecedingLengthGoal = (int)((lengthGoal - centerLength) * fragmentAlignment);
+    if (extraPrecedingLengthGoal <= 0) {
+      // With uneven alignment like 0.1 the preceding portion could be 0 because of rounding, while the following
+      // could be a small positive value. This means to favor extra text after the match if not negative.
+      fragmentEndFollowingLengthGoalFromPreceding = lengthGoal - centerLength;
+      return fragmentStart;
+    }
+    final int targetIdx = fragmentStart - extraPrecedingLengthGoal;
+    if (targetIdx <= 0) {
+      fragmentEndFollowingLengthGoalFromPreceding = lengthGoal - fragmentEndFromPreceding;
+      return 0;
+    }
+    final int beforeIdx = baseIter.preceding(targetIdx);
+    if (beforeIdx == DONE) {
+      fragmentEndFollowingLengthGoalFromPreceding = lengthGoal - fragmentEndFromPreceding;
+      return 0;
+    }
+    if (beforeIdx == targetIdx) { // right on the money
+      fragmentEndFollowingLengthGoalFromPreceding = (lengthGoal - fragmentEndFromPreceding) + beforeIdx;
+      return beforeIdx;
+    }
+    if (isMinimumLength) { // thus never undershoot
+      fragmentEndFollowingLengthGoalFromPreceding = (lengthGoal - fragmentEndFromPreceding) + beforeIdx;
+      return beforeIdx;
+    }
+
+    // note: it is a shame that we invoke following() *one more time*; BI's are sometimes expensive.
+
+    // Find closest break to target
+    final int afterIdx = baseIter.following(targetIdx - 1);
+    if (afterIdx - targetIdx < targetIdx - beforeIdx) {
+      fragmentEndFollowingLengthGoalFromPreceding = (lengthGoal - fragmentEndFromPreceding) + afterIdx;
+      return afterIdx;
+    }
+    fragmentEndFollowingLengthGoalFromPreceding = (lengthGoal - fragmentEndFromPreceding) + beforeIdx;
+    return beforeIdx;
   }
 
   @Override

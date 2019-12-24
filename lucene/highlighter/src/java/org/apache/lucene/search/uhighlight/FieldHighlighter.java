@@ -141,6 +141,7 @@ public class FieldHighlighter {
       }
     });
     Passage passage = new Passage(); // the current passage in-progress.  Will either get reset or added to queue.
+    int lastPassageEnd = 0;
 
     do {
       int start = off.startOffset();
@@ -159,8 +160,9 @@ public class FieldHighlighter {
           break;
         }
         // advance breakIterator
-        passage.setStartOffset(Math.max(this.breakIterator.preceding(start + 1), 0));
-        passage.setEndOffset(Math.min(this.breakIterator.following(start), contentLength));
+        passage.setStartOffset(Math.max(this.breakIterator.preceding(start + 1), lastPassageEnd));
+        lastPassageEnd = Math.min(this.breakIterator.following(start), contentLength);
+        passage.setEndOffset(lastPassageEnd);
       }
       // Add this term to the passage.
       BytesRef term = off.getTerm();// a reference; safe to refer to

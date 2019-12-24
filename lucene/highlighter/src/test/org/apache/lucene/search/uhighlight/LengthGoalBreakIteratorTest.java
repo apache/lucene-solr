@@ -28,6 +28,7 @@ import org.apache.lucene.util.QueryBuilder;
 
 public class LengthGoalBreakIteratorTest extends LuceneTestCase {
   private static final String FIELD = "body";
+  private static final float[] ALIGNS = {0.f, 0.5f, 1.f};
 
   // We test LengthGoalBreakIterator as it is used by the UnifiedHighlighter instead of directly, because it is
   //  not a general purpose BreakIterator.  A unit test of it directly wouldn't give as much confidence.
@@ -45,59 +46,94 @@ public class LengthGoalBreakIteratorTest extends LuceneTestCase {
 
     // at first word:
     Query query = query("aa");
-    assertEquals("almost two sent",
-        "<b>Aa</b> bb.", highlightClosestToLen(CONTENT, query, 9));
-    assertEquals( "barely two sent",
-        "<b>Aa</b> bb. Cc dd.", highlightClosestToLen(CONTENT, query, 10));
-    assertEquals("long goal",
-        "<b>Aa</b> bb. Cc dd. Ee ff", highlightClosestToLen(CONTENT, query, 17 + random().nextInt(20)));
+    for (float align : ALIGNS) { // alignment is not meaningful to boundary anchored matches
+      assertEquals("almost two sent " + align,
+          "<b>Aa</b> bb.", highlightClosestToLen(CONTENT, query, 9, align));
+      assertEquals("barely two sent " + align,
+          "<b>Aa</b> bb. Cc dd.", highlightClosestToLen(CONTENT, query, 11, align));
+      assertEquals("long goal " + align,
+          "<b>Aa</b> bb. Cc dd. Ee ff", highlightClosestToLen(CONTENT, query, 17 + random().nextInt(20), align));
+    }
 
     // at some word not at start of passage
     query = query("dd");
-    assertEquals("short goal",
-        " Cc <b>dd</b>.", highlightClosestToLen(CONTENT, query, random().nextInt(5)));
-    assertEquals("almost two sent",
-        " Cc <b>dd</b>.", highlightClosestToLen(CONTENT, query, 10));
-    assertEquals("barely two sent",
-        " Cc <b>dd</b>. Ee ff", highlightClosestToLen(CONTENT, query, 11));
-    assertEquals("long goal",
-        " Cc <b>dd</b>. Ee ff", highlightClosestToLen(CONTENT, query, 12 + random().nextInt(20)));
+    for (float align : ALIGNS) {
+      // alignment is not meaningful when lengthGoal is less than match-fragment
+      assertEquals("short goal " + align,
+          " Cc <b>dd</b>.", highlightClosestToLen(CONTENT, query, random().nextInt(5), align));
+      // alignment is not meaningful when target indexes are closer to than match-fragment than prev-next fragments
+      assertEquals("almost two sent " + align,
+          " Cc <b>dd</b>.", highlightClosestToLen(CONTENT, query, 9, align));
+    }
+    // preceding/following inclusion by alignment parameter
+    assertEquals("barely two sent A",
+        " Cc <b>dd</b>. Ee ff", highlightClosestToLen(CONTENT, query, 11, 0.f));
+    assertEquals("barely two sent B",
+        " Cc <b>dd</b>. Ee ff", highlightClosestToLen(CONTENT, query, 11, 0.5f));
+    assertEquals("barely two sent C",
+        "Aa bb. Cc <b>dd</b>.", highlightClosestToLen(CONTENT, query, 11, 1.f));
+    assertEquals("long goal A",
+        " Cc <b>dd</b>. Ee ff", highlightClosestToLen(CONTENT, query, 17 + random().nextInt(20), 0.f));
+    assertEquals("long goal B",
+        "Aa bb. Cc <b>dd</b>. Ee ff", highlightClosestToLen(CONTENT, query, 17 + random().nextInt(20), 0.5f));
+    assertEquals("long goal C",
+        "Aa bb. Cc <b>dd</b>. Ee ff", highlightClosestToLen(CONTENT, query, 17 + random().nextInt(20), 1.f));
   }
 
   public void testMinLen() throws IOException {
     // minLen mode is simpler than targetLen... just test a few cases
 
     Query query = query("dd");
-    assertEquals("almost two sent",
-        " Cc <b>dd</b>.", highlightMinLen(CONTENT, query, 6));
-    assertEquals("barely two sent",
-        " Cc <b>dd</b>. Ee ff", highlightMinLen(CONTENT, query, 7));
+    for (float align : ALIGNS) { // alignment is not meaningful when lengthGoal is less or equals than match-fragment
+      assertEquals("almost two sent",
+          " Cc <b>dd</b>.", highlightMinLen(CONTENT, query, 7, align));
+    }
+    assertEquals("barely two sent A",
+        " Cc <b>dd</b>. Ee ff", highlightMinLen(CONTENT, query, 8, 0.f));
+    assertEquals("barely two sent B",
+        " Cc <b>dd</b>. Ee ff", highlightMinLen(CONTENT, query, 8, 0.5f));
+    assertEquals("barely two sent C",
+        "Aa bb. Cc <b>dd</b>.", highlightMinLen(CONTENT, query, 8, 1.f));
+    assertEquals("barely two sent D",
+        " Cc <b>dd</b>. Ee ff", highlightMinLen(CONTENT, query, 8, 0.55f));
+    assertEquals("barely two sent D",
+        "Aa bb. Cc <b>dd</b>.", highlightMinLen(CONTENT, query, 9, 0.55f));
+    assertEquals("barely two sent D",
+        " Cc <b>dd</b>. Ee ff", highlightMinLen(CONTENT, query, 9, 0.45f));
   }
 
   public void testDefaultSummaryTargetLen() throws IOException {
     Query query = query("zz");
-    assertEquals("Aa bb.",
-        highlightClosestToLen(CONTENT, query, random().nextInt(10))); // < 10
+    for (float align : ALIGNS) { // alignment is not used for creating default-summary
+      assertEquals("Aa bb.",
+          highlightClosestToLen(CONTENT, query, 6 + random().nextInt(4), align));
+      assertEquals("Aa bb. Cc dd.",
+          highlightClosestToLen(CONTENT, query, 12 + random().nextInt(4), align));
+      assertEquals("Aa bb. Cc dd. Ee ff",
+          highlightClosestToLen(CONTENT, query, 17 + random().nextInt(20), align));
+    }
     assertEquals("Aa bb. Cc dd.",
-        highlightClosestToLen(CONTENT, query, 10 + 6)); // cusp of adding 3rd sentence
-    assertEquals("Aa bb. Cc dd. Ee ff",
-        highlightClosestToLen(CONTENT, query, 17 + random().nextInt(20))); // >= 14
+        highlightClosestToLen(CONTENT, query, 6 + random().nextInt(4), 0.f, 2));
   }
 
   private Query query(String qStr) {
     return new QueryBuilder(analyzer).createBooleanQuery(FIELD, qStr);
   }
 
-  private String highlightClosestToLen(String content, Query query, int lengthGoal) throws IOException {
-    UnifiedHighlighter highlighter = new UnifiedHighlighter(null, analyzer);
-    highlighter.setBreakIterator(() -> LengthGoalBreakIterator.createClosestToLength(new CustomSeparatorBreakIterator('.'), lengthGoal));
-    return highlighter.highlightWithoutSearcher(FIELD, query, content, 1).toString();
+  private String highlightClosestToLen(String content, Query query, int lengthGoal, float fragAlign) throws IOException {
+    return highlightClosestToLen(content, query, lengthGoal, fragAlign, 1);
   }
 
-  private String highlightMinLen(String content, Query query, int lengthGoal) throws IOException {
+  private String highlightClosestToLen(String content, Query query, int lengthGoal, float fragAlign, int maxPassages) throws IOException {
+    UnifiedHighlighter highlighter = new UnifiedHighlighter(null, analyzer);
+    highlighter.setBreakIterator(() -> LengthGoalBreakIterator.createClosestToLength(new CustomSeparatorBreakIterator('.'), lengthGoal, fragAlign));
+    return highlighter.highlightWithoutSearcher(FIELD, query, content, maxPassages).toString();
+  }
+
+  private String highlightMinLen(String content, Query query, int lengthGoal, float fragAlign) throws IOException {
     // differs from above only by "createMinLength"
     UnifiedHighlighter highlighter = new UnifiedHighlighter(null, analyzer);
-    highlighter.setBreakIterator(() -> LengthGoalBreakIterator.createMinLength(new CustomSeparatorBreakIterator('.'), lengthGoal));
+    highlighter.setBreakIterator(() -> LengthGoalBreakIterator.createMinLength(new CustomSeparatorBreakIterator('.'), lengthGoal, fragAlign));
     return highlighter.highlightWithoutSearcher(FIELD, query, content, 1).toString();
   }
 }
