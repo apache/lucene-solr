@@ -46,7 +46,7 @@ import static org.apache.lucene.codecs.uniformsplit.sharedterms.STUniformSplitPo
 public class STUniformSplitTermsReader extends UniformSplitTermsReader {
 
   public STUniformSplitTermsReader(PostingsReaderBase postingsReader, SegmentReadState state, BlockDecoder blockDecoder) throws IOException {
-    this(postingsReader, state, blockDecoder, new FieldMetadata.Serializer(),
+    this(postingsReader, state, blockDecoder, FieldMetadata.Serializer.INSTANCE,
         NAME, VERSION_START, VERSION_CURRENT, TERMS_BLOCKS_EXTENSION, TERMS_DICTIONARY_EXTENSION);
   }
 

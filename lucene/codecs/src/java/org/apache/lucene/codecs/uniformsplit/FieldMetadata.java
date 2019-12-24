@@ -198,6 +198,11 @@ public class FieldMetadata implements Accountable {
    */
   public static class Serializer {
 
+    /**
+     * Stateless singleton.
+     */
+    public static final Serializer INSTANCE = new Serializer();
+
     public void write(DataOutput output, FieldMetadata fieldMetadata) throws IOException {
       assert fieldMetadata.dictionaryStartFP >= 0;
       assert fieldMetadata.firstBlockStartFP >= 0;

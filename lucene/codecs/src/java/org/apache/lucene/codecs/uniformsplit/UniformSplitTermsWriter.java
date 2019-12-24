@@ -147,7 +147,7 @@ public class UniformSplitTermsWriter extends FieldsConsumer {
    */
   public UniformSplitTermsWriter(PostingsWriterBase postingsWriter, SegmentWriteState state,
                           int targetNumBlockLines, int deltaNumLines, BlockEncoder blockEncoder) throws IOException {
-    this(postingsWriter, state, targetNumBlockLines, deltaNumLines, blockEncoder, new FieldMetadata.Serializer(),
+    this(postingsWriter, state, targetNumBlockLines, deltaNumLines, blockEncoder, FieldMetadata.Serializer.INSTANCE,
         NAME, VERSION_CURRENT, TERMS_BLOCKS_EXTENSION, TERMS_DICTIONARY_EXTENSION);
   }
 

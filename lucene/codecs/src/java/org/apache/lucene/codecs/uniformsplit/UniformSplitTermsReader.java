@@ -68,7 +68,7 @@ public class UniformSplitTermsReader extends FieldsProducer {
    *                     It can be used for decompression or decryption.
    */
   public UniformSplitTermsReader(PostingsReaderBase postingsReader, SegmentReadState state, BlockDecoder blockDecoder) throws IOException {
-    this(postingsReader, state, blockDecoder, new FieldMetadata.Serializer(), NAME, VERSION_START, VERSION_CURRENT,
+    this(postingsReader, state, blockDecoder, FieldMetadata.Serializer.INSTANCE, NAME, VERSION_START, VERSION_CURRENT,
         TERMS_BLOCKS_EXTENSION, TERMS_DICTIONARY_EXTENSION);
    }
    
