@@ -407,9 +407,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
       dir.setAssertNoUnrefencedFilesOnClose(false);
 
       if (doFail) {
-        boolean sawAbortOrFlushDoc = callStackContainsAnyOf("abort", "finishDocument");
-        boolean sawCloseOrMerge = callStackContainsAnyOf("merge", "close");
-        if (sawAbortOrFlushDoc && !sawCloseOrMerge) {
+        if (callStackContainsAnyOf("abort", "finishDocument") && false == callStackContainsAnyOf("merge", "close")) {
           if (onlyOnce) {
             doFail = false;
           }
