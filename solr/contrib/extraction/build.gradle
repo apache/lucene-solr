@@ -18,6 +18,7 @@ dependencies {
   implementation ('org.gagravarr:vorbis-java-tika') { transitive = false }
   implementation ('org.gagravarr:vorbis-java-core') { transitive = false }
   implementation ('org.apache.commons:commons-compress') { transitive = false }
+  implementation ('org.apache.commons:commons-csv') { transitive = false }
   implementation ('org.apache.pdfbox:pdfbox') { transitive = false }
   implementation ('org.apache.pdfbox:pdfbox-tools') { transitive = false }
   implementation ('org.apache.pdfbox:fontbox') { transitive = false }
