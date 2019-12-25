@@ -1,0 +1,12 @@
+// This adds OWASP vulnerability validation of project dependencies
+
+// This should be false only for debugging.
+def failOnError = true
+
+dependencyCheck {
+  autoUpdate=false
+  formats=['HTML', 'JSON']
+  suppressionFile='gradle/validation/dependency-check/exclusions.xml'
+}
+
+// check.dependsOn dependencyCheckAnalyze
