@@ -1169,14 +1169,14 @@ public class TestJsonFacets extends SolrTestCaseHS {
 
     // nested query facets on subset
     client.testJQ(params(p, "q", "id:(2 3)"
-            , "json.facet", "{ catB:{query:{q:'${cat_s}:B', facet:{nj:{query:'${where_s}:NJ'}, ny:{query:'${where_s}:NY'}} }}}"
+        , "json.facet", "{ catB:{query:{q:'${cat_s}:B', facet:{nj:{query:'${where_s}:NJ'}, ny:{query:'${where_s}:NY'}} }}}"
         )
         , "facets=={ 'count':2, 'catB':{'count':1, 'nj':{'count':1}, 'ny':{'count':0}}}"
     );
 
     // nested query facets with stats
     client.testJQ(params(p, "q", "*:*"
-            , "json.facet", "{ catB:{query:{q:'${cat_s}:B', facet:{nj:{query:{q:'${where_s}:NJ'}}, ny:{query:'${where_s}:NY'}} }}}"
+        , "json.facet", "{ catB:{query:{q:'${cat_s}:B', facet:{nj:{query:{q:'${where_s}:NJ'}}, ny:{query:'${where_s}:NY'}} }}}"
         )
         , "facets=={ 'count':6, 'catB':{'count':3, 'nj':{'count':2}, 'ny':{'count':1}}}"
     );
@@ -2290,6 +2290,19 @@ public class TestJsonFacets extends SolrTestCaseHS {
             "}"
     );
 
+    //test filter using queries from json.queries
+    client.testJQ(params(p, "q", "*:*"
+        , "json.queries", "{catS:{'#cat_sA': '${cat_s}:A'}, ff:[{'#id_1':'-id:1'},{'#id_2':'-id:2'}]}"
+        , "json.facet", "{" +
+            ",t_filt1:{${terms} type:terms, field:${cat_s}, domain:{filter:{param:catS} } }" + // test filter via "param" type from .queries
+            ",t_filt2:{${terms} type:terms, field:${cat_s}, domain:{filter:{param:ff}} }" +  // test multi-valued query parameter from .queries
+            "}"
+        )
+        , "facets=={ count:6, " +
+            ",t_filt1:{ buckets:[ {val:A, count:2}] } " +
+            ",t_filt2:{ buckets:[ {val:B, count:2}, {val:A, count:1}] } " +
+            "}"
+    );
 
     // test acc reuse (i.e. reset() method).  This is normally used for stats that are not calculated in the first phase,
     // currently non-sorting stats.

@@ -28,6 +28,10 @@ import org.apache.solr.common.SolrException;
  * @lucene.internal
  */
 class JsonQueryConverter {
+  public static final String paramsPrefix = "_tt";
+
+  public static final Object contextKey = JsonQueryConverter.class.getSimpleName();
+
   private int numParams = 0;
 
   String toLocalParams(Object jsonQueryObject, Map<String, String[]> additionalParams) {
@@ -38,7 +42,7 @@ class JsonQueryConverter {
   }
 
   private String putParam(String val, Map<String, String[]> additionalParams) {
-    String name = "_tt"+(numParams++);
+    String name = paramsPrefix+(numParams++);
     additionalParams.put(name, new String[]{val});
     return name;
   }
