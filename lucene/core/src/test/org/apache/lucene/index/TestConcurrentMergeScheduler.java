@@ -18,7 +18,6 @@ package org.apache.lucene.index;
 
 
 import java.io.IOException;
-import java.lang.StackWalker.StackFrame;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -55,21 +54,8 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     @Override
     public void eval(MockDirectoryWrapper dir)  throws IOException {
       if (doFail && isTestThread()) {
-        boolean isDoFlush = false;
-        boolean isClose = false;
-        
-        StackFrame[] trace = LuceneTestCase.getCallStack();
-        for (int i = 0; i < trace.length; i++) {
-          if (isDoFlush && isClose) {
-            break;
-          }
-          if ("flush".equals(trace[i].getMethodName())) {
-            isDoFlush = true;
-          }
-          if ("close".equals(trace[i].getMethodName())) {
-            isClose = true;
-          }
-        }
+        boolean isDoFlush = callStackContainsAnyOf("flush");
+        boolean isClose = callStackContainsAnyOf("close");
         if (isDoFlush && !isClose && random().nextBoolean()) {
           hitExc = true;
           throw new IOException(Thread.currentThread().getName() + ": now failing during flush");

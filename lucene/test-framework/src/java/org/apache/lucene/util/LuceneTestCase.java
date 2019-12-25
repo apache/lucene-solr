@@ -2716,7 +2716,7 @@ public abstract class LuceneTestCase extends Assert {
         .anyMatch(f -> className.equals(f.getClassName()) && methodName.equals(f.getMethodName())));
   }
 
-  /** Inspects stack trace to figure out if one of the given methodnames (no class restriction) called us. */
+  /** Inspects stack trace to figure out if one of the given method names (no class restriction) called us. */
   public static boolean callStackContainsAnyOf(String... methodNames) {
     return StackWalker.getInstance().walk(s -> s.skip(1) // exclude this utility method
         .map(StackFrame::getMethodName)
@@ -2728,14 +2728,6 @@ public abstract class LuceneTestCase extends Assert {
     return StackWalker.getInstance().walk(s -> s.skip(1) // exclude this utility method
         .map(StackFrame::getClassName)
         .anyMatch(clazz.getName()::equals));
-  }
-  
-  /** Returns the current stack trace.
-   * @deprecated Don't use this method for performance reasons, use {@code callStackContains()} variants instead. */ 
-  @Deprecated
-  public static StackFrame[] getCallStack() {
-    return StackWalker.getInstance().walk(s -> s.skip(1) // exclude this utility method
-        .toArray(StackFrame[]::new));
   }
 
   /** A runnable that can throw any checked exception. */

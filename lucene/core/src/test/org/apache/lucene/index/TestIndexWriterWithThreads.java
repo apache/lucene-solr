@@ -18,7 +18,6 @@ package org.apache.lucene.index;
 
 
 import java.io.IOException;
-import java.lang.StackWalker.StackFrame;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -408,26 +407,9 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
       dir.setAssertNoUnrefencedFilesOnClose(false);
 
       if (doFail) {
-        StackFrame[] trace = LuceneTestCase.getCallStack();
-        boolean sawAbortOrFlushDoc = false;
-        boolean sawClose = false;
-        boolean sawMerge = false;
-        for (int i = 0; i < trace.length; i++) {
-          if (sawAbortOrFlushDoc && sawMerge && sawClose) {
-            break;
-          }
-          if ("abort".equals(trace[i].getMethodName()) ||
-              "finishDocument".equals(trace[i].getMethodName())) {
-            sawAbortOrFlushDoc = true;
-          }
-          if ("merge".equals(trace[i].getMethodName())) {
-            sawMerge = true;
-          }
-          if ("close".equals(trace[i].getMethodName())) {
-            sawClose = true;
-          }
-        }
-        if (sawAbortOrFlushDoc && !sawClose && !sawMerge) {
+        boolean sawAbortOrFlushDoc = callStackContainsAnyOf("abort", "finishDocument");
+        boolean sawCloseOrMerge = callStackContainsAnyOf("merge", "close");
+        if (sawAbortOrFlushDoc && !sawCloseOrMerge) {
           if (onlyOnce) {
             doFail = false;
           }
