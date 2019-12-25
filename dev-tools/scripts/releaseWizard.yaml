@@ -823,7 +823,7 @@ groups:
       python3 -u dev-tools/scripts/smokeTestRelease.py \
       https://dist.apache.org/repos/dist/dev/lucene/lucene-solr-{{ release_version }}-RC{{ rc_number }}-rev{{ build_rc.git_rev | default("<git_rev>", True) }}
 
-      The vote will be open for at least 3 working days, i.e. until {{ vote_close }}.
+      The vote will be open for at least 72 hours i.e. until {{ vote_close }}.
 
       [ ] +1  approve
       [ ] +0  no opinion
@@ -831,6 +831,16 @@ groups:
 
       Here is my +1
       ----
+
+      {% if vote_close_72h_holidays %}
+      [IMPORTANT]
+      ====
+      The voting period contains one or more holidays. Please consider extending the vote deadline.
+
+      {% for holiday in vote_close_72h_holidays %}* {{ holiday }}
+      {% endfor %}
+      ====
+      {%- endif %}
     vars:
       vote_close: '{{ vote_close_72h }}'
       vote_close_epoch: '{{ vote_close_72h_epoch }}'
