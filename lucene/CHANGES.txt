@@ -20,6 +20,9 @@ Improvements
 
 * LUCENE-9091: UnifiedHighlighter HTML escaping should only escape essentials (Nándor Mátravölgyi)
 
+* LUCENE-9109: Backport some changes from master (except StackWalker) to improve
+  TestSecurityManager (Uwe Schindler)
+
 Optimizations
 ---------------------
 (No changes)

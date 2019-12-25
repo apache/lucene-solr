@@ -16,9 +16,6 @@
  */
 package org.apache.lucene.util;
 
-import java.security.AccessController;
-import java.security.PrivilegedAction;
-
 /**
  * A {@link SecurityManager} that prevents tests calling {@link System#exit(int)}.
  * Only the test runner itself is allowed to exit the JVM.
@@ -28,9 +25,9 @@ import java.security.PrivilegedAction;
  */ 
 public final class TestSecurityManager extends SecurityManager {
   
-  static final String JUNIT4_TEST_RUNNER_PACKAGE = "com.carrotsearch.ant.tasks.junit4.";
-  static final String ECLIPSE_TEST_RUNNER_PACKAGE = "org.eclipse.jdt.internal.junit.runner.";
-  static final String IDEA_TEST_RUNNER_PACKAGE = "com.intellij.rt.execution.junit.";
+  private static final String JUNIT4_TEST_RUNNER_PACKAGE = "com.carrotsearch.ant.tasks.junit4.";
+  private static final String ECLIPSE_TEST_RUNNER_PACKAGE = "org.eclipse.jdt.internal.junit.runner.";
+  private static final String IDEA_TEST_RUNNER_PACKAGE = "com.intellij.rt.execution.junit.";
 
   /**
    * Creates a new TestSecurityManager. This ctor is called on JVM startup,
@@ -49,45 +46,38 @@ public final class TestSecurityManager extends SecurityManager {
    */
   @Override
   public void checkExit(final int status) {
-    AccessController.doPrivileged(new PrivilegedAction<Void>() {
-      @Override
-      public Void run() {
-        final String systemClassName = System.class.getName(),
-            runtimeClassName = Runtime.class.getName();
-        String exitMethodHit = null;
-        for (final StackTraceElement se : Thread.currentThread().getStackTrace()) {
-          final String className = se.getClassName(), methodName = se.getMethodName();
-          if (
-            ("exit".equals(methodName) || "halt".equals(methodName)) &&
-            (systemClassName.equals(className) || runtimeClassName.equals(className))
-          ) {
-            exitMethodHit = className + '#' + methodName + '(' + status + ')';
-            continue;
-          }
-          
-          if (exitMethodHit != null) {
-            if (className.startsWith(JUNIT4_TEST_RUNNER_PACKAGE) || 
-                className.startsWith(ECLIPSE_TEST_RUNNER_PACKAGE) ||
-                className.startsWith(IDEA_TEST_RUNNER_PACKAGE)) {
-              // this exit point is allowed, we return normally from closure:
-              return /*void*/ null;
-            } else {
-              // anything else in stack trace is not allowed, break and throw SecurityException below:
-              break;
-            }
-          }
-        }
-        
-        if (exitMethodHit == null) {
-          // should never happen, only if JVM hides stack trace - replace by generic:
-          exitMethodHit = "JVM exit method";
-        }
-        throw new SecurityException(exitMethodHit + " calls are not allowed because they terminate the test runner's JVM.");
+    final String systemClassName = System.class.getName(),
+        runtimeClassName = Runtime.class.getName();
+    String exitMethodHit = null;
+    for (final StackTraceElement se : (new Exception()).getStackTrace()) {
+      final String className = se.getClassName(), methodName = se.getMethodName();
+      if (
+        ("exit".equals(methodName) || "halt".equals(methodName)) &&
+        (systemClassName.equals(className) || runtimeClassName.equals(className))
+      ) {
+        exitMethodHit = className + '#' + methodName + '(' + status + ')';
+        continue;
       }
-    });
+      
+      if (exitMethodHit != null) {
+        if (className.startsWith(JUNIT4_TEST_RUNNER_PACKAGE) || 
+            className.startsWith(ECLIPSE_TEST_RUNNER_PACKAGE) ||
+            className.startsWith(IDEA_TEST_RUNNER_PACKAGE)) {
+          // we passed the stack check, delegate to super, so default policy can still deny permission:
+          super.checkExit(status);
+          return;
+        } else {
+          // anything else in stack trace is not allowed, break and throw SecurityException below:
+          break;
+        }
+      }
+    }
     
-    // we passed the stack check, delegate to super, so default policy can still deny permission:
-    super.checkExit(status);
+    if (exitMethodHit == null) {
+      // should never happen, only if JVM hides stack trace - replace by generic:
+      exitMethodHit = "JVM exit method";
+    }
+    throw new SecurityException(exitMethodHit + " calls are not allowed because they terminate the test runner's JVM.");
   }
 
 }
