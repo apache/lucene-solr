@@ -163,6 +163,13 @@ Improvements
 
 * SOLR-14125: Make <expressible> plugins work with packages (noble)
 
+* SOLR-14138: Jetty's NCSA-formatted RequestLog can be enabled via environment variable,
+  SOLR_REQUESTLOG_ENABLED=true. This will respect SOLR_LOGS_DIR if it is set. (rmuir)
+
+* SOLR-14136: Jetty's InetAccessHandler can be enabled via environment variables,
+  SOLR_IP_WHITELIST and SOLR_IP_BLACKLIST. These variables can restrict access to
+  Solr based on IP addresses/networks. (rmuir)
+
 Optimizations
 ---------------------
 (No changes)
