@@ -171,7 +171,7 @@ public class TestPostingsSolrHighlighter extends SolrTestCaseJ4 {
     assertU(commit());
     assertQ("html escaped", 
         req("q", "text:document", "sort", "id asc", "hl", "true", "hl.encoder", "html"),
-        "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='<em>Document</em>&#32;one&#32;has&#32;a&#32;first&#32;&lt;i&gt;sentence&lt;&#x2F;i&gt;&#46;'");
+        "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='<em>Document</em> one has a first &lt;i&gt;sentence&lt;&#x2F;i&gt;.'");
   }
   
   public void testWildcard() {

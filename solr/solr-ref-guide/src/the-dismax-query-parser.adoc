@@ -148,9 +148,9 @@ The only difference between the above examples, is that using the `bq` parameter
 ====
 Generally speaking, using `bq` (or `bf`, below) is considered a poor way to "boost" documents by a secondary query because it has an "Additive" effect on the final score.  The overall impact a particular `bq` parameter will have on a given document can vary a lot depending on the _absolute_ values of the scores from the original query as well as the `bq` query, which in turn depends on the complexity of the original query, and various scoring factors (TF, IDF, average field length, etc.)
 
-"Multiplicative Boosting" is generally considered to be a more predictable method of influcing document score, because it acts as a "scaling factor" -- increasing (or decreasing) the scores of each document by a _relative_ amount.
+"Multiplicative Boosting" is generally considered to be a more predictable method of influencing document score, because it acts as a "scaling factor" -- increasing (or decreasing) the scores of each document by a _relative_ amount.
 
-The <<other-parsers.adoc#boost-query-parser,`{!boost}` QParser>> provides a convinient wrapper for implementing multiplicitive boosting, and the <<the-extended-dismax-query-parser.adoc#extended-dismax-parameters,`{!edismax}` QParser>> offers a `boost` query parameter shortcut for using it.
+The <<other-parsers.adoc#boost-query-parser,`{!boost}` QParser>> provides a convenient wrapper for implementing multiplicative boosting, and the <<the-extended-dismax-query-parser.adoc#extended-dismax-parameters,`{!edismax}` QParser>> offers a `boost` query parameter shortcut for using it.
 ====
 
 
@@ -178,7 +178,6 @@ bf=div(1,sum(1,price))^1.5
 bq={!func}div(sales_rank,ms(NOW,release_date))
 bq={!lucene}( {!func v='div(1,sum(1,price))'} )^1.5
 ----
-
 
 == Examples of Queries Submitted to the DisMax Query Parser
 

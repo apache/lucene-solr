@@ -58,6 +58,13 @@ Improvements
   
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
 
+* LUCENE-8596: Kuromoji user dictionary now accepts entries containing hash mark (#) that were
+  previously treated as beginning a line-ending comment (Satoshi Kato and Masaru Hasegawa via
+  Michael Sokolov)
+
+* LUCENE-9109: Use StackWalker to implement TestSecurityManager's detection
+  of JVM exit (Uwe Schindler)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
@@ -81,7 +88,13 @@ New Features
 
 Improvements
 ---------------------
-(No changes)
+
+* LUCENE-9102: Add maxQueryLength option to DirectSpellchecker. (Andy Webb via Bruno Roustant)
+
+* LUCENE-9091: UnifiedHighlighter HTML escaping should only escape essentials (Nándor Mátravölgyi)
+
+* LUCENE-9109: Backport some changes from master (except StackWalker) to improve
+  TestSecurityManager (Uwe Schindler)
 
 Optimizations
 ---------------------
