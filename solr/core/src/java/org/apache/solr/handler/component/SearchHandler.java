@@ -154,7 +154,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
         }
 
         @Override
-        public void changed(PackageLoader.Package pkg) {
+        public void changed(PackageLoader.Package pkg, PackageListeners.Ctx ctx) {
           //we could optimize this by listening to only relevant packages,
           // but it is not worth optimizing as these are lightweight objects
           components = null;

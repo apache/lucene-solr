@@ -56,7 +56,7 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
       }
 
       @Override
-      public void changed(PackageLoader.Package pkg) {
+      public void changed(PackageLoader.Package pkg, PackageListeners.Ctx ctx) {
         reload(pkg);
 
       }
