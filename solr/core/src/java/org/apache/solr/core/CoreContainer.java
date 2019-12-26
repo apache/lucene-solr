@@ -135,6 +135,7 @@ import org.apache.solr.util.stats.MetricUtils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.apache.solr.common.cloud.Replica.Type;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
@@ -838,14 +839,14 @@ public class CoreContainer {
   }
 
   /**
-   * This method goes over all the {@link Replica.Type#SHARED} replicas that belong to this node and ensures that
+   * This method goes over all the {@link Type#SHARED} replicas that belong to this node and ensures that
    * there are local core descriptors corresponding to all of them. If missing, it will create them.
    *
    * If we encounter any unknown error during discovery we will log a warning and ignore the error i.e.
    * we prefer loading core container over missing cores.   
    * 
    * @param locallyDiscoveredCoreDescriptors list of the core descriptors that already exist locally
-   * @return list of the core descriptors of {@link Replica.Type#SHARED} replicas that were missing locally
+   * @return list of the core descriptors of {@link Type#SHARED} replicas that were missing locally
    */
   private List<CoreDescriptor> discoverAdditionalCoreDescriptorsForSharedReplicas(List<CoreDescriptor> locallyDiscoveredCoreDescriptors) {
     List<CoreDescriptor> additionalCoreDescriptors = new ArrayList<>();
@@ -872,7 +873,8 @@ public class CoreContainer {
                 if (!localCoreDescriptorSet.contains(replica.getCoreName())) {
                   String coreName = replica.getCoreName();
                   // no corresponding core descriptor present locally
-                  log.info(String.format("Found a replica with missing core descriptor, collection=%s replica=%s core=%s",
+                  log.info(String.format(Locale.ROOT,
+                      "Found a replica with missing core descriptor, collection=%s replica=%s core=%s",
                       collection.getName(), replica.getName(), coreName));
 
                   Map<String, String> coreProperties = BlobStoreUtils.getSharedCoreProperties(getZkController().getZkStateReader(), collection, replica);
@@ -892,7 +894,8 @@ public class CoreContainer {
                   localCoreDescriptorSet.add(coreName);
                 }
               } catch (Exception ex) {
-                log.warn(String.format("Failed to create missing core descriptor for a replica, collection=%s replica=%s core=%s",
+                log.warn(String.format(Locale.ROOT,
+                    "Failed to create missing core descriptor for a replica, collection=%s replica=%s core=%s",
                     collection.getName(),
                     replica != null ? replica.getName() : "",
                     replica != null ? replica.getCoreName() : "")
@@ -901,7 +904,8 @@ public class CoreContainer {
             }
           }
         } catch (Exception ex) {
-          log.warn(String.format("Failed to discover additional core descriptors for a shared collection from zookeeper, collection=%s",
+          log.warn(String.format(Locale.ROOT,
+              "Failed to discover additional core descriptors for a shared collection from zookeeper, collection=%s",
               collection != null ? collection.getName() : "")
               , ex);
         }

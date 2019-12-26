@@ -17,6 +17,7 @@
 package org.apache.solr.store.blob.process;
 
 import java.lang.invoke.MethodHandles;
+import java.util.Locale;
 import java.util.Set;
 
 import com.google.common.collect.Sets;
@@ -115,7 +116,7 @@ public class CorePullerFeeder extends CoreSyncFeeder {
       syncsEnqueuedSinceLastLog++;
 
       // Log if it's time (we did at least one pull otherwise we would be still blocked in the calls above)
-      final long now = System.currentTimeMillis();
+      final long now = System.nanoTime();
       final long msSinceLastLog = now - lastLoggedTimestamp;
       if (msSinceLastLog > minMsBetweenLogs) {
         log.info("Since last pull log " + msSinceLastLog + " ms ago, added "
@@ -211,18 +212,18 @@ public class CorePullerFeeder extends CoreSyncFeeder {
         PullCoreInfo pullCoreInfo = pullTask.getPullCoreInfo();
         if (status.isTransientError() && pullTask.getAttempts() < MAX_ATTEMPTS) {
           pullTask.setAttempts(pullTask.getAttempts() + 1);
-          pullTask.setLastAttemptTimestamp(System.currentTimeMillis());
+          pullTask.setLastAttemptTimestamp(System.nanoTime());
           pullTaskQueue.addDeduplicated(pullTask, true);
-          log.info(String.format("Pulling core %s failed with transient error. Retrying. Last status=%s attempts=%s . %s",
+          log.info(String.format(Locale.ROOT, "Pulling core %s failed with transient error. Retrying. Last status=%s attempts=%s . %s",
               pullCoreInfo.getSharedStoreName(), status, pullTask.getAttempts(), message == null ? "" : message));
           return;
         }
         
         if (status.isSuccess()) {
-          log.info(String.format("Pulling core %s succeeded. Last status=%s attempts=%s . %s",
+          log.info(String.format(Locale.ROOT, "Pulling core %s succeeded. Last status=%s attempts=%s . %s",
               pullCoreInfo.getSharedStoreName(), status, pullTask.getAttempts(), message == null ? "" : message));
         } else {
-          log.warn(String.format("Pulling core %s failed. Giving up. Last status=%s attempts=%s . %s",
+          log.warn(String.format(Locale.ROOT, "Pulling core %s failed. Giving up. Last status=%s attempts=%s . %s",
               pullCoreInfo.getSharedStoreName(), status, pullTask.getAttempts(), message == null ? "" : message));
         }
         BlobCoreSyncer syncer = cores.getSharedStoreManager().getBlobCoreSyncer();

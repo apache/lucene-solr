@@ -61,6 +61,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Replica.Type;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkConfigManager;
@@ -159,7 +160,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
   /**
    * Default values for a collection based on shared storage ({@link DocCollection#getSharedIndex()} returns <code>true</code>,
-   * replicas are {@link Replica.Type#SHARED}).
+   * replicas are {@link Type#SHARED}).
    */
   public static final Map<String, Object> SHARED_INDEX_COLLECTION_PROPS_AND_DEFAULTS = Collections.unmodifiableMap(makeMap(
       ROUTER, DocRouter.DEFAULT_NAME,

@@ -19,6 +19,7 @@ package org.apache.solr.store.shared;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Locale;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -32,7 +33,6 @@ import org.apache.solr.servlet.HttpSolrCall;
 import org.apache.solr.store.blob.client.BlobCoreMetadata;
 import org.apache.solr.store.blob.metadata.PushPullData;
 import org.apache.solr.store.blob.process.CorePullTask;
-import org.apache.solr.store.blob.process.CorePullerThread;
 import org.apache.solr.store.blob.process.CorePusher;
 import org.apache.solr.store.blob.util.BlobStoreUtils;
 import org.apache.solr.store.shared.metadata.SharedShardMetadataController;
@@ -154,7 +154,8 @@ public class SharedCoreConcurrencyController {
       return true;
     }
     if (isVersionNumberSame || isMetadataSuffixSame) {
-      log.warn(String.format("Why only one of version number and metadata suffix matches?" +
+      log.warn(String.format(Locale.ROOT, 
+              "Why only one of version number and metadata suffix matches?" +
               " coreVersionNumber=%s shardVersionNumber=%s" +
               " coreMetadataSuffix=%s shardMetadataSuffix=%s",
           coreVersionMetadata.getVersion(), shardVersionMetadata.getVersion(),
@@ -167,7 +168,8 @@ public class SharedCoreConcurrencyController {
    * Logs the current {@link SharedCoreStage} a core is at.
    */
   public void recordState(String collectionName, String shardName, String coreName, SharedCoreStage stage) {
-    log.info(String.format("RecordSharedCoreStage: collection=%s shard=%s core=%s stage=%s", collectionName, shardName, coreName, stage));
+    log.info(String.format(Locale.ROOT, 
+        "RecordSharedCoreStage: collection=%s shard=%s core=%s stage=%s", collectionName, shardName, coreName, stage));
   }
 
   /**
@@ -235,7 +237,8 @@ public class SharedCoreConcurrencyController {
     //       But at least for semantic correctness we should acquire locks in that path too and enable this assert.
     // assert (currentMetadata.getCorePullLock().getWriteHoldCount() > 0) ||
     //    (currentMetadata.getCorePushLock().getHoldCount() > 0 && currentMetadata.getCorePullLock().getReadHoldCount() > 0);
-    log.info(String.format("updateCoreVersionMetadata: collection=%s shard=%s core=%s  current={%s} updated={%s}",
+    log.info(String.format(Locale.ROOT, 
+        "updateCoreVersionMetadata: collection=%s shard=%s core=%s  current={%s} updated={%s}",
         collectionName, shardName, coreName, currentMetadata.toString(), updatedMetadata.toString()));
     coresVersionMetadata.put(coreName, updatedMetadata);
   }
@@ -290,7 +293,8 @@ public class SharedCoreConcurrencyController {
       metadataController.ensureMetadataNodeExists(collectionName, shardName);
     } catch (IOException ioe) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          String.format("Unable to ensure metadata for collection=%s shard=%s", collectionName, shardName), ioe);
+          String.format(Locale.ROOT,
+              "Unable to ensure metadata for collection=%s shard=%s", collectionName, shardName), ioe);
     }
   }
 
@@ -379,7 +383,8 @@ public class SharedCoreConcurrencyController {
 
     @Override
     public String toString() {
-      return String.format("version=%s  metadataSuffix=%s softGuaranteeOfEquality=%s", version, metadataSuffix, softGuaranteeOfEquality);
+      return String.format(Locale.ROOT,
+          "version=%s  metadataSuffix=%s softGuaranteeOfEquality=%s", version, metadataSuffix, softGuaranteeOfEquality);
     }
   }
 

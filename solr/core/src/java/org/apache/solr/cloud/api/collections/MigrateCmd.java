@@ -33,6 +33,7 @@ import org.apache.solr.common.cloud.CompositeIdRouter;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Replica.Type;
 import org.apache.solr.common.cloud.RoutingRule;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -62,7 +63,7 @@ import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.util.Utils.makeMap;
 
-/** Migration is NOT working with Shared storage based collections (having replicas of type {@link Replica.Type#SHARED}).<br>
+/** Migration is NOT working with Shared storage based collections (having replicas of type {@link Type#SHARED}).<br>
     If/once we make it work, delete this comment. */
 public class MigrateCmd implements OverseerCollectionMessageHandler.Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());

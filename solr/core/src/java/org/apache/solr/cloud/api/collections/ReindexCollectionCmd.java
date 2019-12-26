@@ -48,6 +48,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Replica.Type;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionAdminParams;
@@ -67,7 +68,7 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 
 /**
- * <b>Reindex is NOT working with Shared storage based collections (having replicas of type {@link Replica.Type#SHARED}).<br>
+ * <b>Reindex is NOT working with Shared storage based collections (having replicas of type {@link Type#SHARED}).<br>
  * If/once we make it work, delete this comment.</b>
  *
  * Reindex a collection, usually in order to change the index schema.

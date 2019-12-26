@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.solr.store.blob.metadata;
 
 import java.io.EOFException;
@@ -5,9 +22,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
@@ -95,7 +114,7 @@ public class CorePushPull {
      * @param newMetadataSuffix suffix of the new core.metadata file to be created as part of this push
      */
     public BlobCoreMetadata pushToBlobStore(String currentMetadataSuffix, String newMetadataSuffix) throws Exception {
-      long startTimeMs = System.currentTimeMillis();
+      long startTimeMs = System.nanoTime();
       try {
         SolrCore solrCore = container.getCore(pushPullData.getCoreName());
         if (solrCore == null) {
@@ -127,7 +146,7 @@ public class CorePushPull {
              */
             for (BlobCoreMetadata.BlobFile d : resolvedMetadataResult.getFilesToDelete()) {
                 bcmBuilder.removeFile(d);
-                BlobCoreMetadata.BlobFileToDelete bftd = new BlobCoreMetadata.BlobFileToDelete(d, System.currentTimeMillis());
+                BlobCoreMetadata.BlobFileToDelete bftd = new BlobCoreMetadata.BlobFileToDelete(d, System.nanoTime());
                 bcmBuilder.addFileToDelete(bftd);
             }
             
@@ -137,12 +156,12 @@ public class CorePushPull {
               //      could be added to resolvedMetadataResult#getFilesToDelete()
               ToFromJson<BlobCoreMetadata> converter = new ToFromJson<>();
               String json = converter.toJson(blobMetadata);
-              int bcmSize = json.getBytes().length;
+              int bcmSize = json.getBytes(StandardCharsets.UTF_8).length;
               
               String blobCoreMetadataName = BlobStoreUtils.buildBlobStoreMetadataName(currentMetadataSuffix);
               String coreMetadataPath = blobMetadata.getSharedBlobName() + "/" + blobCoreMetadataName;
               // so far checksum is not used for metadata file
-              BlobCoreMetadata.BlobFileToDelete bftd = new BlobCoreMetadata.BlobFileToDelete("", coreMetadataPath, bcmSize, BlobCoreMetadataBuilder.UNDEFINED_VALUE, System.currentTimeMillis());
+              BlobCoreMetadata.BlobFileToDelete bftd = new BlobCoreMetadata.BlobFileToDelete("", coreMetadataPath, bcmSize, BlobCoreMetadataBuilder.UNDEFINED_VALUE, System.nanoTime());
               bcmBuilder.addFileToDelete(bftd);
             }
             
@@ -187,7 +206,7 @@ public class CorePushPull {
      *                     following the return from this call might see the old core content).
      */
     public void pullUpdateFromBlob(boolean waitForSearcher) throws Exception {
-         pullUpdateFromBlob(System.currentTimeMillis(), waitForSearcher, 0);
+         pullUpdateFromBlob(System.nanoTime(), waitForSearcher, 0);
     }
 
     /**
@@ -214,7 +233,7 @@ public class CorePushPull {
      *                      TODO This has to be revisited before going to real prod, as environemnt issues can cause massive reindexing with this strategy
      */
     public void pullUpdateFromBlob(long requestQueuedTimeMs, boolean waitForSearcher, int attempt) throws Exception {
-        long startTimeMs = System.currentTimeMillis();
+        long startTimeMs = System.nanoTime();
         try {
           SolrCore solrCore = container.getCore(pushPullData.getCoreName());
           if (solrCore == null) {
@@ -409,12 +428,13 @@ public class CorePushPull {
      * transfer or moving from temp dir to final destination. One option could be to just make them -1 in case of failure.
      */
     private void logBlobAction(String action, long filesAffected, long bytesTransferred, long requestQueuedTimeMs, int attempt, long startTimeMs) throws Exception {
-      long now = System.currentTimeMillis();
+      long now = System.nanoTime();
       long runTime = now - startTimeMs;
       long startLatency = now - requestQueuedTimeMs;
 
-      String message = String.format("PushPullData=[%s] action=%s storageProvider=%s bucketRegion=%s bucketName=%s "
-              + "runTime=%s startLatency=%s bytesTransferred=%s attempt=%s filesAffected=%s localGenerationNumber=%s blobGenerationNumber=%s ",
+      String message = String.format(Locale.ROOT,
+            "PushPullData=[%s] action=%s storageProvider=%s bucketRegion=%s bucketName=%s "
+            + "runTime=%s startLatency=%s bytesTransferred=%s attempt=%s filesAffected=%s localGenerationNumber=%s blobGenerationNumber=%s ",
           pushPullData.toString(), action, coreStorageClient.getStorageProvider().name(), coreStorageClient.getBucketRegion(),
           coreStorageClient.getBucketName(), runTime, startLatency, bytesTransferred, attempt, filesAffected,
           solrServerMetadata.getGeneration(), blobMetadata.getGeneration());
@@ -481,7 +501,7 @@ public class CorePushPull {
     @VisibleForTesting
     protected boolean okForHardDelete(BlobCoreMetadata.BlobFileToDelete file) {
       // For now we only check how long ago the file was marked for delete.
-      return System.currentTimeMillis() - file.getDeletedAt() >= deleteManager.getDeleteDelayMs();
+      return System.nanoTime() - file.getDeletedAt() >= deleteManager.getDeleteDelayMs();
     }
     
     @VisibleForTesting

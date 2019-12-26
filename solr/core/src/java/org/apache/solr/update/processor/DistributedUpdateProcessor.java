@@ -38,6 +38,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
+import org.apache.solr.common.cloud.Replica.Type;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
@@ -195,7 +196,7 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
 
   /**
    * This (superclass) method is only called in tests or when Solr is not zk aware.
-   * {@link Replica.Type#SHARED} will not work without ZK so no changes required here for shared storage backed collections.
+   * {@link Type#SHARED} replicas will not work without ZK so no changes required here for shared storage backed collections.
    * @return the replica type of the collection.
    */
   protected Replica.Type computeReplicaType() {

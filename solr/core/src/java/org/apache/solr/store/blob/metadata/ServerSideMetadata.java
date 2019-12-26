@@ -1,12 +1,31 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.solr.store.blob.metadata;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.NoSuchFileException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Objects;
 
 import com.google.common.collect.ImmutableCollection;
@@ -124,7 +143,7 @@ public class ServerSideMetadata {
             if (attempt > MAX_ATTEMPTS_TO_CAPTURE_COMMIT_POINT) {
               throw ex;
             }
-            log.info(String.format("Failed to capture commit point: core=%s attempt=%s reason=%s",
+            log.info(String.format(Locale.ROOT, "Failed to capture commit point: core=%s attempt=%s reason=%s",
                 coreName, attempt, ex.getMessage()));
           }
         }
@@ -271,13 +290,13 @@ public class ServerSideMetadata {
       // .lock files come and go. Ignore them (we're closing the Index Writer before adding any pulled files to the Core)
       if (!fileName.endsWith(".lock")) {
         // Hash the file name and file size so we can tell if any file has changed (or files appeared or vanished)
-        digest.update(fileName.getBytes());
+        digest.update(fileName.getBytes(StandardCharsets.UTF_8));
         try {
-          digest.update(Long.toString(coreDir.fileLength(fileName)).getBytes());
+          digest.update(Long.toString(coreDir.fileLength(fileName)).getBytes(StandardCharsets.UTF_8));
         } catch (FileNotFoundException fnf) {
           // The file was deleted between the listAll() and the check, use an impossible size to not match a digest
           // for which the file is completely present or completely absent.
-          digest.update(Long.toString(-42).getBytes());
+          digest.update(Long.toString(-42).getBytes(StandardCharsets.UTF_8));
         }
       }
     }

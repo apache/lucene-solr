@@ -1,3 +1,20 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package org.apache.solr.store.blob.client;
 
 import java.io.File;
@@ -5,6 +22,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -13,6 +31,8 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import org.apache.lucene.util.IOUtils;
 
 /**
  * Class that handles reads and writes of solr blob files to the local file system.
@@ -97,7 +117,7 @@ public class LocalStorageClient implements CoreStorageClient {
 
       // Writing to the file assumed atomic, the file cannot be observed midway. Might not hold here but should be the case
       // with a real S3 implementation.
-      try (PrintWriter out = new PrintWriter(blobMetadataFile)){
+      try (PrintWriter out = new PrintWriter(blobMetadataFile, StandardCharsets.UTF_8.name())){
         out.println(json);
       }  
     } catch (Exception ex) {
@@ -115,7 +135,7 @@ public class LocalStorageClient implements CoreStorageClient {
       String blobMetadataPath = getBlobAbsolutePath(getBlobMetadataName(sharedStoreName, blobCoreMetadataName));
       File blobMetadataFile = new File(blobMetadataPath); 
       
-      String json = new String(Files.readAllBytes(blobMetadataFile.toPath()));
+      String json = new String(Files.readAllBytes(blobMetadataFile.toPath()), StandardCharsets.UTF_8);
       ToFromJson<BlobCoreMetadata> converter = new ToFromJson<>();
       return converter.fromJson(json, BlobCoreMetadata.class);
     } catch (Exception ex) {
@@ -157,9 +177,8 @@ public class LocalStorageClient implements CoreStorageClient {
         // Since this traversal includes the root directory
         // we need to reverse because we can't delete non-empty directories 
         .sorted(Comparator.reverseOrder())
-        .map(Path::toFile)
-        .forEach(file -> {
-          file.delete();
+        .forEach(filePath -> {
+          IOUtils.deleteFilesIgnoringExceptions(filePath);
         });
     } catch (Exception ex) {
       // In case the path doesn't exist, we'll just swallow the exception because it's not an issue,
@@ -174,8 +193,8 @@ public class LocalStorageClient implements CoreStorageClient {
   public void deleteBlobs(Collection<String> paths) throws BlobException {
     try {
       for (String blobPath : paths) {
-        final File blobFile = new File(getBlobAbsolutePath(blobPath));
-        blobFile.delete();
+        final Path path = Paths.get(getBlobAbsolutePath(blobPath));
+        Files.deleteIfExists(path);
       }
     } catch (Exception ex) {
       throw new BlobException(ex);
