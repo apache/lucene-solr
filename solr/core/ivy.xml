@@ -152,7 +152,7 @@
     <dependency org="joda-time" name="joda-time" rev="${/joda-time/joda-time}" conf="compile"/>
     <dependency org="com.fasterxml.jackson.dataformat" name="jackson-dataformat-cbor" rev="${/com.fasterxml.jackson.dataformat/jackson-dataformat-cbor}" conf="compile"/>
     <dependency org="software.amazon.ion" name="ion-java" rev="${/software.amazon.ion/ion-java}" conf="compile"/>
-    <dependency org="com.google.code.gson" name="gson" rev="${/com.google/gson}" conf="compile"/>
+    <dependency org="com.google.code.gson" name="gson" rev="${/com.google.code.gson/gson}" conf="compile"/>
 
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/> 
   </dependencies>
