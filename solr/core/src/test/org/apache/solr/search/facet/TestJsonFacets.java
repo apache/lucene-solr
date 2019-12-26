@@ -3664,6 +3664,10 @@ public class TestJsonFacets extends SolrTestCaseHS {
         "Expected Map for 'facet', received ArrayList=[{}]",
         req("q", "*:*", "rows", "0", "json.facet", "[{}]"), SolrException.ErrorCode.BAD_REQUEST);
 
+    assertQEx("Should fail as queries is not of type map",
+        "Expected Map for 'queries', received ArrayList=[{}]",
+        req("q", "*:*", "rows", "0", "json.queries", "[{}]"), SolrException.ErrorCode.BAD_REQUEST);
+
     // range facets
     assertQEx("Should fail as 'other' is of type Map",
         "Expected list of string or comma separated string values for 'other', " +

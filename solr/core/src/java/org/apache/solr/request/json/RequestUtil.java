@@ -191,8 +191,7 @@ public class RequestUtil {
     }
 
     // implement compat for existing components...
-    JsonQueryConverter jsonQueryConverter = (JsonQueryConverter) req.getContext()
-        .computeIfAbsent(JsonQueryConverter.contextKey, (k)->new JsonQueryConverter());
+    JsonQueryConverter jsonQueryConverter = new JsonQueryConverter();
 
     if (json != null && !isShard) {
       for (Map.Entry<String,Object> entry : json.entrySet()) {
@@ -217,37 +216,39 @@ public class RequestUtil {
         } else if (SORT.equals(key)) {
           out = SORT;
         } else if ("queries".equals(key)) {
-          for (Map.Entry<String, Object> subEntry : ((Map<String, Object>) entry.getValue()).entrySet()) {
-            out = subEntry.getKey();
-            arr = true;
-            isQuery = true;
-            processJsonEntry(newMap, jsonQueryConverter, subEntry, out, isQuery, arr);
+          Object queriesJsonObj = entry.getValue();
+          if (queriesJsonObj instanceof Map) {
+            for (Map.Entry<String, Object> queryJsonProperty : ((Map<String, Object>) queriesJsonObj).entrySet()) {
+              out = queryJsonProperty.getKey();
+              arr = true;
+              isQuery = true;
+              convertJsonPropertyToLocalParams(newMap, jsonQueryConverter, queryJsonProperty, out, isQuery, arr);
+            }
+            continue;
+          } else {
+           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Expected Map for 'queries', received " + queriesJsonObj.getClass().getSimpleName() + "=" + queriesJsonObj);
           }
-          continue;
+
         } else if ("params".equals(key) || "facet".equals(key) ) {
           // handled elsewhere
           continue;
         } else {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unknown top-level key in JSON request : " + key);
         }
-
-        processJsonEntry(newMap, jsonQueryConverter, entry, out, isQuery, arr);
+        convertJsonPropertyToLocalParams(newMap, jsonQueryConverter, entry, out, isQuery, arr);
       }
-
-
     }
 
     if (json != null) {
       req.setJSON(json);
     }
-
   }
 
-  private static void processJsonEntry(Map<String, String[]> newMap, JsonQueryConverter jsonQueryConverter, Map.Entry<String, Object> entry, String out, boolean isQuery, boolean arr) {
-    Object val = entry.getValue();
+  private static void convertJsonPropertyToLocalParams(Map<String, String[]> outMap, JsonQueryConverter jsonQueryConverter, Map.Entry<String, Object> jsonProperty, String outKey, boolean isQuery, boolean arr) {
+    Object val = jsonProperty.getValue();
 
     if (arr) {
-      String[] existing = newMap.get(out);
+      String[] existing = outMap.get(outKey);
       List lst = val instanceof List ? (List)val : null;
       int existingSize = existing==null ? 0 : existing.length;
       int jsonSize = lst==null ? 1 : lst.size();
@@ -258,14 +259,14 @@ public class RequestUtil {
       if (lst != null) {
         for (int i = 0; i < jsonSize; i++) {
           Object v = lst.get(i);
-          newval[existingSize + i] = isQuery ? jsonQueryConverter.toLocalParams(v, newMap) : v.toString();
+          newval[existingSize + i] = isQuery ? jsonQueryConverter.toLocalParams(v, outMap) : v.toString();
         }
       } else {
-        newval[newval.length-1] = isQuery ? jsonQueryConverter.toLocalParams(val, newMap) : val.toString();
+        newval[newval.length-1] = isQuery ? jsonQueryConverter.toLocalParams(val, outMap) : val.toString();
       }
-      newMap.put(out, newval);
+      outMap.put(outKey, newval);
     } else {
-      newMap.put(out, new String[]{isQuery ? jsonQueryConverter.toLocalParams(val, newMap) : val.toString()});
+      outMap.put(outKey, new String[]{isQuery ? jsonQueryConverter.toLocalParams(val, outMap) : val.toString()});
     }
   }
 
