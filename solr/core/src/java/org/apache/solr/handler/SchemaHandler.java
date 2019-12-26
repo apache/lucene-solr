@@ -27,7 +27,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
@@ -41,7 +40,6 @@ import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -227,8 +225,9 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
         PluginInfo.ClassName className = new PluginInfo.ClassName(klas);
         if (className.pkg != null) {
           req.getCore().getPackageListeners().forEachListener(listener -> {
-            if (listener.pluginInfo() == null) return;
-            if (Objects.equals(listener.pluginInfo().cName.toString(), className.toString())) {
+            PluginInfo pluginInfo = listener.pluginInfo();
+            if (pluginInfo == null) return;
+            if (Objects.equals(pluginInfo.cName.toString(), className.toString())) {
               nl.add("_packageinfo_", listener.getPackageVersion());
             }
           });
