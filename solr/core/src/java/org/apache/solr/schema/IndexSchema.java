@@ -267,7 +267,7 @@ public class IndexSchema implements Closeable {
 
     @Override
     public <T> T newInstance(String cName, Class<T> expectedType, String[] subPackages, Class[] params, Object[] args) {
-      return getIt(cName, expectedType, (pkgloader, name) -> loader.newInstance(name, expectedType, subPackages, params, args));
+      return getIt(cName, expectedType, (pkgloader, name) -> pkgloader.newInstance(name, expectedType, subPackages, params, args));
     }
 
 
