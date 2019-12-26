@@ -38,25 +38,28 @@ public class LengthGoalBreakIterator extends BreakIterator {
   private int fragmentEndFromPreceding; // store the match-break end for reuse in following()
   private int fragmentEndFollowingLengthGoalFromPreceding; // store the remaining length to collect in following()
 
-  /** Breaks will be at least {@code minLength} apart (to the extent possible). */
+  /** Breaks will be at least {@code minLength} apart (to the extent possible),
+   *  while trying to position the match inside the fragment according to {@code fragmentAlignment}. */
   public static LengthGoalBreakIterator createMinLength(BreakIterator baseIter, int minLength,
                                                         float fragmentAlignment) {
-    return new LengthGoalBreakIterator(baseIter, minLength, fragmentAlignment,true);
+    return new LengthGoalBreakIterator(baseIter, minLength, fragmentAlignment, true);
   }
 
   /** For backwards compatibility you can initialise the break iterator without fragmentAlignment. */
+  @Deprecated
   public static LengthGoalBreakIterator createMinLength(BreakIterator baseIter, int minLength) {
     return createMinLength(baseIter, minLength, 0.f);
   }
 
   /** Breaks will be on average {@code targetLength} apart; the closest break to this target (before or after)
-   * is chosen. */
+   * is chosen. The match will be positioned according to {@code fragmentAlignment} as much as possible. */
   public static LengthGoalBreakIterator createClosestToLength(BreakIterator baseIter, int targetLength,
                                                               float fragmentAlignment) {
     return new LengthGoalBreakIterator(baseIter, targetLength, fragmentAlignment, false);
   }
 
   /** For backwards compatibility you can initialise the break iterator without fragmentAlignment. */
+  @Deprecated
   public static LengthGoalBreakIterator createClosestToLength(BreakIterator baseIter, int targetLength) {
     return createClosestToLength(baseIter, targetLength, 0.f);
   }
@@ -68,7 +71,7 @@ public class LengthGoalBreakIterator extends BreakIterator {
     if (fragmentAlignment < 0.f || fragmentAlignment > 1.f || !Float.isFinite(fragmentAlignment)) {
       throw new IllegalArgumentException("fragmentAlignment must be >= zero and <= one");
     }
-    this.fragmentAlignment = Math.max(Math.min(fragmentAlignment, 1.f), 0.f);
+    this.fragmentAlignment = fragmentAlignment;
     this.isMinimumLength = isMinimumLength;
     this.fragmentEndFromPreceding = 0;
     this.fragmentEndFollowingLengthGoalFromPreceding = 0;
