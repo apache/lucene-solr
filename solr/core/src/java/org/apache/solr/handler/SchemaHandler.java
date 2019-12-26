@@ -24,7 +24,10 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
@@ -32,10 +35,13 @@ import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -179,6 +185,7 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
                     SimpleOrderedMap simpleOrderedMap = (SimpleOrderedMap) obj;
                     if(name.equals(simpleOrderedMap.get("name"))) {
                       rsp.add(fieldName.substring(0, realName.length() - 1), simpleOrderedMap);
+                      insertPackageInfo(rsp.getValues(), req);
                       return;
                     }
                   }
@@ -188,6 +195,7 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
             } else {
               rsp.add(fieldName, o);
             }
+            insertPackageInfo(rsp.getValues(), req);
             return;
           }
 
@@ -198,6 +206,37 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
     } catch (Exception e) {
       rsp.setException(e);
     }
+  }
+
+  private  void insertPackageInfo(Object o, SolrQueryRequest req) {
+    if(!req.getParams().getBool("meta")) return;
+    if (o instanceof List) {
+      List l = (List) o;
+      for (Object o1 : l) {
+        if (o1 instanceof NamedList || o1 instanceof List) insertPackageInfo(o1, req);
+      }
+
+    } else if (o instanceof NamedList) {
+      NamedList nl = (NamedList) o;
+      nl.forEach((BiConsumer) (n, v) -> {
+        if (v instanceof NamedList || v instanceof List) insertPackageInfo(v, req);
+      });
+      Object v = nl.get("class");
+      if (v instanceof String) {
+        String klas = (String) v;
+        PluginInfo.ClassName className = new PluginInfo.ClassName(klas);
+        if (className.pkg != null) {
+          req.getCore().getPackageListeners().forEachListener(listener -> {
+            if (listener.pluginInfo() == null) return;
+            if (Objects.equals(listener.pluginInfo().cName.toString(), className.toString())) {
+              nl.add("_packageinfo_", listener.getPackageVersion());
+            }
+          });
+        }
+      }
+
+    }
+
   }
 
   private static Set<String> subPaths = new HashSet<>(Arrays.asList(

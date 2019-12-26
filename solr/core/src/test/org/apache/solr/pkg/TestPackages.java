@@ -18,6 +18,7 @@
 package org.apache.solr.pkg;
 
 import java.io.IOException;
+import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collections;
@@ -52,6 +53,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.filestore.TestDistribPackageStore;
 import org.apache.solr.util.LogLevel;
@@ -169,7 +171,35 @@ public class TestPackages extends SolrCloudTestCase {
           return new SolrResponseBase();
         }
       });
+      verifySchemaComponent(cluster.getSolrClient(), COLLECTION_NAME, "/schema/fieldtypes/myNewTextFieldWithAnalyzerClass",
+          Utils.makeMap(":fieldType:analyzer:charFilters[0]:_packageinfo_:version" ,"1.0",
+                                  ":fieldType:analyzer:tokenizer:_packageinfo_:version","1.0",
+                                  ":fieldType:_packageinfo_:version","1.0"));
 
+      add = new Package.AddVersion();
+      add.version = "2.0";
+      add.pkg = "schemapkg";
+      add.files = Arrays.asList(new String[]{FILE1});
+      req = new V2Request.Builder("/cluster/package")
+          .forceV2(true)
+          .withMethod(SolrRequest.METHOD.POST)
+          .withPayload(Collections.singletonMap("add", add))
+          .build();
+      req.process(cluster.getSolrClient());
+
+      TestDistribPackageStore.assertResponseValues(10,
+          () -> new V2Request.Builder("/cluster/package").
+              withMethod(SolrRequest.METHOD.GET)
+              .build().process(cluster.getSolrClient()),
+          Utils.makeMap(
+              ":result:packages:schemapkg[0]:version", "2.0",
+              ":result:packages:schemapkg[0]:files[0]", FILE1
+          ));
+
+      verifySchemaComponent(cluster.getSolrClient(), COLLECTION_NAME, "/schema/fieldtypes/myNewTextFieldWithAnalyzerClass",
+          Utils.makeMap(":fieldType:analyzer:charFilters[0]:_packageinfo_:version" ,"2.0",
+              ":fieldType:analyzer:tokenizer:_packageinfo_:version","2.0",
+              ":fieldType:_packageinfo_:version","2.0"));
 
     } finally {
       cluster.shutdown();
@@ -498,6 +528,22 @@ public class TestPackages extends SolrCloudTestCase {
 
     }
   }
+
+  private void verifySchemaComponent(SolrClient client, String COLLECTION_NAME, String path,
+                              Map expected) throws Exception {
+    SolrParams params = new MapSolrParams((Map) Utils.makeMap("collection", COLLECTION_NAME,
+        WT, JAVABIN,
+        "meta", "true"));
+
+    GenericSolrRequest req = new GenericSolrRequest(SolrRequest.METHOD.GET,path
+        , params);
+    NamedList<Object> rsp = client.request(req);
+    System.out.println( Utils.writeJson(rsp, new StringWriter(), true).toString());
+    TestDistribPackageStore.assertResponseValues(10,
+        client,
+        req, expected);
+  }
+
 
   private void verifyCmponent(SolrClient client, String COLLECTION_NAME,
   String componentType, String componentName, String pkg, String version) throws Exception {

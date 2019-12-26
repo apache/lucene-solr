@@ -909,6 +909,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   }
 
   public void refreshSchema() {
+    log.info("Reloading schema...");
     IndexSchema old = schema;
     schema = schemaSupplier.get();
     closeWhileHandlingException(old);

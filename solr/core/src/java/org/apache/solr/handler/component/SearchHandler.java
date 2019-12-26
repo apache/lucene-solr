@@ -40,6 +40,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
@@ -161,7 +162,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, 
         }
 
         @Override
-        public PackageLoader.Package.Version getPackageVersion() {
+        public PackageAPI.PkgVersion getPackageVersion() {
           return null;
         }
       });

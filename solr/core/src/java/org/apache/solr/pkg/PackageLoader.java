@@ -244,6 +244,10 @@ public class PackageLoader implements Closeable {
         version.writeMap(ew);
       }
 
+      public PackageAPI.PkgVersion getVersionInfo(){
+        return version;
+      }
+
       Version(Package parent, PackageAPI.PkgVersion v) {
         this.parent = parent;
         this.version = v;

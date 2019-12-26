@@ -41,6 +41,7 @@ import static org.apache.solr.schema.FieldType.CLASS_NAME;
  */
 public class PluginInfo implements MapSerializable {
   public final String name, className, type, pkgName;
+  public final ClassName cName;
   public final NamedList initArgs;
   public final Map<String, String> attributes;
   public final List<PluginInfo> children;
@@ -51,9 +52,9 @@ public class PluginInfo implements MapSerializable {
   public PluginInfo(String type, Map<String, String> attrs, NamedList initArgs, List<PluginInfo> children) {
     this.type = type;
     this.name = attrs.get(NAME);
-    ClassName parsed = new ClassName(attrs.get(CLASS_NAME));
-    this.className = parsed.klas;
-    this.pkgName = parsed.pkg;
+    cName = new ClassName(attrs.get(CLASS_NAME));
+    this.className = cName.klas;
+    this.pkgName = cName.pkg;
     this.initArgs = initArgs;
     attributes = unmodifiableMap(attrs);
     this.children = children == null ? Collections.<PluginInfo>emptyList(): unmodifiableList(children);
@@ -67,8 +68,10 @@ public class PluginInfo implements MapSerializable {
   public static class ClassName {
     public final String pkg;
     public final String klas;
+    private final String actual;
 
     public ClassName(String name) {
+      this.actual = name;
       String pkgName = null;
       String className = name;
       if (name != null) {
@@ -82,15 +85,20 @@ public class PluginInfo implements MapSerializable {
       this.klas = className;
       this.pkg = pkgName;
     }
+
+    @Override
+    public String toString() {
+      return actual;
+    }
   }
 
 
   public PluginInfo(Node node, String err, boolean requireName, boolean requireClass) {
     type = node.getNodeName();
     name = DOMUtil.getAttr(node, NAME, requireName ? err : null);
-    ClassName parsed = new ClassName(DOMUtil.getAttr(node, CLASS_NAME, requireClass ? err : null));
-    className = parsed.klas;
-    pkgName = parsed.pkg;
+    cName = new ClassName(DOMUtil.getAttr(node, CLASS_NAME, requireClass ? err : null));
+    className = cName.klas;
+    pkgName = cName.pkg;
     initArgs = DOMUtil.childNodesToNamedList(node);
     attributes = unmodifiableMap(DOMUtil.toMap(node.getAttributes()));
     children = loadSubPlugins(node);
@@ -120,9 +128,9 @@ public class PluginInfo implements MapSerializable {
     }
     this.type = type;
     this.name = (String) m.get(NAME);
-    ClassName parsed = new ClassName((String) m.get(CLASS_NAME));
-    this.className = parsed.klas;
-    this.pkgName = parsed.pkg;
+    cName = new ClassName((String) m.get(CLASS_NAME));
+    this.className = cName.klas;
+    this.pkgName = cName.pkg;
     attributes = unmodifiableMap(m);
     this.children =  Collections.<PluginInfo>emptyList();
     isFromSolrConfig = true;

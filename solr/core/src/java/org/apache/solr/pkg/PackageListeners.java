@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Consumer;
 
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
@@ -96,6 +97,13 @@ public class PackageListeners {
     }
   }
 
+  public void forEachListener(Consumer<Listener> listenerConsumer){
+    listeners.forEach(ref -> {
+      Listener l = ref.get();
+      if (l != null) listenerConsumer.accept(l);
+    });
+  }
+
   public List<Listener> getListeners() {
     List<Listener> result = new ArrayList<>();
     for (Reference<Listener> ref : listeners) {
@@ -131,7 +139,7 @@ public class PackageListeners {
 
     void changed(PackageLoader.Package pkg, Ctx ctx);
 
-    PackageLoader.Package.Version getPackageVersion();
+    PackageAPI.PkgVersion  getPackageVersion();
 
   }
 }
