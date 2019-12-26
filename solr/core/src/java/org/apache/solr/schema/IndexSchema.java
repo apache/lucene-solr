@@ -220,9 +220,7 @@ public class IndexSchema implements Closeable {
     @Override
     public <T> T newInstance(String cname, Class<T> expectedType, String... subpackages) {
       return getIt(cname, expectedType,
-          (pkgloader, name) -> {
-            return pkgloader.newInstance(name, expectedType, subpackages);
-          });
+          (pkgloader, name) -> pkgloader.newInstance(name, expectedType, subpackages));
     }
 
     private <T> T getIt(String cname, Class expectedType, BiFunction<SolrResourceLoader, String, T> fun) {
