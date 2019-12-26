@@ -44,6 +44,11 @@ public class LengthGoalBreakIterator extends BreakIterator {
     return new LengthGoalBreakIterator(baseIter, minLength, fragmentAlignment,true);
   }
 
+  /** For backwards compatibility you can initialise the break iterator without fragmentAlignment. */
+  public static LengthGoalBreakIterator createMinLength(BreakIterator baseIter, int minLength) {
+    return createMinLength(baseIter, minLength, 0.f);
+  }
+
   /** Breaks will be on average {@code targetLength} apart; the closest break to this target (before or after)
    * is chosen. */
   public static LengthGoalBreakIterator createClosestToLength(BreakIterator baseIter, int targetLength,
@@ -51,10 +56,18 @@ public class LengthGoalBreakIterator extends BreakIterator {
     return new LengthGoalBreakIterator(baseIter, targetLength, fragmentAlignment, false);
   }
 
+  /** For backwards compatibility you can initialise the break iterator without fragmentAlignment. */
+  public static LengthGoalBreakIterator createClosestToLength(BreakIterator baseIter, int targetLength) {
+    return createClosestToLength(baseIter, targetLength, 0.f);
+  }
+
   private LengthGoalBreakIterator(BreakIterator baseIter, int lengthGoal, float fragmentAlignment,
                                   boolean isMinimumLength) {
     this.baseIter = baseIter;
     this.lengthGoal = lengthGoal;
+    if (fragmentAlignment < 0.f || fragmentAlignment > 1.f || !Float.isFinite(fragmentAlignment)) {
+      throw new IllegalArgumentException("fragmentAlignment must be >= zero and <= one");
+    }
     this.fragmentAlignment = Math.max(Math.min(fragmentAlignment, 1.f), 0.f);
     this.isMinimumLength = isMinimumLength;
     this.fragmentEndFromPreceding = 0;
@@ -131,7 +144,7 @@ public class LengthGoalBreakIterator extends BreakIterator {
   // NOTE: this.fragmentEndFromPreceding is used instead of the parameter!
   // This is a big diversion from the API a BreakIterator should implement, but specifically this optimization is fine.
   @Override
-  public int following(int followingIdx) {
+  public int following(int _unused_followingIdx) {
     if (fragmentEndFollowingLengthGoalFromPreceding <= 0) {
       return fragmentEndFromPreceding;
     }

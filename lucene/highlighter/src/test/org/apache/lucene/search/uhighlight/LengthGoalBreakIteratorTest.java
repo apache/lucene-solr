@@ -18,6 +18,7 @@
 package org.apache.lucene.search.uhighlight;
 
 import java.io.IOException;
+import java.text.BreakIterator;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -25,6 +26,7 @@ import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.QueryBuilder;
+import org.junit.Assert;
 
 public class LengthGoalBreakIteratorTest extends LuceneTestCase {
   private static final String FIELD = "body";
@@ -40,6 +42,31 @@ public class LengthGoalBreakIteratorTest extends LuceneTestCase {
   //                      0         1
   //                      01234567890123456789
   static final String CONTENT = "Aa bb. Cc dd. Ee ff";
+
+  public void testFragmentAlignmentConstructor() throws IOException {
+    BreakIterator baseBI = new CustomSeparatorBreakIterator('.');
+    // test fragmentAlignment validation
+    float[] valid_aligns = {0.f, 0.3333f, 0.5f, 0.99f, 1.f};
+    for (float alignment : valid_aligns) {
+      LengthGoalBreakIterator.createClosestToLength(baseBI, 50, alignment);
+    }
+    float[] invalid_aligns = {-0.01f, -1.f, 1.5f, Float.NaN, Float.NEGATIVE_INFINITY, Float.POSITIVE_INFINITY};
+    for (float alignment : invalid_aligns) {
+      try {
+        LengthGoalBreakIterator.createClosestToLength(baseBI, 50, alignment);
+        Assert.fail("Expected IllegalArgumentException for "+alignment);
+      } catch (IllegalArgumentException e) {
+        if (!e.getMessage().contains("fragmentAlignment")) {
+          throw e;
+        }
+      }
+    }
+    // test backwards compatibility constructors
+    String backwardCompString = LengthGoalBreakIterator.createClosestToLength(baseBI, 50).toString();
+    assertTrue(backwardCompString, backwardCompString.contains("fragAlign=0.0"));
+    backwardCompString = LengthGoalBreakIterator.createMinLength(baseBI, 50).toString();
+    assertTrue(backwardCompString, backwardCompString.contains("fragAlign=0.0"));
+  }
 
   public void testTargetLen() throws IOException {
     // "goal" means target length goal to find closest break
