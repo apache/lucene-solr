@@ -42,6 +42,7 @@ public class LengthGoalBreakIteratorTest extends LuceneTestCase {
   //                      0         1
   //                      01234567890123456789
   static final String CONTENT = "Aa bb. Cc dd. Ee ff";
+  static final String CONTENT2 = "Aa bb Cc dd X Ee ff Gg hh.";
 
   public void testFragmentAlignmentConstructor() throws IOException {
     BreakIterator baseBI = new CustomSeparatorBreakIterator('.');
@@ -129,6 +130,14 @@ public class LengthGoalBreakIteratorTest extends LuceneTestCase {
         " Cc <b>dd</b>. Ee ff", highlightMinLen(CONTENT, query, 9, 0.45f));
   }
 
+  public void testMinLenPrecision() throws IOException {
+    Query queryX = query("x");
+    assertEquals("test absolute minimal length",
+        "<b>X</b> ", highlightMinLen(CONTENT2, queryX, 1, 0.f, ' '));
+    assertEquals("test slightly above minimal length",
+        "<b>X</b> Ee ", highlightMinLen(CONTENT2, queryX, 3, 0.f, ' '));
+  }
+
   public void testDefaultSummaryTargetLen() throws IOException {
     Query query = query("zz");
     for (float align : ALIGNS) { // alignment is not used for creating default-summary
@@ -158,9 +167,13 @@ public class LengthGoalBreakIteratorTest extends LuceneTestCase {
   }
 
   private String highlightMinLen(String content, Query query, int lengthGoal, float fragAlign) throws IOException {
+    return highlightMinLen(content, query, lengthGoal, fragAlign, '.');
+  }
+
+  private String highlightMinLen(String content, Query query, int lengthGoal, float fragAlign, char separator) throws IOException {
     // differs from above only by "createMinLength"
     UnifiedHighlighter highlighter = new UnifiedHighlighter(null, analyzer);
-    highlighter.setBreakIterator(() -> LengthGoalBreakIterator.createMinLength(new CustomSeparatorBreakIterator('.'), lengthGoal, fragAlign));
+    highlighter.setBreakIterator(() -> LengthGoalBreakIterator.createMinLength(new CustomSeparatorBreakIterator(separator), lengthGoal, fragAlign));
     return highlighter.highlightWithoutSearcher(FIELD, query, content, 1).toString();
   }
 }

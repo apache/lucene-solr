@@ -189,7 +189,7 @@ public class LengthGoalBreakIterator extends BreakIterator {
   @Override
   public int preceding(int offset) {
     final int fragmentStart = Math.max(baseIter.preceding(offset), 0); // convert DONE to 0
-    fragmentEndFromPreceding = baseIter.following(fragmentStart);
+    fragmentEndFromPreceding = baseIter.following(offset - 1);
     if (fragmentEndFromPreceding == DONE) {
       fragmentEndFromPreceding = baseIter.last();
     }
