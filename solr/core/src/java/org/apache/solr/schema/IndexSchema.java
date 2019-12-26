@@ -39,6 +39,7 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -218,18 +219,21 @@ public class IndexSchema implements Closeable {
 
     @Override
     public <T> T newInstance(String cname, Class<T> expectedType, String... subpackages) {
-      return getIt(cname, expectedType, pkgloader -> pkgloader.newInstance(cname, expectedType, subpackages));
+      return getIt(cname, expectedType,
+          (pkgloader, name) -> {
+            return pkgloader.newInstance(name, expectedType, subpackages);
+          });
     }
 
-    private <T> T getIt(String cname, Class expectedType, Function<SolrResourceLoader, T> fun) {
+    private <T> T getIt(String cname, Class expectedType, BiFunction<SolrResourceLoader, String, T> fun) {
       PluginInfo.ClassName className = new PluginInfo.ClassName(cname);
       if (className.pkg == null) {
-        return  fun.apply(loader);
+        return  fun.apply(loader, className.klas);
       } else {
         SolrResourceLoader pkgloader = core.getResourceLoader(className.pkg);
-        T inst = fun.apply(pkgloader);
+        T inst = fun.apply(pkgloader,className.klas);
         PackageListeners.Listener listener = new PackageListeners.Listener() {
-          PluginInfo info = new PluginInfo(expectedType.getSimpleName(), singletonMap("class", cname));
+          PluginInfo info = new PluginInfo(expectedType.getSimpleName(), singletonMap("class", className.klas));
 
           @Override
           public String packageName() {
@@ -260,12 +264,12 @@ public class IndexSchema implements Closeable {
 
     @Override
     public <T> Class<? extends T> findClass(String cname, Class<T> expectedType) {
-      return getIt(cname, expectedType, (Function<SolrResourceLoader, Class<? extends T>>) loader -> loader.findClass(cname, expectedType));
+      return getIt(cname, expectedType, (BiFunction<SolrResourceLoader, String ,Class<? extends T>>) (loader, name) -> loader.findClass(name, expectedType));
     }
 
     @Override
     public <T> T newInstance(String cName, Class<T> expectedType, String[] subPackages, Class[] params, Object[] args) {
-      return getIt(cName, expectedType, loader -> loader.newInstance(cName, expectedType, subPackages, params, args));
+      return getIt(cName, expectedType, (pkgloader, name) -> loader.newInstance(name, expectedType, subPackages, params, args));
     }
 
 
@@ -579,7 +583,7 @@ public class IndexSchema implements Closeable {
       final FieldTypePluginLoader typeLoader = new FieldTypePluginLoader(this, fieldTypes, schemaAware);
       expression = getFieldTypeXPathExpressions();
       NodeList nodes = (NodeList) xpath.evaluate(expression, document, XPathConstants.NODESET);
-      typeLoader.load(loader, nodes);
+      typeLoader.load(pluginLoader, nodes);
 
       // load the fields
       Map<String,Boolean> explicitRequiredProp = loadFields(document, xpath);

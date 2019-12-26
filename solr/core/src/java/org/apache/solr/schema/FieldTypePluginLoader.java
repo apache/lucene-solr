@@ -36,7 +36,6 @@ import org.apache.solr.analysis.TokenizerChain;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.core.PluginLoader;
 import org.apache.solr.core.SolrConfig;
-import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.DOMUtil;
 import org.apache.solr.util.plugin.AbstractPluginLoader;
 import org.slf4j.Logger;
@@ -192,8 +191,7 @@ public final class FieldTypePluginLoader
   //
   private Analyzer readAnalyzer(Node node) throws XPathExpressionException {
                                 
-    final SolrResourceLoader loader = schema.getResourceLoader();
-    final PluginLoader pluginLoader = schema.getPluginLoader();
+    final PluginLoader loader = schema.getPluginLoader();
 
     // parent node used to be passed in as "fieldtype"
     // if (!fieldtype.hasChildNodes()) return null;
@@ -228,7 +226,7 @@ public final class FieldTypePluginLoader
 
       try {
         // No need to be core-aware as Analyzers are not in the core-aware list
-        final Class<? extends Analyzer> clazz =  pluginLoader.findClass(analyzerName, Analyzer.class);
+        final Class<? extends Analyzer> clazz =  loader.findClass(analyzerName, Analyzer.class);
         Analyzer analyzer = clazz.getConstructor().newInstance();
 
         final String matchVersionStr = DOMUtil.getAttr(attrs, LUCENE_MATCH_VERSION_PARAM);

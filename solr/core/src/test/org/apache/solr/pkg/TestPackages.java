@@ -28,6 +28,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrRequest;
+import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
@@ -39,6 +40,7 @@ import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
 import org.apache.solr.client.solrj.request.beans.Package;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.SolrResponseBase;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.ConfigRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
@@ -46,6 +48,7 @@ import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.MapWriterMap;
 import org.apache.solr.common.NavigableObject;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -78,7 +81,101 @@ public class TestPackages extends SolrCloudTestCase {
   public void teardown() {
     System.clearProperty("enable.packages");
   }
-  
+
+
+  public void testSchemaPlugins() throws Exception {
+    String COLLECTION_NAME = "testSchemaLoadingColl";
+    System.setProperty("managed.schema.mutable", "true");
+
+
+    MiniSolrCloudCluster cluster =
+        configureCluster(4)
+            .withJettyConfig(jetty -> jetty.enableV2(true))
+            .addConfig("conf", configset("cloud-managed"))
+            .configure();
+    try {
+      String FILE1 = "/schemapkg/schema-plugins.jar";
+      byte[] derFile = readFile("cryptokeys/pub_key512.der");
+      cluster.getZkClient().makePath("/keys/exe", true);
+      cluster.getZkClient().create("/keys/exe/pub_key512.der", derFile, CreateMode.PERSISTENT, true);
+      postFileAndWait(cluster, "runtimecode/schema-plugins.jar.bin", FILE1,
+          "iSRhrogDyt9P1htmSf/krh1kx9oty3TYyWm4GKHQGlb8a+X4tKCe9kKk+3tGs+bU9zq5JBZ5txNXsn96aZem5A==");
+
+      Package.AddVersion add = new Package.AddVersion();
+      add.version = "1.0";
+      add.pkg = "schemapkg";
+      add.files = Arrays.asList(new String[]{FILE1});
+      V2Request req = new V2Request.Builder("/cluster/package")
+          .forceV2(true)
+          .withMethod(SolrRequest.METHOD.POST)
+          .withPayload(Collections.singletonMap("add", add))
+          .build();
+      req.process(cluster.getSolrClient());
+
+      TestDistribPackageStore.assertResponseValues(10,
+          () -> new V2Request.Builder("/cluster/package").
+              withMethod(SolrRequest.METHOD.GET)
+              .build().process(cluster.getSolrClient()),
+          Utils.makeMap(
+              ":result:packages:schemapkg[0]:version", "1.0",
+              ":result:packages:schemapkg[0]:files[0]", FILE1
+          ));
+
+      CollectionAdminRequest
+          .createCollection(COLLECTION_NAME, "conf", 2, 2)
+          .setMaxShardsPerNode(100)
+          .process(cluster.getSolrClient());
+      cluster.waitForActiveCollection(COLLECTION_NAME, 2, 4);
+
+      String addFieldTypeAnalyzerWithClass = "{\n" +
+          "'add-field-type' : {" +
+          "    'name' : 'myNewTextFieldWithAnalyzerClass',\n" +
+          "    'class':'schemapkg:my.pkg.MyTextField',\n" +
+          "    'analyzer' : {\n" +
+          "        'luceneMatchVersion':'5.0.0'" ;
+//          + ",\n" +
+//          "        'class':'schemapkg:my.pkg.MyWhitespaceAnalyzer'\n";
+      String charFilters =
+          "        'charFilters' : [{\n" +
+              "            'class':'schemapkg:my.pkg.MyPatternReplaceCharFilterFactory',\n" +
+              "            'replacement':'$1$1',\n" +
+              "            'pattern':'([a-zA-Z])\\\\\\\\1+'\n" +
+              "        }],\n";
+      String tokenizer =
+          "        'tokenizer' : { 'class':'schemapkg:my.pkg.MyWhitespaceTokenizerFactory' },\n";
+      String filters =
+          "        'filters' : [{ 'class':'solr.ASCIIFoldingFilterFactory' }]\n";
+      String suffix = "    }\n" +
+          "}}";
+      cluster.getSolrClient().request(new SolrRequest(SolrRequest.METHOD.POST, "/schema") {
+
+        @Override
+        public RequestWriter.ContentWriter getContentWriter(String expectedType) {
+          return new RequestWriter.StringPayloadContentWriter(addFieldTypeAnalyzerWithClass + ',' + charFilters + tokenizer + filters + suffix, CommonParams.JSON_MIME);
+        }
+
+        @Override
+        public SolrParams getParams() {
+          return null;
+        }
+
+        @Override
+        public String getCollection() {
+          return COLLECTION_NAME;
+        }
+
+        @Override
+        public SolrResponse createResponse(SolrClient client) {
+          return new SolrResponseBase();
+        }
+      });
+
+
+    } finally {
+      cluster.shutdown();
+    }
+
+  }
   @Test
   public void testPluginLoading() throws Exception {
     MiniSolrCloudCluster cluster =
@@ -387,21 +484,6 @@ public class TestPackages extends SolrCloudTestCase {
     }
 
   }
-   /* new V2Request.Builder("/c/"+COLLECTIONORALIAS+"/config").withMethod(SolrRequest.METHOD.POST)
-        .withPayload("{add-expressible: {name: mincopy , class: org.apache.solr.client.solrj.io.stream.metrics.MinCopyMetric}}")
-    .build().process(cluster.getSolrClient());
-
-  ModifiableSolrParams _params = new ModifiableSolrParams();
-  QueryRequest query = new QueryRequest(new MapSolrParams("action","plugins", "collection", COLLECTIONORALIAS, "wt", "javabin"));
-    query.setPath("/stream");
-  NamedList<Object> rsp = cluster.getSolrClient().request(query);
-  assertEquals("org.apache.solr.client.solrj.io.stream.metrics.MinCopyMetric", rsp._getStr("/plugins/mincopy", null));
-  _params = new ModifiableSolrParams();
-  query = new QueryRequest(new MapSolrParams("componentName","mincopy", "meta" ,"true", "collection", COLLECTIONORALIAS, "wt", "javabin"));
-    query.setPath("/config/expressible");
-  rsp = cluster.getSolrClient().request(query);
-
-    System.out.println();*/
 
   private void executeReq(String uri, JettySolrRunner jetty, Utils.InputStreamConsumer parser, Map expected) throws Exception {
     try(HttpSolrClient client = (HttpSolrClient) jetty.newClient()){
