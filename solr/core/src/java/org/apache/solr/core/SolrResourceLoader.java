@@ -83,7 +83,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @since solr 1.3
  */
-public class SolrResourceLoader implements ResourceLoader, Closeable {
+public class SolrResourceLoader implements ResourceLoader, PluginLoader, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static final String project = "solr";
@@ -118,6 +118,9 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   // (such as the SolrZkClient) when XML docs are being parsed.    
   private RestManager.Registry managedResourceRegistry;
 
+  //package private , only to be used from SolrCore
+  SolrCore core;
+
   public synchronized RestManager.Registry getManagedResourceRegistry() {
     if (managedResourceRegistry == null) {
       managedResourceRegistry = new RestManager.Registry();
@@ -146,6 +149,15 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
     for (Path path : classpath) {
       addToClassLoader(path.toUri().normalize().toURL());
     }
+
+  }
+
+  /**
+   * This could be null if it is not associated with a core yet
+   *
+   */
+  public SolrCore getCore() {
+    return core;
 
   }
 
@@ -615,6 +627,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   private static final Class[] NO_CLASSES = new Class[0];
   private static final Object[] NO_OBJECTS = new Object[0];
 
+  @Override
   public <T> T newInstance(String cname, Class<T> expectedType, String... subpackages) {
     return newInstance(cname, expectedType, subpackages, NO_CLASSES, NO_OBJECTS);
   }

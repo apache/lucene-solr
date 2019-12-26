@@ -88,8 +88,7 @@ public abstract class ConfigSetService {
               ) ? false: true;
 
       SolrConfig solrConfig = createSolrConfig(dcore, coreLoader, trusted);
-      IndexSchema schema = createIndexSchema(dcore, solrConfig);
-      return new ConfigSet(configName(dcore), solrConfig, schema, properties, trusted);
+      return new ConfigSet(configName(dcore), solrConfig, () -> createIndexSchema(dcore, solrConfig), properties, trusted);
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Could not load conf for core " + dcore.getName() +

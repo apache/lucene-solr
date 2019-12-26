@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.schema;
+
 import java.io.IOException;
 import java.io.Reader;
 import java.io.StringReader;
@@ -36,8 +37,8 @@ import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedSetSelector;
 import org.apache.lucene.util.AttributeFactory;
-import org.apache.lucene.util.AttributeSource.State;
 import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.AttributeSource.State;
 import org.apache.solr.analysis.SolrAnalyzer;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
@@ -79,7 +80,7 @@ public class PreAnalyzedField extends TextField implements HasImplicitIndexAnaly
         parser = new SimplePreAnalyzedParser();
       } else {
         try {
-          Class<? extends PreAnalyzedParser> implClazz = schema.getResourceLoader().findClass(implName, PreAnalyzedParser.class);
+          Class<? extends PreAnalyzedParser> implClazz = schema.getPluginLoader().findClass(implName, PreAnalyzedParser.class);
           Constructor<?> c = implClazz.getConstructor(new Class<?>[0]);
           parser = (PreAnalyzedParser) c.newInstance(new Object[0]);
         } catch (Exception e) {

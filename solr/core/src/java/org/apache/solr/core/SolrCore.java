@@ -56,6 +56,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Supplier;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Timer;
@@ -173,6 +174,7 @@ import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.lucene.util.IOUtils.closeWhileHandlingException;
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.CommonParams.PATH;
 
@@ -238,6 +240,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   public volatile boolean searchEnabled = true;
   public volatile boolean indexEnabled = true;
   public volatile boolean readOnly = false;
+  private final Supplier<IndexSchema> schemaSupplier;
 
   private PackageListeners packageListeners = new PackageListeners(this);
 
@@ -688,7 +691,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         CoreDescriptor cd = new CoreDescriptor(name, getCoreDescriptor());
         cd.loadExtraProperties(); //Reload the extra properties
         core = new SolrCore(coreContainer, getName(), getDataDir(), coreConfig.getSolrConfig(),
-            coreConfig.getIndexSchema(), coreConfig.getProperties(),
+            () -> coreConfig.getIndexSchema(), coreConfig.getProperties(),
             cd, updateHandler, solrDelPolicy, currentCore, true);
 
         // we open a new IndexWriter to pick up the latest config
@@ -897,7 +900,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   }
 
   public SolrCore(CoreContainer coreContainer, CoreDescriptor cd, ConfigSet coreConfig) {
-    this(coreContainer, cd.getName(), null, coreConfig.getSolrConfig(), coreConfig.getIndexSchema(), coreConfig.getProperties(),
+    this(coreContainer, cd.getName(), null, coreConfig.getSolrConfig(), coreConfig.getIndexSchemaSupplier(), coreConfig.getProperties(),
         cd, null, null, null, false);
   }
 
@@ -905,6 +908,11 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     return coreContainer;
   }
 
+  public void refreshSchema() {
+    IndexSchema old = schema;
+    schema = schemaSupplier.get();
+    closeWhileHandlingException(old);
+  }
 
   /**
    * Creates a new core and register it in the list of cores. If a core with the
@@ -912,11 +920,11 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    *
    * @param dataDir the index directory
    * @param config  a solr config instance
-   * @param schema  a solr schema instance
+   * @param schemaSupplier  a solr schema {@link Supplier}
    * @since solr 1.3
    */
   public SolrCore(CoreContainer coreContainer, String name, String dataDir, SolrConfig config,
-                  IndexSchema schema, NamedList configSetProperties,
+                  Supplier<IndexSchema> schemaSupplier, NamedList configSetProperties,
                   CoreDescriptor coreDescriptor, UpdateHandler updateHandler,
                   IndexDeletionPolicyWrapper delPolicy, SolrCore prev, boolean reload) {
 
@@ -924,6 +932,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
     this.coreContainer = coreContainer;
 
+    this.schemaSupplier = schemaSupplier;
     final CountDownLatch latch = new CountDownLatch(1);
 
     try {
@@ -935,6 +944,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       MDCLoggingContext.setCore(this);
 
       resourceLoader = config.getResourceLoader();
+      resourceLoader.core = this;
       this.solrConfig = config;
       this.configSetProperties = configSetProperties;
       // Initialize the metrics manager
@@ -959,6 +969,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       log.info("[{}] Opening new SolrCore at [{}], dataDir=[{}]", logid, resourceLoader.getInstancePath(),
           this.dataDir);
 
+      IndexSchema schema = schemaSupplier.get();
       checkVersionFieldExistsInSchema(schema, coreDescriptor);
 
       // initialize core metrics

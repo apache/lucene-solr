@@ -30,7 +30,6 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
-import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.TestHarness;
@@ -203,7 +202,6 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
     assertEquals("Unexpected codec factory for this test.", "solr.SchemaCodecFactory", config.get("codecFactory/@class"));
     assertNull("Unexpected configuration of codec factory for this test. Expecting empty element", 
         config.getNode("codecFactory", false).getFirstChild());
-    IndexSchema schema = IndexSchemaFactory.buildIndexSchema("schema_codec.xml", config);
 
     CoreContainer coreContainer = h.getCoreContainer();
     
@@ -211,7 +209,7 @@ public class TestCodecSupport extends SolrTestCaseJ4 {
       CoreDescriptor cd = new CoreDescriptor(newCoreName, testSolrHome.resolve(newCoreName),
           coreContainer.getContainerProperties(), coreContainer.isZooKeeperAware());
       c = new SolrCore(coreContainer, cd,
-          new ConfigSet("fakeConfigset", config, schema, null, true));
+          new ConfigSet("fakeConfigset", config, () -> IndexSchemaFactory.buildIndexSchema("schema_codec.xml", config), null, true));
       assertNull(coreContainer.registerCore(cd, c, false, false));
       h.coreName = newCoreName;
       assertEquals("We are not using the correct core", "solrconfig_codec2.xml", h.getCore().getConfigResource());

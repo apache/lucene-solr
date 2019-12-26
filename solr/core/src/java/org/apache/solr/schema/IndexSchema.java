@@ -19,6 +19,7 @@ package org.apache.solr.schema;
 import javax.xml.xpath.XPath;
 import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
@@ -60,9 +61,13 @@ import org.apache.solr.common.util.Cache;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
+import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.PluginLoader;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.XmlConfigFile;
+import org.apache.solr.pkg.PackageListeners;
+import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SchemaXmlWriter;
 import org.apache.solr.response.SolrQueryResponse;
@@ -91,7 +96,7 @@ import static java.util.Collections.singletonMap;
  *
  *
  */
-public class IndexSchema {
+public class IndexSchema implements Closeable {
   public static final String COPY_FIELD = "copyField";
   public static final String COPY_FIELDS = COPY_FIELD + "s";
   public static final String DEFAULT_SCHEMA_FILE = "schema.xml";
@@ -133,6 +138,7 @@ public class IndexSchema {
   protected final Version luceneVersion;
   protected float version;
   protected final SolrResourceLoader loader;
+  protected final PluginLoader pluginLoader;
 
   protected Map<String,SchemaField> fields = new HashMap<>();
   protected Map<String,FieldType> fieldTypes = new HashMap<>();
@@ -163,6 +169,7 @@ public class IndexSchema {
    */
   protected Map<SchemaField, Integer> copyFieldTargetCounts = new HashMap<>();
 
+
   /**
    * Constructs a schema using the specified resource name and stream.
    * @see SolrResourceLoader#openSchema
@@ -181,9 +188,95 @@ public class IndexSchema {
     }
   }
 
+  public PluginLoader getPluginLoader(){
+    return pluginLoader;
+  }
   protected IndexSchema(Version luceneVersion, SolrResourceLoader loader) {
     this.luceneVersion = Objects.requireNonNull(luceneVersion);
     this.loader = loader;
+    if(loader.getCore() == null) {
+      this.pluginLoader = loader;
+    } else {
+      PackageAwarePluginLoader papl = new PackageAwarePluginLoader(loader.getCore());
+      this.pluginLoader = papl;
+    }
+  }
+
+  class PackageAwarePluginLoader implements PluginLoader, Closeable {
+    final SolrCore core;
+    private final List<PackageListeners.Listener> listeners = new ArrayList<>();
+    Runnable reloadSchemaRunnable = () -> getCore().refreshSchema();
+
+
+    PackageAwarePluginLoader(SolrCore core) {
+      this.core = core;
+    }
+
+    SolrCore getCore() {
+      return core;
+    }
+
+    @Override
+    public <T> T newInstance(String cname, Class<T> expectedType, String... subpackages) {
+      return getIt(cname, expectedType, pkgloader -> pkgloader.newInstance(cname, expectedType, subpackages));
+    }
+
+    private <T> T getIt(String cname, Class expectedType, Function<SolrResourceLoader, T> fun) {
+      PluginInfo.ClassName className = new PluginInfo.ClassName(cname);
+      if (className.pkg == null) {
+        return  fun.apply(loader);
+      } else {
+        SolrResourceLoader pkgloader = core.getResourceLoader(className.pkg);
+        T inst = fun.apply(pkgloader);
+        PackageListeners.Listener listener = new PackageListeners.Listener() {
+          PluginInfo info = new PluginInfo(expectedType.getSimpleName(), singletonMap("class", cname));
+
+          @Override
+          public String packageName() {
+            return className.pkg;
+          }
+
+          @Override
+          public PluginInfo pluginInfo() {
+            return info;
+          }
+
+          @Override
+          public void changed(PackageLoader.Package pkg, PackageListeners.Ctx ctx) {
+            Runnable old = ctx.getPostProcessor(PackageAwarePluginLoader.class.getName());// just want to do one refresh for every package laod
+            if (old == null) ctx.addPostProcessor(PackageAwarePluginLoader.class.getName(), reloadSchemaRunnable);
+          }
+
+          @Override
+          public PackageLoader.Package.Version getPackageVersion() {
+            return null;
+          }
+        };
+        listeners.add(listener);
+        core.getPackageListeners().addListener(listener);
+        return inst;
+      }
+    }
+
+    @Override
+    public <T> Class<? extends T> findClass(String cname, Class<T> expectedType) {
+      return getIt(cname, expectedType, (Function<SolrResourceLoader, Class<? extends T>>) loader -> loader.findClass(cname, expectedType));
+    }
+
+    @Override
+    public <T> T newInstance(String cName, Class<T> expectedType, String[] subPackages, Class[] params, Object[] args) {
+      return getIt(cName, expectedType, loader -> loader.newInstance(cName, expectedType, subPackages, params, args));
+    }
+
+
+
+    @Override
+    public void close() throws IOException {
+      for (PackageListeners.Listener l : listeners) {
+        core.getPackageListeners().removeListener(l);
+      }
+
+    }
   }
 
   /**
@@ -497,7 +590,7 @@ public class IndexSchema {
       if (similarityFactory == null) {
         final Class<?> simClass = SchemaSimilarityFactory.class;
         // use the loader to ensure proper SolrCoreAware handling
-        similarityFactory = loader.newInstance(simClass.getName(), SimilarityFactory.class);
+        similarityFactory = pluginLoader.newInstance(simClass.getName(), SimilarityFactory.class);
         similarityFactory.init(new ModifiableSolrParams());
       } else {
         isExplicitSimilarity = true;
@@ -971,7 +1064,7 @@ public class IndexSchema {
     dynamicCopyFields = temp;
   }
 
-  static SimilarityFactory readSimilarity(SolrResourceLoader loader, Node node) {
+  static SimilarityFactory readSimilarity(PluginLoader loader, Node node) {
     if (node==null) {
       return null;
     } else {
@@ -1981,4 +2074,10 @@ public class IndexSchema {
     return decoders.computeIfAbsent(ft, f -> PayloadUtils.getPayloadDecoder(ft));
   }
 
+  @Override
+  public void close() throws IOException {
+    if (pluginLoader instanceof PackageAwarePluginLoader) {
+      ((PackageAwarePluginLoader) pluginLoader).close();
+    }
+  }
 }
