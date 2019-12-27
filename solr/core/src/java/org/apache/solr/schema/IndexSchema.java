@@ -21,7 +21,6 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import java.io.Closeable;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -40,7 +39,6 @@ import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -63,15 +61,11 @@ import org.apache.solr.common.util.Cache;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
-import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrClassLoader;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.XmlConfigFile;
-import org.apache.solr.pkg.PackageAPI;
-import org.apache.solr.pkg.PackageListeners;
-import org.apache.solr.pkg.PackageLoader;
-import org.apache.solr.pkg.PackagePluginHolder;
+import org.apache.solr.pkg.PackageAwareSolrClassLoader;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.response.SchemaXmlWriter;
 import org.apache.solr.response.SolrQueryResponse;
@@ -174,8 +168,6 @@ public class IndexSchema implements Closeable {
 
   private Map<FieldType, PayloadDecoder> decoders = new HashMap<>();  // cache to avoid scanning token filters repeatedly, unnecessarily
 
-  private Map<String, PackageAPI.PkgVersion> classNameVsPkg = new HashMap<>();
-
   /**
    * keys are all fields copied to, count is num of copyField
    * directives that target them.
@@ -210,118 +202,7 @@ public class IndexSchema implements Closeable {
     if(loader.getCore() == null) {
       this.classLoader = loader;
     } else {
-      this.classLoader = new PackageAwarePluginLoader(loader.getCore());
-    }
-  }
-
-  public class PackageAwarePluginLoader implements SolrClassLoader {
-    final SolrCore core;
-    private final List<PackageListeners.Listener> listeners = new ArrayList<>();
-    Runnable reloadSchemaRunnable = () -> getCore().refreshSchema();
-
-
-    PackageAwarePluginLoader(SolrCore core) {
-      this.core = core;
-    }
-
-    SolrCore getCore() {
-      return core;
-    }
-
-    @Override
-    public InputStream openResource(String resource) throws IOException {
-      return loader.openResource(resource);
-    }
-
-    @Override
-    public <T> T newInstance(String cname, Class<T> expectedType) {
-      return loadWithRightPackageLoader(cname, expectedType,
-          (pkgloader, name) -> pkgloader.newInstance(name, expectedType));
-    }
-
-    @Override
-    public <T> T newInstance(String cname, Class<T> expectedType, String... subpackages) {
-      return loadWithRightPackageLoader(cname, expectedType,
-          (pkgloader, name) -> pkgloader.newInstance(name, expectedType, subpackages));
-    }
-
-    private <T> T loadWithRightPackageLoader(String cname, Class expectedType, BiFunction<SolrClassLoader, String, T> fun) {
-      PluginInfo.ParsedClassName parsedClassName = new PluginInfo.ParsedClassName(cname);
-      if (parsedClassName.pkg == null) {
-        return  fun.apply(loader, parsedClassName.klas);
-      } else {
-        PackageLoader.Package pkg = core.getCoreContainer().getPackageLoader().getPackage(parsedClassName.pkg);
-        PackageLoader.Package.Version ver = PackagePluginHolder.getRightVersion(pkg, core);
-        T result = fun.apply(ver.getLoader(), parsedClassName.klas);
-        if (result instanceof SolrCoreAware) {
-          loader.registerSolrCoreAware((SolrCoreAware) result);
-        }
-        classNameVsPkg.put(cname, ver.getVersionInfo());
-        PackageListeners.Listener listener = new SchemaPluginPackageListener(expectedType, cname, parsedClassName);
-        listeners.add(listener);
-        core.getPackageListeners().addListener(listener);
-        return result;
-      }
-    }
-
-    @Override
-    public <T> Class<? extends T> findClass(String cname, Class<T> expectedType) {
-      return loadWithRightPackageLoader(cname, expectedType, (BiFunction<SolrClassLoader, String ,Class<? extends T>>) (loader, name) -> loader.findClass(name, expectedType));
-    }
-
-    @Override
-    public <T> T newInstance(String cName, Class<T> expectedType, String[] subPackages, Class[] params, Object[] args) {
-      return loadWithRightPackageLoader(cName, expectedType, (pkgloader, name) -> pkgloader.newInstance(name, expectedType, subPackages, params, args));
-    }
-
-
-
-    @Override
-    public void close() throws IOException {
-      for (PackageListeners.Listener l : listeners) {
-        core.getPackageListeners().removeListener(l);
-      }
-
-    }
-
-    private class SchemaPluginPackageListener implements PackageListeners.Listener {
-
-      private final Class expectedType;
-      private final String cname;
-      private final PluginInfo.ParsedClassName parsedClassName;
-      PluginInfo info;
-
-      public SchemaPluginPackageListener(Class expectedType, String cname, PluginInfo.ParsedClassName parsedClassName) {
-        this.expectedType = expectedType;
-        this.cname = cname;
-        this.parsedClassName = parsedClassName;
-        info = new PluginInfo(expectedType.getSimpleName(), singletonMap("class", cname));
-      }
-
-      @Override
-      public String packageName() {
-        return parsedClassName.pkg;
-      }
-
-      @Override
-      public PluginInfo pluginInfo() {
-        return info;
-      }
-
-      @Override
-      public void changed(PackageLoader.Package pkg, PackageListeners.Ctx ctx) {
-        PackageLoader.Package.Version rightVersion = PackagePluginHolder.getRightVersion(pkg, core);
-        if (rightVersion == null ) return;
-        PackageAPI.PkgVersion v = classNameVsPkg.get(parsedClassName.toString());
-        if(Objects.equals(v.version ,rightVersion.getVersionInfo().version)) return; //nothing has changed no need to reload
-        Runnable old = ctx.getPostProcessor(PackageAwarePluginLoader.class.getName());// just want to do one refresh for every package laod
-        if (old == null) ctx.addPostProcessor(PackageAwarePluginLoader.class.getName(), reloadSchemaRunnable);
-      }
-
-      @Override
-      public PackageAPI.PkgVersion getPackageVersion() {
-        return classNameVsPkg.get(cname);
-      }
+      this.classLoader = new PackageAwareSolrClassLoader(loader.getCore(), loader,  () ->  loader.getCore().refreshSchema());
     }
   }
 
@@ -2122,8 +2003,8 @@ public class IndexSchema implements Closeable {
 
   @Override
   public void close() throws IOException {
-    if (classLoader instanceof PackageAwarePluginLoader) {
-      ((PackageAwarePluginLoader) classLoader).close();
+    if (classLoader instanceof PackageAwareSolrClassLoader) {
+      ((PackageAwareSolrClassLoader) classLoader).close();
     }
   }
 }
