@@ -18,7 +18,6 @@
 package org.apache.solr.pkg;
 
 import java.io.IOException;
-import java.io.StringWriter;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collections;
@@ -53,7 +52,6 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
-import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.filestore.TestDistribPackageStore;
 import org.apache.solr.util.LogLevel;
@@ -537,8 +535,6 @@ public class TestPackages extends SolrCloudTestCase {
 
     GenericSolrRequest req = new GenericSolrRequest(SolrRequest.METHOD.GET,path
         , params);
-    NamedList<Object> rsp = client.request(req);
-    System.out.println( Utils.writeJson(rsp, new StringWriter(), true).toString());
     TestDistribPackageStore.assertResponseValues(10,
         client,
         req, expected);
