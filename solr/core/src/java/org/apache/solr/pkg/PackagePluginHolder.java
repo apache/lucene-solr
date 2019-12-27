@@ -24,6 +24,7 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.RequestParams;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -120,6 +121,9 @@ public class PackagePluginHolder<T> extends PluginBag.PluginHolder<T> {
     Object instance = SolrCore.createInstance(pluginInfo.className,
         pluginMeta.clazz, pluginMeta.getCleanTag(), core, newest.getLoader());
     PluginBag.initInstance(instance, pluginInfo);
+    if (instance instanceof SolrCoreAware) {
+      core.getResourceLoader().registerSolrCoreAware((SolrCoreAware) instance);
+    }
     T old = inst;
     inst = (T) instance;
     if (old instanceof AutoCloseable) {

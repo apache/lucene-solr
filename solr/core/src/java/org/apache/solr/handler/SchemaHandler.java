@@ -226,12 +226,12 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
       Object v = nl.get("class");
       if (v instanceof String) {
         String klas = (String) v;
-        PluginInfo.ClassName className = new PluginInfo.ClassName(klas);
-        if (className.pkg != null) {
+        PluginInfo.ParsedClassName parsedClassName = new PluginInfo.ParsedClassName(klas);
+        if (parsedClassName.pkg != null) {
           req.getCore().getPackageListeners().forEachListener(listener -> {
             PluginInfo pluginInfo = listener.pluginInfo();
             if (pluginInfo == null) return;
-            if (Objects.equals(pluginInfo.cName.toString(), className.toString())) {
+            if (Objects.equals(pluginInfo.cName.toString(), parsedClassName.toString())) {
               nl.add("_packageinfo_", listener.getPackageVersion());
             }
           });

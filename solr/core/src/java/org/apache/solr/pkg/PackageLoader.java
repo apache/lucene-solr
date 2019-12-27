@@ -34,6 +34,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
@@ -268,6 +269,19 @@ public class PackageLoader implements Closeable {
             @Override
             protected void initSPI() {
               //no op
+            }
+
+            @Override
+            protected <T> void registerForCallbacks(T obj) {
+              if (obj instanceof ResourceLoaderAware) {
+                assertAwareCompatibility(ResourceLoaderAware.class, obj);
+                try {
+                  ((ResourceLoaderAware) obj).inform(this);
+                } catch (IOException e) {
+                  throw new RuntimeException(e);
+                }
+
+              }
             }
           };
         } catch (MalformedURLException e) {

@@ -21,6 +21,7 @@ import javax.xml.xpath.XPathConstants;
 import javax.xml.xpath.XPathExpressionException;
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.Writer;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -228,52 +229,38 @@ public class IndexSchema implements Closeable {
     }
 
     @Override
+    public InputStream openResource(String resource) throws IOException {
+      return loader.openResource(resource);
+    }
+
+    @Override
+    public <T> T newInstance(String cname, Class<T> expectedType) {
+      return loadWithRightPackageLoader(cname, expectedType,
+          (pkgloader, name) -> pkgloader.newInstance(name, expectedType));
+    }
+
+    @Override
     public <T> T newInstance(String cname, Class<T> expectedType, String... subpackages) {
       return loadWithRightPackageLoader(cname, expectedType,
           (pkgloader, name) -> pkgloader.newInstance(name, expectedType, subpackages));
     }
 
     private <T> T loadWithRightPackageLoader(String cname, Class expectedType, BiFunction<SolrClassLoader, String, T> fun) {
-      PluginInfo.ClassName className = new PluginInfo.ClassName(cname);
-      if (className.pkg == null) {
-        return  fun.apply(loader, className.klas);
+      PluginInfo.ParsedClassName parsedClassName = new PluginInfo.ParsedClassName(cname);
+      if (parsedClassName.pkg == null) {
+        return  fun.apply(loader, parsedClassName.klas);
       } else {
-        PackageLoader.Package pkg = core.getCoreContainer().getPackageLoader().getPackage(className.pkg);
+        PackageLoader.Package pkg = core.getCoreContainer().getPackageLoader().getPackage(parsedClassName.pkg);
         PackageLoader.Package.Version ver = PackagePluginHolder.getRightVersion(pkg, core);
-        T inst = fun.apply(ver.getLoader(),className.klas);
+        T result = fun.apply(ver.getLoader(), parsedClassName.klas);
+        if (result instanceof SolrCoreAware) {
+          loader.registerSolrCoreAware((SolrCoreAware) result);
+        }
         classNameVsPkg.put(cname, ver.getVersionInfo());
-        PackageListeners.Listener listener = new PackageListeners.Listener() {
-
-          PluginInfo info = new PluginInfo(expectedType.getSimpleName(), singletonMap("class", cname));
-
-          @Override
-          public String packageName() {
-            return className.pkg;
-          }
-
-          @Override
-          public PluginInfo pluginInfo() {
-            return info;
-          }
-
-          @Override
-          public void changed(PackageLoader.Package pkg, PackageListeners.Ctx ctx) {
-            PackageLoader.Package.Version rightVersion = PackagePluginHolder.getRightVersion(pkg, core);
-            if (rightVersion == null ) return;
-            PackageAPI.PkgVersion v = classNameVsPkg.get(className.toString());
-            if(Objects.equals(v.version ,rightVersion.getVersionInfo().version)) return; //nothing has changed no need to reload
-            Runnable old = ctx.getPostProcessor(PackageAwarePluginLoader.class.getName());// just want to do one refresh for every package laod
-            if (old == null) ctx.addPostProcessor(PackageAwarePluginLoader.class.getName(), reloadSchemaRunnable);
-          }
-
-          @Override
-          public PackageAPI.PkgVersion getPackageVersion() {
-            return classNameVsPkg.get(cname);
-          }
-        };
+        PackageListeners.Listener listener = new SchemaPluginPackageListener(expectedType, cname, parsedClassName);
         listeners.add(listener);
         core.getPackageListeners().addListener(listener);
-        return inst;
+        return result;
       }
     }
 
@@ -295,6 +282,46 @@ public class IndexSchema implements Closeable {
         core.getPackageListeners().removeListener(l);
       }
 
+    }
+
+    private class SchemaPluginPackageListener implements PackageListeners.Listener {
+
+      private final Class expectedType;
+      private final String cname;
+      private final PluginInfo.ParsedClassName parsedClassName;
+      PluginInfo info;
+
+      public SchemaPluginPackageListener(Class expectedType, String cname, PluginInfo.ParsedClassName parsedClassName) {
+        this.expectedType = expectedType;
+        this.cname = cname;
+        this.parsedClassName = parsedClassName;
+        info = new PluginInfo(expectedType.getSimpleName(), singletonMap("class", cname));
+      }
+
+      @Override
+      public String packageName() {
+        return parsedClassName.pkg;
+      }
+
+      @Override
+      public PluginInfo pluginInfo() {
+        return info;
+      }
+
+      @Override
+      public void changed(PackageLoader.Package pkg, PackageListeners.Ctx ctx) {
+        PackageLoader.Package.Version rightVersion = PackagePluginHolder.getRightVersion(pkg, core);
+        if (rightVersion == null ) return;
+        PackageAPI.PkgVersion v = classNameVsPkg.get(parsedClassName.toString());
+        if(Objects.equals(v.version ,rightVersion.getVersionInfo().version)) return; //nothing has changed no need to reload
+        Runnable old = ctx.getPostProcessor(PackageAwarePluginLoader.class.getName());// just want to do one refresh for every package laod
+        if (old == null) ctx.addPostProcessor(PackageAwarePluginLoader.class.getName(), reloadSchemaRunnable);
+      }
+
+      @Override
+      public PackageAPI.PkgVersion getPackageVersion() {
+        return classNameVsPkg.get(cname);
+      }
     }
   }
 

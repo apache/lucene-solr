@@ -19,10 +19,13 @@ package org.apache.solr.core;
 
 import java.io.Closeable;
 
-/**A generic interface to load classes
+import org.apache.lucene.analysis.util.ResourceLoader;
+
+/**
+ * A generic interface to load classes and resources. This helps us to avoid using {@link SolrResourceLoader} directly
  *
  */
-public interface SolrClassLoader extends Closeable {
+public interface SolrClassLoader extends Closeable, ResourceLoader {
 
   <T> T newInstance(String cname, Class<T> expectedType, String... subpackages);
 

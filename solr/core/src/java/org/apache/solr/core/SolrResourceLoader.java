@@ -82,7 +82,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @since solr 1.3
  */
-public class SolrResourceLoader implements ResourceLoader, SolrClassLoader {
+public class SolrResourceLoader implements SolrClassLoader {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static final String project = "solr";
@@ -698,6 +698,12 @@ public class SolrResourceLoader implements ResourceLoader, SolrClassLoader {
           "Error instantiating class: '" + clazz.getName() + "'", e);
     }
 
+    registerForCallbacks(obj);
+
+    return obj;
+  }
+
+  protected <T> void registerForCallbacks(T obj) {
     if (!live) {
       if (obj instanceof SolrCoreAware) {
         assertAwareCompatibility(SolrCoreAware.class, obj);
@@ -712,8 +718,6 @@ public class SolrResourceLoader implements ResourceLoader, SolrClassLoader {
         infoMBeans.add((SolrInfoBean) obj);
       }
     }
-
-    return obj;
   }
 
 
@@ -740,6 +744,18 @@ public class SolrResourceLoader implements ResourceLoader, SolrClassLoader {
 
     // this is the last method to be called in SolrCore before the latch is released.
     live = true;
+  }
+
+  public void registerSolrCoreAware(SolrCoreAware obj) {
+    assertAwareCompatibility(SolrCoreAware.class, obj);
+    if (live) {
+      //this core is already live
+      if (this.core != null) {
+        obj.inform(this.core);
+      }
+    } else {
+      waitingForCore.add(obj);
+    }
   }
 
   /**
@@ -924,7 +940,7 @@ public class SolrResourceLoader implements ResourceLoader, SolrClassLoader {
   /**
    * Utility function to throw an exception if the class is invalid
    */
-  static void assertAwareCompatibility(Class aware, Object obj) {
+  public static void assertAwareCompatibility(Class aware, Object obj) {
     Class[] valid = awareCompatibility.get(aware);
     if (valid == null) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
