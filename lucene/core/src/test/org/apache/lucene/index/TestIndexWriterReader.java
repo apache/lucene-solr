@@ -1067,17 +1067,14 @@ public class TestIndexWriterReader extends LuceneTestCase {
     dir.failOn(new MockDirectoryWrapper.Failure() {
       @Override
       public void eval(MockDirectoryWrapper dir) throws IOException {
-        StackTraceElement[] trace = new Exception().getStackTrace();
         if (shouldFail.get()) {
-          for (int i = 0; i < trace.length; i++) {
-            if ("getReadOnlyClone".equals(trace[i].getMethodName())) {
-              if (VERBOSE) {
-                System.out.println("TEST: now fail; exc:");
-                new Throwable().printStackTrace(System.out);
-              }
-              shouldFail.set(false);
-              throw new FakeIOException();
+          if (callStackContainsAnyOf("getReadOnlyClone")) {
+            if (VERBOSE) {
+              System.out.println("TEST: now fail; exc:");
+              new Throwable().printStackTrace(System.out);
             }
+            shouldFail.set(false);
+            throw new FakeIOException();
           }
         }
       }

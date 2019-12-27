@@ -66,6 +66,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -2699,6 +2700,27 @@ public abstract class LuceneTestCase extends Assert {
         // we don't need to uninvert and compare here ... we did that in the first loop above
       }
     }
+  }
+  
+  /** Inspects stack trace to figure out if a method of a specific class called us. */
+  public static boolean callStackContains(Class<?> clazz, String methodName) {
+    final String className = clazz.getName();
+    return Stream.of(new Exception().getStackTrace()).skip(1) // exclude this utility method
+        .anyMatch(f -> className.equals(f.getClassName()) && methodName.equals(f.getMethodName()));
+  }
+
+  /** Inspects stack trace to figure out if one of the given method names (no class restriction) called us. */
+  public static boolean callStackContainsAnyOf(String... methodNames) {
+    return Stream.of(new Exception().getStackTrace()).skip(1) // exclude this utility method
+        .map(StackTraceElement::getMethodName)
+        .anyMatch(Arrays.asList(methodNames)::contains);
+  }
+
+  /** Inspects stack trace if the given class called us. */
+  public static boolean callStackContains(Class<?> clazz) {
+    return Stream.of(new Exception().getStackTrace()).skip(1) // exclude this utility method
+        .map(StackTraceElement::getClassName)
+        .anyMatch(clazz.getName()::equals);
   }
 
   /** A runnable that can throw any checked exception. */

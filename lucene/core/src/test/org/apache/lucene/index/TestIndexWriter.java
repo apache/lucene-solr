@@ -3048,13 +3048,8 @@ public class TestIndexWriter extends LuceneTestCase {
     dir.failOn(new MockDirectoryWrapper.Failure() {
       @Override
       public void eval(MockDirectoryWrapper dir) throws IOException {
-        StackTraceElement[] trace = new Exception().getStackTrace();
-        for (int i = 0; i < trace.length; i++) {
-          if ("flush".equals(trace[i].getMethodName())
-              && "org.apache.lucene.index.DocumentsWriterPerThread".equals(trace[i].getClassName())) {
-            flushingThreads.add(Thread.currentThread().getName());
-            break;
-          }
+        if (callStackContains(DocumentsWriterPerThread.class, "flush")) {
+          flushingThreads.add(Thread.currentThread().getName());
         }
       }
     });
@@ -3384,15 +3379,12 @@ public class TestIndexWriter extends LuceneTestCase {
     try (Directory dir = new FilterDirectory(newDirectory()) {
       @Override
       public IndexOutput createOutput(String name, IOContext context) throws IOException {
-        StackTraceElement[] trace = new Exception().getStackTrace();
-        for (int i = 0; i < trace.length; i++) {
-          if ("flush".equals(trace[i].getMethodName()) && DefaultIndexingChain.class.getName().equals(trace[i].getClassName())) {
-            try {
-              inFlush.countDown();
-              latch.await();
-            } catch (InterruptedException e) {
-              throw new AssertionError(e);
-            }
+        if (callStackContains(DefaultIndexingChain.class, "flush")) {
+          try {
+            inFlush.countDown();
+            latch.await();
+          } catch (InterruptedException e) {
+            throw new AssertionError(e);
           }
         }
         return super.createOutput(name, context);

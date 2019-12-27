@@ -23,6 +23,9 @@ Improvements
 * LUCENE-9109: Backport some changes from master (except StackWalker) to improve
   TestSecurityManager (Uwe Schindler)
 
+* LUCENE-9110: Backport refactored stack analysis in tests to use generalized
+  LuceneTestCase methods (Uwe Schindler)
+
 Optimizations
 ---------------------
 (No changes)

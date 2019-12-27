@@ -566,19 +566,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     @Override
     public void eval(MockDirectoryWrapper dir)  throws IOException {
       if (doFail) {
-        StackTraceElement[] trace = new Exception().getStackTrace();
-        boolean sawFlush = false;
-        boolean sawFinishDocument = false;
-        for (int i = 0; i < trace.length; i++) {
-          if ("flush".equals(trace[i].getMethodName())) {
-            sawFlush = true;
-          }
-          if ("finishDocument".equals(trace[i].getMethodName())) {
-            sawFinishDocument = true;
-          }
-        }
-
-        if (sawFlush && sawFinishDocument == false && count++ >= 30) {
+        if (callStackContainsAnyOf("flush") && false == callStackContainsAnyOf("finishDocument") && count++ >= 30) {
           doFail = false;
           throw new IOException("now failing during flush");
         }
@@ -871,16 +859,14 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     @Override
     public void eval(MockDirectoryWrapper dir)  throws IOException {
       if (doFail) {
-        StackTraceElement[] trace = new Exception().getStackTrace();
-        for (int i = 0; i < trace.length; i++) {
-          if (doFail && MockDirectoryWrapper.class.getName().equals(trace[i].getClassName()) && "sync".equals(trace[i].getMethodName())) {
-            didFail = true;
-            if (VERBOSE) {
-              System.out.println("TEST: now throw exc:");
-              new Throwable().printStackTrace(System.out);
-            }
-            throw new IOException("now failing on purpose during sync");
+        if (callStackContains(MockDirectoryWrapper.class, "sync")) {
+          didFail = true;
+          if (VERBOSE) {
+            System.out.println("TEST: now throw exc:");
+            new Throwable().printStackTrace(System.out);
           }
+          throw new IOException("now failing on purpose during sync");
+          
         }
       }
     }
@@ -948,28 +934,10 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     @Override
     public void eval(MockDirectoryWrapper dir)  throws IOException {
-      StackTraceElement[] trace = new Exception().getStackTrace();
-      boolean isCommit = false;
-      boolean isDelete = false;
-      boolean isSyncMetadata = false;
-      boolean isInGlobalFieldMap = false;
-      for (int i = 0; i < trace.length; i++) {
-        if (isCommit && isDelete && isInGlobalFieldMap && isSyncMetadata) {
-          break;
-        }
-        if (SegmentInfos.class.getName().equals(trace[i].getClassName()) && stage.equals(trace[i].getMethodName())) {
-          isCommit = true;
-        }
-        if (MockDirectoryWrapper.class.getName().equals(trace[i].getClassName()) && "deleteFile".equals(trace[i].getMethodName())) {
-          isDelete = true;
-        }
-        if (SegmentInfos.class.getName().equals(trace[i].getClassName()) && "writeGlobalFieldMap".equals(trace[i].getMethodName())) {
-          isInGlobalFieldMap = true;
-        }
-        if (MockDirectoryWrapper.class.getName().equals(trace[i].getClassName()) && "syncMetaData".equals(trace[i].getMethodName())) {
-          isSyncMetadata = true;
-        }
-      }
+      boolean isCommit = callStackContains(SegmentInfos.class, stage);
+      boolean isDelete = callStackContains(MockDirectoryWrapper.class, "deleteFile");
+      boolean isSyncMetadata = callStackContains(MockDirectoryWrapper.class, "syncMetaData");
+      boolean isInGlobalFieldMap = callStackContains(SegmentInfos.class, "writeGlobalFieldMap");
       if (isInGlobalFieldMap && dontFailDuringGlobalFieldMap) {
         isCommit = false;
       }
@@ -1383,17 +1351,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
 
     @Override
     public void eval(MockDirectoryWrapper dir)  throws IOException {
-
-      StackTraceElement[] trace = new Exception().getStackTrace();
-      boolean fail = false;
-      for (int i = 0; i < trace.length; i++) {
-        if (TermVectorsConsumer.class.getName().equals(trace[i].getClassName()) && stage.equals(trace[i].getMethodName())) {
-          fail = true;
-          break;
-        }
-      }
-      
-      if (fail) {
+      if (callStackContains(TermVectorsConsumer.class, stage)) {
         throw new RuntimeException(EXC_MSG);
       }
     }
@@ -1719,11 +1677,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     @Override
     public IndexInput openInput(String name, IOContext context) throws IOException {
       if (doFail && name.startsWith("segments_")) {
-        StackTraceElement[] trace = new Exception().getStackTrace();
-        for (int i = 0; i < trace.length; i++) {
-          if ("readCommit".equals(trace[i].getMethodName()) || "readLatestCommit".equals(trace[i].getMethodName())) {
-            throw new UnsupportedOperationException("expected UOE");
-          }
+        if (callStackContainsAnyOf("readCommit", "readLatestCommit")) {
+          throw new UnsupportedOperationException("expected UOE");
         }
       }
       return super.openInput(name, context);
@@ -1939,17 +1894,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
           if (random().nextInt(10) != 0) {
             return;
           }
-          boolean maybeFail = false;
-          StackTraceElement[] trace = Thread.currentThread().getStackTrace();
-          
-          for (int i = 0; i < trace.length; i++) {
-            if ("rollbackInternal".equals(trace[i].getMethodName())) {
-              maybeFail = true;
-              break;
-            }
-          }
-          
-          if (maybeFail) {
+          if (callStackContainsAnyOf("rollbackInternal")) {
             if (VERBOSE) {
               System.out.println("TEST: now fail; thread=" + Thread.currentThread().getName() + " exc:");
               new Throwable().printStackTrace(System.out);
@@ -2012,17 +1957,14 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
             // Already failed
             return;
           }
-          StackTraceElement[] trace = Thread.currentThread().getStackTrace();
-          
-          for (int i = 0; i < trace.length; i++) {
-            if ("merge".equals(trace[i].getMethodName())) {
-              if (VERBOSE) {
-                System.out.println("TEST: now fail; thread=" + Thread.currentThread().getName() + " exc:");
-                new Throwable().printStackTrace(System.out);
-              }
-              didFail.set(true);
-              throw new FakeIOException();
+
+          if (callStackContainsAnyOf("merge")) {
+            if (VERBOSE) {
+              System.out.println("TEST: now fail; thread=" + Thread.currentThread().getName() + " exc:");
+              new Throwable().printStackTrace(System.out);
             }
+            didFail.set(true);
+            throw new FakeIOException();
           }
         }
       });
