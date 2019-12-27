@@ -731,15 +731,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
           }
           new Throwable().printStackTrace(System.out);
           if (sawMaybe && !failed) {
-            boolean seen = false;
-            StackTraceElement[] trace = new Exception().getStackTrace();
-            for (int i = 0; i < trace.length; i++) {
-              if ("applyDeletesAndUpdates".equals(trace[i].getMethodName()) ||
-                  "slowFileExists".equals(trace[i].getMethodName())) {
-                seen = true;
-                break;
-              }
-            }
+            boolean seen = callStackContainsAnyOf("applyDeletesAndUpdates", "slowFileExists");
             if (!seen) {
               // Only fail once we are no longer in applyDeletes
               failed = true;
@@ -751,16 +743,12 @@ public class TestIndexWriterDelete extends LuceneTestCase {
             }
           }
           if (!failed) {
-            StackTraceElement[] trace = new Exception().getStackTrace();
-            for (int i = 0; i < trace.length; i++) {
-              if ("applyDeletesAndUpdates".equals(trace[i].getMethodName())) {
-                if (VERBOSE) {
-                  System.out.println("TEST: mock failure: saw applyDeletes");
-                  new Throwable().printStackTrace(System.out);
-                }
-                sawMaybe = true;
-                break;
+            if (callStackContainsAnyOf("applyDeletesAndUpdates")) {
+              if (VERBOSE) {
+                System.out.println("TEST: mock failure: saw applyDeletes");
+                new Throwable().printStackTrace(System.out);
               }
+              sawMaybe = true;
             }
           }
         }

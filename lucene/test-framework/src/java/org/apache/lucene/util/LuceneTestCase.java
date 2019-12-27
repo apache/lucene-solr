@@ -21,6 +21,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.lang.StackWalker.StackFrame;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
@@ -2706,6 +2707,27 @@ public abstract class LuceneTestCase extends Assert {
         // we don't need to uninvert and compare here ... we did that in the first loop above
       }
     }
+  }
+  
+  /** Inspects stack trace to figure out if a method of a specific class called us. */
+  public static boolean callStackContains(Class<?> clazz, String methodName) {
+    final String className = clazz.getName();
+    return StackWalker.getInstance().walk(s -> s.skip(1) // exclude this utility method
+        .anyMatch(f -> className.equals(f.getClassName()) && methodName.equals(f.getMethodName())));
+  }
+
+  /** Inspects stack trace to figure out if one of the given method names (no class restriction) called us. */
+  public static boolean callStackContainsAnyOf(String... methodNames) {
+    return StackWalker.getInstance().walk(s -> s.skip(1) // exclude this utility method
+        .map(StackFrame::getMethodName)
+        .anyMatch(Set.of(methodNames)::contains));
+  }
+
+  /** Inspects stack trace if the given class called us. */
+  public static boolean callStackContains(Class<?> clazz) {
+    return StackWalker.getInstance().walk(s -> s.skip(1) // exclude this utility method
+        .map(StackFrame::getClassName)
+        .anyMatch(clazz.getName()::equals));
   }
 
   /** A runnable that can throw any checked exception. */
