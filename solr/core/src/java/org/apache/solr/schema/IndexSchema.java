@@ -140,7 +140,14 @@ public class IndexSchema implements Closeable {
   protected String name;
   protected final Version luceneVersion;
   protected float version;
+  /**All resources and other files should be loaded using this
+   */
   protected final SolrResourceLoader loader;
+
+  /**Classes for all plugins should be loaded using this.
+   * If resources need to be loaded from packages, use the classloader of one of the classes
+   * loaded from this package
+   */
   protected final PluginLoader pluginLoader;
 
   protected Map<String,SchemaField> fields = new HashMap<>();
