@@ -20,7 +20,6 @@ import javax.naming.Context;
 import javax.naming.InitialContext;
 import javax.naming.NamingException;
 import javax.naming.NoInitialContextException;
-import java.io.Closeable;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -83,7 +82,7 @@ import org.slf4j.LoggerFactory;
 /**
  * @since solr 1.3
  */
-public class SolrResourceLoader implements ResourceLoader, PluginLoader, Closeable {
+public class SolrResourceLoader implements ResourceLoader, SolrClassLoader {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static final String project = "solr";
@@ -190,6 +189,11 @@ public class SolrResourceLoader implements ResourceLoader, PluginLoader, Closeab
     }
     this.classLoader = URLClassLoader.newInstance(new URL[0], parent);
 
+    initSPI();
+    this.coreProperties = coreProperties;
+  }
+
+  protected void initSPI() {
     /*
      * Skip the lib subdirectory when we are loading from the solr home.
      * Otherwise load it, so core lib directories still get loaded.
@@ -207,7 +211,6 @@ public class SolrResourceLoader implements ResourceLoader, PluginLoader, Closeab
         reloadLuceneSPI();
       }
     }
-    this.coreProperties = coreProperties;
   }
 
   /**

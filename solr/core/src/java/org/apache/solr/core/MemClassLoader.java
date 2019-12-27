@@ -39,7 +39,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 
-public class MemClassLoader extends ClassLoader implements AutoCloseable, ResourceLoader {
+public class MemClassLoader extends ClassLoader implements ResourceLoader, SolrClassLoader {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private boolean allJarsLoaded = false;
   private final SolrResourceLoader parentLoader;
@@ -51,6 +51,16 @@ public class MemClassLoader extends ClassLoader implements AutoCloseable, Resour
   public MemClassLoader(List<PluginBag.RuntimeLib> libs, SolrResourceLoader resourceLoader) {
     this.parentLoader = resourceLoader;
     this.libs = libs;
+  }
+
+  @Override
+  public <T> T newInstance(String cname, Class<T> expectedType, String... subpackages) {
+    return null;
+  }
+
+  @Override
+  public <T> T newInstance(String cName, Class<T> expectedType, String[] subPackages, Class[] params, Object[] args) {
+    return null;
   }
 
   synchronized void loadRemoteJars() {
@@ -149,7 +159,7 @@ public class MemClassLoader extends ClassLoader implements AutoCloseable, Resour
   }
 
   @Override
-  public void close() throws Exception {
+  public void close() {
     for (PluginBag.RuntimeLib lib : libs) {
       try {
         lib.close();

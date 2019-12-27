@@ -37,6 +37,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrClassLoader;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.slf4j.Logger;
@@ -234,7 +235,7 @@ public class PackageLoader implements Closeable {
 
     public class Version implements MapWriter, Closeable {
       private final Package parent;
-      private SolrResourceLoader loader;
+      private SolrClassLoader loader;
 
       private final PackageAPI.PkgVersion version;
 
@@ -263,7 +264,12 @@ public class PackageLoader implements Closeable {
               "PACKAGE_LOADER: " + parent.name() + ":" + version,
               paths,
               coreContainer.getResourceLoader().getInstancePath(),
-              coreContainer.getResourceLoader().getClassLoader());
+              coreContainer.getResourceLoader().getClassLoader()){
+            @Override
+            protected void initSPI() {
+              //no op
+            }
+          };
         } catch (MalformedURLException e) {
           log.error("Could not load classloader ", e);
         }
@@ -277,7 +283,7 @@ public class PackageLoader implements Closeable {
         return Collections.unmodifiableList(version.files);
       }
 
-      public SolrResourceLoader getLoader() {
+      public SolrClassLoader getLoader() {
         return loader;
       }
 

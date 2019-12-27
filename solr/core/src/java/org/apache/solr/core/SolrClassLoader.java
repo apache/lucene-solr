@@ -17,10 +17,12 @@
 
 package org.apache.solr.core;
 
+import java.io.Closeable;
+
 /**A generic interface to load classes
  *
  */
-public interface PluginLoader {
+public interface SolrClassLoader extends Closeable {
 
   <T> T newInstance(String cname, Class<T> expectedType, String... subpackages);
 

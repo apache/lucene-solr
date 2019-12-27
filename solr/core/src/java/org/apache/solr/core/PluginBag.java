@@ -34,7 +34,6 @@ import java.util.stream.Collectors;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.solr.api.Api;
 import org.apache.solr.api.ApiBag;
@@ -144,7 +143,7 @@ public class PluginBag<T> implements AutoCloseable {
         PackagePluginHolder<T> holder = new PackagePluginHolder<>(info, core, meta);
         return holder;
       } else {
-        T inst = core.createInstance(info.className, (Class<T>) meta.clazz, meta.getCleanTag(), null, core.getResourceLoader(info.pkgName));
+        T inst = core.createInstance(info.className, (Class<T>) meta.clazz, meta.getCleanTag(), null, core.getSolrClassLoader(info.pkgName));
         initInstance(inst, info);
         return new PluginHolder<>(info, inst);
       }
@@ -403,11 +402,11 @@ public class PluginBag<T> implements AutoCloseable {
     private final SolrConfig.SolrPluginInfo pluginMeta;
     protected SolrException solrException;
     private final SolrCore core;
-    protected ResourceLoader resourceLoader;
+    protected SolrClassLoader resourceLoader;
     private final boolean isRuntimeLib;
 
 
-    LazyPluginHolder(SolrConfig.SolrPluginInfo pluginMeta, PluginInfo pluginInfo, SolrCore core, ResourceLoader loader, boolean isRuntimeLib) {
+    LazyPluginHolder(SolrConfig.SolrPluginInfo pluginMeta, PluginInfo pluginInfo, SolrCore core, SolrClassLoader loader, boolean isRuntimeLib) {
       super(pluginInfo);
       this.pluginMeta = pluginMeta;
       this.isRuntimeLib = isRuntimeLib;

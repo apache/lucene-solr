@@ -63,7 +63,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.core.PluginInfo;
-import org.apache.solr.core.PluginLoader;
+import org.apache.solr.core.SolrClassLoader;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.core.XmlConfigFile;
@@ -144,11 +144,11 @@ public class IndexSchema implements Closeable {
    */
   protected final SolrResourceLoader loader;
 
-  /**Classes for all plugins should be loaded using this.
+  /** Classes for all plugins should be loaded using this.
    * If resources need to be loaded from packages, use the classloader of one of the classes
    * loaded from this package
    */
-  protected final PluginLoader pluginLoader;
+  protected final SolrClassLoader classLoader;
 
   protected Map<String,SchemaField> fields = new HashMap<>();
   protected Map<String,FieldType> fieldTypes = new HashMap<>();
@@ -200,21 +200,20 @@ public class IndexSchema implements Closeable {
     }
   }
 
-  public PluginLoader getPluginLoader(){
-    return pluginLoader;
+  public SolrClassLoader getSolrClassLoader(){
+    return classLoader;
   }
   protected IndexSchema(Version luceneVersion, SolrResourceLoader loader) {
     this.luceneVersion = Objects.requireNonNull(luceneVersion);
     this.loader = loader;
     if(loader.getCore() == null) {
-      this.pluginLoader = loader;
+      this.classLoader = loader;
     } else {
-      PackageAwarePluginLoader papl = new PackageAwarePluginLoader(loader.getCore());
-      this.pluginLoader = papl;
+      this.classLoader = new PackageAwarePluginLoader(loader.getCore());
     }
   }
 
-  public class PackageAwarePluginLoader implements PluginLoader, Closeable {
+  public class PackageAwarePluginLoader implements SolrClassLoader {
     final SolrCore core;
     private final List<PackageListeners.Listener> listeners = new ArrayList<>();
     Runnable reloadSchemaRunnable = () -> getCore().refreshSchema();
@@ -234,7 +233,7 @@ public class IndexSchema implements Closeable {
           (pkgloader, name) -> pkgloader.newInstance(name, expectedType, subpackages));
     }
 
-    private <T> T loadWithRightPackageLoader(String cname, Class expectedType, BiFunction<SolrResourceLoader, String, T> fun) {
+    private <T> T loadWithRightPackageLoader(String cname, Class expectedType, BiFunction<SolrClassLoader, String, T> fun) {
       PluginInfo.ClassName className = new PluginInfo.ClassName(cname);
       if (className.pkg == null) {
         return  fun.apply(loader, className.klas);
@@ -280,7 +279,7 @@ public class IndexSchema implements Closeable {
 
     @Override
     public <T> Class<? extends T> findClass(String cname, Class<T> expectedType) {
-      return loadWithRightPackageLoader(cname, expectedType, (BiFunction<SolrResourceLoader, String ,Class<? extends T>>) (loader, name) -> loader.findClass(name, expectedType));
+      return loadWithRightPackageLoader(cname, expectedType, (BiFunction<SolrClassLoader, String ,Class<? extends T>>) (loader, name) -> loader.findClass(name, expectedType));
     }
 
     @Override
@@ -599,7 +598,7 @@ public class IndexSchema implements Closeable {
       final FieldTypePluginLoader typeLoader = new FieldTypePluginLoader(this, fieldTypes, schemaAware);
       expression = getFieldTypeXPathExpressions();
       NodeList nodes = (NodeList) xpath.evaluate(expression, document, XPathConstants.NODESET);
-      typeLoader.load(pluginLoader, nodes);
+      typeLoader.load(classLoader, nodes);
 
       // load the fields
       Map<String,Boolean> explicitRequiredProp = loadFields(document, xpath);
@@ -610,7 +609,7 @@ public class IndexSchema implements Closeable {
       if (similarityFactory == null) {
         final Class<?> simClass = SchemaSimilarityFactory.class;
         // use the loader to ensure proper SolrCoreAware handling
-        similarityFactory = pluginLoader.newInstance(simClass.getName(), SimilarityFactory.class);
+        similarityFactory = classLoader.newInstance(simClass.getName(), SimilarityFactory.class);
         similarityFactory.init(new ModifiableSolrParams());
       } else {
         isExplicitSimilarity = true;
@@ -1084,7 +1083,7 @@ public class IndexSchema implements Closeable {
     dynamicCopyFields = temp;
   }
 
-  static SimilarityFactory readSimilarity(PluginLoader loader, Node node) {
+  static SimilarityFactory readSimilarity(SolrClassLoader loader, Node node) {
     if (node==null) {
       return null;
     } else {
@@ -2096,8 +2095,8 @@ public class IndexSchema implements Closeable {
 
   @Override
   public void close() throws IOException {
-    if (pluginLoader instanceof PackageAwarePluginLoader) {
-      ((PackageAwarePluginLoader) pluginLoader).close();
+    if (classLoader instanceof PackageAwarePluginLoader) {
+      ((PackageAwarePluginLoader) classLoader).close();
     }
   }
 }

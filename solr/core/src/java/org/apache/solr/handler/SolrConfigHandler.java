@@ -66,6 +66,7 @@ import org.apache.solr.core.ConfigOverlay;
 import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.RequestParams;
+import org.apache.solr.core.SolrClassLoader;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
@@ -593,9 +594,9 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
         //this is not dynamically loaded so we can verify the class right away
         try {
           if(expected == Expressible.class) {
-            SolrResourceLoader resourceLoader = info.pkgName == null ?
+            SolrClassLoader resourceLoader = info.pkgName == null ?
                 req.getCore().getResourceLoader() :
-                req.getCore().getResourceLoader(info.pkgName);
+                req.getCore().getSolrClassLoader(info.pkgName);
             resourceLoader.findClass(info.className, expected);
           } else {
             req.getCore().createInitInstance(info, expected, clz, "");
