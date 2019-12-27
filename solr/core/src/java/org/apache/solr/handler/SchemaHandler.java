@@ -206,6 +206,10 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
     }
   }
 
+  /**If a plugin is loaded from a package, the version of the package being used should be added
+   * to the response
+   *
+   */
   private  void insertPackageInfo(Object o, SolrQueryRequest req) {
     if(!req.getParams().getBool("meta")) return;
     if (o instanceof List) {
