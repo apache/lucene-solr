@@ -118,6 +118,12 @@ public class PackageListeners {
 
   public class Ctx {
     private Map<String, Runnable > postProcessors;
+
+    /**A post processor will be run after all the listeners are invoked. This is particularly helpful
+     * if a group of plugins need to be reloaded all at once.  The case in point is schema plugins.
+     * If there are multiple plugins loade from packages in a schema, we would like to reload it only once
+     *
+     */
     public void addPostProcessor(String name, Runnable runnable){
       if(postProcessors == null) postProcessors = new HashMap<>();
       postProcessors.put(name, runnable);
