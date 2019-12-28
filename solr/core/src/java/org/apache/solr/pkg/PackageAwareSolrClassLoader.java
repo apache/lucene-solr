@@ -48,9 +48,14 @@ public class PackageAwareSolrClassLoader implements SolrClassLoader {
   private final Runnable reloadRunnable;
 
 
-  public PackageAwareSolrClassLoader(SolrCore core, SolrResourceLoader loader, Runnable runnable) {
+  /**
+   *
+   * @param core The core where this belong to
+   * @param runnable run a task if somethingis modified, say reload schema or reload core, refresh cache or something else
+   */
+  public PackageAwareSolrClassLoader(SolrCore core,  Runnable runnable) {
     this.core = core;
-    this.loader = loader;
+    this.loader = core.getResourceLoader();
     this.reloadRunnable = runnable;
   }
 

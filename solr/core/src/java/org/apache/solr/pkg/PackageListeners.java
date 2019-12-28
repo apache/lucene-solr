@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 
 import org.apache.solr.core.PluginInfo;
@@ -98,10 +99,10 @@ public class PackageListeners {
   }
 
   public void forEachListener(Consumer<Listener> listenerConsumer){
-    listeners.forEach(ref -> {
-      Listener l = ref.get();
-      if (l != null) listenerConsumer.accept(l);
-    });
+    listeners.stream()
+        .map(Reference::get)
+        .filter(Objects::nonNull)
+        .forEach(listenerConsumer);
   }
 
   public List<Listener> getListeners() {

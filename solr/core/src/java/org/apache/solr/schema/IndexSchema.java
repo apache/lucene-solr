@@ -202,7 +202,8 @@ public class IndexSchema implements Closeable {
     if(loader.getCore() == null) {
       this.classLoader = loader;
     } else {
-      this.classLoader = new PackageAwareSolrClassLoader(loader.getCore(), loader,  () ->  loader.getCore().refreshSchema());
+      SolrCore core = loader.getCore();
+      this.classLoader = new PackageAwareSolrClassLoader(loader.getCore(), core::refreshSchema);
     }
   }
 
