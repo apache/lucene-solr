@@ -31,8 +31,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.carrotsearch.randomizedtesting.annotations.Repeat;
-
 
 @LuceneTestCase.SuppressCodecs({"Lucene3x","Lucene40","Lucene41","Lucene42","Lucene45","Appending"})
 public class TestJsonRequest extends SolrTestCaseHS {
@@ -64,7 +62,7 @@ public class TestJsonRequest extends SolrTestCaseHS {
     systemClearPropertySolrDisableShardsWhitelist();
   }
 
-  @Test @Repeat(iterations = 100)
+  @Test
   public void testLocalJsonRequest() throws Exception {
     doJsonRequest(Client.localClient, false);
   }
