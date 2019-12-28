@@ -161,7 +161,7 @@ public class FieldHighlighter {
         }
         // advance breakIterator
         passage.setStartOffset(Math.max(this.breakIterator.preceding(start + 1), lastPassageEnd));
-        lastPassageEnd = Math.min(this.breakIterator.following(start), contentLength);
+        lastPassageEnd = Math.min(this.breakIterator.following(end - 1), contentLength);
         passage.setEndOffset(lastPassageEnd);
       }
       // Add this term to the passage.

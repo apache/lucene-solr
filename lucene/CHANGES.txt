@@ -43,8 +43,8 @@ API Changes
 
 Improvements
 
-* LUCENE-9093: Added hl.fragalign parameter to Unified highlighter which influences
-  how much text to include around a match on the left and the right.
+* LUCENE-9093: Unified highlighter got configurable options that influence how much text
+  gets included around a match on the left and the right.
 
 * LUCENE-8757: When provided with an ExecutorService to run queries across
   multiple threads, IndexSearcher now groups small segments together, up to

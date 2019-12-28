@@ -68,24 +68,26 @@ public class LengthGoalBreakIteratorTest extends LuceneTestCase {
 
     // at first word:
     Query query = query("aa");
-    for (float align : ALIGNS) { // alignment is not meaningful to boundary anchored matches
-      assertEquals("almost two sent " + align,
-          "<b>Aa</b> bb.", highlightClosestToLen(CONTENT, query, 9, align));
-      assertEquals("barely two sent " + align,
-          "<b>Aa</b> bb. Cc dd.", highlightClosestToLen(CONTENT, query, 11, align));
-      assertEquals("long goal " + align,
-          "<b>Aa</b> bb. Cc dd. Ee ff", highlightClosestToLen(CONTENT, query, 17 + random().nextInt(20), align));
-    }
-
+    assertEquals("almost two sent A",
+        "<b>Aa</b> bb.", highlightClosestToLen(CONTENT, query, 7, 0.f));
+    assertEquals("almost two sent B",
+        "<b>Aa</b> bb.", highlightClosestToLen(CONTENT, query, 14, 0.5f));
+    assertEquals("almost two sent C",
+        "<b>Aa</b> bb.", highlightClosestToLen(CONTENT, query, 64, 1.f));
+    assertEquals("barely two sent A",
+        "<b>Aa</b> bb. Cc dd.", highlightClosestToLen(CONTENT, query, 8, 0.f));
+    assertEquals("barely two sent B",
+        "<b>Aa</b> bb. Cc dd.", highlightClosestToLen(CONTENT, query, 16, 0.5f));
+    assertEquals("long goal A",
+        "<b>Aa</b> bb. Cc dd. Ee ff", highlightClosestToLen(CONTENT, query, 17 + random().nextInt(20), 0.f));
+    assertEquals("long goal B",
+        "<b>Aa</b> bb. Cc dd. Ee ff", highlightClosestToLen(CONTENT, query, 28 + random().nextInt(20), 0.5f));
     // at some word not at start of passage
     query = query("dd");
     for (float align : ALIGNS) {
-      // alignment is not meaningful when lengthGoal is less than match-fragment
+      // alignment is not meaningful if fragsize is shorter than or closer to match-fragment boundaries
       assertEquals("short goal " + align,
-          " Cc <b>dd</b>.", highlightClosestToLen(CONTENT, query, random().nextInt(5), align));
-      // alignment is not meaningful when target indexes are closer to than match-fragment than prev-next fragments
-      assertEquals("almost two sent " + align,
-          " Cc <b>dd</b>.", highlightClosestToLen(CONTENT, query, 9, align));
+          " Cc <b>dd</b>.", highlightClosestToLen(CONTENT, query, random().nextInt(4), align));
     }
     // preceding/following inclusion by alignment parameter
     assertEquals("barely two sent A",
@@ -99,37 +101,44 @@ public class LengthGoalBreakIteratorTest extends LuceneTestCase {
     assertEquals("long goal B",
         "Aa bb. Cc <b>dd</b>. Ee ff", highlightClosestToLen(CONTENT, query, 17 + random().nextInt(20), 0.5f));
     assertEquals("long goal C",
-        "Aa bb. Cc <b>dd</b>. Ee ff", highlightClosestToLen(CONTENT, query, 17 + random().nextInt(20), 1.f));
+        "Aa bb. Cc <b>dd</b>.", highlightClosestToLen(CONTENT, query, 17 + random().nextInt(20), 1.f));
   }
 
   public void testMinLen() throws IOException {
     // minLen mode is simpler than targetLen... just test a few cases
 
     Query query = query("dd");
-    for (float align : ALIGNS) { // alignment is not meaningful when lengthGoal is less or equals than match-fragment
-      assertEquals("almost two sent",
-          " Cc <b>dd</b>.", highlightMinLen(CONTENT, query, 7, align));
-    }
+    assertEquals("almost two sent A",
+        " Cc <b>dd</b>.", highlightMinLen(CONTENT, query, 0, 0.f));
+    assertEquals("almost two sent B",
+        " Cc <b>dd</b>.", highlightMinLen(CONTENT, query, 1, 0.5f));
+    assertEquals("almost two sent C",
+        " Cc <b>dd</b>.", highlightMinLen(CONTENT, query, 5, 1.f));
+
     assertEquals("barely two sent A",
-        " Cc <b>dd</b>. Ee ff", highlightMinLen(CONTENT, query, 8, 0.f));
+        " Cc <b>dd</b>. Ee ff", highlightMinLen(CONTENT, query, 1, 0.f));
     assertEquals("barely two sent B",
-        " Cc <b>dd</b>. Ee ff", highlightMinLen(CONTENT, query, 8, 0.5f));
+        " Cc <b>dd</b>. Ee ff", highlightMinLen(CONTENT, query, 2, 0.5f));
     assertEquals("barely two sent C",
-        "Aa bb. Cc <b>dd</b>.", highlightMinLen(CONTENT, query, 8, 1.f));
-    assertEquals("barely two sent D",
-        " Cc <b>dd</b>. Ee ff", highlightMinLen(CONTENT, query, 8, 0.55f));
-    assertEquals("barely two sent D",
-        "Aa bb. Cc <b>dd</b>.", highlightMinLen(CONTENT, query, 9, 0.55f));
-    assertEquals("barely two sent D",
-        " Cc <b>dd</b>. Ee ff", highlightMinLen(CONTENT, query, 9, 0.45f));
+        "Aa bb. Cc <b>dd</b>.", highlightMinLen(CONTENT, query, 6, 1.f));
+    assertEquals("barely two sent D/a",
+        " Cc <b>dd</b>.", highlightMinLen(CONTENT, query, 2, 0.55f));
+    assertEquals("barely two sent D/b",
+        " Cc <b>dd</b>. Ee ff", highlightMinLen(CONTENT, query, 3, 0.55f));
+    assertEquals("barely two sent E/a",
+        " Cc <b>dd</b>. Ee ff", highlightMinLen(CONTENT, query, 9, 0.5f));
+    assertEquals("barely two sent E/b",
+        "Aa bb. Cc <b>dd</b>. Ee ff", highlightMinLen(CONTENT, query, 9, 0.7f));
+    assertEquals("barely two sent E/c",
+        "Aa bb. Cc <b>dd</b>.", highlightMinLen(CONTENT, query, 9, 0.9f));
   }
 
   public void testMinLenPrecision() throws IOException {
     Query queryX = query("x");
     assertEquals("test absolute minimal length",
-        "<b>X</b> ", highlightMinLen(CONTENT2, queryX, 1, 0.f, ' '));
+        "<b>X</b> ", highlightMinLen(CONTENT2, queryX, 1, 0.5f, ' '));
     assertEquals("test slightly above minimal length",
-        "<b>X</b> Ee ", highlightMinLen(CONTENT2, queryX, 3, 0.f, ' '));
+        "dd <b>X</b> Ee ", highlightMinLen(CONTENT2, queryX, 4, 0.5f, ' '));
   }
 
   public void testDefaultSummaryTargetLen() throws IOException {

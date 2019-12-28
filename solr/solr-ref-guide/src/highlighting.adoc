@@ -225,10 +225,13 @@ By default, the Unified Highlighter will usually pick the right offset source (s
 +
 The offset source can be explicitly configured to one of: `ANALYSIS`, `POSTINGS`, `POSTINGS_WITH_TERM_VECTORS`, or `TERM_VECTORS`.
 
-`hl.fragalign`::
-Fragment alignment can influence where the match in a passage is positioned. This floating point value is used to break the remaining `hl.fragsize` of the passage around the match. The default value of `0.0` means to align the match to the left, this is the backward-compatible setting. A value of `0.5` would mean that equal amount of text should be around the match on both sides, while `1.0` to align it to the right. _Note: there are situations where the requested alignment is not plausible. This depends on the length of the match, the used breakiterator and the text content around the match._
+`hl.fragAlignRatio`::
+Fragment alignment can influence where the match in a passage is positioned. This floating point value is used to break the `hl.fragsize` around the match. The default value of `0.5` means to align the match to the middle. A value of `0.0` would mean to align the match to the left, while `1.0` to align it to the right. _Note: there are situations where the requested alignment is not plausible. This depends on the length of the match, the used breakiterator and the text content around the match._
+
+`hl.fragsizeIsMinimum`::
+By default this parameter is `false`. In this case the highlighter will accept a shorter fragment than `hl.fragsize`, if that is closer to the target than what the next longer choice would be.
 +
-Before the introduction of this parameter all passages had left-aligned matches. Changing the `hl.bs.type` to `WORD` and the `hl.fragalign` to `0.5` will make results that closely resemble what the other highlighters produce by default.
+When treating `hl.fragsize` as a strict minimum length is acceptable, turning this on has some performance benefits to consider.
 
 `hl.tag.ellipsis`::
 By default, each snippet is returned as a separate value (as is done with the other highlighters). Set this parameter to instead return one string with this text as the delimiter. _Note: this is likely to be removed in the future._
