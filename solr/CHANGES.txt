@@ -187,6 +187,8 @@ Improvements
   hl.fragsizeIsMinimum, with defaults that aim to better center matches in fragments than previously. See the ref guide.
   Regardless of the settings, the passages may be sized differently than before. (Nándor Mátravölgyi, David Smiley)
 
+* SOLR-14154: Return correct isolation level when retrieving it from the SQL Connection (Nick Vercammen, Kevin Risden)
+
 Optimizations
 ---------------------
 (No changes)
