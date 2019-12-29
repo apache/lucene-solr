@@ -35,12 +35,13 @@ public class LengthGoalBreakIterator extends BreakIterator {
   private final int lengthGoal;
   private final float fragmentAlignment; // how much text to align before match-fragment, valid in range [0, 1]
   private final boolean isMinimumLength; // if false then is "closest to" length
+  private int currentCache;
 
   /** Breaks will be at least {@code minLength} apart (to the extent possible),
    *  while trying to position the match inside the fragment according to {@code fragmentAlignment}. */
   public static LengthGoalBreakIterator createMinLength(BreakIterator baseIter, int minLength,
                                                         float fragmentAlignment) {
-    return new LengthGoalBreakIterator(baseIter, minLength, fragmentAlignment, true);
+    return new LengthGoalBreakIterator(baseIter, minLength, fragmentAlignment, true, baseIter.current());
   }
 
   /** For backwards compatibility you can initialise the break iterator without fragmentAlignment. */
@@ -53,7 +54,7 @@ public class LengthGoalBreakIterator extends BreakIterator {
    * is chosen. The match will be positioned according to {@code fragmentAlignment} as much as possible. */
   public static LengthGoalBreakIterator createClosestToLength(BreakIterator baseIter, int targetLength,
                                                               float fragmentAlignment) {
-    return new LengthGoalBreakIterator(baseIter, targetLength, fragmentAlignment, false);
+    return new LengthGoalBreakIterator(baseIter, targetLength, fragmentAlignment, false, baseIter.current());
   }
 
   /** For backwards compatibility you can initialise the break iterator without fragmentAlignment. */
@@ -63,8 +64,9 @@ public class LengthGoalBreakIterator extends BreakIterator {
   }
 
   private LengthGoalBreakIterator(BreakIterator baseIter, int lengthGoal, float fragmentAlignment,
-                                  boolean isMinimumLength) {
+                                  boolean isMinimumLength, int currentCache) {
     this.baseIter = baseIter;
+    this.currentCache = currentCache;
     this.lengthGoal = lengthGoal;
     if (fragmentAlignment < 0.f || fragmentAlignment > 1.f || !Float.isFinite(fragmentAlignment)) {
       throw new IllegalArgumentException("fragmentAlignment must be >= zero and <= one");
@@ -82,12 +84,14 @@ public class LengthGoalBreakIterator extends BreakIterator {
   public String toString() {
     String goalDesc = isMinimumLength ? "minLen" : "targetLen";
     return getClass().getSimpleName() + "{" + goalDesc + "=" + lengthGoal + ", fragAlign=" + fragmentAlignment +
-        ", baseIter=" + baseIter + "}";
+        ", baseIter=" + baseIter + ", currentCache=" + currentCache + "}";
   }
 
   @Override
   public Object clone() {
-    return new LengthGoalBreakIterator((BreakIterator) baseIter.clone(), lengthGoal, fragmentAlignment, isMinimumLength);
+    return new LengthGoalBreakIterator(
+        (BreakIterator) baseIter.clone(), lengthGoal, fragmentAlignment, isMinimumLength, currentCache
+    );
   }
 
   @Override
@@ -98,26 +102,28 @@ public class LengthGoalBreakIterator extends BreakIterator {
   @Override
   public void setText(String newText) {
     baseIter.setText(newText);
+    currentCache = baseIter.current();
   }
 
   @Override
   public void setText(CharacterIterator newText) {
     baseIter.setText(newText);
+    currentCache = baseIter.current();
   }
 
   @Override
   public int current() {
-    return baseIter.current();
+    return currentCache;
   }
 
   @Override
   public int first() {
-    return baseIter.first();
+    return currentCache = baseIter.first();
   }
 
   @Override
   public int last() {
-    return baseIter.last();
+    return currentCache = baseIter.last();
   }
 
   @Override
@@ -127,36 +133,9 @@ public class LengthGoalBreakIterator extends BreakIterator {
   }
 
   // Called by getSummaryPassagesNoHighlight to generate default summary.
-  // This is the same implementation that following() has, except:
-  //   - we use the full lengthGoal for targetIdx
-  //   - in closestTo mode the current index has to be moved back to afterIdx if that's the closer one
   @Override
   public int next() {
-    final int matchEndIndex = current();
-    final int targetIdx = matchEndIndex + lengthGoal;
-    if (targetIdx >= getText().getEndIndex()) {
-      return baseIter.last();
-    }
-    final int afterIdx = baseIter.following(targetIdx - 1);
-    if (afterIdx == DONE) {
-      return baseIter.current();
-    }
-    if (afterIdx == targetIdx) { // right on the money
-      return afterIdx;
-    }
-    if (isMinimumLength) { // thus never undershoot
-      return afterIdx;
-    }
-
-    // note: it is a shame that we invoke preceding() *one more time*; BI's are sometimes expensive.
-
-    // Find closest break to target
-    final int beforeIdx = baseIter.preceding(targetIdx);
-    if (targetIdx - beforeIdx < afterIdx - targetIdx && beforeIdx > matchEndIndex) {
-      return beforeIdx;
-    }
-    // moveToBreak is necessary because we use current() each call to continue from previous position
-    return moveToBreak(afterIdx);
+    return following(currentCache, currentCache + lengthGoal);
   }
 
   @Override
@@ -167,19 +146,26 @@ public class LengthGoalBreakIterator extends BreakIterator {
 
   @Override
   public int following(int matchEndIndex) {
-    final int targetIdx = (matchEndIndex + 1) + (int)(lengthGoal * (1.f - fragmentAlignment));
+    return following(matchEndIndex, (matchEndIndex + 1) + (int)(lengthGoal * (1.f - fragmentAlignment)));
+  }
+
+  private int following(int matchEndIndex, int targetIdx) {
     if (targetIdx >= getText().getEndIndex()) {
-      return baseIter.last();
+      if (currentCache == baseIter.last()) {
+        return DONE;
+      }
+      return currentCache = baseIter.last();
     }
     final int afterIdx = baseIter.following(targetIdx - 1);
     if (afterIdx == DONE) {
-      return baseIter.current();
+      currentCache = baseIter.last();
+      return DONE;
     }
     if (afterIdx == targetIdx) { // right on the money
-      return afterIdx;
+      return currentCache = afterIdx;
     }
     if (isMinimumLength) { // thus never undershoot
-      return afterIdx;
+      return currentCache = afterIdx;
     }
 
     // note: it is a shame that we invoke preceding() *one more time*; BI's are sometimes expensive.
@@ -187,20 +173,10 @@ public class LengthGoalBreakIterator extends BreakIterator {
     // Find closest break to target
     final int beforeIdx = baseIter.preceding(targetIdx);
     if (targetIdx - beforeIdx < afterIdx - targetIdx && beforeIdx > matchEndIndex) {
-      return beforeIdx;
+      return currentCache = beforeIdx;
     }
-    return afterIdx;
-  }
-
-  private int moveToBreak(int idx) { // precondition: idx is a known break
-    // bi.isBoundary(idx) has side-effect of moving the position.  Not obvious!
-    //boolean moved = baseIter.isBoundary(idx); // probably not particularly expensive
-    //assert moved && current() == idx;
-
-    // TODO fix: Would prefer to do "- 1" instead of "- 2" but CustomSeparatorBreakIterator has a bug.
-    int current = baseIter.following(idx - 2);
-    assert current == idx : "following() didn't move us to the expected index.";
-    return idx;
+    // moveToBreak is necessary for when getSummaryPassagesNoHighlight calls next and current() is used
+    return currentCache = afterIdx;
   }
 
   // called at start of new Passage given first word start offset
@@ -208,17 +184,21 @@ public class LengthGoalBreakIterator extends BreakIterator {
   public int preceding(int matchStartIndex) {
     final int targetIdx = (matchStartIndex - 1) - (int)(lengthGoal * fragmentAlignment);
     if (targetIdx <= 0) {
-      return 0;
+      if (currentCache == baseIter.first()) {
+        return DONE;
+      }
+      return currentCache = baseIter.first();
     }
     final int beforeIdx = baseIter.preceding(targetIdx + 1);
     if (beforeIdx == DONE) {
-      return 0;
+      currentCache = baseIter.first();
+      return DONE;
     }
     if (beforeIdx == targetIdx) { // right on the money
-      return beforeIdx;
+      return currentCache = beforeIdx;
     }
     if (isMinimumLength) { // thus never undershoot
-      return beforeIdx;
+      return currentCache = beforeIdx;
     }
 
     // note: it is a shame that we invoke following() *one more time*; BI's are sometimes expensive.
@@ -226,9 +206,10 @@ public class LengthGoalBreakIterator extends BreakIterator {
     // Find closest break to target
     final int afterIdx = baseIter.following(targetIdx - 1);
     if (afterIdx - targetIdx < targetIdx - beforeIdx && afterIdx < matchStartIndex) {
-      return afterIdx;
+      return currentCache = afterIdx;
     }
-    return beforeIdx;
+    // moveToBreak is for consistency
+    return currentCache = beforeIdx;
   }
 
   @Override
