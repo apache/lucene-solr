@@ -186,7 +186,7 @@ class ConnectionImpl implements Connection {
 
   @Override
   public int getTransactionIsolation() throws SQLException {
-    throw new UnsupportedOperationException();
+    return Connection.TRANSACTION_NONE;
   }
 
   @Override
