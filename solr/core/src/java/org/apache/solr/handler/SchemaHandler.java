@@ -211,7 +211,7 @@ public class SchemaHandler extends RequestHandlerBase implements SolrCoreAware, 
    *
    */
   private  void insertPackageInfo(Object o, SolrQueryRequest req) {
-    if(!req.getParams().getBool("meta")) return;
+    if(!req.getParams().getBool("meta",false)) return;
     if (o instanceof List) {
       List l = (List) o;
       for (Object o1 : l) {

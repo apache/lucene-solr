@@ -70,7 +70,6 @@ import org.apache.solr.core.SolrClassLoader;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
-import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -253,18 +252,16 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
                 if (req.getParams().getBool("meta", false)) {
                   // meta=true is asking for the package info of the plugin
                   // We go through all the listeners and see if there is one registered for this plugin
-                  List<PackageListeners.Listener> listeners = req.getCore().getPackageListeners().getListeners();
-                  for (PackageListeners.Listener listener :
-                      listeners) {
+                  req.getCore().getPackageListeners().forEachListener(listener -> {
                     PluginInfo info = listener.pluginInfo();
-                    if(info == null) continue;
+                    if(info == null) return;
                     if (info.type.equals(parts.get(1)) && info.name.equals(componentName)) {
                       if (o instanceof Map) {
                         Map m1 = (Map) o;
                         m1.put("_packageinfo_", listener.getPackageVersion());
                       }
                     }
-                  }
+                  });
                 }
               }
             }

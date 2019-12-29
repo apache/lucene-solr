@@ -969,7 +969,14 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       log.info("[{}] Opening new SolrCore at [{}], dataDir=[{}]", logid, resourceLoader.getInstancePath(),
           this.dataDir);
 
-      IndexSchema schema = schemaSupplier.get();
+      IndexSchema schema = null;
+      try {
+        schema = schemaSupplier.get();
+      } catch (SolrException se){
+        throw se;
+      } catch (Exception e) {
+        throw new SolrException ( ErrorCode.SERVER_ERROR, "could not create schema", e);
+      }
       checkVersionFieldExistsInSchema(schema, coreDescriptor);
 
       // initialize core metrics
@@ -1567,6 +1574,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     log.info("{} CLOSING SolrCore {}", logid, this);
 
     ExecutorUtil.shutdownAndAwaitTermination(coreAsyncTaskExecutor);
+    closeWhileHandlingException(schema);
 
     // stop reporting metrics
     try {
@@ -1677,13 +1685,15 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     }
 
     // Close the snapshots meta-data directory.
-    Directory snapshotsDir = snapshotMgr.getSnapshotsDir();
-    try {
-      this.directoryFactory.release(snapshotsDir);
-    } catch (Throwable e) {
-      SolrException.log(log, e);
-      if (e instanceof Error) {
-        throw (Error) e;
+    if(snapshotMgr !=null) {
+      Directory snapshotsDir = snapshotMgr.getSnapshotsDir();
+      try {
+        this.directoryFactory.release(snapshotsDir);
+      } catch (Throwable e) {
+        SolrException.log(log, e);
+        if (e instanceof Error) {
+          throw (Error) e;
+        }
       }
     }
 
