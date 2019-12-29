@@ -1357,7 +1357,7 @@ groups:
     title: Setup your mail client for PGP
     description: |
       The announce mail to `announce@apache.org` should be cryptographically signed.
-      Make sure you have a PGP enabled email client with your apache ket installed.
+      Make sure you have a PGP enabled email client with your apache key installed.
       There are plugins for popular email programs, as well as browser plugins for webmail.
       See links for help on how to setup your email client for PGP.
     links:
@@ -1370,7 +1370,7 @@ groups:
     id: announce_lucene_sig
     title: Announce the Lucene release (announce@a.o)
     description: |
-      (( template=announce_solr_sign_mail ))
+      (( template=announce_lucene_sign_mail ))
   - !Todo
     id: announce_solr_sig
     title: Announce the Solr release (announce@a.o)
@@ -1667,7 +1667,7 @@ groups:
 
       *Solr*
 
-      . Open https://issues.apache.org/jira/issues/?jql=project+=+LUCENE+AND+resolution=Unresolved+AND+fixVersion={{ release_version }}
+      . Open https://issues.apache.org/jira/issues/?jql=project+=+SOLR+AND+resolution=Unresolved+AND+fixVersion={{ release_version }}
       . In the `Tools` menu, start a bulk change - operation="Edit issues"
       . Identify issues that *are included* in the release, but are unresolved e.g. due to being REOPENED. These shall *not* be bulk changed!
       . Check the box next to `Change Fix Version/s` and in the dropdown `Find and remove these`, selecting v {{ release_version }}
@@ -1675,7 +1675,7 @@ groups:
       . Click `Next`, review the changes and click `Confirm`
     links:
     - https://issues.apache.org/jira/issues/?jql=project+=+LUCENE+AND+resolution=Unresolved+AND+fixVersion={{ release_version }}
-    - https://issues.apache.org/jira/issues/?jql=project+=+LUCENE+AND+resolution=Unresolved+AND+fixVersion={{ release_version }}
+    - https://issues.apache.org/jira/issues/?jql=project+=+SOLR+AND+resolution=Unresolved+AND+fixVersion={{ release_version }}
   - !Todo
     id: jira_clear_security
     title: Clear Security Level of Public Solr JIRA Issues
