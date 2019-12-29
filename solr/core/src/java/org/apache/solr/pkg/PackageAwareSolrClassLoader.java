@@ -35,7 +35,7 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import static java.util.Collections.singletonMap;
 
 /**
- * This class implements a SolrClassLoader that can  identify the correct packages
+ * This class implements a {@link SolrClassLoader} that can  identify the correct packages
  * and load classes from that. This also listens to any changes to the relevant packages and
  * invoke a callback if anything is modified
  */
@@ -51,7 +51,7 @@ public class PackageAwareSolrClassLoader implements SolrClassLoader {
   /**
    *
    * @param core The core where this belong to
-   * @param runnable run a task if somethingis modified, say reload schema or reload core, refresh cache or something else
+   * @param runnable run a task if something is modified, say reload schema or reload core, refresh cache or something else
    */
   public PackageAwareSolrClassLoader(SolrCore core,  Runnable runnable) {
     this.core = core;
@@ -92,7 +92,7 @@ public class PackageAwareSolrClassLoader implements SolrClassLoader {
         loader.registerSolrCoreAware((SolrCoreAware) result);
       }
       classNameVsPkg.put(cname, ver.getVersionInfo());
-      PackageListeners.Listener listener = new SchemaPluginPackageListener(expectedType, cname, parsedClassName);
+      PackageListeners.Listener listener = new PackageListener(expectedType, cname, parsedClassName);
       listeners.add(listener);
       core.getPackageListeners().addListener(listener);
       return result;
@@ -116,16 +116,15 @@ public class PackageAwareSolrClassLoader implements SolrClassLoader {
     for (PackageListeners.Listener l : listeners) {
       core.getPackageListeners().removeListener(l);
     }
-
   }
 
-  private class SchemaPluginPackageListener implements PackageListeners.Listener {
+  private class PackageListener implements PackageListeners.Listener {
 
     private final String cname;
     private final PluginInfo.ParsedClassName parsedClassName;
     PluginInfo info;
 
-    public SchemaPluginPackageListener(Class expectedType, String cname, PluginInfo.ParsedClassName parsedClassName) {
+    public PackageListener(Class expectedType, String cname, PluginInfo.ParsedClassName parsedClassName) {
       this.cname = cname;
       this.parsedClassName = parsedClassName;
       info = new PluginInfo(expectedType.getSimpleName(), singletonMap("class", cname));
