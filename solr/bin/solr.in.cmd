@@ -141,8 +141,8 @@ REM SSL Certificates contain host/ip "peer name" information that is validated b
 REM this to false can be useful to disable these checks when re-using a certificate on many hosts
 REM set SOLR_SSL_CHECK_PEER_NAME=true
 REM Override Key/Trust Store types if necessary
-REM set SOLR_SSL_KEY_STORE_TYPE=JKS
-REM set SOLR_SSL_TRUST_STORE_TYPE=JKS
+REM set SOLR_SSL_KEY_STORE_TYPE=PKCS12
+REM set SOLR_SSL_TRUST_STORE_TYPE=PKCS12
 
 REM Uncomment if you want to override previously defined SSL values for HTTP client
 REM otherwise keep them commented and the above values will automatically be set for HTTP clients
