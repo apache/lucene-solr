@@ -42,6 +42,7 @@ public class LengthGoalBreakIteratorTest extends LuceneTestCase {
   //                      01234567890123456789
   static final String CONTENT = "Aa bb. Cc dd. Ee ff";
   static final String CONTENT2 = "Aa bb Cc dd X Ee ff Gg hh.";
+  static final String CONTENT3 = "Aa bbcc ddxyzee ffgg hh.";
 
   public void testFragmentAlignmentConstructor() throws IOException {
     BreakIterator baseBI = new CustomSeparatorBreakIterator('.');
@@ -71,7 +72,7 @@ public class LengthGoalBreakIteratorTest extends LuceneTestCase {
     assertEquals("almost two sent A",
         "<b>Aa</b> bb.", highlightClosestToLen(CONTENT, query, 7, 0.f));
     assertEquals("almost two sent B",
-        "<b>Aa</b> bb.", highlightClosestToLen(CONTENT, query, 14, 0.5f));
+        "<b>Aa</b> bb.", highlightClosestToLen(CONTENT, query, 15, 0.5f));
     assertEquals("almost two sent C",
         "<b>Aa</b> bb.", highlightClosestToLen(CONTENT, query, 64, 1.f));
     assertEquals("barely two sent A",
@@ -79,7 +80,7 @@ public class LengthGoalBreakIteratorTest extends LuceneTestCase {
     assertEquals("barely two sent B",
         "<b>Aa</b> bb. Cc dd.", highlightClosestToLen(CONTENT, query, 16, 0.5f));
     assertEquals("long goal A",
-        "<b>Aa</b> bb. Cc dd. Ee ff", highlightClosestToLen(CONTENT, query, 17 + random().nextInt(20), 0.f));
+        "<b>Aa</b> bb. Cc dd. Ee ff", highlightClosestToLen(CONTENT, query, 14 + random().nextInt(20), 0.f));
     assertEquals("long goal B",
         "<b>Aa</b> bb. Cc dd. Ee ff", highlightClosestToLen(CONTENT, query, 28 + random().nextInt(20), 0.5f));
     // at some word not at start of passage
@@ -102,6 +103,12 @@ public class LengthGoalBreakIteratorTest extends LuceneTestCase {
         "Aa bb. Cc <b>dd</b>. Ee ff", highlightClosestToLen(CONTENT, query, 17 + random().nextInt(20), 0.5f));
     assertEquals("long goal C",
         "Aa bb. Cc <b>dd</b>.", highlightClosestToLen(CONTENT, query, 17 + random().nextInt(20), 1.f));
+
+    query = query("ddxyzee");
+    assertEquals("test fragment search from the middle of the match; almost including",
+        "<b>ddxyzee</b> ", highlightClosestToLen(CONTENT3, query, 7, 0.5f, 1, ' '));
+    assertEquals("test fragment search from the middle of the match; barely including",
+        "bbcc <b>ddxyzee</b> ffgg ", highlightClosestToLen(CONTENT3, query, 14, 0.5f, 1, ' '));
   }
 
   public void testMinLen() throws IOException {
@@ -120,25 +127,31 @@ public class LengthGoalBreakIteratorTest extends LuceneTestCase {
     assertEquals("barely two sent B",
         " Cc <b>dd</b>. Ee ff", highlightMinLen(CONTENT, query, 2, 0.5f));
     assertEquals("barely two sent C",
-        "Aa bb. Cc <b>dd</b>.", highlightMinLen(CONTENT, query, 6, 1.f));
+        "Aa bb. Cc <b>dd</b>.", highlightMinLen(CONTENT, query, 7, 1.f));
     assertEquals("barely two sent D/a",
         " Cc <b>dd</b>.", highlightMinLen(CONTENT, query, 2, 0.55f));
     assertEquals("barely two sent D/b",
         " Cc <b>dd</b>. Ee ff", highlightMinLen(CONTENT, query, 3, 0.55f));
     assertEquals("barely two sent E/a",
-        " Cc <b>dd</b>. Ee ff", highlightMinLen(CONTENT, query, 9, 0.5f));
+        " Cc <b>dd</b>. Ee ff", highlightMinLen(CONTENT, query, 10, 0.5f));
     assertEquals("barely two sent E/b",
-        "Aa bb. Cc <b>dd</b>. Ee ff", highlightMinLen(CONTENT, query, 9, 0.7f));
+        "Aa bb. Cc <b>dd</b>. Ee ff", highlightMinLen(CONTENT, query, 10, 0.7f));
     assertEquals("barely two sent E/c",
         "Aa bb. Cc <b>dd</b>.", highlightMinLen(CONTENT, query, 9, 0.9f));
+
+    query = query("ddxyzee");
+    assertEquals("test fragment search from the middle of the match; almost including",
+        "<b>ddxyzee</b> ", highlightMinLen(CONTENT3, query, 7, 0.5f, ' '));
+    assertEquals("test fragment search from the middle of the match; barely including",
+        "bbcc <b>ddxyzee</b> ffgg ", highlightMinLen(CONTENT3, query, 8, 0.5f, ' '));
   }
 
   public void testMinLenPrecision() throws IOException {
-    Query queryX = query("x");
+    Query query = query("x");
     assertEquals("test absolute minimal length",
-        "<b>X</b> ", highlightMinLen(CONTENT2, queryX, 1, 0.5f, ' '));
+        "<b>X</b> ", highlightMinLen(CONTENT2, query, 1, 0.5f, ' '));
     assertEquals("test slightly above minimal length",
-        "dd <b>X</b> Ee ", highlightMinLen(CONTENT2, queryX, 4, 0.5f, ' '));
+        "dd <b>X</b> Ee ", highlightMinLen(CONTENT2, query, 4, 0.5f, ' '));
   }
 
   public void testDefaultSummaryTargetLen() throws IOException {
@@ -164,8 +177,12 @@ public class LengthGoalBreakIteratorTest extends LuceneTestCase {
   }
 
   private String highlightClosestToLen(String content, Query query, int lengthGoal, float fragAlign, int maxPassages) throws IOException {
+    return highlightClosestToLen(content, query, lengthGoal, fragAlign, maxPassages, '.');
+  }
+
+  private String highlightClosestToLen(String content, Query query, int lengthGoal, float fragAlign, int maxPassages, char separator) throws IOException {
     UnifiedHighlighter highlighter = new UnifiedHighlighter(null, analyzer);
-    highlighter.setBreakIterator(() -> LengthGoalBreakIterator.createClosestToLength(new CustomSeparatorBreakIterator('.'), lengthGoal, fragAlign));
+    highlighter.setBreakIterator(() -> LengthGoalBreakIterator.createClosestToLength(new CustomSeparatorBreakIterator(separator), lengthGoal, fragAlign));
     return highlighter.highlightWithoutSearcher(FIELD, query, content, maxPassages).toString();
   }
 

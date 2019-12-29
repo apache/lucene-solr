@@ -247,7 +247,7 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
     assertQ("CUSTOM breakiterator",
         req("q", "text:document", "sort", "id asc", "hl", "true", "hl.bs.type", "SEPARATOR","hl.bs.separator","#","hl.fragsize", "-1"),
         "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='This <em>document</em> contains #'");
-    assertQ("different breakiterator", 
+    assertQ("different breakiterator",
         req("q", "text:document", "sort", "id asc", "hl", "true", "hl.bs.type", "SEPARATOR","hl.bs.separator","#","hl.fragsize", "-1"),
         "//lst[@name='highlighting']/lst[@name='104']/arr[@name='text']/str='While the other <em>document</em> contains the same #'");
 
@@ -259,26 +259,29 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
         "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='This <em>document</em> contains #'");
     assertQ("CUSTOM breakiterator with fragsize 90",
         req("q", "text:document", "sort", "id asc", "hl", "true", "hl.bs.type", "SEPARATOR","hl.bs.separator","#","hl.fragsize", "90"),
+        "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='This <em>document</em> contains #'");
+    assertQ("CUSTOM breakiterator with fragsize 100",
+        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.bs.type", "SEPARATOR","hl.bs.separator","#","hl.fragsize", "100"),
         "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='This <em>document</em> contains # special characters, while the other <em>document</em> contains the same #'");
   }
 
   public void testFragsize() {
     // test default is 70... so make a sentence that is a little less (closer to 70 than end of text)
     clearIndex();
-    assertU(adoc("id", "10", "text", "This is a sentence just under seventy chars in length blah blah blah. Next sentence is here."));
+    assertU(adoc("id", "10", "text", "This is a sentence just under seventy chars in length blah blah. Next sentence is here."));
     assertU(commit());
     assertQ("default fragsize",
         req("q", "text:seventy", "hl", "true", "hl.fragsizeIsMinimum", "true"),
-        "//lst[@name='highlighting']/lst[@name='10']/arr[@name='text']/str='This is a sentence just under <em>seventy</em> chars in length blah blah blah. Next sentence is here.'");
+        "//lst[@name='highlighting']/lst[@name='10']/arr[@name='text']/str='This is a sentence just under <em>seventy</em> chars in length blah blah. Next sentence is here.'");
     assertQ("default fragsize",
         req("q", "text:seventy", "hl", "true", "hl.fragsizeIsMinimum", "true", "hl.fragsize", "60"),
-        "//lst[@name='highlighting']/lst[@name='10']/arr[@name='text']/str='This is a sentence just under <em>seventy</em> chars in length blah blah blah. '");
+        "//lst[@name='highlighting']/lst[@name='10']/arr[@name='text']/str='This is a sentence just under <em>seventy</em> chars in length blah blah. '");
     assertQ("smaller fragsize",
         req("q", "text:seventy", "hl", "true"),
-        "//lst[@name='highlighting']/lst[@name='10']/arr[@name='text']/str='This is a sentence just under <em>seventy</em> chars in length blah blah blah. '");
+        "//lst[@name='highlighting']/lst[@name='10']/arr[@name='text']/str='This is a sentence just under <em>seventy</em> chars in length blah blah. '");
     assertQ("default fragsize",
         req("q", "text:seventy", "hl", "true", "hl.fragsize", "90"),
-        "//lst[@name='highlighting']/lst[@name='10']/arr[@name='text']/str='This is a sentence just under <em>seventy</em> chars in length blah blah blah. Next sentence is here.'");
+        "//lst[@name='highlighting']/lst[@name='10']/arr[@name='text']/str='This is a sentence just under <em>seventy</em> chars in length blah blah. Next sentence is here.'");
   }
   
   public void testEncoder() {

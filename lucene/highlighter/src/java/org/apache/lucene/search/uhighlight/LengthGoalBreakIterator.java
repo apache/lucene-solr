@@ -175,7 +175,6 @@ public class LengthGoalBreakIterator extends BreakIterator {
     if (targetIdx - beforeIdx < afterIdx - targetIdx && beforeIdx > matchEndIndex) {
       return currentCache = beforeIdx;
     }
-    // moveToBreak is necessary for when getSummaryPassagesNoHighlight calls next and current() is used
     return currentCache = afterIdx;
   }
 
@@ -208,7 +207,6 @@ public class LengthGoalBreakIterator extends BreakIterator {
     if (afterIdx - targetIdx < targetIdx - beforeIdx && afterIdx < matchStartIndex) {
       return currentCache = afterIdx;
     }
-    // moveToBreak is for consistency
     return currentCache = beforeIdx;
   }
 
