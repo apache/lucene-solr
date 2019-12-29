@@ -478,16 +478,13 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
       if (!doFail) {
         return;
       }
-      StackTraceElement[] trace = new Exception().getStackTrace();
-      for (int i = 0; i < trace.length; i++) {
-        if (SegmentMerger.class.getName().equals(trace[i].getClassName()) && "mergeTerms".equals(trace[i].getMethodName()) && !didFail1) {
-          didFail1 = true;
-          throw new IOException("fake disk full during mergeTerms");
-        }
-        if (LiveDocsFormat.class.getName().equals(trace[i].getClassName()) && "writeLiveDocs".equals(trace[i].getMethodName()) && !didFail2) {
-          didFail2 = true;
-          throw new IOException("fake disk full while writing LiveDocs");
-        }
+      if (callStackContains(SegmentMerger.class, "mergeTerms") && !didFail1) {
+        didFail1 = true;
+        throw new IOException("fake disk full during mergeTerms");
+      }
+      if (callStackContains(LiveDocsFormat.class, "writeLiveDocs") && !didFail2) {
+        didFail2 = true;
+        throw new IOException("fake disk full while writing LiveDocs");
       }
     }
   }

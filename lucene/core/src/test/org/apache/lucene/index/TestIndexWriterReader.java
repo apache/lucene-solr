@@ -35,8 +35,8 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.MockDirectoryWrapper.FakeIOException;
 import org.apache.lucene.store.MockDirectoryWrapper;
+import org.apache.lucene.store.MockDirectoryWrapper.FakeIOException;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.InfoStream;
@@ -1067,17 +1067,14 @@ public class TestIndexWriterReader extends LuceneTestCase {
     dir.failOn(new MockDirectoryWrapper.Failure() {
       @Override
       public void eval(MockDirectoryWrapper dir) throws IOException {
-        StackTraceElement[] trace = new Exception().getStackTrace();
         if (shouldFail.get()) {
-          for (int i = 0; i < trace.length; i++) {
-            if ("getReadOnlyClone".equals(trace[i].getMethodName())) {
-              if (VERBOSE) {
-                System.out.println("TEST: now fail; exc:");
-                new Throwable().printStackTrace(System.out);
-              }
-              shouldFail.set(false);
-              throw new FakeIOException();
+          if (callStackContainsAnyOf("getReadOnlyClone")) {
+            if (VERBOSE) {
+              System.out.println("TEST: now fail; exc:");
+              new Throwable().printStackTrace(System.out);
             }
+            shouldFail.set(false);
+            throw new FakeIOException();
           }
         }
       }

@@ -30,8 +30,8 @@ import org.apache.lucene.index.ConcurrentMergeScheduler;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LogMergePolicy;
-import org.apache.lucene.index.MergePolicy.OneMerge;
 import org.apache.lucene.index.MergePolicy;
+import org.apache.lucene.index.MergePolicy.OneMerge;
 import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.index.MergeTrigger;
 import org.apache.lucene.store.ByteBuffersDirectory;
@@ -89,18 +89,15 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
   private static class FailOnlyOnMerge extends MockDirectoryWrapper.Failure {
     @Override
     public void eval(MockDirectoryWrapper dir)  throws IOException {
-      StackTraceElement[] trace = new Exception().getStackTrace();
-      for (int i = 0; i < trace.length; i++) {
-        if ("doMerge".equals(trace[i].getMethodName())) {
-          IOException ioe = new IOException("now failing during merge");
-          StringWriter sw = new StringWriter();
-          PrintWriter pw = new PrintWriter(sw);
-          ioe.printStackTrace(pw);
-          if (infoStream.isEnabled("IW")) {
-            infoStream.message("IW", "TEST: now throw exc:\n" + sw.toString());
-          }
-          throw ioe;
+      if (callStackContainsAnyOf("doMerge")) {
+        IOException ioe = new IOException("now failing during merge");
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        ioe.printStackTrace(pw);
+        if (infoStream.isEnabled("IW")) {
+          infoStream.message("IW", "TEST: now throw exc:\n" + sw.toString());
         }
+        throw ioe;
       }
     }
   }

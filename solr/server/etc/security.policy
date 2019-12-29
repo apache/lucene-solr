@@ -20,20 +20,23 @@
 // permissions needed for tests to pass, based on properties set by the build system
 // NOTE: if the property is not set, the permission entry is ignored.
 grant {
-  // contain read access to only what we need:
   // 3rd party jar resources (where symlinks are not supported), test-files/ resources
   permission java.io.FilePermission "${common.dir}${/}-", "read";
   permission java.io.FilePermission "${common.dir}${/}..${/}solr${/}-", "read";
-  // 3rd party jar resources (where symlinks are supported)
-  permission java.io.FilePermission "${user.home}${/}.ivy2${/}cache${/}-", "read";
+
   // system jar resources
   permission java.io.FilePermission "${java.home}${/}-", "read";
+
+  // Test launchers (randomizedtesting, etc.)
   permission java.io.FilePermission "${junit4.childvm.cwd}", "read";
   permission java.io.FilePermission "${junit4.childvm.cwd}${/}temp", "read,write,delete";
   permission java.io.FilePermission "${junit4.childvm.cwd}${/}temp${/}-", "read,write,delete";
   permission java.io.FilePermission "${junit4.childvm.cwd}${/}jacoco.db", "write";
   permission java.io.FilePermission "${junit4.tempDir}${/}*", "read,write,delete";
   permission java.io.FilePermission "${clover.db.dir}${/}-", "read,write,delete";
+  // 3rd party jar resources (where symlinks are supported)
+  permission java.io.FilePermission "${user.home}${/}.ivy2${/}cache${/}-", "read";
+
   permission java.io.FilePermission "${tests.linedocsfile}", "read";
   // DirectoryFactoryTest messes with these (wtf?)
   permission java.io.FilePermission "/tmp/inst1/conf/solrcore.properties", "read";
@@ -42,7 +45,7 @@ grant {
   permission java.io.FilePermission "/path/to/solr/home/lib", "read";
 
   permission java.nio.file.LinkPermission "hard";
-  
+
   // all possibilities of accepting/binding/connections on localhost with ports >=1024:
   permission java.net.SocketPermission "localhost:1024-", "accept,listen,connect,resolve";
   permission java.net.SocketPermission "127.0.0.1:1024-", "accept,listen,connect,resolve";
@@ -55,10 +58,10 @@ grant {
   // Basic permissions needed for Lucene to work:
   permission java.util.PropertyPermission "*", "read,write";
 
-  // needed by gson serialization of junit4 runner: TODO clean that up
+  // needed by randomizedtesting runner to identify test methods.
   permission java.lang.reflect.ReflectPermission "suppressAccessChecks";
   permission java.lang.RuntimePermission "accessDeclaredMembers";
-  // needed by junit4 runner to capture sysout/syserr:
+  // needed by certain tests to redirect sysout/syserr:
   permission java.lang.RuntimePermission "setIO";
   // needed by randomized runner to catch failures from other threads:
   permission java.lang.RuntimePermission "setDefaultUncaughtExceptionHandler";
