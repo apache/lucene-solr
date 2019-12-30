@@ -26,6 +26,8 @@ Improvements
 * LUCENE-9110: Backport refactored stack analysis in tests to use generalized
   LuceneTestCase methods (Uwe Schindler)
 
+* LUCENE-9105: UniformSplit postings format detects corrupted index and better handles IO exceptions. (Bruno Roustant)
+
 Optimizations
 ---------------------
 (No changes)
