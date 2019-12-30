@@ -890,7 +890,7 @@ public class Grouping {
       TopDocs topDocs = topCollector.topDocs();
       float maxScore;
       if (withinGroupSort == null || withinGroupSort.equals(Sort.RELEVANCE)) {
-        maxScore = topDocs.scoreDocs.length == 0 ? Float.NaN : topDocs.scoreDocs[0].score;
+        maxScore = topDocs.scoreDocs.length == 0 ? 0.0f : topDocs.scoreDocs[0].score;
       } else if (needScores) {
         // use top-level query to populate the scores
         TopFieldCollector.populateScores(topDocs.scoreDocs, searcher, Grouping.this.query);
