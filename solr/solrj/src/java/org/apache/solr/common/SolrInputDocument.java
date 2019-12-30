@@ -289,7 +289,6 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
   }
 
   @Override
-  @Deprecated
   public int getChildDocumentCount() {
     return hasChildDocuments() ? _childDocuments.size(): 0;
   }

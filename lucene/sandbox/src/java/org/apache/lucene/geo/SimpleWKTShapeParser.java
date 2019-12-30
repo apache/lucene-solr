@@ -114,7 +114,6 @@ public class SimpleWKTShapeParser {
   }
 
   /** Parses a list of points into latitude and longitude arraylists */
-  @SuppressWarnings("rawtypes")
   private static void parseCoordinates(StreamTokenizer stream, ArrayList lats, ArrayList lons)
       throws IOException, ParseException {
     boolean isOpenParen = false;
@@ -138,7 +137,6 @@ public class SimpleWKTShapeParser {
   }
 
   /** parses a single coordinate, w/ optional 3rd dimension */
-  @SuppressWarnings({"unchecked", "rawtypes"})
   private static void parseCoordinate(StreamTokenizer stream, ArrayList lats, ArrayList lons)
       throws IOException, ParseException {
     lons.add(nextNumber(stream));
@@ -154,8 +152,8 @@ public class SimpleWKTShapeParser {
     if (token.equals(EMPTY)) {
       return null;
     }
-    ArrayList<Double> lats = new ArrayList<>();
-    ArrayList<Double> lons = new ArrayList<>();
+    ArrayList<Double> lats = new ArrayList();
+    ArrayList<Double> lons = new ArrayList();
     parseCoordinates(stream, lats, lons);
     double[][] result = new double[lats.size()][2];
     for (int i = 0; i < lats.size(); ++i) {
@@ -170,8 +168,8 @@ public class SimpleWKTShapeParser {
     if (token.equals(EMPTY)) {
       return null;
     }
-    ArrayList<Double> lats = new ArrayList<>();
-    ArrayList<Double> lons = new ArrayList<>();
+    ArrayList<Double> lats = new ArrayList();
+    ArrayList<Double> lons = new ArrayList();
     parseCoordinates(stream, lats, lons);
     return new Line(lats.stream().mapToDouble(i->i).toArray(), lons.stream().mapToDouble(i->i).toArray());
   }
@@ -182,7 +180,7 @@ public class SimpleWKTShapeParser {
     if (token.equals(EMPTY)) {
       return null;
     }
-    ArrayList<Line> lines = new ArrayList<>();
+    ArrayList<Line> lines = new ArrayList();
     lines.add(parseLine(stream));
     while (nextCloserOrComma(stream).equals(COMMA)) {
       lines.add(parseLine(stream));
@@ -191,7 +189,6 @@ public class SimpleWKTShapeParser {
   }
 
   /** parses the hole of a polygon */
-  @SuppressWarnings({"rawtypes", "unchecked"})
   private static Polygon parsePolygonHole(StreamTokenizer stream) throws IOException, ParseException {
     ArrayList<Double> lats = new ArrayList();
     ArrayList<Double> lons = new ArrayList();
@@ -200,7 +197,6 @@ public class SimpleWKTShapeParser {
   }
 
   /** parses a POLYGON */
-  @SuppressWarnings({"rawtypes", "unchecked"})
   private static Polygon parsePolygon(StreamTokenizer stream) throws IOException, ParseException {
     if (nextEmptyOrOpen(stream).equals(EMPTY)) {
       return null;
@@ -226,7 +222,7 @@ public class SimpleWKTShapeParser {
     if (token.equals(EMPTY)) {
       return null;
     }
-    ArrayList<Polygon> polygons = new ArrayList<>();
+    ArrayList<Polygon> polygons = new ArrayList();
     polygons.add(parsePolygon(stream));
     while (nextCloserOrComma(stream).equals(COMMA)) {
       polygons.add(parsePolygon(stream));

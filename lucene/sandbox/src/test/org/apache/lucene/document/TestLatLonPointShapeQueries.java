@@ -74,6 +74,9 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
 
     @Override
     public boolean testBBoxQuery(double minLat, double maxLat, double minLon, double maxLon, Object shape) {
+      if (queryRelation == QueryRelation.CONTAINS) {
+        return false;
+      }
       Point p = (Point)shape;
       double lat = encoder.quantizeY(p.lat);
       double lon = encoder.quantizeX(p.lon);
@@ -90,6 +93,9 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
 
     @Override
     public boolean testComponentQuery(Component2D query, Object shape) {
+      if (queryRelation == QueryRelation.CONTAINS) {
+        return false;
+      }
       Point p =  (Point) shape;
       double lat = encoder.quantizeY(p.lat);
       double lon = encoder.quantizeX(p.lon);

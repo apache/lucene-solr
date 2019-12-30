@@ -23,7 +23,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
-
 import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -128,7 +127,7 @@ public class ReplicaListTransformerTest extends SolrTestCase {
       final Map<String,Object> propMap = new HashMap<String,Object>();
       propMap.put("base_url", url);
       // a skeleton replica, good enough for this test's purposes
-      final Replica replica = new Replica(name, propMap);
+      final Replica replica = new Replica(name, propMap,"c1","s1");
 
       inputs.add(replica);
       if (url.matches(regex)) {

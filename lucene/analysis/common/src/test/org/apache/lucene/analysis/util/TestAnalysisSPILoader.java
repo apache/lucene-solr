@@ -29,7 +29,6 @@ import org.apache.lucene.util.Version;
 
 public class TestAnalysisSPILoader extends LuceneTestCase {
   
-  @SuppressWarnings("serial")
   private Map<String,String> versionArgOnly() {
     return new HashMap<String, String>() {{
       put("luceneMatchVersion", Version.LATEST.toString());

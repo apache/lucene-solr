@@ -33,6 +33,8 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import junit.framework.Assert;
+
 public class TestMultiTermConstantScore extends BaseTestRangeFilter {
 
   /** threshold for comparing floats */
@@ -41,9 +43,8 @@ public class TestMultiTermConstantScore extends BaseTestRangeFilter {
   static Directory small;
   static IndexReader reader;
 
-  @SuppressWarnings("deprecation")
   static public void assertEquals(String m, int e, int a) {
-    junit.framework.Assert.assertEquals(m, e, a);
+    Assert.assertEquals(m, e, a);
   }
 
   @BeforeClass

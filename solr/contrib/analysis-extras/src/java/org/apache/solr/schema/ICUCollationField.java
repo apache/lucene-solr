@@ -96,7 +96,6 @@ public class ICUCollationField extends FieldType {
   /**
    * Setup the field according to the provided parameters
    */
-  @SuppressWarnings("deprecation")
   private void setup(ResourceLoader loader, Map<String,String> args) {
     String custom = args.remove("custom");
     String localeID = args.remove("locale");
@@ -198,7 +197,6 @@ public class ICUCollationField extends FieldType {
    * Read custom rules from a file, and create a RuleBasedCollator
    * The file cannot support comments, as # might be in the rules!
    */
-  @SuppressWarnings("deprecation")
   static Collator createFromRules(String fileName, ResourceLoader loader) {
     InputStream input = null;
     try {

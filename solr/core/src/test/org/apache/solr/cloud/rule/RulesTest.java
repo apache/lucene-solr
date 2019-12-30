@@ -18,6 +18,7 @@ package org.apache.solr.cloud.rule;
 
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.List;
@@ -82,8 +83,9 @@ public class RulesTest extends SolrCloudTestCase {
                  5, cluster.getJettySolrRunners().size());
     
     final long minGB = (random().nextBoolean() ? 1 : 0);
+    final Path toTest = Paths.get("").toAbsolutePath();
     assumeTrue("doIntegrationTest needs minGB="+minGB+" usable disk space",
-        ImplicitSnitch.getUsableSpaceInGB(Paths.get("/")) > minGB);
+        ImplicitSnitch.getUsableSpaceInGB(toTest) > minGB);
 
     String rulesColl = "rulesColl";
     CollectionAdminRequest.createCollectionWithImplicitRouter(rulesColl, "conf", "shard1", 2)
@@ -323,13 +325,14 @@ public class RulesTest extends SolrCloudTestCase {
 
   @Test
   public void testModifyColl() throws Exception {
+    final Path toTest = Paths.get("").toAbsolutePath();
 
     final long minGB1 = (random().nextBoolean() ? 1 : 0);
     final long minGB2 = 5;
     assumeTrue("testModifyColl needs minGB1="+minGB1+" usable disk space",
-        ImplicitSnitch.getUsableSpaceInGB(Paths.get("/")) > minGB1);
+        ImplicitSnitch.getUsableSpaceInGB(toTest) > minGB1);
     assumeTrue("testModifyColl needs minGB2="+minGB2+" usable disk space",
-        ImplicitSnitch.getUsableSpaceInGB(Paths.get("/")) > minGB2);
+        ImplicitSnitch.getUsableSpaceInGB(toTest) > minGB2);
 
     String rulesColl = "modifyColl";
     CollectionAdminRequest.createCollection(rulesColl, "conf", 1, 2)

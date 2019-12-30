@@ -110,7 +110,6 @@ public class LTRFeatureLoggerTransformerFactory extends TransformerFactory {
     this.csvFeatureSeparator = csvFeatureSeparator.charAt(0);
   }
 
-  @SuppressWarnings("unchecked")
   @Override
   public void init(@SuppressWarnings("rawtypes") NamedList args) {
     super.init(args);

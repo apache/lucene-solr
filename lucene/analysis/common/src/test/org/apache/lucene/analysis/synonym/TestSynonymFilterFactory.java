@@ -30,7 +30,6 @@ import org.apache.lucene.util.Version;
 public class TestSynonymFilterFactory extends BaseTokenStreamFactoryTestCase {
 
   /** checks for synonyms of "GB" in synonyms.txt */
-  @SuppressWarnings("deprecation")
   private void checkSolrSynonyms(TokenFilterFactory factory) throws Exception {
     Reader reader = new StringReader("GB");
     TokenStream stream = whitespaceMockTokenizer(reader);
@@ -42,7 +41,6 @@ public class TestSynonymFilterFactory extends BaseTokenStreamFactoryTestCase {
   }
 
   /** checks for synonyms of "second" in synonyms-wordnet.txt */
-  @SuppressWarnings("deprecation")
   private void checkWordnetSynonyms(TokenFilterFactory factory) throws Exception {
     Reader reader = new StringReader("second");
     TokenStream stream = whitespaceMockTokenizer(reader);

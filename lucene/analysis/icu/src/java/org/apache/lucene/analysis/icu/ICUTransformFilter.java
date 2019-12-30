@@ -73,7 +73,6 @@ public final class ICUTransformFilter extends TokenFilter {
    * @param input {@link TokenStream} to filter.
    * @param transform Transliterator to transform the text.
    */
-  @SuppressWarnings("deprecation")
   public ICUTransformFilter(TokenStream input, Transliterator transform) {
     super(input);
     this.transform = transform;

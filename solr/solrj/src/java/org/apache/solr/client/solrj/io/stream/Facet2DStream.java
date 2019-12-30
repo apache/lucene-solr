@@ -115,6 +115,11 @@ public class Facet2DStream extends TupleStream implements Expressible {
         params.add(namedParam.getName(), namedParam.getParameter().toString().trim());
       }
     }
+
+    if(params.get("q") == null) {
+      params.set("q", "*:*");
+    }
+
     Bucket x = null;
     if (bucketXExpression != null) {
       if (bucketXExpression.getParameter() instanceof StreamExpressionValue) {
@@ -148,8 +153,8 @@ public class Facet2DStream extends TupleStream implements Expressible {
     String bucketSortString = metric.getIdentifier() + " desc";
     FieldComparator bucketSort = parseBucketSort(bucketSortString, x, y);
 
-    int dimensionX = 0;
-    int dimensionY = 0;
+    int dimensionX = 10;
+    int dimensionY = 10;
     if (dimensionsExpression != null) {
       if (dimensionsExpression.getParameter() instanceof StreamExpressionValue) {
         String[] strDimensions = ((StreamExpressionValue) dimensionsExpression.getParameter()).getValue().split(",");

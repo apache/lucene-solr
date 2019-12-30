@@ -228,6 +228,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
   @Override
   public int addDoc(AddUpdateCommand cmd) throws IOException {
+    TestInjection.injectDirectUpdateLatch();
     try {
       return addDoc0(cmd);
     } catch (SolrException e) {
@@ -414,6 +415,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   // we don't return the number of docs deleted because it's not always possible to quickly know that info.
   @Override
   public void delete(DeleteUpdateCommand cmd) throws IOException {
+    TestInjection.injectDirectUpdateLatch();
     deleteByIdCommands.increment();
     deleteByIdCommandsCumulative.mark();
 
@@ -477,6 +479,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
   // we don't return the number of docs deleted because it's not always possible to quickly know that info.
   @Override
   public void deleteByQuery(DeleteUpdateCommand cmd) throws IOException {
+    TestInjection.injectDirectUpdateLatch();
     deleteByQueryCommands.increment();
     deleteByQueryCommandsCumulative.mark();
     boolean madeIt=false;
@@ -542,6 +545,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
   @Override
   public int mergeIndexes(MergeIndexesCommand cmd) throws IOException {
+    TestInjection.injectDirectUpdateLatch();
     mergeIndexesCommands.mark();
     int rc;
 
@@ -605,6 +609,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
 
   @Override
   public void commit(CommitUpdateCommand cmd) throws IOException {
+    TestInjection.injectDirectUpdateLatch();
     if (cmd.prepareCommit) {
       prepareCommit(cmd);
       return;
@@ -754,6 +759,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
    */
   @Override
   public void rollback(RollbackUpdateCommand cmd) throws IOException {
+    TestInjection.injectDirectUpdateLatch();
     if (core.getCoreContainer().isZooKeeperAware()) {
       throw new UnsupportedOperationException("Rollback is currently not supported in SolrCloud mode. (SOLR-4895)");
     }

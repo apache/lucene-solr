@@ -254,7 +254,6 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   }
 
   @Override
-  @SuppressWarnings("deprecation")
   public ClusterState getClusterState() throws IOException {
     for (String nodeName: liveNodes) {
       String baseUrl = Utils.getBaseUrlForNodeName(nodeName, urlScheme);
@@ -276,7 +275,6 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   }
 
   @Override
-  @SuppressWarnings("deprecation")
   public Map<String, Object> getClusterProperties() {
     for (String nodeName : liveNodes) {
       String baseUrl = Utils.getBaseUrlForNodeName(nodeName, urlScheme);

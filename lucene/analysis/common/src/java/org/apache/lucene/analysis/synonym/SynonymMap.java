@@ -39,6 +39,7 @@ import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.fst.ByteSequenceOutputs;
 import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.Util;
 
 /**
@@ -210,12 +211,11 @@ public class SynonymMap {
     /**
      * Builds an {@link SynonymMap} and returns it.
      */
-    @SuppressWarnings("deprecation")
     public SynonymMap build() throws IOException {
       ByteSequenceOutputs outputs = ByteSequenceOutputs.getSingleton();
       // TODO: are we using the best sharing options?
-      org.apache.lucene.util.fst.Builder<BytesRef> builder = 
-        new org.apache.lucene.util.fst.Builder<>(FST.INPUT_TYPE.BYTE4, outputs);
+      FSTCompiler<BytesRef> fstCompiler =
+        new FSTCompiler<>(FST.INPUT_TYPE.BYTE4, outputs);
       
       BytesRefBuilder scratch = new BytesRefBuilder();
       ByteArrayDataOutput scratchOutput = new ByteArrayDataOutput();
@@ -279,10 +279,10 @@ public class SynonymMap {
         
         scratch.setLength(scratchOutput.getPosition());
         //System.out.println("  add input=" + input + " output=" + scratch + " offset=" + scratch.offset + " length=" + scratch.length + " count=" + count);
-        builder.add(Util.toUTF32(input, scratchIntsRef), scratch.toBytesRef());
+        fstCompiler.add(Util.toUTF32(input, scratchIntsRef), scratch.toBytesRef());
       }
       
-      FST<BytesRef> fst = builder.finish();
+      FST<BytesRef> fst = fstCompiler.compile();
       return new SynonymMap(fst, words, maxHorizontalContext);
     }
   }

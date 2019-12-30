@@ -51,7 +51,6 @@ public class TestModelManagerPersistence extends TestRerankBase {
   }
 
   // executed first
-  @SuppressWarnings("unchecked")
   @Test
   public void testFeaturePersistence() throws Exception {
 

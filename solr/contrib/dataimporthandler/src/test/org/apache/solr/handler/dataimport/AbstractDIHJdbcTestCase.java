@@ -24,7 +24,7 @@ import java.sql.Statement;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.junit.Assert;
+import junit.framework.Assert;
 
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.junit.After;

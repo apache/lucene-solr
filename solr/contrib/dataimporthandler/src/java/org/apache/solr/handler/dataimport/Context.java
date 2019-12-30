@@ -102,7 +102,6 @@ public abstract class Context {
    * @see org.apache.solr.handler.dataimport.DataSource
    * @see #getDataSource(String)
    */
-  @SuppressWarnings("rawtypes")
   public abstract DataSource getDataSource();
 
   /**
@@ -113,7 +112,6 @@ public abstract class Context {
    * @return a new DataSource instance
    * @see org.apache.solr.handler.dataimport.DataSource
    */
-  @SuppressWarnings("rawtypes")
   public abstract DataSource getDataSource(String name);
 
   /**

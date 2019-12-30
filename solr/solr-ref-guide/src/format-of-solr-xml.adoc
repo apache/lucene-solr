@@ -100,7 +100,7 @@ Sets the maximum number of clauses allowed in any boolean query.
 +
 This global limit provides a safety constraint on the number of clauses allowed in any boolean queries against any collection -- regardless of whether those clauses were explicitly specified in a query string, or were the result of query expansion/re-writing from a more complex type of query based on the terms in the index.
 +
-In default configurations this property uses the value of the `solr.max.booleanClauses` system property if specified.  This is the same system property used in the default configset for the <<query-settings-in-solrconfig#maxbooleanclauses,`<maxBooleanClauses>` setting of `solrconfig.xml`>> making it easy for Solr administrators to increase both values (in all collections) without needing to search through and update all of their configs.
+In default configurations this property uses the value of the `solr.max.booleanClauses` system property if specified.  This is the same system property used in the `_default` configset for the <<query-settings-in-solrconfig#maxbooleanclauses,`<maxBooleanClauses>` setting of `solrconfig.xml`>> making it easy for Solr administrators to increase both values (in all collections) without needing to search through and update all of their configs.
 +
 [source,xml]
 ----
@@ -216,7 +216,9 @@ A NamedList specifying replica routing preference configuration. This may be use
   </lst>
 </shardHandlerFactory>
 ----
-Replica routing may also be specified (overriding defaults) per-request, via the `shards.preference` request parameter. If a request contains both dividend param and hash param, dividend param takes priority for routing. For configuring `stable` routing, the `hash` param implicitly defaults to a hash of the String value of the main query param (i.e., `q`). `dividend` param must be configured explicitly; there is no implicit default. If only `dividend` routing is desired, `hash` may be explicitly set to the empty string, entirely disabling implicit hash-based routing.
+Replica routing may also be specified (overriding defaults) per-request, via the `shards.preference` request parameter. If a request contains both `dividend` and `hash`, `dividend` takes priority for routing. For configuring `stable` routing, the `hash` parameter implicitly defaults to a hash of the String value of the main query parameter (i.e., `q`).
++
+The `dividend` parameter must be configured explicitly; there is no implicit default. If only `dividend` routing is desired, `hash` may be explicitly set to the empty string, entirely disabling implicit hash-based routing.
 
 === The <metrics> Element
 

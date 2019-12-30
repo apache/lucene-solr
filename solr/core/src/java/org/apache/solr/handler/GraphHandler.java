@@ -19,6 +19,7 @@ package org.apache.solr.handler;
 
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,7 +28,9 @@ import java.util.Map.Entry;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.graph.Traversal;
-import org.apache.solr.client.solrj.io.stream.*;
+import org.apache.solr.client.solrj.io.stream.ExceptionStream;
+import org.apache.solr.client.solrj.io.stream.StreamContext;
+import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.stream.expr.DefaultStreamFactory;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
@@ -39,7 +42,12 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
+<<<<<<< HEAD
+=======
+import org.apache.solr.core.SolrConfig;
+>>>>>>> ca6bd364fb0a5a454b2f92d8a78f35a8b87339f8
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.handler.StreamHandler.ExpressibleHolder;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
@@ -99,20 +107,29 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
     }
 
     // This pulls all the overrides and additions from the config
+    List<PluginInfo> pluginInfos = core.getSolrConfig().getPluginInfos(Expressible.class.getName());
+    
+    // Check deprecated approach.
     Object functionMappingsObj = initArgs.get("streamFunctions");
     if(null != functionMappingsObj){
       log.warn("solrconfig.xml: <streamFunctions> is deprecated for adding additional streaming functions to GraphHandler.");
       NamedList<?> functionMappings = (NamedList<?>)functionMappingsObj;
-      for(Entry<String,?> functionMapping : functionMappings){
-        Class<? extends Expressible> clazz = core.getResourceLoader().findClass((String)functionMapping.getValue(),
-        Expressible.class);
-        streamFactory.withFunctionName(functionMapping.getKey(), clazz);
+      for(Entry<String,?> functionMapping : functionMappings) {
+        String key = functionMapping.getKey();
+        PluginInfo pluginInfo = new PluginInfo(key, Collections.singletonMap("class", functionMapping.getValue()));
+        pluginInfos.add(pluginInfo);
       }
     }
-    List<PluginInfo> pluginInfos = core.getSolrConfig().getPluginInfos(Expressible.class.getName());
+    
     for (PluginInfo pluginInfo : pluginInfos) {
-      Class<? extends Expressible> clazz = core.getMemClassLoader().findClass(pluginInfo.className, Expressible.class);
-      streamFactory.withFunctionName(pluginInfo.name, clazz);
+      if (pluginInfo.pkgName != null) {
+        ExpressibleHolder holder = new ExpressibleHolder(pluginInfo, core, SolrConfig.classVsSolrPluginInfo.get(Expressible.class));
+        streamFactory.withFunctionName(pluginInfo.name,
+            () -> holder.getClazz());
+      } else {
+        Class<? extends Expressible> clazz = core.getMemClassLoader().findClass(pluginInfo.className, Expressible.class);
+        streamFactory.withFunctionName(pluginInfo.name, clazz);
+      }
     }
   }
 

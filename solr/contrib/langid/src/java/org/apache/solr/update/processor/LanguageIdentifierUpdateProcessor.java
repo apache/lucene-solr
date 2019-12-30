@@ -16,6 +16,16 @@
  */
 package org.apache.solr.update.processor;
 
+import java.io.IOException;
+import java.io.Reader;
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.regex.Pattern;
+
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
@@ -28,16 +38,6 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.update.AddUpdateCommand;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.io.Reader;
-import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.regex.Pattern;
 
 
 /**
@@ -229,7 +229,7 @@ public abstract class LanguageIdentifierUpdateProcessor extends UpdateRequestPro
       }
     } else {
       // langField is set, we sanity check it against whitelist and fallback
-      docLang = resolveLanguage((String) doc.getFieldValue(langField), fallbackLang);
+      docLang = resolveLanguage(doc.getFieldValue(langField).toString(), fallbackLang);
       docLangs.add(docLang);
       log.debug("Field "+langField+" already contained value "+docLang+", not overwriting.");
     }

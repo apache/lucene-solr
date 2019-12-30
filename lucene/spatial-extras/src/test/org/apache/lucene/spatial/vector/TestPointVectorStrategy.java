@@ -33,7 +33,6 @@ import org.locationtech.spatial4j.context.SpatialContext;
 import org.locationtech.spatial4j.shape.Circle;
 import org.locationtech.spatial4j.shape.Point;
 
-@SuppressWarnings("deprecation")
 public class TestPointVectorStrategy extends StrategyTestCase {
 
   @Before

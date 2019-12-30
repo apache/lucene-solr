@@ -33,9 +33,7 @@ import org.apache.hadoop.fs.permission.FsPermission;
 import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.hadoop.hdfs.protocol.HdfsConstants.SafeModeAction;
-import org.apache.lucene.util.QuickPatchThreadsFilter;
 import org.apache.lucene.util.TestUtil;
-import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
@@ -59,8 +57,6 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.cloud.ZkStateReader.BASE_URL_PROP;
 
 @ThreadLeakFilters(defaultFilters = true, filters = {
-    SolrIgnoredThreadsFilter.class,
-    QuickPatchThreadsFilter.class,
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
 @SolrTestCaseJ4.SuppressSSL     // Currently unknown why SSL does not work with this test

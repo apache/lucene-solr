@@ -50,6 +50,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.data.Stat;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -88,6 +89,11 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     // disable .scheduled_maintenance (once it exists)
     CloudTestUtils.waitForTriggerToBeScheduled(cluster.getOpenOverseer().getSolrCloudManager(), ".scheduled_maintenance");
     CloudTestUtils.suspendTrigger(cluster.getOpenOverseer().getSolrCloudManager(), ".scheduled_maintenance");
+  }
+
+  @AfterClass
+  public static void cleanUpAfterClass() throws Exception {
+    cloudManager = null;
   }
 
   private static CountDownLatch getTriggerFiredLatch() {

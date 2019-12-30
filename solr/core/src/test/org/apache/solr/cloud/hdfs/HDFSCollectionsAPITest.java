@@ -19,8 +19,6 @@ package org.apache.solr.cloud.hdfs;
 
 import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
-import org.apache.lucene.util.QuickPatchThreadsFilter;
-import org.apache.solr.SolrIgnoredThreadsFilter;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -34,8 +32,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 @ThreadLeakFilters(defaultFilters = true, filters = {
-    SolrIgnoredThreadsFilter.class,
-    QuickPatchThreadsFilter.class,
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
 public class HDFSCollectionsAPITest extends SolrCloudTestCase {
@@ -44,8 +40,7 @@ public class HDFSCollectionsAPITest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupClass() throws Exception {
-    configureCluster(2)
-        .configure();
+    configureCluster(2).configure();
 
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
 
@@ -58,6 +53,7 @@ public class HDFSCollectionsAPITest extends SolrCloudTestCase {
   public static void teardownClass() throws Exception {
     try {
       shutdownCluster(); // need to close before the MiniDFSCluster
+      cluster = null;
     } finally {
       try {
         HdfsTestUtil.teardownClass(dfsCluster);

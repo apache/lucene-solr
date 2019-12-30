@@ -44,6 +44,7 @@ public abstract class AbstractDefaultValueUpdateProcessorFactory
 
   protected String fieldName = null;
 
+  @SuppressWarnings("unchecked")
   @Override
   public void init(NamedList args) {
 

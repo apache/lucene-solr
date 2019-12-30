@@ -166,7 +166,7 @@ public class NodePreferenceRulesComparator implements Comparator<Object> {
       return false;
     }
     final String s = ((Replica)o).getType().toString();
-    return s.equals(preferred);
+    return s.equalsIgnoreCase(preferred);
   }
 
   public List<PreferenceRule> getSortRules() {

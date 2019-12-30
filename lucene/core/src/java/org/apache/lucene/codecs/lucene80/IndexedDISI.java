@@ -239,7 +239,7 @@ final class IndexedDISI extends DocIdSetIterator {
     return jumps;
   }
 
-  // Flushes the offet & index jump-table for blocks. This should be the last data written to out
+  // Flushes the offset & index jump-table for blocks. This should be the last data written to out
   // This method returns the blockCount for the blocks reachable for the jump_table or -1 for no jump-table
   private static short flushBlockJumps(int[] jumps, int blockCount, IndexOutput out, long origo) throws IOException {
     if (blockCount == 2) { // Jumps with a single real entry + NO_MORE_DOCS is just wasted space so we ignore that

@@ -21,13 +21,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
-import static org.apache.solr.common.util.ByteArrayUtf8CharSequence.convertCharSeq;
-
 /**
  *
  * @since solr 1.3
  */
-@SuppressWarnings({"unchecked", "rawtypes"})
 public class SolrInputField implements Iterable<Object>, Serializable
 {
   String name;
@@ -64,6 +61,7 @@ public class SolrInputField implements Iterable<Object>, Serializable
    * Add values to a field.  If the added value is a collection, each value
    * will be added individually.
    */
+  @SuppressWarnings("unchecked")
   public void addValue(Object v) {
     if( value == null ) {
       if ( v instanceof Collection ) {
@@ -107,38 +105,8 @@ public class SolrInputField implements Iterable<Object>, Serializable
 
   //---------------------------------------------------------------
   //---------------------------------------------------------------
-  
+
   public Object getFirstValue() {
-    if( value instanceof Collection ) {
-      Collection c = (Collection<Object>)value;
-      if( c.size() > 0 ) {
-        return convertCharSeq(c.iterator().next());
-      }
-      return null;
-    }
-    return convertCharSeq(value);
-  }
-
-  /**
-   * @return the value for this field.  If the field has multiple values, this
-   * will be a collection.
-   */
-  public Object getValue() {
-    return convertCharSeq(value);
-  }
-
-
-  /**
-   * Return a value as is without converting and CharSequence Objects
-   */
-  public Object getRawValue() {
-    return value;
-  }
-
-  /**
-   * Return the first value as is without converting and CharSequence Objects
-   */
-  public Object getFirstRawValue() {
     if (value instanceof Collection) {
       Collection c = (Collection<Object>) value;
       if (c.size() > 0) {
@@ -150,16 +118,25 @@ public class SolrInputField implements Iterable<Object>, Serializable
   }
 
   /**
+   * @return the value for this field.  If the field has multiple values, this
+   * will be a collection.
+   */
+  public Object getValue() {
+    return value;
+  }
+
+  /**
    * @return the values for this field.  This will return a collection even
    * if the field is not multi-valued
    */
+  @SuppressWarnings("unchecked")
   public Collection<Object> getValues() {
     if (value instanceof Collection) {
-      return convertCharSeq((Collection<Object>) value);
+      return (Collection<Object>) value;
     }
     if( value != null ) {
       Collection<Object> vals = new ArrayList<>(1);
-      vals.add(convertCharSeq(value));
+      vals.add(value);
       return vals;
     }
     return null;
@@ -187,33 +164,8 @@ public class SolrInputField implements Iterable<Object>, Serializable
   }
 
   @Override
+  @SuppressWarnings("unchecked")
   public Iterator<Object> iterator(){
-    if( value instanceof Collection ) {
-      return (convertCharSeq ((Collection)value)).iterator();
-    }
-    return new Iterator<Object>() {
-      boolean nxt = (value!=null);
-
-      @Override
-      public boolean hasNext() {
-        return nxt;
-      }
-
-      @Override
-      public Object next() {
-        nxt = false;
-        return convertCharSeq(value);
-      }
-
-      @Override
-      public void remove() {
-        throw new UnsupportedOperationException();
-      }
-    };
-
-  }
-
-  public Iterator<Object> getRawIterator() {
     if( value instanceof Collection ) {
       return ((Collection)value).iterator();
     }

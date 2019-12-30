@@ -23,12 +23,12 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.security.HadoopAuthPlugin;
@@ -50,7 +50,7 @@ public class TestImpersonationWithHadoopAuth  extends SolrCloudTestCase {
   @SuppressWarnings("unchecked")
   @BeforeClass
   public static void setupClass() throws Exception {
-    assumeFalse("Hadoop does not work on Windows", Constants.WINDOWS);
+    HdfsTestUtil.checkAssumptions();
 
     InetAddress loopback = InetAddress.getLoopbackAddress();
     Path securityJsonPath = TEST_PATH().resolve("security").resolve("hadoop_simple_auth_with_delegation.json");
@@ -63,7 +63,7 @@ public class TestImpersonationWithHadoopAuth  extends SolrCloudTestCase {
     proxyUserConfigs.put("proxyuser.noGroups.hosts", "*");
     proxyUserConfigs.put("proxyuser.anyHostAnyUser.hosts", "*");
     proxyUserConfigs.put("proxyuser.anyHostAnyUser.groups", "*");
-    proxyUserConfigs.put("proxyuser.wrongHost.hosts", "1.1.1.1.1.1");
+    proxyUserConfigs.put("proxyuser.wrongHost.hosts", DEAD_HOST_1);
     proxyUserConfigs.put("proxyuser.wrongHost.groups", "*");
     proxyUserConfigs.put("proxyuser.noHosts.groups", "*");
     proxyUserConfigs.put("proxyuser.localHostAnyGroup.hosts",

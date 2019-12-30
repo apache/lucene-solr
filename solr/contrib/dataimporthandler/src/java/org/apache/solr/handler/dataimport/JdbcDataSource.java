@@ -170,7 +170,6 @@ public class JdbcDataSource extends
     }
 
     return factory = new Callable<Connection>() {
-      @SuppressWarnings("unchecked")
       @Override
       public Connection call() throws Exception {
         log.info("Creating a connection for entity "

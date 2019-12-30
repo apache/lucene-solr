@@ -18,12 +18,15 @@ package org.apache.solr.handler;
 
 import java.io.IOException;
 import java.util.ArrayList;
+
+import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.analytics.AnalyticsDriver;
 import org.apache.solr.analytics.AnalyticsRequestManager;
 import org.apache.solr.analytics.AnalyticsRequestParser;
 import org.apache.solr.analytics.ExpressionFactory;
+import org.apache.solr.analytics.TimeExceededStubException;
 import org.apache.solr.analytics.stream.AnalyticsShardResponseParser;
 import org.apache.solr.client.solrj.io.ModelCache;
 import org.apache.solr.client.solrj.io.SolrClientCache;
@@ -43,6 +46,7 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SolrQueryTimeoutImpl;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
@@ -74,6 +78,11 @@ public class AnalyticsHandler extends RequestHandlerBase implements SolrCoreAwar
   }
 
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+   
+    long timeAllowed = req.getParams().getLong(CommonParams.TIME_ALLOWED, -1L);
+    if (timeAllowed >= 0L) {
+      SolrQueryTimeoutImpl.set(timeAllowed);
+    }
     try {
       DocSet docs;
       try {
@@ -95,6 +104,10 @@ public class AnalyticsHandler extends RequestHandlerBase implements SolrCoreAwar
       rsp.addResponse(new AnalyticsResponse(manager));
     } catch (SolrException e) {
       rsp.addResponse(new AnalyticsResponse(e));
+    } catch (ExitableDirectoryReader.ExitingReaderException e) {
+      rsp.addResponse(new AnalyticsResponse(new TimeExceededStubException(e)));
+    } finally {
+      SolrQueryTimeoutImpl.reset();
     }
   }
 

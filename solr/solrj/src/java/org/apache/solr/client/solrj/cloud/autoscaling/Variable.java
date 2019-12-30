@@ -237,7 +237,6 @@ public interface Variable {
     DISKTYPE;
 
     public final String tagName;
-    @SuppressWarnings("rawtypes")
     public final Class type;
     public Meta meta;
 
@@ -253,7 +252,6 @@ public interface Variable {
     final Variable impl;
 
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     Type() {
       try {
         meta = Type.class.getField(name()).getAnnotation(Meta.class);
@@ -377,7 +375,6 @@ public interface Variable {
   @interface Meta {
     String name();
 
-    @SuppressWarnings("rawtypes")
     Class type();
 
     String[] associatedPerNodeValue() default NULL;
@@ -402,7 +399,6 @@ public interface Variable {
 
     String metricsKey() default NULL;
 
-    @SuppressWarnings("rawtypes")
     Class implementation() default void.class;
 
     ComputedType[] computedValues() default ComputedType.NULL;

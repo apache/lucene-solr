@@ -116,7 +116,6 @@ public class CompositeStrategyTest extends RandomSpatialOpStrategyTestCase {
   }
 
   //TODO move up
-  @SuppressWarnings("deprecation")
   private Shape randomCircle() {
     final Point point = randomPoint();
     //TODO pick using gaussian

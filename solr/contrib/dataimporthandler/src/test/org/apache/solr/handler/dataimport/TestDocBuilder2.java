@@ -36,7 +36,6 @@ import java.nio.charset.StandardCharsets;
  *
  * @since solr 1.3
  */
-@SuppressWarnings({"unchecked", "rawtypes"})
 public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
 
   @BeforeClass
@@ -45,6 +44,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   public void testSingleEntity() throws Exception {
     List rows = new ArrayList();
     rows.add(createMap("id", "1", "desc", "one"));
@@ -60,6 +60,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   public void testSingleEntity_CaseInsensitive() throws Exception {
     List rows = new ArrayList();
     rows.add(createMap("id", "1", "desC", "one"));
@@ -87,6 +88,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   public void testDynamicFields() throws Exception {
     List rows = new ArrayList();
     rows.add(createMap("id", "1", "desc", "one"));
@@ -99,6 +101,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   public void testRequestParamsAsVariable() throws Exception {
     List rows = new ArrayList();
     rows.add(createMap("id", "101", "desc", "ApacheSolr"));
@@ -113,6 +116,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   public void testDynamicFieldNames() throws Exception {
     List rows = new ArrayList();
     rows.add(createMap("mypk", "101", "text", "ApacheSolr"));
@@ -126,6 +130,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   public void testRequestParamsAsFieldName() throws Exception {
     List rows = new ArrayList();
     rows.add(createMap("mypk", "101", "text", "ApacheSolr"));
@@ -140,6 +145,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   public void testContext() throws Exception {
     List rows = new ArrayList();
     rows.add(createMap("id", "1", "desc", "one"));
@@ -149,6 +155,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   public void testSkipDoc() throws Exception {
     List rows = new ArrayList();
     rows.add(createMap("id", "1", "desc", "one"));
@@ -162,6 +169,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   public void testSkipRow() throws Exception {
     List rows = new ArrayList();
     rows.add(createMap("id", "1", "desc", "one"));
@@ -196,6 +204,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   public void testStopTransform() throws Exception {
     List rows = new ArrayList();
     rows.add(createMap("id", "1", "desc", "one"));
@@ -210,6 +219,7 @@ public class TestDocBuilder2 extends AbstractDataImportHandlerTestCase {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   public void testDeleteDocs() throws Exception {
     List rows = new ArrayList();
     rows.add(createMap("id", "1", "desc", "one"));

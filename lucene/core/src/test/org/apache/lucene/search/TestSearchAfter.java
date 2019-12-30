@@ -281,7 +281,6 @@ public class TestSearchAfter extends LuceneTestCase {
     assertEquals(all.scoreDocs.length, pageStart);
   }
 
-  @SuppressWarnings("deprecation")
   void assertPage(int pageStart, TopDocs all, TopDocs paged) throws IOException {
     assertEquals(all.totalHits.value, paged.totalHits.value);
     for (int i = 0; i < paged.scoreDocs.length; i++) {

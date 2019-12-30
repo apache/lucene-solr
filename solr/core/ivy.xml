@@ -96,7 +96,6 @@
     <dependency org="org.apache.kerby" name="kerby-pkix" rev="${/org.apache.kerby/kerby-pkix}" conf="compile.hadoop"/>
 
     <!-- Hadoop DfsMiniCluster Dependencies-->
-    <dependency org="org.apache.hadoop" name="hadoop-minicluster" rev="${/org.apache.hadoop/hadoop-minicluster}" conf="test.DfsMiniCluster" />
     <dependency org="org.apache.hadoop" name="hadoop-common" rev="${/org.apache.hadoop/hadoop-common}" conf="test.DfsMiniCluster">
       <artifact name="hadoop-common" type="test" ext="jar" maven:classifier="tests" />
     </dependency>
@@ -104,11 +103,9 @@
       <artifact name="hadoop-hdfs" ext="jar" />
       <artifact name="hadoop-hdfs" type="test" ext="jar" maven:classifier="tests" />
     </dependency>
-    <dependency org="com.sun.jersey" name="jersey-core" rev="${/com.sun.jersey/jersey-core}" conf="test.DfsMiniCluster"/>
-    <dependency org="com.sun.jersey" name="jersey-server" rev="${/com.sun.jersey/jersey-server}" conf="test.DfsMiniCluster"/>
     <dependency org="com.sun.jersey" name="jersey-servlet" rev="${/com.sun.jersey/jersey-servlet}" conf="test.DfsMiniCluster"/>
     <dependency org="commons-logging" name="commons-logging" rev="${/commons-logging/commons-logging}" conf="test.DfsMiniCluster"/>
-    <dependency org="io.netty" name="netty-all" rev="${/io.netty/netty-all}" conf="test.DfsMiniCluster"/>
+    <dependency org="org.apache.commons" name="commons-compress" rev="${/org.apache.commons/commons-compress}" conf="test.DfsMiniCluster"/>
     <dependency org="org.apache.commons" name="commons-text" rev="${/org.apache.commons/commons-text}" conf="test.DfsMiniCluster"/>
 
     <!-- Hadoop MiniKdc Dependencies-->

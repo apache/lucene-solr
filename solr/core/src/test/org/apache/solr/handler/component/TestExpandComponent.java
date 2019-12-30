@@ -352,6 +352,19 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
         "/response/lst[@name='expanded']/result[@name='2000.0']/doc[1]/str[@name='id'][.='7']",
         "count(//*[@name='score'])=0"
     );
+
+    // Support expand enabled without previous collapse
+    assertQ(req("q", "type_s:child", "sort", group+" asc, test_l desc", "defType", "edismax",
+        "expand", "true", "expand.q", "type_s:parent", "expand.field", group),
+        "*[count(/response/result/doc)=4]",
+        "*[count(/response/lst[@name='expanded']/result)=2]",
+        "/response/result/doc[1]/str[@name='id'][.='7']",
+        "/response/result/doc[2]/str[@name='id'][.='2']",
+        "/response/result/doc[3]/str[@name='id'][.='8']",
+        "/response/result/doc[4]/str[@name='id'][.='6']",
+        "/response/lst[@name='expanded']/result[@name='1"+floatAppend+"']/doc[1]/str[@name='id'][.='1']",
+        "/response/lst[@name='expanded']/result[@name='2"+floatAppend+"']/doc[1]/str[@name='id'][.='5']"
+    );
   }
 
   @Test
@@ -379,8 +392,15 @@ public class TestExpandComponent extends SolrTestCaseJ4 {
     ignoreException("Can't determine a Sort Order");
     ignoreException("Expand not supported for fieldType:'text'");
 
+    // expand with grouping
+    SolrException e = expectThrows(SolrException.class, () -> {
+      h.query(req("q", "*:*", "expand", "true", "expand.field", "id", "group", "true", "group.field", "id"));
+    });
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertEquals("Can not use expand with Grouping enabled", e.getMessage());
+
     // no expand field
-    SolrException e = expectThrows(SolrException.class,  () -> h.query(req("q", "*:*", "expand", "true")));
+    e = expectThrows(SolrException.class,  () -> h.query(req("q", "*:*", "expand", "true")));
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
     assertEquals("missing expand field", e.getMessage());
 

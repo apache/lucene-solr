@@ -21,26 +21,28 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
-import java.util.Random;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.Map;
 
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
+import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.client.solrj.routing.ReplicaListTransformer;
+import org.apache.solr.client.solrj.routing.RequestReplicaListTransformerGenerator;
 import org.apache.solr.common.IteratorWriter;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
-import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.params.SolrParams;
 
 
 /**
@@ -118,6 +120,14 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
                                        String collection,
                                        StreamContext streamContext)
       throws IOException {
+    return getShards(zkHost, collection, streamContext, new ModifiableSolrParams());
+  }
+
+  public static List<String> getShards(String zkHost,
+                                       String collection,
+                                       StreamContext streamContext,
+                                       SolrParams requestParams)
+      throws IOException {
     Map<String, List<String>> shardsMap = null;
     List<String> shards = new ArrayList();
 
@@ -130,24 +140,34 @@ public abstract class TupleStream implements Closeable, Serializable, MapWriter 
       shards = shardsMap.get(collection);
     } else {
       //SolrCloud Sharding
-      CloudSolrClient cloudSolrClient = streamContext.getSolrClientCache().getCloudSolrClient(zkHost);
+      CloudSolrClient cloudSolrClient =
+          Optional.ofNullable(streamContext.getSolrClientCache()).orElseGet(SolrClientCache::new).getCloudSolrClient(zkHost);
       ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
       ClusterState clusterState = zkStateReader.getClusterState();
       Slice[] slices = CloudSolrStream.getSlices(collection, zkStateReader, true);
       Set<String> liveNodes = clusterState.getLiveNodes();
+
+
+      ModifiableSolrParams solrParams = new ModifiableSolrParams(streamContext.getRequestParams());
+      solrParams.add(requestParams);
+
+      RequestReplicaListTransformerGenerator requestReplicaListTransformerGenerator =
+          Optional.ofNullable(streamContext.getRequestReplicaListTransformerGenerator()).orElseGet(RequestReplicaListTransformerGenerator::new);
+
+      ReplicaListTransformer replicaListTransformer = requestReplicaListTransformerGenerator.getReplicaListTransformer(solrParams);
+
       for(Slice slice : slices) {
-        Collection<Replica> replicas = slice.getReplicas();
-        List<Replica> shuffler = new ArrayList<>();
-        for(Replica replica : replicas) {
-          if(replica.getState() == Replica.State.ACTIVE && liveNodes.contains(replica.getNodeName()))
-            shuffler.add(replica);
+        List<Replica> sortedReplicas = new ArrayList<>();
+        for(Replica replica : slice.getReplicas()) {
+          if(replica.getState() == Replica.State.ACTIVE && liveNodes.contains(replica.getNodeName())) {
+            sortedReplicas.add(replica);
+          }
         }
 
-        Collections.shuffle(shuffler, new Random());
-        Replica rep = shuffler.get(0);
-        ZkCoreNodeProps zkProps = new ZkCoreNodeProps(rep);
-        String url = zkProps.getCoreUrl();
-        shards.add(url);
+        replicaListTransformer.transform(sortedReplicas);
+        if (sortedReplicas.size() > 0) {
+          shards.add(sortedReplicas.get(0).getCoreUrl());
+        }
       }
     }
     Object core = streamContext.get("core");

@@ -25,9 +25,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStreamWriter;
 import java.io.RandomAccessFile;
-import java.io.Writer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -46,9 +44,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.CachingGetSpaceUsed;
 import org.apache.hadoop.fs.CommonConfigurationKeys;
-import org.apache.hadoop.fs.GetSpaceUsed;
 import org.apache.hadoop.hdfs.DFSConfigKeys;
 import org.apache.hadoop.hdfs.DFSUtilClient;
 import org.apache.hadoop.hdfs.protocol.Block;
@@ -82,7 +78,9 @@ import com.google.common.annotations.VisibleForTesting;
  *
  * This class is synchronized by {@link FsVolumeImpl}.
  */
-class BlockPoolSlice {
+public class BlockPoolSlice {
+  public static final Object SOLR_HACK_FOR_CLASS_VERIFICATION = new Object();
+
   static final Logger LOG = LoggerFactory.getLogger(BlockPoolSlice.class);
 
   private final String bpid;
@@ -118,9 +116,6 @@ class BlockPoolSlice {
           return f1.getName().compareTo(f2.getName());
         }
       };
-
-  // TODO:FEDERATION scalability issue - a thread per DU is needed
-  private final GetSpaceUsed dfsUsage;
 
   /**
    * Create a blook pool slice
@@ -178,12 +173,6 @@ class BlockPoolSlice {
     fileIoProvider.mkdirs(volume, rbwDir);
     fileIoProvider.mkdirs(volume, tmpDir);
 
-    // Use cached value initially if available. Or the following call will
-    // block until the initial du command completes.
-    this.dfsUsage = new CachingGetSpaceUsed.Builder().setPath(bpDir)
-        .setConf(conf)
-        .setInitialUsed(loadDfsUsed())
-        .build();
     if (addReplicaThreadPool == null) {
       // initialize add replica fork join pool
       initializeAddReplicaPool(conf);
@@ -192,10 +181,7 @@ class BlockPoolSlice {
     shutdownHook = new Runnable() {
       @Override
       public void run() {
-        if (!dfsUsedSaved) {
-          saveDfsUsed();
-          addReplicaThreadPool.shutdownNow();
-        }
+        addReplicaThreadPool.shutdownNow();
       }
     };
     ShutdownHookManager.get().addShutdownHook(shutdownHook,
@@ -243,92 +229,13 @@ class BlockPoolSlice {
 
   /** Run DU on local drives.  It must be synchronized from caller. */
   void decDfsUsed(long value) {
-    if (dfsUsage instanceof CachingGetSpaceUsed) {
-      ((CachingGetSpaceUsed)dfsUsage).incDfsUsed(-value);
-    }
   }
 
   long getDfsUsed() throws IOException {
-    return dfsUsage.getUsed();
+    return 0L;
   }
 
   void incDfsUsed(long value) {
-    if (dfsUsage instanceof CachingGetSpaceUsed) {
-      ((CachingGetSpaceUsed)dfsUsage).incDfsUsed(value);
-    }
-  }
-
-  /**
-   * Read in the cached DU value and return it if it is less than
-   * cachedDfsUsedCheckTime which is set by
-   * dfs.datanode.cached-dfsused.check.interval.ms parameter. Slight imprecision
-   * of dfsUsed is not critical and skipping DU can significantly shorten the
-   * startup time. If the cached value is not available or too old, -1 is
-   * returned.
-   */
-  long loadDfsUsed() {
-    long cachedDfsUsed;
-    long mtime;
-    Scanner sc;
-
-    try {
-      sc = new Scanner(new File(currentDir, DU_CACHE_FILE), "UTF-8");
-    } catch (FileNotFoundException fnfe) {
-      return -1;
-    }
-
-    try {
-      // Get the recorded dfsUsed from the file.
-      if (sc.hasNextLong()) {
-        cachedDfsUsed = sc.nextLong();
-      } else {
-        return -1;
-      }
-      // Get the recorded mtime from the file.
-      if (sc.hasNextLong()) {
-        mtime = sc.nextLong();
-      } else {
-        return -1;
-      }
-
-      // Return the cached value if mtime is okay.
-      if (mtime > 0 && (timer.now() - mtime < cachedDfsUsedCheckTime)) {
-        FsDatasetImpl.LOG.info("Cached dfsUsed found for " + currentDir + ": " +
-            cachedDfsUsed);
-        return cachedDfsUsed;
-      }
-      return -1;
-    } finally {
-      sc.close();
-    }
-  }
-
-  /**
-   * Write the current dfsUsed to the cache file.
-   */
-  void saveDfsUsed() {
-    File outFile = new File(currentDir, DU_CACHE_FILE);
-    if (!fileIoProvider.deleteWithExistsCheck(volume, outFile)) {
-      FsDatasetImpl.LOG.warn("Failed to delete old dfsUsed file in " +
-          outFile.getParent());
-    }
-
-    try {
-      long used = getDfsUsed();
-      try (Writer out = new OutputStreamWriter(
-          new FileOutputStream(outFile), "UTF-8")) {
-        // mtime is written last, so that truncated writes won't be valid.
-        out.write(Long.toString(used) + " " + Long.toString(timer.now()));
-        // This is only called as part of the volume shutdown.
-        // We explicitly avoid calling flush with fileIoProvider which triggers
-        // volume check upon io exception to avoid cyclic volume checks.
-        out.flush();
-      }
-    } catch (IOException ioe) {
-      // If write failed, the volume might be bad. Since the cache file is
-      // not critical, log the error and continue.
-      FsDatasetImpl.LOG.warn("Failed to write dfsUsed to " + outFile, ioe);
-    }
   }
 
   /**
@@ -362,13 +269,7 @@ class BlockPoolSlice {
   File addFinalizedBlock(Block b, ReplicaInfo replicaInfo) throws IOException {
     File blockDir = DatanodeUtil.idToBlockDir(finalizedDir, b.getBlockId());
     fileIoProvider.mkdirsWithExistsCheck(volume, blockDir);
-    File blockFile = FsDatasetImpl.moveBlockFiles(b, replicaInfo, blockDir);
-    File metaFile = FsDatasetUtil.getMetaFile(blockFile, b.getGenerationStamp());
-    if (dfsUsage instanceof CachingGetSpaceUsed) {
-      ((CachingGetSpaceUsed) dfsUsage).incDfsUsed(
-          b.getNumBytes() + metaFile.length());
-    }
-    return blockFile;
+    return FsDatasetImpl.moveBlockFiles(b, replicaInfo, blockDir);
   }
 
   /**
@@ -851,16 +752,10 @@ class BlockPoolSlice {
 
   void shutdown(BlockListAsLongs blocksListToPersist) {
     saveReplicas(blocksListToPersist);
-    saveDfsUsed();
-    dfsUsedSaved = true;
 
     // Remove the shutdown hook to avoid any memory leak
     if (shutdownHook != null) {
       ShutdownHookManager.get().removeShutdownHook(shutdownHook);
-    }
-
-    if (dfsUsage instanceof CachingGetSpaceUsed) {
-      IOUtils.cleanupWithLogger(LOG, ((CachingGetSpaceUsed) dfsUsage));
     }
   }
 

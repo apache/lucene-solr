@@ -29,7 +29,6 @@ import org.junit.Test;
  *
  * @since solr 1.3
  */
-@SuppressWarnings({"rawtypes", "unchecked"})
 public class TestXPathRecordReader extends AbstractDataImportHandlerTestCase {
   @Test
   public void testBasic() {

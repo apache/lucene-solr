@@ -26,7 +26,6 @@ import org.junit.Test;
 
 public class DoubleFieldsTest extends AbstractAnalyticsFieldTest {
 
-  @SuppressWarnings("deprecation")
   @Test
   public void expressionFactoryCreationTest() {
     ExpressionFactory fact = getExpressionFactory();
@@ -69,7 +68,6 @@ public class DoubleFieldsTest extends AbstractAnalyticsFieldTest {
     checkSingleFieldValues(singleDoubles, values, missing);
   }
 
-  @SuppressWarnings("deprecation")
   @Test
   public void multiValuedTrieDoubleTest() throws IOException {
     DoubleMultiTrieField valueField = new DoubleMultiTrieField("double_dm_t");

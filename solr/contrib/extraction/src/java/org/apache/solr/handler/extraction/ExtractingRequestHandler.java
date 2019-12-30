@@ -55,7 +55,7 @@ public class ExtractingRequestHandler extends ContentStreamHandlerBase implement
   }
 
   @Override
-  public void init(@SuppressWarnings("rawtypes") NamedList args) {
+  public void init(NamedList args) {
     super.init(args);
   }
 

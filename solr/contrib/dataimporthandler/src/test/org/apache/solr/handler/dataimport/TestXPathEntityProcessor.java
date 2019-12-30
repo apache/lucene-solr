@@ -36,7 +36,6 @@ import org.junit.Test;
  *
  * @since solr 1.3
  */
-@SuppressWarnings({"rawtypes", "unchecked"})
 public class TestXPathEntityProcessor extends AbstractDataImportHandlerTestCase {
   boolean simulateSlowReader;
   boolean simulateSlowResultProcessor;
@@ -94,6 +93,7 @@ public class TestXPathEntityProcessor extends AbstractDataImportHandlerTestCase 
     assertEquals("ü", l.get(2));
   }
   
+  @SuppressWarnings({"rawtypes", "unchecked"})
   @Test
   public void testMultiValuedWithMultipleDocuments() throws Exception {
     Map entityAttrs = createMap("name", "e", "url", "testdata.xml", XPathEntityProcessor.FOR_EACH, "/documents/doc");

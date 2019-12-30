@@ -26,7 +26,6 @@ import org.junit.Test;
 
 public class IntFieldsTest extends AbstractAnalyticsFieldTest {
 
-  @SuppressWarnings("deprecation")
   @Test
   public void expressionFactoryCreationTest() {
     ExpressionFactory fact = getExpressionFactory();
@@ -69,7 +68,6 @@ public class IntFieldsTest extends AbstractAnalyticsFieldTest {
     checkSingleFieldValues(singleInts, values, missing);
   }
 
-  @SuppressWarnings("deprecation")
   @Test
   public void multiValuedTrieIntTest() throws IOException {
     IntMultiTrieField valueField = new IntMultiTrieField("int_im_t");

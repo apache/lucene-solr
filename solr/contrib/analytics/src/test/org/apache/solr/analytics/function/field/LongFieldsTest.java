@@ -26,7 +26,6 @@ import org.junit.Test;
 
 public class LongFieldsTest extends AbstractAnalyticsFieldTest {
 
-  @SuppressWarnings("deprecation")
   @Test
   public void expressionFactoryCreationTest() {
     ExpressionFactory fact = getExpressionFactory();
@@ -69,7 +68,6 @@ public class LongFieldsTest extends AbstractAnalyticsFieldTest {
     checkSingleFieldValues(singleLongs, values, missing);
   }
 
-  @SuppressWarnings("deprecation")
   @Test
   public void multiValuedTrieLongTest() throws IOException {
     LongMultiTrieField valueField = new LongMultiTrieField("long_lm_t");

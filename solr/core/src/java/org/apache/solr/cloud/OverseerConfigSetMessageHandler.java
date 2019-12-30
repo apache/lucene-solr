@@ -16,18 +16,6 @@
  */
 package org.apache.solr.cloud;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.DocCollection;
@@ -43,6 +31,17 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 import static org.apache.solr.common.params.CommonParams.NAME;
 import static org.apache.solr.common.params.ConfigSetParams.ConfigSetAction.CREATE;
@@ -90,7 +89,7 @@ public class OverseerConfigSetMessageHandler implements OverseerMessageHandler {
   }
 
   @Override
-  public SolrResponse processMessage(ZkNodeProps message, String operation) {
+  public OverseerSolrResponse processMessage(ZkNodeProps message, String operation) {
     NamedList results = new NamedList();
     try {
       if (!operation.startsWith(CONFIGSETS_ACTION_PREFIX)) {
