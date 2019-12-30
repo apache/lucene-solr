@@ -129,15 +129,7 @@ public class DefaultPassageFormatter extends PassageFormatter {
             dest.append("&#x2F;");
             break;
           default:
-            if (ch >= 0x30 && ch <= 0x39 || ch >= 0x41 && ch <= 0x5A || ch >= 0x61 && ch <= 0x7A) {
-              dest.append(ch);
-            } else if (ch < 0xff) {
-              dest.append("&#");
-              dest.append((int) ch);
-              dest.append(";");
-            } else {
-              dest.append(ch);
-            }
+            dest.append(ch);
         }
       }
     } else {

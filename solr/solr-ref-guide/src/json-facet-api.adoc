@@ -742,7 +742,7 @@ include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-nested-cat-f
 
 And the response will look something like:
 
-[source,java]
+[source,json]
 ----
 "facets":{
     "count":32,
@@ -760,7 +760,7 @@ And the response will look something like:
           "top_manufacturer":{
             "buckets":[{
                 "val":"boa",
-                "count":1}]}},
+                "count":1}]}}]}}
 ----
 
 
@@ -804,8 +804,6 @@ include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-nested-cat-f
 ----
 ====
 --
-
-
 
 In some situations the desired `sort` may be an aggregation function that is very costly to compute for every bucket.  A `prelim_sort` option can be used to specify an approximation of the `sort`, for initially ranking the buckets to determine the top candidates (based on the `limit` and `overrequest`).  Only after the top candidate buckets have been refined, will the actual `sort` be used.
 

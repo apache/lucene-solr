@@ -20,6 +20,7 @@ package org.apache.lucene.codecs.uniformsplit;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.BlockTermState;
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
@@ -129,6 +130,9 @@ public class BlockLine implements Accountable {
      */
     public BlockLine readLine(DataInput blockInput, boolean isIncrementalEncodingSeed, BlockLine reuse) throws IOException {
       int termStateRelativeOffset = blockInput.readVInt();
+      if (termStateRelativeOffset < 0) {
+        throw new CorruptIndexException("Illegal termStateRelativeOffset= " + termStateRelativeOffset, blockInput);
+      }
       return reuse == null ?
           new BlockLine(readIncrementallyEncodedTerm(blockInput, isIncrementalEncodingSeed, null), termStateRelativeOffset)
           : reuse.reset(readIncrementallyEncodedTerm(blockInput, isIncrementalEncodingSeed, reuse.termBytes), termStateRelativeOffset);

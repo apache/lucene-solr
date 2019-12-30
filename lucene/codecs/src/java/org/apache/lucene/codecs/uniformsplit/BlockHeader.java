@@ -19,6 +19,7 @@ package org.apache.lucene.codecs.uniformsplit;
 
 import java.io.IOException;
 
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.util.Accountable;
@@ -147,14 +148,22 @@ public class BlockHeader implements Accountable {
 
   public static BlockHeader read(DataInput input, BlockHeader reuse) throws IOException {
     int linesCount = input.readVInt();
-    assert linesCount > 0 && linesCount <= UniformSplitTermsWriter.MAX_NUM_BLOCK_LINES : "linesCount=" + linesCount;
+    if (linesCount <= 0 || linesCount > UniformSplitTermsWriter.MAX_NUM_BLOCK_LINES) {
+      throw new CorruptIndexException("Illegal number of lines in a block: " + linesCount, input);
+    }
 
     long baseDocsFP = input.readVLong();
     long basePositionsFP = input.readVLong();
     long basePayloadsFP = input.readVLong();
 
     int termStatesBaseOffset = input.readVInt();
+    if (termStatesBaseOffset < 0) {
+      throw new CorruptIndexException("Illegal termStatesBaseOffset= " + termStatesBaseOffset, input);
+    }
     int middleTermOffset = input.readVInt();
+    if (middleTermOffset < 0) {
+      throw new CorruptIndexException("Illegal middleTermOffset= " + middleTermOffset, input);
+    }
 
     BlockHeader blockHeader = reuse == null ? new BlockHeader() : reuse;
     return blockHeader.reset(linesCount, baseDocsFP, basePositionsFP, basePayloadsFP, termStatesBaseOffset, middleTermOffset);

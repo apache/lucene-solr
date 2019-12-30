@@ -9,11 +9,7 @@ REM  Find location of this script
 set SDIR=%~dp0
 if "%SDIR:~-1%"=="\" set SDIR=%SDIR:~0,-1%
 
-if defined LOG4J_PROPS (
-  set "LOG4J_CONFIG=file:///%LOG4J_PROPS%"
-) else (
-  set "LOG4J_CONFIG=file:///%SDIR%\..\..\resources\log4j2-console.xml"
-)
+set "LOG4J_CONFIG=file:///%SDIR%\..\..\resources\log4j2-console.xml"
 
 REM Settings for ZK ACL
 REM set SOLR_ZK_CREDS_AND_ACLS=-DzkACLProvider=org.apache.solr.common.cloud.VMParamsAllAndReadonlyDigestZkACLProvider ^
