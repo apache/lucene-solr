@@ -103,6 +103,8 @@ Improvements
 * SOLR-13808: filter in BoolQParser and {"bool":{"filter":..}} in Query DSL are cached by default 
   (Mikhail Khludnev)
 
+* SOLR-14129: Reuse Jackson ObjectMapper in AuditLoggerPlugin (janhoy)
+
 Optimizations
 ---------------------
 (No changes)
