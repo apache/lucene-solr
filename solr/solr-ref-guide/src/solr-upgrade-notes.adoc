@@ -38,7 +38,7 @@ If you are upgrading from 7.x, see the section <<Upgrading from 7.x Releases>> b
 === Solr 8.4
 
 See the https://cwiki.apache.org/confluence/display/SOLR/ReleaseNote84[8.4 Release Notes]
-for an overview of the main new features of Solr 8.3.
+for an overview of the main new features of Solr 8.4.
 
 When upgrading to 8.4.x users should be aware of the following major changes from 8.3.
 
