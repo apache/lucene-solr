@@ -158,8 +158,8 @@
 # this to false can be useful to disable these checks when re-using a certificate on many hosts
 #SOLR_SSL_CHECK_PEER_NAME=true
 # Override Key/Trust Store types if necessary
-#SOLR_SSL_KEY_STORE_TYPE=JKS
-#SOLR_SSL_TRUST_STORE_TYPE=JKS
+#SOLR_SSL_KEY_STORE_TYPE=PKCS12
+#SOLR_SSL_TRUST_STORE_TYPE=PKCS12
 
 # Uncomment if you want to override previously defined SSL values for HTTP client
 # otherwise keep them commented and the above values will automatically be set for HTTP clients
