@@ -22,8 +22,9 @@ import java.util.Collection;
 
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.uniformsplit.BlockDecoder;
-import org.apache.lucene.codecs.uniformsplit.DictionaryBrowserSupplier;
+import org.apache.lucene.codecs.uniformsplit.FSTDictionary;
 import org.apache.lucene.codecs.uniformsplit.FieldMetadata;
+import org.apache.lucene.codecs.uniformsplit.IndexDictionary;
 import org.apache.lucene.codecs.uniformsplit.UniformSplitTerms;
 import org.apache.lucene.codecs.uniformsplit.UniformSplitTermsReader;
 import org.apache.lucene.index.FieldInfos;
@@ -62,7 +63,7 @@ public class STUniformSplitTermsReader extends UniformSplitTermsReader {
     if (!fieldMetadataCollection.isEmpty()) {
       FieldMetadata unionFieldMetadata = createUnionFieldMetadata(fieldMetadataCollection);
       // Share the same immutable dictionary between all fields.
-      DictionaryBrowserSupplier dictionaryBrowserSupplier = new DictionaryBrowserSupplier(dictionaryInput, fieldMetadataCollection.iterator().next().getDictionaryStartFP(), blockDecoder);
+      IndexDictionary.BrowserSupplier dictionaryBrowserSupplier = new FSTDictionary.BrowserSupplier(dictionaryInput, fieldMetadataCollection.iterator().next().getDictionaryStartFP(), blockDecoder);
       for (FieldMetadata fieldMetadata : fieldMetadataCollection) {
         fieldToTermsMap.put(fieldMetadata.getFieldInfo().name,
             new STUniformSplitTerms(blockInput, fieldMetadata, unionFieldMetadata, postingsReader, blockDecoder, fieldInfos, dictionaryBrowserSupplier));
