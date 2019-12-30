@@ -78,7 +78,9 @@ import com.google.common.annotations.VisibleForTesting;
  *
  * This class is synchronized by {@link FsVolumeImpl}.
  */
-class BlockPoolSlice {
+public class BlockPoolSlice {
+  public static final Object SOLR_HACK_FOR_CLASS_VERIFICATION = new Object();
+
   static final Logger LOG = LoggerFactory.getLogger(BlockPoolSlice.class);
 
   private final String bpid;

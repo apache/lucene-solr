@@ -99,7 +99,6 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.client.solrj.impl.BaseHttpSolrClient.*;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 
-// TODO: error handling, small Http2SolrClient features, security, ssl
 /**
  * Difference between this {@link Http2SolrClient} and {@link HttpSolrClient}:
  * <ul>
@@ -180,13 +179,13 @@ public class Http2SolrClient extends SolrClient {
     ThreadPoolExecutor httpClientExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(32,
         256, 60, TimeUnit.SECONDS, queue, new SolrjNamedThreadFactory("h2sc"));
 
-    SslContextFactory sslContextFactory;
+    SslContextFactory.Client sslContextFactory;
     boolean ssl;
     if (builder.sslConfig == null) {
       sslContextFactory = getDefaultSslContextFactory();
       ssl = sslContextFactory.getTrustStore() != null || sslContextFactory.getTrustStorePath() != null;
     } else {
-      sslContextFactory = builder.sslConfig.createContextFactory();
+      sslContextFactory = builder.sslConfig.createClientContextFactory();
       ssl = true;
     }
 
@@ -868,7 +867,6 @@ public class Http2SolrClient extends SolrClient {
       this.connectionTimeout = connectionTimeOut;
       return this;
     }
-
   }
 
   public Set<String> getQueryParams() {
@@ -921,7 +919,7 @@ public class Http2SolrClient extends SolrClient {
     Http2SolrClient.defaultSSLConfig = null;
   }
 
-  private static SslContextFactory getDefaultSslContextFactory() {
+  private static SslContextFactory.Client getDefaultSslContextFactory() {
     String checkPeerNameStr = System.getProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME);
     boolean sslCheckPeerName = true;
     if (checkPeerNameStr == null || "false".equalsIgnoreCase(checkPeerNameStr)) {
@@ -949,5 +947,4 @@ public class Http2SolrClient extends SolrClient {
 
     return sslContextFactory;
   }
-
 }

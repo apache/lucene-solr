@@ -38,7 +38,7 @@ public class EmpiricalDistributionEvaluator extends RecursiveNumericEvaluator im
   }
   
   @Override
-  public Object doWork(Object[] values) throws IOException {
+  public Object doWork(Object... values) throws IOException {
 
     if(!(values[0] instanceof List<?>)){
       throw new StreamEvaluatorException("List value expected but found type %s for value %s", values[0].getClass().getName(), values[0].toString());

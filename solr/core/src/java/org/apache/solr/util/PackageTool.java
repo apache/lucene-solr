@@ -118,9 +118,13 @@ public class PackageTool extends SolrCLI.ToolBase {
                 } else {
                   String packageName = cli.getArgs()[1];
                   Map<String, String> deployedCollections = packageManager.getDeployedCollections(packageName);
-                  PackageUtils.printGreen("Collections on which package " + packageName + " was deployed:");
-                  for (String collection: deployedCollections.keySet()) {
-                    PackageUtils.printGreen("\t" + collection + "("+packageName+":"+deployedCollections.get(collection)+")");
+                  if (deployedCollections.isEmpty() == false) {
+                    PackageUtils.printGreen("Collections on which package " + packageName + " was deployed:");
+                    for (String collection: deployedCollections.keySet()) {
+                      PackageUtils.printGreen("\t" + collection + "("+packageName+":"+deployedCollections.get(collection)+")");
+                    }
+                  } else {
+                    PackageUtils.printGreen("Package "+packageName+" not deployed on any collection.");
                   }
                 }
                 break;
@@ -130,7 +134,7 @@ public class PackageTool extends SolrCLI.ToolBase {
                 String packageName = parsedVersion.first();
                 String version = parsedVersion.second();
                 repositoryManager.install(packageName, version);
-                PackageUtils.printGreen(repositoryManager.toString() + " installed.");
+                PackageUtils.printGreen(packageName + " installed.");
                 break;
               }
               case "deploy":
@@ -140,7 +144,7 @@ public class PackageTool extends SolrCLI.ToolBase {
                 String version = parsedVersion.second();
                 boolean noprompt = cli.hasOption('y');
                 boolean isUpdate = cli.hasOption("update") || cli.hasOption('u');
-                packageManager.deploy(packageName, version, PackageUtils.validateCollections(cli.getOptionValues("collections")), cli.getOptionValues("param"), isUpdate, noprompt);
+                packageManager.deploy(packageName, version, PackageUtils.validateCollections(cli.getOptionValue("collections").split(",")), cli.getOptionValues("param"), isUpdate, noprompt);
                 break;
               }
               case "undeploy":
@@ -150,7 +154,7 @@ public class PackageTool extends SolrCLI.ToolBase {
                   throw new SolrException(ErrorCode.BAD_REQUEST, "Only package name expected, without a version. Actual: " + cli.getArgList().get(1));
                 }
                 String packageName = parsedVersion.first();
-                packageManager.undeploy(packageName, cli.getOptionValues("collections"));
+                packageManager.undeploy(packageName, cli.getOptionValue("collections").split(","));
                 break;
               }
               case "help":
@@ -228,7 +232,7 @@ public class PackageTool extends SolrCLI.ToolBase {
 
         OptionBuilder
         .withArgName("COLLECTIONS")
-        .hasArgs()
+        .hasArg()
         .isRequired(false)
         .withDescription("List of collections. Run './solr package help' for more details.")
         .create("collections"),

@@ -62,6 +62,8 @@ import org.apache.hadoop.util.StringUtils;
 @InterfaceAudience.Public
 @InterfaceStability.Stable
 public class RawLocalFileSystem extends FileSystem {
+  public static final Object SOLR_HACK_FOR_CLASS_VERIFICATION = new Object();
+
   static final URI NAME = URI.create("file:///");
   private Path workingDir;
   // Temporary workaround for HADOOP-9652.

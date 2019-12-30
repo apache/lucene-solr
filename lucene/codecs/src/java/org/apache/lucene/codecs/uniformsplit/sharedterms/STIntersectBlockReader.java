@@ -22,8 +22,8 @@ import java.io.IOException;
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.uniformsplit.BlockDecoder;
-import org.apache.lucene.codecs.uniformsplit.DictionaryBrowserSupplier;
 import org.apache.lucene.codecs.uniformsplit.FieldMetadata;
+import org.apache.lucene.codecs.uniformsplit.IndexDictionary;
 import org.apache.lucene.codecs.uniformsplit.IntersectBlockReader;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.store.IndexInput;
@@ -42,8 +42,8 @@ public class STIntersectBlockReader extends IntersectBlockReader {
   protected final FieldInfos fieldInfos;
 
   public STIntersectBlockReader(CompiledAutomaton compiled, BytesRef startTerm,
-                         DictionaryBrowserSupplier dictionaryBrowserSupplier, IndexInput blockInput, PostingsReaderBase postingsReader,
-                         FieldMetadata fieldMetadata, BlockDecoder blockDecoder, FieldInfos fieldInfos) throws IOException {
+                                IndexDictionary.BrowserSupplier dictionaryBrowserSupplier, IndexInput blockInput, PostingsReaderBase postingsReader,
+                                FieldMetadata fieldMetadata, BlockDecoder blockDecoder, FieldInfos fieldInfos) throws IOException {
     super(compiled, startTerm, dictionaryBrowserSupplier, blockInput, postingsReader, fieldMetadata, blockDecoder);
     this.fieldInfos = fieldInfos;
   }

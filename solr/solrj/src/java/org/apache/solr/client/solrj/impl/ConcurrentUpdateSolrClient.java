@@ -134,7 +134,9 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
     this.connectionTimeout = builder.connectionTimeoutMillis;
     this.soTimeout = builder.socketTimeoutMillis;
     this.stallTime = Integer.getInteger("solr.cloud.client.stallTime", 15000);
-
+    if (stallTime < pollQueueTime * 2) {
+      throw new RuntimeException("Invalid stallTime: " + stallTime + "ms, must be 2x > pollQueueTime " + pollQueueTime);
+    }
 
     if (builder.executorService != null) {
       this.scheduler = builder.executorService;
@@ -827,6 +829,12 @@ public class ConcurrentUpdateSolrClient extends SolrClient {
    */
   public void setPollQueueTime(int pollQueueTime) {
     this.pollQueueTime = pollQueueTime;
+    // make sure the stall time is larger than the polling time
+    // to give a chance for the queue to change
+    int minimalStallTime = pollQueueTime * 2;
+    if (minimalStallTime > this.stallTime) {
+      this.stallTime = minimalStallTime;
+    }
   }
 
   public void setRequestWriter(RequestWriter requestWriter) {
