@@ -24,7 +24,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.DocCollection;
@@ -35,10 +34,13 @@ import org.apache.solr.store.blob.metadata.PushPullData;
 import org.apache.solr.store.blob.process.CorePullTask;
 import org.apache.solr.store.blob.process.CorePusher;
 import org.apache.solr.store.blob.util.BlobStoreUtils;
+import org.apache.solr.store.shared.TimeAwareLruCache.CacheRemovalTrigger;
 import org.apache.solr.store.shared.metadata.SharedShardMetadataController;
 import org.apache.solr.store.shared.metadata.SharedShardMetadataController.SharedShardVersionMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.annotations.VisibleForTesting;
 
 /**
  * This class helps coordinate synchronization of concurrent indexing, pushes and pulls
@@ -129,18 +131,29 @@ public class SharedCoreConcurrencyController {
    * If it does then either we are too slow in pulling and can tune this value or something else is wrong.
    */
   public static int MAX_ATTEMPTS_INDEXING_PULL_WRITE_LOCK = 10;
+  
+  /**
+   * Maximum number of SharedCoreVersionMetadata to keep in an in-memory cache before we start 
+   * evicting entries 
+   */
+  public static int MAX_CACHE_SIZE = 5000;
+
+  /**
+   * Time in seconds that needs to pass before evicting entries from the in-memory cache that haven't 
+   * accessed recently
+   */
+  public static int CACHE_EXPIRATION_TIME_SECONDS = 60*60*12;
 
   private final CoreContainer cores;
   /**
    * This cache maintains the shared store version the each core is at or ahead of(core has to sometimes be ahead of
    * shared store given indexing first happens locally before being propagated to shared store).
-   * todo: need to add eviction strategy.
    */
-  private final ConcurrentHashMap<String, SharedCoreVersionMetadata> coresVersionMetadata;
+  private final TimeAwareLruCache<String, SharedCoreVersionMetadata> coresVersionMetadata;
 
   public SharedCoreConcurrencyController(CoreContainer cores) {
     this.cores = cores;
-    coresVersionMetadata = new ConcurrentHashMap<>();
+    coresVersionMetadata = buildMetadataCache();
   }
 
   /**
@@ -230,6 +243,13 @@ public class SharedCoreConcurrencyController {
     SharedCoreVersionMetadata updatedMetadata = currentMetadata.updatedOf(softGuaranteeOfEquality);
     updateCoreVersionMetadata(collectionName, shardName, coreName, currentMetadata, updatedMetadata);
   }
+  
+  /**
+   * Evicts an entry from the {@link #coresVersionMetadata} if one exists for the given core name. 
+   */
+  public boolean removeCoreVersionMetadataIfPresent(String coreName) {
+    return coresVersionMetadata.invalidate(coreName);
+  }
 
   private void updateCoreVersionMetadata(String collectionName, String shardName, String coreName, SharedCoreVersionMetadata currentMetadata, SharedCoreVersionMetadata updatedMetadata) {
     // either have a pull write lock or push lock along with pull read lock
@@ -249,10 +269,16 @@ public class SharedCoreConcurrencyController {
       // already present
       return coreVersionMetadata;
     }
-    return initializeCoreVersionMetadata(collectionName, shardName, coreName);
+    try {
+      return initializeCoreVersionMetadata(collectionName, shardName, coreName);
+    } catch (Exception ex) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error initializing the"
+          + "default SharedCoreVersionMetadata for collection " + collectionName + 
+          " shard " + shardName + " core " + coreName, ex);
+    }
   }
 
-  private SharedCoreVersionMetadata initializeCoreVersionMetadata(String collectionName, String shardName, String coreName) {
+  private SharedCoreVersionMetadata initializeCoreVersionMetadata(String collectionName, String shardName, String coreName) throws Exception {
     // computeIfAbsent to ensure we only do single initialization
     return coresVersionMetadata.computeIfAbsent(coreName, k -> {
       // TODO: This metadata should not be created here. It should only be created on shard creation or zk recovery time.
@@ -297,6 +323,14 @@ public class SharedCoreConcurrencyController {
               "Unable to ensure metadata for collection=%s shard=%s", collectionName, shardName), ioe);
     }
   }
+  
+  @VisibleForTesting
+  protected TimeAwareLruCache<String, SharedCoreVersionMetadata> buildMetadataCache() {
+    SharedConcurrencyMetadataCacheBuilder builder = new SharedConcurrencyMetadataCacheBuilder();
+    return builder.maxSize(MAX_CACHE_SIZE)
+        .expirationTimeSeconds(CACHE_EXPIRATION_TIME_SECONDS)
+        .build();
+  }
 
   /**
    * This represents metadata that need to be cached for a core of a shared collection {@link DocCollection#getSharedIndex()}
@@ -339,7 +373,8 @@ public class SharedCoreConcurrencyController {
      */
     private final ReentrantLock corePushLock;
 
-    private SharedCoreVersionMetadata(int version, String metadataSuffix, BlobCoreMetadata blobCoreMetadata,
+    @VisibleForTesting
+    protected SharedCoreVersionMetadata(int version, String metadataSuffix, BlobCoreMetadata blobCoreMetadata,
                                       boolean softGuaranteeOfEquality, ReentrantReadWriteLock corePullLock, ReentrantLock corePushLock) {
       this.version = version;
       this.metadataSuffix = metadataSuffix;
@@ -385,6 +420,68 @@ public class SharedCoreConcurrencyController {
     public String toString() {
       return String.format(Locale.ROOT,
           "version=%s  metadataSuffix=%s softGuaranteeOfEquality=%s", version, metadataSuffix, softGuaranteeOfEquality);
+    }
+  }
+  
+  /**
+   * Builder for constructing an in-memory time-aware LRU cache for 
+   * shared core concurrency metadata.
+   */
+  public static class SharedConcurrencyMetadataCacheBuilder {
+    
+    /**
+     * Maximum allowable size for the cache before entries get evicted. Some cache
+     * implementations may evict entries before this limit is hit
+     */
+    private int maxSize;
+    
+    /**
+     * Time in seconds that may pass before an entry that has not been accessed via
+     * a read or write will be evicted
+     */
+    private long expirationTimeSeconds;
+    
+    /**
+     * An object that performs some function when a {@link SharedCoreVersionMetadata} gets
+     * evicted or manually removed from the concurrency cache 
+     */
+    private CacheRemovalTrigger<String, SharedCoreVersionMetadata> removalTrigger;
+    
+    /**
+     * Flag indicating that the calling thread acting on the cache should run eviction policies
+     * synchronously. Used for testing only
+     */
+    private boolean runSync;
+
+    /**
+     * Sets the max allowable size for a cache
+     */
+    public SharedConcurrencyMetadataCacheBuilder maxSize(int maxSize) {
+      this.maxSize = maxSize;
+      return this;
+    }
+    
+    /**
+     * Sets delay in seconds before an entry that hasn't been accessed is evicted
+     * from the cache
+     */
+    public SharedConcurrencyMetadataCacheBuilder expirationTimeSeconds(long expirationTimeSeconds) {
+      this.expirationTimeSeconds = expirationTimeSeconds;
+      return this;
+    }
+    
+    /*
+     * Sets an object that invokes some action when an object is removed from the cache. The trigger
+     * gets passed the key, value, and a string description of the cause
+     */
+    public SharedConcurrencyMetadataCacheBuilder removalTrigger(CacheRemovalTrigger<String, SharedCoreVersionMetadata> trigger) {
+      this.removalTrigger = trigger;
+      return this;
+    }
+    
+    public TimeAwareLruCache<String, SharedCoreVersionMetadata> build() {
+      return new TimeAwareLruCache.EvictingCache<String, SharedCoreVersionMetadata>(maxSize, expirationTimeSeconds, 
+          removalTrigger);
     }
   }
 
