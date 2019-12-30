@@ -42,10 +42,7 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
-<<<<<<< HEAD
-=======
 import org.apache.solr.core.SolrConfig;
->>>>>>> ca6bd364fb0a5a454b2f92d8a78f35a8b87339f8
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.StreamHandler.ExpressibleHolder;
 import org.apache.solr.request.SolrQueryRequest;
@@ -108,7 +105,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
 
     // This pulls all the overrides and additions from the config
     List<PluginInfo> pluginInfos = core.getSolrConfig().getPluginInfos(Expressible.class.getName());
-    
+
     // Check deprecated approach.
     Object functionMappingsObj = initArgs.get("streamFunctions");
     if(null != functionMappingsObj){
@@ -120,7 +117,7 @@ public class GraphHandler extends RequestHandlerBase implements SolrCoreAware, P
         pluginInfos.add(pluginInfo);
       }
     }
-    
+
     for (PluginInfo pluginInfo : pluginInfos) {
       if (pluginInfo.pkgName != null) {
         ExpressibleHolder holder = new ExpressibleHolder(pluginInfo, core, SolrConfig.classVsSolrPluginInfo.get(Expressible.class));
