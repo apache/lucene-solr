@@ -33,6 +33,8 @@ Bug Fixes
 
 * SOLR-14106: Cleanup Jetty SslContextFactory usage (Ryan Rockenbaugh, Jan Hoydahl, Kevin Risden)
 
+* SOLR-14109: Always log to stdout from server/scripts/cloud-scripts/zkcli.{bat|sh} (janhoy)
+
 ==================  8.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -111,7 +113,7 @@ New Features
 
 * SOLR-13912: Add 'countvals' aggregation in JSON FacetModule (hossman, Munendra S N)
 
-* SOLR-12217: Support shards.preference in SolrJ for single shard collections. The parameter 
+* SOLR-12217: Support shards.preference in SolrJ for single shard collections. The parameter
   is now used by the CloudSolrClient and Streaming Expressions. (Houston Putman, Tomas Fernandez-Lobbe)
 
 * SOLR-14043: Allow the precision Stream Evaluator to operate on matrices (Joel bernstein)
@@ -154,7 +156,7 @@ Improvements
 * SOLR-13957: Add sensible defaults for the facet, random, facet2D, timeseries, stats
   and update Streaming Expressions (Joel Bernstein)
 
-* SOLR-13904: Analytic component abandons requests exceedig a limit passed via timeAllowed parameter. 
+* SOLR-13904: Analytic component abandons requests exceedig a limit passed via timeAllowed parameter.
   (Houston Putman, Mikhail Khludnev).
 
 * SOLR-13970: Fail the request when collapsing or expand is used with Grouping. (Erick Erickson, Joel Bernstein, Munendra S N)
