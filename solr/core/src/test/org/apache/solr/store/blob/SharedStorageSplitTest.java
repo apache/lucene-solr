@@ -137,12 +137,10 @@ public class SharedStorageSplitTest extends SolrCloudSharedStoreTestCase  {
   void doSplitShard(String collectionName, boolean sharedStorage, int repFactor, int nPrefixes, int nDocsPerPrefix) throws Exception {
     CloudSolrClient client = createCollection(collectionName, sharedStorage, repFactor);
 
-    /*** TODO: this currently causes a failure due to a NPE.  Uncomment when fixed.
     if (random().nextBoolean()) {
       // start off with a commit
       client.commit(collectionName, true, true, false);
     }
-     ***/
 
     indexPrefixDocs(client, collectionName, nPrefixes, nDocsPerPrefix, 0);
 
@@ -225,7 +223,7 @@ public class SharedStorageSplitTest extends SolrCloudSharedStoreTestCase  {
 
   void doLiveSplitShard(String collectionName, boolean sharedStorage, int repFactor, int nThreads) throws Exception {
     final boolean doSplit = true;  // test debugging aid: set to false if you want to check that the test passes if we don't do a split
-    final boolean updateFailureOK = true;  // TODO: this should be changed to false after the NPE bug is fixed
+    final boolean updateFailureOK = false;  // we should not expect any of our updates to fail without a node failure
     final CloudSolrClient client = createCollection(collectionName, sharedStorage, repFactor);
 
     final ConcurrentHashMap<String,Long> model = new ConcurrentHashMap<>();  // what the index should contain
@@ -248,8 +246,13 @@ public class SharedStorageSplitTest extends SolrCloudSharedStoreTestCase  {
               // Try all docs in the same update request
               UpdateRequest updateReq = new UpdateRequest();
               updateReq.add(sdoc("id", docId));
-              UpdateResponse ursp = updateReq.commit(client, collectionName);  // uncomment this if you want a commit each time
-              // UpdateResponse ursp = updateReq.process(client, collectionName);
+
+              UpdateResponse ursp;
+              if (random().nextInt(4)==0) { // add commit 25% of the time
+                ursp = updateReq.commit(client, collectionName);
+              } else {
+                ursp = updateReq.process(client, collectionName);
+              }
 
               updateLatch.get().countDown();
               if (ursp.getStatus() == 0) {
