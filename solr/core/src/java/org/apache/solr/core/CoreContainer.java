@@ -647,6 +647,9 @@ public class CoreContainer {
 
     zkSys.initZooKeeper(this, solrHome, cfg.getCloudConfig());
     if (isZooKeeperAware()) {
+      packageLoader = new PackageLoader(this);
+      containerHandlers.getApiBag().register(new AnnotatedApi(packageLoader.getPackageAPI().editAPI), Collections.EMPTY_MAP);
+      containerHandlers.getApiBag().register(new AnnotatedApi(packageLoader.getPackageAPI().readAPI), Collections.EMPTY_MAP);
       pkiAuthenticationPlugin = new PKIAuthenticationPlugin(this, zkSys.getZkController().getNodeName(),
           (PublicKeyHandler) containerHandlers.get(PublicKeyHandler.PATH));
       // use deprecated API for back-compat, remove in 9.0
@@ -744,9 +747,6 @@ public class CoreContainer {
 
     if (isZooKeeperAware()) {
       metricManager.loadClusterReporters(metricReporters, this);
-      packageLoader = new PackageLoader(this);
-      containerHandlers.getApiBag().register(new AnnotatedApi(packageLoader.getPackageAPI().editAPI), Collections.EMPTY_MAP);
-      containerHandlers.getApiBag().register(new AnnotatedApi(packageLoader.getPackageAPI().readAPI), Collections.EMPTY_MAP);
     }
 
 
