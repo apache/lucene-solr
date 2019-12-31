@@ -28,6 +28,8 @@ Improvements
 
 * LUCENE-9105: UniformSplit postings format detects corrupted index and better handles IO exceptions. (Bruno Roustant)
 
+* LUCENE-9106: UniformSplit postings format allows extension of block/line serializers. (Bruno Roustant)
+
 Optimizations
 ---------------------
 (No changes)

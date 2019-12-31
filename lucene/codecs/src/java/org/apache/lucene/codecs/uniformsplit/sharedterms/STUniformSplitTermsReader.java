@@ -47,13 +47,15 @@ import static org.apache.lucene.codecs.uniformsplit.sharedterms.STUniformSplitPo
 public class STUniformSplitTermsReader extends UniformSplitTermsReader {
 
   public STUniformSplitTermsReader(PostingsReaderBase postingsReader, SegmentReadState state, BlockDecoder blockDecoder) throws IOException {
-    super(postingsReader, state, blockDecoder, NAME, VERSION_START,
-        VERSION_CURRENT, TERMS_BLOCKS_EXTENSION, TERMS_DICTIONARY_EXTENSION);
+    this(postingsReader, state, blockDecoder, FieldMetadata.Serializer.INSTANCE,
+        NAME, VERSION_START, VERSION_CURRENT, TERMS_BLOCKS_EXTENSION, TERMS_DICTIONARY_EXTENSION);
   }
 
-  protected STUniformSplitTermsReader(PostingsReaderBase postingsReader, SegmentReadState state, BlockDecoder blockDecoder,
-                                      String codecName, int versionStart, int versionCurrent, String termsBlocksExtension, String dictionaryExtension) throws IOException {
-    super(postingsReader, state, blockDecoder, codecName, versionStart, versionCurrent, termsBlocksExtension, dictionaryExtension);
+  protected STUniformSplitTermsReader(PostingsReaderBase postingsReader, SegmentReadState state,
+                                      BlockDecoder blockDecoder, FieldMetadata.Serializer fieldMetadataReader,
+                                      String codecName, int versionStart, int versionCurrent,
+                                      String termsBlocksExtension, String dictionaryExtension) throws IOException {
+    super(postingsReader, state, blockDecoder, fieldMetadataReader, codecName, versionStart, versionCurrent, termsBlocksExtension, dictionaryExtension);
   }
 
   @Override
