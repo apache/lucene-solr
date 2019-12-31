@@ -118,11 +118,11 @@ Upgrade Notes
 
 * SOLR-13983: Process execution is removed from SystemInfoHandler. A best-effort attempt to
   execute "uname -a" and "uptime" on non-Windows platforms is no longer made. (rmuir)
-  
+
 * SOLR-14095 introduces a change in the format used for the elements in the Overseer queues and maps (see the Jira
   issue for details on the reasons for the change). This queue is used internally by the Overseer to reliably handle
   operations, to communicate operation results between the Overseer and the coordinator node, and by the
-  REQUESTSTATUS API for displaying information about async Collection operations. 
+  REQUESTSTATUS API for displaying information about async Collection operations.
   This change won’t require you to change any client-side code you should see no differences on the client side,
   however, it does require some care when upgrading an existing SolrCloud cluster:
   - If you are upgrading Solr with an atomic restart strategy:
@@ -149,7 +149,7 @@ Upgrade Notes
       system property
   If you prefer to keep the old (but insecure) serialization strategy, you can start your nodes using the
   property: `-Dsolr.useUnsafeOverseerResponse=true`. Keep in mind that this will be removed in future version of Solr.
- 
+
  * SOLR-13808: add cache=false into uderneath BoolQParser's filter clause or {"bool":{"filter":..}} to avoid caching in
    filterCache. (Mikhail Khludnev)
 
@@ -159,7 +159,7 @@ New Features
 
 Improvements
 ---------------------
-* SOLR-14120: Define JavaScript methods 'includes' and 'startsWith' to ensure AdminUI can be displayed when using 
+* SOLR-14120: Define JavaScript methods 'includes' and 'startsWith' to ensure AdminUI can be displayed when using
   Internet Explorer 11 (jafurrer).
 
 * SOLR-14042: Fix varargs precommit warnings (Andraas Salamon via Jason Gerlowski)
@@ -182,6 +182,8 @@ Improvements
 
 * SOLR-13808: filter in BoolQParser and {"bool":{"filter":..}} in Query DSL are cached by default (Mikhail Khludnev)
 
+* SOLR-14129: Reuse Jackson ObjectMapper in AuditLoggerPlugin (janhoy)
+
 Optimizations
 ---------------------
 (No changes)
@@ -194,6 +196,8 @@ Bug Fixes
 * SOLR-14017: Ensure bin/solr's -q and -v options work with examples (Andy Vuong via Jason Gerlowski)
 
 * SOLR-14106: Cleanup Jetty SslContextFactory usage (Ryan Rockenbaugh, Jan Hoydahl, Kevin Risden)
+
+* SOLR-14109: Always log to stdout from server/scripts/cloud-scripts/zkcli.{bat|sh} (janhoy)
 
 Other Changes
 ---------------------

@@ -23,7 +23,7 @@ This page highlights the biggest changes, including new features you may want to
 
 == Solr 8 Upgrade Planning
 
-Before staring an upgrade to Solr 8, please take the time to review all information about changes from the version you are currently on up to Solr 8.
+Before starting an upgrade to Solr 8, please take the time to review all information about changes from the version you are currently on up to Solr 8.
 
 You should also consider all changes that have been made to Solr in any version you have not upgraded to already. For example, if you are currently using Solr 7.4, you should review changes made in all subsequent 7.x releases in addition to changes for 8.0.
 
