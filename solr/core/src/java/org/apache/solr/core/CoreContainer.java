@@ -1319,7 +1319,7 @@ public class CoreContainer {
         return core.getDirectoryFactory().isSharedStorage();
       } else {
         ConfigSet configSet = getConfigSet(cd);
-        return DirectoryFactory.loadDirectoryFactory(configSet.getSolrConfig(), this, null).isSharedStorage();
+        return DirectoryFactory.loadDirectoryFactory(configSet.getSolrConfig(), this, null, configSet.getSolrConfig().getResourceLoader()).isSharedStorage();
       }
     }
   }
@@ -1393,7 +1393,7 @@ public class CoreContainer {
     SolrConfig config = coreConfig.getSolrConfig();
 
     String registryName = SolrMetricManager.getRegistryName(SolrInfoBean.Group.core, dcore.getName());
-    DirectoryFactory df = DirectoryFactory.loadDirectoryFactory(config, this, registryName);
+    DirectoryFactory df = DirectoryFactory.loadDirectoryFactory(config, this, registryName, config.getResourceLoader());
     String dataDir = SolrCore.findDataDir(df, null, config, dcore);
 
     String tmpIdxDirName = "index." + new SimpleDateFormat(SnapShooter.DATE_FMT, Locale.ROOT).format(new Date());

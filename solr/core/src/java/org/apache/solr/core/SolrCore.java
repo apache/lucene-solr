@@ -109,6 +109,7 @@ import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.metrics.SolrCoreMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
+import org.apache.solr.pkg.PackageAwareSolrClassLoader;
 import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
@@ -197,6 +198,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
   private final SolrConfig solrConfig;
   private final SolrResourceLoader resourceLoader;
+  private final SolrClassLoader packageClassLoader;
   private volatile IndexSchema schema;
   private final NamedList configSetProperties;
   private final String dataDir;
@@ -282,6 +284,10 @@ public final class SolrCore implements SolrInfoBean, Closeable {
    */
   public SolrResourceLoader getResourceLoader() {
     return resourceLoader;
+  }
+
+  public SolrClassLoader getPackageClassLoader(){
+    return packageClassLoader;
   }
 
   /** Gets the SolrResourceLoader for a given package
@@ -520,7 +526,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     final PluginInfo info = solrConfig.getPluginInfo(IndexDeletionPolicy.class.getName());
     final IndexDeletionPolicy delPolicy;
     if (info != null) {
-      delPolicy = createInstance(info.className, IndexDeletionPolicy.class, "Deletion Policy for SOLR", this, getResourceLoader());
+      delPolicy = createInstance(info, IndexDeletionPolicy.class, "Deletion Policy for SOLR", this, getPackageClassLoader());
       if (delPolicy instanceof NamedListInitializedPlugin) {
         ((NamedListInitializedPlugin) delPolicy).init(info.initArgs);
       }
@@ -709,7 +715,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   }
 
   private DirectoryFactory initDirectoryFactory() {
-    return DirectoryFactory.loadDirectoryFactory(solrConfig, coreContainer, coreMetricManager.getRegistryName());
+    return DirectoryFactory.loadDirectoryFactory(solrConfig, coreContainer, coreMetricManager.getRegistryName(), packageClassLoader);
   }
 
   private RecoveryStrategy.Builder initRecoveryStrategyBuilder() {
@@ -717,7 +723,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     final RecoveryStrategy.Builder rsBuilder;
     if (info != null && info.className != null) {
       log.info(info.className);
-      rsBuilder = getResourceLoader().newInstance(info.className, RecoveryStrategy.Builder.class);
+      rsBuilder = getPackageClassLoader ().newInstance(info, RecoveryStrategy.Builder.class);
     } else {
       log.debug("solr.RecoveryStrategy.Builder");
       rsBuilder = new RecoveryStrategy.Builder();
@@ -732,7 +738,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     IndexReaderFactory indexReaderFactory;
     PluginInfo info = solrConfig.getPluginInfo(IndexReaderFactory.class.getName());
     if (info != null) {
-      indexReaderFactory = resourceLoader.newInstance(info.className, IndexReaderFactory.class);
+      indexReaderFactory =  packageClassLoader.newInstance(info, IndexReaderFactory.class);
       indexReaderFactory.init(info.initArgs);
     } else {
       indexReaderFactory = new StandardIndexReaderFactory();
@@ -806,23 +812,27 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     cleanupOldIndexDirectories(reload);
   }
 
+  public static <T> T createInstance(String className, Class<T> cast, String msg, SolrCore core, SolrClassLoader resourceLoader) {
+    return createInstance(new PluginInfo(cast.getSimpleName(), Collections.singletonMap("class", className)) , cast, msg, core,  resourceLoader);
+
+  }
 
   /**
    * Creates an instance by trying a constructor that accepts a SolrCore before
    * trying the default (no arg) constructor.
    *
-   * @param className the instance class to create
+   * @param info the instance class to create
    * @param cast      the class or interface that the instance should extend or implement
    * @param msg       a message helping compose the exception error if any occurs.
    * @param core      The SolrCore instance for which this object needs to be loaded
    * @return the desired instance
    * @throws SolrException if the object could not be instantiated
    */
-  public static <T> T createInstance(String className, Class<T> cast, String msg, SolrCore core, SolrClassLoader resourceLoader) {
+  public static <T> T createInstance(PluginInfo info, Class<T> cast, String msg, SolrCore core, SolrClassLoader resourceLoader) {
     Class<? extends T> clazz = null;
     if (msg == null) msg = "SolrCore Object";
     try {
-      clazz = resourceLoader.findClass(className, cast);
+      clazz = resourceLoader.findClass(info, cast);
       //most of the classes do not have constructors which takes SolrCore argument. It is recommended to obtain SolrCore by implementing SolrCoreAware.
       // So invariably always it will cause a  NoSuchMethodException. So iterate though the list of available constructors
       Constructor<?>[] cons = clazz.getConstructors();
@@ -832,7 +842,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
           return cast.cast(con.newInstance(core));
         }
       }
-      return resourceLoader.newInstance(className, cast);//use the empty constructor
+      return resourceLoader.newInstance(info, cast);//use the empty constructor
     } catch (SolrException e) {
       throw e;
     } catch (Exception e) {
@@ -843,7 +853,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         throw inner;
       }
 
-      throw new SolrException(ErrorCode.SERVER_ERROR, "Error Instantiating " + msg + ", " + className + " failed to instantiate " + cast.getName(), e);
+      throw new SolrException(ErrorCode.SERVER_ERROR, "Error Instantiating " + msg + ", " + info.className + " failed to instantiate " + cast.getName(), e);
     }
   }
 
@@ -945,6 +955,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
 
       resourceLoader = config.getResourceLoader();
       resourceLoader.core = this;
+      packageClassLoader = coreContainer.isZooKeeperAware()?
+          new PackageAwareSolrClassLoader(this, () -> new Thread(() -> getCoreContainer().reload(name)).start()) :
+          resourceLoader;
       this.solrConfig = config;
       this.configSetProperties = configSetProperties;
       // Initialize the metrics manager
@@ -1423,7 +1436,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     final PluginInfo info = solrConfig.getPluginInfo(CodecFactory.class.getName());
     final CodecFactory factory;
     if (info != null) {
-      factory = resourceLoader.newInstance(info.className, CodecFactory.class);
+      factory = packageClassLoader.newInstance(info, CodecFactory.class);
       factory.init(info.initArgs);
     } else {
       factory = new CodecFactory() {

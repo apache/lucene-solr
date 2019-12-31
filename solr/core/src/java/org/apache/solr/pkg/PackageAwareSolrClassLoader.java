@@ -20,6 +20,7 @@ package org.apache.solr.pkg;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,8 +32,6 @@ import org.apache.solr.core.SolrClassLoader;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.plugin.SolrCoreAware;
-
-import static java.util.Collections.singletonMap;
 
 /**
  * This class implements a {@link SolrClassLoader} that can  identify the correct packages
@@ -64,6 +63,11 @@ public class PackageAwareSolrClassLoader implements SolrClassLoader {
   }
 
   @Override
+  public <T> T newInstance(PluginInfo info, Class<T> expectedType) {
+    return null;
+  }
+
+  @Override
   public InputStream openResource(String resource) throws IOException {
     return loader.openResource(resource);
   }
@@ -79,24 +83,26 @@ public class PackageAwareSolrClassLoader implements SolrClassLoader {
     return loadWithRightPackageLoader(cname, expectedType,
         (pkgloader, name) -> pkgloader.newInstance(name, expectedType, subpackages));
   }
-
-  private <T> T loadWithRightPackageLoader(String cname, Class expectedType, BiFunction<SolrClassLoader, String, T> fun) {
-    PluginInfo.ParsedClassName parsedClassName = new PluginInfo.ParsedClassName(cname);
-    if (parsedClassName.pkg == null) {
-      return  fun.apply(loader, parsedClassName.klas);
+  private <T> T loadWithRightPackageLoader(PluginInfo info, BiFunction<SolrClassLoader, String, T> fun) {
+    if (info.pkgName == null) {
+      return  fun.apply(loader, info.className);
     } else {
-      PackageLoader.Package pkg = core.getCoreContainer().getPackageLoader().getPackage(parsedClassName.pkg);
+      PackageLoader.Package pkg = core.getCoreContainer().getPackageLoader().getPackage(info.pkgName);
       PackageLoader.Package.Version ver = PackagePluginHolder.getRightVersion(pkg, core);
-      T result = fun.apply(ver.getLoader(), parsedClassName.klas);
+      T result = fun.apply(ver.getLoader(), info.className);
       if (result instanceof SolrCoreAware) {
         loader.registerSolrCoreAware((SolrCoreAware) result);
       }
-      classNameVsPkg.put(cname, ver.getVersionInfo());
-      PackageListeners.Listener listener = new PackageListener(expectedType, cname, parsedClassName);
+      classNameVsPkg.put(info.cName.toString(), ver.getVersionInfo());
+      PackageListeners.Listener listener = new PackageListener(info);
       listeners.add(listener);
       core.getPackageListeners().addListener(listener);
       return result;
     }
+  }
+
+  private <T> T loadWithRightPackageLoader(String cname, Class expectedType, BiFunction<SolrClassLoader, String, T> fun) {
+    return loadWithRightPackageLoader(new PluginInfo(expectedType.getSimpleName(), Collections.singletonMap("class", cname)), fun);
   }
 
   @Override
@@ -119,20 +125,15 @@ public class PackageAwareSolrClassLoader implements SolrClassLoader {
   }
 
   private class PackageListener implements PackageListeners.Listener {
-
-    private final String cname;
-    private final PluginInfo.ParsedClassName parsedClassName;
     PluginInfo info;
 
-    public PackageListener(Class expectedType, String cname, PluginInfo.ParsedClassName parsedClassName) {
-      this.cname = cname;
-      this.parsedClassName = parsedClassName;
-      info = new PluginInfo(expectedType.getSimpleName(), singletonMap("class", cname));
+    public PackageListener(PluginInfo pluginInfo) {
+      this.info = pluginInfo;
     }
 
     @Override
     public String packageName() {
-      return parsedClassName.pkg;
+      return info.pkgName;
     }
 
     @Override
@@ -144,7 +145,7 @@ public class PackageAwareSolrClassLoader implements SolrClassLoader {
     public void changed(PackageLoader.Package pkg, PackageListeners.Ctx ctx) {
       PackageLoader.Package.Version rightVersion = PackagePluginHolder.getRightVersion(pkg, core);
       if (rightVersion == null ) return;
-      PackageAPI.PkgVersion v = classNameVsPkg.get(parsedClassName.toString());
+      PackageAPI.PkgVersion v = classNameVsPkg.get(info.cName.toString());
       if(Objects.equals(v.version ,rightVersion.getVersionInfo().version)) return; //nothing has changed no need to reload
       Runnable old = ctx.getPostProcessor(PackageAwareSolrClassLoader.class.getName());// just want to do one refresh for every package laod
       if (old == null) ctx.addPostProcessor(PackageAwareSolrClassLoader.class.getName(), reloadRunnable);
@@ -152,7 +153,7 @@ public class PackageAwareSolrClassLoader implements SolrClassLoader {
 
     @Override
     public PackageAPI.PkgVersion getPackageVersion() {
-      return classNameVsPkg.get(cname);
+      return classNameVsPkg.get(info.cName.toString());
     }
   }
 }

@@ -29,7 +29,15 @@ public interface SolrClassLoader extends Closeable, ResourceLoader {
 
   <T> T newInstance(String cname, Class<T> expectedType, String... subpackages);
 
+  default <T> T newInstance(PluginInfo info, Class<T> expectedType) {
+   return newInstance(info.className, expectedType);
+  }
+
   <T> T newInstance(String cName, Class<T> expectedType, String[] subPackages, Class[] params, Object[] args);
 
   <T> Class<? extends T> findClass(String cname, Class<T> expectedType);
+
+  default  <T> Class<? extends T> findClass(PluginInfo info, Class<T> expectedType){
+    return findClass(info.className, expectedType);
+  }
 }

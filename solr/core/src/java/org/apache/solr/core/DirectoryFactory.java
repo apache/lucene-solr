@@ -23,9 +23,9 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.NoSuchFileException;
-import java.util.Arrays;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -415,12 +415,12 @@ public abstract class DirectoryFactory implements NamedListInitializedPlugin,
   /**
    * Create a new DirectoryFactory instance from the given SolrConfig and tied to the specified core container.
    */
-  static DirectoryFactory loadDirectoryFactory(SolrConfig config, CoreContainer cc, String registryName) {
+  static DirectoryFactory loadDirectoryFactory(SolrConfig config, CoreContainer cc, String registryName , SolrClassLoader loader) {
     final PluginInfo info = config.getPluginInfo(DirectoryFactory.class.getName());
     final DirectoryFactory dirFactory;
     if (info != null) {
       log.debug(info.className);
-      dirFactory = config.getResourceLoader().newInstance(info.className, DirectoryFactory.class);
+      dirFactory = loader.newInstance(info, DirectoryFactory.class);
       // allow DirectoryFactory instances to access the CoreContainer
       dirFactory.initCoreContainer(cc);
       dirFactory.init(info.initArgs);
