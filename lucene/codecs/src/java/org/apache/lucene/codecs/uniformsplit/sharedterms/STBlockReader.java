@@ -117,6 +117,11 @@ public class STBlockReader extends BlockReader {
     return blockStartFP > fieldMetadata.getLastBlockStartFP() || super.isBeyondLastTerm(searchedTerm, blockStartFP);
   }
 
+  @Override
+  protected STBlockLine.Serializer createBlockLineSerializer() {
+    return new STBlockLine.Serializer();
+  }
+
   /**
    * Reads the {@link BlockTermState} on the current line for this reader's field.
    *
@@ -125,7 +130,7 @@ public class STBlockReader extends BlockReader {
   @Override
   protected BlockTermState readTermState() throws IOException {
     termStatesReadBuffer.setPosition(blockFirstLineStart + blockHeader.getTermStatesBaseOffset() + blockLine.getTermStateRelativeOffset());
-    return termState = STBlockLine.Serializer.readTermStateForField(
+    return termState = ((STBlockLine.Serializer) blockLineReader).readTermStateForField(
         fieldMetadata.getFieldInfo().number,
         termStatesReadBuffer,
         termStateSerializer,

@@ -98,7 +98,7 @@ public class STMergingBlockReader extends STBlockReader {
   public void readFieldTermStatesMap(Map<String, BlockTermState> fieldTermStatesMap) throws IOException {
     if (term() != null) {
       termStatesReadBuffer.setPosition(blockFirstLineStart + blockHeader.getTermStatesBaseOffset() + blockLine.getTermStateRelativeOffset());
-      STBlockLine.Serializer.readFieldTermStatesMap(
+      ((STBlockLine.Serializer) blockLineReader).readFieldTermStatesMap(
           termStatesReadBuffer,
           termStateSerializer,
           blockHeader,
