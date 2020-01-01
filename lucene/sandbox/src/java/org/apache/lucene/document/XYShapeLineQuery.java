@@ -24,7 +24,6 @@ import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.geo.XYLine;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.util.Version;
 
 import static org.apache.lucene.geo.XYEncodingUtils.decode;
 
@@ -88,8 +87,8 @@ final class XYShapeLineQuery extends ShapeQuery {
   }
 
   @Override
-  protected boolean queryMatches(byte[] t, ShapeField.DecodedTriangle scratchTriangle, QueryRelation queryRelation, Version version) {
-    ShapeField.decodeTriangle(t, scratchTriangle, version);
+  protected boolean queryMatches(byte[] t, ShapeField.DecodedTriangle scratchTriangle, QueryRelation queryRelation) {
+    ShapeField.decodeTriangle(t, scratchTriangle);
 
     double alat = decode(scratchTriangle.aY);
     double alon = decode(scratchTriangle.aX);
@@ -107,8 +106,8 @@ final class XYShapeLineQuery extends ShapeQuery {
   }
 
   @Override
-  protected Component2D.WithinRelation queryWithin(byte[] t, ShapeField.DecodedTriangle scratchTriangle, Version version) {
-    ShapeField.decodeTriangle(t, scratchTriangle, version);
+  protected Component2D.WithinRelation queryWithin(byte[] t, ShapeField.DecodedTriangle scratchTriangle) {
+    ShapeField.decodeTriangle(t, scratchTriangle);
 
     double alat = decode(scratchTriangle.aY);
     double alon = decode(scratchTriangle.aX);

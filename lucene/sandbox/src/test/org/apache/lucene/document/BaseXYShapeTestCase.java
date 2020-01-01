@@ -28,7 +28,6 @@ import org.apache.lucene.geo.XYPolygon;
 import org.apache.lucene.geo.XYPolygon2D;
 import org.apache.lucene.geo.XYRectangle;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.util.Version;
 
 import static org.apache.lucene.geo.XYEncodingUtils.decode;
 import static org.apache.lucene.geo.XYEncodingUtils.encode;
@@ -165,7 +164,7 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
         byte[] encoded = new byte[7 * ShapeField.BYTES];
         ShapeField.encodeTriangle(encoded, encode(ay), encode(ax), ab, encode(by), encode(bx), bc, encode(cy), encode(cx), ca);
         ShapeField.DecodedTriangle triangle  = new ShapeField.DecodedTriangle();
-        ShapeField.decodeTriangle(encoded, triangle, Version.LATEST);
+        ShapeField.decodeTriangle(encoded, triangle);
         return triangle;
       }
     };

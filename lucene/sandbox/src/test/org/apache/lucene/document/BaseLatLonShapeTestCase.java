@@ -29,7 +29,6 @@ import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
-import org.apache.lucene.util.Version;
 
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
@@ -286,7 +285,7 @@ public abstract class BaseLatLonShapeTestCase extends BaseShapeTestCase {
         byte[] encoded = new byte[7 * ShapeField.BYTES];
         ShapeField.encodeTriangle(encoded, encodeLatitude(ay), encodeLongitude(ax), ab, encodeLatitude(by), encodeLongitude(bx), bc, encodeLatitude(cy), encodeLongitude(cx), ca);
         ShapeField.DecodedTriangle triangle  = new ShapeField.DecodedTriangle();
-        ShapeField.decodeTriangle(encoded, triangle, Version.LATEST);
+        ShapeField.decodeTriangle(encoded, triangle);
         return triangle;
       }
     };

@@ -25,7 +25,6 @@ import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Line2D;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.util.Version;
 
 /**
  * Finds all previously indexed geo shapes that intersect the specified arbitrary {@code Line}.
@@ -86,8 +85,8 @@ final class LatLonShapeLineQuery extends ShapeQuery {
   }
 
   @Override
-  protected boolean queryMatches(byte[] t, ShapeField.DecodedTriangle scratchTriangle, QueryRelation queryRelation, Version version) {
-    ShapeField.decodeTriangle(t, scratchTriangle, version);
+  protected boolean queryMatches(byte[] t, ShapeField.DecodedTriangle scratchTriangle, QueryRelation queryRelation) {
+    ShapeField.decodeTriangle(t, scratchTriangle);
 
     double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle.aY);
     double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle.aX);
@@ -105,8 +104,8 @@ final class LatLonShapeLineQuery extends ShapeQuery {
   }
 
   @Override
-  protected Component2D.WithinRelation queryWithin(byte[] t, ShapeField.DecodedTriangle scratchTriangle, Version version) {
-    ShapeField.decodeTriangle(t, scratchTriangle, version);
+  protected Component2D.WithinRelation queryWithin(byte[] t, ShapeField.DecodedTriangle scratchTriangle) {
+    ShapeField.decodeTriangle(t, scratchTriangle);
 
     double alat = GeoEncodingUtils.decodeLatitude(scratchTriangle.aY);
     double alon = GeoEncodingUtils.decodeLongitude(scratchTriangle.aX);
