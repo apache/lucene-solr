@@ -244,15 +244,24 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
     assertU(adoc("text", "This document contains # special characters, while the other document contains the same # special character.", "id", "103"));
     assertU(adoc("text", "While the other document contains the same # special character.", "id", "104"));
     assertU(commit());
-    assertQ("CUSTOM breakiterator", 
+    assertQ("CUSTOM breakiterator",
         req("q", "text:document", "sort", "id asc", "hl", "true", "hl.bs.type", "SEPARATOR","hl.bs.separator","#","hl.fragsize", "-1"),
         "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='This <em>document</em> contains #'");
-    assertQ("different breakiterator", 
+    assertQ("different breakiterator",
         req("q", "text:document", "sort", "id asc", "hl", "true", "hl.bs.type", "SEPARATOR","hl.bs.separator","#","hl.fragsize", "-1"),
         "//lst[@name='highlighting']/lst[@name='104']/arr[@name='text']/str='While the other <em>document</em> contains the same #'");
 
+    assertQ("CUSTOM breakiterator with fragsize 70 minimum",
+        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.bs.type", "SEPARATOR","hl.bs.separator","#","hl.fragsize", "70", "hl.fragsizeIsMinimum", "true"),
+        "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='This <em>document</em> contains # special characters, while the other <em>document</em> contains the same #'");
     assertQ("CUSTOM breakiterator with fragsize 70",
         req("q", "text:document", "sort", "id asc", "hl", "true", "hl.bs.type", "SEPARATOR","hl.bs.separator","#","hl.fragsize", "70"),
+        "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='This <em>document</em> contains #'");
+    assertQ("CUSTOM breakiterator with fragsize 90",
+        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.bs.type", "SEPARATOR","hl.bs.separator","#","hl.fragsize", "90"),
+        "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='This <em>document</em> contains #'");
+    assertQ("CUSTOM breakiterator with fragsize 100",
+        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.bs.type", "SEPARATOR","hl.bs.separator","#","hl.fragsize", "100"),
         "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='This <em>document</em> contains # special characters, while the other <em>document</em> contains the same #'");
   }
 
@@ -262,11 +271,17 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
     assertU(adoc("id", "10", "text", "This is a sentence just under seventy chars in length blah blah. Next sentence is here."));
     assertU(commit());
     assertQ("default fragsize",
-        req("q", "text:seventy", "hl", "true"),
+        req("q", "text:seventy", "hl", "true", "hl.fragsizeIsMinimum", "true"),
         "//lst[@name='highlighting']/lst[@name='10']/arr[@name='text']/str='This is a sentence just under <em>seventy</em> chars in length blah blah. Next sentence is here.'");
-    assertQ("smaller fragsize",
-        req("q", "text:seventy", "hl", "true", "hl.fragsize", "60"), // a bit smaller
+    assertQ("default fragsize",
+        req("q", "text:seventy", "hl", "true", "hl.fragsizeIsMinimum", "true", "hl.fragsize", "60"),
         "//lst[@name='highlighting']/lst[@name='10']/arr[@name='text']/str='This is a sentence just under <em>seventy</em> chars in length blah blah. '");
+    assertQ("smaller fragsize",
+        req("q", "text:seventy", "hl", "true"),
+        "//lst[@name='highlighting']/lst[@name='10']/arr[@name='text']/str='This is a sentence just under <em>seventy</em> chars in length blah blah. '");
+    assertQ("default fragsize",
+        req("q", "text:seventy", "hl", "true", "hl.fragsize", "90"),
+        "//lst[@name='highlighting']/lst[@name='10']/arr[@name='text']/str='This is a sentence just under <em>seventy</em> chars in length blah blah. Next sentence is here.'");
   }
   
   public void testEncoder() {
