@@ -26,8 +26,6 @@ import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.Transition;
-import org.apache.lucene.util.compress.LZ4;
-import org.apache.lucene.util.compress.LowercaseAsciiCompression;
 import org.apache.lucene.util.fst.FST;
 
 // TODO: can we share this with the frame in STE?
@@ -196,20 +194,13 @@ final class IntersectTermsEnumFrame {
       if (suffixBytes.length < numSuffixBytes) {
         suffixBytes = new byte[ArrayUtil.oversize(numSuffixBytes, 1)];
       }
-      final int compressionAlg = (int) codeL & 0x03;
-      switch (compressionAlg) {
-        case 0x00: // no compression
-          ite.in.readBytes(suffixBytes, 0, numSuffixBytes);
-          break;
-        case 0x01: // lowercase ASCII
-          LowercaseAsciiCompression.decompress(ite.in, suffixBytes, numSuffixBytes);
-          break;
-        case 0x02: // LZ4
-          LZ4.decompress(ite.in, numSuffixBytes, suffixBytes, 0);
-          break;
-        default:
-          throw new CorruptIndexException("Illegal compression algorithm: " + compressionAlg, ite.in);
+      final CompressionAlgorithm compressionAlg;
+      try {
+        compressionAlg = CompressionAlgorithm.byCode((int) codeL & 0x03);
+      } catch (IllegalArgumentException e) {
+        throw new CorruptIndexException(e.getMessage(), ite.in, e);
       }
+      compressionAlg.read(ite.in, suffixBytes, numSuffixBytes);
       suffixesReader.reset(suffixBytes, 0, numSuffixBytes);
 
       final int numSuffixLengthBytes = ite.in.readVInt();

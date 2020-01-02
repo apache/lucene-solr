@@ -128,7 +128,7 @@ public class Stats {
       totalUncompressedBlockSuffixBytes += frame.suffixLengthsReader.length();
     }
     totalBlockStatsBytes += frame.statsReader.length();
-    compressionAlgorithms[frame.compressionAlg]++;
+    compressionAlgorithms[frame.compressionAlg.code]++;
   }
 
   void endBlock(SegmentTermsEnumFrame frame) {
@@ -184,8 +184,20 @@ public class Stats {
     out.println("    " + (totalBlockCount-floorSubBlockCount) + " non-floor blocks");
     out.println("    " + floorSubBlockCount + " floor sub-blocks");
     out.println("    " + totalUncompressedBlockSuffixBytes + " term suffix bytes before compression" + (totalBlockCount != 0 ? " (" + String.format(Locale.ROOT, "%.1f", ((double) totalBlockSuffixBytes)/totalBlockCount) + " suffix-bytes/block)" : ""));
+    StringBuilder compressionCounts = new StringBuilder();
+    for (int code = 0; code < compressionAlgorithms.length; ++code) {
+      if (compressionAlgorithms[code] == 0) {
+        continue;
+      }
+      if (compressionCounts.length() > 0) {
+        compressionCounts.append(", ");
+      }
+      compressionCounts.append(CompressionAlgorithm.byCode(code));
+      compressionCounts.append(": ");
+      compressionCounts.append(compressionAlgorithms[code]);
+    }
     out.println("    " + totalBlockSuffixBytes + " compressed term suffix bytes" + (totalBlockCount != 0 ? " (" + String.format(Locale.ROOT, "%.2f", ((double) totalBlockSuffixBytes)/totalUncompressedBlockSuffixBytes) +
-        " compression ratio - compression count by algorithm: uncompressed:" + compressionAlgorithms[0] + ", lowercase_ascii:" + compressionAlgorithms[1] + ", LZ4:" + compressionAlgorithms[2] + ")"  : ""));
+        " compression ratio - compression count by algorithm: " + compressionCounts : ""));
     out.println("    " + totalBlockStatsBytes + " term stats bytes" + (totalBlockCount != 0 ? " (" + String.format(Locale.ROOT, "%.1f", ((double) totalBlockStatsBytes)/totalBlockCount) + " stats-bytes/block)" : ""));
     out.println("    " + totalBlockOtherBytes + " other bytes" + (totalBlockCount != 0 ? " (" + String.format(Locale.ROOT, "%.1f", ((double) totalBlockOtherBytes)/totalBlockCount) + " other-bytes/block)" : ""));
     if (totalBlockCount != 0) {

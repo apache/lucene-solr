@@ -813,27 +813,26 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
 
       // Write suffixes byte[] blob to terms dict output, either uncompressed, compressed with LZ4 or with LowercaseAsciiCompression.
       LZ4.compress(suffixWriter.bytes(), 0, suffixWriter.length(), spareWriter, compressionHashTable);
-      long token = ((long) suffixWriter.length() << 3);
-      if (isLeafBlock) {
-        token |= 0x04;
-      }
-      boolean compressed = false;
+      CompressionAlgorithm compressionAlg = CompressionAlgorithm.NO_COMPRESSION;
       if (spareWriter.size() < suffixWriter.length() - (suffixWriter.length() >>> 2)) {
         // LZ4 saved more than 25%, go for it
-        token |= 0x02;
-        compressed = true;
+        compressionAlg = CompressionAlgorithm.LZ4;
       } else {
         spareWriter.reset();
         if (spareBytes.length < suffixWriter.length()) {
           spareBytes = new byte[ArrayUtil.oversize(suffixWriter.length(), 1)];
         }
         if (LowercaseAsciiCompression.compress(suffixWriter.bytes(), suffixWriter.length(), spareBytes, spareWriter)) {
-          token |= 0x01;
-          compressed = true;
+          compressionAlg = CompressionAlgorithm.LOWERCASE_ASCII;
         }
       }
+      long token = ((long) suffixWriter.length()) << 3;
+      if (isLeafBlock) {
+        token |= 0x04;
+      }
+      token |= compressionAlg.code;
       termsOut.writeVLong(token);
-      if (compressed == false) {
+      if (compressionAlg == CompressionAlgorithm.NO_COMPRESSION) {
         termsOut.writeBytes(suffixWriter.bytes(), suffixWriter.length());
       } else {
         spareWriter.copyTo(termsOut);

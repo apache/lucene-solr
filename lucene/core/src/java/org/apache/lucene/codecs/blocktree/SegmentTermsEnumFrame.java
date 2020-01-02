@@ -26,8 +26,6 @@ import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.compress.LZ4;
-import org.apache.lucene.util.compress.LowercaseAsciiCompression;
 import org.apache.lucene.util.fst.FST;
 
 final class SegmentTermsEnumFrame {
@@ -188,20 +186,12 @@ final class SegmentTermsEnumFrame {
       if (suffixBytes.length < numSuffixBytes) {
         suffixBytes = new byte[ArrayUtil.oversize(numSuffixBytes, 1)];
       }
-      compressionAlg = (int) codeL & 0x03;
-      switch (compressionAlg) {
-        case 0x00: // no compression
-          ste.in.readBytes(suffixBytes, 0, numSuffixBytes);
-          break;
-        case 0x01: // lowercase ASCII
-          LowercaseAsciiCompression.decompress(ste.in, suffixBytes, numSuffixBytes);
-          break;
-        case 0x02: // LZ4
-          LZ4.decompress(ste.in, numSuffixBytes, suffixBytes, 0);
-          break;
-        default:
-          throw new CorruptIndexException("Illegal compression algorithm: " + compressionAlg, ste.in);
+      try {
+        compressionAlg = CompressionAlgorithm.byCode((int) codeL & 0x03);
+      } catch (IllegalArgumentException e) {
+        throw new CorruptIndexException(e.getMessage(), ste.in, e);
       }
+      compressionAlg.read(ste.in, suffixBytes, numSuffixBytes);
       suffixesReader.reset(suffixBytes, 0, numSuffixBytes);
 
       final int numSuffixLengthBytes = ste.in.readVInt();
@@ -535,7 +525,7 @@ final class SegmentTermsEnumFrame {
   private int startBytePos;
   private int suffix;
   private long subCode;
-  int compressionAlg;
+  CompressionAlgorithm compressionAlg;
 
   // for debugging
   /*
