@@ -33,10 +33,6 @@ enum CompressionAlgorithm {
       in.readBytes(out, 0, len);
     }
 
-    @Override
-    public String toString() {
-      return "no_compression";
-    }
   },
 
   LOWERCASE_ASCII(0x01) {
@@ -46,10 +42,6 @@ enum CompressionAlgorithm {
       LowercaseAsciiCompression.decompress(in, out, len);
     }
 
-    @Override
-    public String toString() {
-      return "lowercase_ascii";
-    }
   },
 
   LZ4(0x02) {
@@ -59,10 +51,6 @@ enum CompressionAlgorithm {
       org.apache.lucene.util.compress.LZ4.decompress(in, len, out, 0);
     }
 
-    @Override
-    public String toString() {
-      return "lz4";
-    }
   };
 
   private static final CompressionAlgorithm[] BY_CODE = new CompressionAlgorithm[3];
