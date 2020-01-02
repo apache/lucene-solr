@@ -17,7 +17,6 @@
 package org.apache.lucene.util.compress;
 
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
