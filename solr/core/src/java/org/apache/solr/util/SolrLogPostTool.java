@@ -17,6 +17,7 @@
 package org.apache.solr.util;
 
 import java.io.*;
+import java.nio.charset.Charset;
 import java.util.List;
 import java.util.ArrayList;
 import java.net.URLDecoder;
@@ -69,7 +70,7 @@ public class SolrLogPostTool {
         LineNumberReader bufferedReader = null;
 
         try {
-          bufferedReader = new LineNumberReader(new FileReader(file));
+          bufferedReader = new LineNumberReader(new InputStreamReader(new FileInputStream(file), Charset.defaultCharset()));
           LogRecordReader recordReader = new LogRecordReader(bufferedReader);
           SolrInputDocument doc = null;
           String fileName = file.getName();
@@ -461,33 +462,33 @@ public class SolrLogPostTool {
       for(String pair : pairs) {
         String[] parts = pair.split("=");
         if(parts.length == 2 && parts[0].equals("q")) {
-          String dq = URLDecoder.decode(parts[1]);
+          String dq = URLDecoder.decode(parts[1], Charset.defaultCharset());
           doc.addField("q_s", dq);
           doc.addField("q_t", dq);
         }
 
         if(parts[0].equals("rows")) {
-          String dr = URLDecoder.decode(parts[1]);
+          String dr = URLDecoder.decode(parts[1], Charset.defaultCharset());
           doc.addField("rows_i", dr);
         }
 
         if(parts[0].equals("distrib")) {
-          String dr = URLDecoder.decode(parts[1]);
+          String dr = URLDecoder.decode(parts[1], Charset.defaultCharset());
           doc.addField("distrib_s", dr);
         }
 
         if(parts[0].equals("isShard")) {
-          String dr = URLDecoder.decode(parts[1]);
+          String dr = URLDecoder.decode(parts[1], Charset.defaultCharset());
           doc.addField("isShard_s", dr);
         }
 
         if(parts[0].equals("wt")) {
-          String dr = URLDecoder.decode(parts[1]);
+          String dr = URLDecoder.decode(parts[1], Charset.defaultCharset());
           doc.addField("wt_s", dr);
         }
 
         if(parts[0].equals("facet")) {
-          String dr = URLDecoder.decode(parts[1]);
+          String dr = URLDecoder.decode(parts[1], Charset.defaultCharset());
           doc.addField("facet_s", dr);
         }
       }
