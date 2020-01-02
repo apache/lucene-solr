@@ -124,6 +124,8 @@ Bug Fixes
 
 * SOLR-14109: Always log to stdout from server/scripts/cloud-scripts/zkcli.{bat|sh} (janhoy)
 
+* SOLR-14122: SimUtils converts v2 to v1 request params incorrectly. (Li Cao, ab)
+
 Other Changes
 ---------------------
 
