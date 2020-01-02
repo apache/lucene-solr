@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import org.apache.lucene.store.ByteBuffersDataOutput;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -39,7 +40,7 @@ public class TestLowercaseAsciiCompression extends LuceneTestCase {
       assertTrue(compressed.size() < len);
       byte[] restored = new byte[len + random().nextInt(10)];
       LowercaseAsciiCompression.decompress(compressed.toDataInput(), restored, len);
-      assertArrayEquals(Arrays.copyOf(bytes, len), Arrays.copyOf(restored, len));
+      assertArrayEquals(ArrayUtil.copyOfSubArray(bytes, 0, len), ArrayUtil.copyOfSubArray(restored, 0, len));
       return true;
     } else {
       return false;
