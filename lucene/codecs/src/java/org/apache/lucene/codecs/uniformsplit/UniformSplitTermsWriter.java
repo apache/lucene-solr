@@ -128,6 +128,7 @@ public class UniformSplitTermsWriter extends FieldsConsumer {
   protected final int deltaNumLines;
 
   protected final BlockEncoder blockEncoder;
+  protected final FieldMetadata.Serializer fieldMetadataWriter;
   protected final IndexOutput blockOutput;
   protected final IndexOutput dictionaryOutput;
 
@@ -146,7 +147,7 @@ public class UniformSplitTermsWriter extends FieldsConsumer {
    */
   public UniformSplitTermsWriter(PostingsWriterBase postingsWriter, SegmentWriteState state,
                           int targetNumBlockLines, int deltaNumLines, BlockEncoder blockEncoder) throws IOException {
-    this(postingsWriter, state, targetNumBlockLines, deltaNumLines, blockEncoder,
+    this(postingsWriter, state, targetNumBlockLines, deltaNumLines, blockEncoder, FieldMetadata.Serializer.INSTANCE,
         NAME, VERSION_CURRENT, TERMS_BLOCKS_EXTENSION, TERMS_DICTIONARY_EXTENSION);
   }
 
@@ -164,7 +165,7 @@ public class UniformSplitTermsWriter extends FieldsConsumer {
    *                            It can be used for compression or encryption.
    */
   protected UniformSplitTermsWriter(PostingsWriterBase postingsWriter, SegmentWriteState state,
-                          int targetNumBlockLines, int deltaNumLines, BlockEncoder blockEncoder,
+                          int targetNumBlockLines, int deltaNumLines, BlockEncoder blockEncoder, FieldMetadata.Serializer fieldMetadataWriter,
                           String codecName, int versionCurrent, String termsBlocksExtension, String dictionaryExtension) throws IOException {
     validateSettings(targetNumBlockLines, deltaNumLines);
     IndexOutput blockOutput = null;
@@ -177,6 +178,7 @@ public class UniformSplitTermsWriter extends FieldsConsumer {
       this.targetNumBlockLines = targetNumBlockLines;
       this.deltaNumLines = deltaNumLines;
       this.blockEncoder = blockEncoder;
+      this.fieldMetadataWriter = fieldMetadataWriter;
 
       String termsName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, termsBlocksExtension);
       blockOutput = state.directory.createOutput(termsName, state.context);
@@ -278,7 +280,7 @@ public class UniformSplitTermsWriter extends FieldsConsumer {
 
     if (fieldMetadata.getNumTerms() > 0) {
       fieldMetadata.setLastTerm(lastTerm);
-      fieldMetadata.write(fieldsOutput);
+      fieldMetadataWriter.write(fieldsOutput, fieldMetadata);
       writeDictionary(dictionaryBuilder);
       return 1;
     }

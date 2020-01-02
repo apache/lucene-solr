@@ -184,6 +184,10 @@ Improvements
 
 * SOLR-14129: Reuse Jackson ObjectMapper in AuditLoggerPlugin (janhoy)
 
+* LUCENE-9093: The Unified highlighter has two new passage sizing parameters, hl.fragAlignRatio and
+  hl.fragsizeIsMinimum, with defaults that aim to better center matches in fragments than previously. See the ref guide.
+  Regardless of the settings, the passages may be sized differently than before. (Nándor Mátravölgyi, David Smiley)
+
 Optimizations
 ---------------------
 (No changes)
