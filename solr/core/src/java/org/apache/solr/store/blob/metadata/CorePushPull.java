@@ -205,7 +205,7 @@ public class CorePushPull {
     }
 
     /**
-     * We're doing here what replication does in {@link org.apache.solr.handler.IndexFetcher#fetchLatestIndex}.<p>
+     * We're doing here what replication does in {@link org.apache.solr.handler.IndexFetcher#fetchLatestIndex(boolean, boolean)}.<p>
      *
      * This method will work in 2 cases:
      * <ol>
@@ -241,8 +241,10 @@ public class CorePushPull {
             // Create temp directory (within the core local folder).
             // If we are moving index to a new directory because of conflict then this will be that new directory.
             // Even if we are not moving to a newer directory we will first download files from blob store into this temp directory.
-            // Then we will take a lock over index directory and move files from temp directory to index directory. This is to avoid
-            // involving a network operation within an index directory lock.
+            // Then we will move files from temp directory to index directory. This is to avoid leaving a download half done
+            // in case of failure as well as to limit the time during which we close then reopen the index writer to take
+            // into account the new files. In theory nothing should be changing the local directory as we pull files from
+            // Blob store, but let's be defensive (we're checking further down that local dir hasn't changed in the meantime).
             String tempIndexDirName = "index.pull." + System.nanoTime();
             String tempIndexDirPath = solrCore.getDataDir() + tempIndexDirName;
             Directory tempIndexDir = solrCore.getDirectoryFactory().get(tempIndexDirPath, DirectoryFactory.DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
@@ -269,6 +271,7 @@ public class CorePushPull {
               Directory indexDir = solrCore.getDirectoryFactory().get(indexDirPath, DirectoryFactory.DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
               try {
                 if (!createNewIndexDir) {
+                  // TODO should we call solrCore.closeSearcher() here? IndexFetcher.fetchLatestIndex() does call it.
                   // Close the index writer to stop changes to this core
                   solrCore.getUpdateHandler().getSolrCoreState().closeIndexWriter(solrCore, true);
                 }

@@ -171,7 +171,7 @@ public class SharedStoreResolutionUtil {
       // We remove from map of local files those already present remotely since they don't have to be pushed.
       CoreFileData localFile = localFilesMissingOnBlob.remove(solrFilename);
       if (localFile != null) {
-        // // The blob file is present locally and is part of current commit point. Check if there is a conflict between local and distant (blob) versions of that file.
+        // The blob file is present locally and is part of current commit point. Check if there is a conflict between local and distant (blob) versions of that file.
         blobFilesMissingLocally.remove(solrFilename);
         if (localFile.getFileSize() != bf.getFileSize() || localFile.getChecksum() != bf.getChecksum()) {
           String message = String.format(Locale.ROOT, "Size/Checksum conflicts. sharedShardName=%s coreName=%s fileName=%s blobName=%s" +
@@ -183,7 +183,7 @@ public class SharedStoreResolutionUtil {
         }
       } else if (allLocalFiles.contains(solrFilename)) {
         // If the file is NOT in current commit point but similar name file exists in local dir, we risk conflict.
-        log.info("File exists locally outside of commit point. sharedShardName=" + distant.getSharedBlobName() + " coreName="+ local.getCoreName()
+        log.info("File exists locally outside of current commit point. sharedShardName=" + distant.getSharedBlobName() + " coreName="+ local.getCoreName()
             + " fileName=" + solrFilename + " blobName=" + bf.getBlobName());
         downloadToNewDir = true;
       }

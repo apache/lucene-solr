@@ -241,7 +241,7 @@ public class ServerSideMetadata {
         digest.update(fileName.getBytes(StandardCharsets.UTF_8));
         try {
           digest.update(Long.toString(coreDir.fileLength(fileName)).getBytes(StandardCharsets.UTF_8));
-        } catch (FileNotFoundException fnf) {
+        } catch (FileNotFoundException | NoSuchFileException fnf) {
           // The file was deleted between the listAll() and the check, use an impossible size to not match a digest
           // for which the file is completely present or completely absent (which will cause this hash to never match that directory again).
           digest.update(Long.toString(-42).getBytes(StandardCharsets.UTF_8));
