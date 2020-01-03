@@ -42,6 +42,7 @@ apply from: file('gradle/validation/precommit.gradle')
 apply from: file('gradle/validation/forbidden-apis.gradle')
 apply from: file('gradle/validation/jar-checks.gradle')
 apply from: file('gradle/validation/git-status.gradle')
+apply from: file('gradle/validation/versions-props-sorted.gradle')
 
 // Additional development aids.
 apply from: file('gradle/maven/maven-local.gradle')
