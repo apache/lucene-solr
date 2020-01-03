@@ -26,7 +26,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.function.Predicate;
 
 import javax.net.ssl.SSLException;
 
@@ -36,7 +35,6 @@ import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.impl.client.RequestWrapper;
 import org.apache.http.protocol.HttpContext;
-import org.apache.solr.client.solrj.util.Constants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
