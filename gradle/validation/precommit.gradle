@@ -6,5 +6,7 @@ configure(rootProject) {
   task precommit() {
     group = 'Precommit'
     description = "All precommit checks"
+
+    dependsOn verifyLocks
   }
 }
