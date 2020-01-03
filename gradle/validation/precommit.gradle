@@ -1,0 +1,10 @@
+// This adds top-level 'precommit' task.
+// Validation tasks attach themselves to it in their own
+// respective build scripts.
+
+configure(rootProject) {
+  task precommit() {
+    group = 'Precommit'
+    description = "All precommit checks"
+  }
+}
