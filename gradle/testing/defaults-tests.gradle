@@ -92,6 +92,11 @@ allprojects {
           showCauses true
           showStackTraces true
         }
+        onOutput { td, event ->
+          if (event.destination == TestOutputEvent.Destination.StdErr && event.message.startsWith("NOTE:")) {
+            logger.error(event.message)
+          }
+        }
       }
 
       doFirst {
