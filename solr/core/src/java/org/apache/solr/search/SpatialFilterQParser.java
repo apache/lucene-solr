@@ -91,8 +91,8 @@ public class SpatialFilterQParser extends QParser {
         sources.add(sf.getType().getValueSource(sf, this));
       }
       MultiValueSource vs = new VectorValueSource(sources);
-      ValueSourceRangeFilter rf = new ValueSourceRangeFilter(vs, "0", String.valueOf(dist), true, true);
-      result = new SolrConstantScoreQuery(rf);*/
+      FunctionRangeQuery rf = new FunctionRangeQuery(vs, "0", String.valueOf(dist), true, true);
+      result = new ConstantScoreQuery(rf);*/
     }
 
     return result;

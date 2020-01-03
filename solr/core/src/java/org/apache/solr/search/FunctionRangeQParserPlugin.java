@@ -17,12 +17,14 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.queries.function.FunctionQuery;
+import org.apache.lucene.queries.function.FunctionRangeQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.QueryValueSource;
 import org.apache.lucene.search.*;
+import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.search.function.*;
 
 /**
  * Create a range query over a function.
@@ -37,8 +39,12 @@ import org.apache.solr.search.function.*;
 public class FunctionRangeQParserPlugin extends QParserPlugin {
   public static final String NAME = "frange";
 
+  // NOTE: unlike most queries, frange defaults to cost==100
+  private static final SolrParams defaultParams = new ModifiableSolrParams().set(CommonParams.COST, "100");
+
   @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
+    localParams = SolrParams.wrapDefaults(localParams, defaultParams);
     return new QParser(qstr, localParams, params, req) {
       ValueSource vs;
       String funcStr;
@@ -61,9 +67,7 @@ public class FunctionRangeQParserPlugin extends QParserPlugin {
         boolean includeUpper = localParams.getBool("incu",true);
 
         // TODO: add a score=val option to allow score to be the value
-        ValueSourceRangeFilter rf = new ValueSourceRangeFilter(vs, l, u, includeLower, includeUpper);
-        FunctionRangeQuery frq = new FunctionRangeQuery(rf);
-        return frq;
+        return new ConstantScoreQuery(new FunctionRangeQuery(vs, l, u, includeLower, includeUpper));
       }
     };
   }

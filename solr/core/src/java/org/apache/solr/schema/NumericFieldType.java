@@ -20,14 +20,14 @@ import org.apache.lucene.document.DoublePoint;
 import org.apache.lucene.document.FloatPoint;
 import org.apache.lucene.document.NumericDocValuesField;
 import org.apache.lucene.document.SortedNumericDocValuesField;
+import org.apache.lucene.queries.function.FunctionRangeQuery;
 import org.apache.lucene.queries.function.ValueSource;
+import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.search.FunctionRangeQuery;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.function.ValueSourceRangeFilter;
 import org.apache.solr.util.DateMathParser;
 
 public abstract class NumericFieldType extends PrimitiveFieldType {
@@ -139,7 +139,7 @@ public abstract class NumericFieldType extends PrimitiveFieldType {
     // If min is negative (or -0d) and max is positive (or +0d), then issue a FunctionRangeQuery
     if (minNegative && !maxNegative) {
       ValueSource vs = getValueSource(sf, null);
-      query = new FunctionRangeQuery(new ValueSourceRangeFilter(vs, minVal.toString(), maxVal.toString(), true, true));
+      query = new ConstantScoreQuery(new FunctionRangeQuery(vs, minVal.toString(), maxVal.toString(), true, true));
     } else if (minNegative && maxNegative) {// If both max and min are negative (or -0d), then issue range query with max and min reversed
       query = numericDocValuesRangeQuery
           (fieldName, maxBits, minBits, true, true, false);

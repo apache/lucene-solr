@@ -35,6 +35,7 @@ import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SlowCodecReaderWrapper;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.queries.function.FunctionRangeQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
@@ -59,12 +60,10 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.FunctionRangeQuery;
 import org.apache.solr.search.QParser;
 import org.apache.solr.search.QueryUtils;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.SyntaxError;
-import org.apache.solr.search.function.ValueSourceRangeFilter;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
@@ -462,8 +461,7 @@ public class DirectUpdateHandler2 extends UpdateHandler implements SolrCoreState
         bq.add(q, Occur.MUST);
         SchemaField sf = ulog.getVersionInfo().getVersionField();
         ValueSource vs = sf.getType().getValueSource(sf, null);
-        ValueSourceRangeFilter filt = new ValueSourceRangeFilter(vs, Long.toString(Math.abs(cmd.getVersion())), null, true, true);
-        FunctionRangeQuery range = new FunctionRangeQuery(filt);
+        FunctionRangeQuery range = new FunctionRangeQuery(vs, Long.toString(Math.abs(cmd.getVersion())), null, true, true);
         bq.add(range, Occur.MUST_NOT);  // formulated in the "MUST_NOT" sense so we can delete docs w/o a version (some tests depend on this...)
         q = bq.build();
       }

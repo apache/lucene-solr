@@ -19,15 +19,15 @@ package org.apache.solr.schema;
 import java.io.IOException;
 
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.queries.function.FunctionRangeQuery;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.queries.function.valuesource.LiteralValueSource;
+import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
 import org.apache.solr.response.TextResponseWriter;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.SolrConstantScoreQuery;
 import org.apache.solr.search.SpatialOptions;
-import org.apache.solr.search.function.ValueSourceRangeFilter;
 import org.apache.solr.search.function.distance.GeohashHaversineFunction;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 import org.apache.solr.util.SpatialUtils;
@@ -67,7 +67,7 @@ public class GeoHashField extends FieldType implements SpatialQueryable {
   public Query createSpatialQuery(QParser parser, SpatialOptions options) {
     String geohash = toInternal(options.pointStr);
     //TODO: optimize this
-    return new SolrConstantScoreQuery(new ValueSourceRangeFilter(new GeohashHaversineFunction(getValueSource(options.field, parser),
+    return new ConstantScoreQuery(new FunctionRangeQuery(new GeohashHaversineFunction(getValueSource(options.field, parser),
             new LiteralValueSource(geohash), options.radius), "0", String.valueOf(options.distance), true, true));
   }
 
