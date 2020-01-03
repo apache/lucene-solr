@@ -47,7 +47,8 @@ public class SolrLogPostTool {
       CLIO.out("-- baseUrl: Example http://localhost:8983/solr/collection1");
       CLIO.out("-- rootDir: All files found at or below the root will be indexed.");
       CLIO.out("");
-      CLIO.out("Sample syntax: ./bin/postlogs http://localhost:8983/solr/collection1 /user/foo/logs");
+      CLIO.out("Sample syntax 1: ./bin/postlogs http://localhost:8983/solr/collection1 /user/foo/logs/solr.log");
+      CLIO.out("Sample syntax 2: ./bin/postlogs http://localhost:8983/solr/collection1 /user/foo/logs");
       CLIO.out("");
       return;
     }
@@ -139,12 +140,11 @@ public class SolrLogPostTool {
     private String pushedBack = null;
     private boolean finished = false;
     private String cause;
-    Pattern p = Pattern.compile("^\\d\\d\\d\\d\\-\\d\\d\\-\\d\\d");
+    private Pattern p = Pattern.compile("^(\\d\\d\\d\\d\\-\\d\\d\\-\\d\\d \\d\\d:\\d\\d\\:\\d\\d.\\d\\d\\d)");
 
     public LogRecordReader(BufferedReader bufferedReader) throws IOException {
       this.bufferedReader = bufferedReader;
     }
-
 
     public SolrInputDocument readRecord() throws IOException {
       while(true) {
@@ -196,7 +196,7 @@ public class SolrLogPostTool {
           //If it's not there then read into the stack trace buffer
           Matcher m = p.matcher(line);
 
-          if (!m.find()) {
+          if (!m.find() && buf.length() < 10000) {
             //Line does not start with a timestamp so append to the stack trace
             buf.append(line.replace("\t", "    ") + "<br/>");
             if(line.startsWith("Caused by:")) {
@@ -212,14 +212,24 @@ public class SolrLogPostTool {
       return buf.toString();
     }
 
+    private String parseDate(String line) {
+      Matcher m = p.matcher(line);
+      if(m.find()) {
+        String date = m.group(1);
+        return date.replace(" ", "T");
+      }
+
+      return null;
+    }
+
     private SolrInputDocument parseError(String line, String trace) throws IOException {
-      String[] parts = line.split("\\s+");
       SolrInputDocument doc = new SolrInputDocument();
-      doc.addField("date_dt", parts[0]+"T"+parts[1]);
+      doc.addField("date_dt", parseDate(line));
       doc.addField("type_s", "error");
       doc.addField("line_t", line);
 
-      if(trace != null) {
+      //Don't include traces that have only the %html header.
+      if(trace != null && trace.length() > 6) {
         doc.addField("stack_t", trace);
       }
 
@@ -237,8 +247,7 @@ public class SolrLogPostTool {
 
     private SolrInputDocument parseCommit(String line) throws IOException {
       SolrInputDocument doc = new SolrInputDocument();
-      String[] parts = line.split("\\s+");
-      doc.addField("date_dt", parts[0]+"T"+parts[1]);
+      doc.addField("date_dt", parseDate(line));
       doc.addField("type_s", "commit");
       doc.addField("line_t", line);
       if(line.contains("softCommit=true")) {
@@ -263,9 +272,8 @@ public class SolrLogPostTool {
 
     private SolrInputDocument parseQueryRecord(String line) {
 
-      String[] parts = line.split("\\s+");
       SolrInputDocument doc = new SolrInputDocument();
-      doc.addField("date_dt", parts[0]+"T"+parts[1]);
+      doc.addField("date_dt", parseDate(line));
       doc.addField("qtime_i", parseQTime(line));
       doc.addField("status_s", parseStatus(line));
 
@@ -276,9 +284,6 @@ public class SolrLogPostTool {
       String params = parseParams(line);
       doc.addField("params_t", params);
       addParams(doc, params);
-
-      String ll = parts[2];
-      doc.addField("log_level_s", ll);
 
       doc.addField("collection_s", parseCollection(line));
       doc.addField("core_s", parseCore(line));
@@ -299,9 +304,8 @@ public class SolrLogPostTool {
 
     private SolrInputDocument parseNewSearch(String line) {
 
-      String[] parts = line.split("\\s+");
       SolrInputDocument doc = new SolrInputDocument();
-      doc.addField("date_dt", parts[0]+"T"+parts[1]);
+      doc.addField("date_dt", parseDate(line));
       doc.addField("core_s", parseNewSearcherCore(line));
       doc.addField("type_s", "newSearcher");
       doc.addField("line_t", line);
@@ -312,7 +316,7 @@ public class SolrLogPostTool {
     private String parseCollection(String line) {
       char[] ca = {' ', ']'};
       String parts[] = line.split("c:");
-      if(parts.length == 2) {
+      if(parts.length >= 2) {
         return readUntil(parts[1], ca);
       } else {
         return null;
@@ -320,9 +324,8 @@ public class SolrLogPostTool {
     }
 
     private SolrInputDocument parseUpdate(String line) {
-      String[] parts = line.split("\\s+");
       SolrInputDocument doc = new SolrInputDocument();
-      doc.addField("date_dt", parts[0]+"T"+parts[1]);
+      doc.addField("date_dt", parseDate(line));
 
       if(line.contains("deleteByQuery=")) {
         doc.addField("type_s", "deleteByQuery");

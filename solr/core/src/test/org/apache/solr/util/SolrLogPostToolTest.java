@@ -26,16 +26,10 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.util.SolrLogPostTool.LogRecordReader;
 
-import org.junit.Before;
 import org.junit.Test;
-
 
 public class SolrLogPostToolTest extends SolrTestCaseJ4 {
 
-  @Before
-  public void initVariousPostTools() throws Exception {
-
-  }
 
   @Test
   public void testQueryRecord() throws Exception{
@@ -51,7 +45,6 @@ public class SolrLogPostToolTest extends SolrTestCaseJ4 {
     SolrInputField hits = doc.getField("hits_l");
     SolrInputField type = doc.getField("type_s");
     SolrInputField status = doc.getField("status_s");
-    SolrInputField loglevel = doc.getField("log_level_s");
     SolrInputField shard = doc.getField("shard_s");
     SolrInputField replica = doc.getField("replica_s");
     SolrInputField core = doc.getField("core_s");
@@ -66,7 +59,6 @@ public class SolrLogPostToolTest extends SolrTestCaseJ4 {
     assertEquals(hits.getValue(), "234868");
     assertEquals(type.getValue(), "query");
     assertEquals(status.getValue(), "0");
-    assertEquals(loglevel.getValue(), "INFO");
     assertEquals(shard.getValue(), "shard1");
     assertEquals(replica.getValue(), "core_node2");
     assertEquals(core.getValue(), "logs4_shard1_replica_n1");
