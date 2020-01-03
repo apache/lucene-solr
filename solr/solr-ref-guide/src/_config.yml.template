@@ -84,7 +84,7 @@ solr-attributes: &solr-attributes-ref
   ivy-opennlp-version: "${ivyversions./org.apache.opennlp/opennlp-tools}"
   ivy-tika-version: "${ivyversions.org.apache.tika.version}"
   ivy-velocity-tools-version: "${ivyversions.org.apache.velocity.tools.version}"
-  ivy-zookeeper-version: "${ivyversions./org.apache.zookeeper/zookeeper}"
+  ivy-zookeeper-version: "${ivyversions.org.apache.zookeeper.version}"
 
 asciidoctor:
   safe: 0

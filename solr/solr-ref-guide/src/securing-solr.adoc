@@ -58,7 +58,27 @@ Authorization makes sure that only users with the necessary roles/permissions ca
 
 Audit logging will record an audit trail of incoming reqests to your cluster, such as users being denied access to admin APIs. Learn more about audit logging and how to implement an audit logger plugin here in the <<audit-logging.adoc#audit-logging,Audit Logging>> chapter.
 
+== Request Logging
+
+Solr can optionally log every incoming HTTP(s) request in the standard https://en.wikipedia.org/wiki/Common_Log_Format[`NCSA format`]. You can enable request logging by setting `SOLR_REQUESTLOG_ENABLED=true` via environment variable or in `solr.in.sh`/`solr.in.cmd`.
+
+== Enable IP Access Control
+
+Restrict network access to specific hosts, by setting `SOLR_IP_WHITELIST`/`SOLR_IP_BLACKLIST` via environment variables or in `solr.in.sh`/`solr.in.cmd`.
+
+[source,bash]
+----
+# Allow IPv4/IPv6 localhost, the 192.168.0.x IPv4 network, and 2000:123:4:5:: IPv6 network.
+SOLR_IP_WHITELIST="127.0.0.1, [::1], 192.168.0.0/24, [2000:123:4:5::]/64"
+# Explicitly deny access to two problematic hosts.
+SOLR_IP_BLACKLIST="192.168.0.3, 192.168.0.4"
+----
+
 == Securing ZooKeeper Traffic
 
 ZooKeeper is a central and important part of a SolrCloud cluster and understanding how to secure
 its content is covered in the <<zookeeper-access-control.adoc#zookeeper-access-control,ZooKeeper Access Control>> page.
+
+== Enable Security Manager
+
+Solr can run in a Java Security Manager sandbox by setting `SOLR_SECURITY_MANAGER_ENABLED=true` via environment variable or in `solr.in.sh`/`solr.in.cmd`. This feature is incompatible with Hadoop.

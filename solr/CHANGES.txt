@@ -83,8 +83,7 @@ Improvements
 
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
 
-* SOLR-13749: New cross collection join filter (XCJF) (Kevin Fox, Kevin Watters, via Gus Heck)
-
+* SOLR-13749: New cross collection join filter (XCJF) (Dan Fox, Kevin Watters, via Gus Heck)
 
 Other Changes
 ----------------------
@@ -116,13 +115,77 @@ Upgrade Notes
 * SOLR-14092: BlockJoinFacetComponent is marked for deprecation and will be removed in 9.0.
   Users are encouraged to migrate to uniqueBlock() in JSON Facet API.  (Mikhail Khludnev)
 
+* SOLR-13983: Process execution is removed from SystemInfoHandler. A best-effort attempt to
+  execute "uname -a" and "uptime" on non-Windows platforms is no longer made. (rmuir)
+
+* SOLR-14095 introduces a change in the format used for the elements in the Overseer queues and maps (see the Jira
+  issue for details on the reasons for the change). This queue is used internally by the Overseer to reliably handle
+  operations, to communicate operation results between the Overseer and the coordinator node, and by the
+  REQUESTSTATUS API for displaying information about async Collection operations.
+  This change won’t require you to change any client-side code you should see no differences on the client side,
+  however, it does require some care when upgrading an existing SolrCloud cluster:
+  - If you are upgrading Solr with an atomic restart strategy:
+    - If you don’t use async or REQUESTSTATUS operations, you should be able to restart and not see any issues.
+    - If you do use Collection API operations:
+      1. pause Collection API operations
+      2. cleanup queues (https://lucene.apache.org/solr/guide/8_3/collections-api.html#examples-using-deletestatus)
+      if you use async operations
+      3. upgrade and restart the nodes
+  - If you are upgrading Solr with a rolling restart strategy:
+    - If you don’t use Collection API operations, you should be able to do a rolling restart and not see
+    any issues.
+    - If you do use Collection API operations, but you can pause their use during the restart the easiest
+    way is to:
+      1. pause Collection API operations
+      2. upgrade and restart all nodes
+      3. cleanup queues (https://lucene.apache.org/solr/guide/8_3/collections-api.html#examples-using-deletestatus)
+      if you use async operations
+      4. Resume all normal operations
+    - If you use Collection API operations and can’t pause them during the upgrade:
+      1. Start 8.5 nodes with the system property: `-Dsolr.useUnsafeOverseerResponse=deserialization`. Ensure the
+      Overseer node is upgraded last
+      2. Once all nodes are in 8.5 and once you don’t need to read old status anymore, restart again removing the
+      system property
+  If you prefer to keep the old (but insecure) serialization strategy, you can start your nodes using the
+  property: `-Dsolr.useUnsafeOverseerResponse=true`. Keep in mind that this will be removed in future version of Solr.
+
+ * SOLR-13808: add cache=false into uderneath BoolQParser's filter clause or {"bool":{"filter":..}} to avoid caching in
+   filterCache. (Mikhail Khludnev)
+
 New Features
 ---------------------
 (No changes)
 
 Improvements
 ---------------------
-(No changes)
+* SOLR-14120: Define JavaScript methods 'includes' and 'startsWith' to ensure AdminUI can be displayed when using
+  Internet Explorer 11 (jafurrer).
+
+* SOLR-14042: Fix varargs precommit warnings (Andraas Salamon via Jason Gerlowski)
+
+* SOLR-14095: Replace Java serialization with Javabin in the Overseer queues (Tomás Fernández Löbbe)
+
+* SOLR-14125: Make <expressible> plugins work with packages (noble)
+
+* SOLR-14138: Jetty's NCSA-formatted RequestLog can be enabled via environment variable,
+  SOLR_REQUESTLOG_ENABLED=true. This will respect SOLR_LOGS_DIR if it is set. (rmuir)
+
+* SOLR-14136: Jetty's InetAccessHandler can be enabled via environment variables,
+  SOLR_IP_WHITELIST and SOLR_IP_BLACKLIST. These variables can restrict access to
+  Solr based on IP addresses/networks. (rmuir)
+
+* SOLR-14131: Add maxQueryLength option to DirectSolrSpellchecker. (Andy Webb via Bruno Roustant)
+
+* SOLR-13984: Java's SecurityManager sandbox can be enabled via environment variable,
+  SOLR_SECURITY_MANAGER_ENABLED=true. (rmuir)
+
+* SOLR-13808: filter in BoolQParser and {"bool":{"filter":..}} in Query DSL are cached by default (Mikhail Khludnev)
+
+* SOLR-14129: Reuse Jackson ObjectMapper in AuditLoggerPlugin (janhoy)
+
+* LUCENE-9093: The Unified highlighter has two new passage sizing parameters, hl.fragAlignRatio and
+  hl.fragsizeIsMinimum, with defaults that aim to better center matches in fragments than previously. See the ref guide.
+  Regardless of the settings, the passages may be sized differently than before. (Nándor Mátravölgyi, David Smiley)
 
 Optimizations
 ---------------------
@@ -133,6 +196,14 @@ Bug Fixes
 
 * SOLR-14099: Fixed @LogLevel annotation in test-framework to correctly 'unset' Loggers after test (hossman)
 
+* SOLR-14017: Ensure bin/solr's -q and -v options work with examples (Andy Vuong via Jason Gerlowski)
+
+* SOLR-14106: Cleanup Jetty SslContextFactory usage (Ryan Rockenbaugh, Jan Hoydahl, Kevin Risden)
+
+* SOLR-14109: Always log to stdout from server/scripts/cloud-scripts/zkcli.{bat|sh} (janhoy)
+
+* SOLR-14122: SimUtils converts v2 to v1 request params incorrectly. (Li Cao, ab)
+
 Other Changes
 ---------------------
 
@@ -140,6 +211,10 @@ Other Changes
 
 * SOLR-14054: Upgrade to Tika 1.23 when available (Tim Allison)
 
+* SOLR-14091: Remove deprecated soLingerTime when configuring Jetty connector (Matthias Krueger via Kevin Risden)
+
+* SOLR-13778: Solrj client will retry requests on SSLException with a suppressed SocketException
+  (very likely a hard-closed socket connection).
 
 ==================  8.4.0 ==================
 
@@ -156,8 +231,8 @@ Jetty 9.4.19.v20190610
 Upgrade Notes
 ---------------------
 
-* org.apache.solr.search.grouping.distributed.command.QueryCommand.Builder has new method 'setMainQuery' which is used
-  to set top-level query. build() would fail if called without setting mainQuery
+* SOLR-13823: org.apache.solr.search.grouping.distributed.command.QueryCommand.Builder has new method 'setMainQuery' which is used
+  to set top-level query. build() would fail if called without setting mainQuery.
 
 * SOLR-13817: Deprecate legacy SolrCache implementations. Users are encouraged to transition their
   configurations to use org.apache.solr.search.CaffeineCache instead. (ab)
@@ -266,10 +341,6 @@ Improvements
   (Houston Putman, Mikhail Khludnev).
 
 * SOLR-13970: Fail the request when collapsing or expand is used with Grouping. (Erick Erickson, Joel Bernstein, Munendra S N)
-
-Optimizations
----------------------
-(No changes)
 
 Bug Fixes
 ---------------------

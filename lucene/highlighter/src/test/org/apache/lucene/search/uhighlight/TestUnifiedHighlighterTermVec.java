@@ -133,8 +133,8 @@ public class TestUnifiedHighlighterTermVec extends LuceneTestCase {
           @Override
           public Fields getTermVectors(int docID) throws IOException {
             // if we're invoked by ParallelLeafReader then we can't do our assertion. TODO see LUCENE-6868
-            if (calledBy(ParallelLeafReader.class) == false
-                && calledBy(CheckIndex.class) == false) {
+            if (callStackContains(ParallelLeafReader.class) == false
+                && callStackContains(CheckIndex.class) == false) {
               assertFalse("Should not request TVs for doc more than once.", seenDocIDs.get(docID));
               seenDocIDs.set(docID);
             }
@@ -168,14 +168,6 @@ public class TestUnifiedHighlighterTermVec extends LuceneTestCase {
     public CacheHelper getReaderCacheHelper() {
       return null;
     }
-  }
-
-  private static boolean calledBy(Class<?> clazz) {
-    for (StackTraceElement stackTraceElement : Thread.currentThread().getStackTrace()) {
-      if (stackTraceElement.getClassName().equals(clazz.getName()))
-        return true;
-    }
-    return false;
   }
 
   @Test(expected = IllegalArgumentException.class)

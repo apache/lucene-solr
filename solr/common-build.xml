@@ -38,7 +38,7 @@
   <property name="maven.dist.dir" location="${package.dir}/maven"/>
   <property name="lucene-libs" location="${dest}/lucene-libs" />
   <property name="tests.userdir" location="src/test-files"/>
-  <property name="tests.policy" location="${common-solr.dir}/../lucene/tools/junit4/solr-tests.policy"/>
+  <property name="tests.policy" location="${common-solr.dir}/server/etc/security.policy"/>
   <property name="server.dir" location="${common-solr.dir}/server" />
   <property name="example" location="${common-solr.dir}/example" />
   <property name="javadoc.dir" location="${dest}/docs"/>
@@ -151,11 +151,6 @@
       </uptodate>
     </sequential>
   </macrodef>
-
-  <!-- turn on security manager? -->
-  <condition property="java.security.manager" value="org.apache.solr.util.SolrSecurityManager">
-    <istrue value="${tests.useSecurityManager}"/>
-  </condition>
 
   <target name="validate" depends="compile-tools">
   </target>

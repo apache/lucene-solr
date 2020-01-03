@@ -659,16 +659,13 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
         }
         //System.out.println("failOn: ");
         //new Throwable().printStackTrace(System.out);
-        StackTraceElement[] trace = new Exception().getStackTrace();
-        for (int i = 0; i < trace.length; i++) {
-          if ("readLiveDocs".equals(trace[i].getMethodName())) {
-            if (VERBOSE) {
-              System.out.println("TEST: now fail; exc:");
-              new Throwable().printStackTrace(System.out);
-            }
-            failed = true;
-            throw new FakeIOException();
+        if (callStackContainsAnyOf("readLiveDocs")) {
+          if (VERBOSE) {
+            System.out.println("TEST: now fail; exc:");
+            new Throwable().printStackTrace(System.out);
           }
+          failed = true;
+          throw new FakeIOException();
         }
       }
     });
