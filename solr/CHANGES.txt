@@ -85,7 +85,6 @@ Improvements
 
 * SOLR-13749: New cross collection join filter (XCJF) (Dan Fox, Kevin Watters, via Gus Heck)
 
-
 Other Changes
 ----------------------
 * SOLR-10288: Remove non-minified JavaScript from the webapp. (Erik Hatcher, marcussorealheis)
@@ -202,6 +201,8 @@ Bug Fixes
 * SOLR-14106: Cleanup Jetty SslContextFactory usage (Ryan Rockenbaugh, Jan Hoydahl, Kevin Risden)
 
 * SOLR-14109: Always log to stdout from server/scripts/cloud-scripts/zkcli.{bat|sh} (janhoy)
+
+* SOLR-14122: SimUtils converts v2 to v1 request params incorrectly. (Li Cao, ab)
 
 Other Changes
 ---------------------
