@@ -18,18 +18,13 @@ package org.apache.lucene.search;
 
 
 import java.io.IOException;
-import java.util.Arrays;
 
-import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.util.Attribute;
-import org.apache.lucene.util.AttributeImpl;
-import org.apache.lucene.util.AttributeReflector;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -37,6 +32,7 @@ import org.apache.lucene.util.UnicodeUtil;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
+import org.apache.lucene.util.automaton.TooComplexToDeterminizeException;
 
 /** Subclass of TermsEnum for enumerating all terms that are similar
  * to the specified filter term.
@@ -88,12 +84,12 @@ public final class FuzzyTermsEnum extends TermsEnum {
    * @param term Pattern term.
    * @param maxEdits Maximum edit distance.
    * @param prefixLength the length of the required common prefix
-   * @param transitions whether transitions should count as a single edit
+   * @param transpositions whether transpositions should count as a single edit
    * @throws IOException if there is a low-level IO error
    */
-  public FuzzyTermsEnum(Terms terms, Term term, int maxEdits, int prefixLength, boolean transitions) throws IOException {
+  public FuzzyTermsEnum(Terms terms, Term term, int maxEdits, int prefixLength, boolean transpositions) throws IOException {
     this(terms, new AttributeSource(), term, maxEdits,
-        buildAutomata(term.text(), prefixLength, transitions, maxEdits));
+        buildAutomata(term.text(), prefixLength, transpositions, maxEdits));
   }
 
   /**
@@ -128,6 +124,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
     this.boostAtt = atts.addAttribute(BoostAttribute.class);
 
     this.automata = automata;
+
     bottom = maxBoostAtt.getMaxNonCompetitiveBoost();
     bottomTerm = maxBoostAtt.getCompetitiveTerm();
     bottomChanged(null);
@@ -165,7 +162,12 @@ public final class FuzzyTermsEnum extends TermsEnum {
     CompiledAutomaton[] compiled = new CompiledAutomaton[maxEdits + 1];
     Automaton[] automata = buildAutomata(stringToUTF32(text), prefixLength, transpositions, maxEdits);
     for (int i = 0; i <= maxEdits; i++) {
-      compiled[i] = new CompiledAutomaton(automata[i], true, false);
+      try {
+        compiled[i] = new CompiledAutomaton(automata[i], true, false);
+      }
+      catch (TooComplexToDeterminizeException e) {
+        throw new FuzzyTermsException(text, e);
+      }
     }
     return compiled;
   }
@@ -361,6 +363,17 @@ public final class FuzzyTermsEnum extends TermsEnum {
   @Override
   public BytesRef term() throws IOException {
     return actualEnum.term();
+  }
+
+  /**
+   * Thrown to indicate that there was an issue creating a fuzzy query for a given term.
+   * Typically occurs with terms longer than 220 UTF-8 characters,
+   * but also possible with shorter terms consisting of UTF-32 code points.
+   */
+  public static class FuzzyTermsException extends RuntimeException {
+    FuzzyTermsException(String term, Throwable cause) {
+      super("Term too complex: " + term, cause);
+    }
   }
 
 }

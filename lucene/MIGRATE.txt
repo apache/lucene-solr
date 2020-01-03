@@ -1,5 +1,10 @@
 # Apache Lucene Migration Guide
 
+## o.a.l.util.fst.Builder is renamed FSTCompiler with fluent-style Builder (LUCENE-9089) ##
+
+Simply use FSTCompiler instead of the previous Builder. Use either the simple constructor with default settings, or
+the FSTCompiler.Builder to tune and tweak any parameter.
+
 ## Kuromoji user dictionary now forbids illegal segmentation (LUCENE-8933) ##
 
 User dictionary now strictly validates if the (concatenated) segment is the same as the surface form. This change avoids

@@ -309,12 +309,12 @@ public class DeepRandomStream extends TupleStream implements Expressible {
 
   protected void constructStreams() throws IOException {
     try {
-
-      List<String> shardUrls = getShards(this.zkHost, this.collection, this.streamContext);
-
       ModifiableSolrParams mParams = new ModifiableSolrParams(params);
       mParams = adjustParams(mParams);
       mParams.set(DISTRIB, "false"); // We are the aggregator.
+
+      List<String> shardUrls = getShards(this.zkHost, this.collection, this.streamContext, mParams);
+
       String rows = mParams.get(ROWS);
       int r = Integer.parseInt(rows);
       int newRows = r/shardUrls.size();

@@ -89,7 +89,7 @@ public class TestDynamicFieldNamesIndexCorrectly extends AbstractFullDistribZkTe
     Iterator<SolrInputDocument> it = solrDocs.iterator();
     while (it.hasNext()) {
       final SolrInputDocument inDoc = it.next();
-      final String id = inDoc.getField("id").getRawValue().toString();
+      final String id = inDoc.getField("id").getValue().toString();
       final SolrDocument resultDoc = resultMap.get(id);
       final Collection<String> resultFieldNames = resultDoc.getFieldNames();
       inDoc

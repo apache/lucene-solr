@@ -88,6 +88,7 @@ public class TestSimClusterStateProvider extends SolrCloudTestCase {
     if (simulated && cloudManager != null) {
       cloudManager.close();
     }
+    cloudManager = null;
   }
 
   private static void init() throws Exception {

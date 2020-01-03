@@ -223,9 +223,9 @@ public abstract class BaseDistributedSearchTestCase extends SolrTestCaseJ4 {
    */
   protected BaseDistributedSearchTestCase(final String context) {
     this.context = context;
-    this.deadServers = new String[] {"[ff01::114]:33332" + context, 
-                                     "[ff01::083]:33332" + context, 
-                                     "[ff01::213]:33332" + context};
+    this.deadServers = new String[] {DEAD_HOST_1 + context,
+                                     DEAD_HOST_2 + context,
+                                     DEAD_HOST_3 + context};
   }
 
   private final static int DEFAULT_MAX_SHARD_COUNT = 3;

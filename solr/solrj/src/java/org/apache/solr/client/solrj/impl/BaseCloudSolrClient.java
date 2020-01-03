@@ -44,6 +44,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
@@ -55,6 +56,8 @@ import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.routing.ReplicaListTransformer;
+import org.apache.solr.client.solrj.routing.RequestReplicaListTransformerGenerator;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -69,7 +72,6 @@ import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
@@ -100,6 +102,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
   private final boolean updatesToLeaders;
   private final boolean directUpdatesToLeadersOnly;
+  private final RequestReplicaListTransformerGenerator requestRLTGenerator;
   boolean parallelUpdates; //TODO final
   private ExecutorService threadPool = ExecutorUtil
       .newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory(
@@ -221,6 +224,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     this.updatesToLeaders = updatesToLeaders;
     this.parallelUpdates = parallelUpdates;
     this.directUpdatesToLeadersOnly = directUpdatesToLeadersOnly;
+    this.requestRLTGenerator = new RequestReplicaListTransformerGenerator();
   }
 
   /** Sets the cache ttl for DocCollection Objects cached  . This is only applicable for collections which are persisted outside of clusterstate.json
@@ -467,6 +471,8 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       for(String param : NON_ROUTABLE_PARAMS) {
         routableParams.remove(param);
       }
+    } else {
+      params = new ModifiableSolrParams();
     }
 
     if (collection == null) {
@@ -492,10 +498,12 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       return null;
     }
 
+    ReplicaListTransformer replicaListTransformer = requestRLTGenerator.getReplicaListTransformer(params);
+
     //Create the URL map, which is keyed on slice name.
     //The value is a list of URLs for each replica in the slice.
     //The first value in the list is the leader for the slice.
-    final Map<String,List<String>> urlMap = buildUrlMap(col);
+    final Map<String,List<String>> urlMap = buildUrlMap(col, replicaListTransformer);
     final Map<String, ? extends LBSolrClient.Req> routes = createRoutes(updateRequest, routableParams, col, router, urlMap, idField);
     if (routes == null) {
       if (directUpdatesToLeadersOnly && hasInfoToFindLeaders(updateRequest, idField)) {
@@ -616,12 +624,12 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     return urlMap == null ? null : updateRequest.getRoutesToCollection(router, col, urlMap, routableParams, idField);
   }
 
-  private Map<String,List<String>> buildUrlMap(DocCollection col) {
+  private Map<String,List<String>> buildUrlMap(DocCollection col, ReplicaListTransformer replicaListTransformer) {
     Map<String, List<String>> urlMap = new HashMap<>();
     Slice[] slices = col.getActiveSlicesArr();
     for (Slice slice : slices) {
       String name = slice.getName();
-      List<String> urls = new ArrayList<>();
+      List<Replica> sortedReplicas = new ArrayList<>();
       Replica leader = slice.getLeader();
       if (directUpdatesToLeadersOnly && leader == null) {
         for (Replica replica : slice.getReplicas(
@@ -638,20 +646,22 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         // take unoptimized general path - we cannot find a leader yet
         return null;
       }
-      ZkCoreNodeProps zkProps = new ZkCoreNodeProps(leader);
-      String url = zkProps.getCoreUrl();
-      urls.add(url);
+
       if (!directUpdatesToLeadersOnly) {
         for (Replica replica : slice.getReplicas()) {
-          if (!replica.getNodeName().equals(leader.getNodeName()) &&
-              !replica.getName().equals(leader.getName())) {
-            ZkCoreNodeProps zkProps1 = new ZkCoreNodeProps(replica);
-            String url1 = zkProps1.getCoreUrl();
-            urls.add(url1);
+          if (!replica.equals(leader)) {
+            sortedReplicas.add(replica);
           }
         }
       }
-      urlMap.put(name, urls);
+
+      // Sort the non-leader replicas according to the request parameters
+      replicaListTransformer.transform(sortedReplicas);
+
+      // put the leaderUrl first.
+      sortedReplicas.add(0, leader);
+
+      urlMap.put(name, sortedReplicas.stream().map(Replica::getCoreUrl).collect(Collectors.toList()));
     }
     return urlMap;
   }
@@ -1046,6 +1056,8 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       reqParams = new ModifiableSolrParams();
     }
 
+    ReplicaListTransformer replicaListTransformer = requestRLTGenerator.getReplicaListTransformer(reqParams);
+
     final Set<String> liveNodes = getClusterStateProvider().getLiveNodes();
 
     final List<String> theUrlList = new ArrayList<>(); // we populate this as follows...
@@ -1087,34 +1099,38 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       }
 
       // Gather URLs, grouped by leader or replica
-      // TODO: allow filtering by group, role, etc
-      Set<String> seenNodes = new HashSet<>();
-      List<String> replicas = new ArrayList<>();
-      String joinedInputCollections = StrUtils.join(inputCollections, ',');
+      List<Replica> sortedReplicas = new ArrayList<>();
+      List<Replica> replicas = new ArrayList<>();
       for (Slice slice : slices.values()) {
-        for (ZkNodeProps nodeProps : slice.getReplicasMap().values()) {
-          ZkCoreNodeProps coreNodeProps = new ZkCoreNodeProps(nodeProps);
-          String node = coreNodeProps.getNodeName();
+        Replica leader = slice.getLeader();
+        for (Replica replica : slice.getReplicas()) {
+          String node = replica.getNodeName();
           if (!liveNodes.contains(node) // Must be a live node to continue
-              || Replica.State.getState(coreNodeProps.getState()) != Replica.State.ACTIVE) // Must be an ACTIVE replica to continue
+              || replica.getState() != Replica.State.ACTIVE) // Must be an ACTIVE replica to continue
             continue;
-          if (seenNodes.add(node)) { // if we haven't yet collected a URL to this node...
-            String url = ZkCoreNodeProps.getCoreUrl(nodeProps.getStr(ZkStateReader.BASE_URL_PROP), joinedInputCollections);
-            if (sendToLeaders && coreNodeProps.isLeader()) {
-              theUrlList.add(url); // put leaders here eagerly (if sendToLeader mode)
-            } else {
-              replicas.add(url); // replicas here
-            }
+          if (sendToLeaders && replica.equals(leader)) {
+            sortedReplicas.add(replica); // put leaders here eagerly (if sendToLeader mode)
+          } else {
+            replicas.add(replica); // replicas here
           }
         }
       }
 
-      // Shuffle the leaders, if any    (none if !sendToLeaders)
-      Collections.shuffle(theUrlList, rand);
+      // Sort the leader replicas, if any, according to the request preferences    (none if !sendToLeaders)
+      replicaListTransformer.transform(sortedReplicas);
 
-      // Shuffle the replicas, if any, and append to our list
-      Collections.shuffle(replicas, rand);
-      theUrlList.addAll(replicas);
+      // Sort the replicas, if any, according to the request preferences and append to our list
+      replicaListTransformer.transform(replicas);
+
+      sortedReplicas.addAll(replicas);
+
+      String joinedInputCollections = StrUtils.join(inputCollections, ',');
+      Set<String> seenNodes = new HashSet<>();
+      sortedReplicas.forEach( replica -> {
+        if (seenNodes.add(replica.getNodeName())) {
+          theUrlList.add(ZkCoreNodeProps.getCoreUrl(replica.getBaseUrl(), joinedInputCollections));
+        }
+      });
 
       if (theUrlList.isEmpty()) {
         collectionStateCache.keySet().removeAll(collectionNames);

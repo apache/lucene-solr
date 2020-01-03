@@ -92,7 +92,6 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
   CompletionService<Object> completionService;
   Set<Future<Object>> pending;
   private final Map<String, String> collectionUlogDirMap = new HashMap<>();
-
   
   @BeforeClass
   public static void hdfsFailoverBeforeClass() throws Exception {
@@ -104,9 +103,12 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
   
   @AfterClass
   public static void hdfsFailoverAfterClass() throws Exception {
-    HdfsTestUtil.teardownClass(dfsCluster);
-    System.clearProperty("solr.hdfs.blockcache.blocksperbank");
-    dfsCluster = null;
+    try {
+      HdfsTestUtil.teardownClass(dfsCluster);
+    } finally {
+      System.clearProperty("solr.hdfs.blockcache.blocksperbank");
+      dfsCluster = null;
+    }
   }
 
   @Before

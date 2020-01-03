@@ -67,7 +67,7 @@ public class SolrSlf4jReporter extends FilteringSolrMetricReporter {
     final Map<String, String> mdcContext;
 
     Slf4jReporterWrapper(String logger, Map<String, String> mdcContext, Slf4jReporter delegate, TimeUnit rateUnit, TimeUnit durationUnit) {
-      super(null, logger, null, rateUnit, durationUnit);
+      super(metricManager.registry(registryName), logger, null, rateUnit, durationUnit);
       this.delegate = delegate;
       this.mdcContext = mdcContext;
     }

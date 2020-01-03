@@ -229,8 +229,9 @@ This value is only checked at the time of:
 
 . Query Expansion, and
 . Document collection
+. Doc Values reading
 
-As this check is periodically performed, the actual time for which a request can be processed before it is aborted would be marginally greater than or equal to the value of `timeAllowed`. If the request consumes more time in other stages, custom components, etc., this parameter is not expected to abort the request.
+As this check is periodically performed, the actual time for which a request can be processed before it is aborted would be marginally greater than or equal to the value of `timeAllowed`. If the request consumes more time in other stages, custom components, etc., this parameter is not expected to abort the request. Regular search, JSON Facet and the Analytics component abandon requests in accordance with this parameter.
 
 == segmentTerminateEarly Parameter
 
@@ -276,7 +277,7 @@ fq=quantity_in_stock:[5 TO *]
 fq={!frange l=10 u=100}mul(popularity,price)
 fq={!frange cost=200 l=0}pow(mul(sum(1, query('tag:smartphone')), div(1,avg_rating)), 2.3)
 
-These are the same filters run w/o caching.  The simple range query on the `quantity_in_stock` field will be run in parallel with the main query like a traditional lucene filter, while the 2 `frange` filters will only be checked against each document has already matched the main query and the `quantity_in_stock` range query -- first the simpler `mul(popularity,price)` will be checked (because of it's implicit `cost=100`) and only if it matches will the final very complex filter (with it's higher `cost=200`) be checked.
+These are the same filters run w/o caching.  The simple range query on the `quantity_in_stock` field will be run in parallel with the main query like a traditional Lucene filter, while the 2 `frange` filters will only be checked against each document has already matched the main query and the `quantity_in_stock` range query -- first the simpler `mul(popularity,price)` will be checked (because of its implicit `cost=100`) and only if it matches will the final very complex filter (with its higher `cost=200`) be checked.
 
 [source,text]
 q=some keywords

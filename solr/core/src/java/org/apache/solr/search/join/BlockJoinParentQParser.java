@@ -85,6 +85,7 @@ public class BlockJoinParentQParser extends FiltersQParser {
   }
 
   public static BitDocIdSetFilterWrapper getCachedFilter(final SolrQueryRequest request, Query parentList) {
+    @SuppressWarnings("unchecked")
     SolrCache<Query, Filter> parentCache = request.getSearcher().getCache(CACHE_NAME);
     // lazily retrieve from solr cache
     BitDocIdSetFilterWrapper result;

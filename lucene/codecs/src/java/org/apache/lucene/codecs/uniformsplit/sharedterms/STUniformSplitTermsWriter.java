@@ -88,13 +88,14 @@ public class STUniformSplitTermsWriter extends UniformSplitTermsWriter {
 
   public STUniformSplitTermsWriter(PostingsWriterBase postingsWriter, SegmentWriteState state,
                                    int targetNumBlockLines, int deltaNumLines, BlockEncoder blockEncoder) throws IOException {
-    this(postingsWriter, state, targetNumBlockLines, deltaNumLines, blockEncoder, NAME, VERSION_CURRENT, TERMS_BLOCKS_EXTENSION, TERMS_DICTIONARY_EXTENSION);
+    this(postingsWriter, state, targetNumBlockLines, deltaNumLines, blockEncoder, FieldMetadata.Serializer.INSTANCE,
+        NAME, VERSION_CURRENT, TERMS_BLOCKS_EXTENSION, TERMS_DICTIONARY_EXTENSION);
   }
 
   protected STUniformSplitTermsWriter(PostingsWriterBase postingsWriter, SegmentWriteState state,
-                                      int targetNumBlockLines, int deltaNumLines, BlockEncoder blockEncoder,
+                                      int targetNumBlockLines, int deltaNumLines, BlockEncoder blockEncoder, FieldMetadata.Serializer fieldMetadataWriter,
                                       String codecName, int versionCurrent, String termsBlocksExtension, String dictionaryExtension) throws IOException {
-    super(postingsWriter, state, targetNumBlockLines, deltaNumLines, blockEncoder, codecName, versionCurrent, termsBlocksExtension, dictionaryExtension);
+    super(postingsWriter, state, targetNumBlockLines, deltaNumLines, blockEncoder, fieldMetadataWriter, codecName, versionCurrent, termsBlocksExtension, dictionaryExtension);
   }
 
   @Override
@@ -200,7 +201,7 @@ public class STUniformSplitTermsWriter extends UniformSplitTermsWriter {
     int fieldsNumber = 0;
     for (FieldMetadata fieldMetadata : fieldMetadataList) {
       if (fieldMetadata.getNumTerms() > 0) {
-        fieldMetadata.write(fieldsOutput);
+        fieldMetadataWriter.write(fieldsOutput, fieldMetadata);
         fieldsNumber++;
       }
     }

@@ -65,10 +65,11 @@ import static org.apache.solr.update.processor.DistributingUpdateProcessorFactor
 // TODO: longer term this should be combined with TestRecovery somehow ??
 public class TestRecoveryHdfs extends SolrTestCaseJ4 {
   // means that we've seen the leader and have version info (i.e. we are a non-leader replica)
-  private static String FROM_LEADER = DistribPhase.FROMLEADER.toString(); 
+  private static final String FROM_LEADER = DistribPhase.FROMLEADER.toString();
 
-  private static int timeout=60;  // acquire timeout in seconds.  change this to a huge number when debugging to prevent threads from advancing.
-  
+  // acquire timeout in seconds.  change this to a huge number when debugging to prevent threads from advancing.
+  private static final int TIMEOUT = 60;
+
   private static MiniDFSCluster dfsCluster;
   private static String hdfsUri;
   private static FileSystem fs;
@@ -102,7 +103,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
         HdfsTestUtil.teardownClass(dfsCluster);
       } finally {
         dfsCluster = null;
-        hdfsDataDir = null;
+        hdfsUri = null;
         System.clearProperty("solr.ulog.dir");
         System.clearProperty("test.build.data");
         System.clearProperty("test.cache.data");
@@ -142,7 +143,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
 
       UpdateLog.testing_logReplayHook = () -> {
         try {
-          assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+          assertTrue(logReplay.tryAcquire(TIMEOUT, TimeUnit.SECONDS));
         } catch (Exception e) {
           throw new RuntimeException(e);
         }
@@ -183,7 +184,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       assertJQ(req("qt","/get", "getVersions",""+versions.size()),"/versions==" + versions);
 
       // wait until recovery has finished
-      assertTrue(logReplayFinish.tryAcquire(timeout, TimeUnit.SECONDS));
+      assertTrue(logReplayFinish.tryAcquire(TIMEOUT, TimeUnit.SECONDS));
 
       assertJQ(req("q","*:*") ,"/response/numFound==3");
 
@@ -203,7 +204,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       // h.getCore().getUpdateHandler().getUpdateLog().recoverFromLog();
 
       // wait until recovery has finished
-      assertTrue(logReplayFinish.tryAcquire(timeout, TimeUnit.SECONDS));
+      assertTrue(logReplayFinish.tryAcquire(TIMEOUT, TimeUnit.SECONDS));
       assertJQ(req("q","*:*") ,"/response/numFound==5");
       assertJQ(req("q","id:A2") ,"/response/numFound==0");
 
@@ -235,7 +236,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
 
     UpdateLog.testing_logReplayHook = () -> {
       try {
-        assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+        assertTrue(logReplay.tryAcquire(TIMEOUT, TimeUnit.SECONDS));
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -386,7 +387,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
 
     UpdateLog.testing_logReplayHook = () -> {
       try {
-        assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+        assertTrue(logReplay.tryAcquire(TIMEOUT, TimeUnit.SECONDS));
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -606,7 +607,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
 
     UpdateLog.testing_logReplayHook = () -> {
       try {
-        assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+        assertTrue(logReplay.tryAcquire(TIMEOUT, TimeUnit.SECONDS));
       } catch (Exception e) {
         throw new RuntimeException(e);
       }
@@ -661,7 +662,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
 
       UpdateLog.testing_logReplayHook = () -> {
         try {
-          assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+          assertTrue(logReplay.tryAcquire(TIMEOUT, TimeUnit.SECONDS));
         } catch (Exception e) {
           throw new RuntimeException(e);
         }
@@ -718,7 +719,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       assertJQ(req("qt","/get", "getVersions",""+maxReq), "/versions==" + versions.subList(0,Math.min(maxReq,start)));
 
       logReplay.release(1000);
-      assertTrue(logReplayFinish.tryAcquire(timeout, TimeUnit.SECONDS));
+      assertTrue(logReplayFinish.tryAcquire(TIMEOUT, TimeUnit.SECONDS));
 
       assertJQ(req("qt","/get", "getVersions",""+maxReq), "/versions==" + versions.subList(0,Math.min(maxReq,start)));
 
@@ -768,7 +769,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
 
       UpdateLog.testing_logReplayHook = () -> {
         try {
-          assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+          assertTrue(logReplay.tryAcquire(TIMEOUT, TimeUnit.SECONDS));
         } catch (Exception e) {
           throw new RuntimeException(e);
         }
@@ -802,7 +803,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       logReplayFinish.drainPermits();
       ignoreException("OutOfBoundsException");  // this is what the corrupted log currently produces... subject to change.
       createCore();
-      assertTrue(logReplayFinish.tryAcquire(timeout, TimeUnit.SECONDS));
+      assertTrue(logReplayFinish.tryAcquire(TIMEOUT, TimeUnit.SECONDS));
       resetExceptionIgnores();
       assertJQ(req("q","*:*") ,"/response/numFound==3");
 
@@ -896,7 +897,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
 
       UpdateLog.testing_logReplayHook = () -> {
         try {
-          assertTrue(logReplay.tryAcquire(timeout, TimeUnit.SECONDS));
+          assertTrue(logReplay.tryAcquire(TIMEOUT, TimeUnit.SECONDS));
         } catch (Exception e) {
           throw new RuntimeException(e);
         }
@@ -948,7 +949,7 @@ public class TestRecoveryHdfs extends SolrTestCaseJ4 {
       logReplayFinish.drainPermits();
       ignoreException("OutOfBoundsException");  // this is what the corrupted log currently produces... subject to change.
       createCore();
-      assertTrue(logReplayFinish.tryAcquire(timeout, TimeUnit.SECONDS));
+      assertTrue(logReplayFinish.tryAcquire(TIMEOUT, TimeUnit.SECONDS));
       resetExceptionIgnores();
       assertJQ(req("q","*:*") ,"/response/numFound==6");
 

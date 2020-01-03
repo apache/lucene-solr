@@ -315,6 +315,8 @@ public class OverseerTest extends SolrTestCaseJ4 {
     if (null != server) {
       server.shutdown();
     }
+
+    server = null;
   }
 
   @After

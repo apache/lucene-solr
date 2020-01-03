@@ -33,7 +33,7 @@
 
     <dependency org="org.locationtech.jts" name="jts-core" rev="${/org.locationtech.jts/jts-core}" conf="test" />
 
-    <dependency org="org.slf4j" name="slf4j-api" rev="${/org.slf4j/slf4j-api}" conf="test"/>
+    <!-- <dependency org="org.slf4j" name="slf4j-api" rev="${/org.slf4j/slf4j-api}" conf="test"/> -->
 
     <exclude org="*" ext="*" matcher="regexp" type="${ivy.exclude.types}"/>
   </dependencies>

@@ -75,6 +75,8 @@ public class DirectSpellChecker {
   private float thresholdFrequency = 0f;
   /** minimum length of a query word to return suggestions */
   private int minQueryLength = 4;
+  /** maximum length of a query word to return suggestions */
+  private int maxQueryLength = Integer.MAX_VALUE;
   /** value in [0..1] (or absolute number &gt;= 1) representing the maximum
    *  number of documents (of the total) a query term can appear in to
    *  be corrected. */
@@ -195,7 +197,25 @@ public class DirectSpellChecker {
    * metric.
    */
   public void setMinQueryLength(int minQueryLength) {
+    if (minQueryLength > this.maxQueryLength)
+      throw new IllegalArgumentException("minQueryLength must not be greater than maxQueryLength");
     this.minQueryLength = minQueryLength;
+  }
+
+  /** Get the maximum length of a query term to return suggestions */
+  public int getMaxQueryLength() {
+    return maxQueryLength;
+  }
+
+  /** 
+   * Set the maximum length of a query term to return suggestions. 
+   * <p>
+   * Long queries can be expensive to process and/or trigger exceptions.
+   */
+  public void setMaxQueryLength(int maxQueryLength) {
+    if (maxQueryLength < this.minQueryLength)
+      throw new IllegalArgumentException("maxQueryLength must not be smaller than minQueryLength");
+    this.maxQueryLength = maxQueryLength;
   }
 
   /**
@@ -317,7 +337,9 @@ public class DirectSpellChecker {
       SuggestMode suggestMode, float accuracy) throws IOException {
     final CharsRefBuilder spare = new CharsRefBuilder();
     String text = term.text();
-    if (minQueryLength > 0 && text.codePointCount(0, text.length()) < minQueryLength)
+
+    int textLength = text.codePointCount(0, text.length());
+    if (textLength < minQueryLength || textLength > maxQueryLength)
       return new SuggestWord[0];
     
     if (lowerCaseTerms) {

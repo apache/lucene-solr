@@ -500,7 +500,7 @@ Number of iterations of the simulation loop. Default is 10.
 Results of the simulation contain the initial suggestions, suggestions at each step of the
 simulation and the final simulated state of the cluster.
 
-=== Simulation scenario tool
+=== Simulation Scenario Tool
 The autoscaling command-line tool supports also the execution of end-to-end simulation scenarios consisting of
 several cluster- and collection-level operations and events.
 
@@ -517,10 +517,10 @@ params := [ path, '?' ] key, '=', value { '&', key, '=', value } *
 
 Keys and values additionally use www-urlencoded format to avoid meta-characters and non-ascii characters.
 
-The `params` part of the line closely follows a regular Solr params representation on purpose - in many cases
+The `params` part of the line closely follows a regular Solr parameter representation on purpose - in many cases
 the content of this part of the command is passed directly to the respective collection- or cluster-level API.
 
-==== Scenario context
+==== Scenario Context
 Scenario has a context, which is simply a map of key-value pairs. Before executing each command the context is
 updated to contain the current values for the following properties:
 
@@ -530,7 +530,7 @@ updated to contain the current values for the following properties:
 * `_collections_` - a list of existing collections, or absent if there are no collections (or no live nodes)
 * `_suggestions_` - a list of autoscaling suggestions generated using CREATE_SUGGESTIONS command.
 * `_responses_` - a list of SolrResponse-s resulting from SOLR_REQUEST commands.
-* `_loop_iter_` - current loop iteration, or absent outside of loop.
+* `_loop_iter_` - current loop iteration (as a string), or absent outside of loop.
 * `_trigger_event_<triggerName>` - last trigger event captured by WAIT_EVENT
 
 Command parameters support variable expansion using string values from the current context (non-string values, including numeric, are ignored)
@@ -543,8 +543,8 @@ For example, assuming a system property is set 'foo=bar', the following command 
 load_snapshot path=/tmp/${foo}
 ----
 
-==== Scenario commands
-The following commands are supported (command names are case insensitive, but params aren't):
+==== Scenario Commands
+The following commands are supported (command names are case insensitive, but parameter names are not):
 
 * `create_cluster numNodes=N[&disableMetricsHistory=false&timeSourcee=simTime:50]` - create a simulated cluster with N nodes
 * `load_snapshot (path=/some/path | zkHost=ZK_CONNECT_STRING)` - create a simulated cluster from an autoscaling snapshot or from a live cluster.
@@ -557,7 +557,7 @@ The following commands are supported (command names are case insensitive, but pa
 * `loop_start [iterations=N]`, `loop_end` - iterate commands enclosed in `loop_start` / `loop_end` N times, or until a loop abort is requested.
 * `set_op_delays op1=delayMs1&op2=delayMs2...` - set operation delays for specific collection commands to simulate slow execution.
 * `solr_request /admin/handler?httpMethod=POST&stream.body={'json':'body'}&other=params` - execute one of SolrRequest types supported by `SimCloudManager`.
-* `run [time=60000]` - run the simulator for some time, allowing background tasks to execute (eg. trigger event processing).
+* `run [time=60000]` - run the simulator for some time, allowing background tasks to execute (e.g., trigger event processing).
 * `wait_collection collection=test&shards=N&replicas=M[&withInactive=false&requireLeaders=true&wait=90]` - wait until the collection shape matches the criteria or the wait time elapses (in which case an error is thrown).
 * `event_listener trigger=triggerName&stage=SUCCEEDED[&beforeAction=foo | &afterAction=bar]` - prepare to listen for a specific trigger event.
 * `wait_event trigger=triggerName[&wait=90]` - wait until an event specified in `event_listener` is captured or a wait time elapses (in which cases an error is thrown).
@@ -569,14 +569,14 @@ The following commands are supported (command names are case insensitive, but pa
 * `index_docs numDocs=NNN[&start=XXX]` - simulate bulk indexing of a large number of documents.
 * `assert condition=(equals | not_equals | null | not_null)&(key=objectPath | value=myValue)[&expected=value]` - assert a condition. When `key` is specified then it can be an object path to complex values present in the scenario's context.
 
-==== Example scenarios
+==== Example Scenarios
 Example scenario testing the behavior of `.autoAddReplicas` trigger:
 [source,text]
 ----
 # standard comment
 // java comment
 create_cluster numNodes=2 // inline comment
-// load autoscaling config from a json string. Notice that the value must be URL-encoded
+// load autoscaling config from a JSON string. Notice that the value must be URL-encoded
 load_autoscaling json={'cluster-policy'+:+[{'replica'+:+'<3',+'shard'+:+'#EACH',+'collection'+:+'testCollection','node':'#ANY'}]}&defaultWaitFor=10
 solr_request /admin/collections?action=CREATE&autoAddReplicas=true&name=testCollection&numShards=2&replicationFactor=2&maxShardsPerNode=2
 wait_collection collection=testCollection&shards=2&replicas=2

@@ -250,13 +250,13 @@ final class FieldUpdatesBuffer {
     @Override
     public int hashCode() {
       throw new UnsupportedOperationException(
-          "this struct should not be use in map or other data-stuctures that use hashCode / equals");
+          "this struct should not be use in map or other data-structures that use hashCode / equals");
     }
 
     @Override
     public boolean equals(Object obj) {
       throw new UnsupportedOperationException(
-          "this struct should not be use in map or other data-stuctures that use hashCode / equals");
+          "this struct should not be use in map or other data-structures that use hashCode / equals");
     }
   }
 

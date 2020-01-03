@@ -84,7 +84,7 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
                 ZkStateReader.NODE_NAME_PROP, "node4",
                 ZkStateReader.CORE_NAME_PROP, "collection1",
                 ZkStateReader.REPLICA_TYPE, "TLOG"
-            )
+            ), "c1","s1"
         )
     );
 
@@ -122,7 +122,7 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
                 ZkStateReader.NODE_NAME_PROP, "node1",
                 ZkStateReader.CORE_NAME_PROP, "collection1",
                 ZkStateReader.REPLICA_TYPE, "NRT"
-            )
+            ),"c1","s1"
         )
     );
     replicas.add(
@@ -133,7 +133,7 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
                 ZkStateReader.NODE_NAME_PROP, "node2",
                 ZkStateReader.CORE_NAME_PROP, "collection1",
                 ZkStateReader.REPLICA_TYPE, "TLOG"
-            )
+            ),"c1","s1"
         )
     );
     replicas.add(
@@ -144,7 +144,7 @@ public class RequestReplicaListTransformerGeneratorTest extends SolrTestCaseJ4 {
                 ZkStateReader.NODE_NAME_PROP, "node3",
                 ZkStateReader.CORE_NAME_PROP, "collection1",
                 ZkStateReader.REPLICA_TYPE, "PULL"
-            )
+            ),"c1","s1"
         )
     );
     return replicas;

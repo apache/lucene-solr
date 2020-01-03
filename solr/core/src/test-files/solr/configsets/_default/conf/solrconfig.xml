@@ -69,21 +69,10 @@
        If a 'dir' option (with or without a regex) is used and nothing
        is found that matches, a warning will be logged.
 
-       The examples below can be used to load some solr-contribs along
+       The example below can be used to load a solr-contrib along
        with their external dependencies.
     -->
-  <lib dir="${solr.install.dir:../../../..}/contrib/extraction/lib" regex=".*\.jar" />
-  <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-cell-\d.*\.jar" />
-
-  <lib dir="${solr.install.dir:../../../..}/contrib/clustering/lib/" regex=".*\.jar" />
-  <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-clustering-\d.*\.jar" />
-
-  <lib dir="${solr.install.dir:../../../..}/contrib/langid/lib/" regex=".*\.jar" />
-  <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-langid-\d.*\.jar" />
-
-  <lib dir="${solr.install.dir:../../../..}/contrib/velocity/lib" regex=".*\.jar" />
-  <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-velocity-\d.*\.jar" />
-  <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-ltr-\d.*\.jar" />
+    <!-- <lib dir="${solr.install.dir:../../../..}/dist/" regex="solr-ltr-\d.*\.jar" /> -->
 
   <!-- an exact 'path' can be used instead of a 'dir' to specify a
        specific jar file.  This will cause a serious error to be logged
@@ -415,8 +404,7 @@
                       to occupy. Note that when this option is specified, the size
                       and initialSize parameters are ignored.
       -->
-    <filterCache class="solr.CaffeineCache"
-                 size="512"
+    <filterCache size="512"
                  initialSize="512"
                  autowarmCount="0"/>
 
@@ -428,8 +416,7 @@
             maxRamMB - the maximum amount of RAM (in MB) that this cache is allowed
                        to occupy
       -->
-    <queryResultCache class="solr.CaffeineCache"
-                      size="512"
+    <queryResultCache size="512"
                       initialSize="512"
                       autowarmCount="0"/>
 
@@ -439,14 +426,13 @@
          document).  Since Lucene internal document ids are transient,
          this cache will not be autowarmed.
       -->
-    <documentCache class="solr.CaffeineCache"
-                   size="512"
+    <documentCache size="512"
                    initialSize="512"
                    autowarmCount="0"/>
 
     <!-- custom cache currently used by block join -->
     <cache name="perSegFilter"
-           class="solr.search.CaffeineCache"
+           class="solr.CaffeineCache"
            size="10"
            initialSize="0"
            autowarmCount="10"
@@ -459,8 +445,7 @@
          even if not configured here.
       -->
     <!--
-       <fieldValueCache class="solr.CaffeineCache"
-                        size="512"
+       <fieldValueCache size="512"
                         autowarmCount="128"
                         showItems="32" />
       -->
@@ -770,41 +755,11 @@
     </lst>
   </requestHandler>
 
-
-  <!-- A Robust Example
-
-       This example SearchHandler declaration shows off usage of the
-       SearchHandler with many defaults declared
-
-       Note that multiple instances of the same Request Handler
-       (SearchHandler) can be registered multiple times with different
-       names (and different init parameters)
-    -->
-  <requestHandler name="/browse" class="solr.SearchHandler" useParams="query,facets,velocity,browse">
-    <lst name="defaults">
-      <str name="echoParams">explicit</str>
-    </lst>
-  </requestHandler>
-
-  <initParams path="/update/**,/query,/select,/tvrh,/elevate,/spell,/browse">
+  <initParams path="/update/**,/query,/select,/spell">
     <lst name="defaults">
       <str name="df">_text_</str>
     </lst>
   </initParams>
-
-  <!-- Solr Cell Update Request Handler
-
-       http://wiki.apache.org/solr/ExtractingRequestHandler
-
-    -->
-  <requestHandler name="/update/extract"
-                  startup="lazy"
-                  class="solr.extraction.ExtractingRequestHandler" >
-    <lst name="defaults">
-      <str name="lowernames">true</str>
-      <str name="fmap.content">_text_</str>
-    </lst>
-  </requestHandler>
 
   <!-- Search Components
 
@@ -936,30 +891,6 @@
     </arr>
   </requestHandler>
 
-  <!-- Term Vector Component
-
-       http://wiki.apache.org/solr/TermVectorComponent
-    -->
-  <searchComponent name="tvComponent" class="solr.TermVectorComponent"/>
-
-  <!-- A request handler for demonstrating the term vector component
-
-       This is purely as an example.
-
-       In reality you will likely want to add the component to your
-       already specified request handlers.
-    -->
-  <requestHandler name="/tvrh" class="solr.SearchHandler" startup="lazy">
-    <lst name="defaults">
-      <bool name="tv">true</bool>
-    </lst>
-    <arr name="last-components">
-      <str>tvComponent</str>
-    </arr>
-  </requestHandler>
-
-  <!-- Clustering Component. (Omitted here. See the default Solr example for a typical configuration.) -->
-
   <!-- Terms Component
 
        http://wiki.apache.org/solr/TermsComponent
@@ -977,30 +908,6 @@
     </lst>
     <arr name="components">
       <str>terms</str>
-    </arr>
-  </requestHandler>
-
-
-  <!-- Query Elevation Component
-
-       http://wiki.apache.org/solr/QueryElevationComponent
-
-       a search component that enables you to configure the top
-       results for a given query regardless of the normal lucene
-       scoring.
-    -->
-  <searchComponent name="elevator" class="solr.QueryElevationComponent" >
-    <!-- pick a fieldType to analyze queries -->
-    <str name="queryFieldType">string</str>
-  </searchComponent>
-
-  <!-- A request handler for demonstrating the elevator component -->
-  <requestHandler name="/elevate" class="solr.SearchHandler" startup="lazy">
-    <lst name="defaults">
-      <str name="echoParams">explicit</str>
-    </lst>
-    <arr name="last-components">
-      <str>elevator</str>
     </arr>
   </requestHandler>
 
@@ -1215,46 +1122,6 @@
      </updateRequestProcessorChain>
     -->
 
-  <!-- Language identification
-
-       This example update chain identifies the language of the incoming
-       documents using the langid contrib. The detected language is
-       written to field language_s. No field name mapping is done.
-       The fields used for detection are text, title, subject and description,
-       making this example suitable for detecting languages form full-text
-       rich documents injected via ExtractingRequestHandler.
-       See more about langId at http://wiki.apache.org/solr/LanguageDetection
-    -->
-  <!--
-   <updateRequestProcessorChain name="langid">
-     <processor class="org.apache.solr.update.processor.TikaLanguageIdentifierUpdateProcessorFactory">
-       <str name="langid.fl">text,title,subject,description</str>
-       <str name="langid.langField">language_s</str>
-       <str name="langid.fallback">en</str>
-     </processor>
-     <processor class="solr.LogUpdateProcessorFactory" />
-     <processor class="solr.RunUpdateProcessorFactory" />
-   </updateRequestProcessorChain>
-  -->
-
-  <!-- Script update processor
-
-    This example hooks in an update processor implemented using JavaScript.
-
-    See more about the script update processor at http://wiki.apache.org/solr/ScriptUpdateProcessor
-  -->
-  <!--
-    <updateRequestProcessorChain name="script">
-      <processor class="solr.StatelessScriptUpdateProcessorFactory">
-        <str name="script">update-script.js</str>
-        <lst name="params">
-          <str name="config_param">example config parameter</str>
-        </lst>
-      </processor>
-      <processor class="solr.RunUpdateProcessorFactory" />
-    </updateRequestProcessorChain>
-  -->
-
   <!-- Response Writers
 
        http://wiki.apache.org/solr/QueryResponseWriter
@@ -1291,23 +1158,6 @@
         <str name="content-type">text/plain; charset=UTF-8</str>
       </queryResponseWriter>
    -->
-
-  <!--
-     Custom response writers can be declared as needed...
-    -->
-  <queryResponseWriter name="velocity" class="solr.VelocityResponseWriter" startup="lazy">
-    <str name="template.base.dir">${velocity.template.base.dir:}</str>
-    <str name="solr.resource.loader.enabled">${velocity.solr.resource.loader.enabled:true}</str>
-    <str name="params.resource.loader.enabled">${velocity.params.resource.loader.enabled:false}</str>
-  </queryResponseWriter>
-
-  <!-- XSLT response writer transforms the XML output by any xslt file found
-       in Solr's conf/xslt directory.  Changes to xslt files are checked for
-       every xsltCacheLifetimeSeconds.
-    -->
-  <queryResponseWriter name="xslt" class="solr.XSLTResponseWriter">
-    <int name="xsltCacheLifetimeSeconds">5</int>
-  </queryResponseWriter>
 
   <!-- Query Parsers
 

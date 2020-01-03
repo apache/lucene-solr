@@ -28,7 +28,10 @@ import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
+import org.apache.lucene.util.automaton.ByteRunAutomaton;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
+import org.apache.lucene.util.automaton.Operations;
+import org.apache.lucene.util.automaton.TooComplexToDeterminizeException;
 
 /** Implements the fuzzy search query. The similarity measurement
  * is based on the Damerau-Levenshtein (optimal string alignment) algorithm,
@@ -174,9 +177,18 @@ public class FuzzyQuery extends MultiTermQuery implements Accountable {
 
   @Override
   public void visit(QueryVisitor visitor) {
-    // TODO find some way of consuming Automata
-    if (visitor.acceptField(term.field())) {
-      visitor.visitLeaf(this);
+    if (visitor.acceptField(field)) {
+      if (maxEdits == 0 || prefixLength >= term.text().length()) {
+        visitor.consumeTerms(this, term);
+      } else {
+        // Note: we're rebuilding the automaton here, so this can be expensive
+        try {
+          visitor.consumeTermsMatching(this, field,
+              new ByteRunAutomaton(toAutomaton(), false, Operations.DEFAULT_MAX_DETERMINIZED_STATES));
+        } catch (TooComplexToDeterminizeException e) {
+          throw new FuzzyTermsEnum.FuzzyTermsException(term.text(), e);
+        }
+      }
     }
   }
 

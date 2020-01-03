@@ -205,9 +205,13 @@ public class UniqueAgg extends StrAggValueSource {
       super(fcontext, field, numSlots);
     }
 
-    @Override
     protected DocIdSetIterator docIdSetIterator() {
       return values;
+    }
+
+    @Override
+    protected boolean advanceExact(int doc) throws IOException {
+      return values.advanceExact(doc);
     }
 
     @Override
@@ -228,9 +232,13 @@ public class UniqueAgg extends StrAggValueSource {
       super(fcontext, field, numSlots);
     }
 
-    @Override
     protected DocIdSetIterator docIdSetIterator() {
       return values;
+    }
+
+    @Override
+    protected boolean advanceExact(int doc) throws IOException {
+      return values.advanceExact(doc);
     }
 
     @Override

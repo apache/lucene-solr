@@ -22,8 +22,9 @@ Solr provides two approaches to backing up and restoring Solr cores or collectio
 
 [NOTE]
 ====
-Backups (and Snapshots) capture data that has been <<near-real-time-searching.adoc#commits-and-searching,_hard_ commited>>.  Commiting changes using `softCommit=true` may result in changes that are visible in search results but not included in subsequent backups.  Likewise, committing changes using `openSearcher=false` may result in changes committed to disk and included in subsequnt backups, even if they are not currently visible in search results.
+Backups (and Snapshots) capture data that has been <<near-real-time-searching.adoc#commits-and-searching,_hard_ commited>>. Commiting changes using `softCommit=true` may result in changes that are visible in search results but not included in subsequent backups.
 
+Likewise, committing changes using `openSearcher=false` may result in changes committed to disk and included in subsequent backups, even if they are not currently visible in search results.
 ====
 
 == SolrCloud Backups

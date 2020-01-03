@@ -278,7 +278,7 @@ public class JettySolrRunner {
       // the server as well as any client actions taken by this JVM in
       // talking to that server, but for the purposes of testing that should
       // be good enough
-      final SslContextFactory sslcontext = SSLConfig.createContextFactory(config.sslConfig);
+      final SslContextFactory.Server sslcontext = SSLConfig.createContextFactory(config.sslConfig);
 
       HttpConfiguration configuration = new HttpConfiguration();
       ServerConnector connector;
@@ -319,7 +319,6 @@ public class JettySolrRunner {
       }
 
       connector.setReuseAddress(true);
-      connector.setSoLingerTime(-1);
       connector.setPort(port);
       connector.setHost("127.0.0.1");
       connector.setIdleTimeout(THREAD_POOL_MAX_IDLE_TIME_MS);
@@ -330,7 +329,6 @@ public class JettySolrRunner {
       HttpConfiguration configuration = new HttpConfiguration();
       ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(configuration));
       connector.setPort(port);
-      connector.setSoLingerTime(-1);
       connector.setIdleTimeout(THREAD_POOL_MAX_IDLE_TIME_MS);
       server.setConnectors(new Connector[] {connector});
     }

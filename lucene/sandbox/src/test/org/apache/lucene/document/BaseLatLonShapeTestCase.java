@@ -225,6 +225,16 @@ public abstract class BaseLatLonShapeTestCase extends BaseShapeTestCase {
   protected Encoder getEncoder() {
     return new Encoder() {
       @Override
+      double decodeX(int encoded) {
+        return decodeLongitude(encoded);
+      }
+
+      @Override
+      double decodeY(int encoded) {
+        return decodeLatitude(encoded);
+      }
+
+      @Override
       double quantizeX(double raw) {
         return decodeLongitude(encodeLongitude(raw));
       }

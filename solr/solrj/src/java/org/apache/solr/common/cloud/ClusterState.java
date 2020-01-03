@@ -31,7 +31,6 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.Utils;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.Watcher;
 import org.noggit.JSONWriter;
 
 /**
@@ -104,7 +103,6 @@ public class ClusterState implements JSONWriter.Writable {
    * Implementation note: This method resolves the collection reference by calling
    * {@link CollectionRef#get()} which can make a call to ZooKeeper. This is necessary
    * because the semantics of how collection list is loaded have changed in SOLR-6629.
-   * Please see javadocs in {@link ZkStateReader#refreshCollectionList(Watcher)}
    */
   public boolean hasCollection(String collectionName) {
     return getCollectionOrNull(collectionName) != null;
@@ -141,7 +139,6 @@ public class ClusterState implements JSONWriter.Writable {
    * Implementation note: This method resolves the collection reference by calling
    * {@link CollectionRef#get()} which may make a call to ZooKeeper. This is necessary
    * because the semantics of how collection list is loaded have changed in SOLR-6629.
-   * Please see javadocs in {@link ZkStateReader#refreshCollectionList(Watcher)}
    */
   public DocCollection getCollectionOrNull(String collectionName, boolean allowCached) {
     CollectionRef ref = collectionStates.get(collectionName);
@@ -154,7 +151,6 @@ public class ClusterState implements JSONWriter.Writable {
    * Implementation note: This method resolves the collection reference by calling
    * {@link CollectionRef#get()} which can make a call to ZooKeeper. This is necessary
    * because the semantics of how collection list is loaded have changed in SOLR-6629.
-   * Please see javadocs in {@link ZkStateReader#refreshCollectionList(Watcher)}
    *
    * @return a map of collection name vs DocCollection object
    */
@@ -258,13 +254,13 @@ public class ClusterState implements JSONWriter.Writable {
     Map<String,Object> props;
     Map<String,Slice> slices;
 
-    Map<String,Object> sliceObjs = (Map<String,Object>)objs.get(DocCollection.SHARDS);
+    Map<String, Object> sliceObjs = (Map<String, Object>) objs.get(DocCollection.SHARDS);
     if (sliceObjs == null) {
       // legacy format from 4.0... there was no separate "shards" level to contain the collection shards.
-      slices = Slice.loadAllFromMap(objs);
+      slices = Slice.loadAllFromMap(name, objs);
       props = Collections.emptyMap();
     } else {
-      slices = Slice.loadAllFromMap(sliceObjs);
+      slices = Slice.loadAllFromMap(name, sliceObjs);
       props = new HashMap<>(objs);
       objs.remove(DocCollection.SHARDS);
     }

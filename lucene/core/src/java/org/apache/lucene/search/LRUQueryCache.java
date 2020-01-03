@@ -28,9 +28,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Executor;
-import java.util.concurrent.FutureTask;
-import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Predicate;
@@ -91,6 +88,7 @@ import static org.apache.lucene.util.RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_U
  * @lucene.experimental
  */
 public class LRUQueryCache implements QueryCache, Accountable {
+
   private final int maxSize;
   private final long maxRamBytesUsed;
   private final Predicate<LeafReaderContext> leavesToCache;
@@ -273,7 +271,6 @@ public class LRUQueryCache implements QueryCache, Accountable {
     assert lock.isHeldByCurrentThread();
     assert key instanceof BoostQuery == false;
     assert key instanceof ConstantScoreQuery == false;
-
     final IndexReader.CacheKey readerKey = cacheHelper.getKey();
     final LeafCache leafCache = cache.get(readerKey);
     if (leafCache == null) {
@@ -407,15 +404,6 @@ public class LRUQueryCache implements QueryCache, Accountable {
     }
   }
 
-  // Get original weight from the cached weight
-  private Weight getOriginalWeight(Weight weight) {
-    while (weight instanceof CachingWrapperWeight) {
-      weight = ((CachingWrapperWeight) weight).in;
-    }
-
-    return weight;
-  }
-
   // pkg-private for testing
   void assertConsistent() {
     lock.lock();
@@ -470,10 +458,12 @@ public class LRUQueryCache implements QueryCache, Accountable {
   }
 
   @Override
-  public Weight doCache(final Weight weight, QueryCachingPolicy policy, Executor executor) {
-    Weight originalWeight = getOriginalWeight(weight);
+  public Weight doCache(Weight weight, QueryCachingPolicy policy) {
+    while (weight instanceof CachingWrapperWeight) {
+      weight = ((CachingWrapperWeight) weight).in;
+    }
 
-    return new CachingWrapperWeight(originalWeight, policy, executor);
+    return new CachingWrapperWeight(weight, policy);
   }
 
   @Override
@@ -675,13 +665,10 @@ public class LRUQueryCache implements QueryCache, Accountable {
     // threads when IndexSearcher is created with threads
     private final AtomicBoolean used;
 
-    private final Executor executor;
-
-    CachingWrapperWeight(Weight in, QueryCachingPolicy policy, Executor executor) {
+    CachingWrapperWeight(Weight in, QueryCachingPolicy policy) {
       super(in.getQuery(), 1f);
       this.in = in;
       this.policy = policy;
-      this.executor = executor;
       used = new AtomicBoolean(false);
     }
 
@@ -769,17 +756,6 @@ public class LRUQueryCache implements QueryCache, Accountable {
                 return supplier.get(leadCost);
               }
 
-              boolean cacheSynchronously = executor == null;
-              if (cacheSynchronously == false) {
-                boolean asyncCachingSucceeded = cacheAsynchronously(context, cacheHelper);
-
-                // If async caching failed, synchronous caching will
-                // be performed, hence do not return the uncached value
-                if (asyncCachingSucceeded) {
-                  return supplier.get(leadCost);
-                }
-              }
-              
               Scorer scorer = supplier.get(Long.MAX_VALUE);
               DocIdSet docIdSet = cacheImpl(new DefaultBulkScorer(scorer), context.reader().maxDoc());
               putIfAbsent(in.getQuery(), docIdSet, cacheHelper);
@@ -876,19 +852,6 @@ public class LRUQueryCache implements QueryCache, Accountable {
 
       if (docIdSet == null) {
         if (policy.shouldCache(in.getQuery())) {
-          boolean cacheSynchronously = executor == null;
-          // If asynchronous caching is requested, perform the same and return
-          // the uncached iterator
-          if (cacheSynchronously == false) {
-            boolean asyncCachingSucceeded = cacheAsynchronously(context, cacheHelper);
-
-            // If async caching failed, we will perform synchronous caching
-            // hence do not return the uncached value here
-            if (asyncCachingSucceeded) {
-              return in.bulkScorer(context);
-            }
-          }
-
           docIdSet = cache(context);
           putIfAbsent(in.getQuery(), docIdSet, cacheHelper);
         } else {
@@ -908,30 +871,5 @@ public class LRUQueryCache implements QueryCache, Accountable {
       return new DefaultBulkScorer(new ConstantScoreScorer(this, 0f, ScoreMode.COMPLETE_NO_SCORES, disi));
     }
 
-    // Perform a cache load asynchronously
-    // @return true if asynchronous caching succeeded, false otherwise
-    private boolean cacheAsynchronously(LeafReaderContext context, IndexReader.CacheHelper cacheHelper) {
-      FutureTask<Void> task = new FutureTask<>(() -> {
-        // If the reader is being closed -- do nothing
-        if (context.reader().tryIncRef()) {
-          try {
-            DocIdSet localDocIdSet = cache(context);
-            putIfAbsent(in.getQuery(), localDocIdSet, cacheHelper);
-          } finally {
-            context.reader().decRef();
-          }
-        }
-
-        return null;
-      });
-      try {
-        executor.execute(task);
-      } catch (RejectedExecutionException e) {
-        // Trigger synchronous caching
-        return false;
-      }
-
-      return true;
-    }
   }
 }

@@ -39,7 +39,7 @@ final class NodeHash<T> {
     this.in = in;
   }
 
-  private boolean nodesEqual(Builder.UnCompiledNode<T> node, long address) throws IOException {
+  private boolean nodesEqual(FSTCompiler.UnCompiledNode<T> node, long address) throws IOException {
     fst.readFirstRealTargetArc(address, scratchArc, in);
 
     // Fail fast for a node with fixed length arcs.
@@ -58,10 +58,10 @@ final class NodeHash<T> {
     }
 
     for(int arcUpto=0; arcUpto < node.numArcs; arcUpto++) {
-      final Builder.Arc<T> arc = node.arcs[arcUpto];
+      final FSTCompiler.Arc<T> arc = node.arcs[arcUpto];
       if (arc.label != scratchArc.label() ||
           !arc.output.equals(scratchArc.output()) ||
-          ((Builder.CompiledNode) arc.target).node != scratchArc.target() ||
+          ((FSTCompiler.CompiledNode) arc.target).node != scratchArc.target() ||
           !arc.nextFinalOutput.equals(scratchArc.nextFinalOutput()) ||
           arc.isFinal != scratchArc.isFinal()) {
         return false;
@@ -82,16 +82,16 @@ final class NodeHash<T> {
 
   // hash code for an unfrozen node.  This must be identical
   // to the frozen case (below)!!
-  private long hash(Builder.UnCompiledNode<T> node) {
+  private long hash(FSTCompiler.UnCompiledNode<T> node) {
     final int PRIME = 31;
     //System.out.println("hash unfrozen");
     long h = 0;
     // TODO: maybe if number of arcs is high we can safely subsample?
     for (int arcIdx=0; arcIdx < node.numArcs; arcIdx++) {
-      final Builder.Arc<T> arc = node.arcs[arcIdx];
+      final FSTCompiler.Arc<T> arc = node.arcs[arcIdx];
       //System.out.println("  label=" + arc.label + " target=" + ((Builder.CompiledNode) arc.target).node + " h=" + h + " output=" + fst.outputs.outputToString(arc.output) + " isFinal?=" + arc.isFinal);
       h = PRIME * h + arc.label;
-      long n = ((Builder.CompiledNode) arc.target).node;
+      long n = ((FSTCompiler.CompiledNode) arc.target).node;
       h = PRIME * h + (int) (n^(n>>32));
       h = PRIME * h + arc.output.hashCode();
       h = PRIME * h + arc.nextFinalOutput.hashCode();
@@ -127,7 +127,7 @@ final class NodeHash<T> {
     return h & Long.MAX_VALUE;
   }
 
-  public long add(Builder<T> builder, Builder.UnCompiledNode<T> nodeIn) throws IOException {
+  public long add(FSTCompiler<T> fstCompiler, FSTCompiler.UnCompiledNode<T> nodeIn) throws IOException {
     //System.out.println("hash: add count=" + count + " vs " + table.size() + " mask=" + mask);
     final long h = hash(nodeIn);
     long pos = h & mask;
@@ -136,7 +136,7 @@ final class NodeHash<T> {
       final long v = table.get(pos);
       if (v == 0) {
         // freeze & add
-        final long node = fst.addNode(builder, nodeIn);
+        final long node = fst.addNode(fstCompiler, nodeIn);
         //System.out.println("  now freeze node=" + node);
         assert hash(node) == h : "frozenHash=" + hash(node) + " vs h=" + h;
         count++;

@@ -73,6 +73,8 @@ public abstract class FieldProperties {
     }
   }
 
+  static final String POSTINGS_FORMAT = "postingsFormat";
+  static final String DOC_VALUES_FORMAT = "docValuesFormat";
 
   /** Returns the symbolic name for the property. */
   static String getPropertyName(int property) {
@@ -85,13 +87,16 @@ public abstract class FieldProperties {
         return 1 << i;
       }
     }
-    if (failOnError && !"default".equals(name)) {
+    if (failOnError && !isPropertyIgnored(name)) {
       throw new IllegalArgumentException("Invalid field property: " + name);
     } else {
       return 0;
     }
   }
 
+  private static boolean isPropertyIgnored(String name) {
+    return name.equals("default") || name.equals(POSTINGS_FORMAT) || name.equals(DOC_VALUES_FORMAT);
+  }
 
   static String propertiesToString(int properties) {
     StringBuilder sb = new StringBuilder();

@@ -24,6 +24,8 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.solr.client.solrj.io.ModelCache;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.client.solrj.routing.RequestReplicaListTransformerGenerator;
+import org.apache.solr.common.params.SolrParams;
 
 /**
  * The StreamContext is passed to TupleStreams using the TupleStream.setStreamContext() method.
@@ -46,6 +48,8 @@ public class StreamContext implements Serializable {
   private ModelCache modelCache;
   private StreamFactory streamFactory;
   private boolean local;
+  private SolrParams requestParams;
+  private RequestReplicaListTransformerGenerator requestReplicaListTransformerGenerator;
 
   public ConcurrentMap getObjectCache() {
     return this.objectCache;
@@ -109,5 +113,21 @@ public class StreamContext implements Serializable {
 
   public boolean isLocal() {
     return local;
+  }
+
+  public void setRequestParams(SolrParams requestParams) {
+    this.requestParams = requestParams;
+  }
+
+  public SolrParams getRequestParams() {
+    return requestParams;
+  }
+
+  public void setRequestReplicaListTransformerGenerator(RequestReplicaListTransformerGenerator requestReplicaListTransformerGenerator) {
+    this.requestReplicaListTransformerGenerator = requestReplicaListTransformerGenerator;
+  }
+
+  public RequestReplicaListTransformerGenerator getRequestReplicaListTransformerGenerator() {
+    return requestReplicaListTransformerGenerator;
   }
 }

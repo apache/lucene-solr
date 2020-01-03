@@ -20,6 +20,7 @@ import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 
 import org.apache.solr.common.SolrException;
@@ -41,9 +42,13 @@ public class RequestReplicaListTransformerGenerator {
       (String configSpec, SolrParams requestParams, ReplicaListTransformerFactory fallback) -> shufflingReplicaListTransformer;
   private final ReplicaListTransformerFactory stableRltFactory;
   private final ReplicaListTransformerFactory defaultRltFactory;
+  private final String defaultShardPreferences;
+  private final String nodeName;
+  private final String localHostAddress;
+  private final NodesSysPropsCacher sysPropsCacher;
 
   public RequestReplicaListTransformerGenerator() {
-    this(RANDOM_RLTF);
+    this(null);
   }
 
   public RequestReplicaListTransformerGenerator(ReplicaListTransformerFactory defaultRltFactory) {
@@ -51,16 +56,24 @@ public class RequestReplicaListTransformerGenerator {
   }
 
   public RequestReplicaListTransformerGenerator(ReplicaListTransformerFactory defaultRltFactory, ReplicaListTransformerFactory stableRltFactory) {
-    this.defaultRltFactory = defaultRltFactory;
-    if (stableRltFactory == null) {
-      this.stableRltFactory = new AffinityReplicaListTransformerFactory();
-    } else {
-      this.stableRltFactory = stableRltFactory;
-    }
+    this(defaultRltFactory, stableRltFactory, null, null, null, null);
+  }
+
+  public RequestReplicaListTransformerGenerator(String defaultShardPreferences, String nodeName, String localHostAddress, NodesSysPropsCacher sysPropsCacher) {
+    this(null, null, defaultShardPreferences, nodeName, localHostAddress, sysPropsCacher);
+  }
+
+  public RequestReplicaListTransformerGenerator(ReplicaListTransformerFactory defaultRltFactory, ReplicaListTransformerFactory stableRltFactory, String defaultShardPreferences, String nodeName, String localHostAddress, NodesSysPropsCacher sysPropsCacher) {
+    this.defaultRltFactory = Optional.ofNullable(defaultRltFactory).orElse(RANDOM_RLTF);
+    this.stableRltFactory = Optional.ofNullable(stableRltFactory).orElseGet(AffinityReplicaListTransformerFactory::new);
+    this.defaultShardPreferences = Optional.ofNullable(defaultShardPreferences).orElse("");
+    this.nodeName = nodeName;
+    this.localHostAddress = localHostAddress;
+    this.sysPropsCacher = sysPropsCacher;
   }
 
   public ReplicaListTransformer getReplicaListTransformer(final SolrParams requestParams) {
-    return getReplicaListTransformer(requestParams, "");
+    return getReplicaListTransformer(requestParams, null);
   }
 
   public ReplicaListTransformer getReplicaListTransformer(final SolrParams requestParams, String defaultShardPreferences) {
@@ -70,6 +83,7 @@ public class RequestReplicaListTransformerGenerator {
   public ReplicaListTransformer getReplicaListTransformer(final SolrParams requestParams, String defaultShardPreferences, String nodeName, String localHostAddress, NodesSysPropsCacher sysPropsCacher) {
     @SuppressWarnings("deprecation")
     final boolean preferLocalShards = requestParams.getBool(CommonParams.PREFER_LOCAL_SHARDS, false);
+    defaultShardPreferences = Optional.ofNullable(defaultShardPreferences).orElse(this.defaultShardPreferences);
     final String shardsPreferenceSpec = requestParams.get(ShardParams.SHARDS_PREFERENCE, defaultShardPreferences);
 
     if (preferLocalShards || !shardsPreferenceSpec.isEmpty()) {
@@ -84,7 +98,15 @@ public class RequestReplicaListTransformerGenerator {
         preferenceRules.add(new PreferenceRule(ShardParams.SHARDS_PREFERENCE_REPLICA_LOCATION, ShardParams.REPLICA_LOCAL));
       }
 
-      NodePreferenceRulesComparator replicaComp = new NodePreferenceRulesComparator(preferenceRules, requestParams, nodeName, localHostAddress, sysPropsCacher, defaultRltFactory, stableRltFactory);
+      NodePreferenceRulesComparator replicaComp =
+          new NodePreferenceRulesComparator(
+              preferenceRules,
+              requestParams,
+              Optional.ofNullable(nodeName).orElse(this.nodeName),
+              Optional.ofNullable(localHostAddress).orElse(this.localHostAddress),
+              Optional.ofNullable(sysPropsCacher).orElse(this.sysPropsCacher),
+              defaultRltFactory,
+              stableRltFactory);
       ReplicaListTransformer baseReplicaListTransformer = replicaComp.getBaseReplicaListTransformer();
       if (replicaComp.getSortRules() == null) {
         // only applying base transformation

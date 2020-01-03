@@ -371,11 +371,12 @@ public class CloudSolrStream extends TupleStream implements Expressible {
   protected void constructStreams() throws IOException {
     try {
 
-      List<String> shardUrls = getShards(this.zkHost, this.collection, this.streamContext);
 
       ModifiableSolrParams mParams = new ModifiableSolrParams(params);
       mParams = adjustParams(mParams);
       mParams.set(DISTRIB, "false"); // We are the aggregator.
+
+      List<String> shardUrls = getShards(this.zkHost, this.collection, this.streamContext, mParams);
 
       for(String shardUrl : shardUrls) {
         SolrStream solrStream = new SolrStream(shardUrl, mParams);

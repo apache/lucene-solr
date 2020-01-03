@@ -40,8 +40,7 @@ public class HDFSCollectionsAPITest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupClass() throws Exception {
-    configureCluster(2)
-        .configure();
+    configureCluster(2).configure();
 
     dfsCluster = HdfsTestUtil.setupClass(createTempDir().toFile().getAbsolutePath());
 
@@ -54,6 +53,7 @@ public class HDFSCollectionsAPITest extends SolrCloudTestCase {
   public static void teardownClass() throws Exception {
     try {
       shutdownCluster(); // need to close before the MiniDFSCluster
+      cluster = null;
     } finally {
       try {
         HdfsTestUtil.teardownClass(dfsCluster);

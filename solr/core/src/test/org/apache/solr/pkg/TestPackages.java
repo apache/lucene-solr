@@ -54,6 +54,8 @@ import org.apache.solr.filestore.TestDistribPackageStore;
 import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.Stat;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import static org.apache.solr.common.cloud.ZkStateReader.SOLR_PKGS_PATH;
@@ -67,9 +69,18 @@ import static org.apache.solr.filestore.TestDistribPackageStore.waitForAllNodesH
 //@org.apache.lucene.util.LuceneTestCase.AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13822") // leaks files
 public class TestPackages extends SolrCloudTestCase {
 
+  @Before
+  public void setup() {
+    System.setProperty("enable.packages", "true");
+  }
+  
+  @After
+  public void teardown() {
+    System.clearProperty("enable.packages");
+  }
+  
   @Test
   public void testPluginLoading() throws Exception {
-    System.setProperty("enable.packages", "true");
     MiniSolrCloudCluster cluster =
         configureCluster(4)
             .withJettyConfig(jetty -> jetty.enableV2(true))
@@ -81,6 +92,7 @@ public class TestPackages extends SolrCloudTestCase {
       String FILE3 = "/mypkg/runtimelibs_v3.jar";
       String URP1 = "/mypkg/testurpv1.jar";
       String URP2 = "/mypkg/testurpv2.jar";
+      String EXPR1 = "/mypkg/expressible.jar";
       String COLLECTION_NAME = "testPluginLoadingColl";
       byte[] derFile = readFile("cryptokeys/pub_key512.der");
       cluster.getZkClient().makePath("/keys/exe", true);
@@ -91,10 +103,13 @@ public class TestPackages extends SolrCloudTestCase {
       postFileAndWait(cluster, "runtimecode/testurp_v1.jar.bin", URP1,
           "h6UmMzuPqu4hQFGLBMJh/6kDSEXpJlgLsQDXx0KuxXWkV5giilRP57K3towiJRh2J+rqihqIghNCi3YgzgUnWQ==");
 
+      postFileAndWait(cluster, "runtimecode/expressible.jar.bin", EXPR1,
+          "ZOT11arAiPmPZYOHzqodiNnxO9pRyRozWZEBX8XGjU1/HJptFnZK+DI7eXnUtbNaMcbXE2Ze8hh4M/eGyhY8BQ==");
+
       Package.AddVersion add = new Package.AddVersion();
       add.version = "1.0";
       add.pkg = "mypkg";
-      add.files = Arrays.asList(new String[]{FILE1, URP1});
+      add.files = Arrays.asList(new String[]{FILE1, URP1, EXPR1});
       V2Request req = new V2Request.Builder("/cluster/package")
           .forceV2(true)
           .withMethod(SolrRequest.METHOD.POST)
@@ -123,7 +138,8 @@ public class TestPackages extends SolrCloudTestCase {
           "'create-requesthandler' : { 'name' : '/runtime', 'class': 'mypkg:org.apache.solr.core.RuntimeLibReqHandler' }," +
           "'create-searchcomponent' : { 'name' : 'get', 'class': 'mypkg:org.apache.solr.core.RuntimeLibSearchComponent'  }," +
           "'create-queryResponseWriter' : { 'name' : 'json1', 'class': 'mypkg:org.apache.solr.core.RuntimeLibResponseWriter' }" +
-          "'create-updateProcessor' : { 'name' : 'myurp', 'class': 'mypkg:org.apache.solr.update.TestVersionedURP' }" +
+          "'create-updateProcessor' : { 'name' : 'myurp', 'class': 'mypkg:org.apache.solr.update.TestVersionedURP' }," +
+          " create-expressible: {name: mincopy , class: 'mypkg:org.apache.solr.client.solrj.io.stream.metrics.MinCopyMetric'}" +
           "}";
       cluster.getSolrClient().request(new ConfigRequest(payload) {
         @Override
@@ -147,6 +163,20 @@ public class TestPackages extends SolrCloudTestCase {
       verifyCmponent(cluster.getSolrClient(),
           COLLECTION_NAME, "updateProcessor", "myurp",
           "mypkg", "1.0" );
+
+      verifyCmponent(cluster.getSolrClient(),
+          COLLECTION_NAME, "expressible", "mincopy",
+          "mypkg", "1.0" );
+
+      TestDistribPackageStore.assertResponseValues(10,
+          cluster.getSolrClient() ,
+          new GenericSolrRequest(SolrRequest.METHOD.GET,
+              "/stream", new MapSolrParams((Map) Utils.makeMap("collection", COLLECTION_NAME,
+                  WT, JAVABIN,
+                  "action", "plugins"
+                  ))), Utils.makeMap(
+              ":plugins:mincopy", "org.apache.solr.client.solrj.io.stream.metrics.MinCopyMetric"
+          ));
 
       UpdateRequest ur = new UpdateRequest();
       ur.add(new SolrInputDocument("id", "1"));
@@ -181,7 +211,7 @@ public class TestPackages extends SolrCloudTestCase {
           "P/ptFXRvQMd4oKPvadSpd+A9ffwY3gcex5GVFVRy3df0/OF8XT5my8rQz7FZva+2ORbWxdXS8NKwNrbPVHLGXw==");
       //add the version using package API
       add.version = "1.1";
-      add.files = Arrays.asList(new String[]{FILE2,URP2});
+      add.files = Arrays.asList(new String[]{FILE2,URP2, EXPR1});
       req.process(cluster.getSolrClient());
 
       verifyCmponent(cluster.getSolrClient(),
@@ -211,7 +241,7 @@ public class TestPackages extends SolrCloudTestCase {
           "a400n4T7FT+2gM0SC6+MfSOExjud8MkhTSFylhvwNjtWwUgKdPFn434Wv7Qc4QEqDVLhQoL3WqYtQmLPti0G4Q==");
 
       add.version = "2.1";
-      add.files = Arrays.asList(new String[]{FILE3, URP2});
+      add.files = Arrays.asList(new String[]{FILE3, URP2, EXPR1});
       req.process(cluster.getSolrClient());
 
       //now let's verify that the classes are updated
@@ -293,7 +323,7 @@ public class TestPackages extends SolrCloudTestCase {
       }.process(cluster.getSolrClient()) ;
 
       add.version = "2.1";
-      add.files = Arrays.asList(new String[]{FILE3, URP2});
+      add.files = Arrays.asList(new String[]{FILE3, URP2, EXPR1});
       req.process(cluster.getSolrClient());
 
       //the collections mypkg is set to use version 1.1
@@ -357,6 +387,21 @@ public class TestPackages extends SolrCloudTestCase {
     }
 
   }
+   /* new V2Request.Builder("/c/"+COLLECTIONORALIAS+"/config").withMethod(SolrRequest.METHOD.POST)
+        .withPayload("{add-expressible: {name: mincopy , class: org.apache.solr.client.solrj.io.stream.metrics.MinCopyMetric}}")
+    .build().process(cluster.getSolrClient());
+
+  ModifiableSolrParams _params = new ModifiableSolrParams();
+  QueryRequest query = new QueryRequest(new MapSolrParams("action","plugins", "collection", COLLECTIONORALIAS, "wt", "javabin"));
+    query.setPath("/stream");
+  NamedList<Object> rsp = cluster.getSolrClient().request(query);
+  assertEquals("org.apache.solr.client.solrj.io.stream.metrics.MinCopyMetric", rsp._getStr("/plugins/mincopy", null));
+  _params = new ModifiableSolrParams();
+  query = new QueryRequest(new MapSolrParams("componentName","mincopy", "meta" ,"true", "collection", COLLECTIONORALIAS, "wt", "javabin"));
+    query.setPath("/config/expressible");
+  rsp = cluster.getSolrClient().request(query);
+
+    System.out.println();*/
 
   private void executeReq(String uri, JettySolrRunner jetty, Utils.InputStreamConsumer parser, Map expected) throws Exception {
     try(HttpSolrClient client = (HttpSolrClient) jetty.newClient()){
@@ -379,7 +424,6 @@ public class TestPackages extends SolrCloudTestCase {
         "componentName", componentName,
         "meta", "true"));
 
-    String s = "queryResponseWriter";
     GenericSolrRequest req1 = new GenericSolrRequest(SolrRequest.METHOD.GET,
         "/config/" + componentType, params);
     TestDistribPackageStore.assertResponseValues(10,

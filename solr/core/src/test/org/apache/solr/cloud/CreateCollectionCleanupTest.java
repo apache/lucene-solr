@@ -21,11 +21,12 @@ import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Properties;
+import org.apache.solr.client.solrj.impl.BaseHttpSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.junit.BeforeClass;
@@ -77,10 +78,13 @@ public class CreateCollectionCleanupTest extends SolrCloudTestCase {
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,"conf1",1,1);
 
     Properties properties = new Properties();
-    properties.put(CoreAdminParams.DATA_DIR, "/some_invalid_dir/foo");
+    Path tmpDir = createTempDir();
+    tmpDir = tmpDir.resolve("foo");
+    Files.createFile(tmpDir);
+    properties.put(CoreAdminParams.DATA_DIR, tmpDir.toString());
     create.setProperties(properties);
-    expectThrows(HttpSolrClient.RemoteSolrException.class, () -> {
-      CollectionAdminResponse rsp = create.process(cloudClient);
+    expectThrows(BaseHttpSolrClient.RemoteSolrException.class, () -> {
+      create.process(cloudClient);
     });
 
     // Confirm using LIST that the collection does not exist
@@ -99,7 +103,10 @@ public class CreateCollectionCleanupTest extends SolrCloudTestCase {
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,"conf1",1,1);
 
     Properties properties = new Properties();
-    properties.put(CoreAdminParams.DATA_DIR, "/some_invalid_dir/foo2");
+    Path tmpDir = createTempDir();
+    tmpDir = tmpDir.resolve("foo");
+    Files.createFile(tmpDir);
+    properties.put(CoreAdminParams.DATA_DIR, tmpDir.toString());
     create.setProperties(properties);
     create.setAsyncId("testAsyncCreateCollectionCleanup");
     create.process(cloudClient);
