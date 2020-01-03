@@ -135,6 +135,9 @@ Other Changes
 
 * SOLR-14091: Remove deprecated soLingerTime when configuring Jetty connector (Matthias Krueger via Kevin Risden)
 
+* SOLR-13778: Solrj client will retry requests on SSLException with a suppressed SocketException
+  (very likely a hard-closed socket connection).
+
 ==================  8.4.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
