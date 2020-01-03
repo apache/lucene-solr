@@ -53,6 +53,7 @@ allprojects {
     description = "Apply all dependency/ license checks."
   }
   check.dependsOn(licenses)
+  precommit.dependsOn(licenses)
 }
 
 subprojects {
