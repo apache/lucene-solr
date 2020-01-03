@@ -136,7 +136,27 @@ public class SSLConfig {
   }
 
   public SslContextFactory.Client createClientContextFactory() {
-    return new SslContextFactory.Client();
+    if (! isSSLMode()) {
+      return null;
+    }
+    // else...
+
+    SslContextFactory.Client factory = new SslContextFactory.Client();
+    if (getKeyStore() != null) {
+      factory.setKeyStorePath(getKeyStore());
+    }
+    if (getKeyStorePassword() != null) {
+      factory.setKeyStorePassword(getKeyStorePassword());
+    }
+
+    if (isClientAuthMode()) {
+      if (getTrustStore() != null)
+        factory.setTrustStorePath(getTrustStore());
+      if (getTrustStorePassword() != null)
+        factory.setTrustStorePassword(getTrustStorePassword());
+    }
+
+    return factory;
   }
 
   private static SslContextFactory.Server configureSslFromSysProps() {
