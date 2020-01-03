@@ -1879,6 +1879,10 @@ if [ -z "$SOLR_PORT" ]; then
   SOLR_PORT=8983
 fi
 
+if [ -n "$SOLR_JETTY_HOST" ]; then
+  SOLR_OPTS+=("-Dsolr.jetty.host=$SOLR_JETTY_HOST")
+fi
+
 if [ -z "$STOP_PORT" ]; then
   STOP_PORT=`expr $SOLR_PORT - 1000`
 fi
