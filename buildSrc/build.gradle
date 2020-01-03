@@ -1,0 +1,3 @@
+
+// Make sure the build environment is consistent.
+apply from: file('../gradle/validation/check-environment.gradle')
