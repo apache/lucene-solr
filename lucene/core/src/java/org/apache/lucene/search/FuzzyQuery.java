@@ -167,6 +167,13 @@ public class FuzzyQuery extends MultiTermQuery implements Accountable {
     return transpositions;
   }
 
+  /**
+   * Returns the compiled automata used to match terms
+   */
+  public CompiledAutomaton[] getAutomata() {
+    return automata;
+  }
+
   @Override
   public void visit(QueryVisitor visitor) {
     if (visitor.acceptField(field)) {
@@ -202,7 +209,7 @@ public class FuzzyQuery extends MultiTermQuery implements Accountable {
     }
     buffer.append(term.text());
     buffer.append('~');
-    buffer.append(Integer.toString(maxEdits));
+    buffer.append(maxEdits);
     return buffer.toString();
   }
 
@@ -227,6 +234,8 @@ public class FuzzyQuery extends MultiTermQuery implements Accountable {
     if (getClass() != obj.getClass())
       return false;
     FuzzyQuery other = (FuzzyQuery) obj;
+    // Note that we don't need to compare termLength or automata because they
+    // are entirely determined by the other fields
     if (maxEdits != other.maxEdits)
       return false;
     if (prefixLength != other.prefixLength)
