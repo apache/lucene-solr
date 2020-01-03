@@ -380,23 +380,24 @@ public final class ShapeField {
    */
   public static void decodeTriangle(byte[] t, DecodedTriangle triangle) {
     final int bits = NumericUtils.sortableBytesToInt(t, 6 * BYTES);
-    final boolean bit6 = (bits & 1 << 6) == 1 << 6;
-    final boolean bit7 = (bits & 1 << 7) == 1 << 7;
-    if (bit6) {
-      if (bit7) {
+    final int typeBits = (bits >>> 6) & 0x03;
+    switch (typeBits) {
+      case 0:
+        triangle.type = DecodedTriangle.TYPE.UNKNOWN;
+        decodeTriangle(t, triangle, bits);
+        break;
+      case 1:
+        triangle.type = DecodedTriangle.TYPE.POINT;
+        decodePoint(t, triangle);
+        break;
+      case 2:
+        triangle.type = DecodedTriangle.TYPE.LINE;
+        decodeLine(t, triangle, bits);
+        break;
+      case 3:
         triangle.type = DecodedTriangle.TYPE.TRIANGLE;
         decodeTriangle(t, triangle, bits);
-      } else {
-        triangle.type = DecodedTriangle.TYPE.POINT;
-        decodePoint(t,  triangle);
-      }
-    } else if (bit7) {
-      triangle.type = DecodedTriangle.TYPE.LINE;
-      decodeLine(t, triangle, bits);
-    } else {
-      // for backwards compatibility
-      triangle.type = DecodedTriangle.TYPE.UNKNOWN;
-      decodeTriangle(t, triangle, bits);
+        break;
     }
   }
 
@@ -578,8 +579,10 @@ public final class ShapeField {
       if (triangle.aX == triangle.cX && triangle.aY == triangle.cY) {
         triangle.type = DecodedTriangle.TYPE.POINT;
       } else {
-        triangle.aX = triangle.cX;
-        triangle.aY = triangle.cY;
+        triangle.bX = triangle.cX;
+        triangle.bY = triangle.cY;
+        triangle.cX = triangle.aX;
+        triangle.cY = triangle.aY;
         triangle.type = DecodedTriangle.TYPE.LINE;
       }
     } else if (triangle.aX == triangle.cX && triangle.aY == triangle.cY) {
