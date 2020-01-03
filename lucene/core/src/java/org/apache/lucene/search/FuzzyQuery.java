@@ -71,6 +71,7 @@ public class FuzzyQuery extends MultiTermQuery implements Accountable {
   private final boolean transpositions;
   private final int prefixLength;
   private final Term term;
+  private final int termLength;
   private final CompiledAutomaton[] automata;
 
   private final long ramBytesUsed;
@@ -109,7 +110,9 @@ public class FuzzyQuery extends MultiTermQuery implements Accountable {
     this.prefixLength = prefixLength;
     this.transpositions = transpositions;
     this.maxExpansions = maxExpansions;
-    this.automata = FuzzyTermsEnum.buildAutomata(term.text(), prefixLength, transpositions, maxEdits);
+    int[] codePoints = FuzzyTermsEnum.stringToUTF32(term.text());
+    this.termLength = codePoints.length;
+    this.automata = FuzzyTermsEnum.buildAutomata(term.text(), codePoints, prefixLength, transpositions, maxEdits);
     setRewriteMethod(new MultiTermQuery.TopTermsBlendedFreqScoringRewrite(maxExpansions));
     this.ramBytesUsed = calculateRamBytesUsed(term, this.automata);
   }
@@ -168,26 +171,13 @@ public class FuzzyQuery extends MultiTermQuery implements Accountable {
     return transpositions;
   }
 
-  /**
-   * Expert: Constructs an equivalent Automaton accepting terms matched by this query
-   */
-  public Automaton toAutomaton() {
-    return FuzzyTermsEnum.buildAutomaton(term.text(), prefixLength, transpositions, maxEdits);
-  }
-
   @Override
   public void visit(QueryVisitor visitor) {
     if (visitor.acceptField(field)) {
       if (maxEdits == 0 || prefixLength >= term.text().length()) {
         visitor.consumeTerms(this, term);
       } else {
-        // Note: we're rebuilding the automaton here, so this can be expensive
-        try {
-          visitor.consumeTermsMatching(this, field,
-              new ByteRunAutomaton(toAutomaton(), false, Operations.DEFAULT_MAX_DETERMINIZED_STATES));
-        } catch (TooComplexToDeterminizeException e) {
-          throw new FuzzyTermsEnum.FuzzyTermsException(term.text(), e);
-        }
+        automata[automata.length - 1].visit(visitor, this, field);
       }
     }
   }
@@ -197,7 +187,7 @@ public class FuzzyQuery extends MultiTermQuery implements Accountable {
     if (maxEdits == 0 || prefixLength >= term.text().length()) {  // can only match if it's exact
       return new SingleTermsEnum(terms.iterator(), term.bytes());
     }
-    return new FuzzyTermsEnum(terms, atts, getTerm(), maxEdits, automata);
+    return new FuzzyTermsEnum(terms, atts, getTerm(), termLength, maxEdits, automata);
   }
 
   /**

@@ -88,8 +88,12 @@ public final class FuzzyTermsEnum extends TermsEnum {
    * @throws IOException if there is a low-level IO error
    */
   public FuzzyTermsEnum(Terms terms, Term term, int maxEdits, int prefixLength, boolean transpositions) throws IOException {
-    this(terms, new AttributeSource(), term, maxEdits,
-        buildAutomata(term.text(), prefixLength, transpositions, maxEdits));
+    this(terms, term, stringToUTF32(term.text()), maxEdits, prefixLength, transpositions);
+  }
+
+  private FuzzyTermsEnum(Terms terms, Term term, int[] codePoints, int maxEdits, int prefixLength, boolean transpositions) throws IOException {
+    this(terms, new AttributeSource(), term, codePoints.length, maxEdits,
+        buildAutomata(term.text(), codePoints, prefixLength, transpositions, maxEdits));
   }
 
   /**
@@ -105,20 +109,17 @@ public final class FuzzyTermsEnum extends TermsEnum {
    * @param term Pattern term.
    * @param maxEdits Maximum edit distance.
    * @param automata An array of levenshtein automata to match against terms,
-   *                 see {@link #buildAutomata(String, int, boolean, int)}
+   *                 see {@link #buildAutomata(String, int[], int, boolean, int)}
    * @throws IOException if there is a low-level IO error
    */
-  public FuzzyTermsEnum(Terms terms, AttributeSource atts, Term term, 
+  public FuzzyTermsEnum(Terms terms, AttributeSource atts, Term term, int termLength,
       final int maxEdits, CompiledAutomaton[] automata) throws IOException {
 
     this.maxEdits = maxEdits;
     this.terms = terms;
     this.term = term;
     this.atts = atts;
-    
-    // convert the string into a utf32 int[] representation for fast comparisons
-    int[] termText = stringToUTF32(term.text());
-    this.termLength = termText.length;
+    this.termLength = termLength;
 
     this.maxBoostAtt = atts.addAttribute(MaxNonCompetitiveBoostAttribute.class);
     this.boostAtt = atts.addAttribute(BoostAttribute.class);
@@ -145,22 +146,9 @@ public final class FuzzyTermsEnum extends TermsEnum {
     return boostAtt.getBoost();
   }
 
-  /**
-   * Builds a binary Automaton to match a fuzzy term
-   * @param text            the term to match
-   * @param prefixLength    length of a required common prefix
-   * @param transpositions  {@code true} if transpositions should count as a single edit
-   * @param maxEdits        the maximum edit distance of matching terms
-   */
-  public static Automaton buildAutomaton(String text, int prefixLength, boolean transpositions, int maxEdits) {
-    int[] termText = stringToUTF32(text);
-    Automaton[] automata = buildAutomata(termText, prefixLength, transpositions, maxEdits);
-    return automata[automata.length - 1];
-  }
-
-  public static CompiledAutomaton[] buildAutomata(String text, int prefixLength, boolean transpositions, int maxEdits) {
+  static CompiledAutomaton[] buildAutomata(String text, int[] termText, int prefixLength, boolean transpositions, int maxEdits) {
     CompiledAutomaton[] compiled = new CompiledAutomaton[maxEdits + 1];
-    Automaton[] automata = buildAutomata(stringToUTF32(text), prefixLength, transpositions, maxEdits);
+    Automaton[] automata = buildAutomata(termText, prefixLength, transpositions, maxEdits);
     for (int i = 0; i <= maxEdits; i++) {
       try {
         compiled[i] = new CompiledAutomaton(automata[i], true, false);
@@ -172,7 +160,7 @@ public final class FuzzyTermsEnum extends TermsEnum {
     return compiled;
   }
 
-  private static int[] stringToUTF32(String text) {
+  static int[] stringToUTF32(String text) {
     int[] termText = new int[text.codePointCount(0, text.length())];
     for (int cp, i = 0, j = 0; i < text.length(); i += Character.charCount(cp)) {
       termText[j++] = cp = text.codePointAt(i);
