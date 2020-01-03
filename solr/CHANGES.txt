@@ -153,12 +153,14 @@ Upgrade Notes
   If you prefer to keep the old (but insecure) serialization strategy, you can start your nodes using the
   property: `-Dsolr.useUnsafeOverseerResponse=true`. Keep in mind that this will be removed in future version of Solr.
 
- * SOLR-13808: add cache=false into uderneath BoolQParser's filter clause or {"bool":{"filter":..}} to avoid caching in
+ * SOLR-13808: add cache=false into underneath BoolQParser's filter clause or {"bool":{"filter":..}} to avoid caching in
    filterCache. (Mikhail Khludnev)
 
 New Features
 ---------------------
-(No changes)
+ * SOLR-12490: Introducing json.queries in JSON Request API. Every property of this object holds one or many named 
+   Query DSL queries. It's optional and doesn't impact response without explicit referencing these queries by names 
+   (Anatolii Siuniaev via Mikhail Khludnev)
 
 Improvements
 ---------------------

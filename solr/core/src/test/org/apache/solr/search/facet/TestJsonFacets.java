@@ -56,6 +56,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
   private static int origTableSize;
   private static FacetField.FacetMethod origDefaultFacetMethod;
 
+  @SuppressWarnings("deprecation")
   @BeforeClass
   public static void beforeTests() throws Exception {
     systemSetPropertySolrDisableShardsWhitelist("true");
@@ -83,6 +84,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     }
   }
 
+  @SuppressWarnings("deprecation")
   @AfterClass
   public static void afterTests() throws Exception {
     systemClearPropertySolrDisableShardsWhitelist();
@@ -1063,7 +1065,6 @@ public class TestJsonFacets extends SolrTestCaseHS {
   }
 
   public static void doStatsTemplated(Client client, ModifiableSolrParams p) throws Exception {
-    int numShards = client.local() ? 1 : client.getClientProvider().all().size();
     p.set("Z_num_i", "Z_" + p.get("num_i") );
     p.set("Z_num_l", "Z_" + p.get("num_l") );
     p.set("sparse_num_d", "sparse_" + p.get("num_d") );
@@ -2290,6 +2291,19 @@ public class TestJsonFacets extends SolrTestCaseHS {
             "}"
     );
 
+    //test filter using queries from json.queries
+    client.testJQ(params(p, "q", "*:*"
+        , "json.queries", "{catS:{'#cat_sA': '${cat_s}:A'}, ff:[{'#id_1':'-id:1'},{'#id_2':'-id:2'}]}"
+        , "json.facet", "{" +
+            ",t_filt1:{${terms} type:terms, field:${cat_s}, domain:{filter:{param:catS} } }" + // test filter via "param" type from .queries
+            ",t_filt2:{${terms} type:terms, field:${cat_s}, domain:{filter:{param:ff}} }" +  // test multi-valued query parameter from .queries
+            "}"
+        )
+        , "facets=={ count:6, " +
+            ",t_filt1:{ buckets:[ {val:A, count:2}] } " +
+            ",t_filt2:{ buckets:[ {val:B, count:2}, {val:A, count:1}] } " +
+            "}"
+    );
 
     // test acc reuse (i.e. reset() method).  This is normally used for stats that are not calculated in the first phase,
     // currently non-sorting stats.
@@ -2907,7 +2921,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
     int commitPercent = 10;
     int ndocs=1000;
 
-    Map<Integer, Map<Integer, List<Integer>>> model = new HashMap();  // cat->where->list<ids>
+    Map<Integer, Map<Integer, List<Integer>>> model = new HashMap<>();  // cat->where->list<ids>
     for (int i=0; i<ndocs; i++) {
       Integer cat = r.nextInt(numCat);
       Integer where = r.nextInt(numWhere);
@@ -3328,7 +3342,6 @@ public class TestJsonFacets extends SolrTestCaseHS {
   }
 
   public void doTestErrors(Client client) throws Exception {
-    ModifiableSolrParams p = params("rows", "0");
     client.deleteByQuery("*:*", null);
 
     try {
@@ -3646,10 +3659,17 @@ public class TestJsonFacets extends SolrTestCaseHS {
         req("q", "*:*", "rows", "0", "json.facet", "{cat_s:{type:terms,field:cat_s,sort:[\"count desc\"]}}"),
         SolrException.ErrorCode.BAD_REQUEST);
 
-
     assertQEx("Should fail as facet is not of type map",
         "Expected Map for 'facet', received ArrayList=[{}]",
         req("q", "*:*", "rows", "0", "json.facet", "[{}]"), SolrException.ErrorCode.BAD_REQUEST);
+
+    assertQEx("Should fail as queries is not of type map",
+        "Expected Map for 'queries', received [{}]",
+        req("q", "*:*", "rows", "0", "json.queries", "[{}]"), SolrException.ErrorCode.BAD_REQUEST);
+
+    assertQEx("Should fail as queries are null in JSON",
+        "Expected Map for 'queries', received null",
+        req("json", "{query:\"*:*\", queries:null}"), SolrException.ErrorCode.BAD_REQUEST);
 
     // range facets
     assertQEx("Should fail as 'other' is of type Map",
