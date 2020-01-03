@@ -187,6 +187,11 @@ Improvements
   hl.fragsizeIsMinimum, with defaults that aim to better center matches in fragments than previously. See the ref guide.
   Regardless of the settings, the passages may be sized differently than before. (Nándor Mátravölgyi, David Smiley)
 
+* SOLR-13890: Add "top-level" DV implementation for {!terms} queries.  This approach tends to be more efficient for
+  queries withvery large numbers of terms.  The new implementation is used by default for method=docValuesTermsFilter
+  terms queries that are searching 500 or more terms.  Users wishing to ignore this heuristic can choose their
+  implementation explicitly by setting a "submethod" value of either "toplevel" or "persegment".
+
 Optimizations
 ---------------------
 (No changes)

@@ -188,7 +188,7 @@ A list of queries that *must not* appear in matching documents.
 A list of queries *should* appear in matching documents. For a BooleanQuery with no `must` queries, one or more `should` queries must match a document for the BooleanQuery to match.
 
 `filter`::
-A list of queries that *must* appear in matching documents. However, unlike `must`, the score of filter queries is ignored. Also, these queries are cached in filter cache. To avoid caching add either `cache=false` as local parameter, or `"cache":"false"` property to underneath Query DLS Object.  
+A list of queries that *must* appear in matching documents. However, unlike `must`, the score of filter queries is ignored. Also, these queries are cached in filter cache. To avoid caching add either `cache=false` as local parameter, or `"cache":"false"` property to underneath Query DLS Object.
 
 *Examples*
 
@@ -1031,7 +1031,15 @@ The field on which to search. This parameter is required.
 Separator to use when parsing the input. If set to " " (a single blank space), will trim additional white space from the input terms. Defaults to  a comma (`,`).
 
 `method`::
-The internal query-building implementation: `termsFilter`, `booleanQuery`, `automaton`, or `docValuesTermsFilter`. Defaults to `termsFilter`.
+An optional parameter used to determine which of several query implementations should be used by Solr.  Options are restricted to: `termsFilter`, `booleanQuery`, `automaton`, or `docValuesTermsFilter`.  If unspecified, the default value is `termsFilter`.  Each implementation has its own performance characteristics, and users are encouraged to experiment to determine which implementation is most performant for their use-case.  Heuristics are given below.
++
+`booleanQuery` creates a `BooleanQuery` representing the request.  Scales well with index size, but poorly with the number of terms being searched for.
++
+`termsFilter` the default `method`.  Uses a `BooleanQuery` or a `TermInSetQuery` depending on the number of terms.  Scales well with index size, but only moderately with the number of query terms.
++
+`docValuesTermsFilter` uses doc values data structures to process the request.  This method scales well to a large numbers of query terms.  It encompasses two implementations or submethods.  Solr uses heuristics to choose between these at runtime, but users can also pick explicitly by providing a `submethod` parameter with either `toplevel` or `persegment` as a value.  The `persegment` implementation is more general purpose, while `toplevel` is geared for anyone with particularly high numbers of query terms (several hundred to several thousand).  The `toplevel` submethod relies on data structures which are lazily populated after each commit.  If you use this submethod and commit frequently, you may benefit from adding a static warming query to `solrconfig.xml` so that this is done as a part of the commit, and doesn't slow down user requests.
++
+`automaton` creates an `AutomatonQuery` representing the request with each term forming a union.  Scales well with index size and moderately with the number of query terms.
 
 *Examples*
 
