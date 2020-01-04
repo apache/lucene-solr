@@ -229,4 +229,4 @@
 # Runtime properties are passed to the security policy file (server/etc/security.policy)
 # You can also tweak via standard JDK files such as ~/.java.policy, see https://s.apache.org/java8policy
 # This is experimental! It may not work at all with Hadoop/HDFS features.
-#SOLR_SECURITY_MANAGER_ENABLED=true
+SOLR_SECURITY_MANAGER_ENABLED=true
