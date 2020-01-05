@@ -94,7 +94,3 @@ It is also strongly recommended that Solr listen to only those network interface
  SOLR_JETTY_HOST="0.0.0.0"
  ----
 // end::security-network-binding-1[]
-
-== Enable Security Manager
-
-Solr runs in a Java Security Manager sandbox by default. Since this feature is incompatible with Hadoop, you can disable it by setting `SOLR_SECURITY_MANAGER_ENABLED=false` via environment variable or in `solr.in.sh`/`solr.in.cmd` if you are running Solr with Hadoop.

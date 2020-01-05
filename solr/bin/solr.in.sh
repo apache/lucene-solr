@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Settings here will override settings in existing env vars or in bin/solr.  The default shipped state
+# Settings here, though commented, will override settings in existing env vars or in bin/solr.  The default shipped state
 # of this file is completely commented.
 
 # By default the script will use JAVA_HOME to determine which java
@@ -229,4 +229,4 @@
 # Runtime properties are passed to the security policy file (server/etc/security.policy)
 # You can also tweak via standard JDK files such as ~/.java.policy, see https://s.apache.org/java8policy
 # This is experimental! It may not work at all with Hadoop/HDFS features.
-SOLR_SECURITY_MANAGER_ENABLED=true
+#SOLR_SECURITY_MANAGER_ENABLED=true

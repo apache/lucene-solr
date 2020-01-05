@@ -16,7 +16,7 @@
 
 @echo off
 
-REM Settings here will override settings in existing env vars or in bin/solr.  The default shipped state
+REM Settings here, though commented, will override settings in existing env vars or in bin/solr.  The default shipped state
 REM of this file is completely commented.
 
 REM By default the script will use JAVA_HOME to determine which java
@@ -197,4 +197,4 @@ REM Runs solr in a java security manager sandbox. This can protect against some 
 REM Runtime properties are passed to the security policy file (server\etc\security.policy)
 REM You can also tweak via standard JDK files such as ~\.java.policy, see https://s.apache.org/java8policy
 REM This is experimental! It may not work at all with Hadoop/HDFS features.
-set SOLR_SECURITY_MANAGER_ENABLED=true
+REM set SOLR_SECURITY_MANAGER_ENABLED=true
