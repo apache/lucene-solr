@@ -16,7 +16,7 @@
 
 @echo off
 
-REM Settings here, though commented, will override settings in existing env vars or in bin/solr.  The default shipped state
+REM Settings here will override settings in existing env vars or in bin/solr.  The default shipped state
 REM of this file is completely commented.
 
 REM By default the script will use JAVA_HOME to determine which java

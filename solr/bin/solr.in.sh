@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Settings here  will override settings in existing env vars or in bin/solr.  The default shipped state
+# Settings here will override settings in existing env vars or in bin/solr.  The default shipped state
 # of this file is completely commented.
 
 # By default the script will use JAVA_HOME to determine which java
