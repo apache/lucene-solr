@@ -886,38 +886,19 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
   }
 
+  /**
+   * Holds a filter and postFilter pair that together match a set of documents.  Either of them may be null.
+   * Additionally, this might have a DocSet {@code answer}.  When this is present, it is guaranteed to match the same
+   * documents.  Certain callers might simply want the DocSet and so that's here.
+   * @see #getProcessedFilter(DocSet, List)
+   */
   public static class ProcessedFilter {
     public DocSet answer; // the answer, if non-null
-    public Filter filter;
+    public Query filter;
     public DelegatingCollector postFilter;
-    public boolean hasDeletedDocs;  // true if it's possible that filter may match deleted docs
   }
 
   private static Comparator<Query> sortByCost = (q1, q2) -> ((ExtendedQuery) q1).getCost() - ((ExtendedQuery) q2).getCost();
-
-  private DocSet getDocSetScore(List<Query> queries) throws IOException {
-    Query main = queries.remove(0);
-    ProcessedFilter pf = getProcessedFilter(null, queries);
-    DocSetCollector setCollector = new DocSetCollector(maxDoc());
-    Collector collector = setCollector;
-    if (pf.postFilter != null) {
-      pf.postFilter.setLastDelegate(collector);
-      collector = pf.postFilter;
-    }
-
-    if (pf.filter != null) {
-      Query query = new BooleanQuery.Builder().add(main, Occur.MUST).add(pf.filter, Occur.FILTER).build();
-      search(query, collector);
-    } else {
-      search(main, collector);
-    }
-
-    if (collector instanceof DelegatingCollector) {
-      ((DelegatingCollector) collector).finish();
-    }
-
-    return DocSetUtil.getDocSet(setCollector, this);
-  }
 
   /**
    * Returns the set of document ids matching all queries. This method is cache-aware and attempts to retrieve the
@@ -928,16 +909,26 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
    */
   public DocSet getDocSet(List<Query> queries) throws IOException {
 
-    if (queries != null) {
+    Query mainScoring = null; // only used if one of 'queries' is a "ScoreFilter"
+    if (queries != null) { // TODO and queries.size > 1?
       for (Query q : queries) {
         if (q instanceof ScoreFilter) {
-          return getDocSetScore(queries);
+          mainScoring = queries.get(0); // TODO Joel: why the first?  Seems very hacky!
+          queries = queries.subList(1, queries.size()); // remove
         }
       }
     }
 
     ProcessedFilter pf = getProcessedFilter(null, queries);
-    if (pf.answer != null) return pf.answer;
+
+    if (mainScoring == null) {
+      if (pf.answer != null) {
+        return pf.answer;
+      }
+      if (pf.filter == null && pf.postFilter == null) {
+        return getLiveDocSet();
+      }
+    }
 
     DocSetCollector setCollector = new DocSetCollector(maxDoc());
     Collector collector = setCollector;
@@ -946,43 +937,19 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       collector = pf.postFilter;
     }
 
-    for (final LeafReaderContext leaf : leafContexts) {
-      final LeafReader reader = leaf.reader();
-      Bits liveDocs = reader.getLiveDocs();
-      DocIdSet idSet = null;
-      if (pf.filter != null) {
-        idSet = pf.filter.getDocIdSet(leaf, liveDocs);
-        if (idSet == null) continue;
+    Query q; // combine mainScoring and pf.filter
+    if (mainScoring == null) { // then we only have filter (if that)
+      q = pf.filter;
+      if (q == null) {
+        q = matchAllDocsQuery;
       }
-      DocIdSetIterator idIter = null;
-      if (idSet != null) {
-        idIter = idSet.iterator();
-        if (idIter == null) continue;
-        if (!pf.hasDeletedDocs) liveDocs = null; // no need to check liveDocs
-      }
-
-      final LeafCollector leafCollector = collector.getLeafCollector(leaf);
-      int max = reader.maxDoc();
-
-      if (idIter == null) {
-        for (int docid = 0; docid < max; docid++) {
-          if (liveDocs != null && !liveDocs.get(docid)) continue;
-          leafCollector.collect(docid);
-        }
-      } else {
-        if (liveDocs != null) {
-          for (int docid = -1; (docid = idIter.advance(docid + 1)) < max; ) {
-            if (liveDocs.get(docid))
-              leafCollector.collect(docid);
-          }
-        } else {
-          for (int docid = -1; (docid = idIter.advance(docid + 1)) < max;) {
-            leafCollector.collect(docid);
-          }
-        }
-      }
-
+    } else if (pf.filter == null) {
+      q = mainScoring;
+    } else {
+      q = new BooleanQuery.Builder().add(mainScoring, Occur.MUST).add(pf.filter, Occur.FILTER).build();
     }
+
+    search(q, collector);
 
     if (collector instanceof DelegatingCollector) {
       ((DelegatingCollector) collector).finish();
@@ -994,10 +961,15 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   public ProcessedFilter getProcessedFilter(DocSet setFilter, List<Query> queries) throws IOException {
     ProcessedFilter pf = new ProcessedFilter();
     if (queries == null || queries.size() == 0) {
-      if (setFilter != null) pf.filter = setFilter.getTopFilter();
+      if (setFilter != null) {
+        pf.answer = setFilter;
+        pf.filter = setFilter.getTopFilter();
+      }
       return pf;
     }
 
+    // We combine all the filter queries that come from the filter cache & setFilter into "answer".  This might
+    //  not be the final "answer" if there are any non-cached filters.
     DocSet answer = null;
 
     boolean[] neg = new boolean[queries.size() + 1];
@@ -1073,29 +1045,38 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       if (!neg[i] && i != smallestIndex) answer = answer.intersection(sets[i]);
     }
 
-    if (notCached != null) {
-      Collections.sort(notCached, sortByCost);
-      List<Weight> weights = new ArrayList<>(notCached.size());
-      for (Query q : notCached) {
-        Query qq = QueryUtils.makeQueryable(q);
-        weights.add(createWeight(rewrite(qq), ScoreMode.COMPLETE_NO_SCORES, 1));
-      }
-      pf.filter = new FilterImpl(answer, weights);
-      pf.hasDeletedDocs = (answer == null);  // if all clauses were uncached, the resulting filter may match deleted docs
-    } else {
-      if (postFilters == null) {
-        if (answer == null) {
-          answer = getLiveDocSet();
-        }
-        // "answer" is the only part of the filter, so set it.
-        pf.answer = answer;
-      }
-
-      if (answer != null) {
-        pf.filter = answer.getTopFilter();
-      }
+    // ignore "answer" if it simply matches all docs
+    if (answer != null && answer.size() == numDocs()) {
+      answer = null;
     }
 
+    if (notCached == null && postFilters == null) {
+      // "answer" is the only part of the filter, so set it.
+      if (answer != null) {
+        pf.answer = answer;
+        pf.filter = answer.getTopFilter();
+      }
+      return pf;
+    }
+
+    // Set pf.filter based on 'answer' and 'notCached'
+    if (answer != null) {
+      pf.filter = answer.getTopFilter();
+    }
+    if (notCached != null) {
+      notCached.sort(sortByCost); // pointless?
+      final BooleanQuery.Builder builder = new BooleanQuery.Builder();
+      if (pf.filter != null) { // == answer.getTopFilter()
+        builder.add(pf.filter, Occur.FILTER);
+      }
+      for (Query q : notCached) {
+        Query qq = QueryUtils.makeQueryable(q);
+        builder.add(qq, Occur.FILTER);
+      }
+      pf.filter = builder.build();
+    }
+
+    // Set pf.postFilter
     if (postFilters != null) {
       Collections.sort(postFilters, sortByCost);
       for (int i = postFilters.size() - 1; i >= 0; i--) {
@@ -2315,178 +2296,6 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           statsCache.getCacheMetrics().getSnapshot(map::put);
           map.put("statsCacheImpl", statsCache.getClass().getSimpleName());
         }), true, "statsCache", Category.CACHE.toString(), scope);
-  }
-
-  private static class FilterImpl extends Filter {
-    private final Filter topFilter;
-    private final List<Weight> weights;
-
-    public FilterImpl(DocSet filter, List<Weight> weights) {
-      this.weights = weights;
-      this.topFilter = filter == null ? null : filter.getTopFilter();
-    }
-
-    @Override
-    public DocIdSet getDocIdSet(LeafReaderContext context, Bits acceptDocs) throws IOException {
-      final DocIdSet sub = topFilter == null ? null : topFilter.getDocIdSet(context, acceptDocs);
-      if (weights.size() == 0) return sub;
-      return new FilterSet(sub, context);
-    }
-
-    @Override
-    public String toString(String field) {
-      return "SolrFilter";
-    }
-
-    @Override
-    public void visit(QueryVisitor visitor) {
-      visitor.visitLeaf(this);
-    }
-
-    private class FilterSet extends DocIdSet {
-      private final DocIdSet docIdSet;
-      private final LeafReaderContext context;
-
-      public FilterSet(DocIdSet docIdSet, LeafReaderContext context) {
-        this.docIdSet = docIdSet;
-        this.context = context;
-      }
-
-      @Override
-      public DocIdSetIterator iterator() throws IOException {
-        List<DocIdSetIterator> iterators = new ArrayList<>(weights.size() + 1);
-        if (docIdSet != null) {
-          final DocIdSetIterator iter = docIdSet.iterator();
-          if (iter == null) return null;
-          iterators.add(iter);
-        }
-        for (Weight w : weights) {
-          final Scorer scorer = w.scorer(context);
-          if (scorer == null) return null;
-          iterators.add(scorer.iterator());
-        }
-        if (iterators.isEmpty()) return null;
-        if (iterators.size() == 1) return iterators.get(0);
-        if (iterators.size() == 2) return new DualFilterIterator(iterators.get(0), iterators.get(1));
-        return new FilterIterator(iterators.toArray(new DocIdSetIterator[iterators.size()]));
-      }
-
-      @Override
-      public Bits bits() throws IOException {
-        return null; // don't use random access
-      }
-
-      @Override
-      public long ramBytesUsed() {
-        return docIdSet != null ? docIdSet.ramBytesUsed() : 0L;
-      }
-    }
-
-    private static class FilterIterator extends DocIdSetIterator {
-      private final DocIdSetIterator[] iterators;
-      private final DocIdSetIterator first;
-
-      public FilterIterator(DocIdSetIterator[] iterators) {
-        this.iterators = iterators;
-        this.first = iterators[0];
-      }
-
-      @Override
-      public int docID() {
-        return first.docID();
-      }
-
-      private int advanceAllTo(int doc) throws IOException {
-        int highestDocIter = 0; // index of the iterator with the highest id
-        int i = 1; // We already advanced the first iterator before calling this method
-        while (i < iterators.length) {
-          if (i != highestDocIter) {
-            final int next = iterators[i].advance(doc);
-            if (next != doc) { // We need to advance all iterators to a new target
-              doc = next;
-              highestDocIter = i;
-              i = 0;
-              continue;
-            }
-          }
-          ++i;
-        }
-        return doc;
-      }
-
-      @Override
-      public int nextDoc() throws IOException {
-        return advanceAllTo(first.nextDoc());
-      }
-
-      @Override
-      public int advance(int target) throws IOException {
-        return advanceAllTo(first.advance(target));
-      }
-
-      @Override
-      public long cost() {
-        return first.cost();
-      }
-    }
-
-    private static class DualFilterIterator extends DocIdSetIterator {
-      private final DocIdSetIterator a;
-      private final DocIdSetIterator b;
-
-      public DualFilterIterator(DocIdSetIterator a, DocIdSetIterator b) {
-        this.a = a;
-        this.b = b;
-      }
-
-      @Override
-      public int docID() {
-        return a.docID();
-      }
-
-      @Override
-      public int nextDoc() throws IOException {
-        return doNext(a.nextDoc());
-      }
-
-      @Override
-      public int advance(int target) throws IOException {
-        return doNext(a.advance(target));
-      }
-
-      @Override
-      public long cost() {
-        return Math.min(a.cost(), b.cost());
-      }
-
-      private int doNext(int doc) throws IOException {
-        for (;;) {
-          int other = b.advance(doc);
-          if (other == doc) return doc;
-          doc = a.advance(other);
-          if (other == doc) return doc;
-        }
-      }
-
-    }
-
-    @Override
-    public boolean equals(Object other) {
-      return sameClassAs(other) &&
-             equalsTo(getClass().cast(other));
-    }
-
-    private boolean equalsTo(FilterImpl other) {
-      return Objects.equals(this.topFilter, other.topFilter) &&
-             Objects.equals(this.weights, other.weights);
-    }
-
-    @Override
-    public int hashCode() {
-      return classHash() 
-          + 31 * Objects.hashCode(topFilter)
-          + 31 * Objects.hashCode(weights);
-    }
   }
 
 }

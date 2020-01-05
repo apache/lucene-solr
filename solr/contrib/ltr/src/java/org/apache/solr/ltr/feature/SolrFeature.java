@@ -23,14 +23,14 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.DocIdSet;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
-import org.apache.lucene.util.Bits;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrCore;
@@ -237,21 +237,25 @@ public class SolrFeature extends Feature {
      * @return DocIdSetIterator to traverse documents that matched all filter
      *         criteria
      */
+    // TODO it's not optimal to call getProcessedFilter per-segment!  Save the results into one Query
+    // TODO rename to "FromFilterQueries" suffix to at least suggest this uses the filter cache
     private DocIdSetIterator getDocIdSetIteratorFromQueries(List<Query> queries,
         LeafReaderContext context) throws IOException {
       final SolrIndexSearcher.ProcessedFilter pf = ((SolrIndexSearcher) searcher)
           .getProcessedFilter(null, queries);
-      final Bits liveDocs = context.reader().getLiveDocs();
-
-      DocIdSetIterator idIter = null;
-      if (pf.filter != null) {
-        final DocIdSet idSet = pf.filter.getDocIdSet(context, liveDocs);
-        if (idSet != null) {
-          idIter = idSet.iterator();
-        }
+      if (pf.postFilter != null) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "PostFilter queries are not supported");
       }
-
-      return idIter;
+      Query q = pf.filter;
+      if (q == null) {
+        q = new MatchAllDocsQuery(); // usually never happens?
+      }
+      Scorer scorer = q.createWeight(searcher, ScoreMode.COMPLETE_NO_SCORES, 1f).scorer(context);
+      if (scorer != null) {
+        return scorer.iterator();
+      }
+      return null;
     }
 
     /**
