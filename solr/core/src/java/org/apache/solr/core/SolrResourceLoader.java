@@ -319,26 +319,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
     return classLoader;
   }
 
-  /**
-   * Opens a schema resource by its name.
-   * Override this method to customize loading schema resources.
-   *
-   * @return the stream for the named schema
-   */
-  public InputStream openSchema(String name) throws IOException {
-    return openResource(name);
-  }
-
-  /**
-   * Opens a config resource by its name.
-   * Override this method to customize loading config resources.
-   *
-   * @return the stream for the named configuration
-   */
-  public InputStream openConfig(String name) throws IOException {
-    return openResource(name);
-  }
-
   private Path checkPathIsSafe(Path pathToCheck) throws IOException {
     if (Boolean.getBoolean("solr.allow.unsafe.resourceloading"))
       return pathToCheck;

@@ -121,7 +121,7 @@ public class XmlConfigFile { // formerly simply "Config"
       javax.xml.parsers.DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
 
       if (is == null) {
-        InputStream in = loader.openConfig(name);
+        InputStream in = loader.openResource(name);
         if (in instanceof ZkSolrResourceLoader.ZkByteArrayInputStream) {
           zkVersion = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
           log.debug("loaded config {} with version {} ",name,zkVersion);

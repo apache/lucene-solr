@@ -168,7 +168,6 @@ public class IndexSchema {
 
   /**
    * Constructs a schema using the specified resource name and stream.
-   * @see SolrResourceLoader#openSchema
    * By default, this follows the normal config path directory searching rules.
    * @see SolrResourceLoader#openResource
    */
