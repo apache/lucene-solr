@@ -45,79 +45,80 @@ import org.slf4j.LoggerFactory;
  * happening on a core of a shared collection {@link DocCollection#getSharedIndex()}
  * The objective of synchronization is not only to be functionally correct but also efficient i.e.
  * we don't unnecessarily fail things that are happening concurrently on a single node.
- * Following paragraphs explain those needs and how are those addressed.
+ * Following paragraphs explain those needs and how are those addressed.<br>&nbsp;
  *
- * General requirement: The source of truth for shared cores is shared store. We pull from shared store if a core is
- * locally absent or is stale. We push to shared store at the end of indexing. Queries can only trigger pulls. Whereas,
+ * <p>General requirement: The source of truth for shared cores is shared store. We pull from shared store if a core is
+ * locally absent or is stale. We push to shared store at the end of indexing. Queries can only trigger pulls. Whereas
  * indexing does a pull (only if the core is stale) then local indexing and finally a push to shared store. It is
- * important that local indexing always happen on source of truth that was in the shared store when the batch arrived,
+ * important that local indexing always happens on source of truth that was in the shared store when the batch arrived,
  * so that at the push time new source of truth is whatever was there before plus new local indexing on top of that. In
- * scenarios below we will talk about concurrent local indexing. Solr already takes care of that. Our job is to make 
+ * scenarios below we will talk about concurrent local indexing. Solr already takes care of that. Our job is to make
  * sure that shared cores play nicely and efficiently with that i.e. we do not end up completely serializing each
- * indexing batch.
+ * indexing batch.<br>&nbsp;
  *
  *
- * Scenario#1: Since leadership can change anytime, we need to protect the source of truth from being incorrectly
+ * <p>Scenario#1: Since leadership can change anytime, we need to protect the source of truth from being incorrectly
  * overwritten by an indexing batch on ghost leader (was a real leader when received the batch but at the time of push
- * world has changed).
+ * world has changed).<br>
  * Solution: We use optimistic concurrency by maintaining a unique identifier (metadataSuffix) in zookeeper that is
  * changed at each push. At push time we make sure that metadataSuffix is still at the value on which we started the
  * local indexing i.e. no one else became the leader while we were indexing locally and did a push to shared store.
- * If metadataSuffix in zookeeper happens to have changed we fail the indexing batch.
- * {@link SharedShardVersionMetadata} is representative of that unique identifier in zookeeper.
+ * If metadataSuffix in zookeeper happens to have changed we fail the indexing batch.<br>
+ * {@link SharedShardVersionMetadata} is representative of that unique identifier in zookeeper.<br>&nbsp;
  *
- * Scenario#2: A pull is going on and another pull comes in, they will step over each other. Even if we pull into a 
- * new index directory on each pull we will have to ensure that pull corresponding to later contents of shared store wins. 
- * Solution: We serialize pulls.
- * {@link #getCorePullLock(String, String, String)}'s write lock is used for that purpose.
+ * <p>Scenario#2: A pull is going on and another pull comes in, they will step over each other. Even if we pull into a
+ * new index directory on each pull we will have to ensure that pull corresponding to later contents of shared store wins.
+ * Solution: We serialize pulls.<br>
+ * {@link #getCorePullLock(String, String, String)}'s write lock is used for that purpose.<br>&nbsp;
  *
- * Scenario#3: The core is stale and an indexing batch comes in, refreshes it and proceeds to local indexing. After the
+ * <p>Scenario#3: The core is stale and an indexing batch comes in, refreshes it and proceeds to local indexing. After the
  * local indexing is finished and before the push to shared store, a query comes in and triggers the pull. Because of
  * local indexing, local contents are different from shared store, pull will go ahead and overwrite them with what is on
- * shared store(it being the source of truth). Now the indexing batch will go ahead and finish its push and declare 
+ * shared store(it being the source of truth). Now the indexing batch will go ahead and finish its push and declare
  * success. The only problem is it did not push anything since whatever it had indexed locally was undone by the query pull.
  * Note! In this scenario query pull can also be replaced by a pull of another concurrent indexing request.
  * Solution: We need a cache telling us the last shared store state that was pulled in successfully i.e. a value of
  * metadataSuffix that we also for conditional zk update at push time(as explained earlier scenario#1). This cache not
  * only provides functional correctness but also prevents from unnecessary comparison of local and shared store contents.
- * {@link #coresVersionMetadata} is that per core cache.
+ * {@link #coresVersionMetadata} is that per core cache.<br>&nbsp;
  *
- * Scenario#4: Local indexing is finished and server goes into a long GC pause and loses leadership. The new leader makes
+ * <p>Scenario#4: Local indexing is finished and server goes into a long GC pause and loses leadership. The new leader makes
  * progress on indexing. The old leader comes out of GC pause. Before the push of stalled batch resumes, a query comes
  * in and triggers a pull. That pull will overwrite local index with whatever the new leader has pushed to shared store.
  * We will lose the local indexing of stalled batch. Because of successful pull, our cache now matches with what's in
- * shared store. The push will be successful but end up pushing nothing.
+ * shared store. The push will be successful but end up pushing nothing.<br>
  * Note! In this scenario query pull can also be replaced by a pull of another concurrent indexing request(assuming old
- * leader becomes leader again).
- * Solution: We need to protect indexing(including pushes) from pulls.
- * {@link #getCorePullLock(String, String, String)}'s read lock is used for that protection.
+ * leader becomes leader again).<br>
+ * Solution: We need to protect indexing(including pushes) from pulls.<br>
+ * {@link #getCorePullLock(String, String, String)}'s read lock is used for that protection.<br>&nbsp;
  *
- * Scenario#5: Two concurrent indexing threads finish up their local indexing and are ready to push. One pushes and advances
+ * <p>Scenario#5: Two concurrent indexing threads finish up their local indexing and are ready to push. One pushes and advances
  * metadaSuffix in zookeeper. The second one being on previous cached version would fail on conditional zk update. This
- * will functionally be correct but inefficient since second's batch progress will go to waste.
- * Solution: We serialize pushes to shared store. So that concurrent pushes on the same node do not fail.
- * {@link #getCorePushLock(String, String, String)} is used for that serialization.
- * Corollary: When an indexing thread goes into push phase it will not only push its own batch rather it will end up pushing 
+ * will functionally be correct but inefficient since second's batch progress will go to waste.<br>
+ * Solution: We serialize pushes to shared store. So that concurrent pushes on the same node do not fail.<br>
+ * {@link #getCorePushLock(String, String, String)} is used for that serialization.<br>
+ * Corollary: When an indexing thread goes into push phase it will not only push its own batch rather it will end up pushing
  * all other batches that have been committed up till that point. Later on, the threads responsible for other batches will
- * just do a touch and go(assuming no other batch came afterwards). In other words, push phase of indexing can be described 
- * as: "push if there is something to be pushed (my batch could be part of it or someone else has already pushed that for me)"
+ * just do a touch and go(assuming no other batch came afterwards). In other words, push phase of indexing can be described
+ * as: "push if there is something to be pushed (my batch could be part of it or someone else has already pushed that for me)"<br>&nbsp;
  *
  *
- * Miscellaneous Notes:
- * 1. Since we are doing synchronous pushes of files from index directory to shared store we only support hard commits
- *    for shared collections. We ensure that each batch has a hard commit {@link HttpSolrCall#addCommitIfAbsent()}.
- * 2. In steady state a leader does not need to consult zookeeper all the time since it is the only one updating the
- *    metadataSuffix. For that we rely on {@link SharedCoreVersionMetadata#softGuaranteeOfEquality}. Leaders set it to 
+ * <p>Miscellaneous Notes:<ol>
+ * <li>Since we are doing synchronous pushes of files from index directory to shared store we only support hard commits
+ *    for shared collections. We ensure that each batch has a hard commit {@link HttpSolrCall#addCommitIfAbsent()}.</li>
+ * <li>In steady state a leader does not need to consult zookeeper all the time since it is the only one updating the
+ *    metadataSuffix. For that we rely on {@link SharedCoreVersionMetadata#softGuaranteeOfEquality}. Leaders set it to
  *    "true" when they successfully pull from or push to shared store. If we happen to be incorrect, conditional update
- *    of zookeeper will fail at push time.
- * 3. We also cache {@link SharedCoreVersionMetadata#blobCoreMetadata} so that in steady state leaders don't need to read
- *    it from shared store at push time.
- * 4. {@link #coresVersionMetadata} cache:
- *    a. It is a {@link ConcurrentHashMap} and consists of immutable values, therefore, updating it is an atomic operation.
- *    b. We initialize it only once with values never to be found in zookeeper{@link #initializeCoreVersionMetadata(String, String, String)}.
- *    c. We can only update {@link #coresVersionMetadata} under either a pull write lock or push lock along with pull read lock.
- *       {@link #updateCoreVersionMetadata(String, String, String, SharedCoreVersionMetadata, SharedCoreVersionMetadata)}
+ *    of zookeeper will fail at push time.</li>
+ * <li>We also cache {@link SharedCoreVersionMetadata#blobCoreMetadata} so that in steady state leaders don't need to read
+ *    it from shared store at push time.</li>
+ * <li>{@link #coresVersionMetadata} cache:<ol>
+ *    <li>It is a {@link ConcurrentHashMap} and consists of immutable values, therefore, updating it is an atomic operation.</li>
+ *    <li>We initialize it only once with values never to be found in zookeeper{@link #initializeCoreVersionMetadata(String, String, String)}.</li>
+ *    <li>We can only update {@link #coresVersionMetadata} under either a pull write lock or push lock along with pull read lock.<br>
+ *       {@link #updateCoreVersionMetadata(String, String, String, SharedCoreVersionMetadata, SharedCoreVersionMetadata)}</li></ol></li></ol>
  */
+
 public class SharedCoreConcurrencyController {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   /**

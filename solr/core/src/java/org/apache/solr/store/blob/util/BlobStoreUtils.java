@@ -125,8 +125,8 @@ public class BlobStoreUtils {
             return;
           }
 
-          // Get local metadata + resolve with blob metadata
-          ServerSideMetadata serverMetadata = new ServerSideMetadata(coreName, coreContainer);
+          // Get local metadata + resolve with blob metadata. Given we're doing a pull, don't need to reserve commit point
+          ServerSideMetadata serverMetadata = new ServerSideMetadata(coreName, coreContainer, false);
           SharedMetadataResolutionResult resolutionResult = SharedStoreResolutionUtil.resolveMetadata(serverMetadata, blobstoreMetadata);
           PushPullData pushPullData = new PushPullData.Builder()
               .setCollectionName(collectionName)
@@ -151,7 +151,7 @@ public class BlobStoreUtils {
         }
       } catch (Exception ex) {
         // wrap every thrown exception in a solr exception
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error occured pulling shard=" + shardName + " collection=" + collectionName + " from shared store " + ex);
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error occurred pulling shard=" + shardName + " collection=" + collectionName + " from shared store", ex);
       }
     } else {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Sync requested for unknown shard=" + shardName + " in collection=" + collectionName);

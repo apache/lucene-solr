@@ -111,7 +111,7 @@ public class BlobCoreMetadataBuilder {
   }
 
   public BlobCoreMetadata build() {
-    // TODO make this fail if we find more than one segments_N files.
+    // TODO make this fail if we find more than one segments_N files (or if "N" does not match generation).
     BlobCoreMetadata.BlobFile[] blobFilesArray = this.blobFiles.toArray(new BlobCoreMetadata.BlobFile[this.blobFiles.size()]);
     BlobCoreMetadata.BlobFileToDelete[] blobFilesToDeleteArray = this.blobFilesToDelete.toArray(new BlobCoreMetadata.BlobFileToDelete[this.blobFilesToDelete.size()]);
 

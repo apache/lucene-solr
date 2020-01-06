@@ -283,8 +283,8 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
         }
       }
 
-      // Get local metadata + resolve with blob metadata
-      ServerSideMetadata serverMetadata = new ServerSideMetadata(pullCoreInfo.getCoreName(), coreContainer);
+      // Get local metadata + resolve with blob metadata. Given we're doing a pull, don't need to reserve commit point
+      ServerSideMetadata serverMetadata = new ServerSideMetadata(pullCoreInfo.getCoreName(), coreContainer, false);
       SharedMetadataResolutionResult resolutionResult = SharedStoreResolutionUtil.resolveMetadata(
           serverMetadata, blobMetadata);
       
@@ -308,11 +308,11 @@ public class CorePullTask implements DeduplicatingList.Deduplicatable<String> {
 
       // The following call can fail if blob is corrupt (in non trivial ways, trivial ways are identified by other cases)
       // pull was successful
-      //if (CorePullerFeeder.isEmptyCoreAwaitingPull(coreContainer, pullCoreInfo.getCoreName())) {
-        // the javadoc for pulledBlob suggests that it is only meant to be called if we pulled from scratch
-        // therefore only limiting this call when we created the local core for this pull ourselves
-        // BlobTransientLog.get().getCorruptCoreTracker().pulledBlob(pullCoreInfo.coreName, blobMetadata);
-      //}
+      // if (CorePullerFeeder.isEmptyCoreAwaitingPull(coreContainer, pullCoreInfo.getCoreName())) {
+      //   the javadoc for pulledBlob suggests that it is only meant to be called if we pulled from scratch
+      //   therefore only limiting this call when we created the local core for this pull ourselves
+      //   BlobTransientLog.get().getCorruptCoreTracker().pulledBlob(pullCoreInfo.coreName, blobMetadata);
+      // }
     } catch (InterruptedException e) {
       throw e;
     } catch (Exception e) {

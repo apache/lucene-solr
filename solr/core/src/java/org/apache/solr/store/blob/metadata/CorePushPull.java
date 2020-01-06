@@ -115,81 +115,76 @@ public class CorePushPull {
      */
     public BlobCoreMetadata pushToBlobStore(String currentMetadataSuffix, String newMetadataSuffix) throws Exception {
       long startTimeMs = System.nanoTime();
+      SolrCore solrCore = container.getCore(pushPullData.getCoreName());
+      if (solrCore == null) {
+        throw new Exception("Can't find core " + pushPullData.getCoreName());
+      }
+
       try {
-        SolrCore solrCore = container.getCore(pushPullData.getCoreName());
-        if (solrCore == null) {
-          throw new Exception("Can't find core " + pushPullData.getCoreName());
+        // Creating the new BlobCoreMetadata as a modified clone of the existing one
+        BlobCoreMetadataBuilder bcmBuilder = new BlobCoreMetadataBuilder(blobMetadata, solrServerMetadata.getGeneration());
+
+        /*
+         * Removing from the core metadata the files that are stored on the blob store but no longer needed.
+         *
+         * When this method is executed, the content of the index on Blob is to be replaced with the local content.
+         * The assumption (or normal flow) is for local to refresh from Blob, update locally then push the
+         * changes to Blob.
+         * When merges happen locally the update has to mark old segment files for delete (and for example the
+         * previous "segments_N" is to be deleted as a new higher generation segment has been created).
+         */
+        for (BlobCoreMetadata.BlobFile d : resolvedMetadataResult.getFilesToDelete()) {
+            bcmBuilder.removeFile(d);
+            BlobCoreMetadata.BlobFileToDelete bftd = new BlobCoreMetadata.BlobFileToDelete(d, System.currentTimeMillis());
+            bcmBuilder.addFileToDelete(bftd);
         }
 
+        // add the old core.metadata file to delete
+        if (!currentMetadataSuffix.equals(SharedShardMetadataController.METADATA_NODE_DEFAULT_VALUE)) {
+          // TODO This may be inefficient but we'll likely remove this when CorePushPull is refactored to have deletion elsewhere
+          //      could be added to resolvedMetadataResult#getFilesToDelete()
+          ToFromJson<BlobCoreMetadata> converter = new ToFromJson<>();
+          String json = converter.toJson(blobMetadata);
+          int bcmSize = json.getBytes().length;
+
+          String blobCoreMetadataName = BlobStoreUtils.buildBlobStoreMetadataName(currentMetadataSuffix);
+          String coreMetadataPath = blobMetadata.getSharedBlobName() + "/" + blobCoreMetadataName;
+          // so far checksum is not used for metadata file
+          BlobCoreMetadata.BlobFileToDelete bftd = new BlobCoreMetadata.BlobFileToDelete("", coreMetadataPath, bcmSize, BlobCoreMetadataBuilder.UNDEFINED_VALUE, System.currentTimeMillis());
+          bcmBuilder.addFileToDelete(bftd);
+        }
+
+        // When we build solrServerMetadata we requested to reserve the commit point for some short duration. Assumption is
+        // it took less than this duration to get here (didn't do anything blocking) and now we actually save the commit
+        // point for the (potentially long) time it takes to push all files to the Blob store.
+        Directory coreIndexDir = solrCore.getDirectoryFactory().get(solrCore.getIndexDir(), DirectoryFactory.DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
+        solrCore.getDeletionPolicy().saveCommitPoint(solrServerMetadata.getGeneration());
         try {
-          // Creating the new BlobCoreMetadata as a modified clone of the existing one
-          BlobCoreMetadataBuilder bcmBuilder = new BlobCoreMetadataBuilder(blobMetadata, solrServerMetadata.getGeneration());
+          // Directory's javadoc says: "Java's i/o APIs not used directly, but rather all i/o is through this API"
+          // But this is untrue/totally false/misleading. IndexFetcher has File all over.
+          for (CoreFileData cfd : resolvedMetadataResult.getFilesToPush()) {
+            // Sanity check that we're talking about the same file (just sanity, Solr doesn't update files so should never be different)
+            assert cfd.getFileSize() == coreIndexDir.fileLength(cfd.getFileName());
 
-          Directory snapshotIndexDir = solrCore.getDirectoryFactory().get(solrServerMetadata.getSnapshotDirPath(), DirectoryFactory.DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
-          try {
-
-            /*
-             * Removing from the core metadata the files that should no longer be there.
-             * 
-             * TODO
-             * This is a little confusing: This is equivalent to what we were doing in first-party 
-             * where the files to delete for a push were just the files that we determined were 
-             * missing locally but on blob (filesToPull) for a push. This operates on the assumption
-             * that the core locally was refreshed with what was in blob before this update (both in
-             * first party and Solr Cloud). 
-             * 
-             * SharedMetadataResolutionResult makes no distinction between what action is being taken 
-             * (push or pull) hence the confusing method naming but leaving this for now while we reach
-             * blob feature parity.
-             * 
-             * The deletion logic will move out of this class in the future and make this less confusing. 
-             */
-            for (BlobCoreMetadata.BlobFile d : resolvedMetadataResult.getFilesToDelete()) {
-                bcmBuilder.removeFile(d);
-                BlobCoreMetadata.BlobFileToDelete bftd = new BlobCoreMetadata.BlobFileToDelete(d, System.nanoTime());
-                bcmBuilder.addFileToDelete(bftd);
-            }
-            
-            // add the old core.metadata file to delete
-            if (!currentMetadataSuffix.equals(SharedShardMetadataController.METADATA_NODE_DEFAULT_VALUE)) {
-              // TODO This may be inefficient but we'll likely remove this when CorePushPull is refactored to have deletion elsewhere
-              //      could be added to resolvedMetadataResult#getFilesToDelete()
-              ToFromJson<BlobCoreMetadata> converter = new ToFromJson<>();
-              String json = converter.toJson(blobMetadata);
-              int bcmSize = json.getBytes(StandardCharsets.UTF_8).length;
-              
-              String blobCoreMetadataName = BlobStoreUtils.buildBlobStoreMetadataName(currentMetadataSuffix);
-              String coreMetadataPath = blobMetadata.getSharedBlobName() + "/" + blobCoreMetadataName;
-              // so far checksum is not used for metadata file
-              BlobCoreMetadata.BlobFileToDelete bftd = new BlobCoreMetadata.BlobFileToDelete("", coreMetadataPath, bcmSize, BlobCoreMetadataBuilder.UNDEFINED_VALUE, System.nanoTime());
-              bcmBuilder.addFileToDelete(bftd);
-            }
-            
-            // Directory's javadoc says: "Java's i/o APIs not used directly, but rather all i/o is through this API"
-            // But this is untrue/totally false/misleading. SnapPuller has File all over.
-            for (CoreFileData cfd : resolvedMetadataResult.getFilesToPush()) {
-              // Sanity check that we're talking about the same file (just sanity, Solr doesn't update files so should never be different)
-              assert cfd.getFileSize() == snapshotIndexDir.fileLength(cfd.getFileName());
-
-              String blobPath = pushFileToBlobStore(coreStorageClient, snapshotIndexDir, cfd.getFileName(), cfd.getFileSize());
-              bcmBuilder.addFile(new BlobCoreMetadata.BlobFile(cfd.getFileName(), blobPath, cfd.getFileSize(), cfd.getChecksum()));
-            }
-          } finally {
-            solrCore.getDirectoryFactory().release(snapshotIndexDir);
+            String blobPath = pushFileToBlobStore(coreStorageClient, coreIndexDir, cfd.getFileName(), cfd.getFileSize());
+            bcmBuilder.addFile(new BlobCoreMetadata.BlobFile(cfd.getFileName(), blobPath, cfd.getFileSize(), cfd.getChecksum()));
           }
-          
-          // delete what we need
-          enqueueForHardDelete(bcmBuilder);
-          
-          BlobCoreMetadata newBcm = bcmBuilder.build();
-
-          String blobCoreMetadataName = BlobStoreUtils.buildBlobStoreMetadataName(newMetadataSuffix);          
-          coreStorageClient.pushCoreMetadata(blobMetadata.getSharedBlobName(), blobCoreMetadataName, newBcm);
-          return newBcm;
         } finally {
-          solrCore.close();
+          solrCore.getDeletionPolicy().releaseCommitPoint(solrServerMetadata.getGeneration());
+          solrCore.getDirectoryFactory().release(coreIndexDir);
         }
+
+        // delete what we need
+        enqueueForHardDelete(bcmBuilder);
+
+        BlobCoreMetadata newBcm = bcmBuilder.build();
+
+        String blobCoreMetadataName = BlobStoreUtils.buildBlobStoreMetadataName(newMetadataSuffix);
+        coreStorageClient.pushCoreMetadata(blobMetadata.getSharedBlobName(), blobCoreMetadataName, newBcm);
+        return newBcm;
       } finally {
+        solrCore.close();
+
         long filesAffected = resolvedMetadataResult.getFilesToPush().size();
         long bytesTransferred = resolvedMetadataResult.getFilesToPush().stream().mapToLong(cfd -> cfd.getFileSize()).sum();
         
@@ -210,7 +205,7 @@ public class CorePushPull {
     }
 
     /**
-     * We're doing here what replication does in {@link org.apache.solr.handler.IndexFetcher#fetchLatestIndex}.<p>
+     * We're doing here what replication does in {@link org.apache.solr.handler.IndexFetcher#fetchLatestIndex(boolean, boolean)}.<p>
      *
      * This method will work in 2 cases:
      * <ol>
@@ -246,8 +241,10 @@ public class CorePushPull {
             // Create temp directory (within the core local folder).
             // If we are moving index to a new directory because of conflict then this will be that new directory.
             // Even if we are not moving to a newer directory we will first download files from blob store into this temp directory.
-            // Then we will take a lock over index directory and move files from temp directory to index directory. This is to avoid
-            // involving a network operation within an index directory lock.
+            // Then we will move files from temp directory to index directory. This is to avoid leaving a download half done
+            // in case of failure as well as to limit the time during which we close then reopen the index writer to take
+            // into account the new files. In theory nothing should be changing the local directory as we pull files from
+            // Blob store, but let's be defensive (we're checking further down that local dir hasn't changed in the meantime).
             String tempIndexDirName = "index.pull." + System.nanoTime();
             String tempIndexDirPath = solrCore.getDataDir() + tempIndexDirName;
             Directory tempIndexDir = solrCore.getDirectoryFactory().get(tempIndexDirPath, DirectoryFactory.DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
@@ -274,6 +271,7 @@ public class CorePushPull {
               Directory indexDir = solrCore.getDirectoryFactory().get(indexDirPath, DirectoryFactory.DirContext.DEFAULT, solrCore.getSolrConfig().indexConfig.lockType);
               try {
                 if (!createNewIndexDir) {
+                  // TODO should we call solrCore.closeSearcher() here? IndexFetcher.fetchLatestIndex() does call it.
                   // Close the index writer to stop changes to this core
                   solrCore.getUpdateHandler().getSolrCoreState().closeIndexWriter(solrCore, true);
                 }
@@ -287,7 +285,7 @@ public class CorePushPull {
                   }
 
                   if (createNewIndexDir) {
-                    // point index to the new directory
+                    // point index to the new directory. Method call below always returns true BTW.
                     coreSwitchedToNewIndexDir = solrCore.modifyIndexProps(tempIndexDirName);
                   } else {
                     moveFilesFromTempToIndexDir(solrCore, tempIndexDir, indexDir);
@@ -369,45 +367,45 @@ public class CorePushPull {
         }
     }
 
-  private void moveFilesFromTempToIndexDir(SolrCore solrCore, Directory tmpIndexDir, Directory dir) throws IOException {
-    // Copy all files into the Solr directory
-    // Move the segments_N file last once all other are ok.
-    String segmentsN = null;
-    for (BlobFile bf : resolvedMetadataResult.getFilesToPull()) {
-      if (SharedStoreResolutionUtil.isSegmentsNFilename(bf)) {
-        assert segmentsN == null;
-        segmentsN = bf.getSolrFileName();
-      } else {
-        // Copy all non segments_N files
-        moveFileToDirectory(solrCore, tmpIndexDir, bf.getSolrFileName(), dir);
-      }
-    }
-    assert segmentsN != null;
-    // Copy segments_N file. From this point on the local core might be accessed and is up to date with Blob content
-    moveFileToDirectory(solrCore, tmpIndexDir, segmentsN, dir);
-  }
-
-  private Collection<BlobFile> initializeNewIndexDirWithLocallyAvailableFiles(Directory indexDir, Directory newIndexDir) {
-    Collection<BlobFile> filesToDownload = new HashSet<>();
-      for (BlobFile blobFile : resolvedMetadataResult.getFilesToPull()) {
-        try (final IndexInput indexInput = indexDir.openInput(blobFile.getSolrFileName(), IOContext.READONCE)) {
-          long length = indexInput.length();
-          long checksum  = CodecUtil.retrieveChecksum(indexInput);
-          if (length == blobFile.getFileSize() && checksum == blobFile.getChecksum()) {
-            copyFileToDirectory(indexDir, blobFile.getSolrFileName(), newIndexDir);
-          } else {
-            filesToDownload.add(blobFile);
-          }
-        } catch (Exception ex){
-          // Either file does not exist locally or copy not succeeded, we will download from blob store
-          filesToDownload.add(blobFile);
+    private void moveFilesFromTempToIndexDir(SolrCore solrCore, Directory tmpIndexDir, Directory dir) throws IOException {
+      // Copy all files into the Solr directory
+      // Move the segments_N file last once all other are ok.
+      String segmentsN = null;
+      for (BlobFile bf : resolvedMetadataResult.getFilesToPull()) {
+        if (SharedStoreResolutionUtil.isSegmentsNFilename(bf)) {
+          assert segmentsN == null;
+          segmentsN = bf.getSolrFileName();
+        } else {
+          // Copy all non segments_N files
+          moveFileToDirectory(solrCore, tmpIndexDir, bf.getSolrFileName(), dir);
         }
       }
-    return filesToDownload;
-  }
+      assert segmentsN != null;
+      // Copy segments_N file. From this point on the local core might be accessed and is up to date with Blob content
+      moveFileToDirectory(solrCore, tmpIndexDir, segmentsN, dir);
+    }
 
-  /**
-     * Pushes a local file to blob store and returns a unique path to newly created blob  
+    private Collection<BlobFile> initializeNewIndexDirWithLocallyAvailableFiles(Directory indexDir, Directory newIndexDir) {
+      Collection<BlobFile> filesToDownload = new HashSet<>();
+        for (BlobFile blobFile : resolvedMetadataResult.getFilesToPull()) {
+          try (final IndexInput indexInput = indexDir.openInput(blobFile.getSolrFileName(), IOContext.READONCE)) {
+            long length = indexInput.length();
+            long checksum  = CodecUtil.retrieveChecksum(indexInput);
+            if (length == blobFile.getFileSize() && checksum == blobFile.getChecksum()) {
+              copyFileToDirectory(indexDir, blobFile.getSolrFileName(), newIndexDir);
+            } else {
+              filesToDownload.add(blobFile);
+            }
+          } catch (Exception ex){
+            // Either file does not exist locally or copy not succeeded, we will download from blob store
+            filesToDownload.add(blobFile);
+          }
+        }
+      return filesToDownload;
+    }
+
+    /**
+     * Pushes a local file to blob store and returns a unique path to newly created blob
      */
     @VisibleForTesting
     protected String pushFileToBlobStore(CoreStorageClient blob, Directory dir, String fileName, long fileSize) throws Exception {
@@ -434,7 +432,7 @@ public class CorePushPull {
 
       String message = String.format(Locale.ROOT,
             "PushPullData=[%s] action=%s storageProvider=%s bucketRegion=%s bucketName=%s "
-            + "runTime=%s startLatency=%s bytesTransferred=%s attempt=%s filesAffected=%s localGenerationNumber=%s blobGenerationNumber=%s ",
+              + "runTime=%s startLatency=%s bytesTransferred=%s attempt=%s filesAffected=%s localGeneration=%s blobGeneration=%s ",
           pushPullData.toString(), action, coreStorageClient.getStorageProvider().name(), coreStorageClient.getBucketRegion(),
           coreStorageClient.getBucketName(), runTime, startLatency, bytesTransferred, attempt, filesAffected,
           solrServerMetadata.getGeneration(), blobMetadata.getGeneration());

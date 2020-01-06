@@ -45,7 +45,7 @@ public class BlobCoreMetadata {
   /** 
    * Generation number of index represented by this metadata. Generation numbers across replicas don't carry any meaning
    * since each replica can be doing its own indexing. We are only using this generation for optimizations in the context of
-   * single replica. It should not be used beyond following stated purposes. If its mere existence is popping it into
+   * a single replica. It should not be used beyond following stated purposes. If its mere existence is popping it into
    * consideration for solving unintended use cases, then we can remove it and implement the suggested alternatives 
    * for following usages.
    * 1. identify a scenario where local index generation number is higher than what we have in shared store. In that scenario 
@@ -53,7 +53,7 @@ public class BlobCoreMetadata {
    *    generation number locally, shared store contents cannot establish their legitimacy. Storing this number is just 
    *    an optimization. We can always infer that number from segment_N file and get rid of this usage.
    *    {@link SharedStoreResolutionUtil#resolveMetadata(ServerSideMetadata, BlobCoreMetadata)} 
-   * 2. {@link CorePusher#pushCoreToBlob(PushPullData)} piggy back's on cached BlobCoreMetadata's generation number instead
+   * 2. {@link CorePusher#pushCoreToBlob(PushPullData)} piggy backs on cached BlobCoreMetadata's generation number instead
    *    of carrying a separate lastGenerationPushed property in the cache. This is also an optimization, we can always
    *    add lastGenerationPushed property to cache and get rid of this usage.
    */
