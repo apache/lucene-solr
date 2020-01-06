@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FSDataInputStream;
@@ -114,9 +115,11 @@ public class HdfsDirectory extends BaseDirectory {
     return new HdfsFileWriter(getFileSystem(), new Path(hdfsDirPath, name), name);
   }
 
+  private final AtomicLong nextTempFileCounter = new AtomicLong();
   @Override
   public IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
-    throw new UnsupportedOperationException();
+    String name = getTempFileName(prefix, suffix, nextTempFileCounter.getAndIncrement());
+    return this.createOutput(name,context);
   }
   
   private String[] getNormalNames(List<String> files) {
