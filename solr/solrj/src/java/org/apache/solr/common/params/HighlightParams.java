@@ -47,6 +47,8 @@ public interface HighlightParams {
 
   // sizing
   public static final String FRAGSIZE    = HIGHLIGHT+".fragsize"; // OH, FVH, UH
+  public static final String FRAGSIZEISMINIMUM = HIGHLIGHT+".fragsizeIsMinimum"; // UH
+  public static final String FRAGALIGNRATIO = HIGHLIGHT+".fragAlignRatio"; // UH
   public static final String FRAGMENTER  = HIGHLIGHT+".fragmenter"; // OH
   public static final String INCREMENT   = HIGHLIGHT+".increment"; // OH
   public static final String REGEX       = "regex"; // OH

@@ -58,6 +58,16 @@ Improvements
   
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
 
+* LUCENE-8596: Kuromoji user dictionary now accepts entries containing hash mark (#) that were
+  previously treated as beginning a line-ending comment (Satoshi Kato and Masaru Hasegawa via
+  Michael Sokolov)
+
+* LUCENE-9109: Use StackWalker to implement TestSecurityManager's detection
+  of JVM exit (Uwe Schindler)
+
+* LUCENE-9110: Refactor stack analysis in tests to use generalized LuceneTestCase
+  methods that use StackWalker (Uwe Schindler)
+
 Bug fixes
 
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
@@ -73,7 +83,10 @@ Other
 
 API Changes
 ---------------------
-(No changes)
+
+* LUCENE-9093: Not an API change but a change in behavior of the UnifiedHighlighter's LengthGoalBreakIterator that will
+  yield Passages sized a little different due to the fact that the sizing pivot is now the center of the first match and
+  not its left edge.
 
 New Features
 ---------------------
@@ -81,11 +94,29 @@ New Features
 
 Improvements
 ---------------------
-(No changes)
+
+* LUCENE-9102: Add maxQueryLength option to DirectSpellchecker. (Andy Webb via Bruno Roustant)
+
+* LUCENE-9091: UnifiedHighlighter HTML escaping should only escape essentials (Nándor Mátravölgyi)
+
+* LUCENE-9109: Backport some changes from master (except StackWalker) to improve
+  TestSecurityManager (Uwe Schindler)
+
+* LUCENE-9110: Backport refactored stack analysis in tests to use generalized
+  LuceneTestCase methods (Uwe Schindler)
+
+* LUCENE-9105: UniformSplit postings format detects corrupted index and better handles IO exceptions. (Bruno Roustant)
+
+* LUCENE-9106: UniformSplit postings format allows extension of block/line serializers. (Bruno Roustant)
+
+* LUCENE-9093: UnifiedHighlighter's LengthGoalBreakIterator has a new fragmentAlignment option to better center the
+  first match in the passage. Also the sizing point now pivots at the center of the first match term and not its left
+  edge. This yields Passages that won't be identical to the previous behavior. (Nándor Mátravölgyi, David Smiley)
 
 Optimizations
 ---------------------
-(No changes)
+
+* LUCENE-9113: Faster merging of SORTED/SORTED_SET doc values. (Adrien Grand)
 
 Bug Fixes
 ---------------------
@@ -93,7 +124,9 @@ Bug Fixes
 
 Other
 ---------------------
-(No changes)
+
+* LUCENE-9096: Simplification of CompressingTermVectorsWriter#flushOffsets.
+  (kkewwei via Adrien Grand)
 
 ======================= Lucene 8.4.0 =======================
 

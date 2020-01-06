@@ -60,6 +60,8 @@ public class BlockWriter {
   protected final ByteBuffersDataOutput blockLinesWriteBuffer;
   protected final ByteBuffersDataOutput termStatesWriteBuffer;
 
+  protected final BlockHeader.Serializer blockHeaderWriter;
+  protected final BlockLine.Serializer blockLineWriter;
   protected final DeltaBaseTermStateSerializer termStateSerializer;
   protected final BlockEncoder blockEncoder;
   protected final ByteBuffersDataOutput blockWriteBuffer;
@@ -73,7 +75,7 @@ public class BlockWriter {
   protected BlockWriter(IndexOutput blockOutput, int targetNumBlockLines, int deltaNumLines, BlockEncoder blockEncoder) {
     assert blockOutput != null;
     assert targetNumBlockLines > 0;
-    assert deltaNumLines > 0;
+    assert deltaNumLines >= 0;
     assert deltaNumLines < targetNumBlockLines;
     this.blockOutput = blockOutput;
     this.targetNumBlockLines = targetNumBlockLines;
@@ -81,7 +83,9 @@ public class BlockWriter {
     this.blockEncoder = blockEncoder;
 
     this.blockLines = new ArrayList<>(targetNumBlockLines);
-    this.termStateSerializer = new DeltaBaseTermStateSerializer();
+    this.blockHeaderWriter = createBlockHeaderSerializer();
+    this.blockLineWriter = createBlockLineSerializer();
+    this.termStateSerializer = createDeltaBaseTermStateSerializer();
 
     this.blockLinesWriteBuffer = ByteBuffersDataOutput.newResettableInstance();
     this.termStatesWriteBuffer = ByteBuffersDataOutput.newResettableInstance();
@@ -89,6 +93,18 @@ public class BlockWriter {
 
     this.reusableBlockHeader = new BlockHeader();
     this.scratchBytesRef = new BytesRef();
+  }
+
+  protected BlockHeader.Serializer createBlockHeaderSerializer() {
+    return new BlockHeader.Serializer();
+  }
+
+  protected BlockLine.Serializer createBlockLineSerializer() {
+    return new BlockLine.Serializer();
+  }
+
+  protected DeltaBaseTermStateSerializer createDeltaBaseTermStateSerializer() {
+    return new DeltaBaseTermStateSerializer();
   }
 
   /**
@@ -196,7 +212,7 @@ public class BlockWriter {
 
     reusableBlockHeader.reset(blockLines.size(), termStateSerializer.getBaseDocStartFP(), termStateSerializer.getBasePosStartFP(),
         termStateSerializer.getBasePayStartFP(), Math.toIntExact(blockLinesWriteBuffer.size()), middleOffset);
-    reusableBlockHeader.write(blockWriteBuffer);
+    blockHeaderWriter.write(blockWriteBuffer, reusableBlockHeader);
 
     blockLinesWriteBuffer.copyTo(blockWriteBuffer);
     termStatesWriteBuffer.copyTo(blockWriteBuffer);
@@ -236,8 +252,8 @@ public class BlockWriter {
 
   protected void writeBlockLine(boolean isIncrementalEncodingSeed, BlockLine line, BlockLine previousLine) throws IOException {
     assert fieldMetadata != null;
-    BlockLine.Serializer.writeLine(blockLinesWriteBuffer, line, previousLine, Math.toIntExact(termStatesWriteBuffer.size()), isIncrementalEncodingSeed);
-    BlockLine.Serializer.writeLineTermState(termStatesWriteBuffer, line, fieldMetadata.getFieldInfo(), termStateSerializer);
+    blockLineWriter.writeLine(blockLinesWriteBuffer, line, previousLine, Math.toIntExact(termStatesWriteBuffer.size()), isIncrementalEncodingSeed);
+    blockLineWriter.writeLineTermState(termStatesWriteBuffer, line, fieldMetadata.getFieldInfo(), termStateSerializer);
   }
 
   /**
@@ -245,7 +261,7 @@ public class BlockWriter {
    * {@link IndexDictionary.Builder} .
    * The block key is the MDP (see {@link TermBytes}) of the block first term.
    */
-  protected void addBlockKey(List<BlockLine> blockLines, IndexDictionary.Builder dictionaryBuilder) {
+  protected void addBlockKey(List<BlockLine> blockLines, IndexDictionary.Builder dictionaryBuilder) throws IOException {
     assert !blockLines.isEmpty();
     assert dictionaryBuilder != null;
     TermBytes firstTerm = blockLines.get(0).getTermBytes();
