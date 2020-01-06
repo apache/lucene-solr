@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -28,12 +29,14 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.PointInSetQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -43,7 +46,9 @@ import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.parser.QueryParser;
 import org.apache.solr.query.FilterQuery;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -58,6 +63,13 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     createIndex();
   }
 
+  private static final List<String> HAS_VAL_FIELDS = new ArrayList<String>(31);
+
+  @AfterClass
+  public static void afterClass() throws Exception {
+    HAS_VAL_FIELDS.clear();
+  }
+  
   public static void createIndex() {
     String v;
     v = "how now brown cow";
@@ -72,12 +84,55 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertU(adoc("id", "13", "eee_s", "'balance'", "rrr_s", "/leading_slash"));
 
     assertU(adoc("id", "20", "syn", "wifi ATM"));
-    
+
+    { // make a doc that has a value in *lots* of fields that no other doc has
+      SolrInputDocument doc = sdoc("id", "999");
+      
+      // numbers...
+      for (String t : Arrays.asList("i", "l", "f", "d")) { 
+        for (String s : Arrays.asList("", "s", "_dv", "s_dv", "_dvo")) {
+          final String f = "has_val_" + t + s;
+          HAS_VAL_FIELDS.add(f);
+          doc.addField(f, "42");
+        }
+      }
+      // boolean...
+      HAS_VAL_FIELDS.add("has_val_b");
+      doc.addField("has_val_b", "false");
+      // dates (and strings/text -- they don't care about the format)...
+      for (String s : Arrays.asList("dt", "s", "s1", "t")) {
+        final String f = "has_val_" + s;
+        HAS_VAL_FIELDS.add(f);
+        doc.addField(f, "2019-01-12T00:00:00Z");
+      }
+      assertU(adoc(doc));
+    }
+            
     assertU(adoc("id", "30", "shingle23", "A B X D E"));
 
     assertU(commit());
   }
 
+  public void testDocsWithValuesInField() throws Exception {
+    assertEquals("someone changed the test setup of HAS_VAL_FIELDS, w/o updating the sanity check",
+                 25, HAS_VAL_FIELDS.size());
+    for (String f : HAS_VAL_FIELDS) {
+      // for all of these fields, these 2 syntaxes should be functionally equivilent
+      // in matching the one doc that contains these fields
+      for (String q : Arrays.asList( f + ":*", f + ":[* TO *]" )) {
+        assertJQ(req("q", q) 
+                 , "/response/numFound==1"
+                 , "/response/docs/[0]/id=='999'"
+                 );
+        // the same syntaxes should be valid even if no doc has the field...
+        assertJQ(req("q", "bogus___" + q) 
+                 , "/response/numFound==0"
+                 );
+        
+      }
+    }
+  }
+  
   @Test
   public void testPhrase() {
     // "text" field's type has WordDelimiterGraphFilter (WDGFF) and autoGeneratePhraseQueries=true
@@ -1134,14 +1189,14 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
         "is_dv", "fs_dv", "ds_dv", "ls_dv",
         "i_dvo", "f_dvo", "d_dvo", "l_dvo",
     };
-    
+
     for (String suffix:fieldSuffix) {
       //Good queries
       qParser = QParser.getParser("foo_" + suffix + ":(1 2 3 4 5 6 7 8 9 10 20 19 18 17 16 15 14 13 12 25)", req);
       qParser.setIsFilter(true);
       qParser.getQuery();
     }
-    
+
     for (String suffix:fieldSuffix) {
       qParser = QParser.getParser("foo_" + suffix + ":(1 2 3 4 5 6 7 8 9 10 20 19 18 17 16 15 14 13 12 NOT_A_NUMBER)", req);
       qParser.setIsFilter(true); // this may change in the future
@@ -1149,7 +1204,39 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
       assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
       assertTrue("Unexpected exception: " + e.getMessage(), e.getMessage().contains("Invalid Number: NOT_A_NUMBER"));
     }
-    
-    
+
+
+  }
+
+  @Test
+  public void testFieldExistsQueries() throws SyntaxError {
+    SolrQueryRequest req = req();
+    IndexSchema indexSchema = h.getCore().getLatestSchema();
+    String[] fieldSuffix = new String[] {
+        "ti", "tf", "td", "tl", "tdt",
+        "pi", "pf", "pd", "pl", "pdt",
+        "i", "f", "d", "l", "dt", "s", "b",
+        "is", "fs", "ds", "ls", "dts", "ss", "bs",
+        "i_dv", "f_dv", "d_dv", "l_dv", "dt_dv", "s_dv", "b_dv",
+        "is_dv", "fs_dv", "ds_dv", "ls_dv", "dts_dv", "ss_dv", "bs_dv",
+        "i_dvo", "f_dvo", "d_dvo", "l_dvo", "dt_dvo",
+        "t"
+    };
+    String[] existenceQueries = new String[] {
+        "*", "[* TO *]"
+    };
+
+    for (String existenceQuery : existenceQueries) {
+      for (String suffix : fieldSuffix) {
+        String field = "foo_" + suffix;
+        String query = field + ":" + existenceQuery;
+        QParser qParser = QParser.getParser(query, req);
+        if (indexSchema.getField(field).hasDocValues()) {
+          assertTrue("Field has docValues, so existence query \"" + query + "\" should return DocValuesFieldExistsQuery", qParser.getQuery() instanceof DocValuesFieldExistsQuery);
+        } else {
+          assertFalse("Field doesn't have docValues, so existence query \"" + query + "\" should not return DocValuesFieldExistsQuery", qParser.getQuery() instanceof DocValuesFieldExistsQuery);
+        }
+      }
+    }
   }
 }
