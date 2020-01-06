@@ -22,10 +22,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Properties;
 
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZooKeeperException;
@@ -151,25 +149,6 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
     throw new ZooKeeperException(
         ErrorCode.SERVER_ERROR,
         "ZkSolrResourceLoader does not support getConfigDir() - likely, what you are trying to do is not supported in ZooKeeper mode");
-  }
-  
-  @Override
-  public String[] listConfigDir() {
-    List<String> list;
-    try {
-      list = zkController.getZkClient().getChildren(configSetZkPath, null, true);
-    } catch (InterruptedException e) {
-      // Restore the interrupted status
-      Thread.currentThread().interrupt();
-      log.error("", e);
-      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-          "", e);
-    } catch (KeeperException e) {
-      log.error("", e);
-      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR,
-          "", e);
-    }
-    return list.toArray(new String[0]);
   }
 
   public String getConfigSetZkPath() {

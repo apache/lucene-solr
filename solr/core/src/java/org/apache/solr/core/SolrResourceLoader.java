@@ -331,15 +331,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
     return (path != null && (!(path.endsWith("/") || path.endsWith("\\")))) ? path + File.separator : path;
   }
 
-  public String[] listConfigDir() {
-    File configdir = new File(getConfigDir());
-    if (configdir.exists() && configdir.isDirectory()) {
-      return configdir.list();
-    } else {
-      return new String[0];
-    }
-  }
-
   public String getConfigDir() {
     return instanceDir.resolve("conf").toString();
   }
