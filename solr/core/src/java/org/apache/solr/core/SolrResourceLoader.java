@@ -94,7 +94,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
       "spelling.suggest.", "spelling.suggest.fst.", "rest.schema.analysis.", "security.", "handler.admin.",
       "cloud.autoscaling."
   };
-  private static final java.lang.String SOLR_CORE_NAME = "solr.core.name";
   private static Set<String> loggedOnce = new ConcurrentSkipListSet<>();
   private static final Charset UTF_8 = StandardCharsets.UTF_8;
 
@@ -211,20 +210,13 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
       this.classLoader = newLoader;
     }
 
-    log.info("[{}] Added {} libs to classloader, from paths: {}",
-        getCoreName("null"), urls.size(), urls.stream()
+    //nocommit validate core name needn't be present
+    log.info("Added {} libs to classloader, from paths: {}",
+        urls.size(), urls.stream()
         .map(u -> u.getPath().substring(0,u.getPath().lastIndexOf("/")))
         .sorted()
         .distinct()
         .collect(Collectors.toList()));
-  }
-
-  private String getCoreName(String defaultVal) {
-    if (getCoreProperties() != null) {
-      return getCoreProperties().getProperty(SOLR_CORE_NAME, defaultVal);
-    } else {
-      return defaultVal;
-    }
   }
 
   /**

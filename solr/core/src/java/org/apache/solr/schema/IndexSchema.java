@@ -460,12 +460,9 @@ public class IndexSchema {
       final XPath xpath = schemaConf.getXPath();
       String expression = stepsToPath(SCHEMA, AT + NAME);
       Node nd = (Node) xpath.evaluate(expression, document, XPathConstants.NODE);
-      String coreName = getCoreName("null");
       StringBuilder sb = new StringBuilder();
+      // nocommit validate by default we log the core name; no need to add to our log.
       // Another case where the initialization from the test harness is different than the "real world"
-      sb.append("[");
-      sb.append(coreName);
-      sb.append("] ");
       if (nd==null) {
         sb.append("schema has no name!");
         log.warn(sb.toString());
@@ -605,14 +602,6 @@ public class IndexSchema {
     refreshAnalyzers();
 
     log.info("Loaded schema {}/{} with uniqueid field {}", name, version, uniqueKeyFieldName);
-  }
-
-  private String getCoreName(String defaultVal) {
-    if (loader != null && loader.getCoreProperties() != null) {
-      return loader.getCoreProperties().getProperty(SOLR_CORE_NAME, defaultVal);
-    } else {
-      return defaultVal;
-    }
   }
 
   protected void postReadInform() {
