@@ -1,0 +1,42 @@
+#!/bin/bash
+#
+# Configure a Solr demo and then run solr in the foreground
+
+set -euo pipefail
+
+if [[ "${VERBOSE:-}" == "yes" ]]; then
+    set -x
+fi
+
+. /opt/docker-solr/scripts/run-initdb
+
+CORE=demo
+
+coresdir=/var/solr/data
+CORE_DIR="$coresdir/demo"
+if [ -d "$CORE_DIR" ]; then
+  echo "$CORE_DIR exists; skipping demo creation"
+else
+  start-local-solr
+  echo "Creating $CORE"
+  /opt/solr/bin/solr create -c "$CORE"
+  echo "Created $CORE"
+  echo "Loading example data"
+  post_args=()
+  if [[ -n "${SOLR_PORT:-}" ]]; then
+    post_args+=(-p "$SOLR_PORT")
+  fi
+  /opt/solr/bin/post "${post_args[@]}" -c $CORE -commit no example/exampledocs/*.xml
+  /opt/solr/bin/post "${post_args[@]}" -c $CORE -commit no example/exampledocs/books.json
+  /opt/solr/bin/post "${post_args[@]}" -c $CORE -commit yes example/exampledocs/books.csv
+  echo "Loaded example data"
+  stop-local-solr
+
+    # check the core_dir exists; otherwise the detecting above will fail after stop/start
+    if [ ! -d "$CORE_DIR" ]; then
+        echo "Missing $CORE_DIR"
+        exit 1
+    fi
+fi
+
+exec solr-fg
