@@ -100,7 +100,7 @@ public class PackageStoreAPI {
       try {
         PackageStore.FileType type = packageStore.getType(path, true);
         if (type != PackageStore.FileType.FILE) {
-          errs.accept("No such file : " + path);
+          errs.accept("No such file: " + path);
           continue;
         }
 
@@ -114,7 +114,7 @@ public class PackageStoreAPI {
             try {
               validate(entry.meta.signatures, entry, true);
             } catch (Exception e) {
-              log.error("error validating package artifact", e);
+              log.error("Error validating package artifact", e);
               errs.accept(e.getMessage());
             }
           }
@@ -145,7 +145,7 @@ public class PackageStoreAPI {
             CreateMode.EPHEMERAL, true);
 
         Iterable<ContentStream> streams = req.getContentStreams();
-        if (streams == null) throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "no payload");
+        if (streams == null) throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No payload");
         String path = req.getPathTemplateValues().get("*");
         if (path == null) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No path");
@@ -158,7 +158,7 @@ public class PackageStoreAPI {
           MetaData meta = _createJsonMetaData(buf, signatures);
           PackageStore.FileType type = packageStore.getType(path, true);
           if(type != PackageStore.FileType.NOFILE) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,  "Path already exists "+ path);
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,  "Path already exists: "+ path);
           }
           packageStore.put(new PackageStore.FileEntry(buf, meta, path));
           rsp.add(CommonParams.FILE, path);
@@ -168,7 +168,7 @@ public class PackageStoreAPI {
       } catch (InterruptedException e) {
         log.error("Unexpected error", e);
       } catch (KeeperException.NodeExistsException e) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "A write is already in process , try later");
+        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "A write is already in process, try later.");
       } catch (KeeperException e) {
         log.error("Unexpected error", e);
       } finally {
@@ -194,18 +194,18 @@ public class PackageStoreAPI {
       Map<String, byte[]> keys = packageStore.getKeys();
       if (keys == null || keys.isEmpty()) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-            "package store does not have any keys");
+            "The trusted keystore ("+KEYS_DIR+") of the package store does not have any keys");
       }
       CryptoKeys cryptoKeys = null;
       try {
         cryptoKeys = new CryptoKeys(keys);
       } catch (Exception e) {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-            "Error parsing public keys in Package store");
+            "Error parsing public keys in trusted keystore ("+KEYS_DIR+") of the package store");
       }
       for (String sig : sigs) {
         if (cryptoKeys.verify(sig, buf) == null) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Signature does not match any public key : " + sig +" len: "+buf.limit()+  " content sha512: "+
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Signature does not match any public key: " + sig +" len: "+buf.limit()+  " content sha512: "+
               DigestUtils.sha512Hex(new ByteBufferInputStream(buf)));
         }
 
@@ -252,7 +252,7 @@ public class PackageStoreAPI {
           } catch (Exception e) {
             log.error("Failed to download file: " + pathCopy, e);
           }
-          log.info("downloaded file: {}", pathCopy);
+          log.info("Downloaded file: {}", pathCopy);
         });
         return;
 
@@ -293,7 +293,7 @@ public class PackageStoreAPI {
           try {
             org.apache.commons.io.IOUtils.copy(it.getInputStream(), os);
           } catch (IOException e) {
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error reading file" + path);
+            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error reading file: " + path);
           }
         }, false);
 
@@ -329,12 +329,12 @@ public class PackageStoreAPI {
 
   public static void validateName(String path, boolean failForTrusted) {
     if (path == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "empty path");
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Empty path");
     }
     List<String> parts = StrUtils.splitSmart(path, '/', true);
     for (String part : parts) {
       if (part.charAt(0) == '.') {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "cannot start with period");
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cannot start with period");
       }
       for (int i = 0; i < part.length(); i++) {
         for (int j = 0; j < INVALIDCHARS.length(); j++) {
@@ -344,7 +344,7 @@ public class PackageStoreAPI {
       }
     }
     if (failForTrusted &&  TRUSTED_DIR.equals(parts.get(0))) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "trying to write into /_trusted_/ directory");
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Trying to write into /_trusted_/ directory");
     }
   }
 
@@ -353,8 +353,6 @@ public class PackageStoreAPI {
    * @param sigs the signatures. atleast one should succeed
    * @param entry The file details
    * @param isFirstAttempt If there is a failure
-   * @throws SolrException
-   * @throws IOException
    */
   public void validate(List<String> sigs,
                        PackageStore.FileEntry entry, boolean isFirstAttempt) throws SolrException, IOException {
@@ -378,7 +376,7 @@ public class PackageStoreAPI {
           "Error parsing public keys in ZooKeeper");
     }
     for (String sig : sigs) {
-      Supplier<String> errMsg = () -> "Signature does not match any public key : " + sig + "sha256 " + entry.getMetaData().sha512;
+      Supplier<String> errMsg = () -> "Signature does not match any public key: " + sig + ", sha256: " + entry.getMetaData().sha512;
       if (entry.getBuffer() != null) {
         if (cryptoKeys.verify(sig, entry.getBuffer()) == null) {
           if(isFirstAttempt)  validate(sigs, entry, false);
