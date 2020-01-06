@@ -39,7 +39,8 @@ Improvements
 
 Optimizations
 ---------------------
-(No changes)
+
+* LUCENE-9113: Faster merging of SORTED/SORTED_SET doc values. (Adrien Grand)
 
 Bug Fixes
 ---------------------
