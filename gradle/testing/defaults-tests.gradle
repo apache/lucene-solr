@@ -1,6 +1,8 @@
 import org.apache.tools.ant.taskdefs.condition.Os
 import org.gradle.api.tasks.testing.logging.*
 
+import java.util.concurrent.ConcurrentHashMap
+
 def verboseModeHookInstalled = false
 
 allprojects {
@@ -92,9 +94,43 @@ allprojects {
           showCauses true
           showStackTraces true
         }
+
+        Map<String, ? extends Collection<String>> testOutput = new ConcurrentHashMap<>()
+
         onOutput { td, event ->
-          if (event.destination == TestOutputEvent.Destination.StdErr && event.message.startsWith("NOTE:")) {
-            logger.error(event.message)
+          // This is our 'reproduce with' line, print it immediately, which will be right after the test failure message
+          if (event.destination == TestOutputEvent.Destination.StdErr && event.message.startsWith("NOTE: reproduce")) {
+            logger.error event.message
+          }
+
+          // TODO spill output to a file
+          if (event.message != null) {
+            String key = td.className + td.name
+            testOutput.computeIfAbsent(key, { k -> new ArrayList<String>() }).add(event.message)
+          }
+        }
+
+        afterTest { td, result ->
+          String key = td.className + td.name;
+          if (result.resultType == TestResult.ResultType.FAILURE) {
+            // This will print the test output, but not anything that comes from the suite (i.e. beforeTest or afterTest)
+            // Note that this output is printed before the corresponding failure trace, not sure it that is expected or not
+            def output = testOutput.get(key)
+            if (output != null) {
+              // need to strip trailing because unfortunately we saved the newline character earlier
+              output.forEach { s -> logger.error(s.stripTrailing()) }
+            }
+          }
+          // Be careful with how much output we are buffering in memory - clean up!
+          testOutput.remove(key)
+        }
+        afterSuite { suite, result ->
+          if (result.resultType == TestResult.ResultType.FAILURE) {
+            if (suite.name.equals(suite.className)) { // Act on single classes, not on whole suites
+              // This will print failure info from before/after the test, including 'reproduce with' lines
+              // We might not need it since we have the reproduce line printed with the failure
+              // testOutput.get(suite.className + suite.name).forEach({ s -> logger.error(s) })
+            }
           }
         }
       }
