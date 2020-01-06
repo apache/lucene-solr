@@ -76,7 +76,7 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
   public void testStressUpdateSameID() throws Exception {
     int iters = atLeast(100);
     for(int iter=0;iter<iters;iter++) {
-      Directory dir = newDirectory();
+      Directory dir = newFSDirectory(createTempDir());
       final RandomIndexWriter w = new RandomIndexWriter(random(), dir);
       Thread[] threads = new Thread[TestUtil.nextInt(random(), 2, 5)];
       final CountDownLatch startingGun = new CountDownLatch(1);
@@ -148,7 +148,7 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
     final int opCount = atLeast(10000);
     final int idCount = TestUtil.nextInt(random(), 10, 1000);
 
-    Directory dir = newDirectory();
+    Directory dir = newFSDirectory(createTempDir());
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE);
 
@@ -308,7 +308,7 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
     final int opCount = atLeast(10000);
     final int idCount = TestUtil.nextInt(random(), 10, 1000);
 
-    Directory dir = newDirectory();
+    Directory dir = newFSDirectory(createTempDir());
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE);
 
@@ -467,7 +467,7 @@ public class TestIndexingSequenceNumbers extends LuceneTestCase {
     final int opCount = atLeast(10000);
     final int idCount = TestUtil.nextInt(random(), 10, 1000);
 
-    Directory dir = newDirectory();
+    Directory dir = newFSDirectory(createTempDir());
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setIndexDeletionPolicy(NoDeletionPolicy.INSTANCE);
 
