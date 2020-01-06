@@ -322,10 +322,10 @@ Comments may be nested.
 
 Solr's standard query parser originated as a variation of Lucene's "classic" QueryParser.  It diverges in the following ways:
 
-* A `*` may be used for either or both endpoints to specify an open-ended range query
+* A `*` may be used for either or both endpoints to specify an open-ended range query, or by itself as an existence query.
 ** `field:[* TO 100]` finds all field values less than or equal to 100
 ** `field:[100 TO *]` finds all field values greater than or equal to 100
-** `field:[* TO *]` matches all documents with the field
+** `field:*` or `field:[* TO *]` matches all documents where the field exists
 * Pure negative queries (all clauses prohibited) are allowed (only as a top-level clause)
 ** `-inStock:false` finds all field values where inStock is not false
 ** `-field:[* TO *]` finds all documents without a value for field
