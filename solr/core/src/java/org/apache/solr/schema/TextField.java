@@ -173,8 +173,10 @@ public class TextField extends FieldType {
 
       TermToBytesRefAttribute termAtt = source.getAttribute(TermToBytesRefAttribute.class);
 
-      if (!source.incrementToken())
-        throw  new SolrException(SolrException.ErrorCode.BAD_REQUEST,"analyzer returned no terms for multiTerm term: " + part);
+      if (!source.incrementToken()) {
+        // Accept no token because it may have been filtered out by a StopFilter for example.
+        return null;
+      }
       BytesRef bytes = BytesRef.deepCopyOf(termAtt.getBytesRef());
       if (source.incrementToken())
         throw  new SolrException(SolrException.ErrorCode.BAD_REQUEST,"analyzer returned too many terms for multiTerm term: " + part);
