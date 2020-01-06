@@ -35,7 +35,9 @@ ENV SOLR_USER="solr" \
 
 RUN set -ex; \
   groupadd -r --gid "$SOLR_GID" "$SOLR_GROUP"; \
-  useradd -r --uid "$SOLR_UID" --gid "$SOLR_GID" "$SOLR_USER"
+  useradd -r --uid "$SOLR_UID" --gid "$SOLR_GID" "$SOLR_USER"; \
+  echo "solr soft memlock unlimited" >> /etc/security/limits.conf; \
+  echo "solr hard memlock unlimited" >> /etc/security/limits.conf
 
 ADD --chown=solr:solr "./solr-$SOLR_VERSION.tgz" /opt/
 
