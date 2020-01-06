@@ -60,7 +60,7 @@ public class ZkContainer {
     
   }
 
-  public void initZooKeeper(final CoreContainer cc, String solrHome, CloudConfig config) {
+  public void initZooKeeper(final CoreContainer cc, CloudConfig config) {
 
     ZkController zkController = null;
 
@@ -79,6 +79,7 @@ public class ZkContainer {
     // TODO: remove after updating to an slf4j based zookeeper
     System.setProperty("zookeeper.jmx.log4j.disable", "true");
 
+    String solrHome = cc.getSolrHome();
     if (zkRun != null) {
       String zkDataHome = System.getProperty("zkServerDataDir", Paths.get(solrHome).resolve("zoo_data").toString());
       String zkConfHome = System.getProperty("zkServerConfDir", solrHome);
@@ -147,7 +148,7 @@ public class ZkContainer {
 
         
         if(boostrapConf) {
-          ZkController.bootstrapConf(zkController.getZkClient(), cc, solrHome);
+          ZkController.bootstrapConf(zkController.getZkClient(), cc);
         }
         
       } catch (InterruptedException e) {

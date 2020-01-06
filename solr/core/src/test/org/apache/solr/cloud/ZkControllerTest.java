@@ -361,7 +361,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     UpdateShardHandler updateShardHandler = new UpdateShardHandler(UpdateShardHandlerConfig.DEFAULT);
 
     public MockCoreContainer() {
-      super(SolrXmlConfig.fromString(null, "<solr/>"));
+      super(SolrXmlConfig.fromString(TEST_PATH(), "<solr/>"));
       this.shardHandlerFactory = new HttpShardHandlerFactory();
       this.coreAdminHandler = new CoreAdminHandler();
     }

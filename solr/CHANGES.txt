@@ -40,6 +40,8 @@ Other Changes
 * SOLR-14256: Remove HashDocSet; add DocSet.getBits() instead.  DocSet is now strictly immutable and ascending order.
   It's now locked-down to external extension; only 2 impls exist.  (David Smiley)
 
+* SOLR-14197: SolrResourceLoader: remove deprecated methods and do other improvements. (David Smiley)
+
 ==================  8.6.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -62,7 +64,8 @@ Bug Fixes
 
 Other Changes
 ---------------------
-(No changes)
+* SOLR-14197: SolrResourceLoader: marked many methods as deprecated, and in some cases rerouted exiting logic to avoid
+  them. (David Smiley)
 
 ==================  8.5.0 ==================
 
