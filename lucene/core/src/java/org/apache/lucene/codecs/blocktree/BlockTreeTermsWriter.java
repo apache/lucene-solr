@@ -41,6 +41,7 @@ import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
+import org.apache.lucene.util.FutureArrays;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.StringHelper;
@@ -885,18 +886,17 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
 
     /** Pushes the new term to the top of the stack, and writes new blocks. */
     private void pushTerm(BytesRef text) throws IOException {
-      int limit = Math.min(lastTerm.length(), text.length);
-
       // Find common prefix between last term and current term:
-      int pos = 0;
-      while (pos < limit && lastTerm.byteAt(pos) == text.bytes[text.offset+pos]) {
-        pos++;
+      int prefixLength = FutureArrays.mismatch(lastTerm.bytes(), 0, lastTerm.length(), text.bytes, text.offset, text.offset + text.length);
+      if (prefixLength == -1) { // Only happens for the first term, if it is empty
+        assert lastTerm.length() == 0;
+        prefixLength = 0;
       }
 
       // if (DEBUG) System.out.println("  shared=" + pos + "  lastTerm.length=" + lastTerm.length);
 
       // Close the "abandoned" suffix now:
-      for(int i=lastTerm.length()-1;i>=pos;i--) {
+      for(int i=lastTerm.length()-1;i>=prefixLength;i--) {
 
         // How many items on top of the stack share the current suffix
         // we are closing:
@@ -913,7 +913,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
       }
 
       // Init new tail:
-      for(int i=pos;i<text.length;i++) {
+      for(int i=prefixLength;i<text.length;i++) {
         prefixStarts[i] = pending.size();
       }
 
