@@ -121,7 +121,6 @@ import org.apache.solr.handler.component.HttpShardHandler;
 import org.apache.solr.logging.MDCLoggingContext;
 import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.servlet.SolrDispatchFilter;
-import org.apache.solr.store.shared.SharedCoreConcurrencyController;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.util.RTimer;
 import org.apache.solr.util.RefCounted;
@@ -1294,15 +1293,6 @@ public class ZkController implements Closeable {
             publish(desc, Replica.State.ACTIVE);
           }
         } else {
-          // before publishing the state of a SHARED typed replica as ACTIVE, check and evict any
-          // pre-existing entry for it in the SharedCoreConcurrencyController cache; see SOLR-14134
-          SharedCoreConcurrencyController concurrencyController =  
-              cc.getSharedStoreManager().getSharedCoreConcurrencyController();
-          if (concurrencyController.removeCoreVersionMetadataIfPresent(coreName)) {
-            log.info("Evicted newly register core " + coreName + " for collection " + collection + 
-                " and shard " + shardId + " from shared core concurrency cache");
-          }
-          
           publish(desc, Replica.State.ACTIVE);
         }
 

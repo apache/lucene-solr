@@ -83,6 +83,7 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Replica.State;
+import org.apache.solr.common.cloud.Replica.Type;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.IOUtils;
@@ -125,6 +126,7 @@ import org.apache.solr.security.PKIAuthenticationPlugin;
 import org.apache.solr.security.PublicKeyHandler;
 import org.apache.solr.security.SecurityPluginHolder;
 import org.apache.solr.store.blob.util.BlobStoreUtils;
+import org.apache.solr.store.shared.SharedCoreConcurrencyController;
 import org.apache.solr.store.shared.SharedStoreManager;
 import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.update.UpdateShardHandler;
@@ -135,7 +137,6 @@ import org.apache.solr.util.stats.MetricUtils;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.apache.solr.common.cloud.Replica.Type;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
@@ -1191,9 +1192,19 @@ public class CoreContainer {
      * set both the name of the descriptor and the name of the
      * core, since the descriptors name is used for persisting.
      */
-
     core.setName(cd.getName());
-
+    
+    // Check and evict any pre-existing entry for it in 
+    // the SharedCoreConcurrencyController cache; see SOLR-14134
+    SharedCoreConcurrencyController concurrencyController = getSharedStoreManager().getSharedCoreConcurrencyController();
+    if (cd.getCloudDescriptor().getReplicaType().equals(Replica.Type.SHARED)
+        && concurrencyController.removeCoreVersionMetadataIfPresent(cd.getName())) {
+      String collectionName = cd.getCollectionName();
+      String shardId = cd.getCloudDescriptor().getShardId();
+      log.info("Evicted newly register core " + cd.getName() + " for collection " + collectionName + 
+          " and shard " + shardId + " from shared core concurrency cache");
+    }
+    
     coreInitFailures.remove(cd.getName());
 
     if (old == null || old == core) {

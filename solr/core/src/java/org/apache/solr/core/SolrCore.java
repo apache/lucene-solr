@@ -83,6 +83,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.params.CollectionAdminParams;
@@ -142,6 +143,7 @@ import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.search.ValueSourceParser;
 import org.apache.solr.search.stats.LocalStatsCache;
 import org.apache.solr.search.stats.StatsCache;
+import org.apache.solr.store.shared.SharedCoreConcurrencyController;
 import org.apache.solr.update.DefaultSolrCoreState;
 import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.IndexFingerprint;
@@ -1656,6 +1658,21 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
       SolrException.log(log, e);
       if (e instanceof Error) {
         throw (Error) e;
+      }
+    }
+    
+    CoreDescriptor cd = getCoreDescriptor();
+    if (cd != null) {
+      SharedCoreConcurrencyController concurrencyController = coreContainer.
+          getSharedStoreManager().getSharedCoreConcurrencyController();
+      CloudDescriptor cloudDesc = cd.getCloudDescriptor();
+      if (cloudDesc != null && 
+          cloudDesc.getReplicaType().equals(Replica.Type.SHARED) && 
+          concurrencyController.removeCoreVersionMetadataIfPresent(cd.getName())) {
+        String collectionName = cd.getCollectionName();
+        String shardId = cd.getCloudDescriptor().getShardId();
+        log.info("Evicted closing core " + cd.getName() + " for collection " + collectionName + 
+            " and shard " + shardId + " from shared core concurrency cache");
       }
     }
 

@@ -34,7 +34,6 @@ import org.apache.solr.store.blob.metadata.PushPullData;
 import org.apache.solr.store.blob.process.CorePullTask;
 import org.apache.solr.store.blob.process.CorePusher;
 import org.apache.solr.store.blob.util.BlobStoreUtils;
-import org.apache.solr.store.shared.TimeAwareLruCache.CacheRemovalTrigger;
 import org.apache.solr.store.shared.metadata.SharedShardMetadataController;
 import org.apache.solr.store.shared.metadata.SharedShardMetadataController.SharedShardVersionMetadata;
 import org.slf4j.Logger;
@@ -149,7 +148,7 @@ public class SharedCoreConcurrencyController {
    * This cache maintains the shared store version the each core is at or ahead of(core has to sometimes be ahead of
    * shared store given indexing first happens locally before being propagated to shared store).
    */
-  private final TimeAwareLruCache<String, SharedCoreVersionMetadata> coresVersionMetadata;
+  private final ConcurrentHashMap<String, SharedCoreVersionMetadata> coresVersionMetadata;
 
   public SharedCoreConcurrencyController(CoreContainer cores) {
     this.cores = cores;
@@ -248,7 +247,7 @@ public class SharedCoreConcurrencyController {
    * Evicts an entry from the {@link #coresVersionMetadata} if one exists for the given core name. 
    */
   public boolean removeCoreVersionMetadataIfPresent(String coreName) {
-    return coresVersionMetadata.invalidate(coreName);
+    return coresVersionMetadata.remove(coreName) != null;
   }
 
   private void updateCoreVersionMetadata(String collectionName, String shardName, String coreName, SharedCoreVersionMetadata currentMetadata, SharedCoreVersionMetadata updatedMetadata) {
@@ -325,11 +324,8 @@ public class SharedCoreConcurrencyController {
   }
   
   @VisibleForTesting
-  protected TimeAwareLruCache<String, SharedCoreVersionMetadata> buildMetadataCache() {
-    SharedConcurrencyMetadataCacheBuilder builder = new SharedConcurrencyMetadataCacheBuilder();
-    return builder.maxSize(MAX_CACHE_SIZE)
-        .expirationTimeSeconds(CACHE_EXPIRATION_TIME_SECONDS)
-        .build();
+  protected ConcurrentHashMap<String, SharedCoreVersionMetadata> buildMetadataCache() {
+    return new ConcurrentHashMap<String, SharedCoreVersionMetadata>();
   }
 
   /**
@@ -420,68 +416,6 @@ public class SharedCoreConcurrencyController {
     public String toString() {
       return String.format(Locale.ROOT,
           "version=%s  metadataSuffix=%s softGuaranteeOfEquality=%s", version, metadataSuffix, softGuaranteeOfEquality);
-    }
-  }
-  
-  /**
-   * Builder for constructing an in-memory time-aware LRU cache for 
-   * shared core concurrency metadata.
-   */
-  public static class SharedConcurrencyMetadataCacheBuilder {
-    
-    /**
-     * Maximum allowable size for the cache before entries get evicted. Some cache
-     * implementations may evict entries before this limit is hit
-     */
-    private int maxSize;
-    
-    /**
-     * Time in seconds that may pass before an entry that has not been accessed via
-     * a read or write will be evicted
-     */
-    private long expirationTimeSeconds;
-    
-    /**
-     * An object that performs some function when a {@link SharedCoreVersionMetadata} gets
-     * evicted or manually removed from the concurrency cache 
-     */
-    private CacheRemovalTrigger<String, SharedCoreVersionMetadata> removalTrigger;
-    
-    /**
-     * Flag indicating that the calling thread acting on the cache should run eviction policies
-     * synchronously. Used for testing only
-     */
-    private boolean runSync;
-
-    /**
-     * Sets the max allowable size for a cache
-     */
-    public SharedConcurrencyMetadataCacheBuilder maxSize(int maxSize) {
-      this.maxSize = maxSize;
-      return this;
-    }
-    
-    /**
-     * Sets delay in seconds before an entry that hasn't been accessed is evicted
-     * from the cache
-     */
-    public SharedConcurrencyMetadataCacheBuilder expirationTimeSeconds(long expirationTimeSeconds) {
-      this.expirationTimeSeconds = expirationTimeSeconds;
-      return this;
-    }
-    
-    /*
-     * Sets an object that invokes some action when an object is removed from the cache. The trigger
-     * gets passed the key, value, and a string description of the cause
-     */
-    public SharedConcurrencyMetadataCacheBuilder removalTrigger(CacheRemovalTrigger<String, SharedCoreVersionMetadata> trigger) {
-      this.removalTrigger = trigger;
-      return this;
-    }
-    
-    public TimeAwareLruCache<String, SharedCoreVersionMetadata> build() {
-      return new TimeAwareLruCache.EvictingCache<String, SharedCoreVersionMetadata>(maxSize, expirationTimeSeconds, 
-          removalTrigger);
     }
   }
 
