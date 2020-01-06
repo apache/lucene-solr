@@ -120,7 +120,8 @@ Optimizations
 
 Bug Fixes
 ---------------------
-(No changes)
+* LUCENE-9115: NRTCachingDirectory no longer caches files of unknown size.
+  (Adrien Grand)
 
 Other
 ---------------------
