@@ -141,12 +141,12 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
    */
   public SolrConfig(Path instanceDir, String name, InputSource is, boolean isConfigsetTrusted)
       throws ParserConfigurationException, IOException, SAXException {
-    this(new SolrResourceLoader(instanceDir), name, is, isConfigsetTrusted);
+    this(new SolrResourceLoader(instanceDir), name, is, isConfigsetTrusted, null);
   }
 
-  public static SolrConfig readFromResourceLoader(SolrResourceLoader loader, String name, boolean isConfigsetTrusted) {
+  public static SolrConfig readFromResourceLoader(SolrResourceLoader loader, String name, boolean isConfigsetTrusted, Properties substitutableProperties) {
     try {
-      return new SolrConfig(loader, name, null, isConfigsetTrusted);
+      return new SolrConfig(loader, name, null, isConfigsetTrusted, substitutableProperties);
     } catch (Exception e) {
       String resource;
       if (loader instanceof ZkSolrResourceLoader) {
@@ -162,15 +162,16 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
    * Creates a configuration instance from a resource loader, a configuration name and a stream.
    * If the stream is null, the resource loader will open the configuration stream.
    * If the stream is not null, no attempt to load the resource will occur (the name is not used).
-   *
-   * @param                     loader the resource loader
+   *  @param                     loader the resource loader
    * @param name                the configuration name
    * @param is                  the configuration stream
    * @param isConfigsetTrusted  false if configset was uploaded using unsecured configset upload API, true otherwise
+   * @param substitutableProperties optional properties to substitute into the XML
    */
-  private SolrConfig(SolrResourceLoader loader, String name, InputSource is, boolean isConfigsetTrusted)
+  private SolrConfig(SolrResourceLoader loader, String name, InputSource is, boolean isConfigsetTrusted, Properties substitutableProperties)
       throws ParserConfigurationException, IOException, SAXException {
-    super(loader, name, is, "/config/");
+    // insist we have non-null substituteProperties; it might get overlayed
+    super(loader, name, is, "/config/", substitutableProperties == null ? new Properties() : substitutableProperties);
     getOverlay();//just in case it is not initialized
     getRequestParams();
     initLibs(isConfigsetTrusted);
@@ -923,7 +924,7 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
   }
 
   @Override
-  protected Properties getSubstituteProperties() {
+  public Properties getSubstituteProperties() {
     Map<String, Object> p = getOverlay().getUserProps();
     if (p == null || p.isEmpty()) return super.getSubstituteProperties();
     Properties result = new Properties(super.getSubstituteProperties());

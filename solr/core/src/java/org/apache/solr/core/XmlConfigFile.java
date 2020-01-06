@@ -72,20 +72,25 @@ public class XmlConfigFile { // formerly simply "Config"
   private final String prefix;
   private final String name;
   private final SolrResourceLoader loader;
+  private final Properties substituteProperties;
   private int zkVersion = -1;
 
   /**
-   * Builds a config from a resource name with no xpath prefix.
+   * Builds a config from a resource name with no xpath prefix.  Does no property substitution.
    */
   public XmlConfigFile(SolrResourceLoader loader, String name) throws ParserConfigurationException, IOException, SAXException
   {
     this( loader, name, null, null );
   }
 
+  /**
+   * Builds a config.  Does no property substitution.
+   */
   public XmlConfigFile(SolrResourceLoader loader, String name, InputSource is, String prefix) throws ParserConfigurationException, IOException, SAXException
   {
-    this(loader, name, is, prefix, true);
+    this(loader, name, is, prefix, null);
   }
+
   /**
    * Builds a config:
    * <p>
@@ -101,13 +106,15 @@ public class XmlConfigFile { // formerly simply "Config"
    * @param name the resource name used if the input stream 'is' is null
    * @param is the resource as a SAX InputSource
    * @param prefix an optional prefix that will be prepended to all non-absolute xpath expressions
+   * @param substituteProps optional property substitution
    */
-  public XmlConfigFile(SolrResourceLoader loader, String name, InputSource is, String prefix, boolean substituteProps) throws ParserConfigurationException, IOException, SAXException
+  public XmlConfigFile(SolrResourceLoader loader, String name, InputSource is, String prefix, Properties substituteProps) throws ParserConfigurationException, IOException, SAXException
   {
     if( loader == null ) {
       loader = new SolrResourceLoader(SolrResourceLoader.locateSolrHome());
     }
     this.loader = loader;
+    this.substituteProperties = substituteProps;
     this.name = name;
     this.prefix = (prefix != null && !prefix.endsWith("/"))? prefix + '/' : prefix;
     try {
@@ -143,7 +150,7 @@ public class XmlConfigFile { // formerly simply "Config"
         // some XML parsers are broken and don't close the byte stream (but they should according to spec)
         IOUtils.closeQuietly(is.getByteStream());
       }
-      if (substituteProps) {
+      if (substituteProps != null) {
         DOMUtil.substituteProperties(doc, getSubstituteProperties());
       }
     } catch (ParserConfigurationException | SAXException | TransformerException e)  {
@@ -167,23 +174,11 @@ public class XmlConfigFile { // formerly simply "Config"
     }
   }
 
+  /** Returns non-null props to substitute.  Param is the base/default set, also non-null. */
   protected Properties getSubstituteProperties() {
-    return loader.getCoreProperties();
+    return this.substituteProperties;
   }
 
-  public XmlConfigFile(SolrResourceLoader loader, String name, Document doc) {
-    this.prefix = null;
-    this.doc = doc;
-    try {
-      this.origDoc = copyDoc(doc);
-    } catch (TransformerException e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    }
-    this.name = name;
-    this.loader = loader;
-  }
-
-  
   private static Document copyDoc(Document doc) throws TransformerException {
     TransformerFactory tfactory = TransformerFactory.newInstance();
     Transformer tx = tfactory.newTransformer();
@@ -224,11 +219,6 @@ public class XmlConfigFile { // formerly simply "Config"
     return (prefix==null || path.startsWith("/")) ? path : prefix+path;
   }
   
-  public void substituteProperties() {
-    DOMUtil.substituteProperties(doc, getSubstituteProperties());
-  }
-
-
   public Object evaluate(String path, QName type) {
     XPath xpath = xpathFactory.newXPath();
     try {
@@ -440,10 +430,6 @@ public class XmlConfigFile { // formerly simply "Config"
    */
   public int getZnodeVersion(){
     return zkVersion;
-  }
-
-  public XmlConfigFile getOriginalConfig() {
-    return new XmlConfigFile(loader, null, origDoc);
   }
 
 }

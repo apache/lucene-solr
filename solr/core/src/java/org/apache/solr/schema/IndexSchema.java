@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Properties;
 import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -133,6 +134,7 @@ public class IndexSchema {
   protected final Version luceneVersion;
   protected float version;
   protected final SolrResourceLoader loader;
+  protected final Properties substitutableProperties;
 
   protected Map<String,SchemaField> fields = new HashMap<>();
   protected Map<String,FieldType> fieldTypes = new HashMap<>();
@@ -140,6 +142,7 @@ public class IndexSchema {
   protected List<SchemaField> fieldsWithDefaultValue = new ArrayList<>();
   protected Collection<SchemaField> requiredFields = new HashSet<>();
   protected DynamicField[] dynamicFields = new DynamicField[] {};
+
   public DynamicField[] getDynamicFields() { return dynamicFields; }
 
   protected Cache<String, SchemaField> dynamicFieldCache = new ConcurrentLRUCache(10000, 8000, 9000,100, false,false, null);
@@ -169,8 +172,8 @@ public class IndexSchema {
    * By default, this follows the normal config path directory searching rules.
    * @see SolrResourceLoader#openResource
    */
-  public IndexSchema(String name, InputSource is, Version luceneVersion, SolrResourceLoader resourceLoader) {
-    this(luceneVersion, resourceLoader);
+  public IndexSchema(String name, InputSource is, Version luceneVersion, SolrResourceLoader resourceLoader, Properties substitutableProperties) {
+    this(luceneVersion, resourceLoader, substitutableProperties);
 
     this.resourceName = Objects.requireNonNull(name);
     try {
@@ -181,9 +184,10 @@ public class IndexSchema {
     }
   }
 
-  protected IndexSchema(Version luceneVersion, SolrResourceLoader loader) {
+  protected IndexSchema(Version luceneVersion, SolrResourceLoader loader, Properties substitutableProperties) {
     this.luceneVersion = Objects.requireNonNull(luceneVersion);
     this.loader = loader;
+    this.substitutableProperties = substitutableProperties;
   }
 
   /**
@@ -455,7 +459,7 @@ public class IndexSchema {
     try {
       // pass the config resource loader to avoid building an empty one for no reason:
       // in the current case though, the stream is valid so we wont load the resource by name
-      XmlConfigFile schemaConf = new XmlConfigFile(loader, SCHEMA, is, SLASH+SCHEMA+SLASH);
+      XmlConfigFile schemaConf = new XmlConfigFile(loader, SCHEMA, is, SLASH+SCHEMA+SLASH, substitutableProperties);
       Document document = schemaConf.getDocument();
       final XPath xpath = schemaConf.getXPath();
       String expression = stepsToPath(SCHEMA, AT + NAME);

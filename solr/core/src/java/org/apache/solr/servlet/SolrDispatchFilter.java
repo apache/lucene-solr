@@ -270,7 +270,7 @@ public class SolrDispatchFilter extends BaseSolrFilter {
    */
   public static NodeConfig loadNodeConfig(Path solrHome, Properties nodeProperties) {
     NodeConfig cfg = null;
-    try (SolrResourceLoader loader = new SolrResourceLoader(solrHome, SolrDispatchFilter.class.getClassLoader(), nodeProperties)) {
+    try (SolrResourceLoader loader = new SolrResourceLoader(solrHome, SolrDispatchFilter.class.getClassLoader())) {
       if (!StringUtils.isEmpty(System.getProperty("solr.solrxml.location"))) {
         log.warn("Solr property solr.solrxml.location is no longer supported. " +
             "Will automatically load solr.xml from ZooKeeper if it exists");
@@ -284,14 +284,14 @@ public class SolrDispatchFilter extends BaseSolrFilter {
           if (zkClient.exists("/solr.xml", true)) {
             log.info("solr.xml found in ZooKeeper. Loading...");
             byte[] data = zkClient.getData("/solr.xml", null, null, true);
-            return SolrXmlConfig.fromInputStream(loader, new ByteArrayInputStream(data));
+            return SolrXmlConfig.fromInputStream(loader, new ByteArrayInputStream(data), nodeProperties);
           }
         } catch (Exception e) {
           throw new SolrException(ErrorCode.SERVER_ERROR, "Error occurred while loading solr.xml from zookeeper", e);
         }
         log.info("Loading solr.xml from SolrHome (not found in ZooKeeper)");
       }
-      cfg = SolrXmlConfig.fromSolrHome(loader, loader.getInstancePath());
+      cfg = SolrXmlConfig.fromSolrHome(loader, loader.getInstancePath(), nodeProperties);
     } catch (IOException e) {
       // do nothing.
     }

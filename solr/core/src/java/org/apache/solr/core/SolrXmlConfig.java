@@ -55,7 +55,7 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 
 
 /**
- *
+ * Loads {@code solr.xml}.
  */
 public class SolrXmlConfig {
 
@@ -67,8 +67,6 @@ public class SolrXmlConfig {
   public static NodeConfig fromConfig(XmlConfigFile config) {
 
     checkForIllegalConfig(config);
-
-    config.substituteProperties();
 
     CloudConfig cloudConfig = null;
     UpdateShardHandlerConfig deprecatedUpdateConfig = null;
@@ -110,7 +108,7 @@ public class SolrXmlConfig {
     return fillSolrSection(configBuilder, entries);
   }
 
-  public static NodeConfig fromFile(SolrResourceLoader loader, Path configFile) {
+  public static NodeConfig fromFile(SolrResourceLoader loader, Path configFile, Properties substituteProps) {
 
     log.info("Loading container configuration from {}", configFile);
 
@@ -120,7 +118,7 @@ public class SolrXmlConfig {
     }
 
     try (InputStream inputStream = Files.newInputStream(configFile)) {
-      return fromInputStream(loader, inputStream);
+      return fromInputStream(loader, inputStream, substituteProps);
     } catch (SolrException exc) {
       throw exc;
     } catch (Exception exc) {
@@ -129,15 +127,19 @@ public class SolrXmlConfig {
     }
   }
 
+  /** TEST-ONLY */
   public static NodeConfig fromString(SolrResourceLoader loader, String xml) {
-    return fromInputStream(loader, new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)));
+    return fromInputStream(loader, new ByteArrayInputStream(xml.getBytes(StandardCharsets.UTF_8)), new Properties());
   }
 
-  public static NodeConfig fromInputStream(SolrResourceLoader loader, InputStream is) {
+  public static NodeConfig fromInputStream(SolrResourceLoader loader, InputStream is, Properties substituteProps) {
+    if (substituteProps == null) {
+      substituteProps = new Properties();
+    }
     try {
       byte[] buf = IOUtils.toByteArray(is);
       try (ByteArrayInputStream dup = new ByteArrayInputStream(buf)) {
-        XmlConfigFile config = new XmlConfigFile(loader, null, new InputSource(dup), null, false);
+        XmlConfigFile config = new XmlConfigFile(loader, null, new InputSource(dup), null, substituteProps);
         return fromConfig(config);
       }
     } catch (SolrException exc) {
@@ -147,13 +149,14 @@ public class SolrXmlConfig {
     }
   }
 
-  public static NodeConfig fromSolrHome(SolrResourceLoader loader, Path solrHome) {
-    return fromFile(loader, solrHome.resolve(SOLR_XML_FILE));
+  public static NodeConfig fromSolrHome(SolrResourceLoader loader, Path solrHome, Properties substituteProps) {
+    return fromFile(loader, solrHome.resolve(SOLR_XML_FILE), substituteProps);
   }
 
+  /** TEST-ONLY */
   public static NodeConfig fromSolrHome(Path solrHome) {
     SolrResourceLoader loader = new SolrResourceLoader(solrHome);
-    return fromSolrHome(loader, solrHome);
+    return fromSolrHome(loader, solrHome, new Properties());
   }
 
   private static void checkForIllegalConfig(XmlConfigFile config) {

@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
-import java.util.Properties;
 
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.ZkConfigManager;
@@ -47,12 +46,6 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public ZkSolrResourceLoader(Path instanceDir, String configSet, ZkController zooKeeperController) {
-    super(instanceDir);
-    this.zkController = zooKeeperController;
-    configSetZkPath = ZkConfigManager.CONFIGS_ZKNODE + "/" + configSet;
-  }
-
   /**
    * <p>
    * This loader will first attempt to load resources from ZooKeeper, but if not found
@@ -61,8 +54,8 @@ public class ZkSolrResourceLoader extends SolrResourceLoader {
    * the "lib/" directory in the specified instance directory.
    */
   public ZkSolrResourceLoader(Path instanceDir, String configSet, ClassLoader parent,
-      Properties coreProperties, ZkController zooKeeperController) {
-    super(instanceDir, parent, coreProperties);
+                              ZkController zooKeeperController) {
+    super(instanceDir, parent);
     this.zkController = zooKeeperController;
     configSetZkPath = ZkConfigManager.CONFIGS_ZKNODE + "/" + configSet;
   }

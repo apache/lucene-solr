@@ -113,8 +113,8 @@ public class DocBuilder {
       VariableResolver resolver = null;
       String epoch = propWriter.convertDateToString(EPOCH);
       if(dataImporter != null && dataImporter.getCore() != null
-          && dataImporter.getCore().getResourceLoader().getCoreProperties() != null){
-        resolver =  new VariableResolver(dataImporter.getCore().getResourceLoader().getCoreProperties());
+          && dataImporter.getCore().getCoreDescriptor().getSubstitutableProperties() != null){
+        resolver =  new VariableResolver(dataImporter.getCore().getCoreDescriptor().getSubstitutableProperties());
       } else {
         resolver = new VariableResolver();
       }

@@ -960,6 +960,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
           this.dataDir);
 
       checkVersionFieldExistsInSchema(schema, coreDescriptor);
+      setLatestSchema(schema);
 
       // initialize core metrics
       initializeMetrics(solrMetricsContext, null);
@@ -969,8 +970,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       // also register it here for back-compat
       solrFieldCacheBean.initializeMetrics(solrMetricsContext, "core");
       infoRegistry.put("fieldCache", solrFieldCacheBean);
-
-      initSchema(config, schema);
 
       this.maxWarmingSearchers = config.maxWarmingSearchers;
       this.slowQueryThresholdMillis = config.slowQueryThresholdMillis;
@@ -1152,20 +1151,6 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     }
     infoRegistry.put("updateHandler", newUpdateHandler);
     return newUpdateHandler;
-  }
-
-  /**
-   * Initializes the "Latest Schema" for this SolrCore using either the provided <code>schema</code>
-   * if non-null, or a new instance build via the factory identified in the specified <code>config</code>
-   *
-   * @see IndexSchemaFactory
-   * @see #setLatestSchema
-   */
-  private void initSchema(SolrConfig config, IndexSchema schema) {
-    if (schema == null) {
-      schema = IndexSchemaFactory.buildIndexSchema(IndexSchema.DEFAULT_SCHEMA_FILE, config);
-    }
-    setLatestSchema(schema);
   }
 
   /**

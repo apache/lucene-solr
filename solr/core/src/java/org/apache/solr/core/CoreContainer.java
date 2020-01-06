@@ -292,7 +292,7 @@ public class CoreContainer {
    * @see #load()
    */
   public CoreContainer(SolrResourceLoader loader) {
-    this(SolrXmlConfig.fromSolrHome(loader, loader.getInstancePath()));
+    this(SolrXmlConfig.fromSolrHome(loader, loader.getInstancePath(), new Properties()));
   }
 
   /**
@@ -551,7 +551,7 @@ public class CoreContainer {
    */
   public static CoreContainer createAndLoad(Path solrHome, Path configFile) {
     SolrResourceLoader loader = new SolrResourceLoader(solrHome);
-    CoreContainer cc = new CoreContainer(SolrXmlConfig.fromFile(loader, configFile));
+    CoreContainer cc = new CoreContainer(SolrXmlConfig.fromFile(loader, configFile, new Properties()));
     try {
       cc.load();
     } catch (Exception e) {

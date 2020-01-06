@@ -19,6 +19,7 @@ package org.apache.solr.core;
 import java.io.File;
 import java.io.IOException;
 import java.util.Locale;
+import java.util.Properties;
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import org.apache.commons.io.FileUtils;
@@ -64,7 +65,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     File testSrcRoot = new File(SolrTestCaseJ4.TEST_HOME());
     FileUtils.copyFile(new File(testSrcRoot, "solr-50-all.xml"), new File(solrHome, "solr.xml"));
 
-    NodeConfig cfg = SolrXmlConfig.fromSolrHome(loader, solrHome.toPath());
+    NodeConfig cfg = SolrXmlConfig.fromSolrHome(loader, solrHome.toPath(), new Properties());
     CloudConfig ccfg = cfg.getCloudConfig();
     UpdateShardHandlerConfig ucfg = cfg.getUpdateShardHandlerConfig();
     PluginInfo[] backupRepoConfigs = cfg.getBackupRepositoryPlugins();
@@ -120,7 +121,7 @@ public class TestSolrXml extends SolrTestCaseJ4 {
     File testSrcRoot = new File(SolrTestCaseJ4.TEST_HOME());
     FileUtils.copyFile(new File(testSrcRoot, "solr-50-all.xml"), new File(solrHome, "solr.xml"));
 
-    NodeConfig cfg = SolrXmlConfig.fromSolrHome(loader, solrHome.toPath());
+    NodeConfig cfg = SolrXmlConfig.fromSolrHome(loader, solrHome.toPath(), new Properties());
     assertThat(cfg.getCoreRootDirectory().toString(), containsString("myCoreRoot"));
     assertEquals("solr host port", 8888, cfg.getCloudConfig().getSolrHostPort());
     assertEquals("schema cache", false, cfg.hasSchemaCache());

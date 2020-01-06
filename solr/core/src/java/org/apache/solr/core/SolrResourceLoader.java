@@ -45,7 +45,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentSkipListSet;
@@ -106,8 +105,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   private final List<SolrInfoBean> infoMBeans = Collections.synchronizedList(new ArrayList<SolrInfoBean>());
   private final List<ResourceLoaderAware> waitingForResources = Collections.synchronizedList(new ArrayList<ResourceLoaderAware>());
 
-  private final Properties coreProperties;
-
   private volatile boolean live;
 
   // Provide a registry so that managed resources can register themselves while the XML configuration
@@ -124,18 +121,7 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   }
 
   public SolrResourceLoader() {
-    this(SolrResourceLoader.locateSolrHome(), null, null);
-  }
-
-  /**
-   * <p>
-   * This loader will delegate to the context classloader when possible,
-   * otherwise it will attempt to resolve resources using any jar files
-   * found in the "lib/" directory in the specified instance directory.
-   * If the instance directory is not specified (=null), SolrResourceLoader#locateInstanceDir will provide one.
-   */
-  public SolrResourceLoader(Path instanceDir, ClassLoader parent) {
-    this(instanceDir, parent, null);
+    this(SolrResourceLoader.locateSolrHome(), null);
   }
 
   public SolrResourceLoader(String name, List<Path> classpath, Path instanceDir, ClassLoader parent) throws MalformedURLException {
@@ -149,20 +135,18 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
 
 
   public SolrResourceLoader(Path instanceDir) {
-    this(instanceDir, null, null);
+    this(instanceDir, null);
   }
 
   /**
-   * <p>
    * This loader will delegate to Solr's classloader when possible,
    * otherwise it will attempt to resolve resources using any jar files
    * found in the "lib/" directory in the specified instance directory.
-   * </p>
    *
    * @param instanceDir - base directory for this resource loader, if null locateSolrHome() will be used.
    * @see #locateSolrHome
    */
-  public SolrResourceLoader(Path instanceDir, ClassLoader parent, Properties coreProperties) {
+  public SolrResourceLoader(Path instanceDir, ClassLoader parent) {
     if (instanceDir == null) {
       this.instanceDir = SolrResourceLoader.locateSolrHome().toAbsolutePath().normalize();
       log.debug("new SolrResourceLoader for deduced Solr Home: '{}'", this.instanceDir);
@@ -193,7 +177,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
         reloadLuceneSPI();
       }
     }
-    this.coreProperties = coreProperties;
   }
 
   /**
@@ -324,10 +307,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
 
   public String getConfigDir() {
     return instanceDir.resolve("conf").toString();
-  }
-
-  public Properties getCoreProperties() {
-    return coreProperties;
   }
 
   /**

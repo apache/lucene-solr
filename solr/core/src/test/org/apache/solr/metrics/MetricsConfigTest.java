@@ -18,6 +18,7 @@ package org.apache.solr.metrics;
 
 import java.io.File;
 import java.io.InputStream;
+import java.util.Properties;
 
 import com.carrotsearch.randomizedtesting.rules.SystemPropertiesRestoreRule;
 import com.codahale.metrics.Clock;
@@ -121,6 +122,6 @@ public class MetricsConfigTest extends SolrTestCaseJ4 {
 
   private NodeConfig loadNodeConfig() throws Exception {
     InputStream is = MetricsConfigTest.class.getResourceAsStream("/solr/solr-metricsconfig.xml");
-    return SolrXmlConfig.fromInputStream(loader, is);
+    return SolrXmlConfig.fromInputStream(loader, is, new Properties());
   }
 }
