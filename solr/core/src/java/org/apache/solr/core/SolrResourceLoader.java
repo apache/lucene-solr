@@ -102,7 +102,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   private String name = "";
   protected URLClassLoader classLoader;
   private final Path instanceDir;
-  private String dataDir;
 
   private final List<SolrCoreAware> waitingForCore = Collections.synchronizedList(new ArrayList<SolrCoreAware>());
   private final List<SolrInfoBean> infoMBeans = Collections.synchronizedList(new ArrayList<SolrInfoBean>());
@@ -333,10 +332,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
 
   public String getConfigDir() {
     return instanceDir.resolve("conf").toString();
-  }
-
-  public String getDataDir() {
-    return dataDir;
   }
 
   public Properties getCoreProperties() {
@@ -696,8 +691,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
    * Tell all {@link SolrCoreAware} instances about the SolrCore
    */
   public void inform(SolrCore core) {
-    this.dataDir = core.getDataDir();
-
     // make a copy to avoid potential deadlock of a callback calling newInstance and trying to
     // add something to waitingForCore.
     SolrCoreAware[] arr;
