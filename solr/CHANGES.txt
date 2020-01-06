@@ -212,6 +212,8 @@ Bug Fixes
 
 * SOLR-14122: SimUtils converts v2 to v1 request params incorrectly. (Li Cao, ab)
 
+* SOLR-13089: Fix lsof edge cases in the solr CLI script (Martijn Koster via janhoy)
+
 Other Changes
 ---------------------
 
