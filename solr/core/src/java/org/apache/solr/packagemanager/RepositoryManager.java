@@ -130,14 +130,17 @@ public class RepositoryManager {
       packageManager.zkClient.setData(PackageUtils.REPOSITORIES_ZK_PATH, getMapper().writeValueAsString(repos).getBytes("UTF-8"), true);
     }
 
+    addKey(IOUtils.toByteArray(new URL(uri + "/publickey.der").openStream()), repoName + ".der");
+  }
+
+  public void addKey(byte[] key, String destinationKeyFilename) throws Exception {
     // get solr_home directory from info servlet
     String systemInfoUrl = solrClient.getBaseURL() + "/solr/admin/info/system";
     Map<String,Object> systemInfo = SolrCLI.getJson(solrClient.getHttpClient(), systemInfoUrl, 2, true);
     String solrHome = (String) systemInfo.get("solr_home");
     
     // put the public key into package store's trusted key store and request a sync.
-    byte[] key = IOUtils.toByteArray(new URL(uri + "/publickey.der").openStream());
-    String path = PackageStoreAPI.KEYS_DIR + "/" + repoName + ".der";
+    String path = PackageStoreAPI.KEYS_DIR + "/" + destinationKeyFilename;
     PackageUtils.uploadKey(key, path, Paths.get(solrHome), solrClient);
     PackageUtils.getJsonStringFromUrl(solrClient.getHttpClient(), solrClient.getBaseURL() + "/api/node/files" + path + "?sync=true");
   }
