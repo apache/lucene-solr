@@ -21,8 +21,10 @@ solrAdminApp.controller('IndexController', function($scope, System, Cores, Const
     System.get(function(data) {
       $scope.system = data;
 
-      // load average
-      $scope.load_average = data.system.systemLoadAverage.toFixed(2);
+      // load average, unless its negative (means n/a on windows, etc)
+      if (data.system.systemLoadAverage >= 0) {
+        $scope.load_average = data.system.systemLoadAverage.toFixed(2);
+      }
 
       // physical memory
       var memoryMax = parse_memory_value(data.system.totalPhysicalMemorySize);

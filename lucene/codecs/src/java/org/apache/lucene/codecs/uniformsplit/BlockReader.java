@@ -18,11 +18,11 @@
 package org.apache.lucene.codecs.uniformsplit;
 
 import java.io.IOException;
-import java.util.function.Supplier;
 
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.index.BaseTermsEnum;
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.TermState;
@@ -60,6 +60,7 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
   protected final FieldMetadata fieldMetadata;
   protected final BlockDecoder blockDecoder;
 
+  protected BlockHeader.Serializer blockHeaderReader;
   protected BlockLine.Serializer blockLineReader;
   /**
    * In-memory read buffer for the current block.
@@ -76,7 +77,7 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
   /**
    * {@link IndexDictionary.Browser} supplier for lazy loading.
    */
-  protected final Supplier<IndexDictionary.Browser> dictionaryBrowserSupplier;
+  protected final IndexDictionary.BrowserSupplier dictionaryBrowserSupplier;
   /**
    * Holds the {@link IndexDictionary.Browser} once loaded.
    */
@@ -135,7 +136,7 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
    * @param blockDecoder              Optional block decoder, may be null if none.
    *                                  It can be used for decompression or decryption.
    */
-  protected BlockReader(Supplier<IndexDictionary.Browser> dictionaryBrowserSupplier, IndexInput blockInput,
+  protected BlockReader(IndexDictionary.BrowserSupplier dictionaryBrowserSupplier, IndexInput blockInput,
                         PostingsReaderBase postingsReader, FieldMetadata fieldMetadata,
                         BlockDecoder blockDecoder) throws IOException {
     this.dictionaryBrowserSupplier = dictionaryBrowserSupplier;
@@ -204,7 +205,9 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
    */
   protected SeekStatus seekInBlock(BytesRef searchedTerm, long blockStartFP) throws IOException {
     initializeHeader(searchedTerm, blockStartFP);
-    assert blockHeader != null;
+    if (blockHeader == null) {
+      throw newCorruptIndexException("Illegal absence of block", blockStartFP);
+    }
     return seekInBlock(searchedTerm);
   }
 
@@ -274,7 +277,9 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
     blockReadBuffer.skipBytes(blockHeader.getMiddleLineOffset());
     lineIndexInBlock = blockHeader.getMiddleLineIndex();
     readLineInBlock();
-    assert blockLine != null;
+    if (blockLine == null) {
+      throw newCorruptIndexException("Illegal absence of line at the middle of the block", null);
+    }
     int compare = searchedTerm.compareTo(term());
     if (compare < 0) {
       blockReadBuffer.setPosition(blockFirstLineStart);
@@ -328,7 +333,9 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
   public BytesRef next() throws IOException {
     if (termStateForced) {
       initializeHeader(forcedTerm.get(), termState.blockFilePointer);
-      assert blockHeader != null;
+      if (blockHeader == null) {
+        throw newCorruptIndexException("Illegal absence of block for TermState", termState.blockFilePointer);
+      }
       for (int i = lineIndexInBlock; i < termState.termBlockOrd; i++) {
         readLineInBlock();
       }
@@ -349,7 +356,9 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
     if (blockHeader == null) {
       // Read the first block for the field.
       initializeHeader(null, fieldMetadata.getFirstBlockStartFP());
-      assert blockHeader != null;
+      if (blockHeader == null) {
+        throw newCorruptIndexException("Illegal absence of first block", fieldMetadata.getFirstBlockStartFP());
+      }
     }
     if (readLineInBlock() == null) {
       // No more line in the current block.
@@ -375,7 +384,9 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
     if (blockStartFP == targetBlockStartFP) {
       // Optimization: If the block to read is already the current block, then
       // reuse it directly without reading nor decoding the block bytes.
-      assert blockHeader != null;
+      if (blockHeader == null) {
+        throw newCorruptIndexException("Illegal absence of block", blockStartFP);
+      }
       if (searchedTerm == null || blockLine == null || searchedTerm.compareTo(blockLine.getTermBytes().getTerm()) <= 0) {
         // If the searched term precedes lexicographically the current term,
         // then reset the position to the first term line of the block.
@@ -393,15 +404,28 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
     }
   }
 
-  protected void initializeBlockReadLazily() {
+  protected void initializeBlockReadLazily() throws IOException {
     if (blockStartFP == -1) {
       blockInput = blockInput.clone();
-      blockLineReader = new BlockLine.Serializer();
+      blockHeaderReader = createBlockHeaderSerializer();
+      blockLineReader = createBlockLineSerializer();
       blockReadBuffer = new ByteArrayDataInput();
       termStatesReadBuffer = new ByteArrayDataInput();
-      termStateSerializer = new DeltaBaseTermStateSerializer();
+      termStateSerializer = createDeltaBaseTermStateSerializer();
       scratchBlockBytes = new BytesRef();
     }
+  }
+
+  protected BlockHeader.Serializer createBlockHeaderSerializer() {
+    return new BlockHeader.Serializer();
+  }
+
+  protected BlockLine.Serializer createBlockLineSerializer() {
+    return new BlockLine.Serializer();
+  }
+
+  protected DeltaBaseTermStateSerializer createDeltaBaseTermStateSerializer() {
+    return new DeltaBaseTermStateSerializer();
   }
 
   /**
@@ -418,7 +442,7 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
     BytesRef blockBytesRef = decodeBlockBytesIfNeeded(numBlockBytes);
     blockReadBuffer.reset(blockBytesRef.bytes, blockBytesRef.offset, blockBytesRef.length);
     termStatesReadBuffer.reset(blockBytesRef.bytes, blockBytesRef.offset, blockBytesRef.length);
-    return blockHeader = BlockHeader.read(blockReadBuffer, blockHeader);
+    return blockHeader = blockHeaderReader.read(blockReadBuffer, blockHeader);
   }
 
   protected BytesRef decodeBlockBytesIfNeeded(int numBlockBytes) throws IOException {
@@ -520,7 +544,7 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
         + (termState == null ? 0 : RamUsageUtil.ramBytesUsed(termState));
   }
 
-  protected IndexDictionary.Browser getOrCreateDictionaryBrowser() {
+  protected IndexDictionary.Browser getOrCreateDictionaryBrowser() throws IOException {
     if (dictionaryBrowser == null) {
       dictionaryBrowser = dictionaryBrowserSupplier.get();
     }
@@ -533,5 +557,11 @@ public class BlockReader extends BaseTermsEnum implements Accountable {
   protected void clearTermState() {
     termState = null;
     termStateForced = false;
+  }
+
+  private CorruptIndexException newCorruptIndexException(String msg, Long fp) {
+    return new CorruptIndexException(msg
+        + (fp == null ? "" : " at FP " + fp)
+        + " for field \"" + fieldMetadata.getFieldInfo().name + "\"", blockInput);
   }
 }

@@ -283,14 +283,15 @@ public abstract class AuditLoggerPlugin implements Closeable, Runnable, SolrInfo
    * Event formatter that returns event as JSON string
    */
   public static class JSONAuditEventFormatter implements AuditEventFormatter {
+    private static ObjectMapper mapper = new ObjectMapper()
+        .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
+        .setSerializationInclusion(Include.NON_NULL);
+
     /**
      * Formats an audit event as a JSON string
      */
     @Override
     public String formatEvent(AuditEvent event) {
-      ObjectMapper mapper = new ObjectMapper();
-      mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-      mapper.setSerializationInclusion(Include.NON_NULL);
       try {
         StringWriter sw = new StringWriter();
         mapper.writeValue(sw, event);

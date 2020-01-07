@@ -262,6 +262,11 @@ else
   SOLR_JETTY_CONFIG+=("--module=http")
 fi
 
+# Requestlog options
+if [ "$SOLR_REQUESTLOG_ENABLED" == "true" ]; then
+  SOLR_JETTY_CONFIG+=("--module=requestlog")
+fi
+
 # Authentication options
 if [ -z "$SOLR_AUTH_TYPE" ] && [ -n "$SOLR_AUTHENTICATION_OPTS" ]; then
   echo "WARNING: SOLR_AUTHENTICATION_OPTS environment variable configured without associated SOLR_AUTH_TYPE variable"
@@ -710,7 +715,7 @@ function jetty_port() {
 function run_tool() {
 
   "$JAVA" $SOLR_SSL_OPTS $AUTHC_OPTS $SOLR_ZK_CREDS_AND_ACLS -Dsolr.install.dir="$SOLR_TIP" \
-    -Dlog4j.configurationFile="file:$DEFAULT_SERVER_DIR/resources/log4j2-console.xml" \
+    -Dlog4j.configurationFile="$DEFAULT_SERVER_DIR/resources/log4j2-console.xml" \
     -classpath "$DEFAULT_SERVER_DIR/solr-webapp/webapp/WEB-INF/lib/*:$DEFAULT_SERVER_DIR/lib/ext/*:$DEFAULT_SERVER_DIR/lib/*" \
     org.apache.solr.util.SolrCLI "$@"
 
@@ -1737,10 +1742,12 @@ if [ $# -gt 0 ]; then
         ;;
         -v)
             SOLR_LOG_LEVEL=DEBUG
+            PASS_TO_RUN_EXAMPLE+=" -Dsolr.log.level=$SOLR_LOG_LEVEL"
             shift
         ;;
         -q)
             SOLR_LOG_LEVEL=WARN
+            PASS_TO_RUN_EXAMPLE+=" -Dsolr.log.level=$SOLR_LOG_LEVEL"
             shift
         ;;
         -all)
@@ -1872,6 +1879,10 @@ if [ -z "$SOLR_PORT" ]; then
   SOLR_PORT=8983
 fi
 
+if [ -n "$SOLR_JETTY_HOST" ]; then
+  SOLR_OPTS+=("-Dsolr.jetty.host=$SOLR_JETTY_HOST")
+fi
+
 if [ -z "$STOP_PORT" ]; then
   STOP_PORT=`expr $SOLR_PORT - 1000`
 fi
@@ -1944,7 +1955,7 @@ fi
 
 LOG4J_CONFIG=()
 if [ -n "$LOG4J_PROPS" ]; then
-  LOG4J_CONFIG+=("-Dlog4j.configurationFile=file:$LOG4J_PROPS")
+  LOG4J_CONFIG+=("-Dlog4j.configurationFile=$LOG4J_PROPS")
 fi
 
 if [ "$SCRIPT_CMD" == "stop" ]; then
@@ -2043,6 +2054,10 @@ else
   fi
 fi
 
+# IP-based access control
+IP_ACL_OPTS=("-Dsolr.jetty.inetaccess.includes=${SOLR_IP_WHITELIST}" \
+             "-Dsolr.jetty.inetaccess.excludes=${SOLR_IP_BLACKLIST}")
+
 # These are useful for attaching remote profilers like VisualVM/JConsole
 if [ "$ENABLE_REMOTE_JMX_OPTS" == "true" ]; then
 
@@ -2067,6 +2082,16 @@ if [ "$ENABLE_REMOTE_JMX_OPTS" == "true" ]; then
   fi
 else
   REMOTE_JMX_OPTS=()
+fi
+
+# Enable java security manager (limiting filesystem access and other things)
+if [ "$SOLR_SECURITY_MANAGER_ENABLED" == "true" ]; then
+  SECURITY_MANAGER_OPTS=('-Djava.security.manager' \
+    "-Djava.security.policy=${SOLR_SERVER_DIR}/etc/security.policy" \
+    "-Djava.security.properties=${SOLR_SERVER_DIR}/etc/security.properties" \
+    '-Dsolr.internal.network.permission=*')
+else
+  SECURITY_MANAGER_OPTS=()
 fi
 
 JAVA_MEM_OPTS=()
@@ -2173,12 +2198,12 @@ function start_solr() {
     exit 1
   fi
 
-  SOLR_START_OPTS=('-server' "${JAVA_MEM_OPTS[@]}" "${GC_TUNE[@]}" "${GC_LOG_OPTS[@]}" \
+  SOLR_START_OPTS=('-server' "${JAVA_MEM_OPTS[@]}" "${GC_TUNE[@]}" "${GC_LOG_OPTS[@]}" "${IP_ACL_OPTS[@]}" \
     "${REMOTE_JMX_OPTS[@]}" "${CLOUD_MODE_OPTS[@]}" $SOLR_LOG_LEVEL_OPT -Dsolr.log.dir="$SOLR_LOGS_DIR" \
     "-Djetty.port=$SOLR_PORT" "-DSTOP.PORT=$stop_port" "-DSTOP.KEY=$STOP_KEY" \
     "${SOLR_HOST_ARG[@]}" "-Duser.timezone=$SOLR_TIMEZONE" \
     "-Djetty.home=$SOLR_SERVER_DIR" "-Dsolr.solr.home=$SOLR_HOME" "-Dsolr.data.home=$SOLR_DATA_HOME" "-Dsolr.install.dir=$SOLR_TIP" \
-    "-Dsolr.default.confdir=$DEFAULT_CONFDIR" "${LOG4J_CONFIG[@]}" "${SOLR_OPTS[@]}")
+    "-Dsolr.default.confdir=$DEFAULT_CONFDIR" "${LOG4J_CONFIG[@]}" "${SOLR_OPTS[@]}" "${SECURITY_MANAGER_OPTS[@]}")
 
   if [ "$SOLR_MODE" == "solrcloud" ]; then
     IN_CLOUD_MODE=" in SolrCloud mode"
@@ -2216,13 +2241,13 @@ function start_solr() {
 	echo ""
     fi
     # no lsof on cygwin though
-    if hash lsof 2>/dev/null ; then  # hash returns true if lsof is on the path
+    if lsof -v 2>&1 | grep -q revision; then
       echo -n "Waiting up to $SOLR_STOP_WAIT seconds to see Solr running on port $SOLR_PORT"
       # Launch in a subshell to show the spinner
       (loops=0
       while true
       do
-        running=`lsof -PniTCP:$SOLR_PORT -sTCP:LISTEN`
+        running=$(lsof -t -PniTCP:$SOLR_PORT -sTCP:LISTEN)
         if [ -z "$running" ]; then
 	  slept=$((loops * 2))
           if [ $slept -lt $SOLR_STOP_WAIT ]; then

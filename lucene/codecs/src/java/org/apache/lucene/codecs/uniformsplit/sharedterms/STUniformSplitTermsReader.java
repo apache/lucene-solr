@@ -22,8 +22,9 @@ import java.util.Collection;
 
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.uniformsplit.BlockDecoder;
-import org.apache.lucene.codecs.uniformsplit.DictionaryBrowserSupplier;
+import org.apache.lucene.codecs.uniformsplit.FSTDictionary;
 import org.apache.lucene.codecs.uniformsplit.FieldMetadata;
+import org.apache.lucene.codecs.uniformsplit.IndexDictionary;
 import org.apache.lucene.codecs.uniformsplit.UniformSplitTerms;
 import org.apache.lucene.codecs.uniformsplit.UniformSplitTermsReader;
 import org.apache.lucene.index.FieldInfos;
@@ -46,13 +47,15 @@ import static org.apache.lucene.codecs.uniformsplit.sharedterms.STUniformSplitPo
 public class STUniformSplitTermsReader extends UniformSplitTermsReader {
 
   public STUniformSplitTermsReader(PostingsReaderBase postingsReader, SegmentReadState state, BlockDecoder blockDecoder) throws IOException {
-    super(postingsReader, state, blockDecoder, NAME, VERSION_START,
-        VERSION_CURRENT, TERMS_BLOCKS_EXTENSION, TERMS_DICTIONARY_EXTENSION);
+    this(postingsReader, state, blockDecoder, FieldMetadata.Serializer.INSTANCE,
+        NAME, VERSION_START, VERSION_CURRENT, TERMS_BLOCKS_EXTENSION, TERMS_DICTIONARY_EXTENSION);
   }
 
-  protected STUniformSplitTermsReader(PostingsReaderBase postingsReader, SegmentReadState state, BlockDecoder blockDecoder,
-                                      String codecName, int versionStart, int versionCurrent, String termsBlocksExtension, String dictionaryExtension) throws IOException {
-    super(postingsReader, state, blockDecoder, codecName, versionStart, versionCurrent, termsBlocksExtension, dictionaryExtension);
+  protected STUniformSplitTermsReader(PostingsReaderBase postingsReader, SegmentReadState state,
+                                      BlockDecoder blockDecoder, FieldMetadata.Serializer fieldMetadataReader,
+                                      String codecName, int versionStart, int versionCurrent,
+                                      String termsBlocksExtension, String dictionaryExtension) throws IOException {
+    super(postingsReader, state, blockDecoder, fieldMetadataReader, codecName, versionStart, versionCurrent, termsBlocksExtension, dictionaryExtension);
   }
 
   @Override
@@ -62,7 +65,7 @@ public class STUniformSplitTermsReader extends UniformSplitTermsReader {
     if (!fieldMetadataCollection.isEmpty()) {
       FieldMetadata unionFieldMetadata = createUnionFieldMetadata(fieldMetadataCollection);
       // Share the same immutable dictionary between all fields.
-      DictionaryBrowserSupplier dictionaryBrowserSupplier = new DictionaryBrowserSupplier(dictionaryInput, fieldMetadataCollection.iterator().next().getDictionaryStartFP(), blockDecoder);
+      IndexDictionary.BrowserSupplier dictionaryBrowserSupplier = new FSTDictionary.BrowserSupplier(dictionaryInput, fieldMetadataCollection.iterator().next().getDictionaryStartFP(), blockDecoder);
       for (FieldMetadata fieldMetadata : fieldMetadataCollection) {
         fieldToTermsMap.put(fieldMetadata.getFieldInfo().name,
             new STUniformSplitTerms(blockInput, fieldMetadata, unionFieldMetadata, postingsReader, blockDecoder, fieldInfos, dictionaryBrowserSupplier));
