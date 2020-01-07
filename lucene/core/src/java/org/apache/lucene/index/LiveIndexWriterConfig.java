@@ -117,6 +117,12 @@ public class LiveIndexWriterConfig {
   /** the attributes for the NRT readers */
   protected Map<String, String> readerAttributes = Collections.emptyMap();
 
+  /** Amount of time to wait for merges returned by MergePolicy.findCommitMerges(...) */
+  protected volatile double maxCommitMergeWaitSeconds;
+
+  /** Callback interface called on index writer actions. */
+  protected IndexWriterEvents indexWriterEvents;
+
 
   // used by IndexWriterConfig
   LiveIndexWriterConfig(Analyzer analyzer) {
@@ -141,6 +147,8 @@ public class LiveIndexWriterConfig {
     readerPooling = IndexWriterConfig.DEFAULT_READER_POOLING;
     indexerThreadPool = new DocumentsWriterPerThreadPool();
     perThreadHardLimitMB = IndexWriterConfig.DEFAULT_RAM_PER_THREAD_HARD_LIMIT_MB;
+    maxCommitMergeWaitSeconds = IndexWriterConfig.DEFAULT_MAX_COMMIT_MERGE_WAIT_SECONDS;
+    indexWriterEvents = IndexWriterEvents.NULL_EVENTS;
   }
   
   /** Returns the default analyzer to use for indexing documents. */
@@ -480,6 +488,22 @@ public class LiveIndexWriterConfig {
     return softDeletesField;
   }
 
+  /**
+   * Expert: return the amount of time to wait for merges returned by by MergePolicy.findCommitMerges(...).
+   * If this time is reached, those merges will be aborted and we will wait again. If this time limit is reached again,
+   * we will abort the commit.
+   */
+  public double getMaxCommitMergeWaitSeconds() {
+    return maxCommitMergeWaitSeconds;
+  }
+
+  /**
+   * Returns a callback used to signal actions taken by the {@link IndexWriter}.
+   */
+  public IndexWriterEvents getIndexWriterEvents() {
+    return indexWriterEvents;
+  }
+
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
@@ -505,6 +529,8 @@ public class LiveIndexWriterConfig {
     sb.append("checkPendingFlushOnUpdate=").append(isCheckPendingFlushOnUpdate()).append("\n");
     sb.append("softDeletesField=").append(getSoftDeletesField()).append("\n");
     sb.append("readerAttributes=").append(getReaderAttributes()).append("\n");
+    sb.append("maxCommitMergeWaitSeconds=").append(getMaxCommitMergeWaitSeconds()).append("\n");
+    sb.append("indexWriterEvents=").append(getIndexWriterEvents().getClass().getName()).append("\n");
     return sb.toString();
   }
 

@@ -527,6 +527,19 @@ public abstract class MergePolicy {
       SegmentInfos segmentInfos, MergeContext mergeContext) throws IOException;
 
   /**
+   * Identifies merges that we want to execute (synchronously) on commit. By default, do not synchronously merge on commit.
+   *
+   * Implementers of this method should use isMergingSegment to exclude any already-merging segments from the returned
+   * {@link MergeSpecification}. If a segment already registered in a merge is returned, then the commit will fail.
+   *
+   * @param segmentInfos the total set of segments in the index (while preparing the commit)
+   * @param mergeContext the IndexWriter to find the merges on
+   */
+  public MergeSpecification findCommitMerges(SegmentInfos segmentInfos, MergeContext mergeContext) throws IOException {
+    return null;
+  }
+
+  /**
    * Returns true if a new segment (regardless of its origin) should use the
    * compound file format. The default implementation returns <code>true</code>
    * iff the size of the given mergedInfo is less or equal to

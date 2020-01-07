@@ -59,6 +59,11 @@ public class OneMergeWrappingMergePolicy extends FilterMergePolicy {
     return wrapSpec(in.findForcedDeletesMerges(segmentInfos, mergeContext));
   }
 
+  @Override
+  public MergeSpecification findCommitMerges(SegmentInfos segmentInfos, MergeContext mergeContext) throws IOException {
+    return wrapSpec(in.findCommitMerges(segmentInfos, mergeContext));
+  }
+
   private MergeSpecification wrapSpec(MergeSpecification spec) {
     MergeSpecification wrapped = spec == null ? null : new MergeSpecification();
     if (wrapped != null) {
