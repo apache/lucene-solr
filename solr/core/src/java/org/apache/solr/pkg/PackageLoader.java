@@ -172,7 +172,8 @@ public class PackageLoader implements Closeable {
           try {
             ver = new Version(this, v);
           } catch (Exception e) {
-            log.error("package could not be loaded "+ ver.toString());
+            log.error("package could not be loaded "+ ver.toString(), e);
+            continue;
           }
           myVersions.put(v.version, ver);
           sortedVersions.add(v.version);

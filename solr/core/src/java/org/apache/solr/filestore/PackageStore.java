@@ -56,7 +56,7 @@ public interface PackageStore {
 
   List<FileDetails> list(String path, Predicate<String> predicate);
 
-  /** Sync a loacl file to all nodes. All the nodes are asked to pull the file from this node
+  /** Sync a local file to all nodes. All the nodes are asked to pull the file from this node
    */
   void syncToAllNodes(String path) throws IOException;
 
