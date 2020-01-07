@@ -20,7 +20,6 @@ package org.apache.solr.filestore;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -45,6 +44,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.packagemanager.PackageUtils;
 import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.server.ByteBufferInputStream;
 import org.junit.After;
@@ -250,21 +250,14 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
 
   public static void uploadKey(byte[] bytes, String path, MiniSolrCloudCluster cluster) throws Exception {
     JettySolrRunner jetty = cluster.getRandomJetty(random());
-    ByteBuffer buf = ByteBuffer.wrap(bytes);
-    PackageStoreAPI.MetaData meta = PackageStoreAPI._createJsonMetaData(buf, null);
-    Path home = jetty.getCoreContainer().getResourceLoader().getInstancePath();
-    DistribPackageStore._persistToFile(home,  path, buf, ByteBuffer.wrap(Utils.toJSON(meta)));
     try(HttpSolrClient client = (HttpSolrClient) jetty.newClient()) {
-      Utils.executeGET(client.getHttpClient(), jetty.getBaseURLV2().toString()+"/node/files"+path +"?sync=true", null );
+      PackageUtils.uploadKey(bytes, path, jetty.getCoreContainer().getResourceLoader().getInstancePath(), client);
+      Object resp = Utils.executeGET(client.getHttpClient(), jetty.getBaseURLV2().toString() + "/node/files" + path + "?sync=true", null);
+      System.out.println("sync resp: "+jetty.getBaseURLV2().toString() + "/node/files" + path + "?sync=true"+" ,is: "+resp);
     }
     waitForAllNodesHaveFile(cluster,path, Utils.makeMap(":files:" + path + ":name", (Predicate<Object>) Objects::nonNull),
         false);
-
-
-
   }
-
-
 
   public static void postFile(SolrClient client, ByteBuffer buffer, String name, String sig)
       throws SolrServerException, IOException {

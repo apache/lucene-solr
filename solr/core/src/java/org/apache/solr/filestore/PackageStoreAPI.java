@@ -214,7 +214,9 @@ public class PackageStoreAPI {
 
   }
 
-  /**Internal API , for expert use only
+  /**
+   * Creates a JSON string with the metadata
+   * @lucene.internal
    */
   public static MetaData _createJsonMetaData(ByteBuffer buf, List<String> signatures) throws IOException {
     String sha512 = DigestUtils.sha512Hex(new ByteBufferInputStream(buf));
@@ -302,7 +304,7 @@ public class PackageStoreAPI {
 
   }
 
-  static class MetaData implements MapWriter {
+  public static class MetaData implements MapWriter {
     public static final String SHA512 = "sha512";
     String sha512;
     List<String> signatures;
