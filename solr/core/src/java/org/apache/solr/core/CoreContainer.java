@@ -1194,16 +1194,8 @@ public class CoreContainer {
      */
     core.setName(cd.getName());
     
-    // Check and evict any pre-existing entry for it in 
-    // the SharedCoreConcurrencyController cache; see SOLR-14134
-    SharedCoreConcurrencyController concurrencyController = getSharedStoreManager().getSharedCoreConcurrencyController();
-    if (cd.getCloudDescriptor().getReplicaType().equals(Replica.Type.SHARED)
-        && concurrencyController.removeCoreVersionMetadataIfPresent(cd.getName())) {
-      String collectionName = cd.getCollectionName();
-      String shardId = cd.getCloudDescriptor().getShardId();
-      log.info("Evicted newly register core " + cd.getName() + " for collection " + collectionName + 
-          " and shard " + shardId + " from shared core concurrency cache");
-    }
+    // Check and evict any pre-existing concurrency metadata for cores belonging to shared replicas
+    evictSharedCoreMetadata(cd);
     
     coreInitFailures.remove(cd.getName());
 
@@ -1768,8 +1760,9 @@ public class CoreContainer {
         // Stop replication if this is part of a pull/tlog replica before closing the core
         zkSys.getZkController().stopReplicationFromLeader(name);
       }
+      evictSharedCoreMetadata(cd);
     }
-
+    
     core.unloadOnClose(cd, deleteIndexDir, deleteDataDir, deleteInstanceDir);
     if (close)
       core.closeAndWait();
@@ -2101,6 +2094,23 @@ public class CoreContainer {
     }
 
     return tragicException != null;
+  }
+  
+  /**
+   * Check and evict any pre-existing entry for it in
+   * the SharedCoreConcurrencyController cache; see SOLR-14134
+   */
+  public void evictSharedCoreMetadata(CoreDescriptor cd) {
+    SharedCoreConcurrencyController concurrencyController = 
+        getSharedStoreManager().getSharedCoreConcurrencyController();
+    if (cd != null &&
+        cd.getCloudDescriptor().getReplicaType().equals(Replica.Type.SHARED) && 
+        concurrencyController.removeCoreVersionMetadataIfPresent(cd.getName())) {
+      String collectionName = cd.getCollectionName();
+      String shardId = cd.getCloudDescriptor().getShardId();
+      log.info("Evicted core " + cd.getName() + " for collection " + collectionName + 
+          " and shard " + shardId + " from shared core concurrency cache");
+    }
   }
 
   static {

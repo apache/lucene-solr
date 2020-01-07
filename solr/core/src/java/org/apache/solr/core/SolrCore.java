@@ -1662,19 +1662,7 @@ public final class SolrCore implements SolrInfoBean, SolrMetricProducer, Closeab
     }
     
     CoreDescriptor cd = getCoreDescriptor();
-    if (cd != null) {
-      SharedCoreConcurrencyController concurrencyController = coreContainer.
-          getSharedStoreManager().getSharedCoreConcurrencyController();
-      CloudDescriptor cloudDesc = cd.getCloudDescriptor();
-      if (cloudDesc != null && 
-          cloudDesc.getReplicaType().equals(Replica.Type.SHARED) && 
-          concurrencyController.removeCoreVersionMetadataIfPresent(cd.getName())) {
-        String collectionName = cd.getCollectionName();
-        String shardId = cd.getCloudDescriptor().getShardId();
-        log.info("Evicted closing core " + cd.getName() + " for collection " + collectionName + 
-            " and shard " + shardId + " from shared core concurrency cache");
-      }
-    }
+    coreContainer.evictSharedCoreMetadata(cd);
 
     if (coreStateClosed) {
 
