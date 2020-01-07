@@ -190,10 +190,12 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
       try {
         replicaPositions = buildReplicaPositions(ocmh.cloudManager, clusterState, clusterState.getCollection(collectionName), message, shardNames, sessionWrapper);
       } catch (Assign.AssignmentException e) {
-        ZkNodeProps deleteMessage = new ZkNodeProps("name", collectionName);
-        new DeleteCollectionCmd(ocmh).call(clusterState, deleteMessage, results);
+        deleteCollection(clusterState, results, collectionName);
         // unwrap the exception
         throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage(), e.getCause());
+      } catch (SolrException e) {
+        deleteCollection(clusterState, results, collectionName);
+        throw e;
       }
 
       if (replicaPositions.isEmpty()) {
@@ -342,6 +344,11 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
     } finally {
       if (sessionWrapper.get() != null) sessionWrapper.get().release();
     }
+  }
+
+  private void deleteCollection(ClusterState clusterState, NamedList results, String collectionName) throws Exception {
+    ZkNodeProps deleteMessage = new ZkNodeProps("name", collectionName);
+    new DeleteCollectionCmd(ocmh).call(clusterState, deleteMessage, results);
   }
 
   public static List<ReplicaPosition> buildReplicaPositions(SolrCloudManager cloudManager, ClusterState clusterState,

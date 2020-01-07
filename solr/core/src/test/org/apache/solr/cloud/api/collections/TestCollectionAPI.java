@@ -97,6 +97,7 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
     clusterStatusZNodeVersion();
     testClusterStateMigration();
     testCollectionCreationCollectionNameValidation();
+    testCollectionCreationTooManyShards();
     testReplicationFactorValidaton();
     testCollectionCreationShardNameValidation();
     testAliasCreationNameValidation();
@@ -936,6 +937,35 @@ public class TestCollectionAPI extends ReplicaPropertiesBase {
         assertTrue(errorMessage.contains("shard names must consist entirely of"));
       }
     }
+  }
+
+  private void testCollectionCreationTooManyShards() throws Exception {
+    try (CloudSolrClient client = createCloudClient(null)) {
+      ModifiableSolrParams params = new ModifiableSolrParams();
+      params.set("action", CollectionParams.CollectionAction.CREATE.toString());
+      params.set("name", "collection_too_many");
+      params.set("router.name", "implicit");
+      params.set("numShards", "10");
+      params.set("maxShardsPerNode", 1);
+      params.set("shards", "b0,b1,b2,b3,b4,b5,b6,b7,b8,b9");
+      SolrRequest request = new QueryRequest(params);
+      request.setPath("/admin/collections");
+
+      try {
+        client.request(request);
+        fail();
+      } catch (RemoteSolrException e) {
+        final String errorMessage = e.getMessage();
+        assertTrue(errorMessage.contains("Cannot create collection"));
+        assertTrue(errorMessage.contains("This requires 10 shards to be created (higher than the allowed number)"));
+        assertMissingCollection(client, "collection_too_many");
+      }
+    }
+  }
+
+  private void assertMissingCollection(CloudSolrClient client, String collectionName) throws Exception {
+    ClusterState clusterState = client.getZkStateReader().getClusterState();
+    assertNull(clusterState.getCollectionOrNull(collectionName));
   }
   
   private void testAliasCreationNameValidation() throws Exception{
