@@ -79,6 +79,22 @@ SOLR_IP_BLACKLIST="192.168.0.3, 192.168.0.4"
 ZooKeeper is a central and important part of a SolrCloud cluster and understanding how to secure
 its content is covered in the <<zookeeper-access-control.adoc#zookeeper-access-control,ZooKeeper Access Control>> page.
 
+
+== Network Configuration
+
+// tag::security-network-binding-1[]
+Administrators should consider their security setup carefully as an important step in moving to production.  Solr provides a number of features out of the box to meet the security needs of users: authentication and authorization can be configured using a range of security plugins, privacy can be bolstered by enabling SSL/TLS, and (in SolrCloud) ZooKeeper data can be protected with ACL rules to prevent unauthorized reads and writes.
+
+Even if these measures or others are taken, it is strongly recommended that Solr always be protected by a firewall.  Solr is not designed to be exposed on the open internet.
+
+It is also strongly recommended that Solr listen to only those network interfaces that are strictly required.  To prevent administrators from unintentionally exposing Solr more broadly, Solr only listens on the loopback interface ("127.0.0.1") by default.  Most deployments will need to change this value to something less restrictive so that it can be reached from other boxes.  This can be done by setting a `SOLR_JETTY_HOST` value in your environment's "include script" (`solr.in.sh` or `solr.in.cmd`):
+
+[source,bash]
+ ----
+ SOLR_JETTY_HOST="0.0.0.0"
+ ----
+// end::security-network-binding-1[]
+
 == Enable Security Manager
 
 Solr can run in a Java Security Manager sandbox by setting `SOLR_SECURITY_MANAGER_ENABLED=true` via environment variable or in `solr.in.sh`/`solr.in.cmd`. This feature is incompatible with Hadoop.

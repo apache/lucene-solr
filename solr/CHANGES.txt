@@ -77,6 +77,10 @@ Upgrade Notes
 
 * SOLR-14092: Deprecated BlockJoinFacetComponent and BlockJoinDocSetFacetComponent are removed
   Users are encouraged to migrate to uniqueBlock() in JSON Facet API.  (Mikhail Khludnev)
+
+* SOLR-13985: Solr's Jetty now binds to localhost network interface by default for better out of the box security.
+  Administrators that need Solr exposed more broadly can change the SOLR_JETTY_HOST property in their Solr include
+  (solr.in.sh/solr.in.cmd) file. (Jason Gerlowski, David Smiley, Robert Muir)
   
 Improvements
 ----------------------
@@ -149,12 +153,14 @@ Upgrade Notes
   If you prefer to keep the old (but insecure) serialization strategy, you can start your nodes using the
   property: `-Dsolr.useUnsafeOverseerResponse=true`. Keep in mind that this will be removed in future version of Solr.
 
- * SOLR-13808: add cache=false into uderneath BoolQParser's filter clause or {"bool":{"filter":..}} to avoid caching in
+ * SOLR-13808: add cache=false into underneath BoolQParser's filter clause or {"bool":{"filter":..}} to avoid caching in
    filterCache. (Mikhail Khludnev)
 
 New Features
 ---------------------
-(No changes)
+ * SOLR-12490: Introducing json.queries in JSON Request API. Every property of this object holds one or many named 
+   Query DSL queries. It's optional and doesn't impact response without explicit referencing these queries by names 
+   (Anatolii Siuniaev via Mikhail Khludnev)
 
 Improvements
 ---------------------
@@ -187,6 +193,8 @@ Improvements
   hl.fragsizeIsMinimum, with defaults that aim to better center matches in fragments than previously. See the ref guide.
   Regardless of the settings, the passages may be sized differently than before. (Nándor Mátravölgyi, David Smiley)
 
+* SOLR-14154: Return correct isolation level when retrieving it from the SQL Connection (Nick Vercammen, Kevin Risden)
+
 Optimizations
 ---------------------
 (No changes)
@@ -203,6 +211,10 @@ Bug Fixes
 * SOLR-14109: Always log to stdout from server/scripts/cloud-scripts/zkcli.{bat|sh} (janhoy)
 
 * SOLR-14122: SimUtils converts v2 to v1 request params incorrectly. (Li Cao, ab)
+
+* SOLR-13089: Fix lsof edge cases in the solr CLI script (Martijn Koster via janhoy)
+
+* SOLR-11746: Fixed existence query support for numeric point fields. (Kai Chan, hossman, Houston Putman)
 
 Other Changes
 ---------------------

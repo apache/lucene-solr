@@ -93,14 +93,11 @@ public class TestCloudConsistency extends SolrCloudTestCase {
   }
 
   @Test
-  //commented 2-Aug-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 6-Sep-2018
   public void testOutOfSyncReplicasCannotBecomeLeader() throws Exception {
     testOutOfSyncReplicasCannotBecomeLeader(false);
   }
 
   @Test
-  // commented out on: 24-Dec-2018   @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 2-Aug-2018
   public void testOutOfSyncReplicasCannotBecomeLeaderAfterRestart() throws Exception {
     testOutOfSyncReplicasCannotBecomeLeader(true);
   }
@@ -247,6 +244,7 @@ public class TestCloudConsistency extends SolrCloudTestCase {
   private void addDoc(String collection, int docId, JettySolrRunner solrRunner) throws IOException, SolrServerException {
     try (HttpSolrClient solrClient = new HttpSolrClient.Builder(solrRunner.getBaseUrl().toString()).build()) {
       solrClient.add(collection, new SolrInputDocument("id", String.valueOf(docId), "fieldName_s", String.valueOf(docId)));
+      solrClient.commit(collection);
     }
   }
 
