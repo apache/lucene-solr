@@ -19,12 +19,14 @@
 
 package org.apache.lucene.index;
 
+/**
+ * Callback interface to signal various actions taken by IndexWriter.
+ */
 public interface IndexWriterEvents {
   /**
    * A default implementation that ignores all events.
    */
-  final class NullEvents implements IndexWriterEvents {
-    private NullEvents() { }
+  IndexWriterEvents NULL_EVENTS = new IndexWriterEvents() {
     @Override
     public void beginMergeOnCommit() { }
 
@@ -33,8 +35,7 @@ public interface IndexWriterEvents {
 
     @Override
     public void abandonedMergesOnCommit(int abandonedCount) { }
-  }
-  IndexWriterEvents NULL_EVENTS = new NullEvents();
+  };
 
   /**
    * Signals the start of waiting for a merge on commit, returned from
