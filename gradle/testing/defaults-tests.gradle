@@ -95,33 +95,28 @@ allprojects {
           showStackTraces true
         }
 
-        Map<String, ? extends Collection<String>> testOutput = new ConcurrentHashMap<>()
+        Map<String, TestOutputBuffer> testOutput = new ConcurrentHashMap<>()
 
         onOutput { td, event ->
-          // This is our 'reproduce with' line, print it immediately, which will be right after the test failure message
-          if (event.destination == TestOutputEvent.Destination.StdErr && event.message.startsWith("NOTE: reproduce")) {
-            logger.error event.message
-          }
-
-          // TODO spill output to a file
           if (event.message != null) {
+            if (event.destination == TestOutputEvent.Destination.StdErr && event.message.startsWith("NOTE: reproduce")) {
+              // This is our 'reproduce with' line, print it immediately, which will be right after the test failure message
+              logger.error event.message
+            }
             String key = td.className + td.name
-            testOutput.computeIfAbsent(key, { k -> new ArrayList<String>() }).add(event.message)
+            testOutput.computeIfAbsent(key, { k -> new TestOutputBuffer(testsTmpDir, k) }).add(event)
           }
         }
 
         afterTest { td, result ->
           String key = td.className + td.name;
-          if (result.resultType == TestResult.ResultType.FAILURE) {
-            // This will print the test output, but not anything that comes from the suite (i.e. beforeTest or afterTest)
-            // Note that this output is printed before the corresponding failure trace, not sure it that is expected or not
-            def output = testOutput.get(key)
-            if (output != null) {
-              // need to strip trailing because unfortunately we saved the newline character earlier
-              output.forEach { s -> logger.error(s.stripTrailing()) }
+          testOutput.get(key).withCloseable { output ->
+            if (result.resultType == TestResult.ResultType.FAILURE) {
+              // This will print the test output, but not anything that comes from the suite (i.e. beforeTest or afterTest)
+              // Note that this output is printed before the corresponding failure trace, not sure it that is expected or not
+              output?.log(logger)
             }
           }
-          // Be careful with how much output we are buffering in memory - clean up!
           testOutput.remove(key)
         }
         afterSuite { suite, result ->
@@ -140,5 +135,47 @@ allprojects {
         logger.info("Test folders for {}: cwd={}, tmp={}", project.path, testsWorkDir, testsTmpDir)
       }
     }
+  }
+}
+
+class TestOutputBuffer implements Closeable {
+  private final File outputFile;
+  private final Writer writer;
+
+  TestOutputBuffer(File outputDirectory, String key) {
+    this.outputFile = new File(outputDirectory, key + ".out");
+    try {
+      FileOutputStream fos = new FileOutputStream(this.outputFile);
+      this.writer = new PrintWriter(new BufferedOutputStream(fos));
+    } catch (IOException e) {
+      throw new UncheckedIOException("Unable to create test suite output file", e);
+    }
+  }
+
+  void add(TestOutputEvent event) {
+    String prefix;
+    if (event.destination == TestOutputEvent.Destination.StdOut) {
+      prefix = "  1> ";
+    } else {
+      prefix = "  2> ";
+    }
+
+    try {
+      writer.write(prefix + event.message);
+    } catch (IOException e) {
+      throw new UncheckedIOException("Unable to write test suite output", e);
+    }
+  }
+
+  void log(Logger logger) {
+    outputFile.eachLine { line ->
+      logger.error(line)
+    }
+  }
+
+  @Override
+  void close() throws IOException {
+    writer.close();
+    outputFile.delete();
   }
 }
