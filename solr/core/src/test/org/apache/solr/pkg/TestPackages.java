@@ -461,7 +461,7 @@ public class TestPackages extends SolrCloudTestCase {
           .build();
 
       //the files is not yet there. The command should fail with error saying "No such file"
-      expectError(req, cluster.getSolrClient(), errPath, "No such file :");
+      expectError(req, cluster.getSolrClient(), errPath, "No such file:");
 
 
       //post the jar file. No signature is sent

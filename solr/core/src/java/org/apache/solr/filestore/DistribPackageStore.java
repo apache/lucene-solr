@@ -48,6 +48,7 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.filestore.PackageStoreAPI.MetaData;
 import org.apache.solr.util.SimplePostTool;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.server.ByteBufferInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +60,8 @@ import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
 public class DistribPackageStore implements PackageStore {
   static final long MAX_PKG_SIZE = Long.parseLong(System.getProperty("max.file.store.size", String.valueOf(100 * 1024 * 1024)));
-  /**This is where al the files in the package store are listed
+  /**
+   * This is where al the files in the package store are listed
    */
   static final String ZK_PACKAGESTORE = "/packagestore";
 
@@ -67,7 +69,8 @@ public class DistribPackageStore implements PackageStore {
   private final CoreContainer coreContainer;
   private Map<String, FileInfo> tmpFiles = new ConcurrentHashMap<>();
 
-  private final Path solrhome ;
+  private final Path solrhome;
+
   public DistribPackageStore(CoreContainer coreContainer) {
     this.coreContainer = coreContainer;
     solrhome = this.coreContainer.getResourceLoader().getInstancePath();
@@ -101,7 +104,7 @@ public class DistribPackageStore implements PackageStore {
       this.path = path;
     }
 
-    public ByteBuffer getFileData(boolean validate) throws IOException {
+    ByteBuffer getFileData(boolean validate) throws IOException {
       if (fileData == null) {
         try (FileInputStream fis = new FileInputStream(getRealpath(path).toFile())) {
           fileData = SimplePostTool.inputStreamToByteArray(fis);
@@ -118,7 +121,6 @@ public class DistribPackageStore implements PackageStore {
     }
 
 
-
     private void persistToFile(ByteBuffer data, ByteBuffer meta) throws IOException {
       synchronized (DistribPackageStore.this) {
         this.metaData = meta;
@@ -128,8 +130,6 @@ public class DistribPackageStore implements PackageStore {
 
       }
     }
-
-
 
 
     public boolean exists(boolean validateContent, boolean fetchMissing) throws IOException {
@@ -327,8 +327,8 @@ public class DistribPackageStore implements PackageStore {
   private void distribute(FileInfo info) {
     try {
       String dirName = info.path.substring(0, info.path.lastIndexOf('/'));
-      coreContainer.getZkController().getZkClient().makePath(ZK_PACKAGESTORE + dirName,false, true);
-      coreContainer.getZkController().getZkClient().create(ZK_PACKAGESTORE + info.path , info.getDetails().getMetaData().sha512.getBytes(UTF_8),
+      coreContainer.getZkController().getZkClient().makePath(ZK_PACKAGESTORE + dirName, false, true);
+      coreContainer.getZkController().getZkClient().create(ZK_PACKAGESTORE + info.path, info.getDetails().getMetaData().sha512.getBytes(UTF_8),
           CreateMode.PERSISTENT, true);
     } catch (Exception e) {
       throw new SolrException(SERVER_ERROR, "Unable to create an entry in ZK", e);
@@ -472,17 +472,23 @@ public class DistribPackageStore implements PackageStore {
   @Override
   public void refresh(String path) {
     try {
-      List l = coreContainer.getZkController().getZkClient().getChildren(path, null, true);
+      List l = null;
+      try {
+        l = coreContainer.getZkController().getZkClient().getChildren(ZK_PACKAGESTORE+ path, null, true);
+      } catch (KeeperException.NoNodeException e) {
+        // does not matter
+      }
       if (l != null && !l.isEmpty()) {
         List myFiles = list(path, s -> true);
         for (Object f : l) {
-          if(!myFiles.contains(f)) {
-            fetch(path+ "/"+ f.toString(), "*");
+          if (!myFiles.contains(f)) {
+            log.info("{} does not exist locally, downloading.. ",f);
+            fetch(path + "/" + f.toString(), "*");
           }
         }
       }
     } catch (Exception e) {
-      e.printStackTrace();
+      log.error("Could not refresh files in " +path, e);
     }
   }
 
@@ -524,7 +530,8 @@ public class DistribPackageStore implements PackageStore {
   public static Path getPackageStoreDirPath(Path solrHome) {
     return Paths.get(solrHome.toAbsolutePath().toString(), PackageStoreAPI.PACKAGESTORE_DIRECTORY).toAbsolutePath();
   }
-  private static String  _getMetapath(String path) {
+
+  private static String _getMetapath(String path) {
     int idx = path.lastIndexOf('/');
     return path.substring(0, idx + 1) + "." + path.substring(idx + 1) + ".json";
   }
@@ -533,7 +540,7 @@ public class DistribPackageStore implements PackageStore {
    * Internal API
    */
   public static void _persistToFile(Path solrHome, String path, ByteBuffer data, ByteBuffer meta) throws IOException {
-    Path realpath = _getRealPath(path , solrHome);
+    Path realpath = _getRealPath(path, solrHome);
     File file = realpath.toFile();
     File parent = file.getParentFile();
     if (!parent.exists()) {
@@ -545,7 +552,7 @@ public class DistribPackageStore implements PackageStore {
     }
 
 
-    File metdataFile = _getRealPath(_getMetapath(path) , solrHome).toFile();
+    File metdataFile = _getRealPath(_getMetapath(path), solrHome).toFile();
 
     try (FileOutputStream fos = new FileOutputStream(metdataFile)) {
       fos.write(meta.array(), 0, meta.limit());
@@ -563,9 +570,9 @@ public class DistribPackageStore implements PackageStore {
     return _getKeys(solrhome);
   }
 
-  /**Internal API
-   */
-  public static Map<String, byte[]> _getKeys(Path solrhome) throws IOException {
+
+  // reads local keys file
+  private static Map<String, byte[]> _getKeys(Path solrhome) throws IOException {
     Map<String, byte[]> result = new HashMap<>();
     Path keysDir = _getRealPath(PackageStoreAPI.KEYS_DIR, solrhome);
 
