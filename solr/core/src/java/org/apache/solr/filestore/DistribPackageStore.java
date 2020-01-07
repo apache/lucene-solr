@@ -104,7 +104,7 @@ public class DistribPackageStore implements PackageStore {
       this.path = path;
     }
 
-    public ByteBuffer getFileData(boolean validate) throws IOException {
+    ByteBuffer getFileData(boolean validate) throws IOException {
       if (fileData == null) {
         try (FileInputStream fis = new FileInputStream(getRealpath(path).toFile())) {
           fileData = SimplePostTool.inputStreamToByteArray(fis);
@@ -476,7 +476,7 @@ public class DistribPackageStore implements PackageStore {
       try {
         l = coreContainer.getZkController().getZkClient().getChildren(ZK_PACKAGESTORE+ path, null, true);
       } catch (KeeperException.NoNodeException e) {
-        // doe not matter
+        // does not matter
       }
       if (l != null && !l.isEmpty()) {
         List myFiles = list(path, s -> true);
@@ -488,7 +488,7 @@ public class DistribPackageStore implements PackageStore {
         }
       }
     } catch (Exception e) {
-      e.printStackTrace();
+      log.error("Could not refresh files in " +path, e);
     }
   }
 
