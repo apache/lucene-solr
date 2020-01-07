@@ -96,7 +96,6 @@ allprojects {
         }
 
         Map<String, TestOutputBuffer> testOutput = new ConcurrentHashMap<>()
-
         onOutput { td, event ->
           if (event.message != null) {
             if (event.destination == TestOutputEvent.Destination.StdErr && event.message.startsWith("NOTE: reproduce")) {
@@ -110,21 +109,11 @@ allprojects {
 
         afterTest { td, result ->
           String key = td.className + td.name;
-          testOutput.get(key).withCloseable { output ->
+          testOutput.remove(key).withCloseable { output ->
             if (result.resultType == TestResult.ResultType.FAILURE) {
               // This will print the test output, but not anything that comes from the suite (i.e. beforeTest or afterTest)
               // Note that this output is printed before the corresponding failure trace, not sure it that is expected or not
               output?.log(logger)
-            }
-          }
-          testOutput.remove(key)
-        }
-        afterSuite { suite, result ->
-          if (result.resultType == TestResult.ResultType.FAILURE) {
-            if (suite.name.equals(suite.className)) { // Act on single classes, not on whole suites
-              // This will print failure info from before/after the test, including 'reproduce with' lines
-              // We might not need it since we have the reproduce line printed with the failure
-              // testOutput.get(suite.className + suite.name).forEach({ s -> logger.error(s) })
             }
           }
         }
@@ -143,39 +132,39 @@ class TestOutputBuffer implements Closeable {
   private final Writer writer;
 
   TestOutputBuffer(File outputDirectory, String key) {
-    this.outputFile = new File(outputDirectory, key + ".out");
+    this.outputFile = new File(outputDirectory, key + ".out")
     try {
-      FileOutputStream fos = new FileOutputStream(this.outputFile);
-      this.writer = new PrintWriter(new BufferedOutputStream(fos));
+      FileOutputStream fos = new FileOutputStream(this.outputFile)
+      this.writer = new PrintWriter(new BufferedOutputStream(fos))
     } catch (IOException e) {
-      throw new UncheckedIOException("Unable to create test suite output file", e);
+      throw new UncheckedIOException("Unable to create test suite output file", e)
     }
   }
 
   void add(TestOutputEvent event) {
-    String prefix;
+    String prefix
     if (event.destination == TestOutputEvent.Destination.StdOut) {
-      prefix = "  1> ";
+      prefix = "  1> "
     } else {
-      prefix = "  2> ";
+      prefix = "  2> "
     }
 
     try {
-      writer.write(prefix + event.message);
+      writer.write(prefix + event.message)
     } catch (IOException e) {
-      throw new UncheckedIOException("Unable to write test suite output", e);
+      throw new UncheckedIOException("Unable to write test suite output", e)
     }
   }
 
   void log(Logger logger) {
-    outputFile.eachLine { line ->
-      logger.error(line)
+    synchronized (logger) {
+      outputFile.eachLine(logger.&error)
     }
   }
 
   @Override
   void close() throws IOException {
-    writer.close();
-    outputFile.delete();
+    writer.close()
+    outputFile.delete()
   }
 }
