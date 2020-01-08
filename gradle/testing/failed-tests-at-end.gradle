@@ -1,0 +1,38 @@
+// Display all failed tests at the end of the build.
+
+def failedTests = []
+
+allprojects {
+  tasks.withType(Test) { Test task ->
+    afterTest { desc, result ->
+      if (result.resultType == TestResult.ResultType.FAILURE) {
+        failedTests << [
+            "name": "${desc.className}.${desc.name}",
+            "project": "${test.project.path}",
+            "reproduce": "gradlew ${project.path}:test --tests \"${desc.className}\" ${task.project.testOptionsForReproduceLine}"
+        ]
+      }
+    }
+
+    afterSuite { desc, result ->
+      if (result.exceptions) {
+        failedTests << [
+            "name": "${desc.name}",
+            "project": "${test.project.path}",
+            "reproduce": "gradlew ${project.path}:test --tests \"${desc.name}\" ${task.project.testOptionsForReproduceLine}"
+        ]
+      }
+    }
+  }
+}
+
+gradle.buildFinished { result ->
+  if (failedTests) {
+    def formatted = failedTests
+      .sort { a, b -> b.project.compareTo(a.project) }
+      .collect { e -> String.format(Locale.ROOT, "  - %s (%s)\n    Minimum reproduce line: %s\n", e.name, e.project, e.reproduce) }
+      .join("\n")
+
+    logger.error("\nERROR: The following test(s) have failed:\n${formatted}")
+  }
+}
