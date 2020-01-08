@@ -98,8 +98,13 @@ allprojects {
         }
 
         // Set up custom test output handler.
+        def testOutputsDir = file("${reports.junitXml.destination}/outputs")
+        doFirst {
+          project.delete testOutputsDir
+        }
+
         def spillDir = getTemporaryDir().toPath()
-        def listener = new ErrorReportingTestListener(test.testLogging, spillDir)
+        def listener = new ErrorReportingTestListener(test.testLogging, spillDir, testOutputsDir.toPath())
         addTestOutputListener(listener)
         addTestListener(listener)
       }

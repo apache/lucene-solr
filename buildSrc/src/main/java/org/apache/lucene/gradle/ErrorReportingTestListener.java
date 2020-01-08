@@ -1,14 +1,31 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package org.apache.lucene.gradle;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.io.UncheckedIOException;
+import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.regex.Pattern;
+
 import org.gradle.api.internal.tasks.testing.logging.FullExceptionFormatter;
 import org.gradle.api.internal.tasks.testing.logging.TestExceptionFormatter;
 import org.gradle.api.logging.Logger;
@@ -32,22 +49,17 @@ public class ErrorReportingTestListener implements TestOutputListener, TestListe
    private final TestExceptionFormatter formatter;
    private final Map<TestKey, OutputHandler> outputHandlers = new ConcurrentHashMap<>();
    private final Path spillDir;
+   private final Path outputsDir;
 
-   public ErrorReportingTestListener(TestLogging testLogging, Path spillDir) {
+   public ErrorReportingTestListener(TestLogging testLogging, Path spillDir, Path outputsDir) {
       this.formatter = new FullExceptionFormatter(testLogging);
       this.spillDir = spillDir;
+      this.outputsDir = outputsDir;
    }
 
    @Override
    public void onOutput(TestDescriptor testDescriptor, TestOutputEvent outputEvent) {
-      TestDescriptor suite = testDescriptor.getParent();
-
-      // Check if this is output from the test suite itself (e.g. afterTest or beforeTest)
-      if (testDescriptor.isComposite()) {
-         suite = testDescriptor;
-      }
-
-      handlerFor(suite).write(outputEvent);
+      handlerFor(testDescriptor).write(outputEvent);
    }
 
    @Override
@@ -62,51 +74,89 @@ public class ErrorReportingTestListener implements TestOutputListener, TestListe
 
    @Override
    public void afterSuite(final TestDescriptor suite, TestResult result) {
+      if (suite.getParent() == null || suite.getName().startsWith("Gradle")) {
+         return;
+      }
+
       TestKey key = TestKey.of(suite);
       try {
-         // if the test suite failed, report all captured output
-         if (Objects.equals(result.getResultType(), TestResult.ResultType.FAILURE)) {
-            reportFailure(suite, outputHandlers.get(key));
+         OutputHandler outputHandler = outputHandlers.get(key);
+         if (outputHandler != null) {
+            long length = outputHandler.length();
+            if (length > 1024 * 1024 * 10) {
+               LOGGER.warn(String.format(Locale.ROOT, "WARNING: Test %s wrote %,d bytes of output.",
+                   suite.getName(),
+                   length));
+            }
+         }
+
+         boolean echoOutput = Objects.equals(result.getResultType(), TestResult.ResultType.FAILURE);
+         boolean dumpOutput = echoOutput; // Force output dumping.
+
+         // If the test suite failed, report output.
+         if (dumpOutput || echoOutput) {
+            Files.createDirectories(outputsDir);
+            Path outputLog = outputsDir.resolve(getOutputLogName(suite));
+
+            // Save the output of a failing test to disk.
+            try (Writer w = Files.newBufferedWriter(outputLog, StandardCharsets.UTF_8)) {
+               if (outputHandler != null) {
+                  outputHandler.copyTo(w);
+               }
+            }
+
+            if (echoOutput) {
+               synchronized (this) {
+                  System.out.println("");
+                  System.out.println(suite.getClassName() + " > test suite's output saved to " + outputLog + ", copied below:");
+                  try (BufferedReader reader = Files.newBufferedReader(outputLog, StandardCharsets.UTF_8)) {
+                     char[] buf = new char[1024];
+                     int len;
+                     while ((len = reader.read(buf)) >= 0) {
+                        System.out.print(new String(buf, 0, len));
+                     }
+                     System.out.println();
+                  }
+               }
+            }
          }
       } catch (IOException e) {
-         throw new UncheckedIOException("Error reading test suite output", e);
+         throw new UncheckedIOException(e);
       } finally {
-         OutputHandler writer = outputHandlers.remove(key);
-         if (writer != null) {
+         OutputHandler handler = outputHandlers.remove(key);
+         if (handler != null) {
             try {
-               writer.close();
+               handler.close();
             } catch (IOException e) {
-               LOGGER.error("Failed to close test suite's event writer for: " + key, e);
+               LOGGER.error("Failed to close output handler for: " + key, e);
             }
          }
       }
    }
 
-   private void reportFailure(TestDescriptor suite, OutputHandler outputHandler) throws IOException {
-      if (outputHandler != null) {
-         synchronized (this) {
-            System.out.println("");
-            System.out.println(suite.getClassName() + " > test suite's output copied below:");
-            outputHandler.copyTo(System.out);
-         }
-      }
+   private static Pattern SANITIZE = Pattern.compile("[^a-zA-Z .\\-_0-9]+");
+
+   public static String getOutputLogName(TestDescriptor suite) {
+      return SANITIZE.matcher("OUTPUT-" + suite.getName() + ".txt").replaceAll("_");
    }
 
    @Override
    public void afterTest(TestDescriptor testDescriptor, TestResult result) {
       // Include test failure exception stacktrace(s) in test output log.
       if (result.getResultType() == TestResult.ResultType.FAILURE) {
-         if (testDescriptor.getParent() != null) {
-            if (result.getExceptions().size() > 0) {
-               String message = formatter.format(testDescriptor, result.getExceptions());
-               handlerFor(testDescriptor.getParent()).write(message);
-            }
+         if (result.getExceptions().size() > 0) {
+            String message = formatter.format(testDescriptor, result.getExceptions());
+            handlerFor(testDescriptor).write(message);
          }
       }
    }
 
-   private OutputHandler handlerFor(TestDescriptor suite) {
-      return outputHandlers.computeIfAbsent(TestKey.of(suite), (key) -> new OutputHandler());
+   private OutputHandler handlerFor(TestDescriptor descriptor) {
+      // Attach output of leaves (individual tests) to their parent.
+      if (!descriptor.isComposite()) {
+         descriptor = descriptor.getParent();
+      }
+      return outputHandlers.computeIfAbsent(TestKey.of(descriptor), (key) -> new OutputHandler());
    }
 
    public static class TestKey {
@@ -183,6 +233,10 @@ public class ErrorReportingTestListener implements TestOutputListener, TestListe
          write(sint, message);
       }
 
+      public long length() throws IOException {
+         return buffer.length();
+      }
+
       private void write(PrefixedWriter out, String message) {
          try {
             if (out != last) {
@@ -195,10 +249,9 @@ public class ErrorReportingTestListener implements TestOutputListener, TestListe
          }
       }
 
-      public void copyTo(PrintStream out) throws IOException {
+      public void copyTo(Writer out) throws IOException {
          flush();
          buffer.copyTo(out);
-         out.println();
       }
 
       public void flush() throws IOException {
