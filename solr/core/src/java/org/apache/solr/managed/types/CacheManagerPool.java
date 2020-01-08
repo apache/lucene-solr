@@ -102,6 +102,7 @@ public class CacheManagerPool extends ResourceManagerPool<SolrCache> {
   protected long lookupDelta = DEFAULT_LOOKUP_DELTA;
   protected double maxAdjustRatio = DEFAULT_MAX_ADJUST_RATIO;
   protected Map<String, Long> lookups = new HashMap<>();
+  protected Map<String, Long> hits = new HashMap<>();
   protected Map<String, Map<String, Object>> initialComponentLimits = new HashMap<>();
 
   public CacheManagerPool(String name, String type, ResourceManager resourceManager, Map<String, Object> poolLimits, Map<String, Object> poolParams) {
@@ -161,6 +162,13 @@ public class CacheManagerPool extends ResourceManagerPool<SolrCache> {
     return limits;
   }
 
+  private static final String[] MONITORED_KEYS = new String[] {
+      SolrCache.HITS_PARAM,
+      SolrCache.HIT_RATIO_PARAM,
+      SolrCache.LOOKUPS_PARAM,
+      SolrCache.EVICTIONS_PARAM
+  };
+
   @Override
   public Map<String, Object> getMonitoredValues(SolrCache component) throws Exception {
     Map<String, Object> values = new HashMap<>();
@@ -170,18 +178,13 @@ public class CacheManagerPool extends ResourceManagerPool<SolrCache> {
     SolrMetricsContext metricsContext = component.getSolrMetricsContext();
     if (metricsContext != null) {
       Map<String, Object> metrics = metricsContext.getMetricsSnapshot();
-      String key = component.getCategory().toString() + "." + metricsContext.getScope() + "." + SolrCache.HIT_RATIO_PARAM;
-      values.put(SolrCache.HIT_RATIO_PARAM, metrics.get(key));
-      key = component.getCategory().toString() + "." + metricsContext.getScope() + "." + SolrCache.CUMULATIVE_PREFIX + SolrCache.HIT_RATIO_PARAM;
-      values.put(SolrCache.CUMULATIVE_PREFIX + SolrCache.HIT_RATIO_PARAM, metrics.get(key));
-      key = component.getCategory().toString() + "." + metricsContext.getScope() + "." + SolrCache.LOOKUPS_PARAM;
-      values.put(SolrCache.LOOKUPS_PARAM, metrics.get(key));
-      key = component.getCategory().toString() + "." + metricsContext.getScope() + "." + SolrCache.CUMULATIVE_PREFIX + SolrCache.LOOKUPS_PARAM;
-      values.put(SolrCache.CUMULATIVE_PREFIX + SolrCache.LOOKUPS_PARAM, metrics.get(key));
-      key = component.getCategory().toString() + "." + metricsContext.getScope() + "." + SolrCache.EVICTIONS_PARAM;
-      values.put(SolrCache.EVICTIONS_PARAM, metrics.get(key));
-      key = component.getCategory().toString() + "." + metricsContext.getScope() + "." + SolrCache.CUMULATIVE_PREFIX + SolrCache.EVICTIONS_PARAM;
-      values.put(SolrCache.CUMULATIVE_PREFIX + SolrCache.EVICTIONS_PARAM, metrics.get(key));
+      String keyPrefix = component.getCategory().toString() + "." + metricsContext.getScope() + ".";
+      for (String k : MONITORED_KEYS) {
+        String key = keyPrefix + k;
+        values.put(k, metrics.get(key));
+        key = keyPrefix + SolrCache.CUMULATIVE_PREFIX + k;
+        values.put(SolrCache.CUMULATIVE_PREFIX + k, metrics.get(key));
+      }
     }
     return values;
   }
@@ -250,7 +253,7 @@ public class CacheManagerPool extends ResourceManagerPool<SolrCache> {
     // expand the size of caches with too low hitRatio
     final AtomicReference<Double> newTotalValue = new AtomicReference<>(totalValue);
     components.forEach(component -> {
-      long currentLookups = ((Number)currentValues.get(component.getManagedComponentId().toString()).get(SolrCache.LOOKUPS_PARAM)).longValue();
+      long currentLookups = ((Number)currentValues.get(component.getManagedComponentId().toString()).get(SolrCache.CUMULATIVE_PREFIX + SolrCache.LOOKUPS_PARAM)).longValue();
       long lastLookups = lookups.computeIfAbsent(component.getManagedComponentId().toString(), k -> 0L);
       if (currentLookups < lastLookups + lookupDelta) {
         // too little data, skip the optimization
@@ -258,7 +261,17 @@ public class CacheManagerPool extends ResourceManagerPool<SolrCache> {
       }
       Map<String, Object> resourceLimits = getResourceLimits(component);
       double currentLimit = ((Number)resourceLimits.get(limitName)).doubleValue();
-      double currentHitRatio = ((Number)currentValues.get(component.getManagedComponentId().toString()).get(SolrCache.HIT_RATIO_PARAM)).doubleValue();
+
+      // calculate the hit ratio since the last adjustment.
+      // NOTE: we don't use the hitratio reported by the cache because it's either a cumulative total
+      // or a short-term value since the last commit. We want a value that represents the period since the
+      // last optimization
+      long currentHits = ((Number)currentValues.get(component.getManagedComponentId().toString()).get(SolrCache.CUMULATIVE_PREFIX + SolrCache.HITS_PARAM)).longValue();
+      long lastHits = hits.computeIfAbsent(component.getManagedComponentId().toString(), k -> 0L);
+      long currentHitsDelta = currentHits - lastHits;
+      long currentLookupsDelta = currentLookups - lastLookups;
+      double currentHitRatio = (double)currentHitsDelta / (double)currentLookupsDelta;
+
       Number initialLimit = (Number)initialComponentLimits.get(component.getManagedComponentId().toString()).get(limitName);
       if (initialLimit == null) {
         // can't optimize because we don't know how far off we are from the initial setting
@@ -287,10 +300,11 @@ public class CacheManagerPool extends ResourceManagerPool<SolrCache> {
         if (newLimit <= currentLimit) {
           return;
         }
-        lookups.put(component.getManagedComponentId().toString(), currentLookups);
         try {
           Number actualNewLimit = (Number)setResourceLimit(component, limitName, newLimit, ChangeListener.Reason.OPTIMIZATION);
           newTotalValue.getAndUpdate(v -> v - currentLimit + actualNewLimit.doubleValue());
+          lookups.put(component.getManagedComponentId().toString(), currentLookups);
+          hits.put(component.getManagedComponentId().toString(), currentHits);
         } catch (Exception e) {
           log.warn("Failed to set managed limit " + limitName +
               " from " + currentLimit + " to " + newLimit + " on " + component.getManagedComponentId(), e);
@@ -302,10 +316,11 @@ public class CacheManagerPool extends ResourceManagerPool<SolrCache> {
           // don't shrink ad infinitum
           return;
         }
-        lookups.put(component.getManagedComponentId().toString(), currentLookups);
         try {
           Number actualNewLimit = (Number)setResourceLimit(component, limitName, newLimit, ChangeListener.Reason.OPTIMIZATION);
           newTotalValue.getAndUpdate(v -> v - currentLimit + actualNewLimit.doubleValue());
+          lookups.put(component.getManagedComponentId().toString(), currentLookups);
+          hits.put(component.getManagedComponentId().toString(), currentHits);
         } catch (Exception e) {
           log.warn("Failed to set managed limit " + limitName +
               " from " + currentLimit + " to " + newLimit + " on " + component.getManagedComponentId(), e);
@@ -334,6 +349,10 @@ public class CacheManagerPool extends ResourceManagerPool<SolrCache> {
       double newLimit = currentLimit * changeRatio.get();
       try {
         setResourceLimit(component, limitName, newLimit, ChangeListener.Reason.ABOVE_TOTAL_LIMIT);
+        long currentLookups = ((Number)currentValues.get(component.getManagedComponentId().toString()).get(SolrCache.CUMULATIVE_PREFIX + SolrCache.LOOKUPS_PARAM)).longValue();
+        long currentHits = ((Number)currentValues.get(component.getManagedComponentId().toString()).get(SolrCache.CUMULATIVE_PREFIX + SolrCache.HITS_PARAM)).longValue();
+        lookups.put(component.getManagedComponentId().toString(), currentLookups);
+        hits.put(component.getManagedComponentId().toString(), currentHits);
       } catch (Exception e) {
         log.warn("Failed to set managed limit " + limitName +
             " from " + currentLimit + " to " + newLimit + " on " + component.getManagedComponentId(), e);
