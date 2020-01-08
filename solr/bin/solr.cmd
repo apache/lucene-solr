@@ -961,6 +961,10 @@ IF "%verbose%"=="1" (
 
 IF NOT "%SOLR_HOST%"=="" (
   set SOLR_HOST_ARG=-Dhost=%SOLR_HOST%
+) ELSE IF "%SOLR_JETTY_HOST%"=="" (
+  set "SOLR_HOST_ARG=-Dhost=localhost"
+) ELSE IF "%SOLR_JETTY_HOST%"=="127.0.0.1" (
+  set "SOLR_HOST_ARG=-Dhost=localhost"
 ) ELSE (
   set SOLR_HOST_ARG=
 )
