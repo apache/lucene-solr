@@ -101,6 +101,9 @@ public class ResourceManagerHandler extends RequestHandlerBase implements Permis
     }
     String poolAction = req.getParams().get(POOL_ACTION_PARAM);
     String resAction = req.getParams().get(RES_ACTION_PARAM);
+    if (poolAction != null && resAction != null) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Only one of " + POOL_ACTION_PARAM + " or " + RES_ACTION_PARAM + " can be specified: " + req.getParams());
+    }
     if (poolAction != null) {
       handlePoolRequest(req, rsp);
     } else if (resAction != null) {

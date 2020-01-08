@@ -40,6 +40,8 @@ public interface SolrCache<K,V> extends SolrInfoBean, ManagedComponent, Accounta
   String EVICTIONS_PARAM = "evictions";
   /** Number of lookups. */
   String LOOKUPS_PARAM = "lookups";
+  /** Prefix for cumulative stats. */
+  String CUMULATIVE_PREFIX = "cumulative_";
   /** Current cache size. */
   String SIZE_PARAM = "size";
   /** Maximum allowed size. */

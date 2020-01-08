@@ -697,7 +697,7 @@ public class CoreContainer {
       poolConfigs.putAll((Map<String, Object>)clusterProps.getOrDefault(DefaultResourceManager.POOL_CONFIGS_PARAM, Collections.emptyMap()));
     }
     try {
-      resourceManager = ResourceManager.load(loader, TimeSource.NANO_TIME, DefaultResourceManager.class,
+      resourceManager = ResourceManager.load(loader, metricManager, TimeSource.NANO_TIME, DefaultResourceManager.class,
           new PluginInfo("resourceManager", Collections.emptyMap()), resManConfig);
     } catch (Exception e) {
       log.warn("Resource manager initialization error - disabling!", e);
@@ -1046,7 +1046,11 @@ public class CoreContainer {
       }
 
       if (resourceManager != null) {
-        IOUtils.closeQuietly(resourceManager);
+        try {
+          resourceManager.close();
+        } catch (Exception e) {
+          log.debug("Error closing resource manager, ignoring", e);
+        }
       }
 
       try {
@@ -1958,6 +1962,10 @@ public class CoreContainer {
 
   public SolrResourceLoader getResourceLoader() {
     return loader;
+  }
+
+  public SolrMetricsContext getSolrMetricsContext() {
+    return solrMetricsContext;
   }
 
   public boolean isCoreLoading(String name) {

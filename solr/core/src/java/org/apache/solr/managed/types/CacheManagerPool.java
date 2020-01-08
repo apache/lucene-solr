@@ -166,13 +166,22 @@ public class CacheManagerPool extends ResourceManagerPool<SolrCache> {
     Map<String, Object> values = new HashMap<>();
     values.put(SolrCache.SIZE_PARAM, component.size());
     values.put(SolrCache.RAM_BYTES_USED_PARAM, component.ramBytesUsed());
+    // add also some useful stats for optimization
     SolrMetricsContext metricsContext = component.getSolrMetricsContext();
     if (metricsContext != null) {
       Map<String, Object> metrics = metricsContext.getMetricsSnapshot();
       String key = component.getCategory().toString() + "." + metricsContext.getScope() + "." + SolrCache.HIT_RATIO_PARAM;
       values.put(SolrCache.HIT_RATIO_PARAM, metrics.get(key));
+      key = component.getCategory().toString() + "." + metricsContext.getScope() + "." + SolrCache.CUMULATIVE_PREFIX + SolrCache.HIT_RATIO_PARAM;
+      values.put(SolrCache.CUMULATIVE_PREFIX + SolrCache.HIT_RATIO_PARAM, metrics.get(key));
       key = component.getCategory().toString() + "." + metricsContext.getScope() + "." + SolrCache.LOOKUPS_PARAM;
       values.put(SolrCache.LOOKUPS_PARAM, metrics.get(key));
+      key = component.getCategory().toString() + "." + metricsContext.getScope() + "." + SolrCache.CUMULATIVE_PREFIX + SolrCache.LOOKUPS_PARAM;
+      values.put(SolrCache.CUMULATIVE_PREFIX + SolrCache.LOOKUPS_PARAM, metrics.get(key));
+      key = component.getCategory().toString() + "." + metricsContext.getScope() + "." + SolrCache.EVICTIONS_PARAM;
+      values.put(SolrCache.EVICTIONS_PARAM, metrics.get(key));
+      key = component.getCategory().toString() + "." + metricsContext.getScope() + "." + SolrCache.CUMULATIVE_PREFIX + SolrCache.EVICTIONS_PARAM;
+      values.put(SolrCache.CUMULATIVE_PREFIX + SolrCache.EVICTIONS_PARAM, metrics.get(key));
     }
     return values;
   }
@@ -258,6 +267,11 @@ public class CacheManagerPool extends ResourceManagerPool<SolrCache> {
       if (currentHitRatio < targetHitRatio) {
         if (changeRatio.get() < 1.0) {
           // don't expand if we're already short on resources
+          return;
+        }
+        long currentEvictions = ((Number)currentValues.get(component.getManagedComponentId().toString()).get(SolrCache.EVICTIONS_PARAM)).longValue();
+        if (currentEvictions <= 0) {
+          // don't expand - there are no evictions yet so all items fit in the current size
           return;
         }
         // expand to increase the hitRatio, but not more than maxAdjustRatio from the initialLimit

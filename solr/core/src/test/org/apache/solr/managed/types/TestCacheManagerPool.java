@@ -39,7 +39,8 @@ public class TestCacheManagerPool extends SolrTestCaseJ4 {
   public void setupTest() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
     // disable automatic scheduling of pool runs
-    resourceManager = new DefaultResourceManager(h.getCore().getResourceLoader(), null);
+    resourceManager = new DefaultResourceManager(h.getCore().getResourceLoader(), h.getCoreContainer().getMetricManager(), null);
+    resourceManager.initializeMetrics(h.getCoreContainer().getSolrMetricsContext(), "test");
     resourceManager.init(null);
   }
 
@@ -237,6 +238,10 @@ public class TestCacheManagerPool extends SolrTestCaseJ4 {
 
   @After
   public void teardownTest() throws Exception {
+    log.info("Closing resource manager...");
     resourceManager.close();
+    log.info("-- closed");
+    resourceManager = null;
+    deleteCore();
   }
 }

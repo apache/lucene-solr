@@ -17,6 +17,7 @@
 
 package org.apache.solr.managed;
 
+import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
@@ -29,6 +30,9 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.slf4j.Logger;
@@ -39,7 +43,7 @@ import org.slf4j.LoggerFactory;
  * resource pools of a given type, each pool with its own defined resource limits. Components can be added
  * to a pool for the management of a specific aspect of that component.
  */
-public abstract class ResourceManager implements SolrCloseable, PluginInfoInitialized {
+public abstract class ResourceManager implements PluginInfoInitialized, SolrMetricProducer {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String RESOURCE_MANAGER_PARAM = "resourceManager";
@@ -48,6 +52,7 @@ public abstract class ResourceManager implements SolrCloseable, PluginInfoInitia
   public static final String POOL_PARAMS_PARAM = "poolParams";
 
   protected PluginInfo pluginInfo;
+  protected SolrMetricsContext metricsContext;
   protected boolean isClosed = false;
   protected boolean enabled = true;
   protected boolean initialized = false;
@@ -60,9 +65,9 @@ public abstract class ResourceManager implements SolrCloseable, PluginInfoInitia
    * @param pluginInfo resource manager plugin info
    * @param config resource manager and pool configurations
    */
-  public static ResourceManager load(SolrResourceLoader loader, TimeSource timeSource,
-                           Class<? extends ResourceManager> resourceManagerClass, PluginInfo pluginInfo,
-                           Map<String, Object> config) throws Exception {
+  public static ResourceManager load(SolrResourceLoader loader, SolrMetricManager metricManager, TimeSource timeSource,
+                                     Class<? extends ResourceManager> resourceManagerClass, PluginInfo pluginInfo,
+                                     Map<String, Object> config) throws Exception {
     Map<String, Object> managerOverrides = (Map<String, Object>)config.getOrDefault(RESOURCE_MANAGER_PARAM, Collections.emptyMap());
     if (!managerOverrides.isEmpty()) {
       Map<String, Object> pluginMap = new HashMap<>();
@@ -78,8 +83,9 @@ public abstract class ResourceManager implements SolrCloseable, PluginInfoInitia
         resourceManagerClass.getName(),
         resourceManagerClass,
         null,
-        new Class[]{SolrResourceLoader.class, TimeSource.class},
-        new Object[]{loader, timeSource});
+        new Class[]{SolrResourceLoader.class, SolrMetricManager.class, TimeSource.class},
+        new Object[]{loader, metricManager, timeSource});
+    resourceManager.initializeMetrics(new SolrMetricsContext(metricManager, "node", SolrMetricProducer.getUniqueMetricTag(loader, null)), null);
     resourceManager.init(pluginInfo);
     Map<String, Object> poolConfigs = (Map<String, Object>)config.get(POOL_CONFIGS_PARAM);
     if (poolConfigs != null) {
@@ -118,7 +124,11 @@ public abstract class ResourceManager implements SolrCloseable, PluginInfoInitia
       initialized = true;
     } catch (Exception e) {
       log.warn("Exception initializing resource manager " + getClass().getSimpleName() + ", disabling!");
-      IOUtils.closeQuietly(this);
+      try {
+        close();
+      } catch (Exception e1) {
+        log.warn("Exception closing resource manager " + getClass().getSimpleName(), e1);
+      }
     }
   }
 
@@ -138,6 +148,16 @@ public abstract class ResourceManager implements SolrCloseable, PluginInfoInitia
   }
 
   protected abstract void doInit() throws Exception;
+
+  @Override
+  public void initializeMetrics(SolrMetricsContext parentContext, String childScope) {
+    metricsContext = parentContext.getChildContext(this, "manager");
+  }
+
+  @Override
+  public SolrMetricsContext getSolrMetricsContext() {
+    return metricsContext;
+  }
 
   public void updatePoolConfigs(Map<String, Object> newPoolConfigs) throws Exception {
     if (newPoolConfigs == null || newPoolConfigs.isEmpty()) {
@@ -235,7 +255,7 @@ public abstract class ResourceManager implements SolrCloseable, PluginInfoInitia
   public abstract boolean unregisterComponent(String pool, String componentId);
 
   protected void ensureActive() {
-    if (isClosed()) {
+    if (isClosed) {
       throw new IllegalStateException("Already closed.");
     }
     if (!initialized) {
@@ -244,7 +264,10 @@ public abstract class ResourceManager implements SolrCloseable, PluginInfoInitia
   }
 
   @Override
-  public synchronized boolean isClosed() {
-    return isClosed;
+  public void close() throws Exception {
+    synchronized (this) {
+      isClosed = true;
+      SolrMetricProducer.super.close();
+    }
   }
 }

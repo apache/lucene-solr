@@ -12,6 +12,9 @@ import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -140,7 +143,9 @@ public class TestResourceManagerPool extends SolrTestCaseJ4 {
   @Before
   public void initManager() {
     loader = new SolrResourceLoader(TEST_PATH());
-    resourceManager = new DefaultResourceManager(loader, TimeSource.get("simTime:" + SPEED));
+    SolrMetricManager metricManager = new SolrMetricManager();
+    resourceManager = new DefaultResourceManager(loader, metricManager, TimeSource.get("simTime:" + SPEED));
+    resourceManager.initializeMetrics(new SolrMetricsContext(metricManager, "node", SolrMetricProducer.getUniqueMetricTag(loader, null)), null);
     Map<String, Object> initArgs = new HashMap<>();
     Map<String, Object> config = new HashMap<>();
     initArgs.put("plugins", config);
@@ -154,9 +159,9 @@ public class TestResourceManagerPool extends SolrTestCaseJ4 {
   }
 
   @After
-  public void destroyManager() {
+  public void destroyManager() throws Exception {
     if (resourceManager != null) {
-      IOUtils.closeQuietly(resourceManager);
+      resourceManager.close();
       resourceManager = null;
     }
   }

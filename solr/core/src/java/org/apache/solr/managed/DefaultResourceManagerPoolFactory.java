@@ -23,6 +23,8 @@ import java.util.Map;
 
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.managed.types.CacheManagerPool;
+import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.search.SolrCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -101,6 +103,7 @@ public class DefaultResourceManagerPoolFactory implements ResourceManagerPoolFac
         null,
         new Class[]{String.class, String.class, ResourceManager.class, Map.class, Map.class},
         new Object[]{name, type, resourceManager, poolLimits, poolParams});
+    resourceManagerPool.initializeMetrics(resourceManager.getSolrMetricsContext(), "pool");
     return resourceManagerPool;
   }
 

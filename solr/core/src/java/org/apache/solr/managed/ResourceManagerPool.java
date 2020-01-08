@@ -3,22 +3,26 @@ package org.apache.solr.managed;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.codahale.metrics.Timer;
+import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  *
  */
-public abstract class ResourceManagerPool<T extends ManagedComponent> implements Closeable {
+public abstract class ResourceManagerPool<T extends ManagedComponent> implements SolrInfoBean, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected final String name;
@@ -29,10 +33,12 @@ public abstract class ResourceManagerPool<T extends ManagedComponent> implements
   protected final Class<? extends ManagedComponent> componentClass;
   private final Map<String, Object> poolParams;
   protected final ResourcePoolContext poolContext = new ResourcePoolContext();
-  protected final List<ChangeListener> listeners = new ArrayList<>();
-  protected final ReentrantLock updateLock = new ReentrantLock();
+  protected final Set<ChangeListener> listeners = new CopyOnWriteArraySet<>();
+  protected final ReentrantLock manageLock = new ReentrantLock();
   protected int scheduleDelaySeconds;
   protected ScheduledFuture<?> scheduledFuture;
+  protected SolrMetricsContext solrMetricsContext;
+  protected Timer manageTimer;
 
   public ResourceManagerPool(String name, String type, ResourceManager resourceManager,
                                 Map<String, Object> poolLimits, Map<String, Object> poolParams) {
@@ -52,6 +58,25 @@ public abstract class ResourceManagerPool<T extends ManagedComponent> implements
   /** Pool type. */
   public String getType() {
     return type;
+  }
+
+  public Category getCategory() {
+    return Category.RESOURCE;
+  }
+
+  public String getDescription() {
+    return getName() + "/" + getType() + " (" + getClass().getSimpleName() + ")";
+  }
+
+  @Override
+  public void initializeMetrics(SolrMetricsContext parentContext, String childScope) {
+    solrMetricsContext = parentContext.getChildContext(this, childScope);
+    manageTimer = solrMetricsContext.timer("manageTimes", getCategory().toString(), getType(), getName());
+  }
+
+  @Override
+  public SolrMetricsContext getSolrMetricsContext() {
+    return solrMetricsContext;
   }
 
   public ResourceManager getResourceManager() {
@@ -90,9 +115,7 @@ public abstract class ResourceManagerPool<T extends ManagedComponent> implements
   }
 
   public void addChangeListener(ChangeListener listener) {
-    if (!listeners.contains(listener)) {
-      listeners.add(listener);
-    }
+    listeners.add(listener);
   }
 
   public void removeChangeListener(ChangeListener listener) {
@@ -105,21 +128,16 @@ public abstract class ResourceManagerPool<T extends ManagedComponent> implements
    * and param/value maps as values.
    */
   public Map<String, Map<String, Object>> getCurrentValues() throws InterruptedException {
-    updateLock.lockInterruptibly();
-    try {
-      // collect the current values
-      Map<String, Map<String, Object>> currentValues = new HashMap<>();
-      for (T managedComponent : components.values()) {
-        try {
-          currentValues.put(managedComponent.getManagedComponentId().toString(), getMonitoredValues(managedComponent));
-        } catch (Exception e) {
-          log.warn("Error getting managed values from " + managedComponent.getManagedComponentId(), e);
-        }
+    // collect the current values
+    Map<String, Map<String, Object>> currentValues = new HashMap<>();
+    for (T managedComponent : components.values()) {
+      try {
+        currentValues.put(managedComponent.getManagedComponentId().toString(), getMonitoredValues(managedComponent));
+      } catch (Exception e) {
+        log.warn("Error getting managed values from " + managedComponent.getManagedComponentId(), e);
       }
-      return Collections.unmodifiableMap(currentValues);
-    } finally {
-      updateLock.unlock();
     }
+    return Collections.unmodifiableMap(currentValues);
   }
 
   public abstract Map<String, Object> getMonitoredValues(T component) throws Exception;
@@ -193,13 +211,20 @@ public abstract class ResourceManagerPool<T extends ManagedComponent> implements
   }
 
   public void manage() {
-    updateLock.lock();
+    manageLock.lock();
+    Timer.Context ctx = manageTimer.time();
     try {
       doManage();
     } catch (Exception e) {
       log.warn("Exception caught managing pool " + getName(), e);
     } finally {
-      updateLock.unlock();
+      long time = ctx.stop();
+      long timeSec = TimeUnit.NANOSECONDS.toSeconds(time);
+      if (timeSec > scheduleDelaySeconds) {
+        log.warn("Execution of pool " + getName() + "/" + getType() + " took " + timeSec +
+            " seconds, which is longer than the schedule delay of " + scheduleDelaySeconds + " seconds!");
+      }
+      manageLock.unlock();
     }
   }
 
@@ -212,5 +237,6 @@ public abstract class ResourceManagerPool<T extends ManagedComponent> implements
     }
     components.clear();
     poolContext.clear();
+    listeners.clear();
   }
 }

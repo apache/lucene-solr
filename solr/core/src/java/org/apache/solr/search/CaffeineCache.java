@@ -381,11 +381,11 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
         map.put(MAX_SIZE_PARAM, getMaxSize());
 
         CacheStats cumulativeStats = priorStats.plus(stats);
-        map.put("cumulative_lookups", cumulativeStats.requestCount());
-        map.put("cumulative_hits", cumulativeStats.hitCount());
-        map.put("cumulative_hitratio", cumulativeStats.hitRate());
-        map.put("cumulative_inserts", priorInserts + insertCount);
-        map.put("cumulative_evictions", cumulativeStats.evictionCount());
+        map.put(CUMULATIVE_PREFIX + LOOKUPS_PARAM, cumulativeStats.requestCount());
+        map.put(CUMULATIVE_PREFIX + HITS_PARAM, cumulativeStats.hitCount());
+        map.put(CUMULATIVE_PREFIX + HIT_RATIO_PARAM, cumulativeStats.hitRate());
+        map.put(CUMULATIVE_PREFIX + INSERTS_PARAM, priorInserts + insertCount);
+        map.put(CUMULATIVE_PREFIX + EVICTIONS_PARAM, cumulativeStats.evictionCount());
       }
     });
     solrMetricsContext.gauge(cacheMap, true, null, getCategory().toString());

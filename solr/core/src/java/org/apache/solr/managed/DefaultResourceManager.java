@@ -34,6 +34,7 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.managed.types.CacheManagerPool;
+import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.slf4j.Logger;
@@ -84,16 +85,19 @@ public class DefaultResourceManager extends ResourceManager {
 
   protected ResourceManagerPoolFactory resourceManagerPoolFactory;
   protected SolrResourceLoader loader;
+  protected SolrMetricManager metricManager;
 
 
-  public DefaultResourceManager(SolrResourceLoader loader, TimeSource timeSource) {
+  public DefaultResourceManager(SolrResourceLoader loader, SolrMetricManager metricManager, TimeSource timeSource) {
     this.loader = loader;
     this.timeSource = timeSource;
+    this.metricManager = metricManager;
   }
 
   protected void doInit() throws Exception {
-    scheduledThreadPoolExecutor = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(maxNumPools,
+    scheduledThreadPoolExecutor = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(2,
         new DefaultSolrThreadFactory(getClass().getSimpleName()));
+    scheduledThreadPoolExecutor.setMaximumPoolSize(maxNumPools);
     scheduledThreadPoolExecutor.setRemoveOnCancelPolicy(true);
     scheduledThreadPoolExecutor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
     // TODO: make configurable based on plugin info
@@ -133,7 +137,13 @@ public class DefaultResourceManager extends ResourceManager {
     }
     ResourceManagerPool newPool = resourceManagerPoolFactory.create(name, type, this, poolLimits, args);
     newPool.scheduleDelaySeconds = Integer.parseInt(String.valueOf(args.getOrDefault(SCHEDULE_DELAY_SECONDS_PARAM, DEFAULT_SCHEDULE_DELAY_SECONDS)));
-    resourcePools.putIfAbsent(name, newPool);
+    ResourceManagerPool oldPool = resourcePools.putIfAbsent(name, newPool);
+    if (oldPool != null) {
+      // someone else already created it
+      IOUtils.closeQuietly(newPool);
+      throw new IllegalArgumentException("Pool '" + name + "' already exists.");
+    }
+    newPool.initializeMetrics(metricsContext, name);
     if (timeSource != null) {
       newPool.scheduledFuture = scheduledThreadPoolExecutor.scheduleWithFixedDelay(() -> {
             log.info("- running pool " + newPool.getName() + " / " + newPool.getType());
@@ -212,20 +222,20 @@ public class DefaultResourceManager extends ResourceManager {
   }
 
   @Override
-  public void close() throws IOException {
+  public void close() throws Exception {
+    super.close();
     synchronized (this) {
-      isClosed = true;
       log.debug("Closing all pools.");
       for (ResourceManagerPool pool : resourcePools.values()) {
         IOUtils.closeQuietly(pool);
       }
       resourcePools.clear();
     }
-    log.debug("Shutting down scheduled thread pool executor now");
+    log.info("Shutting down scheduled thread pool executor now");
     scheduledThreadPoolExecutor.shutdownNow();
-    log.debug("Awaiting termination of scheduled thread pool executor");
+    log.info("Awaiting termination of scheduled thread pool executor");
     ExecutorUtil.awaitTermination(scheduledThreadPoolExecutor);
-    log.debug("Closed.");
+    log.info("Closed.");
   }
 
 }

@@ -19,6 +19,8 @@ package org.apache.solr.managed;
 /**
  * Listen to changes in resource limit settings caused by resource management framework
  * (or by users via resource management API).
+ * <p>Note: implementations must provide unique and stable {@link #equals(Object)} / {@link #hashCode()} methods
+ * to avoid duplicates when registering.</p>
  */
 public interface ChangeListener {
 
