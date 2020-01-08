@@ -68,7 +68,6 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
   public static final String PROPERTIES_FILE = "init.properties.file";
 
   // System property names, these are _only_ loaded at node startup (no per-request control of these)
-  public static final String PARAMS_RESOURCE_LOADER_ENABLED = "params.resource.loader.enabled";
   public static final String SOLR_RESOURCE_LOADER_ENABLED = "solr.resource.loader.enabled";
 
   // request param names
@@ -84,8 +83,6 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
   public static final String JSON_CONTENT_TYPE = "application/json;charset=UTF-8";
 
   private File fileResourceLoaderBaseDir;
-  private boolean paramsResourceLoaderEnabled;
-  private boolean solrResourceLoaderEnabled;
   private String initPropertiesFileName;  // used just to hold from init() to inform()
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -110,14 +107,6 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
         }
       }
     }
-
-    // params resource loader: off by default
-    Boolean prle = Boolean.getBoolean(PARAMS_RESOURCE_LOADER_ENABLED);
-    paramsResourceLoaderEnabled = (null == prle ? false : prle);
-
-    // solr resource loader: off by default
-    Boolean srle = Boolean.getBoolean(SOLR_RESOURCE_LOADER_ENABLED);
-    solrResourceLoaderEnabled = (null == srle ? false : srle);
 
     initPropertiesFileName = (String) args.get(PROPERTIES_FILE);
 
@@ -233,25 +222,32 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
     resourceTool.configure(toolConfig);
     context.put("resource", resourceTool);
 
-/*
-    // Custom tools, specified in config as:
-        <queryResponseWriter name="velocityWithCustomTools" class="solr.VelocityResponseWriter">
-          <lst name="tools">
-            <str name="mytool">com.example.solr.velocity.MyTool</str>
-          </lst>
-        </queryResponseWriter>
-*/
-    // Custom tools can override any of the built-in tools provided above, by registering one with the same name
-    for(String name : customTools.keySet()) {
-      Object customTool = SolrCore.createInstance(customTools.get(name), Object.class, "VrW custom tool: " + name, request.getCore(), request.getCore().getResourceLoader());
-      if (customTool instanceof LocaleConfig) {
-        ((LocaleConfig)customTool).configure(toolConfig);
-      }
-      context.put(name, customTool);
-    }
+   if (request.getCore().getCoreDescriptor().isConfigSetTrusted()) {
+      // Load custom tools, only if in a trusted configset
 
-    // custom tools _cannot_ override context objects added below, like $request and $response
-    // TODO: at least log a warning when one of the *fixed* tools classes in name with a custom one, currently silently ignored
+      /*
+          // Custom tools, specified in config as:
+              <queryResponseWriter name="velocityWithCustomTools" class="solr.VelocityResponseWriter">
+                <lst name="tools">
+                  <str name="mytool">com.example.solr.velocity.MyTool</str>
+                </lst>
+              </queryResponseWriter>
+      */
+      // Custom tools can override any of the built-in tools provided above, by registering one with the same name
+      if (request.getCore().getCoreDescriptor().isConfigSetTrusted()) {
+        for (Map.Entry<String, String> entry : customTools.entrySet()) {
+          String name = entry.getKey();
+          // TODO: at least log a warning when one of the *fixed* tools classes is same name with a custom one, currently silently ignored
+          Object customTool = SolrCore.createInstance(entry.getValue(), Object.class, "VrW custom tool: " + name, request.getCore(), request.getCore().getResourceLoader());
+          if (customTool instanceof LocaleConfig) {
+            ((LocaleConfig) customTool).configure(toolConfig);
+          }
+          context.put(name, customTool);
+        }
+      }
+
+      // custom tools _cannot_ override context objects added below, like $request and $response
+    }
 
 
     // Turn the SolrQueryResponse into a SolrResponse.
@@ -285,15 +281,10 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
   }
 
   private VelocityEngine createEngine(SolrQueryRequest request) {
+    boolean trustedMode = request.getCore().getCoreDescriptor().isConfigSetTrusted();
+	
+	
     VelocityEngine engine = new VelocityEngine();
-
-    // route all Velocity logging through Solr's logging facility
-    engine.setProperty(RuntimeConstants.RUNTIME_LOG_LOGSYSTEM, velocityLogger);
-
-    // Set some engine properties that improve the experience
-    //   - these could be considered in the future for parameterization, but can also be overridden by using
-    //     the init.properties.file setting.  (TODO: add a test for this properties set here overridden)
-
     // load the built-in _macros.vm first, then load VM_global_library.vm for legacy (pre-5.0) support,
     // and finally allow macros.vm to have the final say and override anything defined in the preceding files.
     engine.setProperty(RuntimeConstants.VM_LIBRARY, "_macros.vm,VM_global_library.vm,macros.vm");
@@ -308,25 +299,25 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
        and there are Velocity template resource loaders.  It's confusing, they overlap: there is a Velocity resource
        loader that loads templates from Solr's resource loader (SolrVelocityResourceLoader).
 
-      The Velocity resource loader order is [params,][file,][solr], intentionally ordered in this manner, and each
-      one optional and individually enable-able.  By default, only "solr" (resource loader) is used, parsing templates
-      from a velocity/ sub-tree in either the classpath or under conf/.
+      The Velocity resource loader order is `[file,][solr],builtin` intentionally ordered in this manner.
+      The "file" resource loader, enabled when the configset is trusted and `template.base.dir` is specified as a
+      response writer init property.
+	  
+      The "solr" resource loader, enabled when the configset is trusted, and provides templates from a velocity/
+      sub-tree in either the classpath or under conf/.
 
-      A common usage would be to enable the file template loader, keeping the solr loader enabled; the Velocity resource
-      loader path would then be "file,solr" (params is disabled by default).  The basic browse templates are built into
+      By default, only "builtin" resource loader is enabled, providing tenplates from builtin Solr .jar files.
+
+	  The basic browse templates are built into
       this plugin, but can be individually overridden by placing a same-named template in the template.base.dir specified
-      directory.
+      directory, or within a trusted configset's velocity/ directory.
      */
     ArrayList<String> loaders = new ArrayList<String>();
-    if (paramsResourceLoaderEnabled) {
-      loaders.add("params");
-      engine.setProperty("params.resource.loader.instance", new SolrParamResourceLoader(request));
-    }
-    if (fileResourceLoaderBaseDir != null) {
+    if ((fileResourceLoaderBaseDir != null) && trustedMode) {
       loaders.add("file");
       engine.setProperty(RuntimeConstants.FILE_RESOURCE_LOADER_PATH, fileResourceLoaderBaseDir.getAbsolutePath());
     }
-    if (solrResourceLoaderEnabled) {
+    if (trustedMode) {
       // The solr resource loader serves templates under a velocity/ subtree from <lib>, conf/,
       // or SolrCloud's configuration tree.  Or rather the other way around, other resource loaders are rooted
       // from the top, whereas this is velocity/ sub-tree rooted.
@@ -343,6 +334,25 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
     engine.setProperty(RuntimeConstants.RESOURCE_LOADER, StringUtils.join(loaders,','));
 
     engine.setProperty(RuntimeConstants.INPUT_ENCODING, "UTF-8");
+	
+	// install a class/package restricting uberspector
+    engine.setProperty(RuntimeConstants.UBERSPECT_CLASSNAME,"org.apache.velocity.util.introspection.SecureUberspector");
+    engine.addProperty(RuntimeConstants.INTROSPECTOR_RESTRICT_PACKAGES,"java.lang.reflect");
+    engine.addProperty(RuntimeConstants.INTROSPECTOR_RESTRICT_CLASSES,"java.lang.Class");
+    engine.addProperty(RuntimeConstants.INTROSPECTOR_RESTRICT_CLASSES,"java.lang.ClassLoader");
+    engine.addProperty(RuntimeConstants.INTROSPECTOR_RESTRICT_CLASSES,"java.lang.Compiler");
+    engine.addProperty(RuntimeConstants.INTROSPECTOR_RESTRICT_CLASSES,"java.lang.InheritableThreadLocal");
+    engine.addProperty(RuntimeConstants.INTROSPECTOR_RESTRICT_CLASSES,"java.lang.Package");
+    engine.addProperty(RuntimeConstants.INTROSPECTOR_RESTRICT_CLASSES,"java.lang.Process");
+    engine.addProperty(RuntimeConstants.INTROSPECTOR_RESTRICT_CLASSES,"java.lang.Runtime");
+    engine.addProperty(RuntimeConstants.INTROSPECTOR_RESTRICT_CLASSES,"java.lang.RuntimePermission");
+    engine.addProperty(RuntimeConstants.INTROSPECTOR_RESTRICT_CLASSES,"java.lang.SecurityManager");
+    engine.addProperty(RuntimeConstants.INTROSPECTOR_RESTRICT_CLASSES,"java.lang.System");
+    engine.addProperty(RuntimeConstants.INTROSPECTOR_RESTRICT_CLASSES,"java.lang.Thread");
+    engine.addProperty(RuntimeConstants.INTROSPECTOR_RESTRICT_CLASSES,"java.lang.ThreadGroup");
+    engine.addProperty(RuntimeConstants.INTROSPECTOR_RESTRICT_CLASSES,"java.lang.ThreadLocal");
+    engine.addProperty(RuntimeConstants.INTROSPECTOR_RESTRICT_CLASSES,"org.apache.solr.core.SolrResourceLoader");
+    engine.addProperty(RuntimeConstants.INTROSPECTOR_RESTRICT_CLASSES,"org.apache.solr.core.CoreContainer");
 
     // bring in any custom properties too
     engine.init(velocityInitProps);
