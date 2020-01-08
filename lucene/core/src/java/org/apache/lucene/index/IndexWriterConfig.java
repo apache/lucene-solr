@@ -488,9 +488,8 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
   }
 
   /**
-   * Expert: sets the amount of time to wait for merges returned by by MergePolicy.findCommitMerges(...).
-   * If this time is reached, those merges will be aborted and we will wait again. If this time limit is reached again,
-   * we will abort the commit.
+   * Expert: sets the amount of time to wait for merges returned by MergePolicy.findCommitMerges(...).
+   * If this time is reached, we proceed with the commit based on segments merged up to that point.
    */
   public IndexWriterConfig setMaxCommitMergeWaitSeconds(double maxCommitMergeWaitSeconds) {
     this.maxCommitMergeWaitSeconds = maxCommitMergeWaitSeconds;
