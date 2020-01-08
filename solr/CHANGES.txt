@@ -45,6 +45,9 @@ Bug fixes
   the number of replicas. This avoids making too many cascading calls to remote servers, which, if not restricted, can
   bring down nodes containing the said collection (Kesharee Nandan Vishwakarma, Ishan Chattopadhyaya)
 
+* SOLR-13971: Velocity response writer's resource loading now possible only through startup parameters. Also, removed velocity 
+  response writer from _default configset. (Ishan Chattopadhyaya, Sachin Pattan)
+
 ==================  7.7.2 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

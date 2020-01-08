@@ -27,8 +27,6 @@ Its JAR and dependencies must be added (via `<lib>` or solr/home lib inclusion),
 
 <!--
   <str name="init.properties.file">velocity-init.properties</str>
-  <bool name="params.resource.loader.enabled">true</bool>
-  <bool name="solr.resource.loader.enabled">false</bool>
   <lst name="tools">
     <str name="mytool">com.example.MyCustomTool</str>
   </lst>
@@ -36,16 +34,11 @@ Its JAR and dependencies must be added (via `<lib>` or solr/home lib inclusion),
 </queryResponseWriter>
 ----
 
-The above example shows the optional initialization and custom tool parameters used by VelocityResponseWriter; these are detailed in the following table. These initialization parameters are only specified in the writer registration in `solrconfig.xml`, not as request-time parameters. See further below for request-time parameters.
+The above example shows the optional initialization and custom tool parameters used by VelocityResponseWriter; these are detailed in the following table. These initialization parameters are only specified in the writer registration in `solrconfig.xml`, not as request-time parameters. In this example, all Solr nodes should be started with `-Dparams.resource.loader.enabled=true`. See further below for request-time parameters.
 
 == Configuration & Usage
 
-=== VelocityResponseWriter Initialization Parameters
-
-`template.base.dir`::
-If specified and exists as a file system directory, a file resource loader will be added for this directory. Templates in this directory will override "solr" resource loader templates.
-
-`init.properties.file`:: Specifies a properties file name which must exist in the Solr `conf/` directory (*not* under a `velocity/` subdirectory) or root of a JAR file in a <lib>.
+=== VelocityResponseWriter Startup Parameters
 
 `params.resource.loader.enabled`::
 The "params" resource loader allows templates to be specified in Solr request parameters. For example:
@@ -57,6 +50,13 @@ where `v.template=custom` says to render a template called "custom" and the valu
 
 `solr.resource.loader.enabled`::
 The "solr" resource loader is the only template loader registered by default. Templates are served from resources visible to the SolrResourceLoader under a `velocity/` subdirectory. The VelocityResponseWriter itself has some built-in templates (in its JAR file, under `velocity/`) that are available automatically through this loader. These built-in templates can be overridden when the same template name is in conf/velocity/ or by using the `template.base.dir` option.
+
+=== VelocityResponseWriter Initialization Parameters
+
+`template.base.dir`::
+If specified and exists as a file system directory, a file resource loader will be added for this directory. Templates in this directory will override "solr" resource loader templates.
+
+`init.properties.file`:: Specifies a properties file name which must exist in the Solr `conf/` directory (*not* under a `velocity/` subdirectory) or root of a JAR file in a <lib>.
 
 `tools`::
 External "tools" can be specified as list of string name/value (tool name / class name) pairs. Tools, in the Velocity context, are simply Java objects. Tool classes are constructed using a no-arg constructor (or a single-SolrCore-arg constructor if it exists) and added to the Velocity context with the specified name.
