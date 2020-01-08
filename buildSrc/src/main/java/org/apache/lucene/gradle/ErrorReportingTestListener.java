@@ -50,11 +50,13 @@ public class ErrorReportingTestListener implements TestOutputListener, TestListe
    private final Map<TestKey, OutputHandler> outputHandlers = new ConcurrentHashMap<>();
    private final Path spillDir;
    private final Path outputsDir;
+   private final boolean verboseMode;
 
-   public ErrorReportingTestListener(TestLogging testLogging, Path spillDir, Path outputsDir) {
+   public ErrorReportingTestListener(TestLogging testLogging, Path spillDir, Path outputsDir, boolean verboseMode) {
       this.formatter = new FullExceptionFormatter(testLogging);
       this.spillDir = spillDir;
       this.outputsDir = outputsDir;
+      this.verboseMode = verboseMode;
    }
 
    @Override
@@ -91,7 +93,7 @@ public class ErrorReportingTestListener implements TestOutputListener, TestListe
          }
 
          boolean echoOutput = Objects.equals(result.getResultType(), TestResult.ResultType.FAILURE);
-         boolean dumpOutput = echoOutput; // Force output dumping.
+         boolean dumpOutput = echoOutput;
 
          // If the test suite failed, report output.
          if (dumpOutput || echoOutput) {
@@ -105,7 +107,7 @@ public class ErrorReportingTestListener implements TestOutputListener, TestListe
                }
             }
 
-            if (echoOutput) {
+            if (echoOutput && !verboseMode) {
                synchronized (this) {
                   System.out.println("");
                   System.out.println(suite.getClassName() + " > test suite's output saved to " + outputLog + ", copied below:");
@@ -219,9 +221,14 @@ public class ErrorReportingTestListener implements TestOutputListener, TestListe
             }
          });
 
-         sint = new PrefixedWriter("   > ", buffer, MAX_LINE_WIDTH);
-         sout = new PrefixedWriter("  1> ", buffer, MAX_LINE_WIDTH);
-         serr = new PrefixedWriter("  2> ", buffer, MAX_LINE_WIDTH);
+         Writer sink = buffer;
+         if (verboseMode) {
+            sink = new StdOutTeeWriter(buffer);
+         }
+
+         sint = new PrefixedWriter("   > ", sink, MAX_LINE_WIDTH);
+         sout = new PrefixedWriter("  1> ", sink, MAX_LINE_WIDTH);
+         serr = new PrefixedWriter("  2> ", sink, MAX_LINE_WIDTH);
          last = sint;
       }
 

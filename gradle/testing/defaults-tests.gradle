@@ -76,38 +76,25 @@ allprojects {
       reports.html.enabled = false
 
       // Set up logging.
-      if (verboseMode) {
-        testLogging {
-          events TestLogEvent.FAILED
-          exceptionFormat TestExceptionFormat.FULL
-          showExceptions true
-          showCauses true
-          showStackTraces true
-          showStandardStreams = false
-        }
-        onOutput { td, event ->
-          print event.message
-        }
-      } else {
-        testLogging {
-          events TestLogEvent.FAILED
-          exceptionFormat TestExceptionFormat.FULL
-          showExceptions true
-          showCauses true
-          showStackTraces true
-        }
-
-        // Set up custom test output handler.
-        def testOutputsDir = file("${reports.junitXml.destination}/outputs")
-        doFirst {
-          project.delete testOutputsDir
-        }
-
-        def spillDir = getTemporaryDir().toPath()
-        def listener = new ErrorReportingTestListener(test.testLogging, spillDir, testOutputsDir.toPath())
-        addTestOutputListener(listener)
-        addTestListener(listener)
+      testLogging {
+        events TestLogEvent.FAILED
+        exceptionFormat TestExceptionFormat.FULL
+        showExceptions true
+        showCauses true
+        showStackTraces true
+        showStandardStreams false
       }
+
+      // Set up custom test output handler.
+      def testOutputsDir = file("${reports.junitXml.destination}/outputs")
+      doFirst {
+        project.delete testOutputsDir
+      }
+
+      def spillDir = getTemporaryDir().toPath()
+      def listener = new ErrorReportingTestListener(test.testLogging, spillDir, testOutputsDir.toPath(), verboseMode)
+      addTestOutputListener(listener)
+      addTestListener(listener)
 
       doFirst {
         // Print some diagnostics about locations used.
