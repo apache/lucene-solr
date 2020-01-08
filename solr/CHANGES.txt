@@ -188,9 +188,9 @@ Improvements
   Regardless of the settings, the passages may be sized differently than before. (Nándor Mátravölgyi, David Smiley)
 
 * SOLR-13890: Add "top-level" DV implementation for {!terms} queries.  This approach tends to be more efficient for
-  queries withvery large numbers of terms.  The new implementation is used by default for method=docValuesTermsFilter
-  terms queries that are searching 500 or more terms.  Users wishing to ignore this heuristic can choose their
-  implementation explicitly by setting a "submethod" value of either "toplevel" or "persegment".
+  queries with very large numbers of terms.  The new implementation is used by default for method=docValuesTermsFilter
+  terms queries that are searching 500 or more terms.  Users wishing to ignore this heuristic can choose the
+  docValuesTermsFilterTopLevel or docValuesTermsFilterPerSegment methods directly.
 
 Optimizations
 ---------------------

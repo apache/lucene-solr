@@ -74,27 +74,21 @@ public class TestTermsQParserPlugin extends SolrTestCaseJ4 {
 
   class TermsParams {
     public String method;
-    public String submethod;
     public boolean cache;
 
     public TermsParams(String method, boolean cache) {
-      this(method, null, cache);
-    }
-
-    public TermsParams(String method, String submethod, boolean cache) {
       this.method = method;
-      this.submethod = submethod;
       this.cache = cache;
     }
 
+
     public String buildQuery(String fieldName, String commaDelimitedTerms) {
-      final String submethodString = (submethod != null) ? " submethod=" + submethod : "";
-      return "{!terms f=" + fieldName + " method=" + method + submethodString + " cache=" + cache + "}" + commaDelimitedTerms;
+      return "{!terms f=" + fieldName + " method=" + method + " cache=" + cache + "}" + commaDelimitedTerms;
     }
   }
 
   @Test
-  public void testTermsMethodAndSubmethodEquivalency() {
+  public void testTermsMethodEquivalency() {
     // Run queries with a variety of 'method' and postfilter options.
     final TermsParams[] methods = new TermsParams[] {
         new TermsParams("termsFilter", true),
@@ -103,10 +97,12 @@ public class TestTermsQParserPlugin extends SolrTestCaseJ4 {
         new TermsParams("booleanQuery", false),
         new TermsParams("automaton", true),
         new TermsParams("automaton", false),
-        new TermsParams("docValuesTermsFilter", "toplevel", true),
-        new TermsParams("docValuesTermsFilter", "toplevel", false),
-        new TermsParams("docValuesTermsFilter", "persegment", true),
-        new TermsParams("docValuesTermsFilter", "persegment", false)
+        new TermsParams("docValuesTermsFilter", true),
+        new TermsParams("docValuesTermsFilter", false),
+        new TermsParams("docValuesTermsFilterTopLevel", true),
+        new TermsParams("docValuesTermsFilterTopLevel", false),
+        new TermsParams("docValuesTermsFilterPerSegment", true),
+        new TermsParams("docValuesTermsFilterPerSegment", false)
     };
 
     for (TermsParams method : methods) {

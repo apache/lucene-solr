@@ -19,7 +19,6 @@ package org.apache.solr.search;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
@@ -43,8 +42,6 @@ import org.apache.solr.schema.PointField;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
-
 /**
  * Finds documents whose specified field has any of the specified values. It's like
  * {@link TermQParserPlugin} but multi-valued, and supports a variety of internal algorithms.
@@ -65,20 +62,17 @@ public class TermsQParserPlugin extends QParserPlugin {
 
   /** Choose the internal algorithm */
   private static final String METHOD = "method";
-  private static final String SUBMETHOD = "submethod";
-  private static final String TOPLEVEL_SUBMETHOD = "toplevel";
-  private static final String PERSEGMENT_SUBMETHOD = "persegment";
 
   private static enum Method {
     termsFilter {
       @Override
-      Query makeFilter(String fname, BytesRef[] bytesRefs, SolrParams localParams) {
+      Query makeFilter(String fname, BytesRef[] bytesRefs) {
         return new TermInSetQuery(fname, bytesRefs);// constant scores
       }
     },
     booleanQuery {
       @Override
-      Query makeFilter(String fname, BytesRef[] byteRefs, SolrParams localParams) {
+      Query makeFilter(String fname, BytesRef[] byteRefs) {
         BooleanQuery.Builder bq = new BooleanQuery.Builder();
         for (BytesRef byteRef : byteRefs) {
           bq.add(new TermQuery(new Term(fname, byteRef)), BooleanClause.Occur.SHOULD);
@@ -88,7 +82,7 @@ public class TermsQParserPlugin extends QParserPlugin {
     },
     automaton {
       @Override
-      Query makeFilter(String fname, BytesRef[] byteRefs, SolrParams localParams) {
+      Query makeFilter(String fname, BytesRef[] byteRefs) {
         ArrayUtil.timSort(byteRefs); // same sort algo as TermInSetQuery's choice
         Automaton union = Automata.makeStringUnion(Arrays.asList(byteRefs)); // input must be sorted
         return new AutomatonQuery(new Term(fname), union);//constant scores
@@ -96,26 +90,25 @@ public class TermsQParserPlugin extends QParserPlugin {
     },
     docValuesTermsFilter {//on 4x this is FieldCacheTermsFilter but we use the 5x name any way
       @Override
-      Query makeFilter(String fname, BytesRef[] byteRefs, SolrParams localParams) {
-        final String type = localParams.get(SUBMETHOD);
-
-        if (type == null) {
-          // TODO Further tune this heuristic number
-          return (byteRefs.length > 700) ? new TopLevelDocValuesTermsQuery(fname, byteRefs) : new DocValuesTermsQuery(fname, byteRefs);
-        }
-
-        if (!(TOPLEVEL_SUBMETHOD.equals(type) || PERSEGMENT_SUBMETHOD.equals(type))) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid terms 'submethod' specified; only 'toplevel' and 'persegment' supported");
-        }
-
-        if (TOPLEVEL_SUBMETHOD.equals(type)) {
-          return new TopLevelDocValuesTermsQuery(fname, byteRefs);
-        }
+      Query makeFilter(String fname, BytesRef[] byteRefs) {
+        // TODO Further tune this heuristic number
+        return (byteRefs.length > 700) ? new TopLevelDocValuesTermsQuery(fname, byteRefs) : new DocValuesTermsQuery(fname, byteRefs);
+      }
+    },
+    docValuesTermsFilterTopLevel {
+      @Override
+      Query makeFilter(String fname, BytesRef[] byteRefs) {
+        return new TopLevelDocValuesTermsQuery(fname, byteRefs);
+      }
+    },
+    docValuesTermsFilterPerSegment {
+      @Override
+      Query makeFilter(String fname, BytesRef[] byteRefs) {
         return new DocValuesTermsQuery(fname, byteRefs);
       }
     };
 
-    abstract Query makeFilter(String fname, BytesRef[] byteRefs, SolrParams localParams);
+    abstract Query makeFilter(String fname, BytesRef[] byteRefs);
   }
 
   @Override
@@ -124,10 +117,7 @@ public class TermsQParserPlugin extends QParserPlugin {
       @Override
       public Query parse() throws SyntaxError {
         String fname = localParams.get(QueryParsing.F);
-        FieldType ft = req.getSchema().getFieldTypeNoEx(fname);
-        if (ft == null) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Field name [" + fname + "] does not exist");
-        }
+        FieldType ft = req.getSchema().getFieldType(fname);
         String separator = localParams.get(SEPARATOR, ",");
         String qstr = localParams.get(QueryParsing.V);//never null
         Method method = Method.valueOf(localParams.get(METHOD, Method.termsFilter.name()));
@@ -164,26 +154,15 @@ public class TermsQParserPlugin extends QParserPlugin {
           bytesRefs[i] = term.toBytesRef();
         }
 
-        return method.makeFilter(fname, bytesRefs, localParams);
+        return method.makeFilter(fname, bytesRefs);
       }
     };
   }
 
-  private static abstract class TopLevelTwoPhaseIterator extends TwoPhaseIterator {
-    private final int docBase;
-    private final int nextDocBase;
-    public TopLevelTwoPhaseIterator(DocIdSetIterator approximation, int docBase, int nextDocBase) {
-      super(new PerSegmentViewDocIdSetIterator(approximation, docBase, nextDocBase));
-
-      this.docBase = docBase;
-      this.nextDocBase = nextDocBase;
-    }
-  }
-
   private static class TopLevelDocValuesTermsQuery extends DocValuesTermsQuery implements ExtendedQuery{
     private final String fieldName;
-    private SortedSetDocValues values;
-    private LongBitSet queryTermOrdinals;
+    private SortedSetDocValues topLevelDocValues;
+    private LongBitSet topLevelTermOrdinals;
     private boolean matchesAtLeastOneTerm = false;
     private boolean cache = true;
     private boolean cacheSeparately = false;
@@ -196,34 +175,33 @@ public class TermsQParserPlugin extends QParserPlugin {
     }
 
     public Weight createWeight(IndexSearcher searcher, final ScoreMode scoreMode, float boost) throws IOException {
-      values = DocValues.getSortedSet(((SolrIndexSearcher)searcher).getSlowAtomicReader(), fieldName);
-      queryTermOrdinals = new LongBitSet(values.getValueCount());
+      topLevelDocValues = DocValues.getSortedSet(((SolrIndexSearcher)searcher).getSlowAtomicReader(), fieldName);
+      topLevelTermOrdinals = new LongBitSet(topLevelDocValues.getValueCount());
       PrefixCodedTerms.TermIterator iterator = getTerms().iterator();
 
-      long lastOrdFound = 0;
+      long lastTermOrdFound = 0;
       for(BytesRef term = iterator.next(); term != null; term = iterator.next()) {
-        long ord = lookupTerm(values, term, lastOrdFound);
-        if (ord >= 0L) {
+        long currentTermOrd = lookupTerm(topLevelDocValues, term, lastTermOrdFound);
+        if (currentTermOrd >= 0L) {
           matchesAtLeastOneTerm = true;
-          queryTermOrdinals.set(ord);
-          lastOrdFound = ord;
+          topLevelTermOrdinals.set(currentTermOrd);
+          lastTermOrdFound = currentTermOrd;
         }
       }
 
       return new ConstantScoreWeight(this, boost) {
         public Scorer scorer(LeafReaderContext context) throws IOException {
-          if (!matchesAtLeastOneTerm) {
+          SortedSetDocValues segmentDocValues = context.reader().getSortedSetDocValues(fieldName);
+          if (segmentDocValues == null) {
             return null;
           }
 
           final int docBase = context.docBase;
-          final List<LeafReaderContext> allLeaves = context.parent.leaves();
-          final int nextDocBase = (allLeaves.size() == context.ord + 1) ? NO_MORE_DOCS:
-              context.parent.leaves().get(context.ord + 1).docBase;
-          return new ConstantScoreScorer(this, this.score(), scoreMode, new TopLevelTwoPhaseIterator(values, docBase, nextDocBase) {
+          return new ConstantScoreScorer(this, this.score(), scoreMode, new TwoPhaseIterator(segmentDocValues) {
             public boolean matches() throws IOException {
-              for(long ord = values.nextOrd(); ord != -1L; ord = values.nextOrd()) {
-                if (queryTermOrdinals.get(ord)) {
+              topLevelDocValues.advanceExact(docBase + approximation.docID());
+              for(long ord = topLevelDocValues.nextOrd(); ord != -1L; ord = topLevelDocValues.nextOrd()) {
+                if (topLevelTermOrdinals.get(ord)) {
                   return true;
                 }
               }
