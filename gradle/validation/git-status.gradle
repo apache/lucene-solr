@@ -49,7 +49,4 @@ configure(rootProject) {
       }
     }
   }
-
-  // Attach to precommit.
-  precommit.dependsOn checkWorkingCopyPristine
 }

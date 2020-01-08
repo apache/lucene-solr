@@ -14,6 +14,4 @@ configure(rootProject) {
       }
     }
   }
-
-  precommit.dependsOn versionsPropsAreSorted
 }

@@ -1,12 +1,23 @@
 // This adds top-level 'precommit' task.
-// Validation tasks attach themselves to it in their own
-// respective build scripts.
 
 configure(rootProject) {
   task precommit() {
     group = 'Precommit'
     description = "All precommit checks"
 
+    // Root-level dependencies.
     dependsOn verifyLocks
+    dependsOn ":versionsPropsAreSorted"
+    dependsOn ":checkWorkingCopyPristine"
+
+    // Attach tasks from other projects using lazy collection
+    // as they may not yet be defined.
+    dependsOn allprojects.collect { prj ->
+      prj.tasks.matching { task -> task.name in [
+          "forbiddenApisMain",
+          "forbiddenApisTest",
+          "licenses",
+      ]}
+    }
   }
 }

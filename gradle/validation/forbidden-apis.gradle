@@ -64,9 +64,8 @@ allprojects { prj ->
       ]
     }
 
-    // Attach validation to check and precommit tasks.
+    // Attach validation to check task.
     check.dependsOn forbiddenApisMain, forbiddenApisTest
-    precommit.dependsOn forbiddenApisMain, forbiddenApisTest
 
     // Disable sysout signatures for these projects.
     if (prj.path in [
