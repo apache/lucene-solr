@@ -29,7 +29,7 @@ ant jar-checksums   => gradlew updateLicenses
 ant check-licenses  => gradlew licenses     [better: gradlew check -x test]
 ant clean-jars      => (NO REPLACEMENT)
 
-ant precommit       => gradlew check -x test
+ant precommit       => gradlew precommit 
 
 ant get-maven-poms  => gradlew mavenLocal
 
