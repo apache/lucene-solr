@@ -348,7 +348,8 @@ public class CacheManagerPool extends ResourceManagerPool<SolrCache> {
       double currentLimit = ((Number)resourceLimits.get(limitName)).doubleValue();
       double newLimit = currentLimit * changeRatio.get();
       try {
-        setResourceLimit(component, limitName, newLimit, ChangeListener.Reason.ABOVE_TOTAL_LIMIT);
+        Number actualNewLimit = (Number) setResourceLimit(component, limitName, newLimit, ChangeListener.Reason.ABOVE_TOTAL_LIMIT);
+        newTotalValue.getAndUpdate(v -> v - currentLimit + actualNewLimit.doubleValue());
         long currentLookups = ((Number)currentValues.get(component.getManagedComponentId().toString()).get(SolrCache.CUMULATIVE_PREFIX + SolrCache.LOOKUPS_PARAM)).longValue();
         long currentHits = ((Number)currentValues.get(component.getManagedComponentId().toString()).get(SolrCache.CUMULATIVE_PREFIX + SolrCache.HITS_PARAM)).longValue();
         lookups.put(component.getManagedComponentId().toString(), currentLookups);
@@ -358,5 +359,10 @@ public class CacheManagerPool extends ResourceManagerPool<SolrCache> {
             " from " + currentLimit + " to " + newLimit + " on " + component.getManagedComponentId(), e);
       }
     });
+    // check that the adjustments were overall successful
+    if (poolLimitValue < newTotalValue.get()) {
+      log.warn("Pool {} / {}: unable to force the total {} resource usage {} to fit the total pool limit of {} !",
+          getName(), getType(), limitName, newTotalValue.get(), poolLimitValue);
+    }
   }
 }
