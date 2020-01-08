@@ -175,6 +175,11 @@ public class TermsQParserPlugin extends QParserPlugin {
     }
 
     public Weight createWeight(IndexSearcher searcher, final ScoreMode scoreMode, float boost) throws IOException {
+      if (! (searcher instanceof SolrIndexSearcher)) {
+        log.debug("Falling back to DocValuesTermsQuery because searcher [{}] is not the required SolrIndexSearcher", searcher);
+        return super.createWeight(searcher, scoreMode, boost);
+      }
+
       topLevelDocValues = DocValues.getSortedSet(((SolrIndexSearcher)searcher).getSlowAtomicReader(), fieldName);
       topLevelTermOrdinals = new LongBitSet(topLevelDocValues.getValueCount());
       PrefixCodedTerms.TermIterator iterator = getTerms().iterator();
