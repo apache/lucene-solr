@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
@@ -124,6 +125,7 @@ public class CacheManagerPool extends ResourceManagerPool<SolrCache> {
   @Override
   public boolean unregisterComponent(String componentId) {
     lookups.remove(componentId);
+    hits.remove(componentId);
     initialComponentLimits.remove(componentId);
     return super.unregisterComponent(componentId);
   }
@@ -245,6 +247,9 @@ public class CacheManagerPool extends ResourceManagerPool<SolrCache> {
     // changeRatio > 1.0 means there are available free resources
     // changeRatio < 1.0 means there's shortage of resources
     final AtomicReference<Double> changeRatio = new AtomicReference<>(poolLimitValue / totalValue);
+    log.info("-- initial changeRatio=" + changeRatio.get());
+    AtomicBoolean optAdjusted = new AtomicBoolean();
+    AtomicBoolean forceAdjusted = new AtomicBoolean();
 
     // ========================== OPTIMIZATION ==============================
     // if the situation is not critical (ie. total consumption is less than max)
@@ -305,6 +310,7 @@ public class CacheManagerPool extends ResourceManagerPool<SolrCache> {
           newTotalValue.getAndUpdate(v -> v - currentLimit + actualNewLimit.doubleValue());
           lookups.put(component.getManagedComponentId().toString(), currentLookups);
           hits.put(component.getManagedComponentId().toString(), currentHits);
+          optAdjusted.set(true);
         } catch (Exception e) {
           log.warn("Failed to set managed limit " + limitName +
               " from " + currentLimit + " to " + newLimit + " on " + component.getManagedComponentId(), e);
@@ -321,12 +327,18 @@ public class CacheManagerPool extends ResourceManagerPool<SolrCache> {
           newTotalValue.getAndUpdate(v -> v - currentLimit + actualNewLimit.doubleValue());
           lookups.put(component.getManagedComponentId().toString(), currentLookups);
           hits.put(component.getManagedComponentId().toString(), currentHits);
+          optAdjusted.set(true);
         } catch (Exception e) {
           log.warn("Failed to set managed limit " + limitName +
               " from " + currentLimit + " to " + newLimit + " on " + component.getManagedComponentId(), e);
         }
       }
     });
+    if (optAdjusted.get()) {
+      log.info("-- component limits " + limitName + " optimized, newTotalValue=" + newTotalValue.get());
+    } else {
+      log.info("-- component limits " + limitName + " not optimized");
+    }
 
     // ======================== HARD LIMIT ================
     // now re-calculate the new changeRatio based on possible
@@ -335,11 +347,14 @@ public class CacheManagerPool extends ResourceManagerPool<SolrCache> {
 
     // dead band to avoid thrashing
     if (Math.abs(totalDelta / poolLimitValue) < deadBand) {
+      log.info("-- delta " + totalDelta + " within deadband, skipping...");
       return;
     }
 
     changeRatio.set(poolLimitValue / newTotalValue.get());
+    log.info("-- updated changeRatio=" + changeRatio.get());
     if (changeRatio.get() >= 1.0) { // there's no resource shortage
+      log.info("--- no shortage, skipping...");
       return;
     }
     // forcibly trim each resource limit (evenly) to fit within the total pool limit
@@ -349,16 +364,23 @@ public class CacheManagerPool extends ResourceManagerPool<SolrCache> {
       double newLimit = currentLimit * changeRatio.get();
       try {
         Number actualNewLimit = (Number) setResourceLimit(component, limitName, newLimit, ChangeListener.Reason.ABOVE_TOTAL_LIMIT);
+        log.info("-- forcing " + component.getManagedComponentId() + "/" + limitName + ": " + currentLimit + " -> " + actualNewLimit);
         newTotalValue.getAndUpdate(v -> v - currentLimit + actualNewLimit.doubleValue());
         long currentLookups = ((Number)currentValues.get(component.getManagedComponentId().toString()).get(SolrCache.CUMULATIVE_PREFIX + SolrCache.LOOKUPS_PARAM)).longValue();
         long currentHits = ((Number)currentValues.get(component.getManagedComponentId().toString()).get(SolrCache.CUMULATIVE_PREFIX + SolrCache.HITS_PARAM)).longValue();
         lookups.put(component.getManagedComponentId().toString(), currentLookups);
         hits.put(component.getManagedComponentId().toString(), currentHits);
+        forceAdjusted.set(true);
       } catch (Exception e) {
         log.warn("Failed to set managed limit " + limitName +
             " from " + currentLimit + " to " + newLimit + " on " + component.getManagedComponentId(), e);
       }
     });
+    if (forceAdjusted.get()) {
+      log.info("-- component limits " + limitName + " adjusted, new total " + newTotalValue.get());
+    } else {
+      log.info("-- component limits " + limitName + " unchanged, new total " + newTotalValue.get());
+    }
     // check that the adjustments were overall successful
     if (poolLimitValue < newTotalValue.get()) {
       log.warn("Pool {} / {}: unable to force the total {} resource usage {} to fit the total pool limit of {} !",

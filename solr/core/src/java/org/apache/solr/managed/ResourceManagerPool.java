@@ -11,10 +11,12 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
 import com.codahale.metrics.Timer;
 import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,6 +41,7 @@ public abstract class ResourceManagerPool<T extends ManagedComponent> implements
   protected ScheduledFuture<?> scheduledFuture;
   protected SolrMetricsContext solrMetricsContext;
   protected Timer manageTimer;
+  protected Map<ChangeListener.Reason, AtomicLong> changeCounts = new ConcurrentHashMap<>();
 
   public ResourceManagerPool(String name, String type, ResourceManager resourceManager,
                                 Map<String, Object> poolLimits, Map<String, Object> poolParams) {
@@ -71,7 +74,11 @@ public abstract class ResourceManagerPool<T extends ManagedComponent> implements
   @Override
   public void initializeMetrics(SolrMetricsContext parentContext, String childScope) {
     solrMetricsContext = parentContext.getChildContext(this, childScope);
-    manageTimer = solrMetricsContext.timer("manageTimes", getCategory().toString(), getType(), getName());
+    manageTimer = solrMetricsContext.timer("manageTimes", getCategory().toString(), "pool", getType());
+    MetricsMap changeMap = new MetricsMap((detailed, map) -> {
+      changeCounts.forEach((k, v) -> map.put(k.toString(), v.get()));
+    });
+    solrMetricsContext.gauge(changeMap, true, "changes", getCategory().toString(), "pool", getType());
   }
 
   @Override
@@ -97,7 +104,7 @@ public abstract class ResourceManagerPool<T extends ManagedComponent> implements
 
   /** Remove named component from this pool. */
   public boolean unregisterComponent(String componentId) {
-    return components.remove(name) != null;
+    return components.remove(componentId) != null;
   }
 
   /**
@@ -153,6 +160,7 @@ public abstract class ResourceManagerPool<T extends ManagedComponent> implements
 
   public Object setResourceLimit(T component, String limitName, Object value, ChangeListener.Reason reason) throws Exception {
     Object newActualLimit = doSetResourceLimit(component, limitName, value);
+    changeCounts.computeIfAbsent(reason, r -> new AtomicLong()).incrementAndGet();
     for (ChangeListener listener : listeners) {
       listener.changedLimit(getName(), component, limitName, value, newActualLimit, reason);
     }

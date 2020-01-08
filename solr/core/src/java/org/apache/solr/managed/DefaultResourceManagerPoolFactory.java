@@ -103,7 +103,7 @@ public class DefaultResourceManagerPoolFactory implements ResourceManagerPoolFac
         null,
         new Class[]{String.class, String.class, ResourceManager.class, Map.class, Map.class},
         new Object[]{name, type, resourceManager, poolLimits, poolParams});
-    resourceManagerPool.initializeMetrics(resourceManager.getSolrMetricsContext(), "pool");
+    resourceManagerPool.initializeMetrics(resourceManager.getSolrMetricsContext(), name);
     return resourceManagerPool;
   }
 

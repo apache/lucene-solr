@@ -222,7 +222,6 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
       
       
       SimpleSolrResponse frsp = rsp;
-      log.info("=== Rsp: " + rsp);
       metricsKeyVsTag.forEach((key, tag) -> {
         Object v = Utils.getObjectByPath(frsp.nl, true, Arrays.asList("metrics", key));
         if (tag instanceof Function) {

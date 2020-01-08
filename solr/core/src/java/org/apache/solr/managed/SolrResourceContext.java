@@ -17,14 +17,21 @@
 package org.apache.solr.managed;
 
 import java.io.Closeable;
+import java.lang.invoke.MethodHandles;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
  */
 public class SolrResourceContext implements Closeable {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   private final ResourceManager resourceManager;
   private final String[] poolNames;
   private final ManagedComponent component;
@@ -53,6 +60,7 @@ public class SolrResourceContext implements Closeable {
 
   @Override
   public void close() {
+    log.info("-- closing managed component " + component.getManagedComponentId() + " in pools " + Arrays.toString(poolNames));
     for (String poolName : poolNames) {
       resourceManager.unregisterComponent(poolName, component.getManagedComponentId());
     }
