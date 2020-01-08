@@ -1185,14 +1185,10 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   // called from parser
   protected Query getWildcardQuery(String field, String termStr) throws SyntaxError {
     checkNullField(field);
-
+    // *:* -> MatchAllDocsQuery
     if ("*".equals(termStr)) {
       if ("*".equals(field) || getExplicitField() == null) {
-        // '*:*' and '*' -> MatchAllDocsQuery
         return newMatchAllDocsQuery();
-      } else {
-        // 'foo:*' -> empty prefix query
-        return getPrefixQuery(field, "");
       }
     }
 

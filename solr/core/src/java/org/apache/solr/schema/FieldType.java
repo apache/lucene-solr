@@ -43,7 +43,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.DocValuesRewriteMethod;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.PrefixQuery;
@@ -458,13 +457,11 @@ public abstract class FieldType extends FieldProperties {
    *
    * @param parser       the {@link org.apache.solr.search.QParser} calling the method
    * @param sf           the schema field
-   * @param termStr      the term string for prefix query, if blank then this query should match all docs with this field
+   * @param termStr      the term string for prefix query
    * @return a Query instance to perform prefix search
+   *
    */
   public Query getPrefixQuery(QParser parser, SchemaField sf, String termStr) {
-    if ("".equals(termStr)) {
-      return getRangeQuery(parser, sf, null, null, true, true);
-    }
     PrefixQuery query = new PrefixQuery(new Term(sf.getName(), termStr));
     query.setRewriteMethod(sf.getType().getRewriteMethod(parser, sf));
     return query;
@@ -849,36 +846,9 @@ public abstract class FieldType extends FieldProperties {
     // trivial base case
     return null;
   }
-
-  /**
-   * Returns a Query instance for doing range searches on this field type. {@link org.apache.solr.search.SolrQueryParser}
-   * currently passes part1 and part2 as null if they are '*' respectively. minInclusive and maxInclusive are both true
-   * currently by SolrQueryParser but that may change in the future. Also, other QueryParser implementations may have
-   * different semantics.
-   * <p>
-   * If the field has docValues enabled, and the range query has '*'s or nulls on either side, then a {@link org.apache.lucene.search.DocValuesFieldExistsQuery} is returned.
-   *
-   * Sub-classes should override the "getSpecializedRangeQuery" method to provide their own range query implementation. They should strive to
-   * handle nulls in part1 and/or part2 as well as unequal minInclusive and maxInclusive parameters gracefully.
-   *
-   *
-   * @param parser       the {@link org.apache.solr.search.QParser} calling the method
-   * @param field        the schema field
-   * @param part1        the lower boundary of the range, nulls are allowed.
-   * @param part2        the upper boundary of the range, nulls are allowed
-   * @param minInclusive whether the minimum of the range is inclusive or not
-   * @param maxInclusive whether the maximum of the range is inclusive or not
-   *  @return a Query instance to perform range search according to given parameters
-   *
-   */
-  public Query getRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
-    if (field.hasDocValues() && part1 == null && part2 == null) {
-      return new DocValuesFieldExistsQuery(field.getName());
-    } else {
-      return getSpecializedRangeQuery(parser, field, part1, part2, minInclusive, maxInclusive);
-    }
-  }
-
+  
+  
+  
   /**
    * Returns a Query instance for doing range searches on this field type. {@link org.apache.solr.search.SolrQueryParser}
    * currently passes part1 and part2 as null if they are '*' respectively. minInclusive and maxInclusive are both true
@@ -897,21 +867,20 @@ public abstract class FieldType extends FieldProperties {
    *  @return a Query instance to perform range search according to given parameters
    *
    */
-  protected Query getSpecializedRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
+  public Query getRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
     // TODO: change these all to use readableToIndexed/bytes instead (e.g. for unicode collation)
     final BytesRef miValue = part1 == null ? null : new BytesRef(toInternal(part1));
     final BytesRef maxValue = part2 == null ? null : new BytesRef(toInternal(part2));
-
     if (field.hasDocValues() && !field.indexed()) {
       return SortedSetDocValuesField.newSlowRangeQuery(
-          field.getName(),
-          miValue, maxValue,
-          minInclusive, maxInclusive);
+            field.getName(),
+            miValue, maxValue,
+            minInclusive, maxInclusive);
     } else {
       SolrRangeQuery rangeQuery = new SolrRangeQuery(
-          field.getName(),
-          miValue, maxValue,
-          minInclusive, maxInclusive);
+            field.getName(),
+            miValue, maxValue,
+            minInclusive, maxInclusive);
       return rangeQuery;
     }
   }
@@ -922,6 +891,7 @@ public abstract class FieldType extends FieldProperties {
    * @param field The {@link org.apache.solr.schema.SchemaField} of the field to search
    * @param externalVal The String representation of the value to search
    * @return The {@link org.apache.lucene.search.Query} instance.  This implementation returns a {@link org.apache.lucene.search.TermQuery} but overriding queries may not
+   * 
    */
   public Query getFieldQuery(QParser parser, SchemaField field, String externalVal) {
     BytesRefBuilder br = new BytesRefBuilder();
