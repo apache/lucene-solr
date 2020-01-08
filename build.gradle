@@ -19,9 +19,6 @@ allprojects {
 
 apply from: file('gradle/generate-defaults.gradle')
 
-// CI systems.
-apply from: file('gradle/ci/buildscan.gradle')
-
 // Set up defaults and configure aspects for certain modules or functionality
 // (java, tests)
 apply from: file('gradle/defaults.gradle')
