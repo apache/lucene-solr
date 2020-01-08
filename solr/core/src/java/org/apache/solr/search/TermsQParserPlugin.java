@@ -159,14 +159,11 @@ public class TermsQParserPlugin extends QParserPlugin {
     };
   }
 
-  private static class TopLevelDocValuesTermsQuery extends DocValuesTermsQuery implements ExtendedQuery{
+  private static class TopLevelDocValuesTermsQuery extends DocValuesTermsQuery {
     private final String fieldName;
     private SortedSetDocValues topLevelDocValues;
     private LongBitSet topLevelTermOrdinals;
     private boolean matchesAtLeastOneTerm = false;
-    private boolean cache = true;
-    private boolean cacheSeparately = false;
-    private int cost;
 
 
     public TopLevelDocValuesTermsQuery(String field, BytesRef... terms) {
@@ -196,6 +193,10 @@ public class TermsQParserPlugin extends QParserPlugin {
 
       return new ConstantScoreWeight(this, boost) {
         public Scorer scorer(LeafReaderContext context) throws IOException {
+          if (! matchesAtLeastOneTerm) {
+            return null;
+          }
+          
           SortedSetDocValues segmentDocValues = context.reader().getSortedSetDocValues(fieldName);
           if (segmentDocValues == null) {
             return null;
@@ -226,24 +227,6 @@ public class TermsQParserPlugin extends QParserPlugin {
         }
       };
     }
-
-    @Override
-    public void setCache(boolean cache) { this.cache = cache; }
-
-    @Override
-    public boolean getCache() { return cache; }
-
-    @Override
-    public int getCost() { return cost; }
-
-    @Override
-    public void setCost(int cost) { this.cost = cost; }
-
-    @Override
-    public boolean getCacheSep() { return cacheSeparately; }
-
-    @Override
-    public void setCacheSep(boolean cacheSep) { this.cacheSeparately = cacheSep; }
 
     /*
      * Same binary-search based implementation as SortedSetDocValues.lookupTerm(BytesRef), but with an
