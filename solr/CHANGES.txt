@@ -210,8 +210,6 @@ Bug Fixes
 
 * SOLR-13089: Fix lsof edge cases in the solr CLI script (Martijn Koster via janhoy)
 
-* SOLR-11746: Fixed existence query support for numeric point fields. (Kai Chan, hossman, Houston Putman)
-
 Other Changes
 ---------------------
 
