@@ -65,9 +65,11 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
   // init param names, these are _only_ loaded at init time (no per-request control of these)
   //   - multiple different named writers could be created with different init params
   public static final String TEMPLATE_BASE_DIR = "template.base.dir";
+  public static final String PROPERTIES_FILE = "init.properties.file";
+
+  // System property names, these are _only_ loaded at node startup (no per-request control of these)
   public static final String PARAMS_RESOURCE_LOADER_ENABLED = "params.resource.loader.enabled";
   public static final String SOLR_RESOURCE_LOADER_ENABLED = "solr.resource.loader.enabled";
-  public static final String PROPERTIES_FILE = "init.properties.file";
 
   // request param names
   public static final String TEMPLATE = "v.template";
@@ -110,12 +112,12 @@ public class VelocityResponseWriter implements QueryResponseWriter, SolrCoreAwar
     }
 
     // params resource loader: off by default
-    Boolean prle = args.getBooleanArg(PARAMS_RESOURCE_LOADER_ENABLED);
+    Boolean prle = Boolean.getBoolean(PARAMS_RESOURCE_LOADER_ENABLED);
     paramsResourceLoaderEnabled = (null == prle ? false : prle);
 
-    // solr resource loader: on by default
-    Boolean srle = args.getBooleanArg(SOLR_RESOURCE_LOADER_ENABLED);
-    solrResourceLoaderEnabled = (null == srle ? true : srle);
+    // solr resource loader: off by default
+    Boolean srle = Boolean.getBoolean(SOLR_RESOURCE_LOADER_ENABLED);
+    solrResourceLoaderEnabled = (null == srle ? false : srle);
 
     initPropertiesFileName = (String) args.get(PROPERTIES_FILE);
 
