@@ -154,7 +154,7 @@
  * {@link org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat Term Frequency data}. 
  * For each term in the dictionary, the numbers of all the
  * documents that contain that term, and the frequency of the term in that
- * document, unless frequencies are omitted (IndexOptions.DOCS_ONLY)
+ * document, unless frequencies are omitted ({@link org.apache.lucene.index.IndexOptions#DOCS IndexOptions.DOCS})
  * </li>
  * <li>
  * {@link org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat Term Proximity data}. 
