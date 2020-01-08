@@ -325,10 +325,10 @@ Solr's standard query parser originated as a variation of Lucene's "classic" Que
 * A `*` may be used for either or both endpoints to specify an open-ended range query, or by itself as an existence query.
 ** `field:[* TO 100]` finds all field values less than or equal to 100
 ** `field:[100 TO *]` finds all field values greater than or equal to 100
-** `field:*` or `field:[* TO *]` finds all documents where the field exists (i.e. has a value)
+** `field:*` or `field:[* TO *]` matches all documents where the field exists
 * Pure negative queries (all clauses prohibited) are allowed (only as a top-level clause)
 ** `-inStock:false` finds all field values where inStock is not false
-** `-field:*` or `-field:[* TO *]` finds all documents without a value for the field
+** `-field:[* TO *]` finds all documents without a value for field
 * Support for embedded Solr queries (sub-queries) using any type of query parser as a nested clause using the local-params syntax.
 ** `inStock:true OR {!dismax qf='name manu' v='ipod'}`
 +
