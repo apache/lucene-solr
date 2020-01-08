@@ -115,7 +115,8 @@ Improvements
 
 Optimizations
 ---------------------
-(No changes)
+
+* LUCENE-9113: Faster merging of SORTED/SORTED_SET doc values. (Adrien Grand)
 
 Bug Fixes
 ---------------------
@@ -123,7 +124,9 @@ Bug Fixes
 
 Other
 ---------------------
-(No changes)
+
+* LUCENE-9096: Simplification of CompressingTermVectorsWriter#flushOffsets.
+  (kkewwei via Adrien Grand)
 
 ======================= Lucene 8.4.0 =======================
 
