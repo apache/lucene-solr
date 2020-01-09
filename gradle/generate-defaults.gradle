@@ -36,6 +36,7 @@ if (!hasDefaults) {
               "org.gradle.jvmargs=-Xmx1g",
               "org.gradle.parallel=true",
               "org.gradle.priority=normal",
+              "org.gradle.warning.mode=none", // Silence gradle warnings. We'll deal with them when we upgrade the wrapper.
               "",
               "# Maximum number of parallel gradle workers.",
               "org.gradle.workers.max=${maxWorkers}",
