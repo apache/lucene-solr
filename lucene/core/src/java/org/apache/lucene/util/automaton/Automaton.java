@@ -658,20 +658,82 @@ public class Automaton implements Accountable {
   public int step(int state, int label) {
     assert state >= 0;
     assert label >= 0;
-    int trans = states[2*state];
-    int limit = trans + 3*states[2*state+1];
-    // TODO: we could do bin search; transitions are sorted
-    while (trans < limit) {
-      int dest = transitions[trans];
-      int min = transitions[trans+1];
-      int max = transitions[trans+2];
-      if (min <= label && label <= max) {
-        return dest;
-      }
-      trans += 3;
-    }
+    int stateIndex = 2 * state;
+    int firstTransitionIndex = states[stateIndex];
+    int numTransitions = states[stateIndex + 1];
 
+    // Since transitions are sorted,
+    // binary search the transition for which label is within [minLabel, maxLabel].
+    int low = 0;
+    int high = numTransitions - 1;
+    while (low <= high) {
+      int mid = (low + high) >>> 1;
+      int transitionIndex = firstTransitionIndex + 3 * mid;
+      int minLabel = transitions[transitionIndex + 1];
+      if (minLabel > label) {
+        high = mid - 1;
+      } else {
+        int maxLabel = transitions[transitionIndex + 2];
+        if (maxLabel < label){
+          low = mid + 1;
+        } else {
+          return transitions[transitionIndex];
+        }
+      }
+    }
     return -1;
+  }
+
+  /**
+   * Looks for the next transition that matches the provided label, assuming determinism.
+   * <p>
+   * This method is similar to {@link #step(int, int)} but is used more efficiently
+   * when iterating over multiple transitions from the same source state. It keeps
+   * the latest reached transition index in {@code transition.transitionUpto} so
+   * the next call to this method can continue from there instead of restarting
+   * from the first transition.
+   *
+   * @param transition The transition to start the lookup from (inclusive, using its
+   *                   {@link Transition#source} and {@link Transition#transitionUpto}).
+   *                   It is updated with the matched transition;
+   *                   or with {@link Transition#dest} = -1 if no match.
+   * @param label      The codepoint to look up.
+   * @return The destination state; or -1 if no matching outgoing transition.
+   */
+  public int next(Transition transition, int label) {
+    // Copy of step() method with
+    // - binary search 'low' bound initialized to transition.transitionUpto.
+    // - param transition .dest/.min/.max/.transitionUpto set to the matching transition.
+    assert transition.source >= 0;
+    assert label >= 0;
+    int stateIndex = 2 * transition.source;
+    int firstTransitionIndex = states[stateIndex];
+    int numTransitions = states[stateIndex + 1];
+
+    // Since transitions are sorted,
+    // binary search the transition for which label is within [minLabel, maxLabel].
+    int low = Math.max(transition.transitionUpto, 0);
+    int high = numTransitions - 1;
+    while (low <= high) {
+      int mid = (low + high) >>> 1;
+      int transitionIndex = firstTransitionIndex + 3 * mid;
+      int minLabel = transitions[transitionIndex + 1];
+      if (minLabel > label) {
+        high = mid - 1;
+      } else {
+        int maxLabel = transitions[transitionIndex + 2];
+        if (maxLabel < label){
+          low = mid + 1;
+        } else {
+          transition.min = minLabel;
+          transition.max = maxLabel;
+          transition.transitionUpto = mid;
+          return transition.dest = transitions[transitionIndex];
+        }
+      }
+    }
+    transition.transitionUpto = low;
+    return transition.dest = -1;
   }
 
   /** Records new states and transitions and then {@link

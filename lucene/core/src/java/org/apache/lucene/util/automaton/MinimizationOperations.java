@@ -94,12 +94,15 @@ final public class MinimizationOperations {
       }
     }
     // find initial partition and reverse edges
+    Transition transition = new Transition();
     for (int q = 0; q < statesLen; q++) {
       final int j = a.isAccept(q) ? 0 : 1;
       partition[j].add(q);
       block[q] = j;
+      transition.source = q;
+      transition.transitionUpto = -1;
       for (int x = 0; x < sigmaLen; x++) {
-        final ArrayList<Integer>[] r = reverse[a.step(q, sigma[x])];
+        final ArrayList<Integer>[] r = reverse[a.next(transition, sigma[x])];
         if (r[x] == null) {
           r[x] = new ArrayList<>();
         }
