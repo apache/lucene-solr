@@ -40,6 +40,8 @@ comprehensive documentation, visit:
 
 (You do not need to do this if you downloaded a pre-built package)
 
+### Building with Ant
+
 Lucene and Solr are built using [Apache Ant](http://ant.apache.org/).  To build
 Lucene and Solr, run:
 
@@ -57,6 +59,29 @@ The Solr server can then be packaged and prepared for startup by running the
 following command from the `solr/` directory:
 
 `ant server`
+
+### Building with Gradle
+
+There is ongoing work (see [LUCENE-9077](https://issues.apache.org/jira/browse/LUCENE-9077))
+to switch the legacy ant-based build system to [gradle](https://gradle.org/).
+Please give it a try!
+
+At the moment of writing, the gradle build requires precisely Java 11 
+(it may or may not work with newer Java versions).
+
+To build Lucene and Solr, run (`./` can be omitted on Windows):
+
+`./gradlew assemble`
+
+The command above also packages a full distribution of Solr server; the 
+package can be located at:
+
+`solr/packaging/build/solr-*`
+
+Note that the gradle build does not create or copy binaries throughout the
+source repository (like ant build does) so you need to switch to the
+packaging output folder above; the rest of the instructions below remain
+identical.  
 
 ## Running Solr
 
@@ -89,6 +114,12 @@ import Lucene/Solr.
 - *IntelliJ* - `ant idea` (See [this](https://cwiki.apache.org/confluence/display/lucene/HowtoConfigureIntelliJ) for details)
 - *Netbeans* - `ant netbeans` (See [this](https://cwiki.apache.org/confluence/display/lucene/HowtoConfigureNetbeans) for details)
 
+### Gradle build and IDE support
+
+- *IntelliJ* - IntelliJ idea can import the project out of the box. 
+               Code formatting conventions should be manually adjusted. 
+- *Eclipse*  - Not tested.
+- *Netbeans* - Not tested.
 
 ## Running Tests
 
@@ -100,6 +131,13 @@ Like Solr itself, the test-running can be customized or tailored in a number or
 ways.  For an exhaustive discussion of the options available, run:
 
 `ant test-help`
+
+### Gradle build and tests
+
+Run the following command to display an extensive help for running
+tests with gradle:
+
+`./gradlew helpTests`
 
 ## Contributing
 
