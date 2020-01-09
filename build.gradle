@@ -16,10 +16,12 @@ allprojects {
 // if the build file is incorrectly written and evaluates something
 // eagerly).
 
-apply from: file('gradle/generate-defaults.gradle')
+// Bug fixes, workarounds.
+apply from: file('gradle/bugs/palantir.gradle')
 
 // Set up defaults and configure aspects for certain modules or functionality
 // (java, tests)
+apply from: file('gradle/generate-defaults.gradle')
 apply from: file('gradle/defaults.gradle')
 apply from: file('gradle/defaults-java.gradle')
 apply from: file('gradle/testing/defaults-tests.gradle')
