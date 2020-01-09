@@ -45,14 +45,13 @@ final class VersionFieldReader extends Terms implements Accountable {
   final Pair<BytesRef,Long> rootCode;
   final BytesRef minTerm;
   final BytesRef maxTerm;
-  final int longsSize;
   final VersionBlockTreeTermsReader parent;
 
   final FST<Pair<BytesRef,Long>> index;
   //private boolean DEBUG;
 
   VersionFieldReader(VersionBlockTreeTermsReader parent, FieldInfo fieldInfo, long numTerms, Pair<BytesRef,Long> rootCode, long sumTotalTermFreq, long sumDocFreq, int docCount,
-              long indexStartFP, int longsSize, IndexInput indexIn, BytesRef minTerm, BytesRef maxTerm) throws IOException {
+              long indexStartFP, IndexInput indexIn, BytesRef minTerm, BytesRef maxTerm) throws IOException {
     assert numTerms > 0;
     this.fieldInfo = fieldInfo;
     //DEBUG = BlockTreeTermsReader.DEBUG && fieldInfo.name.equals("id");
@@ -63,7 +62,6 @@ final class VersionFieldReader extends Terms implements Accountable {
     this.docCount = docCount;
     this.indexStartFP = indexStartFP;
     this.rootCode = rootCode;
-    this.longsSize = longsSize;
     this.minTerm = minTerm;
     this.maxTerm = maxTerm;
     // if (DEBUG) {

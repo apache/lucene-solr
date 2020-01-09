@@ -143,11 +143,10 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
     public final Pair<BytesRef,Long> rootCode;
     public final long numTerms;
     public final long indexStartFP;
-    private final int longsSize;
     public final BytesRef minTerm;
     public final BytesRef maxTerm;
 
-    public FieldMetaData(FieldInfo fieldInfo, Pair<BytesRef,Long> rootCode, long numTerms, long indexStartFP, int longsSize,
+    public FieldMetaData(FieldInfo fieldInfo, Pair<BytesRef,Long> rootCode, long numTerms, long indexStartFP,
                          BytesRef minTerm, BytesRef maxTerm) {
       assert numTerms > 0;
       this.fieldInfo = fieldInfo;
@@ -155,7 +154,6 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
       this.rootCode = rootCode;
       this.indexStartFP = indexStartFP;
       this.numTerms = numTerms;
-      this.longsSize = longsSize;
       this.minTerm = minTerm;
       this.maxTerm = maxTerm;
     }
@@ -403,7 +401,6 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
 
   class TermsWriter {
     private final FieldInfo fieldInfo;
-    private final int longsSize;
     private long numTerms;
     final FixedBitSet docsSeen;
     long indexStartFP;
@@ -415,8 +412,6 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
     // to write a new block:
     private final BytesRefBuilder lastTerm = new BytesRefBuilder();
     private int[] prefixStarts = new int[8];
-
-    private final long[] longs;
 
     // Pending stack of terms and blocks.  As terms arrive (in sorted order)
     // we append to this stack, and once the top of the stack has enough
@@ -605,13 +600,7 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
           assert floorLeadLabel == -1 || (term.termBytes[prefixLength] & 0xff) >= floorLeadLabel;
 
           // Write term meta data
-          postingsWriter.encodeTerm(longs, bytesWriter, fieldInfo, state, absolute);
-          for (int pos = 0; pos < longsSize; pos++) {
-            assert longs[pos] >= 0;
-            metaWriter.writeVLong(longs[pos]);
-          }
-          bytesWriter.copyTo(metaWriter);
-          bytesWriter.reset();
+          postingsWriter.encodeTerm(metaWriter, fieldInfo, state, absolute);
           absolute = false;
         }
       } else {
@@ -648,13 +637,7 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
             // separate anymore:
 
             // Write term meta data
-            postingsWriter.encodeTerm(longs, bytesWriter, fieldInfo, state, absolute);
-            for (int pos = 0; pos < longsSize; pos++) {
-              assert longs[pos] >= 0;
-              metaWriter.writeVLong(longs[pos]);
-            }
-            bytesWriter.copyTo(metaWriter);
-            bytesWriter.reset();
+            postingsWriter.encodeTerm(metaWriter, fieldInfo, state, absolute);
             absolute = false;
           } else {
             PendingBlock block = (PendingBlock) ent;
@@ -720,8 +703,7 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
       this.fieldInfo = fieldInfo;
       docsSeen = new FixedBitSet(maxDoc);
 
-      this.longsSize = postingsWriter.setField(fieldInfo);
-      this.longs = new long[longsSize];
+      postingsWriter.setField(fieldInfo);
     }
     
     /** Writes one term's worth of postings. */
@@ -818,7 +800,6 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
                                      ((PendingBlock) pending.get(0)).index.getEmptyOutput(),
                                      numTerms,
                                      indexStartFP,
-                                     longsSize,
                                      minTerm, maxTerm));
       } else {
         // cannot assert this: we skip deleted docIDs in the postings:
@@ -828,7 +809,6 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
 
     private final ByteBuffersDataOutput suffixWriter = ByteBuffersDataOutput.newResettableInstance();
     private final ByteBuffersDataOutput metaWriter = ByteBuffersDataOutput.newResettableInstance();
-    private final ByteBuffersDataOutput bytesWriter = ByteBuffersDataOutput.newResettableInstance();
   }
 
   private boolean closed;
@@ -856,7 +836,6 @@ public final class VersionBlockTreeTermsWriter extends FieldsConsumer {
         out.writeVInt(field.rootCode.output1.length);
         out.writeBytes(field.rootCode.output1.bytes, field.rootCode.output1.offset, field.rootCode.output1.length);
         out.writeVLong(field.rootCode.output2);
-        out.writeVInt(field.longsSize);
         indexOut.writeVLong(field.indexStartFP);
         writeBytesRef(out, field.minTerm);
         writeBytesRef(out, field.maxTerm);
