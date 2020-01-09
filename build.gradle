@@ -25,6 +25,7 @@ apply from: file('gradle/defaults-java.gradle')
 apply from: file('gradle/testing/defaults-tests.gradle')
 apply from: file('gradle/testing/randomization.gradle')
 apply from: file('gradle/testing/fail-on-no-tests.gradle')
+apply from: file('gradle/testing/runtime-jvm-support.gradle')
 
 // Maven publishing.
 apply from: file('gradle/maven/defaults-maven.gradle')
