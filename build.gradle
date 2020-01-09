@@ -1,7 +1,7 @@
 
 plugins {
   id "base"
-  id "com.palantir.consistent-versions" version "1.13.1"
+  id "com.palantir.consistent-versions" version "1.14.0"
   id 'de.thetaphi.forbiddenapis' version '2.7' apply false
 }
 
