@@ -32,7 +32,7 @@ public class TestTextField extends SolrTestCaseJ4 {
 
   @Test
   public void testAnalyzeMultiTerm() {
-    // No term provided by the StopFilter (stop word) for the multi-term part.
+    // No terms provided by the StopFilter (stop word) for the multi-term part.
     // This is supported. Check TextField.analyzeMultiTerm returns null (and does not throw an exception).
     BytesRef termBytes = TextField.analyzeMultiTerm("field", "the", new StopAnalyzer(EnglishAnalyzer.ENGLISH_STOP_WORDS_SET));
     assertNull(termBytes);
@@ -44,11 +44,7 @@ public class TestTextField extends SolrTestCaseJ4 {
 
     // Two terms provided by the WhitespaceTokenizer for the multi-term part.
     // This is not allowed. Expect an exception.
-    try {
-      termBytes = TextField.analyzeMultiTerm("field", "term1 term2", new WhitespaceAnalyzer());
-      fail("Expected exception was not thrown, returned term \"" + termBytes.utf8ToString() + "\"");
-    } catch (SolrException e) {
-      assertEquals("Unexpected exception", SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-    }
+    SolrException exception = expectThrows(SolrException.class, () -> TextField.analyzeMultiTerm("field", "term1 term2", new WhitespaceAnalyzer()));
+    assertEquals("Unexpected error code", SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
   }
 }

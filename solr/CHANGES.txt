@@ -212,7 +212,7 @@ Bug Fixes
 
 * SOLR-14122: SimUtils converts v2 to v1 request params incorrectly. (Li Cao, ab)
 
-* SOLR-6613: TextField.analyzeMultiTerm does not throw an exception when Analyzer returns no term. (Bruno Roustant)
+* SOLR-6613: TextField.analyzeMultiTerm does not throw an exception when Analyzer returns no terms. (Bruno Roustant)
 
 Other Changes
 ---------------------
