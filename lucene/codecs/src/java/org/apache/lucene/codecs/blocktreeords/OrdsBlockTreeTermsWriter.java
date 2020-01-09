@@ -143,11 +143,12 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
     public final long sumTotalTermFreq;
     public final long sumDocFreq;
     public final int docCount;
+    private final int longsSize;
     public final BytesRef minTerm;
     public final BytesRef maxTerm;
 
     public FieldMetaData(FieldInfo fieldInfo, Output rootCode, long numTerms, long indexStartFP,
-                         long sumTotalTermFreq, long sumDocFreq, int docCount,
+                         long sumTotalTermFreq, long sumDocFreq, int docCount, int longsSize,
                          BytesRef minTerm, BytesRef maxTerm) {
       assert numTerms > 0;
       this.fieldInfo = fieldInfo;
@@ -158,6 +159,7 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
       this.sumTotalTermFreq = sumTotalTermFreq;
       this.sumDocFreq = sumDocFreq;
       this.docCount = docCount;
+      this.longsSize = longsSize;
       this.minTerm = minTerm;
       this.maxTerm = maxTerm;
     }
@@ -426,6 +428,7 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
 
   class TermsWriter {
     private final FieldInfo fieldInfo;
+    private final int longsSize;
     private long numTerms;
     final FixedBitSet docsSeen;
     long sumTotalTermFreq;
@@ -439,6 +442,8 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
     // to write a new block:
     private final BytesRefBuilder lastTerm = new BytesRefBuilder();
     private int[] prefixStarts = new int[8];
+
+    private final long[] longs;
 
     // Pending stack of terms and blocks.  As terms arrive (in sorted order)
     // we append to this stack, and once the top of the stack has enough
@@ -632,7 +637,13 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
           }
 
           // Write term meta data
-          postingsWriter.encodeTerm(metaWriter, fieldInfo, state, absolute);
+          postingsWriter.encodeTerm(longs, bytesWriter, fieldInfo, state, absolute);
+          for (int pos = 0; pos < longsSize; pos++) {
+            assert longs[pos] >= 0;
+            metaWriter.writeVLong(longs[pos]);
+          }
+          bytesWriter.writeTo(metaWriter);
+          bytesWriter.reset();
           absolute = false;
         }
         totalTermCount = end-start;
@@ -677,7 +688,13 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
             // separate anymore:
 
             // Write term meta data
-            postingsWriter.encodeTerm(metaWriter, fieldInfo, state, absolute);
+            postingsWriter.encodeTerm(longs, bytesWriter, fieldInfo, state, absolute);
+            for (int pos = 0; pos < longsSize; pos++) {
+              assert longs[pos] >= 0;
+              metaWriter.writeVLong(longs[pos]);
+            }
+            bytesWriter.writeTo(metaWriter);
+            bytesWriter.reset();
             absolute = false;
 
             totalTermCount++;
@@ -750,7 +767,8 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
     TermsWriter(FieldInfo fieldInfo) {
       this.fieldInfo = fieldInfo;
       docsSeen = new FixedBitSet(maxDoc);
-      postingsWriter.setField(fieldInfo);
+      this.longsSize = postingsWriter.setField(fieldInfo);
+      this.longs = new long[longsSize];
     }
     
     /** Writes one term's worth of postings. */
@@ -860,6 +878,7 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
                                      sumTotalTermFreq,
                                      sumDocFreq,
                                      docsSeen.cardinality(),
+                                     longsSize,
                                      minTerm, maxTerm));
       } else {
         assert docsSeen.cardinality() == 0;
@@ -869,6 +888,7 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
     private final RAMOutputStream suffixWriter = new RAMOutputStream();
     private final RAMOutputStream statsWriter = new RAMOutputStream();
     private final RAMOutputStream metaWriter = new RAMOutputStream();
+    private final RAMOutputStream bytesWriter = new RAMOutputStream();
   }
 
   private boolean closed;
@@ -900,6 +920,7 @@ public final class OrdsBlockTreeTermsWriter extends FieldsConsumer {
         }
         out.writeVLong(field.sumDocFreq);
         out.writeVInt(field.docCount);
+        out.writeVInt(field.longsSize);
         indexOut.writeVLong(field.indexStartFP);
         writeBytesRef(out, field.minTerm);
         writeBytesRef(out, field.maxTerm);
