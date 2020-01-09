@@ -328,4 +328,6 @@ task buildSite(type: JavaExec) {
 
 // Hook up custom tasks with standard tasks.
 check.dependsOn bareBonesHtmlValidation
-assemble.dependsOn buildSite
+
+// Do not hook site building to assemble, at least for now.
+// assemble.dependsOn buildSite
