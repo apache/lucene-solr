@@ -63,13 +63,13 @@ public class EnumField extends AbstractEnumField {
   }
 
   @Override
-  protected Query getSpecializedRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minInclusive, boolean maxInclusive) {
+  public Query getRangeQuery(QParser parser, SchemaField field, String min, String max, boolean minInclusive, boolean maxInclusive) {
     Integer minValue = enumMapping.stringValueToIntValue(min);
     Integer maxValue = enumMapping.stringValueToIntValue(max);
 
     if (field.multiValued() && field.hasDocValues() && !field.indexed()) {
       // for the multi-valued dv-case, the default rangeimpl over toInternal is correct
-      return super.getSpecializedRangeQuery(parser, field, minValue.toString(), maxValue.toString(), minInclusive, maxInclusive);
+      return super.getRangeQuery(parser, field, minValue.toString(), maxValue.toString(), minInclusive, maxInclusive);
     }
     Query query = null;
     final boolean matchOnly = field.hasDocValues() && !field.indexed();

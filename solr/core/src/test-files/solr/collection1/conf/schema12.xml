@@ -686,33 +686,23 @@
   <dynamicField name="*_l_dv" type="long" indexed="true" stored="true" docValues="true" multiValued="false"/>
   <dynamicField name="*_ls_dv" type="long" indexed="true" stored="true" docValues="true" multiValued="true"/>
   <dynamicField name="*_l_dvo" type="long" indexed="false" stored="true" docValues="true"/>
-
+  
   <dynamicField name="*_d" type="double" indexed="true" stored="true"/>
   <dynamicField name="*_ds" type="double" indexed="true" stored="true" multiValued="true"/>
   <dynamicField name="*_d_dv" type="double" indexed="true" stored="true" docValues="true" multiValued="false"/>
   <dynamicField name="*_ds_dv" type="double" indexed="true" stored="true" docValues="true" multiValued="true"/>
   <dynamicField name="*_d_dvo" type="double" indexed="false" stored="true" docValues="true"/>
-
-  <dynamicField name="*_dt" type="date" indexed="true" stored="true"/>
-  <dynamicField name="*_dts" type="date" indexed="true" stored="true" multiValued="true"/>
-  <dynamicField name="*_dt_dv" type="date" indexed="true" stored="true" docValues="true" multiValued="false"/>
-  <dynamicField name="*_dts_dv" type="date" indexed="true" stored="true" docValues="true" multiValued="true"/>
-  <dynamicField name="*_dt_dvo" type="date" indexed="false" stored="true" docValues="true"/>
   
   <dynamicField name="*_s1" type="string" indexed="true" stored="true" multiValued="false"/>
   <!-- :TODO: why are these identical?!?!?! -->
   <dynamicField name="*_s" type="string" indexed="true" stored="true" multiValued="true"/>
   <dynamicField name="*_ss" type="string" indexed="true" stored="true" multiValued="true"/>
-  <dynamicField name="*_s_dv" type="string" indexed="true" stored="true" docValues="true"/>
   <dynamicField name="*_sdv" type="string" indexed="false" stored="false" docValues="true" useDocValuesAsStored="true"/>
-  <dynamicField name="*_ss_dv" type="string" indexed="true" stored="true" docValues="true" multiValued="true"/>
+  <dynamicField name="*_bdv" type="boolean" indexed="false" stored="false" docValues="true" useDocValuesAsStored="true"/>
   <dynamicField name="*_t" type="text" indexed="true" stored="true"/>
   <dynamicField name="*_tt" type="text" indexed="true" stored="true"/>
   <dynamicField name="*_b" type="boolean" indexed="true" stored="true"/>
-  <dynamicField name="*_bs" type="boolean" indexed="true" stored="true" multiValued="true"/>
-  <dynamicField name="*_bdv" type="boolean" indexed="false" stored="false" docValues="true" useDocValuesAsStored="true"/>
-  <dynamicField name="*_b_dv" type="boolean" indexed="true" stored="true" docValues="true"/>
-  <dynamicField name="*_bs_dv" type="boolean" indexed="true" stored="true" docValues="true" multiValued="true"/>
+  <dynamicField name="*_dt" type="date" indexed="true" stored="true"/>
 
   <dynamicField name="*_pi" type="pint" indexed="true" multiValued="false"/>
   <dynamicField name="*_pl" type="plong" indexed="true" multiValued="false"/>
