@@ -268,7 +268,7 @@ public class STBlockReaderTest extends LuceneTestCase {
         }
 
         @Override
-        public void decodeTerm(long[] longs, DataInput in, FieldInfo fieldInfo, BlockTermState state, boolean absolute) {
+        public void decodeTerm(DataInput in, FieldInfo fieldInfo, BlockTermState state, boolean absolute) {
         }
 
         @Override
