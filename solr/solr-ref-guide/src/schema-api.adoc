@@ -73,7 +73,7 @@ bin/solr -e cloud -noprompt
 
 == Modify the Schema
 
-To add, remove or replace fields, dynamic field rules, copy field rules, or new field types, you can send a POST request to the `/collection/schema/` endpoint with a sequence of commands in JSON format to perform the requested actions. The following commands are supported:
+To add, remove or replace fields, dynamic field rules, copy field rules, or new field types, you can send a POST request to the `/api/{collections|cores}/{name}/schema/` endpoint with a sequence of commands in JSON format to perform the requested actions. The following commands are supported:
 
 * `add-field`: add a new field with parameters you provide.
 * `delete-field`: delete a field.
@@ -127,7 +127,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "name":"sell_by",
      "type":"pdate",
      "stored":true }
-}' http://localhost:8983/api/cores/gettingstarted/schema
+}' http://localhost:8983/api/collections/gettingstarted/schema
 ----
 ====
 --
@@ -158,7 +158,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
   "delete-field" : { "name":"sell_by" }
-}' http://localhost:8983/api/cores/gettingstarted/schema
+}' http://localhost:8983/api/collections/gettingstarted/schema
 ----
 ====
 --
@@ -197,7 +197,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "name":"sell_by",
      "type":"date",
      "stored":false }
-}' http://localhost:8983/api/cores/gettingstarted/schema
+}' http://localhost:8983/api/collections/gettingstarted/schema
 ----
 ====
 --
@@ -236,7 +236,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "name":"*_s",
      "type":"string",
      "stored":true }
-}' http://localhost:8983/api/cores/gettingstarted/schema
+}' http://localhost:8983/api/collections/gettingstarted/schema
 ----
 ====
 --
@@ -267,7 +267,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
   "delete-dynamic-field":{ "name":"*_s" }
-}' http://localhost:8983/api/cores/gettingstarted/schema
+}' http://localhost:8983/api/collections/gettingstarted/schema
 ----
 ====
 --
@@ -388,7 +388,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "queryAnalyzer":{
         "tokenizer":{
            "name":"keyword" }}}
-}' http://localhost:8983/api/cores/gettingstarted/schema
+}' http://localhost:8983/api/collections/gettingstarted/schema
 ----
 ====
 --
@@ -419,7 +419,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
   "delete-field-type":{ "name":"myNewTxtField" }
-}' http://localhost:8983/api/cores/gettingstarted/schema
+}' http://localhost:8983/api/collections/gettingstarted/schema
 ----
 ====
 --
@@ -464,7 +464,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
      "analyzer":{
         "tokenizer":{
            "name":"standard" }}}
-}' http://localhost:8983/api/cores/gettingstarted/schema
+}' http://localhost:8983/api/collections/gettingstarted/schema
 ----
 ====
 --
@@ -510,7 +510,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
   "add-copy-field":{
      "source":"shelf",
      "dest":[ "location", "catchall" ]}
-}' http://localhost:8983/api/cores/gettingstarted/schema
+}' http://localhost:8983/api/collections/gettingstarted/schema
 ----
 ====
 --
@@ -543,7 +543,7 @@ curl -X POST -H 'Content-type:application/json' --data-binary '{
 ----
 curl -X POST -H 'Content-type:application/json' --data-binary '{
   "delete-copy-field":{ "source":"shelf", "dest":"location" }
-}' http://localhost:8983/api/cores/gettingstarted/schema
+}' http://localhost:8983/api/collections/gettingstarted/schema
 ----
 ====
 --
