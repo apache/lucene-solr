@@ -87,7 +87,7 @@ public abstract class PushPostingsWriterBase extends PostingsWriterBase {
    * fixed length of long[] metadata (which is fixed per
    * field), called when the writing switches to another field. */
   @Override
-  public void setField(FieldInfo fieldInfo) {
+  public int setField(FieldInfo fieldInfo) {
     this.fieldInfo = fieldInfo;
     indexOptions = fieldInfo.getIndexOptions();
 
@@ -113,6 +113,8 @@ public abstract class PushPostingsWriterBase extends PostingsWriterBase {
         enumFlags = PostingsEnum.OFFSETS;
       }
     }
+
+    return 0;
   }
 
   @Override

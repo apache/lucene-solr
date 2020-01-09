@@ -83,7 +83,9 @@ final class IDVersionSegmentTermsEnumFrame {
 
   final BlockTermState state;
 
-  // metadata
+  // metadata buffer, holding monotonic values
+  public long[] longs;
+  // metadata buffer, holding general values
   public byte[] bytes;
   ByteArrayDataInput bytesReader;
 
@@ -94,6 +96,7 @@ final class IDVersionSegmentTermsEnumFrame {
     this.ord = ord;
     this.state = ste.fr.parent.postingsReader.newTermState();
     this.state.totalTermFreq = -1;
+    this.longs = new long[ste.fr.longsSize];
   }
 
   public void setFloorData(ByteArrayDataInput in, BytesRef source) {
@@ -393,8 +396,11 @@ final class IDVersionSegmentTermsEnumFrame {
       state.docFreq = 1;
       state.totalTermFreq = 1;
       //if (DEBUG) System.out.println("    dF=" + state.docFreq);
-      // metadata
-      ste.fr.parent.postingsReader.decodeTerm(bytesReader, ste.fr.fieldInfo, state, absolute);
+      // metadata 
+      for (int i = 0; i < ste.fr.longsSize; i++) {
+        longs[i] = bytesReader.readVLong();
+      }
+      ste.fr.parent.postingsReader.decodeTerm(longs, bytesReader, ste.fr.fieldInfo, state, absolute);
 
       metaDataUpto++;
       absolute = false;

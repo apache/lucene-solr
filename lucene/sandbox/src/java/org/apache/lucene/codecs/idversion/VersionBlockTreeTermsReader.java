@@ -127,6 +127,7 @@ public final class VersionBlockTreeTermsReader extends FieldsProducer {
         final long sumDocFreq = numTerms;
         assert numTerms <= Integer.MAX_VALUE;
         final int docCount = (int) numTerms;
+        final int longsSize = in.readVInt();
 
         BytesRef minTerm = readBytesRef(in);
         BytesRef maxTerm = readBytesRef(in);
@@ -142,7 +143,7 @@ public final class VersionBlockTreeTermsReader extends FieldsProducer {
         final long indexStartFP = indexIn.readVLong();
         VersionFieldReader previous = fields.put(fieldInfo.name,       
                                                  new VersionFieldReader(this, fieldInfo, numTerms, rootCode, sumTotalTermFreq, sumDocFreq, docCount,
-                                                                        indexStartFP, indexIn, minTerm, maxTerm));
+                                                                        indexStartFP, longsSize, indexIn, minTerm, maxTerm));
         if (previous != null) {
           throw new CorruptIndexException("duplicate field: " + fieldInfo.name, in);
         }

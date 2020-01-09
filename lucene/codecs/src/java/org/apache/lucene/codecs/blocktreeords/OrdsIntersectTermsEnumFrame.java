@@ -84,7 +84,9 @@ final class OrdsIntersectTermsEnumFrame {
 
   final BlockTermState termState;
   
-  // metadata
+  // metadata buffer, holding monotonic values
+  public long[] longs;
+  // metadata buffer, holding general values
   public byte[] bytes;
   ByteArrayDataInput bytesReader;
 
@@ -101,6 +103,7 @@ final class OrdsIntersectTermsEnumFrame {
     this.ord = ord;
     this.termState = ite.fr.parent.postingsReader.newTermState();
     this.termState.totalTermFreq = -1;
+    this.longs = new long[ite.fr.longsSize];
   }
 
   void loadNextFloorBlock() throws IOException {
@@ -295,8 +298,11 @@ final class OrdsIntersectTermsEnumFrame {
         termState.totalTermFreq = termState.docFreq + statsReader.readVLong();
         //if (DEBUG) System.out.println("    totTF=" + state.totalTermFreq);
       }
-      // metadata
-      ite.fr.parent.postingsReader.decodeTerm(bytesReader, ite.fr.fieldInfo, termState, absolute);
+      // metadata 
+      for (int i = 0; i < ite.fr.longsSize; i++) {
+        longs[i] = bytesReader.readVLong();
+      }
+      ite.fr.parent.postingsReader.decodeTerm(longs, bytesReader, ite.fr.fieldInfo, termState, absolute);
 
       metaDataUpto++;
       absolute = false;
