@@ -81,9 +81,8 @@ public class BlockTermsWriter extends FieldsConsumer implements Closeable {
     public final long sumTotalTermFreq;
     public final long sumDocFreq;
     public final int docCount;
-    public final int longsSize;
 
-    public FieldMetaData(FieldInfo fieldInfo, long numTerms, long termsStartPointer, long sumTotalTermFreq, long sumDocFreq, int docCount, int longsSize) {
+    public FieldMetaData(FieldInfo fieldInfo, long numTerms, long termsStartPointer, long sumTotalTermFreq, long sumDocFreq, int docCount) {
       assert numTerms > 0;
       this.fieldInfo = fieldInfo;
       this.termsStartPointer = termsStartPointer;
@@ -91,7 +90,6 @@ public class BlockTermsWriter extends FieldsConsumer implements Closeable {
       this.sumTotalTermFreq = sumTotalTermFreq;
       this.sumDocFreq = sumDocFreq;
       this.docCount = docCount;
-      this.longsSize = longsSize;
     }
   }
 
@@ -176,7 +174,6 @@ public class BlockTermsWriter extends FieldsConsumer implements Closeable {
           }
           out.writeVLong(field.sumDocFreq);
           out.writeVInt(field.docCount);
-          out.writeVInt(field.longsSize);
         }
         writeTrailer(dirStart);
         CodecUtil.writeFooter(out);
@@ -206,7 +203,6 @@ public class BlockTermsWriter extends FieldsConsumer implements Closeable {
     long sumTotalTermFreq;
     long sumDocFreq;
     int docCount;
-    int longsSize;
 
     private TermEntry[] pendingTerms;
 
@@ -226,7 +222,7 @@ public class BlockTermsWriter extends FieldsConsumer implements Closeable {
       }
       termsStartPointer = out.getFilePointer();
       this.postingsWriter = postingsWriter;
-      this.longsSize = postingsWriter.setField(fieldInfo);
+      postingsWriter.setField(fieldInfo);
     }
     
     private final BytesRefBuilder lastPrevTerm = new BytesRefBuilder();
@@ -285,8 +281,7 @@ public class BlockTermsWriter extends FieldsConsumer implements Closeable {
                                      termsStartPointer,
                                      fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0 ? sumTotalTermFreq : -1,
                                      sumDocFreq,
-                                     docsSeen.cardinality(),
-                                     longsSize));
+                                     docsSeen.cardinality()));
       }
     }
 
@@ -307,7 +302,6 @@ public class BlockTermsWriter extends FieldsConsumer implements Closeable {
     }
 
     private final RAMOutputStream bytesWriter = new RAMOutputStream();
-    private final RAMOutputStream bufferWriter = new RAMOutputStream();
 
     private void flushBlock() throws IOException {
       //System.out.println("BTW.flushBlock seg=" + segment + " pendingCount=" + pendingCount + " fp=" + out.getFilePointer());
@@ -353,16 +347,10 @@ public class BlockTermsWriter extends FieldsConsumer implements Closeable {
       bytesWriter.reset();
 
       // 4th pass: write the metadata 
-      long[] longs = new long[longsSize];
       boolean absolute = true;
       for(int termCount=0;termCount<pendingCount;termCount++) {
         final BlockTermState state = pendingTerms[termCount].state;
-        postingsWriter.encodeTerm(longs, bufferWriter, fieldInfo, state, absolute);
-        for (int i = 0; i < longsSize; i++) {
-          bytesWriter.writeVLong(longs[i]);
-        }
-        bufferWriter.writeTo(bytesWriter);
-        bufferWriter.reset();
+        postingsWriter.encodeTerm(bytesWriter, fieldInfo, state, absolute);
         absolute = false;
       }
       out.writeVInt((int) bytesWriter.getFilePointer());
