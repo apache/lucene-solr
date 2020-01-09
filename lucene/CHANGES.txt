@@ -88,6 +88,12 @@ API Changes
   yield Passages sized a little different due to the fact that the sizing pivot is now the center of the first match and
   not its left edge.
 
+* LUCENE-9116: PostingsWriterBase and PostingsReaderBase no longer support
+  setting a field's metadata via a `long[]`. (Adrien Grand)
+
+* LUCENE-9116: The FSTOrd postings format has been removed.
+  (Adrien Grand)
+
 New Features
 ---------------------
 (No changes)
