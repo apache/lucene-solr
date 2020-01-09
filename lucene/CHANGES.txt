@@ -120,6 +120,9 @@ Optimizations
 
 Bug Fixes
 ---------------------
+
+* LUCENE-9084: Fix potential deadlock due to circular synchronization in AnalyzingInfixSuggester (Paul Ward)
+
 * LUCENE-9115: NRTCachingDirectory no longer caches files of unknown size.
   (Adrien Grand)
 

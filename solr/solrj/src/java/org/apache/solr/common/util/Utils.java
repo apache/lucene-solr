@@ -203,10 +203,10 @@ public class Utils {
   }
 
   public static Writer writeJson(Object o, Writer writer, boolean indent) throws IOException {
-    new SolrJSONWriter(writer)
-        .setIndent(indent)
-        .writeObj(o)
-        .close();
+    try (SolrJSONWriter jsonWriter = new SolrJSONWriter(writer)) {
+      jsonWriter.setIndent(indent)
+      .writeObj(o);
+    }
     return writer;
   }
 

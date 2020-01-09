@@ -77,10 +77,6 @@ Upgrade Notes
 
 * SOLR-14092: Deprecated BlockJoinFacetComponent and BlockJoinDocSetFacetComponent are removed
   Users are encouraged to migrate to uniqueBlock() in JSON Facet API.  (Mikhail Khludnev)
-
-* SOLR-13985: Solr's Jetty now binds to localhost network interface by default for better out of the box security.
-  Administrators that need Solr exposed more broadly can change the SOLR_JETTY_HOST property in their Solr include
-  (solr.in.sh/solr.in.cmd) file. (Jason Gerlowski, David Smiley, Robert Muir)
   
 Improvements
 ----------------------
@@ -225,6 +221,8 @@ Other Changes
 
 * SOLR-13778: Solrj client will retry requests on SSLException with a suppressed SocketException
   (very likely a hard-closed socket connection).
+
+* SOLR-14169: Fix 20 Resource Leak warnings in SolrJ's apache/solr/common (Andras Salamon via Tomás Fernández Löbbe)
 
 ==================  8.4.0 ==================
 
