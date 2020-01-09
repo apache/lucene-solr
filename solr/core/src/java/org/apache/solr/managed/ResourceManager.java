@@ -17,16 +17,13 @@
 
 package org.apache.solr.managed;
 
-import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrResourceLoader;
@@ -198,9 +195,12 @@ public abstract class ResourceManager implements PluginInfoInitialized, SolrMetr
    */
   public abstract Collection<String> listPools();
 
-  /** Get a named pool. */
+  /** Return a named pool or null if no such pool exists. */
   public abstract ResourceManagerPool getPool(String name);
 
+  public boolean hasPool(String name) {
+    return getPool(name) != null;
+  }
   /**
    * Modify pool limits of an existing pool.
    * @param name existing pool name

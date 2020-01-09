@@ -52,10 +52,14 @@ public class DefaultResourceManager extends ResourceManager {
   public static final String SCHEDULE_DELAY_SECONDS_PARAM = "scheduleDelaySeconds";
   public static final String MAX_NUM_POOLS_PARAM = "maxNumPools";
 
-  public static final int DEFAULT_MAX_POOLS = 100;
+  public static final int DEFAULT_MAX_POOLS = 200;
   public static final int DEFAULT_SCHEDULE_DELAY_SECONDS = 10;
 
-  public static final String NODE_SEARCHER_CACHE_POOL = "nodeSearcherCachePool";
+  public static final String DOCUMENT_CACHE_POOL = "searcherDocumentCache";
+  public static final String FILTER_CACHE_POOL = "searcherFilterCache";
+  public static final String FIELD_VALUE_CACHE_POOL = "searcherFieldValueCache";
+  public static final String QUERY_RESULT_CACHE_POOL = "searcherQueryResultCache";
+  public static final String USER_SEARCHER_CACHE_POOL = "searcherUserCache";
 
   public static final Map<String, Map<String, Object>> DEFAULT_NODE_POOLS = new HashMap<>();
 
@@ -64,7 +68,13 @@ public class DefaultResourceManager extends ResourceManager {
     params.put(CommonParams.TYPE, CacheManagerPool.TYPE);
     // unlimited RAM
     params.put(SolrCache.MAX_RAM_MB_PARAM, -1L);
-    DEFAULT_NODE_POOLS.put(NODE_SEARCHER_CACHE_POOL, params);
+    // unlimited size
+    params.put(SolrCache.MAX_SIZE_PARAM, -1L);
+    DEFAULT_NODE_POOLS.put(DOCUMENT_CACHE_POOL, new HashMap<>(params));
+    DEFAULT_NODE_POOLS.put(FILTER_CACHE_POOL, new HashMap<>(params));
+    DEFAULT_NODE_POOLS.put(FIELD_VALUE_CACHE_POOL, new HashMap<>(params));
+    DEFAULT_NODE_POOLS.put(QUERY_RESULT_CACHE_POOL, new HashMap<>(params));
+    DEFAULT_NODE_POOLS.put(USER_SEARCHER_CACHE_POOL, new HashMap<>(params));
   }
 
 
@@ -95,7 +105,7 @@ public class DefaultResourceManager extends ResourceManager {
   }
 
   protected void doInit() throws Exception {
-    scheduledThreadPoolExecutor = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(2,
+    scheduledThreadPoolExecutor = (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(DEFAULT_NODE_POOLS.size(),
         new DefaultSolrThreadFactory(getClass().getSimpleName()));
     scheduledThreadPoolExecutor.setMaximumPoolSize(maxNumPools);
     scheduledThreadPoolExecutor.setRemoveOnCancelPolicy(true);
@@ -183,7 +193,8 @@ public class DefaultResourceManager extends ResourceManager {
     ensureActive();
     ResourceManagerPool pool = resourcePools.remove(name);
     if (pool == null) {
-      throw new IllegalArgumentException("Pool '" + name + "' doesn't exist.");
+      log.warn("Pool '" + name + "' doesn't exist, ignoring remove request.");
+      return;
     }
     IOUtils.closeQuietly(pool);
     log.info("- removed pool " + pool.getName() + " / " + pool.getType());
@@ -194,7 +205,8 @@ public class DefaultResourceManager extends ResourceManager {
     ensureActive();
     ResourceManagerPool pool = resourcePools.get(name);
     if (pool == null) {
-      throw new IllegalArgumentException("Pool '" + name + "' doesn't exist.");
+      log.warn("Pool '" + name + "' doesn't exist, ignoring register of " + managedComponent.getManagedComponentId());
+      return;
     }
     String poolType = pool.getType();
     resourcePools.forEach((poolName, otherPool) -> {
@@ -216,7 +228,8 @@ public class DefaultResourceManager extends ResourceManager {
     ensureActive();
     ResourceManagerPool pool = resourcePools.get(poolName);
     if (pool == null) {
-      throw new IllegalArgumentException("Pool '" + poolName + "' doesn't exist.");
+      log.warn("Pool '" + poolName + "' doesn't exist, ignoring unregister of " + resourceId);
+      return false;
     }
     return pool.unregisterComponent(resourceId);
   }

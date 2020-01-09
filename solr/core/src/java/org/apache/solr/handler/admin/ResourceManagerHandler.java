@@ -18,10 +18,12 @@ package org.apache.solr.handler.admin;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
@@ -124,47 +126,56 @@ public class ResourceManagerHandler extends RequestHandlerBase implements Permis
     if (op == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unsupported pool operation: " + params.get(POOL_ACTION_PARAM));
     }
-    String name = null;
-    if (op != PoolOp.LIST) {
-      name = params.get(CommonParams.NAME);
+    final String name = params.get(CommonParams.NAME);
+    if (op == PoolOp.CREATE) {
       if (name == null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Required parameter " + CommonParams.NAME + " missing: " + params);
       }
     }
     NamedList<Object> result = new SimpleOrderedMap<>();
+    Set<String> poolNames = new TreeSet<String>(
+        name != null ?
+            resourceManager.listPools().stream()
+                .filter(n -> n.startsWith(name))
+                .collect(Collectors.toSet())
+        :
+        resourceManager.listPools());
     switch (op) {
       case LIST:
-        resourceManager.listPools().forEach(p -> {
+        poolNames.forEach(p -> {
           ResourceManagerPool pool = resourceManager.getPool(p);
           if (pool == null) {
             return;
           }
-          NamedList<Object> perPool = new SimpleOrderedMap<>();
+          SimpleOrderedMap<Object> perPool = new SimpleOrderedMap<>();
+          result.add(p, perPool);
+          perPool.add("type", pool.getType());
+          perPool.add("size", pool.getComponents().size());
+          perPool.add("poolLimits", pool.getPoolLimits());
+          perPool.add("poolParams", pool.getParams());
+        });
+        break;
+      case STATUS:
+        poolNames.forEach(p -> {
+          ResourceManagerPool pool = resourceManager.getPool(p);
+          if (pool == null) {
+            return;
+          }
+          SimpleOrderedMap<Object> perPool = new SimpleOrderedMap<>();
           result.add(p, perPool);
           perPool.add("type", pool.getType());
           perPool.add("size", pool.getComponents().size());
           perPool.add("poolLimits", pool.getPoolLimits());
           perPool.add("poolParams", pool.getParams());
           perPool.add("resources", new TreeSet<>(pool.getComponents().keySet()));
+          try {
+            Map<String, Map<String, Object>> values = pool.getCurrentValues();
+            perPool.add("totalValues", new TreeMap<>(pool.aggregateTotalValues(values)));
+          } catch (Exception e) {
+            log.warn("Error getting current values from pool " + name, e);
+            perPool.add("error", "Error getting current values: " + e.toString());
+          }
         });
-        break;
-      case STATUS:
-        ResourceManagerPool pool = resourceManager.getPool(name);
-        if (pool == null) {
-          throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "Pool '" + name + "' not found.");
-        }
-        result.add("type", pool.getType());
-        result.add("size", pool.getComponents().size());
-        result.add("poolLimits", pool.getPoolLimits());
-        result.add("poolParams", pool.getParams());
-        result.add("resources", new TreeSet<>(pool.getComponents().keySet()));
-        try {
-          Map<String, Map<String, Object>> values = pool.getCurrentValues();
-          result.add("totalValues", new TreeMap<>(pool.aggregateTotalValues(values)));
-        } catch (Exception e) {
-          log.warn("Error getting current values from pool " + name, e);
-          result.add("error", "Error getting current values: " + e.toString());
-        }
         break;
       case CREATE:
         String type = params.get(CommonParams.TYPE);
@@ -181,29 +192,33 @@ public class ResourceManagerHandler extends RequestHandlerBase implements Permis
         }
         break;
       case DELETE:
-        try {
-          resourceManager.removePool(name);
-          result.add("success", "removed");
-        } catch (Exception e) {
-          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Pool '" + name + "' deletion failed: " + e.toString(), e);
-        }
-        break;
-      case SETLIMITS:
-        ResourceManagerPool pool1 = resourceManager.getPool(name);
-        if (pool1 == null) {
-          throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "Pool '" + name + "' not found.");
-        }
-        Map<String, Object> currentLimits = new HashMap<>(pool1.getPoolLimits());
-        Map<String, Object> newLimits = getMap(params, LIMIT_PREFIX_PARAM);
-        newLimits.forEach((k, v) -> {
-          if (v == null) {
-            currentLimits.remove(k);
-          } else {
-            currentLimits.put(k, v);
+        poolNames.forEach(p -> {
+          try {
+            resourceManager.removePool(p);
+            result.add(p, "success");
+          } catch (Exception e) {
+            result.add(p, "error: " + e.toString());
           }
         });
-        pool1.setPoolLimits(newLimits);
-        result.add("success", newLimits);
+        break;
+      case SETLIMITS:
+        poolNames.forEach(p -> {
+          ResourceManagerPool pool = resourceManager.getPool(p);
+          if (pool == null) {
+            return;
+          }
+          Map<String, Object> currentLimits = new HashMap<>(pool.getPoolLimits());
+          Map<String, Object> newLimits = getMap(params, LIMIT_PREFIX_PARAM);
+          newLimits.forEach((k, v) -> {
+            if (v == null) {
+              currentLimits.remove(k);
+            } else {
+              currentLimits.put(k, v);
+            }
+          });
+          pool.setPoolLimits(newLimits);
+          result.add(p, newLimits);
+        });
         break;
     }
     rsp.getValues().add("result", result);
@@ -250,18 +265,24 @@ public class ResourceManagerHandler extends RequestHandlerBase implements Permis
       throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "Pool '" + poolName + "' not found.");
     }
     String resName = params.get(CommonParams.NAME);
-    if ((resName == null || resName.isBlank()) && op != ResOp.LIST) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Missing '" + CommonParams.NAME + "' parameter.");
-    }
     NamedList<Object> result = new SimpleOrderedMap<>();
+    // we support a prefix of resource names because eg. searcher caches will have a quickly
+    // changing unique suffix
     List<ManagedComponent> components = resName == null ? new ArrayList<>(pool.getComponents().values()) : pool.getComponents().values().stream()
+        .sorted(Comparator.comparing(c -> c.getManagedComponentId().toString()))
         .filter(c -> c.getManagedComponentId().toString().startsWith(resName)).collect(Collectors.toList());
     if (op != ResOp.LIST && components.isEmpty()) {
       throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "Component(s) '" + resName + " not found in pool '" + poolName + "'.");
     }
     switch (op) {
       case LIST:
-        pool.getComponents().forEach((n, component) -> {
+        Set<String> componentNames = new TreeSet<>(pool.getComponents().keySet());
+        componentNames.forEach(n -> {
+          ManagedComponent component = pool.getComponents().get(n);
+          if (component == null) {
+            // removed in the meantime
+            return;
+          }
           NamedList<Object> perRes = new SimpleOrderedMap<>();
           result.add(n, perRes);
           perRes.add("class", component.getClass().getName());

@@ -59,6 +59,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.ObjectReleaseTracker;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.core.SolrConfig;
@@ -125,6 +126,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
   // map of generic caches - not synchronized since it's read-only after the constructor.
   private final Map<String,SolrCache> cacheMap;
+
+  private final Map<String, List<SolrCache>> cacheByPool;
 
   // list of all caches associated with this searcher.
   private final SolrCache[] cacheList;
@@ -272,16 +275,33 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     this.cachingEnabled = enableCache;
     if (cachingEnabled) {
       final ArrayList<SolrCache> clist = new ArrayList<>();
+      cacheByPool = new HashMap<>();
       fieldValueCache = solrConfig.fieldValueCacheConfig == null ? null
           : solrConfig.fieldValueCacheConfig.newInstance();
-      if (fieldValueCache != null) clist.add(fieldValueCache);
+      if (fieldValueCache != null) {
+        clist.add(fieldValueCache);
+        cacheByPool.computeIfAbsent(DefaultResourceManager.FIELD_VALUE_CACHE_POOL, Utils.NEW_ARRAYLIST_FUN)
+            .add(fieldValueCache);
+      }
       filterCache = solrConfig.filterCacheConfig == null ? null : solrConfig.filterCacheConfig.newInstance();
-      if (filterCache != null) clist.add(filterCache);
+      if (filterCache != null) {
+        clist.add(filterCache);
+        cacheByPool.computeIfAbsent(DefaultResourceManager.FILTER_CACHE_POOL, Utils.NEW_ARRAYLIST_FUN)
+            .add(filterCache);
+      }
       queryResultCache = solrConfig.queryResultCacheConfig == null ? null
           : solrConfig.queryResultCacheConfig.newInstance();
-      if (queryResultCache != null) clist.add(queryResultCache);
+      if (queryResultCache != null) {
+        clist.add(queryResultCache);
+        cacheByPool.computeIfAbsent(DefaultResourceManager.QUERY_RESULT_CACHE_POOL, Utils.NEW_ARRAYLIST_FUN)
+            .add(queryResultCache);
+      }
       SolrCache<Integer, Document> documentCache = docFetcher.getDocumentCache();
-      if (documentCache != null) clist.add(documentCache);
+      if (documentCache != null) {
+        clist.add(documentCache);
+        cacheByPool.computeIfAbsent(DefaultResourceManager.DOCUMENT_CACHE_POOL, Utils.NEW_ARRAYLIST_FUN)
+            .add(documentCache);
+      }
 
       if (solrConfig.userCacheConfigs.isEmpty()) {
         cacheMap = NO_GENERIC_CACHES;
@@ -292,6 +312,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
           if (cache != null) {
             cacheMap.put(cache.name(), cache);
             clist.add(cache);
+            cacheByPool.computeIfAbsent(DefaultResourceManager.USER_SEARCHER_CACHE_POOL, Utils.NEW_ARRAYLIST_FUN)
+                .add(cache);
           }
         }
       }
@@ -303,6 +325,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       this.fieldValueCache = null;
       this.cacheMap = NO_GENERIC_CACHES;
       this.cacheList = NO_CACHES;
+      this.cacheByPool = Collections.emptyMap();
     }
 
     // We already have our own filter cache
@@ -436,10 +459,15 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     this.solrMetricsContext = core.getSolrMetricsContext().getChildContext(this, null);
     for (SolrCache cache : cacheList) {
       cache.initializeMetrics(solrMetricsContext, SolrMetricManager.mkName(cache.name(), STATISTICS_KEY));
-      try {
-        cache.initializeManagedComponent(resourceManager, DefaultResourceManager.NODE_SEARCHER_CACHE_POOL);
-      } catch (Exception e) {
-        log.warn("Exception adding cache '" + cache.getManagedComponentId() + "' to the resource manager pool", e);
+    }
+    // register caches in their respective resource pools
+    for (Map.Entry<String, List<SolrCache>> entry : cacheByPool.entrySet()) {
+      for (SolrCache cache : entry.getValue()) {
+        try {
+          cache.initializeManagedComponent(resourceManager, entry.getKey());
+        } catch (Exception e) {
+          log.warn("Exception adding cache '" + cache.getManagedComponentId() + "' to the resource manager pool " + entry.getKey(), e);
+        }
       }
     }
     initializeMetrics(solrMetricsContext, STATISTICS_KEY);

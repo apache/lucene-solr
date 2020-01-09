@@ -296,6 +296,12 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
     if (regenerator == null) {
       return;
     }
+
+    // inherit also maxSize / maxRamMB from the old cache - these may
+    // be currently set to different values than the static config due to
+    // dynamic adjustments
+    setMaxSize(old.getMaxSize());
+    setMaxRamMB(old.getMaxRamMB());
     
     long warmingStartTime = System.nanoTime();
     Map<K, V> hottest = Collections.emptyMap();
