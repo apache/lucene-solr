@@ -1,5 +1,0 @@
-
-// https://github.com/palantir/gradle-consistent-versions/pull/365
-configure(rootProject.tasks.matching {it.name == "checkUnusedConstraints" }) { task ->
-  task.enabled = false
-}
