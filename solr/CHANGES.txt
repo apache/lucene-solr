@@ -371,6 +371,8 @@ Bug Fixes
   affects splits triggered by the autoscale framework, which use async mode.
   (Megan Carey, Andy Vuong, Bilal Waheed, Ilan Ginzburg, yonik)
 
+* SOLR-6613: TextField.analyzeMultiTerm does not throw an exception when Analyzer returns no terms. (Bruno Roustant)
+
 Other Changes
 ---------------------
 
