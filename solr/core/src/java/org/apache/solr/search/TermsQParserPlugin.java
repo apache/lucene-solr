@@ -92,7 +92,7 @@ public class TermsQParserPlugin extends QParserPlugin {
       @Override
       Query makeFilter(String fname, BytesRef[] byteRefs) {
         // TODO Further tune this heuristic number
-        return disableCacheByDefault((byteRefs.length > 700) ? new TopLevelDocValuesTermsQuery(fname, byteRefs) : new DocValuesTermsQuery(fname, byteRefs));
+        return (byteRefs.length > 700) ? docValuesTermsFilterTopLevel.makeFilter(fname, byteRefs) : docValuesTermsFilterPerSegment.makeFilter(fname, byteRefs);
       }
     },
     docValuesTermsFilterTopLevel {
