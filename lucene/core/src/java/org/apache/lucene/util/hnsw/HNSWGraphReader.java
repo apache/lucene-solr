@@ -18,8 +18,10 @@
 package org.apache.lucene.util.hnsw;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.lucene.index.FieldInfo;
@@ -47,18 +49,19 @@ public final class HNSWGraphReader {
 
   public Neighbors searchNeighbors(float[] query, int ef, VectorValues vectorValues) throws IOException {
     HNSWGraph hnsw = get(field, context, false);
+    // TODO: refactor into HNSWGraph
     int enterPoint = hnsw.getFirstEnterPoint();
     if (!vectorValues.seek(enterPoint)) {
       throw new IllegalStateException("enterPoint=" + enterPoint + " has no vector value");
     }
 
-    Neighbors neighbors;
     Neighbor ep = new ImmutableNeighbor(enterPoint, VectorValues.distance(query, vectorValues.vectorValue(), distFunc));
+    FurthestNeighbors neighbors = new FurthestNeighbors(ef, ep);
     for (int l = hnsw.topLevel(); l > 0; l--) {
-      neighbors = hnsw.searchLayer(query, ep, 1, l, vectorValues);
-      ep = neighbors.top();
+      hnsw.searchLayer(query, neighbors, 1, l, vectorValues);
     }
-    return hnsw.searchLayer(query, ep, ef, 0, vectorValues);
+    hnsw.searchLayer(query, neighbors, ef, 0, vectorValues);
+    return neighbors;
   }
 
   public static long loadGraphs(String field, IndexReader reader, boolean forceReload) throws IOException {
