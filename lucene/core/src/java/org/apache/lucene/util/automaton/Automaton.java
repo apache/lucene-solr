@@ -656,32 +656,7 @@ public class Automaton implements Accountable {
    * @return destination state, -1 if no matching outgoing transition
    */
   public int step(int state, int label) {
-    assert state >= 0;
-    assert label >= 0;
-    int stateIndex = 2 * state;
-    int firstTransitionIndex = states[stateIndex];
-    int numTransitions = states[stateIndex + 1];
-
-    // Since transitions are sorted,
-    // binary search the transition for which label is within [minLabel, maxLabel].
-    int low = 0;
-    int high = numTransitions - 1;
-    while (low <= high) {
-      int mid = (low + high) >>> 1;
-      int transitionIndex = firstTransitionIndex + 3 * mid;
-      int minLabel = transitions[transitionIndex + 1];
-      if (minLabel > label) {
-        high = mid - 1;
-      } else {
-        int maxLabel = transitions[transitionIndex + 2];
-        if (maxLabel < label){
-          low = mid + 1;
-        } else {
-          return transitions[transitionIndex];
-        }
-      }
-    }
-    return -1;
+    return next(state, 0, label, null);
   }
 
   /**
@@ -701,18 +676,28 @@ public class Automaton implements Accountable {
    * @return The destination state; or -1 if no matching outgoing transition.
    */
   public int next(Transition transition, int label) {
-    // Copy of step() method with
-    // - binary search 'low' bound initialized to transition.transitionUpto.
-    // - param transition .dest/.min/.max/.transitionUpto set to the matching transition.
-    assert transition.source >= 0;
+    return next(transition.source, transition.transitionUpto, label, transition);
+  }
+
+  /**
+   * Looks for the next transition that matches the provided label, assuming determinism.
+   *
+   * @param state               The source state.
+   * @param fromTransitionIndex The transition index to start the lookup from (inclusive); negative interpreted as 0.
+   * @param label               The codepoint to look up.
+   * @param transition          The output transition to update with the matching transition; or null for no update.
+   * @return The destination state; or -1 if no matching outgoing transition.
+   */
+  private int next(int state, int fromTransitionIndex, int label, Transition transition) {
+    assert state >= 0;
     assert label >= 0;
-    int stateIndex = 2 * transition.source;
+    int stateIndex = 2 * state;
     int firstTransitionIndex = states[stateIndex];
     int numTransitions = states[stateIndex + 1];
 
     // Since transitions are sorted,
     // binary search the transition for which label is within [minLabel, maxLabel].
-    int low = Math.max(transition.transitionUpto, 0);
+    int low = Math.max(fromTransitionIndex, 0);
     int high = numTransitions - 1;
     while (low <= high) {
       int mid = (low + high) >>> 1;
@@ -725,15 +710,23 @@ public class Automaton implements Accountable {
         if (maxLabel < label){
           low = mid + 1;
         } else {
-          transition.min = minLabel;
-          transition.max = maxLabel;
-          transition.transitionUpto = mid;
-          return transition.dest = transitions[transitionIndex];
+          int destState = transitions[transitionIndex];
+          if (transition != null) {
+            transition.dest = destState;
+            transition.min = minLabel;
+            transition.max = maxLabel;
+            transition.transitionUpto = mid;
+          }
+          return destState;
         }
       }
     }
-    transition.transitionUpto = low;
-    return transition.dest = -1;
+    int destState = -1;
+    if (transition != null) {
+      transition.dest = destState;
+      transition.transitionUpto = low;
+    }
+    return destState;
   }
 
   /** Records new states and transitions and then {@link
