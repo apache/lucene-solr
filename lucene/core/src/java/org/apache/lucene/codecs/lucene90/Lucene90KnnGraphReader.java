@@ -18,6 +18,8 @@
 package org.apache.lucene.codecs.lucene90;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.FloatBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -258,18 +260,29 @@ public final class Lucene90KnnGraphReader extends KnnGraphReader {
 
     final int maxDoc;
     final int numDims;
+    final int byteSize;
     final KnnGraphEntry entry;
     final IndexInput dataIn;
+    final BytesRef binaryValue;
+    final ByteBuffer byteBuffer;
+    final FloatBuffer floatBuffer;
+    final float[] value;
 
     int doc = -1;
-    BytesRef binaryValue;
 
     RandomAccessVectorValuesReader(int maxDoc, int numDims, KnnGraphEntry entry, IndexInput dataIn) {
       this.maxDoc = maxDoc;
       this.numDims = numDims;
       this.entry = entry;
       this.dataIn = dataIn;
-      this.binaryValue = new BytesRef(new byte[Float.BYTES * numDims]);
+      // TODO: if we had more direct access to file system (a FileChannel) we could use a
+      // MappedByteBuffer here. EG if we know that dataIn is a ByteBufferIndexInput, we could get a
+      // FloatBuffer from that and provide access to it
+      byteSize = Float.BYTES * numDims;
+      byteBuffer = ByteBuffer.allocate(byteSize);
+      floatBuffer = byteBuffer.asFloatBuffer();
+      value = new float[numDims];
+      binaryValue = new BytesRef(byteBuffer.array(), byteBuffer.arrayOffset(), byteSize);
     }
 
     @Override
@@ -277,7 +290,10 @@ public final class Lucene90KnnGraphReader extends KnnGraphReader {
       if (doc == NO_MORE_DOCS) {
         return null;
       }
-      return VectorValues.decode(binaryValue, numDims);
+      // return VectorValues.decode(binaryValue, numDims);
+      floatBuffer.position(0);
+      floatBuffer.get(value, 0, numDims);
+      return value;
     }
 
     @Override
@@ -296,10 +312,11 @@ public final class Lucene90KnnGraphReader extends KnnGraphReader {
       if (ord == null) {
         return false;
       }
-      int offset = Float.BYTES * numDims * ord;
+      int offset = ord * byteSize;
       assert offset >= 0;
       dataIn.seek(offset);
-      dataIn.readBytes(binaryValue.bytes, binaryValue.offset, binaryValue.length);
+      //dataIn.readBytes(binaryValue.bytes, binaryValue.offset, binaryValue.length);
+      dataIn.readBytes(byteBuffer.array(), byteBuffer.arrayOffset(), byteSize);
       return true;
     }
 

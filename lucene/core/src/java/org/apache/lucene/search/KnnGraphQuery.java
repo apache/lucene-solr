@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.FieldInfo;
@@ -44,8 +45,8 @@ public class KnnGraphQuery extends Query implements Accountable {
   private final String field;
   private final float[] queryVector;
   private final int ef;
-
-  private long bytesUsed = 0L;
+  private final long bytesUsed;
+  private final AtomicLong visitedCounter;
 
   /**
    * Creates an nearest neighbor search query with default {@code ef} parameter (={@link #DEFAULT_EF}).
@@ -54,7 +55,6 @@ public class KnnGraphQuery extends Query implements Accountable {
    */
   public KnnGraphQuery(String field, float[] queryVector) {
     this(field, queryVector, DEFAULT_EF);
-    this.bytesUsed = RamUsageEstimator.shallowSizeOfInstance(getClass());
   }
 
   /**
@@ -68,7 +68,8 @@ public class KnnGraphQuery extends Query implements Accountable {
     this.field = field;
     this.queryVector = queryVector;
     this.ef = ef;
-    this.bytesUsed = RamUsageEstimator.shallowSizeOfInstance(getClass());
+    visitedCounter = new AtomicLong();
+    bytesUsed = RamUsageEstimator.shallowSizeOfInstance(getClass());
   }
 
   /**
@@ -85,8 +86,11 @@ public class KnnGraphQuery extends Query implements Accountable {
     this.field = field;
     this.queryVector = queryVector;
     this.ef = ef;
+    visitedCounter = new AtomicLong();
     if (reader != null) {
-      this.bytesUsed = HNSWGraphReader.loadGraphs(field, reader, forceReload);
+      bytesUsed = HNSWGraphReader.loadGraphs(field, reader, forceReload);
+    } else {
+      bytesUsed = 0;
     }
   }
 
@@ -106,7 +110,9 @@ public class KnnGraphQuery extends Query implements Accountable {
 
   @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-    return new KnnScoreWeight(this, boost, scoreMode, field, queryVector, ef);
+    KnnScoreWeight weight = new KnnScoreWeight(this, boost, scoreMode, field, queryVector, ef);
+    weight.setVisitedCounter(visitedCounter);
+    return weight;
   }
 
   @Override
@@ -142,5 +148,12 @@ public class KnnGraphQuery extends Query implements Accountable {
   @Override
   public long ramBytesUsed() {
     return bytesUsed;
+  }
+
+  /**
+   * @return this total the number of documents visited by this query
+   */
+  public long getVisitedCount() {
+    return visitedCounter.get();
   }
 }

@@ -35,11 +35,15 @@ import org.apache.lucene.search.DocIdSetIterator;
  * This also caches built {@link HNSWGraph}s for repeated use. */
 public final class HNSWGraphReader {
 
+  // TODO: evict from this cache when a reader's segment is merged. Probably should hold the cache
+  // somewhere that has a similar lifecycle, like Lucene90KnnGraphReader
   private static final Map<GraphKey, HNSWGraph> cache = new ConcurrentHashMap<>();
 
   private final String field;
   private final LeafReaderContext context;
   private final VectorValues.DistanceFunction distFunc;
+
+  private long visitedCount;
 
   public HNSWGraphReader(String field, LeafReaderContext context) {
     this.field = field;
@@ -58,9 +62,9 @@ public final class HNSWGraphReader {
     Neighbor ep = new ImmutableNeighbor(enterPoint, VectorValues.distance(query, vectorValues.vectorValue(), distFunc));
     FurthestNeighbors neighbors = new FurthestNeighbors(ef, ep);
     for (int l = hnsw.topLevel(); l > 0; l--) {
-      hnsw.searchLayer(query, neighbors, 1, l, vectorValues);
+      visitedCount += hnsw.searchLayer(query, neighbors, 1, l, vectorValues);
     }
-    hnsw.searchLayer(query, neighbors, ef, 0, vectorValues);
+    visitedCount += hnsw.searchLayer(query, neighbors, ef, 0, vectorValues);
     return neighbors;
   }
 
@@ -120,6 +124,15 @@ public final class HNSWGraphReader {
     }
     hnsw.finish();
     return hnsw;
+  }
+
+  /**
+   * @return the number of documents visited by this reader. For each visited document, the reader
+   * computed the distance to a target vector.  This count accumulates over the lifetime of the
+   * reader.
+   */
+  public long getVisitedCount() {
+    return visitedCount;
   }
 
   private static class GraphKey {

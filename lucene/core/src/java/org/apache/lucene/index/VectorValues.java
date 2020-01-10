@@ -73,15 +73,9 @@ public abstract class VectorValues extends DocIdSetIterator {
    * Encodes float array to byte array.
    */
   public static BytesRef encode(float[] value) {
-    byte[] bytes = new byte[Float.BYTES * value.length];
-    for (int i = 0; i < value.length; i++) {
-      int bits = Float.floatToIntBits(value[i]);
-      bytes[i * Float.BYTES] = (byte)(bits >> 24);
-      bytes[i * Float.BYTES + 1] = (byte)(bits >> 16);
-      bytes[i * Float.BYTES + 2] = (byte)(bits >> 8);
-      bytes[i * Float.BYTES + 3] = (byte)(bits);
-    }
-    return new BytesRef(bytes);
+    ByteBuffer buffer = ByteBuffer.allocate(Float.BYTES * value.length);
+    buffer.asFloatBuffer().put(value);
+    return new BytesRef(buffer.array());
   }
 
   public static boolean verifyNumDimensions(int numBytes, int numDims) {

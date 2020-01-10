@@ -55,29 +55,27 @@ public final class HNSWGraph implements Accountable {
    * @param ef the number of nodes to be searched
    * @param level graph level
    * @param vectorValues vector values
-   * @return nearest neighbors
+   * @return number of candidates visited
    */
-  void searchLayer(float[] query, FurthestNeighbors results, int ef, int level, VectorValues vectorValues) throws IOException {
+  int searchLayer(float[] query, FurthestNeighbors results, int ef, int level, VectorValues vectorValues) throws IOException {
     if (level >= layers.size()) {
       throw new IllegalArgumentException("layer does not exist for the level: " + level);
     }
 
     Layer layer = layers.get(level);
     TreeSet<Neighbor> candidates = new TreeSet<>();
-    for (Neighbor n : results) {
-      // TODO: candidates should get neighbors of neighbors
-      candidates.add(n);
-    }
     // set of docids that have been visited by search on this layer, used to avoid backtracking
     Set<Integer> visited = new HashSet<>();
-    // We want to efficiently pop the best (nearest, least distance) candidate, so use NearestNeighbors,
-    // but we don't want to overflow the heap and lose the best candidate!
+    for (Neighbor n : results) {
+      candidates.add(n);
+      visited.add(n.docId());
+    }
+    Neighbor f = results.top();
     while (candidates.size() > 0) {
       Neighbor c = candidates.pollFirst();
-      Neighbor f = results.top();
       assert c.isDeferred() == false;
       assert f.isDeferred() == false;
-      if (c.distance() > f.distance()) {
+      if (c.distance() > f.distance() && results.size() >= ef) {
         break;
       }
       for (Neighbor e : layer.getFriends(c.docId())) {
@@ -85,21 +83,19 @@ public final class HNSWGraph implements Accountable {
           continue;
         }
         visited.add(e.docId());
-        assert f.isDeferred() == false;
         float dist = distance(query, e.docId(), vectorValues);
         if (dist < f.distance() || results.size() < ef) {
           Neighbor n = new ImmutableNeighbor(e.docId(), dist);
           candidates.add(n);
-          Neighbor popped = results.insertWithOverflow(n);
-          if (popped != null && popped != n) {
-            f = results.top();
-          }
+          results.insertWithOverflow(n);
+          f = results.top();
         }
       }
     }
 
     //System.out.println("level=" + level + ", visited nodes=" + visited.size());
     //return pickNearestNeighbor(results);
+    return visited.size();
   }
 
   private float distance(float[] query, int docId, VectorValues vectorValues) throws IOException {
@@ -216,13 +212,10 @@ public final class HNSWGraph implements Accountable {
       throw new IllegalArgumentException("layer does not exist for level: " + level);
     }
     layer.connectNodes(node1, node2, dist);
-    /*
     // ensure friends size <= maxConnections
-    //
     if (maxConnections > 0) {
       layer.shrink(node2, maxConnections);
     }
-    */
   }
 
   /** Connects two nodes; this is supposed to be called when searching */

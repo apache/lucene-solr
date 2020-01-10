@@ -64,7 +64,7 @@ public final class HNSWGraphWriter implements Accountable {
   }
 
   /** Full constructor */
-  public HNSWGraphWriter(int maxConn, int maxConn0, int efConst, long seed, int numDimensions, VectorValues.DistanceFunction distFunc) {
+  HNSWGraphWriter(int maxConn, int maxConn0, int efConst, long seed, int numDimensions, VectorValues.DistanceFunction distFunc) {
     this.maxConn = maxConn;
     this.maxConn0 = maxConn0;
     this.efConst = efConst;
@@ -115,7 +115,7 @@ public final class HNSWGraphWriter implements Accountable {
     FurthestNeighbors results = new FurthestNeighbors(efConst, ep);
     // down to the level from the hnsw's top level
     for (int l = hnsw.topLevel(); l > level; l--) {
-      hnsw.searchLayer(value, results, efConst, l, vectorValues);
+      hnsw.searchLayer(value, results, 1, l, vectorValues);
     }
 
     // down to level 0 with placing the doc to each layer
@@ -128,12 +128,10 @@ public final class HNSWGraphWriter implements Accountable {
 
       hnsw.searchLayer(value, results, efConst, l, vectorValues);
       int maxConnections = l == 0 ? maxConn0 : maxConn;
-      NearestNeighbors neighbors = new NearestNeighbors(maxConnections, results.top());
-      for (Neighbor n : results) {
-        neighbors.insertWithOverflow(n);
+      while (results.size() > maxConnections) {
+        results.pop();
       }
-      for (Neighbor n : neighbors) {
-        // TODO: limit *total* num connections by pruning (shrinking)
+      for (Neighbor n : results) {
         hnsw.connectNodes(l, docId, n.docId(), n.distance(), maxConnections);
       }
     }
