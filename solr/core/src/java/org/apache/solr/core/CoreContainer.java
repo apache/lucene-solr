@@ -2101,6 +2101,10 @@ public class CoreContainer {
    * the SharedCoreConcurrencyController cache; see SOLR-14134
    */
   public void evictSharedCoreMetadata(CoreDescriptor cd) {
+    if (!isZooKeeperAware()) {
+      return;
+    }
+    
     SharedCoreConcurrencyController concurrencyController = 
         getSharedStoreManager().getSharedCoreConcurrencyController();
     if (cd != null &&

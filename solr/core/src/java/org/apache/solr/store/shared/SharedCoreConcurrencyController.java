@@ -130,18 +130,6 @@ public class SharedCoreConcurrencyController {
    * If it does then either we are too slow in pulling and can tune this value or something else is wrong.
    */
   public static int MAX_ATTEMPTS_INDEXING_PULL_WRITE_LOCK = 10;
-  
-  /**
-   * Maximum number of SharedCoreVersionMetadata to keep in an in-memory cache before we start 
-   * evicting entries 
-   */
-  public static int MAX_CACHE_SIZE = 5000;
-
-  /**
-   * Time in seconds that needs to pass before evicting entries from the in-memory cache that haven't 
-   * accessed recently
-   */
-  public static int CACHE_EXPIRATION_TIME_SECONDS = 60*60*12;
 
   private final CoreContainer cores;
   /**
