@@ -17,7 +17,7 @@ configure(rootProject) {
     doFirst {
       ant.taskdef(
           name: "groovy",
-          class: "org.codehaus.groovy.ant.Groovy",
+          classname: "org.codehaus.groovy.ant.Groovy",
           classpath: configurations.checkSourceDeps.asPath)
 
       ant.groovy(src: project(":lucene").file("tools/src/groovy/check-source-patterns.groovy"))
