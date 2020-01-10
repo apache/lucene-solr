@@ -26,3 +26,7 @@ pom.xml
 /nbproject
 /nb-build
 .pydevproject
+__pycache__
+/dev-tools/scripts/scripts.iml
+.DS_Store
+

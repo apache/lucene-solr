@@ -34,6 +34,7 @@ import java.util.function.IntFunction;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.util.PriorityQueue;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
@@ -148,7 +149,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   }
 
   /** 
-   * Simple helper for checking if a {@FacetRequest.FacetSort} is on "count" or "index" and picking 
+   * Simple helper for checking if a {@link FacetRequest.FacetSort} is on "count" or "index" and picking
    * the existing SlotAcc 
    * @return an existing SlotAcc for sorting, else null if it should be built from the Aggs
    */
@@ -224,6 +225,12 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
 
     boolean needOtherAccs = freq.allBuckets;  // TODO: use for missing too...
 
+    if (sortAcc == null) {
+      // as sort is already validated, in what case sortAcc would be null?
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Invalid sort '" + sort + "' for field '" + sf.getName() + "'");
+    }
+
     if (!needOtherAccs) {
       // we may need them later, but we don't want to create them now
       // otherwise we won't know if we need to call setNextReader on them.
@@ -287,6 +294,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
   SimpleOrderedMap<Object> findTopSlots(final int numSlots, final int slotCardinality,
                                         IntFunction<Comparable> bucketValFromSlotNumFunc,
                                         Function<Comparable, String> fieldQueryValFunc) throws IOException {
+    assert this.sortAcc != null;
     int numBuckets = 0;
 
     final int off = fcontext.isShard() ? 0 : (int) freq.offset;
@@ -326,7 +334,7 @@ abstract class FacetFieldProcessor extends FacetProcessor<FacetField> {
         return cmp == 0 ? b.slot < a.slot : cmp < 0;
       };
     }
-    final PriorityQueue<Slot> queue = new PriorityQueue<Slot>(maxTopVals) {
+    final PriorityQueue<Slot> queue = new PriorityQueue<>(maxTopVals) {
       @Override
       protected boolean lessThan(Slot a, Slot b) { return orderPredicate.test(a, b); }
     };

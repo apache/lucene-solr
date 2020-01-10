@@ -57,9 +57,13 @@ public class ColStatus {
   private final ZkNodeProps props;
   private final SolrClientCache solrClientCache;
 
-  public static final String CORE_INFO_PROP = SegmentsInfoRequestHandler.WITH_CORE_INFO;
-  public static final String FIELD_INFO_PROP = SegmentsInfoRequestHandler.WITH_FIELD_INFO;
-  public static final String SIZE_INFO_PROP = SegmentsInfoRequestHandler.WITH_SIZE_INFO;
+  public static final String CORE_INFO_PROP = SegmentsInfoRequestHandler.CORE_INFO_PARAM;
+  public static final String FIELD_INFO_PROP = SegmentsInfoRequestHandler.FIELD_INFO_PARAM;
+  public static final String SIZE_INFO_PROP = SegmentsInfoRequestHandler.SIZE_INFO_PARAM;
+  public static final String RAW_SIZE_PROP = SegmentsInfoRequestHandler.RAW_SIZE_PARAM;
+  public static final String RAW_SIZE_SUMMARY_PROP = SegmentsInfoRequestHandler.RAW_SIZE_SUMMARY_PARAM;
+  public static final String RAW_SIZE_DETAILS_PROP = SegmentsInfoRequestHandler.RAW_SIZE_DETAILS_PARAM;
+  public static final String RAW_SIZE_SAMPLING_PERCENT_PROP = SegmentsInfoRequestHandler.RAW_SIZE_SAMPLING_PERCENT_PARAM;
   public static final String SEGMENTS_PROP = "segments";
 
   public ColStatus(HttpClient httpClient, ClusterState clusterState, ZkNodeProps props) {
@@ -80,6 +84,14 @@ public class ColStatus {
     boolean withSegments = props.getBool(SEGMENTS_PROP, false);
     boolean withCoreInfo = props.getBool(CORE_INFO_PROP, false);
     boolean withSizeInfo = props.getBool(SIZE_INFO_PROP, false);
+    boolean withRawSizeInfo = props.getBool(RAW_SIZE_PROP, false);
+    boolean withRawSizeSummary = props.getBool(RAW_SIZE_SUMMARY_PROP, false);
+    boolean withRawSizeDetails = props.getBool(RAW_SIZE_DETAILS_PROP, false);
+    Object samplingPercentVal = props.get(RAW_SIZE_SAMPLING_PERCENT_PROP);
+    Float samplingPercent = samplingPercentVal != null ? Float.parseFloat(String.valueOf(samplingPercentVal)) : null;
+    if (withRawSizeSummary || withRawSizeDetails) {
+      withRawSizeInfo = true;
+    }
     if (withFieldInfo || withSizeInfo) {
       withSegments = true;
     }
@@ -111,6 +123,11 @@ public class ColStatus {
         int recoveringReplicas = 0;
         int recoveryFailedReplicas = 0;
         for (Replica r : s.getReplicas()) {
+          // replica may still be marked as ACTIVE even though its node is no longer live
+          if (! r.isActive(clusterState.getLiveNodes())) {
+            downReplicas++;
+            continue;
+          }
           switch (r.getState()) {
             case ACTIVE:
               activeReplicas++;
@@ -159,6 +176,12 @@ public class ColStatus {
           params.add(FIELD_INFO_PROP, "true");
           params.add(CORE_INFO_PROP, String.valueOf(withCoreInfo));
           params.add(SIZE_INFO_PROP, String.valueOf(withSizeInfo));
+          params.add(RAW_SIZE_PROP, String.valueOf(withRawSizeInfo));
+          params.add(RAW_SIZE_SUMMARY_PROP, String.valueOf(withRawSizeSummary));
+          params.add(RAW_SIZE_DETAILS_PROP, String.valueOf(withRawSizeDetails));
+          if (samplingPercent != null) {
+            params.add(RAW_SIZE_SAMPLING_PERCENT_PROP, String.valueOf(samplingPercent));
+          }
           QueryRequest req = new QueryRequest(params);
           NamedList<Object> rsp = client.request(req);
           rsp.remove("responseHeader");

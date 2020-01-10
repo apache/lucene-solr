@@ -1,5 +1,4 @@
 = Solr System Requirements
-:page-toc: false
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -25,6 +24,7 @@ You can install Solr in any system where a suitable Java Runtime Environment (JR
 
 Solr is tested on several versions of Linux, macOS and Windows.
 
+//TODO: this with the next big section on Java fragments the Java requirements too much. Consider merging sections.
 === Java Requirements
 
 You will need the Java Runtime Environment (JRE) version 1.8 or higher. At a command line, check your Java version like this:
@@ -39,64 +39,57 @@ Java HotSpot(TM) 64-Bit Server VM (build 25.60-b23, mixed mode)
 
 The exact output will vary, but you need to make sure you meet the minimum version requirement. We also recommend choosing a version that is not end-of-life from its vendor. Oracle/OpenJDK are the most tested JREs and are preferred. It's also preferred to use the latest available official release.
 
-Some versions of Java VM have bugs that may impact your implementation. To be sure, check the page https://wiki.apache.org/lucene-java/JavaBugs[Lucene Java Bugs].
+Some versions of Java VM have bugs that may impact your implementation. To be sure, check the page https://wiki.apache.org/confluence/display/LUCENEJAVA/JavaBugs[Lucene Java Bugs].
 
 === Sources for Java
-Java is available from a number of providers. Lucene and Solr regularly test with https://jdk.java.net/[OpenJDK]/Oracle versions of Java. Some are free, others have a cost, some provide security patches and support, others do not. We recommend you read the article https://medium.com/@javachampions/java-is-still-free-2-0-0-6b9aa8d6d244[Java is still free by Java Champions] to help you decide.
+
+Java is available from a number of providers. Lucene and Solr regularly test with https://jdk.java.net/[OpenJDK] and Oracle versions of Java. Some are free, others have a cost, some provide security patches and support, others do not. We recommend you read the article https://medium.com/@javachampions/java-is-still-free-2-0-0-6b9aa8d6d244[Java is still free by Java Champions] to help you decide.
 
 The Lucene project does not endorse any particular provider of Java.
 
 NOTE: While we reference the Java Development (JDK) on this page, any Java Runtime Environment (JRE) associated with the referenced JDKs is acceptable.
 
-== Java and Lucene/Solr combinations
-Each Lucene/Solr release has an extensively tested minimum Java version. For instance the minimum Java version for Solr 8 is Java 8. This section is intended to provide guidance when running Lucene/Solr with a more recent Java version than the minimum specified.
+== Java and Lucene/Solr Combinations
 
-=== Executive summary
-* OpenJDK/Oracle distribution are tested extensively and will continue to be tested going forward.
-** Distributions of Java from other source are not regularly tested by our testing infrastructure, therefore you must test Java from those sources in your environment.
-** For the purposes of Lucene and Solr, Oracle's paid version and OpenJDK are are identical.
+Each Lucene/Solr release has an extensively tested minimum Java version. For instance the minimum Java version for Solr 8 is Java 8. This section provides guidance when running Lucene/Solr with a more recent Java version than the minimum specified.
+
+* OpenJDK and Oracle Java distributions are tested extensively and will continue to be tested going forward.
+** Distributions of Java from other sources are not regularly tested by our testing infrastructure, therefore you must test Java from those sources in your environment.
+** For the purposes of Lucene and Solr, Oracle's Java and OpenJDK are identical.
 * Upgrading Java is not required with the understanding that no Java bugs will be addressed unless you are using a version of Java that provides LTS.
-* Java 8 has been extensively tested both in the field and by automated tests through Solr 8. LTS for Java 8 is provided by some sources, see https://medium.com/@javachampions/java-is-still-free-2-0-0-6b9aa8d6d244[Java is still free].
-* Our testing infrastructure continuously tests with the minimum and greater versions of Java for each development branch.
-* Java 9 and 10 have no Long Term Support (LTS). For this reason, Java 11 is preferred over 9 or 10 when upgrading Java.
+* Java 8 has been extensively tested by both automated tests and users through Solr 8. Long Term Support (LTS) for Java 8 is provided by some sources, see https://medium.com/@javachampions/java-is-still-free-2-0-0-6b9aa8d6d244[Java is still free].
+* The project's testing infrastructure continuously tests with the minimum and greater versions of Java for each development branch.
+* Java 9 and 10 have no LTS. For this reason, Java 11 is preferred over 9 or 10 when upgrading Java.
 * For specific questions the http://lucene.apache.org/solr/community.html#mailing-lists-irc[Solr User's List] is a great resource.
 
-The rest of this page summarizes the Lucene/Solr community's testing experience for Lucene/Solr releases.
-
-=== How we test Solr/Lucene
+=== Project Testing of Java-Solr Combinations
 Solr and Lucene run a continuous integration model, running automated unit and integration tests using several versions of Java. In addition, some organizations also maintain their own test infrastructure and feed their results back to the community.
 
 Our continuous testing is against the two code lines under active development, Solr 8x and the future Solr 9.0:
 
-* Lucene/Solr 8.x is the current stable branch and will have "point releases", i.e. 8.1, 8.2... until Lucene/Solr 9.0 is released.
-** This version is currently tested against Java 8, 9, 10, 11, 12 and (pre-release) 13
-* There is also development and testing with the future Lucene/Solr 9.0. There is no planned release date although the cadence has been between 1 and 2 years for major releases.
-** This version will require Java 11, so it is currently tested against Java 11, 12 and (pre-release) 13
-* Lucene/Solr 7x and earlier are not tested on a continuous basis.
+* Lucene/Solr 8.x is the current stable release line and will have "point releases", i.e., 8.1, 8.2, etc. until Lucene/Solr 9.0 is released.
+** Solr 8.x is currently tested against Java 8, 9, 10, 11, 12 and (pre-release) 13.
+* There is also development and testing with the future Lucene/Solr 9.x release line, which will require Java 11 as a minimum version. This line is currently tested against Java 11, 12 and (pre-release) 13.
+* Lucene/Solr 7.x and earlier release lines are not tested on a continuous basis.
 
 === Released Lucene/Solr and Java Versions
 The success rate in our automated tests is similar with all the Java versions tested with the following caveats.
 
-==== Lucene/Solr prior to 7.0
+==== Lucene/Solr Prior to 7.0
 
-* Lucene/Solr 7.0 was the first version that successfully passed our tests using Java 9+. Our best guidance is to avoid Java 9 or later for Lucene/Solr 6 or earlier
+* Lucene/Solr 7.0 was the first version that successfully passed our tests using Java 9 and higher. You should avoid Java 9 or later for Lucene/Solr 6.x or earlier.
 
-==== Lucene/Solr 7
+==== Lucene/Solr 7.x
 
-* Requires Java 8+
-* This version had continuous testing with Java 9, 10, 11, 12 and the pre release version of Java 13. Regular testing stopped when Lucene/Solr 8.0 was released.
-* Lucene/Solr 7.0 is the first release of Lucene/Solr that successfully completed our testing with Java 9+.
+* Requires Java 8 or higher.
+* This version had continuous testing with Java 9, 10, 11, 12 and the pre-release version of Java 13. Regular testing stopped when Lucene/Solr 8.0 was released.
 * Hadoop with Java 9+ may not work in all situations, test in your environment.
 * Kerberos with Java 9+ may not work in all situations, test in your environment.
 * Be sure to test with SSL/TLS and/or authorization enabled in your environment if you require either when using Java 9+.
 
+==== Lucene/Solr 8.x
 
-==== Lucene/Solr 8
-
-* Requires Java 8+
-* This version has continuous testing with Java 9, 10, 11, 12 and the pre release version of Java 13.
-* There were known issues with Kerberos with Java 9+ that will be addressed in Lucene/Solr 8.1, test in your environment.
+* Requires Java 8 or higher.
+* This version has continuous testing with Java 9, 10, 11, 12 and the pre-release version of Java 13.
+* There were known issues with Kerberos with Java 9+ prior to Solr 8.1. If using 8.0, you should test in your environment.
 * Be sure to test with SSL/TLS and/or authorization enabled in your environment if you require either when using Java 9+.
-
-
-

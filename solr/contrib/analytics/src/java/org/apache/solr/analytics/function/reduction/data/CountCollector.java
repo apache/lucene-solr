@@ -25,7 +25,7 @@ import org.apache.solr.analytics.value.AnalyticsValueStream;
 public abstract class CountCollector extends ReductionDataCollector<CountCollector.CountData> {
   public static final String name = "count";
   private final String exprStr;
-  
+
   public CountCollector(String exprStr) {
     this.exprStr = exprStr;
   }
@@ -35,7 +35,7 @@ public abstract class CountCollector extends ReductionDataCollector<CountCollect
 
   /**
    * The number of Solr Documents for which the given analytics expression exists.
-   * 
+   *
    * @return the count
    */
   public long count() {
@@ -43,7 +43,7 @@ public abstract class CountCollector extends ReductionDataCollector<CountCollect
   }
   /**
    * The number of Solr Documents used in this reduction.
-   * 
+   *
    * @return the number of documents
    */
   public long docCount() {
@@ -93,7 +93,7 @@ public abstract class CountCollector extends ReductionDataCollector<CountCollect
   public String getExpressionStr() {
     return exprStr;
   }
-  
+
   public static class CountData extends ReductionData {
     long count;
     long missing;
@@ -102,24 +102,24 @@ public abstract class CountCollector extends ReductionDataCollector<CountCollect
 
   /**
    * Represents a {@code count(expr)} expression. This collects 3 values:
-   * 
+   *
    * docCount - The number of Solr Documents for which the wrapped expression exists.
    * count - The number of values which wrapped expression contains.
    * missing - The number of Solr Documents for which the wrapped expression does not exist.
    */
   public static class ExpressionCountCollector extends CountCollector {
     private final AnalyticsValueStream param;
-    
+
     public ExpressionCountCollector(AnalyticsValueStream param) {
       super(AnalyticsValueStream.createExpressionString(name, param));
       this.param = param;
     }
-    
+
     private long missing;
-    
+
     /**
      * The number of Solr Documents for which the given analytics expression does not exist.
-     * 
+     *
      * @return the number of missing values
      */
     public long missing() {
@@ -137,7 +137,7 @@ public abstract class CountCollector extends ReductionDataCollector<CountCollect
       super.setData(data);
       missing = ((CountData)data).missing;
     }
-    
+
     long tempCount;
     int tempMissing;
     int tempDocCount;
@@ -150,7 +150,7 @@ public abstract class CountCollector extends ReductionDataCollector<CountCollect
       tempMissing = tempCount == 0 ? 1 : 0;
       tempDocCount = tempCount > 0 ? 1 : 0;
     }
-    
+
     @Override
     protected void apply(CountData data) {
       data.count += tempCount;
@@ -168,16 +168,16 @@ public abstract class CountCollector extends ReductionDataCollector<CountCollect
         ));
     }
   }
-  
+
   /**
    * Represents a {@code count()} expression. This collects the number of Solr Documents used in a result set.
    */
   public static class TotalCountCollector extends CountCollector {
-    
+
     public TotalCountCollector() {
       super(AnalyticsValueStream.createExpressionString(name));
     }
-    
+
     @Override
     protected void apply(CountData data) {
       data.count += 1;

@@ -28,10 +28,11 @@ public interface PointValue {
   /** Returns the packed values for the dimensions */
   BytesRef packedValue();
 
-  /** Returns the document id */
+  /** Returns the docID */
   int docID();
 
-  /** Returns the byte representation of the document id */
-  BytesRef docIDBytes();
+  /** Returns the byte representation of the packed value
+   * together with the docID */
+  BytesRef packedValueDocIDBytes();
 
 }

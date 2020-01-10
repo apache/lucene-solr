@@ -53,13 +53,14 @@ public class MetricSamples {
   }
 
   public void addAll(MetricSamples other) {
-    for (String key : other.samplesByMetricName.keySet()) {
+    for (Map.Entry<String, Collector.MetricFamilySamples> entry : other.samplesByMetricName.entrySet()) {
+      String key = entry.getKey();
       if (this.samplesByMetricName.containsKey(key)) {
-        for (Collector.MetricFamilySamples.Sample sample : other.samplesByMetricName.get(key).samples) {
+        for (Collector.MetricFamilySamples.Sample sample : entry.getValue().samples) {
           addSampleIfMetricExists(key, sample);
         }
       } else {
-        this.samplesByMetricName.put(key, other.samplesByMetricName.get(key));
+        this.samplesByMetricName.put(key, entry.getValue());
       }
     }
   }

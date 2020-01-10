@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.function.IntConsumer;
 
 public class IntDataReader extends ReductionDataReader<IntConsumer> {
-  
+
   public IntDataReader(DataInput inputStream, IntConsumer applier) {
     super(inputStream, applier);
   }

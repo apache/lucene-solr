@@ -54,13 +54,13 @@ There are several things defined in this file:
 <2> The parameter `"blockUnknown":true` means that unauthenticated requests are not allowed to pass through.
 <3> A user called 'solr', with a password `'SolrRocks'` has been defined.
 <4> We override the `realm` property to display another text on the login prompt.
-<5> The parameter `"forwardCredentials":false` means we let Solr's PKI authenticaion handle distributed request instead of forwarding the Basic Auth header. 
+<5> The parameter `"forwardCredentials":false` means we let Solr's PKI authenticaion handle distributed request instead of forwarding the Basic Auth header.
 <6> The 'admin' role has been defined, and it has permission to edit security settings.
 <7> The 'solr' user has been defined to the 'admin' role.
 
 Save your settings to a file called `security.json` locally. If you are using Solr in standalone mode, you should put this file in `$SOLR_HOME`.
 
-If `blockUnknown` does not appear in the `security.json` file, it will default to `false`. This has the effect of not requiring authentication at all. In some cases, you may want this; for example, if you want to have `security.json` in place but aren't ready to enable authentication. However, you will want to ensure that this parameter is set to `true` in order for authentication to be truly enabled in your system.
+If `blockUnknown` does not appear in the `security.json` file, it will default to `true`. This has the effect of requiring authentication for HTTP access to Solr. In some cases, you may not want authentication after enabling the plugin; for example, if you want to have `security.json` in place but aren't ready to enable authentication. However, you will want to ensure that `blockUnknown` is set to `true` or omitted entirely in order for authentication to be enforced for all requests to your system.
 
 If `realm` is not defined, it will default to `solr`.
 
@@ -71,7 +71,7 @@ If you are using SolrCloud, you must upload `security.json` to ZooKeeper. You ca
 bin/solr zk cp file:path_to_local_security.json zk:/security.json -z localhost:9983
 ----
 
-NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<setting-up-an-external-zookeeper-ensemble#updating-solr-s-include-files,instructions>>) you can omit `-z <zk host string>` from the above command.
+NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<setting-up-an-external-zookeeper-ensemble#updating-solr-include-files,instructions>>) you can omit `-z <zk host string>` from the above command.
 
 === Caveats
 
@@ -170,7 +170,7 @@ curl --user solr:SolrRocks http://localhost:8983/api/cluster/security/authentica
 ====
 --
 
-The authentication realm defaults to `solr` and is displayed in the `WWW-Authenticate` HTTP header and in the Admin UI login page. To change the realm, set the `realm` property: 
+The authentication realm defaults to `solr` and is displayed in the `WWW-Authenticate` HTTP header and in the Admin UI login page. To change the realm, set the `realm` property:
 
 [.dynamic-tabs]
 --
@@ -225,7 +225,7 @@ Alternatively, users can use SolrJ's `PreemptiveBasicAuthClientBuilderFactory` t
 To enable this feature, users should set the following system property `-Dsolr.httpclient.builder.factory=org.apache.solr.client.solrj.impl.PreemptiveBasicAuthClientBuilderFactory`.
 `PreemptiveBasicAuthClientBuilderFactory` allows applications to provide credentials in two different ways:
 
-. The `basicauth` system property can be passed, containing the credentials directly (e.g. `-Dbasicauth=username:password`).  This option is straightforward, but may expose the credentials in the command line, depending on how they're set.
+. The `basicauth` system property can be passed, containing the credentials directly (e.g., `-Dbasicauth=username:password`).  This option is straightforward, but may expose the credentials in the command line, depending on how they're set.
 . The `solr.httpclient.config` system property can be passed, containing a path to a properties file holding the credentials.  Inside this file the username and password can be specified as `httpBasicAuthUser` and `httpBasicAuthPassword`, respectively.
 +
 [source,bash]

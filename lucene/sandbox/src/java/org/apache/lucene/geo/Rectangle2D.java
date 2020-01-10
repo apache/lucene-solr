@@ -18,16 +18,14 @@
 package org.apache.lucene.geo;
 
 import java.util.Arrays;
+import java.util.Objects;
 
-import org.apache.lucene.index.PointValues;
-import org.apache.lucene.util.FutureArrays;
+import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.NumericUtils;
 
 import static java.lang.Integer.BYTES;
 import static org.apache.lucene.geo.GeoEncodingUtils.MAX_LON_ENCODED;
 import static org.apache.lucene.geo.GeoEncodingUtils.MIN_LON_ENCODED;
-import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitudeCeil;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
@@ -35,19 +33,19 @@ import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitudeCeil;
 import static org.apache.lucene.geo.GeoUtils.orient;
 
 /**
- * 2D rectangle implementation containing spatial logic.
+ * 2D rectangle implementation containing geo spatial logic.
  *
  * @lucene.internal
  */
 public class Rectangle2D {
-  final byte[] bbox;
-  final byte[] west;
-  final int minX;
-  final int maxX;
-  final int minY;
-  final int maxY;
+  protected final byte[] bbox;
+  private final byte[] west;
+  protected final int minX;
+  protected final int maxX;
+  protected final int minY;
+  protected final int maxY;
 
-  private Rectangle2D(double minLat, double maxLat, double minLon, double maxLon) {
+  protected Rectangle2D(double minLat, double maxLat, double minLon, double maxLon) {
     this.bbox = new byte[4 * BYTES];
     int minXenc = encodeLongitudeCeil(minLon);
     int maxXenc = encodeLongitude(maxLon);
@@ -79,6 +77,16 @@ public class Rectangle2D {
     }
   }
 
+  protected Rectangle2D(int minX, int maxX, int minY, int maxY) {
+    this.bbox = new byte[4 * BYTES];
+    this.west = null;
+    this.minX = minX;
+    this.maxX = maxX;
+    this.minY = minY;
+    this.maxY = maxY;
+    encode(this.minX, this.maxX, this.minY, this.maxY, bbox);
+  }
+
   /** Builds a Rectangle2D from rectangle */
   public static Rectangle2D create(Rectangle rectangle) {
     return new Rectangle2D(rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon);
@@ -97,12 +105,24 @@ public class Rectangle2D {
     return bboxContainsPoint(x, y, this.minX, this.maxX, this.minY, this.maxY);
   }
 
-  /** compare this to a provided rangle bounding box **/
-  public PointValues.Relation relateRangeBBox(int minXOffset, int minYOffset, byte[] minTriangle,
-                                              int maxXOffset, int maxYOffset, byte[] maxTriangle) {
-    PointValues.Relation eastRelation = compareBBoxToRangeBBox(this.bbox, minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
-    if (this.crossesDateline() && eastRelation == PointValues.Relation.CELL_OUTSIDE_QUERY) {
+  /** compare this to a provided range bounding box **/
+  public Relation relateRangeBBox(int minXOffset, int minYOffset, byte[] minTriangle,
+                                  int maxXOffset, int maxYOffset, byte[] maxTriangle) {
+    Relation eastRelation = compareBBoxToRangeBBox(this.bbox,
+        minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
+    if (this.crossesDateline() && eastRelation == Relation.CELL_OUTSIDE_QUERY) {
       return compareBBoxToRangeBBox(this.west, minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
+    }
+    return eastRelation;
+  }
+
+  /** intersects this to a provided range bounding box **/
+  public Relation intersectRangeBBox(int minXOffset, int minYOffset, byte[] minTriangle,
+                                  int maxXOffset, int maxYOffset, byte[] maxTriangle) {
+    Relation eastRelation = intersectBBoxWithRangeBBox(this.bbox,
+        minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
+    if (this.crossesDateline() && eastRelation == Relation.CELL_OUTSIDE_QUERY) {
+      return intersectBBoxWithRangeBBox(this.west, minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle);
     }
     return eastRelation;
   }
@@ -148,6 +168,66 @@ public class Rectangle2D {
     return false;
   }
 
+  /** Returns the Within relation to the provided triangle */
+  public Component2D.WithinRelation withinTriangle(int ax, int ay, boolean ab, int bx, int by, boolean bc, int cx, int cy, boolean ca) {
+    if (this.crossesDateline() == true) {
+      throw new IllegalArgumentException("withinTriangle is not supported for rectangles crossing the date line");
+    }
+    // Short cut, lines and points cannot contain a bbox
+    if ((ax == bx && ay == by) || (ax == cx && ay == cy) || (bx == cx && by == cy)) {
+      return Component2D.WithinRelation.DISJOINT;
+    }
+    // Compute bounding box of triangle
+    int tMinX = StrictMath.min(StrictMath.min(ax, bx), cx);
+    int tMaxX = StrictMath.max(StrictMath.max(ax, bx), cx);
+    int tMinY = StrictMath.min(StrictMath.min(ay, by), cy);
+    int tMaxY = StrictMath.max(StrictMath.max(ay, by), cy);
+    // Bounding boxes disjoint?
+    if (boxesAreDisjoint(tMinX, tMaxX, tMinY, tMaxY, minX, maxX, minY, maxY)) {
+      return Component2D.WithinRelation.DISJOINT;
+    }
+    // Points belong to the shape so if points are inside the rectangle then it cannot be within.
+    if (bboxContainsPoint(ax, ay, minX, maxX, minY, maxY) ||
+        bboxContainsPoint(bx, by, minX, maxX, minY, maxY) ||
+        bboxContainsPoint(cx, cy, minX, maxX, minY, maxY)) {
+      return Component2D.WithinRelation.NOTWITHIN;
+    }
+    // If any of the edges intersects an edge belonging to the shape then it cannot be within.
+    Component2D.WithinRelation relation = Component2D.WithinRelation.DISJOINT;
+    if (edgeIntersectsBox(ax, ay, bx, by, minX, maxX, minY, maxY) == true) {
+      if (ab == true) {
+        return Component2D.WithinRelation.NOTWITHIN;
+      } else {
+        relation = Component2D.WithinRelation.CANDIDATE;
+      }
+    }
+    if (edgeIntersectsBox(bx, by, cx, cy, minX, maxX, minY, maxY) == true) {
+      if (bc == true) {
+        return Component2D.WithinRelation.NOTWITHIN;
+      } else {
+        relation = Component2D.WithinRelation.CANDIDATE;
+      }
+    }
+
+    if (edgeIntersectsBox(cx, cy, ax, ay, minX, maxX, minY, maxY) == true) {
+      if (ca == true) {
+        return Component2D.WithinRelation.NOTWITHIN;
+      } else {
+        relation = Component2D.WithinRelation.CANDIDATE;
+      }
+    }
+    // If any of the rectangle edges crosses a triangle edge that does not belong to the shape
+    // then it is a candidate for within
+    if (relation == Component2D.WithinRelation.CANDIDATE) {
+      return Component2D.WithinRelation.CANDIDATE;
+    }
+    // Check if shape is within the triangle
+    if (Tessellator.pointInTriangle(minX, minY, ax, ay, bx, by, cx, cy)) {
+      return Component2D.WithinRelation.CANDIDATE;
+    }
+    return relation;
+  }
+
   /** Checks if the rectangle contains the provided triangle **/
   public boolean containsTriangle(int ax, int ay, int bx, int by, int cx, int cy) {
     if (this.crossesDateline() == true) {
@@ -157,25 +237,76 @@ public class Rectangle2D {
     return bboxContainsTriangle(ax, ay, bx, by, cx, cy, minX, maxX, minY, maxY);
   }
 
-  /** static utility method to compare a bbox with a range of triangles (just the bbox of the triangle collection) */
-  private static PointValues.Relation compareBBoxToRangeBBox(final byte[] bbox,
-                                                            int minXOffset, int minYOffset, byte[] minTriangle,
-                                                            int maxXOffset, int maxYOffset, byte[] maxTriangle) {
+  /**
+   * static utility method to compare a bbox with a range of triangles (just the bbox of the triangle collection)
+   **/
+  private static Relation compareBBoxToRangeBBox(final byte[] bbox,
+                                                 int minXOffset, int minYOffset, byte[] minTriangle,
+                                                 int maxXOffset, int maxYOffset, byte[] maxTriangle) {
     // check bounding box (DISJOINT)
-    if (FutureArrays.compareUnsigned(minTriangle, minXOffset, minXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES) > 0 ||
-        FutureArrays.compareUnsigned(maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, BYTES, 2 * BYTES) < 0 ||
-        FutureArrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) > 0 ||
-        FutureArrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 0, BYTES) < 0) {
-      return PointValues.Relation.CELL_OUTSIDE_QUERY;
+    if (disjoint(bbox, minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle)) {
+      return Relation.CELL_OUTSIDE_QUERY;
     }
 
-    if (FutureArrays.compareUnsigned(minTriangle, minXOffset, minXOffset + BYTES, bbox, BYTES, 2 * BYTES) >= 0 &&
-        FutureArrays.compareUnsigned(maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES) <= 0 &&
-        FutureArrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 0, BYTES) >= 0 &&
-        FutureArrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) <= 0) {
-      return PointValues.Relation.CELL_INSIDE_QUERY;
+    if (Arrays.compareUnsigned(minTriangle, minXOffset, minXOffset + BYTES, bbox, BYTES, 2 * BYTES) >= 0 &&
+        Arrays.compareUnsigned(maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES) <= 0 &&
+        Arrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 0, BYTES) >= 0 &&
+        Arrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) <= 0) {
+      return Relation.CELL_INSIDE_QUERY;
     }
-    return PointValues.Relation.CELL_CROSSES_QUERY;
+
+    return Relation.CELL_CROSSES_QUERY;
+  }
+
+  /**
+   * static utility method to compare a bbox with a range of triangles (just the bbox of the triangle collection)
+   * for intersection
+   **/
+  private static Relation intersectBBoxWithRangeBBox(final byte[] bbox,
+                                                     int minXOffset, int minYOffset, byte[] minTriangle,
+                                                     int maxXOffset, int maxYOffset, byte[] maxTriangle) {
+    // check bounding box (DISJOINT)
+    if (disjoint(bbox, minXOffset, minYOffset, minTriangle, maxXOffset, maxYOffset, maxTriangle)) {
+      return Relation.CELL_OUTSIDE_QUERY;
+    }
+
+    if (Arrays.compareUnsigned(minTriangle, minXOffset, minXOffset + BYTES, bbox, BYTES, 2 * BYTES) >= 0 &&
+        Arrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 0, BYTES) >= 0 ) {
+      if (Arrays.compareUnsigned(maxTriangle, minXOffset, minXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES) <= 0 &&
+          Arrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) <= 0) {
+        return Relation.CELL_INSIDE_QUERY;
+      }
+      if (Arrays.compareUnsigned(maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES) <= 0 &&
+          Arrays.compareUnsigned(maxTriangle, minYOffset, minYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) <= 0) {
+        return Relation.CELL_INSIDE_QUERY;
+      }
+    }
+
+    if (Arrays.compareUnsigned(maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES) <= 0 &&
+        Arrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) <= 0 ) {
+      if (Arrays.compareUnsigned(minTriangle, minXOffset, minXOffset + BYTES, bbox, BYTES, 2 * BYTES) >= 0 &&
+          Arrays.compareUnsigned(minTriangle, maxYOffset, maxYOffset + BYTES, bbox, 0, BYTES) >= 0) {
+        return Relation.CELL_INSIDE_QUERY;
+      }
+      if (Arrays.compareUnsigned(minTriangle, maxXOffset, maxXOffset + BYTES, bbox, BYTES, 2 * BYTES) >= 0 &&
+          Arrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 0, BYTES) >= 0) {
+        return Relation.CELL_INSIDE_QUERY;
+      }
+    }
+
+    return Relation.CELL_CROSSES_QUERY;
+  }
+
+  /**
+   * static utility method to check a bbox is disjoint with a range of triangles
+   **/
+  private static boolean disjoint(final byte[] bbox,
+                               int minXOffset, int minYOffset, byte[] minTriangle,
+                               int maxXOffset, int maxYOffset, byte[] maxTriangle) {
+      return Arrays.compareUnsigned(minTriangle, minXOffset, minXOffset + BYTES, bbox, 3 * BYTES, 4 * BYTES) > 0 ||
+          Arrays.compareUnsigned(maxTriangle, maxXOffset, maxXOffset + BYTES, bbox, BYTES, 2 * BYTES) < 0 ||
+          Arrays.compareUnsigned(minTriangle, minYOffset, minYOffset + BYTES, bbox, 2 * BYTES, 3 * BYTES) > 0 ||
+          Arrays.compareUnsigned(maxTriangle, maxYOffset, maxYOffset + BYTES, bbox, 0, BYTES) < 0;
   }
 
   /**
@@ -278,33 +409,22 @@ public class Rectangle2D {
 
   @Override
   public boolean equals(Object o) {
-    return Arrays.equals(bbox, ((Rectangle2D)o).bbox)
-        && Arrays.equals(west, ((Rectangle2D)o).west);
+    if (this == o) return true;
+    if (!(o instanceof Rectangle2D)) return false;
+    Rectangle2D that = (Rectangle2D) o;
+    return minX == that.minX &&
+        maxX == that.maxX &&
+        minY == that.minY &&
+        maxY == that.maxY &&
+        Arrays.equals(bbox, that.bbox) &&
+        Arrays.equals(west, that.west);
   }
 
   @Override
   public int hashCode() {
-    int hash = super.hashCode();
-    hash = 31 * hash + Arrays.hashCode(bbox);
-    hash = 31 * hash + Arrays.hashCode(west);
-    return hash;
-  }
-
-  @Override
-  public String toString() {
-    final StringBuilder sb = new StringBuilder();
-    sb.append("Rectangle(lat=");
-    sb.append(decodeLatitude(minY));
-    sb.append(" TO ");
-    sb.append(decodeLatitude(maxY));
-    sb.append(" lon=");
-    sb.append(decodeLongitude(minX));
-    sb.append(" TO ");
-    sb.append(decodeLongitude(maxX));
-    if (maxX < minX) {
-      sb.append(" [crosses dateline!]");
-    }
-    sb.append(")");
-    return sb.toString();
+    int result = Objects.hash(minX, maxX, minY, maxY);
+    result = 31 * result + Arrays.hashCode(bbox);
+    result = 31 * result + Arrays.hashCode(west);
+    return result;
   }
 }

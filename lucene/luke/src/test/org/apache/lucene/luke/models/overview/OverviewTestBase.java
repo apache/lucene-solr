@@ -28,6 +28,8 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.LuceneTestCase;
@@ -55,7 +57,9 @@ public abstract class OverviewTestBase extends LuceneTestCase {
     Path indexDir = createTempDir();
 
     Directory dir = newFSDirectory(indexDir);
-    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, new MockAnalyzer(random()));
+    IndexWriterConfig config = new IndexWriterConfig(new MockAnalyzer(random()));
+    config.setMergePolicy(NoMergePolicy.INSTANCE);  // see LUCENE-8998
+    RandomIndexWriter writer = new RandomIndexWriter(random(), dir, config);
 
     Document doc1 = new Document();
     doc1.add(newStringField("f1", "1", Field.Store.NO));

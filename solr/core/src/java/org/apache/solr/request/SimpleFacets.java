@@ -38,6 +38,7 @@ import java.util.concurrent.Semaphore;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -261,7 +262,7 @@ public class SimpleFacets {
     DocSet base = searcher.getDocSet(qlist);
     if (rb.grouping() && rb.getGroupingSpec().isTruncateGroups()) {
       Grouping grouping = new Grouping(searcher, null, rb.createQueryCommand(), false, 0, false);
-      grouping.setWithinGroupSort(rb.getGroupingSpec().getSortWithinGroup());
+      grouping.setWithinGroupSort(rb.getGroupingSpec().getWithinGroupSortSpec().getSort());
       if (rb.getGroupingSpec().getFields().length > 0) {
         grouping.addFieldCommand(rb.getGroupingSpec().getFields()[0], req);
       } else if (rb.getGroupingSpec().getFunctions().length > 0) {
@@ -440,14 +441,18 @@ public class SimpleFacets {
     final int threads = parsed.threads;
     int offset = params.getFieldInt(field, FacetParams.FACET_OFFSET, 0);
     int limit = params.getFieldInt(field, FacetParams.FACET_LIMIT, 100);
-    if (limit == 0) return new NamedList<>();
+    boolean missing = params.getFieldBool(field, FacetParams.FACET_MISSING, false);
+
+    // when limit=0 and missing=false then return empty list
+    if (limit == 0 && !missing) return new NamedList<>();
+
     if (mincount==null) {
       Boolean zeros = params.getFieldBool(field, FacetParams.FACET_ZEROS);
       // mincount = (zeros!=null && zeros) ? 0 : 1;
       mincount = (zeros!=null && !zeros) ? 1 : 0;
       // current default is to include zeros.
     }
-    boolean missing = params.getFieldBool(field, FacetParams.FACET_MISSING, false);
+
     // default to sorting if there is a limit.
     String sort = params.getFieldParam(field, FacetParams.FACET_SORT, limit>0 ? FacetParams.FACET_SORT_COUNT : FacetParams.FACET_SORT_INDEX);
     String prefix = params.getFieldParam(field, FacetParams.FACET_PREFIX);
@@ -705,7 +710,8 @@ public class SimpleFacets {
                                              String prefix,
                                              Predicate<BytesRef> termFilter) throws IOException {
     GroupingSpecification groupingSpecification = rb.getGroupingSpec();
-    final String groupField  = groupingSpecification != null ? groupingSpecification.getFields()[0] : null;
+    String[] groupFields = groupingSpecification != null? groupingSpecification.getFields(): null;
+    final String groupField = ArrayUtils.isNotEmpty(groupFields) ? groupFields[0] : null;
     if (groupField == null) {
       throw new SolrException (
           SolrException.ErrorCode.BAD_REQUEST,
@@ -947,6 +953,11 @@ public class SimpleFacets {
     * don't enum if we get our max from them
     */
 
+    final NamedList<Integer> res = new NamedList<>();
+    if (limit == 0) {
+      return finalize(res, searcher, docs, field, missing);
+    }
+
     // Minimum term docFreq in order to use the filterCache for that term.
     int minDfFilterCache = global.getFieldInt(field, FacetParams.FACET_ENUM_CACHE_MINDF, 0);
 
@@ -964,7 +975,6 @@ public class SimpleFacets {
     boolean sortByCount = sort.equals("count") || sort.equals("true");
     final int maxsize = limit>=0 ? offset+limit : Integer.MAX_VALUE-1;
     final BoundedTreeSet<CountPair<BytesRef,Integer>> queue = sortByCount ? new BoundedTreeSet<CountPair<BytesRef,Integer>>(maxsize) : null;
-    final NamedList<Integer> res = new NamedList<>();
 
     int min=mincount-1;  // the smallest value in the top 'N' values    
     int off=offset;
@@ -1106,6 +1116,11 @@ public class SimpleFacets {
       }
     }
 
+    return finalize(res, searcher, docs, field, missing);
+  }
+
+  private static NamedList<Integer> finalize(NamedList<Integer> res, SolrIndexSearcher searcher, DocSet docs,
+                                             String field, boolean missing) throws IOException {
     if (missing) {
       res.add(null, getFieldMissingCount(searcher,docs,field));
     }

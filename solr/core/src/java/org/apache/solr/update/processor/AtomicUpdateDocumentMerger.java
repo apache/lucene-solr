@@ -35,11 +35,14 @@ import org.apache.commons.lang3.tuple.Pair;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.solr.cloud.CloudDescriptor;
+import org.apache.solr.cloud.ZkController;
 import org.apache.solr.common.SolrDocumentBase;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.core.SolrCore;
@@ -101,39 +104,36 @@ public class AtomicUpdateDocumentMerger {
         for (Entry<String,Object> entry : ((Map<String,Object>) val).entrySet()) {
           String key = entry.getKey();
           Object fieldVal = entry.getValue();
-          boolean updateField = false;
           switch (key) {
             case "add":
-              updateField = true;
               doAdd(toDoc, sif, fieldVal);
               break;
             case "set":
-              updateField = true;
               doSet(toDoc, sif, fieldVal);
               break;
             case "remove":
-              updateField = true;
               doRemove(toDoc, sif, fieldVal);
               break;
             case "removeregex":
-              updateField = true;
               doRemoveRegex(toDoc, sif, fieldVal);
               break;
             case "inc":
-              updateField = true;
               doInc(toDoc, sif, fieldVal);
               break;
             case "add-distinct":
-              updateField = true;
               doAddDistinct(toDoc, sif, fieldVal);
               break;
             default:
-              //Perhaps throw an error here instead?
-              log.warn("Unknown operation for the an atomic update, operation ignored: " + key);
-              break;
+              Object id = toDoc.containsKey(idField.getName())? toDoc.getFieldValue(idField.getName()):
+                  fromDoc.getFieldValue(idField.getName());
+              String err = "Unknown operation for the an atomic update, operation ignored: " + key;
+              if (id != null) {
+                err = err + " for id:" + id;
+              }
+              throw new SolrException(ErrorCode.BAD_REQUEST, err);
           }
           // validate that the field being modified is not the id field.
-          if (updateField && idField.getName().equals(sif.getName())) {
+          if (idField.getName().equals(sif.getName())) {
             throw new SolrException(ErrorCode.BAD_REQUEST, "Invalid update of id field: " + sif);
           }
 
@@ -179,11 +179,13 @@ public class AtomicUpdateDocumentMerger {
       return Collections.emptySet();
     }
     
+    String routeFieldOrNull = getRouteField(cmd);
     // first pass, check the things that are virtually free,
     // and bail out early if anything is obviously not a valid in-place update
     for (String fieldName : sdoc.getFieldNames()) {
       if (fieldName.equals(uniqueKeyFieldName)
-          || fieldName.equals(CommonParams.VERSION_FIELD)) {
+          || fieldName.equals(CommonParams.VERSION_FIELD)
+          || fieldName.equals(routeFieldOrNull)) {
         continue;
       }
       Object fieldValue = sdoc.getField(fieldName).getValue();
@@ -192,9 +194,16 @@ public class AtomicUpdateDocumentMerger {
         return Collections.emptySet();
       }
       // else it's a atomic update map...
-      for (String op : ((Map<String, Object>)fieldValue).keySet()) {
+      Map<String, Object> fieldValueMap = (Map<String, Object>)fieldValue;
+      for (Entry<String, Object> entry : fieldValueMap.entrySet()) {
+        String op = entry.getKey();
+        Object obj = entry.getValue();
         if (!op.equals("set") && !op.equals("inc")) {
           // not a supported in-place update op
+          return Collections.emptySet();
+        } else if (op.equals("set") && (obj == null || (obj instanceof Collection && ((Collection) obj).isEmpty()))) {
+          // when operation is set and value is either null or empty list
+          // treat the update as atomic instead of inplace
           return Collections.emptySet();
         }
         // fail fast if child doc
@@ -228,19 +237,14 @@ public class AtomicUpdateDocumentMerger {
     // third pass: requiring checks against the actual IndexWriter due to internal DV update limitations
     SolrCore core = cmd.getReq().getCore();
     RefCounted<IndexWriter> holder = core.getSolrCoreState().getIndexWriter(core);
-    Set<String> fieldNamesFromIndexWriter = null;
     Set<String> segmentSortingFields = null;
     try {
       IndexWriter iw = holder.get();
-      fieldNamesFromIndexWriter = iw.getFieldNames(); // This shouldn't be needed once LUCENE-7659 is resolved
       segmentSortingFields = iw.getConfig().getIndexSortFields();
     } finally {
       holder.decref();
     }
     for (String fieldName: candidateFields) {
-      if (! fieldNamesFromIndexWriter.contains(fieldName) ) {
-        return Collections.emptySet(); // if this field doesn't exist, DV update can't work
-      }
       if (segmentSortingFields.contains(fieldName) ) {
         return Collections.emptySet(); // if this is used for segment sorting, DV updates can't work
       }
@@ -249,6 +253,19 @@ public class AtomicUpdateDocumentMerger {
     return candidateFields;
   }
 
+  private static String getRouteField(AddUpdateCommand cmd) {
+    String result = null;
+    SolrCore core = cmd.getReq().getCore();
+    CloudDescriptor cloudDescriptor = core.getCoreDescriptor().getCloudDescriptor();
+    if (cloudDescriptor != null) {
+      String collectionName = cloudDescriptor.getCollectionName();
+      ZkController zkController = core.getCoreContainer().getZkController();
+      DocCollection collection = zkController.getClusterState().getCollection(collectionName);
+      result = collection.getRouter().getRouteField(collection);
+    }
+    return result;
+  }
+  
   /**
    *
    * @param fullDoc the full doc to  be compared against
@@ -395,7 +412,7 @@ public class AtomicUpdateDocumentMerger {
    */
   public SolrInputDocument updateDocInSif(SolrInputField updateSif, SolrInputDocument cmdDocWChildren, SolrInputDocument updateDoc) {
     List sifToReplaceValues = (List) updateSif.getValues();
-    final boolean wasList = updateSif.getRawValue() instanceof Collection;
+    final boolean wasList = updateSif.getValue() instanceof Collection;
     int index = getDocIndexFromCollection(cmdDocWChildren, sifToReplaceValues);
     SolrInputDocument updatedDoc = merge(updateDoc, cmdDocWChildren);
     if(index == -1) {
@@ -524,9 +541,9 @@ public class AtomicUpdateDocumentMerger {
   private Collection<Pattern> preparePatterns(Object fieldVal) {
     final Collection<Pattern> patterns = new LinkedHashSet<>(1);
     if (fieldVal instanceof Collection) {
-      Collection<String> patternVals = (Collection<String>) fieldVal;
-      for (String patternVal : patternVals) {
-        patterns.add(Pattern.compile(patternVal));
+      Collection<Object> patternVals = (Collection<Object>) fieldVal;
+      for (Object patternVal : patternVals) {
+        patterns.add(Pattern.compile(patternVal.toString()));
       }
     } else {
       patterns.add(Pattern.compile(fieldVal.toString()));
@@ -535,7 +552,7 @@ public class AtomicUpdateDocumentMerger {
   }
 
   private Object getNativeFieldValue(String fieldName, Object val) {
-    if(isChildDoc(val)) {
+    if (isChildDoc(val) || val == null || (val instanceof Collection && ((Collection) val).isEmpty())) {
       return val;
     }
     SchemaField sf = schema.getField(fieldName);

@@ -26,6 +26,11 @@ import java.nio.channels.SeekableByteChannel;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import org.apache.lucene.util.NamedThreadFactory;
 
 /** Basic tests for LeakFS */
 public class TestLeakFS extends MockFileSystemTestCase {
@@ -44,12 +49,9 @@ public class TestLeakFS extends MockFileSystemTestCase {
     file.write(5);
     file.close();
     InputStream leak = Files.newInputStream(dir.resolve("stillopen"));
-    try {
-      dir.getFileSystem().close();
-      fail("should have gotten exception");
-    } catch (Exception e) {
-      assertTrue(e.getMessage().contains("file handle leaks"));
-    }
+
+    Exception e = expectThrows(Exception.class, () -> dir.getFileSystem().close());
+    assertTrue(e.getMessage().contains("file handle leaks"));
     leak.close();
   }
   
@@ -58,12 +60,8 @@ public class TestLeakFS extends MockFileSystemTestCase {
     Path dir = wrap(createTempDir());
     
     OutputStream leak = Files.newOutputStream(dir.resolve("leaky"));
-    try {
-      dir.getFileSystem().close();
-      fail("should have gotten exception");
-    } catch (Exception e) {
-      assertTrue(e.getMessage().contains("file handle leaks"));
-    }
+    Exception e = expectThrows(Exception.class, () -> dir.getFileSystem().close());
+    assertTrue(e.getMessage().contains("file handle leaks"));
     leak.close();
   }
   
@@ -75,30 +73,32 @@ public class TestLeakFS extends MockFileSystemTestCase {
     file.write(5);
     file.close();
     FileChannel leak = FileChannel.open(dir.resolve("stillopen"));
-    try {
-      dir.getFileSystem().close();
-      fail("should have gotten exception");
-    } catch (Exception e) {
-      assertTrue(e.getMessage().contains("file handle leaks"));
-    }
+
+    Exception e = expectThrows(Exception.class, () -> dir.getFileSystem().close());
+    assertTrue(e.getMessage().contains("file handle leaks"));
     leak.close();
   }
   
   /** Test leaks via AsynchronousFileChannel.open */
-  public void testLeakAsyncFileChannel() throws IOException {
+  public void testLeakAsyncFileChannel() throws IOException, InterruptedException {
     Path dir = wrap(createTempDir());
     
     OutputStream file = Files.newOutputStream(dir.resolve("stillopen"));
     file.write(5);
     file.close();
-    AsynchronousFileChannel leak = AsynchronousFileChannel.open(dir.resolve("stillopen"));
+
+    ExecutorService executorService = Executors.newFixedThreadPool(1,
+        new NamedThreadFactory("async-io"));
     try {
-      dir.getFileSystem().close();
-      fail("should have gotten exception");
-    } catch (Exception e) {
+      AsynchronousFileChannel leak = AsynchronousFileChannel.open(dir.resolve("stillopen"),
+          Collections.emptySet(), executorService);
+      Exception e = expectThrows(Exception.class, () -> dir.getFileSystem().close());
       assertTrue(e.getMessage().contains("file handle leaks"));
+      leak.close();
+    } finally {
+      executorService.shutdown();
+      executorService.awaitTermination(5, TimeUnit.SECONDS);
     }
-    leak.close();
   }
   
   /** Test leaks via Files.newByteChannel */
@@ -109,12 +109,9 @@ public class TestLeakFS extends MockFileSystemTestCase {
     file.write(5);
     file.close();
     SeekableByteChannel leak = Files.newByteChannel(dir.resolve("stillopen"));
-    try {
-      dir.getFileSystem().close();
-      fail("should have gotten exception");
-    } catch (Exception e) {
-      assertTrue(e.getMessage().contains("file handle leaks"));
-    }
+
+    Exception e = expectThrows(Exception.class, () -> dir.getFileSystem().close());
+    assertTrue(e.getMessage().contains("file handle leaks"));
     leak.close();
   }
 }

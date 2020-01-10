@@ -37,6 +37,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.FieldComparator;
+import org.apache.lucene.search.FuzzyTermsEnum;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
@@ -69,6 +70,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
+import org.apache.solr.schema.SortableTextField;
 import org.apache.solr.search.CursorMark;
 import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocList;
@@ -281,6 +283,21 @@ public class QueryComponent extends SearchComponent
     }
     groupingSpec.setResponseFormat(responseFormat);
 
+    // See SOLR-12249. Disallow grouping on text fields that are not SortableText in cloud mode
+    if (req.getCore().getCoreContainer().isZooKeeperAware()) {
+      IndexSchema schema = rb.req.getSchema();
+      String[] fields = params.getParams(GroupParams.GROUP_FIELD);
+      if (fields != null) {
+        for (String field : fields) {
+          SchemaField schemaField = schema.getField(field);
+          if (schemaField.getType().isTokenized() && (schemaField.getType() instanceof SortableTextField) == false) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, String.format(Locale.ROOT,
+                "Sorting on a tokenized field that is not a SortableTextField is not supported in cloud mode."));
+          }
+        }
+      }
+    }
+
     groupingSpec.setFields(params.getParams(GroupParams.GROUP_FIELD));
     groupingSpec.setQueries(params.getParams(GroupParams.GROUP_QUERY));
     groupingSpec.setFunctions(params.getParams(GroupParams.GROUP_FUNC));
@@ -288,6 +305,14 @@ public class QueryComponent extends SearchComponent
     groupingSpec.setMain(params.getBool(GroupParams.GROUP_MAIN, false));
     groupingSpec.setNeedScore((rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES) != 0);
     groupingSpec.setTruncateGroups(params.getBool(GroupParams.GROUP_TRUNCATE, false));
+
+    // when group.format=grouped then, validate group.offset
+    // for group.main=true and group.format=simple, start value is used instead of group.offset
+    // and start is already validate above for negative values
+    if (!(groupingSpec.isMain() || groupingSpec.getResponseFormat() == Grouping.Format.simple) &&
+        groupingSpec.getWithinGroupSortSpec().getOffset() < 0) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'group.offset' parameter cannot be negative");
+    }
   }
 
 
@@ -306,11 +331,11 @@ public class QueryComponent extends SearchComponent
       return;
     }
 
-    StatsCache statsCache = req.getCore().getStatsCache();
+    SolrIndexSearcher searcher = req.getSearcher();
+    StatsCache statsCache = searcher.getStatsCache();
     
     int purpose = params.getInt(ShardParams.SHARDS_PURPOSE, ShardRequest.PURPOSE_GET_TOP_IDS);
     if ((purpose & ShardRequest.PURPOSE_GET_TERM_STATS) != 0) {
-      SolrIndexSearcher searcher = req.getSearcher();
       statsCache.returnLocalStats(rb, searcher);
       return;
     }
@@ -662,7 +687,7 @@ public class QueryComponent extends SearchComponent
   }
 
   protected void createDistributedStats(ResponseBuilder rb) {
-    StatsCache cache = rb.req.getCore().getStatsCache();
+    StatsCache cache = rb.req.getSearcher().getStatsCache();
     if ( (rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES)!=0 || rb.getSortSpec().includesScore()) {
       ShardRequest sreq = cache.retrieveStatsRequest(rb);
       if (sreq != null) {
@@ -672,7 +697,7 @@ public class QueryComponent extends SearchComponent
   }
 
   protected void updateStats(ResponseBuilder rb, ShardRequest sreq) {
-    StatsCache cache = rb.req.getCore().getStatsCache();
+    StatsCache cache = rb.req.getSearcher().getStatsCache();
     cache.mergeToGlobalStats(rb.req, sreq.responses);
   }
 
@@ -717,6 +742,7 @@ public class QueryComponent extends SearchComponent
       // if the client set shards.rows set this explicity
       sreq.params.set(CommonParams.ROWS,rb.shards_rows);
     } else {
+      // what if rows<0 as it is allowed for grouped request??
       sreq.params.set(CommonParams.ROWS, rb.getSortSpec().getOffset() + rb.getSortSpec().getCount());
     }
 
@@ -751,8 +777,9 @@ public class QueryComponent extends SearchComponent
 
     // TODO: should this really sendGlobalDfs if just includeScore?
 
-    if (shardQueryIncludeScore) {
-      StatsCache statsCache = rb.req.getCore().getStatsCache();
+    if (shardQueryIncludeScore || rb.isDebug()) {
+      StatsCache statsCache = rb.req.getSearcher().getStatsCache();
+      sreq.purpose |= ShardRequest.PURPOSE_SET_TERM_STATS;
       statsCache.sendGlobalStats(rb, sreq);
     }
 
@@ -836,7 +863,7 @@ public class QueryComponent extends SearchComponent
           }
           else {
             responseHeader = (NamedList<?>)srsp.getSolrResponse().getResponse().get("responseHeader");
-            final Object rhste = (responseHeader == null ? null : responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY));
+            final Object rhste = responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY);
             if (rhste != null) {
               nl.add(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY, rhste);
             }
@@ -866,20 +893,16 @@ public class QueryComponent extends SearchComponent
         }
 
         final boolean thisResponseIsPartial;
-        if (responseHeader != null) {
-          thisResponseIsPartial = Boolean.TRUE.equals(responseHeader.getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
-          thereArePartialResults |= thisResponseIsPartial;
-          
-          if (!Boolean.TRUE.equals(segmentTerminatedEarly)) {
-            final Object ste = responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY);
-            if (Boolean.TRUE.equals(ste)) {
-              segmentTerminatedEarly = Boolean.TRUE;
-            } else if (Boolean.FALSE.equals(ste)) {
-              segmentTerminatedEarly = Boolean.FALSE;
-            }
+        thisResponseIsPartial = Boolean.TRUE.equals(responseHeader.getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY));
+        thereArePartialResults |= thisResponseIsPartial;
+        
+        if (!Boolean.TRUE.equals(segmentTerminatedEarly)) {
+          final Object ste = responseHeader.get(SolrQueryResponse.RESPONSE_HEADER_SEGMENT_TERMINATED_EARLY_KEY);
+          if (Boolean.TRUE.equals(ste)) {
+            segmentTerminatedEarly = Boolean.TRUE;
+          } else if (Boolean.FALSE.equals(ste)) {
+            segmentTerminatedEarly = Boolean.FALSE;
           }
-        } else {
-          thisResponseIsPartial = false;
         }
         
         // calculate global maxScore and numDocsFound
@@ -1172,7 +1195,7 @@ public class QueryComponent extends SearchComponent
         }
         {
           NamedList<?> responseHeader = (NamedList<?>)srsp.getSolrResponse().getResponse().get("responseHeader");
-          if (responseHeader!=null && Boolean.TRUE.equals(responseHeader.getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
+          if (Boolean.TRUE.equals(responseHeader.getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY))) {
             rb.rsp.getResponseHeader().asShallowMap()
                .put(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY, Boolean.TRUE);
           }
@@ -1285,7 +1308,7 @@ public class QueryComponent extends SearchComponent
     for (String field : groupingSpec.getFields()) {
       topsGroupsActionBuilder.addCommandField(new SearchGroupsFieldCommand.Builder()
           .setField(schema.getField(field))
-          .setGroupSort(groupingSpec.getGroupSort())
+          .setGroupSort(groupingSpec.getGroupSortSpec().getSort())
           .setTopNGroups(cmd.getOffset() + cmd.getLen())
           .setIncludeGroupCount(groupingSpec.isIncludeGroupCount())
           .build()
@@ -1321,7 +1344,8 @@ public class QueryComponent extends SearchComponent
         .setTruncateGroups(groupingSpec.isTruncateGroups() && groupingSpec.getFields().length > 0)
         .setSearcher(searcher);
 
-    int docsToCollect = Grouping.getMax(groupingSpec.getWithinGroupOffset(), groupingSpec.getWithinGroupLimit(), searcher.maxDoc());
+    SortSpec withinGroupSortSpec = groupingSpec.getWithinGroupSortSpec();
+    int docsToCollect = Grouping.getMax(withinGroupSortSpec.getOffset(), withinGroupSortSpec.getCount(), searcher.maxDoc());
     docsToCollect = Math.max(docsToCollect, 1);
 
     for (String field : groupingSpec.getFields()) {
@@ -1346,8 +1370,8 @@ public class QueryComponent extends SearchComponent
           new TopGroupsFieldCommand.Builder()
               .setQuery(cmd.getQuery())
               .setField(schemaField)
-              .setGroupSort(groupingSpec.getGroupSort())
-              .setSortWithinGroup(groupingSpec.getSortWithinGroup())
+              .setGroupSort(groupingSpec.getGroupSortSpec().getSort())
+              .setSortWithinGroup(withinGroupSortSpec.getSort())
               .setFirstPhaseGroups(topGroups)
               .setMaxDocPerGroup(docsToCollect)
               .setNeedScores(needScores)
@@ -1356,12 +1380,21 @@ public class QueryComponent extends SearchComponent
       );
     }
 
+    SortSpec groupSortSpec = groupingSpec.getGroupSortSpec();
+    // use start and rows for group.format=simple and group.main=true
+    if (rb.getGroupingSpec().getResponseFormat() == Grouping.Format.simple || rb.getGroupingSpec().isMain()) {
+      // would this ever be negative, as shardRequest sets rows to offset+limit
+      int limit = groupSortSpec.getCount();
+      docsToCollect = limit >= 0? limit + groupSortSpec.getOffset() : Integer.MAX_VALUE;
+    }
     for (String query : groupingSpec.getQueries()) {
       secondPhaseBuilder.addCommandField(new Builder()
           .setDocsToCollect(docsToCollect)
-          .setSort(groupingSpec.getGroupSort())
+          .setSort(groupSortSpec.getSort())
           .setQuery(query, rb.req)
           .setDocSet(searcher)
+          .setMainQuery(rb.getQuery())
+          .setNeedScores(needScores)
           .build()
       );
     }
@@ -1392,13 +1425,15 @@ public class QueryComponent extends SearchComponent
     int limitDefault = cmd.getLen(); // this is normally from "rows"
     Grouping grouping =
         new Grouping(searcher, result, cmd, cacheSecondPassSearch, maxDocsPercentageToCache, groupingSpec.isMain());
-    grouping.setGroupSort(groupingSpec.getGroupSort())
-        .setWithinGroupSort(groupingSpec.getSortWithinGroup())
+
+    SortSpec withinGroupSortSpec = groupingSpec.getWithinGroupSortSpec();
+    grouping.setGroupSort(groupingSpec.getGroupSortSpec().getSort())
+        .setWithinGroupSort(withinGroupSortSpec.getSort())
         .setDefaultFormat(groupingSpec.getResponseFormat())
         .setLimitDefault(limitDefault)
         .setDefaultTotalCount(defaultTotalCount)
-        .setDocsPerGroupDefault(groupingSpec.getWithinGroupLimit())
-        .setGroupOffsetDefault(groupingSpec.getWithinGroupOffset())
+        .setDocsPerGroupDefault(withinGroupSortSpec.getCount())
+        .setGroupOffsetDefault(withinGroupSortSpec.getOffset())
         .setGetGroupedDocSet(groupingSpec.isTruncateGroups());
 
     if (groupingSpec.getFields() != null) {
@@ -1450,7 +1485,11 @@ public class QueryComponent extends SearchComponent
 
     SolrIndexSearcher searcher = req.getSearcher();
 
-    searcher.search(result, cmd);
+    try {
+      searcher.search(result, cmd);
+    } catch (FuzzyTermsEnum.FuzzyTermsException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+    }
     rb.setResult(result);
 
     ResultContext ctx = new BasicResultContext(rb);

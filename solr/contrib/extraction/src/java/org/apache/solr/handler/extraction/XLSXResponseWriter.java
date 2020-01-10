@@ -284,12 +284,12 @@ class XLSXWriter extends TabularResponseWriter {
       if (v instanceof IndexableField) {
         IndexableField f = (IndexableField)v;
         if (v instanceof Date) {
-          output.append(((Date) val).toInstant().toString() + "; ");
+          output.append(((Date) val).toInstant().toString()).append("; ");
         } else {
-          output.append(f.stringValue() + "; ");
+          output.append(f.stringValue()).append("; ");
         }
       } else {
-        output.append(v.toString() + "; ");
+        output.append(v.toString()).append("; ");
       }
     }
     if (output.length() > 0) {

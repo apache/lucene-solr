@@ -530,7 +530,7 @@ var zkStatusSubController = function($scope, ZookeeperStatus) {
     $scope.initZookeeper = function() {
       ZookeeperStatus.monitor({}, function(data) {
         $scope.zkState = data.zkStatus;
-        $scope.mainKeys = ["ok", "clientPort", "zk_server_state", "zk_version", 
+        $scope.mainKeys = ["ok", "clientPort", "secureClientPort", "zk_server_state", "zk_version",
           "zk_approximate_data_size", "zk_znode_count", "zk_num_alive_connections"];
         $scope.detailKeys = ["dataDir", "dataLogDir", 
           "zk_avg_latency", "zk_max_file_descriptor_count", "zk_watch_count", 
@@ -538,7 +538,14 @@ var zkStatusSubController = function($scope, ZookeeperStatus) {
           "tickTime", "maxClientCnxns", "minSessionTimeout", "maxSessionTimeout"];
         $scope.ensembleMainKeys = ["serverId", "electionPort", "quorumPort"];
         $scope.ensembleDetailKeys = ["peerType", "electionAlg", "initLimit", "syncLimit",
-          "zk_followers", "zk_synced_followers", "zk_pending_syncs"];
+          "zk_followers", "zk_synced_followers", "zk_pending_syncs",
+          "server.1", "server.2", "server.3", "server.4", "server.5"];
+        $scope.notEmptyRow = function(key) {
+          for (hostId in $scope.zkState.details) {
+            if (key in $scope.zkState.details[hostId]) return true;
+          }
+          return false;
+        };
       });
     };
 
@@ -661,7 +668,7 @@ var graphSubController = function ($scope, Zookeeper) {
             }
 
             Zookeeper.clusterState(params, function (data) {
-                    eval("var state=" + data.znode.data); // @todo fix horrid means to parse JSON
+                    var state = $.parseJSON(data.znode.data);
 
                     var leaf_count = 0;
                     var graph_data = {
@@ -731,7 +738,9 @@ var graphSubController = function ($scope, Zookeeper) {
                                 name: shard_status == "shard-inactive" ? s + ' (inactive)' : s,
                                 data: {
                                     type: 'shard',
-                                    state: shard_status
+                                    state: shard_status,
+                                    range: state[c].shards[s].range
+
                                 },
                                 children: nodes
                             };
@@ -741,13 +750,20 @@ var graphSubController = function ($scope, Zookeeper) {
                         var collection = {
                             name: c,
                             data: {
-                                type: 'collection'
+                                type: 'collection',
+                                pullReplicas: state[c].pullReplicas,
+                                replicationFactor: state[c].replicationFactor,
+                                router: state[c].router.name,
+                                maxShardsPerNode: state[c].maxShardsPerNode,
+                                autoAddReplicas: state[c].autoAddReplicas,
+                                nrtReplicas: state[c].nrtReplicas,
+                                tlogReplicas: state[c].tlogReplicas,
+                                numShards: shards.length
                             },
                             children: shards
                         };
                         graph_data.children.push(collection);
                     }
-
                     $scope.helperData.protocol = $.unique($scope.helperData.protocol);
                     $scope.helperData.host = $.unique($scope.helperData.host);
                     $scope.helperData.hostname = $.unique($scope.helperData.hostname);
@@ -844,21 +860,44 @@ solrAdminApp.directive('graph', function(Constants) {
             };
 
             var helper_tooltip_text = function (d) {
-                if (!d.data || !d.data.uri) {
-                    return tooltip;
+                if (!d.data) {
+                  return tooltip;
+                }
+                var tooltip;
+
+                if (! d.data.type) {
+                  return tooltip;
                 }
 
-                var tooltip = d.data.uri.core_node + " {<br/>";
 
-                if (0 !== scope.helperData.core.length) {
-                    tooltip += "core: [" + d.data.uri.core + "],<br/>";
+                if (d.data.type == 'collection') {
+                  tooltip = d.name + " {<br/> ";
+                  tooltip += "numShards: [" + d.data.numShards + "],<br/>";
+                  tooltip += "maxShardsPerNode: [" + d.data.maxShardsPerNode + "],<br/>";
+                  tooltip += "router: [" + d.data.router + "],<br/>";
+                  tooltip += "autoAddReplicas: [" + d.data.autoAddReplicas + "],<br/>";
+                  tooltip += "replicationFactor: [" + d.data.replicationFactor + "],<br/>";
+                  tooltip += "nrtReplicas: [" + d.data.nrtReplicas + "],<br/>";
+                  tooltip += "pullReplicas: [" + d.data.pullReplicas + "],<br/>";
+                  tooltip += "tlogReplicas: [" + d.data.tlogReplicas + "],<br/>";
+                  tooltip += "}";
+                } else if (d.data.type == 'shard') {
+                  tooltip = d.name + " {<br/> ";
+                  tooltip += "range: [" + d.data.range + "],<br/>";
+                  tooltip += "state: [" + d.data.state + "],<br/>";
+                  tooltip += "}";
+                } else if (d.data.type == 'node') {
+                  tooltip = d.data.uri.core_node + " {<br/>";
+
+                  if (0 !== scope.helperData.core.length) {
+                      tooltip += "core: [" + d.data.uri.core + "],<br/>";
+                  }
+
+                  if (0 !== scope.helperData.node_name.length) {
+                      tooltip += "node_name: [" + d.data.uri.node_name + "],<br/>";
+                  }
+                  tooltip += "}";
                 }
-
-                if (0 !== scope.helperData.node_name.length) {
-                    tooltip += "node_name: [" + d.data.uri.node_name + "],<br/>";
-                }
-
-                tooltip += "}";
 
                 return tooltip;
             };
@@ -869,7 +908,6 @@ solrAdminApp.directive('graph', function(Constants) {
                 }
 
                 var name = d.data.uri.hostname;
-
                 if (1 !== scope.helperData.protocol.length) {
                     name = d.data.uri.protocol + '//' + name;
                 }

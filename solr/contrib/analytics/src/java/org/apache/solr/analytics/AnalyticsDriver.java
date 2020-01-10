@@ -31,10 +31,10 @@ import org.apache.solr.search.Filter;
 import org.apache.solr.search.SolrIndexSearcher;
 
 public class AnalyticsDriver {
-  
+
   /**
    * Drive the collection of reduction data. This includes overall data as well as faceted data.
-   * 
+   *
    * @param manager of the request to drive
    * @param searcher the results of the query
    * @param filter that represents the overall query
@@ -45,9 +45,9 @@ public class AnalyticsDriver {
     StreamingInfo streamingInfo = manager.getStreamingFacetInfo();
     Iterable<StreamingFacet> streamingFacets = streamingInfo.streamingFacets;
     ReductionCollectionManager collectionManager = streamingInfo.streamingCollectionManager;
-    
+
     Iterable<FacetValueQueryExecuter> facetExecuters = manager.getFacetExecuters(filter, queryRequest);
-    
+
     // Streaming phase (Overall results & Value/Pivot Facets)
     // Loop through all documents and collect reduction data for streaming facets and overall results
     if (collectionManager.needsCollection()) {
@@ -72,7 +72,7 @@ public class AnalyticsDriver {
         }
       }
     }
-    
+
     // Executing phase (Query/Range Facets)
     // Send additional Solr Queries to compute facet values
     for (FacetValueQueryExecuter executer : facetExecuters) {

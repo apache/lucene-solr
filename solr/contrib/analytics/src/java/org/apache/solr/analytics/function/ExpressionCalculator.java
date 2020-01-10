@@ -37,11 +37,11 @@ public class ExpressionCalculator {
   /**
    * Calculate results for the list of {@link AnalyticsExpression}s.
    * <p>
-   * NOTE: This method can, and is, called multiple times to generate different responses. 
+   * NOTE: This method can, and is, called multiple times to generate different responses.
    * <br>
    * The results are determined by which {@link ReductionDataCollection} is passed to the {@link ReductionCollectionManager#setData}
    * method of the {@link ReductionCollectionManager} managing the reduction for the list of {@link AnalyticsExpression}s.
-   * 
+   *
    * @return a {@link NamedList} containing the results
    */
   public Map<String,Object> getResults() {
@@ -58,11 +58,11 @@ public class ExpressionCalculator {
   /**
    * Calculate results for the list of {@link AnalyticsExpression}s and add them to the given response.
    * <p>
-   * NOTE: This method can, and is, called multiple times to generate different responses. 
+   * NOTE: This method can, and is, called multiple times to generate different responses.
    * <br>
    * The results are determined by which {@link ReductionDataCollection} is passed to the {@link ReductionCollectionManager#setData}
    * method of the {@link ReductionCollectionManager} managing the reduction for the list of {@link AnalyticsExpression}s.
-   * 
+   *
    * @param response the response to add the results map to.
    */
   public void addResults(Map<String,Object> response) {

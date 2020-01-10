@@ -31,19 +31,19 @@ import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.feature.FieldValueFeature;
 import org.apache.solr.ltr.feature.ValueFeature;
 import org.apache.solr.ltr.store.rest.ManagedModelStore;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class TestDefaultWrapperModel extends TestRerankBase {
 
   final private static String featureStoreName = "test";
-  private static String baseModelJson = null;
   private static File baseModelFile = null;
 
   static List<Feature> features = null;
 
-  @BeforeClass
-  public static void setupBeforeClass() throws Exception {
+  @Before
+  public void setupBeforeClass() throws Exception {
     setuptest(false);
     assertU(adoc("id", "1", "title", "w1", "description", "w1", "popularity", "1"));
     assertU(adoc("id", "2", "title", "w2", "description", "w2", "popularity", "2"));
@@ -58,7 +58,7 @@ public class TestDefaultWrapperModel extends TestRerankBase {
     features.add(getManagedFeatureStore().getFeatureStore("test").get("popularity"));
     features.add(getManagedFeatureStore().getFeatureStore("test").get("const"));
 
-    baseModelJson = getModelInJson("linear", LinearModel.class.getName(),
+    final String baseModelJson = getModelInJson("linear", LinearModel.class.getName(),
         new String[] {"popularity", "const"},
         featureStoreName,
         "{\"weights\":{\"popularity\":-1.0, \"const\":1.0}}");
@@ -69,6 +69,13 @@ public class TestDefaultWrapperModel extends TestRerankBase {
       writer.write(baseModelJson);
     }
     baseModelFile.deleteOnExit();
+  }
+  
+  @After
+  public void cleanup() throws Exception {
+    features = null;
+    baseModelFile = null;
+    aftertest();
   }
 
   private static String getDefaultWrapperModelInJson(String wrapperModelName, String[] features, String params) {

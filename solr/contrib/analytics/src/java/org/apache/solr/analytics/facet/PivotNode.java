@@ -55,11 +55,11 @@ public abstract class PivotNode<T> extends SortableFacet implements Consumer<Str
     currentPivot = pivot;
     expression.streamStrings(this);
   }
-  
+
   /**
-   * Import the shard data from a bit-stream for the given pivot, exported by the {@link #exportPivot} method 
+   * Import the shard data from a bit-stream for the given pivot, exported by the {@link #exportPivot} method
    * in the each of the collection's shards.
-   * 
+   *
    * @param input The bit-stream to import the data from
    * @param pivot the values for this pivot node and the pivot children (if they exist)
    * @throws IOException if an exception occurs while reading from the {@link DataInput}
@@ -73,7 +73,7 @@ public abstract class PivotNode<T> extends SortableFacet implements Consumer<Str
   }
   /**
    * Import the next pivot value's set of {@link ReductionData} and children's {@link ReductionData} if they exist.
-   * 
+   *
    * @param input the bit-stream to import the reduction data from
    * @param pivotValue the next pivot value
    * @throws IOException if an exception occurs while reading from the input
@@ -81,37 +81,37 @@ public abstract class PivotNode<T> extends SortableFacet implements Consumer<Str
   protected abstract void importPivotValue(DataInput input, String pivotValue) throws IOException;
 
   /**
-   * Export the shard data through a bit-stream for the given pivot, 
+   * Export the shard data through a bit-stream for the given pivot,
    * to be imported by the {@link #importPivot} method in the originating shard.
-   * 
+   *
    * @param output The bit-stream to output the data through
    * @param pivot the values for this pivot node and the pivot children (if they exist)
    * @throws IOException if an exception occurs while writing to the {@link DataOutput}
    */
   public void exportPivot(DataOutput output, Map<String,T> pivot) throws IOException {
     output.writeInt(pivot.size());
-    for (String pivotValue : pivot.keySet()) {
-      output.writeUTF(pivotValue);
-      exportPivotValue(output, pivot.get(pivotValue));
+    for (Map.Entry<String, T> entry : pivot.entrySet()) {
+      output.writeUTF(entry.getKey());
+      exportPivotValue(output, entry.getValue());
     }
   }
   /**
    * Export the given pivot data, containing {@link ReductionData} and pivot children if they exist.
-   * 
+   *
    * @param output the bit-stream to output the reduction data to
    * @param pivotData the next pivot value data
    * @throws IOException if an exception occurs while reading from the input
    */
   protected abstract void exportPivotValue(DataOutput output, T pivotData) throws IOException;
-  
+
   /**
    * Create the response of the facet to be returned in the overall analytics response.
-   * 
+   *
    * @param pivot the pivot to create a response for
    * @return the response of the facet
    */
   public abstract Iterable<Map<String,Object>> getPivotedResponse(Map<String,T> pivot);
-  
+
   /**
    * A pivot node that has no pivot children.
    */
@@ -120,7 +120,7 @@ public abstract class PivotNode<T> extends SortableFacet implements Consumer<Str
     public PivotLeaf(String name, StringValueStream expression) {
       super(name, expression);
     }
-    
+
     @Override
     public void accept(String pivotValue) {
       ReductionDataCollection collection = currentPivot.get(pivotValue);
@@ -170,7 +170,7 @@ public abstract class PivotNode<T> extends SortableFacet implements Consumer<Str
       return results;
     }
   }
-  
+
   /**
    * A pivot node that has pivot children.
    */
@@ -180,7 +180,7 @@ public abstract class PivotNode<T> extends SortableFacet implements Consumer<Str
       super(name, expression);
       this.childPivot = childPivot;
     }
-    
+
     @Override
     public void setReductionCollectionManager(ReductionCollectionManager collectionManager) {
       super.setReductionCollectionManager(collectionManager);
@@ -192,7 +192,7 @@ public abstract class PivotNode<T> extends SortableFacet implements Consumer<Str
       super.setExpressionCalculator(expressionCalculator);
       childPivot.setExpressionCalculator(expressionCalculator);
     }
-    
+
     @Override
     public void accept(String pivotValue) {
       PivotDataPair<T> pivotData = currentPivot.get(pivotValue);
@@ -226,7 +226,7 @@ public abstract class PivotNode<T> extends SortableFacet implements Consumer<Str
     protected void exportPivotValue(DataOutput output, PivotDataPair<T> pivotData) throws IOException {
       collectionManager.prepareReductionDataIO(pivotData.pivotReduction);
       collectionManager.exportData();
-      
+
       childPivot.exportPivot(output, pivotData.childPivots);
     }
 
@@ -251,7 +251,7 @@ public abstract class PivotNode<T> extends SortableFacet implements Consumer<Str
       }
       return results;
     }
-    
+
     /**
      * Contains pivot data for {@link PivotNode.PivotBranch} classes.
      */

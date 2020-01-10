@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
+
+/**
  * Reduction data collectors to use while computing analytics expressions.
  * For multi-sharded collections, this is the data that is sent from shard to shard.
  */

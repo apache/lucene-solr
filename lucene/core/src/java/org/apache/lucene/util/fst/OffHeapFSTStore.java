@@ -54,6 +54,11 @@ public final class OffHeapFSTStore implements FSTStore {
     }
 
     @Override
+    public long size() {
+        return numBytes;
+    }
+
+    @Override
     public FST.BytesReader getReverseBytesReader() {
         try {
             return new ReverseRandomAccessReader(in.randomAccessSlice(offset, numBytes));

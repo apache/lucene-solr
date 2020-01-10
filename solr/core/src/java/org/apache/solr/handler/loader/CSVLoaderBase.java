@@ -30,6 +30,7 @@ import org.apache.solr.internal.csv.CSVStrategy;
 import org.apache.solr.internal.csv.CSVParser;
 import org.apache.commons.io.IOUtils;
 
+import java.util.Map;
 import java.util.regex.Pattern;
 import java.util.List;
 import java.util.HashMap;
@@ -380,9 +381,8 @@ abstract class CSVLoaderBase extends ContentStreamLoader {
     }
 
     // add any literals
-    for (String fname : literals.keySet()) {
-      String val = literals.get(fname);
-      doc.addField(fname, val);
+    for (Map.Entry<String, String> entry : literals.entrySet()) {
+      doc.addField(entry.getKey(), entry.getValue());
     }
     if (rowId != null){
       doc.addField(rowId, line + rowIdOffset);

@@ -20,9 +20,8 @@ import java.util.Comparator;
 
 /** Implementation of the quick select algorithm.
  *  <p>It uses the median of the first, middle and last values as a pivot and
- *  falls back to a heap sort when the number of recursion levels exceeds
- *  {@code 2 lg(n)}, as a consequence it runs in linear time on average and in
- *  {@code n log(n)} time in the worst case.</p>
+ *  falls back to a median of medians when the number of recursion levels exceeds
+ *  {@code 2 lg(n)}, as a consequence it runs in linear time on average.</p>
  *  @lucene.internal */
 public abstract class IntroSelector extends Selector {
 
@@ -33,26 +32,90 @@ public abstract class IntroSelector extends Selector {
     quickSelect(from, to, k, maxDepth);
   }
 
-  // heap sort
-  // TODO: use median of median instead to have linear worst-case rather than
-  // n*log(n)
-  void slowSelect(int from, int to, int k) {
-    new Sorter() {
+  int slowSelect(int from, int to, int k) {
+    return medianOfMediansSelect(from, to-1, k);
+  }
 
-      @Override
-      protected void swap(int i, int j) {
-        IntroSelector.this.swap(i, j);
+  int medianOfMediansSelect(int left, int right, int k) {
+    do {
+      // Defensive check, this is also checked in the calling
+      // method. Including here so this method can be used
+      // as a self contained quickSelect implementation.
+      if (left == right) {
+        return left;
       }
+      int pivotIndex = pivot(left, right);
+      pivotIndex = partition(left, right, k, pivotIndex);
+      if (k == pivotIndex) {
+        return k;
+      } else if (k < pivotIndex) {
+        right = pivotIndex-1;
+      } else {
+        left = pivotIndex+1;
+      }
+    } while (left != right);
+    return left;
+  }
 
-      @Override
-      protected int compare(int i, int j) {
-        return IntroSelector.this.compare(i, j);
+  private int partition(int left, int right, int k, int pivotIndex) {
+    setPivot(pivotIndex);
+    swap(pivotIndex, right);
+    int storeIndex = left;
+    for (int i = left; i < right; i++) {
+      if (comparePivot(i) > 0) {
+        swap(storeIndex, i);
+        storeIndex++;
       }
+    }
+    int storeIndexEq = storeIndex;
+    for (int i = storeIndex; i < right; i++) {
+      if (comparePivot(i) == 0) {
+        swap(storeIndexEq, i);
+        storeIndexEq++;
+      }
+    }
+    swap(right, storeIndexEq);
+    if (k < storeIndex) {
+      return storeIndex;
+    } else if (k <= storeIndexEq) {
+      return k;
+    }
+    return storeIndexEq;
+  }
 
-      public void sort(int from, int to) {
-        heapSort(from, to);
+  private int pivot(int left, int right) {
+    if (right - left < 5) {
+      int pivotIndex = partition5(left, right);
+      return pivotIndex;
+    }
+
+    for (int i = left; i <= right; i=i+5) {
+      int subRight = i + 4;
+      if (subRight > right) {
+        subRight = right;
       }
-    }.sort(from, to);
+      int median5 = partition5(i, subRight);
+      swap(median5, left + ((i-left)/5));
+    }
+    int mid = ((right - left) / 10) + left + 1;
+    int to = left + ((right - left)/5);
+    return medianOfMediansSelect(left, to, mid);
+  }
+
+  // selects the median of a group of at most five elements,
+  // implemented using insertion sort. Efficient due to
+  // bounded nature of data set.
+  private int partition5(int left, int right) {
+    int i = left + 1;
+    while( i <= right) {
+      int j = i;
+      while (j > left && compare(j-1,j)>0) {
+        swap(j-1, j);
+        j--;
+      }
+      i++;
+    }
+    return (left + right) >>> 1;
   }
 
   private void quickSelect(int from, int to, int k, int maxDepth) {

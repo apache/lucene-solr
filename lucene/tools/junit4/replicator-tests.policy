@@ -1,0 +1,91 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+// Policy file for lucene replicator tests. Please keep minimal and avoid wildcards.
+// this differs from the standard lucene policy in that it must allow read-write access
+// to all system properties, because of jetty
+
+grant {
+  // contain read access to only what we need:
+  // 3rd party jar resources (where symlinks are not supported), test-files/ resources
+  permission java.io.FilePermission "${common.dir}${/}-", "read";
+  // 3rd party jar resources (where symlinks are supported)
+  permission java.io.FilePermission "${user.home}${/}.ivy2${/}cache${/}-", "read";
+  // system jar resources, and let TestIndexWriterOnJRECrash fork its jvm
+  permission java.io.FilePermission "${java.home}${/}-", "read,execute";
+  // should be enclosed within common.dir, but just in case:
+  permission java.io.FilePermission "${junit4.childvm.cwd}", "read";
+
+  // write only to sandbox
+  permission java.io.FilePermission "${junit4.childvm.cwd}${/}temp", "read,write,delete";
+  permission java.io.FilePermission "${junit4.childvm.cwd}${/}temp${/}-", "read,write,delete";
+  permission java.io.FilePermission "${junit4.childvm.cwd}${/}jacoco.db", "write";
+  permission java.io.FilePermission "${junit4.tempDir}${/}*", "read,write,delete";
+  permission java.io.FilePermission "${clover.db.dir}${/}-", "read,write,delete";
+  permission java.io.FilePermission "${tests.linedocsfile}", "read";
+
+  // misc HardlinkCopyDirectoryWrapper needs this to test if hardlinks can be created
+  permission java.nio.file.LinkPermission "hard";
+  // needed by SSD detection tests in TestIOUtils (creates symlinks)
+  permission java.nio.file.LinkPermission "symbolic";
+
+  // needed by gson serialization of junit4 runner: TODO clean that up
+  permission java.lang.RuntimePermission "accessDeclaredMembers";
+  permission java.lang.reflect.ReflectPermission "suppressAccessChecks";
+  // needed by junit4 runner to capture sysout/syserr:
+  permission java.lang.RuntimePermission "setIO";
+  // needed by randomized runner to catch failures from other threads:
+  permission java.lang.RuntimePermission "setDefaultUncaughtExceptionHandler";
+  // needed by randomized runner getTopThreadGroup:
+  permission java.lang.RuntimePermission "modifyThreadGroup";
+  // needed by tests e.g. shutting down executors:
+  permission java.lang.RuntimePermission "modifyThread";
+  // needed for tons of test hacks etc
+  permission java.lang.RuntimePermission "getStackTrace";
+  // needed for mock filesystems in tests
+  permission java.lang.RuntimePermission "fileSystemProvider";
+  // needed for test of IOUtils.spins (maybe it can be avoided)
+  permission java.lang.RuntimePermission "getFileStoreAttributes";
+  // analyzers/uima: needed by lucene expressions' JavascriptCompiler
+  permission java.lang.RuntimePermission "createClassLoader";
+  // needed to test unmap hack on platforms that support it
+  permission java.lang.RuntimePermission "accessClassInPackage.sun.misc";
+  // needed by cyberneko usage by benchmarks on J9
+  permission java.lang.RuntimePermission "accessClassInPackage.org.apache.xerces.util";
+  // needed by jacoco to dump coverage
+  permission java.lang.RuntimePermission "shutdownHooks";
+  // needed by org.apache.logging.log4j
+  permission java.lang.RuntimePermission "getenv.*";
+  permission java.lang.RuntimePermission "getClassLoader";
+  permission java.lang.RuntimePermission "setContextClassLoader";
+
+  // read/write access to all system properties (required by jetty in these tests)
+  permission java.util.PropertyPermission "*", "read,write";
+
+  // replicator: jetty tests require some network permissions:
+  // all possibilities of accepting/binding/connecting on localhost with ports >= 1024:
+  permission java.net.SocketPermission "localhost:1024-", "accept,listen,connect,resolve";
+  permission java.net.SocketPermission "127.0.0.1:1024-", "accept,listen,connect,resolve";
+  permission java.net.SocketPermission "[::1]:1024-", "accept,listen,connect,resolve";
+  
+  // SSL related properties for jetty
+  permission java.security.SecurityPermission "getProperty.ssl.KeyManagerFactory.algorithm";
+  permission java.security.SecurityPermission "getProperty.ssl.TrustManagerFactory.algorithm";
+  
+  // allows LuceneTestCase#runWithRestrictedPermissions to execute with lower (or no) permission
+  permission java.security.SecurityPermission "createAccessControlContext";
+};

@@ -28,7 +28,7 @@ _linked_ to the same `withCollection`.
 
 == Create a Colocated Collection
 The Create Collection API supports a parameter named `withCollection` which can be used to specify a collection
-with which the replicas of the newly created collection should be colocated. See <<collections-api.adoc#create,Create Collection API>>.
+with which the replicas of the newly created collection should be colocated. See <<collection-management.adoc#create,Create Collection API>>.
 
 `/admin/collections?action=CREATE&name=techproducts&numShards=1&replicationFactor=2&withCollection=tech_categories`
 
@@ -36,7 +36,7 @@ In the above example, all replicas of the `techproducts` collection will be colo
 replica of the `tech_categories` collection.
 
 == Colocating Existing Collections
-When collections already exist beforehand, the <<collections-api.adoc#modifycollection, Modify Collection API>> can be
+When collections already exist beforehand, the <<collection-management.adoc#modifycollection, Modify Collection API>> can be
 used to set the `withCollection` parameter so that the two collections can be linked. This will *not* trigger
 changes to the cluster automatically because moving a large number of replicas immediately might de-stabilize the system.
 Instead, it is recommended that the Suggestions UI page should be consulted on the operations that can be performed
@@ -47,7 +47,7 @@ Example:
 
 == Deleting Colocated Collections
 Deleting a collection which has been linked to another will fail unless the link itself is deleted first by using the
-<<collections-api.adoc#modifycollection, Modify Collection API>> to un-set the `withCollection` attribute.
+<<collection-management.adoc#modifycollection, Modify Collection API>> to un-set the `withCollection` attribute.
 
 Example:
 `/admin/collections?action=MODIFYCOLLECTION&collection=techproducts&withCollection=`

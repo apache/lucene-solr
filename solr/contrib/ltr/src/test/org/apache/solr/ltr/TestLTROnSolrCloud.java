@@ -299,7 +299,10 @@ public class TestLTROnSolrCloud extends TestRerankBase {
 
   @AfterClass
   public static void after() throws Exception {
-    FileUtils.deleteDirectory(tmpSolrHome);
+    if (null != tmpSolrHome) {
+      FileUtils.deleteDirectory(tmpSolrHome);
+      tmpSolrHome = null;
+    }
     System.clearProperty("managed.schema.mutable");
   }
 

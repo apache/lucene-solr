@@ -1841,22 +1841,6 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     return flushDeletesCount.get();
   }
 
-  /**
-   * Return an unmodifiable set of all field names as visible
-   * from this IndexWriter, across all segments of the index.
-   * Useful for knowing which fields exist, before {@link #updateDocValues(Term, Field...)} is
-   * attempted. We could phase out this method if
-   * {@link #updateDocValues(Term, Field...)} could create the non-existent
-   * docValues fields as necessary, instead of throwing
-   * IllegalArgumentException for attempts to update non-existent
-   * docValues fields.
-   * @lucene.internal
-   * @lucene.experimental
-   */
-  public Set<String> getFieldNames() {
-    return globalFieldNumberMap.getFieldNames(); // FieldNumbers#getFieldNames() returns an unmodifiableSet
-  }
-
   final String newSegmentName() {
     // Cannot synchronize on IndexWriter because that causes
     // deadlock

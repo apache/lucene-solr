@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -34,7 +35,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.codahale.metrics.MetricRegistry;
 import com.google.common.collect.Iterables;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
@@ -47,7 +47,6 @@ import org.apache.lucene.index.MultiPostingsEnum;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.StoredFieldVisitor;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.*;
@@ -66,8 +65,9 @@ import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
+import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.metrics.SolrMetricProducer;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
@@ -75,6 +75,7 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.facet.UnInvertedField;
+import org.apache.solr.search.stats.StatsCache;
 import org.apache.solr.search.stats.StatsSource;
 import org.apache.solr.uninverting.UninvertingReader;
 import org.apache.solr.update.IndexFingerprint;
@@ -87,7 +88,7 @@ import org.slf4j.LoggerFactory;
  *
  * @since solr 0.9
  */
-public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrInfoBean, SolrMetricProducer {
+public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrInfoBean {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -135,9 +136,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   private final String path;
   private boolean releaseDirectory;
 
+  private final StatsCache statsCache;
+
   private Set<String> metricNames = ConcurrentHashMap.newKeySet();
-  private SolrMetricManager metricManager;
-  private String registryName;
+  private SolrMetricsContext solrMetricsContext;
 
   private static DirectoryReader getReader(SolrCore core, SolrIndexConfig config, DirectoryFactory directoryFactory,
                                            String path) throws IOException {
@@ -236,6 +238,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     this.rawReader = r;
     this.leafReader = SlowCompositeReaderWrapper.wrap(this.reader);
     this.core = core;
+    this.statsCache = core.createStatsCache();
     this.schema = schema;
     this.name = "Searcher@" + Integer.toHexString(hashCode()) + "[" + core.getName() + "]"
         + (name != null ? " " + name : "");
@@ -243,6 +246,7 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
 
     if (directoryFactory.searchersReserveCommitPoints()) {
       // reserve commit point for life of searcher
+      // TODO: This may not be safe w/softCommit, see SOLR-13908
       core.getDeletionPolicy().saveCommitPoint(reader.getIndexCommit().getGeneration());
     }
 
@@ -315,6 +319,10 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return super.leafContexts;
   }
 
+  public StatsCache getStatsCache() {
+    return statsCache;
+  }
+
   public FieldInfos getFieldInfos() {
     return leafReader.getFieldInfos();
   }
@@ -323,15 +331,15 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
      * Override these two methods to provide a way to use global collection stats.
      */
   @Override
-  public TermStatistics termStatistics(Term term, TermStates context) throws IOException {
+  public TermStatistics termStatistics(Term term, int docFreq, long totalTermFreq) throws IOException {
     final SolrRequestInfo reqInfo = SolrRequestInfo.getRequestInfo();
     if (reqInfo != null) {
       final StatsSource statsSrc = (StatsSource) reqInfo.getReq().getContext().get(STATS_SOURCE);
       if (statsSrc != null) {
-        return statsSrc.termStatistics(this, term, context);
+        return statsSrc.termStatistics(this, term, docFreq, totalTermFreq);
       }
     }
-    return localTermStatistics(term, context);
+    return localTermStatistics(term, docFreq, totalTermFreq);
   }
 
   @Override
@@ -346,8 +354,8 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     return localCollectionStatistics(field);
   }
 
-  public TermStatistics localTermStatistics(Term term, TermStates context) throws IOException {
-    return super.termStatistics(term, context);
+  public TermStatistics localTermStatistics(Term term, int docFreq, long totalTermFreq) throws IOException {
+    return super.termStatistics(term, docFreq, totalTermFreq);
   }
 
   public CollectionStatistics localCollectionStatistics(String field) throws IOException {
@@ -422,12 +430,11 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
       cache.setState(SolrCache.State.LIVE);
       infoRegistry.put(cache.name(), cache);
     }
-    metricManager = core.getCoreContainer().getMetricManager();
-    registryName = core.getCoreMetricManager().getRegistryName();
+    this.solrMetricsContext = core.getSolrMetricsContext().getChildContext(this);
     for (SolrCache cache : cacheList) {
-      cache.initializeMetrics(metricManager, registryName, core.getMetricTag(), SolrMetricManager.mkName(cache.name(), STATISTICS_KEY));
+      cache.initializeMetrics(solrMetricsContext, SolrMetricManager.mkName(cache.name(), STATISTICS_KEY));
     }
-    initializeMetrics(metricManager, registryName, core.getMetricTag(), STATISTICS_KEY);
+    initializeMetrics(solrMetricsContext, STATISTICS_KEY);
     registerTime = new Date();
   }
 
@@ -470,11 +477,21 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
     }
 
     for (SolrCache cache : cacheList) {
-      cache.close();
+      try {
+        cache.close();
+      } catch (Exception e) {
+        SolrException.log(log, "Exception closing cache " + cache.name(), e);
+      }
     }
 
     if (releaseDirectory) {
       directoryFactory.release(getIndexReader().directory());
+    }
+
+    try {
+      SolrInfoBean.super.close();
+    } catch (Exception e) {
+      log.warn("Exception closing", e);
     }
 
     // do this at the end so it only gets done if there are no exceptions
@@ -2261,32 +2278,43 @@ public class SolrIndexSearcher extends IndexSearcher implements Closeable, SolrI
   }
 
   @Override
-  public Set<String> getMetricNames() {
-    return metricNames;
+  public SolrMetricsContext getSolrMetricsContext() {
+    return solrMetricsContext;
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registry, String tag, String scope) {
-    this.registryName = registry;
-    this.metricManager = manager;
-    manager.registerGauge(this, registry, () -> name, tag, true, "searcherName", Category.SEARCHER.toString(), scope);
-    manager.registerGauge(this, registry, () -> cachingEnabled, tag, true, "caching", Category.SEARCHER.toString(), scope);
-    manager.registerGauge(this, registry, () -> openTime, tag, true, "openedAt", Category.SEARCHER.toString(), scope);
-    manager.registerGauge(this, registry, () -> warmupTime, tag, true, "warmupTime", Category.SEARCHER.toString(), scope);
-    manager.registerGauge(this, registry, () -> registerTime, tag, true, "registeredAt", Category.SEARCHER.toString(), scope);
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    parentContext.gauge(() -> name, true, "searcherName", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(() -> cachingEnabled, true, "caching", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(() -> openTime, true, "openedAt", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(() -> warmupTime, true, "warmupTime", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(() -> registerTime, true, "registeredAt", Category.SEARCHER.toString(), scope);
     // reader stats
-    manager.registerGauge(this, registry, () -> reader.numDocs(), tag, true, "numDocs", Category.SEARCHER.toString(), scope);
-    manager.registerGauge(this, registry, () -> reader.maxDoc(), tag, true, "maxDoc", Category.SEARCHER.toString(), scope);
-    manager.registerGauge(this, registry, () -> reader.maxDoc() - reader.numDocs(), tag, true, "deletedDocs", Category.SEARCHER.toString(), scope);
-    manager.registerGauge(this, registry, () -> reader.toString(), tag, true, "reader", Category.SEARCHER.toString(), scope);
-    manager.registerGauge(this, registry, () -> reader.directory().toString(), tag, true, "readerDir", Category.SEARCHER.toString(), scope);
-    manager.registerGauge(this, registry, () -> reader.getVersion(), tag, true, "indexVersion", Category.SEARCHER.toString(), scope);
-
-  }
-
-  @Override
-  public MetricRegistry getMetricRegistry() {
-    return core.getMetricRegistry();
+    parentContext.gauge(() -> reader.numDocs(), true, "numDocs", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(() -> reader.maxDoc(), true, "maxDoc", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(() -> reader.maxDoc() - reader.numDocs(), true, "deletedDocs", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(() -> reader.toString(), true, "reader", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(() -> reader.directory().toString(), true, "readerDir", Category.SEARCHER.toString(), scope);
+    parentContext.gauge(() -> reader.getVersion(), true, "indexVersion", Category.SEARCHER.toString(), scope);
+    // size of the currently opened commit
+    parentContext.gauge(() -> {
+      try {
+        Collection<String> files = reader.getIndexCommit().getFileNames();
+        long total = 0;
+        for (String file : files) {
+          total += DirectoryFactory.sizeOf(reader.directory(), file);
+        }
+        return total;
+      } catch (Exception e) {
+        return -1;
+      }
+    }, true, "indexCommitSize", Category.SEARCHER.toString(), scope);
+    // statsCache metrics
+    parentContext.gauge(
+        new MetricsMap((detailed, map) -> {
+          statsCache.getCacheMetrics().getSnapshot(map::put);
+          map.put("statsCacheImpl", statsCache.getClass().getSimpleName());
+        }), true, "statsCache", Category.CACHE.toString(), scope);
   }
 
   private static class FilterImpl extends Filter {

@@ -67,7 +67,7 @@ public abstract class AbstractCloudBackupRestoreTestCase extends SolrCloudTestCa
   int numPullReplicas;
 
   private static long docsSeed; // see indexDocs()
-  private String testSuffix = "test1";
+  protected String testSuffix = "test1";
 
   @BeforeClass
   public static void createCluster() throws Exception {

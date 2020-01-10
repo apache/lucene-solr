@@ -19,6 +19,7 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -26,6 +27,8 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.IOSupplier;
 
 /**
@@ -42,13 +45,18 @@ public final class MatchesUtils {
    */
   public static final Matches MATCH_WITH_NO_TERMS = new Matches() {
     @Override
-    public Iterator<String> iterator() {
-      return Collections.emptyIterator();
+    public MatchesIterator getMatches(String field) {
+      return null;
     }
 
     @Override
-    public MatchesIterator getMatches(String field) {
-      return null;
+    public Collection<Matches> getSubMatches() {
+      return Collections.emptyList();
+    }
+
+    @Override
+    public Iterator<String> iterator() {
+      return Collections.emptyIterator();
     }
   };
 
@@ -85,6 +93,11 @@ public final class MatchesUtils {
         // for each sub-match, iterate its fields (it's an Iterable of the fields), and return the distinct set
         return sm.stream().flatMap(m -> StreamSupport.stream(m.spliterator(), false)).distinct().iterator();
       }
+
+      @Override
+      public Collection<Matches> getSubMatches() {
+        return subMatches;
+      }
     };
   }
 
@@ -120,6 +133,11 @@ public final class MatchesUtils {
       public Iterator<String> iterator() {
         return Collections.singleton(field).iterator();
       }
+
+      @Override
+      public Collection<Matches> getSubMatches() {
+        return Collections.emptyList();
+      }
     };
   }
 
@@ -128,5 +146,14 @@ public final class MatchesUtils {
    */
   public static MatchesIterator disjunction(List<MatchesIterator> subMatches) throws IOException {
     return DisjunctionMatchesIterator.fromSubIterators(subMatches);
+  }
+
+  /**
+   * Create a MatchesIterator that is a disjunction over a list of terms extracted from a {@link BytesRefIterator}.
+   *
+   * Only terms that have at least one match in the given document will be included
+   */
+  public static MatchesIterator disjunction(LeafReaderContext context, int doc, Query query, String field, BytesRefIterator terms) throws IOException {
+    return DisjunctionMatchesIterator.fromTermsEnum(context, doc, query, field, terms);
   }
 }

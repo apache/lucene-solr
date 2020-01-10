@@ -25,6 +25,7 @@
     <buildFile url="file://$PROJECT_DIR$/lucene/highlighter/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/join/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/luke/build.xml" />
+    <buildFile url="file://$PROJECT_DIR$/lucene/luwak/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/memory/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/misc/build.xml" />
     <buildFile url="file://$PROJECT_DIR$/lucene/queries/build.xml" />

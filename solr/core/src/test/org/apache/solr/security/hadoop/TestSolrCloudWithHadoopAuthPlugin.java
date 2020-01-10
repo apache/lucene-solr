@@ -20,7 +20,6 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -28,6 +27,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.KerberosTestServices;
 import org.apache.solr.cloud.SolrCloudAuthTestCase;
+import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -41,7 +41,7 @@ public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudAuthTestCase {
 
   @BeforeClass
   public static void setupClass() throws Exception {
-    assumeFalse("Hadoop does not work on Windows", Constants.WINDOWS);
+    HdfsTestUtil.checkAssumptions();
 
     setupMiniKdc();
 
@@ -136,6 +136,6 @@ public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudAuthTestCase {
     deleteReq.process(solrClient);
     AbstractDistribZkTestBase.waitForCollectionToDisappear(collectionName,
         solrClient.getZkStateReader(), true, true, 330);
-    assertAuthMetricsMinimums(16, 8, 0, 8, 0, 0);
+    assertAuthMetricsMinimums(14, 8, 0, 6, 0, 0);
   }
 }

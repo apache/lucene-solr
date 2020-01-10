@@ -27,6 +27,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.store.Directory;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -63,6 +64,7 @@ import org.apache.solr.update.CommitUpdateCommand;
 import org.apache.solr.update.PeerSyncWithLeader;
 import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.UpdateLog.RecoveryInfo;
+import org.apache.solr.update.UpdateShardHandlerConfig;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
@@ -172,6 +174,18 @@ public class RecoveryStrategy implements Runnable, Closeable {
     this.recoveringAfterStartup = recoveringAfterStartup;
   }
 
+  /** Builds a new HttpSolrClient for use in recovery.  Caller must close */
+  private final HttpSolrClient buildRecoverySolrClient(final String leaderUrl) {
+    // workaround for SOLR-13605: get the configured timeouts & set them directly
+    // (even though getRecoveryOnlyHttpClient() already has them set)
+    final UpdateShardHandlerConfig cfg = cc.getConfig().getUpdateShardHandlerConfig();
+    return (new HttpSolrClient.Builder(leaderUrl)
+            .withConnectionTimeout(cfg.getDistributedConnectionTimeout())
+            .withSocketTimeout(cfg.getDistributedSocketTimeout())
+            .withHttpClient(cc.getUpdateShardHandler().getRecoveryOnlyHttpClient())
+            ).build();
+  }
+  
   // make sure any threads stop retrying
   @Override
   final public void close() {
@@ -248,6 +262,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
         SolrIndexSearcher searcher = searchHolder.get();
         Directory dir = core.getDirectoryFactory().get(core.getIndexDir(), DirContext.META_DATA, null);
         try {
+          final IndexCommit commit = core.getDeletionPolicy().getLatestCommit();
           log.debug(core.getCoreContainer()
               .getZkController().getNodeName()
               + " replicated "
@@ -255,8 +270,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
               + " from "
               + leaderUrl
               + " gen:"
-              + (core.getDeletionPolicy().getLatestCommit() != null ? "null"
-                  : core.getDeletionPolicy().getLatestCommit().getGeneration())
+              + (null == commit ? "null" : commit.getGeneration())
               + " data:" + core.getDataDir()
               + " index:" + core.getIndexDir()
               + " newIndex:" + core.getNewIndexDir()
@@ -274,10 +288,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
 
   final private void commitOnLeader(String leaderUrl) throws SolrServerException,
       IOException {
-    try (HttpSolrClient client = new HttpSolrClient.Builder(leaderUrl)
-        .withConnectionTimeout(30000)
-        .withHttpClient(cc.getUpdateShardHandler().getRecoveryOnlyHttpClient())
-        .build()) {
+    try (HttpSolrClient client = buildRecoverySolrClient(leaderUrl)) {
       UpdateRequest ureq = new UpdateRequest();
       ureq.setParams(new ModifiableSolrParams());
       // ureq.getParams().set(DistributedUpdateProcessor.COMMIT_END_POINT, true);
@@ -786,19 +797,15 @@ public class RecoveryStrategy implements Runnable, Closeable {
         return leaderReplica;
       }
 
-      try (HttpSolrClient httpSolrClient = new HttpSolrClient.Builder(leaderReplica.getCoreUrl())
-          .withSocketTimeout(1000)
-          .withConnectionTimeout(1000)
-          .withHttpClient(cc.getUpdateShardHandler().getRecoveryOnlyHttpClient())
-          .build()) {
+      try (HttpSolrClient httpSolrClient = buildRecoverySolrClient(leaderReplica.getCoreUrl())) {
         SolrPingResponse resp = httpSolrClient.ping();
         return leaderReplica;
       } catch (IOException e) {
-        log.info("Failed to connect leader {} on recovery, try again", leaderReplica.getBaseUrl());
+        log.error("Failed to connect leader {} on recovery, try again", leaderReplica.getBaseUrl());
         Thread.sleep(500);
       } catch (Exception e) {
         if (e.getCause() instanceof IOException) {
-          log.info("Failed to connect leader {} on recovery, try again", leaderReplica.getBaseUrl());
+          log.error("Failed to connect leader {} on recovery, try again", leaderReplica.getBaseUrl());
           Thread.sleep(500);
         } else {
           return leaderReplica;
@@ -886,9 +893,7 @@ public class RecoveryStrategy implements Runnable, Closeable {
     int conflictWaitMs = zkController.getLeaderConflictResolveWait();
     // timeout after 5 seconds more than the max timeout (conflictWait + 3 seconds) on the server side
     int readTimeout = conflictWaitMs + Integer.parseInt(System.getProperty("prepRecoveryReadTimeoutExtraWait", "8000"));
-    try (HttpSolrClient client = new HttpSolrClient.Builder(leaderBaseUrl)
-        .withHttpClient(cc.getUpdateShardHandler().getRecoveryOnlyHttpClient()).build()) {
-      client.setConnectionTimeout(10000);
+    try (HttpSolrClient client = buildRecoverySolrClient(leaderBaseUrl)) {
       client.setSoTimeout(readTimeout);
       HttpUriRequestResponse mrr = client.httpUriRequest(prepCmd);
       prevSendPreRecoveryHttpUriRequest = mrr.httpUriRequest;

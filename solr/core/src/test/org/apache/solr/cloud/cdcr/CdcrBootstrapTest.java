@@ -241,6 +241,58 @@ public class CdcrBootstrapTest extends SolrTestCaseJ4 {
     }
   }
 
+  /**
+   * This test successfully validates the follower nodes at target copies content
+   * from their respective leaders
+   */
+  public void testBootstrapWithMultipleReplicas() throws Exception {
+    // start the target first so that we know its zkhost
+    MiniSolrCloudCluster target = new MiniSolrCloudCluster(3, createTempDir("cdcr-target"), buildJettyConfig("/solr"));
+    try {
+      System.out.println("Target zkHost = " + target.getZkServer().getZkAddress());
+      System.setProperty("cdcr.target.zkHost", target.getZkServer().getZkAddress());
+
+      MiniSolrCloudCluster source = new MiniSolrCloudCluster(3, createTempDir("cdcr-source"), buildJettyConfig("/solr"));
+      try {
+        source.uploadConfigSet(configset("cdcr-source"), "cdcr-source");
+
+        CollectionAdminRequest.createCollection("cdcr-source", "cdcr-source", 1, 3)
+            .withProperty("solr.directoryFactory", "solr.StandardDirectoryFactory")
+            .process(source.getSolrClient());
+        source.waitForActiveCollection("cdcr-source", 1, 3);
+
+        CloudSolrClient sourceSolrClient = source.getSolrClient();
+        int docs = (TEST_NIGHTLY ? 100 : 10);
+        int numDocs = indexDocs(sourceSolrClient, "cdcr-source", docs);
+
+        QueryResponse response = sourceSolrClient.query(new SolrQuery("*:*"));
+        assertEquals("", numDocs, response.getResults().getNumFound());
+
+        // setup the target cluster
+        target.uploadConfigSet(configset("cdcr-target"), "cdcr-target");
+        CollectionAdminRequest.createCollection("cdcr-target", "cdcr-target", 1, 3)
+            .process(target.getSolrClient());
+        target.waitForActiveCollection("cdcr-target", 1, 3);
+        CloudSolrClient targetSolrClient = target.getSolrClient();
+        targetSolrClient.setDefaultCollection("cdcr-target");
+
+        CdcrTestsUtil.cdcrStart(targetSolrClient);
+        CdcrTestsUtil.cdcrStart(sourceSolrClient);
+
+        response = CdcrTestsUtil.getCdcrQueue(sourceSolrClient);
+        log.info("Cdcr queue response: " + response.getResponse());
+        long foundDocs = CdcrTestsUtil.waitForClusterToSync(numDocs, targetSolrClient);
+        assertEquals("Document mismatch on target after sync", numDocs, foundDocs);
+        assertTrue("leader followers didnt' match", CdcrTestsUtil.assertShardInSync("cdcr-target", "shard1", targetSolrClient)); // with more than 1 replica
+
+      } finally {
+        source.shutdown();
+      }
+    } finally {
+      target.shutdown();
+    }
+  }
+
   // 29-June-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 6-Sep-2018
   @Test

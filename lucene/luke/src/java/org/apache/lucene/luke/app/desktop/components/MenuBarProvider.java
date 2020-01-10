@@ -33,6 +33,7 @@ import org.apache.lucene.luke.app.desktop.PreferencesFactory;
 import org.apache.lucene.luke.app.desktop.components.dialog.menubar.AboutDialogFactory;
 import org.apache.lucene.luke.app.desktop.components.dialog.menubar.CheckIndexDialogFactory;
 import org.apache.lucene.luke.app.desktop.components.dialog.menubar.CreateIndexDialogFactory;
+import org.apache.lucene.luke.app.desktop.components.dialog.menubar.ExportTermsDialogFactory;
 import org.apache.lucene.luke.app.desktop.components.dialog.menubar.OpenIndexDialogFactory;
 import org.apache.lucene.luke.app.desktop.components.dialog.menubar.OptimizeIndexDialogFactory;
 import org.apache.lucene.luke.app.desktop.util.DialogOpener;
@@ -56,6 +57,8 @@ public final class MenuBarProvider {
   private final CreateIndexDialogFactory createIndexDialogFactory;
 
   private final OptimizeIndexDialogFactory optimizeIndexDialogFactory;
+
+  private final ExportTermsDialogFactory exportTermsDialogFactory;
 
   private final CheckIndexDialogFactory checkIndexDialogFactory;
 
@@ -81,6 +84,8 @@ public final class MenuBarProvider {
 
   private final JMenuItem optimizeIndexMItem = new JMenuItem();
 
+  private final JMenuItem exportTermsMItem = new JMenuItem();
+
   private final JMenuItem checkIndexMItem = new JMenuItem();
 
   private final JMenuItem aboutMItem = new JMenuItem();
@@ -95,6 +100,7 @@ public final class MenuBarProvider {
     this.openIndexDialogFactory = OpenIndexDialogFactory.getInstance();
     this.createIndexDialogFactory = CreateIndexDialogFactory.getInstance();
     this.optimizeIndexDialogFactory = OptimizeIndexDialogFactory.getInstance();
+    this.exportTermsDialogFactory = ExportTermsDialogFactory.getInstance();
     this.checkIndexDialogFactory = CheckIndexDialogFactory.getInstance();
     this.aboutDialogFactory = AboutDialogFactory.getInstance();
 
@@ -173,6 +179,10 @@ public final class MenuBarProvider {
     checkIndexMItem.setEnabled(false);
     checkIndexMItem.addActionListener(listeners::showCheckIndexDialog);
     toolsMenu.add(checkIndexMItem);
+    exportTermsMItem.setText(MessageUtils.getLocalizedMessage("menu.item.export.terms"));
+    exportTermsMItem.setEnabled(false);
+    exportTermsMItem.addActionListener(listeners::showExportTermsDialog);
+    toolsMenu.add(exportTermsMItem);
     return toolsMenu;
   }
 
@@ -258,6 +268,12 @@ public final class MenuBarProvider {
           });
     }
 
+    void showExportTermsDialog(ActionEvent e) {
+      new DialogOpener<>(exportTermsDialogFactory).open("Export terms", 600, 450,
+          factory -> {
+          });
+    }
+
   }
 
   private class Observer implements IndexObserver, DirectoryObserver {
@@ -267,6 +283,7 @@ public final class MenuBarProvider {
       reopenIndexMItem.setEnabled(false);
       closeIndexMItem.setEnabled(false);
       optimizeIndexMItem.setEnabled(false);
+      exportTermsMItem.setEnabled(false);
       checkIndexMItem.setEnabled(true);
     }
 
@@ -279,6 +296,7 @@ public final class MenuBarProvider {
     public void openIndex(LukeState state) {
       reopenIndexMItem.setEnabled(true);
       closeIndexMItem.setEnabled(true);
+      exportTermsMItem.setEnabled(true);
       if (!state.readOnly() && state.hasDirectoryReader()) {
         optimizeIndexMItem.setEnabled(true);
       }
@@ -297,6 +315,7 @@ public final class MenuBarProvider {
       closeIndexMItem.setEnabled(false);
       optimizeIndexMItem.setEnabled(false);
       checkIndexMItem.setEnabled(false);
+      exportTermsMItem.setEnabled(false);
     }
 
   }

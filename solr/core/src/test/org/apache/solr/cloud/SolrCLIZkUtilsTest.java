@@ -55,7 +55,11 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
   @AfterClass
   public static void closeConn() {
-    zkClient.close();
+    if (null != zkClient) {
+      zkClient.close();
+      zkClient = null;
+    }
+    zkAddr = null;
   }
 
   private static String zkAddr;
@@ -67,7 +71,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
     Path configSet = TEST_PATH().resolve("configsets");
     Path srcPathCheck = configSet.resolve("cloud-subdirs").resolve("conf");
-    copyConfigUp(configSet, "cloud-subdirs", "upconfig1");
+    AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "upconfig1", zkAddr);
     // Now do we have that config up on ZK?
     verifyZkLocalPathsMatch(srcPathCheck, "/configs/upconfig1");
 
@@ -112,7 +116,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     
     Path configSet = TEST_PATH().resolve("configsets");
     Path srcPathCheck = configSet.resolve("cloud-subdirs").resolve("conf");
-    copyConfigUp(configSet, "cloud-subdirs", "downconfig1");
+    AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "downconfig1", zkAddr);
     // Now do we have that config up on ZK?
     verifyZkLocalPathsMatch(srcPathCheck, "/configs/downconfig1");
 
@@ -133,7 +137,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     Files.createFile(emptyFile);
 
     // Now copy it up and back and insure it's still a file in the new place
-    copyConfigUp(tmp.getParent(), "myconfset", "downconfig2");
+    AbstractDistribZkTestBase.copyConfigUp(tmp.getParent(), "myconfset", "downconfig2", zkAddr);
     Path tmp2 = createTempDir("downConfigNewPlace2");
     downTool = new SolrCLI.ConfigSetDownloadTool();
     args = new String[]{
@@ -158,7 +162,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     Path configSet = TEST_PATH().resolve("configsets");
     Path srcPathCheck = configSet.resolve("cloud-subdirs").resolve("conf");
 
-    copyConfigUp(configSet, "cloud-subdirs", "cp1");
+    AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "cp1", zkAddr);
 
     // Now copy it somewhere else on ZK.
     String[] args = new String[]{
@@ -456,8 +460,8 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
     Path configSet = TEST_PATH().resolve("configsets");
     Path srcPathCheck = configSet.resolve("cloud-subdirs").resolve("conf");
-    
-    copyConfigUp(configSet, "cloud-subdirs", "mv1");
+
+    AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "mv1", zkAddr);
 
     // Now move it somewhere else.
     String[] args = new String[]{
@@ -534,7 +538,7 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
 
     Path configSet = TEST_PATH().resolve("configsets");
 
-    copyConfigUp(configSet, "cloud-subdirs", "lister");
+    AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "lister", zkAddr);
 
     // Should only find a single level.
     String[] args = new String[]{
@@ -632,9 +636,9 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
     
     Path configSet = TEST_PATH().resolve("configsets");
     Path srcPathCheck = configSet.resolve("cloud-subdirs").resolve("conf");
-    
-    copyConfigUp(configSet, "cloud-subdirs", "rm1");
-    copyConfigUp(configSet, "cloud-subdirs", "rm2");
+
+    AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "rm1", zkAddr);
+    AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "rm2", zkAddr);
 
     // Should fail if recurse not set.
     String[] args = new String[]{
@@ -690,26 +694,9 @@ public class SolrCLIZkUtilsTest extends SolrCloudTestCase {
         "-zkHost", zkAddr,
     };
 
-    copyConfigUp(configSet, "cloud-subdirs", "rm3");
+    AbstractDistribZkTestBase.copyConfigUp(configSet, "cloud-subdirs", "rm3", zkAddr);
     res = tool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args));
     assertFalse("Should fail when trying to remove /.", res == 0);
-  }
-
-  // We can use this for testing since the goal is to move "some stuff" up to ZK.
-  // The fact that they're in configsets is irrelevant.
-  private void copyConfigUp(Path configSetDir, String srcConfigSet, String dstConfigName) throws Exception {
-    String[] args = new String[]{
-        "-confname", dstConfigName,
-        "-confdir", srcConfigSet,
-        "-zkHost", zkAddr,
-        "-configsetsDir", configSetDir.toAbsolutePath().toString(),
-    };
-
-    SolrCLI.ConfigSetUploadTool tool = new SolrCLI.ConfigSetUploadTool();
-
-    int res = tool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args));
-    assertEquals("Tool should have returned 0 for success, returned: " + res, res, 0);
-
   }
 
   // Check that all children of fileRoot are children of zkRoot and vice-versa

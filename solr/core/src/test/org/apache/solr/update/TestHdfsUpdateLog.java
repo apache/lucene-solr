@@ -70,8 +70,8 @@ public class TestHdfsUpdateLog extends SolrTestCaseJ4 {
       try {
         HdfsTestUtil.teardownClass(dfsCluster);
       } finally {
-        hdfsDataDir = null;
         dfsCluster = null;
+        hdfsUri = null;
         System.clearProperty("solr.ulog.dir");
         System.clearProperty("test.build.data");
         System.clearProperty("test.cache.data");

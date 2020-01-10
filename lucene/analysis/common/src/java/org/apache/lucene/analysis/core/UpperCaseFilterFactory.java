@@ -37,8 +37,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * when you require uppercase tokens.  Use the {@link LowerCaseFilterFactory} for 
  * general search matching
  * @since 4.7.0
+ * @lucene.spi {@value #NAME}
  */
 public class UpperCaseFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "uppercase";
   
   /** Creates a new UpperCaseFilterFactory */
   public UpperCaseFilterFactory(Map<String,String> args) {

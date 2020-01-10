@@ -126,6 +126,7 @@ public final class KoreanTokenizer extends Tokenizer {
   private final FST.BytesReader userFSTReader;
   private final TokenInfoFST userFST;
 
+  private final boolean discardPunctuation;
   private final DecompoundMode mode;
   private final boolean outputUnknownUnigrams;
 
@@ -159,7 +160,7 @@ public final class KoreanTokenizer extends Tokenizer {
    * Uses the default AttributeFactory.
    */
   public KoreanTokenizer() {
-    this(DEFAULT_TOKEN_ATTRIBUTE_FACTORY, null, DEFAULT_DECOMPOUND, false);
+    this(DEFAULT_TOKEN_ATTRIBUTE_FACTORY, null, DEFAULT_DECOMPOUND, false, true);
   }
 
   /**
@@ -171,8 +172,22 @@ public final class KoreanTokenizer extends Tokenizer {
    * @param outputUnknownUnigrams If true outputs unigrams for unknown words.
    */
   public KoreanTokenizer(AttributeFactory factory, UserDictionary userDictionary, DecompoundMode mode, boolean outputUnknownUnigrams) {
+    this(factory, userDictionary, mode, outputUnknownUnigrams, true);
+  }
+
+  /**
+   * Create a new KoreanTokenizer.
+   *
+   * @param factory the AttributeFactory to use
+   * @param userDictionary Optional: if non-null, user dictionary.
+   * @param mode Decompound mode.
+   * @param outputUnknownUnigrams If true outputs unigrams for unknown words.
+   * @param discardPunctuation true if punctuation tokens should be dropped from the output.
+   */
+  public KoreanTokenizer(AttributeFactory factory, UserDictionary userDictionary, DecompoundMode mode, boolean outputUnknownUnigrams, boolean discardPunctuation) {
     super(factory);
     this.mode = mode;
+    this.discardPunctuation = discardPunctuation;
     this.outputUnknownUnigrams = outputUnknownUnigrams;
     dictionary = TokenInfoDictionary.getInstance();
     fst = dictionary.getFST();
@@ -325,7 +340,7 @@ public final class KoreanTokenizer extends Tokenizer {
 
   }
 
-  private void add(Dictionary dict, Position fromPosData, int wordPos, int endPos, int wordID, Type type) throws IOException {
+  private void add(Dictionary dict, Position fromPosData, int wordPos, int endPos, int wordID, Type type) {
     final POS.Tag leftPOS = dict.getLeftPOS(wordID);
     final int wordCost = dict.getWordCost(wordID);
     final int leftID = dict.getLeftId(wordID);
@@ -518,15 +533,9 @@ public final class KoreanTokenizer extends Tokenizer {
     int userWordMaxPosAhead = -1;
 
     // Advances over each position (character):
-    while (true) {
-
-      if (buffer.get(pos) == -1) {
-        // End
-        break;
-      }
-
+    while (buffer.get(pos) != -1) {
       final Position posData = positions.get(pos);
-      final boolean isFrontier = positions.getNextPos() == pos+1;
+      final boolean isFrontier = positions.getNextPos() == pos + 1;
 
       if (posData.count == 0) {
         // No arcs arrive here; move to next position:
@@ -570,9 +579,9 @@ public final class KoreanTokenizer extends Tokenizer {
         int leastIDX = -1;
         int leastCost = Integer.MAX_VALUE;
         Position leastPosData = null;
-        for(int pos2=pos;pos2<positions.getNextPos();pos2++) {
+        for (int pos2 = pos; pos2 < positions.getNextPos(); pos2++) {
           final Position posData2 = positions.get(pos2);
-          for(int idx=0;idx<posData2.count;idx++) {
+          for (int idx = 0; idx < posData2.count; idx++) {
             //System.out.println("    idx=" + idx + " cost=" + cost);
             final int cost = posData2.costs[idx];
             if (cost < leastCost) {
@@ -587,7 +596,7 @@ public final class KoreanTokenizer extends Tokenizer {
         assert leastIDX != -1;
 
         // Second pass: prune all but the best path:
-        for(int pos2=pos;pos2<positions.getNextPos();pos2++) {
+        for (int pos2 = pos; pos2 < positions.getNextPos(); pos2++) {
           final Position posData2 = positions.get(pos2);
           if (posData2 != leastPosData) {
             posData2.reset();
@@ -640,7 +649,7 @@ public final class KoreanTokenizer extends Tokenizer {
       if (Character.getType(buffer.get(pos)) == Character.SPACE_SEPARATOR) {
         int nextChar = buffer.get(++pos);
         while (nextChar != -1 && Character.getType(nextChar) == Character.SPACE_SEPARATOR) {
-          pos ++;
+          pos++;
           nextChar = buffer.get(pos);
         }
       }
@@ -658,7 +667,7 @@ public final class KoreanTokenizer extends Tokenizer {
         int outputMaxPosAhead = 0;
         int arcFinalOutMaxPosAhead = 0;
 
-        for(int posAhead=pos;;posAhead++) {
+        for (int posAhead = pos; ; posAhead++) {
           final int ch = buffer.get(posAhead);
           if (ch == -1) {
             break;
@@ -666,11 +675,11 @@ public final class KoreanTokenizer extends Tokenizer {
           if (userFST.findTargetArc(ch, arc, arc, posAhead == pos, userFSTReader) == null) {
             break;
           }
-          output += arc.output.intValue();
+          output += arc.output().intValue();
           if (arc.isFinal()) {
             maxPosAhead = posAhead;
             outputMaxPosAhead = output;
-            arcFinalOutMaxPosAhead = arc.nextFinalOutput.intValue();
+            arcFinalOutMaxPosAhead = arc.nextFinalOutput().intValue();
             anyMatches = true;
           }
         }
@@ -680,9 +689,9 @@ public final class KoreanTokenizer extends Tokenizer {
           if (VERBOSE) {
             System.out.println("    USER word " + new String(buffer.get(pos, maxPosAhead + 1)) + " toPos=" + (maxPosAhead + 1));
           }
-          add(userDictionary, posData, pos, maxPosAhead+1, outputMaxPosAhead+arcFinalOutMaxPosAhead, Type.USER);
+          add(userDictionary, posData, pos, maxPosAhead + 1, outputMaxPosAhead + arcFinalOutMaxPosAhead, Type.USER);
           userWordMaxPosAhead = Math.max(userWordMaxPosAhead, maxPosAhead);
-        } 
+        }
       }
 
       // TODO: we can be more aggressive about user
@@ -694,7 +703,7 @@ public final class KoreanTokenizer extends Tokenizer {
         fst.getFirstArc(arc);
         int output = 0;
 
-        for(int posAhead=pos;;posAhead++) {
+        for (int posAhead = pos; ; posAhead++) {
           final int ch = buffer.get(posAhead);
           if (ch == -1) {
             break;
@@ -705,7 +714,7 @@ public final class KoreanTokenizer extends Tokenizer {
             break;
           }
 
-          output += arc.output.intValue();
+          output += arc.output().intValue();
 
           // Optimization: for known words that are too-long
           // (compound), we should pre-compute the 2nd
@@ -714,12 +723,12 @@ public final class KoreanTokenizer extends Tokenizer {
           // match is found.
 
           if (arc.isFinal()) {
-            dictionary.lookupWordIds(output + arc.nextFinalOutput.intValue(), wordIdRef);
+            dictionary.lookupWordIds(output + arc.nextFinalOutput().intValue(), wordIdRef);
             if (VERBOSE) {
               System.out.println("    KNOWN word " + new String(buffer.get(pos, posAhead - pos + 1)) + " toPos=" + (posAhead + 1) + " " + wordIdRef.length + " wordIDs");
             }
             for (int ofs = 0; ofs < wordIdRef.length; ofs++) {
-              add(dictionary, posData, pos, posAhead+1, wordIdRef.ints[wordIdRef.offset + ofs], Type.KNOWN);
+              add(dictionary, posData, pos, posAhead + 1, wordIdRef.ints[wordIdRef.offset + ofs], Type.KNOWN);
               anyMatches = true;
             }
           }
@@ -743,8 +752,9 @@ public final class KoreanTokenizer extends Tokenizer {
         } else {
           // Extract unknown word. Characters with the same script are considered to be part of unknown word
           unknownWordLength = 1;
-          UnicodeScript scriptCode = UnicodeScript.of((int) firstCharacter);
+          UnicodeScript scriptCode = UnicodeScript.of(firstCharacter);
           final boolean isPunct = isPunctuation(firstCharacter);
+          final boolean isDigit = Character.isDigit(firstCharacter);
           for (int posAhead = pos + 1; unknownWordLength < MAX_UNKNOWN_WORD_LENGTH; posAhead++) {
             int next = buffer.get(posAhead);
             if (next == -1) {
@@ -759,7 +769,10 @@ public final class KoreanTokenizer extends Tokenizer {
                 || chType == Character.NON_SPACING_MARK;
 
             if (sameScript
+                  // split on punctuation
                   && isPunctuation(ch, chType) == isPunct
+                  // split on digit
+                  && Character.isDigit(ch) == isDigit
                   && characterDefinition.isGroup(ch)) {
               unknownWordLength++;
             } else {
@@ -874,11 +887,9 @@ public final class KoreanTokenizer extends Tokenizer {
               backWordPos+i,
               backWordPos+i+charLen
           );
-          if (shouldFilterToken(token) == false) {
-            pending.add(token);
-            if (VERBOSE) {
-              System.out.println("    add token=" + pending.get(pending.size() - 1));
-            }
+          pending.add(token);
+          if (VERBOSE) {
+            System.out.println("    add token=" + pending.get(pending.size() - 1));
           }
         }
       } else {
@@ -939,6 +950,16 @@ public final class KoreanTokenizer extends Tokenizer {
           }
         }
       }
+      if (discardPunctuation == false && backWordPos != backPos) {
+        // Add a token for whitespaces between terms
+        int offset = backPos - lastBackTracePos;
+        int len = backWordPos - backPos;
+        //System.out.println(offset + " " + fragmentOffset + " " + len + " " + backWordPos + " " + backPos);
+        unkDictionary.lookupWordIds(characterDefinition.getCharacterClass(' '), wordIdRef);
+        DictionaryToken spaceToken = new DictionaryToken(Type.UNKNOWN, unkDictionary,
+            wordIdRef.ints[wordIdRef.offset], fragment, offset, len, backPos, backPos+len);
+        pending.add(spaceToken);
+      }
 
       pos = backPos;
       bestIDX = nextBestIDX;
@@ -960,7 +981,7 @@ public final class KoreanTokenizer extends Tokenizer {
   }
 
   private boolean shouldFilterToken(Token token) {
-    return isPunctuation(token.getSurfaceForm()[token.getOffset()]);
+    return discardPunctuation && isPunctuation(token.getSurfaceForm()[token.getOffset()]);
   }
 
   private static boolean isPunctuation(char ch) {

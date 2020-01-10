@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 import org.apache.lucene.analysis.util.ResourceLoader;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,6 +53,7 @@ public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements Re
   private ResourceLoader loader;
   List<AuditLoggerPlugin> plugins = new ArrayList<>();
   List<String> pluginNames = new ArrayList<>();
+  SolrMetricsContext solrMetricsContext;
 
   /**
    * Passes the AuditEvent to all sub plugins in parallel. The event should be a {@link AuditEvent} to be able to pull context info.
@@ -118,10 +119,11 @@ public class MultiDestinationAuditLogger extends AuditLoggerPlugin implements Re
     this.loader = loader;
   }
 
+
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
-    super.initializeMetrics(manager, registryName, tag, scope);
-    plugins.forEach(p -> p.initializeMetrics(manager, registryName, tag, scope));
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    super.initializeMetrics(parentContext, scope);
+    plugins.forEach(p -> p.initializeMetrics(solrMetricsContext, scope));
   }
 
   @Override

@@ -71,8 +71,13 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *  </li>
  * </ul>
  * @since 5.0.0
+ * @lucene.spi {@value #NAME}
  */
-  public class SuggestStopFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+public class SuggestStopFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+
+  /** SPI name */
+  public static final String NAME = "suggestStop";
+
   /** the default format, one word per line, whole line comments start with "#" */
   public static final String FORMAT_WORDSET = "wordset";
   /** multiple words may be specified on each line, trailing comments start with "&#124;" */

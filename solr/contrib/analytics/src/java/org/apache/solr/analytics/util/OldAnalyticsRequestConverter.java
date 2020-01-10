@@ -33,21 +33,21 @@ import org.apache.solr.common.params.SolrParams;
  */
 public class OldAnalyticsRequestConverter implements OldAnalyticsParams {
   // Old language Parsing
-  private static final Pattern oldExprPattern = 
+  private static final Pattern oldExprPattern =
       Pattern.compile("^(?:"+OLD_PREFIX+")\\.([^\\.]+)\\.(?:"+OLD_EXPRESSION+")\\.([^\\.]+)$", Pattern.CASE_INSENSITIVE);
-  private static final Pattern oldFieldFacetPattern = 
+  private static final Pattern oldFieldFacetPattern =
       Pattern.compile("^(?:"+OLD_PREFIX+")\\.([^\\.]+)\\.(?:"+FIELD_FACET+")$", Pattern.CASE_INSENSITIVE);
-  private static final Pattern oldFieldFacetParamPattern = 
+  private static final Pattern oldFieldFacetParamPattern =
       Pattern.compile("^(?:"+OLD_PREFIX+")\\.([^\\.]+)\\.(?:"+FIELD_FACET+")\\.([^\\.]+)\\.("+FieldFacetParamParser.regexParamList+")$", Pattern.CASE_INSENSITIVE);
   private static final Pattern oldRangeFacetParamPattern =
       Pattern.compile("^(?:"+OLD_PREFIX+")\\.([^\\.]+)\\.(?:"+RANGE_FACET+")\\.([^\\.]+)\\.("+RangeFacetParamParser.regexParamList+")$", Pattern.CASE_INSENSITIVE);
-  private static final Pattern oldQueryFacetParamPattern = 
+  private static final Pattern oldQueryFacetParamPattern =
       Pattern.compile("^(?:"+OLD_PREFIX+")\\.([^\\.]+)\\.(?:"+QUERY_FACET+")\\.([^\\.]+)\\.("+QUERY+")$", Pattern.CASE_INSENSITIVE);
-  
+
   /**
    * Convert the old olap-style Analytics Request in the given params to
    * an analytics request string using the current format.
-   * 
+   *
    * @param params to find the analytics request in
    * @return an analytics request string
    */
@@ -63,7 +63,7 @@ public class OldAnalyticsRequestConverter implements OldAnalyticsParams {
     }
     return request;
   }
-  
+
   private static void parseParam(AnalyticsRequest request, String param, CharSequence paramSequence, SolrParams params) {
     // Check if grouped expression
     Matcher m = oldExprPattern.matcher(paramSequence);
@@ -71,21 +71,21 @@ public class OldAnalyticsRequestConverter implements OldAnalyticsParams {
       addExpression(request,m.group(1),m.group(2),params.get(param));
       return;
     }
-    
+
     // Check if field facet parameter
     m = oldFieldFacetPattern.matcher(paramSequence);
     if (m.matches()) {
       addFieldFacets(request,m.group(1),params.getParams(param));
       return;
     }
-    
+
     // Check if field facet parameter
     m = oldFieldFacetParamPattern.matcher(paramSequence);
     if (m.matches()) {
       setFieldFacetParam(request,m.group(1),m.group(2),m.group(3),params.getParams(param));
       return;
     }
-    
+
     // Check if field facet parameter
     m = oldFieldFacetParamPattern.matcher(paramSequence);
     if (m.matches()) {
@@ -105,9 +105,9 @@ public class OldAnalyticsRequestConverter implements OldAnalyticsParams {
     if (m.matches()) {
       setQueryFacetParam(request,m.group(1),m.group(2),m.group(3),params.getParams(param));
       return;
-    } 
+    }
   }
-  
+
   private static AnalyticsGroupingRequest getGrouping(AnalyticsRequest request, String name) {
     AnalyticsGroupingRequest grouping = request.groupings.get(name);
     if (grouping == null) {
@@ -121,7 +121,7 @@ public class OldAnalyticsRequestConverter implements OldAnalyticsParams {
 
   private static void addFieldFacets(AnalyticsRequest request, String groupingName, String[] params) {
     AnalyticsGroupingRequest grouping = getGrouping(request, groupingName);
-    
+
     for (String param : params) {
       if (!grouping.facets.containsKey(param)) {
         AnalyticsValueFacetRequest fieldFacet = new AnalyticsValueFacetRequest();
@@ -133,9 +133,9 @@ public class OldAnalyticsRequestConverter implements OldAnalyticsParams {
 
   private static void setFieldFacetParam(AnalyticsRequest request, String groupingName, String field, String paramType, String[] params) {
     AnalyticsGroupingRequest grouping = getGrouping(request, groupingName);
-    
+
     AnalyticsValueFacetRequest fieldFacet = (AnalyticsValueFacetRequest) grouping.facets.get(field);
-    
+
     if (fieldFacet == null) {
       fieldFacet = new AnalyticsValueFacetRequest();
       fieldFacet.expression = field;
@@ -146,7 +146,7 @@ public class OldAnalyticsRequestConverter implements OldAnalyticsParams {
 
   private static void setRangeFacetParam(AnalyticsRequest request, String groupingName, String field, String paramType, String[] params) {
     AnalyticsGroupingRequest grouping = getGrouping(request, groupingName);
-    
+
     AnalyticsRangeFacetRequest rangeFacet = (AnalyticsRangeFacetRequest) grouping.facets.get(field);
     if (rangeFacet == null) {
       rangeFacet = new AnalyticsRangeFacetRequest();
@@ -158,7 +158,7 @@ public class OldAnalyticsRequestConverter implements OldAnalyticsParams {
 
   private static void setQueryFacetParam(AnalyticsRequest request, String groupingName, String facetName, String paramType, String[] params) {
     AnalyticsGroupingRequest grouping = getGrouping(request, groupingName);
-    
+
     AnalyticsQueryFacetRequest queryFacet = new AnalyticsQueryFacetRequest();
     queryFacet.queries = new HashMap<>();
     if (paramType.equals("query")||paramType.equals("q")) {
@@ -171,7 +171,7 @@ public class OldAnalyticsRequestConverter implements OldAnalyticsParams {
 
   private static void addExpression(AnalyticsRequest request, String groupingName, String expressionName, String expression) {
     request.expressions.put(groupingName + expressionName, expression);
-    
+
     getGrouping(request, groupingName).expressions.put(expressionName, expression);
   }
 }

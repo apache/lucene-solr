@@ -55,7 +55,7 @@ public class StringCastFunctionTest extends SolrTestCaseJ4 {
   @Test
   public void multiValueParameterTest() {
     TestBooleanValueStream val = new TestBooleanValueStream();
-    
+
     AnalyticsValueStream uncasted = StringCastFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
     assertTrue(uncasted instanceof StringValueStream);
     StringValueStream func = (StringValueStream) uncasted;
@@ -65,7 +65,7 @@ public class StringCastFunctionTest extends SolrTestCaseJ4 {
     func.streamStrings( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // One value
     val.setValues(true);
     Iterator<String> values1 = Arrays.asList("true").iterator();
@@ -74,7 +74,7 @@ public class StringCastFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values1.next(), value);
     });
     assertFalse(values1.hasNext());
-    
+
     // Multiple values
     val.setValues(true, true, false, false);
     Iterator<String> values2 = Arrays.asList("true", "true", "false", "false").iterator();

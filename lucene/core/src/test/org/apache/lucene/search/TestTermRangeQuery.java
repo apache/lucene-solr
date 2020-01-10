@@ -131,12 +131,12 @@ public class TestTermRangeQuery extends LuceneTestCase {
     TermRangeQuery query = TermRangeQuery.newStringRange("content", "B", "J", true, true);
     checkBooleanTerms(searcher, query, "B", "C", "D", "E", "F", "G", "H", "I", "J");
     
-    final int savedClauseCount = BooleanQuery.getMaxClauseCount();
+    final int savedClauseCount = IndexSearcher.getMaxClauseCount();
     try {
-      BooleanQuery.setMaxClauseCount(3);
+      IndexSearcher.setMaxClauseCount(3);
       checkBooleanTerms(searcher, query, "B", "C", "D");
     } finally {
-      BooleanQuery.setMaxClauseCount(savedClauseCount);
+      IndexSearcher.setMaxClauseCount(savedClauseCount);
     }
     reader.close();
   }

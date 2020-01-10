@@ -29,10 +29,12 @@ import org.apache.lucene.index.PrefixCodedTerms;
 import org.apache.lucene.index.PrefixCodedTerms.TermIterator;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.LongBitSet;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * A {@link Query} that only accepts documents whose
@@ -91,7 +93,8 @@ import org.apache.lucene.util.LongBitSet;
  *
  * @lucene.experimental
  */
-public class DocValuesTermsQuery extends Query {
+public class DocValuesTermsQuery extends Query implements Accountable {
+  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(DocValuesTermsQuery.class);
 
   private final String field;
   private final PrefixCodedTerms termData;
@@ -162,6 +165,27 @@ public class DocValuesTermsQuery extends Query {
     }
 
     return builder.toString();
+  }
+
+  /**
+   * @return the name of the field searched by this query.
+   */
+  public String getField() {
+    return field;
+  }
+
+  /**
+   * @return the terms looked up by this query, prefix-encoded.
+   */
+  public PrefixCodedTerms getTerms() {
+    return termData;
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return BASE_RAM_BYTES +
+        RamUsageEstimator.sizeOfObject(field) +
+        RamUsageEstimator.sizeOfObject(termData);
   }
 
   @Override

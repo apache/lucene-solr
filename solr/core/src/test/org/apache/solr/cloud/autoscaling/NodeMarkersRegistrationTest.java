@@ -20,12 +20,14 @@ package org.apache.solr.cloud.autoscaling;
 import java.lang.invoke.MethodHandles;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.solr.client.solrj.SolrRequest;
@@ -41,6 +43,7 @@ import org.apache.solr.common.cloud.LiveNodesListener;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
@@ -49,6 +52,10 @@ import org.junit.Before;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.cloud.autoscaling.OverseerTriggerThread.MARKER_ACTIVE;
+import static org.apache.solr.cloud.autoscaling.OverseerTriggerThread.MARKER_INACTIVE;
+import static org.apache.solr.cloud.autoscaling.OverseerTriggerThread.MARKER_STATE;
 
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.client.solrj.cloud.autoscaling=DEBUG")
 public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
@@ -81,7 +88,7 @@ public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
     return triggerFiredLatch;
   }
 
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13376")
+  //@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13376")
   @Test
   public void testNodeMarkersRegistration() throws Exception {
     triggerFiredLatch = new CountDownLatch(1);
@@ -135,10 +142,16 @@ public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
     String pathLost = ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH + "/" + overseerLeader;
     
     TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    AtomicBoolean markerInactive = new AtomicBoolean();
     try {
-      timeout.waitFor("zk path to go away", () -> {
+      timeout.waitFor("nodeLost marker to get inactive", () -> {
         try {
-          return !zkClient().exists(pathLost, true);
+          if (!zkClient().exists(pathLost, true)) {
+            throw new RuntimeException("marker " + pathLost + " should exist!");
+          }
+          Map<String, Object> markerData = Utils.getJson(zkClient(), pathLost, true);
+          markerInactive.set(markerData.getOrDefault(MARKER_STATE, MARKER_ACTIVE).equals(MARKER_INACTIVE));
+          return markerInactive.get();
         } catch (KeeperException e) {
           throw new RuntimeException(e);
         } catch (InterruptedException e) {
@@ -149,8 +162,8 @@ public class NodeMarkersRegistrationTest extends SolrCloudTestCase {
       // okay
     }
 
-    // verify that a znode does NOT exist - the new overseer cleaned up existing nodeLost markers
-    assertFalse("Path " + pathLost + " exists", zkClient().exists(pathLost, true));
+    // verify that the marker is inactive - the new overseer should deactivate markers once they are processed
+    assertTrue("Marker " + pathLost + " still active!", markerInactive.get());
 
     listener.reset();
 

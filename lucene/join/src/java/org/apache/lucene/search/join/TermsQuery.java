@@ -24,8 +24,10 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRefHash;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * A query that has an array of terms from a specific field. This query will match documents have one or more terms in
@@ -33,7 +35,8 @@ import org.apache.lucene.util.BytesRefHash;
  *
  * @lucene.experimental
  */
-class TermsQuery extends MultiTermQuery {
+class TermsQuery extends MultiTermQuery implements Accountable {
+  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(TermsQuery.class);
 
   private final BytesRefHash terms;
   private final int[] ords;
@@ -43,6 +46,8 @@ class TermsQuery extends MultiTermQuery {
   private final Query fromQuery;
   // id of the context rather than the context itself in order not to hold references to index readers
   private final Object indexReaderContextId;
+
+  private final long ramBytesUsed; // cache
 
   /**
    * @param toField               The field that should contain terms that are specified in the next parameter.
@@ -56,6 +61,13 @@ class TermsQuery extends MultiTermQuery {
     this.fromField = fromField;
     this.fromQuery = fromQuery;
     this.indexReaderContextId = indexReaderContextId;
+
+    this.ramBytesUsed = BASE_RAM_BYTES +
+        RamUsageEstimator.sizeOfObject(field) +
+        RamUsageEstimator.sizeOfObject(fromField) +
+        RamUsageEstimator.sizeOfObject(fromQuery, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED) +
+        RamUsageEstimator.sizeOfObject(ords) +
+        RamUsageEstimator.sizeOfObject(terms);
   }
 
   @Override
@@ -102,4 +114,8 @@ class TermsQuery extends MultiTermQuery {
     return classHash() + Objects.hash(field, fromField, fromQuery, indexReaderContextId);
   }
 
+  @Override
+  public long ramBytesUsed() {
+    return ramBytesUsed;
+  }
 }

@@ -35,13 +35,13 @@ public class LegacyFieldFacetExtrasTest extends LegacyAbstractAnalyticsFacetTest
   public static final int DATE = 25;
   public static final int STRING = 26;
   public static final int NUM_LOOPS = 100;
-  
+
   //INT
-  static ArrayList<ArrayList<Integer>> intLongTestStart; 
-  static ArrayList<ArrayList<Integer>> intFloatTestStart; 
-  static ArrayList<ArrayList<Integer>> intDoubleTestStart; 
-  static ArrayList<ArrayList<Integer>> intStringTestStart; 
-  
+  static ArrayList<ArrayList<Integer>> intLongTestStart;
+  static ArrayList<ArrayList<Integer>> intFloatTestStart;
+  static ArrayList<ArrayList<Integer>> intDoubleTestStart;
+  static ArrayList<ArrayList<Integer>> intStringTestStart;
+
   @BeforeClass
   public static void beforeClass() throws Exception {
     initCore("solrconfig-analytics.xml","schema-analytics.xml");
@@ -60,7 +60,7 @@ public class LegacyFieldFacetExtrasTest extends LegacyAbstractAnalyticsFacetTest
       double d = j%DOUBLE;
       int dt = j%DATE;
       int s = j%STRING;
-      assertU(adoc("id", "1000" + j, "int_id", "" + i, "long_ld", "" + l, "float_fd", "" + f, 
+      assertU(adoc("id", "1000" + j, "int_id", "" + i, "long_ld", "" + l, "float_fd", "" + f,
           "double_dd", "" + d,  "date_dtd", (1800+dt) + "-12-31T23:59:59.999Z", "string_sd", "abc" + s));
       //Long
       if (j-LONG<0) {
@@ -94,18 +94,18 @@ public class LegacyFieldFacetExtrasTest extends LegacyAbstractAnalyticsFacetTest
       } else {
         intStringTestStart.get(s).add(i);
       }
-      
+
       if (usually()) {
         assertU(commit()); // to have several segments
       }
     }
-    
-    assertU(commit()); 
+
+    assertU(commit());
     setResponse(h.query(request(fileToStringArr(LegacyFieldFacetExtrasTest.class, fileName))));
   }
-  
+
   @Test
-  public void limitTest() throws Exception { 
+  public void limitTest() throws Exception {
 
     Collection<Double> lon = getDoubleList("lr", "fieldFacets", "long_ld", "double", "mean");
     assertEquals(getRawResponse(), lon.size(),5);
@@ -116,51 +116,51 @@ public class LegacyFieldFacetExtrasTest extends LegacyAbstractAnalyticsFacetTest
     Collection<Integer> string = getIntegerList("lr", "fieldFacets", "string_sd", "int", "percentile_20");
     assertEquals(getRawResponse(), string.size(),1);
   }
-  
+
   @Test
-  public void offsetTest() throws Exception { 
+  public void offsetTest() throws Exception {
 
     Collection<Double> lon;
-   
+
     List<Double> all = new ArrayList<>();
     lon = getDoubleList("off0", "fieldFacets", "long_ld", "double", "mean");
     assertEquals(getRawResponse(), lon.size(),2);
     assertArrayEquals(new Double[]{ 1.5,  2.0 }, lon.toArray(new Double[0]));
     all.addAll(lon);
-    
+
     lon = getDoubleList("off1", "fieldFacets", "long_ld", "double", "mean");
     assertEquals(getRawResponse(), lon.size(),2);
     assertArrayEquals(new Double[]{ 3.0,  4.0 }, lon.toArray(new Double[0]));
     all.addAll(lon);
-    
+
     lon = getDoubleList("off2", "fieldFacets", "long_ld", "double", "mean");
     assertEquals(getRawResponse(), lon.size(),3);
     assertArrayEquals(new Double[]{ 5.0,  5.75, 6.0 }, lon.toArray(new Double[0]));
     all.addAll(lon);
-    
+
     lon = getDoubleList("offAll", "fieldFacets", "long_ld", "double", "mean");
     assertEquals(getRawResponse(), lon.size(),7);
     assertArrayEquals(all.toArray(new Double[0]), lon.toArray(new Double[0]));
   }
-  
+
   @SuppressWarnings("unchecked")
   @Test
-  public void sortTest() throws Exception { 
+  public void sortTest() throws Exception {
     Collection<Double> lon = getDoubleList("sr", "fieldFacets", "long_ld", "double", "mean");
     ArrayList<Double> longTest = calculateNumberStat(intLongTestStart, "mean");
     Collections.sort(longTest);
     assertEquals(getRawResponse(), longTest,lon);
-    
+
     Collection<Double> flo = getDoubleList("sr", "fieldFacets", "float_fd", "double", "median");
     ArrayList<Double> floatTest = calculateNumberStat(intFloatTestStart, "median");
     Collections.sort(floatTest,Collections.reverseOrder());
     assertEquals(getRawResponse(), floatTest,flo);
-    
+
     Collection<Long> doub = getLongList("sr", "fieldFacets", "double_dd", "long", "count");
     ArrayList<Long> doubleTest = (ArrayList<Long>)calculateStat(intDoubleTestStart, "count");
     Collections.sort(doubleTest);
     assertEquals(getRawResponse(), doubleTest,doub);
-    
+
     Collection<Integer> string = getIntegerList("sr", "fieldFacets", "string_sd", "int", "percentile_20");
     ArrayList<Integer> stringTest = (ArrayList<Integer>)calculateStat(intStringTestStart, "perc_20");
     Collections.sort(stringTest,Collections.reverseOrder());

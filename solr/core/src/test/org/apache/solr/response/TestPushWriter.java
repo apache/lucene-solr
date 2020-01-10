@@ -23,6 +23,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.lang.invoke.MethodHandles;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
@@ -36,7 +37,6 @@ import org.apache.solr.request.LocalSolrQueryRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Collections.singletonMap;
 
 public class TestPushWriter extends SolrTestCaseJ4 {
@@ -45,12 +45,12 @@ public class TestPushWriter extends SolrTestCaseJ4 {
 
   public void testStandardResponse() throws IOException {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    OutputStreamWriter osw = new OutputStreamWriter(baos, UTF_8);
+    OutputStreamWriter osw = new OutputStreamWriter(baos, StandardCharsets.UTF_8);
     PushWriter pw = new JSONWriter(osw,
         new LocalSolrQueryRequest(null, new ModifiableSolrParams()), new SolrQueryResponse());
     writeData(pw);
     osw.flush();
-    log.info(new String(baos.toByteArray(), "UTF-8"));
+    log.info(new String(baos.toByteArray(), StandardCharsets.UTF_8));
     Map m = (Map) Utils.fromJSON(baos.toByteArray());
     checkValues(m);
     try (JavaBinCodec jbc = new JavaBinCodec(baos= new ByteArrayOutputStream(), null)) {

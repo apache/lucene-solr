@@ -37,6 +37,8 @@ With the exception of in-place updates, the whole block must be updated or delet
 
  * The schema must include an indexed field `\_root_`. Solr automatically populates this with the value of the top/parent ID. +
  `<field name="\_root_" type="string" indexed="true" stored="false" docValues="false" />`
+ ** `\_root_` must be set either as stored (stored="true") or doc values (docValues="true") to enable
+    <<updating-parts-of-documents#updating-child-documents, atomic updates of nested documents>>.
  * `\_nest_path_` is populated by Solr automatically with the path of the document in the hierarchy for non-root documents. This field is optional. +
  `<fieldType name="\_nest_path_" class="solr.NestPathField" />
   <field name="\_nest_path_" type="_nest_path_" />`
@@ -54,7 +56,7 @@ With the exception of in-place updates, the whole block must be updated or delet
 === Rudimentary Root-only Schemas
 
 These schemas do not contain any other nested related fields apart from `\_root_`.
-Many schemas in existence are this way simply because default configSets are this way, even if the application isn't using nested documents.
+Many schemas in existence are this way simply because default configsets are this way, even if the application isn't using nested documents.
 If an application uses nested documents with such a schema, keep in mind that that some related features aren't as effective since there is less information.  Mainly the <<searching-nested-documents.adoc#child-doc-transformer,[child]>> transformer returns matching children in a flat list (not nested) and it's attached to the parent using the special field name `\_childDocuments_`.
 
 With such a schema, typically you should have a field that differentiates a root doc from any nested children.

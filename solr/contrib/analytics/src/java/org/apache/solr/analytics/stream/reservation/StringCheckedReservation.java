@@ -27,7 +27,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 
 public class StringCheckedReservation extends ReductionCheckedDataReservation<Consumer<String>, Supplier<String>> {
-  
+
   public StringCheckedReservation(Consumer<String> applier, Supplier<String> extractor, BooleanSupplier exists) {
     super(applier, extractor, exists);
   }

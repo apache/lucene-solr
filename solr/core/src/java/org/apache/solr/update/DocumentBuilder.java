@@ -135,7 +135,7 @@ public class DocumentBuilder {
     // Load fields from SolrDocument to Document
     for( SolrInputField field : doc ) {
 
-      if (field.getFirstRawValue() instanceof SolrDocumentBase) {
+      if (field.getFirstValue() instanceof SolrDocumentBase) {
         if (ignoreNestedDocs) {
           continue;
         }
@@ -159,7 +159,7 @@ public class DocumentBuilder {
       // load each field value
       boolean hasField = false;
       try {
-        Iterator it = field.getRawIterator();
+        Iterator it = field.iterator();
         while (it.hasNext()) {
           Object v = it.next();
           if( v == null ) {
@@ -196,8 +196,8 @@ public class DocumentBuilder {
 
                 // Perhaps trim the length of a copy field
                 Object val = v;
-                if( val instanceof String && cf.getMaxChars() > 0 ) {
-                  val = cf.getLimitedValue((String)val);
+                if( val instanceof CharSequence && cf.getMaxChars() > 0 ) {
+                    val = cf.getLimitedValue(val.toString());
                 }
 
                 addField(out, destinationField, val,

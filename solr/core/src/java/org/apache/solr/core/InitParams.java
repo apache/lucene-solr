@@ -16,7 +16,6 @@
  */
 package org.apache.solr.core;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -49,7 +48,7 @@ public class InitParams {
     Set<String> paths = null;
     String pathStr = p.attributes.get(PATH);
     if (pathStr != null) {
-      paths = Collections.unmodifiableSet(new HashSet<>(StrUtils.splitSmart(pathStr, ',')));
+      paths = Set.copyOf(StrUtils.splitSmart(pathStr, ','));
     }
     this.paths = paths;
     NamedList nl = (NamedList) p.initArgs.get(DEFAULTS);

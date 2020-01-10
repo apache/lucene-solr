@@ -49,7 +49,7 @@ public class CleanupOldIndexTest extends SolrCloudTestCase {
   @AfterClass
   public static void afterClass() throws Exception {
 
-    if (suiteFailureMarker.wasSuccessful()) {
+    if (null != cluster && suiteFailureMarker.wasSuccessful()) {
       zkClient().printLayoutToStream(System.out);
     }
 

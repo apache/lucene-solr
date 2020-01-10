@@ -34,23 +34,23 @@ public class DivideFunctionTest extends SolrTestCaseJ4 {
   public void twoSingleValueParametersTest() {
     TestIntValue dividend = new TestIntValue();
     TestFloatValue divisor = new TestFloatValue();
-    
+
     AnalyticsValueStream uncasted = DivideFunction.creatorFunction.apply(new AnalyticsValueStream[] {dividend, divisor});
     assertTrue(uncasted instanceof DoubleValue);
     DoubleValue func = (DoubleValue) uncasted;
-    
+
     // Neither exists
     dividend.setExists(false);
     divisor.setExists(false);
     func.getDouble();
     assertFalse(func.exists());
-    
+
     // One exists
     dividend.setValue(30).setExists(true);
     divisor.setExists(false);
     func.getDouble();
     assertFalse(func.exists());
-    
+
     // Both exist
     dividend.setValue(60).setExists(true);
     divisor.setValue(23.56F).setExists(true);
@@ -62,7 +62,7 @@ public class DivideFunctionTest extends SolrTestCaseJ4 {
   public void oneMultiOneSingleValueParameterTest() {
     TestLongValueStream dividend = new TestLongValueStream();
     TestDoubleValue divisor = new TestDoubleValue();
-    
+
     AnalyticsValueStream uncasted = DivideFunction.creatorFunction.apply(new AnalyticsValueStream[] {dividend, divisor});
     assertTrue(uncasted instanceof DoubleValueStream);
     DoubleValueStream func = (DoubleValueStream) uncasted;
@@ -73,14 +73,14 @@ public class DivideFunctionTest extends SolrTestCaseJ4 {
     func.streamDoubles( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Multiple values, no value
     dividend.setValues(4L, 10023L);
     divisor.setExists(false);
     func.streamDoubles( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Multiple values, one value
     dividend.setValues(20L, 5L, -234L);
     divisor.setValue(44.56F).setExists(true);
@@ -96,7 +96,7 @@ public class DivideFunctionTest extends SolrTestCaseJ4 {
   public void oneSingleOneMultiValueParameterTest() {
     TestDoubleValue dividend = new TestDoubleValue();
     TestLongValueStream divisor = new TestLongValueStream();
-    
+
     AnalyticsValueStream uncasted = DivideFunction.creatorFunction.apply(new AnalyticsValueStream[] {dividend, divisor});
     assertTrue(uncasted instanceof DoubleValueStream);
     DoubleValueStream func = (DoubleValueStream) uncasted;
@@ -107,14 +107,14 @@ public class DivideFunctionTest extends SolrTestCaseJ4 {
     func.streamDoubles( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Multiple values, no value
     dividend.setExists(false);
     divisor.setValues(4L, 10023L);
     func.streamDoubles( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Multiple values, one value
     dividend.setValue(44.56F).setExists(true);
     divisor.setValues(20L, 5L, -234L);

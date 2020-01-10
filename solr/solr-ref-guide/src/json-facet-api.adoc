@@ -131,7 +131,6 @@ include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-metrics-face
 
 The response to the facet request above will start with documents matching the root domain (docs containing "memory" with inStock:true) followed by the requested statistics in a `facets` block:
 
-[...]
 [source,java]
 ----
  "facets" : {
@@ -186,8 +185,6 @@ include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-terms-facet-
 ----
 ====
 --
-
-// TODO: This table has cells that won't work with PDF: https://github.com/ctargett/refguide-asciidoc-poc/issues/13
 
 [width="100%",cols="20%,90%",options="header",]
 |===
@@ -378,8 +375,6 @@ The output from the range facet above would look a bit like:
 
 Range facet parameter names and semantics largely mirror facet.range query-parameter style faceting. For example "start" here corresponds to "facet.range.start" in a facet.range command.
 
-// TODO: This table has cells that won't work with PDF: https://github.com/ctargett/refguide-asciidoc-poc/issues/13
-
 [width="100%",cols="10%,90%",options="header",]
 |===
 |Parameter |Description
@@ -407,7 +402,97 @@ By default, the ranges used to compute range faceting between `start` and `end` 
 * "all" shorthand for lower, upper, edge, outer
 
 |facet |Aggregations, metrics, or nested facets that will be calculated for every returned bucket
+|ranges a|List of arbitrary range when specified calculates facet on given ranges rather than `start`, `gap` and `end`. With `start`, `end` and `gap` the width of the range or bucket is always fixed. If range faceting needs to computed on varying range width then, `ranges` should be specified.
+
+* Specifying `start`, `end` or `gap` along with `ranges` is disallowed and request would fail.
+* When `ranges` are specified in the range facet, `hardend`, `include` and `other` parameters are ignored.
+
+Refer <<Arbitrary Range>>
 |===
+
+==== Arbitrary Range
+
+An arbitrary range consists of from and to values over which range bucket is computed. This range can be specified in two syntax.
+
+[width="100%",cols="10%,90%",options="header",]
+|===
+|Parameter |Description
+|from |The lower bound of the range. When not specified defaults to `*`.
+|to |The upper bound of the range. When not specified defaults to `*`.
+|inclusive_from |A boolean, which if true means that include the lower bound `from`. This defaults to `true`.
+|inclusive_to |A boolean, which if true means that include the upper bound `to`. This default to `false`.
+|range a|The range is specified as string. This is semantically similar to `facet.interval`
+
+* When `range` is specified then, all the above parameters `from`, `to` and etc in the range are ignored
+* `range` always start with `(` or `[` and ends with `)` or `]`
+** `(` - exclude lower bound
+** `[` - include lower bound
+** `)` - exclude upper bound
+** `]` - include upper bound
+
+For example, For range `(5,10]` 5 is excluded and 10 is included
+|===
+
+===== other with ranges
+
+`other` parameter is ignored when `ranges` is specified but there are ways to achieve same behavior with `ranges`.
+
+* `before` - This is equivalent to `[*,some_val)` or just specifying `to` value
+* `after` - This is equivalent to `(som_val, *]` or just specifying `from` value
+* `between` - This is equivalent to specifying `start`, `end` as `from` and `to` respectively
+
+===== include with ranges
+
+`include` parameter is ignored when `ranges` is specified but there are ways to achieve same behavior with `ranges`. `lower`, `upper`, `outer`, `edge` all can be achieved using combination of `inclusive_to` and `inclusive_from`.
+
+Range facet with `ranges`
+
+[source,bash]
+----
+curl http://localhost:8983/solr/techproducts/query -d '
+{
+  "query": "*:*",
+  "facet": {
+    "prices": {
+      "type": "range",
+      "field": "price",
+      "ranges": [
+        {
+          "from": 0,
+          "to": 20,
+          "inclusive_from": true,
+          "inclusive_to": false
+        },
+        {
+          "range": "[40,100)"
+        }
+      ]
+    }
+  }
+}'
+----
+
+The output from the range facet above would look a bit like:
+
+[source,json]
+----
+{
+  "prices": {
+    "buckets": [
+      {
+        "val": "[0,20)",
+        "count": 5
+      },
+      {
+        "val": "[40,100)",
+        "count": 2
+      }
+    ]
+  }
+}
+----
+
+NOTE: When `range` is specified, its value in the request is used as key in the response. In the other case, key is generated using `from`, `to`, `inclusive_to` and `inclusive_from`. Currently, custom `key` is not supported.
 
 === Heatmap Facet
 
@@ -484,6 +569,8 @@ Unlike all the facets discussed so far, Aggregation functions (also called *face
 |avg |`avg(popularity)` |average of numeric values
 |min |`min(salary)` |minimum value
 |max |`max(mul(price,popularity))` |maximum value
+|missing |`missing(author)` |number of documents which do not have value for given field or function
+|countvals |`countvals(author)` |number of values for a given field or function
 |unique |`unique(author)` |number of unique values of the given field. Beyond 100 values it yields not exact estimate
 |uniqueBlock |`uniqueBlock(\_root_)` |same as above with smaller footprint strictly for <<json-faceting-domain-changes.adoc#block-join-domain-changes,counting the number of Block Join blocks>>. The given field must be unique across blocks, and only singlevalued string fields are supported, docValues are recommended.
 |hll |`hll(author)` |distributed cardinality estimate via hyper-log-log algorithm
@@ -655,7 +742,7 @@ include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-nested-cat-f
 
 And the response will look something like:
 
-[source,java]
+[source,json]
 ----
 "facets":{
     "count":32,
@@ -673,7 +760,7 @@ And the response will look something like:
           "top_manufacturer":{
             "buckets":[{
                 "val":"boa",
-                "count":1}]}},
+                "count":1}]}}]}}
 ----
 
 
@@ -717,8 +804,6 @@ include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-nested-cat-f
 ----
 ====
 --
-
-
 
 In some situations the desired `sort` may be an aggregation function that is very costly to compute for every bucket.  A `prelim_sort` option can be used to specify an approximation of the `sort`, for initially ranking the buckets to determine the top candidates (based on the `limit` and `overrequest`).  Only after the top candidate buckets have been refined, will the actual `sort` be used.
 
@@ -822,14 +907,14 @@ ____
 
 The `relatedness(...)` function is used to "score" these relationships, relative to "Foreground" and "Background" sets of documents, specified in the function params as queries.
 
-Unlike most aggregation functions, the `relatedness(...)` function is aware of whether and how it's used in <<nested-facets,Nested Facets>>.  It evaluates the query defining the current bucket _independently_ from it's parent/ancestor buckets, and intersects those documents with a "Foreground Set" defined by the foreground query _combined with the ancestor buckets_.  The result is then compared to a similar intersection done against the "Background Set" (defined exclusively by background query) to see if there is a positive, or negative, correlation between the current bucket and the Foreground Set, relative to the Background Set.
+Unlike most aggregation functions, the `relatedness(...)` function is aware of whether and how it's used in <<nested-facets,Nested Facets>>.  It evaluates the query defining the current bucket _independently_ from its parent/ancestor buckets, and intersects those documents with a "Foreground Set" defined by the foreground query _combined with the ancestor buckets_.  The result is then compared to a similar intersection done against the "Background Set" (defined exclusively by background query) to see if there is a positive, or negative, correlation between the current bucket and the Foreground Set, relative to the Background Set.
 
 NOTE: While it's very common to define the Background Set as `\*:*`, or some other super-set of the Foreground Query, it is not strictly required.  The `relatedness(...)` function can be used to compare the statistical relatedness of sets of documents to orthogonal foreground/background queries.
 
 [[relatedness-options]]
 ==== relatedness() Options
 
-When using the extended `type:func` syntax for specifying a `relatedness()` aggregation, an opional `min_popularity` (float) option can be used to specify a lower bound on the `foreground_popularity` and `background_popularity` values, that must be met in order for the `relatedness` score to be valid -- If this `min_popularity` is not met, then the `relatedness` score will be `-Infinity`.
+When using the extended `type:func` syntax for specifying a `relatedness()` aggregation, an optional `min_popularity` (float) option can be used to specify a lower bound on the `foreground_popularity` and `background_popularity` values, that must be met in order for the `relatedness` score to be valid -- If this `min_popularity` is not met, then the `relatedness` score will be `-Infinity`.
 
 [source,json]
 ----

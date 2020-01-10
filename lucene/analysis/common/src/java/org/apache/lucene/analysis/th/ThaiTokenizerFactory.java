@@ -33,8 +33,12 @@ import org.apache.lucene.util.AttributeFactory;
  * &lt;/fieldType&gt;</pre>
  *
  * @since 4.10.0
+ * @lucene.spi {@value #NAME}
  */
 public class ThaiTokenizerFactory extends TokenizerFactory {
+
+  /** SPI name */
+  public static final String NAME = "thai";
   
   /** Creates a new ThaiTokenizerFactory */
   public ThaiTokenizerFactory(Map<String,String> args) {

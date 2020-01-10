@@ -19,7 +19,10 @@ package org.apache.solr.cloud.autoscaling.sim;
 
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -29,6 +32,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Collectors;
 
 import org.apache.commons.math3.stat.descriptive.SummaryStatistics;
 import org.apache.lucene.util.TestUtil;
@@ -36,8 +40,11 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.cloud.autoscaling.Suggester;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
+import org.apache.solr.client.solrj.cloud.autoscaling.Variable;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.cloud.CloudTestUtils;
+import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.cloud.autoscaling.ActionContext;
 import org.apache.solr.cloud.autoscaling.CapturedEvent;
 import org.apache.solr.cloud.autoscaling.ComputePlanAction;
@@ -47,10 +54,13 @@ import org.apache.solr.cloud.autoscaling.TriggerActionBase;
 import org.apache.solr.cloud.autoscaling.TriggerEvent;
 import org.apache.solr.cloud.autoscaling.TriggerListenerBase;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.Pair;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
@@ -86,6 +96,9 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
   @Before
   public void setupTest() throws Exception {
     configureCluster(NUM_NODES, TimeSource.get("simTime:" + SPEED));
+
+    // disable metrics history collection
+    cluster.disableMetricsHistory();
 
     // disable .scheduled_maintenance (once it exists)
     CloudTestUtils.waitForTriggerToBeScheduled(cluster, ".scheduled_maintenance");
@@ -194,8 +207,8 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
     create.setCreateNodeSet(String.join(",", nodes));
     create.process(solrClient);
 
-    log.info("Ready after " + CloudTestUtils.waitForState(cluster, collectionName, 30 * nodes.size(), TimeUnit.SECONDS,
-        CloudTestUtils.clusterShape(5, 15, false, true)) + "ms");
+    log.info("Ready after " + CloudUtil.waitForState(cluster, collectionName, 30 * nodes.size(), TimeUnit.SECONDS,
+        CloudUtil.clusterShape(5, 15, false, true)) + "ms");
 
     int KILL_NODES = 8;
     // kill off a number of nodes
@@ -203,8 +216,8 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
       cluster.simRemoveNode(nodes.get(i), false);
     }
     // should fully recover
-    log.info("Ready after " + CloudTestUtils.waitForState(cluster, collectionName, 90 * KILL_NODES, TimeUnit.SECONDS,
-        CloudTestUtils.clusterShape(5, 15, false, true)) + "ms");
+    log.info("Ready after " + CloudUtil.waitForState(cluster, collectionName, 90 * KILL_NODES, TimeUnit.SECONDS,
+        CloudUtil.clusterShape(5, 15, false, true)) + "ms");
 
     log.info("OP COUNTS: " + cluster.simGetOpCounts());
     long moveReplicaOps = cluster.simGetOpCount(CollectionParams.CollectionAction.MOVEREPLICA.name());
@@ -237,8 +250,8 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
       fail("did not finish processing all events in time: started=" + triggerStartedCount.get() + ", finished=" + triggerFinishedCount.get());
     }
 
-    log.info("Ready after " + CloudTestUtils.waitForState(cluster, collectionName, 30 * nodes.size(), TimeUnit.SECONDS,
-        CloudTestUtils.clusterShape(5, 15, false, true)) + "ms");
+    log.info("Ready after " + CloudUtil.waitForState(cluster, collectionName, 30 * nodes.size(), TimeUnit.SECONDS,
+        CloudUtil.clusterShape(5, 15, false, true)) + "ms");
     long newMoveReplicaOps = cluster.simGetOpCount(CollectionParams.CollectionAction.MOVEREPLICA.name());
     log.info("==== Flaky replicas: {}. Additional MOVEREPLICA count: {}", flakyReplicas, (newMoveReplicaOps - moveReplicaOps));
     // flaky nodes lead to a number of MOVEREPLICA that is non-zero but lower than the number of flaky replicas
@@ -274,8 +287,8 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
       // Since our current goal is to try and find situations where cores are just flat out missing
       // no matter how long we wait, let's be excessive and generous in our timeout.
       // (REMINDER: this uses the cluster's timesource, and ADDREPLICA has a hardcoded delay of 500ms)
-      CloudTestUtils.waitForState(cluster, name, 2 * totalCores, TimeUnit.SECONDS,
-                                  CloudTestUtils.clusterShape(numShards, repsPerShard, false, true));
+      CloudUtil.waitForState(cluster, name, 2 * totalCores, TimeUnit.SECONDS,
+          CloudUtil.clusterShape(numShards, repsPerShard, false, true));
       
       final CollectionAdminRequest.Delete delete = CollectionAdminRequest.deleteCollection(name);
       log.info("DELETE: {}", delete);
@@ -311,8 +324,8 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
     create.setAutoAddReplicas(false);
     create.process(solrClient);
 
-    log.info("Ready after " + CloudTestUtils.waitForState(cluster, collectionName, 90 * NUM_NODES, TimeUnit.SECONDS,
-        CloudTestUtils.clusterShape(NUM_NODES / 10, NUM_NODES / 8 * 3, false, true)) + " ms");
+    log.info("Ready after " + CloudUtil.waitForState(cluster, collectionName, 90 * NUM_NODES, TimeUnit.SECONDS,
+        CloudUtil.clusterShape(NUM_NODES / 10, NUM_NODES / 8 * 3, false, true)) + " ms");
 
     // start adding nodes
     int numAddNode = NUM_NODES / 5;
@@ -361,8 +374,8 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
     log.info("1st check: lastNumOps (MOVEREPLICA) = {}", lastNumOps);
     assertTrue("no MOVEREPLICA ops?", lastNumOps > 0);
 
-    log.info("Ready after " + CloudTestUtils.waitForState(cluster, collectionName, 20 * NUM_NODES, TimeUnit.SECONDS,
-        CloudTestUtils.clusterShape(NUM_NODES / 10, NUM_NODES / 8 * 3, false, true)) + " ms");
+    log.info("Ready after " + CloudUtil.waitForState(cluster, collectionName, 20 * NUM_NODES, TimeUnit.SECONDS,
+        CloudUtil.clusterShape(NUM_NODES / 10, NUM_NODES / 8 * 3, false, true)) + " ms");
 
     int count = 1000;
     SolrInputDocument finishedEvent = null;
@@ -520,8 +533,8 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
     create.setAutoAddReplicas(false);
     create.process(solrClient);
 
-    log.info("Ready after " + CloudTestUtils.waitForState(cluster, collectionName, 60 * NUM_NODES, TimeUnit.SECONDS,
-        CloudTestUtils.clusterShape(NUM_NODES / 5, NUM_NODES / 10, false, true)) + " ms");
+    log.info("Ready after " + CloudUtil.waitForState(cluster, collectionName, 60 * NUM_NODES, TimeUnit.SECONDS,
+        CloudUtil.clusterShape(NUM_NODES / 5, NUM_NODES / 10, false, true)) + " ms");
 
     // start killing nodes
     int numNodes = NUM_NODES / 5;
@@ -604,8 +617,8 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
 
     if (listenerEvents.isEmpty()) {
       // no failed movements - verify collection shape
-      log.info("Ready after " + CloudTestUtils.waitForState(cluster, collectionName, 20 * NUM_NODES, TimeUnit.SECONDS,
-          CloudTestUtils.clusterShape(NUM_NODES / 5, NUM_NODES / 10, false, true)) + " ms");
+      log.info("Ready after " + CloudUtil.waitForState(cluster, collectionName, 20 * NUM_NODES, TimeUnit.SECONDS,
+          CloudUtil.clusterShape(NUM_NODES / 5, NUM_NODES / 10, false, true)) + " ms");
     } else {
       cluster.getTimeSource().sleep(NUM_NODES * 100);
     }
@@ -663,8 +676,8 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
         "conf", 2, 10);
     create.process(solrClient);
 
-    log.info("Ready after " + CloudTestUtils.waitForState(cluster, collectionName, 300, TimeUnit.SECONDS,
-        CloudTestUtils.clusterShape(2, 10, false, true)) + " ms");
+    log.info("Ready after " + CloudUtil.waitForState(cluster, collectionName, 300, TimeUnit.SECONDS,
+        CloudUtil.clusterShape(2, 10, false, true)) + " ms");
 
     // collect the node names for shard1
     Set<String> nodes = new HashSet<>();
@@ -750,5 +763,80 @@ public class TestSimLargeCluster extends SimSolrCloudTestCase {
       assertEquals(collectionName, hint.first());
       assertEquals("shard1", hint.second());
     });
+  }
+
+  @Test
+  public void testFreediskTracking() throws Exception {
+    int NUM_DOCS = 100000;
+    String collectionName = "testFreeDisk";
+    SolrClient solrClient = cluster.simGetSolrClient();
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
+        "conf",2, 2);
+    create.process(solrClient);
+
+    CloudUtil.waitForState(cluster, "Timed out waiting for replicas of new collection to be active",
+        collectionName, CloudUtil.clusterShape(2, 2, false, true));
+    ClusterState clusterState = cluster.getClusterStateProvider().getClusterState();
+    DocCollection coll = clusterState.getCollection(collectionName);
+    Set<String> nodes = coll.getReplicas().stream()
+        .map(r -> r.getNodeName())
+        .collect(Collectors.toSet());
+    Map<String, Number> initialFreedisk = getFreeDiskPerNode(nodes);
+
+    // test small updates
+    for (int i = 0; i < NUM_DOCS; i++) {
+      SolrInputDocument doc = new SolrInputDocument("id", "id-" + i);
+      solrClient.add(collectionName, doc);
+    }
+    Map<String, Number> updatedFreedisk = getFreeDiskPerNode(nodes);
+    double delta = getDeltaFreeDiskBytes(initialFreedisk, updatedFreedisk);
+    // 2 replicas - twice as much delta
+    assertEquals(SimClusterStateProvider.DEFAULT_DOC_SIZE_BYTES * NUM_DOCS * 2, delta, delta * 0.1);
+
+    // test small deletes - delete half of docs
+    for (int i = 0; i < NUM_DOCS / 2; i++) {
+      solrClient.deleteById(collectionName, "id-" + i);
+    }
+    Map<String, Number> updatedFreedisk1 = getFreeDiskPerNode(nodes);
+    double delta1 = getDeltaFreeDiskBytes(initialFreedisk, updatedFreedisk1);
+    // 2 replicas but half the docs
+    assertEquals(SimClusterStateProvider.DEFAULT_DOC_SIZE_BYTES * NUM_DOCS * 2 / 2, delta1, delta1 * 0.1);
+
+    // test bulk delete
+    solrClient.deleteByQuery(collectionName, "*:*");
+    Map<String, Number> updatedFreedisk2 = getFreeDiskPerNode(nodes);
+    double delta2 = getDeltaFreeDiskBytes(initialFreedisk, updatedFreedisk2);
+    // 0 docs - initial freedisk
+    log.info(cluster.dumpClusterState(true));
+    assertEquals(0.0, delta2, delta2 * 0.1);
+
+    // test bulk update
+    UpdateRequest ureq = new UpdateRequest();
+    ureq.setDocIterator(new FakeDocIterator(0, NUM_DOCS));
+    ureq.process(solrClient, collectionName);
+    Map<String, Number> updatedFreedisk3 = getFreeDiskPerNode(nodes);
+    double delta3 = getDeltaFreeDiskBytes(initialFreedisk, updatedFreedisk3);
+    assertEquals(SimClusterStateProvider.DEFAULT_DOC_SIZE_BYTES * NUM_DOCS * 2, delta3, delta3 * 0.1);
+  }
+
+  private double getDeltaFreeDiskBytes(Map<String, Number> initial, Map<String, Number> updated) {
+    double deltaGB = 0;
+    for (String node : initial.keySet()) {
+      double before = initial.get(node).doubleValue();
+      double after = updated.get(node).doubleValue();
+      assertTrue("freedisk after=" + after + " not smaller than before=" + before, after <= before);
+      deltaGB += before - after;
+    }
+    return deltaGB * 1024.0 * 1024.0 * 1024.0;
+  }
+
+  private Map<String, Number> getFreeDiskPerNode(Collection<String> nodes) throws Exception {
+    Map<String, Number> freediskPerNode = new HashMap<>();
+    for (String node : nodes) {
+      Map<String, Object> values = cluster.getNodeStateProvider().getNodeValues(node, Arrays.asList(Variable.Type.FREEDISK.tagName));
+      freediskPerNode.put(node, (Number) values.get(Variable.Type.FREEDISK.tagName));
+    }
+    log.info("- freeDiskPerNode: " + Utils.toJSONString(freediskPerNode));
+    return freediskPerNode;
   }
 }

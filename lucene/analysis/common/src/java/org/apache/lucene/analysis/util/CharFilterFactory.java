@@ -49,6 +49,15 @@ public abstract class CharFilterFactory extends AbstractAnalysisFactory {
     return loader.availableServices();
   }
 
+  /** looks up a SPI name for the specified char filter factory */
+  public static String findSPIName(Class<? extends CharFilterFactory> serviceClass) {
+    try {
+      return lookupSPIName(serviceClass);
+    } catch (NoSuchFieldException | IllegalAccessException | IllegalStateException e) {
+      throw new IllegalStateException(e);
+    }
+  }
+
   /** 
    * Reloads the factory list from the given {@link ClassLoader}.
    * Changes to the factories are visible after the method ends, all

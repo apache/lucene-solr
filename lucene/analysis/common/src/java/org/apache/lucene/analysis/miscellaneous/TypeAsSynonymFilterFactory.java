@@ -38,8 +38,13 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * the emitted synonym will have text "_type_&lt;URL&gt;".
  *
  * @since 7.3.0
+ * @lucene.spi {@value #NAME}
  */
 public class TypeAsSynonymFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "typeAsSynonym";
+
   private final String prefix;
 
   public TypeAsSynonymFilterFactory(Map<String,String> args) {

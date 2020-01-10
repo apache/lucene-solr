@@ -18,12 +18,15 @@ package org.apache.solr.handler;
 
 import java.io.IOException;
 import java.util.ArrayList;
+
+import org.apache.lucene.index.ExitableDirectoryReader;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.analytics.AnalyticsDriver;
 import org.apache.solr.analytics.AnalyticsRequestManager;
 import org.apache.solr.analytics.AnalyticsRequestParser;
 import org.apache.solr.analytics.ExpressionFactory;
+import org.apache.solr.analytics.TimeExceededStubException;
 import org.apache.solr.analytics.stream.AnalyticsShardResponseParser;
 import org.apache.solr.client.solrj.io.ModelCache;
 import org.apache.solr.client.solrj.io.SolrClientCache;
@@ -43,6 +46,7 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.QueryParsing;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.SolrQueryTimeoutImpl;
 import org.apache.solr.search.SyntaxError;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
@@ -68,12 +72,17 @@ public class AnalyticsHandler extends RequestHandlerBase implements SolrCoreAwar
   @Override
   public void inform(SolrCore core) {
     core.registerResponseWriter(AnalyticsShardResponseWriter.NAME, new AnalyticsShardResponseWriter());
-    
+
     indexSchema = core.getLatestSchema();
     AnalyticsRequestParser.init();
   }
 
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
+   
+    long timeAllowed = req.getParams().getLong(CommonParams.TIME_ALLOWED, -1L);
+    if (timeAllowed >= 0L) {
+      SolrQueryTimeoutImpl.set(timeAllowed);
+    }
     try {
       DocSet docs;
       try {
@@ -83,24 +92,28 @@ public class AnalyticsHandler extends RequestHandlerBase implements SolrCoreAwar
       }
       // The olap-style requests are converted to the current format in the AnalyticsComponent
       // so the AnalyticsHandler only needs to handle current format requests.
-      AnalyticsRequestManager manager = AnalyticsRequestParser.parse(req.getParams().get(AnalyticsRequestParser.analyticsParamName), 
+      AnalyticsRequestManager manager = AnalyticsRequestParser.parse(req.getParams().get(AnalyticsRequestParser.analyticsParamName),
                                                                 new ExpressionFactory(indexSchema),
                                                                 false);
       // Collect the reduction data for the request
       SolrIndexSearcher searcher = req.getSearcher();
       Filter filter = docs.getTopFilter();
       AnalyticsDriver.drive(manager, searcher, filter, req);
-      
+
       // Do not calculate results, instead export the reduction data for this shard.
       rsp.addResponse(new AnalyticsResponse(manager));
     } catch (SolrException e) {
       rsp.addResponse(new AnalyticsResponse(e));
+    } catch (ExitableDirectoryReader.ExitingReaderException e) {
+      rsp.addResponse(new AnalyticsResponse(new TimeExceededStubException(e)));
+    } finally {
+      SolrQueryTimeoutImpl.reset();
     }
   }
-  
+
   /**
    * Get the documents returned by the query and filter queries included in the request.
-   * 
+   *
    * @param req the request sent to the handler
    * @return the set of documents matching the query
    * @throws SyntaxError if there is a syntax error in the queries
@@ -112,7 +125,7 @@ public class AnalyticsHandler extends RequestHandlerBase implements SolrCoreAwar
 
     // Query Param
     String queryString = params.get( CommonParams.Q );
-    
+
     String defType = params.get(QueryParsing.DEFTYPE, QParserPlugin.DEFAULT_QTYPE);
 
     QParser parser = QParser.getParser(queryString, defType, req);

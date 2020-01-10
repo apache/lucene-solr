@@ -43,11 +43,11 @@ import org.apache.solr.common.util.NamedList;
 public class BucketBasedJsonFacet {
   public static final int UNSET_FLAG = -1;
   private List<BucketJsonFacet> buckets;
-  private int numBuckets = UNSET_FLAG;
+  private long numBuckets = UNSET_FLAG;
   private long allBuckets = UNSET_FLAG;
-  private int beforeFirstBucketCount = UNSET_FLAG;
-  private int afterLastBucketCount = UNSET_FLAG;
-  private int betweenAllBucketsCount = UNSET_FLAG;
+  private long beforeFirstBucketCount = UNSET_FLAG;
+  private long afterLastBucketCount = UNSET_FLAG;
+  private long betweenAllBucketsCount = UNSET_FLAG;
 
   public BucketBasedJsonFacet(NamedList<Object> bucketBasedFacet) {
     for (Map.Entry<String, Object> entry : bucketBasedFacet) {
@@ -60,15 +60,15 @@ public class BucketBasedJsonFacet {
           buckets.add(new BucketJsonFacet(bucket));
         }
       } else if ("numBuckets".equals(key)) {
-        numBuckets = (int) value;
+        numBuckets = ((Number) value).longValue();
       } else if ("allBuckets".equals(key)) {
-        allBuckets = (long) ((NamedList)value).get("count");
+        allBuckets = ((Number) ((NamedList)value).get("count")).longValue();
       } else if ("before".equals(key)) {
-        beforeFirstBucketCount = (int) ((NamedList)value).get("count");
+        beforeFirstBucketCount = ((Number) ((NamedList)value).get("count")).longValue();
       } else if ("after".equals(key)) {
-        afterLastBucketCount = (int) ((NamedList)value).get("count");
+        afterLastBucketCount = ((Number) ((NamedList)value).get("count")).longValue();
       } else if ("between".equals(key)) {
-        betweenAllBucketsCount = (int) ((NamedList)value).get("count");
+        betweenAllBucketsCount = ((Number) ((NamedList)value).get("count")).longValue();
       } else {
         // We don't recognize the key.  Possible JSON faceting schema has changed without updating client.
         // Silently ignore for now, though we may want to consider throwing an error if this proves problematic.
@@ -90,7 +90,7 @@ public class BucketBasedJsonFacet {
    * {@code numBuckets} option.  {@link #UNSET_FLAG} is returned if this is a "range" facet or {@code numBuckets}
    * computation was not requested in the intiial request.
    */
-  public int getNumBuckets() {
+  public long getNumBuckets() {
     return numBuckets;
   }
 
@@ -113,7 +113,7 @@ public class BucketBasedJsonFacet {
    * This value is only present if the user has specifically requested it with the {@code other} option.
    * {@link #UNSET_FLAG} is returned if this is not the case.
    */
-  public int getBefore() {
+  public long getBefore() {
     return beforeFirstBucketCount;
   }
 
@@ -123,7 +123,7 @@ public class BucketBasedJsonFacet {
    * This value is only present if the user has specifically requested it with the {@code other} option.
    * {@link #UNSET_FLAG} is returned if this is not the case.
    */
-  public int getAfter() {
+  public long getAfter() {
     return afterLastBucketCount;
   }
 
@@ -133,7 +133,7 @@ public class BucketBasedJsonFacet {
    * This value is only present if the user has specifically requested it with the {@code other} option.
    * {@link #UNSET_FLAG} is returned if this is not the case.
    */
-  public int getBetween() {
+  public long getBetween() {
     return betweenAllBucketsCount;
   }
 }

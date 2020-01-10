@@ -283,8 +283,10 @@ public class SelectStream extends TupleStream implements Expressible {
     // Apply all evaluators
     for(Map.Entry<StreamEvaluator, String> selectedEvaluator : selectedEvaluators.entrySet()) {
       Object o = selectedEvaluator.getKey().evaluate(workingForEvaluators);
-      workingForEvaluators.put(selectedEvaluator.getValue(), o);
-      workingToReturn.put(selectedEvaluator.getValue(), o);
+      if(o != null) {
+        workingForEvaluators.put(selectedEvaluator.getValue(), o);
+        workingToReturn.put(selectedEvaluator.getValue(), o);
+      }
     }
     
     return workingToReturn;

@@ -78,7 +78,7 @@ public class Policy implements MapWriter {
   public static final String POLICIES = "policies";
   public static final String CLUSTER_POLICY = "cluster-policy";
   public static final String CLUSTER_PREFERENCES = "cluster-preferences";
-  public static final Set<String> GLOBAL_ONLY_TAGS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList("cores", CollectionAdminParams.WITH_COLLECTION)));
+  public static final Set<String> GLOBAL_ONLY_TAGS = Set.of("cores", CollectionAdminParams.WITH_COLLECTION);
   public static final List<Preference> DEFAULT_PREFERENCES = Collections.unmodifiableList(
       Arrays.asList(
           // NOTE - if you change this, make sure to update the solrcloud-autoscaling-overview.adoc which
@@ -466,6 +466,10 @@ public class Policy implements MapWriter {
     return params.stream().map(Pair::first).collect(toList());
   }
 
+  public List<String> getPerReplicaAttributes() {
+    return Collections.unmodifiableList(perReplicaAttributes);
+  }
+
   /**
    * Compares two {@link Row} loads according to a policy.
    *
@@ -553,7 +557,7 @@ public class Policy implements MapWriter {
           if (!withCollMap.isEmpty()) {
             Clause withCollClause = new Clause((Map<String,Object>)Utils.fromJSONString("{withCollection:'*' , node: '#ANY'}") ,
                 new Condition(NODE.tagName, "#ANY", Operand.EQUAL, null, null),
-                new Condition(WITH_COLLECTION.tagName,"*" , Operand.EQUAL, null, null), true
+                new Condition(WITH_COLLECTION.tagName,"*" , Operand.EQUAL, null, null), true, null, false
             );
             expandedClauses.add(withCollClause);
           }

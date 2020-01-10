@@ -48,7 +48,7 @@ import org.junit.BeforeClass;
  * Builds a random index of a few simple fields, maintaining an in-memory model of the expected
  * doc counts so that we can verify the results of range facets w/ nested field facets that need refinement.
  *
- * The focus here is on stressing the casees where the document values fall directonly on the 
+ * The focus here is on stressing the cases where the document values fall direct only on the
  * range boundaries, and how the various "include" options affects refinement.
  */
 public class RangeFacetCloudTest extends SolrCloudTestCase {
@@ -63,8 +63,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
   private static final int NUM_RANGE_VALUES = 6;
   private static final int TERM_VALUES_RANDOMIZER = 100;
 
-  // TODO: add 'count asc' once SOLR-12343 is fixed
-  private static final List<String> SORTS = Arrays.asList("count desc", "index asc", "index desc");
+  private static final List<String> SORTS = Arrays.asList("count desc", "count asc", "index asc", "index desc");
   
   private static final List<EnumSet<FacetRangeOther>> OTHERS = buildListOfFacetRangeOtherOptions();
   private static final List<FacetRangeOther> BEFORE_AFTER_BETWEEN
@@ -101,7 +100,9 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
 
     final int numDocs = atLeast(1000);
     final int maxTermId = atLeast(TERM_VALUES_RANDOMIZER);
-    
+
+    // clear the RANGE_MODEL
+    Arrays.fill(RANGE_MODEL, 0);
     // seed the TERM_MODEL Maps so we don't have null check later
     for (int i = 0; i < NUM_RANGE_VALUES; i++) {
       TERM_MODEL[i] = new LinkedHashMap<>();
@@ -134,20 +135,20 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
             ("q", "*:*", "rows", "0", "json.facet",
              // exclude a single low value from our ranges
              "{ foo:{ type:range, field:"+INT_FIELD+" start:1, end:5, gap:1"+otherStr+include+subFacet+" } }");
-        
+
           final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
           try {
             final NamedList<Object> foo = ((NamedList<NamedList<Object>>)rsp.getResponse().get("facets")).get("foo");
             final List<NamedList<Object>> buckets = (List<NamedList<Object>>) foo.get("buckets");
-            
+
             assertEquals("num buckets", 4, buckets.size());
             for (int i = 0; i < 4; i++) {
               int expectedVal = i+1;
               assertBucket("bucket#" + i, expectedVal, modelVals(expectedVal), subFacetLimit, buckets.get(i));
             }
-            
+
             assertBeforeAfterBetween(other, modelVals(0), modelVals(5), modelVals(1,4), subFacetLimit, foo);
-            
+
           } catch (AssertionError|RuntimeException ae) {
             throw new AssertionError(solrQuery.toString() + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
           }
@@ -155,7 +156,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
       }
     }
   }
-  
+
   public void testInclude_Lower_Gap2() throws Exception {
     for (boolean doSubFacet : Arrays.asList(false, true)) {
       final Integer subFacetLimit = pickSubFacetLimit(doSubFacet);
@@ -216,6 +217,15 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
         }
       }
     }
+  }
+
+  public void testStatsWithOmitHeader() throws Exception {
+    // SOLR-13509: no NPE should be thrown when only stats are specified with omitHeader=true
+    SolrQuery solrQuery = new SolrQuery("q", "*:*", "omitHeader", "true",
+        "json.facet", "{unique_foo:\"unique(" + STR_FIELD+ ")\"}");
+    final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
+    // response shouldn't contain header as omitHeader is set to true
+    assertNull(rsp.getResponseHeader());
   }
   
   public void testInclude_Upper() throws Exception {
@@ -527,10 +537,6 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
           } catch (AssertionError|RuntimeException ae) {
             throw new AssertionError(solrQuery.toString() + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
           }
-
-
-
-          
         }
       }
     }
@@ -571,6 +577,137 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
     }
   }
 
+  public void testRangeWithInterval() throws Exception {
+    for (boolean doSubFacet : Arrays.asList(false, true)) {
+      final Integer subFacetLimit = pickSubFacetLimit(doSubFacet);
+      final CharSequence subFacet = makeSubFacet(subFacetLimit);
+      for (boolean incUpper : Arrays.asList(false, true)) {
+        String incUpperStr = ",inclusive_to:"+incUpper;
+        final SolrQuery solrQuery = new SolrQuery
+            ("q", "*:*", "rows", "0", "json.facet",
+                "{ foo:{ type:range, field:" + INT_FIELD + " ranges:[{from:1, to:2"+ incUpperStr+ "}," +
+                    "{from:2, to:3"+ incUpperStr +"},{from:3, to:4"+ incUpperStr +"},{from:4, to:5"+ incUpperStr+"}]"
+                    + subFacet + " } }");
+
+        final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
+        try {
+          final NamedList<Object> foo = ((NamedList<NamedList<Object>>) rsp.getResponse().get("facets")).get("foo");
+          final List<NamedList<Object>> buckets = (List<NamedList<Object>>) foo.get("buckets");
+
+          assertEquals("num buckets", 4, buckets.size());
+          for (int i = 0; i < 4; i++) {
+            String expectedVal = "[" + (i + 1) + "," + (i + 2) + (incUpper? "]": ")");
+            ModelRange modelVals = incUpper? modelVals(i+1, i+2) : modelVals(i+1);
+            assertBucket("bucket#" + i, expectedVal, modelVals, subFacetLimit, buckets.get(i));
+          }
+        } catch (AssertionError | RuntimeException ae) {
+          throw new AssertionError(solrQuery.toString() + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
+        }
+      }
+    }
+  }
+
+  public void testRangeWithOldIntervalFormat() throws Exception {
+    for (boolean doSubFacet : Arrays.asList(false, true)) {
+      final Integer subFacetLimit = pickSubFacetLimit(doSubFacet);
+      final CharSequence subFacet = makeSubFacet(subFacetLimit);
+      for (boolean incUpper : Arrays.asList(false, true)) {
+        String incUpperStr = incUpper? "]\"":")\"";
+        final SolrQuery solrQuery = new SolrQuery
+            ("q", "*:*", "rows", "0", "json.facet",
+                "{ foo:{ type:range, field:" + INT_FIELD + " ranges:[{range:\"[1,2"+ incUpperStr+ "}," +
+                    "{range:\"[2,3"+ incUpperStr +"},{range:\"[3,4"+ incUpperStr +"},{range:\"[4,5"+ incUpperStr+"}]"
+                    + subFacet + " } }");
+
+        final QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
+        try {
+          final NamedList<Object> foo = ((NamedList<NamedList<Object>>) rsp.getResponse().get("facets")).get("foo");
+          final List<NamedList<Object>> buckets = (List<NamedList<Object>>) foo.get("buckets");
+
+          assertEquals("num buckets", 4, buckets.size());
+          for (int i = 0; i < 4; i++) {
+            String expectedVal = "[" + (i + 1) + "," + (i + 2) + (incUpper? "]": ")");
+            ModelRange modelVals = incUpper? modelVals(i+1, i+2) : modelVals(i+1);
+            assertBucket("bucket#" + i, expectedVal, modelVals, subFacetLimit, buckets.get(i));
+          }
+        } catch (AssertionError | RuntimeException ae) {
+          throw new AssertionError(solrQuery.toString() + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
+        }
+      }
+    }
+  }
+
+  public void testIntervalWithMincount() throws Exception {
+    for (boolean doSubFacet : Arrays.asList(false, true)) {
+      final Integer subFacetLimit = pickSubFacetLimit(doSubFacet);
+      final CharSequence subFacet = makeSubFacet(subFacetLimit);
+
+      long mincount_to_use = -1;
+      Object expected_mincount_bucket_val = null;
+
+      // without mincount
+      SolrQuery solrQuery = new SolrQuery(
+          "q", "*:*", "rows", "0", "json.facet",
+          "{ foo:{ type:range, field:" + INT_FIELD + " ranges:[{from:1, to:3},{from:3, to:5}]" +
+              subFacet + " } }"
+      );
+
+      QueryResponse rsp = cluster.getSolrClient().query(solrQuery);
+      try {
+        final NamedList<Object> foo = ((NamedList<NamedList<Object>>)rsp.getResponse().get("facets")).get("foo");
+        final List<NamedList<Object>> buckets = (List<NamedList<Object>>) foo.get("buckets");
+
+        assertEquals("num buckets", 2, buckets.size());
+
+        // upper is not included
+        assertBucket("bucket#0", "[1,3)", modelVals(1,2), subFacetLimit, buckets.get(0));
+        assertBucket("bucket#1", "[3,5)", modelVals(3,4), subFacetLimit, buckets.get(1));
+
+        // if we've made it this far, then our buckets match the model
+        // now use our buckets to pick a mincount to use based on the MIN(+1) count seen
+        long count0 = ((Number)buckets.get(0).get("count")).longValue();
+        long count1 = ((Number)buckets.get(1).get("count")).longValue();
+
+        mincount_to_use = 1 + Math.min(count0, count1);
+        if (count0 > count1) {
+          expected_mincount_bucket_val = buckets.get(0).get("val");
+        } else if (count1 > count0) {
+          expected_mincount_bucket_val = buckets.get(1).get("val");
+        }
+
+      } catch (AssertionError|RuntimeException ae) {
+        throw new AssertionError(solrQuery.toString() + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
+      }
+
+      // with mincount
+      solrQuery = new SolrQuery(
+          "q", "*:*", "rows", "0", "json.facet",
+          "{ foo:{ type:range, field:" + INT_FIELD + " ranges:[{from:1, to:3},{from:3, to:5}]" +
+              ",mincount:" + mincount_to_use + subFacet + " } }"
+      );
+
+      rsp = cluster.getSolrClient().query(solrQuery);
+      try {
+        final NamedList<Object> foo = ((NamedList<NamedList<Object>>)rsp.getResponse().get("facets")).get("foo");
+        final List<NamedList<Object>> buckets = (List<NamedList<Object>>) foo.get("buckets");
+
+        if (null == expected_mincount_bucket_val) {
+          assertEquals("num buckets", 0, buckets.size());
+        } else {
+          assertEquals("num buckets", 1, buckets.size());
+          final Object actualBucket = buckets.get(0);
+          if (expected_mincount_bucket_val.equals("[1,3)")) {
+            assertBucket("bucket#0(0)", "[1,3)", modelVals(1,2), subFacetLimit, actualBucket);
+          } else {
+            assertBucket("bucket#0(1)", "[3,5)", modelVals(3,4), subFacetLimit, actualBucket);
+          }
+        }
+      } catch (AssertionError|RuntimeException ae) {
+        throw new AssertionError(solrQuery.toString() + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
+      }
+    }
+  }
+
   /**
    * Helper method for validating a single 'bucket' from a Range facet.
    *
@@ -581,7 +718,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
    * @param actualBucket the actual bucket returned from a query for all assertions to be conducted against.
    */
   private static void assertBucket(final String label,
-                                   final Integer expectedVal,
+                                   final Object expectedVal,
                                    final ModelRange expectedRangeValues,
                                    final Integer subFacetLimitUsed,
                                    final Object actualBucket) {
@@ -603,7 +740,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
         expectedCount += RANGE_MODEL[i];
         toMerge.add(TERM_MODEL[i]);
       }
-      
+
       assertEqualsHACK("count", expectedCount, bucket.get("count"));
       
       // merge the maps of our range values by summing the (int) values on key collisions
@@ -639,7 +776,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
   }
   
   /**
-   * A convinience method for calling {@link #assertBucket} on the before/after/between buckets 
+   * A convenience method for calling {@link #assertBucket} on the before/after/between buckets
    * of a facet result, based on the {@link FacetRangeOther} specified for this facet.
    * 
    * @see #assertBucket
@@ -675,7 +812,7 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
   private static final class ModelRange {
     public final int lower;
     public final int upper;
-    /** Don't use, use the convinience methods */
+    /** Don't use, use the convenience methods */
     public ModelRange(int lower, int upper) {
       if (lower < 0 || upper < 0) {
         assert(lower < 0 && upper < lower);
@@ -760,13 +897,13 @@ public class RangeFacetCloudTest extends SolrCloudTestCase {
     String val = other.toString();
     if (random().nextBoolean()) {
       // two valid syntaxes to randomize between:
-      // - a JSON list of items (conviniently the default toString of EnumSet),
-      // - a single quoted string containing the comma seperated list
+      // - a JSON list of items (conveniently the default toString of EnumSet),
+      // - a single quoted string containing the comma separated list
       val = val.replaceAll("\\[|\\]","'");
 
       // HACK: work around SOLR-12539...
       //
-      // when sending a single string containing a comma seperated list of values, JSON Facets 'other'
+      // when sending a single string containing a comma separated list of values, JSON Facets 'other'
       // parsing can't handle any leading (or trailing?) whitespace
       val = val.replaceAll("\\s","");
     }

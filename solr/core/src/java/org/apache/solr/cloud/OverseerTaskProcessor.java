@@ -34,7 +34,6 @@ import java.util.function.Predicate;
 import com.codahale.metrics.Timer;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.io.IOUtils;
-import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.cloud.Overseer.LeaderStatus;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.common.AlreadyClosedException;
@@ -352,10 +351,10 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
 
   private void cleanUpWorkQueue() throws KeeperException, InterruptedException {
     synchronized (completedTasks) {
-      for (String id : completedTasks.keySet()) {
-        workQueue.remove(completedTasks.get(id));
+      for (Map.Entry<String, QueueEvent> entry : completedTasks.entrySet()) {
+        workQueue.remove(entry.getValue());
         synchronized (runningZKTasks) {
-          runningZKTasks.remove(id);
+          runningZKTasks.remove(entry.getKey());
         }
       }
       completedTasks.clear();
@@ -476,7 +475,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
   protected class Runner implements Runnable {
     ZkNodeProps message;
     String operation;
-    SolrResponse response;
+    OverseerSolrResponse response;
     QueueEvent head;
     OverseerMessageHandler messageHandler;
     private final OverseerMessageHandler.Lock lock;
@@ -511,14 +510,14 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
         if (asyncId != null) {
           if (response != null && (response.getResponse().get("failure") != null 
               || response.getResponse().get("exception") != null)) {
-            failureMap.put(asyncId, SolrResponse.serializable(response));
+            failureMap.put(asyncId, OverseerSolrResponse.serialize(response));
             log.debug("Updated failed map for task with zkid:[{}]", head.getId());
           } else {
-            completedMap.put(asyncId, SolrResponse.serializable(response));
+            completedMap.put(asyncId, OverseerSolrResponse.serialize(response));
             log.debug("Updated completed map for task with zkid:[{}]", head.getId());
           }
         } else {
-          head.setBytes(SolrResponse.serializable(response));
+          head.setBytes(OverseerSolrResponse.serialize(response));
           log.debug("Completed task:[{}]", head.getId());
         }
 

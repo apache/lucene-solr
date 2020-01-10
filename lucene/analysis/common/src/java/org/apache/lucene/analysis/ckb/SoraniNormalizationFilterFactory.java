@@ -32,8 +32,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  * @since 4.7.0
+ * @lucene.spi {@value #NAME}
  */
 public class SoraniNormalizationFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "soraniNormalization";
 
   /** Creates a new SoraniNormalizationFilterFactory */
   public SoraniNormalizationFilterFactory(Map<String,String> args) {

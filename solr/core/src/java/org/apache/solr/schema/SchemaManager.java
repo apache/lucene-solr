@@ -138,6 +138,7 @@ public class SchemaManager {
             //only for non cloud stuff
             managedIndexSchema.persistManagedSchema(false);
             core.setLatestSchema(managedIndexSchema);
+            core.getCoreContainer().reload(core.getName());
           } catch (SolrException e) {
             log.warn(errorMsg);
             errors = singletonList(errorMsg + e.getMessage());

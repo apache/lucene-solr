@@ -84,7 +84,7 @@ When specifying `mm` values, keep in mind the following:
 * No matter what number the calculation arrives at, Solr will never use a value greater than the number of optional clauses, or a value less than 1. In other words, no matter how low or how high the calculated result, the minimum number of required matches will never be less than 1 or greater than the number of clauses.
 * When searching across multiple fields that are configured with different query analyzers, the number of optional clauses may differ between the fields. In such a case, the value specified by mm applies to the maximum number of optional clauses. For example, if a query clause is treated as stopword for one of the fields, the number of optional clauses for that field will be smaller than for the other fields. A query with such a stopword clause would not return a match in that field if mm is set to 100% because the removed clause does not count as matched.
 
-The default value of `mm` is 0% (all clauses optional), unless `q.op` is specified as "AND", in which case `mm` defaults to 100% (all clauses required).  
+The default value of `mm` is 0% (all clauses optional), unless `q.op` is specified as "AND", in which case `mm` defaults to 100% (all clauses required).
 
 
 === pf (Phrase Fields) Parameter
@@ -115,37 +115,69 @@ A value of "0.0" - the default - makes the query a pure "disjunction max query":
 
 === bq (Boost Query) Parameter
 
-The `bq` parameter specifies an additional, optional, query clause that will be added to the user's main query to influence the score. For example, if you wanted to add a relevancy boost for recent documents:
+The `bq` parameter specifies an additional, optional, query clause that will be _added_ to the user's main query as optional clauses that will influence the score. For example, if you wanted to add a boost for documents that are in a particular category you could use:
 
 [source,text]
 ----
 q=cheese
-bq=date:[NOW/DAY-1YEAR TO NOW/DAY]
+bq=category:food^10
 ----
 
-You can specify multiple `bq` parameters. If you want your query to be parsed as separate clauses with separate boosts, use multiple `bq` parameters.
+You can specify multiple `bq` parameters, which will each be added as separate clauses with separate boosts.
+
+[source,text]
+----
+q=cheese
+bq=category:food^10
+bq=category:deli^5
+----
+
+Using the `bq` parameter in this way is functionally equivilent to combining your `q` and `bq` parameters into a single larger boolean query, where the (original) `q` parameter is "mandatory" and the other clauses are optional:
+
+[source,text]
+----
+q=(+cheese category:food^10 category:deli^5)
+----
+
+The only difference between the above examples, is that using the `bq` parameter allows you to specify these extra clauses independently (i.e., as configuration defaults) from the main query.
+
+
+[TIP]
+[[bq-bf-shortcomings]]
+.Additive Boosts vs Multiplicative Boosts
+====
+Generally speaking, using `bq` (or `bf`, below) is considered a poor way to "boost" documents by a secondary query because it has an "Additive" effect on the final score.  The overall impact a particular `bq` parameter will have on a given document can vary a lot depending on the _absolute_ values of the scores from the original query as well as the `bq` query, which in turn depends on the complexity of the original query, and various scoring factors (TF, IDF, average field length, etc.)
+
+"Multiplicative Boosting" is generally considered to be a more predictable method of influencing document score, because it acts as a "scaling factor" -- increasing (or decreasing) the scores of each document by a _relative_ amount.
+
+The <<other-parsers.adoc#boost-query-parser,`{!boost}` QParser>> provides a convenient wrapper for implementing multiplicative boosting, and the <<the-extended-dismax-query-parser.adoc#extended-dismax-parameters,`{!edismax}` QParser>> offers a `boost` query parameter shortcut for using it.
+====
 
 
 === bf (Boost Functions) Parameter
 
-The `bf` parameter specifies functions (with optional boosts) that will be used to construct FunctionQueries which will be added to the user's main query as optional clauses that will influence the score. Any function supported natively by Solr can be used, along with a boost value. For example:
+The `bf` parameter specifies functions (with optional <<the-standard-query-parser.adoc#boosting-a-term-with,query boost>>) that will be used to construct FunctionQueries which will be _added_ to the user's main query as optional clauses that will influence the score. Any <<function-queries.adoc#available-functions,function supported natively by Solr>> can be used, along with a boost value. For example:
 
 [source,text]
 ----
-recip(rord(myfield),1,2,3)^1.5
+q=cheese
+bf=div(1,sum(1,price))^1.5
 ----
 
-Specifying functions with the bf parameter is essentially just shorthand for using the `bq` parameter combined with the `{!func}` parser.
+Specifying functions with the bf parameter is essentially just shorthand for using the `bq` parameter (<<#bq-bf-shortcomings,with the same shortcomings>>) combined with the `{!func}` parser -- with the addition of the simplified "query boost" syntax.
 
-For example, if you want to show the most recent documents first, you could use either of the following:
+For example, the two `bf` parameters listed below, are completely equivalent to the two `bq` parameters below:
 
 [source,text]
 ----
-bf=recip(rord(creationDate),1,1000,1000)
-  ...or...
-bq={!func}recip(rord(creationDate),1,1000,1000)
+bf=div(sales_rank,ms(NOW,release_date))
+bf=div(1,sum(1,price))^1.5
 ----
-
+[source,text]
+----
+bq={!func}div(sales_rank,ms(NOW,release_date))
+bq={!lucene}( {!func v='div(1,sum(1,price))'} )^1.5
+----
 
 == Examples of Queries Submitted to the DisMax Query Parser
 

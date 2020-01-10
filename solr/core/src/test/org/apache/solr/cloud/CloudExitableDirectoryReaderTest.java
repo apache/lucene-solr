@@ -21,13 +21,16 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import com.carrotsearch.randomizedtesting.annotations.Repeat;
+import com.codahale.metrics.Metered;
+import com.codahale.metrics.MetricRegistry;
 import org.apache.lucene.util.TestUtil;
+import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.MiniSolrCloudCluster.JettySolrRunnerWithMetrics;
-import static org.apache.solr.cloud.TrollingIndexReaderFactory.*;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -35,14 +38,17 @@ import org.apache.solr.handler.component.FacetComponent;
 import org.apache.solr.handler.component.QueryComponent;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.facet.FacetModule;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.carrotsearch.randomizedtesting.annotations.Repeat;
-import com.codahale.metrics.Metered;
-import com.codahale.metrics.MetricRegistry;
+import static org.apache.solr.cloud.TrollingIndexReaderFactory.CheckMethodName;
+import static org.apache.solr.cloud.TrollingIndexReaderFactory.Trap;
+import static org.apache.solr.cloud.TrollingIndexReaderFactory.catchClass;
+import static org.apache.solr.cloud.TrollingIndexReaderFactory.catchCount;
+import static org.apache.solr.cloud.TrollingIndexReaderFactory.catchTrace;
 
 /**
 * Distributed test for {@link org.apache.lucene.index.ExitableDirectoryReader} 
@@ -56,34 +62,62 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
 
   private static final String COLLECTION = "exitable";
   private static Map<String, Metered> fiveHundredsByNode;
+
+  /**
+   * Client used for all test requests.
+   * <p>
+   * LBSolrClient (and by extension CloudSolrClient) has it's own enforcement of timeAllowed 
+   * in an attempt to prevent "retrying" failed requests far longer then the client requested.
+   * Because of this client side logic, we do not want to use any LBSolrClient (derivative) in 
+   * this test, in order to ensure that on a "slow" machine, the client doesn't pre-emptively 
+   * abort any of our requests that use very low 'timeAllowed' values.
+   * </p>
+   * <p>
+   * ie: This test is not about testing the SolrClient, so keep the SOlrClient simple.
+   * </p>
+   */
+  private static SolrClient client;
   
   @BeforeClass
   public static void setupCluster() throws Exception {
-    Builder clusterBuilder = configureCluster(2)
+    // create one more node then shard, so that we also test the case of proxied requests.
+    Builder clusterBuilder = configureCluster(3)
         .addConfig("conf", TEST_PATH().resolve("configsets").resolve("exitable-directory").resolve("conf"));
     clusterBuilder.withMetrics(true);
     clusterBuilder
         .configure();
+
+    // pick an arbitrary node to use for our requests
+    client = cluster.getRandomJetty(random()).newClient();
 
     CollectionAdminRequest.createCollection(COLLECTION, "conf", 2, 1)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
     cluster.getSolrClient().waitForState(COLLECTION, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
         (n, c) -> DocCollection.isFullyActive(n, c, 2, 1));
 
-    fiveHundredsByNode = new LinkedHashMap<>(); 
+    fiveHundredsByNode = new LinkedHashMap<>();
+    int httpOk = 0;
     for (JettySolrRunner jetty: cluster.getJettySolrRunners()) {
       MetricRegistry metricRegistry = ((JettySolrRunnerWithMetrics)jetty).getMetricRegistry();
-      Metered httpOk = (Metered) metricRegistry.getMetrics()
-          .get("org.eclipse.jetty.servlet.ServletContextHandler.2xx-responses");
-      assertTrue("expeting some http activity during collection creation",httpOk.getCount()>0);
+      
+      httpOk += ((Metered) metricRegistry.getMetrics()
+                 .get("org.eclipse.jetty.servlet.ServletContextHandler.2xx-responses")).getCount();
       
       Metered old = fiveHundredsByNode.put(jetty.getNodeName(),
           (Metered) metricRegistry.getMetrics()
              .get("org.eclipse.jetty.servlet.ServletContextHandler.5xx-responses"));
       assertNull("expecting uniq nodenames",old);
     }
-    
+    assertTrue("expecting some http activity during collection creation", httpOk > 0);
     indexDocs();
+  }
+  
+  @AfterClass
+  public static void closeClient() throws Exception {
+    if (null != client) {
+      client.close();
+      client = null;
+    }
   }
 
   public static void indexDocs() throws Exception {
@@ -91,21 +125,34 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
     counter = 1;
     UpdateRequest req = new UpdateRequest();
 
-    for(; (counter % NUM_DOCS_PER_TYPE) != 0; counter++ )
-      req.add(sdoc("id", Integer.toString(counter), "name", "a" + counter,
+    for(; (counter % NUM_DOCS_PER_TYPE) != 0; counter++ ) {
+      final String v = "a" + counter;
+      req.add(sdoc("id", Integer.toString(counter), "name", v,
+          "name_dv", v,
+          "name_dvs", v,"name_dvs", v+"1",
           "num",""+counter));
+    }
 
     counter++;
-    for(; (counter % NUM_DOCS_PER_TYPE) != 0; counter++ )
-      req.add(sdoc("id", Integer.toString(counter), "name", "b" + counter,
+    for(; (counter % NUM_DOCS_PER_TYPE) != 0; counter++ ) {
+      final String v = "b" + counter;
+      req.add(sdoc("id", Integer.toString(counter), "name", v,
+          "name_dv", v,
+          "name_dvs", v,"name_dvs", v+"1",
           "num",""+counter));
+    }
 
     counter++;
-    for(; counter % NUM_DOCS_PER_TYPE != 0; counter++ )
-      req.add(sdoc("id", Integer.toString(counter), "name", "dummy term doc" + counter,
+    for(; counter % NUM_DOCS_PER_TYPE != 0; counter++ ) {
+      final String v = "dummy term doc" + counter;
+      req.add(sdoc("id", Integer.toString(counter), "name", 
+          v,
+          "name_dv", v,
+          "name_dvs", v,"name_dvs", v+"1",
           "num",""+counter));
+    }
 
-    req.commit(cluster.getSolrClient(), COLLECTION);
+    req.commit(client, COLLECTION);
   }
 
   @Test
@@ -192,8 +239,11 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
     SolrParams cases[] = new SolrParams[] {
         params( "sort","query($q,1) asc"),
         params("rows","0", "facet","true", "facet.method", "enum", "facet.field", "name"),
-        params("rows","0", "json.facet","{ ids: { type: range, field : num, start : 1, end : 99, gap : 9 }}")
-        }; //add more cases here 
+        params("rows","0", "json.facet","{ ids: { type: range, field : num, start : 1, end : 99, gap : 9 }}"),
+        params("q", "*:*", "rows","0", "json.facet","{ ids: { type: field, field : num}}"),
+        params("q", "*:*", "rows","0", "json.facet","{ ids: { type: field, field : name_dv}}"),
+        params("q", "*:*", "rows","0", "json.facet","{ ids: { type: field, field : name_dvs}}")
+    }; // add more cases here
 
     params.add(cases[random().nextInt(cases.length)]);
     for (; ; creep*=1.5) {
@@ -201,7 +251,7 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
       try(Trap catchClass = catchCount(boundary)){
         
         params.set("boundary", boundary);
-        QueryResponse rsp = cluster.getSolrClient().query(COLLECTION, 
+        QueryResponse rsp = client.query(COLLECTION, 
             params);
         assertEquals(""+rsp, rsp.getStatus(), 0);
         assertNo500s(""+rsp);
@@ -218,13 +268,20 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
     int numBites = atLeast(100);
     for(int bite=0; bite<numBites; bite++) {
       int boundary = random().nextInt(creep);
+      boolean omitHeader = random().nextBoolean();
       try(Trap catchCount = catchCount(boundary)){
+        params.set("omitHeader", "" + omitHeader);
         params.set("boundary", boundary);
-        QueryResponse rsp = cluster.getSolrClient().query(COLLECTION, 
+        QueryResponse rsp = client.query(COLLECTION, 
             params);
         assertEquals(""+rsp, rsp.getStatus(), 0);
         assertNo500s(""+rsp);
-        assertEquals(""+creep+" ticks were sucessful; trying "+boundary+" yields "+rsp, 
+        // without responseHeader, whether the response is partial or not can't be known
+        // omitHeader=true used in request to ensure that no NPE exceptions are thrown
+        if (omitHeader) {
+          continue;
+        }
+        assertEquals("" + creep + " ticks were successful; trying " + boundary + " yields " + rsp,
             catchCount.hasCaught(), isPartial(rsp));
       }catch(AssertionError ae) {
         Trap.dumpLastStackTraces(log);
@@ -249,7 +306,7 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
   }
   
   public void assertPartialResults(ModifiableSolrParams p, Runnable postRequestCheck) throws Exception {
-      QueryResponse rsp = cluster.getSolrClient().query(COLLECTION, p);
+      QueryResponse rsp = client.query(COLLECTION, p);
       postRequestCheck.run();
       assertEquals(rsp.getStatus(), 0);
       assertEquals(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY+" were expected at "+rsp,
@@ -258,7 +315,7 @@ public class CloudExitableDirectoryReaderTest extends SolrCloudTestCase {
   }
   
   public void assertSuccess(ModifiableSolrParams p) throws Exception {
-    QueryResponse rsp = cluster.getSolrClient().query(COLLECTION, p);
+    QueryResponse rsp = client.query(COLLECTION, p);
     assertEquals(rsp.getStatus(), 0);
     assertEquals("Wrong #docs in response", NUM_DOCS_PER_TYPE - 1, rsp.getResults().getNumFound());
     assertNotEquals(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY+" weren't expected "+rsp,

@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.StringTokenizer;
 
@@ -276,8 +277,9 @@ public class Config {
     // log changes in values
     if (valByRound.size() > 0) {
       sb.append(": ");
-      for (final String name : valByRound.keySet()) {
-        Object a = valByRound.get(name);
+      for (final Map.Entry<String, Object> entry : valByRound.entrySet()) {
+        final String name = entry.getKey();
+        Object a = entry.getValue();
         if (a instanceof int[]) {
           int ai[] = (int[]) a;
           int n1 = (roundNumber - 1) % ai.length;
@@ -388,9 +390,8 @@ public class Config {
       return "";
     }
     StringBuilder sb = new StringBuilder();
-    for (final String name : colForValByRound.keySet()) {
-      String colName = colForValByRound.get(name);
-      sb.append(" ").append(colName);
+    for (final String colName : colForValByRound.values()) {
+      sb.append(' ').append(colName);
     }
     return sb.toString();
   }
@@ -403,15 +404,17 @@ public class Config {
       return "";
     }
     StringBuilder sb = new StringBuilder();
-    for (final String name : colForValByRound.keySet()) {
-      String colName = colForValByRound.get(name);
+    for (final Map.Entry<String, String> entry : colForValByRound.entrySet()) {
+      String colName = entry.getValue();
       String template = " " + colName;
       if (roundNum < 0) {
         // just append blanks
         sb.append(Format.formatPaddLeft("-", template));
       } else {
+        String valByRoundName = entry.getKey();
+
         // append actual values, for that round
-        Object a = valByRound.get(name);
+        Object a = valByRound.get(valByRoundName);
         if (a instanceof int[]) {
           int ai[] = (int[]) a;
           int n = roundNum % ai.length;

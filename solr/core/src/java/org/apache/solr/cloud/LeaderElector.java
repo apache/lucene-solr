@@ -133,6 +133,7 @@ public  class LeaderElector {
     if (leaderSeqNodeName.equals(seqs.get(0))) {
       // I am the leader
       try {
+        if (zkClient.isClosed()) return; // but our zkClient is already closed
         runIamLeaderProcess(context, replacement);
       } catch (KeeperException.NodeExistsException e) {
         log.error("node exists",e);

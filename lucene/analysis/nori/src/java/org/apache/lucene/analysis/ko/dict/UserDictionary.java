@@ -25,7 +25,7 @@ import java.util.List;
 
 import org.apache.lucene.analysis.ko.POS;
 import org.apache.lucene.util.IntsRefBuilder;
-import org.apache.lucene.util.fst.Builder;
+import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 
@@ -37,26 +37,26 @@ public final class UserDictionary implements Dictionary {
   // text -> wordID
   private final TokenInfoFST fst;
 
-  public static final int WORD_COST = -100000;
+  private static final int WORD_COST = -100000;
 
   // NNG left
-  public static final short LEFT_ID = 1781;
+  private static final short LEFT_ID = 1781;
 
   // NNG right
-  public static final short RIGHT_ID = 3533;
+  private static final short RIGHT_ID = 3533;
   // NNG right with hangul and a coda on the last char
-  public static final short RIGHT_ID_T = 3535;
+  private static final short RIGHT_ID_T = 3535;
   // NNG right with hangul and no coda on the last char
-  public static final short RIGHT_ID_F = 3534;
+  private static final short RIGHT_ID_F = 3534;
 
   // length, length... indexed by compound ID or null for simple noun
-  private final int segmentations[][];
+  private final int[][] segmentations;
   private final short[] rightIds;
 
   public static UserDictionary open(Reader reader) throws IOException {
 
     BufferedReader br = new BufferedReader(reader);
-    String line = null;
+    String line;
     List<String> entries = new ArrayList<>();
 
     // text + optional segmentations
@@ -83,7 +83,7 @@ public final class UserDictionary implements Dictionary {
     entries.sort(Comparator.comparing(e -> e.split("\\s+")[0]));
 
     PositiveIntOutputs fstOutput = PositiveIntOutputs.getSingleton();
-    Builder<Long> fstBuilder = new Builder<>(FST.INPUT_TYPE.BYTE2, fstOutput);
+    FSTCompiler<Long> fstCompiler = new FSTCompiler<>(FST.INPUT_TYPE.BYTE2, fstOutput);
     IntsRefBuilder scratch = new IntsRefBuilder();
 
     String lastToken = null;
@@ -127,13 +127,13 @@ public final class UserDictionary implements Dictionary {
       scratch.grow(token.length());
       scratch.setLength(token.length());
       for (int i = 0; i < token.length(); i++) {
-        scratch.setIntAt(i, (int) token.charAt(i));
+        scratch.setIntAt(i, token.charAt(i));
       }
-      fstBuilder.add(scratch.get(), ord);
+      fstCompiler.add(scratch.get(), ord);
       lastToken = token;
       ord ++;
     }
-    this.fst = new TokenInfoFST(fstBuilder.finish());
+    this.fst = new TokenInfoFST(fstCompiler.compile());
     this.segmentations = segmentations.toArray(new int[segmentations.size()][]);
     this.rightIds = new short[rightIds.size()];
     for (int i = 0; i < rightIds.size(); i++) {
@@ -221,9 +221,9 @@ public final class UserDictionary implements Dictionary {
         if (fst.findTargetArc(ch, arc, arc, i == 0, fstReader) == null) {
           break; // continue to next position
         }
-        output += arc.output.intValue();
+        output += arc.output().intValue();
         if (arc.isFinal()) {
-          final int finalOutput = output + arc.nextFinalOutput.intValue();
+          final int finalOutput = output + arc.nextFinalOutput().intValue();
           result.add(finalOutput);
         }
       }

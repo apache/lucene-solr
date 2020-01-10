@@ -107,7 +107,7 @@ public class SolrExporterTestBase extends PrometheusExporterTestBase {
 
           String[] parts = currentLine.split(" ");
 
-          assertEquals("Metric must have name and value", 2, parts.length);
+          assertEquals("Metric must have name and value: " + currentLine, 2, parts.length);
 
           metrics.put(parts[0], Double.valueOf(parts[1]));
         }

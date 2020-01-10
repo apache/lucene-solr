@@ -55,3 +55,7 @@ com.google.common.base.Preconditions#checkNotNull(java.lang.Object,java.lang.Obj
 @defaultMessage Use methods in java.util.Comparator instead
 com.google.common.collect.Ordering
 
+@defaultMessage Use org.apache.solr.common.annotation.JsonProperty  instead
+com.fasterxml.jackson.annotation.JsonProperty
+
+

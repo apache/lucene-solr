@@ -18,7 +18,6 @@
 package org.apache.lucene.luke.models.analysis;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -57,7 +56,7 @@ public interface Analysis {
      * Returns attributes of this token.
      */
     public List<TokenAttribute> getAttributes() {
-      return Collections.unmodifiableList(attributes);
+      return List.copyOf(attributes);
     }
   }
 
@@ -84,7 +83,74 @@ public interface Analysis {
      * Returns value of this attribute.
      */
     public Map<String, String> getAttValues() {
-      return Collections.unmodifiableMap(attValues);
+      return Map.copyOf(attValues);
+    }
+  }
+
+
+  /** Base class for named object */
+  abstract class NamedObject {
+    private final String name;
+
+    NamedObject(String name) {
+      this.name = name;
+    }
+
+    public String getName() {
+      return name;
+    }
+  }
+
+  /**
+   * Holder for a pair tokenizer/filter and token list
+   */
+  class NamedTokens extends NamedObject {
+    private final List<Token> tokens;
+
+    NamedTokens(String name, List<Token> tokens) {
+      super(name);
+      this.tokens = tokens;
+    }
+
+    public List<Token> getTokens() {
+      return tokens;
+    }
+  }
+
+  /**
+   * Holder for a charfilter name and text that output by the charfilter
+   */
+  class CharfilteredText extends NamedObject {
+    private final String text;
+
+    public CharfilteredText(String name, String text) {
+      super(name);
+      this.text = text;
+    }
+
+    public String getText() {
+      return text;
+    }
+  }
+
+  /**
+   * Step-by-step analysis result holder.
+   */
+  class StepByStepResult {
+    private List<CharfilteredText> charfilteredTexts;
+    private List<NamedTokens> namedTokens;
+
+    public StepByStepResult(List<CharfilteredText> charfilteredTexts, List<NamedTokens> namedTokens) {
+      this.charfilteredTexts = charfilteredTexts;
+      this.namedTokens = namedTokens;
+    }
+
+    public List<CharfilteredText> getCharfilteredTexts() {
+      return charfilteredTexts;
+    }
+
+    public List<NamedTokens> getNamedTokens() {
+      return namedTokens;
     }
   }
 
@@ -148,5 +214,14 @@ public interface Analysis {
    * @throws LukeException - if an internal error occurs when loading jars
    */
   void addExternalJars(List<String> jarFiles);
+
+
+  /**
+   * Analyzes given text with the current Analyzer.
+   *
+   * @param text - text string to analyze
+   * @return the list of text by charfilter and the list of pair of Tokenizer/TokenFilter name and tokens
+   */
+  StepByStepResult analyzeStepByStep(String text);
 
 }

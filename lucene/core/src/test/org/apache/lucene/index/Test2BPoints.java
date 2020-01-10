@@ -135,6 +135,6 @@ public class Test2BPoints extends LuceneTestCase {
   }
 
   private static Codec getCodec() {
-    return Codec.forName("Lucene80");
+    return Codec.forName("Lucene84");
   }
 }

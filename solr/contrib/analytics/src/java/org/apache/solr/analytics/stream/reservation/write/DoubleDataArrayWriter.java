@@ -26,7 +26,7 @@ public class DoubleDataArrayWriter extends ReductionDataArrayWriter<DoubleSuppli
   public DoubleDataArrayWriter(DataOutput output, DoubleSupplier extractor, IntSupplier sizeSupplier) {
     super(output, extractor, sizeSupplier);
   }
-  
+
   @Override
   public void write(int size) throws IOException {
     for (int i = 0; i < size; ++i) {

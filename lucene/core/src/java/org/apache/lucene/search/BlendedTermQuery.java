@@ -86,8 +86,8 @@ public final class BlendedTermQuery extends Query {
      * object constructed for the given term.
      */
     public Builder add(Term term, float boost, TermStates context) {
-      if (numTerms >= BooleanQuery.getMaxClauseCount()) {
-        throw new BooleanQuery.TooManyClauses();
+      if (numTerms >= IndexSearcher.getMaxClauseCount()) {
+        throw new IndexSearcher.TooManyClauses();
       }
       terms = ArrayUtil.grow(terms, numTerms + 1);
       boosts = ArrayUtil.grow(boosts, numTerms + 1);

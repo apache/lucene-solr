@@ -29,7 +29,7 @@ import org.apache.solr.analytics.value.DoubleValueStream;
  * Uses:
  * <ul>
  * <li>If a single numeric ValueStream is passed in, a {@link DoubleValue} representing the multiplication of the values for each document is returned.
- * <li>If a numeric ValueStream and a numeric Value are passed in, a {@link DoubleValueStream} representing the multiplication of 
+ * <li>If a numeric ValueStream and a numeric Value are passed in, a {@link DoubleValueStream} representing the multiplication of
  * the Value and each of the values of the ValueStream for a document is returned.
  * (Or the other way, since the Value and ValueStream can be used in either order)
  * <li>If multiple numeric Values are passed in, a {@link DoubleValue} representing the multiplication of all values is returned.
@@ -40,13 +40,13 @@ public class MultFunction {
   public static final CreatorFunction creatorFunction = (params -> {
     if (params.length == 0) {
       throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires parameters.");
-    } 
+    }
     else if (params.length == 1) {
       if (params[0] instanceof DoubleValueStream) {
         return LambdaFunction.createDoubleLambdaFunction(name, (a,b) -> a*b, (DoubleValueStream)params[0]);
       }
       throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires numeric parameters. Incorrect param: "+params[0].getExpressionStr());
-    } 
+    }
     else if (params.length == 2) {
       AnalyticsValueStream param1 = params[0];
       AnalyticsValueStream param2 = params[1];

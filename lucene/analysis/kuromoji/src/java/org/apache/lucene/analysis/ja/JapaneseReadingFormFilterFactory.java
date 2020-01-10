@@ -34,8 +34,13 @@ import java.util.Map;
  * &lt;/fieldType&gt;
  * </pre>
  * @since 3.6.0
+ * @lucene.spi {@value #NAME}
  */
 public class JapaneseReadingFormFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "japaneseReadingForm";
+
   private static final String ROMAJI_PARAM = "useRomaji";
   private final boolean useRomaji;
   

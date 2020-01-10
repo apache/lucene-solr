@@ -40,13 +40,8 @@ public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
       CloudSolrClient client = cluster.getSolrClient();
       CollectionAdminRequest.List listReq = new CollectionAdminRequest.List();
 
-      try {
-        client.request(listReq);
-        fail("Requests to a non-running cluster should throw a SolrException");
-      }
-      catch (SolrException e) {
-        assertTrue("Unexpected message: " + e.getMessage(), e.getMessage().contains("cluster not found/not ready"));
-      }
+      SolrException e = expectThrows(SolrException.class, () -> client.request(listReq));
+      assertTrue("Unexpected message: " + e.getMessage(), e.getMessage().contains("cluster not found/not ready"));
 
       cluster.startJettySolrRunner();
       cluster.waitForAllNodes(30);
@@ -70,12 +65,10 @@ public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
     MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(0, createTempDir(), buildJettyConfig("/solr"));
     try {
       CloudSolrClient client = cluster.getSolrClient();
-      try {
+      SolrException e = expectThrows(SolrException.class, () -> {
         ((ZkClientClusterStateProvider)client.getClusterStateProvider()).uploadConfig(configPath, "testconfig");
-        fail("Requests to a non-running cluster should throw a SolrException");
-      } catch (SolrException e) {
-        assertTrue("Unexpected message: " + e.getMessage(), e.getMessage().contains("cluster not found/not ready"));
-      }
+      });
+      assertTrue("Unexpected message: " + e.getMessage(), e.getMessage().contains("cluster not found/not ready"));
 
       cluster.startJettySolrRunner();
       cluster.waitForAllNodes(30);

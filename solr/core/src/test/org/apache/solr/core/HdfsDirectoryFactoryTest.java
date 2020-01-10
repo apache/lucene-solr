@@ -42,6 +42,7 @@ import org.apache.solr.core.DirectoryFactory.DirContext;
 import org.apache.solr.handler.SnapShooter;
 import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.store.hdfs.HdfsLocalityReporter;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.apache.solr.util.MockCoreContainer.MockCoreDescriptor;
@@ -193,7 +194,7 @@ public class HdfsDirectoryFactoryTest extends SolrTestCaseJ4 {
       props.put(HdfsDirectoryFactory.NRTCACHINGDIRECTORY_ENABLE, "false");
       props.put(HdfsDirectoryFactory.LOCALITYMETRICS_ENABLED, "true");
       factory.init(new NamedList<>(props));
-      factory.initializeMetrics(metricManager, registry, "foo", scope);
+      factory.initializeMetrics(new SolrMetricsContext(metricManager, registry, "foo"), scope);
 
       // get the metrics map for the locality bean
       MetricsMap metrics = (MetricsMap) ((SolrMetricManager.GaugeWrapper) metricManager.registry(registry).getMetrics().get("OTHER." + scope + ".hdfsLocality")).getGauge();

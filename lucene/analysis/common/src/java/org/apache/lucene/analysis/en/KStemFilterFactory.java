@@ -34,8 +34,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  * @since 3.3.0
+ * @lucene.spi {@value #NAME}
  */
 public class KStemFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "kStem";
 
   /** Creates a new KStemFilterFactory */
   public KStemFilterFactory(Map<String,String> args) {

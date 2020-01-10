@@ -46,3 +46,9 @@ A SolrCloud cluster consists of some "logical" concepts layered on top of some "
 * The number of Replicas that each Shard has determines:
 ** The level of redundancy built into the Collection and how fault tolerant the Cluster can be in the event that some Nodes become unavailable.
 ** The theoretical limit in the number concurrent search requests that can be processed under heavy load.
+
+WARNING: Make sure the DNS resolution in your cluster is stable, ie.
+for each live host belonging to a Cluster the host name always corresponds to the
+same specific IP and physical node. For example, in clusters deployed on AWS this would
+require setting `preserve_hostname: true` in `/etc/cloud/cloud.cfg`. Changing DNS resolution
+of live nodes may lead to unexpected errors. See SOLR-13159 for more details.

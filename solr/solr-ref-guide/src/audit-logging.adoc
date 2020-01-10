@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr has the ability to log an audit trail of all events in the system.
+Solr has the ability to log an audit trail of all HTTP requests entering the system.
 Audit loggers are pluggable to suit any possible format or log destination.
 
 [quote]
@@ -25,7 +25,7 @@ An audit trail (also called audit log) is a security-relevant chronological reco
 == Configuration in security.json
 Audit logging is configured in `security.json` under the `auditlogging` key.
 
-The example `security.json` below configures synchronous audit logging to Solr default log file. 
+The example `security.json` below configures synchronous audit logging to Solr default log file.
 
 [source,json]
 ----
@@ -55,7 +55,7 @@ By default any AuditLogger plugin configured will log asynchronously in the back
 The defaults are `async: true`, `blockAsync: false`, `queueSize: 4096`. The default for `numThreads` is 2, or if the server has more than 4 CPU-cores then we use CPU-cores/2.
 
 [#audit-event-types]
-=== Event types
+=== Event Types
 These are the event types triggered by the framework:
 
 [%header,format=csv,separator=;]
@@ -71,9 +71,9 @@ COMPLETED;Request completed successfully
 ERROR;Request was not executed due to an error
 |===
 
-By default only the final event types `REJECTED`, `ANONYMOUS_REJECTED`, `UNAUTHORIZED`, `COMPLETED` and `ERROR` are logged. What eventTypes are logged can be configured with the `eventTypes` configuration parameter. 
+By default only the final event types `REJECTED`, `ANONYMOUS_REJECTED`, `UNAUTHORIZED`, `COMPLETED` and `ERROR` are logged. What eventTypes are logged can be configured with the `eventTypes` configuration parameter.
 
-=== Muting certain events
+=== Muting Certain Events
 The configuration parameter `muteRules` lets you mute logging for certain events. You may specify multiple rules and combination of rules that will cause muting. You can mute by request type, username, collection name, path, request parameters or IP address. We'll explain through examples:
 
 The below example will mute logging for all `SEARCH` requests as well as all requests made my user `johndoe` or from IP address `192.168.0.10`:
@@ -95,7 +95,7 @@ An mute rule may also be a list, in which case all must be true for muting to ha
 {
   "auditlogging":{
     "class": "solr.SolrLogAuditLoggerPlugin"
-    "muteRules": [ 
+    "muteRules": [
       "ip:192.168.0.10", <1>
       [ "path:/admin/collections", "param:action=LIST" ], <2>
       [ "path:/admin/collections", "param:collection=test" ] <3>
@@ -105,7 +105,7 @@ An mute rule may also be a list, in which case all must be true for muting to ha
 ----
 
 <1> The first will mute all events from client IP `192.168.0.10`
-<2> The second rule will mute collection admin requests with action=LIST
+<2> The second rule will mute collection admin requests with `action=LIST`
 <3> The third rule will mute collection admin requests for the collection named `test`
 
 Note how you can mix single string rules with lists of rules that must all match:
@@ -115,12 +115,12 @@ Note how you can mix single string rules with lists of rules that must all match
 * `type:<request-type>` (request-type by name: `ADMIN`, `SEARCH`, `UPDATE`, `STREAMING`, `UNKNOWN`)
 * `collection:<collection-name>` (collection by name)
 * `user:<userid>` (user by userid)
-* `path:</path/to/handler>` (request path relative to `/solr` or for search/update requests relative to collection. Path is prefix matched, i.e. `/admin` will mute any sub path as well.
+* `path:</path/to/handler>` (request path relative to `/solr` or for search/update requests relative to collection. Path is prefix matched, i.e., `/admin` will mute any sub path as well.
 * `ip:<ip-address>` (IPv4-address)
-* `param:<param>=<value>` (request parameter) 
+* `param:<param>=<value>` (request parameter)
 
 
-=== Chaining multiple loggers
+=== Chaining Multiple Loggers
 Using the `MultiDestinationAuditLogger` you can configure multiple audit logger plugins in a chain, to log to multiple destinations, as follows:
 
 [source,json]
@@ -139,9 +139,9 @@ Using the `MultiDestinationAuditLogger` you can configure multiple audit logger 
 ----
 
 == Metrics
-AuditLoggerPlugins record metrics about count and timing of log requests, as well as queue size for async loggers. The metrics keys are all recorded on the `SECURITY` category, and each metric name are prefixed with a scope of `/auditlogging` and the class name of the logger, e.g. `SolrLogAuditLoggerPlugin`. The individual metrics are:
+AuditLoggerPlugins record metrics about count and timing of log requests, as well as queue size for async loggers. The metrics keys are all recorded on the `SECURITY` category, and each metric name are prefixed with a scope of `/auditlogging` and the class name of the logger, e.g., `SolrLogAuditLoggerPlugin`. The individual metrics are:
 
-* `count` (type: meter. Records number and rate of audit logs done) 
+* `count` (type: meter. Records number and rate of audit logs done)
 * `errors` (type: meter. Records number and rate of errors)
 * `lost` (type: meter. Records number and rate of events lost due to queue full and `blockAsync=false`)
 * `requestTimes` (type: timer. Records latency and perceniles for logging performance)

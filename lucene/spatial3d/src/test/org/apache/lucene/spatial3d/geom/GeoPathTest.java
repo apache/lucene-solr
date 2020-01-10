@@ -18,8 +18,6 @@ package org.apache.lucene.spatial3d.geom;
 
 import org.junit.Test;
 
-import static org.apache.lucene.util.SloppyMath.toRadians;
-
 import org.apache.lucene.util.LuceneTestCase;
 
 public class GeoPathTest extends LuceneTestCase {
@@ -264,9 +262,9 @@ public class GeoPathTest extends LuceneTestCase {
   public void testCoLinear() {
     // p1: (12,-90), p2: (11, -55), (129, -90)
     GeoStandardPath p = new GeoStandardPath(PlanetModel.SPHERE, 0.1);
-    p.addPoint(toRadians(-90), toRadians(12));//south pole
-    p.addPoint(toRadians(-55), toRadians(11));
-    p.addPoint(toRadians(-90), toRadians(129));//south pole again
+    p.addPoint(Math.toRadians(-90), Math.toRadians(12));//south pole
+    p.addPoint(Math.toRadians(-55), Math.toRadians(11));
+    p.addPoint(Math.toRadians(-90), Math.toRadians(129));//south pole again
     p.done();//at least test this doesn't bomb like it used too -- LUCENE-6520
   }
 
@@ -313,11 +311,11 @@ public class GeoPathTest extends LuceneTestCase {
     final double[] pathLons = new double[] {13.3634,13.3704,13.3307,13.3076,13.2806,13.2484,13.2406,13.241,13.1926};
 
     // Set up a point in the right way
-    final GeoPoint carPoint = new GeoPoint(PlanetModel.SPHERE, toRadians(lat), toRadians(lon));
+    final GeoPoint carPoint = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(lat), Math.toRadians(lon));
     // Create the path, but use a tiny width (e.g. zero)
     final GeoPoint[] pathPoints = new GeoPoint[pathLats.length];
     for (int i = 0; i < pathPoints.length; i++) {
-      pathPoints[i] = new GeoPoint(PlanetModel.SPHERE, toRadians(pathLats[i]), toRadians(pathLons[i]));
+      pathPoints[i] = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(pathLats[i]), Math.toRadians(pathLons[i]));
     }
     // Construct a path with no width
     final GeoPath thisPath = GeoPathFactory.makeGeoPath(PlanetModel.SPHERE, 0.0, pathPoints);
@@ -347,10 +345,10 @@ public class GeoPathTest extends LuceneTestCase {
     final double[] pathLats = new double[] {52.5355,52.54,52.5626,52.5665,52.6007,52.6135,52.6303,52.6651,52.7074};
     final double[] pathLons = new double[] {13.3634,13.3704,13.3307,13.3076,13.2806,13.2484,13.2406,13.241,13.1926};
 
-    final GeoPoint carPoint = new GeoPoint(PlanetModel.SPHERE, toRadians(lat), toRadians(lon));
+    final GeoPoint carPoint = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(lat), Math.toRadians(lon));
     final GeoPoint[] pathPoints = new GeoPoint[pathLats.length];
     for (int i = 0; i < pathPoints.length; i++) {
-      pathPoints[i] = new GeoPoint(PlanetModel.SPHERE, toRadians(pathLats[i]), toRadians(pathLons[i]));
+      pathPoints[i] = new GeoPoint(PlanetModel.SPHERE, Math.toRadians(pathLats[i]), Math.toRadians(pathLons[i]));
     }
     
     // Construct a path with no width

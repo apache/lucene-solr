@@ -58,7 +58,10 @@ public class TestContentStreamDataSource extends AbstractDataImportHandlerTestCa
   @Override
   @After
   public void tearDown() throws Exception {
-    jetty.stop();
+    if (null != jetty) {
+      jetty.stop();
+      jetty = null;
+    }
     super.tearDown();
   }
 

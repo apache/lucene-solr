@@ -41,12 +41,12 @@ public class FloatMultiPointField extends AnalyticsField implements CastingFloat
     count = 0;
     values = new float[initialArrayLength];
   }
-  
+
   @Override
   public void doSetNextReader(LeafReaderContext context) throws IOException {
     docValues = DocValues.getSortedNumeric(context.reader(), fieldName);
   }
-  
+
   @Override
   public void collect(int doc) throws IOException {
     if (docValues.advanceExact(doc)) {
@@ -59,13 +59,13 @@ public class FloatMultiPointField extends AnalyticsField implements CastingFloat
       count = 0;
     }
   }
-  
+
   private void resizeEmptyValues(int count) {
     if (count > values.length) {
       values = new float[count];
     }
   }
-  
+
   @Override
   public void streamFloats(FloatConsumer cons) {
     for (int i = 0; i < count; ++i) {

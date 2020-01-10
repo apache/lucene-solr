@@ -29,7 +29,7 @@ import java.util.TreeMap;
 
 import org.apache.lucene.analysis.ja.util.CSVUtil;
 import org.apache.lucene.util.IntsRefBuilder;
-import org.apache.lucene.util.fst.Builder;
+import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 
@@ -65,7 +65,7 @@ public final class UserDictionary implements Dictionary {
     // text, segmentation, readings, POS
     while ((line = br.readLine()) != null) {
       // Remove comments
-      line = line.replaceAll("#.*$", "");
+      line = line.replaceAll("^#.*$", "");
 
       // Skip empty lines or comment lines
       if (line.trim().length() == 0) {
@@ -99,11 +99,13 @@ public final class UserDictionary implements Dictionary {
     List<int[]> segmentations = new ArrayList<>(featureEntries.size());
     
     PositiveIntOutputs fstOutput = PositiveIntOutputs.getSingleton();
-    Builder<Long> fstBuilder = new Builder<>(FST.INPUT_TYPE.BYTE2, fstOutput);
+    FSTCompiler<Long> fstCompiler = new FSTCompiler<>(FST.INPUT_TYPE.BYTE2, fstOutput);
     IntsRefBuilder scratch = new IntsRefBuilder();
     long ord = 0;
     
     for (String[] values : featureEntries) {
+      String surface = values[0].replaceAll("\\s", "");
+      String concatenatedSegment = values[1].replaceAll("\\s", "");
       String[] segmentation = values[1].replaceAll("  *", " ").split(" ");
       String[] readings = values[2].replaceAll("  *", " ").split(" ");
       String pos = values[3];
@@ -112,6 +114,12 @@ public final class UserDictionary implements Dictionary {
         throw new RuntimeException("Illegal user dictionary entry " + values[0] +
                                    " - the number of segmentations (" + segmentation.length + ")" +
                                    " does not the match number of readings (" + readings.length + ")");
+      }
+
+      if (!surface.equals(concatenatedSegment)) {
+        throw new RuntimeException("Illegal user dictionary entry " + values[0] +
+                                   " - the concatenated segmentation (" + concatenatedSegment + ")" +
+                                   " does not match the surface form (" + surface + ")");
       }
       
       int[] wordIdAndLength = new int[segmentation.length + 1]; // wordId offset, length, length....
@@ -128,11 +136,11 @@ public final class UserDictionary implements Dictionary {
       for (int i = 0; i < token.length(); i++) {
         scratch.setIntAt(i, (int) token.charAt(i));
       }
-      fstBuilder.add(scratch.get(), ord);
+      fstCompiler.add(scratch.get(), ord);
       segmentations.add(wordIdAndLength);
       ord++;
     }
-    this.fst = new TokenInfoFST(fstBuilder.finish(), false);
+    this.fst = new TokenInfoFST(fstCompiler.compile(), false);
     this.data = data.toArray(new String[data.size()]);
     this.segmentations = segmentations.toArray(new int[segmentations.size()][]);
   }
@@ -162,9 +170,9 @@ public final class UserDictionary implements Dictionary {
         if (fst.findTargetArc(ch, arc, arc, i == 0, fstReader) == null) {
           break; // continue to next position
         }
-        output += arc.output.intValue();
+        output += arc.output().intValue();
         if (arc.isFinal()) {
-          final int finalOutput = output + arc.nextFinalOutput.intValue();
+          final int finalOutput = output + arc.nextFinalOutput().intValue();
           result.put(startOffset-off, segmentations[finalOutput]);
           found = true;
         }
@@ -186,11 +194,11 @@ public final class UserDictionary implements Dictionary {
    */
   private int[][] toIndexArray(Map<Integer, int[]> input) {
     ArrayList<int[]> result = new ArrayList<>();
-    for (int i : input.keySet()) {
-      int[] wordIdAndLength = input.get(i);
+    for (Map.Entry<Integer, int[]> entry : input.entrySet()) {
+      int[] wordIdAndLength = entry.getValue();
       int wordId = wordIdAndLength[0];
       // convert length to index
-      int current = i;
+      int current = entry.getKey();
       for (int j = 1; j < wordIdAndLength.length; j++) { // first entry is wordId offset
         int[] token = { wordId + j - 1, current, wordIdAndLength[j] };
         result.add(token);

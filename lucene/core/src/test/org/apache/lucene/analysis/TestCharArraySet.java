@@ -90,87 +90,49 @@ public class TestCharArraySet extends LuceneTestCase {
   
   // TODO: break this up into simpler test methods, vs "telling a story"
   public void testModifyOnUnmodifiable(){
-    CharArraySet set=new CharArraySet(10, true);
+    CharArraySet set = new CharArraySet(10, true);
     set.addAll(Arrays.asList(TEST_STOP_WORDS));
     final int size = set.size();
-    set = CharArraySet.unmodifiableSet(set);
-    assertEquals("Set size changed due to unmodifiableSet call" , size, set.size());
+    CharArraySet unmodifiableSet = CharArraySet.unmodifiableSet(set);
+    assertEquals("Set size changed due to unmodifiableSet call" , size, unmodifiableSet.size());
     String NOT_IN_SET = "SirGallahad";
-    assertFalse("Test String already exists in set", set.contains(NOT_IN_SET));
-    
-    try{
-      set.add(NOT_IN_SET.toCharArray());  
-      fail("Modified unmodifiable set");
-    }catch (UnsupportedOperationException e) {
-      // expected
-      assertFalse("Test String has been added to unmodifiable set", set.contains(NOT_IN_SET));
-      assertEquals("Size of unmodifiable set has changed", size, set.size());
-    }
-    
-    try{
-      set.add(NOT_IN_SET);  
-      fail("Modified unmodifiable set");
-    }catch (UnsupportedOperationException e) {
-      // expected
-      assertFalse("Test String has been added to unmodifiable set", set.contains(NOT_IN_SET));
-      assertEquals("Size of unmodifiable set has changed", size, set.size());
-    }
-    
-    try{
-      set.add(new StringBuilder(NOT_IN_SET));  
-      fail("Modified unmodifiable set");
-    }catch (UnsupportedOperationException e) {
-      // expected
-      assertFalse("Test String has been added to unmodifiable set", set.contains(NOT_IN_SET));
-      assertEquals("Size of unmodifiable set has changed", size, set.size());
-    }
-    
-    try{
-      set.clear();  
-      fail("Modified unmodifiable set");
-    }catch (UnsupportedOperationException e) {
-      // expected
-      assertFalse("Changed unmodifiable set", set.contains(NOT_IN_SET));
-      assertEquals("Size of unmodifiable set has changed", size, set.size());
-    }
-    try{
-      set.add((Object) NOT_IN_SET);  
-      fail("Modified unmodifiable set");
-    }catch (UnsupportedOperationException e) {
-      // expected
-      assertFalse("Test String has been added to unmodifiable set", set.contains(NOT_IN_SET));
-      assertEquals("Size of unmodifiable set has changed", size, set.size());
-    }
-    
+    assertFalse("Test String already exists in set", unmodifiableSet.contains(NOT_IN_SET));
+
+    expectThrows(UnsupportedOperationException.class, () -> unmodifiableSet.add(NOT_IN_SET.toCharArray()));
+    assertFalse("Test String has been added to unmodifiable set", unmodifiableSet.contains(NOT_IN_SET));
+    assertEquals("Size of unmodifiable set has changed", size, unmodifiableSet.size());
+
+    expectThrows(UnsupportedOperationException.class, () -> unmodifiableSet.add(NOT_IN_SET));
+    assertFalse("Test String has been added to unmodifiable set", unmodifiableSet.contains(NOT_IN_SET));
+    assertEquals("Size of unmodifiable set has changed", size, unmodifiableSet.size());
+
+    expectThrows(UnsupportedOperationException.class, () -> unmodifiableSet.add(new StringBuilder(NOT_IN_SET)));
+    assertFalse("Test String has been added to unmodifiable set", unmodifiableSet.contains(NOT_IN_SET));
+    assertEquals("Size of unmodifiable set has changed", size, unmodifiableSet.size());
+
+    expectThrows(UnsupportedOperationException.class, () -> unmodifiableSet.clear());
+    assertFalse("Changed unmodifiable set", unmodifiableSet.contains(NOT_IN_SET));
+    assertEquals("Size of unmodifiable set has changed", size, unmodifiableSet.size());
+
+    expectThrows(UnsupportedOperationException.class, () -> unmodifiableSet.add((Object) NOT_IN_SET));
+    assertFalse("Test String has been added to unmodifiable set", unmodifiableSet.contains(NOT_IN_SET));
+    assertEquals("Size of unmodifiable set has changed", size, unmodifiableSet.size());
+
     // This test was changed in 3.1, as a contains() call on the given Collection using the "correct" iterator's
     // current key (now a char[]) on a Set<String> would not hit any element of the CAS and therefor never call
     // remove() on the iterator
-    try{
-      set.removeAll(new CharArraySet(Arrays.asList(TEST_STOP_WORDS), true));  
-      fail("Modified unmodifiable set");
-    }catch (UnsupportedOperationException e) {
-      // expected
-      assertEquals("Size of unmodifiable set has changed", size, set.size());
-    }
-    
-    try{
-      set.retainAll(new CharArraySet(Arrays.asList(NOT_IN_SET), true));  
-      fail("Modified unmodifiable set");
-    }catch (UnsupportedOperationException e) {
-      // expected
-      assertEquals("Size of unmodifiable set has changed", size, set.size());
-    }
-    
-    try{
-      set.addAll(Arrays.asList(NOT_IN_SET));
-      fail("Modified unmodifiable set");
-    }catch (UnsupportedOperationException e) {
-      // expected
-      assertFalse("Test String has been added to unmodifiable set", set.contains(NOT_IN_SET));
-    }
-    
+    expectThrows(UnsupportedOperationException.class, () -> unmodifiableSet.removeAll(new CharArraySet(Arrays.asList(TEST_STOP_WORDS), true)));
+    assertEquals("Size of unmodifiable set has changed", size, unmodifiableSet.size());
+
+    expectThrows(UnsupportedOperationException.class, () -> unmodifiableSet.retainAll(new CharArraySet(Arrays.asList(NOT_IN_SET), true)));
+    assertEquals("Size of unmodifiable set has changed", size, unmodifiableSet.size());
+
+    expectThrows(UnsupportedOperationException.class, () -> unmodifiableSet.addAll(Arrays.asList(NOT_IN_SET)));
+    assertFalse("Test String has been added to unmodifiable set", unmodifiableSet.contains(NOT_IN_SET));
+
     for (int i = 0; i < TEST_STOP_WORDS.length; i++) {
-      assertTrue(set.contains(TEST_STOP_WORDS[i]));  
+      assertTrue(set.contains(TEST_STOP_WORDS[i]));
+      assertTrue(unmodifiableSet.contains(TEST_STOP_WORDS[i]));
     }
   }
   

@@ -48,6 +48,7 @@ import static org.apache.solr.cloud.api.collections.OverseerCollectionMessageHan
 import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 import static org.apache.solr.common.params.CommonAdminParams.IN_PLACE_MOVE;
 import static org.apache.solr.common.params.CommonAdminParams.TIMEOUT;
@@ -80,7 +81,13 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
 
     String async = message.getStr(ASYNC);
 
-    String collection = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extCollection);
+    boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
+    String collection;
+    if (followAliases) {
+      collection = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extCollection);
+    } else {
+      collection = extCollection;
+    }
 
     DocCollection coll = clusterState.getCollection(collection);
     if (coll == null) {
@@ -211,7 +218,9 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         WAIT_FOR_FINAL_STATE, String.valueOf(waitForFinalState),
         SKIP_CREATE_REPLICA_IN_CLUSTER_STATE, skipCreateReplicaInClusterState,
         CoreAdminParams.ULOG_DIR, ulogDir.substring(0, ulogDir.lastIndexOf(UpdateLog.TLOG_NAME)),
-        CoreAdminParams.DATA_DIR, dataDir);
+        CoreAdminParams.DATA_DIR, dataDir,
+        ZkStateReader.REPLICA_TYPE, replica.getType().name());
+
     if(async!=null) addReplicasProps.getProperties().put(ASYNC, async);
     NamedList addResult = new NamedList();
     try {
@@ -265,7 +274,9 @@ public class MoveReplicaCmd implements OverseerCollectionMessageHandler.Cmd {
         COLLECTION_PROP, coll.getName(),
         SHARD_ID_PROP, slice.getName(),
         CoreAdminParams.NODE, targetNode,
-        CoreAdminParams.NAME, newCoreName);
+        CoreAdminParams.NAME, newCoreName,
+        ZkStateReader.REPLICA_TYPE, replica.getType().name());
+
     if (async != null) addReplicasProps.getProperties().put(ASYNC, async);
     NamedList addResult = new NamedList();
     SolrCloseableLatch countDownLatch = new SolrCloseableLatch(1, ocmh);

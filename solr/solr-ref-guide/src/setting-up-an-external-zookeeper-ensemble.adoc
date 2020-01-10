@@ -83,6 +83,7 @@ The file should have the following information to start:
 tickTime=2000
 dataDir=/var/lib/zookeeper
 clientPort=2181
+4lw.commands.whitelist=mntr,conf,ruok
 ----
 
 The parameters are as follows:
@@ -92,6 +93,8 @@ The parameters are as follows:
 `dataDir`:: This is the directory in which ZooKeeper will store data about the cluster. This directory must be empty before starting ZooKeeper for the first time.
 
 `clientPort`:: This is the port on which Solr will access ZooKeeper.
+
+`4lw.commands.whitelist`:: This allows the Solr admin UI to query ZooKeeper. Optionally use "*" to enable all "4 letter words", the three listed will enable the admin UI.
 
 These are the basic parameters that need to be in use on each ZooKeeper node, so this file must be copied to or created on each node.
 
@@ -110,6 +113,7 @@ Once complete, your `zoo.cfg` file might look like this:
 tickTime=2000
 dataDir=/var/lib/zookeeper
 clientPort=2181
+4lw.commands.whitelist=mntr,conf,ruok
 
 initLimit=5
 syncLimit=2
@@ -153,6 +157,7 @@ On the second node, update `<ZOOKEEPER_HOME>/conf/zoo.cfg` file so it matches th
 tickTime=2000
 dataDir=/var/lib/zookeeper
 clientPort=2181
+4lw.commands.whitelist=mntr,conf,ruok
 
 initLimit=5
 syncLimit=2
@@ -176,6 +181,7 @@ On the third node, update `<ZOOKEEPER_HOME>/conf/zoo.cfg` file so it matches the
 tickTime=2000
 dataDir=/var/lib/zookeeper
 clientPort=2181
+4lw.commands.whitelist=mntr,conf,ruok
 
 initLimit=5
 syncLimit=2
@@ -195,7 +201,7 @@ And create the `myid` file in the `/var/lib/zookeeper` directory:
 Repeat this for servers 4 and 5 if you are creating a 5-node ensemble (a rare case).
 
 
-===  ZooKeeper Environment Configuration
+=== ZooKeeper Environment Configuration
 
 To ease troubleshooting in case of problems with the ensemble later, it's recommended to run ZooKeeper with logging enabled and with proper JVM garbage collection (GC) settings.
 
@@ -289,9 +295,9 @@ For example, to point the Solr instance to the ZooKeeper you've started on port 
 bin/solr start -e cloud -z zk1:2181,zk2:2181,zk3:2181/solr
 ----
 
-=== Updating Solr's Include Files
+=== Updating Solr Include Files
 
-If you update Solr's include file (`solr.in.sh` or `solr.in.cmd`), which overrides defaults used with `bin/solr`, you will not have to use the `-z` parameter with `bin/solr` commands.
+If you update Solr include files (`solr.in.sh` or `solr.in.cmd`), which overrides defaults used with `bin/solr`, you will not have to use the `-z` parameter with `bin/solr` commands.
 
 
 [.dynamic-tabs]

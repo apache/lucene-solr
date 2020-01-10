@@ -35,8 +35,13 @@ import org.apache.lucene.analysis.util.CharFilterFactory;
  * &lt;/fieldType&gt;</pre>
  * 
  * @since Solr 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class PatternReplaceCharFilterFactory extends CharFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "patternReplace";
+
   private final Pattern pattern;
   private final String replacement;
 

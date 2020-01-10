@@ -79,6 +79,10 @@ public class MissingSegmentRecoveryTest extends SolrCloudTestCase {
   
   @After
   public void teardown() throws Exception {
+    if (null == leader) {
+      // test did not initialize, cleanup is No-Op;
+      return;
+    }
     System.clearProperty("CoreInitFailedAction");
     CollectionAdminRequest.deleteCollection(collection).process(cluster.getSolrClient());
   }

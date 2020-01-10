@@ -255,7 +255,7 @@ public final class SearchPanelProvider implements SearchTabOperator {
     c.insets = new Insets(2, 0, 2, 2);
     panel.add(termQueryCB, c);
 
-    queryStringTA.setRows(4);
+    queryStringTA.setRows(3);
     queryStringTA.setLineWrap(true);
     queryStringTA.setText("*:*");
     c.gridx = 0;
@@ -273,7 +273,7 @@ public final class SearchPanelProvider implements SearchTabOperator {
     c.insets = new Insets(8, 0, 2, 2);
     panel.add(labelPQ, c);
 
-    parsedQueryTA.setRows(4);
+    parsedQueryTA.setRows(3);
     parsedQueryTA.setLineWrap(true);
     parsedQueryTA.setEditable(false);
     c.gridx = 0;

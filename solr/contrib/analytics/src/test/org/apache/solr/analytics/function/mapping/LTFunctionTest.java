@@ -46,7 +46,7 @@ public class LTFunctionTest extends SolrTestCaseJ4 {
     comp.setExists(false);
     func.getBoolean();
     assertFalse(func.exists());
-    
+
     base.setExists(false);
     comp.setValue(3.3).setExists(true);
     func.getBoolean();
@@ -88,7 +88,7 @@ public class LTFunctionTest extends SolrTestCaseJ4 {
     comp.setExists(false);
     func.getBoolean();
     assertFalse(func.exists());
-    
+
     base.setExists(false);
     comp.setValue("1800-01-02T10:20:30Z").setExists(true);
     func.getBoolean();
@@ -109,7 +109,7 @@ public class LTFunctionTest extends SolrTestCaseJ4 {
     comp.setValue("1800-01-02T10:20:31Z").setExists(true);
     assertEquals(true, func.getBoolean());
     assertTrue(func.exists());
-    
+
     base.setValue("1800-01-02T10:20:30Z").setExists(true);
     comp.setValue("1000-01-02T10:20:31Z").setExists(true);
     assertEquals(false, func.getBoolean());
@@ -120,7 +120,7 @@ public class LTFunctionTest extends SolrTestCaseJ4 {
   public void oneSingleOneMultiValueNumericParameterTest() {
     TestDoubleValue base = new TestDoubleValue();
     TestDoubleValueStream comp = new TestDoubleValueStream();
-    
+
     AnalyticsValueStream uncasted = LTFunction.creatorFunction.apply(new AnalyticsValueStream[] {base, comp});
     assertTrue(uncasted instanceof BooleanValueStream);
     BooleanValueStream func = (BooleanValueStream) uncasted;
@@ -137,7 +137,7 @@ public class LTFunctionTest extends SolrTestCaseJ4 {
     func.streamBooleans( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // One value
     base.setValue(-4.2).setExists(true);
     comp.setValues(-4);
@@ -147,7 +147,7 @@ public class LTFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values1.next(), value);
     });
     assertFalse(values1.hasNext());
-    
+
     // Multiple values
     base.setValue(4).setExists(true);
     comp.setValues(4, -10, 2345, -74, 4.0001);
@@ -163,7 +163,7 @@ public class LTFunctionTest extends SolrTestCaseJ4 {
   public void oneMultiOneSingleValueNumericParameterTest() {
     TestDoubleValueStream base = new TestDoubleValueStream();
     TestDoubleValue comp = new TestDoubleValue();
-    
+
     AnalyticsValueStream uncasted = LTFunction.creatorFunction.apply(new AnalyticsValueStream[] {base, comp});
     assertTrue(uncasted instanceof BooleanValueStream);
     BooleanValueStream func = (BooleanValueStream) uncasted;
@@ -180,7 +180,7 @@ public class LTFunctionTest extends SolrTestCaseJ4 {
     func.streamBooleans( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // One value
     base.setValues(-4.2);
     comp.setValue(-4).setExists(true);
@@ -190,7 +190,7 @@ public class LTFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values1.next(), value);
     });
     assertFalse(values1.hasNext());
-    
+
     // Multiple values
     base.setValues(4, -10, 2345, -74, 4.0001);
     comp.setValue(4).setExists(true);
@@ -206,7 +206,7 @@ public class LTFunctionTest extends SolrTestCaseJ4 {
   public void oneSingleOneMultiValueDateParameterTest() {
     TestDateValue base = new TestDateValue();
     TestDateValueStream comp = new TestDateValueStream();
-    
+
     AnalyticsValueStream uncasted = LTFunction.creatorFunction.apply(new AnalyticsValueStream[] {base, comp});
     assertTrue(uncasted instanceof BooleanValueStream);
     BooleanValueStream func = (BooleanValueStream) uncasted;
@@ -223,7 +223,7 @@ public class LTFunctionTest extends SolrTestCaseJ4 {
     func.streamBooleans( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // One value
     base.setValue("1803-01-02T10:20:30Z").setExists(true);
     comp.setValues("1800-01-02T10:20:30Z");
@@ -233,7 +233,7 @@ public class LTFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values1.next(), value);
     });
     assertFalse(values1.hasNext());
-    
+
     // Multiple values
     base.setValue("1800-01-02T10:20:30Z").setExists(true);
     comp.setValues("1800-03-02T10:20:30Z", "1799-01-01T10:20:29Z", "1800-01-02T10:20:31Z", "1800-01-02T10:20:30Z", "1800-01-02T10:20:29Z");
@@ -249,7 +249,7 @@ public class LTFunctionTest extends SolrTestCaseJ4 {
   public void oneMultiOneSingleValueDateParameterTest() {
     TestDateValueStream base = new TestDateValueStream();
     TestDateValue comp = new TestDateValue();
-    
+
     AnalyticsValueStream uncasted = LTFunction.creatorFunction.apply(new AnalyticsValueStream[] {base, comp});
     assertTrue(uncasted instanceof BooleanValueStream);
     BooleanValueStream func = (BooleanValueStream) uncasted;
@@ -266,7 +266,7 @@ public class LTFunctionTest extends SolrTestCaseJ4 {
     func.streamBooleans( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // One value
     base.setValues("1800-01-02T10:20:30Z");
     comp.setValue("1803-01-02T10:20:30Z").setExists(true);
@@ -276,7 +276,7 @@ public class LTFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values1.next(), value);
     });
     assertFalse(values1.hasNext());
-    
+
     // Multiple values
     base.setValues("1800-03-02T10:20:30Z", "1799-01-01T10:20:29Z", "1800-01-02T10:20:31Z", "1800-01-02T10:20:30Z", "1800-01-02T10:20:29Z");
     comp.setValue("1800-01-02T10:20:30Z").setExists(true);

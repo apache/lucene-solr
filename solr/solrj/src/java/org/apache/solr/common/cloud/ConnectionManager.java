@@ -17,7 +17,6 @@
 package org.apache.solr.common.cloud;
 
 import java.lang.invoke.MethodHandles;
-
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -36,7 +35,7 @@ public class ConnectionManager implements Watcher {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final String name;
-  
+
   private volatile boolean connected = false;
 
   private final ZkClientConnectionStrategy connectionStrategy;
@@ -73,7 +72,7 @@ public class ConnectionManager implements Watcher {
         || ( stateType == StateType.TRACKING_TIME && (System.nanoTime() - lastDisconnectTime >  TimeUnit.NANOSECONDS.convert(timeToExpire, TimeUnit.MILLISECONDS)));
     }
   }
-  
+
   public static abstract class IsClosed {
     public abstract boolean isClosed();
   }
@@ -91,7 +90,7 @@ public class ConnectionManager implements Watcher {
     this.beforeReconnect = beforeReconnect;
     this.isClosedCheck = isClosed;
   }
-  
+
   private synchronized void connected() {
     connected = true;
     likelyExpiredState = LikelyExpiredState.NOT_EXPIRED;
@@ -114,14 +113,14 @@ public class ConnectionManager implements Watcher {
     } else {
       log.debug("Watcher {} name: {} got event {} path: {} type: {}", this, name, event, event.getPath(), event.getType());
     }
-    
+
     if (isClosed()) {
       log.debug("Client->ZooKeeper status change trigger but we are already closed");
       return;
     }
-    
+
     KeeperState state = event.getState();
-    
+
     if (state == KeeperState.SyncConnected) {
       log.info("zkClient has connected");
       connected();
@@ -133,9 +132,9 @@ public class ConnectionManager implements Watcher {
       // we don't call disconnected here, because we know we are expired
       connected = false;
       likelyExpiredState = LikelyExpiredState.EXPIRED;
-      
+
       log.warn("Our previous ZooKeeper session was expired. Attempting to reconnect to recover relationship with ZooKeeper...");
-      
+
       if (beforeReconnect != null) {
         try {
           beforeReconnect.command();
@@ -143,7 +142,7 @@ public class ConnectionManager implements Watcher {
           log.warn("Exception running beforeReconnect command", e);
         }
       }
-      
+
       do {
         // This loop will break if a valid connection is made. If a connection is not made then it will repeat and
         // try again to create a new connection.
@@ -155,38 +154,38 @@ public class ConnectionManager implements Watcher {
                 public void update(SolrZooKeeper keeper) {
                   try {
                     waitForConnected(Long.MAX_VALUE);
+
+                    try {
+                      client.updateKeeper(keeper);
+                    } catch (InterruptedException e) {
+                      closeKeeper(keeper);
+                      Thread.currentThread().interrupt();
+                      // we must have been asked to stop
+                      throw new RuntimeException(e);
+                    }
+
+                    if (onReconnect != null) {
+                      onReconnect.command();
+                    }
+
                   } catch (Exception e1) {
+                    // if there was a problem creating the new SolrZooKeeper
+                    // or if we cannot run our reconnect command, close the keeper
+                    // our retry loop will try to create one again
                     closeKeeper(keeper);
                     throw new RuntimeException(e1);
                   }
-  
-                  log.info("Connection with ZooKeeper reestablished.");
-                  try {
-                    client.updateKeeper(keeper);
-                  } catch (InterruptedException e) {
-                    closeKeeper(keeper);
-                    Thread.currentThread().interrupt();
-                    // we must have been asked to stop
-                    throw new RuntimeException(e);
-                  } catch (Exception t) {
-                    closeKeeper(keeper);
-                    throw new RuntimeException(t);
-                  }
-  
-                  if (onReconnect != null) {
-                    onReconnect.command();
-                  }
                 }
               });
-          
+
           break;
-          
+
         } catch (Exception e) {
           SolrException.log(log, "", e);
           log.info("Could not connect due to error, sleeping for 1s and trying again");
           waitSleep(1000);
         }
-        
+
       } while (!isClosed());
       log.info("zkClient Connected:" + connected);
     } else if (state == KeeperState.Disconnected) {
@@ -201,37 +200,37 @@ public class ConnectionManager implements Watcher {
   public synchronized boolean isConnectedAndNotClosed() {
     return !isClosed() && connected;
   }
-  
+
   public synchronized boolean isConnected() {
     return connected;
   }
-  
+
   // we use a volatile rather than sync
   // to avoid possible deadlock on shutdown
   public void close() {
     this.isClosed = true;
     this.likelyExpiredState = LikelyExpiredState.EXPIRED;
   }
-  
+
   private boolean isClosed() {
     return isClosed || isClosedCheck.isClosed();
   }
-  
+
   public boolean isLikelyExpired() {
     return isClosed() || likelyExpiredState.isLikelyExpired((long) (client.getZkClientTimeout() * 0.90));
   }
-  
+
   public synchronized void waitSleep(long waitFor) {
     try {
       wait(waitFor);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
-    } 
+    }
   }
 
   public synchronized void waitForConnected(long waitForConnection)
       throws TimeoutException {
-    log.debug("Waiting for client to connect to ZooKeeper");
+    log.info("Waiting for client to connect to ZooKeeper");
     long expire = System.nanoTime() + TimeUnit.NANOSECONDS.convert(waitForConnection, TimeUnit.MILLISECONDS);
     long left = 1;
     while (!connected && left > 0) {
@@ -249,7 +248,7 @@ public class ConnectionManager implements Watcher {
     if (!connected) {
       throw new TimeoutException("Could not connect to ZooKeeper " + zkServerAddress + " within " + waitForConnection + " ms");
     }
-    log.debug("Client is connected to ZooKeeper");
+    log.info("Client is connected to ZooKeeper");
   }
 
   public synchronized void waitForDisconnected(long timeout)

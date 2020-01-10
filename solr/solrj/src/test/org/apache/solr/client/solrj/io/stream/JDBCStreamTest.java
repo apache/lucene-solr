@@ -93,7 +93,7 @@ public class JDBCStreamTest extends SolrCloudTestCase {
     // So, for this reason and to simplify writing these tests I've decided that in all statements all table and column names 
     // will be in UPPERCASE. This is to ensure things look and behave consistently. Note that this is not a requirement of the 
     // JDBCStream and is only a carryover from the driver we are testing with.
-    Class.forName("org.hsqldb.jdbcDriver").newInstance();
+    Class.forName("org.hsqldb.jdbcDriver").getConstructor().newInstance();
     Connection connection = DriverManager.getConnection("jdbc:hsqldb:mem:.");
     Statement statement  = connection.createStatement();
     statement.executeUpdate("create table COUNTRIES(CODE varchar(3) not null primary key, COUNTRY_NAME varchar(50), DELETED char(1) default 'N')");

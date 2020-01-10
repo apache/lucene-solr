@@ -51,8 +51,7 @@ public class SubtractEvaluatorTest extends SolrTestCase {
     values.put("a", 1);
     values.put("b", 2);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(-1L, result);
+    Assert.assertEquals(-1D, result);
     
     values.clear();
     values.put("a", 1.1);
@@ -65,8 +64,7 @@ public class SubtractEvaluatorTest extends SolrTestCase {
     values.put("a", 1.1);
     values.put("b", 2.1);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(-1L, result);
+    Assert.assertEquals(-1D, result);
   }
 
   @Test(expected = IOException.class)
@@ -74,7 +72,7 @@ public class SubtractEvaluatorTest extends SolrTestCase {
     factory.constructEvaluator("sub(a)");
   }
 
-  @Test(expected = IOException.class)
+  @Test//(expected = NumberFormatException.class)
   public void subTwoFieldWithNulls() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("sub(a,b)");
     Object result;
@@ -84,7 +82,7 @@ public class SubtractEvaluatorTest extends SolrTestCase {
     Assert.assertNull(result);
   }
 
-  @Test(expected = IOException.class)
+  @Test//(expected = NumberFormatException.class)
   public void subTwoFieldsWithNull() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("sub(a,b)");
     Object result;
@@ -108,7 +106,7 @@ public class SubtractEvaluatorTest extends SolrTestCase {
     Assert.assertNull(result);
   }
 
-  @Test(expected = IOException.class)
+  @Test//(expected = NumberFormatException.class)
   public void subTwoFieldsWithMissingField() throws Exception{
     StreamEvaluator evaluator = factory.constructEvaluator("sub(a,b)");
     Object result;
@@ -140,8 +138,7 @@ public class SubtractEvaluatorTest extends SolrTestCase {
     values.put("c", 3);
     values.put("d", 4);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(-8L, result);
+    Assert.assertEquals(-8D, result);
     
     values.clear();
     values.put("a", 1.1);
@@ -173,8 +170,7 @@ public class SubtractEvaluatorTest extends SolrTestCase {
     values.put("c", 3);
     values.put("d", 4);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(0L, result);
+    Assert.assertEquals(0D, result);
         
     values.clear();
     values.put("a", 123456789123456789L);
@@ -182,7 +178,6 @@ public class SubtractEvaluatorTest extends SolrTestCase {
     values.put("c", 123456789123456789L);
     values.put("d", 123456789123456789L);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(0L, result);
+    Assert.assertEquals(0D, result);
   }
 }

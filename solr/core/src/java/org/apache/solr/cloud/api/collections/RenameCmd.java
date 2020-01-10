@@ -29,6 +29,8 @@ import org.apache.solr.common.util.NamedList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
+
 /**
  *
  */
@@ -55,7 +57,13 @@ public class RenameCmd implements OverseerCollectionMessageHandler.Cmd {
     }
     Aliases aliases = ocmh.zkStateReader.getAliases();
 
-    String collectionName = aliases.resolveSimpleAlias(extCollectionName);
+    boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
+    String collectionName;
+    if (followAliases) {
+      collectionName = aliases.resolveSimpleAlias(extCollectionName);
+    } else {
+      collectionName = extCollectionName;
+    }
     if (!state.hasCollection(collectionName)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "source collection '" + collectionName + "' not found.");
     }
@@ -65,6 +73,5 @@ public class RenameCmd implements OverseerCollectionMessageHandler.Cmd {
     }
 
     ocmh.zkStateReader.aliasesManager.applyModificationAndExportToZk(a -> a.cloneWithRename(extCollectionName, target));
-
   }
 }

@@ -19,9 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.PrintStream;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -554,8 +552,7 @@ public final class IndexWriterConfig extends LiveIndexWriterConfig {
    * Note: This method make a shallow copy of the provided map.
    */
   public IndexWriterConfig setReaderAttributes(Map<String, String> readerAttributes) {
-    this.readerAttributes = Collections.unmodifiableMap(new HashMap<>(Objects.requireNonNull(readerAttributes)));
+    this.readerAttributes = Map.copyOf(Objects.requireNonNull(readerAttributes));
     return this;
   }
-  
 }

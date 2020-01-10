@@ -20,6 +20,7 @@ import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.util.Version;
 import org.apache.lucene.util.automaton.TooComplexToDeterminizeException;
 
 /**
@@ -27,8 +28,14 @@ import org.apache.lucene.util.automaton.TooComplexToDeterminizeException;
  *
  * <ul>
  *   <li><tt>preserveSep</tt>:
+ *                            For lucene versions lesser than {@link org.apache.lucene.util.Version#LUCENE_8_4_0}
  *                            Whether {@link ConcatenateGraphFilter#SEP_LABEL}
  *                            should separate the input tokens in the concatenated token
+ *                            </li>
+ *   <li><tt>tokenSeparator</tt>:
+ *                            Separator to use for concatenation. If not present,
+ *                            {@link ConcatenateGraphFilter#DEFAULT_TOKEN_SEPARATOR} will be used.
+ *                            If empty, tokens will be concatenated without any separators.
  *                            </li>
  *   <li><tt>preservePositionIncrements</tt>:
  *                                       Whether to add an empty token for missing positions.
@@ -44,17 +51,26 @@ import org.apache.lucene.util.automaton.TooComplexToDeterminizeException;
  * </ul>
  * @see ConcatenateGraphFilter
  * @since 7.4.0
+ * @lucene.spi {@value #NAME}
  */
 public class ConcatenateGraphFilterFactory extends TokenFilterFactory {
 
-  private boolean preserveSep;
+  /** SPI name */
+  public static final String NAME = "concatenateGraph";
+
+  private Character tokenSeparator;
   private boolean preservePositionIncrements;
   private int maxGraphExpansions;
 
   public ConcatenateGraphFilterFactory(Map<String, String> args) {
     super(args);
-
-    preserveSep = getBoolean(args, "preserveSep", ConcatenateGraphFilter.DEFAULT_PRESERVE_SEP);
+    Version luceneMatchVersion = getLuceneMatchVersion();
+    if (luceneMatchVersion.onOrAfter(Version.LUCENE_8_4_0)) {
+      tokenSeparator = getCharacter(args, "tokenSeparator", ConcatenateGraphFilter.DEFAULT_TOKEN_SEPARATOR);
+    } else {
+      boolean preserveSep = getBoolean(args, "preserveSep", ConcatenateGraphFilter.DEFAULT_PRESERVE_SEP);
+      tokenSeparator = (preserveSep) ? ConcatenateGraphFilter.DEFAULT_TOKEN_SEPARATOR : null;
+    }
     preservePositionIncrements = getBoolean(args, "preservePositionIncrements", ConcatenateGraphFilter.DEFAULT_PRESERVE_POSITION_INCREMENTS);
     maxGraphExpansions = getInt(args, "maxGraphExpansions", ConcatenateGraphFilter.DEFAULT_MAX_GRAPH_EXPANSIONS);
 
@@ -65,6 +81,21 @@ public class ConcatenateGraphFilterFactory extends TokenFilterFactory {
 
   @Override
   public TokenStream create(TokenStream input) {
-    return new ConcatenateGraphFilter(input, preserveSep, preservePositionIncrements, maxGraphExpansions);
+    return new ConcatenateGraphFilter(input, tokenSeparator, preservePositionIncrements, maxGraphExpansions);
+  }
+
+  protected Character getCharacter(Map<String,String> args, String name, Character defaultVal) {
+    String s = args.remove(name);
+    if (s == null) {
+      return defaultVal;
+    } else if (s.length() == 0) {
+      return null;
+    } else {
+      if (s.length() != 1) {
+        throw new IllegalArgumentException(name + " should be a char. \"" + s + "\" is invalid");
+      } else {
+        return s.charAt(0);
+      }
+    }
   }
 }

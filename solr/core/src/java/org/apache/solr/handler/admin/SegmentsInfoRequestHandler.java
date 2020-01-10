@@ -74,9 +74,13 @@ import static org.apache.solr.common.params.CommonParams.NAME;
 public class SegmentsInfoRequestHandler extends RequestHandlerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final String WITH_FIELD_INFO = "fieldInfo";
-  public static final String WITH_CORE_INFO = "coreInfo";
-  public static final String WITH_SIZE_INFO = "sizeInfo";
+  public static final String FIELD_INFO_PARAM = "fieldInfo";
+  public static final String CORE_INFO_PARAM = "coreInfo";
+  public static final String SIZE_INFO_PARAM = "sizeInfo";
+  public static final String RAW_SIZE_PARAM = "rawSize";
+  public static final String RAW_SIZE_SUMMARY_PARAM = "rawSizeSummary";
+  public static final String RAW_SIZE_DETAILS_PARAM = "rawSizeDetails";
+  public static final String RAW_SIZE_SAMPLING_PERCENT_PARAM = "rawSizeSamplingPercent";
 
   private static final List<String> FI_LEGEND;
 
@@ -106,9 +110,15 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
 
   private void getSegmentsInfo(SolrQueryRequest req, SolrQueryResponse rsp)
       throws Exception {
-    boolean withFieldInfo = req.getParams().getBool(WITH_FIELD_INFO, false);
-    boolean withCoreInfo = req.getParams().getBool(WITH_CORE_INFO, false);
-    boolean withSizeInfo = req.getParams().getBool(WITH_SIZE_INFO, false);
+    boolean withFieldInfo = req.getParams().getBool(FIELD_INFO_PARAM, false);
+    boolean withCoreInfo = req.getParams().getBool(CORE_INFO_PARAM, false);
+    boolean withSizeInfo = req.getParams().getBool(SIZE_INFO_PARAM, false);
+    boolean withRawSizeInfo = req.getParams().getBool(RAW_SIZE_PARAM, false);
+    boolean withRawSizeSummary = req.getParams().getBool(RAW_SIZE_SUMMARY_PARAM, false);
+    boolean withRawSizeDetails = req.getParams().getBool(RAW_SIZE_DETAILS_PARAM, false);
+    if (withRawSizeSummary || withRawSizeDetails) {
+      withRawSizeInfo  = true;
+    }
     SolrIndexSearcher searcher = req.getSearcher();
 
     SegmentInfos infos =
@@ -160,8 +170,7 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
       }
     }
     SimpleOrderedMap<Object> segmentInfo = null;
-    List<SegmentCommitInfo> sortable = new ArrayList<>();
-    sortable.addAll(infos.asList());
+    List<SegmentCommitInfo> sortable = new ArrayList<>(infos.asList());
     // Order by the number of live docs. The display is logarithmic so it is a little jumbled visually
     sortable.sort((s1, s2) ->
       (s2.info.maxDoc() - s2.getDelCount()) - (s1.info.maxDoc() - s1.getDelCount())
@@ -187,6 +196,25 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
       rsp.add("fieldInfoLegend", FI_LEGEND);
     }
     rsp.add("segments", segmentInfos);
+    if (withRawSizeInfo) {
+      IndexSizeEstimator estimator = new IndexSizeEstimator(searcher.getRawReader(), 20, 100, withRawSizeSummary, withRawSizeDetails);
+      Object samplingPercentVal = req.getParams().get(RAW_SIZE_SAMPLING_PERCENT_PARAM);
+      if (samplingPercentVal != null) {
+        estimator.setSamplingPercent(Float.parseFloat(String.valueOf(samplingPercentVal)));
+      }
+      IndexSizeEstimator.Estimate estimate = estimator.estimate();
+      SimpleOrderedMap<Object> estimateMap = new SimpleOrderedMap<>();
+      // make the units more user-friendly
+      estimateMap.add(IndexSizeEstimator.FIELDS_BY_SIZE, estimate.getHumanReadableFieldsBySize());
+      estimateMap.add(IndexSizeEstimator.TYPES_BY_SIZE, estimate.getHumanReadableTypesBySize());
+      if (estimate.getSummary() != null) {
+        estimateMap.add(IndexSizeEstimator.SUMMARY, estimate.getSummary());
+      }
+      if (estimate.getDetails() != null) {
+        estimateMap.add(IndexSizeEstimator.DETAILS, estimate.getDetails());
+      }
+      rsp.add("rawSize", estimateMap);
+    }
   }
 
   private SimpleOrderedMap<Object> getSegmentInfo(
@@ -350,8 +378,8 @@ public class SegmentsInfoRequestHandler extends RequestHandlerBase {
     flags.append( (fi.isSoftDeletesField() ? "s" : "-"));
     if (fi.getPointDataDimensionCount() > 0 || fi.getPointIndexDimensionCount() > 0) {
       flags.append(":");
-      flags.append(fi.getPointDataDimensionCount() + ":");
-      flags.append(fi.getPointIndexDimensionCount() + ":");
+      flags.append(fi.getPointDataDimensionCount()).append(':');
+      flags.append(fi.getPointIndexDimensionCount()).append(':');
       flags.append(fi.getPointNumBytes());
     }
 

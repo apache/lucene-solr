@@ -327,8 +327,8 @@ public class GeoTestUtil {
     for(int i=0;i<gons;i++) {
       double angle = 360.0-i*(360.0/gons);
       //System.out.println("  angle " + angle);
-      double x = Math.cos(SloppyMath.toRadians(angle));
-      double y = Math.sin(SloppyMath.toRadians(angle));
+      double x = Math.cos(Math.toRadians(angle));
+      double y = Math.sin(Math.toRadians(angle));
       double factor = 2.0;
       double step = 1.0;
       int last = 0;
@@ -494,8 +494,8 @@ public class GeoTestUtil {
         }
         double len = radius * (1.0 - radiusDelta + radiusDelta * random().nextDouble());
         //System.out.println("    len=" + len);
-        double lat = centerLat + len * Math.cos(SloppyMath.toRadians(angle));
-        double lon = centerLon + len * Math.sin(SloppyMath.toRadians(angle));
+        double lat = centerLat + len * Math.cos(Math.toRadians(angle));
+        double lon = centerLon + len * Math.sin(Math.toRadians(angle));
         if (lon <= GeoUtils.MIN_LON_INCL || lon >= GeoUtils.MAX_LON_INCL ||
             lat > 90 || lat < -90) {
           // cannot cross dateline or pole: try again!
@@ -590,10 +590,10 @@ public class GeoTestUtil {
       if (o instanceof double[]) {
         double point[] = (double[]) o;
         sb.append("<!-- point: ");
-        sb.append(point[0] + "," + point[1]);
+        sb.append(point[0]).append(',').append(point[1]);
         sb.append(" -->\n");
       } else {
-        sb.append("<!-- " + o.getClass().getSimpleName() + ": \n");
+        sb.append("<!-- ").append(o.getClass().getSimpleName()).append(": \n");
         sb.append(o.toString());
         sb.append("\n-->\n");
       }
@@ -620,7 +620,7 @@ public class GeoTestUtil {
       // polygon
       double polyLats[] = gon.getPolyLats();
       double polyLons[] = gon.getPolyLons();
-      sb.append("<polygon fill-opacity=\"" + opacity + "\" points=\"");
+      sb.append("<polygon fill-opacity=\"").append(opacity).append("\" points=\"");
       for (int i = 0; i < polyLats.length; i++) {
         if (i > 0) {
           sb.append(" ");
@@ -629,7 +629,7 @@ public class GeoTestUtil {
         .append(",")
         .append(90 - polyLats[i]);
       }
-      sb.append("\" style=\"" + style + "\"/>\n");
+      sb.append("\" style=\"").append(style).append("\"/>\n");
       for (Polygon hole : gon.getHoles()) {
         double holeLats[] = hole.getPolyLats();
         double holeLons[] = hole.getPolyLons();
@@ -698,7 +698,9 @@ public class GeoTestUtil {
     for (i = 0, j = 1; j < nvert; ++i, ++j) {
       if (testy == verty[j] && testy == verty[i] ||
           ((testy <= verty[j] && testy >= verty[i]) != (testy >= verty[j] && testy <= verty[i]))) {
-        if (GeoUtils.orient(vertx[i], verty[i], vertx[j], verty[j], testx, testy) == 0) {
+        if ((testx == vertx[j] && testx == vertx[i]) ||
+            ((testx <= vertx[j] && testx >= vertx[i]) != (testx >= vertx[j] && testx <= vertx[i]) &&
+            GeoUtils.orient(vertx[i], verty[i], vertx[j], verty[j], testx, testy) == 0)) {
           // return true if point is on boundary
           return true;
         } else if ( ((verty[i] > testy) != (verty[j] > testy)) &&

@@ -21,6 +21,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -475,22 +476,16 @@ public class TestDirectoryReader extends LuceneTestCase {
     if (dir instanceof BaseDirectoryWrapper) {
       ((BaseDirectoryWrapper)dir).setCheckIndexOnClose(false); // we will hit NoSuchFileException in MDW since we nuked it!
     }
-    try {
-      DirectoryReader.open(dir);
-      fail("expected FileNotFoundException/NoSuchFileException");
-    } catch (FileNotFoundException | NoSuchFileException e) {
-      // expected
-    }
+    expectThrowsAnyOf(Arrays.asList(FileNotFoundException.class, NoSuchFileException.class),
+        () -> DirectoryReader.open(dir)
+    );
 
     IOUtils.rm(dirFile);
 
     // Make sure we still get a CorruptIndexException (not NPE):
-    try {
-      DirectoryReader.open(dir);
-      fail("expected FileNotFoundException/NoSuchFileException");
-    } catch (FileNotFoundException | NoSuchFileException e) {
-      // expected
-    }
+    expectThrowsAnyOf(Arrays.asList(FileNotFoundException.class, NoSuchFileException.class),
+        () -> DirectoryReader.open(dir)
+    );
     
     dir.close();
   }

@@ -25,10 +25,10 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Properties;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.index.DirectoryReader;
@@ -115,33 +115,37 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
   @After
   public void tearDown() throws Exception {
     super.tearDown();
-    masterClient.close();
-    masterClient  = null;
-    masterJetty.stop();
-    masterJetty = null;
+    if (null != masterClient) {
+      masterClient.close();
+      masterClient  = null;
+    }
+    if (null != masterJetty) {
+      masterJetty.stop();
+      masterJetty = null;
+    }
     master = null;
   }
 
   @Test
   public void testBackupOnCommit() throws Exception {
+    final BackupStatusChecker backupStatus
+      = new BackupStatusChecker(masterClient, "/" + DEFAULT_TEST_CORENAME + "/replication");
+
+    final String lastBackupDir = backupStatus.checkBackupSuccess();
+    // sanity check no backups yet
+    assertNull("Already have a successful backup",
+               lastBackupDir);
+    
     //Index
     int nDocs = BackupRestoreUtils.indexDocs(masterClient, DEFAULT_TEST_COLLECTION_NAME, docsSeed);
-
-    //Confirm if completed
-    CheckBackupStatus checkBackupStatus = new CheckBackupStatus((HttpSolrClient) masterClient, DEFAULT_TEST_CORENAME);
-    while (!checkBackupStatus.success) {
-      checkBackupStatus.fetchStatus();
-      Thread.sleep(1000);
-    }
-
+    
+    final String newBackupDir = backupStatus.waitForDifferentBackupDir(lastBackupDir, 30);
     //Validate
-    try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(master.getDataDir()), "snapshot*")) {
-      Path snapDir = stream.iterator().next();
-      verify(snapDir, nDocs);
-    }
+    verify(Paths.get(master.getDataDir(), newBackupDir), nDocs);
   }
 
   private void verify(Path backup, int nDocs) throws IOException {
+    log.info("Verifying ndocs={} in {}", nDocs, backup);
     try (Directory dir = new SimpleFSDirectory(backup);
         IndexReader reader = DirectoryReader.open(dir)) {
       IndexSearcher searcher = new IndexSearcher(reader);
@@ -153,62 +157,43 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
 
   @Test
   public void doTestBackup() throws Exception {
+    final BackupStatusChecker backupStatus
+      = new BackupStatusChecker(masterClient, "/" + DEFAULT_TEST_CORENAME + "/replication");
 
+    String lastBackupDir = backupStatus.checkBackupSuccess();
+    assertNull("Already have a successful backup",
+               lastBackupDir);
+
+    final Path[] snapDir = new Path[5]; //One extra for the backup on commit
+    //First snapshot location
+    
     int nDocs = BackupRestoreUtils.indexDocs(masterClient, DEFAULT_TEST_COLLECTION_NAME, docsSeed);
 
-    //Confirm if completed
-    CheckBackupStatus checkBackupStatus = new CheckBackupStatus((HttpSolrClient) masterClient, DEFAULT_TEST_CORENAME);
-    while (!checkBackupStatus.success) {
-      checkBackupStatus.fetchStatus();
-      Thread.sleep(1000);
-    }
+    lastBackupDir = backupStatus.waitForDifferentBackupDir(lastBackupDir, 30);
+    snapDir[0] = Paths.get(master.getDataDir(), lastBackupDir);
 
-    Path[] snapDir = new Path[5]; //One extra for the backup on commit
-    //First snapshot location
-    try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(master.getDataDir()), "snapshot*")) {
-      snapDir[0] = stream.iterator().next();
-    }
-
-    boolean namedBackup = random().nextBoolean();
-    String firstBackupTimestamp = null;
+    final boolean namedBackup = random().nextBoolean();
 
     String[] backupNames = null;
     if (namedBackup) {
       backupNames = new String[4];
     }
     for (int i = 0; i < 4; i++) {
-      final String backupName = TestUtil.randomSimpleString(random(), 1, 20);
+      final String backupName = TestUtil.randomSimpleString(random(), 1, 20) + "_" + i;
       if (!namedBackup) {
         if (addNumberToKeepInRequest) {
           runBackupCommand(masterJetty, ReplicationHandler.CMD_BACKUP, "&" + backupKeepParamName + "=2");
         } else {
           runBackupCommand(masterJetty, ReplicationHandler.CMD_BACKUP, "");
         }
+        lastBackupDir = backupStatus.waitForDifferentBackupDir(lastBackupDir, 30);
       } else {
-          runBackupCommand(masterJetty, ReplicationHandler.CMD_BACKUP, "&name=" +  backupName);
+        runBackupCommand(masterJetty, ReplicationHandler.CMD_BACKUP, "&name=" +  backupName);
+        lastBackupDir = backupStatus.waitForBackupSuccess(backupName, 30);
         backupNames[i] = backupName;
       }
-
-     checkBackupStatus = new CheckBackupStatus((HttpSolrClient) masterClient, DEFAULT_TEST_CORENAME, firstBackupTimestamp);
-      while (!checkBackupStatus.success) {
-        checkBackupStatus.fetchStatus();
-        Thread.sleep(1000);
-      }
-      if (i == 0) {
-        firstBackupTimestamp = checkBackupStatus.backupTimestamp;
-      }
-
-      if (!namedBackup) {
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(master.getDataDir()), "snapshot*")) {
-          snapDir[i+1] = stream.iterator().next();
-        }
-      } else {
-        try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(master.getDataDir()), "snapshot." + backupName)) {
-          snapDir[i+1] = stream.iterator().next();
-        }
-      }
+      snapDir[i+1] = Paths.get(master.getDataDir(), lastBackupDir);
       verify(snapDir[i+1], nDocs);
-
     }
 
     
@@ -218,24 +203,26 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     } else {
       //5 backups got created. 4 explicitly and one because a commit was called.
       // Only the last two should still exist.
-      int count =0;
+      final List<String> remainingBackups = new ArrayList<>();
+      
       try (DirectoryStream<Path> stream = Files.newDirectoryStream(Paths.get(master.getDataDir()), "snapshot*")) {
         Iterator<Path> iter = stream.iterator();
         while (iter.hasNext()) {
-          iter.next();
-          count ++;
+          remainingBackups.add(iter.next().getFileName().toString());
         }
       }
 
-      //There will be 2 backups, otherwise 1
+      // Depending on the use of backupKeepParamName there should either be 2 or 1 backups remaining
       if (backupKeepParamName.equals(ReplicationHandler.NUMBER_BACKUPS_TO_KEEP_REQUEST_PARAM)) {
-        assertEquals(2, count);
+        assertEquals(remainingBackups.toString(),
+                     2, remainingBackups.size());
 
         if (Files.exists(snapDir[0]) || Files.exists(snapDir[1]) || Files.exists(snapDir[2])) {
           fail("Backup should have been cleaned up because " + backupKeepParamName + " was set to 2.");
         }
       } else {
-        assertEquals(1, count);
+        assertEquals(remainingBackups.toString(),
+                     1, remainingBackups.size());
 
         if (Files.exists(snapDir[0]) || Files.exists(snapDir[1]) || Files.exists(snapDir[2])
             || Files.exists(snapDir[3])) {
@@ -246,23 +233,19 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     }
   }
 
-  private void testDeleteNamedBackup(String backupNames[]) throws InterruptedException, IOException {
-    String lastTimestamp = null;
+  private void testDeleteNamedBackup(String backupNames[]) throws Exception {
+    final BackupStatusChecker backupStatus
+      = new BackupStatusChecker(masterClient, "/" + DEFAULT_TEST_CORENAME + "/replication");
     for (int i = 0; i < 2; i++) {
+      final Path p = Paths.get(master.getDataDir(), "snapshot." + backupNames[i]);
+      assertTrue("WTF: Backup doesn't exist: " + p.toString(),
+                 Files.exists(p));
       runBackupCommand(masterJetty, ReplicationHandler.CMD_DELETE_BACKUP, "&name=" +backupNames[i]);
-      CheckDeleteBackupStatus checkDeleteBackupStatus = new CheckDeleteBackupStatus(backupNames[i], lastTimestamp);
-      while (true) {
-        boolean success = checkDeleteBackupStatus.fetchStatus();
-        if (success) {
-          lastTimestamp = checkDeleteBackupStatus.lastTimestamp;
-          if (i == 0) {
-            Thread.sleep(1000); //make the timestamp change
-          }
-          break;
-        }
-        Thread.sleep(200);
-      }
+      backupStatus.waitForBackupDeletionSuccess(backupNames[i], 30);
+      assertFalse("backup still exists after deletion: " + p.toString(),
+                  Files.exists(p));
     }
+    
   }
 
   public static void runBackupCommand(JettySolrRunner masterJetty, String cmd, String params) throws IOException {
@@ -278,39 +261,4 @@ public class TestReplicationHandlerBackup extends SolrJettyTestBase {
     }
   }
 
-  private class CheckDeleteBackupStatus {
-    String response = null;
-    private String backupName;
-    final Pattern p = Pattern.compile("<str name=\"snapshotDeletedAt\">(.*?)</str>");
-    String lastTimestamp;
-    
-    private CheckDeleteBackupStatus(String backupName, String lastTimestamp) {
-      this.backupName = backupName;
-      this.lastTimestamp = lastTimestamp;
-    }
-
-    public boolean fetchStatus() throws IOException {
-      String masterUrl = buildUrl(masterJetty.getLocalPort(), context) + "/" + DEFAULT_TEST_CORENAME + ReplicationHandler.PATH + "?wt=xml&command=" + ReplicationHandler.CMD_DETAILS;
-      URL url;
-      InputStream stream = null;
-      try {
-        url = new URL(masterUrl);
-        stream = url.openStream();
-        response = IOUtils.toString(stream, "UTF-8");
-        if(response.contains("<str name=\"status\">success</str>")) {
-          Matcher m = p.matcher(response);
-          if(m.find() && (lastTimestamp == null || !lastTimestamp.equals(m.group(1)))) {
-            lastTimestamp = m.group(1);
-            return true;
-          }
-        } else if(response.contains("<str name=\"status\">Unable to delete snapshot: " + backupName + "</str>" )) {
-          return false;
-        }
-        stream.close();
-      } finally {
-        IOUtils.closeQuietly(stream);
-      }
-      return false;
-    }
-  }
 }

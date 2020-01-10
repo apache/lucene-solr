@@ -112,11 +112,15 @@ public class TestNumericTerms64 extends SolrTestCase {
   @AfterClass
   public static void afterClass() throws Exception {
     searcher = null;
-    TestUtil.checkReader(reader);
-    reader.close();
-    reader = null;
-    directory.close();
-    directory = null;
+    if (null != reader) {
+      TestUtil.checkReader(reader);
+      reader.close();
+      reader = null;
+    }
+    if (null != directory) {
+      directory.close();
+      directory = null;
+    }
   }
   
   private void testSorting(int precisionStep) throws Exception {

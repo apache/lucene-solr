@@ -20,7 +20,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-import org.noggit.JSONUtil;
+import org.apache.solr.common.util.Utils;
 
 public class Replica extends ZkNodeProps {
   
@@ -102,7 +102,7 @@ public class Replica extends ZkNodeProps {
     PULL;
 
     public static Type get(String name){
-      return name == null ? Type.NRT : Type.valueOf(name);
+      return name == null ? Type.NRT : Type.valueOf(name.toUpperCase(Locale.ROOT));
     }
   }
 
@@ -110,9 +110,12 @@ public class Replica extends ZkNodeProps {
   private final String nodeName;
   private final State state;
   private final Type type;
+  public final String slice, collection;
 
-  public Replica(String name, Map<String,Object> propMap) {
+  public Replica(String name, Map<String,Object> propMap, String collection, String slice) {
     super(propMap);
+    this.collection = collection;
+    this.slice = slice;
     this.name = name;
     this.nodeName = (String) propMap.get(ZkStateReader.NODE_NAME_PROP);
     if (propMap.get(ZkStateReader.STATE_PROP) != null) {
@@ -122,6 +125,13 @@ public class Replica extends ZkNodeProps {
       propMap.put(ZkStateReader.STATE_PROP, state.toString());
     }
     type = Type.get((String) propMap.get(ZkStateReader.REPLICA_TYPE));
+  }
+
+  public String getCollection(){
+    return collection;
+  }
+  public String getSlice(){
+    return slice;
   }
 
   @Override
@@ -183,6 +193,6 @@ public class Replica extends ZkNodeProps {
 
   @Override
   public String toString() {
-    return name + ':' + JSONUtil.toJSON(propMap, -1); // small enough, keep it on one line (i.e. no indent)
+    return name + ':' + Utils.toJSONString(propMap); // small enough, keep it on one line (i.e. no indent)
   }
 }

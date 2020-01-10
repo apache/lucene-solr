@@ -16,18 +16,20 @@
  */
 package org.apache.solr.ltr.feature;
 
+import java.util.LinkedHashMap;
+
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.model.LinearModel;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 
 public class TestRankingFeature extends TestRerankBase {
 
-  @BeforeClass
-  public static void before() throws Exception {
+  @Before
+  public void before() throws Exception {
     setuptest(false);
 
     assertU(adoc("id", "1", "title", "w1", "description", "w1", "popularity",
@@ -49,8 +51,8 @@ public class TestRankingFeature extends TestRerankBase {
     assertU(commit());
   }
 
-  @AfterClass
-  public static void after() throws Exception {
+  @After
+  public void after() throws Exception {
     aftertest();
   }
 
@@ -116,8 +118,14 @@ public class TestRankingFeature extends TestRerankBase {
         "/error/msg/=='"+FeatureException.class.getName()+": " +
         "java.lang.UnsupportedOperationException: " +
         "Unable to extract feature for powdesS'");
-    // aftertest();
 
+  }
+
+  @Test
+  public void testParamsToMap() throws Exception {
+    final LinkedHashMap<String,Object> params = new LinkedHashMap<String,Object>();
+    params.put("q", "{!func}pow(popularity,2)");
+    doTestParamsToMap(SolrFeature.class.getName(), params);
   }
 
 }

@@ -80,7 +80,7 @@ public class PartOfSpeechAttributeImpl extends AttributeImpl implements PartOfSp
       if (builder.length() > 0) {
         builder.append("+");
       }
-      builder.append(morpheme.surfaceForm + "/" + morpheme.posTag.name() + "(" + morpheme.posTag.description() + ")");
+      builder.append(morpheme.surfaceForm).append('/').append(morpheme.posTag.name()).append('(').append(morpheme.posTag.description()).append(')');
     }
     return builder.toString();
   }

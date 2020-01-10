@@ -48,9 +48,6 @@ public final class IndexFileNames {
   /** Name of pending index segment file */
   public static final String PENDING_SEGMENTS = "pending_segments";
 
-  /** Name of the generation reference file name */
-  public static final String OLD_SEGMENTS_GEN = "segments.gen";
-
   /**
    * Computes the full file name from base, extension and generation. If the
    * generation is -1, the file name is null. If it's 0, the file name is

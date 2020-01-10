@@ -68,12 +68,10 @@ public class TestDelegationTokenResponse extends SolrTestCase {
     DelegationTokenResponse.Get getResponse = new DelegationTokenResponse.Get();
 
     // not a map
-    try {
+    expectThrows(SolrException.class, () -> {
       delegationTokenResponse(getRequest, getResponse, "");
       getResponse.getDelegationToken();
-      fail("Expected SolrException");
-    } catch (SolrException se) {
-    }
+    });
 
     // doesn't have Token outerMap
     final String someToken = "someToken";
@@ -81,12 +79,8 @@ public class TestDelegationTokenResponse extends SolrTestCase {
     assertNull(getResponse.getDelegationToken());
 
     // Token is not a map
-    try {
-      delegationTokenResponse(getRequest, getResponse, getMapJson("Token", someToken));
-      getResponse.getDelegationToken();
-      fail("Expected SolrException");
-    } catch (SolrException se) {
-    }
+    delegationTokenResponse(getRequest, getResponse, getMapJson("Token", someToken));
+    expectThrows(SolrException.class, getResponse::getDelegationToken);
 
     // doesn't have urlString
     delegationTokenResponse(getRequest, getResponse, getNestedMapJson("Token", "notUrlString", someToken));
@@ -104,24 +98,18 @@ public class TestDelegationTokenResponse extends SolrTestCase {
     DelegationTokenResponse.Renew renewResponse = new DelegationTokenResponse.Renew();
 
     // not a map
-    try {
+    expectThrows(SolrException.class, () -> {
       delegationTokenResponse(renewRequest, renewResponse, "");
       renewResponse.getExpirationTime();
-      fail("Expected SolrException");
-    } catch (SolrException se) {
-    }
+    });
 
     // doesn't have long
     delegationTokenResponse(renewRequest, renewResponse, getMapJson("notLong", "123"));
     assertNull(renewResponse.getExpirationTime());
 
     // long isn't valid
-    try {
-      delegationTokenResponse(renewRequest, renewResponse, getMapJson("long", "aaa"));
-      renewResponse.getExpirationTime();
-      fail("Expected SolrException");
-    } catch (SolrException se) {
-    }
+    delegationTokenResponse(renewRequest, renewResponse, getMapJson("long", "aaa"));
+    expectThrows(SolrException.class, renewResponse::getExpirationTime);
 
     // valid
     Long expirationTime = Long.MAX_VALUE;

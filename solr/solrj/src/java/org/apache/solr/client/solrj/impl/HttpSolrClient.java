@@ -22,7 +22,9 @@ import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
+import java.net.MalformedURLException;
 import java.net.SocketTimeoutException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.Principal;
 import java.util.Arrays;
@@ -32,6 +34,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -183,6 +186,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     if (baseUrl.endsWith("/")) {
       baseUrl = baseUrl.substring(0, baseUrl.length() - 1);
     }
+    
     if (baseUrl.indexOf('?') >= 0) {
       throw new RuntimeException(
           "Invalid base url for solrj.  The base URL must not contain parameters: "
@@ -252,6 +256,12 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       throws SolrServerException, IOException {
     HttpRequestBase method = createMethod(request, collection);
     setBasicAuthHeader(request, method);
+    if (request.getHeaders() != null) {
+      Map<String, String> headers = request.getHeaders();
+      for (Map.Entry<String, String> entry : headers.entrySet()) {
+        method.setHeader(entry.getKey(), entry.getValue());
+      }
+    }
     return executeMethod(method, request.getUserPrincipal(), processor, isV2ApiRequest(request));
   }
 
@@ -323,6 +333,12 @@ public class HttpSolrClient extends BaseHttpSolrClient {
     }
     return queryModParams;
   }
+  
+  static String changeV2RequestEndpoint(String basePath) throws MalformedURLException {
+    URL oldURL = new URL(basePath);
+    String newPath = oldURL.getPath().replaceFirst("/solr", "/api");
+    return new URL(oldURL.getProtocol(), oldURL.getHost(), oldURL.getPort(), newPath).toString();
+  }
 
   protected HttpRequestBase createMethod(SolrRequest request, String collection) throws IOException, SolrServerException {
     if (request instanceof V2RequestSupport) {
@@ -357,7 +373,7 @@ public class HttpSolrClient extends BaseHttpSolrClient {
       basePath += "/" + collection;
 
     if (request instanceof V2Request) {
-      if (System.getProperty("solr.v2RealPath") == null) {
+      if (System.getProperty("solr.v2RealPath") == null || ((V2Request) request).isForceV2()) {
         basePath = baseUrl.replace("/solr", "/api");
       } else {
         basePath = baseUrl + "/____v2";

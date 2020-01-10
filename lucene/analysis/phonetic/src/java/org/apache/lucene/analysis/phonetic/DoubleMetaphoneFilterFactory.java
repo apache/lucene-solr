@@ -33,9 +33,14 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * &lt;/fieldType&gt;</pre>
  *
  * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class DoubleMetaphoneFilterFactory extends TokenFilterFactory
 {
+
+  /** SPI name */
+  public static final String NAME = "doubleMetaphone";
+
   /** parameter name: true if encoded tokens should be added as synonyms */
   public static final String INJECT = "inject"; 
   /** parameter name: restricts the length of the phonetic code */

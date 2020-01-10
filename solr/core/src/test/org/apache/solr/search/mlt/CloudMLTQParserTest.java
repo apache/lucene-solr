@@ -90,7 +90,9 @@ public class CloudMLTQParserTest extends SolrCloudTestCase {
   
   @After
   public void cleanCluster() throws Exception {
-    cluster.shutdown();
+    if (null != cluster) {
+      cluster.shutdown();
+    }
   }
 
   public static final String COLLECTION = "mlt-collection";

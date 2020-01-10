@@ -38,6 +38,7 @@ import org.apache.solr.schema.SchemaField;
 import org.apache.solr.schema.TrieDateField;
 import org.apache.solr.schema.TrieField;
 import org.apache.solr.search.DocSet;
+import org.apache.solr.search.SyntaxError;
 import org.apache.solr.search.facet.SlotAcc.SlotContext;
 import org.apache.solr.util.DateMathParser;
 
@@ -50,6 +51,7 @@ public class FacetRange extends FacetRequestSorted {
   Object start;
   Object end;
   Object gap;
+  Object ranges;
   boolean hardend = false;
   EnumSet<FacetRangeInclude> include;
   EnumSet<FacetRangeOther> others;
@@ -72,11 +74,15 @@ public class FacetRange extends FacetRequestSorted {
   
   @Override
   public Map<String, Object> getFacetDescription() {
-    Map<String, Object> descr = new HashMap<String, Object>();
+    Map<String, Object> descr = new HashMap<>();
     descr.put("field", field);
-    descr.put("start", start);
-    descr.put("end", end);
-    descr.put("gap", gap);
+    if (ranges != null) {
+      descr.put("ranges", ranges);
+    } else {
+      descr.put("start", start);
+      descr.put("end", end);
+      descr.put("gap", gap);
+    }
     return descr;
   }
   
@@ -95,7 +101,8 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
   final Comparable start;
   final Comparable end;
   final String gap;
-  
+  final Object ranges;
+
   /** Build by {@link #createRangeList} if and only if needed for basic faceting */
   List<Range> rangeList;
   /** Build by {@link #createRangeList} if and only if needed for basic faceting */
@@ -120,11 +127,22 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     include = freq.include;
     sf = fcontext.searcher.getSchema().getField(freq.field);
     calc = getCalcForField(sf);
-    start = calc.getValue(freq.start.toString());
-    end = calc.getValue(freq.end.toString());
-    gap = freq.gap.toString();
+    if (freq.ranges != null && (freq.start != null || freq.end != null || freq.gap != null)) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Cannot set gap/start/end and ranges params together");
+    }
+    if (freq.ranges != null) {
+      ranges = freq.ranges;
+      start = null;
+      end = null;
+      gap = null;
+    } else {
+      start = calc.getValue(freq.start.toString());
+      end = calc.getValue(freq.end.toString());
+      gap = freq.gap.toString();
+      ranges = null;
+    }
 
-    
     // Under the normal mincount=0, each shard will need to return 0 counts since we don't calculate buckets at the top level.
     // If mincount>0 then we could *potentially* set our sub mincount to 1...
     // ...but that would require sorting the buckets (by their val) at the top level
@@ -245,7 +263,12 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
     Comparable low = start;
     Comparable loop_end = this.end;
-    
+
+    if (ranges != null) {
+      rangeList.addAll(parseRanges(ranges));
+      return;
+    }
+
     while (low.compareTo(end) < 0) {
       Comparable high = calc.addGap(low, gap);
       if (end.compareTo(high) < 0) {
@@ -263,14 +286,14 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       if (high.compareTo(low) == 0) {
         throw new SolrException
             (SolrException.ErrorCode.BAD_REQUEST,
-                "range facet infinite loop: gap is either zero, or too small relative start/end and caused underflow: " + low + " + " + gap + " = " + high );
+                "range facet infinite loop: gap is either zero, or too small relative start/end and caused underflow: " + low + " + " + gap + " = " + high);
       }
 
-      boolean incLower =(include.contains(FacetRangeInclude.LOWER) ||
-                         (include.contains(FacetRangeInclude.EDGE) && 0 == low.compareTo(start)));
+      boolean incLower = (include.contains(FacetRangeInclude.LOWER) ||
+          (include.contains(FacetRangeInclude.EDGE) && 0 == low.compareTo(start)));
       boolean incUpper = (include.contains(FacetRangeInclude.UPPER) ||
-                          (include.contains(FacetRangeInclude.EDGE) && 0 == high.compareTo(end)));
-      
+          (include.contains(FacetRangeInclude.EDGE) && 0 == high.compareTo(end)));
+
       Range range = new Range(calc.buildRangeLabel(low), low, high, incLower, incUpper);
       rangeList.add( range );
 
@@ -299,8 +322,203 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       actual_end = null;
     }
   }
-  
-  
+
+  /**
+   * Parses the given list of maps and returns list of Ranges
+   *
+   * @param input - list of map containing the ranges
+   * @return list of {@link Range}
+   */
+  private List<Range> parseRanges(Object input) {
+    if (!(input instanceof List)) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Expected List for ranges but got " + input.getClass().getSimpleName() + " = " + input
+      );
+    }
+    List intervals = (List) input;
+    List<Range> ranges = new ArrayList<>();
+    for (Object obj : intervals) {
+      if (!(obj instanceof Map)) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "Expected Map for range but got " + obj.getClass().getSimpleName() + " = " + obj);
+      }
+      Range range;
+      Map<String, Object> interval = (Map<String, Object>) obj;
+      if (interval.containsKey("range")) {
+        range = getRangeByOldFormat(interval);
+      } else {
+        range = getRangeByNewFormat(interval);
+      }
+      ranges.add(range);
+    }
+    return ranges;
+  }
+
+  private boolean getBoolean(Map<String,Object> args, String paramName, boolean defVal) {
+    Object o = args.get(paramName);
+    if (o == null) {
+      return defVal;
+    }
+    // TODO: should we be more flexible and accept things like "true" (strings)?
+    // Perhaps wait until the use case comes up.
+    if (!(o instanceof Boolean)) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Expected boolean type for param '"+paramName + "' but got " + o.getClass().getSimpleName() + " = " + o);
+    }
+
+    return (Boolean)o;
+  }
+
+  private String getString(Map<String,Object> args, String paramName, boolean required) {
+    Object o = args.get(paramName);
+    if (o == null) {
+      if (required) {
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+            "Missing required parameter '" + paramName + "' for " + args);
+      }
+      return null;
+    }
+    if (!(o instanceof String)) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Expected string type for param '"+paramName + "' but got " + o.getClass().getSimpleName() + " = " + o);
+    }
+
+    return (String)o;
+  }
+
+  /**
+   * Parses the range given in format {from:val1, to:val2, inclusive_to:true}
+   * and returns the {@link Range}
+   *
+   * @param rangeMap Map containing the range info
+   * @return {@link Range}
+   */
+  private Range getRangeByNewFormat(Map<String, Object> rangeMap) {
+    Object fromObj = rangeMap.get("from");
+    Object toObj = rangeMap.get("to");
+
+    String fromStr = fromObj == null? "*" : fromObj.toString();
+    String toStr = toObj == null? "*": toObj.toString();
+    boolean includeUpper = getBoolean(rangeMap, "inclusive_to", false);
+    boolean includeLower = getBoolean(rangeMap, "inclusive_from", true);
+
+    Object key = rangeMap.get("key");
+    // if (key == null) {
+    //  key = (includeLower? "[": "(") + fromStr + "," + toStr + (includeUpper? "]": ")");
+    // }
+    // using the default key as custom key won't work with refine
+    // refine would need both low and high values
+    key = (includeLower? "[": "(") + fromStr + "," + toStr + (includeUpper? "]": ")");
+
+    Comparable from = getComparableFromString(fromStr);
+    Comparable to = getComparableFromString(toStr);
+    if (from != null && to != null && from.compareTo(to) > 0) {
+      // allowing from and to be same
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'from' is higher than 'to' in range for key: " + key);
+    }
+
+    return new Range(key, from, to, includeLower, includeUpper);
+  }
+
+  /**
+   * Parses the range string from the map and Returns {@link Range}
+   *
+   * @param range map containing the interval
+   * @return {@link Range}
+   */
+  private Range getRangeByOldFormat(Map<String, Object> range) {
+    String key = getString(range, "key", false);
+    String rangeStr = getString(range, "range", true);
+    try {
+      return parseRangeFromString(key, rangeStr);
+    } catch (SyntaxError e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+    }
+  }
+
+  /**
+   * Parses the given string and returns Range.
+   * This is adopted from {@link org.apache.solr.request.IntervalFacets}
+   *
+   * @param key The name of range which would be used as {@link Range}'s label
+   * @param rangeStr The string containing the Range
+   * @return {@link Range}
+   */
+  private Range parseRangeFromString(String key, String rangeStr) throws SyntaxError {
+    rangeStr = rangeStr.trim();
+    if (rangeStr.isEmpty()) {
+      throw new SyntaxError("empty facet range");
+    }
+
+    boolean includeLower = true, includeUpper = true;
+    Comparable start = null, end = null;
+    if (rangeStr.charAt(0) == '(') {
+      includeLower = false;
+    } else if (rangeStr.charAt(0) != '[') {
+      throw new SyntaxError( "Invalid start character " + rangeStr.charAt(0) + " in facet range " + rangeStr);
+    }
+
+    final int lastNdx = rangeStr.length() - 1;
+    if (rangeStr.charAt(lastNdx) == ')') {
+      includeUpper = false;
+    } else if (rangeStr.charAt(lastNdx) != ']') {
+      throw new SyntaxError("Invalid end character " + rangeStr.charAt(lastNdx) + " in facet range " + rangeStr);
+    }
+
+    StringBuilder startStr = new StringBuilder(lastNdx);
+    int i = unescape(rangeStr, 1, lastNdx, startStr);
+    if (i == lastNdx) {
+      if (rangeStr.charAt(lastNdx - 1) == ',') {
+        throw new SyntaxError("Empty range limit");
+      }
+      throw new SyntaxError("Missing unescaped comma separating range ends in " + rangeStr);
+    }
+    start = getComparableFromString(startStr.toString());
+
+    StringBuilder endStr = new StringBuilder(lastNdx);
+    i = unescape(rangeStr, i, lastNdx, endStr);
+    if (i != lastNdx) {
+      throw new SyntaxError("Extra unescaped comma at index " + i + " in range " + rangeStr);
+    }
+    end = getComparableFromString(endStr.toString());
+
+    if (start != null && end != null && start.compareTo(end) > 0) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'start' is higher than 'end' in range for key: " + rangeStr);
+    }
+
+    // not using custom key as it won't work with refine
+    // refine would need both low and high values
+    return new Range(rangeStr, start, end, includeLower, includeUpper);
+  }
+
+  /* Fill in sb with a string from i to the first unescaped comma, or n.
+      Return the index past the unescaped comma, or n if no unescaped comma exists */
+  private int unescape(String s, int i, int n, StringBuilder sb) throws SyntaxError {
+    for (; i < n; ++i) {
+      char c = s.charAt(i);
+      if (c == '\\') {
+        ++i;
+        if (i < n) {
+          c = s.charAt(i);
+        } else {
+          throw new SyntaxError("Unfinished escape at index " + i + " in facet range " + s);
+        }
+      } else if (c == ',') {
+        return i + 1;
+      }
+      sb.append(c);
+    }
+    return n;
+  }
+
+  private Comparable getComparableFromString(String value) {
+    value = value.trim();
+    if ("*".equals(value)) {
+      return null;
+    }
+    return calc.getValue(value);
+  }
+
   private  SimpleOrderedMap getRangeCountsIndexed() throws IOException {
 
     int slotCount = rangeList.size() + otherList.size();
@@ -341,7 +559,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
       addStats(bucket, rangeList.size() + idx);
       doSubs(bucket, rangeList.size() + idx);
     }
-      
+
     if (null != actual_end) {
       res.add(FacetRange.ACTUAL_END_JSON_KEY, calc.formatValue(actual_end));
     }
@@ -404,7 +622,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     }
 
     /**
-     * Given the low value for a bucket, generates the appropraite "label" object to use. 
+     * Given the low value for a bucket, generates the appropriate "label" object to use.
      * By default return the low object unmodified.
      */
     public Object buildRangeLabel(Comparable low) {
@@ -471,7 +689,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
     /**
      * Adds the String gap param to a low Range endpoint value to determine
-     * the corrisponding high Range endpoint value, throwing
+     * the corresponding high Range endpoint value, throwing
      * a useful exception if not possible.
      */
     public final Comparable addGap(Comparable value, String gap) {
@@ -485,7 +703,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     }
     /**
      * Adds the String gap param to a low Range endpoint value to determine
-     * the corrisponding high Range endpoint value.
+     * the corresponding high Range endpoint value.
      * Can throw a low level format exception as needed.
      */
     protected abstract Comparable parseAndAddGap(Comparable value, String gap)
@@ -695,7 +913,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
     // But range faceting does *NOT* use the "leaves" and "partial" syntax
     // 
     // If/When range facet becomes more like field facet in it's ability to sort and limit the "range buckets"
-    // FacetRangeProcessor and FacetFieldProcessor should prbably be refactored to share more code.
+    // FacetRangeProcessor and FacetFieldProcessor should probably be refactored to share more code.
     
     boolean skipThisFacet = (fcontext.flags & SKIP_FACET) != 0;
 
@@ -722,7 +940,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
 
     { // refine the special "other" buckets
       
-      // NOTE: we're re-useing this variable for each special we look for...
+      // NOTE: we're re-using this variable for each special we look for...
       Map<String,Object> specialFacetInfo;
 
       specialFacetInfo = (Map<String, Object>) fcontext.facetInfo.get(FacetRangeOther.BEFORE.toString());
@@ -784,7 +1002,20 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
   
   private SimpleOrderedMap<Object> refineBucket(Object bucketVal, boolean skip, Map<String,Object> facetInfo) throws IOException {
 
-    Comparable low = calc.getValue(bucketVal.toString());
+    String val = bucketVal.toString();
+    if (ranges != null) {
+      try {
+        Range range = parseRangeFromString(val, val);
+        final SimpleOrderedMap<Object> bucket = refineRange(range, skip, facetInfo);
+        bucket.add("val", range.label);
+        return bucket;
+      } catch (SyntaxError e) {
+        // execution won't reach here as ranges are already validated
+        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+      }
+    }
+
+    Comparable low = calc.getValue(val);
     Comparable high = calc.addGap(low, gap);
     Comparable max_end = end;
     if (end.compareTo(high) < 0) {

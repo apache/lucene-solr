@@ -147,9 +147,9 @@ Please choose a configuration for the techproducts collection, available options
 _default or sample_techproducts_configs [_default]
 ----
 
-We've reached another point where we will deviate from the default option. Solr has two sample sets of configuration files (called a _configSet_) available out-of-the-box.
+We've reached another point where we will deviate from the default option. Solr has two sample sets of configuration files (called a configset) available out-of-the-box.
 
-A collection must have a configSet, which at a minimum includes the two main configuration files for Solr: the schema file (named either `managed-schema` or `schema.xml`), and `solrconfig.xml`. The question here is which configSet you would like to start with. The `_default` is a bare-bones option, but note there's one whose name includes "techproducts", the same as we named our collection. This configSet is specifically designed to support the sample data we want to use, so enter `sample_techproducts_configs` at the prompt and hit kbd:[enter].
+A collection must have a configset, which at a minimum includes the two main configuration files for Solr: the schema file (named either `managed-schema` or `schema.xml`), and `solrconfig.xml`. The question here is which configset you would like to start with. The `_default` is a bare-bones option, but note there's one whose name includes "techproducts", the same as we named our collection. This configset is specifically designed to support the sample data we want to use, so enter `sample_techproducts_configs` at the prompt and hit kbd:[enter].
 
 At this point, Solr will create the collection and again output to the screen the commands it issues.
 
@@ -513,7 +513,7 @@ This starts the first node. When it's done start the second node, and tell it ho
 
 `./bin/solr start -c -p 7574 -s example/cloud/node2/solr -z localhost:9983`
 
-NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<setting-up-an-external-zookeeper-ensemble#updating-solr-s-include-files,instructions>>) you can omit `-z <zk host string>` from the above command.
+NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<setting-up-an-external-zookeeper-ensemble#updating-solr-include-files,instructions>>) you can omit `-z <zk host string>` from the above command.
 
 === Create a New Collection
 
@@ -529,13 +529,13 @@ Solr's schema is a single file (in XML) that stores the details about the fields
 Earlier in the tutorial we mentioned copy fields, which are fields made up of data that originated from other fields. You can also define dynamic fields, which use wildcards (such as `*_t` or `*_s`) to dynamically create fields of a specific field type. These types of rules are also defined in the schema.
 ****
 
-When you initially started Solr in the first exercise, we had a choice of a configSet to use. The one we chose had a schema that was pre-defined for the data we later indexed. This time, we're going to use a configSet that has a very minimal schema and let Solr figure out from the data what fields to add.
+When you initially started Solr in the first exercise, we had a choice of a configset to use. The one we chose had a schema that was pre-defined for the data we later indexed. This time, we're going to use a configset that has a very minimal schema and let Solr figure out from the data what fields to add.
 
-The data you're going to index is related to movies, so start by creating a collection named "films" that uses the `_default` configSet:
+The data you're going to index is related to movies, so start by creating a collection named "films" that uses the `_default` configset:
 
 `bin/solr create -c films -s 2 -rf 2`
 
-Whoa, wait. We didn't specify a configSet! That's fine, the `_default` is appropriately named, since it's the default and is used if you don't specify one at all.
+Whoa, wait. We didn't specify a configset! That's fine, the `_default` is appropriately named, since it's the default and is used if you don't specify one at all.
 
 We did, however, set two parameters `-s` and `-rf`. Those are the number of shards to split the collection across (2) and how many replicas to create (2). This is equivalent to the options we had during the interactive example from the first exercise.
 
@@ -573,13 +573,13 @@ http://localhost:7574/solr/admin/collections?action=CREATE&name=films&numShards=
       "core":"films_shard1_replica_n2"}}}
 ----
 
-The first thing the command printed was a warning about not using this configSet in production. That's due to some of the limitations we'll cover shortly.
+The first thing the command printed was a warning about not using this configset in production. That's due to some of the limitations we'll cover shortly.
 
 Otherwise, though, the collection should be created. If we go to the Admin UI at http://localhost:8983/solr/#/films/collection-overview we should see the overview screen.
 
 ==== Preparing Schemaless for the Films Data
 
-There are two parallel things happening with the schema that comes with the `_default` configSet.
+There are two parallel things happening with the schema that comes with the `_default` configset.
 
 First, we are using a "managed schema", which is configured to only be modified by Solr's Schema API. That means we should not hand-edit it so there isn't confusion about which edits come from which source. Solr's Schema API allows us to make changes to fields, field types, and other types of schema rules.
 
@@ -896,7 +896,7 @@ Before you get started, create a new collection, named whatever you'd like. In t
 
 `./bin/solr create -c localDocs -s 2 -rf 2`
 
-Again, as we saw from Exercise 2 above, this will use the `_default` configSet and all the schemaless features it provides. As we noted previously, this may cause problems when we index our data. You may need to iterate on indexing a few times before you get the schema right.
+Again, as we saw from Exercise 2 above, this will use the `_default` configset and all the schemaless features it provides. As we noted previously, this may cause problems when we index our data. You may need to iterate on indexing a few times before you get the schema right.
 
 === Indexing Ideas
 

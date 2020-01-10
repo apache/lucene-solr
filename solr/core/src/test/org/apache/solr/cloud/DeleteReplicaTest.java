@@ -35,8 +35,8 @@ import org.apache.solr.client.solrj.request.CoreStatus;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.cloud.CollectionStateWatcher;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocCollectionWatcher;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -100,7 +100,11 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
 
     DocCollection state = getCollectionState(collectionName);
     Slice shard = getRandomShard(state);
-    Replica replica = getRandomReplica(shard, (r) -> r.getState() == Replica.State.ACTIVE);
+    
+    // don't choose the leader to shutdown, it just complicates things unneccessarily
+    Replica replica = getRandomReplica(shard, (r) ->
+                                       ( r.getState() == Replica.State.ACTIVE &&
+                                         ! r.equals(shard.getLeader())));
 
     CoreStatus coreStatus = getCoreStatus(replica);
     Path dataDir = Paths.get(coreStatus.getDataDirectory());
@@ -115,15 +119,27 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
 
     JettySolrRunner replicaJetty = cluster.getReplicaJetty(replica);
     ZkStateReaderAccessor accessor = new ZkStateReaderAccessor(replicaJetty.getCoreContainer().getZkController().getZkStateReader());
-    Set<CollectionStateWatcher> watchers = accessor.getStateWatchers(collectionName);
+
+    final long preDeleteWatcherCount = countUnloadCoreOnDeletedWatchers
+      (accessor.getStateWatchers(collectionName));
+    
     CollectionAdminRequest.deleteReplica(collectionName, shard.getName(), replica.getName())
         .process(cluster.getSolrClient());
     waitForState("Expected replica " + replica.getName() + " to have been removed", collectionName, (n, c) -> {
       Slice testShard = c.getSlice(shard.getName());
       return testShard.getReplica(replica.getName()) == null;
     });
-    // the core no longer watch collection state since it was removed
-    assertEquals(watchers.size() - 1, accessor.getStateWatchers(collectionName).size());
+    
+    // the core should no longer have a watch collection state since it was removed
+    // the core should no longer have a watch collection state since it was removed
+    TimeOut timeOut = new TimeOut(60, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    timeOut.waitFor("Waiting for core's watcher to be removed", () -> {
+        final long postDeleteWatcherCount = countUnloadCoreOnDeletedWatchers
+          (accessor.getStateWatchers(collectionName));
+        log.info("preDeleteWatcherCount={} vs postDeleteWatcherCount={}",
+                 preDeleteWatcherCount, postDeleteWatcherCount);
+        return (preDeleteWatcherCount - 1L == postDeleteWatcherCount);
+      });
 
     assertFalse("Data directory for " + replica.getName() + " should have been removed", Files.exists(dataDir));
 
@@ -217,11 +233,20 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     cluster.getSolrClient().add(collectionName, new SolrInputDocument("id", "2"));
     cluster.getSolrClient().commit(collectionName);
 
+    cluster.waitForActiveCollection(collectionName, 1, 3);
+
     Slice shard = getCollectionState(collectionName).getSlice("shard1");
-    Replica replica = getRandomReplica(shard);
+
+    // don't choose the leader to shutdown, it just complicates things unneccessarily
+    Replica replica = getRandomReplica(shard, (r) ->
+                                       ( r.getState() == Replica.State.ACTIVE &&
+                                         ! r.equals(shard.getLeader())));
+    
     JettySolrRunner replicaJetty = cluster.getReplicaJetty(replica);
     ZkStateReaderAccessor accessor = new ZkStateReaderAccessor(replicaJetty.getCoreContainer().getZkController().getZkStateReader());
-    Set<CollectionStateWatcher> watchers = accessor.getStateWatchers(collectionName);
+
+    final long preDeleteWatcherCount = countUnloadCoreOnDeletedWatchers
+      (accessor.getStateWatchers(collectionName));
 
     ZkNodeProps m = new ZkNodeProps(
         Overseer.QUEUE_OPERATION, OverseerAction.DELETECORE.toLower(),
@@ -240,12 +265,17 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     timeOut.waitFor("Waiting for replica get unloaded", () ->
         replicaJetty.getCoreContainer().getCoreDescriptor(replica.getCoreName()) == null
     );
-    // the core no longer watch collection state since it was removed
+    
+    // the core should no longer have a watch collection state since it was removed
     timeOut = new TimeOut(60, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    timeOut.waitFor("Waiting for watcher get removed", () ->
-        watchers.size() - 1 == accessor.getStateWatchers(collectionName).size()
-    );
-
+    timeOut.waitFor("Waiting for core's watcher to be removed", () -> {
+        final long postDeleteWatcherCount = countUnloadCoreOnDeletedWatchers
+          (accessor.getStateWatchers(collectionName));
+        log.info("preDeleteWatcherCount={} vs postDeleteWatcherCount={}",
+                 preDeleteWatcherCount, postDeleteWatcherCount);
+        return (preDeleteWatcherCount - 1L == postDeleteWatcherCount);
+      });
+    
     CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
   }
 
@@ -380,6 +410,7 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
     });
 
     leaderJetty.start();
+    cluster.waitForActiveCollection(collectionName, 1, 2);
 
     CollectionAdminRequest.deleteCollection(collectionName).process(cluster.getSolrClient());
   }
@@ -439,6 +470,20 @@ public class DeleteReplicaTest extends SolrCloudTestCase {
       log.info("Timeout wait for state {}", getCollectionState(collectionName));
       throw e;
     }
+  }
+
+  /** 
+   * Helper method for counting the number of instances of <code>UnloadCoreOnDeletedWatcher</code>
+   * that exist on a given node.
+   *
+   * This is useful for verifying that deleting a replica correctly removed it's watchers.
+   *
+   * (Note: tests should not assert specific values, since multiple replicas may exist on the same 
+   * node. Instead tests should only assert that the number of watchers has decreased by 1 per known 
+   * replica removed)
+   */
+  private static final long countUnloadCoreOnDeletedWatchers(final Set<DocCollectionWatcher> watchers) {
+    return watchers.stream().filter(w -> w instanceof ZkController.UnloadCoreOnDeletedWatcher).count();
   }
 }
 

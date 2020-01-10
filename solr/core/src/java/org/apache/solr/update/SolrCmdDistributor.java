@@ -33,6 +33,9 @@ import java.util.concurrent.CompletionService;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
 
+import io.opentracing.Span;
+import io.opentracing.Tracer;
+import io.opentracing.propagation.Format;
 import org.apache.http.NoHttpResponseException;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -50,6 +53,8 @@ import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.LeaderRequestReplicationTracker;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.RollupRequestReplicationTracker;
+import org.apache.solr.util.tracing.GlobalTracer;
+import org.apache.solr.util.tracing.SolrRequestCarrier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,10 +93,12 @@ public class SolrCmdDistributor implements Closeable {
   
   public void finish() {    
     try {
-      assert ! finished : "lifecycle sanity check";
+      assert !finished : "lifecycle sanity check";
       finished = true;
-      
+
       blockAndDoRetries();
+    } catch (IOException e) {
+      log.warn("Unable to finish sending updates", e);
     } finally {
       clients.shutdown();
     }
@@ -101,7 +108,7 @@ public class SolrCmdDistributor implements Closeable {
     clients.shutdown();
   }
 
-  private void doRetriesIfNeeded() {
+  private void doRetriesIfNeeded() throws IOException {
     // NOTE: retries will be forwards to a single url
     
     List<Error> errors = new ArrayList<>(this.errors);
@@ -117,7 +124,7 @@ public class SolrCmdDistributor implements Closeable {
       int maxErrorsToShow = 10;
       for (Error e:errors) {
         if (maxErrorsToShow-- <= 0) break;
-        builder.append("\n" + e);
+        builder.append("\n").append(e);
       }
       if (errors.size() > 10) {
         builder.append("\n... and ");
@@ -254,7 +261,7 @@ public class SolrCmdDistributor implements Closeable {
     
   }
 
-  public void blockAndDoRetries() {
+  public void blockAndDoRetries() throws IOException {
     clients.blockUntilFinished();
     
     // wait for any async commits to complete
@@ -279,10 +286,17 @@ public class SolrCmdDistributor implements Closeable {
         : AbstractUpdateRequest.ACTION.COMMIT, false, cmd.waitSearcher, cmd.maxOptimizeSegments, cmd.softCommit, cmd.expungeDeletes, cmd.openSearcher);
   }
 
-  private void submit(final Req req, boolean isCommit) {
+  private void submit(final Req req, boolean isCommit) throws IOException {
     // Copy user principal from the original request to the new update request, for later authentication interceptor use
     if (SolrRequestInfo.getRequestInfo() != null) {
       req.uReq.setUserPrincipal(SolrRequestInfo.getRequestInfo().getReq().getUserPrincipal());
+    }
+
+    Tracer tracer = GlobalTracer.getTracer();
+    Span parentSpan = tracer.activeSpan();
+    if (parentSpan != null) {
+      tracer.inject(parentSpan.context(), Format.Builtin.HTTP_HEADERS,
+          new SolrRequestCarrier(req.uReq));
     }
 
     if (req.synchronous) {
@@ -421,11 +435,6 @@ public class SolrCmdDistributor implements Closeable {
           }
         } catch (Exception e) {
           log.warn("Failed to parse response from {} during replication factor accounting", node, e);
-        } finally {
-          try {
-            inputStream.close();
-          } catch (Exception ignore) {
-          }
         }
       }
       return Integer.MAX_VALUE;

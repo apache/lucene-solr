@@ -55,15 +55,6 @@ public class TermsFacetMapTest extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testRejectsNegativeBucketLimit() {
-    final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
-      final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME)
-          .setLimit(-1);
-    });
-    assertThat(thrown.getMessage(), containsString("must be non-negative"));
-  }
-
-  @Test
   public void testStoresBucketLimitWithCorrectKey() {
     final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME)
         .setLimit(3);
@@ -129,9 +120,9 @@ public class TermsFacetMapTest extends SolrTestCaseJ4 {
   public void testRejectInvalidMinCount() {
     final Throwable thrown = expectThrows(IllegalArgumentException.class, () -> {
       final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME)
-          .setMinCount(0);
+          .setMinCount(-1);
     });
-    assertThat(thrown.getMessage(), containsString("must be a positive integer"));
+    assertThat(thrown.getMessage(), containsString("must be a non-negative integer"));
   }
 
   @Test
@@ -139,6 +130,8 @@ public class TermsFacetMapTest extends SolrTestCaseJ4 {
     final TermsFacetMap termsFacet = new TermsFacetMap(ANY_FIELD_NAME)
         .setMinCount(6);
     assertEquals(6, termsFacet.get("mincount"));
+    termsFacet.setMinCount(0);
+    assertEquals(0, termsFacet.get("mincount"));
   }
 
   @Test

@@ -76,7 +76,10 @@ public class BasicAuthStandaloneTest extends SolrTestCaseJ4 {
   @Override
   @After
   public void tearDown() throws Exception {
-    jetty.stop();
+    if (null != jetty) {
+      jetty.stop();
+      jetty = null;
+    }
     super.tearDown();
   }
 

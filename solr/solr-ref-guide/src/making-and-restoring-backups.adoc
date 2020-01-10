@@ -20,6 +20,13 @@ If you are worried about data loss, and of course you _should_ be, you need a wa
 
 Solr provides two approaches to backing up and restoring Solr cores or collections, depending on how you are running Solr. If you run in SolrCloud mode, you will use the Collections API. If you run Solr in standalone mode, you will use the replication handler.
 
+[NOTE]
+====
+Backups (and Snapshots) capture data that has been <<near-real-time-searching.adoc#commits-and-searching,_hard_ commited>>. Commiting changes using `softCommit=true` may result in changes that are visible in search results but not included in subsequent backups.
+
+Likewise, committing changes using `openSearcher=false` may result in changes committed to disk and included in subsequent backups, even if they are not currently visible in search results.
+====
+
 == SolrCloud Backups
 
 Support for backups when running SolrCloud is provided with the <<collections-api.adoc#collections-api,Collections API>>. This allows the backups to be generated across multiple shards, and restored to the same number of shards and replicas as the original collection.
@@ -28,8 +35,8 @@ NOTE: SolrCloud Backup/Restore requires a shared file system mounted at the same
 
 Two commands are available:
 
-* `action=BACKUP`: This command backs up Solr indexes and configurations. More information is available in the section <<collections-api.adoc#backup,Backup Collection>>.
-* `action=RESTORE`: This command restores Solr indexes and configurations. More information is available in the section <<collections-api.adoc#restore,Restore Collection>>.
+* `action=BACKUP`: This command backs up Solr indexes and configurations. More information is available in the section <<collection-management.adoc#backup,Backup Collection>>.
+* `action=RESTORE`: This command restores Solr indexes and configurations. More information is available in the section <<collection-management.adoc#restore,Restore Collection>>.
 
 == Standalone Mode Backups
 

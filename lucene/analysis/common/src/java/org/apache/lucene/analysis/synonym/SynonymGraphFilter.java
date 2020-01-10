@@ -290,7 +290,7 @@ public final class SynonymGraphFilter extends TokenFilter {
     BytesRef pendingOutput = fst.outputs.getNoOutput();
     fst.getFirstArc(scratchArc);
 
-    assert scratchArc.output == fst.outputs.getNoOutput();
+    assert scratchArc.output() == fst.outputs.getNoOutput();
 
     // How many tokens in the current match
     int matchLength = 0;
@@ -360,7 +360,7 @@ public final class SynonymGraphFilter extends TokenFilter {
         }
 
         // Accum the output
-        pendingOutput = fst.outputs.add(pendingOutput, scratchArc.output);
+        pendingOutput = fst.outputs.add(pendingOutput, scratchArc.output());
         bufUpto += Character.charCount(codePoint);
       }
 
@@ -369,7 +369,7 @@ public final class SynonymGraphFilter extends TokenFilter {
       // OK, entire token matched; now see if this is a final
       // state in the FST (a match):
       if (scratchArc.isFinal()) {
-        matchOutput = fst.outputs.add(pendingOutput, scratchArc.nextFinalOutput);
+        matchOutput = fst.outputs.add(pendingOutput, scratchArc.nextFinalOutput());
         matchInputLength = matchLength;
         matchEndOffset = inputEndOffset;
         //System.out.println("    ** match");
@@ -385,7 +385,7 @@ public final class SynonymGraphFilter extends TokenFilter {
       } else {
         // More matching is possible -- accum the output (if
         // any) of the WORD_SEP arc:
-        pendingOutput = fst.outputs.add(pendingOutput, scratchArc.output);
+        pendingOutput = fst.outputs.add(pendingOutput, scratchArc.output());
         doFinalCapture = true;
         if (liveToken) {
           capture();

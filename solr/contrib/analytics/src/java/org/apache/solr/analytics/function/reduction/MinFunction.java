@@ -70,7 +70,7 @@ public class MinFunction {
     if (param instanceof StringValueStream) {
       return new StringMinFunction((StringValueStream)param);
     }
-    throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires a comparable parameter. " + 
+    throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires a comparable parameter. " +
           "Incorrect parameter: "+params[0].getExpressionStr());
   });
 }
@@ -78,7 +78,7 @@ class IntMinFunction extends AbstractIntValue implements ReductionFunction {
   private IntMinCollector collector;
   public static final String name = MinFunction.name;
   private final String exprStr;
-  
+
   public IntMinFunction(IntValueStream param) {
     this.collector = new IntMinCollector(param);
     this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
@@ -115,7 +115,7 @@ class LongMinFunction extends AbstractLongValue implements ReductionFunction {
   private LongMinCollector collector;
   public static final String name = MinFunction.name;
   private final String exprStr;
-  
+
   public LongMinFunction(LongValueStream param) {
     this.collector = new LongMinCollector(param);
     this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
@@ -152,7 +152,7 @@ class FloatMinFunction extends AbstractFloatValue implements ReductionFunction {
   private FloatMinCollector collector;
   public static final String name = MinFunction.name;
   private final String exprStr;
-  
+
   public FloatMinFunction(FloatValueStream param) {
     this.collector = new FloatMinCollector(param);
     this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
@@ -189,7 +189,7 @@ class DoubleMinFunction extends AbstractDoubleValue implements ReductionFunction
   private DoubleMinCollector collector;
   public static final String name = MinFunction.name;
   private final String exprStr;
-  
+
   public DoubleMinFunction(DoubleValueStream param) {
     this.collector = new DoubleMinCollector(param);
     this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
@@ -226,7 +226,7 @@ class DateMinFunction extends AbstractDateValue implements ReductionFunction {
   private LongMinCollector collector;
   public static final String name = MinFunction.name;
   private final String exprStr;
-  
+
   public DateMinFunction(LongValueStream param) {
     this.collector = new LongMinCollector(param);
     this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
@@ -263,7 +263,7 @@ class StringMinFunction extends AbstractStringValue implements ReductionFunction
   private StringMinCollector collector;
   public static final String name = MinFunction.name;
   private final String exprStr;
-  
+
   public StringMinFunction(StringValueStream param) {
     this.collector = new StringMinCollector(param);
     this.exprStr = AnalyticsValueStream.createExpressionString(name,param);

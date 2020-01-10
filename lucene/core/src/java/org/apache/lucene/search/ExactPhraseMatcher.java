@@ -19,9 +19,19 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
+import java.util.stream.Collectors;
 
+import org.apache.lucene.index.Impact;
+import org.apache.lucene.index.Impacts;
+import org.apache.lucene.index.ImpactsEnum;
+import org.apache.lucene.index.ImpactsSource;
 import org.apache.lucene.index.PostingsEnum;
+import org.apache.lucene.search.similarities.Similarity.SimScorer;
+import org.apache.lucene.util.PriorityQueue;
 
 final class ExactPhraseMatcher extends PhraseMatcher {
 
@@ -37,9 +47,21 @@ final class ExactPhraseMatcher extends PhraseMatcher {
   }
 
   private final PostingsAndPosition[] postings;
+  private final DocIdSetIterator approximation;
+  private final ImpactsDISI impactsApproximation;
 
-  ExactPhraseMatcher(PhraseQuery.PostingsAndFreq[] postings, float matchCost) {
-    super(approximation(postings), matchCost);
+  ExactPhraseMatcher(PhraseQuery.PostingsAndFreq[] postings, ScoreMode scoreMode, SimScorer scorer, float matchCost) {
+    super(matchCost);
+
+    final DocIdSetIterator approximation = ConjunctionDISI.intersectIterators(Arrays.stream(postings).map(p -> p.postings).collect(Collectors.toList()));
+    final ImpactsSource impactsSource = mergeImpacts(Arrays.stream(postings).map(p -> p.impacts).toArray(ImpactsEnum[]::new));
+
+    if (scoreMode == ScoreMode.TOP_SCORES) {
+      this.approximation = this.impactsApproximation = new ImpactsDISI(approximation, impactsSource, scorer);
+    } else {
+      this.approximation = approximation;
+      this.impactsApproximation = new ImpactsDISI(approximation, impactsSource, scorer);
+    }
 
     List<PostingsAndPosition> postingsAndPositions = new ArrayList<>();
     for(PhraseQuery.PostingsAndFreq posting : postings) {
@@ -48,12 +70,14 @@ final class ExactPhraseMatcher extends PhraseMatcher {
     this.postings = postingsAndPositions.toArray(new PostingsAndPosition[postingsAndPositions.size()]);
   }
 
-  private static DocIdSetIterator approximation(PhraseQuery.PostingsAndFreq[] postings) {
-    List<DocIdSetIterator> iterators = new ArrayList<>();
-    for (PhraseQuery.PostingsAndFreq posting : postings) {
-      iterators.add(posting.postings);
-    }
-    return ConjunctionDISI.intersectIterators(iterators);
+  @Override
+  DocIdSetIterator approximation() {
+    return approximation;
+  }
+
+  @Override
+  ImpactsDISI impactsApproximation() {
+    return impactsApproximation;
   }
 
   @Override
@@ -147,6 +171,175 @@ final class ExactPhraseMatcher extends PhraseMatcher {
   @Override
   public int endOffset() throws IOException {
     return postings[postings.length - 1].postings.endOffset();
+  }
+
+  /**
+   * Merge impacts for multiple terms of an exact phrase.
+   */
+  static ImpactsSource mergeImpacts(ImpactsEnum[] impactsEnums) {
+    // Iteration of block boundaries uses the impacts enum with the lower cost.
+    // This is consistent with BlockMaxConjunctionScorer.
+    int tmpLeadIndex = -1;
+    for (int i = 0; i < impactsEnums.length; ++i) {
+      if (tmpLeadIndex == -1 || impactsEnums[i].cost() < impactsEnums[tmpLeadIndex].cost()) {
+        tmpLeadIndex = i;
+      }
+    }
+    final int leadIndex = tmpLeadIndex;
+
+    return new ImpactsSource() {
+
+      class SubIterator {
+        final Iterator<Impact> iterator;
+        Impact current;
+
+        SubIterator(List<Impact> impacts) {
+          this.iterator = impacts.iterator();
+          this.current = iterator.next();
+        }
+
+        boolean next() {
+          if (iterator.hasNext() == false) {
+            current = null;
+            return false;
+          } else {
+            current = iterator.next();
+            return true;
+          }
+        }
+      }
+
+      @Override
+      public Impacts getImpacts() throws IOException {
+        final Impacts[] impacts = new Impacts[impactsEnums.length];
+        for (int i = 0; i < impactsEnums.length; ++i) {
+          impacts[i] = impactsEnums[i].getImpacts();
+        }
+        final Impacts lead = impacts[leadIndex];
+        return new Impacts() {
+
+          @Override
+          public int numLevels() {
+            // Delegate to the lead
+            return lead.numLevels();
+          }
+
+          @Override
+          public int getDocIdUpTo(int level) {
+            // Delegate to the lead
+            return lead.getDocIdUpTo(level);
+          }
+
+          /**
+           * Return the minimum level whose impacts are valid up to {@code docIdUpTo},
+           * or {@code -1} if there is no such level.
+           */
+          private int getLevel(Impacts impacts, int docIdUpTo) {
+            for (int level = 0, numLevels = impacts.numLevels(); level < numLevels; ++level) {
+              if (impacts.getDocIdUpTo(level) >= docIdUpTo) {
+                return level;
+              }
+            }
+            return -1;
+          }
+
+          @Override
+          public List<Impact> getImpacts(int level) {
+            final int docIdUpTo = getDocIdUpTo(level);
+
+            PriorityQueue<SubIterator> pq = new PriorityQueue<SubIterator>(impacts.length) {
+              @Override
+              protected boolean lessThan(SubIterator a, SubIterator b) {
+                return a.current.freq < b.current.freq;
+              }
+            };
+
+            boolean hasImpacts = false;
+            List<Impact> onlyImpactList = null;
+            for (int i = 0; i < impacts.length; ++i) {
+              int impactsLevel = getLevel(impacts[i], docIdUpTo);
+              if (impactsLevel == -1) {
+                // This instance doesn't have useful impacts, ignore it: this is safe.
+                continue;
+              }
+
+              List<Impact> impactList = impacts[i].getImpacts(impactsLevel);
+              Impact firstImpact = impactList.get(0);
+              if (firstImpact.freq == Integer.MAX_VALUE && firstImpact.norm == 1L) {
+                // Dummy impacts, ignore it too.
+                continue;
+              }
+
+              SubIterator subIterator = new SubIterator(impactList);
+              pq.add(subIterator);
+              if (hasImpacts == false) {
+                hasImpacts = true;
+                onlyImpactList = impactList;
+              } else {
+                onlyImpactList = null; // there are multiple impacts
+              }
+            }
+
+            if (hasImpacts == false) {
+              return Collections.singletonList(new Impact(Integer.MAX_VALUE, 1L));
+            } else if (onlyImpactList != null) {
+              return onlyImpactList;
+            }
+
+            // Idea: merge impacts by freq. The tricky thing is that we need to
+            // consider freq values that are not in the impacts too. For
+            // instance if the list of impacts is [{freq=2,norm=10}, {freq=4,norm=12}],
+            // there might well be a document that has a freq of 2 and a length of 11,
+            // which was just not added to the list of impacts because {freq=2,norm=10}
+            // is more competitive.
+            // We walk impacts in parallel through a PQ ordered by freq. At any time,
+            // the competitive impact consists of the lowest freq among all entries of
+            // the PQ (the top) and the highest norm (tracked separately).
+            List<Impact> mergedImpacts = new ArrayList<>();
+            SubIterator top = pq.top();
+            int currentFreq = top.current.freq;
+            long currentNorm = 0;
+            for (SubIterator it : pq) {
+              if (Long.compareUnsigned(it.current.norm, currentNorm) > 0) {
+                currentNorm = it.current.norm;
+              }
+            }
+
+            outer: while (true) {
+              if (mergedImpacts.size() > 0 && mergedImpacts.get(mergedImpacts.size() - 1).norm == currentNorm) {
+                mergedImpacts.get(mergedImpacts.size() - 1).freq = currentFreq;
+              } else {
+                mergedImpacts.add(new Impact(currentFreq, currentNorm));
+              }
+
+              do {
+                if (top.next() == false) {
+                  // At least one clause doesn't have any more documents below the current norm,
+                  // so we can safely ignore further clauses. The only reason why they have more
+                  // impacts is because they cover more documents that we are not interested in.
+                  break outer;
+                }
+                if (Long.compareUnsigned(top.current.norm, currentNorm) > 0) {
+                  currentNorm = top.current.norm;
+                }
+                top = pq.updateTop();
+              } while (top.current.freq == currentFreq);
+
+              currentFreq = top.current.freq;
+            }
+
+            return mergedImpacts;
+          }
+        };
+      }
+
+      @Override
+      public void advanceShallow(int target) throws IOException {
+        for (ImpactsEnum impactsEnum : impactsEnums) {
+          impactsEnum.advanceShallow(target);
+        }
+      }
+    };
   }
 
 }

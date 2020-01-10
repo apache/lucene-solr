@@ -93,12 +93,7 @@ public class SolrMetricManagerTest extends SolrTestCaseJ4 {
     // this should simply skip existing names
     metricManager.registerAll(registryName, mr, true);
     // this should produce error
-    try {
-      metricManager.registerAll(registryName, mr, false);
-      fail("registerAll with duplicate metric names should fail");
-    } catch (IllegalArgumentException e) {
-      // expected
-    }
+    expectThrows(IllegalArgumentException.class, () -> metricManager.registerAll(registryName, mr, false));
   }
 
   @Test

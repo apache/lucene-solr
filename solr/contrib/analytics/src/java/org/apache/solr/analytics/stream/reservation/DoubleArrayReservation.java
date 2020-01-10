@@ -27,7 +27,7 @@ import org.apache.solr.analytics.stream.reservation.read.DoubleDataArrayReader;
 import org.apache.solr.analytics.stream.reservation.write.DoubleDataArrayWriter;
 
 public class DoubleArrayReservation extends ReductionDataArrayReservation<DoubleConsumer, DoubleSupplier> {
-  
+
   public DoubleArrayReservation(DoubleConsumer applier, IntConsumer sizeApplier, DoubleSupplier extractor, IntSupplier sizeExtractor) {
     super(applier, sizeApplier, extractor, sizeExtractor);
   }

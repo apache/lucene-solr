@@ -28,10 +28,10 @@ public class CastingFloatValueStreamTest extends SolrTestCaseJ4 {
   @Test
   public void doubleStreamCastingTest() {
     TestFloatValueStream val = new TestFloatValueStream();
-    
+
     assertTrue(val instanceof DoubleValueStream);
     DoubleValueStream casted = (DoubleValueStream)val;
-    
+
     // No values
     val.setValues();
     casted.streamDoubles( value -> {
@@ -51,10 +51,10 @@ public class CastingFloatValueStreamTest extends SolrTestCaseJ4 {
   @Test
   public void stringStreamCastingTest() {
     TestFloatValueStream val = new TestFloatValueStream();
-    
+
     assertTrue(val instanceof StringValueStream);
     StringValueStream casted = (StringValueStream)val;
-    
+
     // No values
     val.setValues();
     casted.streamStrings( value -> {
@@ -74,10 +74,10 @@ public class CastingFloatValueStreamTest extends SolrTestCaseJ4 {
   @Test
   public void objectStreamCastingTest() {
     TestFloatValueStream val = new TestFloatValueStream();
-    
+
     assertTrue(val instanceof AnalyticsValueStream);
     AnalyticsValueStream casted = (AnalyticsValueStream)val;
-    
+
     // No values
     val.setValues();
     casted.streamObjects( value -> {
@@ -93,7 +93,7 @@ public class CastingFloatValueStreamTest extends SolrTestCaseJ4 {
     });
     assertFalse(values.hasNext());
   }
-  
+
   @Test
   public void constantConversionTest() {
     AnalyticsValueStream val = new TestFloatValueStream();

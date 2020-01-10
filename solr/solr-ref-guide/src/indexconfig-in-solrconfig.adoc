@@ -56,6 +56,17 @@ Controls whether newly written (and not yet merged) index segments should use th
 <useCompoundFile>false</useCompoundFile>
 ----
 
+=== ramPerThreadHardLimitMB
+
+Sets the maximum memory (defined in megabytes) consumption per thread triggering a forced flush if exceeded. The given value must be greater than 0 and less than 2GB (2048 MB).
+
+[source,xml]
+----
+<ramPerThreadHardLimitMB>1945</ramPerThreadHardLimitMB>
+----
+
+NOTE: This is an expert level parameter as it triggers forced flush even if <<ramBufferSizeMB>> has not been exceeded.
+
 == Merging Index Segments
 
 === mergePolicyFactory

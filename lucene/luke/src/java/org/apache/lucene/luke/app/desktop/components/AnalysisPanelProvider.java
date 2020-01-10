@@ -20,14 +20,13 @@ package org.apache.lucene.luke.app.desktop.components;
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JRadioButton;
 import javax.swing.JScrollPane;
 import javax.swing.JSplitPane;
-import javax.swing.JTable;
 import javax.swing.JTextArea;
-import javax.swing.ListSelectionModel;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.FlowLayout;
@@ -37,11 +36,9 @@ import java.awt.event.ActionEvent;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.io.IOException;
-import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.stream.Collectors;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.custom.CustomAnalyzer;
@@ -54,13 +51,16 @@ import org.apache.lucene.luke.app.desktop.components.fragments.analysis.CustomAn
 import org.apache.lucene.luke.app.desktop.components.fragments.analysis.CustomAnalyzerPanelProvider;
 import org.apache.lucene.luke.app.desktop.components.fragments.analysis.PresetAnalyzerPanelOperator;
 import org.apache.lucene.luke.app.desktop.components.fragments.analysis.PresetAnalyzerPanelProvider;
+import org.apache.lucene.luke.app.desktop.components.fragments.analysis.SimpleAnalyzeResultPanelOperator;
+import org.apache.lucene.luke.app.desktop.components.fragments.analysis.SimpleAnalyzeResultPanelProvider;
+import org.apache.lucene.luke.app.desktop.components.fragments.analysis.StepByStepAnalyzeResultPanelOperator;
+import org.apache.lucene.luke.app.desktop.components.fragments.analysis.StepByStepAnalyzeResultPanelProvider;
 import org.apache.lucene.luke.app.desktop.components.fragments.search.AnalyzerTabOperator;
 import org.apache.lucene.luke.app.desktop.components.fragments.search.MLTTabOperator;
 import org.apache.lucene.luke.app.desktop.util.DialogOpener;
 import org.apache.lucene.luke.app.desktop.util.FontUtils;
 import org.apache.lucene.luke.app.desktop.util.MessageUtils;
 import org.apache.lucene.luke.app.desktop.util.StyleConstants;
-import org.apache.lucene.luke.app.desktop.util.TableUtils;
 import org.apache.lucene.luke.models.analysis.Analysis;
 import org.apache.lucene.luke.models.analysis.AnalysisFactory;
 import org.apache.lucene.luke.models.analysis.CustomAnalyzerConfig;
@@ -97,11 +97,15 @@ public final class AnalysisPanelProvider implements AnalysisTabOperator {
 
   private final JTextArea inputArea = new JTextArea();
 
-  private final JTable tokensTable = new JTable();
+  private final JPanel lowerPanel = new JPanel(new BorderLayout());
+
+  private final JPanel simpleResult;
+
+  private final JPanel stepByStepResult;
+
+  private final JCheckBox stepByStepCB = new JCheckBox();
 
   private final ListenerFunctions listeners = new ListenerFunctions();
-
-  private List<Analysis.Token> tokens;
 
   private Analysis analysisModel;
 
@@ -117,11 +121,15 @@ public final class AnalysisPanelProvider implements AnalysisTabOperator {
     this.analysisModel = new AnalysisFactory().newInstance();
     analysisModel.createAnalyzerFromClassName(StandardAnalyzer.class.getName());
 
+    this.simpleResult = new SimpleAnalyzeResultPanelProvider(tokenAttrDialogFactory).get();
+    this.stepByStepResult = new StepByStepAnalyzeResultPanelProvider(tokenAttrDialogFactory).get();
+
     operatorRegistry.register(AnalysisTabOperator.class, this);
 
     operatorRegistry.get(PresetAnalyzerPanelOperator.class).ifPresent(operator -> {
       // Scanning all Analyzer types will take time...
-      ExecutorService executorService = Executors.newFixedThreadPool(1, new NamedThreadFactory("load-preset-analyzer-types"));
+      ExecutorService executorService =
+          Executors.newFixedThreadPool(1, new NamedThreadFactory("load-preset-analyzer-types"));
       executorService.execute(() -> {
         operator.setPresetAnalyzers(analysisModel.getPresetAnalyzerTypes());
         operator.setSelectedAnalyzer(analysisModel.currentAnalyzer().getClass());
@@ -209,53 +217,39 @@ public final class AnalysisPanelProvider implements AnalysisTabOperator {
     inputArea.setText(MessageUtils.getLocalizedMessage("analysis.textarea.prompt"));
     input.add(new JScrollPane(inputArea));
 
-    JButton executeBtn = new JButton(FontUtils.elegantIconHtml("&#xe007;", MessageUtils.getLocalizedMessage("analysis.button.test")));
+    JButton executeBtn = new JButton(FontUtils.elegantIconHtml("&#xe007;",
+        MessageUtils.getLocalizedMessage("analysis.button.test")));
     executeBtn.setFont(StyleConstants.FONT_BUTTON_LARGE);
     executeBtn.setMargin(new Insets(3, 3, 3, 3));
     executeBtn.addActionListener(listeners::executeAnalysis);
     input.add(executeBtn);
+
+    stepByStepCB.setText(MessageUtils.getLocalizedMessage("analysis.checkbox.step_by_step"));
+    stepByStepCB.setSelected(false);
+    stepByStepCB.setOpaque(false);
+    stepByStepCB.setVisible(false);
+    input.add(stepByStepCB);
 
     JButton clearBtn = new JButton(MessageUtils.getLocalizedMessage("button.clear"));
     clearBtn.setFont(StyleConstants.FONT_BUTTON_LARGE);
     clearBtn.setMargin(new Insets(5, 5, 5, 5));
     clearBtn.addActionListener(e -> {
       inputArea.setText("");
-      TableUtils.setupTable(tokensTable, ListSelectionModel.SINGLE_SELECTION, new TokensTableModel(),
-          null,
-          TokensTableModel.Column.TERM.getColumnWidth(),
-          TokensTableModel.Column.ATTR.getColumnWidth());
+      operatorRegistry.get(SimpleAnalyzeResultPanelOperator.class).ifPresent(
+          SimpleAnalyzeResultPanelOperator::clearTable);
+      operatorRegistry.get(StepByStepAnalyzeResultPanelOperator.class).ifPresent(
+          StepByStepAnalyzeResultPanelOperator::clearTable);
     });
     input.add(clearBtn);
 
     inner1.add(input, BorderLayout.CENTER);
 
-    JPanel inner2 = new JPanel(new BorderLayout());
-    inner2.setOpaque(false);
+    lowerPanel.setOpaque(false);
+    lowerPanel.setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));
+    lowerPanel.add(inner1, BorderLayout.PAGE_START);
+    lowerPanel.add(this.simpleResult, BorderLayout.CENTER);
 
-    JPanel hint = new JPanel(new FlowLayout(FlowLayout.LEADING));
-    hint.setOpaque(false);
-    hint.add(new JLabel(MessageUtils.getLocalizedMessage("analysis.hint.show_attributes")));
-    inner2.add(hint, BorderLayout.PAGE_START);
-
-
-    TableUtils.setupTable(tokensTable, ListSelectionModel.SINGLE_SELECTION, new TokensTableModel(),
-        new MouseAdapter() {
-          @Override
-          public void mouseClicked(MouseEvent e) {
-            listeners.showAttributeValues(e);
-          }
-        },
-        TokensTableModel.Column.TERM.getColumnWidth(),
-        TokensTableModel.Column.ATTR.getColumnWidth());
-    inner2.add(new JScrollPane(tokensTable), BorderLayout.CENTER);
-
-    JPanel panel = new JPanel(new BorderLayout());
-    panel.setOpaque(false);
-    panel.setBorder(BorderFactory.createEmptyBorder(3, 3, 3, 3));
-    panel.add(inner1, BorderLayout.PAGE_START);
-    panel.add(inner2, BorderLayout.CENTER);
-
-    return panel;
+    return lowerPanel;
   }
 
   // control methods
@@ -269,7 +263,8 @@ public final class AnalysisPanelProvider implements AnalysisTabOperator {
         operator.setPresetAnalyzers(analysisModel.getPresetAnalyzerTypes());
         operator.setSelectedAnalyzer(analysisModel.currentAnalyzer().getClass());
       });
-
+      stepByStepCB.setSelected(false);
+      stepByStepCB.setVisible(false);
     } else if (command.equalsIgnoreCase(TYPE_CUSTOM)) {
       mainPanel.remove(preset);
       mainPanel.add(custom, BorderLayout.CENTER);
@@ -278,6 +273,7 @@ public final class AnalysisPanelProvider implements AnalysisTabOperator {
         operator.setAnalysisModel(analysisModel);
         operator.resetAnalysisComponents();
       });
+      stepByStepCB.setVisible(true);
     }
     mainPanel.setVisible(false);
     mainPanel.setVisible(true);
@@ -289,11 +285,32 @@ public final class AnalysisPanelProvider implements AnalysisTabOperator {
       messageBroker.showStatusMessage(MessageUtils.getLocalizedMessage("analysis.message.empry_input"));
     }
 
-    tokens = analysisModel.analyze(text);
-    tokensTable.setModel(new TokensTableModel(tokens));
-    tokensTable.setShowGrid(true);
-    tokensTable.getColumnModel().getColumn(TokensTableModel.Column.TERM.getIndex()).setPreferredWidth(TokensTableModel.Column.TERM.getColumnWidth());
-    tokensTable.getColumnModel().getColumn(TokensTableModel.Column.ATTR.getIndex()).setPreferredWidth(TokensTableModel.Column.ATTR.getColumnWidth());
+    lowerPanel.remove(stepByStepResult);
+    lowerPanel.add(simpleResult, BorderLayout.CENTER);
+
+    operatorRegistry.get(SimpleAnalyzeResultPanelOperator.class).ifPresent(operator -> {
+      operator.setAnalysisModel(analysisModel);
+      operator.executeAnalysis(text);
+    });
+
+    lowerPanel.setVisible(false);
+    lowerPanel.setVisible(true);
+  }
+
+  void executeAnalysisStepByStep() {
+    String text = inputArea.getText();
+    if (Objects.isNull(text) || text.isEmpty()) {
+      messageBroker.showStatusMessage(MessageUtils.getLocalizedMessage("analysis.message.empry_input"));
+    }
+    lowerPanel.remove(simpleResult);
+    lowerPanel.add(stepByStepResult, BorderLayout.CENTER);
+    operatorRegistry.get(StepByStepAnalyzeResultPanelOperator.class).ifPresent(operator -> {
+      operator.setAnalysisModel(analysisModel);
+      operator.executeAnalysisStepByStep(text);
+    });
+
+    lowerPanel.setVisible(false);
+    lowerPanel.setVisible(true);
   }
 
   void showAnalysisChainDialog() {
@@ -305,17 +322,6 @@ public final class AnalysisPanelProvider implements AnalysisTabOperator {
           });
     }
   }
-
-  void showAttributeValues(int selectedIndex) {
-    String term = tokens.get(selectedIndex).getTerm();
-    List<Analysis.TokenAttribute> attributes = tokens.get(selectedIndex).getAttributes();
-    new DialogOpener<>(tokenAttrDialogFactory).open("Token Attributes", 650, 400,
-        factory -> {
-          factory.setTerm(term);
-          factory.setAttributes(attributes);
-        });
-  }
-
 
   @Override
   public void setAnalyzerByType(String analyzerType) {
@@ -359,81 +365,14 @@ public final class AnalysisPanelProvider implements AnalysisTabOperator {
     }
 
     void executeAnalysis(ActionEvent e) {
-      AnalysisPanelProvider.this.executeAnalysis();
-    }
-
-    void showAttributeValues(MouseEvent e) {
-      if (e.getClickCount() != 2 || e.isConsumed()) {
-        return;
-      }
-      int selectedIndex = tokensTable.rowAtPoint(e.getPoint());
-      if (selectedIndex < 0 || selectedIndex >= tokensTable.getRowCount()) {
-        return;
-      }
-      AnalysisPanelProvider.this.showAttributeValues(selectedIndex);
-    }
-
-  }
-
-  static final class TokensTableModel extends TableModelBase<TokensTableModel.Column> {
-
-    enum Column implements TableColumnInfo {
-      TERM("Term", 0, String.class, 150),
-      ATTR("Attributes", 1, String.class, 1000);
-
-      private final String colName;
-      private final int index;
-      private final Class<?> type;
-      private final int width;
-
-      Column(String colName, int index, Class<?> type, int width) {
-        this.colName = colName;
-        this.index = index;
-        this.type = type;
-        this.width = width;
-      }
-
-      @Override
-      public String getColName() {
-        return colName;
-      }
-
-      @Override
-      public int getIndex() {
-        return index;
-      }
-
-      @Override
-      public Class<?> getType() {
-        return type;
-      }
-
-      @Override
-      public int getColumnWidth() {
-        return width;
+      if (AnalysisPanelProvider.this.stepByStepCB.isSelected()) {
+        AnalysisPanelProvider.this.executeAnalysisStepByStep();
+      } else {
+        AnalysisPanelProvider.this.executeAnalysis();
       }
     }
 
-    TokensTableModel() {
-      super();
-    }
-
-    TokensTableModel(List<Analysis.Token> tokens) {
-      super(tokens.size());
-      for (int i = 0; i < tokens.size(); i++) {
-        Analysis.Token token = tokens.get(i);
-        data[i][Column.TERM.getIndex()] = token.getTerm();
-        List<String> attValues = token.getAttributes().stream()
-            .flatMap(att -> att.getAttValues().entrySet().stream()
-                .map(e -> e.getKey() + "=" + e.getValue()))
-            .collect(Collectors.toList());
-        data[i][Column.ATTR.getIndex()] = String.join(",", attValues);
-      }
-    }
-
-    @Override
-    protected Column[] columnInfos() {
-      return Column.values();
+    void executeAnalysisStepByStep(ActionEvent e) {
     }
   }
 

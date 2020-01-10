@@ -31,6 +31,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.ZkStateReader;
@@ -50,6 +51,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
   volatile Set<String> liveNodes;
   long liveNodesTimestamp = 0;
   volatile Map<String, List<String>> aliases;
+  volatile Map<String, Map<String, String>> aliasProperties;
   long aliasesTimestamp = 0;
 
   private int cacheTimeout = 5; // the liveNodes and aliases cache will be invalidated after 5 secs
@@ -189,7 +191,11 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
 
   @Override
   public List<String> resolveAlias(String aliasName) {
-    return Aliases.resolveAliasesGivenAliasMap(getAliases(false), aliasName);
+    return resolveAlias(aliasName, false);
+  }
+
+  public List<String> resolveAlias(String aliasName, boolean forceFetch) {
+    return Aliases.resolveAliasesGivenAliasMap(getAliases(forceFetch), aliasName);
   }
 
   @Override
@@ -212,7 +218,9 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
         String baseUrl = Utils.getBaseUrlForNodeName(nodeName, urlScheme);
         try (SolrClient client = getSolrClient(baseUrl)) {
 
-          this.aliases = new CollectionAdminRequest.ListAliases().process(client).getAliasesAsLists();
+          CollectionAdminResponse response = new CollectionAdminRequest.ListAliases().process(client);
+          this.aliases = response.getAliasesAsLists();
+          this.aliasProperties = response.getAliasProperties(); // side-effect
           this.aliasesTimestamp = System.nanoTime();
           return Collections.unmodifiableMap(this.aliases);
         } catch (SolrServerException | RemoteSolrException | IOException e) {
@@ -221,6 +229,7 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
             log.warn("LISTALIASES not found, possibly using older Solr server. Aliases won't work"
                 + " unless you re-create the CloudSolrClient using zkHost(s) or upgrade Solr server", e);
             this.aliases = Collections.emptyMap();
+            this.aliasProperties = Collections.emptyMap();
             this.aliasesTimestamp = System.nanoTime();
             return aliases;
           }
@@ -236,6 +245,12 @@ public abstract class BaseHttpClusterStateProvider implements ClusterStateProvid
     } else {
       return Collections.unmodifiableMap(this.aliases); // cached copy is fresh enough
     }
+  }
+
+  @Override
+  public Map<String, String> getAliasProperties(String alias) {
+    getAliases(false);
+    return Collections.unmodifiableMap(aliasProperties.getOrDefault(alias, Collections.emptyMap()));
   }
 
   @Override

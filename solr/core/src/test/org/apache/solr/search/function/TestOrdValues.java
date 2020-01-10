@@ -209,7 +209,9 @@ public class TestOrdValues extends SolrTestCase {
 
   @AfterClass
   public static void afterClassFunctionTestSetup() throws Exception {
-    dir.close();
+    if (null != dir) {
+      dir.close();
+    }
     dir = null;
     anlzr = null;
   }

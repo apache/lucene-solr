@@ -43,6 +43,7 @@ public class HdfsFileWriter extends OutputStreamIndexOutput {
   private static final OutputStream getOutputStream(FileSystem fileSystem, Path path) throws IOException {
     Configuration conf = fileSystem.getConf();
     FsServerDefaults fsDefaults = fileSystem.getServerDefaults(path);
+    short replication = fileSystem.getDefaultReplication(path);
     EnumSet<CreateFlag> flags = EnumSet.of(CreateFlag.CREATE,
         CreateFlag.OVERWRITE);
     if (Boolean.getBoolean(HDFS_SYNC_BLOCK)) {
@@ -50,7 +51,7 @@ public class HdfsFileWriter extends OutputStreamIndexOutput {
     }
     return fileSystem.create(path, FsPermission.getDefault()
         .applyUMask(FsPermission.getUMask(conf)), flags, fsDefaults
-        .getFileBufferSize(), fsDefaults.getReplication(), fsDefaults
+        .getFileBufferSize(), replication, fsDefaults
         .getBlockSize(), null);
   }
 }

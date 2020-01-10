@@ -111,7 +111,7 @@ final class IntersectTermsEnum extends BaseTermsEnum {
     f.prefix = 0;
     f.setState(0);
     f.arc = arc;
-    f.outputPrefix = arc.output;
+    f.outputPrefix = arc.output();
     f.load(fr.rootCode);
 
     // for assert:
@@ -186,14 +186,14 @@ final class IntersectTermsEnum extends BaseTermsEnum {
       // passed to findTargetArc
       arc = fr.index.findTargetArc(target, arc, getArc(1+idx), fstReader);
       assert arc != null;
-      output = fstOutputs.add(output, arc.output);
+      output = fstOutputs.add(output, arc.output());
       idx++;
     }
 
     f.arc = arc;
     f.outputPrefix = output;
     assert arc.isFinal();
-    f.load(fstOutputs.add(output, arc.nextFinalOutput));
+    f.load(fstOutputs.add(output, arc.nextFinalOutput()));
     return f;
   }
 
@@ -515,7 +515,7 @@ final class IntersectTermsEnum extends BaseTermsEnum {
         assert savedStartTerm == null || term.compareTo(savedStartTerm) > 0: "saveStartTerm=" + savedStartTerm.utf8ToString() + " term=" + term.utf8ToString();
         return term;
       } else {
-        // This term is a prefix of a term accepted by the automaton, but is not itself acceptd
+        // This term is a prefix of a term accepted by the automaton, but is not itself accepted
       }
 
       isSubBlock = popPushNext();

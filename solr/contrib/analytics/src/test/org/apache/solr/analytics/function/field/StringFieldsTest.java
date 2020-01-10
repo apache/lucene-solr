@@ -25,7 +25,7 @@ import org.apache.solr.analytics.ExpressionFactory;
 import org.junit.Test;
 
 public class StringFieldsTest extends AbstractAnalyticsFieldTest {
-  
+
   @Test
   public void expressionFactoryCreationTest() {
     ExpressionFactory fact = getExpressionFactory();
@@ -38,7 +38,7 @@ public class StringFieldsTest extends AbstractAnalyticsFieldTest {
   public void singleValuedStringTest() throws IOException {
     StringField valueField = new StringField("string_s");
     Map<String,String> values = new HashMap<>();
-    
+
     Set<String> missing = collectFieldValues(valueField, id -> {
       String value = valueField.getString();
       if (valueField.exists()) {
@@ -46,7 +46,7 @@ public class StringFieldsTest extends AbstractAnalyticsFieldTest {
       }
       return valueField.exists();
     });
-    
+
     checkSingleFieldValues(singleStrings, values, missing);
   }
 
@@ -54,7 +54,7 @@ public class StringFieldsTest extends AbstractAnalyticsFieldTest {
   public void multiValuedStringTest() throws IOException {
     StringMultiField valueField = new StringMultiField("string_sm");
     Map<String,Map<String,Integer>> values = new HashMap<>();
-    
+
     Set<String> missing = collectFieldValues(valueField, id -> {
       Map<String, Integer> doc = new HashMap<>();
       valueField.streamStrings( value -> {
@@ -65,7 +65,7 @@ public class StringFieldsTest extends AbstractAnalyticsFieldTest {
       }
       return doc.size() > 0;
     });
-    
+
     checkMultiFieldValues(multiStrings, values, missing, true);
   }
 }

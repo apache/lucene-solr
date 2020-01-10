@@ -16,6 +16,7 @@
     <orderEntry type="library" name="Solr core library" level="project" />
     <orderEntry type="library" name="Solr example library" level="project" />
     <orderEntry type="library" name="Solrj library" level="project" />
+    <orderEntry type="library" name="Solr test framework library" level="project" />
     <orderEntry type="module" module-name="lucene-test-framework" />
     <orderEntry type="module" module-name="analysis-common" />
     <orderEntry type="module" module-name="solrj" />

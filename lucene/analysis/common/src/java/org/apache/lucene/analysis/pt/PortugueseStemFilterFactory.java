@@ -33,8 +33,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  * @since 3.1.0
+ * @lucene.spi {@value #NAME}
  */
 public class PortugueseStemFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "portugueseStem";
   
   /** Creates a new PortugueseStemFilterFactory */
   public PortugueseStemFilterFactory(Map<String,String> args) {

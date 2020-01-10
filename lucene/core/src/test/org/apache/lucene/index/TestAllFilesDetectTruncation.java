@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 
 import org.apache.lucene.analysis.MockAnalyzer;
@@ -104,21 +105,15 @@ public class TestAllFilesDetectTruncation extends LuceneTestCase {
         dirCopy.sync(Collections.singleton(name));
       }
 
-      try {
-        // NOTE: we .close so that if the test fails (truncation not detected) we don't also get all these confusing errors about open files:
-        DirectoryReader.open(dirCopy).close();
-        fail("truncation not detected after removing " + lostBytes + " bytes out of " + victimLength + " for file " + victim);
-      } catch (CorruptIndexException | EOFException e) {
-        // expected
-      }
+      // NOTE: we .close so that if the test fails (truncation not detected) we don't also get all these confusing errors about open files:
+      expectThrowsAnyOf(Arrays.asList(CorruptIndexException.class, EOFException.class),
+          () -> DirectoryReader.open(dirCopy).close()
+      );
 
       // CheckIndex should also fail:
-      try {
-        TestUtil.checkIndex(dirCopy, true, true, null);
-        fail("truncation not detected after removing " + lostBytes + " bytes out of " + victimLength + " for file " + victim);
-      } catch (CorruptIndexException | EOFException e) {
-        // expected
-      }
+      expectThrowsAnyOf(Arrays.asList(CorruptIndexException.class, EOFException.class),
+          () -> TestUtil.checkIndex(dirCopy, true, true, null)
+      );
     }
   }
 }

@@ -61,6 +61,8 @@ Example: `terms.fl=title`
 Fetches the document frequency for a comma delimited list of terms. Terms are always returned in index order. If `terms.ttf` is set to true, also returns their total term frequency. If multiple `terms.fl` are defined, these statistics will be returned for each term in each requested field.
 +
 Example: `terms.list=termA,termB,termC`
++
+NOTE: When `terms.list` is specified, then terms are always sorted by `index`. Except `terms.ttf`, none of other terms parameters are supported when `terms.list` is specified.
 
 `terms.limit`::
 Specifies the maximum number of terms to return. The default is `10`. If the limit is set to a number less than 0, then no maximum limit is enforced. Although this is not required, either this parameter or `terms.upper` must be defined.
@@ -126,7 +128,9 @@ Example: `terms.sort=index`
 
 `terms.ttf`::
 If set to true, returns both `df` (docFreq) and `ttf` (totalTermFreq) statistics for each requested term in `terms.list`. In this case, the response format is:
-+
+
+XML:
+
 [source,xml]
 ----
 <lst name="terms">
@@ -137,6 +141,23 @@ If set to true, returns both `df` (docFreq) and `ttf` (totalTermFreq) statistics
     </lst>
   </lst>
 </lst>
+----
+
+JSON:
+
+[source,json]
+----
+{
+  "terms": {
+    "field": [
+      "termA",
+      {
+        "df": 22,
+        "ttf": 73
+      }
+    ]
+  }
+}
 ----
 
 `terms.upper`::

@@ -24,17 +24,17 @@ import java.io.IOException;
  * The data being read may not exist, so the reader first checks before reading.
  */
 public abstract class ReductionCheckedDataReader<A> extends ReductionDataReader<A> {
-  
+
   public ReductionCheckedDataReader(DataInput inputStream, A applier) {
     super(inputStream, applier);
   }
-  
+
   @Override
   /**
    * Read a piece of data from the input stream and feed it to the applier.
    * <br>
    * First checks that the piece of data exists before reading.
-   * 
+   *
    * @throws IOException if an exception occurs while reading from the input stream
    */
   public void read() throws IOException {
@@ -42,12 +42,12 @@ public abstract class ReductionCheckedDataReader<A> extends ReductionDataReader<
       checkedRead();
     }
   }
-  
+
   /**
    * Read a piece of data from the input stream and feed it to the applier.
    * <br>
    * This piece of data is guaranteed to be there.
-   * 
+   *
    * @throws IOException if an exception occurs while reading from the input stream
    */
   protected abstract void checkedRead() throws IOException;

@@ -24,10 +24,8 @@ import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.api.ApiBag;
-import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.request.schema.SchemaRequest;
 import org.apache.solr.client.solrj.response.schema.SchemaResponse;
-import org.apache.solr.client.solrj.response.schema.SchemaResponse.FieldResponse;
 import org.apache.solr.common.SolrException;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -65,21 +63,17 @@ public class TestEmbeddedSolrServerSchemaAPI extends SolrTestCaseJ4 {
 
   @AfterClass
   public static void destroyClass() throws IOException {
-    server.close(); // doubtful
-    server = null;
+    if (null != server) {
+      server.close(); 
+      server = null;
+    }
     System.clearProperty("managed.schema.mutable");
   }
 
   @Before
-  public void thereIsNoFieldYet() throws SolrServerException, IOException{
-    try{
-      FieldResponse process = new SchemaRequest.Field(fieldName)
-                  .process(server);
-      fail(""+process);
-    }catch(SolrException e){
-      assertTrue(e.getMessage().contains("No")
-           && e.getMessage().contains("VerificationTest"));
-    }
+  public void thereIsNoFieldYet() {
+    SolrException ex = expectThrows(SolrException.class, () -> new SchemaRequest.Field(fieldName).process(server));
+    assertTrue(ex.getMessage().contains("No") && ex.getMessage().contains("VerificationTest"));
   }
   
   @Test

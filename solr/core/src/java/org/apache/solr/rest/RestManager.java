@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.rest;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -24,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -39,7 +41,6 @@ import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
-import org.noggit.ObjectBuilder;
 import org.restlet.Request;
 import org.restlet.data.MediaType;
 import org.restlet.data.Method;
@@ -49,6 +50,8 @@ import org.restlet.resource.ResourceException;
 import org.restlet.routing.Router;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.util.Utils.fromJSONString;
 
 /**
  * Supports runtime mapping of REST API endpoints to ManagedResource 
@@ -74,7 +77,7 @@ public class RestManager {
   private static class ManagedResourceRegistration {
     String resourceId;
     Class<? extends ManagedResource> implClass;
-    List<ManagedResourceObserver> observers = new ArrayList<>();
+    Set<ManagedResourceObserver> observers = new LinkedHashSet<>();
 
     private ManagedResourceRegistration(String resourceId,
                                         Class<? extends ManagedResource> implClass, 
@@ -227,7 +230,7 @@ public class RestManager {
       }
       
       // there may be a RestManager, in which case, we want to add this new ManagedResource immediately
-      if (initializedRestManager != null) {
+      if (initializedRestManager != null && initializedRestManager.getManagedResourceOrNull(resourceId) == null) {
         initializedRestManager.addRegisteredResource(registered.get(resourceId));
       }
     }    
@@ -422,8 +425,8 @@ public class RestManager {
 
       Object parsedJson = null;
       try {
-        parsedJson = ObjectBuilder.fromJSON(text);
-      } catch (IOException ioExc) {
+        parsedJson = fromJSONString(text);
+      } catch (Exception ioExc) {
         String errMsg = String.format(Locale.ROOT,
             "Failed to parse request [%s] into JSON due to: %s",
             text, ioExc.toString());
@@ -765,11 +768,12 @@ public class RestManager {
     }      
     
     int numAttached = 0;
-    for (String resourceId : managed.keySet()) {
+    for (Map.Entry<String, ManagedResource> entry : managed.entrySet()) {
+      String resourceId = entry.getKey();
       if (resourceId.startsWith(routerPath)) {
         // the way restlet works is you attach a path w/o the routerPath
         String path = resourceId.substring(routerPath.length());
-        attachManagedResource(managed.get(resourceId), path, router);
+        attachManagedResource(entry.getValue(), path, router);
         ++numAttached;
       }
     }

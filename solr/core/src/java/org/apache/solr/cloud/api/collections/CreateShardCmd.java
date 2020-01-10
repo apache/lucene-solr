@@ -39,6 +39,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
 import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
 import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
 import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
+import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
 import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
 
 public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
@@ -59,7 +60,13 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
     if (extCollectionName == null || sliceName == null)
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'collection' and 'shard' are required parameters");
 
-    String collectionName = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extCollectionName);
+    boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
+    String collectionName;
+    if (followAliases) {
+      collectionName = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extCollectionName);
+    } else {
+      collectionName = extCollectionName;
+    }
     DocCollection collection = clusterState.getCollection(collectionName);
 
     int numNrtReplicas = message.getInt(NRT_REPLICAS, message.getInt(REPLICATION_FACTOR, collection.getInt(NRT_REPLICAS, collection.getInt(REPLICATION_FACTOR, 1))));
@@ -70,10 +77,13 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, NRT_REPLICAS + " + " + TLOG_REPLICAS + " must be greater than 0");
     }
 
-    ZkStateReader zkStateReader = ocmh.zkStateReader;
+    //ZkStateReader zkStateReader = ocmh.zkStateReader;
     ocmh.overseer.offerStateUpdate(Utils.toJSON(message));
     // wait for a while until we see the shard
-    ocmh.waitForNewShard(collectionName, sliceName);
+    //ocmh.waitForNewShard(collectionName, sliceName);
+    // wait for a while until we see the shard and update the local view of the cluster state
+    clusterState = ocmh.waitForNewShard(collectionName, sliceName);
+
     String async = message.getStr(ASYNC);
     ZkNodeProps addReplicasProps = new ZkNodeProps(
         COLLECTION_PROP, collectionName,
@@ -90,7 +100,8 @@ public class CreateShardCmd implements OverseerCollectionMessageHandler.Cmd {
     if (async != null) addReplicasProps.getProperties().put(ASYNC, async);
     final NamedList addResult = new NamedList();
     try {
-      ocmh.addReplica(zkStateReader.getClusterState(), addReplicasProps, addResult, () -> {
+      //ocmh.addReplica(zkStateReader.getClusterState(), addReplicasProps, addResult, () -> {
+      ocmh.addReplica(clusterState, addReplicasProps, addResult, () -> {
         Object addResultFailure = addResult.get("failure");
         if (addResultFailure != null) {
           SimpleOrderedMap failure = (SimpleOrderedMap) results.get("failure");

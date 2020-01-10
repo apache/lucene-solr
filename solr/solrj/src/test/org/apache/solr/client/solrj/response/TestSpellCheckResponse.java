@@ -15,8 +15,10 @@
  * limitations under the License.
  */
 package org.apache.solr.client.solrj.response;
-import junit.framework.Assert;
-import org.apache.solr.SolrJettyTestBase;
+
+import java.util.List;
+
+import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.SpellCheckResponse.Collation;
@@ -27,7 +29,7 @@ import org.apache.solr.common.params.SpellingParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.List;
+import junit.framework.Assert;
 
 /**
  * Test for SpellCheckComponent's response in Solrj
@@ -35,12 +37,13 @@ import java.util.List;
  *
  * @since solr 1.3
  */
-public class TestSpellCheckResponse extends SolrJettyTestBase {
+public class TestSpellCheckResponse extends EmbeddedSolrServerTestBase {
+
   @BeforeClass
-  public static void beforeTest() throws Exception {
+  public static void beforeClass() throws Exception {
     initCore();
   }
-  
+
   static String field = "name";
 
   @Test
@@ -101,7 +104,7 @@ public class TestSpellCheckResponse extends SolrJettyTestBase {
     // Hmmm... the API for SpellCheckResponse could be nicer:
     response.getSuggestions().get(0).getAlternatives().get(0);
   }
-  
+
   @Test
   public void testSpellCheckCollationResponse() throws Exception {
     getSolrClient();
@@ -128,7 +131,7 @@ public class TestSpellCheckResponse extends SolrJettyTestBase {
     doc.setField("name", "fat of homer");
     client.add(doc);
     client.commit(true, true);
-     
+
     //Test Backwards Compatibility
     SolrQuery query = new SolrQuery("name:(+fauth +home +loane)");
     query.set(CommonParams.QT, "/spell");
@@ -139,15 +142,15 @@ public class TestSpellCheckResponse extends SolrJettyTestBase {
     SpellCheckResponse response = request.process(client).getSpellCheckResponse();
     response = request.process(client).getSpellCheckResponse();
     assertTrue("name:(+faith +hope +loaves)".equals(response.getCollatedResult()));
-    
+
     //Test Expanded Collation Results
     query.set(SpellingParams.SPELLCHECK_COLLATE_EXTENDED_RESULTS, true);
     query.set(SpellingParams.SPELLCHECK_MAX_COLLATION_TRIES, 10);
-    query.set(SpellingParams.SPELLCHECK_MAX_COLLATIONS, 2); 
+    query.set(SpellingParams.SPELLCHECK_MAX_COLLATIONS, 2);
     request = new QueryRequest(query);
     response = request.process(client).getSpellCheckResponse();
     assertTrue("name:(+faith +hope +love)".equals(response.getCollatedResult()) || "name:(+faith +hope +loaves)".equals(response.getCollatedResult()));
-    
+
     List<Collation> collations = response.getCollatedResults();
     assertEquals(2, collations.size());
     for(Collation collation : collations)
@@ -174,7 +177,7 @@ public class TestSpellCheckResponse extends SolrJettyTestBase {
         }
       }
     }
-    
+
     query.set(SpellingParams.SPELLCHECK_COLLATE_EXTENDED_RESULTS, false);
     response = request.process(client).getSpellCheckResponse();
     {
@@ -182,12 +185,12 @@ public class TestSpellCheckResponse extends SolrJettyTestBase {
       assertEquals(2, collations.size());
       String collation1 = collations.get(0).getCollationQueryString();
       String collation2 = collations.get(1).getCollationQueryString();
-      assertFalse(collation1 + " equals " + collation2, 
+      assertFalse(collation1 + " equals " + collation2,
           collation1.equals(collation2));
       for(Collation collation : collations) {
         assertTrue("name:(+faith +hope +love)".equals(collation.getCollationQueryString()) || "name:(+faith +hope +loaves)".equals(collation.getCollationQueryString()));  
-      }      
+      }
     }
-    
+
   }
 }

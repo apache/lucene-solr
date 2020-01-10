@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.search.Query;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -360,10 +361,16 @@ public abstract class QParser {
       }
 
       parserName = localParams.get(QueryParsing.TYPE,parserName);
-      qstr = localParams.get("v");
+      qstr = localParams.get(QueryParsing.V);
     }
 
     QParserPlugin qplug = req.getCore().getQueryPlugin(parserName);
+    if (qplug == null) {
+      // there should a way to include parameter for which parsing failed
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "invalid query parser '" + parserName + (stringIncludingLocalParams == null?
+              "'": "' for query '" + stringIncludingLocalParams + "'"));
+    }
     QParser parser =  qplug.createParser(qstr, localParams, req.getParams(), req);
 
     parser.stringIncludingLocalParams = stringIncludingLocalParams;

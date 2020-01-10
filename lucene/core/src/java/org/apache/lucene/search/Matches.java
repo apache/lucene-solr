@@ -18,6 +18,7 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
+import java.util.Collection;
 
 /**
  * Reports the positions and optionally offsets of all matching terms in a query
@@ -36,5 +37,11 @@ public interface Matches extends Iterable<String> {
    * or {@code null} if there are no matches in that field.
    */
   MatchesIterator getMatches(String field) throws IOException;
+
+  /**
+   * Returns a collection of Matches that make up this instance; if it is not
+   * a composite, then this returns an empty list
+   */
+  Collection<Matches> getSubMatches();
 
 }

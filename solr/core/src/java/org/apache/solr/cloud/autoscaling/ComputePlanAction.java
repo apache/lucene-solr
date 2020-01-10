@@ -39,6 +39,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.UnsupportedSuggester;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.AutoScalingParams;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.params.CoreAdminParams;
@@ -269,6 +270,7 @@ public class ComputePlanAction extends TriggerActionBase {
 
   private Suggester getNodeAddedSuggester(SolrCloudManager cloudManager, Policy.Session session, TriggerEvent event) throws IOException {
     String preferredOp = (String) event.getProperty(AutoScalingParams.PREFERRED_OP, CollectionParams.CollectionAction.MOVEREPLICA.toLower());
+    Replica.Type replicaType = (Replica.Type) event.getProperty(AutoScalingParams.REPLICA_TYPE, Replica.Type.NRT);
     CollectionParams.CollectionAction action = CollectionParams.CollectionAction.get(preferredOp);
 
     Suggester suggester = session.getSuggester(action)
@@ -289,6 +291,7 @@ public class ComputePlanAction extends TriggerActionBase {
           }
         });
         suggester.hint(Suggester.Hint.COLL_SHARD, collShards);
+        suggester.hint(Suggester.Hint.REPLICATYPE, replicaType);
         break;
       case MOVEREPLICA:
       case NONE:

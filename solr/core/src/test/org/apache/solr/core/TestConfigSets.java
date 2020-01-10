@@ -105,16 +105,15 @@ public class TestConfigSets extends SolrTestCaseJ4 {
 
   @Test
   public void testConfigSetOnCoreReload() throws IOException {
-    File testDirectory = new File(initCoreDataDir, "core-reload");
-    testDirectory.mkdirs();
-    File configSetsDir = new File(testDirectory, "configsets");
+    Path testDirectory = createTempDir("core-reload");
+    File configSetsDir = new File(testDirectory.toFile(), "configsets");
 
     FileUtils.copyDirectory(getFile("solr/configsets"), configSetsDir);
 
     String csd = configSetsDir.getAbsolutePath();
     System.setProperty("configsets", csd);
 
-    SolrResourceLoader loader = new SolrResourceLoader(testDirectory.toPath());
+    SolrResourceLoader loader = new SolrResourceLoader(testDirectory);
     CoreContainer container = new CoreContainer(SolrXmlConfig.fromString(loader, solrxml));
     container.load();
 

@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.geo;
 
-import static org.apache.lucene.util.SloppyMath.TO_RADIANS;
 import static org.apache.lucene.util.SloppyMath.cos;
 import static org.apache.lucene.util.SloppyMath.haversinMeters;
 
@@ -43,13 +42,13 @@ public final class GeoUtils {
   public static final double MAX_LAT_INCL = 90.0D;
 
   /** min longitude value in radians */
-  public static final double MIN_LON_RADIANS = TO_RADIANS * MIN_LON_INCL;
+  public static final double MIN_LON_RADIANS = Math.toRadians(MIN_LON_INCL);
   /** min latitude value in radians */
-  public static final double MIN_LAT_RADIANS = TO_RADIANS * MIN_LAT_INCL;
+  public static final double MIN_LAT_RADIANS = Math.toRadians(MIN_LAT_INCL);
   /** max longitude value in radians */
-  public static final double MAX_LON_RADIANS = TO_RADIANS * MAX_LON_INCL;
+  public static final double MAX_LON_RADIANS = Math.toRadians(MAX_LON_INCL);
   /** max latitude value in radians */
-  public static final double MAX_LAT_RADIANS = TO_RADIANS * MAX_LAT_INCL;
+  public static final double MAX_LAT_RADIANS = Math.toRadians(MAX_LAT_INCL);
 
   // WGS84 earth-ellipsoid parameters
   /** mean earth axis in meters */

@@ -77,10 +77,10 @@ class BytesStore extends DataOutput implements Accountable {
 
   /** Absolute write byte; you must ensure dest is &lt; max
    *  position written so far. */
-  public void writeByte(int dest, byte b) {
-    int blockIndex = dest >> blockBits;
+  public void writeByte(long dest, byte b) {
+    int blockIndex = (int) (dest >> blockBits);
     byte[] block = blocks.get(blockIndex);
-    block[dest & blockMask] = b;
+    block[(int) (dest & blockMask)] = b;
   }
 
   @Override
@@ -235,6 +235,27 @@ class BytesStore extends DataOutput implements Accountable {
         blockIndex--;
         block = blocks.get(blockIndex);
         downTo = blockSize;
+      }
+    }
+  }
+
+  /** Copies bytes from this store to a target byte array. */
+  public void copyBytes(long src, byte[] dest, int offset, int len) {
+    int blockIndex = (int) (src >> blockBits);
+    int upto = (int) (src & blockMask);
+    byte[] block = blocks.get(blockIndex);
+    while (len > 0) {
+      int chunk = blockSize - upto;
+      if (len <= chunk) {
+        System.arraycopy(block, upto, dest, offset, len);
+        break;
+      } else {
+        System.arraycopy(block, upto, dest, offset, chunk);
+        blockIndex++;
+        block = blocks.get(blockIndex);
+        upto = 0;
+        len -= chunk;
+        offset += chunk;
       }
     }
   }

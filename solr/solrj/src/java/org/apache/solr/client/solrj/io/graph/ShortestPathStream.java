@@ -391,8 +391,7 @@ public class ShortestPathStream extends TupleStream implements Expressible {
             List<String> parents = v.get(p.peekFirst());
             if (parents != null) {
               for(String parent : parents) {
-                LinkedList newPath = new LinkedList();
-                newPath.addAll(p);
+                LinkedList newPath = new LinkedList(p);
                 newPath.addFirst(parent);
                 newPaths.add(newPath);
               }

@@ -22,6 +22,9 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
@@ -33,6 +36,7 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
+import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -44,6 +48,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.LogLevel;
+import org.apache.solr.util.TestInjection;
 import org.apache.zookeeper.data.Stat;
 import org.junit.After;
 import org.junit.Before;
@@ -66,6 +71,26 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
   private SolrResourceLoader loader;
   private SolrCloudManager cloudManager;
 
+  public static class StartAction extends TriggerActionBase {
+
+    @Override
+    public void process(TriggerEvent event, ActionContext context) throws Exception {
+      startedProcessing.countDown();
+    }
+  }
+
+  private static CountDownLatch startedProcessing = new CountDownLatch(1);
+
+  public static class FinishAction extends TriggerActionBase {
+
+    @Override
+    public void process(TriggerEvent event, ActionContext context) throws Exception {
+      finishedProcessing.countDown();
+    }
+  }
+
+  private static CountDownLatch finishedProcessing = new CountDownLatch(1);
+
   @BeforeClass
   public static void setupCluster() throws Exception {
 
@@ -84,6 +109,9 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
 
 
     cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
+
+    finishedProcessing = new CountDownLatch(1);
+    startedProcessing = new CountDownLatch(1);
   }
   
 
@@ -91,6 +119,7 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
   public void tearDown() throws Exception  {
     shutdownCluster();
     super.tearDown();
+    TestInjection.reset();
   }
 
   @Test
@@ -232,5 +261,120 @@ public class ExecutePlanActionTest extends SolrCloudTestCase {
     List<Replica> replicasOnSurvivor = docCollection.getReplicas(survivor.getNodeName());
     assertNotNull(replicasOnSurvivor);
     assertEquals(docCollection.toString(), 2, replicasOnSurvivor.size());
+  }
+
+  @Test
+  public void testTaskTimeout() throws Exception  {
+    int DELAY = 2000;
+    boolean taskTimeoutFail = random().nextBoolean();
+    TestInjection.delayInExecutePlanAction = DELAY;
+    CloudSolrClient solrClient = cluster.getSolrClient();
+    String triggerName = "node_lost_trigger2";
+
+    String setTriggerCommand = "{" +
+        "'set-trigger' : {" +
+        "'name' : '" + triggerName + "'," +
+        "'event' : 'nodeLost'," +
+        "'waitFor' : '1s'," +
+        "'enabled' : true," +
+        "'actions' : [{'name':'compute_plan', 'class' : 'solr.ComputePlanAction'}," +
+        "{'name':'execute_plan','class':'solr.ExecutePlanAction', 'taskTimeoutSeconds' : '1','taskTimeoutFail':'" + taskTimeoutFail + "'}," +
+        "{'name':'finish','class':'" + FinishAction.class.getName() + "'}]" +
+        "}}";
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
+    NamedList<Object> response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    String collectionName = "testTaskTimeout";
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
+        "conf", 1, 2);
+    create.setMaxShardsPerNode(1);
+    create.process(solrClient);
+
+    cluster.waitForActiveCollection(collectionName, 1, 2);
+
+    waitForState("Timed out waiting for replicas of new collection to be active",
+        collectionName, clusterShape(1, 2));
+
+    JettySolrRunner sourceNode = cluster.getRandomJetty(random());
+
+    for (int i = 0; i < cluster.getJettySolrRunners().size(); i++) {
+      JettySolrRunner runner = cluster.getJettySolrRunner(i);
+      if (runner == sourceNode) {
+        JettySolrRunner j = cluster.stopJettySolrRunner(i);
+        cluster.waitForJettyToStop(j);
+      }
+    }
+
+    boolean await = finishedProcessing.await(DELAY * 5, TimeUnit.MILLISECONDS);
+    if (taskTimeoutFail) {
+      assertFalse("finished processing event but should fail", await);
+    } else {
+      assertTrue("did not finish processing event in time", await);
+    }
+    String path = ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH + "/" + triggerName + "/execute_plan";
+    assertTrue(path + " does not exist", zkClient().exists(path, true));
+    List<String> requests = zkClient().getChildren(path, null, true);
+    assertFalse("some requests should be still present", requests.isEmpty());
+
+    // in either case the task will complete and move the replica as needed
+    waitForState("Timed out waiting for replicas of collection to be 2 again",
+        collectionName, clusterShape(1, 2));
+  }
+
+  @Test
+  public void testTaskFail() throws Exception  {
+    TestInjection.failInExecutePlanAction = true;
+    CloudSolrClient solrClient = cluster.getSolrClient();
+    String triggerName = "node_lost_trigger3";
+
+    String setTriggerCommand = "{" +
+        "'set-trigger' : {" +
+        "'name' : '" + triggerName + "'," +
+        "'event' : 'nodeLost'," +
+        "'waitFor' : '1s'," +
+        "'enabled' : true," +
+        "'actions' : [{'name':'start', 'class' : '" + StartAction.class.getName() + "'}," +
+        "{'name':'compute_plan','class':'solr.ComputePlanAction'}," +
+        "{'name':'execute_plan','class':'solr.ExecutePlanAction'}," +
+        "{'name':'finish','class':'" + FinishAction.class.getName() + "'}]" +
+        "}}";
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
+    NamedList<Object> response = solrClient.request(req);
+    assertEquals(response.get("result").toString(), "success");
+
+    String collectionName = "testTaskFail";
+    CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName,
+        "conf", 1, 2);
+    create.setMaxShardsPerNode(1);
+    create.process(solrClient);
+
+    cluster.waitForActiveCollection(collectionName, 1, 2);
+
+    waitForState("Timed out waiting for replicas of new collection to be active",
+        collectionName, clusterShape(1, 2));
+
+    // don't stop the jetty that runs our SolrCloudManager
+    JettySolrRunner runner = cluster.stopJettySolrRunner(1);
+    cluster.waitForJettyToStop(runner);
+
+    boolean await = startedProcessing.await(10, TimeUnit.SECONDS);
+    assertTrue("did not start processing event in time", await);
+    await = finishedProcessing.await(2, TimeUnit.SECONDS);
+    assertFalse("finished processing event but should fail", await);
+
+    String path = ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH + "/" + triggerName + "/execute_plan";
+    assertTrue(path + " does not exist", zkClient().exists(path, true));
+    List<String> requests = zkClient().getChildren(path, null, true);
+    assertTrue("there should be no requests pending but got " + requests, requests.isEmpty());
+
+    // the task never completed - we actually lost a replica
+    try {
+      CloudUtil.waitForState(cloudManager, collectionName, 5, TimeUnit.SECONDS,
+          CloudUtil.clusterShape(1, 2));
+      fail("completed a task that should have failed");
+    } catch (TimeoutException te) {
+      // expected
+    }
   }
 }

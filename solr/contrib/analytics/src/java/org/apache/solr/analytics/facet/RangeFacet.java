@@ -43,7 +43,7 @@ public class RangeFacet extends AbstractSolrQueryFacet {
   protected boolean hardEnd = false;
   protected EnumSet<FacetRangeInclude> include;
   protected EnumSet<FacetRangeOther> others;
-  
+
   public RangeFacet(String name, SchemaField field, String start, String end, List<String> gaps) {
     super(name);
     this.field = field;
@@ -59,8 +59,8 @@ public class RangeFacet extends AbstractSolrQueryFacet {
     // Computes the end points of the ranges in the rangeFacet
     final FacetRangeGenerator<? extends Comparable<?>> rec = FacetRangeGenerator.create(this);
     final SchemaField sf = field;
-    
-    // Create a rangeFacetAccumulator for each range and 
+
+    // Create a rangeFacetAccumulator for each range and
     // collect the documents for that range.
     for (FacetRange range : rec.getRanges()) {
       Query q = sf.getType().getRangeQuery(null, sf, range.lower, range.upper, range.includeLower,range.includeUpper);
@@ -70,7 +70,7 @@ public class RangeFacet extends AbstractSolrQueryFacet {
           .add(q, Occur.MUST)
           .add(filter, Occur.FILTER)
           .build();
-      
+
       ReductionDataCollection dataCol = collectionManager.newDataCollection();
       reductionData.put(range.toString(), dataCol);
       consumer.accept(new FacetValueQueryExecuter(dataCol, rangeQuery));
@@ -112,7 +112,7 @@ public class RangeFacet extends AbstractSolrQueryFacet {
   public void setOthers(EnumSet<FacetRangeOther> others) {
     this.others = others;
   }
-  
+
   public SchemaField getField() {
     return field;
   }

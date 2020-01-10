@@ -23,6 +23,8 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collection;
@@ -31,6 +33,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -96,7 +99,6 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.client.solrj.impl.BaseHttpSolrClient.*;
 import static org.apache.solr.common.util.Utils.getObjectByPath;
 
-// TODO: error handling, small Http2SolrClient features, security, ssl
 /**
  * Difference between this {@link Http2SolrClient} and {@link HttpSolrClient}:
  * <ul>
@@ -177,13 +179,13 @@ public class Http2SolrClient extends SolrClient {
     ThreadPoolExecutor httpClientExecutor = new ExecutorUtil.MDCAwareThreadPoolExecutor(32,
         256, 60, TimeUnit.SECONDS, queue, new SolrjNamedThreadFactory("h2sc"));
 
-    SslContextFactory sslContextFactory;
+    SslContextFactory.Client sslContextFactory;
     boolean ssl;
     if (builder.sslConfig == null) {
       sslContextFactory = getDefaultSslContextFactory();
       ssl = sslContextFactory.getTrustStore() != null || sslContextFactory.getTrustStorePath() != null;
     } else {
-      sslContextFactory = builder.sslConfig.createContextFactory();
+      sslContextFactory = builder.sslConfig.createClientContextFactory();
       ssl = true;
     }
 
@@ -317,10 +319,9 @@ public class Http2SolrClient extends SolrClient {
         .newRequest(basePath + "update"
             + requestParams.toQueryString())
         .method(HttpMethod.POST)
-        .header("User-Agent", HttpSolrClient.AGENT)
-        .header("Content-Type", contentType)
+        .header(HttpHeader.CONTENT_TYPE, contentType)
         .content(provider);
-    setListeners(updateRequest, postRequest);
+    decorateRequest(postRequest, updateRequest);
     InputStreamResponseListener responseListener = new InputStreamResponseListener();
     postRequest.send(responseListener);
 
@@ -452,23 +453,36 @@ public class Http2SolrClient extends SolrClient {
   private Request makeRequest(SolrRequest solrRequest, String collection)
       throws SolrServerException, IOException {
     Request req = createRequest(solrRequest, collection);
+    decorateRequest(req, solrRequest);
+    return req;
+  }
+
+  private void decorateRequest(Request req, SolrRequest solrRequest) {
     req.header(HttpHeader.ACCEPT_ENCODING, null);
-    setListeners(solrRequest, req);
     if (solrRequest.getUserPrincipal() != null) {
       req.attribute(REQ_PRINCIPAL_KEY, solrRequest.getUserPrincipal());
     }
 
-    return req;
-  }
-
-  private void setListeners(SolrRequest solrRequest, Request req) {
     setBasicAuthHeader(solrRequest, req);
     for (HttpListenerFactory factory : listenerFactory) {
       HttpListenerFactory.RequestResponseListener listener = factory.get();
-      req.onRequestQueued(listener);
+      listener.onQueued(req);
       req.onRequestBegin(listener);
       req.onComplete(listener);
     }
+
+    Map<String, String> headers = solrRequest.getHeaders();
+    if (headers != null) {
+      for (Map.Entry<String, String> entry : headers.entrySet()) {
+        req.header(entry.getKey(), entry.getValue());
+      }
+    }
+  }
+  
+  private String changeV2RequestEndpoint(String basePath) throws MalformedURLException {
+    URL oldURL = new URL(basePath);
+    String newPath = oldURL.getPath().replaceFirst("/solr", "/api");
+    return new URL(oldURL.getProtocol(), oldURL.getHost(), oldURL.getPort(), newPath).toString();
   }
 
   private Request createRequest(SolrRequest solrRequest, String collection) throws IOException, SolrServerException {
@@ -507,7 +521,7 @@ public class Http2SolrClient extends SolrClient {
 
     if (solrRequest instanceof V2Request) {
       if (System.getProperty("solr.v2RealPath") == null) {
-        basePath = serverBaseUrl.replace("/solr", "/api");
+        basePath = changeV2RequestEndpoint(basePath);
       } else {
         basePath = serverBaseUrl + "/____v2";
       }
@@ -853,7 +867,6 @@ public class Http2SolrClient extends SolrClient {
       this.connectionTimeout = connectionTimeOut;
       return this;
     }
-
   }
 
   public Set<String> getQueryParams() {
@@ -906,8 +919,15 @@ public class Http2SolrClient extends SolrClient {
     Http2SolrClient.defaultSSLConfig = null;
   }
 
-  private static SslContextFactory getDefaultSslContextFactory() {
-    SslContextFactory sslContextFactory = new SslContextFactory(false);
+  /* package-private for testing */
+  static SslContextFactory.Client getDefaultSslContextFactory() {
+    String checkPeerNameStr = System.getProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME);
+    boolean sslCheckPeerName = true;
+    if (checkPeerNameStr == null || "false".equalsIgnoreCase(checkPeerNameStr)) {
+      sslCheckPeerName = false;
+    }
+
+    SslContextFactory.Client sslContextFactory = new SslContextFactory.Client(!sslCheckPeerName);
 
     if (null != System.getProperty("javax.net.ssl.keyStore")) {
       sslContextFactory.setKeyStorePath
@@ -926,18 +946,8 @@ public class Http2SolrClient extends SolrClient {
           (System.getProperty("javax.net.ssl.trustStorePassword"));
     }
 
-    String checkPeerNameStr = System.getProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME);
-    boolean sslCheckPeerName = true;
-    if (checkPeerNameStr == null || "false".equalsIgnoreCase(checkPeerNameStr)) {
-      sslCheckPeerName = false;
-    }
+    sslContextFactory.setEndpointIdentificationAlgorithm(System.getProperty("solr.jetty.ssl.verifyClientHostName"));
 
-    if (System.getProperty("tests.jettySsl.clientAuth") != null) {
-      sslCheckPeerName = sslCheckPeerName || Boolean.getBoolean("tests.jettySsl.clientAuth");
-    }
-
-    sslContextFactory.setNeedClientAuth(sslCheckPeerName);
     return sslContextFactory;
   }
-
 }

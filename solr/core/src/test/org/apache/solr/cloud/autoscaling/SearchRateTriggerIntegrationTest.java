@@ -36,6 +36,7 @@ import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.CloudTestUtils;
+import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.Replica;
@@ -50,6 +51,7 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.data.Stat;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -92,6 +94,11 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
 
   }
 
+  @AfterClass
+  public static void cleanUpAfterClass() throws Exception {
+    cloudManager = null;
+  }
+
   @Before
   public void beforeTest() throws Exception {
     cluster.deleteAllCollections();
@@ -124,8 +131,8 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
         "conf", 1, 2);
     create.process(solrClient);
 
-    CloudTestUtils.waitForState(cloudManager, COLL1, 60, TimeUnit.SECONDS,
-        CloudTestUtils.clusterShape(1, 2));
+    CloudUtil.waitForState(cloudManager, COLL1, 60, TimeUnit.SECONDS,
+        CloudUtil.clusterShape(1, 2));
 
     CloudTestUtils.assertAutoScalingRequest
       (cloudManager, 
@@ -276,8 +283,8 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(COLL1,
         "conf", 1, 2);
     create.process(solrClient);
-    CloudTestUtils.waitForState(cloudManager, COLL1, 60, TimeUnit.SECONDS,
-        CloudTestUtils.clusterShape(1, 2));
+    CloudUtil.waitForState(cloudManager, COLL1, 60, TimeUnit.SECONDS,
+        CloudUtil.clusterShape(1, 2));
 
     // add a couple of spare replicas above RF. Use different types.
     // these additional replicas will be placed on other nodes in the cluster
@@ -285,8 +292,8 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
     solrClient.request(CollectionAdminRequest.addReplicaToShard(COLL1, "shard1", Replica.Type.TLOG));
     solrClient.request(CollectionAdminRequest.addReplicaToShard(COLL1, "shard1", Replica.Type.PULL));
 
-    CloudTestUtils.waitForState(cloudManager, COLL1, 60, TimeUnit.SECONDS,
-        CloudTestUtils.clusterShape(1, 5));
+    CloudUtil.waitForState(cloudManager, COLL1, 60, TimeUnit.SECONDS,
+        CloudUtil.clusterShape(1, 5));
 
     CloudTestUtils.assertAutoScalingRequest
       (cloudManager, 
@@ -393,8 +400,8 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
     assertEquals("cold replicas", 3, coldReplicas.get());
 
     // now the collection should be down to RF = 2
-    CloudTestUtils.waitForState(cloudManager, COLL1, 60, TimeUnit.SECONDS,
-        CloudTestUtils.clusterShape(1, 2));
+    CloudUtil.waitForState(cloudManager, COLL1, 60, TimeUnit.SECONDS,
+        CloudUtil.clusterShape(1, 2));
 
     listenerEvents.clear();
     listenerEventLatch = new CountDownLatch(3);
@@ -494,8 +501,8 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
     assertEquals("coldNodes: " +ops.toString(), 2, coldNodes2.get());
 
     // now the collection should be at RF == 1, with one additional PULL replica
-    CloudTestUtils.waitForState(cloudManager, COLL1, 60, TimeUnit.SECONDS,
-        CloudTestUtils.clusterShape(1, 1));
+    CloudUtil.waitForState(cloudManager, COLL1, 60, TimeUnit.SECONDS,
+        CloudUtil.clusterShape(1, 1));
   }
 
   @Test
@@ -507,8 +514,8 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
         "conf", 1, 2);
 
     create.process(solrClient);
-    CloudTestUtils.waitForState(cloudManager, COLL1, 60, TimeUnit.SECONDS,
-        CloudTestUtils.clusterShape(1, 2));
+    CloudUtil.waitForState(cloudManager, COLL1, 60, TimeUnit.SECONDS,
+        CloudUtil.clusterShape(1, 2));
 
     // add a couple of spare replicas above RF. Use different types to verify that only
     // searchable replicas are considered
@@ -517,8 +524,8 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
     solrClient.request(CollectionAdminRequest.addReplicaToShard(COLL1, "shard1", Replica.Type.TLOG));
     solrClient.request(CollectionAdminRequest.addReplicaToShard(COLL1, "shard1", Replica.Type.PULL));
 
-    CloudTestUtils.waitForState(cloudManager, COLL1, 60, TimeUnit.SECONDS,
-        CloudTestUtils.clusterShape(1, 5));
+    CloudUtil.waitForState(cloudManager, COLL1, 60, TimeUnit.SECONDS,
+        CloudUtil.clusterShape(1, 5));
 
     CloudTestUtils.assertAutoScalingRequest
       (cloudManager, 
@@ -687,8 +694,8 @@ public class SearchRateTriggerIntegrationTest extends SolrCloudTestCase {
     assertEquals(responses.toString(), 4, nodes.get());
 
     // we are left with one searchable replica
-    CloudTestUtils.waitForState(cloudManager, COLL1, 60, TimeUnit.SECONDS,
-        CloudTestUtils.clusterShape(1, 1));
+    CloudUtil.waitForState(cloudManager, COLL1, 60, TimeUnit.SECONDS,
+        CloudUtil.clusterShape(1, 1));
   }
 
   public static class CapturingTriggerListener extends TriggerListenerBase {

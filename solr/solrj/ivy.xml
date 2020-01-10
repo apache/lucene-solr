@@ -29,6 +29,7 @@
 
   <dependencies>
     <dependency org="org.apache.zookeeper" name="zookeeper" rev="${/org.apache.zookeeper/zookeeper}" conf="compile"/>
+    <dependency org="org.apache.zookeeper" name="zookeeper-jute" rev="${/org.apache.zookeeper/zookeeper-jute}" conf="compile"/>
     <dependency org="org.apache.httpcomponents" name="httpclient" rev="${/org.apache.httpcomponents/httpclient}" conf="compile"/>
     <dependency org="org.apache.httpcomponents" name="httpmime" rev="${/org.apache.httpcomponents/httpmime}" conf="compile"/>
     <dependency org="org.apache.httpcomponents" name="httpcore" rev="${/org.apache.httpcomponents/httpcore}" conf="compile"/>
@@ -36,7 +37,6 @@
     <dependency org="org.apache.commons" name="commons-math3" rev="${/org.apache.commons/commons-math3}" conf="compile"/>
     <dependency org="org.codehaus.woodstox" name="woodstox-core-asl" rev="${/org.codehaus.woodstox/woodstox-core-asl}" conf="compile"/>
     <dependency org="org.codehaus.woodstox" name="stax2-api" rev="${/org.codehaus.woodstox/stax2-api}" conf="compile"/>
-    <dependency org="org.noggit" name="noggit" rev="${/org.noggit/noggit}" conf="compile"/>
     <dependency org="org.slf4j" name="slf4j-api" rev="${/org.slf4j/slf4j-api}" conf="compile"/>
     <dependency org="org.slf4j" name="jcl-over-slf4j" rev="${/org.slf4j/jcl-over-slf4j}" conf="compile"/>
 
@@ -51,6 +51,15 @@
     <dependency org="org.eclipse.jetty" name="jetty-io" rev="${/org.eclipse.jetty/jetty-io}" conf="compile"/>
     <dependency org="org.eclipse.jetty" name="jetty-alpn-java-client" rev="${/org.eclipse.jetty/jetty-alpn-java-client}" conf="compile"/>
     <dependency org="org.eclipse.jetty" name="jetty-alpn-client" rev="${/org.eclipse.jetty/jetty-alpn-client}" conf="compile"/>
+
+    <dependency org="io.netty" name="netty-common" rev="${/io.netty/netty-common}" conf="compile"/>
+    <dependency org="io.netty" name="netty-resolver" rev="${/io.netty/netty-resolver}" conf="compile"/>
+    <dependency org="io.netty" name="netty-buffer" rev="${/io.netty/netty-buffer}" conf="compile"/>
+    <dependency org="io.netty" name="netty-codec" rev="${/io.netty/netty-codec}" conf="compile"/>
+    <dependency org="io.netty" name="netty-handler" rev="${/io.netty/netty-handler}" conf="compile"/>
+    <dependency org="io.netty" name="netty-transport" rev="${/io.netty/netty-transport}" conf="compile"/>
+    <dependency org="io.netty" name="netty-transport-native-epoll" rev="${/io.netty/netty-transport-native-epoll}" conf="compile"/>
+    <dependency org="io.netty" name="netty-transport-native-unix-common" rev="${/io.netty/netty-transport-native-unix-common}" conf="compile"/>
 
     <dependency org="org.apache.logging.log4j" name="log4j-slf4j-impl" rev="${/org.apache.logging.log4j/log4j-slf4j-impl}" conf="test"/>
 

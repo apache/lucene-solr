@@ -186,8 +186,10 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
     }
     try {
       for(Term term : terms) {
-        final TermStates termStates = TermStates.build(s.getIndexReader().getContext(), term, true);
-        stats.put(term, s.termStatistics(term, termStates));
+        final TermStates ts = TermStates.build(s.getIndexReader().getContext(), term, true);
+        if (ts.docFreq() > 0) {
+          stats.put(term, s.termStatistics(term, ts.docFreq(), ts.totalTermFreq()));
+        }
       }
     } finally {
       node.searchers.release(s);
@@ -262,36 +264,31 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
       }
 
       @Override
-      public TermStatistics termStatistics(Term term, TermStates context) throws IOException {
+      public TermStatistics termStatistics(Term term, int docFreq, long totalTermFreq) throws IOException {
         assert term != null;
-        long docFreq = 0;
-        long totalTermFreq = 0;
+        long distributedDocFreq = 0;
+        long distributedTotalTermFreq = 0;
         for(int nodeID=0;nodeID<nodeVersions.length;nodeID++) {
 
           final TermStatistics subStats;
           if (nodeID == myNodeID) {
-            subStats = super.termStatistics(term, context);
+            subStats = super.termStatistics(term, docFreq, totalTermFreq);
           } else {
             final TermAndShardVersion key = new TermAndShardVersion(nodeID, nodeVersions[nodeID], term);
             subStats = termStatsCache.get(key);
+            if (subStats == null) {
+              continue; // term not found
+            }
           }
-          
-          if (subStats == null) {
-            continue; // term not found
-          }
-        
+
           long nodeDocFreq = subStats.docFreq();
-          docFreq += nodeDocFreq;
+          distributedDocFreq += nodeDocFreq;
           
           long nodeTotalTermFreq = subStats.totalTermFreq();
-          totalTermFreq += nodeTotalTermFreq;
+          distributedTotalTermFreq += nodeTotalTermFreq;
         }
-
-        if (docFreq == 0) {
-          return null; // term not found in any node whatsoever
-        } else {
-          return new TermStatistics(term.bytes(), docFreq, totalTermFreq);
-        }
+        assert distributedDocFreq > 0;
+        return new TermStatistics(term.bytes(), distributedDocFreq, distributedTotalTermFreq);
       }
 
       @Override
@@ -347,6 +344,10 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
           } else {
             shardHits[nodeID] = searchNode(nodeID, nodeVersions, query, null, numHits, null);
           }
+
+          for (int i = 0; i < shardHits[nodeID].scoreDocs.length; i++) {
+            shardHits[nodeID].scoreDocs[i].shardIndex = nodeID;
+          }
         }
 
         // Merge:
@@ -401,6 +402,10 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
           } else {
             shardHits[nodeID] = searchNode(nodeID, nodeVersions, query, null, numHits, shardAfter);
           }
+
+          for (int i = 0; i < shardHits[nodeID].scoreDocs.length; i++) {
+            shardHits[nodeID].scoreDocs[i].shardIndex = nodeID;
+          }
           //System.out.println("  node=" + nodeID + " totHits=" + shardHits[nodeID].totalHits);
         }
 
@@ -423,6 +428,10 @@ public abstract class ShardSearchingTestBase extends LuceneTestCase {
             shardHits[nodeID] = localSearch(query, numHits, sort);
           } else {
             shardHits[nodeID] = (TopFieldDocs) searchNode(nodeID, nodeVersions, query, sort, numHits, null);
+          }
+
+          for (int i = 0; i < shardHits[nodeID].scoreDocs.length; i++) {
+            shardHits[nodeID].scoreDocs[i].shardIndex = nodeID;
           }
         }
 

@@ -51,7 +51,7 @@ import org.slf4j.LoggerFactory;
  * @lucene.internal
  */
 public class TestInjection {
-  
+
   public static class TestShutdownFailError extends OutOfMemoryError {
 
     public TestShutdownFailError(String msg) {
@@ -126,6 +126,8 @@ public class TestInjection {
 
   public volatile static CountDownLatch splitLatch = null;
 
+  public volatile static CountDownLatch directUpdateLatch = null;
+
   public volatile static CountDownLatch reindexLatch = null;
 
   public volatile static String reindexFailure = null;
@@ -139,6 +141,10 @@ public class TestInjection {
   private volatile static AtomicInteger countPrepRecoveryOpPauseForever = new AtomicInteger(0);
 
   public volatile static Integer delayBeforeSlaveCommitRefresh=null;
+
+  public volatile static Integer delayInExecutePlanAction=null;
+
+  public volatile static boolean failInExecutePlanAction = false;
 
   public volatile static boolean uifOutOfMemoryError = false;
 
@@ -160,6 +166,7 @@ public class TestInjection {
     splitFailureBeforeReplicaCreation = null;
     splitFailureAfterReplicaCreation = null;
     splitLatch = null;
+    directUpdateLatch = null;
     reindexLatch = null;
     reindexFailure = null;
     prepRecoveryOpPauseForever = null;
@@ -167,6 +174,8 @@ public class TestInjection {
     failIndexFingerprintRequests = null;
     wrongIndexFingerprint = null;
     delayBeforeSlaveCommitRefresh = null;
+    delayInExecutePlanAction = null;
+    failInExecutePlanAction = false;
     uifOutOfMemoryError = false;
     notifyPauseForeverDone();
     newSearcherHooks.clear();
@@ -422,6 +431,18 @@ public class TestInjection {
       try {
         log.info("Waiting in ReplicaMutator for up to 60s");
         return splitLatch.await(60, TimeUnit.SECONDS);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+    }
+    return true;
+  }
+
+  public static boolean injectDirectUpdateLatch() {
+    if (directUpdateLatch != null) {
+      try {
+        log.info("Waiting in DirectUpdateHandler2 for up to 60s");
+        return directUpdateLatch.await(60, TimeUnit.SECONDS);
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
       }

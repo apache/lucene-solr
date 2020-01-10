@@ -77,7 +77,7 @@ public class CollectionMutator {
       if (shardParentNode != null)  {
         sliceProps.put("shard_parent_node", shardParentNode);
       }
-      collection = updateSlice(collectionName, collection, new Slice(shardId, replicas, sliceProps));
+      collection = updateSlice(collectionName, collection, new Slice(shardId, replicas, sliceProps, collectionName));
       return new ZkWriteCommand(collectionName, collection);
     } else {
       log.error("Unable to create Shard: " + shardId + " because it already exists in collection: " + collectionName);

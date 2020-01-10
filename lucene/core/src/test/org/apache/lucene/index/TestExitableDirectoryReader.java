@@ -17,12 +17,19 @@
 package org.apache.lucene.index;
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.analysis.MockAnalyzer;
+import org.apache.lucene.document.BinaryDocValuesField;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.IntPoint;
+import org.apache.lucene.document.NumericDocValuesField;
+import org.apache.lucene.document.SortedDocValuesField;
+import org.apache.lucene.document.SortedNumericDocValuesField;
+import org.apache.lucene.document.SortedSetDocValuesField;
 import org.apache.lucene.index.ExitableDirectoryReader.ExitingReaderException;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.Query;
@@ -274,6 +281,100 @@ public class TestExitableDirectoryReader extends LuceneTestCase {
         return true;
       }
     };
+  }
+  
+  @FunctionalInterface
+  interface DvFactory {
+    DocValuesIterator create(LeafReader leaf) throws IOException;
+  }
+  
+  public void testDocValues() throws IOException {
+    Directory directory = newDirectory();
+    IndexWriter writer = new IndexWriter(directory, newIndexWriterConfig(new MockAnalyzer(random())));
+
+    Document d1 = new Document();
+    addDVs(d1, 10);
+    writer.addDocument(d1);
+
+    Document d2 = new Document();
+    addDVs(d2, 100);
+    writer.addDocument(d2);
+
+    Document d3 = new Document();
+    addDVs(d3, 1000);
+    writer.addDocument(d3);
+
+    writer.forceMerge(1);
+    writer.commit();
+    writer.close();
+
+    DirectoryReader directoryReader;
+    DirectoryReader exitableDirectoryReader;
+
+    for (DvFactory dvFactory :   Arrays.<DvFactory>asList(
+                 (r) -> r.getSortedDocValues("sorted"),    
+                 (r) -> r.getSortedSetDocValues("sortedset"),
+                 (r) -> r.getSortedNumericDocValues("sortednumeric"),
+                 (r) -> r.getNumericDocValues("numeric"),
+                 (r) -> r.getBinaryDocValues("binary") 
+            ))
+    {
+      directoryReader = DirectoryReader.open(directory);
+      exitableDirectoryReader = new ExitableDirectoryReader(directoryReader, immediateQueryTimeout());
+      
+      {
+        IndexReader  reader = new TestReader(getOnlyLeafReader(exitableDirectoryReader));
+      
+        expectThrows(ExitingReaderException.class, () -> {
+          LeafReader leaf = reader.leaves().get(0).reader();
+          DocValuesIterator iter = dvFactory.create(leaf);
+          scan(leaf, iter);
+        });
+        reader.close();
+      }
+  
+      directoryReader = DirectoryReader.open(directory);
+      exitableDirectoryReader = new ExitableDirectoryReader(directoryReader, random().nextBoolean()? 
+          infiniteQueryTimeout() : disabledQueryTimeout());
+      {
+        IndexReader reader = new TestReader(getOnlyLeafReader(exitableDirectoryReader));
+        final LeafReader leaf = reader.leaves().get(0).reader();
+        scan(leaf, dvFactory.create(leaf));
+        assertNull(leaf.getNumericDocValues("absent"));
+        assertNull(leaf.getBinaryDocValues("absent"));
+        assertNull(leaf.getSortedDocValues("absent"));
+        assertNull(leaf.getSortedNumericDocValues("absent"));
+        assertNull(leaf.getSortedSetDocValues("absent"));
+        
+        reader.close();
+      }
+    }
+    
+    directory.close();
+  
+  }
+
+  static private void scan(LeafReader leaf, DocValuesIterator iter ) throws IOException {
+    for (iter.nextDoc(); iter.docID()!=DocIdSetIterator.NO_MORE_DOCS
+         && iter.docID()<leaf.maxDoc();) {
+      final int nextDocId = iter.docID()+1;
+      if (random().nextBoolean() && nextDocId<leaf.maxDoc()) {
+        if(random().nextBoolean()) {
+          iter.advance(nextDocId);
+        } else {
+          iter.advanceExact(nextDocId);
+        }
+      } else { 
+        iter.nextDoc();
+      }
+    }
+  }
+  private void addDVs(Document d1, int i) {
+    d1.add(new NumericDocValuesField("numeric", i));
+    d1.add(new BinaryDocValuesField("binary", new BytesRef(""+i)));
+    d1.add(new SortedDocValuesField("sorted", new BytesRef(""+i)));
+    d1.add(new SortedNumericDocValuesField("sortednumeric", i));
+    d1.add(new SortedSetDocValuesField("sortedset", new BytesRef(""+i)));
   }
 }
 

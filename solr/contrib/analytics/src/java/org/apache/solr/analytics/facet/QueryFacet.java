@@ -34,12 +34,12 @@ import org.apache.solr.search.QParser;
  */
 public class QueryFacet extends AbstractSolrQueryFacet {
   private final Map<String,String> queries;
-  
+
   public QueryFacet(String name, Map<String, String> queries) {
     super(name);
     this.queries = queries;
   }
-  
+
   @Override
   public void createFacetValueExecuters(final Filter filter, SolrQueryRequest queryRequest, Consumer<FacetValueQueryExecuter> consumer) {
     queries.forEach( (queryName, query) -> {

@@ -63,7 +63,7 @@ import java.util.regex.Pattern;
 public class GenerateUTR30DataFiles {
   private static final String ICU_SVN_TAG_URL
       = "http://source.icu-project.org/repos/icu/tags";
-  private static final String ICU_RELEASE_TAG = "release-60-2";
+  private static final String ICU_RELEASE_TAG = "release-62-1";
   private static final String ICU_DATA_NORM2_PATH = "icu4c/source/data/unidata/norm2";
   private static final String NFC_TXT = "nfc.txt";
   private static final String NFKC_TXT = "nfkc.txt";

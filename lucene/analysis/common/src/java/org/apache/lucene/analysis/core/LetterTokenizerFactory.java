@@ -42,8 +42,13 @@ import static org.apache.lucene.analysis.standard.StandardTokenizer.MAX_TOKEN_LE
  * </ul>
  *
  * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class LetterTokenizerFactory extends TokenizerFactory {
+
+  /** SPI name */
+  public static final String NAME = "letter";
+
   private final int maxTokenLen;
 
   /** Creates a new LetterTokenizerFactory */

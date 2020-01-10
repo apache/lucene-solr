@@ -54,6 +54,7 @@ import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BitDocIdSet;
 import org.apache.lucene.util.BytesRef;
@@ -61,7 +62,7 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.BytesRefIterator;
 import org.apache.lucene.util.DocIdSetBuilder;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.FutureArrays;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
@@ -377,7 +378,9 @@ public class GraphTermsQParserPlugin extends QParserPlugin {
 
 
 // modified version of PointInSetQuery
-abstract class PointSetQuery extends Query implements DocSetProducer {
+abstract class PointSetQuery extends Query implements DocSetProducer, Accountable {
+  protected static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(PointSetQuery.class);
+
   // A little bit overkill for us, since all of our "terms" are always in the same field:
   final PrefixCodedTerms sortedPackedPoints;
   final int sortedPackedPointsHashCode;
@@ -385,6 +388,7 @@ abstract class PointSetQuery extends Query implements DocSetProducer {
   final int bytesPerDim;
   final int numDims;
   int maxDocFreq = Integer.MAX_VALUE;
+  final long ramBytesUsed; // cache
 
   /**
    * Iterator of encoded point values.
@@ -542,6 +546,8 @@ abstract class PointSetQuery extends Query implements DocSetProducer {
     }
     sortedPackedPoints = builder.finish();
     sortedPackedPointsHashCode = sortedPackedPoints.hashCode();
+    ramBytesUsed = BASE_RAM_BYTES +
+        RamUsageEstimator.sizeOfObject(sortedPackedPoints);
   }
 
   private FixedBitSet getLiveDocs(IndexSearcher searcher) throws IOException {
@@ -562,6 +568,11 @@ abstract class PointSetQuery extends Query implements DocSetProducer {
   @Override
   public DocSet createDocSet(SolrIndexSearcher searcher) throws IOException {
     return getDocSet(searcher);
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return ramBytesUsed;
   }
 
   public DocSet getDocSet(IndexSearcher searcher) throws IOException {
@@ -690,12 +701,12 @@ abstract class PointSetQuery extends Query implements DocSetProducer {
       for(int dim=0;dim<numDims;dim++) {
         int offset = dim*bytesPerDim;
 
-        int cmpMin = FutureArrays.compareUnsigned(minPackedValue, offset, offset + bytesPerDim, pointBytes, offset, offset + bytesPerDim);
+        int cmpMin = Arrays.compareUnsigned(minPackedValue, offset, offset + bytesPerDim, pointBytes, offset, offset + bytesPerDim);
         if (cmpMin > 0) {
           return PointValues.Relation.CELL_OUTSIDE_QUERY;
         }
 
-        int cmpMax = FutureArrays.compareUnsigned(maxPackedValue, offset, offset + bytesPerDim, pointBytes, offset, offset + bytesPerDim);
+        int cmpMax = Arrays.compareUnsigned(maxPackedValue, offset, offset + bytesPerDim, pointBytes, offset, offset + bytesPerDim);
         if (cmpMax < 0) {
           return PointValues.Relation.CELL_OUTSIDE_QUERY;
         }

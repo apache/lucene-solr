@@ -31,8 +31,11 @@ import java.util.Map;
 import java.util.TreeMap;
 
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.GroupParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.index.LogDocMergePolicyFactory;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
@@ -44,8 +47,6 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.noggit.JSONUtil;
-import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,6 +55,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String FOO_STRING_FIELD = "foo_s1";
+  public static final String FOO_STRING_DOCVAL_FIELD = "foo_sdv";
   public static final String SMALL_STRING_FIELD = "small_s1";
   public static final String SMALL_INT_FIELD = "small_i";
   static final String EMPTY_FACETS = "'facet_ranges':{},'facet_intervals':{},'facet_heatmaps':{}";
@@ -99,7 +101,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
             ,"//arr[@name='groups']/lst[1]/str[@name='groupValue'][.='author3']"
             ,"//arr[@name='groups']/lst[1]/result[@numFound='1']"
             ,"//arr[@name='groups']/lst[1]/result/doc/*[@name='id'][.='5']"
-            
+
             ,"//arr[@name='groups']/lst[2]/str[@name='groupValue'][.='author2']"
             ,"//arr[@name='groups']/lst[2]/result[@numFound='2']"
             ,"//arr[@name='groups']/lst[2]/result/doc/*[@name='id'][.='4']"
@@ -122,6 +124,18 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         , "//arr[@name='groups']/lst[2]/result[@numFound='3']"
         , "//arr[@name='groups']/lst[2]/result/doc/*[@name='id'][.='5']"
     );
+
+    SolrException exception = expectThrows(SolrException.class, () -> {
+      h.query(req("q", "title:title", "group", "true", "group.field", "group_i", "group.offset", "-1"));
+    });
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, exception.code());
+    assertEquals("'group.offset' parameter cannot be negative", exception.getMessage());
+
+    // for group.main=true and group.format=simple, group.offset is not consumed
+    assertQ(req("q", "title:title", "group", "true", "group.field", "group_i",
+        "group.offset", "-1", "group.format", "simple"));
+    assertQ(req("q", "title:title", "group", "true", "group.field", "group_i",
+        "group.offset", "-1", "group.main", "true"));
   }
 
   @Test
@@ -561,6 +575,21 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
              ,"/grouped/id:1000=={'matches':10,'doclist':{'numFound':0,'start':0,'docs':[]}}"
     );
 
+    // group.query and sort
+    assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.query",f+":1", "fl","id,score", "rows","2", "group.limit","2", "sort",f+" desc, score desc", "indent","off")
+        ,"/grouped/"+f+":1==" +
+            "{'matches':10,'doclist':{'numFound':3,'start':0,'maxScore':10.0,'docs':[{'id':'8','score':10.0},{'id':'10','score':3.0}]}},"
+    );
+    // group.query with fl=score and default sort
+    assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.query",f+":1", "fl","id,score", "rows","2", "group.limit","2", "sort", "score desc", "indent","off")
+        ,"/grouped/"+f+":1==" +
+            "{'matches':10,'doclist':{'numFound':3,'start':0,'maxScore':10.0,'docs':[{'id':'8','score':10.0},{'id':'10','score':3.0}]}},"
+    );
+    assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.query",f+":1", "fl","id", "rows","2", "group.limit","2", "indent","off")
+        ,"/grouped/"+f+":1==" +
+            "{'matches':10,'doclist':{'numFound':3,'start':0,'docs':[{'id':'8'},{'id':'10'}]}},"
+    );
+
     // group.query and offset
     assertJQ(req("fq",filt,  "q","{!func}"+f2, "group","true", "group.query","id:[2 TO 5]", "fl","id", "group.limit","3", "group.offset","2")
        ,"/grouped=={'id:[2 TO 5]':{'matches':10," +
@@ -658,11 +687,56 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
              ,"/grouped/id:1000=={'matches':0,'doclist':{'numFound':0,'start':0,'docs':[]}}"
     );
 
-
-
   }
 
+  @Test
+  public void testGroupingNonIndexedOrStoredDocValues() throws Exception {
+    // test-case from SOLR-4647
+    assertU(add(doc("id", "1", FOO_STRING_DOCVAL_FIELD, "a", "bday", "2012-11-20T00:00:00Z")));
+    assertU(add(doc("id", "2", FOO_STRING_DOCVAL_FIELD, "b", "bday", "2012-11-21T00:00:00Z")));
+    assertU(add(doc("id", "3", FOO_STRING_DOCVAL_FIELD, "a", "bday", "2012-11-20T00:00:00Z")));
+    assertU(add(doc("id", "4", FOO_STRING_DOCVAL_FIELD, "b", "bday", "2013-01-15T00:00:00Z")));
+    assertU(add(doc("id", "5", FOO_STRING_DOCVAL_FIELD, "a", "bday", "2013-01-14T00:00:00Z")));
+    assertU(commit());
 
+    // Facet counts based on groups
+    SolrQueryRequest req = req("q", "*:*", "rows", "1", "group", "true", "group.field", FOO_STRING_DOCVAL_FIELD,
+        "sort", FOO_STRING_DOCVAL_FIELD + " asc", "fl", "id",
+        "fq", "{!tag=chk}bday:[2012-12-18T00:00:00Z TO 2013-01-17T23:59:59Z]",
+        "facet", "true", "group.truncate", "true", "group.sort", "bday desc",
+        "facet.query", "{!ex=chk key=LW1}bday:[2013-01-11T00:00:00Z TO 2013-01-17T23:59:59Z]",
+        "facet.query", "{!ex=chk key=LM1}bday:[2012-12-18T00:00:00Z TO 2013-01-17T23:59:59Z]",
+        "facet.query", "{!ex=chk key=LM3}bday:[2012-10-18T00:00:00Z TO 2013-01-17T23:59:59Z]");
+    assertJQ(
+        req,
+        "/grouped=={'"+FOO_STRING_DOCVAL_FIELD+"':{'matches':2,'groups':[{'groupValue':'a','doclist':{'numFound':1,'start':0,'docs':[{'id':'5'}]}}]}}",
+        "/facet_counts=={'facet_queries':{'LW1':2,'LM1':2,'LM3':2},'facet_fields':{}," + EMPTY_FACETS + "}"
+    );
+  }
+
+  @Test
+  public void testGroupingOnDateField() throws Exception {
+    assertU(add(doc("id", "1",  "date_dt", "2012-11-20T00:00:00Z")));
+    assertU(add(doc("id", "2",  "date_dt", "2012-11-21T00:00:00Z")));
+    assertU(commit());
+
+    assertU(add(doc("id", "3",  "date_dt", "2012-11-20T00:00:00Z")));
+    assertU(add(doc("id", "4",  "date_dt", "2013-01-15T00:00:00Z")));
+    assertU(add(doc("id", "5")));
+    assertU(commit());
+
+    ModifiableSolrParams params = params("q", "*:*", "group.limit", "10",
+        "group", "true", "fl", "id", "group.ngroups", "true");
+
+    assertJQ(req(params, "group.field", "date_dt", "sort", "id asc"),
+        "/grouped=={'date_dt':{'matches':5,'ngroups':4, 'groups':" +
+            "[{'groupValue':'2012-11-20T00:00:00Z','doclist':{'numFound':2,'start':0,'docs':[{'id':'1'},{'id':'3'}]}}," +
+            "{'groupValue':'2012-11-21T00:00:00Z','doclist':{'numFound':1,'start':0,'docs':[{'id':'2'}]}}," +
+            "{'groupValue':'2013-01-15T00:00:00Z','doclist':{'numFound':1,'start':0,'docs':[{'id':'4'}]}}," +
+            "{'groupValue':null,'doclist':{'numFound':1,'start':0,'docs':[{'id':'5'}]}}" +
+            "]}}"
+    );
+  }
 
   @Test
   public void testRandomGrouping() throws Exception {
@@ -690,6 +764,12 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
       types.add(new FldType(FOO_STRING_FIELD,ONE_ONE, new SVal('a','z',1,2)));
       types.add(new FldType(SMALL_STRING_FIELD,ZERO_ONE, new SVal('a',(char)('c'+indexSize/10),1,1)));
       types.add(new FldType(SMALL_INT_FIELD,ZERO_ONE, new IRange(0,5+indexSize/10)));
+
+      // non-stored non-indexed docValue enabled fields
+      types.add(new FldType("score_ff",ONE_ONE, new FVal(1,100)));
+      types.add(new FldType("foo_ii",ZERO_ONE, new IRange(0,indexSize)));
+      types.add(new FldType(FOO_STRING_DOCVAL_FIELD,ONE_ONE, new SVal('a','z',3,7)));
+      types.add(new FldType("foo_bdv", ZERO_ONE, new BVal()));
 
       clearIndex();
       Map<Comparable, Doc> model = indexDocs(types, null, indexSize);
@@ -825,7 +905,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
         int randomPercentage = random().nextInt(101);
         // TODO: create a random filter too
         SolrQueryRequest req = req("group","true","wt","json","indent","true", "echoParams","all", "q","{!func}score_f", "group.field",groupField
-            ,sortStr==null ? "nosort":"sort", sortStr ==null ? "": sortStr
+            ,sortStr==null ? "nosort":"sort", sortStr ==null ? "": sortStr, "fl", "*,score_ff,foo_ii,foo_bdv," + FOO_STRING_DOCVAL_FIELD // only docValued fields are not returned by default
             ,(groupSortStr == null || groupSortStr == sortStr) ? "noGroupsort":"group.sort", groupSortStr==null ? "": groupSortStr
             ,"rows",""+rows, "start",""+start, "group.offset",""+group_offset, "group.limit",""+group_limit,
             GroupParams.GROUP_CACHE_PERCENTAGE, Integer.toString(randomPercentage), GroupParams.GROUP_TOTAL_COUNT, includeNGroups ? "true" : "false",
@@ -835,13 +915,13 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
 
         String strResponse = h.query(req);
 
-        Object realResponse = ObjectBuilder.fromJSON(strResponse);
+        Object realResponse = Utils.fromJSONString(strResponse);
         String err = JSONTestUtil.matchObj("/grouped/" + groupField, realResponse, modelResponse);
         if (err != null) {
           log.error("GROUPING MISMATCH (" + queryIter + "): " + err
            + "\n\trequest="+req
            + "\n\tresult="+strResponse
-           + "\n\texpected="+ JSONUtil.toJSON(modelResponse)
+           + "\n\texpected="+ Utils.toJSONString(modelResponse)
            + "\n\tsorted_model="+ sortedGroups
           );
 
@@ -857,7 +937,7 @@ public class TestGroupingSearch extends SolrTestCaseJ4 {
           log.error("GROUPING MISMATCH (" + queryIter + "): " + err
            + "\n\trequest="+req
            + "\n\tresult="+strResponse
-           + "\n\texpected="+ JSONUtil.toJSON(expectedFacetResponse)
+           + "\n\texpected="+ Utils.toJSONString(expectedFacetResponse)
           );
 
           // re-execute the request... good for putting a breakpoint here for debugging

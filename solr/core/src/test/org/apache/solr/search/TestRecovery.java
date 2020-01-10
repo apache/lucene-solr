@@ -17,34 +17,7 @@
 package org.apache.solr.search;
 
 
-import static org.apache.solr.search.TestRecovery.VersionProvider.*;
-import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
-
-import com.codahale.metrics.Gauge;
-import com.codahale.metrics.Meter;
-import com.codahale.metrics.Metric;
-import com.codahale.metrics.MetricRegistry;
-import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.metrics.SolrMetricManager;
-import org.apache.solr.util.TimeOut;
-import org.noggit.ObjectBuilder;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.TestUtil;
-import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.request.SolrQueryRequest;
-import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.update.DirectUpdateHandler2;
-import org.apache.solr.update.UpdateLog;
-import org.apache.solr.update.UpdateHandler;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import java.io.File;
-import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
@@ -62,7 +35,30 @@ import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.Metric;
+import com.codahale.metrics.MetricRegistry;
+import org.apache.lucene.util.TestUtil;
+import org.apache.solr.SolrTestCaseJ4;
+import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.update.DirectUpdateHandler2;
+import org.apache.solr.update.UpdateHandler;
+import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
+import org.apache.solr.util.TimeOut;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.search.TestRecovery.VersionProvider.getNextVersion;
+import static org.apache.solr.update.processor.DistributingUpdateProcessorFactory.DISTRIB_UPDATE_PARAM;
 
 public class TestRecovery extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -99,12 +95,6 @@ public class TestRecovery extends SolrTestCaseJ4 {
     }
     
     deleteCore();
-    
-    try {
-      FileUtils.deleteDirectory(initCoreDataDir);
-    } catch (IOException e) {
-      log.error("Exception deleting core directory.", e);
-    }
   }
 
   private Map<String, Metric> getMetrics() {
@@ -1296,9 +1286,9 @@ public class TestRecovery extends SolrTestCaseJ4 {
       h.close();
       files = ulog.getLogList(logDir);
       Arrays.sort(files);
-      RandomAccessFile raf = new RandomAccessFile(new File(logDir, files[files.length-1]), "rw");
-      raf.writeChars("This is a trashed log file that really shouldn't work at all, but we'll see...");
-      raf.close();
+      try (RandomAccessFile raf = new RandomAccessFile(new File(logDir, files[files.length - 1]), "rw")) {
+        raf.writeChars("This is a trashed log file that really shouldn't work at all, but we'll see...");
+      }
 
       ignoreException("Failure to open existing");
       createCore();
@@ -1347,11 +1337,11 @@ public class TestRecovery extends SolrTestCaseJ4 {
       h.close();
       String[] files = ulog.getLogList(logDir);
       Arrays.sort(files);
-      RandomAccessFile raf = new RandomAccessFile(new File(logDir, files[files.length-1]), "rw");
-      raf.seek(raf.length());  // seek to end
-      raf.writeLong(0xffffffffffffffffL);
-      raf.writeChars("This should be appended to a good log file, representing a bad partially written record.");
-      raf.close();
+      try (RandomAccessFile raf = new RandomAccessFile(new File(logDir, files[files.length - 1]), "rw")) {
+        raf.seek(raf.length());  // seek to end
+        raf.writeLong(0xffffffffffffffffL);
+        raf.writeChars("This should be appended to a good log file, representing a bad partially written record.");
+      }
 
       logReplay.release(1000);
       logReplayFinish.drainPermits();
@@ -1408,11 +1398,11 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
       String[] files = ulog.getLogList(logDir);
       Arrays.sort(files);
-      RandomAccessFile raf = new RandomAccessFile(new File(logDir, files[files.length-1]), "rw");
-      long len = raf.length();
-      raf.seek(0);  // seek to start
-      raf.write(new byte[(int)len]);  // zero out file
-      raf.close();
+      try (RandomAccessFile raf = new RandomAccessFile(new File(logDir, files[files.length - 1]), "rw")) {
+        long len = raf.length();
+        raf.seek(0);  // seek to start
+        raf.write(new byte[(int) len]);  // zero out file
+      }
 
 
       ignoreException("Failure to open existing log file");  // this is what the corrupted log currently produces... subject to change.
@@ -1485,16 +1475,16 @@ public class TestRecovery extends SolrTestCaseJ4 {
       String[] files = ulog.getLogList(logDir);
       Arrays.sort(files);
       String fname = files[files.length-1];
-      RandomAccessFile raf = new RandomAccessFile(new File(logDir, fname), "rw");
-      raf.seek(raf.length());  // seek to end
-      raf.writeLong(0xffffffffffffffffL);
-      raf.writeChars("This should be appended to a good log file, representing a bad partially written record.");
-      
-      byte[] content = new byte[(int)raf.length()];
-      raf.seek(0);
-      raf.readFully(content);
+      byte[] content;
+      try (RandomAccessFile raf = new RandomAccessFile(new File(logDir, fname), "rw")) {
+        raf.seek(raf.length());  // seek to end
+        raf.writeLong(0xffffffffffffffffL);
+        raf.writeChars("This should be appended to a good log file, representing a bad partially written record.");
 
-      raf.close();
+        content = new byte[(int) raf.length()];
+        raf.seek(0);
+        raf.readFully(content);
+      }
 
       // Now make a newer log file with just the IDs changed.  NOTE: this may not work if log format changes too much!
       findReplace("AAAAAA".getBytes(StandardCharsets.UTF_8), "aaaaaa".getBytes(StandardCharsets.UTF_8), content);
@@ -1507,10 +1497,9 @@ public class TestRecovery extends SolrTestCaseJ4 {
           UpdateLog.LOG_FILENAME_PATTERN,
           UpdateLog.TLOG_NAME,
           logNumber + 1);
-      raf = new RandomAccessFile(new File(logDir, fname2), "rw");
-      raf.write(content);
-      raf.close();
-      
+      try (RandomAccessFile raf = new RandomAccessFile(new File(logDir, fname2), "rw")) {
+        raf.write(content);
+      }
 
       logReplay.release(1000);
       logReplayFinish.drainPermits();
@@ -1701,7 +1690,7 @@ public class TestRecovery extends SolrTestCaseJ4 {
 
   private static Long getVer(SolrQueryRequest req) throws Exception {
     String response = JQ(req);
-    Map rsp = (Map) ObjectBuilder.fromJSON(response);
+    Map rsp = (Map) Utils.fromJSONString(response);
     Map doc = null;
     if (rsp.containsKey("doc")) {
       doc = (Map)rsp.get("doc");

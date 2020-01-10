@@ -653,7 +653,7 @@ public class ChaosMonkey {
     StringBuilder builder = new StringBuilder();
     builder.append("Collection status: {");
     for (Slice slice:docCollection.getSlices()) {
-      builder.append(slice.getName() + ": {");
+      builder.append(slice.getName()).append(": {");
       for (Replica replica:slice.getReplicas()) {
         log.info(replica.toString());
         java.util.regex.Matcher m = portPattern.matcher(replica.getBaseUrl());

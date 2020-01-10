@@ -203,9 +203,9 @@ public class CoreDescriptor {
     coreProperties.putAll(defaultProperties);
     coreProperties.put(CORE_NAME, name);
 
-    for (String propname : coreProps.keySet()) {
-
-      String propvalue = coreProps.get(propname);
+    for (Map.Entry<String, String> entry : coreProps.entrySet()) {
+      String propname = entry.getKey();
+      String propvalue = entry.getValue();
 
       if (isUserDefinedProperty(propname))
         originalExtraProperties.put(propname, propvalue);

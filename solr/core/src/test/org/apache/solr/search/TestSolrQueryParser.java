@@ -28,6 +28,7 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.PointInSetQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermInSetQuery;
@@ -35,9 +36,10 @@ import org.apache.lucene.search.TermQuery;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MapSolrParams;
-import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.parser.QueryParser;
 import org.apache.solr.query.FilterQuery;
@@ -45,7 +47,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.noggit.ObjectBuilder;
 
 import static org.hamcrest.core.StringContains.containsString;
 
@@ -367,7 +368,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     
   @Test
   public void testManyClauses_Lucene() throws Exception {
-    final int numZ = BooleanQuery.getMaxClauseCount();
+    final int numZ = IndexSearcher.getMaxClauseCount();
     
     final String a = "1 a 2 b 3 c 10 d 11 12 "; // 10 terms
     final StringBuilder sb = new StringBuilder("id:(");
@@ -391,7 +392,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertEquals(SyntaxError.class, e.getCause().getClass());
     
     assertNotNull(e.getCause().getCause());
-    assertEquals(BooleanQuery.TooManyClauses.class, e.getCause().getCause().getClass());
+    assertEquals(IndexSearcher.TooManyClauses.class, e.getCause().getCause().getClass());
 
     // but should still work as a filter query since TermsQuery can be used...
     assertJQ(req("q","*:*", "fq", way_too_long)
@@ -963,7 +964,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
         , "/response/numFound==1"
     );
 
-    Map all = (Map)ObjectBuilder.fromJSON(h.query(req("q", "*:*", "rows", "0", "wt", "json")));
+    Map all = (Map) Utils.fromJSONString(h.query(req("q", "*:*", "rows", "0", "wt", "json")));
     int totalDocs = Integer.parseInt(((Map)all.get("response")).get("numFound").toString());
     int allDocsExceptOne = totalDocs - 1;
 

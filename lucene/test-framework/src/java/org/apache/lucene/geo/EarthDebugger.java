@@ -46,7 +46,7 @@ public class EarthDebugger {
     b.append("    <script src=\"http://www.webglearth.com/v2/api.js\"></script>\n");
     b.append("    <script>\n");
     b.append("      function initialize() {\n");
-    b.append("        var earth = new WE.map('earth_div', {center: [" + centerLat + ", " + centerLon + "], altitude: " + altitudeMeters + "});\n");
+    b.append("        var earth = new WE.map('earth_div', {center: [").append(centerLat).append(", ").append(centerLon).append("], altitude: ").append(altitudeMeters).append("});\n");
   }
 
   public void addPolygon(Polygon poly) {
@@ -57,14 +57,14 @@ public class EarthDebugger {
     String name = "poly" + nextShape;
     nextShape++;
 
-    b.append("        var " + name + " = WE.polygon([\n");
+    b.append("        var ").append(name).append(" = WE.polygon([\n");
     double[] polyLats = poly.getPolyLats();
     double[] polyLons = poly.getPolyLons();
     for(int i=0;i<polyLats.length;i++) {
-      b.append("          [" + polyLats[i] + ", " + polyLons[i] + "],\n");
+      b.append("          [").append(polyLats[i]).append(", ").append(polyLons[i]).append("],\n");
     }
-    b.append("        ], {color: '" + color + "', fillColor: \"#000000\", fillOpacity: 0.0001});\n");
-    b.append("        " + name + ".addTo(earth);\n");
+    b.append("        ], {color: '").append(color).append("', fillColor: \"#000000\", fillOpacity: 0.0001});\n");
+    b.append("        ").append(name).append(".addTo(earth);\n");
 
     for (Polygon hole : poly.getHoles()) {
       addPolygon(hole, "#ffffff");
@@ -84,7 +84,7 @@ public class EarthDebugger {
   private void drawSegment(double minLat, double maxLat, double minLon, double maxLon) {
     int steps = getStepCount(minLat, maxLat, minLon, maxLon);
     for(int i=0;i<steps;i++) {
-      b.append("          [" + (minLat + (maxLat - minLat) * i / steps) + ", " + (minLon + (maxLon - minLon) * i / steps) + "],\n");
+      b.append("          [").append(minLat + (maxLat - minLat) * i / steps).append(", ").append(minLon + (maxLon - minLon) * i / steps).append("],\n");
     }
   }
 
@@ -96,8 +96,8 @@ public class EarthDebugger {
     String name = "rect" + nextShape;
     nextShape++;
 
-    b.append("        // lat: " + minLat + " TO " + maxLat + "; lon: " + minLon + " TO " + maxLon + "\n");
-    b.append("        var " + name + " = WE.polygon([\n");
+    b.append("        // lat: ").append(minLat).append(" TO ").append(maxLat).append("; lon: ").append(minLon).append(" TO ").append(maxLon).append("\n");
+    b.append("        var ").append(name).append(" = WE.polygon([\n");
 
     b.append("          // min -> max lat, min lon\n");
     drawSegment(minLat, maxLat, minLon, minLon);
@@ -112,9 +112,9 @@ public class EarthDebugger {
     drawSegment(minLat, minLat, maxLon, minLon);
 
     b.append("          // min lat, min lon\n");
-    b.append("          [" + minLat + ", " + minLon + "]\n");
-    b.append("        ], {color: \"" + color + "\", fillColor: \"" + color + "\"});\n");
-    b.append("        " + name + ".addTo(earth);\n");
+    b.append("          [").append(minLat).append(", ").append(minLon).append("]\n");
+    b.append("        ], {color: \"").append(color).append("\", fillColor: \"").append(color).append("\"});\n");
+    b.append("        ").append(name).append(".addTo(earth);\n");
   }
 
   /** Draws a line a fixed latitude, spanning the min/max longitude */
@@ -122,19 +122,19 @@ public class EarthDebugger {
     String name = "latline" + nextShape;
     nextShape++;
 
-    b.append("        var " + name + " = WE.polygon([\n");
+    b.append("        var ").append(name).append(" = WE.polygon([\n");
     double lon;
     int steps = getStepCount(lat, minLon, lat, maxLon);
     for(lon = minLon;lon<=maxLon;lon += (maxLon-minLon)/steps) {
-      b.append("          [" + lat + ", " + lon + "],\n");
+      b.append("          [").append(lat).append(", ").append(lon).append("],\n");
     }
-    b.append("          [" + lat + ", " + maxLon + "],\n");
+    b.append("          [").append(lat).append(", ").append(maxLon).append("],\n");
     lon -= (maxLon-minLon)/steps;
     for(;lon>=minLon;lon -= (maxLon-minLon)/steps) {
-      b.append("          [" + lat + ", " + lon + "],\n");
+      b.append("          [").append(lat).append(", ").append(lon).append("],\n");
     }
     b.append("        ], {color: \"#ff0000\", fillColor: \"#ffffff\", opacity: 1, fillOpacity: 0.0001});\n");
-    b.append("        " + name + ".addTo(earth);\n");
+    b.append("        ").append(name).append(".addTo(earth);\n");
   }
 
   /** Draws a line a fixed longitude, spanning the min/max latitude */
@@ -142,33 +142,33 @@ public class EarthDebugger {
     String name = "lonline" + nextShape;
     nextShape++;
 
-    b.append("        var " + name + " = WE.polygon([\n");
+    b.append("        var ").append(name).append(" = WE.polygon([\n");
     double lat;
     int steps = getStepCount(minLat, lon, maxLat, lon);
     for(lat = minLat;lat<=maxLat;lat += (maxLat-minLat)/steps) {
-      b.append("          [" + lat + ", " + lon + "],\n");
+      b.append("          [").append(lat).append(", ").append(lon).append("],\n");
     }
-    b.append("          [" + maxLat + ", " + lon + "],\n");
+    b.append("          [").append(maxLat).append(", ").append(lon).append("],\n");
     lat -= (maxLat-minLat)/36;
     for(;lat>=minLat;lat -= (maxLat-minLat)/steps) {
-      b.append("          [" + lat + ", " + lon + "],\n");
+      b.append("          [").append(lat).append(", ").append(lon).append("],\n");
     }
     b.append("        ], {color: \"#ff0000\", fillColor: \"#ffffff\", opacity: 1, fillOpacity: 0.0001});\n");
-    b.append("        " + name + ".addTo(earth);\n");
+    b.append("        ").append(name).append(".addTo(earth);\n");
   }
 
   public void addPoint(double lat, double lon) {
-    b.append("        WE.marker([" + lat + ", " + lon + "]).addTo(earth);\n");    
+    b.append("        WE.marker([").append(lat).append(", ").append(lon).append("]).addTo(earth);\n");
   }
 
   public void addCircle(double centerLat, double centerLon, double radiusMeters, boolean alsoAddBBox) {
     addPoint(centerLat, centerLon);
     String name = "circle" + nextShape;
     nextShape++;
-    b.append("        var " + name + " = WE.polygon([\n");
+    b.append("        var ").append(name).append(" = WE.polygon([\n");
     inverseHaversin(b, centerLat, centerLon, radiusMeters);
     b.append("        ], {color: '#00ff00', fillColor: \"#000000\", fillOpacity: 0.0001 });\n");
-    b.append("        " + name + ".addTo(earth);\n");
+    b.append("        ").append(name).append(".addTo(earth);\n");
 
     if (alsoAddBBox) {
       Rectangle box = Rectangle.fromPointDistance(centerLat, centerLon, radiusMeters);
@@ -207,8 +207,8 @@ public class EarthDebugger {
 
     newAngle:
     while (angle < 360) {
-      double x = Math.cos(SloppyMath.toRadians(angle));
-      double y = Math.sin(SloppyMath.toRadians(angle));
+      double x = Math.cos(Math.toRadians(angle));
+      double y = Math.sin(Math.toRadians(angle));
       double factor = 2.0;
       double step = 1.0;
       int last = 0;
@@ -235,7 +235,7 @@ public class EarthDebugger {
 
         //System.out.println("  iter lat=" + lat + " lon=" + lon + " distance=" + distanceMeters + " vs " + radiusMeters);
         if (Math.abs(distanceMeters - radiusMeters) < 0.1) {
-          b.append("          [" + lat + ", " + lon + "],\n");
+          b.append("          [").append(lat).append(", ").append(lon).append("],\n");
           break;
         }
         if (distanceMeters > radiusMeters) {

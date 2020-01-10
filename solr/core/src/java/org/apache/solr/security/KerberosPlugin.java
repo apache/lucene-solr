@@ -33,6 +33,8 @@ import com.fasterxml.jackson.core.JsonGenerator;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.collections.iterators.IteratorEnumeration;
 import org.apache.hadoop.security.token.delegation.web.DelegationTokenAuthenticationHandler;
+import org.apache.http.HttpRequest;
+import org.apache.http.protocol.HttpContext;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.Krb5HttpClientBuilder;
 import org.apache.solr.client.solrj.impl.SolrHttpClientBuilder;
@@ -41,6 +43,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SecurityAwareZkACLProvider;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.request.SolrRequestInfo;
+import org.apache.solr.servlet.SolrDispatchFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -70,6 +74,8 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
   public static final String DELEGATION_TOKEN_TYPE_DEFAULT = "solr-dt";
   public static final String IMPERSONATOR_DO_AS_HTTP_PARAM = "doAs";
   public static final String IMPERSONATOR_USER_NAME = "solr.impersonator.user.name";
+
+  public static final String ORIGINAL_USER_PRINCIPAL_HEADER = "originalUserPrincipal";
 
   static final String DELEGATION_TOKEN_ZK_CLIENT =
       "solr.kerberos.delegation.token.zk.client";
@@ -177,7 +183,7 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
       // pass an attribute-enabled context in order to pass the zkClient
       // and because the filter may pass a curator instance.
     } else {
-      kerberosFilter = new KerberosFilter();
+      kerberosFilter = new KerberosFilter(coreContainer);
     }
     log.info("Params: "+params);
 
@@ -226,6 +232,7 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
       FilterChain chain) throws Exception {
     log.debug("Request to authenticate using kerberos: "+req);
     kerberosFilter.doFilter(req, rsp, chain);
+
     String requestContinuesAttr = (String)req.getAttribute(RequestContinuesRecorderAuthenticationHandler.REQUEST_CONTINUES_ATTR);
     if (requestContinuesAttr == null) {
       log.warn("Could not find " + RequestContinuesRecorderAuthenticationHandler.REQUEST_CONTINUES_ATTR);
@@ -233,6 +240,20 @@ public class KerberosPlugin extends AuthenticationPlugin implements HttpClientBu
     } else {
       return Boolean.parseBoolean(requestContinuesAttr);
     }
+  }
+
+  @Override
+  protected boolean interceptInternodeRequest(HttpRequest httpRequest, HttpContext httpContext) {
+    SolrRequestInfo info = SolrRequestInfo.getRequestInfo();
+    if (info != null && (info.getAction() == SolrDispatchFilter.Action.FORWARD ||
+        info.getAction() == SolrDispatchFilter.Action.REMOTEQUERY)) {
+      if (info.getUserPrincipal() != null) {
+        log.info("Setting original user principal: {}", info.getUserPrincipal().getName());
+        httpRequest.setHeader(ORIGINAL_USER_PRINCIPAL_HEADER, info.getUserPrincipal().getName());
+        return true;
+      }
+    }
+    return false;
   }
 
   @Override

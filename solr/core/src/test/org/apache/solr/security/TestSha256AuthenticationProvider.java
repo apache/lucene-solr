@@ -17,23 +17,25 @@
 package org.apache.solr.security;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.LinkedHashMap;
+import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.util.CommandOperation;
+import org.junit.Test;
 
 import static java.util.Collections.singletonMap;
 
 public class TestSha256AuthenticationProvider extends SolrTestCaseJ4 {
   public void testAuthenticate(){
     Sha256AuthenticationProvider zkAuthenticationProvider = new Sha256AuthenticationProvider();
-    zkAuthenticationProvider.init(Collections.emptyMap());
+    zkAuthenticationProvider.init(createConfigMap("ignore", "me"));
 
-    String pwd = "My#$Password";
-    String user = "noble";
-    Map latestConf = new LinkedHashMap<>();
+    String pwd = "Friendly";
+    String user = "marcus";
+    Map latestConf = createConfigMap(user, pwd);
     Map<String, Object> params = singletonMap(user, pwd);
     Map<String, Object> result = zkAuthenticationProvider.edit(latestConf,
         Collections.singletonList(new CommandOperation("set-user",params )));
@@ -48,9 +50,9 @@ public class TestSha256AuthenticationProvider extends SolrTestCaseJ4 {
 
   public void testBasicAuthCommands() throws IOException {
     try (BasicAuthPlugin basicAuthPlugin = new BasicAuthPlugin()) {
-      basicAuthPlugin.init(Collections.emptyMap());
+      basicAuthPlugin.init(createConfigMap("ignore", "me"));
 
-      Map latestConf = new LinkedHashMap<>();
+      Map latestConf = createConfigMap("solr", "SolrRocks");
 
       CommandOperation blockUnknown = new CommandOperation("set-property", singletonMap("blockUnknown", true));
       basicAuthPlugin.edit(latestConf, Collections.singletonList(blockUnknown));
@@ -64,4 +66,46 @@ public class TestSha256AuthenticationProvider extends SolrTestCaseJ4 {
       assertFalse(basicAuthPlugin.getBlockUnknown());
     }
   }
+
+  public void testBasicAuthWithCredentials() throws IOException {
+    try (BasicAuthPlugin basicAuthPlugin = new BasicAuthPlugin()) {
+      Map<String, Object> config = createConfigMap("solr", "IV0EHq1OnNrj6gvRCwvFwTrZ1+z1oBbnQdiVC3otuq0= Ndd7LKvVBAaZIF0QAVi1ekCfAJXr1GGfLtRUXhgrF8c=");
+      basicAuthPlugin.init(config);
+      assertTrue(basicAuthPlugin.authenticate("solr", "SolrRocks"));
+    }
+  }
+
+  @Test(expected = IllegalStateException.class)
+  public void testBasicAuthUserNotFound() throws IOException {
+    try (BasicAuthPlugin basicAuthPlugin = new BasicAuthPlugin()) {
+      Map<String, Object> config = createConfigMap(null, null);
+      basicAuthPlugin.init(config);
+    }
+  }
+
+  public void testBasicAuthDeleteFinalUser() throws IOException {
+    try (BasicAuthPlugin basicAuthPlugin = new BasicAuthPlugin()) {
+      Map<String, Object> config = createConfigMap("solr", "IV0EHq1OnNrj6gvRCwvFwTrZ1+z1oBbnQdiVC3otuq0= Ndd7LKvVBAaZIF0QAVi1ekCfAJXr1GGfLtRUXhgrF8c=");
+      basicAuthPlugin.init(config);
+      assertTrue(basicAuthPlugin.authenticate("solr", "SolrRocks"));
+
+      CommandOperation deleteUser = new CommandOperation("delete-user", "solr");
+      assertFalse(deleteUser.hasError());
+      basicAuthPlugin.edit(config, Arrays.asList(deleteUser));
+      assertTrue(deleteUser.hasError());
+      assertTrue(deleteUser.getErrors().contains(Sha256AuthenticationProvider.CANNOT_DELETE_LAST_USER_ERROR));
+    }
+  }
+
+  private Map<String, Object> createConfigMap(String user, String pw) {
+    Map<String, Object> config = new HashMap<>();
+    Map<String, String> credentials = new HashMap<>();
+    if (user != null) {
+      credentials.put(user, pw);
+    }
+    config.put("credentials", credentials);
+    return config;
+  }
+
 }
+

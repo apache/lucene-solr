@@ -18,7 +18,6 @@
 package org.apache.lucene.luke.models.overview;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -63,6 +62,6 @@ final class TopTerms {
       topTermsCache.put(field, topTerms);
     }
 
-    return Collections.unmodifiableList(topTermsCache.get(field));
+    return List.copyOf(topTermsCache.get(field));
   }
 }

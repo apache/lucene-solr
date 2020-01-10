@@ -52,7 +52,10 @@ public class AuthToolTest extends SolrCloudTestCase {
   @After
   public void tearDown() throws Exception {
     super.tearDown();
-    org.apache.commons.io.FileUtils.deleteDirectory(dir.toFile());
+    if (null != dir) {
+      org.apache.commons.io.FileUtils.deleteDirectory(dir.toFile());
+      dir = null;
+    }
   }
 
   @Test

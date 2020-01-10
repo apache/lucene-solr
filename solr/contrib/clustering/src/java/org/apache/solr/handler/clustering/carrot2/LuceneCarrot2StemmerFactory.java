@@ -143,7 +143,7 @@ public class LuceneCarrot2StemmerFactory implements IStemmerFactory {
       }
 
       try {
-        return new SnowballStemmerAdapter(stemmerClazz.newInstance());
+        return new SnowballStemmerAdapter(stemmerClazz.getConstructor().newInstance());
       } catch (Exception e) {
         log.warn("Could not instantiate snowball stemmer"
             + " for language: " + language.name()

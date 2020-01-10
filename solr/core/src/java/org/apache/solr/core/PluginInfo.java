@@ -16,13 +16,19 @@
  */
 package org.apache.solr.core;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
 import org.apache.solr.common.MapSerializable;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Pair;
 import org.apache.solr.util.DOMUtil;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-
-import java.util.*;
 
 import static java.util.Arrays.asList;
 import static java.util.Collections.unmodifiableList;
@@ -35,27 +41,51 @@ import static org.apache.solr.schema.FieldType.CLASS_NAME;
  *
  */
 public class PluginInfo implements MapSerializable {
-  public final String name, className, type;
+  public final String name, className, type, pkgName;
   public final NamedList initArgs;
   public final Map<String, String> attributes;
   public final List<PluginInfo> children;
   private boolean isFromSolrConfig;
 
+
+
   public PluginInfo(String type, Map<String, String> attrs, NamedList initArgs, List<PluginInfo> children) {
     this.type = type;
     this.name = attrs.get(NAME);
-    this.className = attrs.get(CLASS_NAME);
+    Pair<String, String> parsed = parseClassName(attrs.get(CLASS_NAME));
+    this.className = parsed.second();
+    this.pkgName = parsed.first();
     this.initArgs = initArgs;
     attributes = unmodifiableMap(attrs);
     this.children = children == null ? Collections.<PluginInfo>emptyList(): unmodifiableList(children);
     isFromSolrConfig = false;
   }
 
+  /** class names can be prefixed with package name e.g: my_package:my.pkg.Class
+   * This checks if it is a package name prefixed classname.
+   * the return value has first = package name & second = class name
+   */
+  static Pair<String,String > parseClassName(String name) {
+    String pkgName = null;
+    String className = name;
+    if (name != null) {
+      int colonIdx = name.indexOf(':');
+      if (colonIdx > -1) {
+        pkgName = name.substring(0, colonIdx);
+        className = name.substring(colonIdx + 1);
+      }
+    }
+    return new Pair<>(pkgName, className);
+
+  }
+
 
   public PluginInfo(Node node, String err, boolean requireName, boolean requireClass) {
     type = node.getNodeName();
     name = DOMUtil.getAttr(node, NAME, requireName ? err : null);
-    className = DOMUtil.getAttr(node, CLASS_NAME, requireClass ? err : null);
+    Pair<String, String> parsed = parseClassName(DOMUtil.getAttr(node, CLASS_NAME, requireClass ? err : null));
+    className = parsed.second();
+    pkgName = parsed.first();
     initArgs = DOMUtil.childNodesToNamedList(node);
     attributes = unmodifiableMap(DOMUtil.toMap(node.getAttributes()));
     children = loadSubPlugins(node);
@@ -85,7 +115,9 @@ public class PluginInfo implements MapSerializable {
     }
     this.type = type;
     this.name = (String) m.get(NAME);
-    this.className = (String) m.get(CLASS_NAME);
+    Pair<String, String> parsed = parseClassName((String) m.get(CLASS_NAME));
+    this.className = parsed.second();
+    this.pkgName = parsed.first();
     attributes = unmodifiableMap(m);
     this.children =  Collections.<PluginInfo>emptyList();
     isFromSolrConfig = true;
@@ -108,11 +140,11 @@ public class PluginInfo implements MapSerializable {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder("{");
-    if (type != null) sb.append("type = " + type + ",");
-    if (name != null) sb.append("name = " + name + ",");
-    if (className != null) sb.append("class = " + className + ",");
-    if (attributes != null && attributes.size() > 0) sb.append("attributes = " + attributes + ",");
-    if (initArgs != null && initArgs.size() > 0) sb.append("args = " + initArgs);
+    if (type != null) sb.append("type = ").append(type).append(',');
+    if (name != null) sb.append("name = ").append(name).append(',');
+    if (className != null) sb.append("class = ").append(className).append(',');
+    if (attributes != null && attributes.size() > 0) sb.append("attributes = ").append(attributes).append(',');
+    if (initArgs != null && initArgs.size() > 0) sb.append("args = ").append(initArgs);
     sb.append("}");
     return sb.toString();
   }

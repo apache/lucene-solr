@@ -765,22 +765,21 @@ public class RealTimeGetComponent extends SearchComponent
       // Make sure multivalued fields are represented as lists
       Object existing = out.get(f.name());
       if (existing == null) {
-        SchemaField sf = schema.getFieldOrNull(f.name());
+      SchemaField sf = schema.getFieldOrNull(f.name());
 
-        // don't return copyField targets
+      // don't return copyField targets
         if (sf != null && schema.isCopyFieldTarget(sf)) continue;
-
+      
         if (sf != null && sf.multiValued()) {
-          List<Object> vals = new ArrayList<>();
+        List<Object> vals = new ArrayList<>();
           if (f.fieldType().docValuesType() == DocValuesType.SORTED_NUMERIC) {
             // SORTED_NUMERICS store sortable bits version of the value, need to retrieve the original
             vals.add(sf.getType().toObject(f)); // (will materialize by side-effect)
           } else {
             vals.add( materialize(f) );
           }
-          out.setField( f.name(), vals );
-        }
-        else{
+        out.setField(f.name(), vals);
+      } else {
           out.setField( f.name(), materialize(f) );
         }
       }

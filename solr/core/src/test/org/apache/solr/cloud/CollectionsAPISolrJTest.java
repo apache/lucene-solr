@@ -43,6 +43,7 @@ import org.apache.lucene.util.TestUtil;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
@@ -53,9 +54,11 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.CoreAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.V2Response;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterProperties;
+import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
@@ -656,6 +659,19 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     assertNotNull(Utils.toJSONString(rsp), segInfos.get("fieldInfoLegend"));
     assertNotNull(Utils.toJSONString(rsp), segInfos.findRecursive("segments", "_0", "fields", "id", "flags"));
     assertNotNull(Utils.toJSONString(rsp), segInfos.findRecursive("segments", "_0", "ramBytesUsed"));
+    // test for replicas not active - SOLR-13882
+    DocCollection coll = cluster.getSolrClient().getClusterStateProvider().getClusterState().getCollection(collectionName);
+    Replica firstReplica = coll.getSlice("shard1").getReplicas().iterator().next();
+    String firstNode = firstReplica.getNodeName();
+    for (JettySolrRunner jetty : cluster.getJettySolrRunners()) {
+      if (jetty.getNodeName().equals(firstNode)) {
+        cluster.stopJettySolrRunner(jetty);
+      }
+    }
+    rsp = req.process(cluster.getSolrClient());
+    assertEquals(0, rsp.getStatus());
+    Number down = (Number) rsp.getResponse().findRecursive(collectionName, "shards", "shard1", "replicas", "down");
+    assertTrue("should be some down replicas, but there were none in shard1:" + rsp, down.intValue() > 0);
   }
 
   private static final int NUM_DOCS = 10;
@@ -794,8 +810,20 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
 
   @Test
   public void testRenameCollection() throws Exception {
-    String collectionName1 = "testRename_collection1";
-    String collectionName2 = "testRename_collection2";
+    doTestRenameCollection(true);
+    CollectionAdminRequest.deleteAlias("col1").process(cluster.getSolrClient());
+    CollectionAdminRequest.deleteAlias("col2").process(cluster.getSolrClient());
+    CollectionAdminRequest.deleteAlias("foo").process(cluster.getSolrClient());
+    CollectionAdminRequest.deleteAlias("simpleAlias").process(cluster.getSolrClient());
+    CollectionAdminRequest.deleteAlias("catAlias").process(cluster.getSolrClient());
+    CollectionAdminRequest.deleteAlias("compoundAlias").process(cluster.getSolrClient());
+    cluster.getSolrClient().getZkStateReader().aliasesManager.update();
+    doTestRenameCollection(false);
+  }
+
+  private void doTestRenameCollection(boolean followAliases) throws Exception {
+    String collectionName1 = "testRename1_" + followAliases;
+    String collectionName2 = "testRename2_" + followAliases;
     CollectionAdminRequest.createCollection(collectionName1, "conf", 1, 1).setAlias("col1").process(cluster.getSolrClient());
     CollectionAdminRequest.createCollection(collectionName2, "conf", 1, 1).setAlias("col2").process(cluster.getSolrClient());
 
@@ -810,43 +838,157 @@ public class CollectionsAPISolrJTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCategoryRoutedAlias("catAlias", "field1", 100,
         CollectionAdminRequest.createCollection("_unused_", "conf", 1, 1)).process(cluster.getSolrClient());
 
-    CollectionAdminRequest.renameCollection("col1", "foo").process(cluster.getSolrClient());
+    CollectionAdminRequest.Rename rename = CollectionAdminRequest.renameCollection("col1", "foo");
+    rename.setFollowAliases(followAliases);
     ZkStateReader zkStateReader = cluster.getSolrClient().getZkStateReader();
-    zkStateReader.aliasesManager.update();
+    Aliases aliases;
+    if (!followAliases) {
+      try {
+        rename.process(cluster.getSolrClient());
+      } catch (Exception e) {
+        assertTrue(e.toString(), e.toString().contains("source collection 'col1' not found"));
+      }
+    } else {
+      rename.process(cluster.getSolrClient());
+      zkStateReader.aliasesManager.update();
 
-    Aliases aliases = zkStateReader.getAliases();
-    assertEquals(aliases.getCollectionAliasListMap().toString(), collectionName1, aliases.resolveSimpleAlias("foo"));
-    assertEquals(aliases.getCollectionAliasListMap().toString(), collectionName1, aliases.resolveSimpleAlias("simpleAlias"));
-    List<String> compoundAliases = aliases.resolveAliases("compoundAlias");
-    assertEquals(compoundAliases.toString(), 2, compoundAliases.size());
-    assertTrue(compoundAliases.toString(), compoundAliases.contains(collectionName1));
-    assertTrue(compoundAliases.toString(), compoundAliases.contains(collectionName2));
+      aliases = zkStateReader.getAliases();
+      assertEquals(aliases.getCollectionAliasListMap().toString(), collectionName1, aliases.resolveSimpleAlias("foo"));
+      assertEquals(aliases.getCollectionAliasListMap().toString(), collectionName1, aliases.resolveSimpleAlias("simpleAlias"));
+      List<String> compoundAliases = aliases.resolveAliases("compoundAlias");
+      assertEquals(compoundAliases.toString(), 2, compoundAliases.size());
+      assertTrue(compoundAliases.toString(), compoundAliases.contains(collectionName1));
+      assertTrue(compoundAliases.toString(), compoundAliases.contains(collectionName2));
+    }
 
     CollectionAdminRequest.renameCollection(collectionName1, collectionName2).process(cluster.getSolrClient());
     zkStateReader.aliasesManager.update();
 
     aliases = zkStateReader.getAliases();
-    assertEquals(aliases.getCollectionAliasListMap().toString(), collectionName2, aliases.resolveSimpleAlias("foo"));
+    if (followAliases) {
+      assertEquals(aliases.getCollectionAliasListMap().toString(), collectionName2, aliases.resolveSimpleAlias("foo"));
+    }
     assertEquals(aliases.getCollectionAliasListMap().toString(), collectionName2, aliases.resolveSimpleAlias("simpleAlias"));
     assertEquals(aliases.getCollectionAliasListMap().toString(), collectionName2, aliases.resolveSimpleAlias(collectionName1));
     // we renamed col1 -> col2 so the compound alias contains only "col2,col2" which is reduced to col2
-    compoundAliases = aliases.resolveAliases("compoundAlias");
+    List<String> compoundAliases = aliases.resolveAliases("compoundAlias");
     assertEquals(compoundAliases.toString(), 1, compoundAliases.size());
     assertTrue(compoundAliases.toString(), compoundAliases.contains(collectionName2));
 
     try {
-      CollectionAdminRequest.renameCollection("catAlias", "bar").process(cluster.getSolrClient());
+      rename = CollectionAdminRequest.renameCollection("catAlias", "bar");
+      rename.setFollowAliases(followAliases);
+      rename.process(cluster.getSolrClient());
       fail("category-based alias renaming should fail");
     } catch (Exception e) {
-      assertTrue(e.toString().contains("is a routed alias"));
+      if (followAliases) {
+        assertTrue(e.toString(), e.toString().contains("is a routed alias"));
+      } else {
+        assertTrue(e.toString(), e.toString().contains("source collection 'catAlias' not found"));
+      }
     }
 
     try {
-      CollectionAdminRequest.renameCollection("col2", "foo").process(cluster.getSolrClient());
-      fail("shuold fail because 'foo' already exists");
+      rename = CollectionAdminRequest.renameCollection("col2", "foo");
+      rename.setFollowAliases(followAliases);
+      rename.process(cluster.getSolrClient());
+      fail("should fail because 'foo' already exists");
     } catch (Exception e) {
-      assertTrue(e.toString().contains("exists"));
+      if (followAliases) {
+        assertTrue(e.toString(), e.toString().contains("exists"));
+      } else {
+        assertTrue(e.toString(), e.toString().contains("source collection 'col2' not found"));
+      }
     }
+  }
+
+  @Test
+  public void testDeleteAliasedCollection() throws Exception {
+    CloudSolrClient solrClient = cluster.getSolrClient();
+    String collectionName1 = "aliasedCollection1";
+    String collectionName2 = "aliasedCollection2";
+    CollectionAdminRequest.createCollection(collectionName1, "conf", 1, 1).process(solrClient);
+    CollectionAdminRequest.createCollection(collectionName2, "conf", 1, 1).process(solrClient);
+
+    cluster.waitForActiveCollection(collectionName1, 1, 1);
+    cluster.waitForActiveCollection(collectionName2, 1, 1);
+
+    waitForState("Expected collection1 to be created with 1 shard and 1 replica", collectionName1, clusterShape(1, 1));
+    waitForState("Expected collection2 to be created with 1 shard and 1 replica", collectionName2, clusterShape(1, 1));
+
+    SolrInputDocument doc = new SolrInputDocument("id", "1");
+    solrClient.add(collectionName1, doc);
+    doc = new SolrInputDocument("id", "2");
+    solrClient.add(collectionName2, doc);
+    solrClient.commit(collectionName1);
+    solrClient.commit(collectionName2);
+
+    assertDoc(solrClient, collectionName1, "1");
+    assertDoc(solrClient, collectionName2, "2");
+
+    CollectionAdminRequest.createAlias(collectionName1, collectionName2).process(solrClient);
+
+    RetryUtil.retryUntil("didn't get the new aliases", 10, 1000, TimeUnit.MILLISECONDS, () -> {
+      try {
+        solrClient.getZkStateReader().aliasesManager.update();
+        return solrClient.getZkStateReader().getAliases()
+            .resolveSimpleAlias(collectionName1).equals(collectionName2);
+      } catch (Exception e) {
+        fail("exception caught refreshing aliases: " + e);
+        return false;
+      }
+    });
+
+    // both results should come from collection 2
+    assertDoc(solrClient, collectionName1, "2"); // aliased
+    assertDoc(solrClient, collectionName2, "2"); // direct
+
+    // should be able to remove collection 1 when followAliases = false
+    CollectionAdminRequest.Delete delete = CollectionAdminRequest.deleteCollection(collectionName1);
+    delete.setFollowAliases(false);
+    delete.process(solrClient);
+    ClusterState state = solrClient.getClusterStateProvider().getClusterState();
+    assertFalse(state.getCollectionsMap().toString(), state.hasCollection(collectionName1));
+    // search should still work, returning results from collection 2
+    assertDoc(solrClient, collectionName1, "2"); // aliased
+    assertDoc(solrClient, collectionName2, "2"); // direct
+
+    // without aliases this collection doesn't exist anymore
+    delete = CollectionAdminRequest.deleteCollection(collectionName1);
+    delete.setFollowAliases(false);
+    try {
+      delete.process(solrClient);
+      fail("delete of nonexistent collection 1 should have failed when followAliases=false");
+    } catch (Exception e) {
+      assertTrue(e.toString(), e.toString().contains(collectionName1));
+    }
+
+    // with followAliases=true collection 2 (and the alias) should both be removed
+    delete.setFollowAliases(true);
+    delete.process(solrClient);
+
+    state = solrClient.getClusterStateProvider().getClusterState();
+    // the collection is gone
+    assertFalse(state.getCollectionsMap().toString(), state.hasCollection(collectionName2));
+
+    // and the alias is gone
+    RetryUtil.retryUntil("didn't get the new aliases", 10, 1000, TimeUnit.MILLISECONDS, () -> {
+      try {
+        solrClient.getZkStateReader().aliasesManager.update();
+        return !solrClient.getZkStateReader().getAliases().hasAlias(collectionName1);
+      } catch (Exception e) {
+        fail("exception caught refreshing aliases: " + e);
+        return false;
+      }
+    });
+  }
+
+  private void assertDoc(CloudSolrClient solrClient, String collection, String id) throws Exception {
+    QueryResponse rsp = solrClient.query(collection, params(CommonParams.Q, "*:*"));
+    assertEquals(rsp.toString(), 1, rsp.getResults().getNumFound());
+    SolrDocument sdoc = rsp.getResults().get(0);
+    assertEquals(sdoc.toString(), id, sdoc.getFieldValue("id"));
+
   }
 
   @Test

@@ -25,7 +25,7 @@ import org.apache.solr.analytics.stream.reservation.write.BooleanCheckedDataWrit
 import org.apache.solr.analytics.util.function.BooleanConsumer;
 
 public class BooleanCheckedReservation extends ReductionCheckedDataReservation<BooleanConsumer, BooleanSupplier> {
-  
+
   public BooleanCheckedReservation(BooleanConsumer applier, BooleanSupplier extractor, BooleanSupplier exists) {
     super(applier, extractor, exists);
   }

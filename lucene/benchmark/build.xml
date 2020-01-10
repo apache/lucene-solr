@@ -59,7 +59,7 @@
     </target>
 
     <target name="get-enwiki" unless="enwiki.exists">
-        <get src="http://home.apache.org/~dsmiley/data/enwiki-20070527-pages-articles.xml.bz2"
+        <get src="https://home.apache.org/~dsmiley/data/enwiki-20070527-pages-articles.xml.bz2"
              dest="temp/enwiki-20070527-pages-articles.xml.bz2"/>
     </target>
 
@@ -74,10 +74,10 @@
     </target>
 
     <target name="get-geonames" unless="geonames.exists">
-        <!-- note: latest data is at: http://download.geonames.org/export/dump/allCountries.zip
+        <!-- note: latest data is at: https://download.geonames.org/export/dump/allCountries.zip
          and then randomize with: gsort -R -S 1500M file.txt > file_random.txt
          and then compress with: bzip2 -9 -k file_random.txt -->
-      <get src="http://home.apache.org/~dsmiley/data/geonames_20130921_randomOrder_allCountries.txt.bz2"
+      <get src="https://home.apache.org/~dsmiley/data/geonames_20130921_randomOrder_allCountries.txt.bz2"
              dest="temp/allCountries.txt.bz2"/>
     </target>
 
@@ -87,12 +87,12 @@
     </target>
 
     <target name="get-news-20" unless="20news-18828.exists">
-        <get src="http://www-2.cs.cmu.edu/afs/cs.cmu.edu/project/theo-20/www/data/news20.tar.gz"
+        <get src="https://www-2.cs.cmu.edu/afs/cs.cmu.edu/project/theo-20/www/data/news20.tar.gz"
              dest="temp/news20.tar.gz"/>
 
     </target>
     <target name="get-reuters" unless="reuters.exists">
-
+        <!-- Please note: there is no HTTPS url. As this is only test data, we don't care: -->
         <get src="http://www.daviddlewis.com/resources/testcollections/reuters21578/reuters21578.tar.gz"
             dest="temp/reuters21578.tar.gz"/>
     </target>
@@ -120,7 +120,8 @@
         </java>
     </target>
     <target name="get-20news-18828" unless="20news-18828.exists">
-        <get src="http://people.csail.mit.edu/u/j/jrennie/public_html/20Newsgroups/20news-18828.tar.gz"
+        <!-- TODO: URL no longer works (404 Not found): -->
+        <get src="https://people.csail.mit.edu/u/j/jrennie/public_html/20Newsgroups/20news-18828.tar.gz"
              dest="temp/20news-18828.tar.gz"/>
 
     </target>
@@ -129,7 +130,7 @@
         <untar src="temp/20news-18828.tar" dest="${working.dir}"/>
     </target>
     <target name="get-mini-news" unless="mini.exists">
-        <get src="http://kdd.ics.uci.edu/databases/20newsgroups/mini_newsgroups.tar.gz"
+        <get src="https://kdd.ics.uci.edu/databases/20newsgroups/mini_newsgroups.tar.gz"
              dest="temp/mini_newsgroups.tar.gz"/>
     </target>
     <target name="expand-mini-news" unless="mini.expanded">
@@ -140,7 +141,7 @@
   <property name="top.100k.words.archive.filename" 
             value="top.100k.words.de.en.fr.uk.wikipedia.2009-11.tar.bz2"/>
   <property name="top.100k.words.archive.base.url"
-            value="http://home.apache.org/~rmuir/wikipedia"/>
+            value="https://home.apache.org/~rmuir/wikipedia"/>
   <target name="get-top-100k-words-archive" unless="top.100k.words.archive.present">
     <mkdir dir="temp"/>
       <get src="${top.100k.words.archive.base.url}/${top.100k.words.archive.filename}"

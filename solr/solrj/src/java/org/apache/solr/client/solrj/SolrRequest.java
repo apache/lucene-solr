@@ -19,17 +19,16 @@ package org.apache.solr.client.solrj;
 import java.io.IOException;
 import java.io.Serializable;
 import java.security.Principal;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashSet;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ContentStream;
-
-import static java.util.Collections.unmodifiableSet;
 
 /**
  * 
@@ -55,14 +54,15 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
     DELETE
   };
 
-  public static final Set<String> SUPPORTED_METHODS = unmodifiableSet(new HashSet<>(Arrays.<String>asList(
+  public static final Set<String> SUPPORTED_METHODS = Set.of(
       METHOD.GET.toString(),
       METHOD.POST.toString(),
       METHOD.PUT.toString(),
-      METHOD.DELETE.toString())));
+      METHOD.DELETE.toString());
 
   private METHOD method = METHOD.GET;
   private String path = null;
+  private Map<String,String> headers;
 
   private ResponseParser responseParser;
   private StreamingResponseCallback callback;
@@ -236,5 +236,17 @@ public abstract class SolrRequest<T extends SolrResponse> implements Serializabl
 
   public String getBasePath() {
     return basePath;
+  }
+
+  public void addHeader(String key, String value) {
+    if (headers == null) {
+      headers = new HashMap<>();
+    }
+    headers.put(key, value);
+  }
+
+  public Map<String, String> getHeaders() {
+    if (headers == null) return null;
+    return Collections.unmodifiableMap(headers);
   }
 }

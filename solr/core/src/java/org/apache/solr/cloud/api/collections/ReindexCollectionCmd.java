@@ -64,6 +64,8 @@ import org.apache.zookeeper.CreateMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
+
 /**
  * Reindex a collection, usually in order to change the index schema.
  * <p>WARNING: Reindexing is potentially a lossy operation - some indexed data that is not available as
@@ -178,7 +180,13 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
     if (extCollection == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Source collection name must be specified");
     }
-    String collection = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extCollection);
+    boolean followAliases = message.getBool(FOLLOW_ALIASES, false);
+    String collection;
+    if (followAliases) {
+      collection = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(extCollection);
+    } else {
+      collection = extCollection;
+    }
     if (!clusterState.hasCollection(collection)) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Source collection name must exist");
     }
@@ -186,8 +194,9 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
     if (target == null) {
       target = collection;
     } else {
-      // resolve aliases
-      target = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(target);
+      if (followAliases) {
+        target = ocmh.cloudManager.getClusterStateProvider().resolveSimpleAlias(target);
+      }
     }
     boolean sameTarget = target.equals(collection) || target.equals(extCollection);
     boolean removeSource = message.getBool(REMOVE_SOURCE, false);
@@ -466,6 +475,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
         cmd = new ZkNodeProps(
             Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.DELETE.toLower(),
             CommonParams.NAME, collection,
+            FOLLOW_ALIASES, "false",
             CoreAdminParams.DELETE_METRICS_HISTORY, "true"
         );
         cmdResults = new NamedList<>();
@@ -511,11 +521,10 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
   private Map<String, Object> setReindexingState(String collection, State state, Map<String, Object> props) throws Exception {
     String path = ZkStateReader.COLLECTIONS_ZKNODE + "/" + collection + REINDEXING_STATE_PATH;
     DistribStateManager stateManager = ocmh.cloudManager.getDistribStateManager();
-    Map<String, Object> copyProps = new HashMap<>();
     if (props == null) { // retrieve existing props, if any
       props = Utils.getJson(stateManager, path);
     }
-    copyProps.putAll(props);
+    Map<String, Object> copyProps = new HashMap<>(props);
     copyProps.put("state", state.toLower());
     if (stateManager.hasData(path)) {
       stateManager.setData(path, Utils.toJSON(copyProps), -1);
@@ -770,6 +779,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
       ZkNodeProps cmd = new ZkNodeProps(
           Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.DELETE.toLower(),
           CommonParams.NAME, targetCollection,
+          FOLLOW_ALIASES, "false",
           CoreAdminParams.DELETE_METRICS_HISTORY, "true"
       );
       ocmh.commandMap.get(CollectionParams.CollectionAction.DELETE).call(clusterState, cmd, cmdResults);
@@ -782,6 +792,7 @@ public class ReindexCollectionCmd implements OverseerCollectionMessageHandler.Cm
       ZkNodeProps cmd = new ZkNodeProps(
           Overseer.QUEUE_OPERATION, CollectionParams.CollectionAction.DELETE.toLower(),
           CommonParams.NAME, chkCollection,
+          FOLLOW_ALIASES, "false",
           CoreAdminParams.DELETE_METRICS_HISTORY, "true"
       );
       cmdResults = new NamedList<>();

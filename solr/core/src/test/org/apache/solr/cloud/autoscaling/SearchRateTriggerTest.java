@@ -39,7 +39,7 @@ import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.impl.SolrClientCloudManager;
 import org.apache.solr.client.solrj.impl.SolrClientNodeStateProvider;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
-import org.apache.solr.cloud.CloudTestUtils;
+import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.cloud.ZkDistributedQueueFactory;
 import org.apache.solr.common.cloud.SolrZkClient;
@@ -106,8 +106,8 @@ public class SearchRateTriggerTest extends SolrCloudTestCase {
     create.setMaxShardsPerNode(1);
     create.process(solrClient);
 
-    CloudTestUtils.waitForState(cloudManager, COLL1, 60, TimeUnit.SECONDS, clusterShape(2, 2));
-    CloudTestUtils.waitForState(cloudManager, COLL2, 60, TimeUnit.SECONDS, clusterShape(2, 2));
+    CloudUtil.waitForState(cloudManager, COLL1, 60, TimeUnit.SECONDS, clusterShape(2, 2));
+    CloudUtil.waitForState(cloudManager, COLL2, 60, TimeUnit.SECONDS, clusterShape(2, 2));
 
     double rate = 1.0;
     URL baseUrl = targetNode.getBaseUrl();
@@ -238,7 +238,7 @@ public class SearchRateTriggerTest extends SolrCloudTestCase {
         "conf", 2, 2);
     create.setMaxShardsPerNode(1);
     create.process(solrClient);
-    CloudTestUtils.waitForState(cloudManager, COLL1, 60, TimeUnit.SECONDS, clusterShape(2, 4));
+    CloudUtil.waitForState(cloudManager, COLL1, 60, TimeUnit.SECONDS, clusterShape(2, 4));
 
     long waitForSeconds = 5 + random().nextInt(5);
     Map<String, Object> props = createTriggerProps(Arrays.asList(COLL1, COLL2), waitForSeconds, 1.0, 0.1);

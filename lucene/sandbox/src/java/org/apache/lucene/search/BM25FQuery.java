@@ -37,7 +37,9 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.similarities.SimilarityBase;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * A {@link Query} that treats multiple fields as a single stream and scores
@@ -53,7 +55,8 @@ import org.apache.lucene.util.BytesRef;
  *
  * @lucene.experimental
  */
-public final class BM25FQuery extends Query {
+public final class BM25FQuery extends Query implements Accountable {
+  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(BM25FQuery.class);
 
   /**
    * A builder for {@link BM25FQuery}.
@@ -104,8 +107,8 @@ public final class BM25FQuery extends Query {
      * Adds a term to this builder.
      */
     public Builder addTerm(BytesRef term) {
-      if (termsSet.size() > BooleanQuery.getMaxClauseCount()) {
-        throw new BooleanQuery.TooManyClauses();
+      if (termsSet.size() > IndexSearcher.getMaxClauseCount()) {
+        throw new IndexSearcher.TooManyClauses();
       }
       termsSet.add(term);
       return this;
@@ -116,8 +119,8 @@ public final class BM25FQuery extends Query {
      */
     public BM25FQuery build() {
       int size = fieldAndWeights.size() * termsSet.size();
-      if (size > BooleanQuery.getMaxClauseCount()) {
-        throw new BooleanQuery.TooManyClauses();
+      if (size > IndexSearcher.getMaxClauseCount()) {
+        throw new IndexSearcher.TooManyClauses();
       }
       BytesRef[] terms = termsSet.toArray(new BytesRef[0]);
       return new BM25FQuery(similarity, new TreeMap<>(fieldAndWeights), terms);
@@ -143,13 +146,15 @@ public final class BM25FQuery extends Query {
   // array of terms per field, sorted
   private final Term fieldTerms[];
 
+  private final long ramBytesUsed;
+
   private BM25FQuery(BM25Similarity similarity, TreeMap<String, FieldAndWeight> fieldAndWeights, BytesRef[] terms) {
     this.similarity = similarity;
     this.fieldAndWeights = fieldAndWeights;
     this.terms = terms;
     int numFieldTerms = fieldAndWeights.size() * terms.length;
-    if (numFieldTerms > BooleanQuery.getMaxClauseCount()) {
-      throw new BooleanQuery.TooManyClauses();
+    if (numFieldTerms > IndexSearcher.getMaxClauseCount()) {
+      throw new IndexSearcher.TooManyClauses();
     }
     this.fieldTerms = new Term[numFieldTerms];
     Arrays.sort(terms);
@@ -159,6 +164,11 @@ public final class BM25FQuery extends Query {
         fieldTerms[pos++] = new Term(field, term);
       }
     }
+
+    this.ramBytesUsed = BASE_RAM_BYTES +
+        RamUsageEstimator.sizeOfObject(fieldAndWeights) +
+        RamUsageEstimator.sizeOfObject(fieldTerms) +
+        RamUsageEstimator.sizeOfObject(terms);
   }
 
   public List<Term> getTerms() {
@@ -200,6 +210,11 @@ public final class BM25FQuery extends Query {
   public boolean equals(Object other) {
     return sameClassAs(other) &&
         Arrays.equals(terms, ((BM25FQuery) other).terms);
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return ramBytesUsed;
   }
 
   @Override
@@ -266,9 +281,10 @@ public final class BM25FQuery extends Query {
       termStates = new TermStates[fieldTerms.length];
       for (int i = 0; i < termStates.length; i++) {
         FieldAndWeight field = fieldAndWeights.get(fieldTerms[i].field());
-        termStates[i] = TermStates.build(searcher.getTopReaderContext(), fieldTerms[i], true);
-        TermStatistics termStats = searcher.termStatistics(fieldTerms[i], termStates[i]);
-        if (termStats != null) {
+        TermStates ts = TermStates.build(searcher.getTopReaderContext(), fieldTerms[i], true);
+        termStates[i] = ts;
+        if (ts.docFreq() > 0) {
+          TermStatistics termStats = searcher.termStatistics(fieldTerms[i], ts.docFreq(), ts.totalTermFreq());
           docFreq = Math.max(termStats.docFreq(), docFreq);
           totalTermFreq += (double) field.weight * termStats.totalTermFreq();
         }

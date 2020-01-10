@@ -29,7 +29,7 @@
   <fieldType name="text_icunormalizer2" class="solr.TextField">
     <analyzer>
       <tokenizer class="solr.WhitespaceTokenizerFactory"/>
-      <filter class="solr.ICUNormalizer2FilterFactory" name="nfkc_cf" mode="compose"/>
+      <filter class="solr.ICUNormalizer2FilterFactory" form="nfkc_cf" mode="compose"/>
     </analyzer>
   </fieldType>
 

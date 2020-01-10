@@ -37,8 +37,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * It is important that punctuation is not discarded by the tokenizer so use
  * {@code discardPunctuation="false"} in your {@link JapaneseTokenizerFactory}.
  * @since 6.0.0
+ * @lucene.spi {@value #NAME}
  */
 public class JapaneseNumberFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "japaneseNumber";
 
   public JapaneseNumberFilterFactory(Map<String, String> args) {
     super(args);

@@ -17,7 +17,7 @@
 
 package org.apache.solr.update;
 
-import org.apache.solr.SolrJettyTestBase;
+import org.apache.solr.EmbeddedSolrServerTestBase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.common.SolrDocument;
@@ -32,7 +32,7 @@ import org.junit.rules.ExpectedException;
 
 import static org.hamcrest.CoreMatchers.is;
 
-public class RootFieldTest extends SolrJettyTestBase {
+public class RootFieldTest extends EmbeddedSolrServerTestBase {
   private static boolean useRootSchema;
   private static final String MESSAGE = "Update handler should create and process _root_ field " +
       "unless there is no such a field in schema";

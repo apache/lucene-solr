@@ -83,12 +83,30 @@ public class TestCloudDeleteByQuery extends SolrCloudTestCase {
   
   @AfterClass
   private static void afterClass() throws Exception {
-    CLOUD_CLIENT.close(); CLOUD_CLIENT = null;
-    S_ONE_LEADER_CLIENT.close(); S_ONE_LEADER_CLIENT = null;
-    S_TWO_LEADER_CLIENT.close(); S_TWO_LEADER_CLIENT = null;
-    S_ONE_NON_LEADER_CLIENT.close(); S_ONE_NON_LEADER_CLIENT = null;
-    S_TWO_NON_LEADER_CLIENT.close(); S_TWO_NON_LEADER_CLIENT = null;
-    NO_COLLECTION_CLIENT.close(); NO_COLLECTION_CLIENT = null;
+    if (null != CLOUD_CLIENT) {
+      CLOUD_CLIENT.close();
+      CLOUD_CLIENT = null;
+    }
+    if (null != S_ONE_LEADER_CLIENT) {
+      S_ONE_LEADER_CLIENT.close();
+      S_ONE_LEADER_CLIENT = null;
+    }
+    if (null != S_TWO_LEADER_CLIENT) {
+      S_TWO_LEADER_CLIENT.close();
+      S_TWO_LEADER_CLIENT = null;
+    }
+    if (null != S_ONE_NON_LEADER_CLIENT) {
+      S_ONE_NON_LEADER_CLIENT.close();
+      S_ONE_NON_LEADER_CLIENT = null;
+    }
+    if (null != S_TWO_NON_LEADER_CLIENT) {
+      S_TWO_NON_LEADER_CLIENT.close();
+      S_TWO_NON_LEADER_CLIENT = null;
+    }
+    if (null != NO_COLLECTION_CLIENT) {
+      NO_COLLECTION_CLIENT.close();
+      NO_COLLECTION_CLIENT = null;
+    }
   }
   
   @BeforeClass

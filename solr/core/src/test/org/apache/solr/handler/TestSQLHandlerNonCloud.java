@@ -54,12 +54,8 @@ public class TestSQLHandlerNonCloud extends SolrJettyTestBase {
     String url = jetty.getBaseUrl() + "/" + DEFAULT_TEST_COLLECTION_NAME;
 
     SolrStream solrStream = new SolrStream(url, sParams);
-    try {
-      getTuples(solrStream);
-      fail(SQLHandler.sqlNonCloudErrorMsg);
-    } catch (IOException e) {
-      assertTrue(e.getMessage().contains(SQLHandler.sqlNonCloudErrorMsg));
-    }
+    IOException ex = expectThrows(IOException.class,  () -> getTuples(solrStream));
+    assertTrue(ex.getMessage().contains(SQLHandler.sqlNonCloudErrorMsg));
   }
 
   private List<Tuple> getTuples(TupleStream tupleStream) throws IOException {

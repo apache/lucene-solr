@@ -49,11 +49,11 @@ abstract class PhraseWeight extends Weight {
 
   protected abstract Similarity.SimScorer getStats(IndexSearcher searcher) throws IOException;
 
-  protected abstract PhraseMatcher getPhraseMatcher(LeafReaderContext context, boolean exposeOffsets) throws IOException;
+  protected abstract PhraseMatcher getPhraseMatcher(LeafReaderContext context, SimScorer scorer, boolean exposeOffsets) throws IOException;
 
   @Override
   public Scorer scorer(LeafReaderContext context) throws IOException {
-    PhraseMatcher matcher = getPhraseMatcher(context, false);
+    PhraseMatcher matcher = getPhraseMatcher(context, stats, false);
     if (matcher == null)
       return null;
     LeafSimScorer simScorer = new LeafSimScorer(stats, context.reader(), field, scoreMode.needsScores());
@@ -62,8 +62,8 @@ abstract class PhraseWeight extends Weight {
 
   @Override
   public Explanation explain(LeafReaderContext context, int doc) throws IOException {
-    PhraseMatcher matcher = getPhraseMatcher(context, false);
-    if (matcher == null || matcher.approximation.advance(doc) != doc) {
+    PhraseMatcher matcher = getPhraseMatcher(context, stats, false);
+    if (matcher == null || matcher.approximation().advance(doc) != doc) {
       return Explanation.noMatch("no matching terms");
     }
     matcher.reset();
@@ -86,8 +86,8 @@ abstract class PhraseWeight extends Weight {
   @Override
   public Matches matches(LeafReaderContext context, int doc) throws IOException {
     return MatchesUtils.forField(field, () -> {
-      PhraseMatcher matcher = getPhraseMatcher(context, true);
-      if (matcher == null || matcher.approximation.advance(doc) != doc) {
+      PhraseMatcher matcher = getPhraseMatcher(context, stats, true);
+      if (matcher == null || matcher.approximation().advance(doc) != doc) {
         return null;
       }
       matcher.reset();

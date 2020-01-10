@@ -37,7 +37,7 @@ The BlobHandler is automatically registered in the .system collection. The `solr
 
 If you do not use the `-shards` or `-replicationFactor` options, then defaults of numShards=1 and replicationFactor=3 (or maximum nodes in the cluster) will be used.
 
-You can create the `.system` collection with the <<collections-api.adoc#create,CREATE command>> of the Collections API, as in this example:
+You can create the `.system` collection with the <<collection-management.adoc#create,CREATE command>> of the Collections API, as in this example:
 
 [.dynamic-tabs]
 --

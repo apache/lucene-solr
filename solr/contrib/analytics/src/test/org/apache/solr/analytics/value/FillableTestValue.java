@@ -45,14 +45,14 @@ import org.apache.solr.analytics.value.StringValueStream.AbstractStringValueStre
 public class FillableTestValue {
   public static class TestAnalyticsValue extends AbstractAnalyticsValue {
     private final ExpressionType expressionType;
-    
+
     private Object value;
     private boolean exists;
-    
+
     public TestAnalyticsValue() {
       this(ExpressionType.CONST);
     }
-    
+
     public TestAnalyticsValue(ExpressionType expressionType) {
       this.expressionType = expressionType;
     }
@@ -61,7 +61,7 @@ public class FillableTestValue {
       this.value = value;
       return this;
     }
-    
+
     public TestAnalyticsValue setExists(boolean exists) {
       this.exists = exists;
       return this;
@@ -86,16 +86,16 @@ public class FillableTestValue {
     @Override
     public ExpressionType getExpressionType() { return expressionType; }
   }
-  
+
   public static class TestAnalyticsValueStream extends AbstractAnalyticsValueStream {
     private final ExpressionType expressionType;
-    
+
     private Object[] values;
-    
+
     public TestAnalyticsValueStream() {
       this(ExpressionType.CONST);
     }
-    
+
     public TestAnalyticsValueStream(ExpressionType expressionType) {
       this.expressionType = expressionType;
     }
@@ -121,17 +121,17 @@ public class FillableTestValue {
     @Override
     public ExpressionType getExpressionType() { return expressionType; }
   }
-  
+
   public static class TestIntValue extends AbstractIntValue {
     private final ExpressionType expressionType;
-    
+
     private int value;
     private boolean exists;
-    
+
     public TestIntValue() {
       this(ExpressionType.CONST);
     }
-    
+
     public TestIntValue(ExpressionType expressionType) {
       this.expressionType = expressionType;
     }
@@ -140,7 +140,7 @@ public class FillableTestValue {
       this.value = value;
       return this;
     }
-    
+
     public TestIntValue setExists(boolean exists) {
       this.exists = exists;
       return this;
@@ -165,10 +165,10 @@ public class FillableTestValue {
     @Override
     public ExpressionType getExpressionType() { return expressionType; }
   }
-  
+
   public static class TestIntValueStream extends AbstractIntValueStream {
     private int[] values;
-    
+
     public TestIntValueStream() {
       this.values = new int[0];
     }
@@ -197,14 +197,14 @@ public class FillableTestValue {
 
   public static class TestLongValue extends AbstractLongValue {
     private final ExpressionType expressionType;
-    
+
     private long value;
     private boolean exists;
-    
+
     public TestLongValue() {
       this(ExpressionType.CONST);
     }
-    
+
     public TestLongValue(ExpressionType expressionType) {
       this.expressionType = expressionType;
     }
@@ -213,7 +213,7 @@ public class FillableTestValue {
       this.value = value;
       return this;
     }
-    
+
     public TestLongValue setExists(boolean exists) {
       this.exists = exists;
       return this;
@@ -241,7 +241,7 @@ public class FillableTestValue {
 
   public static class TestLongValueStream extends AbstractLongValueStream {
     private long[] values;
-    
+
     public TestLongValueStream() {
       this.values = new long[0];
     }
@@ -270,14 +270,14 @@ public class FillableTestValue {
 
   public static class TestFloatValue extends AbstractFloatValue {
     private final ExpressionType expressionType;
-    
+
     private float value;
     private boolean exists;
-    
+
     public TestFloatValue() {
       this(ExpressionType.CONST);
     }
-    
+
     public TestFloatValue(ExpressionType expressionType) {
       this.expressionType = expressionType;
     }
@@ -286,7 +286,7 @@ public class FillableTestValue {
       this.value = value;
       return this;
     }
-    
+
     public TestFloatValue setExists(boolean exists) {
       this.exists = exists;
       return this;
@@ -311,10 +311,10 @@ public class FillableTestValue {
     @Override
     public ExpressionType getExpressionType() { return expressionType; }
   }
-  
+
   public static class TestFloatValueStream extends AbstractFloatValueStream {
     private float[] values;
-    
+
     public TestFloatValueStream() {
       this.values = new float[0];
     }
@@ -343,14 +343,14 @@ public class FillableTestValue {
 
   public static class TestDoubleValue extends AbstractDoubleValue {
     private final ExpressionType expressionType;
-    
+
     private double value;
     private boolean exists;
-    
+
     public TestDoubleValue() {
       this(ExpressionType.CONST);
     }
-    
+
     public TestDoubleValue(ExpressionType expressionType) {
       this.expressionType = expressionType;
     }
@@ -359,7 +359,7 @@ public class FillableTestValue {
       this.value = value;
       return this;
     }
-    
+
     public TestDoubleValue setExists(boolean exists) {
       this.exists = exists;
       return this;
@@ -384,10 +384,10 @@ public class FillableTestValue {
     @Override
     public ExpressionType getExpressionType() { return expressionType; }
   }
-  
+
   public static class TestDoubleValueStream extends AbstractDoubleValueStream {
     private double[] values;
-    
+
     public TestDoubleValueStream() {
       this.values = new double[0];
     }
@@ -416,14 +416,14 @@ public class FillableTestValue {
 
   public static class TestBooleanValue extends AbstractBooleanValue {
     private final ExpressionType expressionType;
-    
+
     private boolean value;
     private boolean exists;
-    
+
     public TestBooleanValue() {
       this(ExpressionType.CONST);
     }
-    
+
     public TestBooleanValue(ExpressionType expressionType) {
       this.expressionType = expressionType;
     }
@@ -432,7 +432,7 @@ public class FillableTestValue {
       this.value = value;
       return this;
     }
-    
+
     public TestBooleanValue setExists(boolean exists) {
       this.exists = exists;
       return this;
@@ -460,7 +460,7 @@ public class FillableTestValue {
 
   public static class TestBooleanValueStream extends AbstractBooleanValueStream {
     private boolean[] values;
-    
+
     public TestBooleanValueStream() {
       this.values = new boolean[0];
     }
@@ -489,14 +489,14 @@ public class FillableTestValue {
 
   public static class TestDateValue extends AbstractDateValue {
     private final ExpressionType expressionType;
-    
+
     private long value;
     private boolean exists;
-    
+
     public TestDateValue() {
       this(ExpressionType.CONST);
     }
-    
+
     public TestDateValue(ExpressionType expressionType) {
       this.expressionType = expressionType;
     }
@@ -509,7 +509,7 @@ public class FillableTestValue {
       }
       return this;
     }
-    
+
     public TestDateValue setExists(boolean exists) {
       this.exists = exists;
       return this;
@@ -537,7 +537,7 @@ public class FillableTestValue {
 
   public static class TestDateValueStream extends AbstractDateValueStream {
     private String[] values;
-    
+
     public TestDateValueStream() {
       this.values = new String[0];
     }
@@ -568,14 +568,14 @@ public class FillableTestValue {
 
   public static class TestStringValue extends AbstractStringValue {
     private final ExpressionType expressionType;
-    
+
     private String value;
     private boolean exists;
-    
+
     public TestStringValue() {
       this(ExpressionType.CONST);
     }
-    
+
     public TestStringValue(ExpressionType expressionType) {
       this.expressionType = expressionType;
     }
@@ -584,7 +584,7 @@ public class FillableTestValue {
       this.value = value;
       return this;
     }
-    
+
     public TestStringValue setExists(boolean exists) {
       this.exists = exists;
       return this;
@@ -612,7 +612,7 @@ public class FillableTestValue {
 
   public static class TestStringValueStream extends AbstractStringValueStream {
     private String[] values;
-    
+
     public TestStringValueStream() {
       this.values = new String[0];
     }

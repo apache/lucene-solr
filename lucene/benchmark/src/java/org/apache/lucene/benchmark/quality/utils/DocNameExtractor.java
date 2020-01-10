@@ -17,9 +17,9 @@
 package org.apache.lucene.benchmark.quality.utils;
 
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.StoredFieldVisitor;
@@ -51,9 +51,8 @@ public class DocNameExtractor {
     final List<String> name = new ArrayList<>();
     searcher.getIndexReader().document(docid, new StoredFieldVisitor() {
         @Override
-        public void stringField(FieldInfo fieldInfo, byte[] bytes) {
-          String value = new String(bytes, StandardCharsets.UTF_8);
-          name.add(value);
+        public void stringField(FieldInfo fieldInfo, String value) {
+          name.add(Objects.requireNonNull(value, "String value should not be null"));
         }
 
         @Override

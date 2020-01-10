@@ -25,7 +25,7 @@ import org.apache.solr.analytics.stream.reservation.read.IntDataReader;
 import org.apache.solr.analytics.stream.reservation.write.IntDataWriter;
 
 public class IntReservation extends ReductionDataReservation<IntConsumer, IntSupplier> {
-  
+
   public IntReservation(IntConsumer applier, IntSupplier extractor) {
     super(applier, extractor);
   }

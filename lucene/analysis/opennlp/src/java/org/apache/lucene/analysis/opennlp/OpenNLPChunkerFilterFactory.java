@@ -39,8 +39,13 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  * @since 7.3.0
+ * @lucene.spi {@value #NAME}
  */
 public class OpenNLPChunkerFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+
+  /** SPI name */
+  public static final String NAME = "openNlpChunker";
+
   public static final String CHUNKER_MODEL = "chunkerModel";
 
   private final String chunkerModelFile;

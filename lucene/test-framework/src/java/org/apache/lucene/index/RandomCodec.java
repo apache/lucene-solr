@@ -44,7 +44,6 @@ import org.apache.lucene.codecs.blocktreeords.BlockTreeOrdsPostingsFormat;
 import org.apache.lucene.codecs.bloom.TestBloomFilteredLucenePostings;
 import org.apache.lucene.codecs.lucene60.Lucene60PointsReader;
 import org.apache.lucene.codecs.lucene60.Lucene60PointsWriter;
-import org.apache.lucene.codecs.memory.DirectDocValuesFormat;
 import org.apache.lucene.codecs.memory.DirectPostingsFormat;
 import org.apache.lucene.codecs.memory.FSTOrdPostingsFormat;
 import org.apache.lucene.codecs.memory.FSTPostingsFormat;
@@ -208,8 +207,7 @@ public class RandomCodec extends AssertingCodec {
     
     addDocValues(avoidCodecs,
         TestUtil.getDefaultDocValuesFormat(),
-        new DirectDocValuesFormat(), // maybe not a great idea...
-        TestUtil.getDefaultDocValuesFormat(),
+
         new AssertingDocValuesFormat());
 
     Collections.shuffle(formats, random);

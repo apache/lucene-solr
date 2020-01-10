@@ -31,7 +31,7 @@ import org.apache.lucene.analysis.util.CharFilterFactory;
  * <p>
  * Supports the following attributes:
  * <ul>
- *   <li>name: A <a href="http://unicode.org/reports/tr15/">Unicode Normalization Form</a>, 
+ *   <li>form: A <a href="http://unicode.org/reports/tr15/">Unicode Normalization Form</a>,
  *       one of 'nfc','nfkc', 'nfkc_cf'. Default is nfkc_cf.
  *   <li>mode: Either 'compose' or 'decompose'. Default is compose. Use "decompose" with nfc
  *       or nfkc, to get nfd or nfkd, respectively.
@@ -43,17 +43,22 @@ import org.apache.lucene.analysis.util.CharFilterFactory;
  * @see FilteredNormalizer2
  *
  * @since 4.10.0
+ * @lucene.spi {@value #NAME}
  */
 public class ICUNormalizer2CharFilterFactory extends CharFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "icuNormalizer2";
+
   private final Normalizer2 normalizer;
 
   /** Creates a new ICUNormalizer2CharFilterFactory */
   public ICUNormalizer2CharFilterFactory(Map<String,String> args) {
     super(args);
-    String name = get(args, "name", "nfkc_cf");
+    String form = get(args, "form", "nfkc_cf");
     String mode = get(args, "mode", Arrays.asList("compose", "decompose"), "compose");
     Normalizer2 normalizer = Normalizer2.getInstance
-        (null, name, "compose".equals(mode) ? Normalizer2.Mode.COMPOSE : Normalizer2.Mode.DECOMPOSE);
+        (null, form, "compose".equals(mode) ? Normalizer2.Mode.COMPOSE : Normalizer2.Mode.DECOMPOSE);
     
     String filter = get(args, "filter");
     if (filter != null) {

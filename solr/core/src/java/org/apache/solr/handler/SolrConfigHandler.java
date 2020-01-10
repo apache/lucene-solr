@@ -45,6 +45,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -62,11 +63,13 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.ConfigOverlay;
+import org.apache.solr.core.PluginBag;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.RequestParams;
 import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.pkg.PackageListeners;
 import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
@@ -149,9 +152,9 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
   public static boolean getImmutable(SolrCore core) {
     NamedList configSetProperties = core.getConfigSetProperties();
-    if(configSetProperties == null) return false;
+    if (configSetProperties == null) return false;
     Object immutable = configSetProperties.get(IMMUTABLE_CONFIGSET_ARG);
-    return immutable != null ? Boolean.parseBoolean(immutable.toString()) : false;
+    return immutable != null && Boolean.parseBoolean(immutable.toString());
   }
 
 
@@ -168,8 +171,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       this.method = httpMethod;
       path = (String) req.getContext().get("path");
       if (path == null) path = getDefaultPath();
-      parts = StrUtils.splitSmart(path, '/');
-      if (parts.get(0).isEmpty()) parts.remove(0);
+      parts = StrUtils.splitSmart(path, '/', true);
     }
 
     private String getDefaultPath() {
@@ -245,10 +247,26 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             if (componentName != null) {
               Map map = (Map) val.get(parts.get(1));
               if (map != null) {
-                val.put(parts.get(1), makeMap(componentName, map.get(componentName)));
+                Object o = map.get(componentName);
+                val.put(parts.get(1), makeMap(componentName, o));
+                if (req.getParams().getBool("meta", false)) {
+                  // meta=true is asking for the package info of the plugin
+                  // We go through all the listeners and see if there is one registered for this plugin
+                  List<PackageListeners.Listener> listeners = req.getCore().getPackageListeners().getListeners();
+                  for (PackageListeners.Listener listener :
+                      listeners) {
+                    PluginInfo info = listener.pluginInfo();
+                    if(info == null) continue;
+                    if (info.type.equals(parts.get(1)) && info.name.equals(componentName)) {
+                      if (o instanceof Map) {
+                        Map m1 = (Map) o;
+                        m1.put("_packageinfo_", listener.getPackageVersion());
+                      }
+                    }
+                  }
+                }
               }
             }
-
             resp.add("config", val);
           }
         }
@@ -292,13 +310,13 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
         pluginInfo = ((PluginInfo) plugin).toMap(new LinkedHashMap<>());
       }
       String useParams = (String) pluginInfo.get(USEPARAM);
-      String useparamsInReq = req.getOriginalParams().get(USEPARAM);
-      if (useParams != null || useparamsInReq != null) {
+      String useParamsInReq = req.getOriginalParams().get(USEPARAM);
+      if (useParams != null || useParamsInReq != null) {
         Map m = new LinkedHashMap<>();
         pluginInfo.put("_useParamsExpanded_", m);
         List<String> params = new ArrayList<>();
         if (useParams != null) params.addAll(StrUtils.splitSmart(useParams, ','));
-        if (useparamsInReq != null) params.addAll(StrUtils.splitSmart(useparamsInReq, ','));
+        if (useParamsInReq != null) params.addAll(StrUtils.splitSmart(useParamsInReq, ','));
         for (String param : params) {
           RequestParams.ParamSet p = this.req.getCore().getSolrConfig().getRequestParams().getParams(param);
           if (p != null) {
@@ -414,10 +432,14 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
             if (op.hasError()) break;
             for (String s : name) {
               if (params.getParams(s) == null) {
-                op.addError(formatString("can't delete . No such params ''{0}'' exist", s));
+                op.addError(formatString("Could not delete. No such params ''{0}'' exist", s));
               }
               params = params.setParams(s, null);
             }
+            break;
+          }
+          default: {
+            op.unknownOperation();
           }
         }
       }
@@ -425,7 +447,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
       List errs = CommandOperation.captureErrors(ops);
       if (!errs.isEmpty()) {
-        throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST,"error processing params", errs);
+        throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST, "error processing params", errs);
       }
 
       SolrResourceLoader loader = req.getCore().getResourceLoader();
@@ -488,14 +510,15 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       }
       List errs = CommandOperation.captureErrors(ops);
       if (!errs.isEmpty()) {
-        throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST,"error processing commands", errs);
+        log.error("ERROR:" + Utils.toJSONString(errs));
+        throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST, "error processing commands", errs);
       }
 
       SolrResourceLoader loader = req.getCore().getResourceLoader();
       if (loader instanceof ZkSolrResourceLoader) {
         int latestVersion = ZkController.persistConfigResourceToZooKeeper((ZkSolrResourceLoader) loader, overlay.getZnodeVersion(),
             ConfigOverlay.RESOURCE_NAME, overlay.toByteArray(), true);
-        log.info("Executed config commands successfully and persisted to ZK {}", ops);
+        log.debug("Executed config commands successfully and persisted to ZK {}", ops);
         waitForAllReplicasState(req.getCore().getCoreDescriptor().getCloudDescriptor().getCollectionName(),
             req.getCore().getCoreContainer().getZkController(),
             ConfigOverlay.NAME,
@@ -503,7 +526,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       } else {
         SolrResourceLoader.persistConfLocally(loader, ConfigOverlay.RESOURCE_NAME, overlay.toByteArray());
         req.getCore().getCoreContainer().reload(req.getCore().getName());
-        log.info("Executed config commands successfully and persited to File System {}", ops);
+        log.info("Executed config commands successfully and persisted to File System {}", ops);
       }
 
     }
@@ -526,6 +549,19 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
       op.getMap(PluginInfo.INVARIANTS, null);
       op.getMap(PluginInfo.APPENDS, null);
       if (op.hasError()) return overlay;
+      if (info.clazz == PluginBag.RuntimeLib.class) {
+        if (!PluginBag.RuntimeLib.isEnabled()) {
+          op.addError("Solr not started with -Denable.runtime.lib=true");
+          return overlay;
+        }
+        try {
+          new PluginBag.RuntimeLib(req.getCore()).init(new PluginInfo(info.tag, op.getDataMap()));
+        } catch (Exception e) {
+          op.addError(e.getMessage());
+          log.error("can't load this plugin ", e);
+          return overlay;
+        }
+      }
       if (!verifyClass(op, clz, info.clazz)) return overlay;
       if (pluginExists(info, overlay, name)) {
         if (isCeate) {
@@ -546,17 +582,26 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
     private boolean pluginExists(SolrConfig.SolrPluginInfo info, ConfigOverlay overlay, String name) {
       List<PluginInfo> l = req.getCore().getSolrConfig().getPluginInfos(info.clazz.getName());
-      for (PluginInfo pluginInfo : l) if(name.equals( pluginInfo.name)) return true;
+      for (PluginInfo pluginInfo : l) if (name.equals(pluginInfo.name)) return true;
       return overlay.getNamedPlugins(info.getCleanTag()).containsKey(name);
     }
 
     private boolean verifyClass(CommandOperation op, String clz, Class expected) {
       if (clz == null) return true;
       if (!"true".equals(String.valueOf(op.getStr("runtimeLib", null)))) {
+        PluginInfo info = new PluginInfo(SolrRequestHandler.TYPE, op.getDataMap());
         //this is not dynamically loaded so we can verify the class right away
         try {
-          req.getCore().createInitInstance(new PluginInfo(SolrRequestHandler.TYPE, op.getDataMap()), expected, clz, "");
+          if(expected == Expressible.class) {
+            SolrResourceLoader resourceLoader = info.pkgName == null ?
+                req.getCore().getResourceLoader() :
+                req.getCore().getResourceLoader(info.pkgName);
+            resourceLoader.findClass(info.className, expected);
+          } else {
+            req.getCore().createInitInstance(info, expected, clz, "");
+          }
         } catch (Exception e) {
+          log.error("Error checking plugin : ", e);
           op.addError(e.getMessage());
           return false;
         }
@@ -662,7 +707,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
           c == '_' ||
           c == '-' ||
           c == '.'
-          ) continue;
+      ) continue;
       else {
         return formatString("''{0}'' name should only have chars [a-zA-Z_-.0-9] ", s);
       }
@@ -756,7 +801,7 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
 
         if (!success) {
           String coreUrl = concurrentTasks.get(f).coreUrl;
-          log.warn("Core " + coreUrl + "could not get the expected version " + expectedVersion);
+          log.warn("Core " + coreUrl + " could not get the expected version " + expectedVersion);
           if (failedList == null) failedList = new ArrayList<>();
           failedList.add(coreUrl);
         }

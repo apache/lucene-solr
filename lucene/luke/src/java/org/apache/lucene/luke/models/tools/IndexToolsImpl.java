@@ -17,11 +17,15 @@
 
 package org.apache.lucene.luke.models.tools;
 
+import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -30,6 +34,9 @@ import org.apache.lucene.index.CheckIndex;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.MultiTerms;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.luke.models.LukeException;
 import org.apache.lucene.luke.models.LukeModel;
 import org.apache.lucene.luke.models.util.IndexUtils;
@@ -37,6 +44,7 @@ import org.apache.lucene.luke.models.util.twentynewsgroups.Message;
 import org.apache.lucene.luke.models.util.twentynewsgroups.MessageFilesParser;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.BytesRef;
 
 /** Default implementation of {@link IndexTools} */
 public final class IndexToolsImpl extends LukeModel implements IndexTools {
@@ -182,6 +190,27 @@ public final class IndexToolsImpl extends LukeModel implements IndexTools {
           writer.close();
         } catch (IOException e) {}
       }
+    }
+  }
+
+  public String exportTerms(String destDir, String field, String delimiter) {
+    String filename = "terms_" + field + "_" + System.currentTimeMillis() + ".out";
+    Path path = Paths.get(destDir, filename);
+    try {
+      Terms terms = MultiTerms.getTerms(reader, field);
+      if (terms == null) {
+        throw new LukeException(String.format(Locale.US, "Field %s does not contain any terms to be exported", field));
+      }
+      try (BufferedWriter writer = Files.newBufferedWriter(path, Charset.forName("UTF-8"))) {
+        TermsEnum termsEnum = terms.iterator();
+        BytesRef term;
+        while (!Thread.currentThread().isInterrupted() && (term = termsEnum.next()) != null) {
+          writer.write(String.format(Locale.US, "%s%s%d\n", term.utf8ToString(), delimiter, +termsEnum.docFreq()));
+        }
+        return path.toString();
+      }
+    } catch (IOException e) {
+      throw new LukeException("Terms file export for field [" + field + "] to file [" + filename + "] has failed.", e);
     }
   }
 }

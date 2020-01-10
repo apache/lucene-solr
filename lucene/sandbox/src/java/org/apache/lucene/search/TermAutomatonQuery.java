@@ -33,8 +33,10 @@ import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.search.spans.SpanNearQuery;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.Operations;
 import org.apache.lucene.util.automaton.Transition;
@@ -66,7 +68,9 @@ import static org.apache.lucene.util.automaton.Operations.DEFAULT_MAX_DETERMINIZ
  *
  *  @lucene.experimental */
 
-public class TermAutomatonQuery extends Query {
+public class TermAutomatonQuery extends Query implements Accountable {
+  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(TermAutomatonQuery.class);
+
   private final String field;
   private final Automaton.Builder builder;
   Automaton det;
@@ -264,6 +268,16 @@ public class TermAutomatonQuery extends Query {
     return System.identityHashCode(this);
   }
 
+  @Override
+  public long ramBytesUsed() {
+    return BASE_RAM_BYTES +
+        RamUsageEstimator.sizeOfObject(builder) +
+        RamUsageEstimator.sizeOfObject(det) +
+        RamUsageEstimator.sizeOfObject(field) +
+        RamUsageEstimator.sizeOfObject(idToTerm) +
+        RamUsageEstimator.sizeOfObject(termToID);
+  }
+
   /** Returns the dot (graphviz) representation of this automaton.
    *  This is extremely useful for visualizing the automaton. */
   public String toDot() {
@@ -284,9 +298,9 @@ public class TermAutomatonQuery extends Query {
       b.append("  ");
       b.append(state);
       if (det.isAccept(state)) {
-        b.append(" [shape=doublecircle,label=\"" + state + "\"]\n");
+        b.append(" [shape=doublecircle,label=\"").append(state).append("\"]\n");
       } else {
-        b.append(" [shape=circle,label=\"" + state + "\"]\n");
+        b.append(" [shape=circle,label=\"").append(state).append("\"]\n");
       }
       int numTransitions = det.initTransition(state, t);
       for(int i=0;i<numTransitions;i++) {
@@ -346,9 +360,9 @@ public class TermAutomatonQuery extends Query {
       for(Map.Entry<Integer,BytesRef> ent : idToTerm.entrySet()) {
         Integer termID = ent.getKey();
         if (ent.getValue() != null) {
-          TermStatistics stats = searcher.termStatistics(new Term(field, ent.getValue()), termStates.get(termID));
-          if (stats != null) {
-            allTermStats.add(stats);
+          TermStates ts = termStates.get(termID);
+          if (ts.docFreq() > 0) {
+            allTermStats.add(searcher.termStatistics(new Term(field, ent.getValue()), ts.docFreq(), ts.totalTermFreq()));
           }
         }
       }

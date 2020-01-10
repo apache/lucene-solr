@@ -32,8 +32,13 @@ import java.util.Map;
  * &lt;/fieldType&gt;</pre> 
  *
  * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class StandardTokenizerFactory extends TokenizerFactory {
+
+  /** SPI name */
+  public static final String NAME = "standard";
+
   private final int maxTokenLength;
   
   /** Creates a new StandardTokenizerFactory */

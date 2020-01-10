@@ -36,7 +36,6 @@ import java.awt.Insets;
 import java.awt.Window;
 import java.awt.event.ActionEvent;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -277,15 +276,12 @@ public final class CheckIndexDialogFactory implements DialogOpener.DialogFactory
             CheckIndex.Status status = toolsModel.checkIndex(ps);
             ps.flush();
             return status;
-          } catch (UnsupportedEncodingException e) {
-            // will not reach
           } catch (Exception e) {
             statusLbl.setText(MessageUtils.getLocalizedMessage("message.error.unknown"));
             throw e;
           } finally {
             setProgress(100);
           }
-          return null;
         }
 
         @Override
@@ -358,15 +354,12 @@ public final class CheckIndexDialogFactory implements DialogOpener.DialogFactory
             statusLbl.setText("Done");
             ps.flush();
             return status;
-          } catch (UnsupportedEncodingException e) {
-            // will not occur
           } catch (Exception e) {
             statusLbl.setText(MessageUtils.getLocalizedMessage("message.error.unknown"));
             throw e;
           } finally {
             setProgress(100);
           }
-          return null;
         }
 
         @Override

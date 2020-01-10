@@ -40,22 +40,29 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
+import org.apache.lucene.store.SimpleFSDirectory;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.lucene.util.TestUtil;
+
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettyConfig;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.request.GenericSolrRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
+import org.apache.solr.client.solrj.response.SimpleSolrResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
 import org.apache.solr.common.SolrDocument;
@@ -66,6 +73,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CachingDirectoryFactory;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
@@ -73,6 +81,7 @@ import org.apache.solr.core.StandardDirectoryFactory;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
 import org.apache.solr.util.FileUtils;
 import org.apache.solr.util.TestInjection;
+import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -101,7 +110,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
       + File.separator;
 
   JettySolrRunner masterJetty, slaveJetty, repeaterJetty;
-  SolrClient masterClient, slaveClient, repeaterClient;
+  HttpSolrClient masterClient, slaveClient, repeaterClient;
   SolrInstance master = null, slave = null, repeater = null;
 
   static String context = "/solr";
@@ -147,13 +156,22 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
   @After
   public void tearDown() throws Exception {
     super.tearDown();
-    masterJetty.stop();
-    slaveJetty.stop();
-    masterJetty = slaveJetty = null;
-    master = slave = null;
-    masterClient.close();
-    slaveClient.close();
-    masterClient = slaveClient = null;
+    if (null != masterJetty) {
+      masterJetty.stop();
+      masterJetty = null;
+    }
+    if (null != slaveJetty) {
+      slaveJetty.stop();
+      slaveJetty = null;
+    }
+    if (null != masterClient) {
+      masterClient.close();
+      masterClient = null;
+    }
+    if (null != slaveClient) {
+      slaveClient.close();
+      slaveClient = null;
+    }
     System.clearProperty("solr.indexfetcher.sotimeout");
   }
 
@@ -167,7 +185,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     return jetty;
   }
 
-  static SolrClient createNewSolrClient(int port) {
+  static HttpSolrClient createNewSolrClient(int port) {
     try {
       // setup the client...
       final String baseUrl = buildUrl(port) + "/" + DEFAULT_TEST_CORENAME;
@@ -666,30 +684,60 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
 
       masterJetty.stop();
 
-      // poll interval on slave is 1 second, so we just sleep for a few seconds
-      Thread.sleep(2000);
+      final TimeOut waitForLeaderToShutdown = new TimeOut(300, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      waitForLeaderToShutdown.waitFor
+        ("Gave up after waiting an obscene amount of time for leader to shut down",
+         () -> masterJetty.isStopped() );
+        
+      for(int retries=0; ;retries++) { 
 
+        Thread.yield(); // might not be necessary at all
+        // poll interval on slave is 1 second, so we just sleep for a few seconds
+        Thread.sleep(2000);
+        
+        NamedList<Object> slaveDetails=null;
+        try {
+          slaveDetails = getSlaveDetails();
+          int failed = Integer.parseInt(getStringOrNull(slaveDetails,"timesFailed"));
+          if (previousTimesFailed != null) {
+            assertTrue(failed > previousTimesFailed);
+          }
+          assertEquals(1, Integer.parseInt(getStringOrNull(slaveDetails,"timesIndexReplicated")) - failed);
+          break;
+        } catch (NumberFormatException | AssertionError notYet) {
+          log.info((retries+1)+"th attempt failure on " + notYet+" details are "+slaveDetails);
+          if (retries>9) {
+            log.error("giving up: ", notYet);
+            throw notYet;
+          } 
+        }
+      }
+      
       masterJetty.start();
 
       // poll interval on slave is 1 second, so we just sleep for a few seconds
       Thread.sleep(2000);
-
       //get docs from slave and assert that they are still the same as before
       slaveQueryRsp = rQuery(nDocs, "*:*", slaveClient);
       slaveQueryResult = (SolrDocumentList) slaveQueryRsp.get("response");
       assertEquals(nDocs, numFound(slaveQueryRsp));
 
-      int failed = Integer.parseInt(getSlaveDetails("timesFailed"));
-      if (previousTimesFailed != null) {
-        assertTrue(failed > previousTimesFailed);
-      }
-      assertEquals(1, Integer.parseInt(getSlaveDetails("timesIndexReplicated")) - failed);
     } finally {
       resetFactory();
     }
   }
 
   private String getSlaveDetails(String keyName) throws SolrServerException, IOException {
+    NamedList<Object> details = getSlaveDetails();
+    return getStringOrNull(details, keyName);
+  }
+
+  private String getStringOrNull(NamedList<Object> details, String keyName) {
+    Object o = details.get(keyName);
+    return o != null ? o.toString() : null;
+  }
+
+  private NamedList<Object> getSlaveDetails() throws SolrServerException, IOException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set(CommonParams.QT, "/replication");
     params.set("command", "details");
@@ -698,8 +746,7 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     // details/slave/timesIndexReplicated
     NamedList<Object> details = (NamedList<Object>) response.getResponse().get("details");
     NamedList<Object> slave = (NamedList<Object>) details.get("slave");
-    Object o = slave.get(keyName);
-    return o != null ? o.toString() : null;
+    return slave;
   }
 
   @Test
@@ -1472,10 +1519,8 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     List<String> params = Arrays.asList(ReplicationHandler.FILE, ReplicationHandler.CONF_FILE_SHORT, ReplicationHandler.TLOG_FILE);
     for (String param : params) {
       for (String filename : illegalFilenames) {
-        try {
-          invokeReplicationCommand(masterJetty.getLocalPort(), "filecontent&" + param + "=" + filename);
-          fail("Should have thrown exception on illegal path for param " + param + " and file name " + filename);
-        } catch (Exception e) {}
+        expectThrows(Exception.class, () ->
+            invokeReplicationCommand(masterJetty.getLocalPort(), "filecontent&" + param + "=" + filename));
       }
     }
   }
@@ -1534,6 +1579,58 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
     assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, thrown.code());
     assertThat(thrown.getMessage(), containsString("Missing required parameter: name"));
   }
+
+  @Test
+  public void testEmptyBackups() throws Exception {
+    final File backupDir = createTempDir().toFile();
+    final BackupStatusChecker backupStatus = new BackupStatusChecker(masterClient);
+    
+    { // initial request w/o any committed docs
+      final String backupName = "empty_backup1";
+      final GenericSolrRequest req = new GenericSolrRequest
+        (SolrRequest.METHOD.GET, "/replication",
+         params("command", "backup",
+                "location", backupDir.getAbsolutePath(),
+                "name", backupName));
+      final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      final SimpleSolrResponse rsp = req.process(masterClient);
+
+      final String dirName = backupStatus.waitForBackupSuccess(backupName, timeout);
+      assertEquals("Did not get expected dir name for backup, did API change?",
+                   "snapshot.empty_backup1", dirName);
+      assertTrue(dirName + " doesn't exist in expected location for backup " + backupName,
+                 new File(backupDir, dirName).exists());
+    }
+    
+    index(masterClient, "id", "1", "name", "foo");
+    
+    { // second backup w/uncommited doc
+      final String backupName = "empty_backup2";
+      final GenericSolrRequest req = new GenericSolrRequest
+        (SolrRequest.METHOD.GET, "/replication",
+         params("command", "backup",
+                "location", backupDir.getAbsolutePath(),
+                "name", backupName));
+      final TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+      final SimpleSolrResponse rsp = req.process(masterClient);
+      
+      final String dirName = backupStatus.waitForBackupSuccess(backupName, timeout);
+      assertEquals("Did not get expected dir name for backup, did API change?",
+                   "snapshot.empty_backup2", dirName);
+      assertTrue(dirName + " doesn't exist in expected location for backup " + backupName,
+                 new File(backupDir, dirName).exists());
+    }
+
+    // confirm backups really are empty
+    for (int i = 1; i <=2; i++) {
+      final String name = "snapshot.empty_backup"+i;
+      try (Directory dir = new SimpleFSDirectory(new File(backupDir, name).toPath());
+           IndexReader reader = DirectoryReader.open(dir)) {
+        assertEquals(name + " is not empty", 0, reader.numDocs());
+      }
+    }
+  }
+  
   
   private class AddExtraDocs implements Runnable {
 
@@ -1566,20 +1663,17 @@ public class TestReplicationHandler extends SolrTestCaseJ4 {
    * character copy of file using UTF-8. If port is non-null, will be substituted any time "TEST_PORT" is found.
    */
   private static void copyFile(File src, File dst, Integer port, boolean internalCompression) throws IOException {
-    BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(src), StandardCharsets.UTF_8));
-    Writer out = new OutputStreamWriter(new FileOutputStream(dst), StandardCharsets.UTF_8);
+    try (BufferedReader in = new BufferedReader(new InputStreamReader(new FileInputStream(src), StandardCharsets.UTF_8));
+         Writer out = new OutputStreamWriter(new FileOutputStream(dst), StandardCharsets.UTF_8)) {
 
-    for (String line = in.readLine(); null != line; line = in.readLine()) {
-
-      if (null != port)
-        line = line.replace("TEST_PORT", port.toString());
-      
-      line = line.replace("COMPRESSION", internalCompression?"internal":"false");
-
-      out.write(line);
+      for (String line = in.readLine(); null != line; line = in.readLine()) {
+        if (null != port) {
+          line = line.replace("TEST_PORT", port.toString());
+        }
+        line = line.replace("COMPRESSION", internalCompression ? "internal" : "false");
+        out.write(line);
+      }
     }
-    in.close();
-    out.close();
   }
 
   private UpdateResponse emptyUpdate(SolrClient client, String... params)

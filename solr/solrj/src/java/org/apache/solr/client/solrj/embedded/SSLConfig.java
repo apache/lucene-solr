@@ -24,7 +24,6 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
  * @see #setUseSSL
  */
 public class SSLConfig {
-  
   private boolean useSsl;
   private boolean clientAuth;
   private String keyStore;
@@ -76,7 +75,7 @@ public class SSLConfig {
   }
 
   /**
-   * Returns an SslContextFactory that should be used by a jetty server based on the specified 
+   * Returns an SslContextFactory.Server that should be used by a jetty server based on the specified
    * SSLConfig param which may be null.
    *
    * if the SSLConfig param is non-null, then this method will return the results of 
@@ -88,8 +87,7 @@ public class SSLConfig {
    * 
    * @see #createContextFactory()
    */
-  public static SslContextFactory createContextFactory(SSLConfig sslConfig) {
-
+  public static SslContextFactory.Server createContextFactory(SSLConfig sslConfig) {
     if (sslConfig != null) {
       return sslConfig.createContextFactory();
     }
@@ -102,7 +100,7 @@ public class SSLConfig {
   }
   
   /**
-   * Returns an SslContextFactory that should be used by a jetty server based on this SSLConfig instance, 
+   * Returns an SslContextFactory.Server that should be used by a jetty server based on this SSLConfig instance,
    * or null if SSL should not be used.
    *
    * The default implementation generates a simple factory according to the keystore, truststore, 
@@ -114,14 +112,13 @@ public class SSLConfig {
    * @see #getTrustStore
    * @see #getTrustStorePassword
    */
-  public SslContextFactory createContextFactory() {
-
+  public SslContextFactory.Server createContextFactory() {
     if (! isSSLMode()) {
       return null;
     }
     // else...
     
-    SslContextFactory factory = new SslContextFactory(false);
+    SslContextFactory.Server factory = new SslContextFactory.Server();
     if (getKeyStore() != null)
       factory.setKeyStorePath(getKeyStore());
     if (getKeyStorePassword() != null)
@@ -136,12 +133,34 @@ public class SSLConfig {
         factory.setTrustStorePassword(getTrustStorePassword());
     }
     return factory;
-
   }
 
-  private static SslContextFactory configureSslFromSysProps() {
+  public SslContextFactory.Client createClientContextFactory() {
+    if (! isSSLMode()) {
+      return null;
+    }
+    // else...
 
-    SslContextFactory sslcontext = new SslContextFactory(false);
+    SslContextFactory.Client factory = new SslContextFactory.Client();
+    if (getKeyStore() != null) {
+      factory.setKeyStorePath(getKeyStore());
+    }
+    if (getKeyStorePassword() != null) {
+      factory.setKeyStorePassword(getKeyStorePassword());
+    }
+
+    if (isClientAuthMode()) {
+      if (getTrustStore() != null)
+        factory.setTrustStorePath(getTrustStore());
+      if (getTrustStorePassword() != null)
+        factory.setTrustStorePassword(getTrustStorePassword());
+    }
+
+    return factory;
+  }
+
+  private static SslContextFactory.Server configureSslFromSysProps() {
+    SslContextFactory.Server sslcontext = new SslContextFactory.Server();
 
     if (null != System.getProperty("javax.net.ssl.keyStore")) {
       sslcontext.setKeyStorePath

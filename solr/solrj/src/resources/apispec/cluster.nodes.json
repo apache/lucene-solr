@@ -1,5 +1,5 @@
 {
-  "documentation": "https://lucene.apache.org/solr/guide/collections-api.html",
+  "documentation": "https://lucene.apache.org/solr/guide/cluster-node-management.html",
   "description": "Provides general information about the available nodes of the cluster.",
   "methods": [
     "GET"

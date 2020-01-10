@@ -19,6 +19,7 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.net.InetAddress;
+import java.util.Arrays;
 
 import org.apache.lucene.document.BinaryPoint;
 import org.apache.lucene.document.DoublePoint;
@@ -28,7 +29,6 @@ import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LatLonPoint;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.search.DocIdSetIterator;
-import org.apache.lucene.util.FutureArrays;
 import org.apache.lucene.util.bkd.BKDWriter;
 
 /** 
@@ -140,7 +140,7 @@ public abstract class PointValues {
         final int numBytesPerDimension = values.getBytesPerDimension();
         for (int i = 0; i < numDimensions; ++i) {
           int offset = i * numBytesPerDimension;
-          if (FutureArrays.compareUnsigned(leafMinValue, offset, offset + numBytesPerDimension, minValue, offset, offset + numBytesPerDimension) < 0) {
+          if (Arrays.compareUnsigned(leafMinValue, offset, offset + numBytesPerDimension, minValue, offset, offset + numBytesPerDimension) < 0) {
             System.arraycopy(leafMinValue, offset, minValue, offset, numBytesPerDimension);
           }
         }
@@ -171,7 +171,7 @@ public abstract class PointValues {
         final int numBytesPerDimension = values.getBytesPerDimension();
         for (int i = 0; i < numDimensions; ++i) {
           int offset = i * numBytesPerDimension;
-          if (FutureArrays.compareUnsigned(leafMaxValue, offset, offset + numBytesPerDimension, maxValue, offset, offset + numBytesPerDimension) > 0) {
+          if (Arrays.compareUnsigned(leafMaxValue, offset, offset + numBytesPerDimension, maxValue, offset, offset + numBytesPerDimension) > 0) {
             System.arraycopy(leafMaxValue, offset, maxValue, offset, numBytesPerDimension);
           }
         }
@@ -208,6 +208,16 @@ public abstract class PointValues {
      *  docID order. */
     void visit(int docID, byte[] packedValue) throws IOException;
 
+    /** Similar to {@link IntersectVisitor#visit(int, byte[])} but in this case the packedValue
+     * can have more than one docID associated to it. The provided iterator should not escape the
+     * scope of this method so that implementations of PointValues are free to reuse it,*/
+    default void visit(DocIdSetIterator iterator, byte[] packedValue) throws IOException {
+      int docID;
+      while ((docID = iterator.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
+        visit(docID, packedValue);
+      }
+    }
+
     /** Called for non-leaf cells to test how the cell relates to the query, to
      *  determine how to further recurse down the tree. */
     Relation compare(byte[] minPackedValue, byte[] maxPackedValue);
@@ -223,9 +233,35 @@ public abstract class PointValues {
 
   /** Estimate the number of points that would be visited by {@link #intersect}
    * with the given {@link IntersectVisitor}. This should run many times faster
+   * than {@link #intersect(IntersectVisitor)}. */
+  public abstract long estimatePointCount(IntersectVisitor visitor);
+
+  /** Estimate the number of documents that would be matched by {@link #intersect}
+   * with the given {@link IntersectVisitor}. This should run many times faster
    * than {@link #intersect(IntersectVisitor)}.
    * @see DocIdSetIterator#cost */
-  public abstract long estimatePointCount(IntersectVisitor visitor);
+  public long estimateDocCount(IntersectVisitor visitor) {
+    long estimatedPointCount = estimatePointCount(visitor);
+    int docCount = getDocCount();
+    double size = size();
+    if (estimatedPointCount >= size) {
+      // math all docs
+      return docCount;
+    } else if (size == docCount || estimatedPointCount == 0L ) {
+      // if the point count estimate is 0 or we have only single values
+      // return this estimate
+      return  estimatedPointCount;
+    } else {
+      // in case of multi values estimate the number of docs using the solution provided in
+      // https://math.stackexchange.com/questions/1175295/urn-problem-probability-of-drawing-balls-of-k-unique-colors
+      // then approximate the solution for points per doc << size() which results in the expression
+      // D * (1 - ((N - n) / N)^(N/D))
+      // where D is the total number of docs, N the total number of points and n the estimated point count
+      long docEstimate = (long) (docCount * (1d - Math.pow((size - estimatedPointCount) / size, size / docCount)));
+      return docEstimate == 0L ? 1L : docEstimate;
+    }
+  }
+
 
   /** Returns minimum value for each dimension, packed, or null if {@link #size} is <code>0</code> */
   public abstract byte[] getMinPackedValue() throws IOException;

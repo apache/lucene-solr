@@ -26,6 +26,10 @@ import org.apache.lucene.analysis.util.CharFilterFactory;
  * Factory for {@link MockCharFilter} for testing purposes.
  */
 public class MockCharFilterFactory extends CharFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "mock";
+
   final int remainder;
 
   /** Creates a new MockCharFilterFactory */

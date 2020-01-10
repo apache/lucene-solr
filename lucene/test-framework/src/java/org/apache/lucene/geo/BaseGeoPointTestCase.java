@@ -414,6 +414,29 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     verify(lats, lons);
   }
 
+  // A particularly tricky adversary for BKD tree:
+  public void testLowCardinality() throws Exception {
+    int numPoints = atLeast(1000);
+    int cardinality = TestUtil.nextInt(random(), 2, 20);
+
+    double[] diffLons  = new double[cardinality];
+    double[] diffLats = new double[cardinality];
+    for (int i = 0; i< cardinality; i++) {
+      diffLats[i] = nextLatitude();
+      diffLons[i] = nextLongitude();
+    }
+
+    double[] lats = new double[numPoints];
+    double[] lons = new double[numPoints];
+    for (int i = 0; i < numPoints; i++) {
+      int index = random().nextInt(cardinality);
+      lats[i] = diffLats[index];
+      lons[i] = diffLons[index];
+    }
+
+    verify(lats, lons);
+  }
+
   public void testAllLatEqual() throws Exception {
     int numPoints = atLeast(10000);
     double lat = nextLatitude();
@@ -856,17 +879,17 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
 
         if (hits.get(docID) != expected) {
           StringBuilder b = new StringBuilder();
-          b.append("docID=(" + docID + ")\n");
+          b.append("docID=(").append(docID).append(")\n");
 
           if (expected) {
-            b.append("FAIL: id=" + id + " should match but did not\n");
+            b.append("FAIL: id=").append(id).append(" should match but did not\n");
           } else {
-            b.append("FAIL: id=" + id + " should not match but did\n");
+            b.append("FAIL: id=").append(id).append(" should not match but did\n");
           }
-          b.append("  box=" + rect + "\n");
-          b.append("  query=" + query + " docID=" + docID + "\n");
-          b.append("  lat=" + lats[id] + " lon=" + lons[id] + "\n");
-          b.append("  deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
+          b.append("  box=").append(rect).append("\n");
+          b.append("  query=").append(query).append(" docID=").append(docID).append("\n");
+          b.append("  lat=").append(lats[id]).append(" lon=").append(lons[id]).append("\n");
+          b.append("  deleted?=").append(liveDocs != null && liveDocs.get(docID) == false);
           if (true) {
             fail("wrong hit (first of possibly more):\n\n" + b);
           } else {
@@ -997,16 +1020,16 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
           StringBuilder b = new StringBuilder();
 
           if (expected) {
-            b.append("FAIL: id=" + id + " should match but did not\n");
+            b.append("FAIL: id=").append(id).append(" should match but did not\n");
           } else {
-            b.append("FAIL: id=" + id + " should not match but did\n");
+            b.append("FAIL: id=").append(id).append(" should not match but did\n");
           }
-          b.append("  query=" + query + " docID=" + docID + "\n");
-          b.append("  lat=" + lats[id] + " lon=" + lons[id] + "\n");
-          b.append("  deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
+          b.append("  query=").append(query).append(" docID=").append(docID).append("\n");
+          b.append("  lat=").append(lats[id]).append(" lon=").append(lons[id]).append("\n");
+          b.append("  deleted?=").append(liveDocs != null && liveDocs.get(docID) == false);
           if (Double.isNaN(lats[id]) == false) {
             double distanceMeters = SloppyMath.haversinMeters(centerLat, centerLon, lats[id], lons[id]);
-            b.append("  centerLat=" + centerLat + " centerLon=" + centerLon + " distanceMeters=" + distanceMeters + " vs radiusMeters=" + radiusMeters);
+            b.append("  centerLat=").append(centerLat).append(" centerLon=").append(centerLon).append(" distanceMeters=").append(distanceMeters).append(" vs radiusMeters=").append(radiusMeters);
           }
           if (true) {
             fail("wrong hit (first of possibly more):\n\n" + b);
@@ -1129,14 +1152,14 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
           StringBuilder b = new StringBuilder();
 
           if (expected) {
-            b.append("FAIL: id=" + id + " should match but did not\n");
+            b.append("FAIL: id=").append(id).append(" should match but did not\n");
           } else {
-            b.append("FAIL: id=" + id + " should not match but did\n");
+            b.append("FAIL: id=").append(id).append(" should not match but did\n");
           }
-          b.append("  query=" + query + " docID=" + docID + "\n");
-          b.append("  lat=" + lats[id] + " lon=" + lons[id] + "\n");
-          b.append("  deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
-          b.append("  polygon=" + polygon);
+          b.append("  query=").append(query).append(" docID=").append(docID).append("\n");
+          b.append("  lat=").append(lats[id]).append(" lon=").append(lons[id]).append("\n");
+          b.append("  deleted?=").append(liveDocs != null && liveDocs.get(docID) == false);
+          b.append("  polygon=").append(polygon);
           if (true) {
             fail("wrong hit (first of possibly more):\n\n" + b);
           } else {
@@ -1252,7 +1275,7 @@ public abstract class BaseGeoPointTestCase extends LuceneTestCase {
     // Else seeds may not reproduce:
     iwc.setMergeScheduler(new SerialMergeScheduler());
     int pointsInLeaf = 2 + random().nextInt(4);
-    iwc.setCodec(new FilterCodec("Lucene80", TestUtil.getDefaultCodec()) {
+    iwc.setCodec(new FilterCodec("Lucene84", TestUtil.getDefaultCodec()) {
       @Override
       public PointsFormat pointsFormat() {
         return new PointsFormat() {

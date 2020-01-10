@@ -45,6 +45,7 @@ import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -586,6 +587,16 @@ public class Http2SolrClientTest extends SolrJettyTestBase {
       req.setQueryParams(setOf("requestOnly", "both", "neither"));
       verifyServletState(client, req);
     }
+  }
+
+  @Test
+  public void testGetDefaultSslContextFactory() {
+    assertNull(Http2SolrClient.getDefaultSslContextFactory().getEndpointIdentificationAlgorithm());
+
+    System.setProperty("solr.jetty.ssl.verifyClientHostName", "HTTPS");
+    SslContextFactory.Client sslContextFactory = Http2SolrClient.getDefaultSslContextFactory();
+    assertEquals("HTTPS", sslContextFactory.getEndpointIdentificationAlgorithm());
+    System.clearProperty("solr.jetty.ssl.verifyClientHostName");
   }
 
   /**

@@ -74,7 +74,7 @@ public class FrenchMinimalStemmer {
     if (s[len-1] == 'r') len--;
     if (s[len-1] == 'e') len--;
     if (s[len-1] == 'é') len--;
-    if (s[len-1] == s[len-2]) len--;
+    if (s[len-1] == s[len-2] && Character.isLetter(s[len-1])) len--;
     return len;
   }
 }

@@ -16,6 +16,12 @@
  */
 package org.apache.solr.common.cloud;
 
+import javax.xml.transform.OutputKeys;
+import javax.xml.transform.Source;
+import javax.xml.transform.Transformer;
+import javax.xml.transform.TransformerFactory;
+import javax.xml.transform.stream.StreamResult;
+import javax.xml.transform.stream.StreamSource;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
@@ -28,16 +34,10 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
-
-import javax.xml.transform.OutputKeys;
-import javax.xml.transform.Source;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.stream.StreamResult;
-import javax.xml.transform.stream.StreamSource;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -198,6 +198,7 @@ public class SolrZkClient implements Closeable {
       } catch (InterruptedException e1) {
         Thread.currentThread().interrupt();
       }
+      zkConnManagerCallbackExecutor.shutdown();
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
     assert ObjectReleaseTracker.track(this);
@@ -274,29 +275,8 @@ public class SolrZkClient implements Closeable {
    * {@link #getData(String, org.apache.zookeeper.Watcher, org.apache.zookeeper.data.Stat, boolean)}.
    */
   public Watcher wrapWatcher(final Watcher watcher) {
-    if (watcher == null || watcher instanceof SolrZkWatcher) return watcher;
-
-    return new SolrZkWatcher() {
-      @Override
-      public void process(final WatchedEvent event) {
-        log.debug("Submitting job to respond to event {}", event);
-        try {
-          if (watcher instanceof ConnectionManager) {
-            zkConnManagerCallbackExecutor.submit(() -> watcher.process(event));
-          } else {
-            zkCallbackExecutor.submit(() -> watcher.process(event));
-          }
-        } catch (RejectedExecutionException e) {
-          // If not a graceful shutdown
-          if (!isClosed()) {
-            throw e;
-          }
-        }
-      }
-    };
-  }
-
-  private interface SolrZkWatcher extends Watcher {
+    if (watcher == null || watcher instanceof ProcessWatchWithExecutor) return watcher;
+    return new ProcessWatchWithExecutor(watcher);
   }
 
   /**
@@ -374,6 +354,10 @@ public class SolrZkClient implements Closeable {
   }
 
   public void atomicUpdate(String path, Function<byte[], byte[]> editor) throws KeeperException, InterruptedException {
+   atomicUpdate(path, (stat, bytes) -> editor.apply(bytes));
+  }
+
+  public void atomicUpdate(String path, BiFunction<Stat , byte[], byte[]> editor) throws KeeperException, InterruptedException {
     for (; ; ) {
       byte[] modified = null;
       byte[] zkData = null;
@@ -381,7 +365,7 @@ public class SolrZkClient implements Closeable {
       try {
         if (exists(path, true)) {
           zkData = getData(path, null, s, true);
-          modified = editor.apply(zkData);
+          modified = editor.apply(s, zkData);
           if (modified == null) {
             //no change , no need to persist
             return;
@@ -389,7 +373,7 @@ public class SolrZkClient implements Closeable {
           setData(path, modified, s.getVersion(), true);
           break;
         } else {
-          modified = editor.apply(null);
+          modified = editor.apply(s,null);
           if (modified == null) {
             //no change , no need to persist
             return;
@@ -524,7 +508,7 @@ public class SolrZkClient implements Closeable {
     StringBuilder sbPath = new StringBuilder();
     for (int i = 0; i < paths.length; i++) {
       String pathPiece = paths[i];
-      sbPath.append("/" + pathPiece);
+      sbPath.append("/").append(pathPiece);
       if (i < skipPathParts) {
         continue;
       }
@@ -618,7 +602,7 @@ public class SolrZkClient implements Closeable {
     for (int i = 0; i < indent; i++) {
       dent.append(" ");
     }
-    string.append(dent + path + " (" + children.size() + ")" + NEWL);
+    string.append(dent).append(path).append(" (").append(children.size()).append(")").append(NEWL);
     if (data != null) {
       String dataString = new String(data, StandardCharsets.UTF_8);
       if ((!path.endsWith(".txt") && !path.endsWith(".xml")) || path.endsWith(ZkStateReader.CLUSTER_STATE)) {
@@ -627,10 +611,9 @@ public class SolrZkClient implements Closeable {
           dataString = prettyPrint(dataString);
         }
 
-        string.append(dent + "DATA:\n" + dent + "    "
-            + dataString.replaceAll("\n", "\n" + dent + "    ") + NEWL);
+        string.append(dent).append("DATA:\n").append(dent).append("    ").append(dataString.replaceAll("\n", "\n" + dent + "    ")).append(NEWL);
       } else {
-        string.append(dent + "DATA: ...supressed..." + NEWL);
+        string.append(dent).append("DATA: ...supressed...").append(NEWL);
       }
     }
 
@@ -833,5 +816,57 @@ public class SolrZkClient implements Closeable {
   }
   public void downloadFromZK(String zkPath, Path dir) throws IOException {
     ZkMaintenanceUtils.downloadFromZK(this, zkPath, dir);
+  }
+
+  /**
+   * Watcher wrapper that ensures that heavy implementations of process do not interfere with our ability
+   * to react to other watches, but also ensures that two wrappers containing equal watches are considered
+   * equal (and thus we won't accumulate multiple wrappers of the same watch).
+   */
+  private final class ProcessWatchWithExecutor implements Watcher { // see below for why final.
+    private final Watcher watcher;
+
+    ProcessWatchWithExecutor(Watcher watcher) {
+      if (watcher == null) {
+        throw new IllegalArgumentException("Watcher must not be null");
+      }
+      this.watcher = watcher;
+    }
+
+    @Override
+    public void process(final WatchedEvent event) {
+      log.debug("Submitting job to respond to event {}", event);
+      try {
+        if (watcher instanceof ConnectionManager) {
+          zkConnManagerCallbackExecutor.submit(() -> watcher.process(event));
+        } else {
+          zkCallbackExecutor.submit(() -> watcher.process(event));
+        }
+      } catch (RejectedExecutionException e) {
+        // If not a graceful shutdown
+        if (!isClosed()) {
+          throw e;
+        }
+      }
+    }
+
+    // These overrides of hashcode/equals ensure that we don't store the same exact watch
+    // multiple times in org.apache.zookeeper.ZooKeeper.ZKWatchManager.dataWatches
+    // (a Map<String<Set<Watch>>). This class is marked final to avoid oddball
+    // cases with sub-classes, if you need different behavior, find a new class or make
+    // sure you account for the case where two diff sub-classes with different behavior
+    // for process(WatchEvent) and have been created with the same watch object.
+    @Override
+    public int hashCode() {
+      return watcher.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (obj instanceof ProcessWatchWithExecutor) {
+        return this.watcher.equals(((ProcessWatchWithExecutor) obj).watcher);
+      }
+      return false;
+    }
   }
 }

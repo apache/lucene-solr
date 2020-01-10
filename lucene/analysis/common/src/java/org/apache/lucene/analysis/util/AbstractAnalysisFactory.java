@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.nio.charset.StandardCharsets;
@@ -28,10 +30,10 @@ import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -69,7 +71,7 @@ public abstract class AbstractAnalysisFactory {
    * Initialize this factory via a set of key-value pairs.
    */
   protected AbstractAnalysisFactory(Map<String,String> args) {
-    originalArgs = Collections.unmodifiableMap(new HashMap<>(args));
+    originalArgs = Map.copyOf(args);
     String version = get(args, LUCENE_MATCH_VERSION_PARAM);
     if (version == null) {
       luceneMatchVersion = Version.LATEST;
@@ -81,6 +83,7 @@ public abstract class AbstractAnalysisFactory {
       }
     }
     args.remove(CLASS_NAME);  // consume the class arg
+    args.remove(SPI_NAME);    // consume the spi arg
   }
   
   public final Map<String,String> getOriginalArgs() {
@@ -314,6 +317,8 @@ public abstract class AbstractAnalysisFactory {
   }
 
   private static final String CLASS_NAME = "class";
+
+  private static final String SPI_NAME = "name";
   
   /**
    * @return the string used to specify the concrete class name in a serialized representation: the class arg.  
@@ -335,5 +340,24 @@ public abstract class AbstractAnalysisFactory {
 
   public void setExplicitLuceneMatchVersion(boolean isExplicitLuceneMatchVersion) {
     this.isExplicitLuceneMatchVersion = isExplicitLuceneMatchVersion;
+  }
+
+  /**
+   * Looks up SPI name (static "NAME" field) with appropriate modifiers.
+   * Also it must be a String class and declared in the concrete class.
+   * @return the SPI name
+   * @throws NoSuchFieldException - if the "NAME" field is not defined.
+   * @throws IllegalAccessException - if the "NAME" field is inaccessible.
+   * @throws IllegalStateException - if the "NAME" field does not have appropriate modifiers or isn't a String field.
+   */
+  static String lookupSPIName(Class<? extends AbstractAnalysisFactory> service) throws NoSuchFieldException, IllegalAccessException, IllegalStateException {
+    final Field field = service.getField("NAME");
+    int modifier = field.getModifiers();
+    if (Modifier.isStatic(modifier) && Modifier.isFinal(modifier) &&
+        field.getType().equals(String.class) &&
+        Objects.equals(field.getDeclaringClass(), service)) {
+      return ((String) field.get(null));
+      }
+    throw new IllegalStateException("No SPI name defined.");
   }
 }

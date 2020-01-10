@@ -23,7 +23,6 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.RandomIndexWriter;
-import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
@@ -137,10 +136,14 @@ public class TestNumericRangeQuery64 extends SolrTestCase {
   @AfterClass
   public static void afterClass() throws Exception {
     searcher = null;
-    reader.close();
-    reader = null;
-    directory.close();
-    directory = null;
+    if (null != reader) {
+      reader.close();
+      reader = null;
+    }
+    if (null != directory) {
+      directory.close();
+      directory = null;
+    }
   }
   
   @Override
@@ -148,7 +151,7 @@ public class TestNumericRangeQuery64 extends SolrTestCase {
     super.setUp();
     // set the theoretical maximum term count for 8bit (see docs for the number)
     // super.tearDown will restore the default
-    BooleanQuery.setMaxClauseCount(7*255*2 + 255);
+    IndexSearcher.setMaxClauseCount(7*255*2 + 255);
   }
   
   /** test for constant score + boolean query + filter, the other tests only use the constant score mode */

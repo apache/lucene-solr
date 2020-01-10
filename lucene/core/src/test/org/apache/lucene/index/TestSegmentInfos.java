@@ -29,7 +29,6 @@ import org.apache.lucene.util.Version;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class TestSegmentInfos extends LuceneTestCase {
@@ -111,14 +110,10 @@ public class TestSegmentInfos extends LuceneTestCase {
     Codec codec = Codec.getDefault();
 
     // diagnostics map
-    Map<String, String> diagnostics = new LinkedHashMap<>();
-    diagnostics.put("key1", "value1");
-    diagnostics.put("key2", "value2");
+    Map<String, String> diagnostics = Map.of("key1", "value1", "key2", "value2");
 
     // attributes map
-    Map<String,String> attributes = new LinkedHashMap<>();
-    attributes.put("key1", "value1");
-    attributes.put("key2", "value2");
+    Map<String,String> attributes =  Map.of("akey1", "value1", "akey2", "value2");
 
     // diagnostics X, attributes X
     si = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "TEST", 10000, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), Sort.INDEXORDER);
@@ -131,23 +126,22 @@ public class TestSegmentInfos extends LuceneTestCase {
     assertEquals("TEST(" + Version.LATEST.toString() + ")" +
         ":C10000" +
         ":[indexSort=<doc>]" +
-        ":[diagnostics={key1=value1, key2=value2}]", si.toString());
+        ":[diagnostics=" + diagnostics + "]", si.toString());
 
     // diagnostics X, attributes O
     si = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "TEST", 10000, false, codec, Collections.emptyMap(), StringHelper.randomId(), attributes, Sort.INDEXORDER);
     assertEquals("TEST(" + Version.LATEST.toString() + ")" +
         ":C10000" +
         ":[indexSort=<doc>]" +
-        ":[attributes={key1=value1, key2=value2}]", si.toString());
+        ":[attributes=" + attributes + "]", si.toString());
 
     // diagnostics O, attributes O
     si = new SegmentInfo(dir, Version.LATEST, Version.LATEST, "TEST", 10000, false, codec, diagnostics, StringHelper.randomId(), attributes, Sort.INDEXORDER);
-    System.out.println(si.toString());
     assertEquals("TEST(" + Version.LATEST.toString() + ")" +
         ":C10000" +
         ":[indexSort=<doc>]" +
-        ":[diagnostics={key1=value1, key2=value2}]" +
-        ":[attributes={key1=value1, key2=value2}]", si.toString());
+        ":[diagnostics=" + diagnostics + "]" +
+        ":[attributes=" + attributes + "]", si.toString());
 
     dir.close();
   }

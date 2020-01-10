@@ -85,7 +85,7 @@ final class Geo3DPointSortField extends SortField {
     builder.append(" shape=");
     builder.append(distanceShape);
     if (Double.POSITIVE_INFINITY != getMissingValue()) {
-      builder.append(" missingValue=" + getMissingValue());
+      builder.append(" missingValue=").append(getMissingValue());
     }
     builder.append('>');
     return builder.toString();

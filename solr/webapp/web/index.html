@@ -1,5 +1,5 @@
 <!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
-<html ng-app="solrAdminApp">
+<html ng-app="solrAdminApp" ng-csp>
 <!--
 Licensed to the Apache Software Foundation (ASF) under one or more
 contributor license agreements.  See the NOTICE file distributed with
@@ -23,6 +23,7 @@ limitations under the License.
   <link rel="icon" type="image/x-icon" href="img/favicon.ico?_=${version}">
   <link rel="shortcut icon" type="image/x-icon" href="img/favicon.ico?_=${version}">
 
+  <link rel="stylesheet" type="text/css" href="css/angular/angular-csp.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/common.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/analysis.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/cloud.css?_=${version}">
@@ -46,14 +47,15 @@ limitations under the License.
   <link rel="stylesheet" type="text/css" href="css/angular/segments.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/threads.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/chosen.css?_=${version}">
+  <link rel="stylesheet" type="text/css" href="css/angular/overview.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/jquery-ui.min.css?_=${version}">
   <link rel="stylesheet" type="text/css" href="css/angular/jquery-ui.structure.min.css?_=${version}">
 
   <meta http-equiv="x-ua-compatible" content="IE=9">
   <script src="libs/jquery-2.1.3.min.js"></script>
-  <script src="libs/chosen.jquery.js"></script>
+  <script src="libs/chosen.jquery.min.js"></script>
   <script src="libs/jquery.jstree.js"></script>
-  <script src="libs/angular.js"></script>
+  <script src="libs/angular.min.js"></script>
   <script src="libs/angular-chosen.js"></script>
   <script src="libs/angular-resource.min.js"></script>
   <script src="libs/angular-route.min.js"></script>
@@ -73,6 +75,7 @@ limitations under the License.
   <script src="js/angular/controllers/cores.js"></script>
   <script src="js/angular/controllers/threads.js"></script>
   <script src="js/angular/controllers/java-properties.js"></script>
+  <script src="js/angular/controllers/alias-overview.js"></script>
   <script src="js/angular/controllers/core-overview.js"></script>
   <script src="js/angular/controllers/collection-overview.js"></script>
   <script src="js/angular/controllers/analysis.js"></script>
@@ -97,8 +100,6 @@ limitations under the License.
     <div id="header">
 
       <a href="#/" id="solr"><span>Apache SOLR</span></a>
-
-      <p id="environment">&nbsp;</p>
 
     </div>
 
@@ -143,6 +144,8 @@ limitations under the License.
         <div>
 
           <ul id="menu">
+            <li id="environment" ng-class="environment" ng-show="showEnvironment" ng-style="environment_color !== undefined ? {'background-color': environment_color} : ''">{{ environment_label }}</li>
+
             <li id="login" class="global" ng-class="{active:page=='login'}" ng-show="http401 || currentUser"><p><a href="#/login">{{http401 ? "Login" : "Logout " + currentUser}}</a></p></li>
             
             <li id="index" class="global" ng-class="{active:page=='index'}"><p><a href="#/">Dashboard</a></p></li>
@@ -180,7 +183,7 @@ limitations under the License.
                         ng-model="currentCollection"
                         chosen
                         ng-change="showCollection(currentCollection)"
-                        ng-options="collection.name for collection in collections"></select>
+                        ng-options="collection.name for collection in aliases_and_collections"></select>
               </div>
               <p id="has-no-collections" ng-show="collections.length==0"><a href="#/~collections">
                 No collections available
@@ -189,14 +192,15 @@ limitations under the License.
             </div>
             <div id="collection-menu" class="sub-menu" ng-show="currentCollection">
               <ul>
-                <li class="overview" ng-class="{active:page=='collection-overview'}"><a href="#/{{currentCollection.name}}/collection-overview"><span>Overview</span></a></li>
-                <li class="analysis" ng-class="{active:page=='analysis'}"><a href="#/{{currentCollection.name}}/analysis"><span>Analysis</span></a></li>
-                <li class="dataimport" ng-class="{active:page=='dataimport'}"><a href="#/{{currentCollection.name}}/dataimport"><span>Dataimport</span></a></li>
-                <li class="documents" ng-class="{active:page=='documents'}"><a href="#/{{currentCollection.name}}/documents"><span>Documents</span></a></li>
-                <li class="files" ng-class="{active:page=='files'}"><a href="#/{{currentCollection.name}}/files"><span>Files</span></a></li>
+                <li class="overview" ng-show="currentCollection.type === 'collection'" ng-class="{active:page=='collection-overview'}"><a href="#/{{currentCollection.name}}/collection-overview"><span>Overview</span></a></li>
+                <li class="overview" ng-show="currentCollection.type === 'alias'" ng-class="{active:page=='alias-overview'}"><a href="#/{{currentCollection.name}}/alias-overview"><span>Overview</span></a></li>
+                <li class="analysis" ng-show="!isMultiDestAlias(currentCollection)" ng-class="{active:page=='analysis'}"><a href="#/{{currentCollection.name}}/analysis"><span>Analysis</span></a></li>
+                <li class="dataimport" ng-show="!isMultiDestAlias(currentCollection)" ng-class="{active:page=='dataimport'}"><a href="#/{{currentCollection.name}}/dataimport"><span>Dataimport</span></a></li>
+                <li class="documents" ng-show="!isMultiDestAlias(currentCollection)" ng-class="{active:page=='documents'}"><a href="#/{{currentCollection.name}}/documents"><span>Documents</span></a></li>
+                <li class="files" ng-show="!isMultiDestAlias(currentCollection)" ng-class="{active:page=='files'}"><a href="#/{{currentCollection.name}}/files"><span>Files</span></a></li>
                 <li class="query" ng-class="{active:page=='query'}"><a href="#/{{currentCollection.name}}/query"><span>Query</span></a></li>
                 <li class="stream" ng-class="{active:page=='stream'}"><a href="#/{{currentCollection.name}}/stream"><span>Stream</span></a></li>
-                <li class="schema" ng-class="{active:page=='schema'}"><a href="#/{{currentCollection.name}}/schema"><span>Schema</span></a></li>
+                <li class="schema" ng-show="!isMultiDestAlias(currentCollection)" ng-class="{active:page=='schema'}"><a href="#/{{currentCollection.name}}/schema"><span>Schema</span></a></li>
               </ul>
             </div>
             <div id="core-selector">

@@ -31,6 +31,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.TimeZoneUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,10 +43,11 @@ public class SolrRequestInfo {
   protected SolrQueryRequest req;
   protected SolrQueryResponse rsp;
   protected Date now;
-  protected HttpServletRequest httpRequest;
+  public HttpServletRequest httpRequest;
   protected TimeZone tz;
   protected ResponseBuilder rb;
   protected List<Closeable> closeHooks;
+  protected SolrDispatchFilter.Action action;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -86,9 +88,19 @@ public class SolrRequestInfo {
     this.req = req;
     this.rsp = rsp;    
   }
-  public SolrRequestInfo(HttpServletRequest  httpReq, SolrQueryResponse rsp) {
+  public SolrRequestInfo(SolrQueryRequest req, SolrQueryResponse rsp, SolrDispatchFilter.Action action) {
+    this(req, rsp);
+    this.setAction(action);
+  }
+
+  public SolrRequestInfo(HttpServletRequest httpReq, SolrQueryResponse rsp) {
     this.httpRequest = httpReq;
     this.rsp = rsp;
+  }
+
+  public SolrRequestInfo(HttpServletRequest httpReq, SolrQueryResponse rsp, SolrDispatchFilter.Action action) {
+    this(httpReq, rsp);
+    this.action = action;
   }
 
   public Principal getUserPrincipal() {
@@ -147,6 +159,14 @@ public class SolrRequestInfo {
       }
       closeHooks.add(hook);
     }
+  }
+
+  public SolrDispatchFilter.Action getAction() {
+    return action;
+  }
+
+  public void setAction(SolrDispatchFilter.Action action) {
+    this.action = action;
   }
 
   public static ExecutorUtil.InheritableThreadLocalProvider getInheritableThreadLocalProvider() {

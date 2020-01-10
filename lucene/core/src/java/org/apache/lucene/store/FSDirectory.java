@@ -41,7 +41,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
 
@@ -261,7 +260,7 @@ public abstract class FSDirectory extends BaseDirectory {
     maybeDeletePendingFiles();
     while (true) {
       try {
-        String name = IndexFileNames.segmentFileName(prefix, suffix + "_" + Long.toString(nextTempFileCounter.getAndIncrement(), Character.MAX_RADIX), "tmp");
+        String name = getTempFileName(prefix, suffix, nextTempFileCounter.getAndIncrement());
         if (pendingDeletes.contains(name)) {
           continue;
         }
@@ -429,7 +428,7 @@ public abstract class FSDirectory extends BaseDirectory {
     if (pendingDeletes.isEmpty()) {
       return Collections.emptySet();
     } else {
-      return Collections.unmodifiableSet(new HashSet<>(pendingDeletes));
+      return Set.copyOf(pendingDeletes);
     }
   }
 }

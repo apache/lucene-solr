@@ -37,6 +37,9 @@ import java.awt.Window;
 import java.io.IOException;
 
 import org.apache.lucene.analysis.custom.CustomAnalyzer;
+import org.apache.lucene.analysis.util.CharFilterFactory;
+import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.luke.app.desktop.Preferences;
 import org.apache.lucene.luke.app.desktop.PreferencesFactory;
 import org.apache.lucene.luke.app.desktop.util.DialogOpener;
@@ -109,7 +112,7 @@ public class AnalysisChainDialogFactory implements DialogOpener.DialogFactory {
     c.weighty = 0.5;
     panel.add(new JLabel(MessageUtils.getLocalizedMessage("analysis.dialog.chain.label.charfilters")), c);
 
-    String[] charFilters = analyzer.getCharFilterFactories().stream().map(f -> f.getClass().getName()).toArray(String[]::new);
+    String[] charFilters = analyzer.getCharFilterFactories().stream().map(f -> CharFilterFactory.findSPIName(f.getClass())).toArray(String[]::new);
     JList<String> charFilterList = new JList<>(charFilters);
     charFilterList.setVisibleRowCount(charFilters.length == 0 ? 1 : Math.min(charFilters.length, 5));
     c.gridx = 1;
@@ -124,7 +127,7 @@ public class AnalysisChainDialogFactory implements DialogOpener.DialogFactory {
     c.weighty = 0.1;
     panel.add(new JLabel(MessageUtils.getLocalizedMessage("analysis.dialog.chain.label.tokenizer")), c);
 
-    String tokenizer = analyzer.getTokenizerFactory().getClass().getName();
+    String tokenizer = TokenizerFactory.findSPIName(analyzer.getTokenizerFactory().getClass());
     JTextField tokenizerTF = new JTextField(tokenizer);
     tokenizerTF.setColumns(30);
     tokenizerTF.setEditable(false);
@@ -142,7 +145,7 @@ public class AnalysisChainDialogFactory implements DialogOpener.DialogFactory {
     c.weighty = 0.5;
     panel.add(new JLabel(MessageUtils.getLocalizedMessage("analysis.dialog.chain.label.tokenfilters")), c);
 
-    String[] tokenFilters = analyzer.getTokenFilterFactories().stream().map(f -> f.getClass().getName()).toArray(String[]::new);
+    String[] tokenFilters = analyzer.getTokenFilterFactories().stream().map(f -> TokenFilterFactory.findSPIName(f.getClass())).toArray(String[]::new);
     JList<String> tokenFilterList = new JList<>(tokenFilters);
     tokenFilterList.setVisibleRowCount(tokenFilters.length == 0 ? 1 : Math.min(tokenFilters.length, 5));
     tokenFilterList.setMinimumSize(new Dimension(300, 25));

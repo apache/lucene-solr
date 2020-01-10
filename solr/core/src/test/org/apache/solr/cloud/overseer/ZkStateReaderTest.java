@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud.overseer;
 
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -61,7 +62,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
   }
 
   public void testStateFormatUpdate(boolean explicitRefresh, boolean isInteresting) throws Exception {
-    String zkDir = createTempDir("testStateFormatUpdate").toFile().getAbsolutePath();
+    Path zkDir = createTempDir("testStateFormatUpdate");
 
     ZkTestServer server = new ZkTestServer(zkDir);
 
@@ -137,7 +138,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
   }
 
   public void testExternalCollectionWatchedNotWatched() throws Exception{
-    String zkDir = createTempDir("testExternalCollectionWatchedNotWatched").toFile().getAbsolutePath();
+    Path zkDir = createTempDir("testExternalCollectionWatchedNotWatched");
     ZkTestServer server = new ZkTestServer(zkDir);
     SolrZkClient zkClient = null;
     ZkStateReader reader = null;
@@ -175,7 +176,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
   }
 
   public void testCollectionStateWatcherCaching() throws Exception  {
-    String zkDir = createTempDir("testCollectionStateWatcherCaching").toFile().getAbsolutePath();
+    Path zkDir = createTempDir("testCollectionStateWatcherCaching");
 
     ZkTestServer server = new ZkTestServer(zkDir);
 
@@ -223,7 +224,7 @@ public class ZkStateReaderTest extends SolrTestCaseJ4 {
   }
 
   public void testWatchedCollectionCreation() throws Exception {
-    String zkDir = createTempDir("testWatchedCollectionCreation").toFile().getAbsolutePath();
+    Path zkDir = createTempDir("testWatchedCollectionCreation");
 
     ZkTestServer server = new ZkTestServer(zkDir);
 

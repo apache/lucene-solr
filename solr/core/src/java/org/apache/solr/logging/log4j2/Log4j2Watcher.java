@@ -280,8 +280,8 @@ public class Log4j2Watcher extends LogWatcher<LogEvent> {
 
     Map<String,String> contextMap = event.getContextMap();
     if (contextMap != null) {
-      for (String key : contextMap.keySet())
-        doc.setField(key, contextMap.get(key));
+      for (Map.Entry<String, String> entry : contextMap.entrySet())
+        doc.setField(entry.getKey(), entry.getValue());
     }
 
     if (!doc.containsKey("core"))

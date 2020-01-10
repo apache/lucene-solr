@@ -61,7 +61,7 @@ The Document Builder provides a wizard-like interface to enter fields of a docum
 
 The File Upload option allows choosing a prepared file and uploading it. If using `/update` for the Request-Handler option, you will be limited to XML, CSV, and JSON.
 
-Other document types (e.g Word, PDF, etc.) can be indexed using the ExtractingRequestHandler (aka, Solr Cell). You must modify the RequestHandler to `/update/extract`, which must be defined in your `solrconfig.xml` file with your desired defaults. You should also add `&literal.id` shown in the "Extracting Request Handler Params" field so the file chosen is given a unique id.
+Other document types (e.g., Word, PDF, etc.) can be indexed using the ExtractingRequestHandler (aka, Solr Cell). You must modify the RequestHandler to `/update/extract`, which must be defined in your `solrconfig.xml` file with your desired defaults. You should also add `&literal.id` shown in the "Extracting Request Handler Params" field so the file chosen is given a unique id.
 More information can be found at:  <<uploading-data-with-solr-cell-using-apache-tika.adoc#uploading-data-with-solr-cell-using-apache-tika,Uploading Data with Solr Cell using Apache Tika>>
 
 == Solr Command

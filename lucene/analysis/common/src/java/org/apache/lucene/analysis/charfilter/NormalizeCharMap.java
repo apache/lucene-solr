@@ -25,6 +25,7 @@ import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.IntsRefBuilder;
 import org.apache.lucene.util.fst.CharSequenceOutputs;
 import org.apache.lucene.util.fst.FST;
+import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.Outputs;
 import org.apache.lucene.util.fst.Util;
 
@@ -50,10 +51,10 @@ public class NormalizeCharMap {
         final FST.BytesReader fstReader = map.getBytesReader();
         map.getFirstArc(scratchArc);
         if (FST.targetHasArcs(scratchArc)) {
-          map.readFirstRealTargetArc(scratchArc.target, scratchArc, fstReader);
+          map.readFirstRealTargetArc(scratchArc.target(), scratchArc, fstReader);
           while(true) {
-            assert scratchArc.label != FST.END_LABEL;
-            cachedRootArcs.put(Character.valueOf((char) scratchArc.label), new FST.Arc<CharsRef>().copyFrom(scratchArc));
+            assert scratchArc.label() != FST.END_LABEL;
+            cachedRootArcs.put(Character.valueOf((char) scratchArc.label()), new FST.Arc<CharsRef>().copyFrom(scratchArc));
             if (scratchArc.isLast()) {
               break;
             }
@@ -106,13 +107,13 @@ public class NormalizeCharMap {
       final FST<CharsRef> map;
       try {
         final Outputs<CharsRef> outputs = CharSequenceOutputs.getSingleton();
-        final org.apache.lucene.util.fst.Builder<CharsRef> builder = new org.apache.lucene.util.fst.Builder<>(FST.INPUT_TYPE.BYTE2, outputs);
+        final FSTCompiler<CharsRef> fstCompiler = new FSTCompiler<>(FST.INPUT_TYPE.BYTE2, outputs);
         final IntsRefBuilder scratch = new IntsRefBuilder();
         for(Map.Entry<String,String> ent : pendingPairs.entrySet()) {
-          builder.add(Util.toUTF16(ent.getKey(), scratch),
+          fstCompiler.add(Util.toUTF16(ent.getKey(), scratch),
                       new CharsRef(ent.getValue()));
         }
-        map = builder.finish();
+        map = fstCompiler.compile();
         pendingPairs.clear();
       } catch (IOException ioe) {
         // Bogus FST IOExceptions!!  (will never happen)

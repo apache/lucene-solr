@@ -20,35 +20,36 @@ package org.apache.solr.cloud.api.collections;
 import java.lang.invoke.MethodHandles;
 import java.text.ParseException;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
+import java.time.format.DateTimeParseException;
 import java.time.temporal.ChronoField;
 import java.time.temporal.ChronoUnit;
 import java.util.AbstractMap;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import com.google.common.base.MoreObjects;
-import org.apache.solr.cloud.ZkController;
+import org.apache.solr.client.solrj.RoutedAliasTypes;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Aliases;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.RequiredSolrParams;
-import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.SolrCore;
-import org.apache.solr.handler.admin.CollectionsHandler;
-import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.processor.RoutedAliasUpdateProcessor;
 import org.apache.solr.util.DateMathParser;
@@ -57,9 +58,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.apache.commons.lang3.StringUtils.isNotBlank;
-import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.CreationType.ASYNC_PREEMPTIVE;
-import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.CreationType.NONE;
-import static org.apache.solr.cloud.api.collections.TimeRoutedAlias.CreationType.SYNCHRONOUS;
+import static org.apache.solr.cloud.api.collections.RoutedAlias.CreationType.ASYNC_PREEMPTIVE;
+import static org.apache.solr.cloud.api.collections.RoutedAlias.CreationType.NONE;
+import static org.apache.solr.cloud.api.collections.RoutedAlias.CreationType.SYNCHRONOUS;
 import static org.apache.solr.common.SolrException.ErrorCode.BAD_REQUEST;
 import static org.apache.solr.common.params.CollectionAdminParams.ROUTER_PREFIX;
 import static org.apache.solr.common.params.CommonParams.TZ;
@@ -68,16 +69,12 @@ import static org.apache.solr.common.params.CommonParams.TZ;
  * Holds configuration for a routed alias, and some common code and constants.
  *
  * @see CreateAliasCmd
- * @see MaintainTimeRoutedAliasCmd
+ * @see MaintainRoutedAliasCmd
  * @see RoutedAliasUpdateProcessor
  */
-public class TimeRoutedAlias implements RoutedAlias {
+public class TimeRoutedAlias extends RoutedAlias {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
-  // This class is created once per request and the overseer methods prevent duplicate create requests
-  // from creating extra copies. All we need to track here is that we don't spam preemptive creates to
-  // the overseer multiple times from *this* request.
-  private volatile boolean preemptiveCreateOnceAlready = false;
+  public static final RoutedAliasTypes TYPE = RoutedAliasTypes.TIME;
 
   // These two fields may be updated within the calling thread during processing but should
   // never be updated by any async creation thread.
@@ -85,8 +82,11 @@ public class TimeRoutedAlias implements RoutedAlias {
   private Aliases parsedCollectionsAliases; // a cached reference to the source of what we parse into parsedCollectionsDesc
 
   // These are parameter names to routed alias creation, AND are stored as metadata with the alias.
+  @SuppressWarnings("WeakerAccess")
   public static final String ROUTER_START = ROUTER_PREFIX + "start";
+  @SuppressWarnings("WeakerAccess")
   public static final String ROUTER_INTERVAL = ROUTER_PREFIX + "interval";
+  @SuppressWarnings("WeakerAccess")
   public static final String ROUTER_MAX_FUTURE = ROUTER_PREFIX + "maxFutureMs";
   public static final String ROUTER_AUTO_DELETE_AGE = ROUTER_PREFIX + "autoDeleteAge";
   public static final String ROUTER_PREEMPTIVE_CREATE_MATH = ROUTER_PREFIX + "preemptiveCreateMath";
@@ -95,26 +95,21 @@ public class TimeRoutedAlias implements RoutedAlias {
   /**
    * Parameters required for creating a routed alias
    */
-  public static final Set<String> REQUIRED_ROUTER_PARAMS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
-      CommonParams.NAME,
-      ROUTER_TYPE_NAME,
-      ROUTER_FIELD,
-      ROUTER_START,
-      ROUTER_INTERVAL)));
+  @SuppressWarnings("WeakerAccess")
+  public static final Set<String> REQUIRED_ROUTER_PARAMS = Set.of(
+      CommonParams.NAME, ROUTER_TYPE_NAME, ROUTER_FIELD, ROUTER_START, ROUTER_INTERVAL);
 
   /**
    * Optional parameters for creating a routed alias excluding parameters for collection creation.
    */
   //TODO lets find a way to remove this as it's harder to maintain than required list
-  public static final Set<String> OPTIONAL_ROUTER_PARAMS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
-      ROUTER_MAX_FUTURE,
-      ROUTER_AUTO_DELETE_AGE,
-      ROUTER_PREEMPTIVE_CREATE_MATH,
-      TZ))); // kinda special
+  @SuppressWarnings("WeakerAccess")
+  public static final Set<String> OPTIONAL_ROUTER_PARAMS = Set.of(
+      ROUTER_MAX_FUTURE, ROUTER_AUTO_DELETE_AGE, ROUTER_PREEMPTIVE_CREATE_MATH, TZ); // kinda special
 
 
   // This format must be compatible with collection name limitations
-  private static final DateTimeFormatter DATE_TIME_FORMATTER = new DateTimeFormatterBuilder()
+  static final DateTimeFormatter DATE_TIME_FORMATTER = new DateTimeFormatterBuilder()
       .append(DateTimeFormatter.ISO_LOCAL_DATE).appendPattern("[_HH[_mm[_ss]]]") //brackets mean optional
       .parseDefaulting(ChronoField.HOUR_OF_DAY, 0)
       .parseDefaulting(ChronoField.MINUTE_OF_HOUR, 0)
@@ -148,8 +143,9 @@ public class TimeRoutedAlias implements RoutedAlias {
     this.aliasName = aliasName;
     final MapSolrParams params = new MapSolrParams(this.aliasMetadata); // for convenience
     final RequiredSolrParams required = params.required();
-    if (!"time".equals(required.get(ROUTER_TYPE_NAME))) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Only 'time' routed aliases is supported right now.");
+    String type = required.get(ROUTER_TYPE_NAME).toLowerCase(Locale.ROOT);
+    if (!"time".equals(type)) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Only 'time' routed aliases is supported by TimeRoutedAlias, found:" + type);
     }
     routeField = required.get(ROUTER_FIELD);
     intervalMath = required.get(ROUTER_INTERVAL);
@@ -167,7 +163,7 @@ public class TimeRoutedAlias implements RoutedAlias {
     // check that the date math is valid
     final Date now = new Date();
     try {
-      final Date after = new DateMathParser(now, timeZone).parseMath(intervalMath);
+      final Date after = new DateMathParser(now, timeZone).parseMath(getIntervalMath());
       if (!after.after(now)) {
         throw new SolrException(BAD_REQUEST, "duration must add to produce a time in the future");
       }
@@ -177,7 +173,7 @@ public class TimeRoutedAlias implements RoutedAlias {
 
     if (autoDeleteAgeMath != null) {
       try {
-        final Date before =  new DateMathParser(now, timeZone).parseMath(autoDeleteAgeMath);
+        final Date before = new DateMathParser(now, timeZone).parseMath(autoDeleteAgeMath);
         if (now.before(before)) {
           throw new SolrException(BAD_REQUEST, "duration must round or subtract to produce a time in the past");
         }
@@ -203,8 +199,23 @@ public class TimeRoutedAlias implements RoutedAlias {
     return formatCollectionNameFromInstant(aliasName, parseStringAsInstant(this.start, timeZone));
   }
 
+  @Override
+  String[] formattedRouteValues(SolrInputDocument doc) {
+    String routeField = getRouteField();
+    Date fieldValue = (Date) doc.getFieldValue(routeField);
+    String dest = calcCandidateCollection(fieldValue.toInstant()).getDestinationCollection();
+    int nonValuePrefix = getAliasName().length() + getRoutedAliasType().getSeparatorPrefix().length();
+    return new String[]{dest.substring(nonValuePrefix)};
+  }
+
   public static Instant parseInstantFromCollectionName(String aliasName, String collection) {
-    final String dateTimePart = collection.substring(aliasName.length() + 1);
+    String separatorPrefix = TYPE.getSeparatorPrefix();
+    final String dateTimePart;
+    if (collection.contains(separatorPrefix)) {
+      dateTimePart = collection.substring(collection.lastIndexOf(separatorPrefix) + separatorPrefix.length());
+    } else {
+      dateTimePart = collection.substring(aliasName.length() + 1);
+    }
     return DATE_TIME_FORMATTER.parse(dateTimePart, Instant::from);
   }
 
@@ -212,20 +223,20 @@ public class TimeRoutedAlias implements RoutedAlias {
     String nextCollName = DATE_TIME_FORMATTER.format(timestamp);
     for (int i = 0; i < 3; i++) { // chop off seconds, minutes, hours
       if (nextCollName.endsWith("_00")) {
-        nextCollName = nextCollName.substring(0, nextCollName.length()-3);
+        nextCollName = nextCollName.substring(0, nextCollName.length() - 3);
       }
     }
     assert DATE_TIME_FORMATTER.parse(nextCollName, Instant::from).equals(timestamp);
-    return aliasName + "_" + nextCollName;
+    return aliasName + TYPE.getSeparatorPrefix() + nextCollName;
   }
 
-  Instant parseStringAsInstant(String str, TimeZone zone) {
+  private Instant parseStringAsInstant(String str, TimeZone zone) {
     Instant start = DateMathParser.parseMath(new Date(), str, zone).toInstant();
-    checkMilis(start);
+    checkMillis(start);
     return start;
   }
 
-  private void checkMilis(Instant date) {
+  private void checkMillis(Instant date) {
     if (!date.truncatedTo(ChronoUnit.SECONDS).equals(date)) {
       throw new SolrException(BAD_REQUEST,
           "Date or date math for start time includes milliseconds, which is not supported. " +
@@ -234,15 +245,18 @@ public class TimeRoutedAlias implements RoutedAlias {
   }
 
   @Override
-  public boolean updateParsedCollectionAliases(ZkController zkController) {
-    final Aliases aliases = zkController.getZkStateReader().getAliases(); // note: might be different from last request
+  public boolean updateParsedCollectionAliases(ZkStateReader zkStateReader, boolean contextualize) {
+    final Aliases aliases = zkStateReader.getAliases();
     if (this.parsedCollectionsAliases != aliases) {
       if (this.parsedCollectionsAliases != null) {
         log.debug("Observing possibly updated alias: {}", getAliasName());
       }
-      this.parsedCollectionsDesc = parseCollections(aliases );
+      this.parsedCollectionsDesc = parseCollections(aliases);
       this.parsedCollectionsAliases = aliases;
       return true;
+    }
+    if (contextualize) {
+      this.parsedCollectionsDesc = parseCollections(aliases);
     }
     return false;
   }
@@ -257,18 +271,27 @@ public class TimeRoutedAlias implements RoutedAlias {
     return routeField;
   }
 
+  @Override
+  public RoutedAliasTypes getRoutedAliasType() {
+    return RoutedAliasTypes.TIME;
+  }
+
+  @SuppressWarnings("WeakerAccess")
   public String getIntervalMath() {
     return intervalMath;
   }
 
+  @SuppressWarnings("WeakerAccess")
   public long getMaxFutureMs() {
     return maxFutureMs;
   }
 
+  @SuppressWarnings("WeakerAccess")
   public String getPreemptiveCreateWindow() {
     return preemptiveCreateMath;
   }
 
+  @SuppressWarnings("WeakerAccess")
   public String getAutoDeleteAgeMath() {
     return autoDeleteAgeMath;
   }
@@ -289,16 +312,17 @@ public class TimeRoutedAlias implements RoutedAlias {
         .add("timeZone", timeZone)
         .toString();
   }
+
   /**
    * Parses the elements of the collection list. Result is returned them in sorted order (most recent 1st)
    */
-  List<Map.Entry<Instant,String>> parseCollections(Aliases aliases) {
-    final List<String> collections = aliases.getCollectionAliasListMap().get(aliasName);
+  private List<Map.Entry<Instant, String>> parseCollections(Aliases aliases) {
+    final List<String> collections = getCollectionList(aliases);
     if (collections == null) {
       throw RoutedAlias.newAliasMustExistException(getAliasName());
     }
     // note: I considered TreeMap but didn't like the log(N) just to grab the most recent when we use it later
-    List<Map.Entry<Instant,String>> result = new ArrayList<>(collections.size());
+    List<Map.Entry<Instant, String>> result = new ArrayList<>(collections.size());
     for (String collection : collections) {
       Instant colStartTime = parseInstantFromCollectionName(aliasName, collection);
       result.add(new AbstractMap.SimpleImmutableEntry<>(colStartTime, collection));
@@ -307,8 +331,11 @@ public class TimeRoutedAlias implements RoutedAlias {
     return result;
   }
 
-  /** Computes the timestamp of the next collection given the timestamp of the one before. */
-  public Instant computeNextCollTimestamp(Instant fromTimestamp) {
+
+  /**
+   * Computes the timestamp of the next collection given the timestamp of the one before.
+   */
+  private Instant computeNextCollTimestamp(Instant fromTimestamp) {
     final Instant nextCollTimestamp =
         DateMathParser.parseMath(Date.from(fromTimestamp), "NOW" + intervalMath, timeZone).toInstant();
     assert nextCollTimestamp.isAfter(fromTimestamp);
@@ -317,6 +344,7 @@ public class TimeRoutedAlias implements RoutedAlias {
 
   @Override
   public void validateRouteValue(AddUpdateCommand cmd) throws SolrException {
+
     final Instant docTimestamp =
         parseRouteKey(cmd.getSolrInputDocument().getFieldValue(getRouteField()));
 
@@ -326,60 +354,41 @@ public class TimeRoutedAlias implements RoutedAlias {
           "The document's time routed key of " + docTimestamp + " is too far in the future given " +
               ROUTER_MAX_FUTURE + "=" + getMaxFutureMs());
     }
-  }
 
-  @Override
-  public String createCollectionsIfRequired(AddUpdateCommand cmd) {
-    SolrQueryRequest req = cmd.getReq();
-    SolrCore core = req.getCore();
-    CoreContainer coreContainer = core.getCoreContainer();
-    CollectionsHandler collectionsHandler = coreContainer.getCollectionsHandler();
-    final Instant docTimestamp =
-        parseRouteKey(cmd.getSolrInputDocument().getFieldValue(getRouteField()));
+    // Although this is also checked later, we need to check it here too to handle the case in Dimensional Routed
+    // aliases where one can legally have zero collections for a newly encountered category and thus the loop later
+    // can't catch this.
 
-    // Even though it is possible that multiple requests hit this code in the 1-2 sec that
-    // it takes to create a collection, it's an established anti-pattern to feed data with a very large number
-    // of client connections. This in mind, we only guard against spamming the overseer within a batch of
-    // updates. We are intentionally tolerating a low level of redundant requests in favor of simpler code. Most
-    // super-sized installations with many update clients will likely be multi-tenant and multiple tenants
-    // probably don't write to the same alias. As such, we have deferred any solution to the "many clients causing
-    // collection creation simultaneously" problem until such time as someone actually has that problem in a
-    // real world use case that isn't just an anti-pattern.
-    Map.Entry<Instant, String> candidateCollectionDesc = findCandidateGivenTimestamp(docTimestamp, cmd.getPrintableId());
-    String candidateCollectionName = candidateCollectionDesc.getValue();
-
+    // SOLR-13760 - we need to fix the date math to a specific instant when the first document arrives.
+    // If we don't do this DRA's with a time dimension have variable start times across the other dimensions
+    // and logic gets much to complicated, and depends too much on queries to zookeeper. This keeps life simpler.
+    // I have to admit I'm not terribly fond of the mutation during a validate method however.
+    Instant startTime;
     try {
-      switch (typeOfCreationRequired(docTimestamp, candidateCollectionDesc.getKey())) {
-        case SYNCHRONOUS:
-          // This next line blocks until all collections required by the current document have been created
-          return createAllRequiredCollections(docTimestamp, cmd, candidateCollectionDesc);
-        case ASYNC_PREEMPTIVE:
-          if (!preemptiveCreateOnceAlready) {
-            log.debug("Executing preemptive creation for {}", getAliasName());
-            // It's important not to add code between here and the prior call to findCandidateGivenTimestamp()
-            // in processAdd() that invokes updateParsedCollectionAliases(). Doing so would update parsedCollectionsDesc
-            // and create a race condition. We are relying on the fact that get(0) is returning the head of the parsed
-            // collections that existed when candidateCollectionDesc was created. If this class updates it's notion of
-            // parsedCollectionsDesc since candidateCollectionDesc was chosen, we could create collection n+2
-            // instead of collection n+1.
-            String mostRecentCollName = this.parsedCollectionsDesc.get(0).getValue();
+      startTime = Instant.parse(start);
+    } catch (DateTimeParseException e) {
+      startTime = DateMathParser.parseMath(new Date(), start).toInstant();
+      SolrCore core = cmd.getReq().getCore();
+      ZkStateReader zkStateReader = core.getCoreContainer().getZkController().zkStateReader;
+      Aliases aliases = zkStateReader.getAliases();
+      Map<String, String> props = new HashMap<>(aliases.getCollectionAliasProperties(aliasName));
+      start = DateTimeFormatter.ISO_INSTANT.format(startTime);
+      props.put(ROUTER_START, start);
 
-            // This line does not block and the document can be added immediately
-            preemptiveAsync(() -> createNextCollection(mostRecentCollName, collectionsHandler), core);
-          }
-          return candidateCollectionName;
-        case NONE:
-          return candidateCollectionName; // could use fall through, but fall through is fiddly for later editors.
-        default:
-          throw unknownCreateType();
-      }
-      // do nothing if creationType == NONE
-    } catch (SolrException e) {
-      throw e;
-    } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+      // This could race, but it only occurs when the alias is first used and the values produced
+      // should all be identical and who wins won't matter (baring cases of Date Math involving seconds,
+      // which is pretty far fetched). Putting this in a separate thread to ensure that any failed
+      // races don't cause documents to get rejected.
+      core.runAsync(() -> zkStateReader.aliasesManager.applyModificationAndExportToZk(
+          (a) -> aliases.cloneWithCollectionAliasProperties(aliasName, props)));
+
+    }
+    if (docTimestamp.isBefore(startTime)) {
+      throw new SolrException(BAD_REQUEST, "The document couldn't be routed because " + docTimestamp +
+          " is before the start time for this alias " +start+")");
     }
   }
+
 
   @Override
   public Map<String, String> getAliasMetadata() {
@@ -396,116 +405,12 @@ public class TimeRoutedAlias implements RoutedAlias {
     return OPTIONAL_ROUTER_PARAMS;
   }
 
-  /**
-   * Create as many collections as required. This method loops to allow for the possibility that the docTimestamp
-   * requires more than one collection to be created. Since multiple threads may be invoking maintain on separate
-   * requests to the same alias, we must pass in the name of the collection that this thread believes to be the most
-   * recent collection. This assumption is checked when the command is executed in the overseer. When this method
-   * finds that all collections required have been created it returns the (possibly new) most recent collection.
-   * The return value is ignored by the calling code in the async preemptive case.
-   *
-   * @param docTimestamp the timestamp from the document that determines routing
-   * @param cmd the update command being processed
-   * @param targetCollectionDesc the descriptor for the presently selected collection which should also be
-   *                             the most recent collection in all cases where this method is invoked.
-   * @return The latest collection, including collections created during maintenance
-   */
-  private String createAllRequiredCollections( Instant docTimestamp, AddUpdateCommand cmd,
-                                               Map.Entry<Instant, String> targetCollectionDesc) {
-    SolrQueryRequest req = cmd.getReq();
-    SolrCore core = req.getCore();
-    CoreContainer coreContainer = core.getCoreContainer();
-    CollectionsHandler collectionsHandler = coreContainer.getCollectionsHandler();
-    do {
-      switch(typeOfCreationRequired(docTimestamp, targetCollectionDesc.getKey())) {
-        case NONE:
-          return targetCollectionDesc.getValue(); // we don't need another collection
-        case ASYNC_PREEMPTIVE:
-          // can happen when preemptive interval is longer than one time slice
-          String mostRecentCollName = this.parsedCollectionsDesc.get(0).getValue();
-          preemptiveAsync(() -> createNextCollection(mostRecentCollName, collectionsHandler), core);
-          return targetCollectionDesc.getValue();
-        case SYNCHRONOUS:
-          createNextCollection(targetCollectionDesc.getValue(), collectionsHandler); // *should* throw if fails for some reason but...
-          ZkController zkController = coreContainer.getZkController();
-          if (!updateParsedCollectionAliases(zkController)) { // thus we didn't make progress...
-            // this is not expected, even in known failure cases, but we check just in case
-            throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                "We need to create a new time routed collection but for unknown reasons were unable to do so.");
-          }
-          // then retry the loop ... have to do find again in case other requests also added collections
-          // that were made visible when we called updateParsedCollectionAliases()
-          targetCollectionDesc = findCandidateGivenTimestamp(docTimestamp, cmd.getPrintableId());
-          break;
-        default:
-          throw unknownCreateType();
 
-      }
-    } while (true);
+  @Override
+  protected String getHeadCollectionIfOrdered(AddUpdateCommand cmd) {
+    return parsedCollectionsDesc.get(0).getValue();
   }
 
-  private SolrException unknownCreateType() {
-    return new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Unknown creation type while adding " +
-        "document to a Time Routed Alias! This is a bug caused when a creation type has been added but " +
-        "not all code has been updated to handle it.");
-  }
-
-  private void createNextCollection(String mostRecentCollName, CollectionsHandler collHandler) {
-    // Invoke ROUTEDALIAS_CREATECOLL (in the Overseer, locked by alias name).  It will create the collection
-    //   and update the alias contingent on the most recent collection name being the same as
-    //   what we think so here, otherwise it will return (without error).
-    try {
-      MaintainTimeRoutedAliasCmd.remoteInvoke(collHandler, getAliasName(), mostRecentCollName);
-      // we don't care about the response.  It's possible no collection was created because
-      //  of a race and that's okay... we'll ultimately retry any way.
-
-      // Ensure our view of the aliases has updated. If we didn't do this, our zkStateReader might
-      //  not yet know about the new alias (thus won't see the newly added collection to it), and we might think
-      //  we failed.
-      collHandler.getCoreContainer().getZkController().getZkStateReader().aliasesManager.update();
-    } catch (RuntimeException e) {
-      throw e;
-    } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
-    }
-  }
-
-  private void preemptiveAsync(Runnable r, SolrCore core) {
-    preemptiveCreateOnceAlready = true;
-    core.runAsync(r);
-  }
-
-  /**
-   * Determine if the a new collection will be required based on the document timestamp. Passing null for
-   * preemptiveCreateInterval tells you if the document is beyond all existing collections with a response of
-   * {@link CreationType#NONE} or {@link CreationType#SYNCHRONOUS}, and passing a valid date math for
-   * preemptiveCreateMath additionally distinguishes the case where the document is close enough to the end of
-   * the TRA to trigger preemptive creation but not beyond all existing collections with a value of
-   * {@link CreationType#ASYNC_PREEMPTIVE}.
-   *
-   * @param docTimeStamp The timestamp from the document
-   * @param targetCollectionTimestamp The timestamp for the presently selected destination collection
-   * @return a {@code CreationType} indicating if and how to create a collection
-   */
-  private CreationType typeOfCreationRequired(Instant docTimeStamp, Instant targetCollectionTimestamp) {
-    final Instant nextCollTimestamp = computeNextCollTimestamp(targetCollectionTimestamp);
-
-    if (!docTimeStamp.isBefore(nextCollTimestamp)) {
-      // current document is destined for a collection that doesn't exist, must create the destination
-      // to proceed with this add command
-      return SYNCHRONOUS;
-    }
-
-    if (isNotBlank(getPreemptiveCreateWindow())) {
-      Instant preemptNextColCreateTime =
-          calcPreemptNextColCreateTime(getPreemptiveCreateWindow(), nextCollTimestamp);
-      if (!docTimeStamp.isBefore(preemptNextColCreateTime)) {
-        return ASYNC_PREEMPTIVE;
-      }
-    }
-
-    return NONE;
-  }
 
   private Instant calcPreemptNextColCreateTime(String preemptiveCreateMath, Instant nextCollTimestamp) {
     DateMathParser dateMathParser = new DateMathParser();
@@ -523,38 +428,194 @@ public class TimeRoutedAlias implements RoutedAlias {
     if (routeKey instanceof Instant) {
       docTimestamp = (Instant) routeKey;
     } else if (routeKey instanceof Date) {
-      docTimestamp = ((Date)routeKey).toInstant();
+      docTimestamp = ((Date) routeKey).toInstant();
     } else if (routeKey instanceof CharSequence) {
-      docTimestamp = Instant.parse((CharSequence)routeKey);
+      docTimestamp = Instant.parse((CharSequence) routeKey);
     } else {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unexpected type of routeKey: " + routeKey);
     }
     return docTimestamp;
   }
+
   /**
-   * Given the route key, finds the correct collection or returns the most recent collection if the doc
-   * is in the future. Future docs will potentially cause creation of a collection that does not yet exist
-   * or an error if they exceed the maxFutureMs setting.
+   * Given the route key, finds the correct collection and an indication of any collection that needs to be created.
+   * Future docs will potentially cause creation of a collection that does not yet exist. This method presumes that the
+   * doc time stamp has already been checked to not exceed maxFutureMs
    *
    * @throws SolrException if the doc is too old to be stored in the TRA
    */
-  private Map.Entry<Instant, String> findCandidateGivenTimestamp(Instant docTimestamp, String printableId) {
-    // Lookup targetCollection given route key.  Iterates in reverse chronological order.
-    //    We're O(N) here but N should be small, the loop is fast, and usually looking for 1st.
-    for (Map.Entry<Instant, String> entry : parsedCollectionsDesc) {
-      Instant colStartTime = entry.getKey();
-      if (!docTimestamp.isBefore(colStartTime)) {  // i.e. docTimeStamp is >= the colStartTime
-        return entry; //found it
-      }
-    }
+  @Override
+  public CandidateCollection findCandidateGivenValue(AddUpdateCommand cmd) {
+    Object value = cmd.getSolrInputDocument().getFieldValue(getRouteField());
+    ZkStateReader zkStateReader = cmd.getReq().getCore().getCoreContainer().getZkController().zkStateReader;
+    String printableId = cmd.getPrintableId();
+    updateParsedCollectionAliases(zkStateReader, true);
+
+    final Instant docTimestamp = parseRouteKey(value);
+
+    // reparse explicitly such that if we are a dimension in a DRA, the list gets culled by our context
+    // This does not normally happen with the above updateParsedCollectionAliases, because at that point the aliases
+    // should be up to date and updateParsedCollectionAliases will short circuit
+    this.parsedCollectionsDesc = parseCollections(zkStateReader.getAliases());
+    CandidateCollection next1 = calcCandidateCollection(docTimestamp);
+    if (next1 != null) return next1;
+
     throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
         "Doc " + printableId + " couldn't be routed with " + getRouteField() + "=" + docTimestamp);
   }
 
-  enum CreationType {
-    NONE,
-    ASYNC_PREEMPTIVE,
-    SYNCHRONOUS
+  private CandidateCollection calcCandidateCollection(Instant docTimestamp) {
+    // Lookup targetCollection given route key.  Iterates in reverse chronological order.
+    //    We're O(N) here but N should be small, the loop is fast, and usually looking for 1st.
+    Instant next = null;
+    if (this.parsedCollectionsDesc.isEmpty()) {
+      String firstCol = computeInitialCollectionName();
+      return new CandidateCollection(SYNCHRONOUS, firstCol);
+    } else {
+      Instant mostRecentCol = parsedCollectionsDesc.get(0).getKey();
+
+      // despite most logic hinging on the first element, we must loop so we can complain if the doc
+      // is too old and there's no valid collection.
+      for (int i = 0; i < parsedCollectionsDesc.size(); i++) {
+        Map.Entry<Instant, String> entry = parsedCollectionsDesc.get(i);
+        Instant colStartTime = entry.getKey();
+        if (i == 0) {
+          next = computeNextCollTimestamp(colStartTime);
+        }
+        if (!docTimestamp.isBefore(colStartTime)) {  // (inclusive lower bound)
+          CandidateCollection candidate;
+          if (i == 0) {
+            if (docTimestamp.isBefore(next)) {       // (exclusive upper bound)
+              candidate = new CandidateCollection(NONE, entry.getValue()); //found it
+              // simply goes to head collection no action required
+            } else {
+              // Although we create collections one at a time, this calculation of the ultimate destination is
+              // useful for contextualizing TRA's used as dimensions in DRA's
+              String creationCol = calcNextCollection(colStartTime);
+              Instant colDestTime = colStartTime;
+              Instant possibleDestTime = colDestTime;
+              while (!docTimestamp.isBefore(possibleDestTime) || docTimestamp.equals(possibleDestTime)) {
+                colDestTime = possibleDestTime;
+                possibleDestTime = computeNextCollTimestamp(colDestTime);
+              }
+              String destCol = TimeRoutedAlias.formatCollectionNameFromInstant(getAliasName(),colDestTime);
+              candidate = new CandidateCollection(SYNCHRONOUS, destCol, creationCol); //found it
+            }
+          } else {
+            // older document simply goes to existing collection, nothing created.
+            candidate = new CandidateCollection(NONE, entry.getValue()); //found it
+          }
+
+          if (candidate.getCreationType() == NONE && isNotBlank(getPreemptiveCreateWindow()) && !this.preemptiveCreateOnceAlready) {
+            // are we getting close enough to the (as yet uncreated) next collection to warrant preemptive creation?
+            Instant time2Create = calcPreemptNextColCreateTime(getPreemptiveCreateWindow(), computeNextCollTimestamp(mostRecentCol));
+            if (!docTimestamp.isBefore(time2Create)) {
+              String destinationCollection = candidate.getDestinationCollection(); // dest doesn't change
+              String creationCollection = calcNextCollection(mostRecentCol);
+              return new CandidateCollection(ASYNC_PREEMPTIVE, // add next collection
+                  destinationCollection,
+                  creationCollection);
+            }
+          }
+          return candidate;
+        }
+      }
+    }
+    return null;
   }
+
+  /**
+   * Deletes some of the oldest collection(s) based on {@link TimeRoutedAlias#getAutoDeleteAgeMath()}. If
+   * getAutoDelteAgemath is not present then this method does nothing. Per documentation is relative to a
+   * collection being created. Therefore if nothing is being created, nothing is deleted.
+   * @param actions The previously calculated add action(s). This collection should not be modified within
+   *                this method.
+   */
+  private List<Action> calcDeletes(List<Action> actions) {
+    final String autoDeleteAgeMathStr = this.getAutoDeleteAgeMath();
+    if (autoDeleteAgeMathStr == null || actions .size() == 0) {
+      return Collections.emptyList();
+    }
+    if (actions.size() > 1) {
+      throw new IllegalStateException("We are not supposed to be creating more than one collection at a time");
+    }
+
+    String deletionReferenceCollection = actions.get(0).targetCollection;
+    Instant deletionReferenceInstant = parseInstantFromCollectionName(getAliasName(), deletionReferenceCollection);
+    final Instant delBefore;
+    try {
+      delBefore = new DateMathParser(Date.from(computeNextCollTimestamp(deletionReferenceInstant)), this.getTimeZone()).parseMath(autoDeleteAgeMathStr).toInstant();
+    } catch (ParseException e) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e); // note: should not happen by this point
+    }
+
+    List<Action> collectionsToDelete = new ArrayList<>();
+
+    //iterating from newest to oldest, find the first collection that has a time <= "before".  We keep this collection
+    // (and all newer to left) but we delete older collections, which are the ones that follow.
+    int numToKeep = 0;
+    DateTimeFormatter dtf = null;
+    if (log.isDebugEnabled()) {
+      dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.n", Locale.ROOT);
+      dtf = dtf.withZone(ZoneId.of("UTC"));
+    }
+    for (Map.Entry<Instant, String> parsedCollection : parsedCollectionsDesc) {
+      numToKeep++;
+      final Instant colInstant = parsedCollection.getKey();
+      if (colInstant.isBefore(delBefore) || colInstant.equals(delBefore)) {
+        if (log.isDebugEnabled()) { // don't perform formatting unless debugging
+          assert dtf != null;
+          log.debug("{} is equal to or before {} deletions may be required", dtf.format(colInstant), dtf.format(delBefore));
+        }
+        break;
+      } else {
+        if (log.isDebugEnabled()) { // don't perform formatting unless debugging
+          assert dtf != null;
+          log.debug("{} is not before {} and will be retained", dtf.format(colInstant), dtf.format(delBefore));
+        }
+      }
+    }
+
+    log.debug("Collections will be deleted... parsed collections={}", parsedCollectionsDesc);
+    final List<String> targetList = parsedCollectionsDesc.stream().map(Map.Entry::getValue).collect(Collectors.toList());
+    log.debug("Iterating backwards on collection list to find deletions: {}", targetList);
+    for (int i = parsedCollectionsDesc.size() - 1; i >= numToKeep; i--) {
+      String toDelete = targetList.get(i);
+      log.debug("Adding to TRA delete list:{}", toDelete);
+
+      collectionsToDelete.add(new Action(this, ActionType.ENSURE_REMOVED, toDelete));
+    }
+    return collectionsToDelete;
+  }
+
+  private List<Action> calcAdd(String targetCol) {
+    List<String> collectionList = getCollectionList(parsedCollectionsAliases);
+    if (!collectionList.contains(targetCol) && !collectionList.isEmpty()) {
+      // Then we need to add the next one... (which may or may not be the same as our target
+      String mostRecentCol = collectionList.get(0);
+      String pfx = getRoutedAliasType().getSeparatorPrefix();
+      int sepLen = mostRecentCol.contains(pfx) ? pfx.length() : 1; // __TRA__ or _
+      String mostRecentTime = mostRecentCol.substring(getAliasName().length() + sepLen);
+      Instant parsed = DATE_TIME_FORMATTER.parse(mostRecentTime, Instant::from);
+      String nextCol = calcNextCollection(parsed);
+      return Collections.singletonList(new Action(this, ActionType.ENSURE_EXISTS, nextCol));
+    } else {
+      return Collections.emptyList();
+    }
+  }
+
+  private String calcNextCollection(Instant mostRecentCollTimestamp) {
+    final Instant nextCollTimestamp = computeNextCollTimestamp(mostRecentCollTimestamp);
+    return TimeRoutedAlias.formatCollectionNameFromInstant(aliasName, nextCollTimestamp);
+  }
+
+  @Override
+  protected List<Action> calculateActions(String targetCol) {
+    List<Action> actions = new ArrayList<>();
+    actions.addAll(calcAdd(targetCol));
+    actions.addAll(calcDeletes(actions));
+    return actions;
+  }
+
 
 }

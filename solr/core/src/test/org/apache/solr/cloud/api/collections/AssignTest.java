@@ -16,13 +16,7 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -51,6 +45,13 @@ import org.apache.solr.common.util.Utils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class AssignTest extends SolrTestCaseJ4 {
   
@@ -92,7 +93,7 @@ public class AssignTest extends SolrTestCaseJ4 {
 
   @Test
   public void testIdIsUnique() throws Exception {
-    String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
+    Path zkDir = createTempDir("zkData");
     ZkTestServer server = new ZkTestServer(zkDir);
     Object fixedValue = new Object();
     String[] collections = new String[]{"c1","c2","c3","c4","c5","c6","c7","c8","c9"};
@@ -139,15 +140,15 @@ public class AssignTest extends SolrTestCaseJ4 {
 
   @Test
   public void testBuildCoreName() throws Exception {
-    String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
+    Path zkDir = createTempDir("zkData");
     ZkTestServer server = new ZkTestServer(zkDir);
     server.run();
     try (SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), 10000)) {
       // TODO: fix this to be independent of ZK
       ZkDistribStateManager stateManager = new ZkDistribStateManager(zkClient);
       Map<String, Slice> slices = new HashMap<>();
-      slices.put("shard1", new Slice("shard1", new HashMap<>(), null));
-      slices.put("shard2", new Slice("shard2", new HashMap<>(), null));
+      slices.put("shard1", new Slice("shard1", new HashMap<>(), null,"collection1"));
+      slices.put("shard2", new Slice("shard2", new HashMap<>(), null,"collection1"));
 
       DocCollection docCollection = new DocCollection("collection1", slices, null, DocRouter.DEFAULT);
       assertEquals("Core name pattern changed", "collection1_shard1_replica_n1", Assign.buildSolrCoreName(stateManager, docCollection, "shard1", Replica.Type.NRT));

@@ -85,8 +85,6 @@ public class TestMiniSolrCloudClusterSSL extends SolrTestCaseJ4 {
   
   @Before
   public void before() {
-    assumeFalse("@AwaitsFix: SOLR-12988 - ssl issues on Java 11/12", Constants.JRE_IS_MINIMUM_JAVA11);
-    
     // undo the randomization of our super class
     log.info("NOTE: This Test ignores the randomized SSL & clientAuth settings selected by base class");
     HttpClientUtil.resetHttpClientBuilder(); // also resets SchemaRegistryProvider

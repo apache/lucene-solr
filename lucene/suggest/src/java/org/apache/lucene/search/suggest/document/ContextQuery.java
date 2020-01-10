@@ -27,10 +27,12 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Weight;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
+import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.Operations;
@@ -76,12 +78,16 @@ import org.apache.lucene.util.fst.Util;
  *
  * @lucene.experimental
  */
-public class ContextQuery extends CompletionQuery {
+public class ContextQuery extends CompletionQuery implements Accountable {
+  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(ContextQuery.class);
+
   private IntsRefBuilder scratch = new IntsRefBuilder();
   private Map<IntsRef, ContextMetaData> contexts;
   private boolean matchAllContexts = false;
   /** Inner completion query */
   protected CompletionQuery innerQuery;
+
+  private long ramBytesUsed;
 
   /**
    * Constructs a context completion query that matches
@@ -98,6 +104,13 @@ public class ContextQuery extends CompletionQuery {
     }
     this.innerQuery = query;
     contexts = new HashMap<>();
+    updateRamBytesUsed();
+  }
+
+  private void updateRamBytesUsed() {
+    ramBytesUsed = BASE_RAM_BYTES +
+        RamUsageEstimator.sizeOfObject(contexts) +
+        RamUsageEstimator.sizeOfObject(innerQuery, RamUsageEstimator.QUERY_DEFAULT_RAM_BYTES_USED);
   }
 
   /**
@@ -129,6 +142,7 @@ public class ContextQuery extends CompletionQuery {
       }
     }
     contexts.put(IntsRef.deepCopyOf(Util.toIntsRef(new BytesRef(context), scratch)), new ContextMetaData(boost, exact));
+    updateRamBytesUsed();
   }
 
   /**
@@ -142,15 +156,15 @@ public class ContextQuery extends CompletionQuery {
   public String toString(String field) {
     StringBuilder buffer = new StringBuilder();
     BytesRefBuilder scratch = new BytesRefBuilder();
-    for (IntsRef context : contexts.keySet()) {
+    for (Map.Entry<IntsRef, ContextMetaData> entry : contexts.entrySet()) {
       if (buffer.length() != 0) {
         buffer.append(",");
       } else {
         buffer.append("contexts");
         buffer.append(":[");
       }
-      buffer.append(Util.toBytesRef(context, scratch).utf8ToString());
-      ContextMetaData metaData = contexts.get(context);
+      buffer.append(Util.toBytesRef(entry.getKey(), scratch).utf8ToString());
+      ContextMetaData metaData = entry.getValue();
       if (metaData.exact == false) {
         buffer.append("*");
       }
@@ -342,4 +356,8 @@ public class ContextQuery extends CompletionQuery {
     visitor.visitLeaf(this);
   }
 
+  @Override
+  public long ramBytesUsed() {
+    return ramBytesUsed;
+  }
 }

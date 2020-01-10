@@ -186,9 +186,9 @@ public final class Geo3DPoint extends Field {
     result.append(':');
 
     BytesRef bytes = (BytesRef) fieldsData;
-    result.append(" x=" + decodeDimension(bytes.bytes, bytes.offset));
-    result.append(" y=" + decodeDimension(bytes.bytes, bytes.offset + Integer.BYTES));
-    result.append(" z=" + decodeDimension(bytes.bytes, bytes.offset + 2*Integer.BYTES));
+    result.append(" x=").append(decodeDimension(bytes.bytes, bytes.offset));
+    result.append(" y=").append(decodeDimension(bytes.bytes, bytes.offset + Integer.BYTES));
+    result.append(" z=").append(decodeDimension(bytes.bytes, bytes.offset + 2 * Integer.BYTES));
     result.append('>');
     return result.toString();
   }

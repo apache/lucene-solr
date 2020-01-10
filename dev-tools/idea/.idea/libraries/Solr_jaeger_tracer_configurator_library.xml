@@ -1,0 +1,10 @@
+<component name="libraryTable">
+  <library name="Solr jaeger tracer configurator library">
+    <CLASSES>
+      <root url="file://$PROJECT_DIR$/solr/contrib/jaegertracer-configurator/lib" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+    <jarDirectory url="file://$PROJECT_DIR$/solr/contrib/jaegertracer-configurator/lib" recursive="false" />
+  </library>
+</component>

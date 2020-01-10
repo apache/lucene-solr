@@ -40,8 +40,8 @@ public class ConjunctionSolrSpellCheckerTest extends SolrTestCase {
     @SuppressWarnings("unchecked")
     Class<StringDistance> sameDistance = (Class<StringDistance>) AVAILABLE_DISTANCES[random().nextInt(AVAILABLE_DISTANCES.length)];
     
-    StringDistance sameDistance1 = sameDistance.newInstance();
-    StringDistance sameDistance2 = sameDistance.newInstance();
+    StringDistance sameDistance1 = sameDistance.getConstructor().newInstance();
+    StringDistance sameDistance2 = sameDistance.getConstructor().newInstance();
     
     //NGramDistance defaults to 2, so we'll try 3 or 4 to ensure we have one that is not-equal.
     StringDistance differentDistance = new NGramDistance(3);
@@ -60,12 +60,7 @@ public class ConjunctionSolrSpellCheckerTest extends SolrTestCase {
     
     cssc.addChecker(checker1);
     cssc.addChecker(checker2);
-    try {
-      cssc.addChecker(checker3);
-      fail("ConjunctionSolrSpellChecker should have thrown an exception about non-identical StringDistances.");
-    } catch (IllegalArgumentException iae) {
-      // correct behavior
-    }
+    expectThrows(IllegalArgumentException.class, () -> cssc.addChecker(checker3));
   }
 
   static class MockSolrSpellChecker extends SolrSpellChecker {

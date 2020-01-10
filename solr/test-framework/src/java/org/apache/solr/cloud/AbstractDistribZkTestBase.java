@@ -18,6 +18,7 @@ package org.apache.solr.cloud;
 
 import java.io.File;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -36,6 +37,7 @@ import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.Diagnostics;
 import org.apache.solr.core.MockDirectoryFactory;
+import org.apache.solr.util.SolrCLI;
 import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.BeforeClass;
@@ -67,8 +69,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
   public void distribSetUp() throws Exception {
     super.distribSetUp();
 
-    String zkDir = testDir.getAbsolutePath() + File.separator
-    + "zookeeper/server1/data";
+    Path zkDir = testDir.toPath().resolve("zookeeper/server1/data");
     zkServer = new ZkTestServer(zkDir);
     zkServer.run();
 
@@ -204,7 +205,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
       throws Exception {
     log.info("Wait for collection to disappear - collection: " + collection + " failOnTimeout:" + failOnTimeout + " timeout (sec):" + timeoutSeconds);
 
-    zkStateReader.waitForState(collection, timeoutSeconds, TimeUnit.SECONDS, (liveNodes, docCollection) -> {
+    zkStateReader.waitForState(collection, timeoutSeconds, TimeUnit.SECONDS, (docCollection) -> {
       if (docCollection == null)
         return true;
       return false;
@@ -236,7 +237,7 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
       Thread.sleep(100);
     }
 
-    zkStateReader.waitForState("collection1", timeOut.timeLeft(SECONDS), TimeUnit.SECONDS, (liveNodes, docCollection) -> {
+    zkStateReader.waitForState("collection1", timeOut.timeLeft(SECONDS), TimeUnit.SECONDS, (docCollection) -> {
       if (docCollection == null)
         return false;
 
@@ -251,8 +252,9 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
 
   public static void verifyReplicaStatus(ZkStateReader reader, String collection, String shard, String coreNodeName,
       Replica.State expectedState) throws InterruptedException, TimeoutException {
+    log.info("verifyReplicaStatus ({}) shard={} coreNodeName={}", collection, shard, coreNodeName);
     reader.waitForState(collection, 15000, TimeUnit.MILLISECONDS,
-        (liveNodes, collectionState) -> collectionState != null && collectionState.getSlice(shard) != null
+        (collectionState) -> collectionState != null && collectionState.getSlice(shard) != null
             && collectionState.getSlice(shard).getReplicasMap().get(coreNodeName) != null
             && collectionState.getSlice(shard).getReplicasMap().get(coreNodeName).getState() == expectedState);
   }
@@ -324,4 +326,26 @@ public abstract class AbstractDistribZkTestBase extends BaseDistributedSearchTes
     zkServer = new ZkTestServer(zkServer.getZkDir(), zkServer.getPort());
     zkServer.run(false);
   }
+
+
+  // Copy a configset up from some path on the local  machine to ZK.
+  // Example usage:
+  //
+  // copyConfigUp(TEST_PATH().resolve("configsets"), "cloud-minimal", "configset-name", zk_address);
+
+  static protected void copyConfigUp(Path configSetDir, String srcConfigSet, String dstConfigName, String zkAddr) throws Exception {
+    String[] args = new String[]{
+        "-confname", dstConfigName,
+        "-confdir", srcConfigSet,
+        "-zkHost", zkAddr,
+        "-configsetsDir", configSetDir.toAbsolutePath().toString(),
+    };
+
+    SolrCLI.ConfigSetUploadTool tool = new SolrCLI.ConfigSetUploadTool();
+
+    int res = tool.runTool(SolrCLI.processCommandLineArgs(SolrCLI.joinCommonAndToolOptions(tool.getOptions()), args));
+    assertEquals("Tool should have returned 0 for success, returned: " + res, res, 0);
+
+  }
+
 }

@@ -89,7 +89,7 @@ public class TestPerFieldDocValuesFormat extends BaseDocValuesFormatTestCase {
     // we don't use RandomIndexWriter because it might add more docvalues than we expect !!!!1
     IndexWriterConfig iwc = newIndexWriterConfig(analyzer);
     final DocValuesFormat fast = TestUtil.getDefaultDocValuesFormat();
-    final DocValuesFormat slow = DocValuesFormat.forName("Direct");
+    final DocValuesFormat slow = DocValuesFormat.forName("Asserting");
     iwc.setCodec(new AssertingCodec() {
       @Override
       public DocValuesFormat getDocValuesFormatForField(String field) {

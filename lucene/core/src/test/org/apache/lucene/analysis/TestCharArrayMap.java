@@ -135,95 +135,55 @@ public class TestCharArrayMap extends LuceneTestCase {
     map.put("bar",2);
     final int size = map.size();
     assertEquals(2, size);
-    assertTrue(map.containsKey("foo"));  
-    assertEquals(1, map.get("foo").intValue());  
-    assertTrue(map.containsKey("bar"));  
-    assertEquals(2, map.get("bar").intValue());  
+    assertTrue(map.containsKey("foo"));
+    assertEquals(1, map.get("foo").intValue());
+    assertTrue(map.containsKey("bar"));
+    assertEquals(2, map.get("bar").intValue());
 
-    map = CharArrayMap.unmodifiableMap(map);
-    assertEquals("Map size changed due to unmodifiableMap call" , size, map.size());
+    CharArrayMap<Integer> unmodifiableMap = CharArrayMap.unmodifiableMap(map);
+    assertEquals("Map size changed due to unmodifiableMap call" , size, unmodifiableMap.size());
     String NOT_IN_MAP = "SirGallahad";
-    assertFalse("Test String already exists in map", map.containsKey(NOT_IN_MAP));
-    assertNull("Test String already exists in map", map.get(NOT_IN_MAP));
-    
-    try{
-      map.put(NOT_IN_MAP.toCharArray(), 3);  
-      fail("Modified unmodifiable map");
-    }catch (UnsupportedOperationException e) {
-      // expected
-      assertFalse("Test String has been added to unmodifiable map", map.containsKey(NOT_IN_MAP));
-      assertNull("Test String has been added to unmodifiable map", map.get(NOT_IN_MAP));
-      assertEquals("Size of unmodifiable map has changed", size, map.size());
-    }
-    
-    try{
-      map.put(NOT_IN_MAP, 3);  
-      fail("Modified unmodifiable map");
-    }catch (UnsupportedOperationException e) {
-      // expected
-      assertFalse("Test String has been added to unmodifiable map", map.containsKey(NOT_IN_MAP));
-      assertNull("Test String has been added to unmodifiable map", map.get(NOT_IN_MAP));
-      assertEquals("Size of unmodifiable map has changed", size, map.size());
-    }
-    
-    try{
-      map.put(new StringBuilder(NOT_IN_MAP), 3);  
-      fail("Modified unmodifiable map");
-    }catch (UnsupportedOperationException e) {
-      // expected
-      assertFalse("Test String has been added to unmodifiable map", map.containsKey(NOT_IN_MAP));
-      assertNull("Test String has been added to unmodifiable map", map.get(NOT_IN_MAP));
-      assertEquals("Size of unmodifiable map has changed", size, map.size());
-    }
-    
-    try{
-      map.clear();  
-      fail("Modified unmodifiable map");
-    }catch (UnsupportedOperationException e) {
-      // expected
-      assertEquals("Size of unmodifiable map has changed", size, map.size());
-    }
-    
-    try{
-      map.entrySet().clear();  
-      fail("Modified unmodifiable map");
-    }catch (UnsupportedOperationException e) {
-      // expected
-      assertEquals("Size of unmodifiable map has changed", size, map.size());
-    }
-    
-    try{
-      map.keySet().clear();  
-      fail("Modified unmodifiable map");
-    }catch (UnsupportedOperationException e) {
-      // expected
-      assertEquals("Size of unmodifiable map has changed", size, map.size());
-    }
-    
-    try{
-      map.put((Object) NOT_IN_MAP, 3);  
-      fail("Modified unmodifiable map");
-    }catch (UnsupportedOperationException e) {
-      // expected
-      assertFalse("Test String has been added to unmodifiable map", map.containsKey(NOT_IN_MAP));
-      assertNull("Test String has been added to unmodifiable map", map.get(NOT_IN_MAP));
-      assertEquals("Size of unmodifiable map has changed", size, map.size());
-    }
-    
-    try{
-      map.putAll(Collections.singletonMap(NOT_IN_MAP, 3));  
-      fail("Modified unmodifiable map");
-    }catch (UnsupportedOperationException e) {
-      // expected
-      assertFalse("Test String has been added to unmodifiable map", map.containsKey(NOT_IN_MAP));
-      assertNull("Test String has been added to unmodifiable map", map.get(NOT_IN_MAP));
-      assertEquals("Size of unmodifiable map has changed", size, map.size());
-    }
-    
-    assertTrue(map.containsKey("foo"));  
-    assertEquals(1, map.get("foo").intValue());  
-    assertTrue(map.containsKey("bar"));  
-    assertEquals(2, map.get("bar").intValue());  
+    assertFalse("Test String already exists in map", unmodifiableMap.containsKey(NOT_IN_MAP));
+    assertNull("Test String already exists in map", unmodifiableMap.get(NOT_IN_MAP));
+
+    expectThrows(UnsupportedOperationException.class, () -> unmodifiableMap.put(NOT_IN_MAP.toCharArray(), 3));
+    assertFalse("Test String has been added to unmodifiable map", unmodifiableMap.containsKey(NOT_IN_MAP));
+    assertNull("Test String has been added to unmodifiable map", unmodifiableMap.get(NOT_IN_MAP));
+    assertEquals("Size of unmodifiable map has changed", size, unmodifiableMap.size());
+
+    expectThrows(UnsupportedOperationException.class, () -> unmodifiableMap.put(NOT_IN_MAP, 3));
+    assertFalse("Test String has been added to unmodifiable map", unmodifiableMap.containsKey(NOT_IN_MAP));
+    assertNull("Test String has been added to unmodifiable map", unmodifiableMap.get(NOT_IN_MAP));
+    assertEquals("Size of unmodifiable map has changed", size, unmodifiableMap.size());
+
+    expectThrows(UnsupportedOperationException.class, () -> unmodifiableMap.put(new StringBuilder(NOT_IN_MAP), 3));
+    assertFalse("Test String has been added to unmodifiable map", unmodifiableMap.containsKey(NOT_IN_MAP));
+    assertNull("Test String has been added to unmodifiable map", unmodifiableMap.get(NOT_IN_MAP));
+    assertEquals("Size of unmodifiable map has changed", size, unmodifiableMap.size());
+
+    expectThrows(UnsupportedOperationException.class,  unmodifiableMap::clear);
+    assertEquals("Size of unmodifiable map has changed", size, unmodifiableMap.size());
+
+    expectThrows(UnsupportedOperationException.class,  () -> unmodifiableMap.entrySet().clear());
+    assertEquals("Size of unmodifiable map has changed", size, unmodifiableMap.size());
+
+    expectThrows(UnsupportedOperationException.class,  () -> unmodifiableMap.keySet().clear());
+    assertEquals("Size of unmodifiable map has changed", size, unmodifiableMap.size());
+
+    expectThrows(UnsupportedOperationException.class, () -> unmodifiableMap.put((Object) NOT_IN_MAP, 3));
+    assertFalse("Test String has been added to unmodifiable map", unmodifiableMap.containsKey(NOT_IN_MAP));
+    assertNull("Test String has been added to unmodifiable map", unmodifiableMap.get(NOT_IN_MAP));
+    assertEquals("Size of unmodifiable map has changed", size, unmodifiableMap.size());
+
+    expectThrows(UnsupportedOperationException.class, () -> unmodifiableMap.putAll(Collections.singletonMap(NOT_IN_MAP, 3)));
+    assertFalse("Test String has been added to unmodifiable map", unmodifiableMap.containsKey(NOT_IN_MAP));
+    assertNull("Test String has been added to unmodifiable map", unmodifiableMap.get(NOT_IN_MAP));
+    assertEquals("Size of unmodifiable map has changed", size, unmodifiableMap.size());
+
+    assertTrue(unmodifiableMap.containsKey("foo"));
+    assertEquals(1, unmodifiableMap.get("foo").intValue());
+    assertTrue(unmodifiableMap.containsKey("bar"));
+    assertEquals(2, unmodifiableMap.get("bar").intValue());
   }
   
   public void testToString() {

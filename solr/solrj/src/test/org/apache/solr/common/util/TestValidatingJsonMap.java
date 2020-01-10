@@ -28,6 +28,7 @@ import static org.apache.solr.common.util.ValidatingJsonMap.ENUM_OF;
 import static org.apache.solr.common.util.ValidatingJsonMap.NOT_NULL;
 
 public class TestValidatingJsonMap extends SolrTestCaseJ4 {
+
   public void testBasic() throws Exception {
     ValidatingJsonMap m = ValidatingJsonMap.wrap(
         makeMap("a", Boolean.TRUE,
@@ -38,10 +39,8 @@ public class TestValidatingJsonMap extends SolrTestCaseJ4 {
     assertEquals(Boolean.TRUE, m.getBool("a", Boolean.FALSE));
     assertEquals(Boolean.FALSE, m.getBool("b", Boolean.TRUE));
     assertEquals(Integer.valueOf(10), m.getInt("i",0));
-    try {
-      m.getList("l", ENUM_OF, ImmutableSet.of("X", "Z"));
-      fail("Must have failed with unexpected type");
-    } catch (RuntimeException e) { }
+
+    expectThrows(RuntimeException.class, () -> m.getList("l", ENUM_OF, ImmutableSet.of("X", "Z")));
 
     List l = m.getList("l", ENUM_OF, ImmutableSet.of("X", "Y", "Z"));
     assertEquals(2,l.size());

@@ -67,6 +67,7 @@ public class SolrIndexConfig implements MapSerializable {
   public final int maxBufferedDocs;
 
   public final double ramBufferSizeMB;
+  public final int ramPerThreadHardLimitMB;
 
   public final int writeLockTimeout;
   public final String lockType;
@@ -85,6 +86,7 @@ public class SolrIndexConfig implements MapSerializable {
     useCompoundFile = false;
     maxBufferedDocs = -1;
     ramBufferSizeMB = 100;
+    ramPerThreadHardLimitMB = -1;
     writeLockTimeout = -1;
     lockType = DirectoryFactory.LOCK_TYPE_NATIVE;
     mergePolicyFactoryInfo = null;
@@ -129,6 +131,9 @@ public class SolrIndexConfig implements MapSerializable {
     useCompoundFile = solrConfig.getBool(prefix+"/useCompoundFile", def.useCompoundFile);
     maxBufferedDocs=solrConfig.getInt(prefix+"/maxBufferedDocs",def.maxBufferedDocs);
     ramBufferSizeMB = solrConfig.getDouble(prefix+"/ramBufferSizeMB", def.ramBufferSizeMB);
+
+    // how do we validate the value??
+    ramPerThreadHardLimitMB = solrConfig.getInt(prefix+"/ramPerThreadHardLimitMB", def.ramPerThreadHardLimitMB);
 
     writeLockTimeout=solrConfig.getInt(prefix+"/writeLockTimeout", def.writeLockTimeout);
     lockType=solrConfig.get(prefix+"/lockType", def.lockType);
@@ -179,6 +184,7 @@ public class SolrIndexConfig implements MapSerializable {
     Map<String, Object> m = Utils.makeMap("useCompoundFile", useCompoundFile,
         "maxBufferedDocs", maxBufferedDocs,
         "ramBufferSizeMB", ramBufferSizeMB,
+        "ramPerThreadHardLimitMB", ramPerThreadHardLimitMB,
         "writeLockTimeout", writeLockTimeout,
         "lockType", lockType,
         "infoStreamEnabled", infoStream != InfoStream.NO_OUTPUT);
@@ -220,6 +226,10 @@ public class SolrIndexConfig implements MapSerializable {
 
     if (ramBufferSizeMB != -1)
       iwc.setRAMBufferSizeMB(ramBufferSizeMB);
+
+    if (ramPerThreadHardLimitMB != -1) {
+      iwc.setRAMPerThreadHardLimitMB(ramPerThreadHardLimitMB);
+    }
 
     iwc.setSimilarity(schema.getSimilarity());
     MergePolicy mergePolicy = buildMergePolicy(core.getResourceLoader(), schema);

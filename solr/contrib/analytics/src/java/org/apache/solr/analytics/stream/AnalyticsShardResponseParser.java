@@ -16,6 +16,7 @@
  */
 package org.apache.solr.analytics.stream;
 
+import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.analytics.AnalyticsRequestManager;
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.common.SolrException;
@@ -31,17 +32,17 @@ import java.io.Reader;
 
 /**
  * This parser initiates a merge of an Analytics Shard Response, sent from the {@link AnalyticsHandler}.
- * 
+ *
  * The input stream is immediately sent to the given {@link AnalyticsRequestManager} to merge.
  */
 public class AnalyticsShardResponseParser extends ResponseParser {
   public static final String BINARY_CONTENT_TYPE = "application/octet-stream";
   public static final String STREAM = "application/octet-stream";
-  
+
   private final AnalyticsRequestManager manager;
 
   /**
-   * 
+   *
    * @param manager the manager of the current Analytics Request, will manage the merging of shard data
    */
   public AnalyticsShardResponseParser(AnalyticsRequestManager manager) {
@@ -54,6 +55,7 @@ public class AnalyticsShardResponseParser extends ResponseParser {
   }
 
   @Override
+  @SuppressForbidden(reason = "XXX: security hole")
   public NamedList<Object> processResponse(InputStream body, String encoding) {
     DataInputStream input = new DataInputStream(body);
     //check to see if the response is an exception

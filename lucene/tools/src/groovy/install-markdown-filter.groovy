@@ -22,7 +22,7 @@
 import org.apache.tools.ant.AntTypeDefinition;
 import org.apache.tools.ant.ComponentHelper;
 import org.apache.tools.ant.filters.TokenFilter.ChainableReaderFilter;
-import com.vladsch.flexmark.ast.Node;
+import com.vladsch.flexmark.util.ast.Document;
 import com.vladsch.flexmark.ast.Heading;
 import com.vladsch.flexmark.html.HtmlRenderer;
 import com.vladsch.flexmark.parser.Parser;
@@ -40,7 +40,7 @@ public final class MarkdownFilter extends ChainableReaderFilter {
     options.set(Parser.EXTENSIONS, [ AbbreviationExtension.create(), AutolinkExtension.create() ]);
     options.set(HtmlRenderer.RENDER_HEADER_ID, true);
     options.set(HtmlRenderer.MAX_TRAILING_BLANK_LINES, 0);
-    Node parsed = Parser.builder(options).build().parse(markdownSource);
+    Document parsed = Parser.builder(options).build().parse(markdownSource);
 
     StringBuilder html = new StringBuilder('<html>\n<head>\n');
     CharSequence title = parsed.getFirstChildAny(Heading.class)?.getText();          

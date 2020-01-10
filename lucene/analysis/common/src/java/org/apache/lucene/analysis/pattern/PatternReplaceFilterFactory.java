@@ -38,8 +38,13 @@ import java.util.regex.Pattern;
  * @see PatternReplaceFilter
  *
  * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class PatternReplaceFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "patternReplace";
+
   final Pattern pattern;
   final String replacement;
   final boolean replaceAll;

@@ -58,8 +58,10 @@ public class HttpSolrClientConPoolTest extends SolrJettyTestBase {
   
   @AfterClass
   public static void stopYetty() throws Exception {
-    yetty.stop();
-    yetty = null;
+    if (null != yetty) {
+      yetty.stop();
+      yetty = null;
+    }
   }
   
   public void testPoolSize() throws SolrServerException, IOException {

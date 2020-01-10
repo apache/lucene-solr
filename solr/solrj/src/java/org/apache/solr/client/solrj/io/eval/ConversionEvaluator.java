@@ -43,7 +43,7 @@ public class ConversionEvaluator extends RecursiveNumericEvaluator implements On
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting exactly 3 parameters but found %d", super.toExpression(constructingFactory), containedEvaluators.size()));
     }
     
-    if(0 != containedEvaluators.subList(0, 2).stream().filter(item -> !(item instanceof RawValueEvaluator) && !(item instanceof FieldValueEvaluator)).count()){
+    if(containedEvaluators.subList(0, 2).stream().anyMatch(item -> !(item instanceof RawValueEvaluator) && !(item instanceof FieldValueEvaluator))){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - first two parameters must be strings", super.toExpression(constructingFactory)));      
     }
     

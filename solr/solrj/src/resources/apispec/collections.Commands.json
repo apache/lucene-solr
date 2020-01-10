@@ -1,5 +1,5 @@
 {
-  "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#create",
+  "documentation": "https://lucene.apache.org/solr/guide/collection-management.html#create",
   "description": "Create collections and collection aliases, backup or restore collections, and delete collections and aliases.",
   "methods": [
     "POST"
@@ -13,7 +13,7 @@
   "commands": {
     "create": {
       "type": "object",
-      "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#create",
+      "documentation": "https://lucene.apache.org/solr/guide/collection-management.html#create",
       "description": "Create a collection.",
       "properties": {
         "name": {
@@ -128,7 +128,7 @@
       ]
     },
     "create-alias": {
-      "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#createalias",
+      "documentation": "https://lucene.apache.org/solr/guide/collection-aliasing.html#createalias",
       "description": "Allows one or more collections to be known by another name (to include time partitioned collections). If this command is used on an existing alias, the existing alias will be replaced with the new collection details.",
       "type": "object",
       "properties": {
@@ -145,7 +145,7 @@
         },
         "router" : {
           "type":"object",
-          "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#createalias",
+          "documentation": "https://lucene.apache.org/solr/guide/collection-aliasing.html#createalias",
           "description":"Routing specific properties to define a time routed alias.  Do not specify 'collections' when creating a time routed alias.",
           "properties" : {
             "name" : {
@@ -183,6 +183,14 @@
             "mustMatch": {
               "type": "string",
               "description": "A regular expression that the value of the field specified by `router.field` must match before a corresponding collection will be created."
+            },
+            "routerList": {
+              "type": "array",
+              "description": "A list of router property sets to be used with router type Dimensional[foo,bar] where foo and bar are valid router type names (i.e. time or category). The order must correspond to the type specification in [] in the Dimensional type, so Dimensional[category,time] would require the first set of router properties to be valid for a category routed alias, and the second set to be valid for a time routed alias. In these sets of properties, router.name will be ignored in favor of the type specified in the top level Dimensional[] router.name",
+              "items": {
+                "type": "object",
+                "additionalProperties": true
+              }
             }
           }
         },
@@ -192,7 +200,7 @@
         },
         "create-collection": {
           "type": "object",
-          "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#create",
+          "documentation": "https://lucene.apache.org/solr/guide/collection-management.html#create",
           "description": "The settings to use to create a collection for each new time partition. Most options from the collection create command are available, except for 'name', 'async' and 'waitForFinalState'.",
           "additionalProperties": true
         },
@@ -206,7 +214,7 @@
       ]
     },
     "delete-alias": {
-      "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#deletealias",
+      "documentation": "https://lucene.apache.org/solr/guide/collection-aliasing.html#deletealias",
       "description": "Deletes a collection alias",
       "type": "object",
       "properties": {
@@ -224,7 +232,7 @@
       ]
     },
     "set-alias-property": {
-      "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#modifyalias",
+      "documentation": "https://lucene.apache.org/solr/guide/collection-aliasing.html#modifyalias",
       "description": "Allows changing the properties on an alias. If a key is set with an empty string then it will be removed",
       "type": "object",
       "properties": {
@@ -247,7 +255,7 @@
       ]
     },
     "backup-collection": {
-      "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#backup",
+      "documentation": "https://lucene.apache.org/solr/guide/collection-management.html#backup",
       "description": "Backup Solr indexes and configurations for a specific collection. One copy of the indexes will be taken from each shard, and the config set for the collection will also be copied.",
       "type": "object",
       "properties": {
@@ -275,7 +283,7 @@
       ]
     },
     "restore-collection": {
-      "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#restore",
+      "documentation": "https://lucene.apache.org/solr/guide/collection-management.html#restore",
       "description": "Restore Solr indexes and configurations from a backup. You cannot restore into the same collection you took the backup from. The target collection must not exist before calling this command, as it will be created by the restore action. The new collection will have the same number of shards and replicas as the original collection, and all routing strategies will be retained.",
       "type": "object",
       "properties": {

@@ -20,6 +20,23 @@ The job of a <<tokenizers.adoc#tokenizers,tokenizer>> is to break up a stream of
 
 Characters in the input stream may be discarded, such as whitespace or other delimiters. They may also be added to or replaced, such as mapping aliases or abbreviations to normalized forms. A token contains various metadata in addition to its text value, such as the location at which the token occurs in the field. Because a tokenizer may produce tokens that diverge from the input text, you should not assume that the text of the token is the same text that occurs in the field, or that its length is the same as the original text. It's also possible for more than one token to have the same position or refer to the same offset in the original text. Keep this in mind if you use token metadata for things like highlighting search results in the field text.
 
+[.dynamic-tabs]
+--
+[example.tab-pane#byname-tok]
+====
+[.tab-label]*With name*
+[source,xml]
+----
+<fieldType name="text" class="solr.TextField">
+  <analyzer>
+    <tokenizer name="standard"/>
+  </analyzer>
+</fieldType>
+----
+====
+[example.tab-pane#byclass-tok]
+====
+[.tab-label]*With class name (legacy)*
 [source,xml]
 ----
 <fieldType name="text" class="solr.TextField">
@@ -28,6 +45,8 @@ Characters in the input stream may be discarded, such as whitespace or other del
   </analyzer>
 </fieldType>
 ----
+====
+--
 
 The class named in the tokenizer element is not the actual tokenizer, but rather a class that implements the `TokenizerFactory` API. This factory class will be called upon to create new tokenizer instances as needed. Objects created by the factory must derive from `Tokenizer`, which indicates that they produce sequences of tokens. If the tokenizer produces tokens that are usable as is, it may be the only component of the analyzer. Otherwise, the tokenizer's output tokens will serve as input to the first filter stage in the pipeline.
 

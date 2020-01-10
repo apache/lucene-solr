@@ -24,6 +24,10 @@ Apache Solr is an enterprise search platform written using Apache Lucene.
 Major features include full-text search, index replication and sharding, and
 result faceting and highlighting.
 
+
+[![Build Status](https://builds.apache.org/view/L/view/Lucene/job/Lucene-Artifacts-master/badge/icon?subject=Lucene)](https://builds.apache.org/view/L/view/Lucene/job/Lucene-Artifacts-master/) [![Build Status](https://builds.apache.org/view/L/view/Lucene/job/Solr-Artifacts-master/badge/icon?subject=Solr)](https://builds.apache.org/view/L/view/Lucene/job/Solr-Artifacts-master/)
+
+
 ## Online Documentation
 
 This README file only contains basic setup instructions.  For more
@@ -34,7 +38,7 @@ comprehensive documentation, visit:
 
 ## Building Lucene/Solr
 
-(You do not need to do this if you downloaded a pre-built package.)
+(You do not need to do this if you downloaded a pre-built package)
 
 Lucene and Solr are built using [Apache Ant](http://ant.apache.org/).  To build
 Lucene and Solr, run:
@@ -81,9 +85,9 @@ Ant can be used to generate project files compatible with most common IDEs.
 Run the ant command corresponding to your IDE of choice before attempting to
 import Lucene/Solr.
 
-- *Eclipse* - `ant eclipse` (See [this](https://wiki.apache.org/solr/HowToConfigureEclipse) for details)
-- *IntelliJ* - `ant idea` (See [this](https://wiki.apache.org/lucene-java/HowtoConfigureIntelliJ) for details)
-- *Netbeans* - `ant netbeans` (See [this](https://wiki.apache.org/lucene-java/HowtoConfigureNetbeans) for details)
+- *Eclipse* - `ant eclipse` (See [this](https://cwiki.apache.org/confluence/display/solr/HowToConfigureEclipse) for details)
+- *IntelliJ* - `ant idea` (See [this](https://cwiki.apache.org/confluence/display/lucene/HowtoConfigureIntelliJ) for details)
+- *Netbeans* - `ant netbeans` (See [this](https://cwiki.apache.org/confluence/display/lucene/HowtoConfigureNetbeans) for details)
 
 
 ## Running Tests
@@ -100,7 +104,7 @@ ways.  For an exhaustive discussion of the options available, run:
 ## Contributing
 
 Please review the [Contributing to Solr
-Guide](https://wiki.apache.org/solr/HowToContribute) for information on
+Guide](https://cwiki.apache.org/confluence/display/solr/HowToContribute) for information on
 contributing.
 
 ## Discussion and Support

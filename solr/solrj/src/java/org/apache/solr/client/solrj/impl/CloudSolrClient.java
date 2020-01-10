@@ -253,7 +253,14 @@ public class CloudSolrClient extends BaseCloudSolrClient {
     public Builder(List<String> solrUrls) {
       this.solrUrls = solrUrls;
     }
-    
+
+    /**
+     * Provide an already created {@link ClusterStateProvider} instance
+     */
+    public Builder(ClusterStateProvider stateProvider) {
+      this.stateProvider = stateProvider;
+    }
+
     /**
      * Provide a series of ZK hosts which will be used when configuring {@link CloudSolrClient} instances.
      *

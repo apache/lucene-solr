@@ -135,6 +135,15 @@ public class TestCoreParser extends LuceneTestCase {
     assertEquals(q, sq);
   }
 
+  public void testSpanPositionRangeQueryXML() throws Exception {
+    Query q = parse("SpanPositionRangeQuery.xml");
+    long h = searcher().search(q, 10).totalHits.value;
+    assertEquals("SpanPositionRangeQuery should produce 2 result ", 2, h);
+    SpanQuery sq = parseAsSpan("SpanPositionRangeQuery.xml");
+    dumpResults("SpanPositionRangeQuery", sq, 5);
+    assertEquals(q, sq);
+  }
+
   public void testSpanNearQueryWithoutSlopXML() throws Exception {
     Exception expectedException = new NumberFormatException("For input string: \"\"");
     try {

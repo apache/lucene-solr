@@ -107,6 +107,6 @@ public class CoalesceEvaluatorTest extends SolrTestCase {
     values.put("c", null);
     values.put("d", 4);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertEquals(1L, result);
+    Assert.assertEquals(1D, result);
   }
 }

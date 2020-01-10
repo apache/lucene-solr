@@ -136,14 +136,9 @@ public class HttpReplicatorTest extends ReplicatorTestCase {
     
     try {
       publishRevision(5);
-      
-      try {
-        replicationServlet.setRespondWithError(true);
-        client.updateNow();
-        fail("expected exception");
-      } catch (Throwable t) {
-        // expected
-      }
+
+      replicationServlet.setRespondWithError(true);
+      expectThrows(Exception.class, client::updateNow);
       
       replicationServlet.setRespondWithError(false);
       client.updateNow(); // now it should work

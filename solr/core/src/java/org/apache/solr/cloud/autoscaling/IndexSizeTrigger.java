@@ -30,6 +30,7 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.Locale;
 
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
@@ -51,6 +52,8 @@ import org.apache.solr.update.SolrIndexSplitter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.client.solrj.cloud.autoscaling.Variable.Type.CORE_IDX;
+
 /**
  *
  */
@@ -67,9 +70,13 @@ public class IndexSizeTrigger extends TriggerBase {
   public static final String MAX_OPS_PROP = "maxOps";
   public static final String SPLIT_FUZZ_PROP = CommonAdminParams.SPLIT_FUZZ;
   public static final String SPLIT_METHOD_PROP = CommonAdminParams.SPLIT_METHOD;
+  public static final String SPLIT_BY_PREFIX = CommonAdminParams.SPLIT_BY_PREFIX;
 
   public static final String BYTES_SIZE_PROP = "__bytes__";
+  public static final String TOTAL_BYTES_SIZE_PROP = "__total_bytes__";
   public static final String DOCS_SIZE_PROP = "__docs__";
+  public static final String MAX_DOC_PROP = "__maxDoc__";
+  public static final String COMMIT_SIZE_PROP = "__commitBytes__";
   public static final String ABOVE_SIZE_PROP = "aboveSize";
   public static final String BELOW_SIZE_PROP = "belowSize";
   public static final String VIOLATION_PROP = "violationType";
@@ -81,6 +88,7 @@ public class IndexSizeTrigger extends TriggerBase {
   private long aboveBytes, aboveDocs, belowBytes, belowDocs;
   private int maxOps;
   private SolrIndexSplitter.SplitMethod splitMethod;
+  private boolean splitByPrefix;
   private float splitFuzz;
   private CollectionParams.CollectionAction aboveOp, belowOp;
   private final Set<String> collections = new HashSet<>();
@@ -91,7 +99,7 @@ public class IndexSizeTrigger extends TriggerBase {
     super(TriggerEventType.INDEXSIZE, name);
     TriggerUtils.validProperties(validProperties,
         ABOVE_BYTES_PROP, ABOVE_DOCS_PROP, BELOW_BYTES_PROP, BELOW_DOCS_PROP,
-        COLLECTIONS_PROP, MAX_OPS_PROP, SPLIT_METHOD_PROP, SPLIT_FUZZ_PROP);
+        COLLECTIONS_PROP, MAX_OPS_PROP, SPLIT_METHOD_PROP, SPLIT_FUZZ_PROP, SPLIT_BY_PREFIX);
   }
 
   @Override
@@ -171,11 +179,10 @@ public class IndexSizeTrigger extends TriggerBase {
     } catch (Exception e) {
       throw new TriggerValidationException(getName(), MAX_OPS_PROP, "invalid value: '" + maxOpsStr + "': " + e.getMessage());
     }
-    String methodStr = (String)properties.getOrDefault(CommonAdminParams.SPLIT_METHOD, SolrIndexSplitter.SplitMethod.LINK.toLower());
+    String methodStr = (String)properties.getOrDefault(SPLIT_METHOD_PROP, SolrIndexSplitter.SplitMethod.LINK.toLower());
     splitMethod = SolrIndexSplitter.SplitMethod.get(methodStr);
     if (splitMethod == null) {
-      throw new TriggerValidationException(getName(), SPLIT_METHOD_PROP, "Unknown value '" + CommonAdminParams.SPLIT_METHOD +
-          ": " + methodStr);
+      throw new TriggerValidationException(getName(), SPLIT_METHOD_PROP, "unrecognized value of: '" + methodStr + "'");
     }
     String fuzzStr = String.valueOf(properties.getOrDefault(SPLIT_FUZZ_PROP, 0.0f));
     try {
@@ -183,6 +190,19 @@ public class IndexSizeTrigger extends TriggerBase {
     } catch (Exception e) {
       throw new TriggerValidationException(getName(), SPLIT_FUZZ_PROP, "invalid value: '" + fuzzStr + "': " + e.getMessage());
     }
+    String splitByPrefixStr = String.valueOf(properties.getOrDefault(SPLIT_BY_PREFIX, false));
+    try {
+      splitByPrefix = getValidBool(splitByPrefixStr);
+    } catch (Exception e) {
+      throw new TriggerValidationException(getName(), SPLIT_BY_PREFIX, "invalid value: '" + splitByPrefixStr + "': " + e.getMessage());
+    }
+  }
+  
+  private boolean getValidBool(String str) throws Exception {
+    if (str != null && (str.toLowerCase(Locale.ROOT).equals("true") || str.toLowerCase(Locale.ROOT).equals("false"))) {
+      return Boolean.parseBoolean(str);
+    }
+    throw new IllegalArgumentException("Expected a valid boolean value but got " + str);
   }
 
   @Override
@@ -284,9 +304,13 @@ public class IndexSizeTrigger extends TriggerBase {
               replicaName = info.getName(); // which is actually coreNode name...
             }
             String registry = SolrCoreMetricManager.createRegistryName(true, coll, sh, replicaName, null);
-            String tag = "metrics:" + registry + ":INDEX.sizeInBytes";
+            String tag = "metrics:" + registry + ":" + CORE_IDX.metricsAttribute;
             metricTags.put(tag, info);
             tag = "metrics:" + registry + ":SEARCHER.searcher.numDocs";
+            metricTags.put(tag, info);
+            tag = "metrics:" + registry + ":SEARCHER.searcher.maxDoc";
+            metricTags.put(tag, info);
+            tag = "metrics:" + registry + ":SEARCHER.searcher.indexCommitSize";
             metricTags.put(tag, info);
           });
         });
@@ -307,9 +331,13 @@ public class IndexSizeTrigger extends TriggerBase {
 
             ReplicaInfo currentInfo = currentSizes.computeIfAbsent(info.getCore(), k -> (ReplicaInfo)info.clone());
             if (tag.contains("INDEX")) {
-              currentInfo.getVariables().put(BYTES_SIZE_PROP, ((Number) size).longValue());
-            } else if (tag.contains("SEARCHER")) {
+              currentInfo.getVariables().put(TOTAL_BYTES_SIZE_PROP, ((Number) size).longValue());
+            } else if (tag.endsWith("SEARCHER.searcher.numDocs")) {
               currentInfo.getVariables().put(DOCS_SIZE_PROP, ((Number) size).longValue());
+            } else if (tag.endsWith("SEARCHER.searcher.maxDoc")) {
+              currentInfo.getVariables().put(MAX_DOC_PROP, ((Number) size).longValue());
+            } else if (tag.endsWith("SEARCHER.searcher.indexCommitSize")) {
+              currentInfo.getVariables().put(COMMIT_SIZE_PROP, ((Number) size).longValue());
             }
           }
         });
@@ -329,6 +357,17 @@ public class IndexSizeTrigger extends TriggerBase {
     Set<String> splittable = new HashSet<>();
 
     currentSizes.forEach((coreName, info) -> {
+      // calculate estimated bytes
+      long maxDoc = (Long)info.getVariable(MAX_DOC_PROP);
+      long numDocs = (Long)info.getVariable(DOCS_SIZE_PROP);
+      long commitSize = (Long)info.getVariable(COMMIT_SIZE_PROP, 0L);
+      if (commitSize <= 0) {
+        commitSize = (Long)info.getVariable(TOTAL_BYTES_SIZE_PROP);
+      }
+      // calculate estimated size as a side-effect
+      commitSize = estimatedSize(maxDoc, numDocs, commitSize);
+      info.getVariables().put(BYTES_SIZE_PROP, commitSize);
+
       if ((Long)info.getVariable(BYTES_SIZE_PROP) > aboveBytes ||
           (Long)info.getVariable(DOCS_SIZE_PROP) > aboveDocs) {
         if (waitForElapsed(coreName, now, lastAboveEventMap)) {
@@ -406,10 +445,11 @@ public class IndexSizeTrigger extends TriggerBase {
         TriggerEvent.Op op = new TriggerEvent.Op(aboveOp);
         op.addHint(Suggester.Hint.COLL_SHARD, new Pair<>(coll, r.getShard()));
         Map<String, Object> params = new HashMap<>();
-        params.put(CommonAdminParams.SPLIT_METHOD, splitMethod.toLower());
+        params.put(SPLIT_METHOD_PROP, splitMethod.toLower());
         if (splitFuzz > 0) {
-          params.put(CommonAdminParams.SPLIT_FUZZ, splitFuzz);
+          params.put(SPLIT_FUZZ_PROP, splitFuzz);
         }
+        params.put(SPLIT_BY_PREFIX, splitByPrefix);
         op.addHint(Suggester.Hint.PARAMS, params);
         ops.add(op);
         Long time = lastAboveEventMap.get(r.getCore());
@@ -475,6 +515,16 @@ public class IndexSizeTrigger extends TriggerBase {
         lastBelowEventMap.put(replicas.get(1).getCore(), now);
       });
     }
+  }
+
+  public static long estimatedSize(long maxDoc, long numDocs, long commitSize) {
+    if (maxDoc == 0) {
+      return 0;
+    }
+    if (maxDoc == numDocs) {
+      return commitSize;
+    }
+    return commitSize * numDocs / maxDoc;
   }
 
   private boolean waitForElapsed(String name, long now, Map<String, Long> lastEventMap) {

@@ -51,10 +51,9 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
   void makeExternalFile(String field, String contents) {
     String dir = h.getCore().getDataDir();
     String filename = dir + "/external_" + field + "." + (start++);
-    try {
-      Writer out = new OutputStreamWriter(new FileOutputStream(filename), StandardCharsets.UTF_8);
+
+    try (Writer out = new OutputStreamWriter(new FileOutputStream(filename), StandardCharsets.UTF_8)) {
       out.write(contents);
-      out.close();
     } catch (Exception e) {
       throw new RuntimeException(e);
     }
@@ -470,6 +469,10 @@ public class TestFunctionQuery extends SolrTestCaseJ4 {
     );
     // this should pass
     assertQ(req("q", "*:*","defType","edismax", "boost","recip(1, 2, 3, 4)"));
+
+    // for undefined field NPE shouldn't be thrown
+    assertQEx("Should Fail as the field is undefined", "undefined field a",
+        req("q", "*:*", "fl", "x:payload(a,b)"), SolrException.ErrorCode.BAD_REQUEST);
   }
 
   @Test

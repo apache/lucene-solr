@@ -34,7 +34,7 @@ import org.apache.lucene.analysis.ko.tokenattributes.PartOfSpeechAttribute;
 import org.apache.lucene.analysis.ko.tokenattributes.ReadingAttribute;
 
 public class TestKoreanTokenizer extends BaseTokenStreamTestCase {
-  private Analyzer analyzer, analyzerUnigram, analyzerDecompound, analyzerDecompoundKeep, analyzerReading;
+  private Analyzer analyzer, analyzerWithPunctuation, analyzerUnigram, analyzerDecompound, analyzerDecompoundKeep, analyzerReading;
 
   public static UserDictionary readDict() {
     InputStream is = TestKoreanTokenizer.class.getResourceAsStream("userdict.txt");
@@ -62,6 +62,14 @@ public class TestKoreanTokenizer extends BaseTokenStreamTestCase {
       protected TokenStreamComponents createComponents(String fieldName) {
         Tokenizer tokenizer = new KoreanTokenizer(newAttributeFactory(), userDictionary,
             DecompoundMode.NONE, false);
+        return new TokenStreamComponents(tokenizer, tokenizer);
+      }
+    };
+    analyzerWithPunctuation = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new KoreanTokenizer(newAttributeFactory(), userDictionary,
+            DecompoundMode.NONE, false, false);
         return new TokenStreamComponents(tokenizer, tokenizer);
       }
     };
@@ -100,6 +108,22 @@ public class TestKoreanTokenizer extends BaseTokenStreamTestCase {
     };
   }
 
+  public void testSeparateNumber() throws IOException {
+    assertAnalyzesTo(analyzer, "44사이즈",
+        new String[]{"44", "사이즈"},
+        new int[]{0, 2},
+        new int[]{2, 5},
+        new int[]{1, 1}
+    );
+
+    assertAnalyzesTo(analyzer, "９.９사이즈",
+        new String[]{"９", "９", "사이즈"},
+        new int[]{0, 2, 3},
+        new int[]{1, 3, 6},
+        new int[]{1, 1, 1}
+    );
+  }
+
   public void testSpaces() throws IOException {
     assertAnalyzesTo(analyzer, "화학        이외의         것",
         new String[]{"화학", "이외", "의", "것"},
@@ -125,6 +149,36 @@ public class TestKoreanTokenizer extends BaseTokenStreamTestCase {
         new POS.Type[] { POS.Type.MORPHEME, POS.Type.MORPHEME, POS.Type.MORPHEME, POS.Type.MORPHEME },
         new POS.Tag[] { POS.Tag.NNG, POS.Tag.NNG, POS.Tag.J, POS.Tag.NNB },
         new POS.Tag[] { POS.Tag.NNG, POS.Tag.NNG, POS.Tag.J, POS.Tag.NNB }
+    );
+  }
+
+  public void testPartOfSpeechsWithPunc() throws IOException {
+    assertAnalyzesTo(analyzerWithPunctuation, "화학 이외의 것!",
+        new String[]{"화학", " ", "이외", "의", " ", "것", "!"},
+        new int[]{0, 2, 3, 5, 6, 7, 8, 9},
+        new int[]{2, 3, 5, 6, 7, 8, 9, 11},
+        new int[]{1, 1, 1, 1, 1, 1, 1, 1}
+    );
+    assertPartsOfSpeech(analyzerWithPunctuation, "화학 이외의 것!",
+        new POS.Type[] { POS.Type.MORPHEME, POS.Type.MORPHEME, POS.Type.MORPHEME, POS.Type.MORPHEME, POS.Type.MORPHEME, POS.Type.MORPHEME, POS.Type.MORPHEME },
+        new POS.Tag[] { POS.Tag.NNG, POS.Tag.SP, POS.Tag.NNG, POS.Tag.J, POS.Tag.SP, POS.Tag.NNB, POS.Tag.SF },
+        new POS.Tag[] { POS.Tag.NNG, POS.Tag.SP, POS.Tag.NNG, POS.Tag.J, POS.Tag.SP, POS.Tag.NNB, POS.Tag.SF }
+    );
+  }
+
+  public void testFloatingPointNumber() throws IOException {
+    assertAnalyzesTo(analyzerWithPunctuation, "10.1 인치 모니터",
+        new String[]{"10", ".", "1", " ", "인치", " ", "모니터"},
+        new int[]{0, 2, 3, 4, 5, 7, 8},
+        new int[]{2, 3, 4, 5, 7, 8, 11},
+        new int[]{1, 1, 1, 1, 1, 1, 1}
+    );
+
+    assertAnalyzesTo(analyzer, "10.1 인치 모니터",
+        new String[]{"10", "1", "인치", "모니터"},
+        new int[]{0, 3, 5, 8},
+        new int[]{2, 4, 7, 11},
+        new int[]{1, 1, 1, 1}
     );
   }
 

@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -46,7 +47,7 @@ import org.slf4j.LoggerFactory;
  *
  * @since solr 7.5
  */
-public final class ZookeeperStatusHandler extends RequestHandlerBase {
+public class ZookeeperStatusHandler extends RequestHandlerBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private static final int ZOOKEEPER_DEFAULT_PORT = 2181;
@@ -94,9 +95,15 @@ public final class ZookeeperStatusHandler extends RequestHandlerBase {
     int reportedFollowers = 0;
     int leaders = 0;
     List<String> errors = new ArrayList<>();
+    zkStatus.put("ensembleSize", zookeepers.size());
+    zkStatus.put("zkHost", zkHost);
     for (String zk : zookeepers) {
       try {
         Map<String, Object> stat = monitorZookeeper(zk);
+        if (stat.containsKey("errors")) {
+          errors.addAll((List<String>)stat.get("errors"));
+          stat.remove("errors");
+        }
         details.add(stat);
         if ("true".equals(String.valueOf(stat.get("ok")))) {
           numOk++;
@@ -111,16 +118,15 @@ public final class ZookeeperStatusHandler extends RequestHandlerBase {
           standalone++;
         }
       } catch (SolrException se) {
-        log.warn("Failed talking to zookeeper" + zk, se);
+        log.warn("Failed talking to zookeeper " + zk, se);
         errors.add(se.getMessage());
         Map<String, Object> stat = new HashMap<>();
         stat.put("host", zk);
         stat.put("ok", false);
+        status = STATUS_YELLOW;
         details.add(stat);
-      }       
+      }
     }
-    zkStatus.put("ensembleSize", zookeepers.size());
-    zkStatus.put("zkHost", zkHost);
     zkStatus.put("details", details);
     if (followers+leaders > 0 && standalone > 0) {
       status = STATUS_RED;
@@ -176,18 +182,39 @@ public final class ZookeeperStatusHandler extends RequestHandlerBase {
     return zkStatus;
   }
 
-  private Map<String, Object> monitorZookeeper(String zkHostPort) {
-    List<String> lines = getZkRawResponse(zkHostPort, "mntr");
+  protected Map<String, Object> monitorZookeeper(String zkHostPort) throws SolrException {
     Map<String, Object> obj = new HashMap<>();
+    List<String> errors = new ArrayList<>();
     obj.put("host", zkHostPort);
-    obj.put("ok", "imok".equals(getZkRawResponse(zkHostPort, "ruok").get(0)));
+    List<String> lines = getZkRawResponse(zkHostPort, "ruok");
+    validateZkRawResponse(lines, zkHostPort, "ruok");
+    boolean ok = "imok".equals(lines.get(0));
+    obj.put("ok", ok);
+    lines = getZkRawResponse(zkHostPort, "mntr");
+    validateZkRawResponse(lines, zkHostPort, "mntr");
     for (String line : lines) {
-      obj.put(line.split("\t")[0], line.split("\t")[1]);
+      String[] parts = line.split("\t");
+      if (parts.length >= 2) {
+        obj.put(parts[0], parts[1]);
+      } else {
+        String err = String.format(Locale.ENGLISH, "Unexpected line in 'mntr' response from Zookeeper %s: %s", zkHostPort, line);
+        log.warn(err);
+        errors.add(err);
+      }
     }
     lines = getZkRawResponse(zkHostPort, "conf");
+    validateZkRawResponse(lines, zkHostPort, "conf");
     for (String line : lines) {
-      obj.put(line.split("=")[0], line.split("=")[1]);
+      String[] parts = line.split("=");
+      if (parts.length >= 2) {
+        obj.put(parts[0], parts[1]);
+      } else if (!line.startsWith("membership:")) {
+        String err = String.format(Locale.ENGLISH, "Unexpected line in 'conf' response from Zookeeper %s: %s", zkHostPort, line);
+        log.warn(err);
+        errors.add(err);
+      }
     }
+    obj.put("errors", errors);
     return obj;
   }
   
@@ -197,13 +224,14 @@ public final class ZookeeperStatusHandler extends RequestHandlerBase {
    * @param fourLetterWordCommand the custom 4-letter command to send to Zookeeper
    * @return a list of lines returned from Zookeeper
    */
-  private List<String> getZkRawResponse(String zkHostPort, String fourLetterWordCommand) {
+  protected List<String> getZkRawResponse(String zkHostPort, String fourLetterWordCommand) {
     String[] hostPort = zkHostPort.split(":");
     String host = hostPort[0];
     int port = ZOOKEEPER_DEFAULT_PORT;
     if (hostPort.length > 1) {
       port = Integer.parseInt(hostPort[1]);
     }
+
     try (
         Socket socket = new Socket(host, port);
         Writer writer = new OutputStreamWriter(socket.getOutputStream(), "utf-8");
@@ -212,12 +240,30 @@ public final class ZookeeperStatusHandler extends RequestHandlerBase {
       out.println(fourLetterWordCommand);
       List<String> response = in.lines().collect(Collectors.toList());
       log.debug("Got response from ZK on host {} and port {}: {}", host, port, response);
-      if (response == null || response.isEmpty()) {
-        throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Empty response from Zookeeper " + zkHostPort);
-      }
       return response;
     } catch (IOException e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Failed talking to Zookeeper " + zkHostPort, e);
     }
+  }
+
+  /**
+   * Takes the raw response lines returned by {@link #getZkRawResponse(String, String)} and runs some validations
+   * @param response the lines
+   * @param zkHostPort the host
+   * @param fourLetterWordCommand the 4lw command
+   * @return true if validation succeeds
+   * @throws SolrException if validation fails
+   */
+  protected boolean validateZkRawResponse(List<String> response, String zkHostPort, String fourLetterWordCommand) {
+    if (response == null || response.isEmpty() || (response.size() == 1 && response.get(0).isBlank())) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Empty response from Zookeeper " + zkHostPort);
+    }
+    if (response.size() == 1 && response.get(0).contains("not in the whitelist")) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not execute " + fourLetterWordCommand +
+          " towards ZK host " + zkHostPort + ". Add this line to the 'zoo.cfg' " +
+          "configuration file on each zookeeper node: '4lw.commands.whitelist=mntr,conf,ruok'. See also chapter " +
+          "'Setting Up an External ZooKeeper Ensemble' in the Solr Reference Guide.");
+    }
+    return true;
   }
 }

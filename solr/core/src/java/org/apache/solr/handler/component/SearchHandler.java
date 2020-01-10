@@ -16,9 +16,6 @@
  */
 package org.apache.solr.handler.component;
 
-import static org.apache.solr.common.params.CommonParams.DISTRIB;
-import static org.apache.solr.common.params.CommonParams.PATH;
-
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.lang.invoke.MethodHandles;
@@ -43,6 +40,8 @@ import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
+import org.apache.solr.pkg.PackageListeners;
+import org.apache.solr.pkg.PackageLoader;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrQueryTimeoutImpl;
@@ -56,13 +55,14 @@ import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.params.CommonParams.DISTRIB;
+import static org.apache.solr.common.params.CommonParams.PATH;
+
 
 /**
- *
  * Refer SOLR-281
- *
  */
-public class SearchHandler extends RequestHandlerBase implements SolrCoreAware , PluginInfoInitialized, PermissionNameProvider {
+public class SearchHandler extends RequestHandlerBase implements SolrCoreAware, PluginInfoInitialized, PermissionNameProvider {
   static final String INIT_COMPONENTS = "components";
   static final String INIT_FIRST_COMPONENTS = "first-components";
   static final String INIT_LAST_COMPONENTS = "last-components";
@@ -70,22 +70,21 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected volatile List<SearchComponent> components;
-  private ShardHandlerFactory shardHandlerFactory ;
+  private ShardHandlerFactory shardHandlerFactory;
   private PluginInfo shfInfo;
   private SolrCore core;
 
-  protected List<String> getDefaultComponents()
-  {
+  protected List<String> getDefaultComponents() {
     ArrayList<String> names = new ArrayList<>(8);
-    names.add( QueryComponent.COMPONENT_NAME );
-    names.add( FacetComponent.COMPONENT_NAME );
-    names.add( FacetModule.COMPONENT_NAME );
-    names.add( MoreLikeThisComponent.COMPONENT_NAME );
-    names.add( HighlightComponent.COMPONENT_NAME );
-    names.add( StatsComponent.COMPONENT_NAME );
-    names.add( DebugComponent.COMPONENT_NAME );
-    names.add( ExpandComponent.COMPONENT_NAME);
-    names.add( TermsComponent.COMPONENT_NAME);
+    names.add(QueryComponent.COMPONENT_NAME);
+    names.add(FacetComponent.COMPONENT_NAME);
+    names.add(FacetModule.COMPONENT_NAME);
+    names.add(MoreLikeThisComponent.COMPONENT_NAME);
+    names.add(HighlightComponent.COMPONENT_NAME);
+    names.add(StatsComponent.COMPONENT_NAME);
+    names.add(DebugComponent.COMPONENT_NAME);
+    names.add(ExpandComponent.COMPONENT_NAME);
+    names.add(TermsComponent.COMPONENT_NAME);
 
     return names;
   }
@@ -94,7 +93,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
   public void init(PluginInfo info) {
     init(info.initArgs);
     for (PluginInfo child : info.children) {
-      if("shardHandlerFactory".equals(child.type)){
+      if ("shardHandlerFactory".equals(child.type)) {
         this.shfInfo = child;
         break;
       }
@@ -113,12 +112,10 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
    */
   @Override
   @SuppressWarnings("unchecked")
-  public void inform(SolrCore core)
-  {
+  public void inform(SolrCore core) {
     this.core = core;
-    Set<String> missing = new HashSet<>();
     List<String> c = (List<String>) initArgs.get(INIT_COMPONENTS);
-    missing.addAll(core.getSearchComponents().checkContains(c));
+    Set<String> missing = new HashSet<>(core.getSearchComponents().checkContains(c));
     List<String> first = (List<String>) initArgs.get(INIT_FIRST_COMPONENTS);
     missing.addAll(core.getSearchComponents().checkContains(first));
     List<String> last = (List<String>) initArgs.get(INIT_LAST_COMPONENTS);
@@ -140,6 +137,32 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
 
         @Override
         public void postClose(SolrCore core) {
+        }
+      });
+    }
+
+    if (core.getCoreContainer().isZooKeeperAware()) {
+      core.getPackageListeners().addListener(new PackageListeners.Listener() {
+        @Override
+        public String packageName() {
+          return null;
+        }
+
+        @Override
+        public PluginInfo pluginInfo() {
+          return null;
+        }
+
+        @Override
+        public void changed(PackageLoader.Package pkg) {
+          //we could optimize this by listening to only relevant packages,
+          // but it is not worth optimizing as these are lightweight objects
+          components = null;
+        }
+
+        @Override
+        public PackageLoader.Package.Version getPackageVersion() {
+          return null;
         }
       });
     }
@@ -247,11 +270,18 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
     return shardHandler;
   }
   
+  /**
+   * Override this method if you require a custom {@link ResponseBuilder} e.g. for use by a custom {@link SearchComponent}.
+   */
+  protected ResponseBuilder newResponseBuilder(SolrQueryRequest req, SolrQueryResponse rsp, List<SearchComponent> components) {
+    return new ResponseBuilder(req, rsp, components);
+  }
+
   @Override
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception
   {
     List<SearchComponent> components  = getComponents();
-    ResponseBuilder rb = new ResponseBuilder(req, rsp, components);
+    ResponseBuilder rb = newResponseBuilder(req, rsp, components);
     if (rb.requestInfo != null) {
       rb.requestInfo.setResponseBuilder(rb);
     }
@@ -286,7 +316,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
       // a normal non-distributed request
 
       long timeAllowed = req.getParams().getLong(CommonParams.TIME_ALLOWED, -1L);
-      if (timeAllowed > 0L) {
+      if (timeAllowed >= 0L) {
         SolrQueryTimeoutImpl.set(timeAllowed);
       }
       try {
@@ -370,6 +400,7 @@ public class SearchHandler extends RequestHandlerBase implements SolrCoreAware ,
               params.set(ShardParams.IS_SHARD, true);  // a sub (shard) request
               params.set(ShardParams.SHARDS_PURPOSE, sreq.purpose);
               params.set(ShardParams.SHARD_URL, shard); // so the shard knows what was asked
+              params.set(CommonParams.OMIT_HEADER, false);
               if (rb.requestInfo != null) {
                 // we could try and detect when this is needed, but it could be tricky
                 params.set("NOW", Long.toString(rb.requestInfo.getNOW().getTime()));

@@ -53,30 +53,18 @@ public class TestToleratedUpdateError extends SolrTestCase {
   @Test
   // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testParseMapErrorChecking() {
-    SimpleOrderedMap<String> bogus = new SimpleOrderedMap<String>();
-    try {
-      ToleratedUpdateError.parseMap(bogus);
-      fail("map should not be parsable");
-    } catch (SolrException e) {
-      assertTrue(e.toString(), e.getMessage().contains("Map does not represent a ToleratedUpdateError") );
-    }
+    SimpleOrderedMap<String> bogus = new SimpleOrderedMap<>();
+    SolrException e = expectThrows(SolrException.class, () -> ToleratedUpdateError.parseMap(bogus));
+    assertTrue(e.toString(), e.getMessage().contains("Map does not represent a ToleratedUpdateError"));
 
     bogus.add("id", "some id");
     bogus.add("message", "some message");
-    try {
-      ToleratedUpdateError.parseMap(bogus);
-      fail("map should still not be parsable");
-    } catch (SolrException e) {
-      assertTrue(e.toString(), e.getMessage().contains("Map does not represent a ToleratedUpdateError") );
-    }
+    e = expectThrows(SolrException.class, () -> ToleratedUpdateError.parseMap(bogus));
+    assertTrue(e.toString(), e.getMessage().contains("Map does not represent a ToleratedUpdateError"));
     
     bogus.add("type", "not a real type");
-    try {
-      ToleratedUpdateError.parseMap(bogus);
-      fail("invalid type should not be parsable");
-    } catch (SolrException e) {
-      assertTrue(e.toString(), e.getMessage().contains("Invalid type")); 
-    }
+    e = expectThrows(SolrException.class, () -> ToleratedUpdateError.parseMap(bogus));
+    assertTrue(e.toString(), e.getMessage().contains("Invalid type"));
   }
   
   public void testParseMap() {

@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.function.DoubleSupplier;
 
 public class DoubleDataWriter extends ReductionDataWriter<DoubleSupplier> {
-  
+
   public DoubleDataWriter(DataOutput output, DoubleSupplier extractor) {
     super(output, extractor);
   }

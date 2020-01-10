@@ -20,7 +20,6 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
@@ -37,14 +36,11 @@ import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
-import org.apache.solr.client.solrj.request.CoreAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
@@ -303,8 +299,6 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
                 checkpoint, collectionName, shard);
             CdcrUpdateLog.CdcrLogReader reader1 = ulog.newLogReader();
             reader1.seek(checkpoint);
-            // issue asynchronous request_recovery to the follower nodes of the shards of target collection
-            sendRequestRecoveryToFollowers(state);
             success = true;
             break;
           } else if (status == BootstrapStatus.FAILED) {
@@ -417,29 +411,6 @@ class CdcrReplicatorManager implements CdcrStateManager.CdcrStateObserver {
     SolrRequest request = new QueryRequest(solrParams);
     return client.request(request);
   }
-
-  private void sendRequestRecoveryToFollowers(CdcrReplicatorState state) throws SolrServerException, IOException {
-    Collection<Slice> slices = state.getClient().getZkStateReader().getClusterState().getCollection(state.getTargetCollection()).getActiveSlices();
-    for (Slice slice : slices) {
-      Collection<Replica> replicas = slice.getReplicas();
-      for (Replica replica : replicas) {
-        if (slice.getLeader().getCoreName().equals(replica.getCoreName())) {
-          continue; // no need to request recovery for leader
-        }
-        sendRequestRecoveryToFollower(state.getClient(), replica.getCoreName());
-        log.info("RequestRecovery cmd is issued by core: " + replica.getCoreName() + " of shard: " + slice.getName() +
-            "for target: " + state.getTargetCollection());
-      }
-    }
-  }
-
-  private NamedList sendRequestRecoveryToFollower(SolrClient client, String coreName) throws SolrServerException, IOException {
-    CoreAdminRequest.RequestRecovery recoverRequestCmd = new CoreAdminRequest.RequestRecovery();
-    recoverRequestCmd.setAction(CoreAdminParams.CoreAdminAction.REQUESTRECOVERY);
-    recoverRequestCmd.setCoreName(coreName);
-    return client.request(recoverRequestCmd);
-  }
-
 
   private enum BootstrapStatus  {
     SUBMITTED,

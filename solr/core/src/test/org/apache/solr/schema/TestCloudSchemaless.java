@@ -15,6 +15,15 @@
  * limitations under the License.
  */
 package org.apache.solr.schema;
+
+import java.lang.invoke.MethodHandles;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.function.UnaryOperator;
+
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -30,14 +39,6 @@ import org.junit.Test;
 import org.restlet.ext.servlet.ServerServlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.lang.invoke.MethodHandles;
-import java.util.Arrays;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.SortedMap;
-import java.util.TreeMap;
-import java.util.function.UnaryOperator;
 
 /**
  * Tests a schemaless collection configuration with SolrCloud
@@ -139,8 +140,6 @@ public class TestCloudSchemaless extends AbstractFullDistribZkTestBase {
     // Now, let's ensure that writing the same field with two different types fails
     int failTrials = 50;
     for (int i = 0; i < failTrials; ++i) {
-      List<SolrInputDocument> docs = null;
-
       SolrInputDocument intDoc = new SolrInputDocument();
       intDoc.addField("id", Long.toHexString(Double.doubleToLongBits(random().nextDouble())));
       intDoc.addField("longOrDateField" + i, "123");
@@ -150,28 +149,20 @@ public class TestCloudSchemaless extends AbstractFullDistribZkTestBase {
       dateDoc.addField("longOrDateField" + i, "1995-12-31T23:59:59Z");
 
       // randomize the order of the docs
-      if (random().nextBoolean()) {
-        docs = Arrays.asList(intDoc, dateDoc);
-      } else {
-        docs = Arrays.asList(dateDoc, intDoc);
-      }
+      List<SolrInputDocument> docs = random().nextBoolean()? Arrays.asList(intDoc, dateDoc): Arrays.asList(dateDoc, intDoc);
 
-      try {
+      SolrException ex = expectThrows(SolrException.class,  () -> {
         randomClient.add(docs);
         randomClient.commit();
-        fail("Expected Bad Request Exception");
-      } catch (SolrException se) {
-        assertEquals(ErrorCode.BAD_REQUEST, ErrorCode.getErrorCode(se.code()));
-      }
+      });
+      assertEquals(ErrorCode.BAD_REQUEST, ErrorCode.getErrorCode(ex.code()));
 
-      try {
+      ex = expectThrows(SolrException.class,  () -> {
         CloudSolrClient cloudSolrClient = getCommonCloudSolrClient();
         cloudSolrClient.add(docs);
         cloudSolrClient.commit();
-        fail("Expected Bad Request Exception");
-      } catch (SolrException ex) {
-        assertEquals(ErrorCode.BAD_REQUEST, ErrorCode.getErrorCode((ex).code()));
-      }
+      });
+      assertEquals(ErrorCode.BAD_REQUEST, ErrorCode.getErrorCode(ex.code()));
     }
   }
 }

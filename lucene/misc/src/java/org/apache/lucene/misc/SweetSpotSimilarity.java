@@ -207,8 +207,7 @@ public class SweetSpotSimilarity extends ClassicSimilarity {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("SweetSpotSimilarity")
-        .append("(")
-        .append("ln_min="+ln_min+", ")
+        .append('(').append("ln_min=").append(ln_min).append(", ")
         .append("ln_max=").append(ln_max).append(", ")
         .append("ln_steep=").append(ln_steep).append(", ")
         .append("tf_base=").append(tf_base).append(", ")

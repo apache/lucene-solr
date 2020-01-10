@@ -292,10 +292,8 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
     Failure fail = new Failure() {
       @Override
       public void eval(MockDirectoryWrapper dir) throws IOException {
-        for (StackTraceElement e : Thread.currentThread().getStackTrace()) {
-          if (doFail && "createOutput".equals(e.getMethodName())) {
-            throw new FakeIOException();
-          }
+        if (doFail && callStackContainsAnyOf("createOutput")) {
+          throw new FakeIOException();
         }
       }
     };
@@ -325,10 +323,8 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
     Failure fail = new Failure() {
       @Override
       public void eval(MockDirectoryWrapper dir) throws IOException {
-        for (StackTraceElement e : Thread.currentThread().getStackTrace()) {
-          if (doFail && "close".equals(e.getMethodName())) {
-            throw new FakeIOException();
-          }
+        if (doFail && callStackContainsAnyOf("close")) {
+          throw new FakeIOException();
         }
       }
     };
@@ -358,10 +354,8 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
     Failure fail = new Failure() {
       @Override
       public void eval(MockDirectoryWrapper dir) throws IOException {
-        for (StackTraceElement e : Thread.currentThread().getStackTrace()) {
-          if (doFail && "openInput".equals(e.getMethodName())) {
-            throw new FakeIOException();
-          }
+        if (doFail && callStackContainsAnyOf("openInput")) {
+          throw new FakeIOException();
         }
       }
     };
@@ -392,10 +386,8 @@ public abstract class BaseSegmentInfoFormatTestCase extends BaseIndexFileFormatT
     Failure fail = new Failure() {
       @Override
       public void eval(MockDirectoryWrapper dir) throws IOException {
-        for (StackTraceElement e : Thread.currentThread().getStackTrace()) {
-          if (doFail && "close".equals(e.getMethodName())) {
-            throw new FakeIOException();
-          }
+        if (doFail && callStackContainsAnyOf("close")) {
+          throw new FakeIOException();
         }
       }
     };

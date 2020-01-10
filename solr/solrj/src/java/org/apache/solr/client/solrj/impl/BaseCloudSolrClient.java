@@ -42,7 +42,9 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.Predicate;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import org.apache.solr.client.solrj.ResponseParser;
 import org.apache.solr.client.solrj.SolrClient;
@@ -54,6 +56,8 @@ import org.apache.solr.client.solrj.request.IsUpdateRequest;
 import org.apache.solr.client.solrj.request.RequestWriter;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.request.V2Request;
+import org.apache.solr.client.solrj.routing.ReplicaListTransformer;
+import org.apache.solr.client.solrj.routing.RequestReplicaListTransformerGenerator;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
@@ -62,12 +66,12 @@ import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.CollectionStatePredicate;
 import org.apache.solr.common.cloud.CollectionStateWatcher;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.DocCollectionWatcher;
 import org.apache.solr.common.cloud.DocRouter;
 import org.apache.solr.common.cloud.ImplicitDocRouter;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkCoreNodeProps;
-import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.ShardParams;
@@ -98,6 +102,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
 
   private final boolean updatesToLeaders;
   private final boolean directUpdatesToLeadersOnly;
+  private final RequestReplicaListTransformerGenerator requestRLTGenerator;
   boolean parallelUpdates; //TODO final
   private ExecutorService threadPool = ExecutorUtil
       .newMDCAwareCachedThreadPool(new SolrjNamedThreadFactory(
@@ -219,6 +224,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     this.updatesToLeaders = updatesToLeaders;
     this.parallelUpdates = parallelUpdates;
     this.directUpdatesToLeadersOnly = directUpdatesToLeadersOnly;
+    this.requestRLTGenerator = new RequestReplicaListTransformerGenerator();
   }
 
   /** Sets the cache ttl for DocCollection Objects cached  . This is only applicable for collections which are persisted outside of clusterstate.json
@@ -362,11 +368,21 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   }
 
   /**
-   * Block until a collection state matches a predicate, or a timeout
+   * Block until a CollectionStatePredicate returns true, or the wait times out
    *
+   * <p>
    * Note that the predicate may be called again even after it has returned true, so
    * implementors should avoid changing state within the predicate call itself.
+   * </p>
    *
+   * <p>
+   * This implementation utilizes {@link CollectionStateWatcher} internally. 
+   * Callers that don't care about liveNodes are encouraged to use a {@link DocCollection} {@link Predicate} 
+   * instead
+   * </p>
+   *
+   * @see #waitForState(String, long, TimeUnit, Predicate)
+   * @see #registerCollectionStateWatcher
    * @param collection the collection to watch
    * @param wait       how long to wait
    * @param unit       the units of the wait parameter
@@ -379,20 +395,68 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     getClusterStateProvider().connect();
     assertZKStateProvider().zkStateReader.waitForState(collection, wait, unit, predicate);
   }
+  /**
+   * Block until a Predicate returns true, or the wait times out
+   *
+   * <p>
+   * Note that the predicate may be called again even after it has returned true, so
+   * implementors should avoid changing state within the predicate call itself.
+   * </p>
+   *
+   * @see #registerDocCollectionWatcher
+   * @param collection the collection to watch
+   * @param wait       how long to wait
+   * @param unit       the units of the wait parameter
+   * @param predicate  a {@link Predicate} to test against the {@link DocCollection}
+   * @throws InterruptedException on interrupt
+   * @throws TimeoutException     on timeout
+   */
+  public void waitForState(String collection, long wait, TimeUnit unit, Predicate<DocCollection> predicate)
+      throws InterruptedException, TimeoutException {
+    getClusterStateProvider().connect();
+    assertZKStateProvider().zkStateReader.waitForState(collection, wait, unit, predicate);
+  }
 
   /**
    * Register a CollectionStateWatcher to be called when the cluster state for a collection changes
+   * <em>or</em> the set of live nodes changes.
    *
-   * Note that the watcher is unregistered after it has been called once.  To make a watcher persistent,
-   * it should re-register itself in its {@link CollectionStateWatcher#onStateChanged(Set, DocCollection)}
-   * call
+   * <p>
+   * The Watcher will automatically be removed when it's 
+   * <code>onStateChanged</code> returns <code>true</code>
+   * </p>
    *
+   * <p>
+   * This implementation utilizes {@link ZkStateReader#registerCollectionStateWatcher} internally.
+   * Callers that don't care about liveNodes are encouraged to use a {@link DocCollectionWatcher} 
+   * instead
+   * </p>
+   *
+   * @see #registerDocCollectionWatcher(String, DocCollectionWatcher)
+   * @see ZkStateReader#registerCollectionStateWatcher
    * @param collection the collection to watch
    * @param watcher    a watcher that will be called when the state changes
    */
   public void registerCollectionStateWatcher(String collection, CollectionStateWatcher watcher) {
     getClusterStateProvider().connect();
     assertZKStateProvider().zkStateReader.registerCollectionStateWatcher(collection, watcher);
+  }
+  
+  /**
+   * Register a DocCollectionWatcher to be called when the cluster state for a collection changes.
+   *
+   * <p>
+   * The Watcher will automatically be removed when it's 
+   * <code>onStateChanged</code> returns <code>true</code>
+   * </p>
+   *
+   * @see ZkStateReader#registerDocCollectionWatcher
+   * @param collection the collection to watch
+   * @param watcher    a watcher that will be called when the state changes
+   */
+  public void registerDocCollectionWatcher(String collection, DocCollectionWatcher watcher) {
+    getClusterStateProvider().connect();
+    assertZKStateProvider().zkStateReader.registerDocCollectionWatcher(collection, watcher);
   }
 
   private NamedList<Object> directUpdate(AbstractUpdateRequest request, String collection) throws SolrServerException {
@@ -407,15 +471,23 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       for(String param : NON_ROUTABLE_PARAMS) {
         routableParams.remove(param);
       }
+    } else {
+      params = new ModifiableSolrParams();
     }
 
     if (collection == null) {
       throw new SolrServerException("No collection param specified on request and no default collection has been set.");
     }
 
-    //Check to see if the collection is an alias.
+    //Check to see if the collection is an alias. Updates to multi-collection aliases are ok as long
+    // as they are routed aliases
     List<String> aliasedCollections = getClusterStateProvider().resolveAlias(collection);
-    collection = aliasedCollections.get(0); // pick 1st (consistent with HttpSolrCall behavior)
+    if (getClusterStateProvider().isRoutedAlias(collection) || aliasedCollections.size() == 1) {
+      collection = aliasedCollections.get(0); // pick 1st (consistent with HttpSolrCall behavior)
+    } else {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Update request to non-routed multi-collection alias not supported: "
+        + collection + " -> " + aliasedCollections);
+    }
 
     DocCollection col = getDocCollection(collection, null);
 
@@ -426,10 +498,12 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       return null;
     }
 
+    ReplicaListTransformer replicaListTransformer = requestRLTGenerator.getReplicaListTransformer(params);
+
     //Create the URL map, which is keyed on slice name.
     //The value is a list of URLs for each replica in the slice.
     //The first value in the list is the leader for the slice.
-    final Map<String,List<String>> urlMap = buildUrlMap(col);
+    final Map<String,List<String>> urlMap = buildUrlMap(col, replicaListTransformer);
     final Map<String, ? extends LBSolrClient.Req> routes = createRoutes(updateRequest, routableParams, col, router, urlMap, idField);
     if (routes == null) {
       if (directUpdatesToLeadersOnly && hasInfoToFindLeaders(updateRequest, idField)) {
@@ -521,8 +595,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       }
       nonRoutableRequest.setParams(nonRoutableParams);
       nonRoutableRequest.setBasicAuthCredentials(request.getBasicAuthUser(), request.getBasicAuthPassword());
-      List<String> urlList = new ArrayList<>();
-      urlList.addAll(routes.keySet());
+      List<String> urlList = new ArrayList<>(routes.keySet());
       Collections.shuffle(urlList, rand);
       LBSolrClient.Req req = new LBSolrClient.Req(nonRoutableRequest, urlList);
       try {
@@ -551,12 +624,12 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     return urlMap == null ? null : updateRequest.getRoutesToCollection(router, col, urlMap, routableParams, idField);
   }
 
-  private Map<String,List<String>> buildUrlMap(DocCollection col) {
+  private Map<String,List<String>> buildUrlMap(DocCollection col, ReplicaListTransformer replicaListTransformer) {
     Map<String, List<String>> urlMap = new HashMap<>();
     Slice[] slices = col.getActiveSlicesArr();
     for (Slice slice : slices) {
       String name = slice.getName();
-      List<String> urls = new ArrayList<>();
+      List<Replica> sortedReplicas = new ArrayList<>();
       Replica leader = slice.getLeader();
       if (directUpdatesToLeadersOnly && leader == null) {
         for (Replica replica : slice.getReplicas(
@@ -573,20 +646,22 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         // take unoptimized general path - we cannot find a leader yet
         return null;
       }
-      ZkCoreNodeProps zkProps = new ZkCoreNodeProps(leader);
-      String url = zkProps.getCoreUrl();
-      urls.add(url);
+
       if (!directUpdatesToLeadersOnly) {
         for (Replica replica : slice.getReplicas()) {
-          if (!replica.getNodeName().equals(leader.getNodeName()) &&
-              !replica.getName().equals(leader.getName())) {
-            ZkCoreNodeProps zkProps1 = new ZkCoreNodeProps(replica);
-            String url1 = zkProps1.getCoreUrl();
-            urls.add(url1);
+          if (!replica.equals(leader)) {
+            sortedReplicas.add(replica);
           }
         }
       }
-      urlMap.put(name, urls);
+
+      // Sort the non-leader replicas according to the request parameters
+      replicaListTransformer.transform(sortedReplicas);
+
+      // put the leaderUrl first.
+      sortedReplicas.add(0, leader);
+
+      urlMap.put(name, sortedReplicas.stream().map(Replica::getCoreUrl).collect(Collectors.toList()));
     }
     return urlMap;
   }
@@ -680,8 +755,8 @@ public abstract class BaseCloudSolrClient extends SolrClient {
         throw toThrow;
       }
     }
-    for (String updateType: versions.keySet()) {
-      condensed.add(updateType, versions.get(updateType));
+    for (Map.Entry<String, NamedList> entry : versions.entrySet()) {
+      condensed.add(entry.getKey(), entry.getValue());
     }
     condensed.add("responseHeader", cheader);
     return condensed;
@@ -786,8 +861,9 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       isCollectionRequestOfV2 = ((V2Request) request).isPerCollectionRequest();
     }
     boolean isAdmin = ADMIN_PATHS.contains(request.getPath());
+    boolean isUpdate = (request instanceof IsUpdateRequest) && (request instanceof UpdateRequest);
     if (!inputCollections.isEmpty() && !isAdmin && !isCollectionRequestOfV2) { // don't do _stateVer_ checking for admin, v2 api requests
-      Set<String> requestedCollectionNames = resolveAliases(inputCollections);
+      Set<String> requestedCollectionNames = resolveAliases(inputCollections, isUpdate);
 
       StringBuilder stateVerParamBuilder = null;
       for (String requestedCollection : requestedCollectionNames) {
@@ -957,9 +1033,15 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     connect();
 
     boolean sendToLeaders = false;
+    boolean isUpdate = false;
 
     if (request instanceof IsUpdateRequest) {
       if (request instanceof UpdateRequest) {
+        isUpdate = true;
+        if (inputCollections.size() > 1) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Update request must be sent to a single collection " +
+              "or an alias: " + inputCollections);
+        }
         String collection = inputCollections.isEmpty() ? null : inputCollections.get(0); // getting first mimics HttpSolrCall
         NamedList<Object> response = directUpdate((AbstractUpdateRequest) request, collection);
         if (response != null) {
@@ -973,6 +1055,8 @@ public abstract class BaseCloudSolrClient extends SolrClient {
     if (reqParams == null) { // TODO fix getParams to never return null!
       reqParams = new ModifiableSolrParams();
     }
+
+    ReplicaListTransformer replicaListTransformer = requestRLTGenerator.getReplicaListTransformer(reqParams);
 
     final Set<String> liveNodes = getClusterStateProvider().getLiveNodes();
 
@@ -993,7 +1077,7 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       }
 
     } else { // Typical...
-      Set<String> collectionNames = resolveAliases(inputCollections);
+      Set<String> collectionNames = resolveAliases(inputCollections, isUpdate);
       if (collectionNames.isEmpty()) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
             "No collection param specified on request and no default collection has been set: " + inputCollections);
@@ -1015,34 +1099,38 @@ public abstract class BaseCloudSolrClient extends SolrClient {
       }
 
       // Gather URLs, grouped by leader or replica
-      // TODO: allow filtering by group, role, etc
-      Set<String> seenNodes = new HashSet<>();
-      List<String> replicas = new ArrayList<>();
-      String joinedInputCollections = StrUtils.join(inputCollections, ',');
+      List<Replica> sortedReplicas = new ArrayList<>();
+      List<Replica> replicas = new ArrayList<>();
       for (Slice slice : slices.values()) {
-        for (ZkNodeProps nodeProps : slice.getReplicasMap().values()) {
-          ZkCoreNodeProps coreNodeProps = new ZkCoreNodeProps(nodeProps);
-          String node = coreNodeProps.getNodeName();
+        Replica leader = slice.getLeader();
+        for (Replica replica : slice.getReplicas()) {
+          String node = replica.getNodeName();
           if (!liveNodes.contains(node) // Must be a live node to continue
-              || Replica.State.getState(coreNodeProps.getState()) != Replica.State.ACTIVE) // Must be an ACTIVE replica to continue
+              || replica.getState() != Replica.State.ACTIVE) // Must be an ACTIVE replica to continue
             continue;
-          if (seenNodes.add(node)) { // if we haven't yet collected a URL to this node...
-            String url = ZkCoreNodeProps.getCoreUrl(nodeProps.getStr(ZkStateReader.BASE_URL_PROP), joinedInputCollections);
-            if (sendToLeaders && coreNodeProps.isLeader()) {
-              theUrlList.add(url); // put leaders here eagerly (if sendToLeader mode)
-            } else {
-              replicas.add(url); // replicas here
-            }
+          if (sendToLeaders && replica.equals(leader)) {
+            sortedReplicas.add(replica); // put leaders here eagerly (if sendToLeader mode)
+          } else {
+            replicas.add(replica); // replicas here
           }
         }
       }
 
-      // Shuffle the leaders, if any    (none if !sendToLeaders)
-      Collections.shuffle(theUrlList, rand);
+      // Sort the leader replicas, if any, according to the request preferences    (none if !sendToLeaders)
+      replicaListTransformer.transform(sortedReplicas);
 
-      // Shuffle the replicas, if any, and append to our list
-      Collections.shuffle(replicas, rand);
-      theUrlList.addAll(replicas);
+      // Sort the replicas, if any, according to the request preferences and append to our list
+      replicaListTransformer.transform(replicas);
+
+      sortedReplicas.addAll(replicas);
+
+      String joinedInputCollections = StrUtils.join(inputCollections, ',');
+      Set<String> seenNodes = new HashSet<>();
+      sortedReplicas.forEach( replica -> {
+        if (seenNodes.add(replica.getNodeName())) {
+          theUrlList.add(ZkCoreNodeProps.getCoreUrl(replica.getBaseUrl(), joinedInputCollections));
+        }
+      });
 
       if (theUrlList.isEmpty()) {
         collectionStateCache.keySet().removeAll(collectionNames);
@@ -1057,17 +1145,20 @@ public abstract class BaseCloudSolrClient extends SolrClient {
   }
 
   /** Resolves the input collections to their possible aliased collections. Doesn't validate collection existence. */
-  private LinkedHashSet<String> resolveAliases(List<String> inputCollections) {
-    LinkedHashSet<String> collectionNames = new LinkedHashSet<>(); // consistent ordering
+  private Set<String> resolveAliases(List<String> inputCollections, boolean isUpdate) {
+    if (inputCollections.isEmpty()) {
+      return Collections.emptySet();
+    }
+    LinkedHashSet<String> uniqueNames = new LinkedHashSet<>(); // consistent ordering
     for (String collectionName : inputCollections) {
       if (getClusterStateProvider().getState(collectionName) == null) {
         // perhaps it's an alias
-        collectionNames.addAll(getClusterStateProvider().resolveAlias(collectionName));
+        uniqueNames.addAll(getClusterStateProvider().resolveAlias(collectionName));
       } else {
-        collectionNames.add(collectionName); // it's a collection
+        uniqueNames.add(collectionName); // it's a collection
       }
     }
-    return collectionNames;
+    return uniqueNames;
   }
 
   public boolean isUpdatesToLeaders() {

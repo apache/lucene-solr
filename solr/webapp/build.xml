@@ -24,7 +24,7 @@
   <import file="../common-build.xml"/>
 
   <property name="exclude.from.webapp" value="*slf4j*,log4j-*,*javax.servlet*" />
-  
+ 
   <!-- this module has no javadocs -->
   <target name="javadocs"/>
 
@@ -43,7 +43,7 @@
     <ant dir="${common-solr.dir}" inheritall="false" target="contribs-add-to-webapp"/>
     <mkdir dir="${server.dir}/solr-webapp/webapp"/>
     <copy todir="${server.dir}/solr-webapp/webapp">
-      <fileset dir="web" excludes="${exclude.from.webapp}"/>
+      <fileset dir="web" excludes="${exclude.from.webapp}, libs/angular-cookies.js, libs/angular-route.js, libs/angular-sanitize.js, libs/angular-utf8-base.js, libs/angular.js, libs/chosen.jquery.js"/>
       <fileset dir="${dest}/web" excludes="${exclude.from.war}"/> <!-- contribs' additions -->
     </copy>
     <mkdir dir="${server.dir}/solr-webapp/webapp/WEB-INF/lib"/>

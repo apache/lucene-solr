@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
+
+/**
  * Comparators used to sort the buckets of an analytics facet.
  */
 package org.apache.solr.analytics.facet.compare;

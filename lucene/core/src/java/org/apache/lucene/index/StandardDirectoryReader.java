@@ -53,7 +53,7 @@ public final class StandardDirectoryReader extends DirectoryReader {
     this.segmentInfos = sis;
     this.applyAllDeletes = applyAllDeletes;
     this.writeAllDeletes = writeAllDeletes;
-    this.readerAttributes = Collections.unmodifiableMap(new HashMap<>(readerAttributes));
+    this.readerAttributes = Map.copyOf(readerAttributes);
   }
 
   /** called from DirectoryReader.open(...) methods */

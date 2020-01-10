@@ -269,7 +269,7 @@ public class MiniSolrCloudCluster {
 
     this.externalZkServer = zkTestServer != null;
     if (!externalZkServer) {
-      String zkDir = baseDir.resolve("zookeeper/server1/data").toString();
+      Path zkDir = baseDir.resolve("zookeeper/server1/data");
       zkTestServer = new ZkTestServer(zkDir);
       try {
         zkTestServer.run();
@@ -323,6 +323,7 @@ public class MiniSolrCloudCluster {
   }
 
   private void waitForAllNodes(int numServers, int timeoutSeconds) throws IOException, InterruptedException, TimeoutException {
+    log.info("waitForAllNodes: numServers={}", numServers);
     
     int numRunning = 0;
     TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
@@ -352,6 +353,7 @@ public class MiniSolrCloudCluster {
 
   public void waitForNode(JettySolrRunner jetty, int timeoutSeconds)
       throws IOException, InterruptedException, TimeoutException {
+    log.info("waitForNode: {}", jetty.getNodeName());
 
     ZkStateReader reader = getSolrClient().getZkStateReader();
 
@@ -553,7 +555,7 @@ public class MiniSolrCloudCluster {
       }
       
       for (String collection : reader.getClusterState().getCollectionStates().keySet()) {
-        reader.waitForState(collection, 15, TimeUnit.SECONDS, (liveNodes, collectionState) -> collectionState == null ? true : false);
+        reader.waitForState(collection, 15, TimeUnit.SECONDS, (collectionState) -> collectionState == null ? true : false);
       }
      
     } 
@@ -742,6 +744,7 @@ public class MiniSolrCloudCluster {
   }
   
   public void waitForActiveCollection(String collection, long wait, TimeUnit unit, int shards, int totalReplicas) {
+    log.info("waitForActiveCollection: {}", collection);
     CollectionStatePredicate predicate = expectedShardsAndActiveReplicas(shards, totalReplicas);
 
     AtomicReference<DocCollection> state = new AtomicReference<>();
@@ -783,12 +786,13 @@ public class MiniSolrCloudCluster {
       if (activeReplicas == expectedReplicas) {
         return true;
       }
-      
+
       return false;
     };
   }
 
   public void waitForJettyToStop(JettySolrRunner runner) throws TimeoutException {
+    log.info("waitForJettyToStop: {}", runner.getLocalPort());
     TimeOut timeout = new TimeOut(15, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while(!timeout.hasTimedOut()) {
       if (runner.isStopped()) {

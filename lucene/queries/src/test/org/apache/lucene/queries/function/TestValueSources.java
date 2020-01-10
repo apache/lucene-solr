@@ -17,6 +17,7 @@
 package org.apache.lucene.queries.function;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -485,6 +486,31 @@ public class TestValueSources extends LuceneTestCase {
     vs = new TermFreqValueSource("bogus", "bogus", "bogus", new BytesRef("bogus"));
     assertHits(new FunctionQuery(vs), new float[] { 0F, 0F });
     assertAllExist(vs);
+  }
+
+  public void testMultiBoolFunction() throws Exception {
+    // verify toString and description
+    List<ValueSource> valueSources = new ArrayList<>(Arrays.asList(
+        new ConstValueSource(4.1f), new ConstValueSource(1.2f), new DoubleFieldSource("some_double")
+    ));
+    ValueSource vs = new MultiBoolFunction(valueSources) {
+      @Override
+      protected String name() {
+        return "test";
+      }
+
+      @Override
+      protected boolean func(int doc, FunctionValues[] vals) throws IOException {
+        return false;
+      }
+    };
+    assertEquals("test(const(4.1),const(1.2),double(some_double))", vs.description());
+
+    final LeafReaderContext leaf = searcher.getIndexReader().leaves().get(0);
+    FunctionValues fv = vs.getValues(ValueSource.newContext(searcher), leaf);
+    // doesn't matter what is the docId, verify toString
+    assertEquals("test(const(4.1),const(1.2),double(some_double)=0.0)", fv.toString(1));
+
   }
   
   public void testTF() throws Exception {

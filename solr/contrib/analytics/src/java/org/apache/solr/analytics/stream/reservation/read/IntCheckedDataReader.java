@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.function.IntConsumer;
 
 public class IntCheckedDataReader extends ReductionCheckedDataReader<IntConsumer> {
-  
+
   public IntCheckedDataReader(DataInput inputStream, IntConsumer applier) {
     super(inputStream, applier);
   }

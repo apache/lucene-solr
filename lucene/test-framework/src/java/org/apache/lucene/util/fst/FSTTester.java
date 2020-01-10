@@ -220,7 +220,7 @@ public class FSTTester<T> {
           return null;
         }
       }
-      output = fst.outputs.add(output, arc.output);
+      output = fst.outputs.add(output, arc.output());
     }
 
     if (prefixLength != null) {
@@ -253,14 +253,14 @@ public class FSTTester<T> {
       arcs.clear();
 
       // accumulate output
-      output = fst.outputs.add(output, arc.output);
+      output = fst.outputs.add(output, arc.output());
 
       // append label
-      if (arc.label == FST.END_LABEL) {
+      if (arc.label() == FST.END_LABEL) {
         break;
       }
 
-      in.append(arc.label);
+      in.append(arc.label());
     }
 
     return output;
@@ -272,27 +272,26 @@ public class FSTTester<T> {
       System.out.println("\nTEST: prune1=" + prune1 + " prune2=" + prune2);
     }
 
-    final Builder<T> builder = new Builder<>(inputMode == 0 ? FST.INPUT_TYPE.BYTE1 : FST.INPUT_TYPE.BYTE4,
-                                              prune1, prune2,
-                                              prune1==0 && prune2==0,
-                                              allowRandomSuffixSharing ? random.nextBoolean() : true,
-                                              allowRandomSuffixSharing ? TestUtil.nextInt(random, 1, 10) : Integer.MAX_VALUE,
-                                              outputs,
-                                              true,
-                                              15);
+    final FSTCompiler<T> fstCompiler = new FSTCompiler.Builder<>(inputMode == 0 ? FST.INPUT_TYPE.BYTE1 : FST.INPUT_TYPE.BYTE4, outputs)
+        .minSuffixCount1(prune1)
+        .minSuffixCount2(prune2)
+        .shouldShareSuffix(prune1==0 && prune2==0)
+        .shouldShareNonSingletonNodes(allowRandomSuffixSharing ? random.nextBoolean() : true)
+        .shareMaxTailLength(allowRandomSuffixSharing ? TestUtil.nextInt(random, 1, 10) : Integer.MAX_VALUE)
+        .build();
 
     for(InputOutput<T> pair : pairs) {
       if (pair.output instanceof List) {
         @SuppressWarnings("unchecked") List<Long> longValues = (List<Long>) pair.output;
-        @SuppressWarnings("unchecked") final Builder<Object> builderObject = (Builder<Object>) builder;
+        @SuppressWarnings("unchecked") final FSTCompiler<Object> fstCompilerObject = (FSTCompiler<Object>) fstCompiler;
         for(Long value : longValues) {
-          builderObject.add(pair.input, value);
+          fstCompilerObject.add(pair.input, value);
         }
       } else {
-        builder.add(pair.input, pair.output);
+        fstCompiler.add(pair.input, pair.output);
       }
     }
-    FST<T> fst = builder.finish();
+    FST<T> fst = fstCompiler.compile();
 
     if (random.nextBoolean() && fst != null) {
       IOContext context = LuceneTestCase.newIOContext(random);
@@ -301,7 +300,7 @@ public class FSTTester<T> {
       out.close();
       IndexInput in = dir.openInput("fst.bin", context);
       try {
-        fst = new FST<>(in, outputs);
+        fst = new FST<T>(in, outputs);
       } finally {
         in.close();
         dir.deleteFile("fst.bin");
@@ -320,7 +319,7 @@ public class FSTTester<T> {
       if (fst == null) {
         System.out.println("  fst has 0 nodes (fully pruned)");
       } else {
-        System.out.println("  fst has " + builder.getNodeCount() + " nodes and " + builder.getArcCount() + " arcs");
+        System.out.println("  fst has " + fstCompiler.getNodeCount() + " nodes and " + fstCompiler.getArcCount() + " arcs");
       }
     }
 
@@ -330,8 +329,8 @@ public class FSTTester<T> {
       verifyPruned(inputMode, fst, prune1, prune2);
     }
 
-    nodeCount = builder.getNodeCount();
-    arcCount = builder.getArcCount();
+    nodeCount = fstCompiler.getNodeCount();
+    arcCount = fstCompiler.getArcCount();
 
     return fst;
   }
@@ -812,3 +811,4 @@ public class FSTTester<T> {
     }
   }
 }
+

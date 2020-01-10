@@ -29,7 +29,7 @@ You can find `solr.xml` in your `$SOLR_HOME` directory (usually `server/solr`) i
 <solr>
 
   <int name="maxBooleanClauses">${solr.max.booleanClauses:1024}</int>
-  
+
   <solrcloud>
     <str name="host">${host:}</str>
     <int name="hostPort">${jetty.port:8983}</int>
@@ -92,7 +92,7 @@ This attribute, when set to `true`, ensures that the multiple cores pointing to 
 Defines how many cores with `transient=true` that can be loaded before swapping the least recently used core for a new core.
 
 `configSetBaseDir`::
-The directory under which configSets for Solr cores can be found. Defaults to `$SOLR_HOME/configsets`.
+The directory under which configsets for Solr cores can be found. Defaults to `$SOLR_HOME/configsets`.
 
 [[global-maxbooleanclauses]]
 `maxBooleanClauses`::
@@ -100,7 +100,7 @@ Sets the maximum number of clauses allowed in any boolean query.
 +
 This global limit provides a safety constraint on the number of clauses allowed in any boolean queries against any collection -- regardless of whether those clauses were explicitly specified in a query string, or were the result of query expansion/re-writing from a more complex type of query based on the terms in the index.
 +
-In default configurations this property uses the value of the `solr.max.booleanClauses` system property if specified.  This is the same system property used in the default configset for the <<query-settings-in-solrconfig#maxbooleanclauses,`<maxBooleanClauses>` setting of `solrconfig.xml`>> making it easy for Solr administrators to increase both values (in all collections) without needing to search through and update all of their configs.
+In default configurations this property uses the value of the `solr.max.booleanClauses` system property if specified.  This is the same system property used in the `_default` configset for the <<query-settings-in-solrconfig#maxbooleanclauses,`<maxBooleanClauses>` setting of `solrconfig.xml`>> making it easy for Solr administrators to increase both values (in all collections) without needing to search through and update all of their configs.
 +
 [source,xml]
 ----
@@ -203,6 +203,22 @@ If the threadpool uses a backing queue, what is its maximum size to use direct h
 `fairnessPolicy`::
 A boolean to configure if the threadpool favors fairness over throughput. Default is false to favor throughput.
 
+`replicaRouting`::
+A NamedList specifying replica routing preference configuration. This may be used to select and configure replica routing preferences. `default=true` may be used to set the default base replica routing preference. Only positive default status assertions are respected; i.e., `default=false` has no effect. If no explicit default base replica routing preference is configured, the implicit default will be `random`.
+----
+<shardHandlerFactory class="HttpShardHandlerFactory">
+  <lst name="replicaRouting">
+    <lst name="stable">
+      <bool name="default">true</bool>
+      <str name="dividend">routingDividend</str>
+      <str name="hash">q</str>
+    </lst>
+  </lst>
+</shardHandlerFactory>
+----
+Replica routing may also be specified (overriding defaults) per-request, via the `shards.preference` request parameter. If a request contains both `dividend` and `hash`, `dividend` takes priority for routing. For configuring `stable` routing, the `hash` parameter implicitly defaults to a hash of the String value of the main query parameter (i.e., `q`).
++
+The `dividend` parameter must be configured explicitly; there is no implicit default. If only `dividend` routing is desired, `hash` may be explicitly set to the empty string, entirely disabling implicit hash-based routing.
 
 === The <metrics> Element
 

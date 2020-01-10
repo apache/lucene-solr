@@ -34,18 +34,20 @@ import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.util.SuppressForbidden;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.index.LogDocMergePolicyFactory;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.SchemaField;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.noggit.ObjectBuilder;
 
 public class TestExportWriter extends SolrTestCaseJ4 {
   
   @BeforeClass
   public static void beforeClass() throws Exception {
-    System.setProperty("export.test", "true");
+    // force LogDocMergePolicy so that we get a predictable doc order
+    // when testing index order results
+    systemSetPropertySolrTestsMergePolicyFactory(LogDocMergePolicyFactory.class.getName());
     initCore("solrconfig-sortingresponse.xml","schema-sortingresponse.xml");
   }
 
@@ -731,7 +733,7 @@ public class TestExportWriter extends SolrTestCaseJ4 {
 
     SolrQueryRequest selectReq = req("q", "*:*", "qt", "/select", "fl", "id," + fieldsStr, "sort", sortStr, "rows", Integer.toString(numDocs), "wt", "json");
     String response = h.query(selectReq);
-    Map rsp = (Map)ObjectBuilder.fromJSON(response);
+    Map rsp = (Map)Utils.fromJSONString(response);
     List doclist = (List)(((Map)rsp.get("response")).get("docs"));
 
     assert docs.size() == numDocs;

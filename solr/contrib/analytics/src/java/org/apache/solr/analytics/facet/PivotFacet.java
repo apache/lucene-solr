@@ -27,7 +27,7 @@ import org.apache.solr.analytics.function.ReductionCollectionManager;
 import org.apache.solr.common.util.NamedList;
 
 /**
- * A facet that takes in multiple ValueFacet expressions and does analytics calculations over each dimension given. 
+ * A facet that takes in multiple ValueFacet expressions and does analytics calculations over each dimension given.
  */
 public class PivotFacet extends AnalyticsFacet implements StreamingFacet {
   private final PivotHead<?> pivotHead;
@@ -37,7 +37,7 @@ public class PivotFacet extends AnalyticsFacet implements StreamingFacet {
     super(name);
     this.pivotHead = new PivotHead(topPivot);
   }
-  
+
   @Override
   public void setReductionCollectionManager(ReductionCollectionManager collectionManager) {
     pivotHead.setReductionCollectionManager(collectionManager);
@@ -62,12 +62,12 @@ public class PivotFacet extends AnalyticsFacet implements StreamingFacet {
   public void exportShardData(DataOutput output) throws IOException {
     pivotHead.exportShardData(output);
   }
-  
+
   @Override
   public NamedList<Object> createOldResponse() {
     return new NamedList<>();
   }
-  
+
   @Override
   public Iterable<Map<String,Object>> createResponse() {
     return pivotHead.createResponse();
@@ -75,22 +75,22 @@ public class PivotFacet extends AnalyticsFacet implements StreamingFacet {
 }
 /**
  * Typed Pivot class that stores the overall Pivot data and head of the Pivot node chain.
- * 
+ *
  * This class exists so that the {@link PivotFacet} class doesn't have to be typed ( {@code <T>} ).
  */
 class PivotHead<T> implements StreamingFacet {
   private final PivotNode<T> topPivot;
   private final Map<String, T> pivotValues;
-  
+
   public PivotHead(PivotNode<T> topPivot) {
     this.topPivot = topPivot;
     this.pivotValues = new HashMap<>();
   }
-  
+
   public void setReductionCollectionManager(ReductionCollectionManager collectionManager) {
     topPivot.setReductionCollectionManager(collectionManager);
   }
-  
+
   public void setExpressionCalculator(ExpressionCalculator expressionCalculator) {
     topPivot.setExpressionCalculator(expressionCalculator);
   }
@@ -107,7 +107,7 @@ class PivotHead<T> implements StreamingFacet {
   public void exportShardData(DataOutput output) throws IOException {
     topPivot.exportPivot(output, pivotValues);
   }
-  
+
   public Iterable<Map<String,Object>> createResponse() {
     return topPivot.getPivotedResponse(pivotValues);
   }

@@ -33,7 +33,9 @@ import org.apache.lucene.spatial3d.geom.BasePlanetObject;
 import org.apache.lucene.spatial3d.geom.GeoShape;
 import org.apache.lucene.spatial3d.geom.PlanetModel;
 import org.apache.lucene.spatial3d.geom.XYZBounds;
+import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.DocIdSetBuilder;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /** Finds all previously indexed points that fall within the specified polygon.
  *
@@ -41,7 +43,9 @@ import org.apache.lucene.util.DocIdSetBuilder;
  *
  * @lucene.experimental */
 
-final class PointInGeo3DShapeQuery extends Query {
+final class PointInGeo3DShapeQuery extends Query implements Accountable {
+  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(PointInGeo3DShapeQuery.class);
+
   final String field;
   final GeoShape shape;
   final XYZBounds shapeBounds;
@@ -161,5 +165,13 @@ final class PointInGeo3DShapeQuery extends Query {
     sb.append(" Shape: ");
     sb.append(shape);
     return sb.toString();
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return BASE_RAM_BYTES +
+        RamUsageEstimator.sizeOfObject(field) +
+        RamUsageEstimator.sizeOfObject(shape) +
+        RamUsageEstimator.sizeOfObject(shapeBounds);
   }
 }

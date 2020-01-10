@@ -18,20 +18,6 @@
 package org.apache.solr.cloud.api.collections;
 
 
-import static org.apache.solr.common.cloud.DocCollection.STATE_FORMAT;
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
-import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
-import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
-import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-import static org.apache.solr.common.params.CommonParams.NAME;
-
 import java.lang.invoke.MethodHandles;
 import java.net.URI;
 import java.util.ArrayList;
@@ -52,6 +38,7 @@ import java.util.concurrent.TimeoutException;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.PolicyHelper;
 import org.apache.solr.cloud.Overseer;
+import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler.ShardRequestTracker;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -77,6 +64,20 @@ import org.apache.solr.handler.component.ShardHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.cloud.DocCollection.STATE_FORMAT;
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.MAX_SHARDS_PER_NODE;
+import static org.apache.solr.common.cloud.ZkStateReader.NRT_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.PULL_REPLICAS;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICATION_FACTOR;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.TLOG_REPLICAS;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATE;
+import static org.apache.solr.common.params.CollectionParams.CollectionAction.CREATESHARD;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+import static org.apache.solr.common.params.CommonParams.NAME;
+
 public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -95,7 +96,6 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
     ShardHandler shardHandler = ocmh.shardHandlerFactory.getShardHandler(ocmh.overseer.getCoreContainer().getUpdateShardHandler().getDefaultHttpClient());
     String asyncId = message.getStr(ASYNC);
     String repo = message.getStr(CoreAdminParams.BACKUP_REPOSITORY);
-    Map<String, String> requestMap = new HashMap<>();
 
     CoreContainer cc = ocmh.overseer.getCoreContainer();
     BackupRepository repository = cc.newBackupRepository(Optional.ofNullable(repo));
@@ -199,7 +199,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
         Map<String, Slice> newSlices = new LinkedHashMap<>(backupSlices.size());
         for (Slice backupSlice : backupSlices) {
           newSlices.put(backupSlice.getName(),
-              new Slice(backupSlice.getName(), Collections.emptyMap(), backupSlice.getProperties()));
+              new Slice(backupSlice.getName(), Collections.emptyMap(), backupSlice.getProperties(),restoreCollectionName));
         }
         propMap.put(OverseerCollectionMessageHandler.SHARDS_PROP, newSlices);
       }
@@ -318,36 +318,42 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
       //refresh the location copy of collection state
       restoreCollection = zkStateReader.getClusterState().getCollection(restoreCollectionName);
 
-      //Copy data from backed up index to each replica
-      for (Slice slice : restoreCollection.getSlices()) {
-        ModifiableSolrParams params = new ModifiableSolrParams();
-        params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.RESTORECORE.toString());
-        params.set(NAME, "snapshot." + slice.getName());
-        params.set(CoreAdminParams.BACKUP_LOCATION, backupPath.toASCIIString());
-        params.set(CoreAdminParams.BACKUP_REPOSITORY, repo);
-        ocmh.sliceCmd(clusterState, params, null, slice, shardHandler, asyncId, requestMap);
-      }
-      ocmh.processResponses(new NamedList(), shardHandler, true, "Could not restore core", asyncId, requestMap);
-
-
-      for (Slice s: restoreCollection.getSlices()) {
-        for (Replica r : s.getReplicas()) {
-          String nodeName = r.getNodeName();
-          String coreNodeName = r.getCoreName();
-          Replica.State stateRep  = r.getState();
-
-          log.debug("Calling REQUESTAPPLYUPDATES on: nodeName={}, coreNodeName={}, state={}"
-              , nodeName, coreNodeName, stateRep.name());
-
+      {
+        ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
+        // Copy data from backed up index to each replica
+        for (Slice slice : restoreCollection.getSlices()) {
           ModifiableSolrParams params = new ModifiableSolrParams();
-          params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.REQUESTAPPLYUPDATES.toString());
-          params.set(CoreAdminParams.NAME, coreNodeName);
-
-          ocmh.sendShardRequest(nodeName, params, shardHandler, asyncId, requestMap);
+          params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.RESTORECORE.toString());
+          params.set(NAME, "snapshot." + slice.getName());
+          params.set(CoreAdminParams.BACKUP_LOCATION, backupPath.toASCIIString());
+          params.set(CoreAdminParams.BACKUP_REPOSITORY, repo);
+          shardRequestTracker.sliceCmd(clusterState, params, null, slice, shardHandler);
         }
+        shardRequestTracker.processResponses(new NamedList(), shardHandler, true, "Could not restore core");
+      }
 
-        ocmh.processResponses(new NamedList(), shardHandler, true, "REQUESTAPPLYUPDATES calls did not succeed", asyncId, requestMap);
+      {
+        ShardRequestTracker shardRequestTracker = ocmh.asyncRequestTracker(asyncId);
 
+        for (Slice s : restoreCollection.getSlices()) {
+          for (Replica r : s.getReplicas()) {
+            String nodeName = r.getNodeName();
+            String coreNodeName = r.getCoreName();
+            Replica.State stateRep = r.getState();
+
+            log.debug("Calling REQUESTAPPLYUPDATES on: nodeName={}, coreNodeName={}, state={}", nodeName, coreNodeName,
+                stateRep.name());
+
+            ModifiableSolrParams params = new ModifiableSolrParams();
+            params.set(CoreAdminParams.ACTION, CoreAdminParams.CoreAdminAction.REQUESTAPPLYUPDATES.toString());
+            params.set(CoreAdminParams.NAME, coreNodeName);
+
+            shardRequestTracker.sendShardRequest(nodeName, params, shardHandler);
+          }
+
+          shardRequestTracker.processResponses(new NamedList(), shardHandler, true,
+              "REQUESTAPPLYUPDATES calls did not succeed");
+        }
       }
 
       //Mark all shards in ACTIVE STATE
@@ -361,7 +367,7 @@ public class RestoreCmd implements OverseerCollectionMessageHandler.Cmd {
         ocmh.overseer.offerStateUpdate((Utils.toJSON(new ZkNodeProps(propMap))));
       }
 
-        if (totalReplicasPerShard > 1) {
+      if (totalReplicasPerShard > 1) {
         log.info("Adding replicas to restored collection={}", restoreCollection.getName());
         for (Slice slice : restoreCollection.getSlices()) {
 

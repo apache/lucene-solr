@@ -38,11 +38,11 @@ public class IntField extends AnalyticsField implements CastingIntValue {
   private NumericDocValues docValues;
   private int value;
   private boolean exists;
-  
+
   public IntField(String fieldName) {
     super(fieldName);
   }
-  
+
   @Override
   public void doSetNextReader(LeafReaderContext context) throws IOException {
     docValues = DocValues.getNumeric(context.reader(), fieldName);
@@ -84,7 +84,7 @@ public class IntField extends AnalyticsField implements CastingIntValue {
   public boolean exists() {
     return exists;
   }
-  
+
   @Override
   public void streamInts(IntConsumer cons) {
     if (exists) {
