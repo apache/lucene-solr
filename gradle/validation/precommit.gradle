@@ -9,6 +9,7 @@ configure(rootProject) {
     dependsOn verifyLocks
     dependsOn ":versionsPropsAreSorted"
     dependsOn ":checkWorkingCopyPristine"
+    dependsOn ":validateSourcePatterns"
 
     // Attach tasks from other projects using lazy collection
     // as they may not yet be defined.
