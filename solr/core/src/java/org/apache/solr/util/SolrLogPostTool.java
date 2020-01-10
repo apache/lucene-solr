@@ -140,7 +140,7 @@ public class SolrLogPostTool {
     private String pushedBack = null;
     private boolean finished = false;
     private String cause;
-    private Pattern p = Pattern.compile("^(\\d\\d\\d\\d\\-\\d\\d\\-\\d\\d \\d\\d:\\d\\d\\:\\d\\d.\\d\\d\\d)");
+    private Pattern p = Pattern.compile("^(\\d\\d\\d\\d\\-\\d\\d\\-\\d\\d[\\s|T]\\d\\d:\\d\\d\\:\\d\\d.\\d\\d\\d)");
 
     public LogRecordReader(BufferedReader bufferedReader) throws IOException {
       this.bufferedReader = bufferedReader;
@@ -314,7 +314,7 @@ public class SolrLogPostTool {
     }
 
     private String parseCollection(String line) {
-      char[] ca = {' ', ']'};
+      char[] ca = {' ', ']', ','};
       String parts[] = line.split("c:");
       if(parts.length >= 2) {
         return readUntil(parts[1], ca);
@@ -355,7 +355,7 @@ public class SolrLogPostTool {
     }
 
     private String parseCore(String line) {
-      char[] ca = {' ', ']'};
+      char[] ca = {' ', ']', '}', ','};
       String parts[] = line.split("x:");
       if(parts.length >= 2) {
         return readUntil(parts[1], ca);
@@ -365,7 +365,7 @@ public class SolrLogPostTool {
     }
 
     private String parseShard(String line) {
-      char[] ca = {' ', ']'};
+      char[] ca = {' ', ']', '}', ','};
       String parts[] = line.split("s:");
       if(parts.length >= 2) {
         return readUntil(parts[1], ca);
@@ -375,7 +375,7 @@ public class SolrLogPostTool {
     }
 
     private String parseReplica(String line) {
-      char[] ca = {' ', ']'};
+      char[] ca = {' ', ']', '}',','};
       String parts[] = line.split("r:");
       if(parts.length >= 2) {
         return readUntil(parts[1], ca);
@@ -406,9 +406,9 @@ public class SolrLogPostTool {
     }
 
     private String parseNode(String line) {
-      char[] ca = {' ', ']'};
-      String parts[] = line.split("n:");
-      if(parts.length == 2) {
+      char[] ca = {' ', ']', '}', ','};
+      String parts[] = line.split("node_name=n:");
+      if(parts.length >= 2) {
         return readUntil(parts[1], ca);
       } else {
         return null;
@@ -436,10 +436,11 @@ public class SolrLogPostTool {
     }
 
     private String parseParams(String line) {
-      char[] ca = {'}'};
+      char[] ca = {' '};
       String parts[] = line.split(" params=");
       if(parts.length == 2) {
-        return readUntil(parts[1].substring(1), ca);
+        String p = readUntil(parts[1].substring(1), ca);
+        return p.substring(0, p.length()-1);
       } else {
         return null;
       }
