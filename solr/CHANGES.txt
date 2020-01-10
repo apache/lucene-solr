@@ -158,6 +158,8 @@ New Features
    Query DSL queries. It's optional and doesn't impact response without explicit referencing these queries by names 
    (Anatolii Siuniaev via Mikhail Khludnev)
 
+* SOLR-12131: ExternalRoleRuleBasedAuthorizationPlugin which gets user's roles from request (janhoy)
+
 Improvements
 ---------------------
 * SOLR-14120: Define JavaScript methods 'includes' and 'startsWith' to ensure AdminUI can be displayed when using
@@ -1081,8 +1083,6 @@ New Features
 * SOLR-12121: JWT Token authentication plugin with OpenID Connect implicit flow login through Admin UI (janhoy)
 
 * SOLR-12120: New AuditLoggerPlugin type allowing custom Audit logger plugins (janhoy)
-
-* SOLR-12131: ExternalRoleRuleBasedAuthorizationPlugin which gets user's roles from request (janhoy)
 
 * SOLR-10436: Add hashRollup Streaming Expression (Joel Bernstein)
 
