@@ -24,7 +24,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.DocCollection;
@@ -39,6 +38,8 @@ import org.apache.solr.store.shared.metadata.SharedShardMetadataController;
 import org.apache.solr.store.shared.metadata.SharedShardMetadataController.SharedShardVersionMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.annotations.VisibleForTesting;
 
 /**
  * This class helps coordinate synchronization of concurrent indexing, pushes and pulls
@@ -135,13 +136,12 @@ public class SharedCoreConcurrencyController {
   /**
    * This cache maintains the shared store version the each core is at or ahead of(core has to sometimes be ahead of
    * shared store given indexing first happens locally before being propagated to shared store).
-   * todo: need to add eviction strategy.
    */
   private final ConcurrentHashMap<String, SharedCoreVersionMetadata> coresVersionMetadata;
 
   public SharedCoreConcurrencyController(CoreContainer cores) {
     this.cores = cores;
-    coresVersionMetadata = new ConcurrentHashMap<>();
+    coresVersionMetadata = buildMetadataCache();
   }
 
   /**
@@ -231,6 +231,13 @@ public class SharedCoreConcurrencyController {
     SharedCoreVersionMetadata updatedMetadata = currentMetadata.updatedOf(softGuaranteeOfEquality);
     updateCoreVersionMetadata(collectionName, shardName, coreName, currentMetadata, updatedMetadata);
   }
+  
+  /**
+   * Evicts an entry from the {@link #coresVersionMetadata} if one exists for the given core name. 
+   */
+  public boolean removeCoreVersionMetadataIfPresent(String coreName) {
+    return coresVersionMetadata.remove(coreName) != null;
+  }
 
   private void updateCoreVersionMetadata(String collectionName, String shardName, String coreName, SharedCoreVersionMetadata currentMetadata, SharedCoreVersionMetadata updatedMetadata) {
     // either have a pull write lock or push lock along with pull read lock
@@ -250,10 +257,16 @@ public class SharedCoreConcurrencyController {
       // already present
       return coreVersionMetadata;
     }
-    return initializeCoreVersionMetadata(collectionName, shardName, coreName);
+    try {
+      return initializeCoreVersionMetadata(collectionName, shardName, coreName);
+    } catch (Exception ex) {
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Error initializing the"
+          + "default SharedCoreVersionMetadata for collection " + collectionName + 
+          " shard " + shardName + " core " + coreName, ex);
+    }
   }
 
-  private SharedCoreVersionMetadata initializeCoreVersionMetadata(String collectionName, String shardName, String coreName) {
+  private SharedCoreVersionMetadata initializeCoreVersionMetadata(String collectionName, String shardName, String coreName) throws Exception {
     // computeIfAbsent to ensure we only do single initialization
     return coresVersionMetadata.computeIfAbsent(coreName, k -> {
       // TODO: This metadata should not be created here. It should only be created on shard creation or zk recovery time.
@@ -298,6 +311,11 @@ public class SharedCoreConcurrencyController {
               "Unable to ensure metadata for collection=%s shard=%s", collectionName, shardName), ioe);
     }
   }
+  
+  @VisibleForTesting
+  protected ConcurrentHashMap<String, SharedCoreVersionMetadata> buildMetadataCache() {
+    return new ConcurrentHashMap<String, SharedCoreVersionMetadata>();
+  }
 
   /**
    * This represents metadata that need to be cached for a core of a shared collection {@link DocCollection#getSharedIndex()}
@@ -340,7 +358,8 @@ public class SharedCoreConcurrencyController {
      */
     private final ReentrantLock corePushLock;
 
-    private SharedCoreVersionMetadata(int version, String metadataSuffix, BlobCoreMetadata blobCoreMetadata,
+    @VisibleForTesting
+    protected SharedCoreVersionMetadata(int version, String metadataSuffix, BlobCoreMetadata blobCoreMetadata,
                                       boolean softGuaranteeOfEquality, ReentrantReadWriteLock corePullLock, ReentrantLock corePushLock) {
       this.version = version;
       this.metadataSuffix = metadataSuffix;
