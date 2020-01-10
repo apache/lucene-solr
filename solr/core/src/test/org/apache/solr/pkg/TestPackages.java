@@ -50,9 +50,9 @@ import org.apache.solr.common.params.MapSolrParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.filestore.TestDistribPackageStore;
 import org.apache.solr.util.LogLevel;
-import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.data.Stat;
 import org.junit.After;
 import org.junit.Before;
@@ -63,6 +63,7 @@ import static org.apache.solr.common.params.CommonParams.JAVABIN;
 import static org.apache.solr.common.params.CommonParams.WT;
 import static org.apache.solr.core.TestDynamicLoading.getFileContent;
 import static org.apache.solr.filestore.TestDistribPackageStore.readFile;
+import static org.apache.solr.filestore.TestDistribPackageStore.uploadKey;
 import static org.apache.solr.filestore.TestDistribPackageStore.waitForAllNodesHaveFile;
 
 @LogLevel("org.apache.solr.pkg.PackageLoader=DEBUG;org.apache.solr.pkg.PackageAPI=DEBUG")
@@ -95,8 +96,9 @@ public class TestPackages extends SolrCloudTestCase {
       String EXPR1 = "/mypkg/expressible.jar";
       String COLLECTION_NAME = "testPluginLoadingColl";
       byte[] derFile = readFile("cryptokeys/pub_key512.der");
-      cluster.getZkClient().makePath("/keys/exe", true);
-      cluster.getZkClient().create("/keys/exe/pub_key512.der", derFile, CreateMode.PERSISTENT, true);
+      uploadKey(derFile, PackageStoreAPI.KEYS_DIR+"/pub_key512.der", cluster);
+//      cluster.getZkClient().makePath("/keys/exe", true);
+//      cluster.getZkClient().create("/keys/exe/pub_key512.der", derFile, CreateMode.PERSISTENT, true);
       postFileAndWait(cluster, "runtimecode/runtimelibs.jar.bin", FILE1,
           "L3q/qIGs4NaF6JiO0ZkMUFa88j0OmYc+I6O7BOdNuMct/xoZ4h73aZHZGc0+nmI1f/U3bOlMPINlSOM6LK3JpQ==");
 
@@ -459,7 +461,7 @@ public class TestPackages extends SolrCloudTestCase {
           .build();
 
       //the files is not yet there. The command should fail with error saying "No such file"
-      expectError(req, cluster.getSolrClient(), errPath, "No such file :");
+      expectError(req, cluster.getSolrClient(), errPath, "No such file:");
 
 
       //post the jar file. No signature is sent
@@ -471,20 +473,19 @@ public class TestPackages extends SolrCloudTestCase {
           FILE1 + " has no signature");
       //now we upload the keys
       byte[] derFile = readFile("cryptokeys/pub_key512.der");
-      cluster.getZkClient().makePath("/keys/exe", true);
-      cluster.getZkClient().create("/keys/exe/pub_key512.der", derFile, CreateMode.PERSISTENT, true);
+      uploadKey(derFile, PackageStoreAPI.KEYS_DIR+"/pub_key512.der", cluster);
       //and upload the same file with a different name but it has proper signature
       postFileAndWait(cluster, "runtimecode/runtimelibs.jar.bin", FILE2,
           "L3q/qIGs4NaF6JiO0ZkMUFa88j0OmYc+I6O7BOdNuMct/xoZ4h73aZHZGc0+nmI1f/U3bOlMPINlSOM6LK3JpQ==");
       // with correct signature
       //after uploading the file, let's delete the keys to see if we get proper error message
-      cluster.getZkClient().delete("/keys/exe/pub_key512.der", -1, true);
+//      cluster.getZkClient().delete("/keys/exe/pub_key512.der", -1, true);
       add.files = Arrays.asList(new String[]{FILE2});
-      expectError(req, cluster.getSolrClient(), errPath,
-          "ZooKeeper does not have any public keys");
+      /*expectError(req, cluster.getSolrClient(), errPath,
+          "ZooKeeper does not have any public keys");*/
 
       //Now lets' put the keys back
-      cluster.getZkClient().create("/keys/exe/pub_key512.der", derFile, CreateMode.PERSISTENT, true);
+//      cluster.getZkClient().create("/keys/exe/pub_key512.der", derFile, CreateMode.PERSISTENT, true);
 
       //this time we have a file with proper signature, public keys are in ZK
       // so the add {} command should succeed
