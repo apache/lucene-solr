@@ -28,6 +28,12 @@ Velocity 2.0 and Velocity Tools 3.0
 Apache ZooKeeper 3.5.5
 Jetty 9.4.19.v20190610
 
+Upgrade Notes
+---------------------
+
+* SOLR-14158: Package manager now stores keys in package store instead of ZK. If you're using package manager and have already
+  added any repositories, then you would need to re-add all the keys from /keys/exe location, one-by-one, using:
+  "bin/solr add-key <keyfile.der>"
 
 Bug Fixes
 ----------------------
@@ -39,6 +45,12 @@ Bug Fixes
 * SOLR-14165: SolrResponse serialVersionUID has changed in a backward incompatible way (Andy Webb via noble)
 
 * SOLR-14163: SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION needs to work with Jetty server/client SSL contexts (Kevin Risden)
+
+Improvements
+---------------------
+
+* SOLR-14158: Package manager to store public keys in a special "trusted" location instead of in ZooKeeper
+  (noble, Ishan Chattopadhyaya)
 
 ==================  8.4.0 ==================
 
