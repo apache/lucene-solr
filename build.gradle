@@ -1,3 +1,5 @@
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
 
 plugins {
   id "base"
@@ -8,6 +10,13 @@ plugins {
 // Project version and main properties. Applies to all projects.
 allprojects {
   version = "9.0.0-SNAPSHOT"
+}
+
+ext {
+  def tstamp = ZonedDateTime.now()
+  buildDate = DateTimeFormatter.ofPattern("yyyy-MM-dd").format(tstamp)
+  buildTime = DateTimeFormatter.ofPattern("HH:mm:ss").format(tstamp)
+  buildYear = DateTimeFormatter.ofPattern("yyyy").format(tstamp)
 }
 
 // Include smaller chunks configuring dedicated build areas.
@@ -22,6 +31,7 @@ apply from: file('gradle/generate-defaults.gradle')
 // (java, tests)
 apply from: file('gradle/defaults.gradle')
 apply from: file('gradle/defaults-java.gradle')
+apply from: file('gradle/defaults-javadoc.gradle')
 apply from: file('gradle/testing/defaults-tests.gradle')
 apply from: file('gradle/testing/randomization.gradle')
 apply from: file('gradle/testing/fail-on-no-tests.gradle')

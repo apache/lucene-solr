@@ -119,11 +119,6 @@ ext {
 
     bareBonesDir = file("${buildDir}/bare-bones-html")
 
-    def tstamp = ZonedDateTime.now()
-    buildDate = DateTimeFormatter.ofPattern("yyyy-MM-dd").format(tstamp)
-    buildTime = DateTimeFormatter.ofPattern("HH:mm:ss").format(tstamp)
-    buildYear = DateTimeFormatter.ofPattern("yyyy").format(tstamp)
-
     // Some additional version properties are lazily computed
     // in setupLazyProps (because they need to be computed after evaluation is complete).
     props = [
