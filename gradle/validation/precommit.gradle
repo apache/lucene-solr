@@ -5,14 +5,17 @@ configure(rootProject) {
     group = 'Precommit'
     description = "All precommit checks"
 
-    // Root-level dependencies.
-    dependsOn verifyLocks
+    // Root-level validation tasks.
+    dependsOn ":verifyLocks"
     dependsOn ":versionsPropsAreSorted"
     dependsOn ":checkWorkingCopyPristine"
     dependsOn ":validateSourcePatterns"
 
-    // Attach tasks from other projects using lazy collection
-    // as they may not yet be defined.
+    // Solr validation tasks.
+    dependsOn ":solr:validateConfigFileSanity"
+
+    // Attach all these tasks from all projects that have them.
+    // This uses lazy collections as they may not yet be defined.
     dependsOn allprojects.collect { prj ->
       prj.tasks.matching { task -> task.name in [
           "forbiddenApisMain",
@@ -22,3 +25,4 @@ configure(rootProject) {
     }
   }
 }
+

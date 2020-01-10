@@ -40,6 +40,7 @@ apply from: file('gradle/validation/jar-checks.gradle')
 apply from: file('gradle/validation/git-status.gradle')
 apply from: file('gradle/validation/versions-props-sorted.gradle')
 apply from: file('gradle/validation/validate-source-patterns.gradle')
+apply from: file('gradle/validation/config-file-sanity.gradle')
 
 // Additional development aids.
 apply from: file('gradle/maven/maven-local.gradle')
