@@ -92,21 +92,27 @@ public class TermsQParserPlugin extends QParserPlugin {
       @Override
       Query makeFilter(String fname, BytesRef[] byteRefs) {
         // TODO Further tune this heuristic number
-        return (byteRefs.length > 700) ? new TopLevelDocValuesTermsQuery(fname, byteRefs) : new DocValuesTermsQuery(fname, byteRefs);
+        return disableCacheByDefault((byteRefs.length > 700) ? new TopLevelDocValuesTermsQuery(fname, byteRefs) : new DocValuesTermsQuery(fname, byteRefs));
       }
     },
     docValuesTermsFilterTopLevel {
       @Override
       Query makeFilter(String fname, BytesRef[] byteRefs) {
-        return new TopLevelDocValuesTermsQuery(fname, byteRefs);
+        return disableCacheByDefault(new TopLevelDocValuesTermsQuery(fname, byteRefs));
       }
     },
     docValuesTermsFilterPerSegment {
       @Override
       Query makeFilter(String fname, BytesRef[] byteRefs) {
-        return new DocValuesTermsQuery(fname, byteRefs);
+        return disableCacheByDefault(new DocValuesTermsQuery(fname, byteRefs));
       }
     };
+
+    private static Query disableCacheByDefault(Query q) {
+      final WrappedQuery wrappedQuery = new WrappedQuery(q);
+      wrappedQuery.setCache(false);
+      return wrappedQuery;
+    }
 
     abstract Query makeFilter(String fname, BytesRef[] byteRefs);
   }
@@ -216,7 +222,7 @@ public class TermsQParserPlugin extends QParserPlugin {
             }
 
             public float matchCost() {
-              return 3.0F;
+              return 10.0F;
             }
           });
 
