@@ -40,7 +40,7 @@ import org.apache.lucene.queryparser.surround.query.SrndTruncQuery;
  *  must appear within three positions of each other, or in other words, up
  *  to two terms may appear between a and b.  </p>
  */
-
+@SuppressWarnings("unchecked")
 public class QueryParser implements QueryParserConstants {
   static final int MINIMUM_PREFIX_LENGTH = 3;
   static final int MINIMUM_CHARS_IN_TRUNC = 3;

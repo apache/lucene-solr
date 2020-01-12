@@ -78,6 +78,7 @@ import org.apache.lucene.search.TermRangeQuery;
  * the same syntax as this class, but is more modular,
  * enabling substantial customization to how a query is created.
  */
+@SuppressWarnings("unchecked")
 public class QueryParser extends QueryParserBase implements QueryParserConstants {
   /** The default operator for parsing queries.
    * Use {@link QueryParserBase#setDefaultOperator} to change it.

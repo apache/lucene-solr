@@ -44,6 +44,7 @@ import org.apache.lucene.queryparser.flexible.standard.nodes.TermRangeQueryNode;
 /**
  * Parser for the standard Lucene syntax
  */
+@SuppressWarnings("unchecked")
 public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserConstants {
 
 
