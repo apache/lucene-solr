@@ -54,7 +54,7 @@ public class TestKnnGraph extends LuceneTestCase {
    */
   public void testBasic() throws Exception {
     try (Directory dir = newDirectory();
-         IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null))) {
+         IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null).setCodec(Codec.forName("Lucene90")))) {
       int numDoc = atLeast(10);
       int dimension = atLeast(3);
       float[][] values = new float[numDoc][];
@@ -73,7 +73,7 @@ public class TestKnnGraph extends LuceneTestCase {
 
   public void testSingleDocument() throws Exception {
     try (Directory dir = newDirectory();
-         IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null))) {
+         IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null).setCodec(Codec.forName("Lucene90")))) {
       float[][] values = new float[][]{new float[]{0, 1, 2}};
       add(iw, 0, values[0]);
       assertConsistentGraph(iw, values);
@@ -84,8 +84,7 @@ public class TestKnnGraph extends LuceneTestCase {
 
   public void testSingleDocRecall() throws  Exception {
     try (Directory dir = newDirectory();
-        IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null)
-            .setCodec(Codec.forName("Lucene90")))) {
+        IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null).setCodec(Codec.forName("Lucene90")))) {
       float[][] values = new float[][]{new float[]{0, 1, 2}};
       add(iw, 0, values[0]);
       assertConsistentGraph(iw, values);
@@ -102,7 +101,7 @@ public class TestKnnGraph extends LuceneTestCase {
    */
   public void testMerge() throws Exception {
     try (Directory dir = newDirectory();
-         IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null))) {
+         IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null).setCodec(Codec.forName("Lucene90")))) {
       int numDoc = atLeast(100);
       int dimension = atLeast(10);
       float[][] values = new float[numDoc][];
@@ -134,7 +133,7 @@ public class TestKnnGraph extends LuceneTestCase {
    */
   public void testSearch() throws Exception {
     try (Directory dir = newDirectory();
-         IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null))) {
+         IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null).setCodec(Codec.forName("Lucene90")))) {
       // Add a document for every cartesian point  in an NxN square so we can
       // easily know which are the nearest neighbors to every point. Insert by iterating
       // using a prime number that is not a divisor of N*N so that we will hit each point once,
