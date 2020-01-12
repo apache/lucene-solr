@@ -24,6 +24,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
+import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.VectorField;
@@ -78,6 +79,21 @@ public class TestKnnGraph extends LuceneTestCase {
       assertConsistentGraph(iw, values);
       iw.commit();
       assertConsistentGraph(iw, values);
+    }
+  }
+
+  public void testSingleDocRecall() throws  Exception {
+    try (Directory dir = newDirectory();
+        IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null)
+            .setCodec(Codec.forName("Lucene90")))) {
+      float[][] values = new float[][]{new float[]{0, 1, 2}};
+      add(iw, 0, values[0]);
+      assertConsistentGraph(iw, values);
+
+      iw.commit();
+      assertConsistentGraph(iw, values);
+
+      assertRecall(dir, 0, values[0]);
     }
   }
 
@@ -292,6 +308,25 @@ public class TestKnnGraph extends LuceneTestCase {
     doc.add(new StringField("id", Integer.toString(id), Field.Store.YES));
     //System.out.println("add " + id + " " + Arrays.toString(vector));
     iw.addDocument(doc);
+  }
+
+  private void assertRecall(Directory dir, int expectDocId, float[] value) throws IOException {
+    try (IndexReader reader = DirectoryReader.open(dir)) {
+      IndexSearcher searcher = new IndexSearcher(reader);
+      KnnGraphQuery query = new KnnGraphQuery(KNN_GRAPH_FIELD, value);
+      TopDocs result = searcher.search(query, 1);
+
+      int recallCnt = 0;
+      for (LeafReaderContext ctx : reader.leaves()) {
+        VectorValues vector = ctx.reader().getVectorValues(KNN_GRAPH_FIELD);
+        if (vector.seek(result.scoreDocs[0].doc)) {
+          ++recallCnt;
+          assertEquals(expectDocId, vector.docID());
+          assertEquals(0, Arrays.compare(value, vector.vectorValue()));
+        }
+      }
+      assertEquals(1, recallCnt);
+    }
   }
 
 }

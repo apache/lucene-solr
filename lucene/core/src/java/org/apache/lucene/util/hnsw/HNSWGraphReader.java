@@ -30,6 +30,7 @@ import org.apache.lucene.index.KnnGraphValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.util.IntsRef;
 
 /** Executes approximate nearest neighbor search on per-reader {@link HNSWGraph}.
  * This also caches built {@link HNSWGraph}s for repeated use. */
@@ -117,8 +118,14 @@ public final class HNSWGraphReader {
       int maxLevel = graphValues.getMaxLevel();
       hnsw.ensureLevel(maxLevel);
       for (int l = 0; l <= maxLevel; l++) {
-        for (int friend : graphValues.getFriends(l).ints) {
-          hnsw.connectNodes(l, doc, friend);
+        final IntsRef friends = graphValues.getFriends(l);
+        if (friends.length > 0) {
+          for (int friend : friends.ints) {
+            hnsw.connectNodes(l, doc, friend);
+          }
+        } else {
+          /// if there's single one node (thus no friends), the node should be added to all layers
+          hnsw.addNode(l, doc);
         }
       }
     }
