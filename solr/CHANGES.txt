@@ -95,6 +95,8 @@ Other Changes
 
 * LUCENE-9092: Upgrade Carrot2 to 3.16.2 (Dawid Weiss).
 
+* LUCENE-9080: Upgrade ICU4j to 62.2 and make regenerate work (Erick Erickson)
+
 ==================  8.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.

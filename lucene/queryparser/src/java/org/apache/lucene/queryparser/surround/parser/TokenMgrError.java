@@ -82,7 +82,7 @@ public class TokenMgrError extends Error
         default:
           if ((ch = str.charAt(i)) < 0x20 || ch > 0x7e) {
             String s = "0000" + Integer.toString(ch, 16);
-            retval.append("\\u").append(s.substring(s.length() - 4, s.length()));
+            retval.append("\\u" + s.substring(s.length() - 4, s.length()));
           } else {
             retval.append(ch);
           }
@@ -144,4 +144,4 @@ public class TokenMgrError extends Error
     this(LexicalError(EOFSeen, lexState, errorLine, errorColumn, errorAfter, curChar), reason);
   }
 }
-/* JavaCC - OriginalChecksum=dcdd5ccde13b91bcd8f76a86ca618852 (do not edit this line) */
+/* JavaCC - OriginalChecksum=8c69a370d9a9893140562c8bb911678c (do not edit this line) */
