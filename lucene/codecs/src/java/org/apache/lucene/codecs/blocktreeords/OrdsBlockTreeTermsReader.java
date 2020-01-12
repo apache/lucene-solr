@@ -130,6 +130,7 @@ public final class OrdsBlockTreeTermsReader extends FieldsProducer {
         // when frequencies are omitted, sumDocFreq=totalTermFreq and we only write one value
         final long sumDocFreq = fieldInfo.getIndexOptions() == IndexOptions.DOCS ? sumTotalTermFreq : in.readVLong();
         final int docCount = in.readVInt();
+        final int longsSize = in.readVInt();
         // System.out.println("  longsSize=" + longsSize);
 
         BytesRef minTerm = readBytesRef(in);
@@ -146,7 +147,7 @@ public final class OrdsBlockTreeTermsReader extends FieldsProducer {
         final long indexStartFP = indexIn.readVLong();
         OrdsFieldReader previous = fields.put(fieldInfo.name,       
                                               new OrdsFieldReader(this, fieldInfo, numTerms, rootCode, sumTotalTermFreq, sumDocFreq, docCount,
-                                                                  indexStartFP, indexIn, minTerm, maxTerm));
+                                                                  indexStartFP, longsSize, indexIn, minTerm, maxTerm));
         if (previous != null) {
           throw new CorruptIndexException("duplicate field: " + fieldInfo.name, in);
         }

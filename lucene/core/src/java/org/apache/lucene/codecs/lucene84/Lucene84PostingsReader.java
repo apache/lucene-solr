@@ -166,7 +166,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
   }
 
   @Override
-  public void decodeTerm(DataInput in, FieldInfo fieldInfo, BlockTermState _termState, boolean absolute)
+  public void decodeTerm(long[] longs, DataInput in, FieldInfo fieldInfo, BlockTermState _termState, boolean absolute)
     throws IOException {
     final IntBlockTermState termState = (IntBlockTermState) _termState;
     final boolean fieldHasPositions = fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) >= 0;
@@ -179,11 +179,11 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
       termState.payStartFP = 0;
     }
 
-    termState.docStartFP += in.readVLong();
+    termState.docStartFP += longs[0];
     if (fieldHasPositions) {
-      termState.posStartFP += in.readVLong();
+      termState.posStartFP += longs[1];
       if (fieldHasOffsets || fieldHasPayloads) {
-        termState.payStartFP += in.readVLong();
+        termState.payStartFP += longs[2];
       }
     }
     if (termState.docFreq == 1) {

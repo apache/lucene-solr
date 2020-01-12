@@ -919,7 +919,8 @@ public class Http2SolrClient extends SolrClient {
     Http2SolrClient.defaultSSLConfig = null;
   }
 
-  private static SslContextFactory.Client getDefaultSslContextFactory() {
+  /* package-private for testing */
+  static SslContextFactory.Client getDefaultSslContextFactory() {
     String checkPeerNameStr = System.getProperty(HttpClientUtil.SYS_PROP_CHECK_PEER_NAME);
     boolean sslCheckPeerName = true;
     if (checkPeerNameStr == null || "false".equalsIgnoreCase(checkPeerNameStr)) {
@@ -944,6 +945,8 @@ public class Http2SolrClient extends SolrClient {
       sslContextFactory.setTrustStorePassword
           (System.getProperty("javax.net.ssl.trustStorePassword"));
     }
+
+    sslContextFactory.setEndpointIdentificationAlgorithm(System.getProperty("solr.jetty.ssl.verifyClientHostName"));
 
     return sslContextFactory;
   }
