@@ -16,29 +16,31 @@
  */
 package org.apache.solr.search;
 
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
 import java.util.Arrays;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
+import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.LeafReaderContext;
+import org.apache.lucene.index.PrefixCodedTerms;
+import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.index.Term;
-import org.apache.lucene.search.AutomatonQuery;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.ConstantScoreQuery;
-import org.apache.lucene.search.DocValuesTermsQuery;
-import org.apache.lucene.search.MatchNoDocsQuery;
-import org.apache.lucene.search.Query;
-import org.apache.lucene.search.TermInSetQuery;
-import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.*;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
+import org.apache.lucene.util.LongBitSet;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Automaton;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.PointField;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Finds documents whose specified field has any of the specified values. It's like
@@ -52,6 +54,7 @@ import org.apache.solr.schema.PointField;
  * Note that if no values are specified then the query matches no documents.
  */
 public class TermsQParserPlugin extends QParserPlugin {
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   public static final String NAME = "terms";
 
   /** The separator to use in the underlying suggester */
@@ -88,9 +91,28 @@ public class TermsQParserPlugin extends QParserPlugin {
     docValuesTermsFilter {//on 4x this is FieldCacheTermsFilter but we use the 5x name any way
       @Override
       Query makeFilter(String fname, BytesRef[] byteRefs) {
-        return new DocValuesTermsQuery(fname, byteRefs);//constant scores
+        // TODO Further tune this heuristic number
+        return (byteRefs.length > 700) ? docValuesTermsFilterTopLevel.makeFilter(fname, byteRefs) : docValuesTermsFilterPerSegment.makeFilter(fname, byteRefs);
+      }
+    },
+    docValuesTermsFilterTopLevel {
+      @Override
+      Query makeFilter(String fname, BytesRef[] byteRefs) {
+        return disableCacheByDefault(new TopLevelDocValuesTermsQuery(fname, byteRefs));
+      }
+    },
+    docValuesTermsFilterPerSegment {
+      @Override
+      Query makeFilter(String fname, BytesRef[] byteRefs) {
+        return disableCacheByDefault(new DocValuesTermsQuery(fname, byteRefs));
       }
     };
+
+    private static Query disableCacheByDefault(Query q) {
+      final WrappedQuery wrappedQuery = new WrappedQuery(q);
+      wrappedQuery.setCache(false);
+      return wrappedQuery;
+    }
 
     abstract Query makeFilter(String fname, BytesRef[] byteRefs);
   }
@@ -101,7 +123,7 @@ public class TermsQParserPlugin extends QParserPlugin {
       @Override
       public Query parse() throws SyntaxError {
         String fname = localParams.get(QueryParsing.F);
-        FieldType ft = req.getSchema().getFieldTypeNoEx(fname);
+        FieldType ft = req.getSchema().getFieldType(fname);
         String separator = localParams.get(SEPARATOR, ",");
         String qstr = localParams.get(QueryParsing.V);//never null
         Method method = Method.valueOf(localParams.get(METHOD, Method.termsFilter.name()));
@@ -119,7 +141,7 @@ public class TermsQParserPlugin extends QParserPlugin {
         
         if (ft.isPointField()) {
           if (localParams.get(METHOD) != null) {
-            throw new IllegalArgumentException(
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
                 String.format(Locale.ROOT, "Method '%s' not supported in TermsQParser when using PointFields", localParams.get(METHOD)));
           }
           return ((PointField)ft).getSetQuery(this, req.getSchema().getField(fname), Arrays.asList(splitVals));
@@ -141,5 +163,101 @@ public class TermsQParserPlugin extends QParserPlugin {
         return method.makeFilter(fname, bytesRefs);
       }
     };
+  }
+
+  private static class TopLevelDocValuesTermsQuery extends DocValuesTermsQuery {
+    private final String fieldName;
+    private SortedSetDocValues topLevelDocValues;
+    private LongBitSet topLevelTermOrdinals;
+    private boolean matchesAtLeastOneTerm = false;
+
+
+    public TopLevelDocValuesTermsQuery(String field, BytesRef... terms) {
+      super(field, terms);
+      this.fieldName = field;
+    }
+
+    public Weight createWeight(IndexSearcher searcher, final ScoreMode scoreMode, float boost) throws IOException {
+      if (! (searcher instanceof SolrIndexSearcher)) {
+        log.debug("Falling back to DocValuesTermsQuery because searcher [{}] is not the required SolrIndexSearcher", searcher);
+        return super.createWeight(searcher, scoreMode, boost);
+      }
+
+      topLevelDocValues = DocValues.getSortedSet(((SolrIndexSearcher)searcher).getSlowAtomicReader(), fieldName);
+      topLevelTermOrdinals = new LongBitSet(topLevelDocValues.getValueCount());
+      PrefixCodedTerms.TermIterator iterator = getTerms().iterator();
+
+      long lastTermOrdFound = 0;
+      for(BytesRef term = iterator.next(); term != null; term = iterator.next()) {
+        long currentTermOrd = lookupTerm(topLevelDocValues, term, lastTermOrdFound);
+        if (currentTermOrd >= 0L) {
+          matchesAtLeastOneTerm = true;
+          topLevelTermOrdinals.set(currentTermOrd);
+          lastTermOrdFound = currentTermOrd;
+        }
+      }
+
+      return new ConstantScoreWeight(this, boost) {
+        public Scorer scorer(LeafReaderContext context) throws IOException {
+          if (! matchesAtLeastOneTerm) {
+            return null;
+          }
+          
+          SortedSetDocValues segmentDocValues = context.reader().getSortedSetDocValues(fieldName);
+          if (segmentDocValues == null) {
+            return null;
+          }
+
+          final int docBase = context.docBase;
+          return new ConstantScoreScorer(this, this.score(), scoreMode, new TwoPhaseIterator(segmentDocValues) {
+            public boolean matches() throws IOException {
+              topLevelDocValues.advanceExact(docBase + approximation.docID());
+              for(long ord = topLevelDocValues.nextOrd(); ord != -1L; ord = topLevelDocValues.nextOrd()) {
+                if (topLevelTermOrdinals.get(ord)) {
+                  return true;
+                }
+              }
+
+              return false;
+            }
+
+            public float matchCost() {
+              return 10.0F;
+            }
+          });
+
+        }
+
+        public boolean isCacheable(LeafReaderContext ctx) {
+          return DocValues.isCacheable(ctx, new String[]{fieldName});
+        }
+      };
+    }
+
+    /*
+     * Same binary-search based implementation as SortedSetDocValues.lookupTerm(BytesRef), but with an
+     * optimization to narrow the search space where possible by providing a startOrd instead of begining each search
+     * at 0.
+     */
+    private long lookupTerm(SortedSetDocValues docValues, BytesRef key, long startOrd) throws IOException {
+      long low = startOrd;
+      long high = docValues.getValueCount()-1;
+
+      while (low <= high) {
+        long mid = (low + high) >>> 1;
+        final BytesRef term = docValues.lookupOrd(mid);
+        int cmp = term.compareTo(key);
+
+        if (cmp < 0) {
+          low = mid + 1;
+        } else if (cmp > 0) {
+          high = mid - 1;
+        } else {
+          return mid; // key found
+        }
+      }
+
+      return -(low + 1);  // key not found.
+    }
   }
 }
