@@ -36,13 +36,9 @@ subprojects {
             description = 'Runs Apache Rat checks.'
         }
 
-        // ant had an exclude for ./lucene/analysis/kuromoji/src/test/org/apache/lucene/analysis/ja/bocchan.utf-8
-        // lucene/analysis/kuromoji/build.xml:  <property name="rat.excludes" value="**/*.txt,**/bocchan.utf-8"/>
-        // why don't we need it anymore?
-
         if (project.path == ":lucene:analysis:common") {
             rat {
-                excludes += [
+                srcExcludes += [
                     "**/*.aff",
                     "**/*.dic",
                     "**/charfilter/*.htm*",
@@ -51,9 +47,31 @@ subprojects {
             }
         }
 
-        if (project.path == ":lucene:highlighter") {
+        if (project.path == ":lucene:analysis:kuromoji") {
+            rat {
+                srcExcludes += [
+                    // whether rat detects this as binary or not is platform dependent?!
+                    "**/bocchan.utf-8"
+                ]
+            }
+        }
+
+        if (project.path == ":lucene:analysis:opennlp") {
             rat {
                 excludes += [
+                    "src/tools/test-model-data/chunks.txt",
+                    "src/tools/test-model-data/lemmas.txt",
+                    "src/tools/test-model-data/ner.txt",
+                    "src/tools/test-model-data/pos.txt",
+                    "src/tools/test-model-data/sentences.txt",
+                    "src/tools/test-model-data/tokenizer.txt",
+                ]
+            }
+        }
+
+        if (project.path == ":lucene:highlighter") {
+            rat {
+                srcExcludes += [
                     "**/CambridgeMA.utf8"
                 ]
             }
@@ -61,17 +79,40 @@ subprojects {
 
         if (project.path == ":lucene:suggest") {
             rat {
-                excludes += [
+                srcExcludes += [
                     "**/Top50KWiki.utf8",
                     "**/stop-snowball.txt"
                 ]
             }
         }
 
+        // TODO this doesn't have a corresponding gradle project so it never gets triggered
+        if (project.path == ":lucene:tools") {
+            rat {
+                includes += [
+                    "forbiddenApis/**",
+                    "prettify/**"
+                ]
+            }
+        }
+
+
         if (project.path == ":solr:core") {
             rat {
-                excludes += [
+                srcExcludes += [
                     "**/htmlStripReaderTest.html"
+                ]
+            }
+        }
+
+        if (project.path == ":solr:webapp") {
+            rat {
+                includes = [ "**" ]
+                excludes += [
+                    "web/img/**",
+                    "*.iml",
+                    "build.gradle",
+                    "build/**",
                 ]
             }
         }
@@ -82,19 +123,21 @@ subprojects {
 class RatTask extends DefaultTask {
     @Input
     List<String> includes = [
+        "*.xml",
+        "src/tools/**"
     ]
 
     @Input
-    List<String> excludes = [
+    List<String> excludes = []
+
+    @Input
+    List<String> srcExcludes = [
         "**/TODO",
         "**/*.txt",
         "**/*.iml",
         "**/*.gradle",
         "build/**"
     ]
-
-    @Input
-    List<String> additionalExcludes = []
 
     def reportDir = new File(project.buildDir, 'rat')
     def xmlReport = new File(reportDir, 'rat-report.xml')
@@ -107,13 +150,8 @@ class RatTask extends DefaultTask {
         def rat = NamespaceBuilder.newInstance(ant, uri)
         rat.report(format: 'xml', reportFile: xmlReport, addDefaultLicenseMatchers: true) {
             ant.fileset(dir: "${project.projectDir}") {
-                ant.include(name: '*.xml')
-                includes.each {
-                    ant.include(name: it)
-                }
-                additionalExcludes.each {
-                    ant.exclude(name: it)
-                }
+                includes.each { pattern -> ant.include(name: pattern) }
+                excludes.each { pattern -> ant.exclude(name: pattern) }
             }
 
             [
@@ -121,7 +159,7 @@ class RatTask extends DefaultTask {
                 project.sourceSets.test.java.srcDirs,
             ].flatten().each { srcLocation ->
                 ant.fileset(dir: srcLocation, erroronmissingdir: false) {
-                    excludes.each { x -> ant.exclude(name: x) }
+                    srcExcludes.each { pattern -> ant.exclude(name: pattern) }
                 }
             }
 
