@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 
@@ -55,6 +56,10 @@ public interface PackageStore {
 
   List<FileDetails> list(String path, Predicate<String> predicate);
 
+  /** Sync a local file to all nodes. All the nodes are asked to pull the file from this node
+   */
+  void syncToAllNodes(String path) throws IOException;
+
   /**
    * get the real path on filesystem
    */
@@ -64,6 +69,15 @@ public interface PackageStore {
    * The type of the resource
    */
   FileType getType(String path, boolean fetchMissing);
+
+  /**Get all the keys in the package store. The data is a .DER file content
+   */
+  Map<String,byte[]> getKeys() throws IOException;
+
+  /**Refresh the files in a path. May be this node does not have all files
+   * @param path the path to be refreshed.
+   */
+  void refresh(String path);
 
   public class FileEntry {
     final ByteBuffer buf;
