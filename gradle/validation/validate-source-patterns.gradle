@@ -3,16 +3,16 @@
 // This should be eventually rewritten in plain gradle. For now, delegate to
 // the ant/groovy script we already have.
 
-configurations {
-  checkSourceDeps
-}
-
-dependencies {
-  checkSourceDeps "org.codehaus.groovy:groovy-all:2.4.17"
-  checkSourceDeps "org.apache.rat:apache-rat:0.11"
-}
-
 configure(rootProject) {
+  configurations {
+    checkSourceDeps
+  }
+
+  dependencies {
+    checkSourceDeps "org.codehaus.groovy:groovy-all:2.4.17"
+    checkSourceDeps "org.apache.rat:apache-rat"
+  }
+
   task validateSourcePatterns() {
     doFirst {
       ant.taskdef(
