@@ -21,6 +21,7 @@ configure(rootProject) {
           "forbiddenApisMain",
           "forbiddenApisTest",
           "licenses",
+          "javadoc",
       ]}
     }
   }
