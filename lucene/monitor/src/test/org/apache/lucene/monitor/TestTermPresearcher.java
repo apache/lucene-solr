@@ -149,4 +149,47 @@ public class TestTermPresearcher extends PresearcherTestBase {
     }
 
   }
+
+  public void testQueryBuilderHandlesEmptyField() throws IOException {
+
+    Presearcher presearcher = createPresearcher();
+
+    IndexWriterConfig iwc = new IndexWriterConfig(new KeywordAnalyzer());
+    Directory dir = new ByteBuffersDirectory();
+    IndexWriter writer = new IndexWriter(dir, iwc);
+    MonitorConfiguration config = new MonitorConfiguration(){
+      @Override
+      public IndexWriter buildIndexWriter() {
+        return writer;
+      }
+    };
+
+    try (Monitor monitor = new Monitor(ANALYZER, presearcher, config)) {
+
+      monitor.register(new MonitorQuery("1", parse("f:test")));
+
+      try (IndexReader reader = DirectoryReader.open(writer, false, false)) {
+
+        MemoryIndex mindex = new MemoryIndex();
+        mindex.addField("f", "this is a test document", WHITESPACE);
+        mindex.addField("g", "#######", ANALYZER);
+        LeafReader docsReader = (LeafReader) mindex.createSearcher().getIndexReader();
+
+        QueryIndex.QueryTermFilter termFilter = new QueryIndex.QueryTermFilter(reader);
+
+        BooleanQuery q = (BooleanQuery) presearcher.buildQuery(docsReader, termFilter);
+        BooleanQuery expected = new BooleanQuery.Builder()
+            .add(should(new BooleanQuery.Builder()
+                .add(should(new TermInSetQuery("f", new BytesRef("test")))).build()))
+            .add(should(new TermQuery(new Term("__anytokenfield", "__ANYTOKEN__"))))
+            .build();
+
+        assertEquals(expected, q);
+
+      }
+
+    }
+
+  }
+
 }
