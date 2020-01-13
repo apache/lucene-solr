@@ -262,9 +262,9 @@ public final class DisjunctionMaxQuery extends Query implements Iterable<Query> 
     return buffer.toString();
   }
 
-  /** Return true iff we represent the same query as o
+  /** Return true if we represent the same query as other
    * @param other another object
-   * @return true iff o is a DisjunctionMaxQuery with the same boost and the same subqueries, in the same order, as us
+   * @return true if other is a DisjunctionMaxQuery with the same boost and the same subqueries, in the same order, as us
    */
   @Override
   public boolean equals(Object other) {
