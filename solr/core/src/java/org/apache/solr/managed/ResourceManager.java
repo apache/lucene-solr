@@ -31,6 +31,7 @@ import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricProducer;
 import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.schema.FieldType;
+import org.apache.solr.util.SolrPluginUtils;
 import org.apache.solr.util.plugin.PluginInfoInitialized;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -82,8 +83,9 @@ public abstract class ResourceManager implements PluginInfoInitialized, SolrMetr
         null,
         new Class[]{SolrResourceLoader.class, SolrMetricManager.class, TimeSource.class},
         new Object[]{loader, metricManager, timeSource});
-    resourceManager.initializeMetrics(new SolrMetricsContext(metricManager, "node", SolrMetricProducer.getUniqueMetricTag(loader, null)), null);
+    SolrPluginUtils.invokeSetters(resourceManager, pluginInfo.initArgs);
     resourceManager.init(pluginInfo);
+    resourceManager.initializeMetrics(new SolrMetricsContext(metricManager, "node", SolrMetricProducer.getUniqueMetricTag(loader, null)), null);
     Map<String, Object> poolConfigs = (Map<String, Object>)config.get(POOL_CONFIGS_PARAM);
     if (poolConfigs != null) {
       for (String poolName : poolConfigs.keySet()) {
@@ -144,6 +146,10 @@ public abstract class ResourceManager implements PluginInfoInitialized, SolrMetr
     return pluginInfo;
   }
 
+  /**
+   * This method is called after plugin info and setters are invoked, but before metrics are initialized.
+   * @throws Exception
+   */
   protected abstract void doInit() throws Exception;
 
   @Override
@@ -156,12 +162,16 @@ public abstract class ResourceManager implements PluginInfoInitialized, SolrMetr
     return metricsContext;
   }
 
-  public void updatePoolConfigs(Map<String, Object> newPoolConfigs) throws Exception {
-    if (newPoolConfigs == null || newPoolConfigs.isEmpty()) {
+  /**
+   * Update pool limits for existing pools.
+   * @param newPoolLimits a map of pool names to a map of updated limits. Only existing pools will be affected.
+   */
+  public void updatePoolLimits(Map<String, Object> newPoolLimits) {
+    if (newPoolLimits == null || newPoolLimits.isEmpty()) {
       return;
     }
 
-    for (Map.Entry<String, Object> entry : newPoolConfigs.entrySet()) {
+    for (Map.Entry<String, Object> entry : newPoolLimits.entrySet()) {
       String poolName = entry.getKey();
       Map<String, Object> params = (Map<String, Object>)entry.getValue();
       ResourceManagerPool pool = getPool(poolName);
@@ -169,15 +179,14 @@ public abstract class ResourceManager implements PluginInfoInitialized, SolrMetr
         log.warn("Cannot update config - pool '" + poolName + "' not found.");
         continue;
       }
-      String type = (String)params.get(CommonParams.TYPE);
-      if (type == null || type.isBlank()) {
-        throw new IllegalArgumentException("Pool '" + poolName + "' type is missing: " + params);
-      }
       Map<String, Object> poolLimits = (Map<String, Object>)params.getOrDefault(POOL_LIMITS_PARAM, Collections.emptyMap());
       pool.setPoolLimits(poolLimits);
     }
   }
 
+  /**
+   * Return a factory for creating specialized pools.
+   */
   public abstract ResourceManagerPoolFactory getResourceManagerPoolFactory();
 
   /**
@@ -198,6 +207,7 @@ public abstract class ResourceManager implements PluginInfoInitialized, SolrMetr
   /** Return a named pool or null if no such pool exists. */
   public abstract ResourceManagerPool getPool(String name);
 
+  /** Returns true if a pool with this name exists, false otherwise. */
   public boolean hasPool(String name) {
     return getPool(name) != null;
   }
@@ -244,6 +254,19 @@ public abstract class ResourceManager implements PluginInfoInitialized, SolrMetr
    */
   public boolean unregisterComponent(String pool, ManagedComponentId componentId) {
     return unregisterComponent(pool, componentId.toString());
+  }
+
+  /**
+   * Unregister component from all pools.
+   * @param componentId component id
+   * @return true if a component was actually registered and removed from at least one pool.
+   */
+  public boolean unregisterComponent(String componentId) {
+    boolean removed = false;
+    for (String pool : listPools()) {
+      removed = removed || unregisterComponent(pool, componentId);
+    }
+    return removed;
   }
 
   /**

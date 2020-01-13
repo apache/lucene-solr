@@ -297,7 +297,7 @@ public class CaffeineCache<K, V> extends SolrCacheBase implements SolrCache<K, V
       return;
     }
 
-    // inherit also maxSize / maxRamMB from the old cache - these may
+    // inherit also the maxSize / maxRamMB limits from the old cache - these may
     // be currently set to different values than the static config due to
     // dynamic adjustments
     setMaxSize(old.getMaxSize());

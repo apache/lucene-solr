@@ -16,7 +16,6 @@
  */
 package org.apache.solr.managed;
 
-import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.Collection;
 import java.util.Collections;
@@ -90,9 +89,6 @@ public class DefaultResourceManager extends ResourceManager {
    */
   private ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
 
-  protected boolean isClosed = false;
-  protected boolean enabled = true;
-
   protected ResourceManagerPoolFactory resourceManagerPoolFactory;
   protected SolrResourceLoader loader;
   protected SolrMetricManager metricManager;
@@ -118,6 +114,7 @@ public class DefaultResourceManager extends ResourceManager {
     log.info("Resource manager initialized.");
   }
 
+  // setter invoked by PluginUtils.invokeSetters
   public void setMaxNumPools(Integer maxNumPools) {
     if (maxNumPools != null) {
       this.maxNumPools = maxNumPools;
@@ -244,11 +241,11 @@ public class DefaultResourceManager extends ResourceManager {
       }
       resourcePools.clear();
     }
-    log.info("Shutting down scheduled thread pool executor now");
+    log.debug("Shutting down scheduled thread pool executor now");
     scheduledThreadPoolExecutor.shutdownNow();
-    log.info("Awaiting termination of scheduled thread pool executor");
+    log.debug("Awaiting termination of scheduled thread pool executor");
     ExecutorUtil.awaitTermination(scheduledThreadPoolExecutor);
-    log.info("Closed.");
+    log.debug("Closed.");
   }
 
 }

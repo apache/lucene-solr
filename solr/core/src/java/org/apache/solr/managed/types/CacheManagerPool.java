@@ -61,8 +61,12 @@ public class CacheManagerPool extends ResourceManagerPool<SolrCache> {
 
   /** Controller dead-band - changes smaller than this ratio will be ignored. */
   public static final String DEAD_BAND_PARAM = "deadBand";
+  /** Use soft optimization when not under resource shortage. */
+  public static final String OPTIMIZE_PARAM = "optimize";
   /** Target hit ratio - high enough to be useful, low enough to avoid excessive cache size. */
   public static final String TARGET_HIT_RATIO_PARAM = "targetHitRatio";
+  /** Minimum delta in the number of lookups before attempting optimization. */
+  public static final String LOOKUP_DELTA_PARAM = "lookupDelta";
   /**
    * Maximum allowed adjustment ratio from the initial configuration value. Adjusted value may not be
    * higher than multiple of this factor, and not lower than divided by this factor.
@@ -102,6 +106,7 @@ public class CacheManagerPool extends ResourceManagerPool<SolrCache> {
   protected double targetHitRatio = DEFAULT_TARGET_HITRATIO;
   protected long lookupDelta = DEFAULT_LOOKUP_DELTA;
   protected double maxAdjustRatio = DEFAULT_MAX_ADJUST_RATIO;
+  protected boolean optimize = true;
   protected Map<String, Long> lookups = new HashMap<>();
   protected Map<String, Long> hits = new HashMap<>();
   protected Map<String, Map<String, Object>> initialComponentLimits = new HashMap<>();
@@ -113,6 +118,30 @@ public class CacheManagerPool extends ResourceManagerPool<SolrCache> {
       deadBand = Double.parseDouble(str);
     } catch (Exception e) {
       log.warn("Invalid deadBand parameter value '" + str + "', using default " + DEFAULT_DEAD_BAND);
+    }
+    str = String.valueOf(poolParams.getOrDefault(TARGET_HIT_RATIO_PARAM, DEFAULT_TARGET_HITRATIO));
+    try {
+      targetHitRatio = Double.parseDouble(str);
+    } catch (Exception e) {
+      log.warn("Invalid targetHitRatio parameter value '" + str + "', using default " + DEFAULT_TARGET_HITRATIO);
+    }
+    str = String.valueOf(poolParams.getOrDefault(LOOKUP_DELTA_PARAM, DEFAULT_LOOKUP_DELTA));
+    try {
+      lookupDelta = Long.parseLong(str);
+    } catch (Exception e) {
+      log.warn("Invalid lookupDelta parameter value '" + str + "', using default " + DEFAULT_LOOKUP_DELTA);
+    }
+    str = String.valueOf(poolParams.getOrDefault(MAX_ADJUST_RATIO_PARAM, DEFAULT_MAX_ADJUST_RATIO));
+    try {
+      maxAdjustRatio = Long.parseLong(str);
+    } catch (Exception e) {
+      log.warn("Invalid maxAdjustRatio parameter value '" + str + "', using default " + DEFAULT_MAX_ADJUST_RATIO);
+    }
+    str = String.valueOf(poolParams.getOrDefault(OPTIMIZE_PARAM, true));
+    try {
+      optimize = Boolean.parseBoolean(str);
+    } catch (Exception e) {
+      log.warn("Invalid optimize parameter value '" + str + "', using default " + true);
     }
   }
 
@@ -235,15 +264,15 @@ public class CacheManagerPool extends ResourceManagerPool<SolrCache> {
         }
         adjustableComponents.add(component);
       });
-      optimize(adjustableComponents, currentValues, poolLimitName, poolLimitValue, totalValue.doubleValue());
+      adjust(adjustableComponents, currentValues, poolLimitName, poolLimitValue, totalValue.doubleValue());
     });
   }
 
   /**
    * Manage all eligible components that support this pool limit.
    */
-  private void optimize(List<SolrCache> components, Map<String, Map<String, Object>> currentValues, String limitName,
-                        double poolLimitValue, double totalValue) {
+  private void adjust(List<SolrCache> components, Map<String, Map<String, Object>> currentValues, String limitName,
+                      double poolLimitValue, double totalValue) {
     // changeRatio > 1.0 means there are available free resources
     // changeRatio < 1.0 means there's shortage of resources
     final AtomicReference<Double> changeRatio = new AtomicReference<>(poolLimitValue / totalValue);
@@ -258,6 +287,9 @@ public class CacheManagerPool extends ResourceManagerPool<SolrCache> {
     // expand the size of caches with too low hitRatio
     final AtomicReference<Double> newTotalValue = new AtomicReference<>(totalValue);
     components.forEach(component -> {
+      if (!optimize) {
+        return;
+      }
       long currentLookups = ((Number)currentValues.get(component.getManagedComponentId().toString()).get(SolrCache.CUMULATIVE_PREFIX + SolrCache.LOOKUPS_PARAM)).longValue();
       long lastLookups = lookups.computeIfAbsent(component.getManagedComponentId().toString(), k -> 0L);
       if (currentLookups < lastLookups + lookupDelta) {
@@ -322,6 +354,12 @@ public class CacheManagerPool extends ResourceManagerPool<SolrCache> {
           // don't shrink ad infinitum
           return;
         }
+        if (newLimit < 1.0) {
+          newLimit = 1.0;
+        }
+        if (newLimit >= currentLimit) {
+          return;
+        }
         try {
           Number actualNewLimit = (Number)setResourceLimit(component, limitName, newLimit, ChangeListener.Reason.OPTIMIZATION);
           newTotalValue.getAndUpdate(v -> v - currentLimit + actualNewLimit.doubleValue());
@@ -362,6 +400,10 @@ public class CacheManagerPool extends ResourceManagerPool<SolrCache> {
       Map<String, Object> resourceLimits = getResourceLimits(component);
       double currentLimit = ((Number)resourceLimits.get(limitName)).doubleValue();
       double newLimit = currentLimit * changeRatio.get();
+      // don't shrink it to 0
+      if (newLimit < 1.0) {
+        newLimit = 1.0;
+      }
       try {
         Number actualNewLimit = (Number) setResourceLimit(component, limitName, newLimit, ChangeListener.Reason.ABOVE_TOTAL_LIMIT);
         log.info("-- forcing " + component.getManagedComponentId() + "/" + limitName + ": " + currentLimit + " -> " + actualNewLimit);
