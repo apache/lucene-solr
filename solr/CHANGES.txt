@@ -95,6 +95,8 @@ Other Changes
 
 * LUCENE-9092: Upgrade Carrot2 to 3.16.2 (Dawid Weiss).
 
+* LUCENE-9080: Upgrade ICU4j to 62.2 and make regenerate work (Erick Erickson)
+
 ==================  8.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -211,6 +213,8 @@ Bug Fixes
 * SOLR-13089: Fix lsof edge cases in the solr CLI script (Martijn Koster via janhoy)
 
 * SOLR-14163: SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION needs to work with Jetty server/client SSL contexts (Kevin Risden)
+
+* SOLR-6613: TextField.analyzeMultiTerm does not throw an exception when Analyzer returns no terms. (Bruno Roustant)
 
 Other Changes
 ---------------------
