@@ -46,6 +46,8 @@ Bug Fixes
 * LUCENE-8908: Return default value from objectVal when doc doesn't match the query in QueryValueSource
   (Bill Bell, hossman, Munendra S N, Michele Palmia)
 
+* LUCENE-9133: Fix for potential NPE in TermFilteredPresearcher for empty fields (Marvin Justice via Mike Drob)
+
 Other
 ---------------------
 
