@@ -77,6 +77,10 @@ Upgrade Notes
 
 * SOLR-14092: Deprecated BlockJoinFacetComponent and BlockJoinDocSetFacetComponent are removed
   Users are encouraged to migrate to uniqueBlock() in JSON Facet API.  (Mikhail Khludnev)
+
+* SOLR-13985: Solr's Jetty now binds to localhost network interface by default for better out of the box security.
+  Administrators that need Solr exposed more broadly can change the SOLR_JETTY_HOST property in their Solr include
+  (solr.in.sh/solr.in.cmd) file. (Jason Gerlowski, David Smiley, Robert Muir)
   
 Improvements
 ----------------------
@@ -192,6 +196,11 @@ Improvements
   Regardless of the settings, the passages may be sized differently than before. (Nándor Mátravölgyi, David Smiley)
 
 * SOLR-14154: Return correct isolation level when retrieving it from the SQL Connection (Nick Vercammen, Kevin Risden)
+
+* SOLR-13890: Add "top-level" DV implementation for {!terms} queries.  This approach tends to be more efficient for
+  queries with very large numbers of terms.  The new implementation is used by default for method=docValuesTermsFilter
+  terms queries that are searching 500 or more terms.  Users wishing to ignore this heuristic can choose the
+  docValuesTermsFilterTopLevel or docValuesTermsFilterPerSegment methods directly. (Jason Gerlowski, Joel Bernstein, David Smiley)
 
 Optimizations
 ---------------------

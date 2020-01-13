@@ -182,7 +182,7 @@ IF NOT "%SOLR_HOST%"=="" (
   set "SOLR_TOOL_HOST=localhost"
 )
 IF "%SOLR_JETTY_HOST%"=="" (
-  set SOLR_JETTY_HOST=0.0.0.0
+  set "SOLR_JETTY_HOST=127.0.0.1"
 )
 
 REM Verify Java is available
@@ -965,6 +965,10 @@ IF "%verbose%"=="1" (
 
 IF NOT "%SOLR_HOST%"=="" (
   set SOLR_HOST_ARG=-Dhost=%SOLR_HOST%
+) ELSE IF "%SOLR_JETTY_HOST%"=="" (
+  set "SOLR_HOST_ARG=-Dhost=localhost"
+) ELSE IF "%SOLR_JETTY_HOST%"=="127.0.0.1" (
+  set "SOLR_HOST_ARG=-Dhost=localhost"
 ) ELSE (
   set SOLR_HOST_ARG=
 )
@@ -1089,6 +1093,10 @@ IF "!IS_RESTART!"=="1" set SCRIPT_CMD=start
 
 IF "%SOLR_PORT%"=="" set SOLR_PORT=8983
 IF "%STOP_PORT%"=="" set /A STOP_PORT=%SOLR_PORT% - 1000
+
+IF DEFINED SOLR_JETTY_HOST (
+  set "SOLR_OPTS=%SOLR_OPTS% -Dsolr.jetty.host=%SOLR_JETTY_HOST%"
+)
 
 IF "%SCRIPT_CMD%"=="start" (
   REM see if Solr is already running using netstat
@@ -1325,7 +1333,7 @@ IF "%FG%"=="1" (
   "%JAVA%" %SERVEROPT% %SOLR_JAVA_MEM% %START_OPTS% ^
     -Dlog4j.configurationFile="%LOG4J_CONFIG%" -DSTOP.PORT=!STOP_PORT! -DSTOP.KEY=%STOP_KEY% ^
     -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" -Dsolr.default.confdir="%DEFAULT_CONFDIR%" ^
-    -Djetty.host=%SOLR_JETTY_HOST% -Djetty.port=%SOLR_PORT% -Djetty.home="%SOLR_SERVER_DIR%" ^
+    -Djetty.port=%SOLR_PORT% -Djetty.home="%SOLR_SERVER_DIR%" ^
     -Djava.io.tmpdir="%SOLR_SERVER_DIR%\tmp" -jar start.jar %SOLR_JETTY_CONFIG% "%SOLR_JETTY_ADDL_CONFIG%"
 ) ELSE (
   START /B "Solr-%SOLR_PORT%" /D "%SOLR_SERVER_DIR%" ^
@@ -1333,7 +1341,7 @@ IF "%FG%"=="1" (
     -Dlog4j.configurationFile="%LOG4J_CONFIG%" -DSTOP.PORT=!STOP_PORT! -DSTOP.KEY=%STOP_KEY% ^
     -Dsolr.log.muteconsole ^
     -Dsolr.solr.home="%SOLR_HOME%" -Dsolr.install.dir="%SOLR_TIP%" -Dsolr.default.confdir="%DEFAULT_CONFDIR%" ^
-    -Djetty.host=%SOLR_JETTY_HOST% -Djetty.port=%SOLR_PORT% -Djetty.home="%SOLR_SERVER_DIR%" ^
+    -Djetty.port=%SOLR_PORT% -Djetty.home="%SOLR_SERVER_DIR%" ^
     -Djava.io.tmpdir="%SOLR_SERVER_DIR%\tmp" -jar start.jar %SOLR_JETTY_CONFIG% "%SOLR_JETTY_ADDL_CONFIG%" > "!SOLR_LOGS_DIR!\solr-%SOLR_PORT%-console.log"
   echo %SOLR_PORT%>"%SOLR_TIP%"\bin\solr-%SOLR_PORT%.port
 
