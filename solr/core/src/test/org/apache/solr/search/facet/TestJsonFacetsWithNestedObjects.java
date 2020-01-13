@@ -360,4 +360,30 @@ public class TestJsonFacetsWithNestedObjects extends SolrTestCaseHS{
             "}"
     );
   }
+
+  public void testUniqueBlockQuery() throws Exception {
+    final Client client = Client.localClient();
+    ModifiableSolrParams p = params("rows","0");
+    client.testJQ(params(p, "q", "{!parent tag=top which=type_s:book v=$childquery}"
+        , "childquery", "comment_t:*"
+        , "fl", "id", "fl" , "title_t"
+        , "json.facet", "{" +
+            "  types: {" +
+            "    domain: { blockChildren:\"type_s:book\"" +
+            "            }," +
+            "    type:terms," +
+            "    field:type_s,"
+            + "  limit:-1," +
+            "    facet: {" +
+            "           in_books: \"uniqueBlockQuery(type_s:book)\" }" +
+            "  }" +
+            "}" )
+
+        , "response=={numFound:2,start:0,docs:[]}"
+        , "facets=={ count:2," +
+            "types:{" +
+            "    buckets:[ {val:review,    count:5, in_books:2} ]}" +
+            "}"
+    );
+  }
 }

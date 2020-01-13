@@ -3183,6 +3183,41 @@ public class TestJsonFacets extends SolrTestCaseHS {
             "    ]}" +
             "}"
     );
+
+    //the same test with uniqueBlockQuery agg function
+    client.testJQ(params(p, "q", "type_s:page"
+        , "json.facet", "{" +
+            "  types: {" +
+            "    type:terms," +
+            "    field:type_s," +
+            "    limit:-1," +
+            "    facet: {" +
+            "           in_books: \"unique(_root_)\" }"+
+            "  }," +
+            "  pages: {" +
+            "    type:terms," +
+            "    field:page_s," +
+            "    limit:-1," +
+            "    facet: {" +
+            "           in_books: \"uniqueBlockQuery(type_s:book)\" }"+
+            "  }" +
+            "}" )
+
+        , "response=={numFound:6,start:0,docs:[]}"
+        , "facets=={ count:6," +
+            "types:{" +
+            "    buckets:[ {val:page, count:6, in_books:2} ]}" +
+            "pages:{" +
+            "    buckets:[ " +
+            "     {val:a, count:1, in_books:1}," +
+            "     {val:b, count:1, in_books:1}," +
+            "     {val:c, count:1, in_books:1}," +
+            "     {val:d, count:1, in_books:1}," +
+            "     {val:e, count:1, in_books:1}," +
+            "     {val:f, count:1, in_books:1}" +
+            "    ]}" +
+            "}"
+    );
   }
 
 

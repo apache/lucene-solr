@@ -68,6 +68,7 @@ import org.apache.solr.search.facet.SumAgg;
 import org.apache.solr.search.facet.SumsqAgg;
 import org.apache.solr.search.facet.UniqueAgg;
 import org.apache.solr.search.facet.UniqueBlockAgg;
+import org.apache.solr.search.facet.UniqueBlockQueryAgg;
 import org.apache.solr.search.facet.VarianceAgg;
 import org.apache.solr.search.function.CollapseScoreFunction;
 import org.apache.solr.search.function.ConcatStringFunction;
@@ -972,6 +973,14 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
         return new UniqueBlockAgg(fp.parseArg());
+      }
+    });
+
+    addParser("agg_uniqueBlockQuery", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+        //return new UniqueBlockQueryAgg(fp.parseNestedQuery());
+        return new UniqueBlockQueryAgg(QParser.getParser(fp.parseArg(), fp.req).parse());
       }
     });
 
