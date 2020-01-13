@@ -95,6 +95,8 @@ Other Changes
 
 * LUCENE-9092: Upgrade Carrot2 to 3.16.2 (Dawid Weiss).
 
+* LUCENE-9080: Upgrade ICU4j to 62.2 and make regenerate work (Erick Erickson)
+
 ==================  8.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -191,6 +193,11 @@ Improvements
 
 * SOLR-14154: Return correct isolation level when retrieving it from the SQL Connection (Nick Vercammen, Kevin Risden)
 
+* SOLR-13890: Add "top-level" DV implementation for {!terms} queries.  This approach tends to be more efficient for
+  queries with very large numbers of terms.  The new implementation is used by default for method=docValuesTermsFilter
+  terms queries that are searching 500 or more terms.  Users wishing to ignore this heuristic can choose the
+  docValuesTermsFilterTopLevel or docValuesTermsFilterPerSegment methods directly. (Jason Gerlowski, Joel Bernstein, David Smiley)
+
 Optimizations
 ---------------------
 (No changes)
@@ -210,7 +217,9 @@ Bug Fixes
 
 * SOLR-13089: Fix lsof edge cases in the solr CLI script (Martijn Koster via janhoy)
 
-* SOLR-11746: Fixed existence query support for numeric point fields. (Kai Chan, hossman, Houston Putman)
+* SOLR-14163: SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION needs to work with Jetty server/client SSL contexts (Kevin Risden)
+
+* SOLR-6613: TextField.analyzeMultiTerm does not throw an exception when Analyzer returns no terms. (Bruno Roustant)
 
 Other Changes
 ---------------------
@@ -223,6 +232,38 @@ Other Changes
 
 * SOLR-13778: Solrj client will retry requests on SSLException with a suppressed SocketException
   (very likely a hard-closed socket connection).
+
+* SOLR-14169: Fix 20 Resource Leak warnings in SolrJ's apache/solr/common (Andras Salamon via Tomás Fernández Löbbe)
+
+==================  8.4.1 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.19.1
+Carrot2 3.16.0
+Velocity 2.0 and Velocity Tools 3.0
+Apache ZooKeeper 3.5.5
+Jetty 9.4.19.v20190610
+
+Upgrade Notes
+---------------------
+
+* SOLR-14158: Package manager now stores keys in package store instead of ZK. If you're using package manager and have already
+  added any repositories, then you would need to re-add all the keys from /keys/exe location, one-by-one, using:
+  "bin/solr add-key <keyfile.der>"
+
+Bug Fixes
+----------------------
+
+* SOLR-14165: SolrResponse serialVersionUID has changed in a backward incompatible way (Andy Webb via noble)
+
+Improvements
+---------------------
+
+* SOLR-14158: Package manager to store public keys in a special "trusted" location instead of in ZooKeeper
+  (noble, Ishan Chattopadhyaya)
 
 ==================  8.4.0 ==================
 

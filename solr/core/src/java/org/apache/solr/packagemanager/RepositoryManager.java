@@ -22,10 +22,10 @@ import static org.apache.solr.packagemanager.PackageUtils.getMapper;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.lang.invoke.MethodHandles;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -48,10 +48,12 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.core.BlobRepository;
+import org.apache.solr.filestore.PackageStoreAPI;
 import org.apache.solr.packagemanager.SolrPackage.Artifact;
 import org.apache.solr.packagemanager.SolrPackage.SolrPackageRelease;
 import org.apache.solr.pkg.PackageAPI;
 import org.apache.solr.pkg.PackagePluginHolder;
+import org.apache.solr.util.SolrCLI;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -116,24 +118,31 @@ public class RepositoryManager {
   /**
    * Add a repository to Solr
    */
-  public void addRepository(String name, String uri) throws KeeperException, InterruptedException, MalformedURLException, IOException {
+  public void addRepository(String repoName, String uri) throws Exception {
     String existingRepositoriesJson = getRepositoriesJson(packageManager.zkClient);
     log.info(existingRepositoriesJson);
 
     List<PackageRepository> repos = getMapper().readValue(existingRepositoriesJson, List.class);
-    repos.add(new DefaultPackageRepository(name, uri));
+    repos.add(new DefaultPackageRepository(repoName, uri));
     if (packageManager.zkClient.exists(PackageUtils.REPOSITORIES_ZK_PATH, true) == false) {
       packageManager.zkClient.create(PackageUtils.REPOSITORIES_ZK_PATH, getMapper().writeValueAsString(repos).getBytes("UTF-8"), CreateMode.PERSISTENT, true);
     } else {
       packageManager.zkClient.setData(PackageUtils.REPOSITORIES_ZK_PATH, getMapper().writeValueAsString(repos).getBytes("UTF-8"), true);
     }
 
-    if (packageManager.zkClient.exists("/keys", true)==false) packageManager.zkClient.create("/keys", new byte[0], CreateMode.PERSISTENT, true);
-    if (packageManager.zkClient.exists("/keys/exe", true)==false) packageManager.zkClient.create("/keys/exe", new byte[0], CreateMode.PERSISTENT, true);
-    if (packageManager.zkClient.exists("/keys/exe/" + name + ".der", true)==false) {
-      packageManager.zkClient.create("/keys/exe/" + name + ".der", new byte[0], CreateMode.PERSISTENT, true);
-    }
-    packageManager.zkClient.setData("/keys/exe/" + name + ".der", IOUtils.toByteArray(new URL(uri + "/publickey.der").openStream()), true);
+    addKey(IOUtils.toByteArray(new URL(uri + "/publickey.der").openStream()), repoName + ".der");
+  }
+
+  public void addKey(byte[] key, String destinationKeyFilename) throws Exception {
+    // get solr_home directory from info servlet
+    String systemInfoUrl = solrClient.getBaseURL() + "/solr/admin/info/system";
+    Map<String,Object> systemInfo = SolrCLI.getJson(solrClient.getHttpClient(), systemInfoUrl, 2, true);
+    String solrHome = (String) systemInfo.get("solr_home");
+    
+    // put the public key into package store's trusted key store and request a sync.
+    String path = PackageStoreAPI.KEYS_DIR + "/" + destinationKeyFilename;
+    PackageUtils.uploadKey(key, path, Paths.get(solrHome), solrClient);
+    PackageUtils.getJsonStringFromUrl(solrClient.getHttpClient(), solrClient.getBaseURL() + "/api/node/files" + path + "?sync=true");
   }
 
   private String getRepositoriesJson(SolrZkClient zkClient) throws UnsupportedEncodingException, KeeperException, InterruptedException {
