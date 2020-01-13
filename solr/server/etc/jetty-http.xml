@@ -38,7 +38,7 @@
             </Item>
           </Array>
         </Arg>
-        <Set name="host"><Property name="jetty.host" /></Set>
+        <Set name="host"><Property name="solr.jetty.host" default="127.0.0.1"/></Set>
         <Set name="port"><Property name="jetty.port" default="8983" /></Set>
         <Set name="idleTimeout"><Property name="solr.jetty.http.idleTimeout" default="120000"/></Set>
         <Set name="acceptorPriorityDelta"><Property name="solr.jetty.http.acceptorPriorityDelta" default="0"/></Set>
