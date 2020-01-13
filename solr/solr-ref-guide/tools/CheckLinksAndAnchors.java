@@ -114,8 +114,8 @@ import org.jsoup.select.NodeVisitor;
  *
  * TODO: build a list of all known external links so that some other tool could (optionally) ping them all for 200 status?
  *
- * @see https://github.com/asciidoctor/asciidoctor/issues/1865
- * @see https://github.com/asciidoctor/asciidoctor/issues/1866
+ * @see "https://github.com/asciidoctor/asciidoctor/issues/1865"
+ * @see "https://github.com/asciidoctor/asciidoctor/issues/1866"
  */
 public class CheckLinksAndAnchors { // TODO: rename this class now that it does more then just links & anchors
 
