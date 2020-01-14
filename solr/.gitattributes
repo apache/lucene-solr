@@ -18,9 +18,9 @@
 
 
 # -nix specific
-solr/bin/solr        text eol=lf
-solr/bin/init.d/solr text eol=lf
-solr/bin/post        text eol=lf
+bin/solr        text eol=lf
+bin/init.d/solr text eol=lf
+bin/post        text eol=lf
 *.bash     text eol=lf
 *.sh       text eol=lf
 
