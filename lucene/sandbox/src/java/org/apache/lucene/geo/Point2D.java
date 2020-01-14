@@ -98,6 +98,17 @@ public class Point2D implements Component2D {
     return PointValues.Relation.CELL_OUTSIDE_QUERY;
   }
 
+  @Override
+  public WithinRelation withinTriangle(double minX, double maxX, double minY, double maxY,
+                                       double aX, double aY, boolean ab, double bX, double bY, boolean bc, double cX, double cY, boolean ca) {
+    if (aX == bX && aY == bY && aX == cX && aY == cY) {
+      if (contains(aX, aY)) {
+        return WithinRelation.CANDIDATE;
+      }
+    }
+    return WithinRelation.DISJOINT;
+  }
+
   /** create a Point2D component tree from provided array of LatLon points.  */
   public static Component2D create(double[]... points) {
     Point2D components[] = new Point2D[points.length];

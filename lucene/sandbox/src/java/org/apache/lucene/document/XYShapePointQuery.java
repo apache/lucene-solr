@@ -81,6 +81,20 @@ final class XYShapePointQuery extends ShapeQuery {
   }
 
   @Override
+  protected Component2D.WithinRelation queryWithin(byte[] t, ShapeField.DecodedTriangle scratchTriangle) {
+    ShapeField.decodeTriangle(t, scratchTriangle);
+
+    double aY = decode(scratchTriangle.aY);
+    double aX = decode(scratchTriangle.aX);
+    double bY = decode(scratchTriangle.bY);
+    double bX = decode(scratchTriangle.bX);
+    double cY = decode(scratchTriangle.cY);
+    double cX = decode(scratchTriangle.cX);
+
+    return point2D.withinTriangle(aX, aY, scratchTriangle.ab, bX, bY, scratchTriangle.bc, cX, cY, scratchTriangle.ca);
+  }
+
+  @Override
   public boolean equals(Object o) {
     return sameClassAs(o) && equalsTo(getClass().cast(o));
   }
