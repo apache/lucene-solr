@@ -3184,7 +3184,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
             "}"
     );
 
-    //the same test with uniqueBlockQuery agg function
+    //the same test with uniqueBlock agg function with query
     client.testJQ(params(p, "q", "type_s:page"
         , "json.facet", "{" +
             "  types: {" +
@@ -3199,7 +3199,7 @@ public class TestJsonFacets extends SolrTestCaseHS {
             "    field:page_s," +
             "    limit:-1," +
             "    facet: {" +
-            "           in_books: \"uniqueBlockQuery(type_s:book)\" }"+
+            "           in_books: \"uniqueBlock(parents=type_s:book)\" }"+
             "  }" +
             "}" )
 

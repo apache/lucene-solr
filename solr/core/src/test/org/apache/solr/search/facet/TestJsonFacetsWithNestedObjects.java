@@ -361,7 +361,7 @@ public class TestJsonFacetsWithNestedObjects extends SolrTestCaseHS{
     );
   }
 
-  public void testUniqueBlockQuery() throws Exception {
+  public void testUniqueBlockWithQuery() throws Exception {
     final Client client = Client.localClient();
     ModifiableSolrParams p = params("rows","0");
     client.testJQ(params(p, "q", "{!parent tag=top which=type_s:book v=$childquery}"
@@ -375,7 +375,7 @@ public class TestJsonFacetsWithNestedObjects extends SolrTestCaseHS{
             "    field:type_s,"
             + "  limit:-1," +
             "    facet: {" +
-            "           in_books: \"uniqueBlockQuery(type_s:book)\" }" +
+            "           in_books: \"uniqueBlock(parents=type_s:book)\" }" +
             "  }" +
             "}" )
 

@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -972,7 +973,16 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     addParser("agg_uniqueBlock", new ValueSourceParser() {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        return new UniqueBlockAgg(fp.parseArg());
+        SimpleImmutableEntry<String, String> namedArg = fp.parseNamedArg();
+        String name = namedArg.getKey();
+        String arg = namedArg.getValue();
+        if (name == null) {
+          return new UniqueBlockAgg(arg);
+        } else if ("parents".equals(name)) {
+          return new UniqueBlockQueryAgg(QParser.getParser(arg, fp.req).parse());
+        } else {
+          throw new SyntaxError("Unexpected name for argument in uniqueBlock function: " + name);
+        }
       }
     });
 
