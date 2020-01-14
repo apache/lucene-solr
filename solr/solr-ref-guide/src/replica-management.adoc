@@ -212,6 +212,11 @@ The number of replicas to remove. If the requested number exceeds the number of 
 +
 If `replica` is used instead, this parameter is not required. Otherwise, this parameter must be supplied.
 
+`type`::
+
+The type of replicas to remove. This parameter compliments `count` parameter. If the requested number exceeds the number of replicas of a certain type specified, no replicas will be deleted.If we tend to remove all TLOG and NRT type replicas (replica types eligible to become leader of shard), the request will not be processed.
+If `replica` is used instead, this parameter is not required. Otherwise, this parameter can be supplied with `count` parameter.
+
 `deleteInstanceDir`::
 By default Solr will delete the entire instanceDir of the replica that is deleted. Set this to `false` to prevent the instance directory from being deleted.
 
