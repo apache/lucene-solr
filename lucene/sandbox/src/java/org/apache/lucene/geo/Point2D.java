@@ -21,6 +21,11 @@ import org.apache.lucene.index.PointValues;
 
 import static org.apache.lucene.geo.GeoUtils.orient;
 
+/**
+ * 2D point implementation containing geo spatial logic.
+ *
+ * @lucene.internal
+ */
 public class Point2D implements Component2D {
 
   final private double x;
