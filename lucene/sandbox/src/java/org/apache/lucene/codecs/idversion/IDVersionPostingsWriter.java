@@ -46,6 +46,7 @@ final class IDVersionPostingsWriter extends PushPostingsWriterBase {
   private long lastVersion;
 
   private final Bits liveDocs;
+  private String segment;
 
   public IDVersionPostingsWriter(Bits liveDocs) {
     this.liveDocs = liveDocs;
@@ -59,10 +60,11 @@ final class IDVersionPostingsWriter extends PushPostingsWriterBase {
   @Override
   public void init(IndexOutput termsOut, SegmentWriteState state) throws IOException {
     CodecUtil.writeIndexHeader(termsOut, TERMS_CODEC, VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+    segment = state.segmentInfo.name;
   }
 
   @Override
-  public void setField(FieldInfo fieldInfo) {
+  public int setField(FieldInfo fieldInfo) {
     super.setField(fieldInfo);
     if (fieldInfo.getIndexOptions() != IndexOptions.DOCS_AND_FREQS_AND_POSITIONS) {
       throw new IllegalArgumentException("field must be index using IndexOptions.DOCS_AND_FREQS_AND_POSITIONS");
@@ -73,6 +75,7 @@ final class IDVersionPostingsWriter extends PushPostingsWriterBase {
       throw new IllegalArgumentException("field cannot index term vectors: CheckIndex will report this as index corruption");
     }
     lastState = emptyState;
+    return 0;
   }
 
   @Override
@@ -151,7 +154,7 @@ final class IDVersionPostingsWriter extends PushPostingsWriterBase {
   private long lastEncodedVersion;
 
   @Override
-  public void encodeTerm(DataOutput out, FieldInfo fieldInfo, BlockTermState _state, boolean absolute) throws IOException {
+  public void encodeTerm(long[] longs, DataOutput out, FieldInfo fieldInfo, BlockTermState _state, boolean absolute) throws IOException {
     IDVersionTermState state = (IDVersionTermState) _state;
     out.writeVInt(state.docID);
     if (absolute) {

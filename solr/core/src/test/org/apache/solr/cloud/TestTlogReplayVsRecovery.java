@@ -48,11 +48,10 @@ import org.junit.Before;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13486")
+@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13486;https://issues.apache.org/jira/browse/SOLR-14183")
 public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
   private static final String COLLECTION = "collecion_with_slow_tlog_recovery";
   
   private JettySolrRunner NODE0;
@@ -60,12 +59,16 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
   private Map<JettySolrRunner, SocketProxy> proxies;
   private Map<URI, JettySolrRunner> jettys;
 
+  // we want to ensure there is tlog replay on the leader after we restart it,
+  // so in addition to not committing the docs we add during network partition
+  // we also want to ensure that our leader doesn't do a "Commit on close"
+  //
+  // TODO: once SOLR-13486 is fixed, we should randomize this...
+  private static final boolean TEST_VALUE_FOR_COMMIT_ON_CLOSE = false;
+  
   @Before
   public void setupCluster() throws Exception {
-    // we want to ensure there is tlog replay on the leader after we restart it,
-    // so in addition to not committing the docs we add during network partition
-    // we also want to ensure that our leader doesn't do a "Commit on close"
-    DirectUpdateHandler2.commitOnClose = false; 
+    DirectUpdateHandler2.commitOnClose = TEST_VALUE_FOR_COMMIT_ON_CLOSE;
     
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     System.setProperty("solr.ulog.numRecordsToKeep", "1000");
@@ -113,6 +116,14 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
   }
 
   public void testManyDocsInTlogReplayWhileReplicaIsTryingToRecover() throws Exception {
+    // TODO: One the basic problem in SOLR-13486 is fixed, this test can be made more robust by:
+    // 1) randomizing the number of committedDocs (pre net split) & uncommittedDocs (post net split)
+    //    to trigger diff recovery strategies & shutdown behavior
+    // 2) replace "committedDocs + uncommittedDocs" with 4 variables:
+    //    a: docs committed before network split (add + commit)
+    //    b: docs not committed before network split (add w/o commit)
+    //    c: docs committed after network split (add + commit)
+    //    d: docs not committed after network split (add w/o commit)
     final int committedDocs = 3;
     final int uncommittedDocs = 50;
     
@@ -140,8 +151,9 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
     final Replica leader = getCollectionState(COLLECTION).getSlice("shard1").getLeader();
     assertEquals("Sanity check failed", NODE0.getNodeName(), leader.getNodeName());
 
-    log.info("Add and commit a {} docs...", committedDocs);
+    log.info("Add and commit {} docs...", committedDocs);
     addDocs(true, committedDocs, 1);
+    assertDocsExistInBothReplicas(1, committedDocs);
 
     log.info("Partition nodes...");
     proxies.get(NODE0).close();
@@ -151,7 +163,8 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
     addDocs(false, uncommittedDocs, committedDocs + 1);
 
     log.info("Stopping leader node...");
-    assertEquals("Something broke our expected commitOnClose", false, DirectUpdateHandler2.commitOnClose);
+    assertEquals("Something broke our expected commitOnClose",
+                 TEST_VALUE_FOR_COMMIT_ON_CLOSE, DirectUpdateHandler2.commitOnClose);
     NODE0.stop();
     cluster.waitForJettyToStop(NODE0);
 
@@ -188,7 +201,7 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
     cluster.waitForActiveCollection(COLLECTION, 1, 2);
 
     log.info("Check docs on both replicas...");
-    assertDocsExistInBothReplicas(1, uncommittedDocs + uncommittedDocs);
+    assertDocsExistInBothReplicas(1, committedDocs + uncommittedDocs);
     
     log.info("Test ok, delete collection...");
     CollectionAdminRequest.deleteCollection(COLLECTION).process(cluster.getSolrClient());

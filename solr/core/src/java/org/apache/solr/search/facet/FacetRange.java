@@ -113,7 +113,7 @@ class FacetRangeProcessor extends FacetProcessor<FacetRange> {
    * <ul>
    * <li>If this is a phase#1 shard request, then {@link #createRangeList} will set this value (non null)
    *     if and only if it is needed for refinement (ie: <code>hardend:false</code> &amp; <code>other</code>
-   *     that requres an end value low/high value calculation).  And it wil be included in the response</li>
+   *     that requires an end value low/high value calculation).  And it wil be included in the response</li>
    * <li>If this is a phase#2 refinement request, this variable will be used 
    *     {@link #getOrComputeActualEndForRefinement} to track the value sent with the refinement request 
    *     -- or to cache a recomputed value if the request omitted it -- for use in refining the 
