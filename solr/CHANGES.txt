@@ -197,14 +197,16 @@ Improvements
 
 * SOLR-14154: Return correct isolation level when retrieving it from the SQL Connection (Nick Vercammen, Kevin Risden)
 
+Optimizations
+---------------------
+
 * SOLR-13890: Add "top-level" DV implementation for {!terms} queries.  This approach tends to be more efficient for
   queries with very large numbers of terms.  The new implementation is used by default for method=docValuesTermsFilter
   terms queries that are searching 500 or more terms.  Users wishing to ignore this heuristic can choose the
   docValuesTermsFilterTopLevel or docValuesTermsFilterPerSegment methods directly. (Jason Gerlowski, Joel Bernstein, David Smiley)
 
-Optimizations
----------------------
-(No changes)
+* SOLR-14040: The shareSchema solr.xml option now supports SolrCloud.  shareSchema is useful when you have many
+  cores per node and large schemas.  (David Smiley)
 
 Bug Fixes
 ---------------------
