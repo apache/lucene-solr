@@ -122,7 +122,6 @@ public final class RamUsageEstimator {
   /**
    * JVMs typically cache small longs. This tries to find out what the range is.
    */
-  static final long LONG_CACHE_MIN_VALUE, LONG_CACHE_MAX_VALUE;
   static final int LONG_SIZE, STRING_SIZE;
   
   /** For testing only */
@@ -190,19 +189,6 @@ public final class RamUsageEstimator {
       NUM_BYTES_ARRAY_HEADER = NUM_BYTES_OBJECT_HEADER + Integer.BYTES;
     }
 
-    // get min/max value of cached Long class instances:
-    long longCacheMinValue = 0;
-    while (longCacheMinValue > Long.MIN_VALUE
-        && Long.valueOf(longCacheMinValue - 1) == Long.valueOf(longCacheMinValue - 1)) {
-      longCacheMinValue -= 1;
-    }
-    long longCacheMaxValue = -1;
-    while (longCacheMaxValue < Long.MAX_VALUE
-        && Long.valueOf(longCacheMaxValue + 1) == Long.valueOf(longCacheMaxValue + 1)) {
-      longCacheMaxValue += 1;
-    }
-    LONG_CACHE_MIN_VALUE = longCacheMinValue;
-    LONG_CACHE_MAX_VALUE = longCacheMaxValue;
     LONG_SIZE = (int) shallowSizeOfInstance(Long.class);
     STRING_SIZE = (int) shallowSizeOfInstance(String.class);
   }
@@ -230,9 +216,6 @@ public final class RamUsageEstimator {
    * cached by the JVM and its shallow size otherwise.
    */
   public static long sizeOf(Long value) {
-    if (value >= LONG_CACHE_MIN_VALUE && value <= LONG_CACHE_MAX_VALUE) {
-      return 0;
-    }
     return LONG_SIZE;
   }
 
