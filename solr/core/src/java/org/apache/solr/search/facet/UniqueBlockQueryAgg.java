@@ -18,8 +18,6 @@
 package org.apache.solr.search.facet;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Objects;
 import java.util.function.IntFunction;
 
 import org.apache.lucene.index.LeafReaderContext;
@@ -28,21 +26,17 @@ import org.apache.lucene.util.BitSet;
 
 import static org.apache.solr.search.join.BlockJoinParentQParser.getCachedFilter;
 
-public class UniqueBlockQueryAgg extends AggValueSource {
+public class UniqueBlockQueryAgg extends UniqueBlockAgg {
 
-  protected static final class UniqueBlockQuerySlotAcc extends UniqueSinglevaluedSlotAcc {
+  private static final class UniqueBlockQuerySlotAcc extends UniqueBlockSlotAcc {
 
-    protected int[] lastSeenValuesPerSlot;
     private Query query;
     private BitSet parentBitSet;
 
-    protected UniqueBlockQuerySlotAcc(FacetContext fcontext, int numSlots, Query query)
+    private UniqueBlockQuerySlotAcc(FacetContext fcontext, Query query, int numSlots)
         throws IOException { //
-      super(fcontext, null, /*numSlots suppressing inherited accumulator */ 0, null);
+      super(fcontext, null, numSlots);
       this.query = query;
-      counts = new int[numSlots];
-      lastSeenValuesPerSlot = new int[numSlots];
-      Arrays.fill(lastSeenValuesPerSlot, Integer.MIN_VALUE);
     }
 
     @Override
@@ -55,59 +49,18 @@ public class UniqueBlockQueryAgg extends AggValueSource {
       int ord = parentBitSet.nextSetBit(doc);
       collectOrdToSlot(slotNum, ord);
     }
-
-    @Override
-    protected void collectOrdToSlot(int slotNum, int ord) {
-      if (lastSeenValuesPerSlot[slotNum] != ord) {
-        counts[slotNum] += 1;
-        lastSeenValuesPerSlot[slotNum] = ord;
-      }
-    }
-
-    @Override
-    public void reset() {
-      Arrays.fill(counts, 0);
-      Arrays.fill(lastSeenValuesPerSlot, Integer.MIN_VALUE);
-    }
-
-    @Override
-    public void resize(Resizer resizer) {
-      lastSeenValuesPerSlot = resizer.resize(lastSeenValuesPerSlot, Integer.MIN_VALUE);
-      super.resize(resizer);
-    }
-
-    @Override
-    public Object getValue(int slot) {
-      return counts[slot];
-    }
   }
 
-  private final static String NAME = "uniqueBlockQuery";
-
-  final protected Query query;
+  final private Query query;
 
   public UniqueBlockQueryAgg(Query query) {
-    super(NAME);
+    super(null);
     this.query = query;
-  }
-
-  @Override
-  public int hashCode() {
-    return Objects.hash(getClass(), query);
-  }
-
-  @Override
-  public String description() {
-    return name + "(query" + query + ")";
+    arg = query.toString();
   }
 
   @Override
   public SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) throws IOException {
-    return new UniqueBlockQuerySlotAcc(fcontext, numSlots, query);
-  }
-
-  @Override
-  public FacetMerger createFacetMerger(Object prototype) {
-    return new FacetLongMerger();
+    return new UniqueBlockQuerySlotAcc(fcontext, query, numSlots);
   }
 }
