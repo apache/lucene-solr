@@ -96,7 +96,9 @@ public class WordnetSynonymParser extends SynonymMap.Parser {
     if (expand) {
       for (int i = 0; i < size; i++) {
         for (int j = 0; j < size; j++) {
-          add(synset[i], synset[j], false);
+          if (i != j) {
+            add(synset[i], synset[j], true);
+          }
         }
       }
     } else {

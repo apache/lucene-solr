@@ -61,12 +61,13 @@ echoRun "rvm $RUBY_VERSION@$GEMSET"      # Activate this project's gemset
 # Install gems in the gemset.  Param --force disables dependency conflict detection.
 echoRun "gem install --force --version 3.5.0 jekyll"
 echoRun "gem uninstall --all --ignore-dependencies asciidoctor"  # Get rid of all versions
-echoRun "gem install --force --version 1.5.6.2 asciidoctor"
-echoRun "gem install --force --version 2.1.0 jekyll-asciidoc"
-echoRun "gem install --force --version 1.1.2 pygments.rb"
-echoRun "gem install --force --version 3.0.9 slim"
+echoRun "gem install --force --version 2.0.10 asciidoctor"
+echoRun "gem install --force --version 3.0.0 jekyll-asciidoc"
+echoRun "gem install --force --version 4.0.1 slim"
+echoRun "gem install --force --version 2.0.10 tilt"
+echoRun "gem install --force --version 1.1.5 concurrent-ruby"
 
 cd solr/solr-ref-guide
 
 set -x                                   # Re-enable command echoing
-ant clean build-site build-pdf
+ant clean build-site

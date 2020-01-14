@@ -20,6 +20,7 @@ package org.apache.lucene.codecs.uniformsplit;
 import java.io.IOException;
 
 import org.apache.lucene.codecs.BlockTermState;
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexOptions;
@@ -193,64 +194,99 @@ public class FieldMetadata implements Accountable {
         + (docsSeen == null ? 0 : docsSeen.ramBytesUsed());
   }
 
-  public static FieldMetadata read(DataInput input, FieldInfos fieldInfos) throws IOException {
-    int fieldId = input.readVInt();
-    FieldMetadata stats = new FieldMetadata(fieldInfos.fieldInfo(fieldId), 0, false);
+  /**
+   * Reads/writes field metadata.
+   */
+  public static class Serializer {
 
-    stats.numTerms = input.readVInt();
-    stats.sumDocFreq = input.readVInt();
+    /**
+     * Stateless singleton.
+     */
+    public static final Serializer INSTANCE = new Serializer();
 
-    stats.sumTotalTermFreq = stats.sumDocFreq;
-    if (stats.fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0) {
-      stats.sumTotalTermFreq += input.readVInt();
-      assert stats.sumTotalTermFreq >= stats.sumDocFreq : "sumTotalFQ: " + stats.sumTotalTermFreq + " sumDocFQ: " + stats.sumDocFreq;
+    public void write(DataOutput output, FieldMetadata fieldMetadata) throws IOException {
+      assert fieldMetadata.dictionaryStartFP >= 0;
+      assert fieldMetadata.firstBlockStartFP >= 0;
+      assert fieldMetadata.lastBlockStartFP >= 0;
+      assert fieldMetadata.numTerms > 0 : "There should be at least one term for field " + fieldMetadata.fieldInfo.name + ": " + fieldMetadata.numTerms;
+      assert fieldMetadata.firstBlockStartFP <= fieldMetadata.lastBlockStartFP : "start: " + fieldMetadata.firstBlockStartFP + " end: " + fieldMetadata.lastBlockStartFP;
+      assert fieldMetadata.lastTerm != null : "you must set the last term";
+
+      output.writeVInt(fieldMetadata.fieldInfo.number);
+
+      output.writeVInt(fieldMetadata.numTerms);
+      output.writeVInt(fieldMetadata.sumDocFreq);
+
+      if (fieldMetadata.fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0) {
+        assert fieldMetadata.sumTotalTermFreq >= fieldMetadata.sumDocFreq : "sumTotalFQ: " + fieldMetadata.sumTotalTermFreq + " sumDocFQ: " + fieldMetadata.sumDocFreq;
+        output.writeVInt(fieldMetadata.sumTotalTermFreq - fieldMetadata.sumDocFreq);
+      }
+
+      output.writeVInt(fieldMetadata.getDocCount());
+
+      output.writeVLong(fieldMetadata.dictionaryStartFP);
+      output.writeVLong(fieldMetadata.firstBlockStartFP);
+      output.writeVLong(fieldMetadata.lastBlockStartFP);
+
+      if (fieldMetadata.lastTerm.length > 0) {
+        output.writeVInt(fieldMetadata.lastTerm.length);
+        output.writeBytes(fieldMetadata.lastTerm.bytes, fieldMetadata.lastTerm.offset, fieldMetadata.lastTerm.length);
+      } else {
+        output.writeVInt(0);
+      }
     }
 
-    stats.docCount = input.readVInt();
+    public FieldMetadata read(DataInput input, FieldInfos fieldInfos, int maxNumDocs) throws IOException {
+      int fieldId = input.readVInt();
+      FieldInfo fieldInfo = fieldInfos.fieldInfo(fieldId);
+      if (fieldInfo == null) {
+        throw new CorruptIndexException("Illegal field id= " + fieldId, input);
+      }
+      FieldMetadata fieldMetadata = new FieldMetadata(fieldInfo, 0, false);
 
-    stats.dictionaryStartFP = input.readVLong();
-    stats.firstBlockStartFP = input.readVLong();
-    stats.lastBlockStartFP = input.readVLong();
+      fieldMetadata.numTerms = input.readVInt();
+      if (fieldMetadata.numTerms <= 0) {
+        throw new CorruptIndexException("Illegal number of terms= " + fieldMetadata.numTerms + " for field= " + fieldId, input);
+      }
 
-    int len = input.readVInt();
-    BytesRef lastTerm = new BytesRef(len);
-    if (len > 0) {
-      input.readBytes(lastTerm.bytes, 0, len);
-      lastTerm.length = len;
-    }
-    stats.setLastTerm(lastTerm);
-    return stats;
-  }
+      fieldMetadata.sumDocFreq = input.readVInt();
+      fieldMetadata.sumTotalTermFreq = fieldMetadata.sumDocFreq;
+      if (fieldMetadata.fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0) {
+        fieldMetadata.sumTotalTermFreq += input.readVInt();
+        if (fieldMetadata.sumTotalTermFreq < fieldMetadata.sumDocFreq) {
+          // #positions must be >= #postings.
+          throw new CorruptIndexException("Illegal sumTotalTermFreq= " + fieldMetadata.sumTotalTermFreq
+              + " sumDocFreq= " + fieldMetadata.sumDocFreq + " for field= " + fieldId, input);
+        }
+      }
 
-  public void write(DataOutput output) throws IOException {
-    assert dictionaryStartFP >= 0;
-    assert firstBlockStartFP >= 0;
-    assert lastBlockStartFP >= 0;
-    assert numTerms > 0 : "There should be at least one term for field " + fieldInfo.name + ": " + numTerms;
-    assert firstBlockStartFP <= lastBlockStartFP : "start: " + firstBlockStartFP + " end: " + lastBlockStartFP;
-    assert lastTerm != null : "you must set the last term";
+      fieldMetadata.docCount = input.readVInt();
+      if (fieldMetadata.docCount < 0 || fieldMetadata.docCount > maxNumDocs) {
+        // #docs with field must be <= #docs.
+        throw new CorruptIndexException("Illegal number of docs= " + fieldMetadata.docCount
+            + " maxNumDocs= " + maxNumDocs + " for field=" + fieldId, input);
+      }
+      if (fieldMetadata.sumDocFreq < fieldMetadata.docCount) {
+        // #postings must be >= #docs with field.
+        throw new CorruptIndexException("Illegal sumDocFreq= " + fieldMetadata.sumDocFreq
+            + " docCount= " + fieldMetadata.docCount + " for field= " + fieldId, input);
+      }
 
-    output.writeVInt(fieldInfo.number);
+      fieldMetadata.dictionaryStartFP = input.readVLong();
+      fieldMetadata.firstBlockStartFP = input.readVLong();
+      fieldMetadata.lastBlockStartFP = input.readVLong();
 
-    output.writeVInt(numTerms);
-    output.writeVInt(sumDocFreq);
+      int lastTermLength = input.readVInt();
+      BytesRef lastTerm = new BytesRef(lastTermLength);
+      if (lastTermLength > 0) {
+        input.readBytes(lastTerm.bytes, 0, lastTermLength);
+        lastTerm.length = lastTermLength;
+      } else if (lastTermLength < 0) {
+        throw new CorruptIndexException("Illegal last term length= " + lastTermLength + " for field= " + fieldId, input);
+      }
+      fieldMetadata.setLastTerm(lastTerm);
 
-    if (fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0) {
-      assert sumTotalTermFreq >= sumDocFreq : "sumTotalFQ: " + sumTotalTermFreq + " sumDocFQ: " + sumDocFreq;
-      output.writeVInt(sumTotalTermFreq - sumDocFreq);
-    }
-
-    output.writeVInt(getDocCount());
-
-    output.writeVLong(dictionaryStartFP);
-    output.writeVLong(firstBlockStartFP);
-    output.writeVLong(lastBlockStartFP);
-
-    if (lastTerm.length > 0) {
-      output.writeVInt(lastTerm.length);
-      output.writeBytes(lastTerm.bytes, lastTerm.offset, lastTerm.length);
-    } else {
-      output.writeVInt(0);
+      return fieldMetadata;
     }
   }
 }

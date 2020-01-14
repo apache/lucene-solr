@@ -44,9 +44,11 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.StrUtils;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.packagemanager.PackageUtils;
 import org.apache.solr.util.LogLevel;
-import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.server.ByteBufferInputStream;
+import org.junit.After;
+import org.junit.Before;
 
 import static org.apache.solr.common.util.Utils.JAVABINCONSUMER;
 import static org.apache.solr.core.TestDynamicLoading.getFileContent;
@@ -54,6 +56,16 @@ import static org.apache.solr.core.TestDynamicLoading.getFileContent;
 @LogLevel("org.apache.solr.filestore.PackageStoreAPI=DEBUG;org.apache.solr.filestore.DistribPackageStore=DEBUG")
 public class TestDistribPackageStore extends SolrCloudTestCase {
 
+  @Before
+  public void setup() {
+    System.setProperty("enable.packages", "true");
+  }
+
+  @After
+  public void teardown() {
+    System.clearProperty("enable.packages");
+  }
+  
   public void testPackageStoreManagement() throws Exception {
     MiniSolrCloudCluster cluster =
         configureCluster(4)
@@ -63,8 +75,9 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
     try {
 
       byte[] derFile = readFile("cryptokeys/pub_key512.der");
-      cluster.getZkClient().makePath("/keys/exe", true);
-      cluster.getZkClient().create("/keys/exe/pub_key512.der", derFile, CreateMode.PERSISTENT, true);
+      uploadKey(derFile, PackageStoreAPI.KEYS_DIR+"/pub_key512.der", cluster);
+//      cluster.getZkClient().makePath("/keys/exe", true);
+//      cluster.getZkClient().create("/keys/exe/pub_key512.der", derFile, CreateMode.PERSISTENT, true);
 
       try {
         postFile(cluster.getSolrClient(), getFileContent("runtimecode/runtimelibs.jar.bin"),
@@ -235,7 +248,16 @@ public class TestDistribPackageStore extends SolrCloudTestCase {
     return rsp;
   }
 
-
+  public static void uploadKey(byte[] bytes, String path, MiniSolrCloudCluster cluster) throws Exception {
+    JettySolrRunner jetty = cluster.getRandomJetty(random());
+    try(HttpSolrClient client = (HttpSolrClient) jetty.newClient()) {
+      PackageUtils.uploadKey(bytes, path, jetty.getCoreContainer().getResourceLoader().getInstancePath(), client);
+      Object resp = Utils.executeGET(client.getHttpClient(), jetty.getBaseURLV2().toString() + "/node/files" + path + "?sync=true", null);
+      System.out.println("sync resp: "+jetty.getBaseURLV2().toString() + "/node/files" + path + "?sync=true"+" ,is: "+resp);
+    }
+    waitForAllNodesHaveFile(cluster,path, Utils.makeMap(":files:" + path + ":name", (Predicate<Object>) Objects::nonNull),
+        false);
+  }
 
   public static void postFile(SolrClient client, ByteBuffer buffer, String name, String sig)
       throws SolrServerException, IOException {

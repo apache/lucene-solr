@@ -25,11 +25,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Supplier;
 
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.PostingsReaderBase;
-import org.apache.lucene.codecs.lucene50.MockTermStateFactory;
+import org.apache.lucene.codecs.lucene84.MockTermStateFactory;
 import org.apache.lucene.codecs.uniformsplit.BlockHeader;
 import org.apache.lucene.codecs.uniformsplit.BlockLine;
 import org.apache.lucene.codecs.uniformsplit.FSTDictionary;
@@ -58,7 +57,7 @@ public class STBlockReaderTest extends LuceneTestCase {
 
   private FieldInfos fieldInfos;
   private List<MockSTBlockLine> blockLines;
-  private Supplier<IndexDictionary.Browser> supplier;
+  private IndexDictionary.BrowserSupplier supplier;
   private ByteBuffersDirectory directory;
 
   @Override
@@ -83,7 +82,16 @@ public class STBlockReaderTest extends LuceneTestCase {
     IndexDictionary.Builder builder = new FSTDictionary.Builder();
     builder.add(new BytesRef("a"), 0);
     IndexDictionary indexDictionary = builder.build();
-    supplier = indexDictionary::browser;
+    supplier = new IndexDictionary.BrowserSupplier() {
+      @Override
+      public IndexDictionary.Browser get() throws IOException {
+        return indexDictionary.browser();
+      }
+      @Override
+      public long ramBytesUsed() {
+        return indexDictionary.ramBytesUsed();
+      }
+    };
   }
 
   @Override
@@ -242,7 +250,7 @@ public class STBlockReaderTest extends LuceneTestCase {
 
     List<MockSTBlockLine> lines;
 
-    MockSTBlockReader(Supplier<IndexDictionary.Browser> supplier, List<MockSTBlockLine> lines, Directory directory, FieldInfo fieldInfo, FieldInfos fieldInfos) throws IOException {
+    MockSTBlockReader(IndexDictionary.BrowserSupplier supplier, List<MockSTBlockLine> lines, Directory directory, FieldInfo fieldInfo, FieldInfos fieldInfos) throws IOException {
       super(supplier, directory.openInput(MOCK_BLOCK_OUTPUT_NAME, IOContext.DEFAULT),
           getMockPostingReaderBase(), mockFieldMetadata(fieldInfo, getLastTermForField(lines, fieldInfo.name)), null, fieldInfos);
       this.lines = lines;

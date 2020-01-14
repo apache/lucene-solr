@@ -20,20 +20,61 @@
 package org.noggit;
 
 
-import java.util.*;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+
+import org.noggit.JSONParser.ParseException;
 
 public class ObjectBuilder {
 
+  /** consider to use {@link #fromJSONStrict(String)}*/
   public static Object fromJSON(String json) throws IOException {
     JSONParser p = new JSONParser(json);
     return getVal(p);
   }
+  
+  /** like {@link #fromJSON(String)}, but also check that there is nothing 
+   * remaining in the given string after closing bracket. 
+   * Throws {@link ParseException} otherwise.*/
+  public static Object fromJSONStrict(String json) throws IOException {
+    JSONParser p = new JSONParser(json);
+    final Object val = getVal(p);
+    checkEOF(p);
+    return val;
+  }
 
+  public static void checkEOF(JSONParser p) throws IOException {
+    if (p.nextEvent()!=JSONParser.EOF) {
+      throw p.err("Expecting single object only.");
+    }
+  }
+
+  /** consider to use {@link #getValStrict()}*/
   public static Object getVal(JSONParser parser) throws IOException {
     return new ObjectBuilder(parser).getVal();
+  }
+  
+  /** like {@link #getVal()}, but also check that there is nothing 
+   * remaining in the given stream after closing bracket. 
+   * Throws {@link ParseException} otherwise.*/
+  public static Object getValStrict(JSONParser parser) throws IOException {
+    final Object val = getVal(parser);
+    checkEOF(parser);
+    return val;
+  }
+
+  /** like {@link #getVal()}, but also check that there is nothing 
+   * remaining in the given stream after closing bracket. 
+   * Throws {@link ParseException} otherwise.*/
+  public Object getValStrict() throws IOException {
+    final Object val = getVal();
+    checkEOF(parser);
+    return val;
   }
 
   final JSONParser parser;

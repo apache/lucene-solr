@@ -31,7 +31,7 @@ public class CharacterRunAutomaton extends RunAutomaton {
   /**
    * Construct specifying maxDeterminizedStates.
    * @param a Automaton to match
-   * @param maxDeterminizedStates maximum number of states that the automataon
+   * @param maxDeterminizedStates maximum number of states that the automaton
    *   can have once determinized.  If more states are required to determinize
    *   it then a TooComplexToDeterminizeException is thrown.
    */ 

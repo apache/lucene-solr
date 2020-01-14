@@ -74,7 +74,7 @@ The following properties are available:
 
 `dataDir`:: The core's data directory (where indexes are stored) as either an absolute pathname, or a path relative to the value of `instanceDir`. This is `data` by default.
 
-`configSet`:: The name of a defined configset, if desired, to use to configure the core (see the section  <<config-sets.adoc#config-sets,Config Sets>> for more details).
+`configSet`:: The name of a defined configset, if desired, to use to configure the core (see the section  <<config-sets.adoc#config-sets,Configsets>> for more details).
 
 `properties`:: The name of the properties file for this core. The value can be an absolute pathname or a path relative to the value of `instanceDir`.
 

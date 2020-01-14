@@ -42,10 +42,9 @@ public class TestSolrJsonWriter  extends SolrTestCaseJ4 {
           .add("v632"));
     });
 
-    new SolrJSONWriter(writer)
-        .setIndent(true)
-        .writeObj(map)
-        .close();
+    try (SolrJSONWriter jsonWriter = new SolrJSONWriter(writer)) {
+      jsonWriter.setIndent(true).writeObj(map);
+    }
     Object o = Utils.fromJSONString(writer.toString());
     assertEquals("v1", Utils.getObjectByPath(o, true, "k1"));
     assertEquals(1l, Utils.getObjectByPath(o, true, "k2"));

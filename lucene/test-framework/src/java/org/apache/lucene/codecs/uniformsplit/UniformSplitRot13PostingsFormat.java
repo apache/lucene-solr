@@ -24,8 +24,8 @@ import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.PostingsWriterBase;
-import org.apache.lucene.codecs.lucene50.Lucene50PostingsReader;
-import org.apache.lucene.codecs.lucene50.Lucene50PostingsWriter;
+import org.apache.lucene.codecs.lucene84.Lucene84PostingsReader;
+import org.apache.lucene.codecs.lucene84.Lucene84PostingsWriter;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.DataOutput;
@@ -59,7 +59,7 @@ public class UniformSplitRot13PostingsFormat extends PostingsFormat {
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState segmentWriteState) throws IOException {
-    PostingsWriterBase postingsWriter = new Lucene50PostingsWriter(segmentWriteState);
+    PostingsWriterBase postingsWriter = new Lucene84PostingsWriter(segmentWriteState);
     boolean success = false;
     try {
       FieldsConsumer fieldsConsumer = createFieldsConsumer(segmentWriteState, postingsWriter);
@@ -121,7 +121,7 @@ public class UniformSplitRot13PostingsFormat extends PostingsFormat {
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState segmentReadState) throws IOException {
-    PostingsReaderBase postingsReader = new Lucene50PostingsReader(segmentReadState);
+    PostingsReaderBase postingsReader = new Lucene84PostingsReader(segmentReadState);
     boolean success = false;
     try {
       FieldsProducer fieldsProducer = createFieldsProducer(segmentReadState, postingsReader);

@@ -34,6 +34,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
@@ -353,6 +354,10 @@ public class SolrZkClient implements Closeable {
   }
 
   public void atomicUpdate(String path, Function<byte[], byte[]> editor) throws KeeperException, InterruptedException {
+   atomicUpdate(path, (stat, bytes) -> editor.apply(bytes));
+  }
+
+  public void atomicUpdate(String path, BiFunction<Stat , byte[], byte[]> editor) throws KeeperException, InterruptedException {
     for (; ; ) {
       byte[] modified = null;
       byte[] zkData = null;
@@ -360,7 +365,7 @@ public class SolrZkClient implements Closeable {
       try {
         if (exists(path, true)) {
           zkData = getData(path, null, s, true);
-          modified = editor.apply(zkData);
+          modified = editor.apply(s, zkData);
           if (modified == null) {
             //no change , no need to persist
             return;
@@ -368,7 +373,7 @@ public class SolrZkClient implements Closeable {
           setData(path, modified, s.getVersion(), true);
           break;
         } else {
-          modified = editor.apply(null);
+          modified = editor.apply(s,null);
           if (modified == null) {
             //no change , no need to persist
             return;

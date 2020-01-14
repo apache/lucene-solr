@@ -97,6 +97,20 @@ final class XYShapePolygonQuery extends ShapeQuery {
   }
 
   @Override
+  protected Component2D.WithinRelation queryWithin(byte[] t, ShapeField.DecodedTriangle scratchTriangle) {
+    ShapeField.decodeTriangle(t, scratchTriangle);
+
+    double alat = decode(scratchTriangle.aY);
+    double alon = decode(scratchTriangle.aX);
+    double blat = decode(scratchTriangle.bY);
+    double blon = decode(scratchTriangle.bX);
+    double clat = decode(scratchTriangle.cY);
+    double clon = decode(scratchTriangle.cX);
+
+    return poly2D.withinTriangle(alon, alat, scratchTriangle.ab, blon, blat, scratchTriangle.bc, clon, clat, scratchTriangle.ca);
+  }
+
+  @Override
   public String toString(String field) {
     final StringBuilder sb = new StringBuilder();
     sb.append(getClass().getSimpleName());

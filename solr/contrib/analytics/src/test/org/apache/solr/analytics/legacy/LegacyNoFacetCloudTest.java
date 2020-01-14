@@ -21,7 +21,7 @@ import java.util.List;
 
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.util.NamedList;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class LegacyNoFacetCloudTest extends LegacyAbstractAnalyticsCloudTest {
@@ -57,8 +57,8 @@ public class LegacyNoFacetCloudTest extends LegacyAbstractAnalyticsCloudTest {
   static ArrayList<String> stringTestStart;
   static long stringMissing = 0;
 
-  @Before
-  public void populate() throws Exception {
+  @BeforeClass
+  public static void populate() throws Exception {
     intTestStart = new ArrayList<>();
     longTestStart = new ArrayList<>();
     floatTestStart = new ArrayList<>();
@@ -146,7 +146,7 @@ public class LegacyNoFacetCloudTest extends LegacyAbstractAnalyticsCloudTest {
 
     //Double
     Double doubleResult = getValue(response, "sr", "double_dd");
-        Double doubleTest = (Double) calculateNumberStat(doubleTestStart, "sum");
+    Double doubleTest = (Double) calculateNumberStat(doubleTestStart, "sum");
     assertEquals(responseStr, doubleResult,doubleTest);
   }
 

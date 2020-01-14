@@ -19,16 +19,18 @@ package org.apache.solr.search;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.search.join.BlockJoinChildQParserPlugin;
 import org.apache.solr.search.join.BlockJoinParentQParserPlugin;
 import org.apache.solr.search.join.FiltersQParserPlugin;
 import org.apache.solr.search.join.GraphQParserPlugin;
+import org.apache.solr.search.join.HashRangeQParserPlugin;
+import org.apache.solr.search.join.XCJFQParserPlugin;
 import org.apache.solr.search.mlt.MLTQParserPlugin;
 import org.apache.solr.util.plugin.NamedListInitializedPlugin;
 
@@ -85,6 +87,8 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
     map.put(PayloadCheckQParserPlugin.NAME, new PayloadCheckQParserPlugin());
     map.put(BoolQParserPlugin.NAME, new BoolQParserPlugin());
     map.put(MinHashQParserPlugin.NAME, new MinHashQParserPlugin());
+    map.put(XCJFQParserPlugin.NAME, new XCJFQParserPlugin());
+    map.put(HashRangeQParserPlugin.NAME, new HashRangeQParserPlugin());
 
     standardPlugins = Collections.unmodifiableMap(map);
   }
@@ -114,10 +118,15 @@ public abstract class QParserPlugin implements NamedListInitializedPlugin, SolrI
   }
 
   @Override
-  public Set<String> getMetricNames() {
-    return null;
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    // by default do nothing
   }
 
+  // by default no metrics
+  @Override
+  public SolrMetricsContext getSolrMetricsContext() {
+    return null;
+  }
 }
 
 

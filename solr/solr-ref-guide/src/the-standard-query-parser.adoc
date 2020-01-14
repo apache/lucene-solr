@@ -28,10 +28,10 @@ In addition to the <<common-query-parameters.adoc#common-query-parameters,Common
 Defines a query using standard query syntax. This parameter is mandatory.
 
 `q.op`::
-Specifies the default operator for query expressions, overriding the default operator specified in the Schema. Possible values are "AND" or "OR".
+Specifies the default operator for query expressions. Possible values are "AND" or "OR".
 
 `df`::
-Specifies a default field, overriding the definition of a default field in the Schema.
+Specifies a default searchable field.
 
 `sow`::
 Split on whitespace. If set to `true`, text analysis is invoked separately for each individual whitespace-separated term.  The default is `false`; whitespace-separated term sequences will be provided to text analysis in one shot, enabling proper function of analysis filters that operate over term sequences, e.g., multi-word synonyms and shingles.

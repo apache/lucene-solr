@@ -20,7 +20,6 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.Timer;
@@ -127,6 +126,8 @@ public class TestInjection {
 
   public volatile static CountDownLatch splitLatch = null;
 
+  public volatile static CountDownLatch directUpdateLatch = null;
+
   public volatile static CountDownLatch reindexLatch = null;
 
   public volatile static String reindexFailure = null;
@@ -147,8 +148,6 @@ public class TestInjection {
 
   public volatile static boolean uifOutOfMemoryError = false;
 
-  public volatile static Map<String, String> additionalSystemProps = null;
-
   private volatile static CountDownLatch notifyPauseForeverDone = new CountDownLatch(1);
   
   public static void notifyPauseForeverDone() {
@@ -157,7 +156,6 @@ public class TestInjection {
   }
 
   public static void reset() {
-    additionalSystemProps = null;
     nonGracefullClose = null;
     failReplicaRequests = null;
     failUpdateRequests = null;
@@ -168,6 +166,7 @@ public class TestInjection {
     splitFailureBeforeReplicaCreation = null;
     splitFailureAfterReplicaCreation = null;
     splitLatch = null;
+    directUpdateLatch = null;
     reindexLatch = null;
     reindexFailure = null;
     prepRecoveryOpPauseForever = null;
@@ -439,6 +438,18 @@ public class TestInjection {
     return true;
   }
 
+  public static boolean injectDirectUpdateLatch() {
+    if (directUpdateLatch != null) {
+      try {
+        log.info("Waiting in DirectUpdateHandler2 for up to 60s");
+        return directUpdateLatch.await(60, TimeUnit.SECONDS);
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+      }
+    }
+    return true;
+  }
+
   public static boolean injectReindexFailure() {
     if (reindexFailure != null)  {
       Random rand = random();
@@ -492,10 +503,6 @@ public class TestInjection {
       }
     }
     return true;
-  }
-
-  public static Map<String,String> injectAdditionalProps() {
-    return additionalSystemProps;
   }
 
   public static boolean injectUIFOutOfMemoryError() {

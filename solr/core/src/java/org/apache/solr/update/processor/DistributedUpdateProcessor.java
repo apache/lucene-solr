@@ -1089,15 +1089,17 @@ public class DistributedUpdateProcessor extends UpdateRequestProcessor {
   }
 
   @Override
-  public void finish() throws IOException {
-    assertNotFinished();
+  public final void finish() throws IOException {
+    assert ! finished : "lifecycle sanity check";
+    finished = true;
+
+    doDistribFinish();
 
     super.finish();
   }
 
-  protected void assertNotFinished() {
-    assert ! finished : "lifecycle sanity check";
-    finished = true;
+  protected void doDistribFinish() throws IOException {
+    // no-op for derived classes to implement
   }
 
   /**

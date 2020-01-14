@@ -27,9 +27,13 @@ Included are parameters for defining if it should handle `/select` urls (for Sol
 `handleSelect` is for legacy back-compatibility; those new to Solr do not need to change anything about the way this is configured by default.
 ====
 
-The first configurable item is the `handleSelect` attribute on the `<requestDispatcher>` element itself. This attribute can be set to one of two values, either "true" or "false". It governs how Solr responds to requests such as `/select?qt=XXX`. The default value "false" will ignore requests to `/select` if a requestHandler is not explicitly registered with the name `/select`. A value of "true" will route query requests to the parser defined with the `qt` value.
+The first configurable item is the `handleSelect` attribute on the `<requestDispatcher>` element itself.
+This attribute can be set to one of two values, either "true" or "false".
+It governs how Solr responds to requests such as `/select?qt=XXX`.
+The default value "false" will ignore requests to `/select` if a request handler is not explicitly registered with the name `/select`.
+A value of "true" will route query requests to the parser defined with the `qt` value if a request handler is not explicitly registered with the name `/select`.
 
-In recent versions of Solr, a `/select` requestHandler is defined by default, so a value of "false" will work fine. See the section <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#requesthandlers-and-searchcomponents-in-solrconfig,RequestHandlers and SearchComponents in SolrConfig>> for more information.
+In recent versions of Solr, a `/select` request handler is defined by default, so a value of "false" will work fine. See the section <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#requesthandlers-and-searchcomponents-in-solrconfig,RequestHandlers and SearchComponents in SolrConfig>> for more information.
 
 [source,xml]
 ----

@@ -401,7 +401,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
     sb.append('{');
     int sz = size();
     for (int i=0; i<sz; i++) {
-      if (i != 0) sb.append(',');
+      if (i != 0) sb.append(", ");
       sb.append(getName(i));
       sb.append('=');
       sb.append(getVal(i));

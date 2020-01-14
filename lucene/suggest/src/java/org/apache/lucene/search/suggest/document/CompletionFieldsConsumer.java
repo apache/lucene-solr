@@ -38,7 +38,6 @@ import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 
-import static org.apache.lucene.search.suggest.document.CompletionPostingsFormat.CODEC_NAME;
 import static org.apache.lucene.search.suggest.document.CompletionPostingsFormat.COMPLETION_VERSION_CURRENT;
 import static org.apache.lucene.search.suggest.document.CompletionPostingsFormat.DICT_EXTENSION;
 import static org.apache.lucene.search.suggest.document.CompletionPostingsFormat.INDEX_EXTENSION;
@@ -62,8 +61,10 @@ final class CompletionFieldsConsumer extends FieldsConsumer {
   private final SegmentWriteState state;
   private IndexOutput dictOut;
   private FieldsConsumer delegateFieldsConsumer;
+  private final String codecName;
 
-  CompletionFieldsConsumer(PostingsFormat delegatePostingsFormat, SegmentWriteState state) throws IOException {
+  CompletionFieldsConsumer(String codecName, PostingsFormat delegatePostingsFormat, SegmentWriteState state) throws IOException {
+    this.codecName = codecName;
     this.delegatePostingsFormatName = delegatePostingsFormat.getName();
     this.state = state;
     String dictFile = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, DICT_EXTENSION);
@@ -71,7 +72,7 @@ final class CompletionFieldsConsumer extends FieldsConsumer {
     try {
       this.delegateFieldsConsumer = delegatePostingsFormat.fieldsConsumer(state);
       dictOut = state.directory.createOutput(dictFile, state.context);
-      CodecUtil.writeIndexHeader(dictOut, CODEC_NAME, COMPLETION_VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+      CodecUtil.writeIndexHeader(dictOut, codecName, COMPLETION_VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
       success = true;
     } finally {
       if (success == false) {
@@ -122,7 +123,7 @@ final class CompletionFieldsConsumer extends FieldsConsumer {
     boolean success = false;
     try (IndexOutput indexOut = state.directory.createOutput(indexFile, state.context)) {
       delegateFieldsConsumer.close();
-      CodecUtil.writeIndexHeader(indexOut, CODEC_NAME, COMPLETION_VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
+      CodecUtil.writeIndexHeader(indexOut, codecName, COMPLETION_VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
       /*
        * we write the delegate postings format name so we can load it
        * without getting an instance in the ctor

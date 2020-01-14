@@ -122,6 +122,15 @@ final class ComponentTree implements Component2D {
     return Relation.CELL_OUTSIDE_QUERY;
   }
 
+  @Override
+  public WithinRelation withinTriangle(double minX, double maxX, double minY, double maxY,
+                                       double aX, double aY, boolean ab, double bX, double bY, boolean bc, double cX, double cY, boolean ca) {
+    if (left != null || right != null) {
+      throw new IllegalArgumentException("withinTriangle is not supported for shapes with more than one component");
+    }
+    return component.withinTriangle(minX, maxX, minY, maxY, aX, aY, ab, bX, bY, bc, cX, cY, ca);
+  }
+
   /** Returns relation to the provided rectangle */
   @Override
   public Relation relate(double minX, double maxX, double minY, double maxY) {

@@ -402,7 +402,7 @@ Learning-To-Rank is a contrib module and therefore its plugins must be configure
 [source,xml]
 ----
 <cache name="QUERY_DOC_FV"
-       class="solr.search.LRUCache"
+       class="solr.search.CaffeineCache"
        size="4096"
        initialSize="2048"
        autowarmCount="4096"
@@ -533,7 +533,7 @@ Assuming that you consider to use a large model placed at `/path/to/models/myMod
 }
 ----
 
-First, add the directory to Solr's resource paths with a <<resource-and-plugin-loading.adoc#lib-directives-in-solrconfig,`<lib/>` directive>>:
+First, add the directory to Solr's resource paths with a <<libs.adoc#lib-directives-in-solrconfig,`<lib/>` directive>>:
 
 [source,xml]
 ----

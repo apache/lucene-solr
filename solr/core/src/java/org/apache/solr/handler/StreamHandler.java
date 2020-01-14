@@ -33,7 +33,10 @@ import org.apache.solr.client.solrj.io.ModelCache;
 import org.apache.solr.client.solrj.io.SolrClientCache;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.comp.StreamComparator;
-import org.apache.solr.client.solrj.io.stream.*;
+import org.apache.solr.client.solrj.io.stream.DaemonStream;
+import org.apache.solr.client.solrj.io.stream.ExceptionStream;
+import org.apache.solr.client.solrj.io.stream.StreamContext;
+import org.apache.solr.client.solrj.io.stream.TupleStream;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation;
 import org.apache.solr.client.solrj.io.stream.expr.Explanation.ExpressionType;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
@@ -42,14 +45,21 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParser;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.client.solrj.routing.RequestReplicaListTransformerGenerator;
+import org.apache.solr.cloud.ZkController;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CloseHook;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.core.PluginInfo;
+import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrCore;
+import org.apache.solr.pkg.PackageLoader;
+import org.apache.solr.pkg.PackagePluginHolder;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
@@ -61,6 +71,19 @@ import org.slf4j.LoggerFactory;
 import static org.apache.solr.common.params.CommonParams.ID;
 
 /**
+ * <p>
+ * Solr Request Handler for streaming data.
+ * </p>
+ * <p>
+ * It loads a default set of mappings via {@link org.apache.solr.handler.SolrDefaultStreamFactory}.
+ * </p>
+ * <p>
+ * To add additional mappings, just define them as plugins in solrconfig.xml via
+ * {@code
+ * &lt;expressible name="count" class="org.apache.solr.client.solrj.io.stream.RecordCountStream" /&gt;
+ * }
+ * </p>
+ *
  * @since 5.1.0
  */
 public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, PermissionNameProvider {
@@ -71,7 +94,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
   private SolrDefaultStreamFactory streamFactory = new SolrDefaultStreamFactory();
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private String coreName;
-  private Map<String,DaemonStream> daemons = Collections.synchronizedMap(new HashMap());
+  private Map<String, DaemonStream> daemons = Collections.synchronizedMap(new HashMap());
 
   @Override
   public PermissionNameProvider.Name getPermissionName(AuthorizationContext request) {
@@ -83,17 +106,6 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
   }
 
   public void inform(SolrCore core) {
-
-    /*
-     * The stream factory will always contain the zkUrl for the given collection Adds default streams with their
-     * corresponding function names. These defaults can be overridden or added to in the solrConfig in the stream
-     * RequestHandler def. Example config override
-     * <lst name="streamFunctions">
-     *  <str name="group">org.apache.solr.client.solrj.io.stream.ReducerStream</str>
-     *  <str name="count">org.apache.solr.client.solrj.io.stream.RecordCountStream</str>
-     * </lst>
-     */
-
     String defaultCollection;
     String defaultZkhost;
     CoreContainer coreContainer = core.getCoreContainer();
@@ -113,8 +125,14 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     // This pulls all the overrides and additions from the config
     List<PluginInfo> pluginInfos = core.getSolrConfig().getPluginInfos(Expressible.class.getName());
     for (PluginInfo pluginInfo : pluginInfos) {
-      Class<? extends Expressible> clazz = core.getMemClassLoader().findClass(pluginInfo.className, Expressible.class);
-      streamFactory.withFunctionName(pluginInfo.name, clazz);
+      if (pluginInfo.pkgName != null) {
+        ExpressibleHolder holder = new ExpressibleHolder(pluginInfo, core, SolrConfig.classVsSolrPluginInfo.get(Expressible.class));
+        streamFactory.withFunctionName(pluginInfo.name,
+            () -> holder.getClazz());
+      } else {
+        Class<? extends Expressible> clazz = core.getMemClassLoader().findClass(pluginInfo.className, Expressible.class);
+        streamFactory.withFunctionName(pluginInfo.name, clazz);
+      }
     }
 
     core.addCloseHook(new CloseHook() {
@@ -128,6 +146,24 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         clientCache.close();
       }
     });
+  }
+
+  public static class ExpressibleHolder extends PackagePluginHolder {
+    private Class clazz;
+
+    public ExpressibleHolder(PluginInfo info, SolrCore core, SolrConfig.SolrPluginInfo pluginMeta) {
+      super(info, core, pluginMeta);
+    }
+
+    public Class getClazz() {
+      return clazz;
+    }
+
+    @Override
+    protected void initNewInstance(PackageLoader.Package.Version newest) {
+      clazz = newest.getLoader().findClass(pluginInfo.className, Expressible.class);
+    }
+
   }
 
   public void handleRequestBody(SolrQueryRequest req, SolrQueryResponse rsp) throws Exception {
@@ -160,10 +196,29 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       return;
     }
 
+
+    final SolrCore core = req.getCore(); // explicit check for null core (temporary?, for tests)
+    ZkController zkController = core == null ? null : core.getCoreContainer().getZkController();
+    RequestReplicaListTransformerGenerator requestReplicaListTransformerGenerator;
+    if (zkController != null) {
+      requestReplicaListTransformerGenerator = new RequestReplicaListTransformerGenerator(
+          zkController.getZkStateReader().getClusterProperties()
+              .getOrDefault(ZkStateReader.DEFAULT_SHARD_PREFERENCES, "")
+              .toString(),
+          zkController.getNodeName(),
+          zkController.getBaseUrl(),
+          zkController.getSysPropsCacher()
+      );
+    } else {
+      requestReplicaListTransformerGenerator = new RequestReplicaListTransformerGenerator();
+    }
+
     int worker = params.getInt("workerID", 0);
     int numWorkers = params.getInt("numWorkers", 1);
     boolean local = params.getBool("streamLocalOnly", false);
     StreamContext context = new StreamContext();
+    context.setRequestParams(params);
+    context.setRequestReplicaListTransformerGenerator(requestReplicaListTransformerGenerator);
     context.put("shards", getCollectionShards(params));
     context.workerID = worker;
     context.numWorkers = numWorkers;
@@ -196,6 +251,10 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
 
   private void handleAdmin(SolrQueryRequest req, SolrQueryResponse rsp, SolrParams params) {
     String action = params.get("action").toLowerCase(Locale.ROOT).trim();
+    if ("plugins".equals(action)) {
+      rsp.add("plugins", (MapWriter) ew -> streamFactory.getFunctionNames().forEach((s, classSupplier) -> ew.putNoEx(s, classSupplier.get().getName())));
+      return;
+    }
 
     if ("list".equals(action)) {
       Collection<DaemonStream> vals = daemons.values();
@@ -231,10 +290,10 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         rsp.add("result-set", new DaemonResponseStream("Deamon:" + id + " killed on " + coreName));
         break;
 
-       default:
-         rsp.add("result-set", new DaemonResponseStream("Deamon:" + id + " action '"
-             + action + "' not recognized on " + coreName));
-         break;
+      default:
+        rsp.add("result-set", new DaemonResponseStream("Deamon:" + id + " action '"
+            + action + "' not recognized on " + coreName));
+        break;
     }
   }
 
@@ -264,11 +323,14 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       return null;
     }
 
-    public void close() {}
+    public void close() {
+    }
 
-    public void open() {}
+    public void open() {
+    }
 
-    public void setStreamContext(StreamContext context) {}
+    public void setStreamContext(StreamContext context) {
+    }
 
     public List<TupleStream> children() {
       return null;
@@ -311,11 +373,14 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       return null;
     }
 
-    public void close() {}
+    public void close() {
+    }
 
-    public void open() {}
+    public void open() {
+    }
 
-    public void setStreamContext(StreamContext context) {}
+    public void setStreamContext(StreamContext context) {
+    }
 
     public List<TupleStream> children() {
       return null;
@@ -354,11 +419,14 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
       return null;
     }
 
-    public void close() {}
+    public void close() {
+    }
 
-    public void open() {}
+    public void open() {
+    }
 
-    public void setStreamContext(StreamContext context) {}
+    public void setStreamContext(StreamContext context) {
+    }
 
     public List<TupleStream> children() {
       return null;
@@ -438,9 +506,9 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     }
   }
 
-  private Map<String,List<String>> getCollectionShards(SolrParams params) {
+  private Map<String, List<String>> getCollectionShards(SolrParams params) {
 
-    Map<String,List<String>> collectionShards = new HashMap();
+    Map<String, List<String>> collectionShards = new HashMap();
     Iterator<String> paramsIt = params.getParameterNamesIterator();
     while (paramsIt.hasNext()) {
       String param = paramsIt.next();

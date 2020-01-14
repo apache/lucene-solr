@@ -187,11 +187,9 @@ public class TestHdfsBackupRestoreCore extends SolrCloudTestCase {
       if (testViaReplicationHandler) {
         log.info("Running Backup via replication handler");
         BackupRestoreUtils.runReplicationHandlerCommand(baseUrl, coreName, ReplicationHandler.CMD_BACKUP, "hdfs", backupName);
-        CheckBackupStatus checkBackupStatus = new CheckBackupStatus(masterClient, coreName, null);
-        while (!checkBackupStatus.success) {
-          checkBackupStatus.fetchStatus();
-          Thread.sleep(1000);
-        }
+        final BackupStatusChecker backupStatus
+          = new BackupStatusChecker(masterClient, "/" + coreName + "/replication");
+        backupStatus.waitForBackupSuccess(backupName, 30);
       } else {
         log.info("Running Backup via core admin api");
         Map<String,String> params = new HashMap<>();

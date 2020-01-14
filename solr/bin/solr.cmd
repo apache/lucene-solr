@@ -16,6 +16,8 @@
 
 @echo off
 
+@REM Make sure to keep line endings as CRLF for .cmd files
+
 IF "%OS%"=="Windows_NT" setlocal enabledelayedexpansion enableextensions
 
 set "PASS_TO_RUN_EXAMPLE="
@@ -80,6 +82,10 @@ IF "%SOLR_SSL_ENABLED%"=="true" (
     set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.truststore.type=%SOLR_SSL_TRUST_STORE_TYPE%"
   )
 
+  IF NOT DEFINED SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION (
+    set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.ssl.verifyClientHostName=HTTPS"
+  )
+
   IF DEFINED SOLR_SSL_NEED_CLIENT_AUTH (
     set "SOLR_SSL_OPTS=!SOLR_SSL_OPTS! -Dsolr.jetty.ssl.needClientAuth=%SOLR_SSL_NEED_CLIENT_AUTH%"
   )
@@ -121,6 +127,11 @@ IF "%SOLR_SSL_ENABLED%"=="true" (
   )
 ) ELSE (
   set SOLR_SSL_OPTS=
+)
+
+REM Requestlog options
+IF "%SOLR_REQUESTLOG_ENABLED%"=="true" (
+  set "SOLR_JETTY_CONFIG=!SOLR_JETTY_CONFIG! --module=requestlog"
 )
 
 REM Authentication options
@@ -215,6 +226,7 @@ IF "%1"=="-version" goto get_version
 IF "%1"=="assert" goto run_assert
 IF "%1"=="autoscaling" goto run_autoscaling
 IF "%1"=="export" goto run_export
+IF "%1"=="package" goto run_package
 
 REM Only allow the command to be the first argument, assume start if not supplied
 IF "%1"=="start" goto set_script_cmd
@@ -715,11 +727,13 @@ goto parse_args
 
 :set_debug
 set SOLR_LOG_LEVEL=DEBUG
+set "PASS_TO_RUN_EXAMPLE=!PASS_TO_RUN_EXAMPLE! -Dsolr.log.level=%SOLR_LOG_LEVEL%"
 SHIFT
 goto parse_args
 
 :set_warn
 set SOLR_LOG_LEVEL=WARN
+set "PASS_TO_RUN_EXAMPLE=!PASS_TO_RUN_EXAMPLE! -Dsolr.log.level=%SOLR_LOG_LEVEL%"
 SHIFT
 goto parse_args
 
@@ -991,7 +1005,7 @@ set "EXAMPLE_DIR=%SOLR_TIP%\example"
 set TMP_SOLR_HOME=!SOLR_HOME:%EXAMPLE_DIR%=!
 IF NOT "%TMP_SOLR_HOME%"=="%SOLR_HOME%" (
   set "SOLR_LOGS_DIR=%SOLR_HOME%\..\logs"
-  set "LOG4J_CONFIG=file:///%SOLR_SERVER_DIR%\resources\log4j2.xml"
+  set "LOG4J_CONFIG=%SOLR_SERVER_DIR%\resources\log4j2.xml"
 )
 
 set IS_RESTART=0
@@ -1146,6 +1160,10 @@ IF "%SOLR_MODE%"=="solrcloud" (
   )
 )
 
+REM IP-based access control
+set IP_ACL_OPTS=-Dsolr.jetty.inetaccess.includes="%SOLR_IP_WHITELIST%" ^
+-Dsolr.jetty.inetaccess.excludes="%SOLR_IP_BLACKLIST%"
+
 REM These are useful for attaching remove profilers like VisualVM/JConsole
 IF "%ENABLE_REMOTE_JMX_OPTS%"=="true" (
   IF "!RMI_PORT!"=="" set RMI_PORT=1%SOLR_PORT%
@@ -1159,6 +1177,14 @@ IF "%ENABLE_REMOTE_JMX_OPTS%"=="true" (
   IF NOT "%SOLR_HOST%"=="" set REMOTE_JMX_OPTS=%REMOTE_JMX_OPTS% -Djava.rmi.server.hostname=%SOLR_HOST%
 ) ELSE (
   set REMOTE_JMX_OPTS=
+)
+
+REM Enable java security manager (limiting filesystem access and other things)
+IF "%SOLR_SECURITY_MANAGER_ENABLED%"=="true" (
+  set SECURITY_MANAGER_OPTS=-Djava.security.manager ^
+-Djava.security.policy="%SOLR_SERVER_DIR%\etc\security.policy" ^
+-Djava.security.properties="%SOLR_SERVER_DIR%\etc\security.properties" ^
+-Dsolr.internal.network.permission=*
 )
 
 IF NOT "%SOLR_HEAP%"=="" set SOLR_JAVA_MEM=-Xms%SOLR_HEAP% -Xmx%SOLR_HEAP%
@@ -1248,10 +1274,12 @@ IF "%verbose%"=="1" (
 set START_OPTS=-Duser.timezone=%SOLR_TIMEZONE%
 set START_OPTS=%START_OPTS% !GC_TUNE! %GC_LOG_OPTS%
 IF NOT "!CLOUD_MODE_OPTS!"=="" set "START_OPTS=%START_OPTS% !CLOUD_MODE_OPTS!"
+IF NOT "!IP_ACL_OPTS!"=="" set "START_OPTS=%START_OPTS% !IP_ACL_OPTS!"
 IF NOT "%REMOTE_JMX_OPTS%"=="" set "START_OPTS=%START_OPTS% %REMOTE_JMX_OPTS%"
 IF NOT "%SOLR_ADDL_ARGS%"=="" set "START_OPTS=%START_OPTS% %SOLR_ADDL_ARGS%"
 IF NOT "%SOLR_HOST_ARG%"=="" set "START_OPTS=%START_OPTS% %SOLR_HOST_ARG%"
 IF NOT "%SOLR_OPTS%"=="" set "START_OPTS=%START_OPTS% %SOLR_OPTS%"
+IF NOT "!SECURITY_MANAGER_OPTS!"=="" set "START_OPTS=%START_OPTS% !SECURITY_MANAGER_OPTS!"
 IF "%SOLR_SSL_ENABLED%"=="true" (
   set "SSL_PORT_PROP=-Dsolr.jetty.https.port=%SOLR_PORT%"
   set "START_OPTS=%START_OPTS% %SOLR_SSL_OPTS% !SSL_PORT_PROP!"
@@ -1263,7 +1291,7 @@ set SOLR_DATA_HOME_QUOTED="%SOLR_DATA_HOME%"
 
 set "START_OPTS=%START_OPTS% -Dsolr.log.dir=%SOLR_LOGS_DIR_QUOTED%"
 IF NOT "%SOLR_DATA_HOME%"=="" set "START_OPTS=%START_OPTS% -Dsolr.data.home=%SOLR_DATA_HOME_QUOTED%"
-IF NOT DEFINED LOG4J_CONFIG set "LOG4J_CONFIG=file:///%SOLR_SERVER_DIR%\resources\log4j2.xml"
+IF NOT DEFINED LOG4J_CONFIG set "LOG4J_CONFIG=%SOLR_SERVER_DIR%\resources\log4j2.xml"
 
 cd /d "%SOLR_SERVER_DIR%"
 
@@ -1416,6 +1444,15 @@ goto done
 goto done:
 
 :run_export
+"%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
+  -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
+  -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^
+  org.apache.solr.util.SolrCLI %*
+goto done:
+
+:run_package
+REM TODO: Compute the running Solr URL and populate it as a parameter (as has been done for the shell script)
+REM Without that, users will have to supply -solrUrl parameter in every request. Life can be so hard for Windows users!
 "%JAVA%" %SOLR_SSL_OPTS% %AUTHC_OPTS% %SOLR_ZK_CREDS_AND_ACLS% -Dsolr.install.dir="%SOLR_TIP%" ^
   -Dlog4j.configurationFile="file:///%DEFAULT_SERVER_DIR%\resources\log4j2-console.xml" ^
   -classpath "%DEFAULT_SERVER_DIR%\solr-webapp\webapp\WEB-INF\lib\*;%DEFAULT_SERVER_DIR%\lib\ext\*" ^

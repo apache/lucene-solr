@@ -33,6 +33,8 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import static org.hamcrest.core.StringContains.containsString;
+
 public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
@@ -206,7 +208,6 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
   }
 
   @Test
-  @AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-11974")
   public void testStringCollapse() throws Exception {
     for (final String hint : new String[] {"", " hint="+CollapsingQParserPlugin.HINT_TOP_FC}) {
       testCollapseQueries("group_s", hint, false);
@@ -759,14 +760,12 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
     params.add("facet.mincount", "1");
     assertQ(req(params), "*[count(//doc)=1]", "*[count(//lst[@name='facet_fields']/lst[@name='test_i']/int)=2]");
 
-    // SOLR-5230 - ensure CollapsingFieldValueCollector.finish() is called
-    params = new ModifiableSolrParams();
-    params.add("q", "*:*");
-    params.add("fq", "{!collapse field="+group+hint+"}");
-    params.add("group", "true");
-    params.add("group.field", "id");
-    assertQ(req(params), "*[count(//doc)=2]");
-
+    // SOLR-13970
+    SolrException ex = expectThrows(SolrException.class, () -> {
+      h.query(req(params("q", "*:*", "fq", "{!collapse field="+group+hint+"}", "group", "true", "group.field", "id")));
+    });
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, ex.code());
+    assertThat(ex.getMessage(), containsString("Can not use collapse with Grouping enabled"));
 
     // delete the elevated docs, confirm collapsing still works
     assertU(delI("1"));
@@ -783,7 +782,6 @@ public class TestCollapseQParserPlugin extends SolrTestCaseJ4 {
                          "//result/doc[1]/str[@name='id'][.='3']",
                          "//result/doc[2]/str[@name='id'][.='6']",
                          "//result/doc[3]/str[@name='id'][.='7']");
-
 
   }
 

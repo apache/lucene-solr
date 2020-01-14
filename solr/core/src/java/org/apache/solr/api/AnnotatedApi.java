@@ -19,7 +19,6 @@ package org.apache.solr.api;
 
 
 import java.lang.invoke.MethodHandles;
-import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -33,18 +32,19 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SpecProvider;
 import org.apache.solr.common.util.CommandOperation;
+import org.apache.solr.common.util.JsonSchemaCreator;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.ValidatingJsonMap;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
+import org.apache.solr.util.SolrJacksonAnnotationInspector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,7 +61,7 @@ import org.slf4j.LoggerFactory;
 public class AnnotatedApi extends Api implements PermissionNameProvider {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  public static final String ERR ="Error executing commands :";
+  public static final String ERR = "Error executing commands :";
   private EndPoint endPoint;
   private Map<String, Cmd> commands = new HashMap<>();
   private final Api fallback;
@@ -137,7 +137,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
       }
     }
 
-    List<CommandOperation> cmds = req.getCommands(false);
+    List<CommandOperation> cmds = req.getCommands(true);
     boolean allExists = true;
     for (CommandOperation cmd : cmds) {
       if (!commands.containsKey(cmd.name)) {
@@ -161,8 +161,8 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
 
     List<Map> errs = CommandOperation.captureErrors(cmds);
     if (!errs.isEmpty()) {
-      log.error(ERR+ Utils.toJSONString(errs));
-      throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST, ERR , errs);
+      log.error(ERR + Utils.toJSONString(errs));
+      throw new ApiBag.ExceptionWithErrObject(SolrException.ErrorCode.BAD_REQUEST, ERR, errs);
     }
 
   }
@@ -171,7 +171,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
     final Command command;
     final Method method;
     final Object obj;
-    ObjectMapper mapper = new ObjectMapper();
+    ObjectMapper mapper = SolrJacksonAnnotationInspector.createObjectMapper();
     int paramsCount;
     Class c;
     boolean isWrappedInPayloadObj = false;
@@ -227,6 +227,7 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
           }
           if (isWrappedInPayloadObj) {
             PayloadObj<Object> payloadObj = new PayloadObj<>(cmd.name, cmd.getCommandData(), o);
+            cmd = payloadObj;
             method.invoke(obj, req, rsp, payloadObj);
           } else {
             method.invoke(obj, req, rsp, o);
@@ -239,71 +240,33 @@ public class AnnotatedApi extends Api implements PermissionNameProvider {
 
 
       } catch (SolrException se) {
+        log.error("Error executing command  ", se);
         throw se;
       } catch (InvocationTargetException ite) {
+        log.error("Error executing command ", ite);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, ite.getCause());
       } catch (Exception e) {
+        log.error("Error executing command : ", e);
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
       }
 
     }
   }
 
-  private static final Map<Class, String> primitives = new HashMap<>();
-
-  static {
-    primitives.put(String.class, "string");
-    primitives.put(Integer.class, "integer");
-    primitives.put(int.class, "integer");
-    primitives.put(Float.class, "number");
-    primitives.put(float.class, "number");
-    primitives.put(Double.class, "number");
-    primitives.put(double.class, "number");
-    primitives.put(Boolean.class, "boolean");
-    primitives.put(List.class, "array");
-  }
-
-
   public static Map<String, Object> createSchema(Method m) {
     Type[] types = m.getGenericParameterTypes();
     if (types.length == 3) {
-      return createSchemaFromType(types[2]);
+      Type t = types[2];
+      if (t instanceof ParameterizedType) {
+        ParameterizedType typ = (ParameterizedType) t;
+        if (typ.getRawType() == PayloadObj.class) {
+          t = typ.getActualTypeArguments()[0];
+        }
+      }
+      return JsonSchemaCreator.getSchema(t);
 
     }
     return null;
   }
-
-  private static Map<String, Object> createSchemaFromType(Type t) {
-    Map<String, Object> map = new LinkedHashMap<>();
-    if (t instanceof ParameterizedType) {
-      ParameterizedType typ = (ParameterizedType) t;
-      if (typ.getRawType() == PayloadObj.class) {
-        t = typ.getActualTypeArguments()[0];
-      }
-    }
-
-    if (primitives.containsKey(t)) {
-      map.put("type", primitives.get(t));
-    } else if (t instanceof ParameterizedType && ((ParameterizedType) t).getRawType() == List.class) {
-      Type typ = ((ParameterizedType) t).getActualTypeArguments()[0];
-      map.put("type", "array");
-      map.put("items", createSchemaFromType(typ));
-    } else {
-      createObjectSchema((Class) t, map);
-    }
-    return map;
-  }
-
-  private static void createObjectSchema(Class klas, Map<String, Object> map) {
-    map.put("type", "object");
-    Map<String, Object> props = new HashMap<>();
-    map.put("properties", props);
-    for (Field fld : klas.getDeclaredFields()) {
-      JsonProperty p = fld.getAnnotation(JsonProperty.class);
-      if (p == null) continue;
-      props.put(p.value(), createSchemaFromType(fld.getGenericType()));
-    }
-  }
-
 
 }

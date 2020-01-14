@@ -331,7 +331,7 @@ public class SolrClientNodeStateProvider implements NodeStateProvider, MapWriter
           }
         }
         
-        if (cnt == retries) {
+        if (cnt == retries || rsp == null) {
           throw new SolrException(ErrorCode.SERVER_ERROR, "Could not get remote info after many retries on NoHttpResponseException");
         }
                 

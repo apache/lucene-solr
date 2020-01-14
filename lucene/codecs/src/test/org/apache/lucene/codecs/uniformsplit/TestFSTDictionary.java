@@ -33,7 +33,7 @@ import org.apache.lucene.util.LuceneTestCase;
  */
 public class TestFSTDictionary extends LuceneTestCase {
 
-  public void testEmptyTermSupported() {
+  public void testEmptyTermSupported() throws Exception {
     FSTDictionary indexDictionary = createFSTDictionary(Collections.singletonList(new BytesRef()), new int[]{588});
     assertEquals(588, indexDictionary.browser().seekBlock(new BytesRef()));
   }
@@ -49,7 +49,7 @@ public class TestFSTDictionary extends LuceneTestCase {
     }
   }
 
-  public void testRepeatedOutputAllowed() {
+  public void testRepeatedOutputAllowed() throws Exception {
     BytesRef[] terms = {new BytesRef("a"), new BytesRef("b")};
     FSTDictionary indexDictionary = createFSTDictionary(Arrays.asList(terms), new int[]{588, 588});
     assertEquals(588, indexDictionary.browser().seekBlock(new BytesRef("a")));
@@ -83,7 +83,7 @@ public class TestFSTDictionary extends LuceneTestCase {
     }
   }
 
-  public void testCommonPrefixes() {
+  public void testCommonPrefixes() throws Exception {
     List<String> vocab = new ArrayList<>();
     vocab.add("aswoon");
     vocab.add("asyl");
@@ -121,7 +121,7 @@ public class TestFSTDictionary extends LuceneTestCase {
     assertEquals(blockFPs[9], browser.seekBlock(new BytesRef("asymmetriesz")));
   }
 
-  private static FSTDictionary createFSTDictionary(List<BytesRef> blockKeys, int[] blockFPs) {
+  private static FSTDictionary createFSTDictionary(List<BytesRef> blockKeys, int[] blockFPs) throws IOException {
     FSTDictionary.Builder builder = new FSTDictionary.Builder();
     for (int i = 0; i < blockKeys.size(); i++) {
       builder.add(blockKeys.get(i), blockFPs[i]);
@@ -129,7 +129,7 @@ public class TestFSTDictionary extends LuceneTestCase {
     return builder.build();
   }
 
-  private static FSTDictionary createFSTDictionary(List<String> vocab) {
+  private static FSTDictionary createFSTDictionary(List<String> vocab) throws IOException {
     FSTDictionary.Builder builder = new FSTDictionary.Builder();
     for (int i = 0; i < vocab.size(); i++) {
       builder.add(new BytesRef(vocab.get(i)), i);

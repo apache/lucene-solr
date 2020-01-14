@@ -34,7 +34,6 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
-import java.net.ServerSocket;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -332,6 +331,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       
       if (null != testExecutor) {
         ExecutorUtil.shutdownAndAwaitTermination(testExecutor);
+        testExecutor = null;
       }
 
       resetExceptionIgnores();
@@ -377,6 +377,22 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
   }
   
+  /**
+   * a "dead" host, if you try to connect to it, it will likely fail fast
+   * please consider using mocks and not real networking to simulate failure
+   */
+  public static final String DEAD_HOST_1 = "[::1]:4";
+  /**
+   * a "dead" host, if you try to connect to it, it will likely fail fast
+   * please consider using mocks and not real networking to simulate failure
+   */
+  public static final String DEAD_HOST_2 = "[::1]:6";
+  /**
+   * a "dead" host, if you try to connect to it, it will likely fail fast
+   * please consider using mocks and not real networking to simulate failure
+   */
+  public static final String DEAD_HOST_3 = "[::1]:8";
+
   /** Assumes that Mockito/Bytebuddy is available and can be used to mock classes (e.g., fails if Java version is too new). */
   public static void assumeWorkingMockito() {
     // we use reflection here, because we do not have ByteBuddy/Mockito in all modules and the test framework!
@@ -490,6 +506,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     changedFactory = false;
     if (savedFactory != null) {
       System.setProperty("solr.directoryFactory", savedFactory);
+      savedFactory = null;
     } else {
       System.clearProperty("solr.directoryFactory");
     }
@@ -896,21 +913,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     lrf = null;
     configString = schemaString = null;
     initCoreDataDir = null;
+    hdfsDataDir = null;
   }
-
-  /**
-   * Find next available local port.
-   * @return available port number or -1 if none could be found
-   * @throws Exception on IO errors
-   */
-  protected static int getNextAvailablePort() throws Exception {
-    int port = -1;
-    try (ServerSocket s = new ServerSocket(0)) {
-      port = s.getLocalPort();
-    }
-    return port;
-  }
-
 
   /** Validates an update XML String is successful
    */

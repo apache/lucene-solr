@@ -21,6 +21,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
+import java.lang.StackWalker.StackFrame;
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Inherited;
@@ -1331,7 +1332,7 @@ public abstract class LuceneTestCase extends Assert {
    * See {@link #newDirectory()} for more information.
    */
   public static BaseDirectoryWrapper newDirectory(Random r) {
-    return wrapDirectory(r, newDirectoryImpl(r, TEST_DIRECTORY), rarely(r));
+    return wrapDirectory(r, newDirectoryImpl(r, TEST_DIRECTORY), rarely(r), false);
   }
 
   /**
@@ -1339,7 +1340,7 @@ public abstract class LuceneTestCase extends Assert {
    * See {@link #newDirectory()} for more information.
    */
   public static BaseDirectoryWrapper newDirectory(Random r, LockFactory lf) {
-    return wrapDirectory(r, newDirectoryImpl(r, TEST_DIRECTORY, lf), rarely(r));
+    return wrapDirectory(r, newDirectoryImpl(r, TEST_DIRECTORY, lf), rarely(r), false);
   }
 
   public static MockDirectoryWrapper newMockDirectory() {
@@ -1347,11 +1348,11 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   public static MockDirectoryWrapper newMockDirectory(Random r) {
-    return (MockDirectoryWrapper) wrapDirectory(r, newDirectoryImpl(r, TEST_DIRECTORY), false);
+    return (MockDirectoryWrapper) wrapDirectory(r, newDirectoryImpl(r, TEST_DIRECTORY), false, false);
   }
 
   public static MockDirectoryWrapper newMockDirectory(Random r, LockFactory lf) {
-    return (MockDirectoryWrapper) wrapDirectory(r, newDirectoryImpl(r, TEST_DIRECTORY, lf), false);
+    return (MockDirectoryWrapper) wrapDirectory(r, newDirectoryImpl(r, TEST_DIRECTORY, lf), false, false);
   }
 
   public static MockDirectoryWrapper newMockFSDirectory(Path f) {
@@ -1415,10 +1416,7 @@ public abstract class LuceneTestCase extends Assert {
       }
 
       Directory fsdir = newFSDirectoryImpl(clazz, f, lf);
-      if (rarely()) {
-
-      }
-      BaseDirectoryWrapper wrapped = wrapDirectory(random(), fsdir, bare);
+      BaseDirectoryWrapper wrapped = wrapDirectory(random(), fsdir, bare, true);
       return wrapped;
     } catch (Exception e) {
       Rethrow.rethrow(e);
@@ -1446,11 +1444,13 @@ public abstract class LuceneTestCase extends Assert {
         impl.copyFrom(d, file, file, newIOContext(r));
       }
     }
-    return wrapDirectory(r, impl, rarely(r));
+    return wrapDirectory(r, impl, rarely(r), false);
   }
   
-  private static BaseDirectoryWrapper wrapDirectory(Random random, Directory directory, boolean bare) {
-    if (rarely(random) && !bare) {
+  private static BaseDirectoryWrapper wrapDirectory(Random random, Directory directory, boolean bare, boolean filesystem) {
+    // IOContext randomization might make NRTCachingDirectory make bad decisions, so avoid
+    // using it if the user requested a filesystem directory.
+    if (rarely(random) && !bare && filesystem == false) {
       directory = new NRTCachingDirectory(directory, random.nextDouble(), random.nextDouble());
     }
 
@@ -1842,7 +1842,7 @@ public abstract class LuceneTestCase extends Assert {
   public static void overrideDefaultQueryCache() {
     // we need to reset the query cache in an @BeforeClass so that tests that
     // instantiate an IndexSearcher in an @BeforeClass method use a fresh new cache
-    IndexSearcher.setDefaultQueryCache(new LRUQueryCache(10000, 1 << 25, context -> true));
+    IndexSearcher.setDefaultQueryCache(new LRUQueryCache(10000, 1 << 25, context -> true, Float.POSITIVE_INFINITY));
     IndexSearcher.setDefaultQueryCachingPolicy(MAYBE_CACHE_POLICY);
   }
 
@@ -2706,6 +2706,27 @@ public abstract class LuceneTestCase extends Assert {
         // we don't need to uninvert and compare here ... we did that in the first loop above
       }
     }
+  }
+  
+  /** Inspects stack trace to figure out if a method of a specific class called us. */
+  public static boolean callStackContains(Class<?> clazz, String methodName) {
+    final String className = clazz.getName();
+    return StackWalker.getInstance().walk(s -> s.skip(1) // exclude this utility method
+        .anyMatch(f -> className.equals(f.getClassName()) && methodName.equals(f.getMethodName())));
+  }
+
+  /** Inspects stack trace to figure out if one of the given method names (no class restriction) called us. */
+  public static boolean callStackContainsAnyOf(String... methodNames) {
+    return StackWalker.getInstance().walk(s -> s.skip(1) // exclude this utility method
+        .map(StackFrame::getMethodName)
+        .anyMatch(Set.of(methodNames)::contains));
+  }
+
+  /** Inspects stack trace if the given class called us. */
+  public static boolean callStackContains(Class<?> clazz) {
+    return StackWalker.getInstance().walk(s -> s.skip(1) // exclude this utility method
+        .map(StackFrame::getClassName)
+        .anyMatch(clazz.getName()::equals));
   }
 
   /** A runnable that can throw any checked exception. */

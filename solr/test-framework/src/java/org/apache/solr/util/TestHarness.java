@@ -86,7 +86,7 @@ public class TestHarness extends BaseTestHarness {
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
     try {
-      return new SolrConfig(solrHome.resolve(coreName), confFile, null);
+      return new SolrConfig(solrHome.resolve(coreName), confFile, null, true);
     } catch (Exception xany) {
       throw new RuntimeException(xany);
     }

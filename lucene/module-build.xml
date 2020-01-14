@@ -47,7 +47,6 @@
   <path id="junit.classpath">
     <pathelement location="${build.dir}/classes/test"/>
     <path refid="test.classpath"/>
-    <pathelement path="${java.class.path}"/>
   </path>
 
   <target name="init" depends="common.init,compile-lucene-core"/>

@@ -209,7 +209,6 @@ public abstract class AbstractAtomicUpdatesMultivalueTestBase extends EmbeddedSo
   }
 
   @Test
-  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-13762")
   public void testMultivalueBinaryField() throws SolrServerException, IOException {
     runTestForFieldWithoutQuery("binaryRemove",
         new byte[][] {new byte[] {0}, new byte[] {1}, new byte[] {2}, new byte[] {3}});

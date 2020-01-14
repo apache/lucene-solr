@@ -24,7 +24,7 @@ import org.apache.lucene.util.AttributeReflector;
 public class TermFrequencyAttributeImpl extends AttributeImpl implements TermFrequencyAttribute, Cloneable {
   private int termFrequency = 1;
   
-  /** Initialize this attribute with term frequencey of 1 */
+  /** Initialize this attribute with term frequency of 1 */
   public TermFrequencyAttributeImpl() {}
 
   @Override

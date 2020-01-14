@@ -37,6 +37,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.FieldComparator;
+import org.apache.lucene.search.FuzzyTermsEnum;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
@@ -1392,6 +1393,8 @@ public class QueryComponent extends SearchComponent
           .setSort(groupSortSpec.getSort())
           .setQuery(query, rb.req)
           .setDocSet(searcher)
+          .setMainQuery(rb.getQuery())
+          .setNeedScores(needScores)
           .build()
       );
     }
@@ -1482,7 +1485,11 @@ public class QueryComponent extends SearchComponent
 
     SolrIndexSearcher searcher = req.getSearcher();
 
-    searcher.search(result, cmd);
+    try {
+      searcher.search(result, cmd);
+    } catch (FuzzyTermsEnum.FuzzyTermsException e) {
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
+    }
     rb.setResult(result);
 
     ResultContext ctx = new BasicResultContext(rb);
