@@ -83,7 +83,7 @@ allprojects {
             srcExcludes += [
                 "**/CambridgeMA.utf8"
             ]
-    }
+        }
     }
 
     if (project.path == ":lucene:suggest") {
