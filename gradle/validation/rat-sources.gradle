@@ -30,93 +30,91 @@ configure(rootProject) {
 }
 
 subprojects {
-    plugins.withId("java", {
-        task("rat", type: RatTask) {
-            group = 'Verification'
-            description = 'Runs Apache Rat checks.'
-        }
+    task("rat", type: RatTask) {
+        group = 'Verification'
+        description = 'Runs Apache Rat checks.'
+    }
 
-        if (project.path == ":lucene:analysis:common") {
-            rat {
-                srcExcludes += [
-                    "**/*.aff",
-                    "**/*.dic",
-                    "**/charfilter/*.htm*",
-                    "**/*LuceneResourcesWikiPage.html"
-                ]
-            }
+    if (project.path == ":lucene:analysis:common") {
+        rat {
+            srcExcludes += [
+                "**/*.aff",
+                "**/*.dic",
+                "**/charfilter/*.htm*",
+                "**/*LuceneResourcesWikiPage.html"
+            ]
         }
+    }
 
-        if (project.path == ":lucene:analysis:kuromoji") {
-            rat {
-                srcExcludes += [
-                    // whether rat detects this as binary or not is platform dependent?!
-                    "**/bocchan.utf-8"
-                ]
-            }
+    if (project.path == ":lucene:analysis:kuromoji") {
+        rat {
+            srcExcludes += [
+                // whether rat detects this as binary or not is platform dependent?!
+                "**/bocchan.utf-8"
+            ]
         }
+    }
 
-        if (project.path == ":lucene:analysis:opennlp") {
-            rat {
-                excludes += [
-                    "src/tools/test-model-data/chunks.txt",
-                    "src/tools/test-model-data/lemmas.txt",
-                    "src/tools/test-model-data/ner.txt",
-                    "src/tools/test-model-data/pos.txt",
-                    "src/tools/test-model-data/sentences.txt",
-                    "src/tools/test-model-data/tokenizer.txt",
-                ]
-            }
+    if (project.path == ":lucene:analysis:opennlp") {
+        rat {
+            excludes += [
+                "src/tools/test-model-data/chunks.txt",
+                "src/tools/test-model-data/lemmas.txt",
+                "src/tools/test-model-data/ner.txt",
+                "src/tools/test-model-data/pos.txt",
+                "src/tools/test-model-data/sentences.txt",
+                "src/tools/test-model-data/tokenizer.txt",
+            ]
         }
+    }
 
-        if (project.path == ":lucene:highlighter") {
-            rat {
-                srcExcludes += [
-                    "**/CambridgeMA.utf8"
-                ]
-            }
+    if (project.path == ":lucene:highlighter") {
+        rat {
+            srcExcludes += [
+                "**/CambridgeMA.utf8"
+            ]
         }
+    }
 
-        if (project.path == ":lucene:suggest") {
-            rat {
-                srcExcludes += [
-                    "**/Top50KWiki.utf8",
-                    "**/stop-snowball.txt"
-                ]
-            }
+    if (project.path == ":lucene:suggest") {
+        rat {
+            srcExcludes += [
+                "**/Top50KWiki.utf8",
+                "**/stop-snowball.txt"
+            ]
         }
+    }
 
-        // TODO this doesn't have a corresponding gradle project so it never gets triggered
-        if (project.path == ":lucene:tools") {
-            rat {
-                includes += [
-                    "forbiddenApis/**",
-                    "prettify/**"
-                ]
-            }
+    // TODO this doesn't have a corresponding gradle project so it never gets triggered
+    if (project.path == ":lucene:tools") {
+        rat {
+            includes += [
+                "forbiddenApis/**",
+                "prettify/**"
+            ]
         }
+    }
 
 
-        if (project.path == ":solr:core") {
-            rat {
-                srcExcludes += [
-                    "**/htmlStripReaderTest.html"
-                ]
-            }
+    if (project.path == ":solr:core") {
+        rat {
+            srcExcludes += [
+                "**/htmlStripReaderTest.html"
+            ]
         }
+    }
 
-        if (project.path == ":solr:webapp") {
-            rat {
-                includes = [ "**" ]
-                excludes += [
-                    "web/img/**",
-                    "*.iml",
-                    "build.gradle",
-                    "build/**",
-                ]
-            }
+    if (project.path == ":solr:webapp") {
+        rat {
+            includes = [ "**" ]
+            excludes += [
+                "web/img/**",
+                "*.iml",
+                "build.gradle",
+                "build/**",
+            ]
         }
-    })
+    }
 }
 
 // Somewhat inspired by existing task from Apache Kafka
@@ -154,20 +152,22 @@ class RatTask extends DefaultTask {
                 excludes.each { pattern -> ant.exclude(name: pattern) }
             }
 
-            [
-                project.sourceSets.main.java.srcDirs,
-                project.sourceSets.test.java.srcDirs,
-            ].flatten().each { srcLocation ->
-                ant.fileset(dir: srcLocation, erroronmissingdir: false) {
-                    srcExcludes.each { pattern -> ant.exclude(name: pattern) }
+            if (project.plugins.findPlugin(JavaPlugin)) {
+                [
+                    project.sourceSets.main.java.srcDirs,
+                    project.sourceSets.test.java.srcDirs,
+                ].flatten().each { srcLocation ->
+                    ant.fileset(dir: srcLocation, erroronmissingdir: false) {
+                        srcExcludes.each { pattern -> ant.exclude(name: pattern) }
+                    }
                 }
-            }
 
-            [
-                project.sourceSets.main.resources.srcDirs
-            ].flatten().each { srcLocation ->
-                ant.fileset(dir: srcLocation, erroronmissingdir: false) {
-                    ant.include(name: "META-INF/**")
+                [
+                    project.sourceSets.main.resources.srcDirs
+                ].flatten().each { srcLocation ->
+                    ant.fileset(dir: srcLocation, erroronmissingdir: false) {
+                        ant.include(name: "META-INF/**")
+                    }
                 }
             }
 
