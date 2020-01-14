@@ -39,3 +39,7 @@ bin/post        text eol=lf
 *.ico      binary
 *.svg      binary
 *.eps      binary
+
+# Other files to ignore from eol normalization
+licenses/*      -text
+solr-ref-guide/src/fonts/Inconsolata/OFL.txt  -text
