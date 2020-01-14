@@ -237,7 +237,7 @@ public class FunctionQParser extends QParser {
    * if written in following syntax: argumentName=argument.
    *
    * @return Immutable entry with name as the key and argument as value. In case where there's no name, key is null.
-   * @throws SyntaxError
+   * @throws SyntaxError in case when argument is not ended by ) or ,
    */
   public SimpleImmutableEntry<String, String> parseNamedArg() throws SyntaxError {
     argWasQuoted = false;
