@@ -16,16 +16,10 @@
  */
 package org.apache.solr.cloud.api.collections;
 
-import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
-import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
-import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
-import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
-import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
-
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -51,6 +45,13 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.common.cloud.ZkStateReader.COLLECTION_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_PROP;
+import static org.apache.solr.common.cloud.ZkStateReader.SHARD_ID_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.COUNT_PROP;
+import static org.apache.solr.common.params.CollectionAdminParams.FOLLOW_ALIASES;
+import static org.apache.solr.common.params.CommonAdminParams.ASYNC;
+
 
 public class DeleteReplicaCmd implements Cmd {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -64,13 +65,13 @@ public class DeleteReplicaCmd implements Cmd {
   @SuppressWarnings("unchecked")
 
   public void call(ClusterState clusterState, ZkNodeProps message, NamedList results) throws Exception {
-    deleteReplica(clusterState, message, results,null);
+    deleteReplica(clusterState, message, results, null);
   }
 
 
   @SuppressWarnings("unchecked")
   void deleteReplica(ClusterState clusterState, ZkNodeProps message, NamedList results, Runnable onComplete)
-          throws KeeperException, InterruptedException {
+      throws KeeperException, InterruptedException {
     log.debug("deleteReplica() : {}", Utils.toJSONString(message));
     boolean parallel = message.getBool("parallel", false);
 
@@ -98,10 +99,10 @@ public class DeleteReplicaCmd implements Cmd {
     Slice slice = coll.getSlice(shard);
     if (slice == null) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "Invalid shard name : " +  shard + " in collection : " +  collectionName);
+          "Invalid shard name : " + shard + " in collection : " + collectionName);
     }
 
-    deleteCore(slice, collectionName, replicaName, message, shard, results, onComplete,  parallel);
+    deleteCore(slice, collectionName, replicaName, message, shard, results, onComplete, parallel);
 
   }
 
@@ -115,11 +116,14 @@ public class DeleteReplicaCmd implements Cmd {
                                  NamedList results,
                                  Runnable onComplete,
                                  boolean parallel)
-          throws KeeperException, InterruptedException {
+      throws KeeperException, InterruptedException {
     ocmh.checkRequired(message, COLLECTION_PROP, COUNT_PROP);
     int count = Integer.parseInt(message.getStr(COUNT_PROP));
     String collectionName = message.getStr(COLLECTION_PROP);
     String shard = message.getStr(SHARD_ID_PROP);
+    String replicaType = message.getStr(ZkStateReader.REPLICA_TYPE);
+    Replica.Type type = replicaType != null && !replicaType.isEmpty() ? Replica.Type.valueOf(message.getStr(ZkStateReader.REPLICA_TYPE)) : null;
+
     DocCollection coll = clusterState.getCollection(collectionName);
     Slice slice = null;
     //Validate if shard is passed.
@@ -133,14 +137,14 @@ public class DeleteReplicaCmd implements Cmd {
 
     Map<Slice, Set<String>> shardToReplicasMapping = new HashMap<Slice, Set<String>>();
     if (slice != null) {
-      Set<String> replicasToBeDeleted = pickReplicasTobeDeleted(slice, shard, collectionName, count);
+      Set<String> replicasToBeDeleted = pickReplicasTobeDeleted(slice, shard, collectionName, count, type);
       shardToReplicasMapping.put(slice,replicasToBeDeleted);
     } else {
 
       //If there are many replicas left, remove the rest based on count.
       Collection<Slice> allSlices = coll.getSlices();
       for (Slice individualSlice : allSlices) {
-        Set<String> replicasToBeDeleted = pickReplicasTobeDeleted(individualSlice, individualSlice.getName(), collectionName, count);
+        Set<String> replicasToBeDeleted = pickReplicasTobeDeleted(individualSlice, individualSlice.getName(), collectionName, count, type);
         shardToReplicasMapping.put(individualSlice, replicasToBeDeleted);
       }
     }
@@ -164,12 +168,12 @@ public class DeleteReplicaCmd implements Cmd {
   /**
    * Pick replicas to be deleted. Avoid picking the leader.
    */
-  private Set<String> pickReplicasTobeDeleted(Slice slice, String shard, String collectionName, int count) {
-    validateReplicaAvailability(slice, shard, collectionName, count);
+  private Set<String> pickReplicasTobeDeleted(Slice slice, String shard, String collectionName, int count, Replica.Type type) {
+    validateReplicaAvailability(slice, shard, collectionName, count, type);
     Collection<Replica> allReplicas = slice.getReplicas();
     Set<String> replicasToBeRemoved = new HashSet<String>();
     Replica leader = slice.getLeader();
-    for (Replica replica: allReplicas) {
+    for (Replica replica : allReplicas) {
       if (count == 0) {
         break;
       }
@@ -177,8 +181,18 @@ public class DeleteReplicaCmd implements Cmd {
       if (leader.getCoreName().equals(replica.getCoreName())) {
         continue;
       }
+      // if type is not null then only verify 
+      if (type != null && !replica.getType().equals(type)) {
+        continue;
+      }
       replicasToBeRemoved.add(replica.getName());
-      count --;
+      count--;
+    }
+    // pick the leader if no options left when type is passed
+    if (count == 1) {
+      if (leader.getType().equals(type)) {
+        replicasToBeRemoved.add(leader.getName());
+      }
     }
     return replicasToBeRemoved;
   }
@@ -187,44 +201,66 @@ public class DeleteReplicaCmd implements Cmd {
    * Validate if there is less replicas than requested to remove. Also error out if there is
    * only one replica available
    */
-  private void validateReplicaAvailability(Slice slice, String shard, String collectionName, int count) {
+  private void validateReplicaAvailability(Slice slice, String shard, String collectionName, int count, Replica.Type type) {
     //If there is a specific shard passed, validate if there any or just 1 replica left
     if (slice != null) {
       Collection<Replica> allReplicasForShard = slice.getReplicas();
       if (allReplicasForShard == null) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No replicas found  in shard/collection: " +
-                shard + "/"  + collectionName);
+            shard + "/" + collectionName);
       }
 
+      if (type == null) {
+        if (allReplicasForShard.size() == 1) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "There is only one replica available in shard/collection: " +
+              shard + "/" + collectionName + ". Cannot delete that.");
+        }
 
-      if (allReplicasForShard.size() == 1) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "There is only one replica available in shard/collection: " +
-                shard + "/" + collectionName + ". Cannot delete that.");
-      }
+        if (allReplicasForShard.size() <= count) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "There are lesser num replicas requested to be deleted than are available in shard/collection : " +
+              shard + "/" + collectionName + " Requested: " + count + " Available: " + allReplicasForShard.size() + ".");
+        }
+      } else {
+        int nrtReplicas = slice.getReplicas(EnumSet.of(Replica.Type.NRT)).size();
+        int pullReplicas = slice.getReplicas(EnumSet.of(Replica.Type.PULL)).size();
+        int tlogReplicas = slice.getReplicas(EnumSet.of(Replica.Type.TLOG)).size();
 
-      if (allReplicasForShard.size() <= count) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "There are lesser num replicas requested to be deleted than are available in shard/collection : " +
-                shard + "/"  + collectionName  + " Requested: "  + count + " Available: " + allReplicasForShard.size() + ".");
+        if (type.equals(Replica.Type.PULL)) {
+          if (pullReplicas < count) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "There are lesser num replicas requested to be deleted than are available in type/shard/collection : " +
+                type + "/" + shard + "/" + collectionName + " Requested: " + count + " Available: " + pullReplicas + ".");
+          }
+        } else if (type.equals(Replica.Type.NRT)) {
+          if (nrtReplicas <= count && tlogReplicas < 1) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "There are lesser num replicas or qualified leaders requested to be deleted than are available in shard/collection : " +
+                shard + "/" + collectionName + " Requested: " + count + " Available: " + nrtReplicas + ".");
+          }
+        } else if (type.equals(Replica.Type.TLOG)) {
+          if (tlogReplicas <= count && nrtReplicas < 1) {
+            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "There are lesser num replicas or qualified leaders requested to be deleted than are available in shard/collection : " +
+                shard + "/" + collectionName + " Requested: " + count + " Available: " + tlogReplicas + ".");
+          }
+        }
       }
     }
   }
 
-  void deleteCore(Slice slice, String collectionName, String replicaName,ZkNodeProps message, String shard, NamedList results, Runnable onComplete, boolean parallel) throws KeeperException, InterruptedException {
+  void deleteCore(Slice slice, String collectionName, String replicaName, ZkNodeProps message, String shard, NamedList results, Runnable onComplete, boolean parallel) throws KeeperException, InterruptedException {
 
     Replica replica = slice.getReplica(replicaName);
     if (replica == null) {
       ArrayList<String> l = new ArrayList<>();
       for (Replica r : slice.getReplicas())
         l.add(r.getName());
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid replica : " +  replicaName + " in shard/collection : " +
-              shard  + "/" + collectionName + " available replicas are " +  StrUtils.join(l, ','));
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Invalid replica : " + replicaName + " in shard/collection : " +
+          shard + "/" + collectionName + " available replicas are " + StrUtils.join(l, ','));
     }
 
     // If users are being safe and only want to remove a shard if it is down, they can specify onlyIfDown=true
     // on the command.
     if (Boolean.parseBoolean(message.getStr(OverseerCollectionMessageHandler.ONLY_IF_DOWN)) && replica.getState() != Replica.State.DOWN) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-              "Attempted to remove replica : " + collectionName + "/"  + shard + "/" + replicaName +
+          "Attempted to remove replica : " + collectionName + "/" + shard + "/" + replicaName +
               " with onlyIfDown='true', but state is '" + replica.getStr(ZkStateReader.STATE_PROP) + "'");
     }
 
@@ -272,7 +308,7 @@ public class DeleteReplicaCmd implements Cmd {
       try {
         if (!callable.call())
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-                  "Could not remove replica : " + collectionName + "/" + shard + "/" + replicaName);
+              "Could not remove replica : " + collectionName + "/" + shard + "/" + replicaName);
       } catch (InterruptedException | KeeperException e) {
         throw e;
       } catch (Exception ex) {

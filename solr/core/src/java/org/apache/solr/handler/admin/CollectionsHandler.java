@@ -828,6 +828,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
           DELETE_INSTANCE_DIR,
           DELETE_METRICS_HISTORY,
           COUNT_PROP, REPLICA_PROP,
+          REPLICA_TYPE,
           SHARD_ID_PROP,
           ONLY_IF_DOWN,
           FOLLOW_ALIASES);

@@ -87,6 +87,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   private static class Config {
     final String name;
     final Path path;
+
     private Config(String name, Path path) {
       this.name = name;
       this.path = path;
@@ -221,7 +222,7 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
           null, securityJson, trackJettyMetrics);
       CloudSolrClient client = cluster.getSolrClient();
       for (Config config : configs) {
-        ((ZkClientClusterStateProvider)client.getClusterStateProvider()).uploadConfig(config.path, config.name);
+        ((ZkClientClusterStateProvider) client.getClusterStateProvider()).uploadConfig(config.path, config.name);
       }
 
       if (clusterProperties.size() > 0) {
@@ -330,12 +331,16 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
    * number of shards and active replicas
    */
   public static CollectionStatePredicate clusterShape(int expectedShards, int expectedReplicas) {
+    return clusterShape(expectedShards, expectedReplicas, null);
+  }
+
+  public static CollectionStatePredicate clusterShape(int expectedShards, int expectedReplicas, Replica.Type type) {
     return (liveNodes, collectionState) -> {
       if (collectionState == null)
         return false;
       if (collectionState.getSlices().size() != expectedShards)
         return false;
-      return compareActiveReplicaCountsForShards(expectedReplicas, liveNodes, collectionState);
+      return compareActiveReplicaCountsForShards(expectedReplicas, liveNodes, collectionState, type);
     };
   }
 
@@ -380,11 +385,17 @@ public class SolrCloudTestCase extends SolrTestCaseJ4 {
   }
 
   private static boolean compareActiveReplicaCountsForShards(int expectedReplicas, Set<String> liveNodes, DocCollection collectionState) {
+    return compareActiveReplicaCountsForShards(expectedReplicas, liveNodes, collectionState, null);
+  }
+
+  private static boolean compareActiveReplicaCountsForShards(int expectedReplicas, Set<String> liveNodes, DocCollection collectionState, Replica.Type type) {
     int activeReplicas = 0;
     for (Slice slice : collectionState) {
       for (Replica replica : slice) {
-        if (replica.isActive(liveNodes)) {
-          activeReplicas++;
+        if (type == null || replica.getType().equals(type)) {
+          if (replica.isActive(liveNodes)) {
+            activeReplicas++;
+          }
         }
       }
     }

@@ -73,6 +73,7 @@ import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SE
 import static org.apache.solr.common.params.CollectionAdminParams.CREATE_NODE_SET_SHUFFLE_PARAM;
 import static org.apache.solr.common.params.CollectionAdminParams.ROUTER_PREFIX;
 import static org.apache.solr.common.params.CollectionAdminParams.WITH_COLLECTION;
+import static org.apache.solr.common.cloud.ZkStateReader.REPLICA_TYPE;
 
 /**
  * This class is experimental and subject to change.
@@ -2298,6 +2299,20 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     return new DeleteReplica(collection, count);
   }
 
+  public static DeleteReplica deleteReplica(String collection, String shard, int count, Replica.Type type) {
+    return new DeleteReplica(collection, checkNotNull(CoreAdminParams.SHARD, shard), count, type);
+  }
+  /**
+   * Returns a SolrRequest to remove a number of replicas from a specific shard of specific type
+   */
+  public static DeleteReplica deleteReplicasFromShard(String collection, String shard, int count, Replica.Type type) {
+    return new DeleteReplica(collection, checkNotNull(CoreAdminParams.SHARD, shard), count, type);
+  }
+  public static DeleteReplica deleteReplicasFromAllShards(String collection, int count, Replica.Type type) {
+    return new DeleteReplica(collection, count, type);
+  }
+
+
   // DELETEREPLICA request
   public static class DeleteReplica extends AsyncCollectionSpecificAdminRequest {
 
@@ -2308,6 +2323,7 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
     private Boolean deleteInstanceDir;
     private Boolean deleteIndexDir;
     private Integer count;
+    private Replica.Type type;
 
     private DeleteReplica(String collection, String shard, String replica) {
       super(CollectionAction.DELETEREPLICA, collection);
@@ -2325,6 +2341,20 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       super(CollectionAction.DELETEREPLICA, collection);
       this.count = count;
     }
+
+    private DeleteReplica(String collection, String shard, int count, Replica.Type type) {
+      super(CollectionAction.DELETEREPLICA, collection);
+      this.shard = shard;
+      this.count = count;
+      this.type = type;
+    }
+
+    private DeleteReplica(String collection, int count, Replica.Type type) {
+      super(CollectionAction.DELETEREPLICA, collection);
+      this.count = count;
+      this.type = type;
+    }
+
 
     public String getReplica() {
       return this.replica;
@@ -2367,6 +2397,9 @@ public abstract class CollectionAdminRequest<T extends CollectionAdminResponse> 
       }
       if (count != null) {
         params.set(COUNT_PROP, count);
+      }
+      if (type != null) {
+        params.set(REPLICA_TYPE, type.toString());
       }
       return params;
     }
