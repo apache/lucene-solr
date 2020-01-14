@@ -42,11 +42,11 @@ public class KnnGraphQuery extends Query implements Accountable {
 
   public static final Integer DEFAULT_EF = 50;
 
-  private final String field;
-  private final float[] queryVector;
-  private final int ef;
+  protected final String field;
+  protected final float[] queryVector;
+  protected final int ef;
   private final long bytesUsed;
-  private final AtomicLong visitedCounter;
+  protected final AtomicLong visitedCounter;
 
   /**
    * Creates an nearest neighbor search query with default {@code ef} parameter (={@link #DEFAULT_EF}).

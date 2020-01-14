@@ -18,7 +18,9 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.LeafReaderContext;
@@ -27,29 +29,12 @@ import org.apache.lucene.util.hnsw.HNSWGraphReader;
 import org.apache.lucene.util.hnsw.Neighbor;
 import org.apache.lucene.util.hnsw.Neighbors;
 
-class KnnScoreWeight extends ConstantScoreWeight {
-
-  protected final String field;
-  private final ScoreMode scoreMode;
-  protected final float[] queryVector;
-  protected final int ef;
-  protected AtomicLong visitedCounter;
-
-  KnnScoreWeight(Query query, float score, ScoreMode scoreMode, String field, float[] queryVector, int ef) {
-    super(query, score);
-    this.scoreMode = scoreMode;
-    this.field = field;
-    this.queryVector = queryVector;
-    this.ef = ef;
-  }
-
-  @Override
-  public Scorer scorer(LeafReaderContext context) throws IOException {
-    ScorerSupplier supplier = scorerSupplier(context);
-    if (supplier == null) {
-      return null;
-    }
-    return supplier.get(Long.MAX_VALUE);
+/**
+ * In-set deletion, delete at most ef*segCnt vectors that are same to the queryVector.
+ */
+public class KnnDelScoreWeight extends KnnScoreWeight {
+  KnnDelScoreWeight(Query query, float score, ScoreMode scoreMode, String field, float[] queryVector, int ef) {
+    super(query, score, scoreMode, field, queryVector, ef);
   }
 
   @Override
@@ -57,7 +42,8 @@ class KnnScoreWeight extends ConstantScoreWeight {
     FieldInfo fi = context.reader().getFieldInfos().fieldInfo(field);
     int numDimensions = fi.getVectorNumDimensions();
     if (numDimensions != queryVector.length) {
-      throw new IllegalArgumentException("field=\"" + field + "\" was indexed with dimensions=" + numDimensions + "; this is incompatible with query dimensions=" + queryVector.length);
+      throw new IllegalArgumentException("field=\"" + field + "\" was indexed with dimensions=" + numDimensions +
+          "; this is incompatible with query dimensions=" + queryVector.length);
     }
 
     final HNSWGraphReader hnswReader = new HNSWGraphReader(field, context);
@@ -71,12 +57,32 @@ class KnnScoreWeight extends ConstantScoreWeight {
     return new ScorerSupplier() {
       @Override
       public Scorer get(long leadCost) throws IOException {
-        Neighbors neighbors = hnswReader.searchNeighbors(queryVector, ef, vectorValues);
+        final Neighbors neighbors = hnswReader.searchNeighbors(queryVector, ef, vectorValues);
         visitedCounter.addAndGet(hnswReader.getVisitedCount());
+
+        if (neighbors.size() > 0) {
+          Neighbor top = neighbors.top();
+          if (top.distance() > 0) {
+            neighbors.clear();
+          } else {
+            final List<Neighbor> toDeleteNeighbors = new ArrayList<>(neighbors.size());
+            for (Neighbor neighbor : neighbors) {
+              if (neighbor.distance() == 0) {
+                toDeleteNeighbors.add(neighbor);
+              } else {
+                break;
+              }
+            }
+
+            neighbors.clear();
+
+            toDeleteNeighbors.forEach(neighbor -> neighbors.add(neighbor));
+          }
+        }
+
         return new Scorer(weight) {
 
           int doc = -1;
-          float score = 0.0f;
           int size = neighbors.size();
           int offset = 0;
 
@@ -97,7 +103,6 @@ class KnnScoreWeight extends ConstantScoreWeight {
               public int advance(int target) throws IOException {
                 if (target > size || neighbors.size() == 0) {
                   doc = NO_MORE_DOCS;
-                  score = 0.0f;
                 } else {
                   while (offset < target) {
                     neighbors.pop();
@@ -107,21 +112,8 @@ class KnnScoreWeight extends ConstantScoreWeight {
                   offset++;
                   if (next == null) {
                     doc = NO_MORE_DOCS;
-                    score = 0.0f;
                   } else {
                     doc = next.docId();
-                    switch (fi.getVectorDistFunc()) {
-                      case MANHATTAN:
-                      case EUCLIDEAN:
-                        // is it necessary to normalize these scores?
-                        score = 1.0f / (next.distance() / numDimensions + 0.01f);
-                        break;
-                      case COSINE:
-                        score = 1.0f - next.distance();
-                        break;
-                      default:
-                        break;
-                    }
                   }
                 }
                 return doc;
@@ -141,7 +133,7 @@ class KnnScoreWeight extends ConstantScoreWeight {
 
           @Override
           public float score() throws IOException {
-            return score;
+            return 0.0f;
           }
 
           @Override
@@ -156,18 +148,5 @@ class KnnScoreWeight extends ConstantScoreWeight {
         return ef;
       }
     };
-  }
-
-  @Override
-  public boolean isCacheable(LeafReaderContext ctx) {
-    return true;
-  }
-
-  public void setVisitedCounter(AtomicLong counter) {
-    visitedCounter = counter;
-  }
-
-  public long getVisitedCount() {
-    return visitedCounter.get();
   }
 }

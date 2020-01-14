@@ -18,23 +18,29 @@ package org.apache.lucene.index;
 
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.VectorField;
 import org.apache.lucene.document.StringField;
+import org.apache.lucene.search.KnnDelQuery;
 import org.apache.lucene.search.KnnGraphQuery;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.LuceneTestCase;
+import org.apache.lucene.util.NamedThreadFactory;
 import org.junit.Before;
 
 import static org.apache.lucene.util.hnsw.HNSWGraphWriter.RAND_SEED;
@@ -92,7 +98,45 @@ public class TestKnnGraph extends LuceneTestCase {
       iw.commit();
       assertConsistentGraph(iw, values);
 
-      assertRecall(dir, 0, values[0]);
+      assertRecall(dir, 1, values[0]);
+    }
+  }
+
+  public void testDocsDeletionAndRecall() throws  Exception {
+    try (Directory dir = newDirectory();
+         IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null)
+             .setMaxBufferedDocs(2).setCodec(Codec.forName("Lucene90")))) {
+      float[][] values = new float[][]{new float[]{0, 1, 2},
+          new float[]{2, 3, 4}, new float[]{0, 1, 2}, new float[]{2, 3, 4},
+          new float[]{3, 3, 4}, new float[]{3, 5, 7}
+      };
+
+      for (int idx = 0; idx < values.length; ++idx) {
+        add(iw, idx, values[idx]);
+      }
+
+      iw.commit();
+      assertConsistentGraph(iw, values);
+
+      assertRecall(dir, 2, values[0]);
+      assertRecall(dir, 2, values[1]);
+      assertRecall(dir, 1, values[5]);
+
+      KnnGraphQuery query = new KnnDelQuery(KNN_GRAPH_FIELD, new float[]{0, 1.2f, 2.1f}, 3);
+      iw.deleteDocuments(query);
+      iw.commit();
+
+      assertRecall(dir, 2, values[0]);
+      assertRecall(dir, 2, values[1]);
+      assertRecall(dir, 1, values[5]);
+
+      query = new KnnDelQuery(KNN_GRAPH_FIELD, values[0], 1);
+      iw.deleteDocuments(query);
+      iw.commit();
+
+      assertRecall(dir, 2, values[1]);
+      assertRecall(dir, 1, values[4]);
+      assertRecall(dir, 1, values[5]);
     }
   }
 
@@ -309,22 +353,32 @@ public class TestKnnGraph extends LuceneTestCase {
     iw.addDocument(doc);
   }
 
-  private void assertRecall(Directory dir, int expectDocId, float[] value) throws IOException {
+  private void assertRecall(Directory dir, int expectSize, float[] value) throws IOException {
     try (IndexReader reader = DirectoryReader.open(dir)) {
-      IndexSearcher searcher = new IndexSearcher(reader);
+      final ExecutorService es = Executors.newCachedThreadPool(new NamedThreadFactory("HNSW"));
+      IndexSearcher searcher = new IndexSearcher(reader, es);
       KnnGraphQuery query = new KnnGraphQuery(KNN_GRAPH_FIELD, value);
-      TopDocs result = searcher.search(query, 1);
+
+      long startTime = System.currentTimeMillis();
+      TopDocs result = searcher.search(query, expectSize);
+      long costTime = System.currentTimeMillis() - startTime;
+
+      /*System.out.println("Recall vector " + Arrays.toString(value) + " cost " + costTime + " msec, result size -> "
+          + result.scoreDocs.length + ", details -> " + Arrays.toString(result.scoreDocs));*/
 
       int recallCnt = 0;
       for (LeafReaderContext ctx : reader.leaves()) {
         VectorValues vector = ctx.reader().getVectorValues(KNN_GRAPH_FIELD);
-        if (vector.seek(result.scoreDocs[0].doc)) {
-          ++recallCnt;
-          assertEquals(expectDocId, vector.docID());
-          assertEquals(0, Arrays.compare(value, vector.vectorValue()));
+        for (ScoreDoc doc : result.scoreDocs) {
+          if (vector.seek(doc.doc - ctx.docBase)) {
+            ++recallCnt;
+            assertEquals(0, Arrays.compare(value, vector.vectorValue()));
+          }
         }
       }
-      assertEquals(1, recallCnt);
+      assertEquals(expectSize, recallCnt);
+
+      es.shutdown();
     }
   }
 
