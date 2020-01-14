@@ -118,6 +118,9 @@ public class FuzzyQuery extends MultiTermQuery implements Accountable {
     for (CompiledAutomaton a : automata) {
       bytes += a.ramBytesUsed();
     }
+    bytes += 4 * Integer.BYTES;
+    bytes += Long.BYTES;
+    bytes += 1;
     return bytes;
   }
   
