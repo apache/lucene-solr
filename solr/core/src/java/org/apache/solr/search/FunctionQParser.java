@@ -16,6 +16,7 @@
  */
 package org.apache.solr.search;
 
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -231,7 +232,59 @@ public class FunctionQParser extends QParser {
     return val;
   }
 
-  
+  /**
+   * Parse argument in the same way as parseArg() but also parse the argument name
+   * if written in following syntax: argumentName=argument.
+   *
+   * @return Immutable entry with name as the key and argument as value. In case where there's no name, key is null.
+   * @throws SyntaxError
+   */
+  public SimpleImmutableEntry<String, String> parseNamedArg() throws SyntaxError {
+    argWasQuoted = false;
+
+    sp.eatws();
+    char ch = sp.peek();
+    String name = null;
+    String val = null;
+    switch (ch) {
+      case ')': return null;
+      case '$':
+        sp.pos++;
+        String param = sp.getId();
+        val = getParam(param);
+        break;
+      case '\'':
+      case '"':
+        val = sp.getQuotedString();
+        argWasQuoted = true;
+        break;
+      default:
+        // read unquoted literal ended by whitespace ',' or ')'
+        // there is no escaping.
+        int valStart = sp.pos;
+        for (;;) {
+          if (sp.pos >= sp.end) {
+            throw new SyntaxError("Missing end to unquoted value starting at " + valStart + " str='" + sp.val +"'");
+          }
+          char c = sp.val.charAt(sp.pos);
+          if (c==')' || c==',' || Character.isWhitespace(c)) {
+            val = sp.val.substring(valStart, sp.pos);
+            break;
+          }
+          if (c=='=') {
+            name = sp.val.substring(valStart, sp.pos);
+            valStart = sp.pos + 1;
+          }
+          sp.pos++;
+        }
+    }
+
+    sp.eatws();
+    consumeArgumentDelimiter();
+    return new SimpleImmutableEntry<>(name, val);
+  }
+
+
   /**
    * Parse a list of ValueSource.  Must be the final set of arguments
    * to a ValueSource.
