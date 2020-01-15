@@ -138,6 +138,8 @@ Other
 * LUCENE-9096: Simplification of CompressingTermVectorsWriter#flushOffsets.
   (kkewwei via Adrien Grand)
 
+* LUCENE-9068: FuzzyQuery builds its Automaton up-front (Alan Woodward, Mike Drob)
+
 ======================= Lucene 8.4.1 =======================
 
 Bug Fixes
