@@ -51,7 +51,7 @@ import java.io.IOException;
  * @see FieldComparator
  * @lucene.experimental
  */
-public interface LeafFieldComparator {
+public interface LeafFieldComparator<T> {
 
   /**
    * Set the bottom slot, ie the "weakest" (sorted last)
@@ -116,4 +116,7 @@ public interface LeafFieldComparator {
    * obtain the current hit's score, if necessary. */
   void setScorer(Scorable scorer) throws IOException;
 
+  /** Publishes feature values for the given docID
+   */
+  T leafValue(int doc) throws IOException;
 }

@@ -77,4 +77,12 @@ public interface Collector {
    * Indicates what features are required from the scorer.
    */
   ScoreMode scoreMode();
+
+  /**
+   * Indicates that input has ended for the collector. This allows the collector to perform
+   * post processing (if any).
+   */
+  default void postProcess() {
+    // No-op
+  }
 }

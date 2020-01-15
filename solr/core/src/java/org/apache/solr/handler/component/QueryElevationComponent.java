@@ -1220,6 +1220,11 @@ public class QueryElevationComponent extends SearchComponent implements SolrCore
           final int docValue = docVal(doc);
           return topVal - docValue;  // values will be small enough that there is no overflow concern
         }
+
+        @Override
+        public Integer leafValue(int docID) throws IOException {
+          return docVal(docID);
+        }
       };
     }
   }

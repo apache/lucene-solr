@@ -154,6 +154,11 @@ public class RandomSortField extends FieldType {
           // values will be positive... no overflow possible.
           return topVal - hash(doc+seed);
         }
+
+        @Override
+        public Integer leafValue(int docID) throws IOException {
+          return hash(docID + seed);
+        }
       };
     }
   };

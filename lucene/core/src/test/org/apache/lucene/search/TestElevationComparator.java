@@ -194,6 +194,11 @@ class ElevationComparatorSource extends FieldComparatorSource {
 
         @Override
         public void setScorer(Scorable scorer) {}
+
+        @Override
+        public Integer leafValue(int docID) throws IOException {
+          return docVal(docID);
+        }
       };
     }
 
@@ -211,7 +216,6 @@ class ElevationComparatorSource extends FieldComparatorSource {
      public Integer value(int slot) {
        return Integer.valueOf(values[slot]);
      }
-
 
    };
  }
