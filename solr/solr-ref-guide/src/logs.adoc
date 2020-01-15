@@ -125,7 +125,7 @@ image::images/math-expressions/logs-dates.png[]
 
 === Time Series
 
-In the previous example the `stats` expression was used to display the date range contained
+In the previous example the `stats` function was used to display the date range contained
 within the logs.
 
 The `timeseries` function can be used to visualize a time series for a specific time range
@@ -354,7 +354,7 @@ one reason for this may be that specific queries are slow.
 The `q_s` and `q_t` fields both hold the value of the *q* parameter in the Solr parameters. The `q_s`
 field is a string field and the `q_t` field has been tokenized.
 
-The `search` expression can be used to return the top N slowest queries in the logs by sorting
+The `search` function can be used to return the top N slowest queries in the logs by sorting
 the results by *qtime_i desc*. the example
 below demonstrates this:
 
