@@ -72,6 +72,7 @@ org.apache.opennlp:opennlp-tools=1.9.1
 org.apache.pdfbox:*=2.0.17
 org.apache.pdfbox:jempbox=1.8.16
 org.apache.poi:*=4.1.1
+org.apache.rat:apache-rat:0.11
 org.apache.tika:*=1.23
 org.apache.velocity.tools:*=3.0
 org.apache.xmlbeans:xmlbeans=3.1.0
