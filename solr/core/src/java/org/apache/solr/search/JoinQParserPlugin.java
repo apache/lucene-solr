@@ -163,7 +163,7 @@ public class JoinQParserPlugin extends QParserPlugin {
 }
 
 
-class JoinQuery extends Query implements PostFilter {
+class JoinQuery extends Query {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   String fromField;
@@ -203,36 +203,6 @@ class JoinQuery extends Query implements PostFilter {
   @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     return new JoinQueryWeight((SolrIndexSearcher) searcher, scoreMode, boost);
-  }
-
-  @Override
-  public DelegatingCollector getFilterCollector(IndexSearcher searcher) {
-    final SolrIndexSearcher solrSearcher = (SolrIndexSearcher) searcher;
-    final JoinQueryWeight weight = new JoinQueryWeight(solrSearcher, ScoreMode.COMPLETE_NO_SCORES, 1.0f);
-    final SolrIndexSearcher fromSearcher = weight.fromSearcher;
-    final SolrIndexSearcher toSearcher = weight.toSearcher;
-    try {
-      ensureJoinFieldExistsAndHasDocValues(fromSearcher, fromField, "from");
-      ensureJoinFieldExistsAndHasDocValues(toSearcher, toField, "to");
-
-      final SortedSetDocValues toValues = DocValues.getSortedSet(toSearcher.getSlowAtomicReader(), toField);
-      ensureDocValuesAreNonEmpty(toValues, toField, "to");
-      final LongBitSet toOrdBitSet = new LongBitSet(toValues.getValueCount());
-
-      final boolean multivalued = fromSearcher.getSchema().getField(fromField).multiValued();
-      long start = System.currentTimeMillis();
-      final BitsetBounds toBitsetBounds = (multivalued) ? populateToBitsetMultivalued(fromSearcher, toValues, toOrdBitSet) : populateToBitsetSinglevalued(fromSearcher, toValues, toOrdBitSet);
-      long end = System.currentTimeMillis();
-      log.debug("Built the join filter in {} millis", Long.toString(end - start));
-
-      if (toBitsetBounds.lower != BitsetBounds.NO_MATCHES) {
-        return new TopLevelDVTermsCollector(toValues, toOrdBitSet, toBitsetBounds.lower, toBitsetBounds.upper);
-      } else {
-        return new NoMatchesCollector();
-      }
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
   }
 
   private class JoinQueryWeight extends ConstantScoreWeight {
@@ -616,36 +586,6 @@ class JoinQuery extends Query implements PostFilter {
   }
 
   @Override
-  public boolean getCache() {
-    return cache;
-  }
-
-  @Override
-  public void setCache(boolean cache) {
-    this.cache = cache;
-  }
-
-  @Override
-  public int getCost() {
-    return cost;
-  }
-
-  @Override
-  public void setCost(int cost) {
-    this.cost = cost;
-  }
-
-  @Override
-  public boolean getCacheSep() {
-    return cacheSep;
-  }
-
-  @Override
-  public void setCacheSep(boolean cacheSep) {
-    this.cacheSep = cacheSep;
-  }
-
-  @Override
   public String toString(String field) {
     return "{!join from="+fromField+" to="+toField
         + (fromIndex != null ? " fromIndex="+fromIndex : "")
@@ -677,115 +617,6 @@ class JoinQuery extends Query implements PostFilter {
     return h;
   }
 
-  private void ensureJoinFieldExistsAndHasDocValues(SolrIndexSearcher solrSearcher, String fieldName, String querySide) {
-    final IndexSchema schema = solrSearcher.getSchema();
-    final SchemaField field = schema.getFieldOrNull(fieldName);
-    if (field == null) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, querySide + " field '" + fieldName + "' does not exist");
-    }
-
-    if (!field.hasDocValues()) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Postfilter join queries require 'to' and 'from' fields to have docvalues enabled: '" +
-              querySide + "' field '" + fieldName + "' doesn't");
-    }
-  }
-
-  private void ensureDocValuesAreNonEmpty(SortedDocValues docValues, String fieldName, String type) {
-    if (docValues.getValueCount() == 0) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'" + type + "' field " + fieldName+ " has no docvalues");
-    }
-  }
-
-  private void ensureDocValuesAreNonEmpty(SortedSetDocValues docValues, String fieldName, String type) {
-    if (docValues.getValueCount() == 0) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'" + type + "' field " + fieldName+ " has no docvalues");
-    }
-  }
-
-
-  private BitsetBounds populateToBitsetMultivalued(SolrIndexSearcher fromSearcher, SortedSetDocValues toValues, LongBitSet toOrdBitSet) throws IOException {
-    final SortedSetDocValues fromValues = DocValues.getSortedSet(fromSearcher.getSlowAtomicReader(), fromField);
-    ensureDocValuesAreNonEmpty(fromValues, fromField, "from");
-    final LongBitSet fromOrdBitSet = new LongBitSet(fromValues.getValueCount());
-    final Collector fromCollector = new MVTermOrdinalCollector(fromField, fromValues, fromOrdBitSet);
-
-    fromSearcher.search(q, fromCollector);
-    if (fromOrdBitSet.scanIsEmpty()) {
-      log.info("JEGERLOW: from-query found 0 matching ordinals");
-    }
-
-    long fromOrdinal = 0;
-    long firstToOrd = BitsetBounds.NO_MATCHES;
-    long lastToOrd = 0;
-    int count = 0;
-    while (fromOrdinal < fromOrdBitSet.length() && (fromOrdinal = fromOrdBitSet.nextSetBit(fromOrdinal)) >= 0) {
-      ++count;
-      final BytesRef fromBytesRef = fromValues.lookupOrd((int)fromOrdinal);
-      final long toOrdinal = lookupTerm(toValues, fromBytesRef, lastToOrd);//toValues.lookupTerm(fromBytesRef);
-      if (toOrdinal >= 0) {
-        toOrdBitSet.set(toOrdinal);
-        if (firstToOrd == BitsetBounds.NO_MATCHES) firstToOrd = toOrdinal;
-        lastToOrd = toOrdinal;
-      }
-      fromOrdinal++;
-    }
-
-    return new BitsetBounds(firstToOrd, lastToOrd);
-  }
-
-  private BitsetBounds populateToBitsetSinglevalued(SolrIndexSearcher fromSearcher, SortedSetDocValues toValues, LongBitSet toOrdBitSet) throws IOException {
-    final SortedDocValues fromValues = DocValues.getSorted(fromSearcher.getSlowAtomicReader(), fromField);
-    ensureDocValuesAreNonEmpty(fromValues, fromField, "from");
-    final LongBitSet fromOrdBitSet = new LongBitSet(fromValues.getValueCount());
-    final Collector fromCollector = new SVTermOrdinalCollector(fromField, fromValues, fromOrdBitSet);
-
-    fromSearcher.search(q, fromCollector);
-
-    long fromOrdinal = 0;
-    long firstToOrd = BitsetBounds.NO_MATCHES;
-    long lastToOrd = 0;
-    int count = 0;
-    while (fromOrdinal < fromOrdBitSet.length() && (fromOrdinal = fromOrdBitSet.nextSetBit(fromOrdinal)) >= 0) {
-      ++count;
-      final BytesRef fromBytesRef = fromValues.lookupOrd((int)fromOrdinal);
-      final long toOrdinal = lookupTerm(toValues, fromBytesRef, lastToOrd);//toValues.lookupTerm(fromBytesRef);
-      if (toOrdinal >= 0) {
-        toOrdBitSet.set(toOrdinal);
-        if (firstToOrd == BitsetBounds.NO_MATCHES) firstToOrd = toOrdinal;
-        lastToOrd = toOrdinal;
-      }
-      fromOrdinal++;
-    }
-
-    return new BitsetBounds(firstToOrd, lastToOrd);
-  }
-
-  /*
-   * Same binary-search based implementation as SortedSetDocValues.lookupTerm(BytesRef), but with an
-   * optimization to narrow the search space where possible by providing a startOrd instead of beginning each search
-   * at 0.
-   */
-  private long lookupTerm(SortedSetDocValues docValues, BytesRef key, long startOrd) throws IOException {
-    long low = startOrd;
-    long high = docValues.getValueCount()-1;
-
-    while (low <= high) {
-      long mid = (low + high) >>> 1;
-      final BytesRef term = docValues.lookupOrd(mid);
-      int cmp = term.compareTo(key);
-
-      if (cmp < 0) {
-        low = mid + 1;
-      } else if (cmp > 0) {
-        high = mid - 1;
-      } else {
-        return mid; // key found
-      }
-    }
-
-    return -(low + 1);  // key not found.
-  }
 
   private static class BitsetBounds {
     public static final long NO_MATCHES = -1L;
@@ -796,11 +627,6 @@ class JoinQuery extends Query implements PostFilter {
       this.lower = lower;
       this.upper = upper;
     }
-  }
-
-  private static class NoMatchesCollector extends DelegatingCollector {
-    @Override
-    public void collect(int doc) throws IOException {}
   }
 
   static class TopLevelJoinQuery extends JoinQuery {

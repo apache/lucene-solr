@@ -189,19 +189,17 @@ public class TestJoinQueryPerformance extends SolrTestCaseJ4 {
     final String fromQuery = "userid_s:user25"; // The higher the user number, the more permissions he has attached to his name (1-100)
     final String standardJoin = joinQueryBase + "}" + fromQuery;
     final String noScoreJoin = joinQueryBase + " score=none}" + fromQuery;
-    final String postfilterJoin = joinQueryBase + " cost=102}" + fromQuery;
     final String tpiJoin = joinQueryBase + " toplevel=true}" + fromQuery;
 
     try (HttpSolrClient client = new HttpSolrClient.Builder("http://localhost:8983/solr").build()) {
       for ( int i = 0; i < VAL_MAX; i+=20) {
         final String mainQuery = "val_i:[1 TO " + (i+1) + "]";
         final QueryResponse standardJoinRsp = client.query(TO_COLLECTION_NAME, new SolrQuery("q", mainQuery, "fq", standardJoin), SolrRequest.METHOD.POST);
-        final QueryResponse postfilterJoinRsp = client.query(TO_COLLECTION_NAME, new SolrQuery("q", mainQuery, "fq", postfilterJoin), SolrRequest.METHOD.POST);
         final QueryResponse tpiJoinRsp = client.query(TO_COLLECTION_NAME, new SolrQuery("q", mainQuery, "fq", tpiJoin), SolrRequest.METHOD.POST);
         final QueryResponse noScoreJoinRsp = client.query(TO_COLLECTION_NAME, new SolrQuery("q", mainQuery, "fq", noScoreJoin), SolrRequest.METHOD.POST);
-        final long numFound = postfilterJoinRsp.getResults().getNumFound();
+        final long numFound = tpiJoinRsp.getResults().getNumFound();
 
-        System.out.println(i + "," + numFound + "," + standardJoinRsp.getQTime() + "," + noScoreJoinRsp.getQTime() + "," + postfilterJoinRsp.getQTime() + "," + tpiJoinRsp.getQTime());
+        System.out.println(i + "," + numFound + "," + standardJoinRsp.getQTime() + "," + noScoreJoinRsp.getQTime() + "," + tpiJoinRsp.getQTime());
       }
     }
   }
@@ -218,16 +216,14 @@ public class TestJoinQueryPerformance extends SolrTestCaseJ4 {
         final String fromQuery = "userid_s:user" + i;
         final String standardJoin = joinQueryBase + "}" + fromQuery;
         final String noScoreJoin = joinQueryBase + " score=none}" + fromQuery;
-        final String postfilterJoin = joinQueryBase + " cost=102}" + fromQuery;
         final String tpiJoin = joinQueryBase + " toplevel=true}" + fromQuery;
 
         final QueryResponse standardJoinRsp = client.query(TO_COLLECTION_NAME, new SolrQuery("q", mainQuery, "fq", standardJoin), SolrRequest.METHOD.POST);
-        final QueryResponse postfilterJoinRsp = client.query(TO_COLLECTION_NAME, new SolrQuery("q", mainQuery, "fq", postfilterJoin), SolrRequest.METHOD.POST);
         final QueryResponse tpiJoinRsp = client.query(TO_COLLECTION_NAME, new SolrQuery("q", mainQuery, "fq", tpiJoin), SolrRequest.METHOD.POST);
         final QueryResponse noScoreJoinRsp = client.query(TO_COLLECTION_NAME, new SolrQuery("q", mainQuery, "fq", noScoreJoin), SolrRequest.METHOD.POST);
-        final long numFound = postfilterJoinRsp.getResults().getNumFound();
+        final long numFound = tpiJoinRsp.getResults().getNumFound();
 
-        System.out.println(i + "," + numFound + "," + standardJoinRsp.getQTime() + "," + noScoreJoinRsp.getQTime() + "," + postfilterJoinRsp.getQTime() + "," + tpiJoinRsp.getQTime());
+        System.out.println(i + "," + numFound + "," + standardJoinRsp.getQTime() + "," + noScoreJoinRsp.getQTime() + "," + tpiJoinRsp.getQTime());
       }
     }
   }
