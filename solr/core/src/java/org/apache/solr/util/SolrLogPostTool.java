@@ -295,6 +295,8 @@ public class SolrLogPostTool {
       doc.addField("path_s", path);
       if(path != null && path.contains("/admin")) {
         doc.addField("type_s", "admin");
+      } else if(path != null && params.contains("/replication")) {
+        doc.addField("type_s", "replication");
       } else {
         doc.addField("type_s", "query");
       }
@@ -481,6 +483,14 @@ public class SolrLogPostTool {
           doc.addField("distrib_s", dr);
         }
 
+        if(parts[0].equals("shards")) {
+          doc.addField("shards_s", "true");
+        }
+
+        if(parts[0].equals("ids")) {
+          doc.addField("ids_s", "true");
+        }
+
         if(parts[0].equals("isShard")) {
           String dr = URLDecoder.decode(parts[1], Charset.defaultCharset());
           doc.addField("isShard_s", dr);
@@ -495,6 +505,23 @@ public class SolrLogPostTool {
           String dr = URLDecoder.decode(parts[1], Charset.defaultCharset());
           doc.addField("facet_s", dr);
         }
+      }
+
+
+      //Special params used to determine what stage a query is.
+      //So we populate with defaults.
+      //The absence of the distrib params means its a distributed query.
+
+      if(doc.getField("distrib_s") == null) {
+        doc.addField("distrib_s", "true");
+      }
+
+      if(doc.getField("shards_s") == null) {
+        doc.addField("shards_s", "false");
+      }
+
+      if(doc.getField("ids_s") == null) {
+        doc.addField("ids_s", "false");
       }
     }
   }
