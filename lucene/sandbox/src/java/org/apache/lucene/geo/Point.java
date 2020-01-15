@@ -17,7 +17,17 @@
 
 package org.apache.lucene.geo;
 
-
+/**
+ * Represents a point on the earth's surface.  You can construct the Line directly with {@code double}
+ * coordinates.
+ * <p>
+ * NOTES:
+ * <ol>
+ *   <li>latitude/longitude values must be in decimal degrees.
+ *   <li>For more advanced GeoSpatial indexing and query operations see the {@code spatial-extras} module
+ * </ol>
+ * @lucene.experimental
+ */
 public class Point implements LatLonGeometry {
 
   /** latitude coordinate */
