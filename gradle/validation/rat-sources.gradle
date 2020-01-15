@@ -25,7 +25,7 @@ configure(rootProject) {
     }
 
     dependencies {
-        ratDeps "org.apache.rat:apache-rat"
+        ratDeps "org.apache.rat:apache-rat:${scriptDepVersions['apache-rat']}"
     }
 }
 

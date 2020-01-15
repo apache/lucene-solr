@@ -17,6 +17,12 @@ ext {
   buildDate = DateTimeFormatter.ofPattern("yyyy-MM-dd").format(tstamp)
   buildTime = DateTimeFormatter.ofPattern("HH:mm:ss").format(tstamp)
   buildYear = DateTimeFormatter.ofPattern("yyyy").format(tstamp)
+
+  // Workaround for this one, for now:
+  // https://github.com/palantir/gradle-consistent-versions/issues/383
+  scriptDepVersions = [
+      "apache-rat": "0.11"
+  ]
 }
 
 // Include smaller chunks configuring dedicated build areas.

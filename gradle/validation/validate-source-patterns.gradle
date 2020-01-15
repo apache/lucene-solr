@@ -10,7 +10,7 @@ configure(rootProject) {
 
   dependencies {
     checkSourceDeps "org.codehaus.groovy:groovy-all:2.4.17"
-    checkSourceDeps "org.apache.rat:apache-rat"
+    checkSourceDeps "org.apache.rat:apache-rat:${scriptDepVersions['apache-rat']}"
   }
 
   task validateSourcePatterns() {
