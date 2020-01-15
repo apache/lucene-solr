@@ -42,17 +42,15 @@ import org.slf4j.LoggerFactory;
 /**
  * Default implementation of {@link ResourceManager}.
  * <p>Resource pools managed by this implementation are run periodically, each according to
- * its schedule defined by {@link #SCHEDULE_DELAY_SECONDS_PARAM} parameter during the pool creation.</p>
+ * its schedule defined by {@link ResourceManagerPool#SCHEDULE_DELAY_SECONDS_PARAM} parameter during the pool creation.</p>
  */
 public class DefaultResourceManager extends ResourceManager {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
 
-  public static final String SCHEDULE_DELAY_SECONDS_PARAM = "scheduleDelaySeconds";
   public static final String MAX_NUM_POOLS_PARAM = "maxNumPools";
 
   public static final int DEFAULT_MAX_POOLS = 200;
-  public static final int DEFAULT_SCHEDULE_DELAY_SECONDS = 10;
 
   public static final String DOCUMENT_CACHE_POOL = "searcherDocumentCache";
   public static final String FILTER_CACHE_POOL = "searcherFilterCache";
@@ -134,7 +132,7 @@ public class DefaultResourceManager extends ResourceManager {
   }
 
   @Override
-  public ResourceManagerPool createPool(String name, String type, Map<String, Object> poolLimits, Map<String, Object> args) throws Exception {
+  public ResourceManagerPool createPool(String name, String type, Map<String, Object> poolLimits, Map<String, Object> poolParams) throws Exception {
     ensureActive();
     if (resourcePools.containsKey(name)) {
       throw new IllegalArgumentException("Pool '" + name + "' already exists.");
@@ -142,8 +140,7 @@ public class DefaultResourceManager extends ResourceManager {
     if (resourcePools.size() >= maxNumPools) {
       throw new IllegalArgumentException("Maximum number of pools (" + maxNumPools + ") reached.");
     }
-    ResourceManagerPool newPool = resourceManagerPoolFactory.create(name, type, this, poolLimits, args);
-    newPool.scheduleDelaySeconds = Integer.parseInt(String.valueOf(args.getOrDefault(SCHEDULE_DELAY_SECONDS_PARAM, DEFAULT_SCHEDULE_DELAY_SECONDS)));
+    ResourceManagerPool newPool = resourceManagerPoolFactory.create(name, type, this, poolLimits, poolParams);
     ResourceManagerPool oldPool = resourcePools.putIfAbsent(name, newPool);
     if (oldPool != null) {
       // someone else already created it
@@ -153,7 +150,7 @@ public class DefaultResourceManager extends ResourceManager {
     newPool.initializeMetrics(metricsContext, name);
     if (timeSource != null) {
       newPool.scheduledFuture = scheduledThreadPoolExecutor.scheduleWithFixedDelay(() -> {
-            log.info("- running pool " + newPool.getName() + " / " + newPool.getType());
+            log.debug("- running pool {} / {}", newPool.getName(), newPool.getType());
             newPool.manage();
           }, 0,
           timeSource.convertDelay(TimeUnit.SECONDS, newPool.scheduleDelaySeconds, TimeUnit.MILLISECONDS),
@@ -181,8 +178,35 @@ public class DefaultResourceManager extends ResourceManager {
       throw new IllegalArgumentException("Pool '" + name + "' doesn't exist.");
     }
     pool.setPoolLimits(poolLimits);
-    log.info("- modified pool limits " + pool.getName() + " / " + pool.getType() + ": " + poolLimits);
+    log.info("- modified pool limits {} / {}: {}", pool.getName(), pool.getType(), poolLimits);
 
+  }
+
+  @Override
+  public void setPoolParams(String name, Map<String, Object> params) throws Exception {
+    ensureActive();
+    ResourceManagerPool pool = resourcePools.get(name);
+    if (pool == null) {
+      throw new IllegalArgumentException("Pool '" + name + "' doesn't exist.");
+    }
+    // schedule delay may have changed, re-schedule if needed
+    int oldDelay = pool.scheduleDelaySeconds;
+    pool.setPoolParams(params);
+    int newDelay = pool.scheduleDelaySeconds;
+    if (newDelay != oldDelay && timeSource != null) {
+      // re-schedule
+      log.info("- modified pool params {} / {}, re-scheduling due to new schedule delay: {}",
+          pool.getName(), pool.getType(), params);
+      if (pool.scheduledFuture != null) {
+        pool.scheduledFuture.cancel(false);
+      }
+      pool.scheduledFuture = scheduledThreadPoolExecutor.scheduleWithFixedDelay(() -> {
+            log.debug("- running pool {} / {}", pool.getName(), pool.getType());
+            pool.manage();
+          }, 0,
+          timeSource.convertDelay(TimeUnit.SECONDS, newDelay, TimeUnit.MILLISECONDS),
+          TimeUnit.MILLISECONDS);
+    }
   }
 
   @Override

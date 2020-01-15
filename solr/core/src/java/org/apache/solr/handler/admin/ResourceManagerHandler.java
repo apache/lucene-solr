@@ -53,7 +53,7 @@ public class ResourceManagerHandler extends RequestHandlerBase implements Permis
 
   public static final String POOL_PARAM = "pool";
   public static final String LIMIT_PREFIX_PARAM = "limit.";
-  public static final String ARG_PREFIX_PARAM = "arg.";
+  public static final String PARAM_PREFIX_PARAM = "param.";
   public static final String POOL_ACTION_PARAM = "poolAction";
   public static final String RES_ACTION_PARAM = "resAction";
 
@@ -62,7 +62,8 @@ public class ResourceManagerHandler extends RequestHandlerBase implements Permis
     STATUS,
     CREATE,
     DELETE,
-    SETLIMITS;
+    SETLIMITS,
+    SETPARAMS;
 
     public static PoolOp get(String p) {
       if (p != null) {
@@ -140,6 +141,9 @@ public class ResourceManagerHandler extends RequestHandlerBase implements Permis
                 .collect(Collectors.toSet())
         :
         resourceManager.listPools());
+    if (op != PoolOp.CREATE && name != null && poolNames.isEmpty()) {
+      throw new SolrException(SolrException.ErrorCode.NOT_FOUND, "Pool name '" + name + "' doesn't match any existing pools.");
+    }
     switch (op) {
       case LIST:
         poolNames.forEach(p -> {
@@ -152,7 +156,7 @@ public class ResourceManagerHandler extends RequestHandlerBase implements Permis
           perPool.add("type", pool.getType());
           perPool.add("size", pool.getComponents().size());
           perPool.add("poolLimits", pool.getPoolLimits());
-          perPool.add("poolParams", pool.getParams());
+          perPool.add("poolParams", pool.getPoolParams());
         });
         break;
       case STATUS:
@@ -166,7 +170,7 @@ public class ResourceManagerHandler extends RequestHandlerBase implements Permis
           perPool.add("type", pool.getType());
           perPool.add("size", pool.getComponents().size());
           perPool.add("poolLimits", pool.getPoolLimits());
-          perPool.add("poolParams", pool.getParams());
+          perPool.add("poolParams", pool.getPoolParams());
           perPool.add("resources", new TreeSet<>(pool.getComponents().keySet()));
           try {
             Map<String, Map<String, Object>> values = pool.getCurrentValues();
@@ -183,9 +187,9 @@ public class ResourceManagerHandler extends RequestHandlerBase implements Permis
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Required parameter " + CommonParams.TYPE + " missing or empty: " + params);
         }
         Map<String, Object> limits = getMap(params, LIMIT_PREFIX_PARAM);
-        Map<String, Object> args = getMap(params, ARG_PREFIX_PARAM);
+        Map<String, Object> poolParams = getMap(params, PARAM_PREFIX_PARAM);
         try {
-          resourceManager.createPool(name, type, limits, args);
+          resourceManager.createPool(name, type, limits, poolParams);
           result.add("success", "created");
         } catch (Exception e) {
           throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Pool '" + name + "' creation failed: " + e.toString(), e);
@@ -216,8 +220,27 @@ public class ResourceManagerHandler extends RequestHandlerBase implements Permis
               currentLimits.put(k, v);
             }
           });
-          pool.setPoolLimits(newLimits);
-          result.add(p, newLimits);
+          pool.setPoolLimits(currentLimits);
+          result.add(p, currentLimits);
+        });
+        break;
+      case SETPARAMS:
+        poolNames.forEach(p -> {
+          ResourceManagerPool pool = resourceManager.getPool(p);
+          if (pool == null) {
+            return;
+          }
+          Map<String, Object> currentParams = new HashMap<>(pool.getPoolParams());
+          Map<String, Object> newParams = getMap(params, PARAM_PREFIX_PARAM);
+          newParams.forEach((k, v) -> {
+            if (v == null) {
+              currentParams.remove(k);
+            } else {
+              currentParams.put(k, v);
+            }
+          });
+          pool.setPoolLimits(currentParams);
+          result.add(p, currentParams);
         });
         break;
     }

@@ -87,7 +87,7 @@ public class NoOpResourceManager extends ResourceManager {
   }
 
   @Override
-  public ResourceManagerPool createPool(String name, String type, Map<String, Object> poolLimits, Map<String, Object> args) throws Exception {
+  public ResourceManagerPool createPool(String name, String type, Map<String, Object> poolLimits, Map<String, Object> poolParams) throws Exception {
     return NoOpResourcePool.INSTANCE;
   }
 
@@ -103,6 +103,11 @@ public class NoOpResourceManager extends ResourceManager {
 
   @Override
   public void setPoolLimits(String name, Map<String, Object> poolLimits) throws Exception {
+    // no-op
+  }
+
+  @Override
+  public void setPoolParams(String name, Map<String, Object> params) throws Exception {
     // no-op
   }
 

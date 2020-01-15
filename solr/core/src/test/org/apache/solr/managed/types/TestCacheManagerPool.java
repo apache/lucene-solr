@@ -6,14 +6,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.math3.distribution.ZipfDistribution;
 import org.apache.lucene.util.Accountable;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.managed.ChangeListener;
 import org.apache.solr.managed.DefaultResourceManager;
-import org.apache.solr.managed.ManagedComponent;
 import org.apache.solr.managed.ResourceManager;
 import org.apache.solr.managed.ResourceManagerPool;
 import org.apache.solr.metrics.SolrMetricManager;
@@ -44,21 +42,6 @@ public class TestCacheManagerPool extends SolrTestCaseJ4 {
     resourceManager.init(null);
   }
 
-  private static class ChangeTestListener implements ChangeListener {
-    Map<String, Map<String, Object>> changedValues = new ConcurrentHashMap<>();
-
-    @Override
-    public void changedLimit(String poolName, ManagedComponent component, String limitName, Object newRequestedVal, Object newActualVal, Reason reason) {
-      Map<String, Object> perComponent = changedValues.computeIfAbsent(component.getManagedComponentId().toString(), id -> new ConcurrentHashMap<>());
-      perComponent.put(limitName, newActualVal);
-      perComponent.put("reason", reason);
-    }
-
-    public void clear() {
-      changedValues.clear();
-    }
-  }
-
   @Test
   public void testPoolLimits() throws Exception {
     ResourceManagerPool pool = resourceManager.createPool("testPoolLimits", CacheManagerPool.TYPE, Collections.singletonMap("maxRamMB", 200), Collections.emptyMap());
@@ -74,7 +57,7 @@ public class TestCacheManagerPool extends SolrTestCaseJ4 {
       cache.initializeManagedComponent(resourceManager, "testPoolLimits");
       caches.add(cache);
     }
-    ChangeTestListener listener = new ChangeTestListener();
+    CacheChangeListener listener = new CacheChangeListener(0);
     pool.addChangeListener(listener);
     // fill up all caches just below the global limit, evenly with small values
     for (int i = 0; i < 202; i++) {
@@ -111,7 +94,7 @@ public class TestCacheManagerPool extends SolrTestCaseJ4 {
     totalValues = pool.aggregateTotalValues(pool.getCurrentValues());
     // OPTIMIZATION should have handled this, due to abnormally high hit ratios
     assertEquals("should adjust all: " + listener.changedValues.toString(), 10, listener.changedValues.size());
-    listener.changedValues.values().forEach(map -> assertEquals(ChangeListener.Reason.OPTIMIZATION, map.get("reason")));
+    listener.changedValues.values().forEach(lst -> lst.forEach(map -> assertEquals(ChangeListener.Reason.OPTIMIZATION, map.get("reason"))));
     // add more large values
     for (int i = 0; i < 10; i++) {
       caches.get(i).put("large1-" + i, new Accountable() {
@@ -137,7 +120,7 @@ public class TestCacheManagerPool extends SolrTestCaseJ4 {
       }
       totalValues = pool.aggregateTotalValues(pool.getCurrentValues());
       assertEquals("should adjust all again: " + listener.changedValues.toString(), 10, listener.changedValues.size());
-      listener.changedValues.values().forEach(map -> assertEquals(ChangeListener.Reason.ABOVE_TOTAL_LIMIT, map.get("reason")));
+      listener.changedValues.values().forEach(lst -> lst.forEach(map -> assertEquals(ChangeListener.Reason.ABOVE_TOTAL_LIMIT, map.get("reason"))));
       log.info(" - step " + cnt + ": " + listener.changedValues);
     } while (cnt < 10);
     if (cnt == 0) {
@@ -172,7 +155,7 @@ public class TestCacheManagerPool extends SolrTestCaseJ4 {
     cache.initializeMetrics(solrMetricsContext, "testHitRatio");
     cache.initializeManagedComponent(resourceManager, "testHitRatio");
 
-    ChangeTestListener listener = new ChangeTestListener();
+    CacheChangeListener listener = new CacheChangeListener(1);
     pool.addChangeListener(listener);
 
     // ===== test shrinking =====
@@ -186,7 +169,7 @@ public class TestCacheManagerPool extends SolrTestCaseJ4 {
     pool.manage();
     assertTrue(cache.getMaxSize() < initialSize);
     assertEquals(listener.changedValues.toString(), 1, listener.changedValues.size());
-    listener.changedValues.values().forEach(map -> assertEquals(ChangeListener.Reason.OPTIMIZATION, map.get("reason")));
+    listener.changedValues.values().forEach(lst -> lst.forEach(map -> assertEquals(ChangeListener.Reason.OPTIMIZATION, map.get("reason"))));
     // iterate until it's small enough to affect the hit ratio
     int cnt = 0;
     do {
@@ -214,7 +197,7 @@ public class TestCacheManagerPool extends SolrTestCaseJ4 {
     }
     pool.manage();
     assertEquals(listener.changedValues.toString(), 1, listener.changedValues.size());
-    listener.changedValues.values().forEach(map -> assertEquals(ChangeListener.Reason.OPTIMIZATION, map.get("reason")));
+    listener.changedValues.values().forEach(lst -> lst.forEach(map -> assertEquals(ChangeListener.Reason.OPTIMIZATION, map.get("reason"))));
     assertTrue(cache.getMaxSize() > initialSize);
 
     cnt = 0;

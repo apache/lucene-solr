@@ -194,10 +194,10 @@ public abstract class ResourceManager implements PluginInfoInitialized, SolrMetr
    * @param name pool name (must not be empty)
    * @param type pool type (one of the supported {@link ResourceManagerPool} types)
    * @param poolLimits pool limits (must not be null)
-   * @param args other parameters (must not be null).
+   * @param poolParams other parameters (must not be null).
    * @return newly created and scheduled resource pool
    */
-  public abstract ResourceManagerPool createPool(String name, String type, Map<String, Object> poolLimits, Map<String, Object> args) throws Exception;
+  public abstract ResourceManagerPool createPool(String name, String type, Map<String, Object> poolLimits, Map<String, Object> poolParams) throws Exception;
 
   /**
    * List all currently existing pool names.
@@ -218,6 +218,15 @@ public abstract class ResourceManager implements PluginInfoInitialized, SolrMetr
    *                   all other limits will remain unchanged. In order to remove a limit use null value.
    */
   public abstract void setPoolLimits(String name, Map<String, Object> poolLimits) throws Exception;
+
+  /**
+   * Modify parameters of an existing pool.
+   * @param name existing pool name
+   * @param params new parameter values.
+   * @throws Exception when an invalid value or unsupported parameter is requested, or the parameter
+   * value cannot be changed after creation
+   */
+  public abstract void setPoolParams(String name, Map<String, Object> params) throws Exception;
 
   /**
    * Remove pool. This also stops the management of resources registered with that pool.

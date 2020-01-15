@@ -27,13 +27,16 @@ import org.slf4j.LoggerFactory;
 public abstract class ResourceManagerPool<T extends ManagedComponent> implements SolrInfoBean, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  public static final String SCHEDULE_DELAY_SECONDS_PARAM = "scheduleDelaySeconds";
+  public static final int DEFAULT_SCHEDULE_DELAY_SECONDS = 10;
+
   protected final String name;
   protected final String type;
   protected Map<String, Object> poolLimits;
   protected final Map<String, T> components = new ConcurrentHashMap<>();
   protected final ResourceManager resourceManager;
   protected final Class<? extends ManagedComponent> componentClass;
-  private final Map<String, Object> poolParams;
+  protected Map<String, Object> poolParams;
   protected final ResourcePoolContext poolContext = new ResourcePoolContext();
   protected final Set<ChangeListener> listeners = new CopyOnWriteArraySet<>();
   protected final ReentrantLock manageLock = new ReentrantLock();
@@ -49,8 +52,8 @@ public abstract class ResourceManagerPool<T extends ManagedComponent> implements
     this.type = type;
     this.resourceManager = resourceManager;
     this.componentClass = resourceManager.getResourceManagerPoolFactory().getComponentClassByType(type);
-    this.poolLimits = new HashMap<>(poolLimits);
-    this.poolParams = new HashMap<>(poolParams);
+    setPoolLimits(poolLimits);
+    setPoolParams(poolParams);
   }
 
   /** Unique pool name. */
@@ -79,6 +82,15 @@ public abstract class ResourceManagerPool<T extends ManagedComponent> implements
       changeCounts.forEach((k, v) -> map.put(k.toString(), v.get()));
     });
     solrMetricsContext.gauge(changeMap, true, "changes", getCategory().toString(), "pool", getType());
+    solrMetricsContext.gauge(new MetricsMap((detailed, map) -> map.putAll(poolLimits)), true, "poolLimits", getCategory().toString(), "pool", getType());
+    solrMetricsContext.gauge(new MetricsMap((detailed, map) -> {
+      try {
+        Map<String, Object> totalValues = aggregateTotalValues(getCurrentValues());
+        map.putAll(totalValues);
+      } catch (Exception e) {
+        log.warn("Exception retrieving current values in pool {} / {}: {}", getName(), getType(), e);
+      }
+    }), true, "totalValues", getCategory().toString(), "pool", getType());
   }
 
   @Override
@@ -159,12 +171,19 @@ public abstract class ResourceManagerPool<T extends ManagedComponent> implements
   }
 
   public Object setResourceLimit(T component, String limitName, Object value, ChangeListener.Reason reason) throws Exception {
-    Object newActualLimit = doSetResourceLimit(component, limitName, value);
-    changeCounts.computeIfAbsent(reason, r -> new AtomicLong()).incrementAndGet();
-    for (ChangeListener listener : listeners) {
-      listener.changedLimit(getName(), component, limitName, value, newActualLimit, reason);
+    try {
+      Object newActualLimit = doSetResourceLimit(component, limitName, value);
+      changeCounts.computeIfAbsent(reason, r -> new AtomicLong()).incrementAndGet();
+      for (ChangeListener listener : listeners) {
+        listener.changedLimit(getName(), component, limitName, value, newActualLimit, reason);
+      }
+      return newActualLimit;
+    } catch (Throwable t) {
+      for (ChangeListener listener : listeners) {
+        listener.onError(getName(), component, limitName, value, reason, t);
+      }
+      throw t;
     }
-    return newActualLimit;
   }
 
   protected abstract Object doSetResourceLimit(T component, String limitName, Object value) throws Exception;
@@ -203,12 +222,21 @@ public abstract class ResourceManagerPool<T extends ManagedComponent> implements
    * Pool limits are defined using controlled tags.
    */
   public void setPoolLimits(Map<String, Object> poolLimits) {
-    this.poolLimits = new HashMap(poolLimits);
+    if (poolLimits != null) {
+      this.poolLimits = new HashMap(poolLimits);
+    }
   }
 
   /** Get parameters specified during creation. */
-  public Map<String, Object> getParams() {
+  public Map<String, Object> getPoolParams() {
     return Collections.unmodifiableMap(poolParams);
+  }
+
+  public void setPoolParams(Map<String, Object> poolParams) {
+    if (poolParams != null) {
+      this.poolParams = new HashMap<>(poolParams);
+      this.scheduleDelaySeconds = Integer.parseInt(String.valueOf(poolParams.getOrDefault(SCHEDULE_DELAY_SECONDS_PARAM, DEFAULT_SCHEDULE_DELAY_SECONDS)));
+    }
   }
 
   /**

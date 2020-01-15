@@ -222,8 +222,22 @@ public class MetricUtils {
    * converted metrics in simplified format.
    */
   public static Map<String, Object> convertMetrics(MetricRegistry registry, Collection<String> names) {
+    return convertMetrics(registry, names, true, true);
+  }
+
+  /**
+   * Convert selected metrics from a registry into a map, with metrics in a compact AND simple format.
+   * @param registry registry
+   * @param names metric names
+   * @param compact use compact representation for counters and gauges.
+   * @param simple use simplified representation for complex metrics - instead of a (name, map)
+   *             only the selected (name "." key, value) pairs will be produced.
+   * @return map where keys are metric names (if they were present in the registry) and values are
+   * converted metrics in simplified format.
+   */
+  public static Map<String, Object> convertMetrics(MetricRegistry registry, Collection<String> names, boolean compact, boolean simple) {
     final Map<String, Object> metrics = new HashMap<>();
-    convertMetrics(registry, names, false, true, true, true, (k, v) -> metrics.put(k, v));
+    convertMetrics(registry, names, false, true, compact, simple, (k, v) -> metrics.put(k, v));
     return metrics;
   }
 

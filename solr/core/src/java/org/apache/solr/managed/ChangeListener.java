@@ -52,4 +52,17 @@ public interface ChangeListener {
    * @param reason reason of the change
    */
   void changedLimit(String poolName, ManagedComponent component, String limitName, Object newRequestedVal, Object newActualVal, Reason reason);
+
+  /**
+   * @param poolName pool name where resource is managed.
+   * @param component managed component
+   * @param limitName limit name
+   * @param newRequestedVal requested new value of the resource limit.
+   * @param reason reason of the change
+   * @param error error encountered while changing. When an error occurs the actual current value of the
+   *              limit is unknown and must be verified.
+   */
+  default void onError(String poolName, ManagedComponent component, String limitName, Object newRequestedVal, Reason reason, Throwable error) {
+
+  }
 }

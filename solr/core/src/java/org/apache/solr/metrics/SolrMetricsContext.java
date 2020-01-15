@@ -122,10 +122,19 @@ public class SolrMetricsContext {
   }
 
   /**
-   * Return a snapshot of metric values that this component reports.
+   * Return a snapshot of simple metric values that this component reports.
    */
   public Map<String, Object> getMetricsSnapshot() {
-    return MetricUtils.convertMetrics(getMetricRegistry(), metricNames);
+    return getMetricsSnapshot(true);
+  }
+
+  /**
+   * Return a snapshot of metric values that this component reports, with optional metric details.
+   * @param summary if true then only some frequently used metric properties are reported, all metric
+   *                properties otherwise.
+   */
+  public Map<String, Object> getMetricsSnapshot(boolean summary) {
+    return MetricUtils.convertMetrics(getMetricRegistry(), metricNames, true, summary);
   }
 
   private String createName(String metricName, String... metricpath) {
