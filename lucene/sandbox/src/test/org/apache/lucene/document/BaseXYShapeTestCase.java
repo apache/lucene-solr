@@ -22,12 +22,14 @@ import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.Line2D;
+import org.apache.lucene.geo.Point2D;
 import org.apache.lucene.geo.ShapeTestUtil;
 import org.apache.lucene.geo.XYLine;
 import org.apache.lucene.geo.XYPolygon;
 import org.apache.lucene.geo.XYPolygon2D;
 import org.apache.lucene.geo.XYRectangle;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.util.TestUtil;
 
 import static org.apache.lucene.geo.XYEncodingUtils.decode;
 import static org.apache.lucene.geo.XYEncodingUtils.encode;
@@ -56,6 +58,16 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
   @Override
   protected Query newPolygonQuery(String field, QueryRelation queryRelation, Object... polygons) {
     return XYShape.newPolygonQuery(field, queryRelation, Arrays.stream(polygons).toArray(XYPolygon[]::new));
+  }
+
+  @Override
+  protected Query newPointsQuery(String field, QueryRelation queryRelation, Object... points) {
+    return XYShape.newPointQuery(field, queryRelation, Arrays.stream(points).toArray(float[][]::new));
+  }
+
+  @Override
+  protected Component2D toPoint2D(Object... points) {
+    return Point2D.create(Arrays.stream(points).toArray(float[][]::new));
   }
 
   @Override
@@ -119,6 +131,17 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
   @Override
   protected XYPolygon nextPolygon() {
     return ShapeTestUtil.nextPolygon();
+  }
+
+  @Override
+  protected Object[] nextPoints() {
+    int numPoints = TestUtil.nextInt(random(), 1, 20);
+    float[][] points = new float[numPoints][2];
+    for (int i = 0; i < numPoints; i++) {
+      points[i][0] = (float) ShapeTestUtil.nextDouble();
+      points[i][1] = (float) ShapeTestUtil.nextDouble();
+    }
+    return points;
   }
 
   @Override

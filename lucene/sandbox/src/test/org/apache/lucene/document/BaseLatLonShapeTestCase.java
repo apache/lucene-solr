@@ -24,11 +24,13 @@ import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Line;
 import org.apache.lucene.geo.Line2D;
+import org.apache.lucene.geo.Point2D;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Polygon2D;
 import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryUtils;
+import org.apache.lucene.util.TestUtil;
 
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
@@ -67,6 +69,11 @@ public abstract class BaseLatLonShapeTestCase extends BaseShapeTestCase {
   }
 
   @Override
+  protected Query newPointsQuery(String field, QueryRelation queryRelation, Object... points) {
+    return LatLonShape.newPointQuery(field, queryRelation, Arrays.stream(points).toArray(double[][]::new));
+  }
+
+  @Override
   protected Component2D toLine2D(Object... lines) {
     return Line2D.create(Arrays.stream(lines).toArray(Line[]::new));
   }
@@ -77,8 +84,24 @@ public abstract class BaseLatLonShapeTestCase extends BaseShapeTestCase {
   }
 
   @Override
+  protected Component2D toPoint2D(Object... points) {
+    return Point2D.create(Arrays.stream(points).toArray(double[][]::new));
+  }
+
+  @Override
   public Rectangle randomQueryBox() {
     return GeoTestUtil.nextBox();
+  }
+
+  @Override
+  protected Object[] nextPoints() {
+    int numPoints = TestUtil.nextInt(random(), 1, 20);
+    double[][] points = new double[numPoints][2];
+    for (int i = 0; i < numPoints; i++) {
+      points[i][0] = nextLatitude();
+      points[i][1] = nextLongitude();
+    }
+    return points;
   }
 
   @Override
@@ -160,6 +183,11 @@ public abstract class BaseLatLonShapeTestCase extends BaseShapeTestCase {
   /** factory method to create a new polygon query */
   protected Query newPolygonQuery(String field, QueryRelation queryRelation, Polygon... polygons) {
     return LatLonShape.newPolygonQuery(field, queryRelation, polygons);
+  }
+
+  /** factory method to create a new point query */
+  protected Query newPointQuery(String field, QueryRelation queryRelation, double[]... points) {
+    return LatLonShape.newPointQuery(field, queryRelation, points);
   }
 
   public void testPolygonQueryEqualsAndHashcode() {
