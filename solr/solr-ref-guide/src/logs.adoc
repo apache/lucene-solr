@@ -21,8 +21,8 @@ One of the primary *Streaming Expressions* and *Math Expressions* use cases is *
 This section of the user guide provides an introduction to log analytics through examples using
 Solr logs loaded using the *postlogs* command line tool included with Apache Solr.
 
-This is an appendix of the <<math-expressions.adoc,Visual Guide to Streaming Expressions and Math Expressions>>. All the functions described below are convered in detail in the guide.
-The <<math-start.adoc,Getting Started>> chapter can be consulted to learn how to get started with the visualizations and Apache Zeppelin.
+This is an appendix of the <<math-expressions.adoc#streaming-Expressions-and-math-expressions,Visual Guide to Streaming Expressions and Math Expressions>>. All the functions described below are convered in detail in the guide.
+The <<math-start.adoc#math-start,Getting Started>> chapter can be consulted to learn how to get started with the visualizations and Apache Zeppelin.
 
 <<Loading, Loading>> -
 <<Exploring, Exploring>> -
