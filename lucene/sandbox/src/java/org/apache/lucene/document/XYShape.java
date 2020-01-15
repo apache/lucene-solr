@@ -118,6 +118,19 @@ public class XYShape {
     return new XYShapePolygonQuery(field, queryRelation, polygons);
   }
 
+  /** create a query to find all indexed shapes that comply the {@link QueryRelation} with the provided point
+   **/
+  public static Query newPointQuery(String field, QueryRelation queryRelation, float[]... points) {
+    if (queryRelation == QueryRelation.CONTAINS && points.length > 1) {
+      BooleanQuery.Builder builder = new BooleanQuery.Builder();
+      for (int i =0; i < points.length; i++) {
+        builder.add(newPointQuery(field, queryRelation, points[i]), BooleanClause.Occur.MUST);
+      }
+      return builder.build();
+    }
+    return new XYShapePointQuery(field, queryRelation, points);
+  }
+
   /** create a query to find all polygons that intersect a provided circle */
   public static Query newDistanceQuery(String field, QueryRelation queryRelation, XYCircle circle) {
     return new XYShapeDistanceQuery(field, queryRelation, circle);

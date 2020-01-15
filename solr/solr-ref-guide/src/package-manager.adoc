@@ -1,5 +1,6 @@
 = Package Management
 :page-children: package-manager-internals
+:page-tocclass: right
 
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
@@ -18,70 +19,66 @@
 // specific language governing permissions and limitations
 // under the License.
 
-== Glossary of terms
+The package manager in Solr allows installation and updating of Solr-specific packages in Solr's cluster environment.
 
-=== Package
-A set of jar files (usually one) containing one or more <<solr-plugins.adoc#solr-plugins,Solr plugins>>. Each jar file is also accompanied by a signature string (which can be verified against a supplied public key).
+In this system, a _package_ is a set of Java jar files (usually one) containing one or more <<solr-plugins.adoc#solr-plugins,Solr plugins>>. Each jar file is also accompanied by a signature string (which can be verified against a supplied public key).
 
-=== Repository
-A location hosting one or many packages. Usually, this is a web service that serves meta information about packages as well as serves the package artifacts for downloading.
+A key design aspect of this system is the ability to install or update packages in a cluster environment securely without the need to restart every node.
 
-== Overview
-The package manager in Solr consists of the following internal components:
+Other elements of the design include the ability to install from a remote repository; package standardization; a command line interface (CLI); and a package store.
 
-* Package Manager CLI
-* Package Manager internal APIs
-* Isolated classloaders
-* Package Store
+This section will focus on how to use the package manager to install and update packages.
+For technical details, see the section <<package-manager-internals.adoc#package-manager-internals,Package Manager internals>>.
 
-In this guide, we will focus on the Package Manager CLI, which essentially uses the other APIs and components internally. For details on the other components (and hence details of inner workings of the package manager), please refer to <<package-manager-internals.adoc#package-manager-internals,Package Manager internals>>.
+== Interacting with the Package Manager
 
-== Interacting with the package manager
+The package manager CLI includes allows you to:
 
-Essentially, these are the phases in using the package manager:
+* Start Solr with support for package management
+* Add trusted repositories
+* List packages at a repository
+* Install desired packages
+* Deploy packages to collections
+* Update packages when updates are available
 
-* Starting Solr with support for package management
-* Adding trusted repositories
-* Listing and installing packages
-* Deploying packages on to collections
-* Updating packages
+=== Enable the Package Manager
 
-=== Starting Solr with package management support
-
-Start all Solr nodes with the `-Denable.packages=true` parameter. There are security consequences in doing so. At a minimum, no unauthorized user should have write access to Zookeeper instances, since it would then be possible to install packages from untrusted sources (e.g. malicious repositories).
+The package manager is disabled by default. To enable it, start all Solr nodes with the `-Denable.packages=true` parameter.
 
 [source,bash]
 ----
-
 $ bin/solr -c -Denable.packages=true
 ----
 
-=== Adding trusted repositories
+WARNING: There are security consequences to enabling the package manager.
+If an unauthorized user gained access to the system, they would have write access to ZooKeeper and could install packages from untrusted sources. Always ensure you have secured Solr with firewalls and <<authentication-and-authorization-plugins.adoc#authentication-and-authorization-plugins,authentication>> before enabling the package manager.
 
-In order to install packages into Solr, one has to add a repository hosting the packages. A repository is essentially a web service hosting package artifacts (jar files) and a public key (to validate the signatures of the jar files while installing). Note: Please do not add repositories that you don't trust or control. Also, only add repositories that are based on https and avoid repositories based on http to safeguard against MITM attacks.
+=== Add Trusted Repositories
+
+A _repository_ is a a location hosting one or many packages. Often this is a web service that serves meta-information about packages, the package artifacts for downloading, and a public key to validate the jar file signatures while installing.
+
+In order to install packages into Solr, one has to add a repository hosting the packages.
 
 [source,bash]
 ----
-
 $ bin/solr package add-repo <name-of-repo> <repo-url>
 ----
 
-=== Listing and installing packages
+NOTE: Do not add repositories that you don't trust or control. Only add repositories that are based on HTTPS and avoid repositories based on HTTP to safeguard against MITM attacks.
+
+=== Listing and Installing Packages
 
 To list installed packages:
 
 [source,bash]
 ----
-
 $ bin/solr package list-installed
 ----
-
 
 To list packages available for installation from added repositories:
 
 [source,bash]
 ----
-
 $ bin/solr package list-available
 ----
 
@@ -89,35 +86,41 @@ To install a package:
 
 [source,bash]
 ----
-
 $ bin/solr package install <package-name>[:<version>]
 ----
 
-=== Deploying a package on to a collection
+=== Deploy a Package
 
-Once a package has been installed, the plugins contained in it can be used in a collection, using either of the two methods:
+Once a package has been installed, the plugins contained in it can be used in a collection.
 
-==== Deploying using `deploy` command
-This can be done using the package manager's `deploy` command, provided the package supports it (package author's documentation would usually mention that):
+There are two ways to do this: either use the CLI's `deploy` command or manually.
+
+==== deploy Command
+
+If the package author states support for it, the package can be deployed with the CLI's `deploy` command:
 
 [source,bash]
 ----
 $ bin/solr package deploy <package-name>:[version] -collections <collection1>[,<collection2>,...]
 ----
 
-This may prompt you to execute a command to deploy the package. If you pass `-y` to the command, then this prompt can be skipped.
+The author may want you to confirm deployment of a package via a prompt.
+If you pass `-y` to the command, confirmation can be skipped.
 
-==== Deploying manually
-Alternatively, it is also possible manually edit a configset (solrconfig.xml, managedschema / schema.xml etc.) and using it by RELOADing a collection.
+==== Manual Deploy
 
-Example: Add a request handler from the package `mypackage` to a configset's solrconfig.xml:
+It is also possible to deploy a package manually by editing a configset (e.g., `solrconfig.xml`, `managed-schema`/`schema.xml`, etc.) and reloading the collection.
+
+For example, if a package named `mypackage` contains a request handler, we would add it to a configset's `solrconfig.xml` like this:
 
 [source, xml]
 ----
 <requestHandler name="/myhandler" class="mypackage:full.path.to.MyClass"></requestHandler>
 ----
 
-After that, `RELOAD` your collection. Now, you should set the package version that this collection is using, as follows (say collection is called `collection1` and package name is `mypackage` and installed version is `1.0.0`):
+Then use either the Collections API <<collection-management.adoc#reload,RELOAD command>> or the <<collections-core-admin.adoc#collections-core-admin,Admin UI>> to reload the collection.
+
+Next set the package version that this collection is using. If the collection is named `collection1`, the package name is `mypackage`, and the installed version is `1.0.0`, the command would look like this:
 
 [source,bash]
 ----
@@ -125,26 +128,26 @@ curl  "http://localhost:8983/api/collections/collection1/config/params" \
    -H 'Content-type:application/json' -d "{set: {PKG_VERSIONS: {mypackage: '1.0.0'}}}"
 ----
 
-==== Verifying the deployment
+==== Verify the Deployment
 After deploying, verify that the collection is using the package:
 
 [source,bash]
 ----
-
 $ bin/solr package list-deployed -c <collection>
 ----
 
-=== Updating packages
+=== Updating Packages
 
-In order to update a package, first step is make sure the updated version is available in the added repositories by running `list-available` command. Next, install the new version of the package from the repositories.
+In order to update a package, first step is make sure the updated version is available in the added repositories by running `list-available` command shown above in <<Listing and Installing Packages>>.
+
+Next, install the new version of the package from the repositories.
 
 [source,bash]
 ----
-
 $ bin/solr package install <package-name>:<version>
 ----
 
-Now, you can selectively update each of your collections using the old version (say, `1.0.0`) of the package (say, `mypackage`) to the newly added version (say `2.0.0`) as follows:
+Once you have installed the new version, you can selectively update each of your collections. Assuming the old version is `1.0.0` of the package `mypackage`, and the new version is `2.0.0`, the command would be as follows:
 
 [source,bash]
 ----
@@ -154,6 +157,7 @@ $ bin/solr package deploy mypackage:2.0.0 --update -collections mycollection
 You can run the `list-deployed` command to verify that this collection is using the newly added version.
 
 == Security
-Except the `add-repo` step, all other steps can be executed using a HTTP endpoint in Solr (see <<package-manager-internals.adoc#package-manager-internals,Package Manager internals>>). This step registers the public key of the trusted repository, and hence can only be executed using the package manager (CLI) having direct write access to Zookeeper. Hence, as you can imagine, it is important to protect Zookeeper from unauthorized write access.
 
-Also, keep in mind, that it is possible to install any package from a trusted and an already added repository. Hence, if you want to use some packages in production, then it is better to setup your own repository and add that to Solr, instead of adding a generic third-party repository that is beyond your administrative control.
+The `add-repo` step should only be executed using HTTPS enabled repository urls only so as to prevent against MITM attacks when Solr is fetching the public key for the repository. This `add-repo` step registers the public key of the trusted repository, and hence can only be executed using the package manager (CLI) having direct write access to the trusted store of the package store (a special location in the package store that cannot be written to using the package store APIs). Also, it is critical to protect ZooKeeper from unauthorized write access.
+
+Also, keep in mind, that it is possible to install *any* package from a repository once it has been added. If you want to use some packages in production, a best practice is to setup your own repository and add that to Solr instead of adding a generic third-party repository that is beyond your administrative control. You might want to re-sign packages from a third-party repository using your own private keys and host them at your own repository.

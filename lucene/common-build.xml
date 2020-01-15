@@ -202,7 +202,7 @@
   <property name="javadoc.noindex" value="true"/>
 
   <!---TODO: Fix accessibility (order of H1/H2/H3 headings), see https://issues.apache.org/jira/browse/LUCENE-8729 -->
-  <property name="javadoc.doclint.args" value="-Xdoclint:all -Xdoclint:-missing -Xdoclint:-accessibility"/>
+  <property name="javadoc.doclint.args" value="-Xdoclint:all,-missing,-accessibility,-html"/>
   <!---proc:none was added because of LOG4J2-1925 / JDK-8186647 -->
   <property name="javac.doclint.args" value="-Xdoclint:all/protected -Xdoclint:-missing -Xdoclint:-accessibility -proc:none"/>
   
@@ -266,7 +266,7 @@
   <property name="pitest.targetClasses" value="org.apache.*" />
 
   <!-- a reasonable default exclusion set, can be overridden for special cases -->
-  <property name="rat.excludes" value="**/TODO,**/*.txt,**/*.iml"/>
+  <property name="rat.excludes" value="**/TODO,**/*.txt,**/*.iml,**/*.gradle"/>
   
   <!-- These patterns can be defined to add additional files for checks, relative to module's home dir -->
   <property name="rat.additional-includes" value=""/>

@@ -22,6 +22,7 @@ import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.Line2D;
+import org.apache.lucene.geo.Point2D;
 import org.apache.lucene.geo.ShapeTestUtil;
 import org.apache.lucene.geo.XYCircle;
 import org.apache.lucene.geo.XYCircle2D;
@@ -62,8 +63,18 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
   }
 
   @Override
+  protected Query newPointsQuery(String field, QueryRelation queryRelation, Object... points) {
+    return XYShape.newPointQuery(field, queryRelation, Arrays.stream(points).toArray(float[][]::new));
+  }
+
+  @Override
   protected Query newDistanceQuery(String field, QueryRelation queryRelation, Object circle) {
     return XYShape.newDistanceQuery(field, queryRelation, (XYCircle) circle);
+  }
+
+  @Override
+  protected Component2D toPoint2D(Object... points) {
+    return Point2D.create(Arrays.stream(points).toArray(float[][]::new));
   }
 
   @Override
@@ -84,15 +95,6 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
   @Override
   public XYRectangle randomQueryBox() {
     return ShapeTestUtil.nextBox();
-  }
-
-  @Override
-  protected Object nextCircle() {
-    float radius = (float) TestUtil.nextInt(random(), 1, 1000);//Math.abs(ShapeTestUtil.nextDouble());
-    while (radius == 0 || radius > 1000) {
-      radius = (float) Math.abs(ShapeTestUtil.nextDouble());
-    }
-    return new XYCircle((float)ShapeTestUtil.nextDouble(), (float)ShapeTestUtil.nextDouble(), radius);
   }
 
   @Override
@@ -141,6 +143,26 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
   @Override
   protected XYPolygon nextPolygon() {
     return ShapeTestUtil.nextPolygon();
+  }
+
+  @Override
+  protected Object[] nextPoints() {
+    int numPoints = TestUtil.nextInt(random(), 1, 20);
+    float[][] points = new float[numPoints][2];
+    for (int i = 0; i < numPoints; i++) {
+      points[i][0] = (float) ShapeTestUtil.nextDouble();
+      points[i][1] = (float) ShapeTestUtil.nextDouble();
+    }
+    return points;
+  }
+
+  @Override
+  protected Object nextCircle() {
+    float radius = (float) TestUtil.nextInt(random(), 1, 1000);//Math.abs(ShapeTestUtil.nextDouble());
+    while (radius == 0 || radius > 1000) {
+      radius = (float) Math.abs(ShapeTestUtil.nextDouble());
+    }
+    return new XYCircle((float)ShapeTestUtil.nextDouble(), (float)ShapeTestUtil.nextDouble(), radius);
   }
 
   @Override

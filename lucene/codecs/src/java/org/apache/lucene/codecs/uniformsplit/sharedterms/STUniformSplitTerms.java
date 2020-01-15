@@ -21,8 +21,8 @@ import java.io.IOException;
 
 import org.apache.lucene.codecs.PostingsReaderBase;
 import org.apache.lucene.codecs.uniformsplit.BlockDecoder;
-import org.apache.lucene.codecs.uniformsplit.DictionaryBrowserSupplier;
 import org.apache.lucene.codecs.uniformsplit.FieldMetadata;
+import org.apache.lucene.codecs.uniformsplit.IndexDictionary;
 import org.apache.lucene.codecs.uniformsplit.UniformSplitTerms;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.TermsEnum;
@@ -43,7 +43,7 @@ public class STUniformSplitTerms extends UniformSplitTerms {
 
   protected STUniformSplitTerms(IndexInput blockInput, FieldMetadata fieldMetadata,
                                 FieldMetadata unionFieldMetadata, PostingsReaderBase postingsReader,
-                                BlockDecoder blockDecoder, FieldInfos fieldInfos, DictionaryBrowserSupplier dictionaryBrowserSupplier) {
+                                BlockDecoder blockDecoder, FieldInfos fieldInfos, IndexDictionary.BrowserSupplier dictionaryBrowserSupplier) {
     super(blockInput, fieldMetadata, postingsReader, blockDecoder, dictionaryBrowserSupplier);
     this.unionFieldMetadata = unionFieldMetadata;
     this.fieldInfos = fieldInfos;

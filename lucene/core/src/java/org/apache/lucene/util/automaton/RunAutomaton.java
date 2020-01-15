@@ -78,10 +78,13 @@ public abstract class RunAutomaton implements Accountable {
     accept = new boolean[size];
     transitions = new int[size * points.length];
     Arrays.fill(transitions, -1);
+    Transition transition = new Transition();
     for (int n=0;n<size;n++) {
       accept[n] = a.isAccept(n);
+      transition.source = n;
+      transition.transitionUpto = -1;
       for (int c = 0; c < points.length; c++) {
-        int dest = a.step(n, points[c]);
+        int dest = a.next(transition, points[c]);
         assert dest == -1 || dest < size;
         transitions[n * points.length + c] = dest;
       }

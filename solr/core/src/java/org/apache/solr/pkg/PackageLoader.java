@@ -168,7 +168,14 @@ public class PackageLoader implements Closeable {
         Version version = myVersions.get(v.version);
         if (version == null) {
           log.info("A new version: {} added for package: {} with artifacts {}", v.version, this.name, v.files);
-          myVersions.put(v.version, new Version(this, v));
+          Version ver = null;
+          try {
+            ver = new Version(this, v);
+          } catch (Exception e) {
+            log.error("package could not be loaded "+ ver.toString(), e);
+            continue;
+          }
+          myVersions.put(v.version, ver);
           sortedVersions.add(v.version);
         }
       }
@@ -248,9 +255,13 @@ public class PackageLoader implements Closeable {
         this.parent = parent;
         this.version = v;
         List<Path> paths = new ArrayList<>();
+
+        List<String> errs = new ArrayList<>();
+        coreContainer.getPackageStoreAPI().validateFiles(version.files, true, s -> errs.add(s));
+        if(!errs.isEmpty()) {
+          throw new RuntimeException("Cannot load package: " +errs);
+        }
         for (String file : version.files) {
-          //ensure that the files are downloaded and available
-          coreContainer.getPackageStoreAPI().getPackageStore().fetch(file,null);
           paths.add(coreContainer.getPackageStoreAPI().getPackageStore().getRealpath(file));
         }
 
@@ -282,6 +293,11 @@ public class PackageLoader implements Closeable {
         if (loader != null) {
           closeWhileHandlingException(loader);
         }
+      }
+
+      @Override
+      public String toString() {
+        return jsonStr();
       }
     }
   }

@@ -206,6 +206,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
       return " score="+vals[random().nextInt(vals.length)]+" ";
   }
 
+  @SuppressWarnings({"rawtypes", "unchecked"})
   @Test
   public void testRandomJoin() throws Exception {
     int indexIter=50 * RANDOM_MULTIPLIER;
@@ -322,7 +323,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
           final Map<String,String> ps = ((MapSolrParams)req.getParams()).getMap();
           final String q = ps.get("q");
           ps.put("q", q.replaceAll("\\}", " cache=false\\}"));
-          String rsp = h.query(req);
+          h.query(req);
           }
           fail(err);
         }
@@ -331,6 +332,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
     }
   }
 
+  @SuppressWarnings("rawtypes")
   Map<Comparable, Set<Comparable>> createJoinMap(Map<Comparable, Doc> model, String fromField, String toField) {
     Map<Comparable, Set<Comparable>> id_to_id = new HashMap<Comparable, Set<Comparable>>();
 
@@ -357,6 +359,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
   }
 
 
+  @SuppressWarnings("rawtypes")
   Set<Comparable> join(Collection<Doc> input, Map<Comparable, Set<Comparable>> joinMap) {
     Set<Comparable> ids = new HashSet<Comparable>();
     for (Doc doc : input) {

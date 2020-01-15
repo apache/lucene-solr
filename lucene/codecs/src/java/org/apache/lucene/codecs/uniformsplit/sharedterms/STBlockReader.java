@@ -18,7 +18,6 @@
 package org.apache.lucene.codecs.uniformsplit.sharedterms;
 
 import java.io.IOException;
-import java.util.function.Supplier;
 
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.PostingsReaderBase;
@@ -40,7 +39,7 @@ public class STBlockReader extends BlockReader {
 
   protected final FieldInfos fieldInfos;
 
-  public STBlockReader(Supplier<IndexDictionary.Browser> dictionaryBrowserSupplier,
+  public STBlockReader(IndexDictionary.BrowserSupplier dictionaryBrowserSupplier,
                        IndexInput blockInput, PostingsReaderBase postingsReader,
                        FieldMetadata fieldMetadata, BlockDecoder blockDecoder, FieldInfos fieldInfos) throws IOException {
     super(dictionaryBrowserSupplier, blockInput, postingsReader, fieldMetadata, blockDecoder);
@@ -118,6 +117,11 @@ public class STBlockReader extends BlockReader {
     return blockStartFP > fieldMetadata.getLastBlockStartFP() || super.isBeyondLastTerm(searchedTerm, blockStartFP);
   }
 
+  @Override
+  protected STBlockLine.Serializer createBlockLineSerializer() {
+    return new STBlockLine.Serializer();
+  }
+
   /**
    * Reads the {@link BlockTermState} on the current line for this reader's field.
    *
@@ -126,7 +130,7 @@ public class STBlockReader extends BlockReader {
   @Override
   protected BlockTermState readTermState() throws IOException {
     termStatesReadBuffer.setPosition(blockFirstLineStart + blockHeader.getTermStatesBaseOffset() + blockLine.getTermStateRelativeOffset());
-    return termState = STBlockLine.Serializer.readTermStateForField(
+    return termState = ((STBlockLine.Serializer) blockLineReader).readTermStateForField(
         fieldMetadata.getFieldInfo().number,
         termStatesReadBuffer,
         termStateSerializer,

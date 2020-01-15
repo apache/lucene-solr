@@ -1,0 +1,252 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+import groovy.xml.NamespaceBuilder
+
+configure(rootProject) {
+    configurations {
+        ratDeps
+    }
+
+    dependencies {
+        ratDeps "org.apache.rat:apache-rat:${scriptDepVersions['apache-rat']}"
+    }
+}
+
+allprojects {
+    task("rat", type: RatTask) {
+        group = 'Verification'
+        description = 'Runs Apache Rat checks.'
+    }
+}
+
+configure(rootProject) {
+    rat {
+        includes += [
+            "buildSrc/**/*.java",
+            "lucene/tools/forbiddenApis/**",
+            "lucene/tools/prettify/**",
+        ]
+        excludes += [
+            // Unclear if this needs ASF header, depends on how much was copied from ElasticSearch
+            "**/ErrorReportingTestListener.java"
+        ]
+    }
+}
+
+configure(project(":lucene:analysis:common")) {
+    rat {
+        srcExcludes += [
+            "**/*.aff",
+            "**/*.dic",
+            "**/charfilter/*.htm*",
+            "**/*LuceneResourcesWikiPage.html"
+        ]
+    }
+}
+
+configure(project(":lucene:analysis:kuromoji")) {
+    rat {
+        srcExcludes += [
+            // whether rat detects this as binary or not is platform dependent?!
+            "**/bocchan.utf-8"
+        ]
+    }
+}
+
+configure(project(":lucene:analysis:opennlp")) {
+    rat {
+        excludes += [
+            "src/tools/test-model-data/*.txt",
+        ]
+    }
+}
+
+configure(project(":lucene:highlighter")) {
+    rat {
+        srcExcludes += [
+            "**/CambridgeMA.utf8"
+        ]
+    }
+}
+
+configure(project(":lucene:suggest")) {
+    rat {
+        srcExcludes += [
+            "**/Top50KWiki.utf8",
+            "**/stop-snowball.txt"
+        ]
+    }
+}
+
+configure(project(":solr:core")) {
+    rat {
+        srcExcludes += [
+            "**/htmlStripReaderTest.html"
+        ]
+    }
+}
+
+configure(project(":solr:webapp")) {
+    rat {
+        includes = [ "**" ]
+        excludes += [
+            "web/img/**",
+            "*.iml",
+            "build.gradle",
+            "build/**",
+        ]
+    }
+}
+
+// Structure inspired by existing task from Apache Kafka, heavily modified since then.
+class RatTask extends DefaultTask {
+    @Input
+    List<String> includes = [
+        "*.xml",
+        "src/tools/**"
+    ]
+
+    @Input
+    List<String> excludes = []
+
+    @Input
+    List<String> srcExcludes = [
+        "**/TODO",
+        "**/*.txt",
+        "**/*.iml",
+        "**/*.gradle",
+        "build/**"
+    ]
+
+    @OutputFile
+    def xmlReport = new File(new File(project.buildDir, 'rat'), 'rat-report.xml')
+
+    def generateXmlReport() {
+        def uri = 'antlib:org.apache.rat.anttasks'
+        def ratClasspath = project.rootProject.configurations.ratDeps.asPath
+        ant.taskdef(resource: 'org/apache/rat/anttasks/antlib.xml', uri: uri, classpath: ratClasspath)
+
+        def rat = NamespaceBuilder.newInstance(ant, uri)
+        rat.report(format: 'xml', reportFile: xmlReport, addDefaultLicenseMatchers: true) {
+            ant.fileset(dir: "${project.projectDir}") {
+                includes.each { pattern -> ant.include(name: pattern) }
+                excludes.each { pattern -> ant.exclude(name: pattern) }
+            }
+
+            if (project.plugins.findPlugin(JavaPlugin)) {
+                [
+                    project.sourceSets.main.java.srcDirs,
+                    project.sourceSets.test.java.srcDirs,
+                ].flatten().each { srcLocation ->
+                    ant.fileset(dir: srcLocation, erroronmissingdir: false) {
+                        srcExcludes.each { pattern -> ant.exclude(name: pattern) }
+                    }
+                }
+
+                [
+                    project.sourceSets.main.resources.srcDirs
+                ].flatten().each { srcLocation ->
+                    ant.fileset(dir: srcLocation, erroronmissingdir: false) {
+                        ant.include(name: "META-INF/**")
+                    }
+                }
+            }
+
+            // The license rules below were manually copied from lucene/common-build.xml, there is currently no mechanism to sync them
+
+            // BSD 4-clause stuff (is disallowed below)
+            substringMatcher(licenseFamilyCategory: "BSD4 ", licenseFamilyName: "Original BSD License (with advertising clause)") {
+                pattern(substring: "All advertising materials")
+            }
+
+            // BSD-like stuff
+            substringMatcher(licenseFamilyCategory: "BSD  ", licenseFamilyName: "Modified BSD License") {
+                // brics automaton
+                pattern(substring: "Copyright (c) 2001-2009 Anders Moeller")
+                // snowball
+                pattern(substring: "Copyright (c) 2001, Dr Martin Porter")
+                // UMASS kstem
+                pattern(substring: "THIS SOFTWARE IS PROVIDED BY UNIVERSITY OF MASSACHUSETTS AND OTHER CONTRIBUTORS")
+                // Egothor
+                pattern(substring: "Egothor Software License version 1.00")
+                // JaSpell
+                pattern(substring: "Copyright (c) 2005 Bruno Martins")
+                // d3.js
+                pattern(substring: "THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS")
+                // highlight.js
+                pattern(substring: "THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS")
+            }
+
+            // MIT-like
+            substringMatcher(licenseFamilyCategory: "MIT  ", licenseFamilyName:"Modified BSD License") {
+                // ICU license
+                pattern(substring: "Permission is hereby granted, free of charge, to any person obtaining a copy")
+            }
+
+            // Apache
+            substringMatcher(licenseFamilyCategory: "AL   ", licenseFamilyName: "Apache") {
+                pattern(substring: "Licensed to the Apache Software Foundation (ASF) under")
+                // this is the old - school one under some files
+                pattern(substring: 'Licensed under the Apache License, Version 2.0 (the "License")')
+            }
+
+            substringMatcher(licenseFamilyCategory: "GEN  ", licenseFamilyName: "Generated") {
+                // svg files generated by gnuplot
+                pattern(substring: "Produced by GNUPLOT")
+                // snowball stemmers generated by snowball compiler
+                pattern(substring: "This file was generated automatically by the Snowball to Java compiler")
+                // parsers generated by antlr
+                pattern(substring: "ANTLR GENERATED CODE")
+            }
+
+            approvedLicense(familyName: "Apache")
+            approvedLicense(familyName: "The MIT License")
+            approvedLicense(familyName: "Modified BSD License")
+            approvedLicense(familyName: "Generated")
+        }
+    }
+
+    def printUnknownFiles() {
+        def ratXml = new XmlParser().parse(xmlReport)
+        def errors = []
+        ratXml.resource.each { resource ->
+            if (resource.'license-approval'.@name[0] == "false") {
+                errors << "Unknown license: ${resource.@name}"
+            }
+        }
+        if (errors) {
+            throw new GradleException("Found " + errors.size() + " file(s) with errors:\n" +
+                    errors.collect{ msg -> "  - ${msg}" }.join("\n"))
+        }
+    }
+
+    @TaskAction
+    def rat() {
+        def origEncoding = System.getProperty("file.encoding")
+        try {
+            generateXmlReport()
+            printUnknownFiles()
+        } finally {
+            if (System.getProperty("file.encoding") != origEncoding) {
+                throw new GradleException("Insane: rat changed file.encoding to ${System.getProperty('file.encoding')}?")
+            }
+        }
+    }
+}

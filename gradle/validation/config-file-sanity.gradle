@@ -1,0 +1,42 @@
+// An equivalent of ant's "check-example-lucene-match-version"
+
+configure(project(":solr")) {
+  task validateConfigFileSanity() {
+    doFirst {
+      def matchVersion = project(":solr:core").testOptionsResolved['tests.luceneMatchVersion']
+      if (!matchVersion) {
+        throw new GradleException("tests.luceneMatchVersion not defined?")
+      }
+
+      // Verify solrconfig.xml files declare proper luceneMatchVersion.
+      [
+          file("server/solr/configsets"),
+          file("example")
+      ].each { configsetsDir ->
+        def configFiles = fileTree(configsetsDir, {
+          include "**/solrconfig.xml"
+        })
+
+        configFiles.each { file ->
+          def content = file.getText("UTF-8")
+          if (!content.contains("<luceneMatchVersion>${matchVersion}<")) {
+            throw new GradleException("Configset does not refer to the correct luceneMatchVersion (${matchVersion}): ${file.absolutePath}")
+          }
+        }
+      }
+
+      def configsetsDir = file("server/solr/configsets")
+      def subdirs = configsetsDir.listFiles({file -> file.isDirectory() } as FileFilter)
+
+      if (subdirs.size() == 0) {
+        throw new GradleException("No sub-directories found under ${configsetsDir}?")
+      }
+
+      subdirs.each { dir ->
+        if (fileTree(dir, { include "**/solrconfig.xml" }).asList().isEmpty()) {
+          throw new GradleException("No solrconfig.xml file under: ${dir}")
+        }
+      }
+    }
+  }
+}
