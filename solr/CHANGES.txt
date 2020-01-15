@@ -118,6 +118,8 @@ Improvements
   terms queries that are searching 500 or more terms.  Users wishing to ignore this heuristic can choose the
   docValuesTermsFilterTopLevel or docValuesTermsFilterPerSegment methods directly. (Jason Gerlowski, Joel Bernstein, David Smiley)
 
+* SOLR-13749: New cross collection join filter (XCJF) (Dan Fox, Kevin Watters, via Gus Heck)
+
 Optimizations
 ---------------------
 (No changes)
