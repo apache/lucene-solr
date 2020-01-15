@@ -35,7 +35,6 @@ configure(rootProject) {
         ":lucene:queryparser",
         ":lucene:replicator",
         ":lucene:sandbox",
-        ":lucene:spatial",
         ":lucene:spatial-extras",
         ":lucene:spatial3d",
         ":lucene:suggest",

@@ -91,6 +91,8 @@ API Changes
   yield Passages sized a little different due to the fact that the sizing pivot is now the center of the first match and
   not its left edge.
 
+* LUCENE-8369: Remove obsolete spatial module. (Nick Knize, David Smiley)
+
 New Features
 ---------------------
 
