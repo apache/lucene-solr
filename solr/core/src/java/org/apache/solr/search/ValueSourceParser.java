@@ -24,7 +24,6 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
@@ -973,16 +972,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     addParser("agg_uniqueBlock", new ValueSourceParser() {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        Entry<String, String> namedArg = fp.parseNamedArg();
-        String name = namedArg.getKey();
-        String arg = namedArg.getValue();
-        if (name == null) {
-          return new UniqueBlockAgg(arg);
-        } else if ("parents".equals(name)) {
-          return new UniqueBlockQueryAgg(QParser.getParser(arg, fp.req).parse());
-        } else {
-          throw new SyntaxError("Unexpected name for argument in uniqueBlock function: " + name);
-        }
+        return new UniqueBlockAgg(fp.parseArg());
       }
     });
 
