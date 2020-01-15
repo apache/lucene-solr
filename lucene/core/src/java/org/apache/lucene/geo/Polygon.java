@@ -37,7 +37,7 @@ import org.apache.lucene.geo.GeoUtils.WindingOrder;
  * </ol>
  * @lucene.experimental
  */
-public final class Polygon {
+public final class Polygon implements LatLonGeometry {
   private final double[] polyLats;
   private final double[] polyLons;
   private final Polygon[] holes;
@@ -119,6 +119,26 @@ public final class Polygon {
     this.windingOrder = (windingSum < 0) ? GeoUtils.WindingOrder.CCW : GeoUtils.WindingOrder.CW;
   }
 
+  @Override
+  public double getMinLon() {
+    return minLon;
+  }
+
+  @Override
+  public double getMaxLon() {
+    return maxLon;
+  }
+
+  @Override
+  public double getMinLat() {
+    return minLat;
+  }
+
+  @Override
+  public double getMaxLat() {
+    return maxLat;
+  }
+
   /** returns the number of vertex points */
   public int numPoints() {
     return polyLats.length;
@@ -161,6 +181,25 @@ public final class Polygon {
   /** returns the number of holes for the polygon */
   public int numHoles() {
     return holes.length;
+  }
+
+  @Override
+  public Component2D toComponent2D() {
+    return Polygon2D.create(this);
+  }
+
+  /** prints polygons as geojson */
+  @Override
+  public String toGeoJSON() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("[");
+    sb.append(verticesToGeoJSON(polyLats, polyLons));
+    for (Polygon hole : holes) {
+      sb.append(",");
+      sb.append(verticesToGeoJSON(hole.polyLats, hole.polyLons));
+    }
+    sb.append("]");
+    return sb.toString();
   }
 
   @Override
@@ -216,19 +255,6 @@ public final class Polygon {
       }
     }
     sb.append(']');
-    return sb.toString();
-  }
-
-  /** prints polygons as geojson */
-  public String toGeoJSON() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("[");
-    sb.append(verticesToGeoJSON(polyLats, polyLons));
-    for (Polygon hole : holes) {
-      sb.append(",");
-      sb.append(verticesToGeoJSON(hole.polyLats, hole.polyLons));
-    }
-    sb.append("]");
     return sb.toString();
   }
 

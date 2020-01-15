@@ -22,7 +22,9 @@ import java.util.List;
 import org.apache.lucene.document.ShapeField.QueryRelation; // javadoc
 import org.apache.lucene.document.ShapeField.Triangle;
 import org.apache.lucene.geo.GeoUtils;
+import org.apache.lucene.geo.LatLonGeometry;
 import org.apache.lucene.geo.Line;
+import org.apache.lucene.geo.Point;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.geo.Tessellator;
 import org.apache.lucene.index.PointValues; // javadoc
@@ -109,40 +111,37 @@ public class LatLonShape {
    *  note: does not support dateline crossing
    **/
   public static Query newLineQuery(String field, QueryRelation queryRelation, Line... lines) {
-    if (queryRelation == QueryRelation.CONTAINS && lines.length > 1) {
-      BooleanQuery.Builder builder = new BooleanQuery.Builder();
-      for (int i =0; i < lines.length; i++) {
-        builder.add(newLineQuery(field, queryRelation, lines[i]), BooleanClause.Occur.MUST);
-      }
-      return builder.build();
-    }
-    return new LatLonShapeLineQuery(field, queryRelation, lines);
+    return newGeometryCollectionQuery(field, queryRelation, lines);
   }
 
   /** create a query to find all indexed geo shapes that intersect a provided polygon (or array of polygons)
    *  note: does not support dateline crossing
    **/
   public static Query newPolygonQuery(String field, QueryRelation queryRelation, Polygon... polygons) {
-    if (queryRelation == QueryRelation.CONTAINS && polygons.length > 1) {
-      BooleanQuery.Builder builder = new BooleanQuery.Builder();
-      for (int i =0; i < polygons.length; i++) {
-        builder.add(newPolygonQuery(field, queryRelation, polygons[i]), BooleanClause.Occur.MUST);
-      }
-      return builder.build();
-    }
-    return new LatLonShapePolygonQuery(field, queryRelation, polygons);
+    return newGeometryCollectionQuery(field, queryRelation, polygons);
   }
 
-  /** create a query to find all indexed shapes that comply the {@link QueryRelation} with the provided point
+  /** create a query to find all indexed shapes that comply the {@link QueryRelation} with the provided points
    **/
   public static Query newPointQuery(String field, QueryRelation queryRelation, double[]... points) {
-    if (queryRelation == QueryRelation.CONTAINS && points.length > 1) {
+    Point[] pointArray = new Point[points.length];
+    for (int i =0; i < points.length; i++) {
+      pointArray[i] = new Point(points[i][0], points[i][1]);
+    }
+    return newGeometryCollectionQuery(field, queryRelation, pointArray);
+  }
+
+  /** create a query to find all indexed geo shapes that intersect a provided geometry collection
+   *  note: Components do not support dateline crossing
+   **/
+  public static Query newGeometryCollectionQuery(String field, QueryRelation queryRelation, LatLonGeometry... latLonGeometries) {
+    if (queryRelation == QueryRelation.CONTAINS && latLonGeometries.length > 1) {
       BooleanQuery.Builder builder = new BooleanQuery.Builder();
-      for (int i =0; i < points.length; i++) {
-        builder.add(newPointQuery(field, queryRelation, points[i]), BooleanClause.Occur.MUST);
+      for (int i = 0; i < latLonGeometries.length; i++) {
+        builder.add(newGeometryCollectionQuery(field, queryRelation, latLonGeometries[i]), BooleanClause.Occur.MUST);
       }
       return builder.build();
     }
-    return new LatLonShapePointQuery(field, queryRelation, points);
+    return new LatLonShapeComponent2DQuery(field, queryRelation, latLonGeometries);
   }
 }

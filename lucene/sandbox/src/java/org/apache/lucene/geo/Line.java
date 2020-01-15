@@ -29,7 +29,7 @@ import java.util.Arrays;
  * </ol>
  * @lucene.experimental
  */
-public class Line {
+public class Line implements LatLonGeometry {
   /** array of latitude coordinates */
   private final double[] lats;
   /** array of longitude coordinates */
@@ -83,6 +83,26 @@ public class Line {
     this.maxLon = maxLon;
   }
 
+  @Override
+  public double getMinLon() {
+    return minLon;
+  }
+
+  @Override
+  public double getMaxLon() {
+    return maxLon;
+  }
+
+  @Override
+  public double getMinLat() {
+    return minLat;
+  }
+
+  @Override
+  public double getMaxLat() {
+    return maxLat;
+  }
+
   /** returns the number of vertex points */
   public int numPoints() {
     return lats.length;
@@ -106,6 +126,21 @@ public class Line {
   /** Returns a copy of the internal longitude array */
   public double[] getLons() {
     return lons.clone();
+  }
+
+  @Override
+  public Component2D toComponent2D() {
+    return Line2D.create(this);
+  }
+
+  /** prints polygons as geojson */
+  @Override
+  public String toGeoJSON() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("[");
+    sb.append(Polygon.verticesToGeoJSON(lats, lons));
+    sb.append("]");
+    return sb.toString();
   }
 
   @Override
@@ -135,15 +170,6 @@ public class Line {
           .append("]");
     }
     sb.append(')');
-    return sb.toString();
-  }
-
-  /** prints polygons as geojson */
-  public String toGeoJSON() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("[");
-    sb.append(Polygon.verticesToGeoJSON(lats, lons));
-    sb.append("]");
     return sb.toString();
   }
 }

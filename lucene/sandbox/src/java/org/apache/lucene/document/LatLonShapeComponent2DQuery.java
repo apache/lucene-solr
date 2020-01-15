@@ -21,8 +21,7 @@ import java.util.Arrays;
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoEncodingUtils;
-import org.apache.lucene.geo.Polygon;
-import org.apache.lucene.geo.Polygon2D;
+import org.apache.lucene.geo.LatLonGeometry;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.NumericUtils;
 
@@ -31,38 +30,39 @@ import org.apache.lucene.util.NumericUtils;
  * <p>
  * Note:
  * <ul>
- *    <li>Dateline crossing is not yet supported. Polygons should be cut at the dateline and provided as a multipolygon query</li>
+ *    <li>Dateline crossing is not yet supported. Shapes should be cut at the dateline and provided as an array
+ *    of LatLonSpatialComponents</li>
  * </ul>
  *
  * <p>The field must be indexed using
- * {@link org.apache.lucene.document.LatLonShape#createIndexableFields} added per document.
+ * {@link LatLonShape#createIndexableFields} added per document.
  *
  *  @lucene.experimental
  **/
-final class LatLonShapePolygonQuery extends ShapeQuery {
-  final Polygon[] polygons;
-  final private Component2D poly2D;
+final class LatLonShapeComponent2DQuery extends ShapeQuery {
+  final LatLonGeometry[] latLonGeometries;
+  final private Component2D component2D;
 
   /**
    * Creates a query that matches all indexed shapes to the provided polygons
    */
-  public LatLonShapePolygonQuery(String field, QueryRelation queryRelation, Polygon... polygons) {
+  public LatLonShapeComponent2DQuery(String field, QueryRelation queryRelation, LatLonGeometry[] latLonGeometries) {
     super(field, queryRelation);
-    if (polygons == null) {
-      throw new IllegalArgumentException("polygons must not be null");
+    if (latLonGeometries == null) {
+      throw new IllegalArgumentException("shapes must not be null");
     }
-    if (polygons.length == 0) {
-      throw new IllegalArgumentException("polygons must not be empty");
+    if (latLonGeometries.length == 0) {
+      throw new IllegalArgumentException("shapes must not be empty");
     }
-    for (int i = 0; i < polygons.length; i++) {
-      if (polygons[i] == null) {
-        throw new IllegalArgumentException("polygon[" + i + "] must not be null");
-      } else if (polygons[i].minLon > polygons[i].maxLon) {
+    for (int i = 0; i < latLonGeometries.length; i++) {
+      if (latLonGeometries[i] == null) {
+        throw new IllegalArgumentException("shape[" + i + "] must not be null");
+      } else if (latLonGeometries[i].getMinLon() > latLonGeometries[i].getMaxLon()) {
         throw new IllegalArgumentException("LatLonShapePolygonQuery does not currently support querying across dateline.");
       }
     }
-    this.polygons = polygons.clone();
-    this.poly2D = Polygon2D.create(polygons);
+    this.latLonGeometries = latLonGeometries.clone();
+    this.component2D = LatLonGeometry.create(latLonGeometries);
   }
 
   @Override
@@ -75,7 +75,7 @@ final class LatLonShapePolygonQuery extends ShapeQuery {
     double maxLon = GeoEncodingUtils.decodeLongitude(NumericUtils.sortableBytesToInt(maxTriangle, maxXOffset));
 
     // check internal node against query
-    return poly2D.relate(minLon, maxLon, minLat, maxLat);
+    return component2D.relate(minLon, maxLon, minLat, maxLat);
   }
 
   @Override
@@ -90,9 +90,9 @@ final class LatLonShapePolygonQuery extends ShapeQuery {
     double clon = GeoEncodingUtils.decodeLongitude(scratchTriangle.cX);
 
     switch (queryRelation) {
-      case INTERSECTS: return poly2D.relateTriangle(alon, alat, blon, blat, clon, clat) != Relation.CELL_OUTSIDE_QUERY;
-      case WITHIN: return poly2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_INSIDE_QUERY;
-      case DISJOINT: return poly2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_OUTSIDE_QUERY;
+      case INTERSECTS: return component2D.relateTriangle(alon, alat, blon, blat, clon, clat) != Relation.CELL_OUTSIDE_QUERY;
+      case WITHIN: return component2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_INSIDE_QUERY;
+      case DISJOINT: return component2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_OUTSIDE_QUERY;
       default: throw new IllegalArgumentException("Unsupported query type :[" + queryRelation + "]");
     }
   }
@@ -108,7 +108,7 @@ final class LatLonShapePolygonQuery extends ShapeQuery {
     double clat = GeoEncodingUtils.decodeLatitude(scratchTriangle.cY);
     double clon = GeoEncodingUtils.decodeLongitude(scratchTriangle.cX);
 
-    return poly2D.withinTriangle(alon, alat, scratchTriangle.ab, blon, blat, scratchTriangle.bc, clon, clat, scratchTriangle.ca);
+    return component2D.withinTriangle(alon, alat, scratchTriangle.ab, blon, blat, scratchTriangle.bc, clon, clat, scratchTriangle.ca);
   }
 
   @Override
@@ -121,19 +121,24 @@ final class LatLonShapePolygonQuery extends ShapeQuery {
       sb.append(this.field);
       sb.append(':');
     }
-    sb.append("Polygon(").append(polygons[0].toGeoJSON()).append(')');
+    sb.append("[");
+    for (int i =0; i < latLonGeometries.length; i++) {
+      sb.append(latLonGeometries[i].toGeoJSON());
+      sb.append(',');
+    }
+    sb.append(']');
     return sb.toString();
   }
 
   @Override
   protected boolean equalsTo(Object o) {
-    return super.equalsTo(o) && Arrays.equals(polygons, ((LatLonShapePolygonQuery)o).polygons);
+    return super.equalsTo(o) && Arrays.equals(latLonGeometries, ((LatLonShapeComponent2DQuery)o).latLonGeometries);
   }
 
   @Override
   public int hashCode() {
     int hash = super.hashCode();
-    hash = 31 * hash + Arrays.hashCode(polygons);
+    hash = 31 * hash + Arrays.hashCode(latLonGeometries);
     return hash;
   }
 }
