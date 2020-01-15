@@ -63,3 +63,6 @@ image::images/math-expressions/searchiris.png[]
 *<<machine-learning.adoc#machine-learning,Machine Learning>>*: Distance, KNN, DBSCAN, K-means, fuzzy K-means and other ML functions.
 
 *<<computational-geometry.adoc#computational-geometry,Computational Geometry>>*: Convex Hulls and Enclosing Disks.
+
+*<<logs.adoc#log-analytics,Appendix A>>*: Solr log analytics and visualization.
+
