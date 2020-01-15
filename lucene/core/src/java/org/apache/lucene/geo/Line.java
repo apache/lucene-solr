@@ -27,7 +27,6 @@ import java.util.Arrays;
  *   <li>All latitude/longitude values must be in decimal degrees.
  *   <li>For more advanced GeoSpatial indexing and query operations see the {@code spatial-extras} module
  * </ol>
- * @lucene.experimental
  */
 public class Line {
   /** array of latitude coordinates */
