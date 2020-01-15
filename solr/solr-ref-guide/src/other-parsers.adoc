@@ -188,7 +188,7 @@ A list of queries that *must not* appear in matching documents.
 A list of queries *should* appear in matching documents. For a BooleanQuery with no `must` queries, one or more `should` queries must match a document for the BooleanQuery to match.
 
 `filter`::
-A list of queries that *must* appear in matching documents. However, unlike `must`, the score of filter queries is ignored. Also, these queries are cached in filter cache. To avoid caching add either `cache=false` as local parameter, or `"cache":"false"` property to underneath Query DLS Object.  
+A list of queries that *must* appear in matching documents. However, unlike `must`, the score of filter queries is ignored. Also, these queries are cached in filter cache. To avoid caching add either `cache=false` as local parameter, or `"cache":"false"` property to underneath Query DLS Object.
 
 *Examples*
 
@@ -1031,7 +1031,19 @@ The field on which to search. This parameter is required.
 Separator to use when parsing the input. If set to " " (a single blank space), will trim additional white space from the input terms. Defaults to  a comma (`,`).
 
 `method`::
-The internal query-building implementation: `termsFilter`, `booleanQuery`, `automaton`, or `docValuesTermsFilter`. Defaults to `termsFilter`.
+An optional parameter used to determine which of several query implementations should be used by Solr.  Options are restricted to: `termsFilter`, `booleanQuery`, `automaton`, `docValuesTermsFilterPerSegment`, `docValuesTermsFilterTopLevel` or `docValuesTermsFilter`.  If unspecified, the default value is `termsFilter`.  Each implementation has its own performance characteristics, and users are encouraged to experiment to determine which implementation is most performant for their use-case.  Heuristics are given below.
++
+`booleanQuery` creates a `BooleanQuery` representing the request.  Scales well with index size, but poorly with the number of terms being searched for.
++
+`termsFilter` the default `method`.  Uses a `BooleanQuery` or a `TermInSetQuery` depending on the number of terms.  Scales well with index size, but only moderately with the number of query terms.
++
+`docValuesTermsFilter` can only be used on fields with docValues data.  The `cache` parameter is false by default.  Chooses between the `docValuesTermsFilterTopLevel` and `docValuesTermsFilterPerSegment` methods using the number of query terms as a rough heuristic.  Users should typically use this method instead of using `docValuesTermsFilterTopLevel` or `docValuesTermsFilterPerSegment` directly, unless they've done performance testing to validate one of the methods on queries of all sizes.  Depending on the implementation picked, this method may rely on expensive data structures which are lazily populated after each commit.  If you commit frequently and your use-case can tolerate a static warming query, consider adding one to `solrconfig.xml` so that this work is done as a part of the commit itself and not attached directly to user requests.
++
+`docValuesTermsFilterTopLevel` can only be used on fields with docValues data.  The `cache` parameter is false by default.  Uses top-level docValues data structures to find results.  These data structures are more efficient as the number of query terms grows high (over several hundred). But they are also expensive to build and need to be populated lazily after each commit, causing a sometimes-noticeable slowdown on the first query after each commit.  If you commit frequently and your use-case can tolerate a static warming query, consider adding one to `solrconfig.xml` so that this work is done as a part of the commit itself and not attached directly to user requests.
++
+`docValuesTermsFilterPerSegment` can only be used on fields with docValues data.  The `cache` parameter is false by default.  It is more efficient than the "top-level" alternative with small to medium (~500) numbers of query terms, and doesn't suffer a slowdown on queries immediately following a commit (as `docValuesTermsFilterTopLevel` does - see above).  But it is less performant on very large numbers of query terms.
++
+`automaton` creates an `AutomatonQuery` representing the request with each term forming a union.  Scales well with index size and moderately with the number of query terms.
 
 *Examples*
 

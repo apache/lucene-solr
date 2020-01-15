@@ -302,6 +302,10 @@ Check these limits every time you upgrade your kernel or operating system. These
 If these limits are exceeded, the problems reported by Solr vary depending on the specific operation responsible for exceeding the limit. Errors such as "too many open files", "connection error", and "max processes exceeded" have been reported, as well as SolrCloud recovery failures.
 ====
 
+== Security Considerations
+
+include::securing-solr.adoc[tag=security-network-binding-1]
+
 == Running Multiple Solr Nodes per Host
 
 The `bin/solr` script is capable of running multiple instances on one machine, but for a *typical* installation, this is not a recommended setup. Extra CPU and memory resources are required for each additional instance. A single instance is easily capable of handling multiple indexes.
