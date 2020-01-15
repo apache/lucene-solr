@@ -21,11 +21,11 @@ import groovy.xml.NamespaceBuilder
 
 configure(rootProject) {
     configurations {
-        rat
+        ratDeps
     }
 
     dependencies {
-        rat "org.apache.rat:apache-rat"
+        ratDeps "org.apache.rat:apache-rat"
     }
 }
 
@@ -34,98 +34,84 @@ allprojects {
         group = 'Verification'
         description = 'Runs Apache Rat checks.'
     }
+}
 
-    if (project == rootProject) {
-        rat {
-            includes += [
-                "buildSrc/**/*.java",
-                "lucene/tools/forbiddenApis/**",
-                "lucene/tools/prettify/**",
-                // "dev-tools/**"
-            ]
-            excludes += [
-                // Unclear if this needs ASF header, depends on how much was copied from ElasticSearch
-                "**/ErrorReportingTestListener.java"
-            ]
-        }
+configure(rootProject) {
+    rat {
+        includes += [
+            "buildSrc/**/*.java",
+            "lucene/tools/forbiddenApis/**",
+            "lucene/tools/prettify/**",
+        ]
+        excludes += [
+            // Unclear if this needs ASF header, depends on how much was copied from ElasticSearch
+            "**/ErrorReportingTestListener.java"
+        ]
     }
+}
 
-    if (project.path == ":lucene:analysis:common") {
-        rat {
-            srcExcludes += [
-                "**/*.aff",
-                "**/*.dic",
-                "**/charfilter/*.htm*",
-                "**/*LuceneResourcesWikiPage.html"
-            ]
-        }
+configure(project(":lucene:analysis:common")) {
+    rat {
+        srcExcludes += [
+            "**/*.aff",
+            "**/*.dic",
+            "**/charfilter/*.htm*",
+            "**/*LuceneResourcesWikiPage.html"
+        ]
     }
+}
 
-    if (project.path == ":lucene:analysis:kuromoji") {
-        rat {
-            srcExcludes += [
-                // whether rat detects this as binary or not is platform dependent?!
-                "**/bocchan.utf-8"
-            ]
-        }
+configure(project(":lucene:analysis:kuromoji")) {
+    rat {
+        srcExcludes += [
+            // whether rat detects this as binary or not is platform dependent?!
+            "**/bocchan.utf-8"
+        ]
     }
+}
 
-    if (project.path == ":lucene:analysis:opennlp") {
-        rat {
-            excludes += [
-                "src/tools/test-model-data/*.txt",
-            ]
-        }
+configure(project(":lucene:analysis:opennlp")) {
+    rat {
+        excludes += [
+            "src/tools/test-model-data/*.txt",
+        ]
     }
+}
 
-    if (project.path == ":lucene:highlighter") {
-        rat {
-            srcExcludes += [
-                "**/CambridgeMA.utf8"
-            ]
-        }
+configure(project(":lucene:highlighter")) {
+    rat {
+        srcExcludes += [
+            "**/CambridgeMA.utf8"
+        ]
     }
+}
 
-    if (project.path == ":lucene:suggest") {
-        rat {
-            srcExcludes += [
-                "**/Top50KWiki.utf8",
-                "**/stop-snowball.txt"
-            ]
-        }
+configure(project(":lucene:suggest")) {
+    rat {
+        srcExcludes += [
+            "**/Top50KWiki.utf8",
+            "**/stop-snowball.txt"
+        ]
     }
+}
 
-    if (project.path == ":lucene:tools") {
-        rat {
-            includes += [
-                "forbiddenApis/**",
-                "prettify/**",
-                // If/when :lucene:tools becomes a gradle project, then the following line will fail
-                // It is safe to remove it, but also remove the check for lucene/tools in rootProject above
-                "javadoc/ecj.javadocs.prefs"
-            ]
-        }
+configure(project(":solr:core")) {
+    rat {
+        srcExcludes += [
+            "**/htmlStripReaderTest.html"
+        ]
     }
+}
 
-
-    if (project.path == ":solr:core") {
-        rat {
-            srcExcludes += [
-                "**/htmlStripReaderTest.html"
-            ]
-        }
-    }
-
-    if (project.path == ":solr:webapp") {
-        rat {
-            includes = [ "**" ]
-            excludes += [
-                "web/img/**",
-                "*.iml",
-                "build.gradle",
-                "build/**",
-            ]
-        }
+configure(project(":solr:webapp")) {
+    rat {
+        includes = [ "**" ]
+        excludes += [
+            "web/img/**",
+            "*.iml",
+            "build.gradle",
+            "build/**",
+        ]
     }
 }
 
@@ -154,7 +140,7 @@ class RatTask extends DefaultTask {
 
     def generateXmlReport() {
         def uri = 'antlib:org.apache.rat.anttasks'
-        def ratClasspath = project.rootProject.configurations.rat.asPath
+        def ratClasspath = project.rootProject.configurations.ratDeps.asPath
         ant.taskdef(resource: 'org/apache/rat/anttasks/antlib.xml', uri: uri, classpath: ratClasspath)
 
         def rat = NamespaceBuilder.newInstance(ant, uri)
