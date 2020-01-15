@@ -91,7 +91,6 @@ public class Point2D implements Component2D {
       return PointValues.Relation.CELL_OUTSIDE_QUERY;
     } else if (bx == cx && by == cy) {
       // indexed "triangle" is a line:
-      // indexed "triangle" is a line:
       if (orient(cx, cy, ax, ay, x, y) == 0) {
         return PointValues.Relation.CELL_INSIDE_QUERY;
       }

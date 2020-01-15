@@ -572,8 +572,15 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
 
       Object[] queryPoints = nextPoints();
       QueryRelation queryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
-      Component2D queryPoly2D = queryRelation == QueryRelation.CONTAINS ? toPoint2D(queryPoints[0]) : toPoint2D(queryPoints);
-      Query query = newPointsQuery(FIELD_NAME, queryRelation, queryPoints);
+      Component2D queryPoly2D;
+      Query query;
+      if (queryRelation == QueryRelation.CONTAINS) {
+        queryPoly2D = toPoint2D(queryPoints[0]);
+        query = newPointsQuery(FIELD_NAME, queryRelation, queryPoints[0]);
+      } else {
+        queryPoly2D = toPoint2D(queryPoints);
+        query = newPointsQuery(FIELD_NAME, queryRelation, queryPoints);
+      }
 
       if (VERBOSE) {
         System.out.println("  query=" + query + ", relation=" + queryRelation);
