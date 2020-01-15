@@ -1,0 +1,31 @@
+// Add test duration summary at the end of the build.
+
+def allTests = []
+
+allprojects {
+  tasks.withType(Test) { task ->
+    afterTest { desc, result ->
+      def duration = (result.getEndTime() - result.getStartTime())
+
+      allTests << [
+        name    : "${desc.className.replaceAll('.+\\.', "")}.${desc.name} (${project.path})",
+        duration: duration
+      ]
+    }
+  }
+}
+
+gradle.buildFinished { result ->
+  if (allTests && result.getFailure() == null) {
+    def slowest = allTests
+      .sort { a, b -> b.duration.compareTo(a.duration) }
+      .take(10)
+      .findAll { e -> e.duration >= 500 }
+      .collect { e -> String.format(Locale.ROOT, "%5.2fs %s", e.duration / 1000d, e.name) }
+
+    if (slowest) {
+      logger.lifecycle("The slowest tests (exceeding 500 ms) during this run:\n  " +
+        slowest.join("\n  "))
+    }
+  }
+}

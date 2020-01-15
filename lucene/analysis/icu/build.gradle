@@ -1,0 +1,10 @@
+apply plugin: 'java-library'
+
+dependencies {
+  api project(':lucene:core')
+  api project(':lucene:analysis:common')
+
+  api 'com.ibm.icu:icu4j'
+
+  testImplementation project(':lucene:test-framework')
+}

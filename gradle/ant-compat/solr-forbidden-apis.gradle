@@ -1,0 +1,9 @@
+
+// Why does solr exclude these from forbidden API checks?
+
+configure(project(":solr:core")) {
+  configure([forbiddenApisMain, forbiddenApisTest]) {
+    exclude "org/apache/solr/internal/**"
+    exclude "org/apache/hadoop/**"
+  }
+}

@@ -1,0 +1,59 @@
+// Configure javadoc defaults.
+
+allprojects {
+  plugins.withType(JavaPlugin) {
+    tasks.matching { it.name == "javadoc" }.all {
+      StandardJavadocDocletOptions opts = (options as StandardJavadocDocletOptions)
+      opts.locale("en_US")
+      opts.charSet = "UTF-8"
+      opts.encoding = "UTF-8"
+      opts.docEncoding = "UTF-8"
+
+      opts.noIndex()
+      opts.memberLevel = JavadocMemberLevel.PROTECTED
+      opts.version = true
+      opts.author = true
+      opts.use = true
+
+      opts.linksOffline(
+          "https://docs.oracle.com/en/java/javase/11/docs/api/",
+          project(":lucene").file("tools/javadoc/java11/").toString())
+
+      opts.tags(
+          "lucene.experimental:a:WARNING: This API is experimental and might change in incompatible ways in the next release.",
+          "lucene.internal:a:NOTE: This API is for internal purposes only and might change in incompatible ways in the next release.",
+          "lucene.spi:t:SPI Name (case-insensitive: if the name is 'htmlStrip', 'htmlstrip' can be used when looking up the service).",
+      )
+
+      opts.addStringOption("-release", "11")
+      opts.addBooleanOption('Xdoclint:all,-missing,-accessibility,-html', true)
+
+      def libName = project.path.startsWith(":lucene") ? "Lucene" : "Solr"
+      opts.overview = file("src/main/java/overview.html").toString()
+      opts.docTitle = "${libName} ${project.version} ${project.name} API"
+      opts.windowTitle = "${libName} ${project.version} ${project.name} API"
+      opts.bottom = "<i>Copyright &copy; 2000-${buildYear} Apache Software Foundation. All Rights Reserved.</i>"
+    }
+  }
+}
+
+// https://issues.apache.org/jira/browse/LUCENE-9132: Add apache yetus so that javadoc doesn't fail
+configure([
+    project(":solr:solrj"),
+    project(":solr:core"),
+    project(":solr:test-framework"),
+]) {
+  configurations {
+    javadocFix
+  }
+
+  dependencies {
+    javadocFix("org.apache.yetus:audience-annotations:0.11.1")
+  }
+
+  plugins.withType(JavaPlugin) {
+    javadoc {
+      classpath += configurations.javadocFix.asFileTree
+    }
+  }
+}

@@ -1,0 +1,53 @@
+// Set up cross-project dependency on test classes. This should be resolved by pulling reused classes into
+// a separate regular module. Exporting test classes is sort of weird.
+configure([project(":lucene:spatial3d"),
+           project(":lucene:analysis:common"),
+           project(":lucene:backward-codecs"),
+           project(":lucene:queryparser"),
+           project(":solr:contrib:dataimporthandler")]) {
+  plugins.withType(JavaPlugin) {
+    configurations {
+      testClassesExported
+    }
+
+    artifacts {
+      testClassesExported sourceSets.test.java.outputDir, {
+        builtBy testClasses
+      }
+    }
+  }
+}
+
+configure(project(":lucene:spatial-extras")) {
+  plugins.withType(JavaPlugin) {
+    dependencies {
+      testImplementation project(path: ':lucene:spatial3d', configuration: 'testClassesExported')
+    }
+  }
+}
+
+configure(project(":solr:core")) {
+  plugins.withType(JavaPlugin) {
+    dependencies {
+      testImplementation project(path: ':lucene:backward-codecs', configuration: 'testClassesExported')
+      testImplementation project(path: ':lucene:queryparser', configuration: 'testClassesExported')
+    }
+  }
+}
+
+configure(project(":solr:contrib:analysis-extras")) {
+  plugins.withType(JavaPlugin) {
+    dependencies {
+      testImplementation project(path: ':lucene:analysis:common', configuration: 'testClassesExported')
+      testImplementation project(path: ':solr:contrib:dataimporthandler', configuration: 'testClassesExported')
+    }
+  }
+}
+
+configure(project(":solr:contrib:dataimporthandler-extras")) {
+  plugins.withType(JavaPlugin) {
+    dependencies {
+      testImplementation project(path: ':solr:contrib:dataimporthandler', configuration: 'testClassesExported')
+    }
+  }
+}

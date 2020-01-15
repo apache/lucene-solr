@@ -1,0 +1,26 @@
+
+// Equivalent of ant's "validate-source-patterns".
+// This should be eventually rewritten in plain gradle. For now, delegate to
+// the ant/groovy script we already have.
+
+configure(rootProject) {
+  configurations {
+    checkSourceDeps
+  }
+
+  dependencies {
+    checkSourceDeps "org.codehaus.groovy:groovy-all:2.4.17"
+    checkSourceDeps "org.apache.rat:apache-rat:${scriptDepVersions['apache-rat']}"
+  }
+
+  task validateSourcePatterns() {
+    doFirst {
+      ant.taskdef(
+          name: "groovy",
+          classname: "org.codehaus.groovy.ant.Groovy",
+          classpath: configurations.checkSourceDeps.asPath)
+
+      ant.groovy(src: project(":lucene").file("tools/src/groovy/check-source-patterns.groovy"))
+    }
+  }
+}
