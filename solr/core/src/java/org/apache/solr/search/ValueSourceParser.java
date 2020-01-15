@@ -986,6 +986,13 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
       }
     });
 
+    addParser("agg_uniqueBlockQuery", new ValueSourceParser() {
+      @Override
+      public ValueSource parse(FunctionQParser fp) throws SyntaxError {
+        return new UniqueBlockQueryAgg(QParser.getParser(fp.parseArg(), fp.req).parse());
+      }
+    });
+
     addParser("agg_hll", new ValueSourceParser() {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {

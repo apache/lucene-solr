@@ -375,7 +375,7 @@ public class TestJsonFacetsWithNestedObjects extends SolrTestCaseHS{
             "    field:type_s,"
             + "  limit:-1," +
             "    facet: {" +
-            "           in_books: \"uniqueBlock(parents=type_s:book)\" }" +
+            "           in_books: \"uniqueBlockQuery(type_s:book)\" }" +
             "  }" +
             "}" )
 

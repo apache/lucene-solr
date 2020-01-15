@@ -3183,8 +3183,43 @@ public class TestJsonFacets extends SolrTestCaseHS {
             "    ]}" +
             "}"
     );
+  }
 
-    //the same test with uniqueBlock agg function with query
+  /**
+   * Testing uniqueBlock agg function with parent query as parameter
+   */
+  public void testUniqueBlockWithQuery() throws Exception {
+    final Client client = Client.localClient();
+
+    final SolrParams p = params("rows","0");
+
+    client.deleteByQuery("*:*", null);
+
+    SolrInputDocument parent;
+    parent = sdoc("id", "1", "type_s","book", "book_s","A", "v_t","q");
+    client.add(parent, null);
+
+    parent = sdoc("id", "2", "type_s","book", "book_s","B", "v_t","q w");
+    parent.addChildDocument( sdoc("id","2.1", "type_s","page", "page_s","a", "v_t","x y z")  );
+    parent.addChildDocument( sdoc("id","2.2", "type_s","page", "page_s","a", "v_t","x1   z")  );
+    parent.addChildDocument( sdoc("id","2.3", "type_s","page", "page_s","a", "v_t","x2   z")  );
+    parent.addChildDocument( sdoc("id","2.4", "type_s","page", "page_s","b", "v_t","x y  ") );
+    parent.addChildDocument( sdoc("id","2.5", "type_s","page", "page_s","c", "v_t","  y z" )  );
+    parent.addChildDocument( sdoc("id","2.6", "type_s","page", "page_s","c", "v_t","    z" )  );
+    client.add(parent, null);
+
+    parent = sdoc("id", "3", "type_s","book", "book_s","C", "v_t","q w e");
+    parent.addChildDocument( sdoc("id","3.1", "type_s","page", "page_s","b", "v_t","x y  ") );
+    parent.addChildDocument( sdoc("id","3.2", "type_s","page", "page_s","d", "v_t","x    ")  );
+    parent.addChildDocument( sdoc("id","3.3", "type_s","page", "page_s","e", "v_t","  y  ")  );
+    parent.addChildDocument( sdoc("id","3.4", "type_s","page", "page_s","f", "v_t","    z")  );
+    client.add(parent, null);
+
+    parent = sdoc("id", "4", "type_s","book", "book_s","D", "v_t","e");
+    client.add(parent, null);
+
+    client.commit();
+
     client.testJQ(params(p, "q", "type_s:page"
         , "json.facet", "{" +
             "  types: {" +
@@ -3199,19 +3234,19 @@ public class TestJsonFacets extends SolrTestCaseHS {
             "    field:page_s," +
             "    limit:-1," +
             "    facet: {" +
-            "           in_books: \"uniqueBlock(parents=type_s:book)\" }"+
+            "           in_books: \"uniqueBlockQuery(type_s:book)\" }"+
             "  }" +
             "}" )
 
-        , "response=={numFound:6,start:0,docs:[]}"
-        , "facets=={ count:6," +
+        , "response=={numFound:10,start:0,docs:[]}"
+        , "facets=={ count:10," +
             "types:{" +
-            "    buckets:[ {val:page, count:6, in_books:2} ]}" +
+            "    buckets:[ {val:page, count:10, in_books:2} ]}" +
             "pages:{" +
             "    buckets:[ " +
-            "     {val:a, count:1, in_books:1}," +
-            "     {val:b, count:1, in_books:1}," +
-            "     {val:c, count:1, in_books:1}," +
+            "     {val:a, count:3, in_books:1}," +
+            "     {val:b, count:2, in_books:2}," +
+            "     {val:c, count:2, in_books:1}," +
             "     {val:d, count:1, in_books:1}," +
             "     {val:e, count:1, in_books:1}," +
             "     {val:f, count:1, in_books:1}" +
@@ -3219,7 +3254,6 @@ public class TestJsonFacets extends SolrTestCaseHS {
             "}"
     );
   }
-
 
   /**
    * Similar to {@link #testBlockJoin} but uses query time joining.
