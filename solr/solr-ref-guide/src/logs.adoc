@@ -170,7 +170,7 @@ record for
 the top level distributed query and a *shard level* log record on a replica from each shard. There may also
 be a set of *id's* queries to retrieve fields from the shards to complete the page of results.
 
-There are fields in the log index that can be used to differentiate between this types of query records.
+There are fields in the log index that can be used to differentiate between the types of query records.
 
 The examples below use the `stats` function to count the different types of query records in the logs.
 The same queries can be used with `search`, `random` and `timeseries` functions to return results
