@@ -57,8 +57,6 @@ final class LatLonShapeComponent2DQuery extends ShapeQuery {
     for (int i = 0; i < latLonGeometries.length; i++) {
       if (latLonGeometries[i] == null) {
         throw new IllegalArgumentException("shape[" + i + "] must not be null");
-      } else if (latLonGeometries[i].getMinLon() > latLonGeometries[i].getMaxLon()) {
-        throw new IllegalArgumentException("LatLonShapePolygonQuery does not currently support querying across dateline.");
       }
     }
     this.latLonGeometries = latLonGeometries.clone();
