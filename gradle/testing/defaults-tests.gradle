@@ -33,6 +33,10 @@ allprojects {
     }
 
     test {
+      ext {
+        testOutputsDir = file("${reports.junitXml.destination}/outputs")
+      }
+
       if (verboseMode) {
         maxParallelForks = 1
       } else {
@@ -86,7 +90,6 @@ allprojects {
       }
 
       // Set up custom test output handler.
-      def testOutputsDir = file("${reports.junitXml.destination}/outputs")
       doFirst {
         project.delete testOutputsDir
       }
