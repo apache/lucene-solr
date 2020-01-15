@@ -74,6 +74,23 @@ public class UniqueBlockAgg extends UniqueAgg {
   }
 
   @Override
+  public SlotAcc createSlotAcc(FacetContext fcontext, int numDocs, int numSlots) throws IOException {
+    final String fieldName = getArg();
+    SchemaField sf = fcontext.qcontext.searcher().getSchema().getField(fieldName);
+    if (sf.multiValued() || sf.getType().multiValuedFieldCache()) {
+      throw new IllegalArgumentException(name+"("+fieldName+
+          ") doesn't allow multivalue fields, got " + sf);
+    } else {
+      if (sf.getType().getNumberType() != null) {
+        throw new IllegalArgumentException(name+"("+fieldName+
+            ") not yet support numbers " + sf);
+      } else {
+        return new UniqueBlockSlotAcc(fcontext, sf, numSlots);
+      }
+    }
+  }
+
+  @Override
   public FacetMerger createFacetMerger(Object prototype) {
     return new FacetLongMerger() ;
   }

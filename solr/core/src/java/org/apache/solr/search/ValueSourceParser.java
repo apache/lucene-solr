@@ -17,7 +17,6 @@
 package org.apache.solr.search;
 
 import java.io.IOException;
-import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -69,7 +68,7 @@ import org.apache.solr.search.facet.StddevAgg;
 import org.apache.solr.search.facet.SumAgg;
 import org.apache.solr.search.facet.SumsqAgg;
 import org.apache.solr.search.facet.UniqueAgg;
-import org.apache.solr.search.facet.UniqueBlockFieldAgg;
+import org.apache.solr.search.facet.UniqueBlockAgg;
 import org.apache.solr.search.facet.UniqueBlockQueryAgg;
 import org.apache.solr.search.facet.VarianceAgg;
 import org.apache.solr.search.function.CollapseScoreFunction;
@@ -978,7 +977,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
         String name = namedArg.getKey();
         String arg = namedArg.getValue();
         if (name == null) {
-          return new UniqueBlockFieldAgg(arg);
+          return new UniqueBlockAgg(arg);
         } else if ("parents".equals(name)) {
           return new UniqueBlockQueryAgg(QParser.getParser(arg, fp.req).parse());
         } else {
