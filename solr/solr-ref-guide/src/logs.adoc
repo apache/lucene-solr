@@ -282,7 +282,7 @@ Notice that roughly 93 percent of the query times rounded to 0, meaning they wer
 500 millis. About 6 percent round to 1 and the rest rounded to either 2 or 3 seconds.
 
 
-=== QTime Percentiles Plots
+=== QTime Percentiles Plot
 
 A percentile plot is another powerful tool for understanding the distribution of query times
 in the logs. The example below demonstrates how to create and interpret percentile plots.
