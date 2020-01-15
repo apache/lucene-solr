@@ -25,6 +25,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
@@ -973,7 +974,7 @@ public abstract class ValueSourceParser implements NamedListInitializedPlugin {
     addParser("agg_uniqueBlock", new ValueSourceParser() {
       @Override
       public ValueSource parse(FunctionQParser fp) throws SyntaxError {
-        SimpleImmutableEntry<String, String> namedArg = fp.parseNamedArg();
+        Entry<String, String> namedArg = fp.parseNamedArg();
         String name = namedArg.getKey();
         String arg = namedArg.getValue();
         if (name == null) {

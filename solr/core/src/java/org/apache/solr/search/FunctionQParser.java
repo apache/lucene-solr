@@ -19,6 +19,7 @@ package org.apache.solr.search;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map.Entry;
 
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
@@ -239,7 +240,7 @@ public class FunctionQParser extends QParser {
    * @return Immutable entry with name as the key and argument as value. In case where there's no name, key is null.
    * @throws SyntaxError in case when argument is not ended by ) or ,
    */
-  public SimpleImmutableEntry<String, String> parseNamedArg() throws SyntaxError {
+  public Entry<String, String> parseNamedArg() throws SyntaxError {
     argWasQuoted = false;
 
     sp.eatws();
