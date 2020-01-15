@@ -148,7 +148,7 @@ public abstract class ResourceManager implements PluginInfoInitialized, SolrMetr
 
   /**
    * This method is called after plugin info and setters are invoked, but before metrics are initialized.
-   * @throws Exception
+   * @throws Exception on fatal errors during initialization
    */
   protected abstract void doInit() throws Exception;
 

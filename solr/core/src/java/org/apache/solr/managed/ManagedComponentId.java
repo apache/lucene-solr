@@ -20,7 +20,6 @@ package org.apache.solr.managed;
 import java.util.Arrays;
 
 import org.apache.solr.metrics.SolrMetricProducer;
-import org.apache.solr.metrics.SolrMetricsContext;
 
 /**
  * Hierarchical component id.
