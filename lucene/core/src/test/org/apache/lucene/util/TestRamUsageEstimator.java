@@ -17,9 +17,6 @@
 package org.apache.lucene.util;
 
 
-import static org.apache.lucene.util.RamUsageEstimator.*;
-import static org.apache.lucene.util.RamUsageTester.sizeOf;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -31,9 +28,23 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.DisjunctionMaxQuery;
-import org.apache.lucene.search.FuzzyQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.TermQuery;
+
+import static org.apache.lucene.util.RamUsageEstimator.COMPRESSED_REFS_ENABLED;
+import static org.apache.lucene.util.RamUsageEstimator.HOTSPOT_BEAN_CLASS;
+import static org.apache.lucene.util.RamUsageEstimator.JVM_IS_HOTSPOT_64BIT;
+import static org.apache.lucene.util.RamUsageEstimator.LONG_CACHE_MAX_VALUE;
+import static org.apache.lucene.util.RamUsageEstimator.LONG_CACHE_MIN_VALUE;
+import static org.apache.lucene.util.RamUsageEstimator.LONG_SIZE;
+import static org.apache.lucene.util.RamUsageEstimator.MANAGEMENT_FACTORY_CLASS;
+import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_ARRAY_HEADER;
+import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_OBJECT_ALIGNMENT;
+import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_OBJECT_HEADER;
+import static org.apache.lucene.util.RamUsageEstimator.NUM_BYTES_OBJECT_REF;
+import static org.apache.lucene.util.RamUsageEstimator.shallowSizeOf;
+import static org.apache.lucene.util.RamUsageEstimator.shallowSizeOfInstance;
+import static org.apache.lucene.util.RamUsageTester.sizeOf;
 
 public class TestRamUsageEstimator extends LuceneTestCase {
 

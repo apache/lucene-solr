@@ -16,19 +16,6 @@
  */
 package org.apache.lucene.search.spell;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiTerms;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.search.BoostAttribute;
-import org.apache.lucene.search.FuzzyTermsEnum;
-import org.apache.lucene.search.MaxNonCompetitiveBoostAttribute;
-import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.AttributeSource;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CharsRefBuilder;
-import org.apache.lucene.util.automaton.LevenshteinAutomata;
-
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
@@ -36,6 +23,16 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.PriorityQueue;
+
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiTerms;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.search.FuzzyTermsEnum;
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRefBuilder;
+import org.apache.lucene.util.automaton.LevenshteinAutomata;
 
 /**
  * Simple automaton-based spellchecker.
