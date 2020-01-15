@@ -1,0 +1,9 @@
+
+// This file is not included but is kept in ant-compat so that cleanup can be done later
+
+// Remove special handling of dependency checksum validation/ collection for Solr where
+// transitive Lucene dependencies are sucked in to licenses/ folder. We can just copy
+// Lucene licenses as a whole (they're joint projects after all).
+//
+// the hack is in 'jar-checks.gradle' under:
+// def isSolr = project.path.startsWith(":solr")

@@ -73,6 +73,9 @@ Bug fixes
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
   it's inaccessible. (Dawid Weiss)
 
+* LUCENE-9117: RamUsageEstimator hangs with AOT compilation. Removed any attempt to 
+  estimate Long.valueOf cache size. (Cleber Muramoto, Dawid Weiss)
+
 Other
 
 * LUCENE-8768: Fix Javadocs build in Java 11. (Namgyu Kim)
@@ -90,7 +93,8 @@ API Changes
 
 New Features
 ---------------------
-(No changes)
+
+* LUCENE-8903: Add LatLonShape point query. (Ignacio Vera)
 
 Improvements
 ---------------------
@@ -115,13 +119,28 @@ Improvements
 
 Optimizations
 ---------------------
-(No changes)
+
+* LUCENE-9113: Faster merging of SORTED/SORTED_SET doc values. (Adrien Grand)
+
+* LUCENE-9125: Optimize Automaton.step() with binary search and introduce Automaton.next(). (Bruno Roustant)
 
 Bug Fixes
 ---------------------
-(No changes)
+
+* LUCENE-9084: Fix potential deadlock due to circular synchronization in AnalyzingInfixSuggester (Paul Ward)
+
+* LUCENE-9115: NRTCachingDirectory no longer caches files of unknown size.
+  (Adrien Grand)
 
 Other
+---------------------
+
+* LUCENE-9096: Simplification of CompressingTermVectorsWriter#flushOffsets.
+  (kkewwei via Adrien Grand)
+
+======================= Lucene 8.4.1 =======================
+
+Bug Fixes
 ---------------------
 (No changes)
 

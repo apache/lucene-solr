@@ -132,4 +132,17 @@ public class LatLonShape {
     }
     return new LatLonShapePolygonQuery(field, queryRelation, polygons);
   }
+
+  /** create a query to find all indexed shapes that comply the {@link QueryRelation} with the provided point
+   **/
+  public static Query newPointQuery(String field, QueryRelation queryRelation, double[]... points) {
+    if (queryRelation == QueryRelation.CONTAINS && points.length > 1) {
+      BooleanQuery.Builder builder = new BooleanQuery.Builder();
+      for (int i =0; i < points.length; i++) {
+        builder.add(newPointQuery(field, queryRelation, points[i]), BooleanClause.Occur.MUST);
+      }
+      return builder.build();
+    }
+    return new LatLonShapePointQuery(field, queryRelation, points);
+  }
 }

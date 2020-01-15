@@ -1,0 +1,45 @@
+// If we run the test task with a filter we want to fail if no test actually ran (everything was excluded).
+
+configure(allprojects) {
+  plugins.withType(JavaPlugin) {
+    test {
+      filter {
+        failOnNoMatchingTests = false
+      }
+    }
+  }
+}
+
+gradle.taskGraph.whenReady { graph ->
+  def args = gradle.startParameter.taskNames
+  def filters = args.findAll({ arg ->
+    return arg == /--tests/
+  })
+
+  // Only apply the check if we are actually filtering.
+  if (!filters.isEmpty()) {
+    def testTasks = graph.allTasks.findAll { task -> task instanceof Test }
+    // ... and there are some test tasks in the execution graph.
+    if (!testTasks.isEmpty()) {
+      def executedTests = 0
+      def executedTasks = 0
+
+      testTasks.each { task ->
+        task.doFirst {
+          executedTasks++
+        }
+        task.afterSuite { desc, result ->
+          executedTests += result.testCount
+        }
+      }
+
+      // After the build is finished, check the test count.
+      gradle.buildFinished {
+        if (executedTests == 0 && executedTasks > 0) {
+          throw new GradleException("No tests found for the given filters?")
+        }
+      }
+    }
+  }
+}
+

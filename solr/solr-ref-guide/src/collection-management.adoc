@@ -1239,6 +1239,9 @@ The BACKUP command will backup Solr indexes and configurations for a specified c
 `collection`::
 The name of the collection to be backed up. This parameter is required.
 
+`name`::
+What to name the backup that is created.  This is checked to make sure it doesn't already exist, and otherwise an error message is raised. This parameter is required.
+
 `location`::
 The location on a shared drive for the backup command to write to. Alternately it can be set as a <<cluster-node-management.adoc#clusterprop,cluster property>>.
 
@@ -1267,6 +1270,9 @@ You can use the collection <<collection-aliasing.adoc#createalias,CREATEALIAS>> 
 
 `collection`::
 The collection where the indexes will be restored into. This parameter is required.
+
+`name`::
+The name of the existing backup that you want to restore. This parameter is required.
 
 `location`::
 The location on a shared drive for the RESTORE command to read from. Alternately it can be set as a <<cluster-node-management.adoc#clusterprop,cluster property>>.

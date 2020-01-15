@@ -161,6 +161,8 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
 
   protected abstract Object randomQueryBox();
 
+  protected abstract Object[] nextPoints();
+
   protected abstract double rectMinX(Object rect);
   protected abstract double rectMaxX(Object rect);
   protected abstract double rectMinY(Object rect);
@@ -189,9 +191,14 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
   /** factory method to create a new polygon query */
   protected abstract Query newPolygonQuery(String field, QueryRelation queryRelation, Object... polygons);
 
+  /** factory method to create a new polygon query */
+  protected abstract Query newPointsQuery(String field, QueryRelation queryRelation, Object... points);
+
   protected abstract Component2D toLine2D(Object... line);
 
   protected abstract Component2D toPolygon2D(Object... polygon);
+
+  protected abstract Component2D toPoint2D(Object... points);
 
   private void verify(Object... shapes) throws Exception {
     IndexWriterConfig iwc = newIndexWriterConfig();
@@ -251,6 +258,8 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
     verifyRandomLineQueries(reader, shapes);
     // test random polygon queries
     verifyRandomPolygonQueries(reader, shapes);
+    // test random point queries
+    verifyRandomPointQueries(reader, shapes);
   }
 
   /** test random generated bounding boxes */
@@ -546,6 +555,105 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
       }
     }
   }
+
+  /** test random generated point queries */
+  protected void verifyRandomPointQueries(IndexReader reader, Object... shapes) throws Exception {
+    IndexSearcher s = newSearcher(reader);
+
+    final int iters = scaledIterationCount(shapes.length);
+
+    Bits liveDocs = MultiBits.getLiveDocs(s.getIndexReader());
+    int maxDoc = s.getIndexReader().maxDoc();
+
+    for (int iter = 0; iter < iters; ++iter) {
+      if (VERBOSE) {
+        System.out.println("\nTEST: iter=" + (iter+1) + " of " + iters + " s=" + s);
+      }
+
+      Object[] queryPoints = nextPoints();
+      QueryRelation queryRelation = RandomPicks.randomFrom(random(), QueryRelation.values());
+      Component2D queryPoly2D;
+      Query query;
+      if (queryRelation == QueryRelation.CONTAINS) {
+        queryPoly2D = toPoint2D(queryPoints[0]);
+        query = newPointsQuery(FIELD_NAME, queryRelation, queryPoints[0]);
+      } else {
+        queryPoly2D = toPoint2D(queryPoints);
+        query = newPointsQuery(FIELD_NAME, queryRelation, queryPoints);
+      }
+
+      if (VERBOSE) {
+        System.out.println("  query=" + query + ", relation=" + queryRelation);
+      }
+
+      final FixedBitSet hits = new FixedBitSet(maxDoc);
+      s.search(query, new SimpleCollector() {
+
+        private int docBase;
+
+        @Override
+        public ScoreMode scoreMode() {
+          return ScoreMode.COMPLETE_NO_SCORES;
+        }
+
+        @Override
+        protected void doSetNextReader(LeafReaderContext context) throws IOException {
+          docBase = context.docBase;
+        }
+
+        @Override
+        public void collect(int doc) throws IOException {
+          hits.set(docBase+doc);
+        }
+      });
+
+      boolean fail = false;
+      NumericDocValues docIDToID = MultiDocValues.getNumericValues(reader, "id");
+      for (int docID = 0; docID < maxDoc; ++docID) {
+        assertEquals(docID, docIDToID.nextDoc());
+        int id = (int) docIDToID.longValue();
+        boolean expected;
+
+        if (liveDocs != null && liveDocs.get(docID) == false) {
+          // document is deleted
+          expected = false;
+        } else if (shapes[id] == null) {
+          expected = false;
+        } else {
+          expected = VALIDATOR.setRelation(queryRelation).testComponentQuery(queryPoly2D, shapes[id]);
+        }
+
+        if (hits.get(docID) != expected) {
+          StringBuilder b = new StringBuilder();
+
+          if (expected) {
+            b.append("FAIL: id=" + id + " should match but did not\n");
+          } else {
+            b.append("FAIL: id=" + id + " should not match but did\n");
+          }
+          b.append("  relation=" + queryRelation + "\n");
+          b.append("  query=" + query + " docID=" + docID + "\n");
+          if (shapes[id] instanceof Object[]) {
+            b.append("  shape=" + Arrays.toString((Object[]) shapes[id]) + "\n");
+          } else {
+            b.append("  shape=" + shapes[id] + "\n");
+          }
+          b.append("  deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
+          b.append("  rect=Points(" + Arrays.toString(queryPoints) + ")\n");
+          if (true) {
+            fail("wrong hit (first of possibly more):\n\n" + b);
+          } else {
+            System.out.println(b.toString());
+            fail = true;
+          }
+        }
+      }
+      if (fail) {
+        fail("some hits were wrong");
+      }
+    }
+  }
+
 
   protected abstract Validator getValidator();
 

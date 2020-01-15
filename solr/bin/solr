@@ -206,14 +206,13 @@ if [ "$SOLR_SSL_ENABLED" == "true" ]; then
     SOLR_SSL_OPTS+=" -Dsolr.jetty.truststore.type=$SOLR_SSL_TRUST_STORE_TYPE"
   fi
 
-  if [ -n "$SOLR_SSL_NEED_CLIENT_AUTH" ]; then
-    SOLR_SSL_OPTS+=" -Dsolr.jetty.ssl.needClientAuth=$SOLR_SSL_NEED_CLIENT_AUTH"
-  fi
-
   if [ -z "$SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION" ] ; then
     SOLR_SSL_OPTS+=" -Dsolr.jetty.ssl.verifyClientHostName=HTTPS"
   fi
 
+  if [ -n "$SOLR_SSL_NEED_CLIENT_AUTH" ]; then
+    SOLR_SSL_OPTS+=" -Dsolr.jetty.ssl.needClientAuth=$SOLR_SSL_NEED_CLIENT_AUTH"
+  fi
   if [ -n "$SOLR_SSL_WANT_CLIENT_AUTH" ]; then
     SOLR_SSL_OPTS+=" -Dsolr.jetty.ssl.wantClientAuth=$SOLR_SSL_WANT_CLIENT_AUTH"
   fi
@@ -1819,6 +1818,9 @@ fi
 
 if [ "$SOLR_HOST" != "" ]; then
   SOLR_HOST_ARG=("-Dhost=$SOLR_HOST")
+elif [[ -z "$SOLR_JETTY_HOST" || "$SOLR_JETTY_HOST" == "127.0.0.1" ]]; then
+  # Jetty will only bind on localhost interface, so nodes must advertise themselves with localhost
+  SOLR_HOST_ARG=("-Dhost=localhost")
 else
   SOLR_HOST_ARG=()
 fi
@@ -1877,6 +1879,10 @@ fi
 
 if [ -z "$SOLR_PORT" ]; then
   SOLR_PORT=8983
+fi
+
+if [ -n "$SOLR_JETTY_HOST" ]; then
+  SOLR_OPTS+=("-Dsolr.jetty.host=$SOLR_JETTY_HOST")
 fi
 
 if [ -z "$STOP_PORT" ]; then
@@ -2237,13 +2243,13 @@ function start_solr() {
 	echo ""
     fi
     # no lsof on cygwin though
-    if hash lsof 2>/dev/null ; then  # hash returns true if lsof is on the path
+    if lsof -v 2>&1 | grep -q revision; then
       echo -n "Waiting up to $SOLR_STOP_WAIT seconds to see Solr running on port $SOLR_PORT"
       # Launch in a subshell to show the spinner
       (loops=0
       while true
       do
-        running=`lsof -PniTCP:$SOLR_PORT -sTCP:LISTEN`
+        running=$(lsof -t -PniTCP:$SOLR_PORT -sTCP:LISTEN)
         if [ -z "$running" ]; then
 	  slept=$((loops * 2))
           if [ $slept -lt $SOLR_STOP_WAIT ]; then

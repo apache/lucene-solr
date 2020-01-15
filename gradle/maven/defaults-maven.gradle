@@ -1,0 +1,121 @@
+
+// Maven publications and configuration.
+//
+// the 'published' list contains an explicit list of all projects
+// which should be published to Maven repositories.
+
+configure(rootProject) {
+  ext {
+    published = [
+        ":lucene:analysis:common",
+        ":lucene:analysis:icu",
+        ":lucene:analysis:kuromoji",
+        ":lucene:analysis:morfologik",
+        ":lucene:analysis:nori",
+        ":lucene:analysis:opennlp",
+        ":lucene:analysis:phonetic",
+        ":lucene:analysis:smartcn",
+        ":lucene:analysis:stempel",
+        ":lucene:backward-codecs",
+        ":lucene:benchmark",
+        ":lucene:classification",
+        ":lucene:codecs",
+        ":lucene:core",
+        ":lucene:demo",
+        ":lucene:expressions",
+        ":lucene:facet",
+        ":lucene:grouping",
+        ":lucene:highlighter",
+        ":lucene:join",
+        ":lucene:luke",
+        ":lucene:memory",
+        ":lucene:misc",
+        ":lucene:monitor",
+        ":lucene:queries",
+        ":lucene:queryparser",
+        ":lucene:replicator",
+        ":lucene:sandbox",
+        ":lucene:spatial",
+        ":lucene:spatial-extras",
+        ":lucene:spatial3d",
+        ":lucene:suggest",
+        ":lucene:test-framework",
+
+        ":solr:core",
+        ":solr:solrj",
+        ":solr:contrib:analysis-extras",
+        ":solr:contrib:dataimporthandler",
+        ":solr:contrib:dataimporthandler-extras",
+        ":solr:contrib:analytics",
+        ":solr:contrib:clustering",
+        ":solr:contrib:extraction",
+        ":solr:contrib:langid",
+        ":solr:contrib:jaegertracer-configurator",
+        ":solr:contrib:prometheus-exporter",
+        ":solr:contrib:velocity",
+        ":solr:test-framework",
+    ]
+  }
+
+  configure(subprojects.findAll { it.path in rootProject.published }) {
+    apply plugin: 'maven-publish'
+    apply plugin: 'signing'
+
+    publishing {
+      // TODO: Add publishing repository details.
+    }
+
+    plugins.withType(JavaPlugin) {
+      task sourcesJar(type: Jar, dependsOn: classes) {
+        archiveClassifier = 'sources'
+        from sourceSets.main.allJava
+      }
+
+      task javadocJar(type: Jar, dependsOn: javadoc) {
+        archiveClassifier = 'javadoc'
+        from javadoc.destinationDir
+      }
+
+      publishing {
+        def configurePom = {
+          name = "Apache Solr/Lucene (${project.name})"
+          licenses {
+            license {
+              name = 'Apache 2'
+              url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+            }
+          }
+        }
+
+        publications {
+          // JARS and sources, no javadocs (for local inspection only).
+          jars(MavenPublication) {
+            from components.java
+            groupId = project.group
+            artifactId = project.archivesBaseName
+
+            artifact sourcesJar
+
+            pom(configurePom)
+          }
+
+          // Full set of signed artifacts.
+          signed(MavenPublication) {
+            from components.java
+            groupId = project.group
+            artifactId = project.archivesBaseName
+
+            artifact sourcesJar
+            artifact javadocJar
+
+            pom(configurePom)
+          }
+        }
+      }
+
+      signing {
+        sign publishing.publications.signed
+      }
+    }
+  }
+}
