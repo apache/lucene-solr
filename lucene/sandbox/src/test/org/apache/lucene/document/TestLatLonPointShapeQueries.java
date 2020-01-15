@@ -93,12 +93,12 @@ public class TestLatLonPointShapeQueries extends BaseLatLonShapeTestCase {
 
     @Override
     public boolean testComponentQuery(Component2D query, Object shape) {
-      if (queryRelation == QueryRelation.CONTAINS) {
-        return false;
-      }
-      Point p =  (Point) shape;
+      Point p = (Point) shape;
       double lat = encoder.quantizeY(p.lat);
       double lon = encoder.quantizeX(p.lon);
+      if (queryRelation == QueryRelation.CONTAINS) {
+        return query.withinTriangle(lon, lat, true, lon, lat, true, lon, lat, true) == Component2D.WithinRelation.CANDIDATE;
+      }
       // for consistency w/ the query we test the point as a triangle
       Relation r = query.relateTriangle(lon, lat, lon, lat, lon, lat);
       if (queryRelation == QueryRelation.WITHIN) {
