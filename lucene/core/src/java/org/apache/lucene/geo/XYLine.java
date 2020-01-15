@@ -21,8 +21,6 @@ import java.util.Arrays;
 /**
  * Represents a line in cartesian space. You can construct the Line directly with {@code double[]}, {@code double[]} x, y arrays
  * coordinates.
- *
- * @lucene.experimental
  */
 public class XYLine {
   /** array of x coordinates */

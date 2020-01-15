@@ -35,8 +35,7 @@ import org.apache.lucene.util.NumericUtils;
  * <p>
  * This class defines the static methods for encoding the three vertices of a tessellated triangles as a seven dimension point.
  * The coordinates are converted from double precision values into 32 bit integers so they are sortable at index time.
- *
- * @lucene.experimental
+ * <p>
  */
 public final class ShapeField {
   /** vertex coordinates are encoded as 4 byte integers */
@@ -58,13 +57,13 @@ public final class ShapeField {
    */
   public static class Triangle extends Field {
 
-    // constructor for points and lines
+    /** constructor for points and lines */
     Triangle(String name, int aXencoded, int aYencoded, int bXencoded, int bYencoded, int cXencoded, int cYencoded) {
       super(name, TYPE);
       setTriangleValue(aXencoded, aYencoded, true, bXencoded, bYencoded, true, cXencoded, cYencoded, true);
     }
 
-
+    /** xtor from a given Tessellated Triangle object */
     Triangle(String name, Tessellator.Triangle t) {
       super(name, TYPE);
       setTriangleValue(t.getEncodedX(0), t.getEncodedY(0), t.isEdgefromPolygon(0),
@@ -88,7 +87,14 @@ public final class ShapeField {
 
   /** Query Relation Types **/
   public enum QueryRelation {
-    INTERSECTS, WITHIN, DISJOINT, CONTAINS
+    /** used for INTERSECT Queries */
+    INTERSECTS,
+    /** used for WITHIN Queries */
+    WITHIN,
+    /** used for DISJOINT Queries */
+    DISJOINT,
+    /** used for CONTAINS Queries */
+    CONTAINS
   }
 
   private static final int MINY_MINX_MAXY_MAXX_Y_X = 0;
@@ -344,11 +350,26 @@ public final class ShapeField {
    * Represents a encoded triangle using {@link ShapeField#decodeTriangle(byte[], DecodedTriangle)}.
    */
   public static class DecodedTriangle {
-    //Triangle vertices
-    public int aX, aY, bX, bY, cX, cY;
-    //Represent if edges belongs to original shape
-    public boolean ab, bc, ca;
+    /** x coordinate, vertex one */
+    public int aX;
+    /** y coordinate, vertex one */
+    public int aY;
+    /** x coordinate, vertex two */
+    public int bX;
+    /** y coordinate, vertex two */
+    public int bY;
+    /** x coordinate, vertex three */
+    public int cX;
+    /** y coordinate, vertex three */
+    public int cY;
+    /** represent if edge ab belongs to original shape */
+    public boolean ab;
+    /** represent if edge bc belongs to original shape */
+    public boolean bc;
+    /** represent if edge ca belongs to original shape */
+    public boolean ca;
 
+    /** default xtor */
     public DecodedTriangle() {
     }
 

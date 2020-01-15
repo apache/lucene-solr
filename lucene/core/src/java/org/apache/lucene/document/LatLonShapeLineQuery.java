@@ -41,8 +41,6 @@ import org.apache.lucene.util.NumericUtils;
  * </ul>
  * <p>The field must be indexed using
  * {@link org.apache.lucene.document.LatLonShape#createIndexableFields} added per document.
- *
- *  @lucene.experimental
  **/
 final class LatLonShapeLineQuery extends ShapeQuery {
   final Line[] lines;

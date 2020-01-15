@@ -14,6 +14,8 @@ API Changes
 
 * LUCENE-8369: Remove obsolete spatial module. (Nick Knize, David Smiley)
 
+* LUCENE-8621: Refactor LatLonShape, XYShape, and all query and utility classes to core. (Nick Knize)
+
 New Features
 ---------------------
 

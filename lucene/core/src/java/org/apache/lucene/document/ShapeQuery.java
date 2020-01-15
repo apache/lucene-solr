@@ -55,8 +55,7 @@ import org.apache.lucene.util.FixedBitSet;
  *   <li>{@link XYShape#newLineQuery newLineQuery()} for matching cartesian shapes that have some {@link QueryRelation} with a linestring.
  *   <li>{@link XYShape#newPolygonQuery newPolygonQuery()} for matching cartesian shapes that have some {@link QueryRelation} with a polygon.
  * </ul>
- *
- *  @lucene.experimental
+ * <p>
  **/
 abstract class ShapeQuery extends Query {
   /** field name */
@@ -202,6 +201,7 @@ abstract class ShapeQuery extends Query {
     return sameClassAs(o) && equalsTo(o);
   }
 
+  /** class specific equals check */
   protected boolean equalsTo(Object o) {
     return Objects.equals(field, ((ShapeQuery)o).field) && this.queryRelation == ((ShapeQuery)o).queryRelation;
   }
