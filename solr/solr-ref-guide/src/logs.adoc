@@ -16,13 +16,11 @@
 // specific language governing permissions and limitations
 // under the License.
 
-One of the primary *Streaming Expressions* and *Math Expressions* use cases is *log analytics* and
-*visualization*.
-This section of the user guide provides an introduction to log analytics through examples using
-Solr logs loaded using the *postlogs* command line tool included with Apache Solr.
 
-This is an appendix of the <<math-expressions.adoc#streaming-Expressions-and-math-expressions,Visual Guide to Streaming Expressions and Math Expressions>>. All the functions described below are convered in detail in the guide.
-The <<math-start.adoc#math-start,Getting Started>> chapter can be consulted to learn how to get started with the visualizations and Apache Zeppelin.
+This section of the user guide provides an introduction to Solr log analytics.
+
+NOTE: This is an appendix of the <<math-expressions.adoc#streaming-Expressions-and-math-expressions,Visual Guide to Streaming Expressions and Math Expressions>>. All the functions described below are convered in detail in the guide.
+See the <<math-start.adoc#math-start,Getting Started>> chapter to learn how to get started with visualizations and Apache Zeppelin.
 
 <<Loading, Loading>> -
 <<Exploring, Exploring>> -
@@ -59,11 +57,9 @@ found at the base url http://localhost:8983/solr.
 
 == Exploring
 
-One of the primary log analysis activities is *exploration*. This comes into play both
-when looking at the logs of an unfamiliar Solr installation as well as Solr installations that are well known
-to the user.
+Log exploration is often the first step in log analytics and visualization.
 
-With unfamiliar installations exploration can be used to understand which collections are
+When working with unfamiliar installations exploration can be used to understand which collections are
 covered in the logs, what shards and cores are in those collections and the types of operations being
 performed on those collections.
 
@@ -82,7 +78,17 @@ parameter which is the name of the collection to sample.
 image::images/math-expressions/logs-sample.png[]
 
 The sample contains 500 random records with the their full field list. By looking
-at this sample we can quickly learn about the fields available in the *logs* collection.
+at this sample we can quickly learn about the *fields* available in the *logs* collection.
+
+=== Time Period
+
+Each log record contains a time stamp in the `date_dt` field.
+Its often useful to understand what time period the logs cover and how many log records have been
+indexed.
+
+The `stats` function can be run to display this information.
+
+image::images/math-expressions/logs-dates.png[]
 
 
 === Record Types
@@ -106,27 +112,15 @@ they generate.
 
 image::images/math-expressions/logs-collection.png[]
 
+
 === Record Type by Collection
 
 A two dimensional `facet` can be run to visualize the record types by collection.
 
 image::images/math-expressions/logs-type-collection.png[]
 
-=== Time Period
-
-Each log record contains a time stamp in the `date_dt` field.
-Its often useful to understand what time period the logs are covering and how many log records have been
-indexed.
-
-The `stats` function can be run to display this information.
-
-image::images/math-expressions/logs-dates.png[]
-
 
 === Time Series
-
-In the previous example the `stats` function was used to display the date range contained
-within the logs.
 
 The `timeseries` function can be used to visualize a time series for a specific time range
 of the logs.
@@ -141,7 +135,7 @@ Then a burst of log activity occurs from minute 27 to minute 52.
 
 This is then followed by a large spike of log activity.
 
-The example below breaks this down further by add a query on the *type_s* field to only
+The example below breaks this down further by adding a query on the *type_s* field to only
 visualize *query* activity in the log.
 
 
@@ -168,7 +162,7 @@ better understanding of the what's contained in the logs.
 Distributed searches produce more then one log record for each query. There will be one *top level* log
 record for
 the top level distributed query and a *shard level* log record on a replica from each shard. There may also
-be a set of *id's* queries to retrieve fields from the shards to complete the page of results.
+be a set of *ids* queries to retrieve fields by id from the shards to complete the page of results.
 
 There are fields in the log index that can be used to differentiate between the types of query records.
 
@@ -193,7 +187,7 @@ image::images/math-expressions/query-shard-level.png[]
 
 === ID Queries
 
-To find all the IDs queries, adjust the query to limit results to logs with *distrib_s:false AND ids_s:true*
+To find all the *ids* queries, adjust the query to limit results to logs with *distrib_s:false AND ids_s:true*
 as follows:
 
 image::images/math-expressions/query-ids.png[]
@@ -316,18 +310,16 @@ The example below shows a time series, area chart that visualizes *average query
 image::images/math-expressions/qtime-series.png[]
 
 
-
 == Performance Trouble Shooting
 
 If query analysis determines that queries are not performing as expected then log analysis can also be
 used to trouble shoot the cause of the slowness. The section below demonstrates several approaches for
 locating the source of query slowness.
 
-
 === Slow Nodes
 
 In a distributed search the final search performance is only as fast as the slowest
-responding shard in the cluster. Therefore a slow node can be responsible for slow
+responding shard in the cluster. Therefore one slow node can be responsible for slow
 overall search time.
 
 The fields *core_s*, *replica_s* and *shard_s* are available in the log records.
