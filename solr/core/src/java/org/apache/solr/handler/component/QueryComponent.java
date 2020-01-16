@@ -37,6 +37,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.FieldComparator;
+import org.apache.lucene.search.FuzzyTermsEnum;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
@@ -214,7 +215,7 @@ public class QueryComponent extends SearchComponent
           rb.setFilters( filters );
         }
       }
-    } catch (SyntaxError e) {
+    } catch (SyntaxError | FuzzyTermsEnum.FuzzyTermsException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
 
@@ -1483,7 +1484,6 @@ public class QueryComponent extends SearchComponent
     SolrQueryResponse rsp = rb.rsp;
 
     SolrIndexSearcher searcher = req.getSearcher();
-
     searcher.search(result, cmd);
     rb.setResult(result);
 
