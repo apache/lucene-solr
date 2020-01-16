@@ -22,6 +22,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.SortedMap;
 import java.util.TreeMap;
+import java.util.function.Consumer;
 import java.util.function.UnaryOperator;
 
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
@@ -118,22 +119,18 @@ public class TestCloudSchemaless extends AbstractFullDistribZkTestBase {
 
     String [] expectedFields = getExpectedFieldResponses(docNumber);
     // Check that all the fields were added
-    forAllRestTestHarnesses( new UnaryOperator<RestTestHarness>() {
-      @Override
-      public RestTestHarness apply(RestTestHarness client) {
-        try {
-          String request = "/schema/fields?wt=xml";
-          String response = client.query(request);
-          String result = BaseTestHarness.validateXPath(response, expectedFields);
-          if (result != null) {
-            String msg = "QUERY FAILED: xpath=" + result + "  request=" + request + "  response=" + response;
-            log.error(msg);
-            fail(msg);
-          }
-        } catch (Exception ex) {
-          fail("Caught exception: "+ex);
+    forAllRestTestHarnesses(client -> {
+      try {
+        String request = "/schema/fields?wt=xml";
+        String response = client.query(request);
+        String result = BaseTestHarness.validateXPath(response, expectedFields);
+        if (result != null) {
+          String msg = "QUERY FAILED: xpath=" + result + "  request=" + request + "  response=" + response;
+          log.error(msg);
+          fail(msg);
         }
-        return client;
+      } catch (Exception ex) {
+        fail("Caught exception: "+ex);
       }
     });
 

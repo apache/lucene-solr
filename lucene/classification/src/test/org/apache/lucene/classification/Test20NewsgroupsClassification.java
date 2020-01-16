@@ -70,7 +70,7 @@ import org.apache.lucene.util.TimeUnits;
 import org.junit.Test;
 
 @LuceneTestCase.SuppressSysoutChecks(bugUrl = "none")
-@TimeoutSuite(millis = 365 * 24 * TimeUnits.HOUR) // hopefully ~1 year is long enough ;)
+@TimeoutSuite(millis = Integer.MAX_VALUE) // hopefully ~24 days is long enough ;)
 @LuceneTestCase.Monster("takes a lot!")
 public final class Test20NewsgroupsClassification extends LuceneTestCase {
 

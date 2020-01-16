@@ -1,11 +1,51 @@
 // Configure Java project defaults.
 
-allprojects {
-  plugins.withType(JavaPlugin) {
+buildscript {
+  repositories {
+    maven {
+      url "https://plugins.gradle.org/m2/"
+    }
+  }
+  dependencies {
+    classpath 'net.ltgt.gradle:gradle-errorprone-plugin:1.1.1'
+  }
+}
+
+subprojects {
+  apply plugin: 'net.ltgt.errorprone'
+
+  dependencies {
+    errorprone 'com.google.errorprone:error_prone_core:2.3.4'
+  }
+
+  tasks.withType(JavaCompile).configureEach {
     sourceCompatibility = "11"
     targetCompatibility = "11"
 
-    compileJava.options.encoding = "UTF-8"
-    compileTestJava.options.encoding = "UTF-8"
+    options.encoding = "UTF-8"
+
+    options.errorprone {
+      enabled = true
+      disableWarningsInGeneratedCode = true
+
+      excludedPaths = '.*/Compile.java'
+
+      // Checks that default to error which have been downgraded to warn
+      warn 'ArrayToString'
+      warn 'CollectionIncompatibleType'
+      warn 'BadShiftAmount'
+      warn 'EqualsHashCode'
+      warn 'FormatString' // this one looked like it was not false positives
+      warn 'IdentityBinaryExpression'
+      warn 'ArrayHashCode'
+      warn 'ArrayEquals'
+      warn 'ThrowNull'
+      warn 'TryFailThrowable'
+      warn 'ComparableType'
+      warn 'InfiniteRecursion'
+
+      disable 'JUnit4TestNotRun' // LuceneTestCase lets us run JUnit3 style tests as well
+      disable 'MissingOverride' // Too many of these to deal with
+    }
   }
 }
