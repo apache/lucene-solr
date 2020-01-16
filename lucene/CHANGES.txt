@@ -116,6 +116,8 @@ New Features
 Improvements
 ---------------------
 
+* LUCENE-9149: Increase data dimension limit in BKD. (Nick Knize)
+
 * LUCENE-9102: Add maxQueryLength option to DirectSpellchecker. (Andy Webb via Bruno Roustant)
 
 * LUCENE-9091: UnifiedHighlighter HTML escaping should only escape essentials (Nándor Mátravölgyi)
