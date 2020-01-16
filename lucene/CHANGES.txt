@@ -53,6 +53,9 @@ Bug Fixes
 * LUCENE-9115: NRTCachingDirectory no longer caches files of unknown size.
   (Adrien Grand)
 
+* LUCENE-9144: Fix error message on OneDimensionBKDWriter when too many points are added to the writer.
+  (Ignacio Vera)
+
 Other
 ---------------------
 
