@@ -32,6 +32,8 @@ Jetty 9.4.14.v20181114
 Bug fixes
 ----------------------
 
+* SOLR-13779: Use the safe fork of simple-xml for clustering contrib. (Dawid Weiss, Sachin Pattan)
+
 * SOLR-13718: SPLITSHARD (async) with failures in underlying sub-operations can result in data loss (Ishan Chattopadhyaya)
 
 * SOLR-12291: prematurely reporting not yet finished async Collections API call as completed 
