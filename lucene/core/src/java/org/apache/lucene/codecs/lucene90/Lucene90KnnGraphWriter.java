@@ -217,7 +217,7 @@ public final class Lucene90KnnGraphWriter extends KnnGraphWriter {
       while ((docid = sub.nextDoc()) != NO_MORE_DOCS) {
         int mappedDocId = docMap.get(docid);
         /// deleted document (not alive)
-        if (mappedDocId < 0) {
+        if (mappedDocId == -1) {
           continue;
         }
         assert sub.values.docID() == docid;
