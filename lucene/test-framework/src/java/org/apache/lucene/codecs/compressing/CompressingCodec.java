@@ -23,6 +23,7 @@ import org.apache.lucene.codecs.StoredFieldsFormat;
 import org.apache.lucene.codecs.TermVectorsFormat;
 import org.apache.lucene.codecs.compressing.dummy.DummyCompressingCodec;
 import org.apache.lucene.util.TestUtil;
+import org.apache.lucene.util.packed.DirectMonotonicWriter;
 
 import com.carrotsearch.randomizedtesting.generators.RandomNumbers;
 
@@ -57,7 +58,9 @@ public abstract class CompressingCodec extends FilterCodec {
   public static CompressingCodec randomInstance(Random random) {
     final int chunkSize = random.nextBoolean() ? RandomNumbers.randomIntBetween(random, 1, 10) : RandomNumbers.randomIntBetween(random, 1, 1 << 15);
     final int chunkDocs = random.nextBoolean() ? RandomNumbers.randomIntBetween(random, 1, 10) : RandomNumbers.randomIntBetween(random, 64, 1024);
-    final int blockSize = random.nextBoolean() ? RandomNumbers.randomIntBetween(random, 1, 10) : RandomNumbers.randomIntBetween(random, 1, 1024);
+    final int blockSize = random.nextBoolean()
+        ? RandomNumbers.randomIntBetween(random, DirectMonotonicWriter.MIN_BLOCK_SHIFT, 10)
+        : RandomNumbers.randomIntBetween(random, DirectMonotonicWriter.MIN_BLOCK_SHIFT, DirectMonotonicWriter.MAX_BLOCK_SHIFT);
     return randomInstance(random, chunkSize, chunkDocs, false, blockSize);
   }
 

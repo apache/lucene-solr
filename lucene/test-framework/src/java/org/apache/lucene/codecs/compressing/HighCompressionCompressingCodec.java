@@ -21,7 +21,7 @@ public class HighCompressionCompressingCodec extends CompressingCodec {
 
   /** Constructor that allows to configure the chunk size. */
   public HighCompressionCompressingCodec(int chunkSize, int maxDocsPerChunk, boolean withSegmentSuffix, int blockSize) {
-    super("HighCompressionCompressingStoredFields",
+    super("HighCompressionCompressingStoredFieldsData",
           withSegmentSuffix ? "HighCompressionCompressingStoredFields" : "",
           CompressionMode.HIGH_COMPRESSION, chunkSize, maxDocsPerChunk, blockSize);
   }
@@ -30,6 +30,6 @@ public class HighCompressionCompressingCodec extends CompressingCodec {
   public HighCompressionCompressingCodec() {
     // we don't worry about zlib block overhead as it's
     // not bad and try to save space instead:
-    this(61440, 512, false, 1024);
+    this(61440, 512, false, 10);
   }
 }

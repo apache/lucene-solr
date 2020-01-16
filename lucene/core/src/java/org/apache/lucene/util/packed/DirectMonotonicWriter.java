@@ -50,7 +50,7 @@ public final class DirectMonotonicWriter {
     this.data = dataOut;
     this.numValues = numValues;
     if (blockShift < 2 || blockShift > 30) {
-      throw new IllegalArgumentException("blockShift must be in [3-30], got " + blockShift);
+      throw new IllegalArgumentException("blockShift must be in [2-22], got " + blockShift);
     }
     final int blockSize = 1 << blockShift;
     this.buffer = new long[blockSize];

@@ -16,18 +16,16 @@
  */
 package org.apache.lucene.codecs.compressing;
 
-/** CompressionCodec that uses {@link CompressionMode#FAST} */
-public class FastCompressingCodec extends CompressingCodec {
+import java.io.Closeable;
 
-  /** Constructor that allows to configure the chunk size. */
-  public FastCompressingCodec(int chunkSize, int maxDocsPerChunk, boolean withSegmentSuffix, int blockSize) {
-    super("FastCompressingStoredFieldsData", 
-          withSegmentSuffix ? "FastCompressingStoredFields" : "",
-          CompressionMode.FAST, chunkSize, maxDocsPerChunk, blockSize);
-  }
+import org.apache.lucene.util.Accountable;
 
-  /** Default constructor. */
-  public FastCompressingCodec() {
-    this(1 << 14, 128, false, 10);
-  }
+abstract class FieldsIndex implements Accountable, Cloneable, Closeable {
+
+  /** Get the start pointer for the block that contains the given docID. */
+  abstract long getStartPointer(int docID);
+
+  @Override
+  public abstract FieldsIndex clone();
+
 }

@@ -19,7 +19,7 @@ package org.apache.lucene.codecs.lucene50;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.TermVectorsFormat;
-import org.apache.lucene.codecs.compressing.CompressingStoredFieldsIndexWriter;
+import org.apache.lucene.codecs.compressing.FieldsIndexWriter;
 import org.apache.lucene.codecs.compressing.CompressingTermVectorsFormat;
 import org.apache.lucene.codecs.compressing.CompressionMode;
 import org.apache.lucene.store.DataOutput;
@@ -116,7 +116,7 @@ import org.apache.lucene.util.packed.PackedInts;
  * <ul>
  * <li>VectorIndex (.tvx) --&gt; &lt;Header&gt;, &lt;ChunkIndex&gt;, Footer</li>
  * <li>Header --&gt; {@link CodecUtil#writeIndexHeader IndexHeader}</li>
- * <li>ChunkIndex: See {@link CompressingStoredFieldsIndexWriter}</li>
+ * <li>ChunkIndex: See {@link FieldsIndexWriter}</li>
  * <li>Footer --&gt; {@link CodecUtil#writeFooter CodecFooter}</li>
  * </ul>
  * </li>
@@ -127,7 +127,7 @@ public final class Lucene50TermVectorsFormat extends CompressingTermVectorsForma
 
   /** Sole constructor. */
   public Lucene50TermVectorsFormat() {
-    super("Lucene50TermVectors", "", CompressionMode.FAST, 1 << 12, 1024);
+    super("Lucene50TermVectorsData", "", CompressionMode.FAST, 1 << 12, 10);
   }
 
 }

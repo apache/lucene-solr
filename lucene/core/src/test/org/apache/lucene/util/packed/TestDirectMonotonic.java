@@ -170,4 +170,74 @@ public class TestDirectMonotonic extends LuceneTestCase {
     }
   }
 
+  public void testMonotonicBinarySearch() throws IOException {
+    try (Directory dir = newDirectory()) {
+      doTestMonotonicBinarySearchAgainstLongArray(dir, new long[] {4, 7, 8, 10, 19, 30, 55, 78, 100}, 2);
+    }
+  }
+
+  public void testMonotonicBinarySearchRandom() throws IOException {
+    try (Directory dir = newDirectory()) {
+      final int iters = atLeast(100);
+      for (int iter = 0; iter < iters; ++iter) {
+        final int arrayLength = random().nextInt(1 << random().nextInt(14));
+        final long[] array = new long[arrayLength];
+        final long base = random().nextLong();
+        final int bpv = TestUtil.nextInt(random(), 4, 61);
+        for (int i = 0; i < array.length; ++i) {
+          array[i] = base + TestUtil.nextLong(random(), 0, (1L << bpv) - 1);
+        }
+        Arrays.sort(array);
+        doTestMonotonicBinarySearchAgainstLongArray(dir, array, TestUtil.nextInt(random(), 2, 10));
+      }
+    }
+  }
+
+  private void doTestMonotonicBinarySearchAgainstLongArray(Directory dir, long[] array, int blockShift) throws IOException {
+    try (IndexOutput metaOut = dir.createOutput("meta", IOContext.DEFAULT);
+        IndexOutput dataOut = dir.createOutput("data", IOContext.DEFAULT)) {
+      DirectMonotonicWriter writer = DirectMonotonicWriter.getInstance(metaOut, dataOut, array.length, blockShift);
+      for (long l : array) {
+        writer.add(l);
+      }
+      writer.finish();
+    }
+
+    try (IndexInput metaIn = dir.openInput("meta", IOContext.READONCE);
+        IndexInput dataIn = dir.openInput("data", IOContext.READ)) {
+      DirectMonotonicReader.Meta meta = DirectMonotonicReader.loadMeta(metaIn, array.length, blockShift);
+      DirectMonotonicReader reader = DirectMonotonicReader.getInstance(meta, dataIn.randomAccessSlice(0L, dir.fileLength("data")));
+
+      if (array.length == 0) {
+        assertEquals(-1, reader.binarySearch(0, array.length, 42L));
+      } else {
+        for (int i = 0; i < array.length; ++i) {
+          final long index = reader.binarySearch(0, array.length, array[i]);
+          assertTrue(index >= 0);
+          assertTrue(index < array.length);
+          assertEquals(array[i], array[(int) index]);
+        }
+        if (array[0] != Long.MIN_VALUE) {
+          assertEquals(-1, reader.binarySearch(0, array.length, array[0] - 1));
+        }
+        if (array[array.length - 1] != Long.MAX_VALUE) {
+          assertEquals(-1 - array.length, reader.binarySearch(0, array.length, array[array.length - 1] + 1));
+        }
+        for (int i = 0; i < array.length - 2; ++i) {
+          if (array[i] + 1 < array[i+1]) {
+            final long intermediate = random().nextBoolean() ? array[i] + 1 : array[i+1] - 1;
+            final long index = reader.binarySearch(0, array.length, intermediate);
+            assertTrue(index < 0);
+            final int insertionPoint = Math.toIntExact(-1 -index);
+            assertTrue(insertionPoint > 0);
+            assertTrue(insertionPoint < array.length);
+            assertTrue(array[insertionPoint] > intermediate);
+            assertTrue(array[insertionPoint-1] < intermediate);
+          }
+        }
+      }
+    }
+    dir.deleteFile("meta");
+    dir.deleteFile("data");
+  }
 }
