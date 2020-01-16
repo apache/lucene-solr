@@ -896,7 +896,7 @@ public final class BKDReader extends PointValues implements Accountable {
   }
 
   @Override
-  public int getNumDataDimensions() {
+  public int getNumDimensions() {
     return numDataDims;
   }
 

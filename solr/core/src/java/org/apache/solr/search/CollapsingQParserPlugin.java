@@ -442,7 +442,7 @@ public class CollapsingQParserPlugin extends QParserPlugin {
               DocValuesType.NONE,
               fieldInfo.getDocValuesGen(),
               fieldInfo.attributes(),
-              fieldInfo.getPointDataDimensionCount(),
+              fieldInfo.getPointDimensionCount(),
               fieldInfo.getPointIndexDimensionCount(),
               fieldInfo.getPointNumBytes(),
               fieldInfo.isSoftDeletesField());

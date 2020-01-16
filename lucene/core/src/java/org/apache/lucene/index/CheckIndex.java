@@ -1903,7 +1903,7 @@ public final class CheckIndex implements Closeable {
           throw new RuntimeException("there are fields with points, but reader.getPointsReader() is null");
         }
         for (FieldInfo fieldInfo : fieldInfos) {
-          if (fieldInfo.getPointDataDimensionCount() > 0) {
+          if (fieldInfo.getPointDimensionCount() > 0) {
             PointValues values = pointsReader.getValues(fieldInfo.name);
             if (values == null) {
               continue;
@@ -1983,7 +1983,7 @@ public final class CheckIndex implements Closeable {
     public VerifyPointsVisitor(String fieldName, int maxDoc, PointValues values) throws IOException {
       this.maxDoc = maxDoc;
       this.fieldName = fieldName;
-      numDataDims = values.getNumDataDimensions();
+      numDataDims = values.getNumDimensions();
       numIndexDims = values.getNumIndexDimensions();
       bytesPerDim = values.getBytesPerDimension();
       packedBytesCount = numDataDims * bytesPerDim;

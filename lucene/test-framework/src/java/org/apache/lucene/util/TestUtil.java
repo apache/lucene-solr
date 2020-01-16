@@ -1088,7 +1088,7 @@ public final class TestUtil {
       final Field field1 = (Field) f;
       final Field field2;
       final DocValuesType dvType = field1.fieldType().docValuesType();
-      final int dimCount = field1.fieldType().pointDataDimensionCount();
+      final int dimCount = field1.fieldType().pointDimensionCount();
       if (dvType != DocValuesType.NONE) {
         switch(dvType) {
           case NUMERIC:

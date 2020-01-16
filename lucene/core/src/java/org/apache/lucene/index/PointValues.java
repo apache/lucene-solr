@@ -88,6 +88,9 @@ public abstract class PointValues {
   /** Maximum number of dimensions */
   public static final int MAX_DIMENSIONS = BKDWriter.MAX_DIMS;
 
+  /** Maximum number of index dimensions */
+  public static final int MAX_INDEX_DIMENSIONS = BKDWriter.MAX_INDEX_DIMS;
+
   /** Return the cumulated number of points across all leaves of the given
    * {@link IndexReader}. Leaves that do not have points for the given field
    * are ignored.
@@ -269,8 +272,8 @@ public abstract class PointValues {
   /** Returns maximum value for each dimension, packed, or null if {@link #size} is <code>0</code> */
   public abstract byte[] getMaxPackedValue() throws IOException;
 
-  /** Returns how many data dimensions are represented in the values */
-  public abstract int getNumDataDimensions() throws IOException;
+  /** Returns how many dimensions are represented in the values */
+  public abstract int getNumDimensions() throws IOException;
 
   /** Returns how many dimensions are used for the index */
   public abstract int getNumIndexDimensions() throws IOException;
