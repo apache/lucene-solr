@@ -1457,4 +1457,115 @@ public class TestBKD extends LuceneTestCase {
       }
     });
   }
+
+  public void testTooManyPoints() throws Exception {
+    Directory dir = newDirectory();
+    final int numValues = 10;
+    final int numPointsAdded = 50; // exceeds totalPointCount
+    final int numBytesPerDim = TestUtil.nextInt(random(), 1, 4);
+    final byte[] pointValue = new byte[numBytesPerDim];
+    BKDWriter w = new BKDWriter(numValues, dir, "_temp", 1, 1, numBytesPerDim, 2,
+        BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP, numValues);
+    for(int i=0;i<numValues;i++) {
+      random().nextBytes(pointValue);
+      w.add(pointValue, i);
+    }
+    random().nextBytes(pointValue);
+    IllegalStateException ex = expectThrows(IllegalStateException.class, () -> { w.add(pointValue, numValues);});
+    assertEquals("totalPointCount=10 was passed when we were created, but we just hit 11 values", ex.getMessage());
+    w.close();
+    dir.close();
+  }
+
+  public void testTooManyPoints1D() throws Exception {
+    Directory dir = newDirectory();
+    final int numValues = 10;
+    final int numPointsAdded = 50; // exceeds totalPointCount
+    final int numBytesPerDim = TestUtil.nextInt(random(), 1, 4);
+    final byte[][] pointValue = new byte[11][numBytesPerDim];
+    BKDWriter w = new BKDWriter(numValues + 1, dir, "_temp", 1, 1, numBytesPerDim, 2,
+        BKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP, numValues);
+    for(int i=0;i<numValues + 1;i++) {
+      random().nextBytes(pointValue[i]);
+    }
+    MutablePointValues val = new MutablePointValues() {
+      @Override
+      public void getValue(int i, BytesRef packedValue) {
+        packedValue.bytes = pointValue[i];
+        packedValue.offset = 0;
+        packedValue.length = numBytesPerDim;
+      }
+
+      @Override
+      public byte getByteAt(int i, int k) {
+        return pointValue[i][k];
+      }
+
+      @Override
+      public int getDocID(int i) {
+        return i;
+      }
+
+      @Override
+      public void swap(int i, int j) {
+        byte[] temp = pointValue[i];
+        pointValue[i] = pointValue[j];
+        pointValue[j] = temp;
+      }
+
+      @Override
+      public void intersect(IntersectVisitor visitor) throws IOException {
+        for (int i = 0; i < size(); i++) {
+          visitor.visit(i, pointValue[i]);
+        }
+      }
+
+      @Override
+      public long estimatePointCount(IntersectVisitor visitor) {
+        return 11;
+      }
+
+      @Override
+      public byte[] getMinPackedValue() {
+        return new byte[numBytesPerDim];
+      }
+
+      @Override
+      public byte[] getMaxPackedValue() {
+        return new byte[numBytesPerDim];
+      }
+
+      @Override
+      public int getNumDataDimensions() {
+        return 1;
+      }
+
+      @Override
+      public int getNumIndexDimensions() {
+        return 1;
+      }
+
+      @Override
+      public int getBytesPerDimension() {
+        return numBytesPerDim;
+      }
+
+      @Override
+      public long size() {
+        return 11;
+      }
+
+      @Override
+      public int getDocCount() {
+        return 11;
+      }
+    };
+    try (IndexOutput out = dir.createOutput("bkd", IOContext.DEFAULT)) {
+      IllegalStateException ex = expectThrows(IllegalStateException.class, () -> { w.writeField(out, "", val);});
+      assertEquals("totalPointCount=10 was passed when we were created, but we just hit 11 values", ex.getMessage());
+      w.close();
+    }
+    dir.close();
+  }
+
 }

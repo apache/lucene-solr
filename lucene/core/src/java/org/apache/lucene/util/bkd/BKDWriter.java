@@ -568,7 +568,7 @@ public class BKDWriter implements Closeable {
       leafCount++;
 
       if (valueCount + leafCount > totalPointCount) {
-        throw new IllegalStateException("totalPointCount=" + totalPointCount + " was passed when we were created, but we just hit " + pointCount + leafCount + " values");
+        throw new IllegalStateException("totalPointCount=" + totalPointCount + " was passed when we were created, but we just hit " + (valueCount + leafCount) + " values");
       }
 
       if (leafCount == maxPointsInLeafNode) {
