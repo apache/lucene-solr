@@ -19,7 +19,11 @@ package org.apache.lucene.search;
 
 import java.io.IOException;
 
-public class KnnDelQuery extends KnnGraphQuery {
+/**
+ * A query for deleting the exact values of the specified querying vector, used for
+ * {@link org.apache.lucene.index.IndexWriter#deleteDocuments(Query...)}.
+ */
+public class KnnExactDeletionCondition extends KnnGraphQuery {
   /**
    * Creates a delete query for knn graph.
    * Note: only one in-set vector could be deleted.
@@ -28,13 +32,13 @@ public class KnnDelQuery extends KnnGraphQuery {
    * @param queryVector      query vector. must has same number of dimensions to the indexed vectors
    * @param maxDelNumPerSeg  at most maxDelNumPerSeg docs will be deleted from each segment.
    */
-  public KnnDelQuery(String field, float[] queryVector, int maxDelNumPerSeg) {
+  public KnnExactDeletionCondition(String field, float[] queryVector, int maxDelNumPerSeg) {
     super(field, queryVector, maxDelNumPerSeg);
   }
 
   @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
-    KnnScoreWeight weight = new KnnDelScoreWeight(this, boost, scoreMode, field, queryVector, ef);
+    KnnScoreWeight weight = new KnnExactDeletionFilter(this, boost, scoreMode, field, queryVector, ef);
     weight.setVisitedCounter(visitedCounter);
     return weight;
   }

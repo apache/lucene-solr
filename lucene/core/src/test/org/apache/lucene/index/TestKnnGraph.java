@@ -18,7 +18,6 @@ package org.apache.lucene.index;
 
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -32,7 +31,7 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.VectorField;
 import org.apache.lucene.document.StringField;
-import org.apache.lucene.search.KnnDelQuery;
+import org.apache.lucene.search.KnnExactDeletionCondition;
 import org.apache.lucene.search.KnnGraphQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
@@ -122,7 +121,7 @@ public class TestKnnGraph extends LuceneTestCase {
       assertRecall(dir, 2, values[1]);
       assertRecall(dir, 1, values[5]);
 
-      KnnGraphQuery query = new KnnDelQuery(KNN_GRAPH_FIELD, new float[]{0, 1.2f, 2.1f}, 3);
+      KnnGraphQuery query = new KnnExactDeletionCondition(KNN_GRAPH_FIELD, new float[]{0, 1.2f, 2.1f}, 3);
       iw.deleteDocuments(query);
       iw.commit();
 
@@ -130,7 +129,7 @@ public class TestKnnGraph extends LuceneTestCase {
       assertRecall(dir, 2, values[1]);
       assertRecall(dir, 1, values[5]);
 
-      query = new KnnDelQuery(KNN_GRAPH_FIELD, values[0], 1);
+      query = new KnnExactDeletionCondition(KNN_GRAPH_FIELD, values[0], 1);
       iw.deleteDocuments(query);
       iw.commit();
 
