@@ -287,6 +287,7 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
 
   public void testMergeOnCommit() throws IOException, InterruptedException {
     Directory dir = newDirectory();
+
     IndexWriter firstWriter = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
         .setMergePolicy(NoMergePolicy.INSTANCE));
     for (int i = 0; i < 5; i++) {
@@ -302,20 +303,43 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
       @Override
       public MergeSpecification findCommitMerges(SegmentInfos segmentInfos, MergeContext mergeContext) throws IOException {
         // Optimize down to a single segment on commit
-        MergeSpecification mergeSpecification = new MergeSpecification();
-        List<SegmentCommitInfo> nonMergingSegments = new ArrayList<>();
-        for (SegmentCommitInfo sci : segmentInfos) {
-          if (mergeContext.getMergingSegments().contains(sci) == false) {
-            nonMergingSegments.add(sci);
+        if (segmentInfos.size() > 1) {
+          List<SegmentCommitInfo> nonMergingSegments = new ArrayList<>();
+          for (SegmentCommitInfo sci : segmentInfos) {
+            if (mergeContext.getMergingSegments().contains(sci) == false) {
+              nonMergingSegments.add(sci);
+            }
+          }
+          if (nonMergingSegments.size() > 1) {
+            MergeSpecification mergeSpecification = new MergeSpecification();
+            mergeSpecification.add(new OneMerge(nonMergingSegments));
+            return mergeSpecification;
           }
         }
-        mergeSpecification.add(new OneMerge(nonMergingSegments));
-        return mergeSpecification;
+        return null;
       }
     };
 
-    IndexWriter writerWithMergePolicy = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random()))
-        .setMergePolicy(mergeOnCommitPolicy));
+    AtomicInteger abandonedMerges = new AtomicInteger(0);
+    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()))
+        .setMergePolicy(mergeOnCommitPolicy)
+        .setIndexWriterEvents(new IndexWriterEvents() {
+          @Override
+          public void beginMergeOnCommit() {
+
+          }
+
+          @Override
+          public void finishMergeOnCommit() {
+
+          }
+
+          @Override
+          public void abandonedMergesOnCommit(int abandonedCount) {
+            abandonedMerges.incrementAndGet();
+          }
+        });
+    IndexWriter writerWithMergePolicy = new IndexWriter(dir, iwc);
 
     writerWithMergePolicy.commit();
 
@@ -357,8 +381,22 @@ public class TestIndexWriterMergePolicy extends LuceneTestCase {
     for (Thread t : indexingThreads) {
       t.join();
     }
+    for (int i = 0; i < 50; i++) {
+      // Wait for pending merges to finish
+      synchronized (writerWithMergePolicy) {
+        if (writerWithMergePolicy.getMergingSegments().isEmpty()) {
+          break;
+        }
+      }
+      Thread.sleep(100);
+    }
+    abandonedMerges.set(0);
     writerWithMergePolicy.commit();
-    assertEquals(1, writerWithMergePolicy.listOfSegmentCommitInfos().size());
+    if (abandonedMerges.get() == 0) {
+      assertEquals(1, writerWithMergePolicy.listOfSegmentCommitInfos().size());
+    } else {
+      assertNotEquals(1, writerWithMergePolicy.listOfSegmentCommitInfos().size());
+    }
 
     try (IndexReader reader = writerWithMergePolicy.getReader()) {
       IndexSearcher searcher = new IndexSearcher(reader);

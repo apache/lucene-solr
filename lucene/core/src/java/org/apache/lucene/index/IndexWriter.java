@@ -3149,10 +3149,9 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     }
   }
 
-  private MergePolicy waitForMergeOnCommitPolicy(MergePolicy source, final SegmentInfos toCommit,
-                                                 AtomicReference<CountDownLatch> mergeLatchRef) {
-    return new OneMergeWrappingMergePolicy(source, (toWrap) -> new MergePolicy.OneMerge(toWrap.segments) {
-      @Override
+  private MergePolicy.OneMerge updateSegmentInfosOnMergeFinish(MergePolicy.OneMerge merge, final SegmentInfos toCommit,
+                                                                AtomicReference<CountDownLatch> mergeLatchRef) {
+    return new MergePolicy.OneMerge(merge.segments) {
       public void mergeFinished() throws IOException {
         super.mergeFinished();
         CountDownLatch mergeAwaitLatch = mergeLatchRef.get();
@@ -3162,23 +3161,28 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
         }
         if (isAborted() == false) {
           deleter.incRef(this.info.files());
-          toCommit.add(this.info.clone());
-          long segmentCounter = Long.parseLong(this.info.info.name.substring(1), Character.MAX_RADIX);
-          toCommit.counter = Math.max(toCommit.counter, segmentCounter + 1);
-          Set<String> segmentNamesToRemove = new HashSet<>();
+          // Resolve "live" SegmentInfos segments to their toCommit cloned equivalents, based on segment name.
+          Set<String> mergedSegmentNames = new HashSet<>();
           for (SegmentCommitInfo sci : this.segments) {
             deleter.decRef(sci.files());
-            segmentNamesToRemove.add(sci.info.name);
+            mergedSegmentNames.add(sci.info.name);
           }
-          for (int i = toCommit.size() - 1; i >= 0; i--) {
-            if (segmentNamesToRemove.contains(toCommit.info(i).info.name)) {
-              toCommit.remove(i);
+          List<SegmentCommitInfo> toCommitMergedAwaySegments = new ArrayList<>();
+          for (SegmentCommitInfo sci : toCommit) {
+            if (mergedSegmentNames.contains(sci.info.name)) {
+              toCommitMergedAwaySegments.add(sci);
             }
           }
+          // Construct a OneMerge that applies to toCommit
+          MergePolicy.OneMerge applicableMerge = new MergePolicy.OneMerge(toCommitMergedAwaySegments);
+          applicableMerge.info = this.info.clone();
+          long segmentCounter = Long.parseLong(this.info.info.name.substring(1), Character.MAX_RADIX);
+          toCommit.counter = Math.max(toCommit.counter, segmentCounter + 1);
+          toCommit.applyMergeChanges(applicableMerge, false);
         }
         mergeAwaitLatch.countDown();
       }
-    });
+    };
   }
 
   private long prepareCommitInternal() throws IOException {
@@ -3203,7 +3207,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
       SegmentInfos toCommit = null;
       boolean anyChanges = false;
       long seqNo;
-      MergePolicy.MergeSpecification commitMerges = null;
+      List<MergePolicy.OneMerge> commitMerges = null;
       AtomicReference<CountDownLatch> mergeAwaitLatchRef = null;
 
       // This is copied from doFlush, except it's modified to
@@ -3260,31 +3264,25 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
               toCommit = segmentInfos.clone();
 
               if (anyChanges) {
-                mergeAwaitLatchRef = new AtomicReference<>();
-                MergePolicy mergeOnCommitPolicy = waitForMergeOnCommitPolicy(config.getMergePolicy(), toCommit, mergeAwaitLatchRef);
-
                 // Find any merges that can execute on commit (per MergePolicy).
-                commitMerges = mergeOnCommitPolicy.findCommitMerges(segmentInfos, this);
-                if (commitMerges != null && commitMerges.merges.size() > 0) {
-                  int mergeCount = 0;
-                  for (MergePolicy.OneMerge oneMerge : commitMerges.merges) {
-                    if (registerMerge(oneMerge)) {
-                      mergeCount++;
-                    } else {
+                MergePolicy.MergeSpecification mergeSpec =
+                    config.getMergePolicy().findCommitMerges(segmentInfos, this);
+                if (mergeSpec != null && mergeSpec.merges.size() > 0) {
+                  int mergeCount = mergeSpec.merges.size();
+                  commitMerges = new ArrayList<>(mergeCount);
+                  mergeAwaitLatchRef = new AtomicReference<>(new CountDownLatch(mergeCount));
+                  for (MergePolicy.OneMerge oneMerge : mergeSpec.merges) {
+                    MergePolicy.OneMerge trackedMerge =
+                        updateSegmentInfosOnMergeFinish(oneMerge, toCommit, mergeAwaitLatchRef);
+                    if (registerMerge(trackedMerge) == false) {
                       throw new IllegalStateException("MergePolicy " + config.getMergePolicy().getClass() +
                           " returned merging segments from findCommitMerges");
                     }
+                    commitMerges.add(trackedMerge);
                   }
-                  if (mergeCount > 0) {
-                    if (infoStream.isEnabled("IW")) {
-                      infoStream.message("IW", "Registered " + mergeCount + " commit merges");
-                      infoStream.message("IW", "Before executing commit merges, had " + toCommit.size() + " segments");
-                    }
-                    mergeAwaitLatchRef.set(new CountDownLatch(mergeCount));
-                  } else {
-                    if (infoStream.isEnabled("IW")) {
-                      infoStream.message("IW", "Registered no commit merges");
-                    }
+                  if (infoStream.isEnabled("IW")) {
+                    infoStream.message("IW", "Registered " + mergeCount + " commit merges");
+                    infoStream.message("IW", "Before executing commit merges, had " + toCommit.size() + " segments");
                   }
                 }
               }
@@ -3318,18 +3316,18 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
         maybeCloseOnTragicEvent();
       }
 
-      if (mergeAwaitLatchRef != null && mergeAwaitLatchRef.get() != null) {
+      if (mergeAwaitLatchRef != null) {
         CountDownLatch mergeAwaitLatch = mergeAwaitLatchRef.get();
         // If we found and registered any merges above, within the flushLock, then we want to ensure that they
         // complete execution. Note that since we released the lock, other merges may have been scheduled. We will
         // block until  the merges that we registered complete. As they complete, they will update toCommit to
         // replace merged segments with the result of each merge.
+        config.getIndexWriterEvents().beginMergeOnCommit();
         mergeScheduler.merge(this, MergeTrigger.FULL_FLUSH, true);
         long mergeWaitStart = System.nanoTime();
         int abandonedCount = 0;
         long waitTimeMillis = (long) (config.getMaxCommitMergeWaitSeconds() * 1000.0);
         try {
-          config.getIndexWriterEvents().beginMergeOnCommit();
           if (mergeAwaitLatch.await(waitTimeMillis, TimeUnit.MILLISECONDS) == false) {
             synchronized (this) {
               // Need to do this in a synchronized block, to make sure none of our commit merges are currently
@@ -3338,7 +3336,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
               // usual, but when they finish, they won't attempt to update toCommit or modify segment reference
               // counts.
               mergeAwaitLatchRef.set(null);
-              for (MergePolicy.OneMerge commitMerge : commitMerges.merges) {
+              for (MergePolicy.OneMerge commitMerge : commitMerges) {
                 if (runningMerges.contains(commitMerge) || pendingMerges.contains(commitMerge)) {
                   abandonedCount++;
                 }
