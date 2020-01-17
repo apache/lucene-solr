@@ -1,0 +1,35 @@
+// This adds support for compiling and testing against a different Java runtime.
+// This is the only way to build against JVMs not yet supported by Gradle itself.
+
+import org.gradle.internal.jvm.Jvm
+
+def jvmForTests = {
+  def runtimeJavaHome = propertyOrDefault("runtime.java.home", System.getenv('RUNTIME_JAVA_HOME'))
+  if (!runtimeJavaHome) {
+    return Jvm.current()
+  } else {
+    return Jvm.forHome(file(runtimeJavaHome))
+  }
+}()
+def jvmGradle = Jvm.current()
+
+def differentTestJvm = (jvmGradle.javaHome.canonicalPath != jvmForTests.javaHome.canonicalPath)
+
+// Set up tasks to use the alternative Java.
+if (differentTestJvm) {
+  configure(rootProject) {
+    task testJvmWarning() {
+      doFirst {
+        logger.warn("This Java will be used for running tests: ${jvmForTests.javaExecutable}")
+      }
+    }
+  }
+
+  // Set up test tasks to use the alternative JVM.
+  allprojects {
+    tasks.withType(Test) {
+      dependsOn ":testJvmWarning"
+      executable = jvmForTests.javaExecutable
+    }
+  }
+}

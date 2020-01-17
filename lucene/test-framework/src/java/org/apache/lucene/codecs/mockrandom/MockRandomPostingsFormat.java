@@ -41,6 +41,8 @@ import org.apache.lucene.codecs.blocktreeords.OrdsBlockTreeTermsReader;
 import org.apache.lucene.codecs.blocktreeords.OrdsBlockTreeTermsWriter;
 import org.apache.lucene.codecs.lucene84.Lucene84PostingsReader;
 import org.apache.lucene.codecs.lucene84.Lucene84PostingsWriter;
+import org.apache.lucene.codecs.memory.FSTTermsReader;
+import org.apache.lucene.codecs.memory.FSTTermsWriter;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.IndexFileNames;
 import org.apache.lucene.index.SegmentReadState;
@@ -118,9 +120,19 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
     PostingsWriterBase postingsWriter = new Lucene84PostingsWriter(state);
 
     final FieldsConsumer fields;
-    final int t1 = random.nextInt(3);
+    final int t1 = random.nextInt(4);
 
-     if (t1 == 0) {
+    if (t1 == 0) {
+      boolean success = false;
+      try {
+        fields = new FSTTermsWriter(state, postingsWriter);
+        success = true;
+      } finally {
+        if (!success) {
+          postingsWriter.close();
+        }
+      }
+    } else if (t1 == 1) {
       // Use BlockTree terms dict
 
       if (LuceneTestCase.VERBOSE) {
@@ -141,7 +153,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
           postingsWriter.close();
         }
       }
-    } else if (t1 == 1) {
+    } else if (t1 == 2) {
 
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockRandomCodec: writing Block terms dict");
@@ -211,7 +223,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
           }
         }
       }
-    } else if (t1 == 2) {
+    } else if (t1 == 3) {
       // Use OrdsBlockTree terms dict
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockRandomCodec: writing OrdsBlockTree");
@@ -263,8 +275,18 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
     PostingsReaderBase postingsReader = new Lucene84PostingsReader(state);
 
     final FieldsProducer fields;
-    final int t1 = random.nextInt(3);
+    final int t1 = random.nextInt(4);
     if (t1 == 0) {
+      boolean success = false;
+      try {
+        fields = new FSTTermsReader(state, postingsReader);
+        success = true;
+      } finally {
+        if (!success) {
+          postingsReader.close();
+        }
+      }
+    } else if (t1 == 1) {
       // Use BlockTree terms dict
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockRandomCodec: reading BlockTree terms dict");
@@ -279,7 +301,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
           postingsReader.close();
         }
       }
-    } else if (t1 == 1) {
+    } else if (t1 == 2) {
 
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockRandomCodec: reading Block terms dict");
@@ -330,7 +352,7 @@ public final class MockRandomPostingsFormat extends PostingsFormat {
           }
         }
       }
-    } else if (t1 == 2) {
+    } else if (t1 == 3) {
       // Use OrdsBlockTree terms dict
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockRandomCodec: reading OrdsBlockTree terms dict");

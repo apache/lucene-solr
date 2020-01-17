@@ -1,0 +1,14 @@
+apply plugin: 'java-library'
+
+dependencies {
+  implementation project(':solr:core')
+
+  implementation project(':solr:contrib:dataimporthandler')
+  implementation project(':solr:contrib:extraction')
+
+  implementation ('javax.activation:activation')
+  implementation ('com.sun.mail:javax.mail')
+  implementation ('com.sun.mail:gimap')
+
+  testImplementation project(':solr:test-framework')
+}

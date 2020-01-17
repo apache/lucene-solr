@@ -1,0 +1,52 @@
+// This adds top-level 'precommit' task with essential
+// precommit validation checks.
+
+import org.eclipse.jgit.api.*;
+import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.errors.*;
+
+
+buildscript {
+  repositories {
+    mavenCentral()
+  }
+
+  dependencies {
+    classpath 'org.eclipse.jgit:org.eclipse.jgit:5.3.0.201903130848-r'
+    classpath 'commons-codec:commons-codec:1.6'
+  }
+}
+
+configure(rootProject) {
+  // Verify git working copy does not have any modified files.
+  task checkWorkingCopyPristine() {
+    doFirst {
+      def gitDir = rootProject.projectDir
+      try {
+        def repository = new FileRepositoryBuilder()
+            .setWorkTree(gitDir)
+            .setMustExist(true)
+            .build()
+
+        def status = new Git(repository).status().call()
+        if (!status.clean) {
+          def offenders = [
+              "(added)": status.added,
+              "(changed)": status.changed,
+              "(conflicting)": status.conflicting,
+              "(missing)": status.missing,
+              "(modified)": status.modified,
+              "(removed)": status.removed,
+              "(untracked)": [status.untracked, status.untrackedFolders].flatten()
+          ].collectMany { fileStatus, files ->
+            files.collect {file -> "  - ${file} ${fileStatus}" }
+          }.sort()
+
+          throw new GradleException("Working copy is not a clean git checkout, offending files:\n${offenders.join("\n")}")
+        }
+      } catch (RepositoryNotFoundException | NoWorkTreeException | NotSupportedException e) {
+        logger.warn("WARNING: Directory is not a valid GIT checkout (won't check dirty files): ${gitDir}")
+      }
+    }
+  }
+}

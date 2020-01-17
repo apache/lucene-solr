@@ -1,0 +1,377 @@
+// This adds validation of project dependencies:
+// 1) license file
+// 2) notice file
+// 3) checksum validation/ generation.
+
+import org.apache.commons.codec.digest.DigestUtils
+import org.apache.commons.codec.digest.MessageDigestAlgorithms
+
+// This should be false only for debugging.
+def failOnError = true
+
+// We're using commons-codec for computing checksums.
+buildscript {
+  repositories {
+    mavenCentral()
+  }
+
+  dependencies {
+    classpath 'commons-codec:commons-codec:1.13'
+  }
+}
+
+// Configure license checksum folder for top-level projects.
+// (The file("licenses") inside the configure scope resolves
+// relative to the current project so they're not the same).
+configure(project(":lucene")) {
+  ext.licensesDir = file("licenses")
+}
+configure(project(":solr")) {
+  ext.licensesDir = file("licenses")
+}
+
+// All known license types. If 'noticeOptional' is true then
+// the notice file must accompany the license.
+def licenseTypes = [
+    "ASL"     : [name: "Apache Software License 2.0"],
+    "BSD"     : [name: "Berkeley Software Distribution"],
+    //BSD like just means someone has taken the BSD license and put in their name, copyright, or it's a very similar license.
+    "BSD_LIKE": [name: "BSD like license"],
+    "CDDL"    : [name: "Common Development and Distribution License", noticeOptional: true],
+    "CPL"     : [name: "Common Public License"],
+    "EPL"     : [name: "Eclipse Public License Version 1.0", noticeOptional: true],
+    "MIT"     : [name: "Massachusetts Institute of Tech. License", noticeOptional: true],
+    "MPL"     : [name: "Mozilla Public License", noticeOptional: true /* NOT SURE on the required notice */],
+    "PD"      : [name: "Public Domain", noticeOptional: true],
+    "SUN"     : [name: "Sun Open Source License", noticeOptional: true],
+    "COMPOUND": [name: "Compound license (details in NOTICE file)."],
+]
+
+allprojects {
+  task licenses() {
+    group = 'Dependency validation'
+    description = "Apply all dependency/ license checks."
+  }
+  check.dependsOn(licenses)
+}
+
+subprojects {
+  // Configure jarValidation configuration for all projects. Any dependency
+  // declared on this configuration (or any configuration it extends from) will
+  // be verified.
+  configurations {
+    jarValidation
+  }
+
+  // For Java projects, add all dependencies from the following configurations
+  // to jar validation
+  plugins.withType(JavaPlugin) {
+    configurations {
+      jarValidation {
+        extendsFrom runtimeClasspath
+        extendsFrom compileClasspath
+        extendsFrom testRuntimeClasspath
+        extendsFrom testCompileClasspath
+      }
+    }
+  }
+
+  // Collects dependency JAR information for a project and saves it in
+  // project.ext.jarInfos. Each dependency has a map of attributes
+  // which make it easier to process it later on (name, hash, origin module,
+  // see the code below for details).
+  task collectJarInfos() {
+    dependsOn configurations.jarValidation
+
+    doFirst {
+      def isSolr = project.path.startsWith(":solr")
+
+      // When gradle resolves a configuration it applies exclude rules from inherited configurations
+      // globally (this seems like a bug to me). So we process each inherited configuration independently
+      // but make sure there are no other dependencies on jarValidation itself.
+      if (!configurations.jarValidation.dependencies.isEmpty()) {
+        throw new GradleException("jarValidation must only inherit from other configurations (can't have its own dependencies).")
+      }
+
+      def excludeRules = configurations.jarValidation.excludeRules
+
+      ArrayDeque<ResolvedDependency> queue = new ArrayDeque<>()
+      configurations.jarValidation.extendsFrom.each { conf ->
+        if (excludeRules) {
+          conf = configurations.detachedConfiguration().extendsFrom(conf)
+          conf.excludeRules = excludeRules
+        }
+        if (conf.canBeResolved) {
+          queue.addAll(conf.resolvedConfiguration.firstLevelModuleDependencies)
+        }
+      }
+
+      def visited = new HashSet<>()
+      def infos = []
+
+      while (!queue.isEmpty()) {
+        def dep = queue.removeFirst()
+
+        // Skip any artifacts from other Solr modules (they will be resolved there).
+        if (dep.moduleGroup == "org.apache.solr") {
+          continue
+        }
+
+        // Skip any artifacts from Lucene modules.
+        if (dep.moduleGroup.startsWith("org.apache.lucene")) {
+          // ... but process their transitive dependencies for Solr compatibility.
+          if (isSolr) {
+            queue.addAll(dep.children)
+          }
+        } else {
+          queue.addAll(dep.children)
+          dep.moduleArtifacts.each { resolvedArtifact ->
+            def file = resolvedArtifact.file
+            if (visited.add(file)) {
+              infos.add([
+                  name           : resolvedArtifact.name,
+                  jarName        : file.toPath().getFileName().toString(),
+                  path           : file,
+                  module         : resolvedArtifact.moduleVersion,
+                  checksum       : provider { new DigestUtils(MessageDigestAlgorithms.SHA_1).digestAsHex(file).trim() },
+                  // We keep track of the files referenced by this dependency (sha, license, notice, etc.)
+                  // so that we can determine unused dangling files later on.
+                  referencedFiles: []
+              ])
+            }
+          }
+        }
+      }
+
+      project.ext.jarInfos = infos.sort {a, b -> "${a.module}".compareTo("${b.module}")}
+      // jarInfos.each { info -> println "${info.module}" }
+    }
+  }
+
+  // Verifies that each JAR has a corresponding checksum and that it matches actual JAR available for this dependency.
+  task validateJarChecksums() {
+    group = 'Dependency validation'
+    description = "Validate checksums of dependencies"
+    dependsOn collectJarInfos
+
+    doLast {
+      def errors = []
+      jarInfos.each { dep ->
+        def expectedChecksumFile = file("${licensesDir}/${dep.jarName}.sha1")
+        if (!expectedChecksumFile.exists()) {
+          errors << "Dependency checksum missing ('${dep.module}'), expected it at: ${expectedChecksumFile}"
+        } else {
+          dep.referencedFiles += expectedChecksumFile
+          def expected = expectedChecksumFile.getText("UTF-8").trim()
+          def actual = dep.checksum.get()
+          if (expected.compareToIgnoreCase(actual) != 0) {
+            errors << "Dependency checksum mismatch ('${dep.module}'), expected it to be: ${expected}, but was: ${actual}"
+          } else {
+            logger.log(LogLevel.INFO, "Dependency checksum OK ('${dep.module}')")
+          }
+        }
+      }
+
+      if (errors) {
+        def msg = "Dependency checksum validation failed:\n  - " + errors.join("\n  - ")
+        if (failOnError) {
+          throw new GradleException(msg)
+        } else {
+          logger.log(LogLevel.WARN, "WARNING: ${msg}")
+        }
+      }
+    }
+  }
+
+  // Locate the set of license file candidates for this dependency. We
+  // search for [jar-or-prefix]-LICENSE-[type].txt
+  // where 'jar-or-prefix' can be any '-'-delimited prefix of the dependency JAR's name.
+  // So for 'commons-io' it can be 'commons-io-LICENSE-foo.txt' or
+  // 'commons-LICENSE.txt'
+  task validateJarLicenses() {
+    group = 'Dependency validation'
+    description = "Validate license and notice files of dependencies"
+    dependsOn collectJarInfos
+
+    doLast {
+      def errors = []
+      jarInfos.each { dep ->
+        def baseName = dep.name
+        def found = []
+        def candidates = []
+        while (true) {
+          candidates += file("${licensesDir}/${baseName}-LICENSE-[type].txt")
+          found += fileTree(dir: licensesDir, include: "${baseName}-LICENSE-*.txt").files
+          def prefix = baseName.replaceAll(/[\-][^-]+$/, "")
+          if (found || prefix == baseName) {
+            break
+          }
+          baseName = prefix
+        }
+
+        if (found.size() == 0) {
+          errors << "License file missing ('${dep.module}'), expected it at: ${candidates.join(" or ")}," +
+              " where [type] can be any of ${licenseTypes.keySet()}."
+        } else if (found.size() > 1) {
+          errors << "Multiple license files matching for ('${dep.module}'): ${found.join(", ")}"
+        } else {
+          def licenseFile = found.get(0)
+          dep.referencedFiles += licenseFile
+          def m = (licenseFile.name =~ /LICENSE-(.+)\.txt$/)
+          if (!m) throw new GradleException("License file name doesn't contain license type?: ${licenseFile.name}")
+
+          def licenseName = m[0][1]
+          def licenseType = licenseTypes[licenseName]
+          if (!licenseType) {
+            errors << "Unknown license type suffix for ('${dep.module}'): ${licenseFile} (must be one of ${licenseTypes.keySet()})"
+          } else {
+            logger.log(LogLevel.INFO, "Dependency license file OK ('${dep.module}'): " + licenseName)
+
+            // Look for sibling NOTICE file.
+            def noticeFile = file(licenseFile.path.replaceAll(/\-LICENSE-.+/, "-NOTICE.txt"))
+            if (noticeFile.exists()) {
+              dep.referencedFiles += noticeFile
+              logger.log(LogLevel.INFO, "Dependency notice file OK ('${dep.module}'): " + noticeFile)
+            } else if (!licenseType.noticeOptional) {
+              errors << "Notice file missing for ('${dep.module}'), expected it at: ${noticeFile}"
+            }
+          }
+        }
+      }
+
+      if (errors) {
+        def msg = "Certain license/ notice files are missing:\n  - " + errors.join("\n  - ")
+        if (failOnError) {
+          throw new GradleException(msg)
+        } else {
+          logger.log(LogLevel.WARN, "WARNING: ${msg}")
+        }
+      }
+    }
+  }
+
+  licenses.dependsOn validateJarChecksums, validateJarLicenses
+}
+
+// Add top-project level tasks validating dangling files
+// and regenerating dependency checksums.
+configure([project(":solr"), project(":lucene"),]) {
+  def validationTasks = subprojects.collectMany { it.tasks.matching { it.name == "licenses" } }
+  def jarInfoTasks = subprojects.collectMany { it.tasks.matching { it.name == "collectJarInfos" } }
+
+  // Update dependency checksums.
+  task updateLicenses() {
+    group = 'Dependency validation'
+    description = "Write or update checksums of dependencies"
+    dependsOn jarInfoTasks
+
+    doLast {
+      licensesDir.mkdirs()
+
+      // Clean any previous checksums. In theory we wouldn't have to do it --
+      // dangling files from any previous JARs would be reported;
+      // it automates the process of updating versions and makes it easier though so
+      // why not.
+      project.delete fileTree(licensesDir, {
+        include "*.sha1"
+        exclude checkDanglingLicenseFiles.ext.exclude
+      })
+
+      def updated = []
+      jarInfoTasks.collectMany { task -> task.project.jarInfos }.each { dep ->
+        def expectedChecksumFile = file("${licensesDir}/${dep.jarName}.sha1")
+        def actual = dep.checksum.get()
+        if (expectedChecksumFile.exists()) {
+          def expected = expectedChecksumFile.getText("UTF-8").trim()
+          if (expected.compareToIgnoreCase(actual) == 0) {
+            return;
+          }
+        }
+
+        updated += "Updated checksum ('${dep.module}'): ${expectedChecksumFile}"
+        expectedChecksumFile.write(actual + "\n", "UTF-8")
+      }
+
+      updated.sort().each { line -> logger.log(LogLevel.LIFECYCLE, line) }
+    }
+  }
+
+  // Any validation task must run after all updates have been applied.
+  // We add an ordering constraint that any validation task (or its dependency subgraph)
+  // must run after updateLicenses
+  validationTasks
+      .collectMany { task -> [task, task.dependsOn]}
+      .flatten()
+      .each { task ->
+        task.mustRunAfter updateLicenses
+      }
+
+  // Check for dangling files in the licenses folder.
+  task checkDanglingLicenseFiles() {
+    dependsOn validationTasks
+
+    ext {
+      exclude = []
+    }
+
+    doFirst {
+      def allReferenced = validationTasks.collectMany { task ->
+        task.project.jarInfos.collectMany { it.referencedFiles }
+      }.collect { it.toString() }
+
+      def patterns = ext.exclude
+      def allExisting = fileTree(licensesDir, {
+        exclude patterns
+      }).files.collect { it.toString() }
+
+      def dangling = (allExisting - allReferenced).sort()
+
+      if (dangling) {
+        gradle.buildFinished {
+          logger.warn("WARNING: there were unreferenced files under license folder:\n  - ${dangling.join("\n  - ")}")
+        }
+      }
+    }
+  }
+
+  licenses.dependsOn checkDanglingLicenseFiles
+}
+
+// Exclude files that are not a result of direct dependencies but have to be there.
+// It would be probably better to move non-dependency licenses into the actual project
+// where they're used and only assemble them for the distribution package.
+configure(project(":lucene")) {
+  checkDanglingLicenseFiles {
+    exclude += [
+        "elegant-icon-font-*",
+        "ant-*",
+        "ivy-*",
+    ]
+  }
+}
+
+configure(project(":solr")) {
+  checkDanglingLicenseFiles {
+    exclude += [
+        "README.committers.txt",
+
+        // solr-ref-guide compilation-only dependencies.
+        "android-json-*",
+        "ant-*",
+        "asciidoctor-ant-*",
+        "jsoup-*",
+        "junit4-ant-*",
+        "slf4j-simple-*",
+        "start.jar.sha1"
+    ]
+  }
+}
+
+// solr-ref-guide doesn't contribute any JARs to dependency checks.
+configure(project(":solr:solr-ref-guide")) {
+  configurations {
+    jarValidation {
+      exclude group: "*"
+    }
+  }
+}
