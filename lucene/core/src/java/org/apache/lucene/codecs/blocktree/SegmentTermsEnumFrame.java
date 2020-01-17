@@ -27,6 +27,7 @@ import org.apache.lucene.index.TermsEnum.SeekStatus;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.compress.LZ4;
 import org.apache.lucene.util.fst.FST;
 
 final class SegmentTermsEnumFrame {
@@ -45,7 +46,7 @@ final class SegmentTermsEnumFrame {
   long fp;
   long fpOrig;
   long fpEnd;
-  long totalSuffixBytes; // for stats
+  long totalSuffixBytes, totalStatsBytes; // for stats
 
   byte[] suffixBytes = new byte[128];
   final ByteArrayDataInput suffixesReader = new ByteArrayDataInput();
@@ -196,7 +197,7 @@ final class SegmentTermsEnumFrame {
       if (suffixLengthBytes.length < numSuffixLengthBytes) {
         suffixLengthBytes = new byte[ArrayUtil.oversize(numSuffixLengthBytes, 1)];
       }
-      ste.in.readBytes(suffixLengthBytes, 0, numSuffixLengthBytes);
+      LZ4.decompress(ste.in, numSuffixLengthBytes, suffixLengthBytes, 0);
       suffixLengthsReader.reset(suffixLengthBytes, 0, numSuffixLengthBytes);
     } else {
       code = ste.in.readVInt();
@@ -219,11 +220,17 @@ final class SegmentTermsEnumFrame {
       }*/
 
     // stats
+    final long startStatsFP = ste.in.getFilePointer();
     int numBytes = ste.in.readVInt();
     if (statBytes.length < numBytes) {
       statBytes = new byte[ArrayUtil.oversize(numBytes, 1)];
     }
-    ste.in.readBytes(statBytes, 0, numBytes);
+    if (version >= BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
+      LZ4.decompress(ste.in, numBytes, statBytes, 0);
+    } else {
+      ste.in.readBytes(statBytes, 0, numBytes);
+    }
+    totalStatsBytes = ste.in.getFilePointer() - startStatsFP;
     statsReader.reset(statBytes, 0, numBytes);
     metaDataUpto = 0;
 
@@ -520,7 +527,7 @@ final class SegmentTermsEnumFrame {
   private int startBytePos;
   private int suffix;
   private long subCode;
-  CompressionAlgorithm compressionAlg;
+  CompressionAlgorithm compressionAlg = CompressionAlgorithm.NO_COMPRESSION;
 
   // for debugging
   /*

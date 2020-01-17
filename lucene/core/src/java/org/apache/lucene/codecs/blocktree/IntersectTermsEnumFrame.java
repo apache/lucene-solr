@@ -26,6 +26,7 @@ import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.Transition;
+import org.apache.lucene.util.compress.LZ4;
 import org.apache.lucene.util.fst.FST;
 
 // TODO: can we share this with the frame in STE?
@@ -203,7 +204,7 @@ final class IntersectTermsEnumFrame {
       if (suffixLengthBytes.length < numSuffixLengthBytes) {
         suffixLengthBytes = new byte[ArrayUtil.oversize(numSuffixLengthBytes, 1)];
       }
-      ite.in.readBytes(suffixLengthBytes, 0, numSuffixLengthBytes);
+      LZ4.decompress(ite.in, numSuffixLengthBytes, suffixLengthBytes, 0);
       suffixLengthsReader.reset(suffixLengthBytes, 0, numSuffixLengthBytes);
     } else {
       code = ite.in.readVInt();
@@ -221,13 +222,17 @@ final class IntersectTermsEnumFrame {
     if (statBytes.length < numBytes) {
       statBytes = new byte[ArrayUtil.oversize(numBytes, 1)];
     }
-    ite.in.readBytes(statBytes, 0, numBytes);
+    if (version >= BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
+      LZ4.decompress(ite.in, numBytes, statBytes, 0);
+    } else {
+      ite.in.readBytes(statBytes, 0, numBytes);
+    }
     statsReader.reset(statBytes, 0, numBytes);
     metaDataUpto = 0;
 
     termState.termBlockOrd = 0;
     nextEnt = 0;
-         
+
     // metadata
     numBytes = ite.in.readVInt();
     if (bytes.length < numBytes) {

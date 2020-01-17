@@ -461,16 +461,24 @@ public final class Lucene84PostingsWriter extends PushPostingsWriterBase {
     IntBlockTermState state = (IntBlockTermState)_state;
     if (absolute) {
       lastState = emptyState;
+      assert lastState.docStartFP == 0;
     }
-    out.writeVLong(state.docStartFP - lastState.docStartFP);
+
+    if (state.singletonDocID != -1 && absolute == false && state.docStartFP == lastState.docStartFP) {
+      // With runs of rare values such as ID fields, the increment of pointers in the docs file is often 0.
+      out.writeVLong((((long) state.singletonDocID) << 1) | 1);
+    } else {
+      out.writeVLong((state.docStartFP - lastState.docStartFP) << 1);
+      if (state.singletonDocID != -1) {
+        out.writeVInt(state.singletonDocID);
+      }
+    }
+
     if (writePositions) {
       out.writeVLong(state.posStartFP - lastState.posStartFP);
       if (writePayloads || writeOffsets) {
         out.writeVLong(state.payStartFP - lastState.payStartFP);
       }
-    }
-    if (state.singletonDocID != -1) {
-      out.writeVInt(state.singletonDocID);
     }
     if (writePositions) {
       if (state.lastPosBlockOffset != -1) {

@@ -35,6 +35,7 @@ import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.store.ByteArrayDataOutput;
 import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
@@ -796,18 +797,23 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
       }
 
       // Write suffixes byte[] blob to terms dict output, either uncompressed, compressed with LZ4 or with LowercaseAsciiCompression.
-      LZ4.compress(suffixWriter.bytes(), 0, suffixWriter.length(), spareWriter, compressionHashTable);
       CompressionAlgorithm compressionAlg = CompressionAlgorithm.NO_COMPRESSION;
-      if (spareWriter.size() < suffixWriter.length() - (suffixWriter.length() >>> 2)) {
-        // LZ4 saved more than 25%, go for it
-        compressionAlg = CompressionAlgorithm.LZ4;
-      } else {
-        spareWriter.reset();
-        if (spareBytes.length < suffixWriter.length()) {
-          spareBytes = new byte[ArrayUtil.oversize(suffixWriter.length(), 1)];
-        }
-        if (LowercaseAsciiCompression.compress(suffixWriter.bytes(), suffixWriter.length(), spareBytes, spareWriter)) {
-          compressionAlg = CompressionAlgorithm.LOWERCASE_ASCII;
+      // If there are 2 suffix bytes or less per term, then we don't bother compressing as suffix are unlikely what
+      // makes the terms dictionary large, and it also tends to be frequently the case for dense IDs like
+      // auto-increment IDs, so not compressing in that case helps not hurt ID lookups by too much.
+      if (suffixWriter.length() > 2L * numEntries) {
+        LZ4.compress(suffixWriter.bytes(), 0, suffixWriter.length(), spareWriter, compressionHashTable);
+        if (spareWriter.size() < suffixWriter.length() - (suffixWriter.length() >>> 2)) {
+          // LZ4 saved more than 25%, go for it
+          compressionAlg = CompressionAlgorithm.LZ4;
+        } else {
+          spareWriter.reset();
+          if (spareBytes.length < suffixWriter.length()) {
+            spareBytes = new byte[ArrayUtil.oversize(suffixWriter.length(), 1)];
+          }
+          if (LowercaseAsciiCompression.compress(suffixWriter.bytes(), suffixWriter.length(), spareBytes, spareWriter)) {
+            compressionAlg = CompressionAlgorithm.LOWERCASE_ASCII;
+          }
         }
       }
       long token = ((long) suffixWriter.length()) << 3;
@@ -825,14 +831,21 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
       spareWriter.reset();
 
       // Write suffix lengths
-      termsOut.writeVInt((int) suffixLengthsWriter.size());
-      suffixLengthsWriter.copyTo(termsOut);
+      // Structured fields like IDs often have most values of the same length so we give LZ4 a chance
+      final int numSuffixBytes = Math.toIntExact(suffixLengthsWriter.size());
+      termsOut.writeVInt(numSuffixBytes);
+      spareBytes = ArrayUtil.grow(spareBytes, numSuffixBytes);
+      suffixLengthsWriter.copyTo(new ByteArrayDataOutput(spareBytes));
       suffixLengthsWriter.reset();
+      LZ4.compress(spareBytes, 0, numSuffixBytes, termsOut, compressionHashTable);
 
-      // Write term stats byte[] blob
-      termsOut.writeVInt((int) statsWriter.size());
-      statsWriter.copyTo(termsOut);
+      // Term stats might have long runs of 1s for rare fields like ID fields so we give LZ4 a chance
+      final int numStatsBytes = Math.toIntExact(statsWriter.size());
+      termsOut.writeVInt(numStatsBytes);
+      spareBytes = ArrayUtil.grow(spareBytes, numStatsBytes);
+      statsWriter.copyTo(new ByteArrayDataOutput(spareBytes));
       statsWriter.reset();
+      LZ4.compress(spareBytes, 0, numStatsBytes, termsOut, compressionHashTable);
 
       // Write term meta data byte[] blob
       termsOut.writeVInt((int) metaWriter.size());
