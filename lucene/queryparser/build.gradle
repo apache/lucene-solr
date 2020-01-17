@@ -7,3 +7,223 @@ dependencies {
 
   testImplementation project(':lucene:test-framework')
 }
+
+configure(":lucene:queryparser") {
+  configurations {
+    javaCCDeps
+  }
+
+  dependencies {
+    javaCCDeps "net.java.dev.javacc:javacc:5.0"
+  }
+}
+
+String lineSeparator = System.lineSeparator()
+
+task runJavaccQueryParser(type: JavaCC) {
+  outputs.upToDateWhen { false } //nocommit
+  inputFile file('src/java/org/apache/lucene/queryparser/classic/QueryParser.jj')
+  target file('src/java/org/apache/lucene/queryparser/classic')
+  doLast {
+    ant.replaceregexp(file: "src/java/org/apache/lucene/queryparser/classic/QueryParser.java",
+        byline: "true",
+        match: "public QueryParser\\(CharStream ",
+        replace: "protected QueryParser(CharStream ")
+    ant.replaceregexp(file: "src/java/org/apache/lucene/queryparser/classic/QueryParser.java",
+        byline: "true",
+        match: "public QueryParser\\(QueryParserTokenManager ",
+        replace: "protected QueryParser(QueryParserTokenManager ")
+  }
+}
+
+task runJavaccSurround(type: JavaCC) {
+  outputs.upToDateWhen { false } //nocommit
+  inputFile file('src/java/org/apache/lucene/queryparser/surround/parser/QueryParser.jj')
+  target file('src/java/org/apache/lucene/queryparser/surround/parser')
+}
+
+task runJavaccFlexible(type: JavaCC) {
+  outputs.upToDateWhen { false } //nocommit
+  inputFile file('src/java/org/apache/lucene/queryparser/flexible/standard/parser/StandardSyntaxParser.jj')
+  target file('src/java/org/apache/lucene/queryparser/flexible/standard/parser')
+  doLast {
+    ant.replaceregexp(file: "src/java/org/apache/lucene/queryparser/flexible/standard/parser/ParseException.java",
+        match: "public class ParseException extends Exception",
+        replace: "public class ParseException extends QueryNodeParseException",
+        flags: "g",
+        byline: "false")
+    ant.replaceregexp(file: "src/java/org/apache/lucene/queryparser/flexible/standard/parser/ParseException.java",
+        match: "package org.apache.lucene.queryparser.flexible.standard.parser;",
+        replace: "package org.apache.lucene.queryparser.flexible.standard.parser;${lineSeparator}${lineSeparator}" +
+            "import org.apache.lucene.queryparser.flexible.messages.Message;${lineSeparator}" +
+            "import org.apache.lucene.queryparser.flexible.messages.MessageImpl;${lineSeparator}" +
+            "import org.apache.lucene.queryparser.flexible.core.*;${lineSeparator}" +
+            "import org.apache.lucene.queryparser.flexible.core.messages.*;",
+        flags: "g",
+        byline: "false")
+    ant.replaceregexp(file: "src/java/org/apache/lucene/queryparser/flexible/standard/parser/ParseException.java",
+        match: "^  public ParseException\\(Token currentTokenVal.*\$(\\s\\s[^}].*\\n)*  \\}",
+        replace: "  public ParseException(Token currentTokenVal,${lineSeparator}" +
+            "    int[][] expectedTokenSequencesVal, String[] tokenImageVal) {${lineSeparator}" +
+            "      super(new MessageImpl(QueryParserMessages.INVALID_SYNTAX, initialise(${lineSeparator}" +
+            "      currentTokenVal, expectedTokenSequencesVal, tokenImageVal)));${lineSeparator}" +
+            "      this.currentToken = currentTokenVal;${lineSeparator}" +
+            "      this.expectedTokenSequences = expectedTokenSequencesVal;${lineSeparator}" +
+            "      this.tokenImage = tokenImageVal;${lineSeparator}" +
+            "  }",
+        flags: "gm",
+        byline: "false")
+    ant.replaceregexp(file:"src/java/org/apache/lucene/queryparser/flexible/standard/parser/ParseException.java",
+    match: "^  public ParseException\\(String message.*\$(\\s\\s[^}].*\\n)*  \\}",
+    replace: "  public ParseException(Message message) {${lineSeparator}" +
+    "    super(message);${lineSeparator}" +
+    "  }",
+    flags: "gm",
+    byline: "false")
+    ant.replaceregexp(file:"src/java/org/apache/lucene/queryparser/flexible/standard/parser/ParseException.java",
+    match: "^  public ParseException\\(\\).*\$(\\s\\s[^}].*\\n)*  \\}",
+    replace: "  public ParseException() {${lineSeparator}" +
+    "    super(new MessageImpl(QueryParserMessages.INVALID_SYNTAX, \"Error\"));${lineSeparator}" +
+    "  }",
+    flags: "gm",
+    byline: "false")
+    ant.replaceregexp(file: "src/java/org/apache/lucene/queryparser/flexible/standard/parser/ParseException.java",
+    match: "^  public String getMessage\\(\\).*\$(\\s\\s\\s\\s[^}].*\n)*    \\}",
+    replace: "  private static String initialise(Token currentToken, int[][] expectedTokenSequences, String[] tokenImage) {${lineSeparator}" +
+    "String eol = System.getProperty(&quot;lineSeparator&quot;, &quot;\n&quot;);",
+    flags: "gm",
+    byline: "false")
+    ant.replaceregexp(file: "src/java/org/apache/lucene/queryparser/flexible/standard/parser/ParseException.java",
+    match: "\\s*protected String add_escapes.*",
+    replace: "  static private String add_escapes(String str) {",
+    flags: "g",
+    byline: "true")
+  }
+
+  task runJavacc {
+    outputs.upToDateWhen { false } //nocommit
+    group = 'Build Regenerate'
+    description = "Regenerates javacc generated src files."
+    dependsOn runJavaccQueryParser, runJavaccSurround, runJavaccFlexible
+  }
+
+  task regenerate {
+    group = 'Build Regenerate'
+    description = "Regenerates various generated src files, automoton, packedints, jflex, javacc, etc"
+    dependsOn runJavacc
+  }
+}
+
+class JavaCC extends DefaultTask {
+
+  @InputFile
+  File inputFile
+
+  @OutputDirectory
+  File target
+
+  @TaskAction
+  void javacc() {
+
+
+    String javaCCClasspath = project.project(":lucene:queryparser").configurations.javaCCDeps.asPath
+    String javaCCHome = javaCCClasspath.substring(0, javaCCClasspath.lastIndexOf("/"))
+
+    // This bit seems really awkward, but I didn't find a good way to either convince the ant task to accept a different
+    // name than javacc.jar...
+    // nocommit So I'm taking the javacc-5.0.jar file that's downloaded to Gradle's cache and renaming it.
+    //          Does anyone with a clue know of a better way?
+    String hacky = javaCCHome + "/" + "javacc.jar"
+    File hackyFile = new File(hacky)
+    if (hackyFile.exists() == false) {
+      hackyFile.bytes = new File(javaCCClasspath).bytes
+      hackyFile.setExecutable(true)
+    }
+
+    target.eachFileMatch ~/.*\.java/, { f ->
+      if (f.text =~ /Generated.*By.*JavaCC/) {
+        f.delete()
+      }
+    }
+
+    ant.javacc(target: inputFile.getAbsolutePath(), outputDirectory: target.getAbsolutePath(), javacchome: javaCCHome)
+
+    // Remove debug stream (violates forbidden-apis)
+    ant.replaceregexp(match: "/\\*\\* Debug output.*?Set debug output.*?ds; }", replace: '', flags: 's', encoding: 'UTF-8') {
+      ant.fileset(dir: target.getAbsolutePath(), includes: "*TokenManager.java")
+    }
+    // This is very clumsy, but these are unused imports that are necessary other generated files
+    [
+      "import java.util.Vector;",
+      "import org.apache.lucene.queryparser.flexible.messages.Message;",
+      "import org.apache.lucene.queryparser.flexible.messages.MessageImpl;",
+      "import org.apache.lucene.queryparser.flexible.core.QueryNodeParseException;",
+      "import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;",
+      "import org.apache.lucene.queryparser.flexible.core.nodes.AndQueryNode;",
+      "import org.apache.lucene.queryparser.flexible.core.nodes.BooleanQueryNode;",
+      "import org.apache.lucene.queryparser.flexible.core.nodes.BoostQueryNode;",
+      "import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;",
+      "import org.apache.lucene.queryparser.flexible.core.nodes.FuzzyQueryNode;",
+      "import org.apache.lucene.queryparser.flexible.core.nodes.ModifierQueryNode;",
+      "import org.apache.lucene.queryparser.flexible.core.nodes.GroupQueryNode;",
+      "import org.apache.lucene.queryparser.flexible.core.nodes.OrQueryNode;",
+      "import org.apache.lucene.queryparser.flexible.standard.nodes.RegexpQueryNode;",
+      "import org.apache.lucene.queryparser.flexible.core.nodes.SlopQueryNode;",
+      "import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;",
+      "import org.apache.lucene.queryparser.flexible.core.nodes.QuotedFieldQueryNode;",
+      "import org.apache.lucene.queryparser.flexible.core.parser.SyntaxParser;",
+      "import org.apache.lucene.queryparser.flexible.standard.nodes.TermRangeQueryNode;",
+      "import java.io.StringReader;",
+      "import java.util.ArrayList;",
+      "import java.util.Arrays;",
+      "import java.util.HashSet;",
+      "import java.util.List;",
+      "import java.util.Locale;",
+      "import java.util.Set;",
+      "import org.apache.lucene.analysis.Analyzer;",
+      "import org.apache.lucene.document.DateTools;",
+      "import org.apache.lucene.search.BooleanClause;",
+      "import org.apache.lucene.search.Query;",
+      "import org.apache.lucene.search.TermRangeQuery;",
+      "import org.apache.lucene.analysis.TokenStream;",
+      "import org.apache.lucene.queryparser.surround.query.SrndQuery;",
+      "import org.apache.lucene.queryparser.surround.query.FieldsQuery;",
+      "import org.apache.lucene.queryparser.surround.query.OrQuery;",
+      "import org.apache.lucene.queryparser.surround.query.AndQuery;",
+      "import org.apache.lucene.queryparser.surround.query.NotQuery;",
+      "import org.apache.lucene.queryparser.surround.query.DistanceQuery;",
+      "import org.apache.lucene.queryparser.surround.query.SrndTermQuery;",
+      "import org.apache.lucene.queryparser.surround.query.SrndPrefixQuery;",
+      "import org.apache.lucene.queryparser.surround.query.SrndTruncQuery;"
+    ].each {
+      ant.replaceregexp(match: "${it}.*${System.getProperty('line.separator')}", replace: "", encoding: "UTF-8") {
+        ant.fileset(dir: target.getAbsolutePath(), includes: "*TokenManager.java")
+      }
+    }
+    // StringBuffer -> StringBuilder
+    ant.replace(token: "StringBuffer", value: "StringBuilder", encoding: "UTF-8") {
+      ant.fileset(dir: target.getAbsolutePath(), includes: "ParseException.java TokenMgrError.java")
+    }
+
+    [
+        "import org.apache.lucene.analysis.TokenStream;",
+    ].each {
+      ant.replaceregexp(match: "${it}.*${System.getProperty('line.separator')}", replace: "", encoding: "UTF-8") {
+        ant.fileset(dir: target.getAbsolutePath(), includes: "QueryParser.java")
+      }
+    }
+    // StringBuffer -> StringBuilder
+    ant.replace(token: "StringBuffer", value: "StringBuilder", encoding: "UTF-8") {
+      ant.fileset(dir: target.getAbsolutePath(), includes: "ParseException.java TokenMgrError.java")
+    }
+
+
+    // This makes no difference when building on OS X, but leaving in in case it
+    // matters for windows.
+    ant.fixcrlf(srcdir: target.getAbsolutePath(), includes: '*.java', encoding: 'UTF-8') {
+      ant.containsregexp(expression: 'Generated.*By.*JavaCC')
+    }
+  }
+}
+
+
