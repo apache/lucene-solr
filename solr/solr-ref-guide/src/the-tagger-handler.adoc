@@ -16,7 +16,7 @@
 // specific language governing permissions and limitations
 // under the License.
 
-The "Tagger" Request Handler, AKA the "SolrTextTagger" is a "text tagger".
+The Tagger request handler, AKA the "SolrTextTagger", is a "text tagger".
 
 Given a dictionary (a Solr index) with a name-like field,
   you can post text to this request handler and it will return every occurrence of one of those names with offsets and other document metadata desired.
@@ -29,8 +29,11 @@ The SolrTextTagger might be used on queries for query-understanding or large doc
 
 To get a sense of how to use it, jump to the <<tutorial-with-geonames,tutorial>> below.
 
-The tagger does not yet support a sharded index.
-Tens, perhaps hundreds of millions of names (documents) are supported, mostly limited by memory.
+The Tagger request handler *does not* yet support a sharded index.
+It can be used in a cluster running in SolrCloud mode, but the collection that
+stores the tag dictionary must be a single-sharded collection.
+Despite this limitation, tens to hundreds of millions of names (documents) can
+be supported; the maximum is mostly limited only by memory.
 
 == Tagger Configuration
 
