@@ -27,7 +27,7 @@ package org.apache.lucene.geo;
  *   <li>For more advanced GeoSpatial indexing and query operations see the {@code spatial-extras} module
  * </ol>
  */
-public class Point implements LatLonGeometry {
+public final class Point implements LatLonGeometry {
 
   /** latitude coordinate */
   private final double lat;
