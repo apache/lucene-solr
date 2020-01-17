@@ -46,7 +46,6 @@ import org.apache.lucene.codecs.lucene60.Lucene60PointsReader;
 import org.apache.lucene.codecs.lucene60.Lucene60PointsWriter;
 import org.apache.lucene.codecs.memory.DirectDocValuesFormat;
 import org.apache.lucene.codecs.memory.DirectPostingsFormat;
-import org.apache.lucene.codecs.memory.FSTOrdPostingsFormat;
 import org.apache.lucene.codecs.memory.FSTPostingsFormat;
 import org.apache.lucene.codecs.mockrandom.MockRandomPostingsFormat;
 import org.apache.lucene.index.PointValues.IntersectVisitor;
@@ -191,7 +190,6 @@ public class RandomCodec extends AssertingCodec {
     add(avoidCodecs,
         TestUtil.getDefaultPostingsFormat(minItemsPerBlock, maxItemsPerBlock, RandomPicks.randomFrom(random, BlockTreeTermsReader.FSTLoadMode.values())),
         new FSTPostingsFormat(),
-        new FSTOrdPostingsFormat(),
         new DirectPostingsFormat(LuceneTestCase.rarely(random) ? 1 : (LuceneTestCase.rarely(random) ? Integer.MAX_VALUE : maxItemsPerBlock),
                                  LuceneTestCase.rarely(random) ? 1 : (LuceneTestCase.rarely(random) ? Integer.MAX_VALUE : lowFreqCutoff)),
         //TODO as a PostingsFormat which wraps others, we should allow TestBloomFilteredLucenePostings to be constructed 

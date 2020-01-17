@@ -209,7 +209,6 @@ public class FSTTermsWriter extends FieldsConsumer {
           }
           out.writeVLong(field.sumDocFreq);
           out.writeVInt(field.docCount);
-          out.writeVInt(field.longsSize);
           field.dict.save(out);
         }
         writeTrailer(out, dirStart);
@@ -232,16 +231,14 @@ public class FSTTermsWriter extends FieldsConsumer {
     public final long sumTotalTermFreq;
     public final long sumDocFreq;
     public final int docCount;
-    public final int longsSize;
     public final FST<FSTTermOutputs.TermData> dict;
 
-    public FieldMetaData(FieldInfo fieldInfo, long numTerms, long sumTotalTermFreq, long sumDocFreq, int docCount, int longsSize, FST<FSTTermOutputs.TermData> fst) {
+    public FieldMetaData(FieldInfo fieldInfo, long numTerms, long sumTotalTermFreq, long sumDocFreq, int docCount, FST<FSTTermOutputs.TermData> fst) {
       this.fieldInfo = fieldInfo;
       this.numTerms = numTerms;
       this.sumTotalTermFreq = sumTotalTermFreq;
       this.sumDocFreq = sumDocFreq;
       this.docCount = docCount;
-      this.longsSize = longsSize;
       this.dict = fst;
     }
   }
@@ -250,7 +247,6 @@ public class FSTTermsWriter extends FieldsConsumer {
     private final Builder<FSTTermOutputs.TermData> builder;
     private final FSTTermOutputs outputs;
     private final FieldInfo fieldInfo;
-    private final int longsSize;
     private long numTerms;
 
     private final IntsRefBuilder scratchTerm = new IntsRefBuilder();
@@ -259,19 +255,18 @@ public class FSTTermsWriter extends FieldsConsumer {
     TermsWriter(FieldInfo fieldInfo) {
       this.numTerms = 0;
       this.fieldInfo = fieldInfo;
-      this.longsSize = postingsWriter.setField(fieldInfo);
-      this.outputs = new FSTTermOutputs(fieldInfo, longsSize);
+      postingsWriter.setField(fieldInfo);
+      this.outputs = new FSTTermOutputs(fieldInfo);
       this.builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
     }
 
     public void finishTerm(BytesRef text, BlockTermState state) throws IOException {
       // write term meta data into fst
       final FSTTermOutputs.TermData meta = new FSTTermOutputs.TermData();
-      meta.longs = new long[longsSize];
       meta.bytes = null;
       meta.docFreq = state.docFreq;
       meta.totalTermFreq = state.totalTermFreq;
-      postingsWriter.encodeTerm(meta.longs, metaWriter, fieldInfo, state, true);
+      postingsWriter.encodeTerm(metaWriter, fieldInfo, state, true);
       final int bytesSize = (int)metaWriter.getFilePointer();
       if (bytesSize > 0) {
         meta.bytes = new byte[bytesSize];
@@ -286,7 +281,7 @@ public class FSTTermsWriter extends FieldsConsumer {
       // save FST dict
       if (numTerms > 0) {
         final FST<FSTTermOutputs.TermData> fst = builder.finish();
-        fields.add(new FieldMetaData(fieldInfo, numTerms, sumTotalTermFreq, sumDocFreq, docCount, longsSize, fst));
+        fields.add(new FieldMetaData(fieldInfo, numTerms, sumTotalTermFreq, sumDocFreq, docCount, fst));
       }
     }
   }
