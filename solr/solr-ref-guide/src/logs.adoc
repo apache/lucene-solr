@@ -104,7 +104,7 @@ image::images/math-expressions/logs-type.png[]
 
 === Collections
 
-Another key field is the `collection_s` field which is the collection that the
+Another important field is the `collection_s` field which is the collection that the
 log record was generated from.
 
 The `facet` expression can be used to visualize the different collections and how many log records
@@ -126,7 +126,7 @@ The `timeseries` function can be used to visualize a time series for a specific 
 of the logs.
 
 In the example below a time series is used to visualize the log record counts
-at 15 second intervals across the full range of log records.
+at 15 second intervals.
 
 image::images/math-expressions/logs-time-series.png[]
 
@@ -145,8 +145,7 @@ Notice the query activity accounts for more then half of the burst of log record
 minute 27 and minute 52. But the query activity does not account for the large spike in
 log activity that follows.
 
-
-We can account for that spike by changing the search to include *update*, *commit*,
+We can account for that spike by changing the search to include only *update*, *commit*,
 and *deleteByQuery* records in the logs. We can also narrow by collection
 so we know where these activities are taking place.
 
@@ -154,17 +153,17 @@ so we know where these activities are taking place.
 image::images/math-expressions/logs-time-series3.png[]
 
 Through the various exploratory queries and visualizations we now have a much
-better understanding of the what's contained in the logs.
+better understanding of what's contained in the logs.
 
 
 == Query Counting
 
 Distributed searches produce more then one log record for each query. There will be one *top level* log
 record for
-the top level distributed query and a *shard level* log record on a replica from each shard. There may also
+the top level distributed query and a *shard level* log record on one replica from each shard. There may also
 be a set of *ids* queries to retrieve fields by id from the shards to complete the page of results.
 
-There are fields in the log index that can be used to differentiate between the types of query records.
+There are fields in the log index that can be used to differentiate between the three types of query records.
 
 The examples below use the `stats` function to count the different types of query records in the logs.
 The same queries can be used with `search`, `random` and `timeseries` functions to return results
