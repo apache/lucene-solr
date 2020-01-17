@@ -39,7 +39,7 @@ import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
  * An geo shape utility class for indexing and searching gis geometries
  * whose vertices are latitude, longitude values (in decimal degrees).
  * <p>
- * This class defines six static factory methods for common indexing and search operations:
+ * This class defines seven static factory methods for common indexing and search operations:
  * <ul>
  *   <li>{@link #createIndexableFields(String, Polygon)} for indexing a geo polygon.
  *   <li>{@link #createIndexableFields(String, Line)} for indexing a geo linestring.
@@ -47,6 +47,8 @@ import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
  *   <li>{@link #newBoxQuery newBoxQuery()} for matching geo shapes that have some {@link QueryRelation} with a bounding box.
  *   <li>{@link #newLineQuery newLineQuery()} for matching geo shapes that have some {@link QueryRelation} with a linestring.
  *   <li>{@link #newPolygonQuery newPolygonQuery()} for matching geo shapes that have some {@link QueryRelation} with a polygon.
+ *   <li>{@link #newGeometryCollectionQuery newGeometryCollectionQuery()} for matching geo shapes that have some {@link QueryRelation}
+ *   with one or more {@link LatLonGeometry}.
  * </ul>
 
  * <b>WARNING</b>: Like {@link LatLonPoint}, vertex values are indexed with some loss of precision from the

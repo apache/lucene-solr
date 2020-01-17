@@ -77,23 +77,16 @@ public class Point implements LatLonGeometry {
 
   @Override
   public Component2D toComponent2D() {
-    return Point2D.create(new double[] {quantizeLat(lat), quantizeLon(lon)});
+    double qLat = GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(lat));
+    double qLon = GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(lon));
+    return Point2D.create(new double[] {qLat, qLon});
   }
 
-  private double quantizeLat(double lat) {
-    return GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(lat));
-  }
-
-  private double quantizeLon(double lon) {
-    return GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(lon));
-  }
-
-  /** prints polygons as geojson */
   @Override
   public String toGeoJSON() {
     StringBuilder sb = new StringBuilder();
     sb.append("[");
-    //sb.append(Polygon.verticesToGeoJSON(lats, lons));
+    sb.append(lon + "," + lat);
     sb.append("]");
     return sb.toString();
   }

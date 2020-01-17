@@ -34,19 +34,17 @@ import org.apache.lucene.util.NumericUtils;
  *    of LatLonSpatialComponents</li>
  * </ul>
  *
- * <p>The field must be indexed using
- * {@link LatLonShape#createIndexableFields} added per document.
+ * <p>The field must be indexed using {@link LatLonShape#createIndexableFields} added per document.
  *
- *  @lucene.experimental
  **/
 final class LatLonShapeComponent2DQuery extends ShapeQuery {
   final LatLonGeometry[] latLonGeometries;
   final private Component2D component2D;
 
   /**
-   * Creates a query that matches all indexed shapes to the provided polygons
+   * Creates a query that matches all indexed shapes to the provided {@link Component2D}
    */
-  public LatLonShapeComponent2DQuery(String field, QueryRelation queryRelation, LatLonGeometry[] latLonGeometries) {
+  LatLonShapeComponent2DQuery(String field, QueryRelation queryRelation, LatLonGeometry[] latLonGeometries) {
     super(field, queryRelation);
     if (latLonGeometries == null) {
       throw new IllegalArgumentException("shapes must not be null");
