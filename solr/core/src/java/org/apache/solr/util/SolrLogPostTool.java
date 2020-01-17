@@ -162,9 +162,7 @@ public class SolrLogPostTool {
         }
 
         if (line != null) {
-          if (line.contains("QTime=")) {
-            return parseQueryRecord(line);
-          } else if (line.contains("Registered new searcher")) {
+          if (line.contains("Registered new searcher")) {
             return parseNewSearch(line);
           } else if (line.contains("path=/update")) {
             return parseUpdate(line);
@@ -173,6 +171,8 @@ public class SolrLogPostTool {
             return parseError(line, readTrace());
           } else if (line.contains("start commit")) {
             return parseCommit(line);
+          } else if(line.contains("QTime=")) {
+            return parseQueryRecord(line);
           } else {
             continue;
           }

@@ -20,11 +20,13 @@ package org.apache.solr.cloud;
 import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -36,11 +38,13 @@ import org.apache.solr.client.solrj.response.schema.SchemaResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.RetryUtil;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.logging.LogWatcher;
 import org.apache.solr.logging.LogWatcherConfig;
 import org.apache.solr.util.IdUtils;
@@ -74,13 +78,21 @@ public class SystemCollectionCompatTest extends SolrCloudTestCase {
 
   @Before
   public void setupSystemCollection() throws Exception {
-    CollectionAdminRequest.createCollection(CollectionAdminParams.SYSTEM_COLL, null, 1, 2)
-        .process(cluster.getSolrClient());
-    cluster.waitForActiveCollection(CollectionAdminParams.SYSTEM_COLL,  1, 2);
     ZkController zkController = cluster.getJettySolrRunner(0).getCoreContainer().getZkController();
     cloudManager = zkController.getSolrCloudManager();
     solrClient = new CloudSolrClientBuilder(Collections.singletonList(zkController.getZkServerAddress()),
         Optional.empty()).build();
+    CollectionAdminRequest.OverseerStatus status = new CollectionAdminRequest.OverseerStatus();
+    CollectionAdminResponse adminResponse = status.process(solrClient);
+    String overseerLeader = (String) adminResponse.getResponse().get("leader");
+    Set<String> nodes = new HashSet<>(cloudManager.getClusterStateProvider().getLiveNodes());
+    nodes.remove(overseerLeader);
+    // put .system replicas on other nodes that the overseer
+    CollectionAdminRequest.createCollection(CollectionAdminParams.SYSTEM_COLL, null, 1, 2)
+        .setCreateNodeSet(String.join(",", nodes))
+        .setMaxShardsPerNode(2)
+        .process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(CollectionAdminParams.SYSTEM_COLL,  1, 2);
     // send a dummy doc to the .system collection
     SolrInputDocument doc = new SolrInputDocument(
         "id", IdUtils.timeRandomId(),
@@ -90,9 +102,11 @@ public class SystemCollectionCompatTest extends SolrCloudTestCase {
     solrClient.add(CollectionAdminParams.SYSTEM_COLL, doc);
     solrClient.commit(CollectionAdminParams.SYSTEM_COLL);
 
-    Replica leader
-        = solrClient.getZkStateReader().getLeaderRetry(CollectionAdminParams.SYSTEM_COLL, "shard1", DEFAULT_TIMEOUT);
-    final AtomicReference<Long> coreStartTime = new AtomicReference<>(getCoreStatus(leader).getCoreStartTime().getTime());
+    Map<String, Long> coreStartTimes = new HashMap<>();
+    DocCollection coll = cloudManager.getClusterStateProvider().getCollection(CollectionAdminParams.SYSTEM_COLL);
+    for (Replica r : coll.getReplicas()) {
+      coreStartTimes.put(r.getName(), getCoreStatus(r).getCoreStartTime().getTime());
+    }
     // trigger compat report by changing the schema
     SchemaRequest req = new SchemaRequest();
     SchemaResponse rsp = req.process(solrClient, CollectionAdminParams.SYSTEM_COLL);
@@ -107,16 +121,20 @@ public class SystemCollectionCompatTest extends SolrCloudTestCase {
     CollectionAdminResponse response = reloadRequest.process(solrClient);
     assertEquals(0, response.getStatus());
     assertTrue(response.isSuccess());
-    // wait for the reload to complete
+    // wait for the reload of all replicas to complete
     RetryUtil.retryUntil("Timed out waiting for core to reload", 30, 1000, TimeUnit.MILLISECONDS, () -> {
-      long restartTime = 0;
-      try {
-        restartTime = getCoreStatus(leader).getCoreStartTime().getTime();
-      } catch (Exception e) {
-        log.warn("Exception getting core start time: {}", e.getMessage());
-        return false;
+      boolean allReloaded = true;
+      for (Replica r : coll.getReplicas()) {
+        long previousTime = coreStartTimes.get(r.getName());
+        try {
+          long currentTime = getCoreStatus(r).getCoreStartTime().getTime();
+          allReloaded = allReloaded && (previousTime < currentTime);
+        } catch (Exception e) {
+          log.warn("Error retrieving replica status of " + Utils.toJSONString(r), e);
+          allReloaded = false;
+        }
       }
-      return restartTime > coreStartTime.get();
+      return allReloaded;
     });
     cluster.waitForActiveCollection(CollectionAdminParams.SYSTEM_COLL,  1, 2);
 
