@@ -79,72 +79,117 @@ public class JoinQParserPlugin extends QParserPlugin {
   public static final String NAME = "join";
   public static final String COST = "cost";
   public static final String CACHE = "cache";
+  /** Choose the internal algorithm */
+  private static final String METHOD = "method";
+
+  private static class JoinParams {
+    final String fromField;
+    final String fromCore;
+    final Query fromQuery;
+    final long fromCoreOpenTime;
+    final String toField;
+
+    public JoinParams(String fromField, String fromCore, Query fromQuery, long fromCoreOpenTime, String toField) {
+      this.fromField = fromField;
+      this.fromCore = fromCore;
+      this.fromQuery = fromQuery;
+      this.fromCoreOpenTime = fromCoreOpenTime;
+      this.toField = toField;
+    }
+  }
+
+  private static enum Method {
+    perSegment {
+      @Override
+      Query makeFilter(QParser qparser) throws SyntaxError {
+        final JoinParams jParams = parseJoin(qparser);
+        final JoinQuery q = new JoinQuery(jParams.fromField, jParams.toField, jParams.fromCore, jParams.fromQuery);
+        q.fromCoreOpenTime = jParams.fromCoreOpenTime;
+        return q;
+      }
+    },
+    topLevel {
+      @Override
+      Query makeFilter(QParser qparser) throws SyntaxError {
+        final JoinParams jParams = parseJoin(qparser);
+        final JoinQuery q = new JoinQuery.TopLevelJoinQuery(jParams.fromField, jParams.toField, jParams.fromCore, jParams.fromQuery);
+        q.fromCoreOpenTime = jParams.fromCoreOpenTime;
+        return q;
+      }
+    },
+    score {
+      @Override
+      Query makeFilter(QParser qparser) throws SyntaxError {
+        return new ScoreJoinQParserPlugin().createParser(qparser.qstr, qparser.localParams, qparser.params, qparser.req).parse();
+      }
+    };
+
+    abstract Query makeFilter(QParser qparser) throws SyntaxError;
+
+    JoinParams parseJoin(QParser qparser) throws SyntaxError {
+      final String fromField = qparser.getParam("from");
+      final String fromIndex = qparser.getParam("fromIndex");
+      final String toField = qparser.getParam("to");
+      final String v = qparser.localParams.get("v");
+      final String coreName;
+
+      Query fromQuery;
+      long fromCoreOpenTime = 0;
+
+      if (fromIndex != null && !fromIndex.equals(qparser.req.getCore().getCoreDescriptor().getName()) ) {
+        CoreContainer container = qparser.req.getCore().getCoreContainer();
+
+        // if in SolrCloud mode, fromIndex should be the name of a single-sharded collection
+        coreName = ScoreJoinQParserPlugin.getCoreName(fromIndex, container);
+
+        final SolrCore fromCore = container.getCore(coreName);
+        if (fromCore == null) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+              "Cross-core join: no such core " + coreName);
+        }
+
+        RefCounted<SolrIndexSearcher> fromHolder = null;
+        LocalSolrQueryRequest otherReq = new LocalSolrQueryRequest(fromCore, qparser.params);
+        try {
+          QParser parser = QParser.getParser(v, otherReq);
+          fromQuery = parser.getQuery();
+          fromHolder = fromCore.getRegisteredSearcher();
+          if (fromHolder != null) fromCoreOpenTime = fromHolder.get().getOpenNanoTime();
+        } finally {
+          otherReq.close();
+          fromCore.close();
+          if (fromHolder != null) fromHolder.decref();
+        }
+      } else {
+        coreName = null;
+        QParser fromQueryParser = qparser.subQuery(v, null);
+        fromQueryParser.setIsFilter(true);
+        fromQuery = fromQueryParser.getQuery();
+      }
+
+      final String indexToUse = coreName == null ? fromIndex : coreName;
+      return new JoinParams(fromField, indexToUse, fromQuery, fromCoreOpenTime, toField);
+    }
+  }
 
   @Override
   public QParser createParser(String qstr, SolrParams localParams, SolrParams params, SolrQueryRequest req) {
     return new QParser(qstr, localParams, params, req) {
-      
+
       @Override
       public Query parse() throws SyntaxError {
-        if(localParams!=null && localParams.get(ScoreJoinQParserPlugin.SCORE)!=null){
+        if (localParams != null && localParams.get(METHOD) != null) {
+          // TODO Make sure 'method' is valid value here and give users a nice error
+          final Method explicitMethod = Method.valueOf(localParams.get(METHOD));
+          return explicitMethod.makeFilter(this);
+        }
+
+        // Legacy join behavior before introduction of SOLR-13892
+        if(localParams!=null && localParams.get(ScoreJoinQParserPlugin.SCORE)!=null) {
           return new ScoreJoinQParserPlugin().createParser(qstr, localParams, params, req).parse();
         } else {
-          return parseJoin(localParams!=null && localParams.get("toplevel")!= null && localParams.get("toplevel").equals("true"));
+          return Method.perSegment.makeFilter(this);
         }
-      }
-
-      private boolean postFilterEnabled() {
-        return localParams != null &&
-            localParams.getInt(COST) != null && localParams.getPrimitiveInt(COST) > 99 &&
-            localParams.getBool(CACHE) != null && localParams.getPrimitiveBool(CACHE) == false;
-      }
-      
-      Query parseJoin(boolean topLevel) throws SyntaxError {
-        final String fromField = getParam("from");
-        final String fromIndex = getParam("fromIndex");
-        final String toField = getParam("to");
-        final String v = localParams.get("v");
-        final String coreName;
-
-        Query fromQuery;
-        long fromCoreOpenTime = 0;
-
-        if (fromIndex != null && !fromIndex.equals(req.getCore().getCoreDescriptor().getName()) ) {
-          CoreContainer container = req.getCore().getCoreContainer();
-
-          // if in SolrCloud mode, fromIndex should be the name of a single-sharded collection
-          coreName = ScoreJoinQParserPlugin.getCoreName(fromIndex, container);
-
-          final SolrCore fromCore = container.getCore(coreName);
-          if (fromCore == null) {
-            throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-                "Cross-core join: no such core " + coreName);
-          }
-
-          RefCounted<SolrIndexSearcher> fromHolder = null;
-          LocalSolrQueryRequest otherReq = new LocalSolrQueryRequest(fromCore, params);
-          try {
-            QParser parser = QParser.getParser(v, otherReq);
-            fromQuery = parser.getQuery();
-            fromHolder = fromCore.getRegisteredSearcher();
-            if (fromHolder != null) fromCoreOpenTime = fromHolder.get().getOpenNanoTime();
-          } finally {
-            otherReq.close();
-            fromCore.close();
-            if (fromHolder != null) fromHolder.decref();
-          }
-        } else {
-          coreName = null;
-          QParser fromQueryParser = subQuery(v, null);
-          fromQueryParser.setIsFilter(true);
-          fromQuery = fromQueryParser.getQuery();
-        }
-
-
-        final String indexToUse = coreName == null ? fromIndex : coreName;
-        final JoinQuery jq = (topLevel) ? new JoinQuery.TopLevelJoinQuery(fromField, toField, indexToUse, fromQuery) : new JoinQuery(fromField, toField, indexToUse, fromQuery);
-        jq.fromCoreOpenTime = fromCoreOpenTime;
-        return jq;
       }
     };
   }
