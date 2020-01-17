@@ -182,7 +182,6 @@
     <!-- queries: problems -->
     <!-- queryparser: problems -->
     <!-- sandbox: problems -->
-    <check-missing-javadocs dir="build/docs/spatial" level="method"/>
     <!-- spatial-extras: problems -->
     <check-missing-javadocs dir="build/docs/suggest" level="method"/>
     <!-- test-framework: problems -->

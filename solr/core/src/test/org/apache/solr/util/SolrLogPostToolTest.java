@@ -51,6 +51,8 @@ public class SolrLogPostToolTest extends SolrTestCaseJ4 {
     SolrInputField wt = doc.getField("wt_s");
     SolrInputField distrib = doc.getField("distrib_s");
     SolrInputField isShard = doc.getField("isShard_s");
+    SolrInputField ids = doc.getField("ids_s");
+    SolrInputField shards = doc.getField("shards_s");
 
     assertEquals(query.getValue(), "*:*");
     assertEquals(date.getValue(), "2019-12-09T15:05:01.931");
@@ -65,6 +67,9 @@ public class SolrLogPostToolTest extends SolrTestCaseJ4 {
     assertEquals(wt.getValue(), "javabin");
     assertEquals(distrib.getValue(), "false");
     assertEquals(isShard.getValue(), "true");
+    assertEquals(ids.getValue(), "false");
+    assertEquals(shards.getValue(), "false");
+
   }
 
   @Test
@@ -201,7 +206,7 @@ public class SolrLogPostToolTest extends SolrTestCaseJ4 {
 
   @Test
   public void testCommit() throws Exception{
-    String record = "2019-12-16 14:20:19.708 INFO  (qtp812143047-22671) [c:production_201912 s:shard128 r:core_node7 x:production_201912_shard128_replica] o.a.s.u.DirectUpdateHandler2 start commit{_version_=1653086376121335808,optimize=false,openSearcher=true,waitSearcher=true,expungeDeletes=false,softCommit=false,prepareCommit=false}\n";
+    String record = "2019-12-16T14:20:19.708 INFO  (qtp812143047-22671) [c:production_201912 s:shard128 r:core_node7 x:production_201912_shard128_replica] o.a.s.u.DirectUpdateHandler2 start commit{_version_=1653086376121335808,optimize=false,openSearcher=true,waitSearcher=true,expungeDeletes=false,softCommit=false,prepareCommit=false}\n";
     List<SolrInputDocument> docs = readDocs(record);
     assertEquals(docs.size(), 1);
     SolrInputDocument doc = docs.get(0);

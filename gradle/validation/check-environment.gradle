@@ -1,0 +1,30 @@
+// This checks that we're running the desired version of Gradle and
+// that the JVM is supported.
+
+import org.gradle.util.GradleVersion
+
+configure(rootProject) {
+  ext {
+    expectedGradleVersion = '6.0.1'
+    minJavaVersion = JavaVersion.VERSION_11
+  }
+
+  wrapper {
+    distributionType = Wrapper.DistributionType.ALL
+    gradleVersion = expectedGradleVersion
+  }
+
+  def currentJavaVersion = JavaVersion.current()
+  if (currentJavaVersion < minJavaVersion) {
+    throw new GradleException("At least Java ${minJavaVersion} is required, you are running Java ${currentJavaVersion} "
+      + "[${System.getProperty('java.vm.name')} ${System.getProperty('java.vm.version')}]")
+  }
+
+  // If we're regenerating the wrapper, skip the check.
+  if (!gradle.startParameter.taskNames.contains("wrapper")) {
+    def currentGradleVersion = GradleVersion.current()
+    if (currentGradleVersion != GradleVersion.version(expectedGradleVersion)) {
+      throw new GradleException("Gradle ${expectedGradleVersion} is required (hint: use the gradlew script): this gradle is ${currentGradleVersion}")
+    }
+  }
+}

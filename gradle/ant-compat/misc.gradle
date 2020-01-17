@@ -1,0 +1,30 @@
+
+// Exclude inner classes from testing.
+allprojects {
+  tasks.withType(Test) { task ->
+    exclude '**/*$*'
+  }
+}
+
+// Exclude test classes that are not actually stand-alone tests (they're executed from other stuff).
+configure(project(":lucene:replicator")) {
+  plugins.withType(JavaPlugin) {
+    test {
+      exclude "**/SimpleServer*"
+    }
+  }
+}
+
+
+// Resources from top-level project folder are looked up via getClass(). Strange.
+configure(project(":lucene:benchmark")) {
+  plugins.withType(JavaPlugin) {
+    task syncConf(type: Sync) {
+      from('conf')
+      into file("${sourceSets.test.java.outputDir}/conf")
+    }
+    processTestResources.dependsOn syncConf
+  }
+}
+
+

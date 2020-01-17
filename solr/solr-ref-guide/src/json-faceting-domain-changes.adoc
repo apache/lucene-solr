@@ -72,10 +72,47 @@ include::{example-source-dir}JsonRequestApiTest.java[tag=solrj-json-facet-filter
 The value of `filter` can be a single query to treat as a filter, or a JSON list of filter queries.  Each query can be:
 
 * a string containing a query in Solr query syntax.
-* a reference to a request parameter containing Solr query syntax, of the form: `{param: <request_param_name>}`.
+* a reference to a request parameter containing Solr query syntax, of the form: `{param: <request_param_name>}`. It's possible to refer to one or multiple queries in DSL syntax defined under <<json-query-dsl.adoc#additional-queries,queries>> key in JSON Request API.
 The referred parameter might have 0 (absent) or many values.
 ** When no values are specified, no filter is applied and no error is thrown.
-** When many values are specified, each value is parsed and used as filters.
+** When many values are specified, each value is parsed and used as filters in conjunction.
+
+Here is the example of referencing DSL queries: 
+
+[source,bash]
+----
+curl http://localhost:8983/solr/techproducts/query -d '
+{
+  "query": "*:*",
+  "queries": {
+      "sample_filtrs":[
+           {"field":{"f":"text", "query":"usb"}},
+           {"field":{"f":"text", "query":"lcd"}}
+        ],
+        "another_filtr":
+            {"field":{"f":"text", "query":"usb"}}
+  },
+  "facet": {
+    "usblcd": {
+      "type": "terms",
+      "field": "cat",
+      "limit": 3,
+      "domain": {
+        "filter": {"param":"sample_filtrs"}
+      }
+    },
+    "justusb": {
+      "type": "terms",
+      "field": "cat",
+      "limit": 3,
+      "domain": {
+        "filter": {"param":"another_filtr"}
+      }
+    }
+  }
+}'
+----
+
 
 When a `filter` option is combined with other `domain` changing options, the filtering is applied _after_ the other domain changes take place.
 

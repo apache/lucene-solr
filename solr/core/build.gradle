@@ -1,0 +1,129 @@
+
+apply plugin: 'java-library'
+
+dependencies {
+  api project(':lucene:core')
+  api project(':lucene:analysis:common')
+  api project(':lucene:analysis:kuromoji')
+  api project(':lucene:analysis:nori')
+  api project(':lucene:analysis:phonetic')
+  api project(':lucene:backward-codecs')
+  api project(':lucene:classification')
+  api project(':lucene:codecs')
+  api project(':lucene:expressions')
+  api project(':lucene:grouping')
+  api project(':lucene:highlighter')
+  api project(':lucene:join')
+  api project(':lucene:misc')
+  api project(':lucene:queries')
+  api project(':lucene:queryparser')
+  api project(':lucene:sandbox')
+  api project(':lucene:spatial-extras')
+  api project(':lucene:suggest')
+
+  // Export these dependencies so that they're imported transitively by
+  // other modules.
+  api ('com.google.guava:guava', {
+    exclude group: "org.codehaus.mojo", module: "animal-sniffer-annotations"
+    exclude group: "com.google.j2objc", module: "j2objc-annotations"
+    exclude group: "com.google.errorprone", module: "error_prone_annotations"
+    exclude group: "org.checkerframework", module: "checker-qual"
+    exclude group: "com.google.code.findbugs", module: "jsr305"
+  })
+
+  api project(':solr:solrj')
+  api project(':solr:server')
+
+  api 'org.apache.commons:commons-lang3'
+  api 'com.carrotsearch:hppc'
+  api 'com.fasterxml.jackson.core:jackson-databind'
+  api 'commons-cli:commons-cli'
+  api 'commons-codec:commons-codec'
+  api 'commons-collections:commons-collections'
+
+  implementation 'com.fasterxml.jackson.dataformat:jackson-dataformat-smile'
+
+  implementation('com.github.ben-manes.caffeine:caffeine', {
+    exclude group: "org.checkerframework", module: "checker-qual"
+    exclude group: "com.google.errorprone", module: "error_prone_annotations"
+  })
+
+  implementation 'com.github.zafarkhaja:java-semver'
+  implementation 'com.google.re2j:re2j'
+
+  implementation('com.jayway.jsonpath:json-path', {
+    exclude group: "net.minidev", module: "json-smart"
+  })
+
+  implementation 'com.tdunning:t-digest'
+  implementation 'commons-fileupload:commons-fileupload'
+
+  implementation 'io.opentracing:opentracing-api'
+  implementation 'io.opentracing:opentracing-noop'
+  implementation 'io.opentracing:opentracing-util'
+  implementation 'org.apache.commons:commons-exec'
+  implementation 'org.apache.commons:commons-text'
+  implementation("org.apache.commons:commons-configuration2", {
+    exclude group: "commons-logging", module: "commons-logging"
+  })
+  implementation 'org.apache.htrace:htrace-core4'
+
+  implementation 'org.apache.logging.log4j:log4j-api'
+  implementation 'org.apache.logging.log4j:log4j-core'
+  implementation 'org.apache.logging.log4j:log4j-slf4j-impl'
+
+  api 'org.bitbucket.b_c:jose4j'
+  implementation 'org.codehaus.janino:commons-compiler'
+  implementation 'org.codehaus.janino:janino'
+
+  api 'org.restlet.jee:org.restlet'
+  implementation 'org.rrd4j:rrd4j'
+  implementation 'org.restlet.jee:org.restlet.ext.servlet'
+
+  implementation ('org.apache.calcite.avatica:avatica-core') { transitive = false }
+  implementation ('org.apache.calcite:calcite-core') { transitive = false }
+  implementation ('org.apache.calcite:calcite-linq4j') { transitive = false }
+  implementation ('org.apache.curator:curator-client') { transitive = false }
+  implementation ('org.apache.curator:curator-framework') { transitive = false }
+  implementation ('org.apache.hadoop:hadoop-annotations') { transitive = false }
+  implementation ('org.apache.hadoop:hadoop-auth') { transitive = false }
+  implementation ('org.apache.hadoop:hadoop-common') { transitive = false }
+  implementation ('org.apache.hadoop:hadoop-hdfs-client') { transitive = false }
+  testImplementation 'org.apache.commons:commons-compress' // required for customized hadoop classes
+
+  implementation ('net.hydromatic:eigenbase-properties') { transitive = false }
+
+  runtimeOnly ('org.apache.curator:curator-recipes') { transitive = false }
+  runtimeOnly ('org.apache.kerby:kerb-core')
+  runtimeOnly ('org.apache.kerby:kerb-util')
+  runtimeOnly ('org.apache.kerby:kerby-asn1')
+  runtimeOnly ('org.apache.kerby:kerby-pkix')
+  runtimeOnly ('com.google.protobuf:protobuf-java')
+
+  testImplementation project(':lucene:analysis:icu')
+  testImplementation project(':solr:contrib:analysis-extras')
+  testImplementation project(':solr:test-framework')
+
+  testImplementation ('org.apache.hadoop:hadoop-common::tests') { transitive = false }
+  testImplementation ('org.apache.hadoop:hadoop-hdfs') { transitive = false }
+  testImplementation ('org.apache.hadoop:hadoop-hdfs::tests') { transitive = false }
+  testImplementation ('org.apache.hadoop:hadoop-minikdc') { transitive = false }
+  testImplementation 'org.apache.logging.log4j:log4j-1.2-api'
+
+  testImplementation ('org.apache.kerby:kerb-client') { transitive = false }
+  testImplementation ('org.apache.kerby:kerb-common') { transitive = false }
+  testImplementation ('org.apache.kerby:kerb-identity') { transitive = false }
+  testImplementation ('org.apache.kerby:kerb-server') { transitive = false }
+  testImplementation ('org.apache.kerby:kerb-simplekdc') { transitive = false }
+  testImplementation ('org.apache.kerby:kerb-admin') { transitive = false }
+  testImplementation ('org.apache.kerby:kerby-kdc') { transitive = false }
+
+  testImplementation ('com.sun.jersey:jersey-servlet') { transitive = false }
+
+  testImplementation 'com.google.protobuf:protobuf-java'
+  testImplementation 'commons-logging:commons-logging'
+  testImplementation('org.mockito:mockito-core', {
+    exclude group: "net.bytebuddy", module: "byte-buddy-agent"
+  })
+}
+

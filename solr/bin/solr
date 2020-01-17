@@ -1818,6 +1818,9 @@ fi
 
 if [ "$SOLR_HOST" != "" ]; then
   SOLR_HOST_ARG=("-Dhost=$SOLR_HOST")
+elif [[ -z "$SOLR_JETTY_HOST" || "$SOLR_JETTY_HOST" == "127.0.0.1" ]]; then
+  # Jetty will only bind on localhost interface, so nodes must advertise themselves with localhost
+  SOLR_HOST_ARG=("-Dhost=localhost")
 else
   SOLR_HOST_ARG=()
 fi
@@ -1876,6 +1879,10 @@ fi
 
 if [ -z "$SOLR_PORT" ]; then
   SOLR_PORT=8983
+fi
+
+if [ -n "$SOLR_JETTY_HOST" ]; then
+  SOLR_OPTS+=("-Dsolr.jetty.host=$SOLR_JETTY_HOST")
 fi
 
 if [ -z "$STOP_PORT" ]; then

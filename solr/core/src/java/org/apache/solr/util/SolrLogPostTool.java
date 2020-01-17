@@ -140,7 +140,7 @@ public class SolrLogPostTool {
     private String pushedBack = null;
     private boolean finished = false;
     private String cause;
-    private Pattern p = Pattern.compile("^(\\d\\d\\d\\d\\-\\d\\d\\-\\d\\d \\d\\d:\\d\\d\\:\\d\\d.\\d\\d\\d)");
+    private Pattern p = Pattern.compile("^(\\d\\d\\d\\d\\-\\d\\d\\-\\d\\d[\\s|T]\\d\\d:\\d\\d\\:\\d\\d.\\d\\d\\d)");
 
     public LogRecordReader(BufferedReader bufferedReader) throws IOException {
       this.bufferedReader = bufferedReader;
@@ -162,9 +162,7 @@ public class SolrLogPostTool {
         }
 
         if (line != null) {
-          if (line.contains("QTime=")) {
-            return parseQueryRecord(line);
-          } else if (line.contains("Registered new searcher")) {
+          if (line.contains("Registered new searcher")) {
             return parseNewSearch(line);
           } else if (line.contains("path=/update")) {
             return parseUpdate(line);
@@ -173,6 +171,8 @@ public class SolrLogPostTool {
             return parseError(line, readTrace());
           } else if (line.contains("start commit")) {
             return parseCommit(line);
+          } else if(line.contains("QTime=")) {
+            return parseQueryRecord(line);
           } else {
             continue;
           }
@@ -295,6 +295,8 @@ public class SolrLogPostTool {
       doc.addField("path_s", path);
       if(path != null && path.contains("/admin")) {
         doc.addField("type_s", "admin");
+      } else if(path != null && params.contains("/replication")) {
+        doc.addField("type_s", "replication");
       } else {
         doc.addField("type_s", "query");
       }
@@ -314,7 +316,7 @@ public class SolrLogPostTool {
     }
 
     private String parseCollection(String line) {
-      char[] ca = {' ', ']'};
+      char[] ca = {' ', ']', ','};
       String parts[] = line.split("c:");
       if(parts.length >= 2) {
         return readUntil(parts[1], ca);
@@ -355,7 +357,7 @@ public class SolrLogPostTool {
     }
 
     private String parseCore(String line) {
-      char[] ca = {' ', ']'};
+      char[] ca = {' ', ']', '}', ','};
       String parts[] = line.split("x:");
       if(parts.length >= 2) {
         return readUntil(parts[1], ca);
@@ -365,7 +367,7 @@ public class SolrLogPostTool {
     }
 
     private String parseShard(String line) {
-      char[] ca = {' ', ']'};
+      char[] ca = {' ', ']', '}', ','};
       String parts[] = line.split("s:");
       if(parts.length >= 2) {
         return readUntil(parts[1], ca);
@@ -375,7 +377,7 @@ public class SolrLogPostTool {
     }
 
     private String parseReplica(String line) {
-      char[] ca = {' ', ']'};
+      char[] ca = {' ', ']', '}',','};
       String parts[] = line.split("r:");
       if(parts.length >= 2) {
         return readUntil(parts[1], ca);
@@ -406,9 +408,9 @@ public class SolrLogPostTool {
     }
 
     private String parseNode(String line) {
-      char[] ca = {' ', ']'};
-      String parts[] = line.split("n:");
-      if(parts.length == 2) {
+      char[] ca = {' ', ']', '}', ','};
+      String parts[] = line.split("node_name=n:");
+      if(parts.length >= 2) {
         return readUntil(parts[1], ca);
       } else {
         return null;
@@ -436,10 +438,11 @@ public class SolrLogPostTool {
     }
 
     private String parseParams(String line) {
-      char[] ca = {'}'};
+      char[] ca = {' '};
       String parts[] = line.split(" params=");
       if(parts.length == 2) {
-        return readUntil(parts[1].substring(1), ca);
+        String p = readUntil(parts[1].substring(1), ca);
+        return p.substring(0, p.length()-1);
       } else {
         return null;
       }
@@ -480,6 +483,14 @@ public class SolrLogPostTool {
           doc.addField("distrib_s", dr);
         }
 
+        if(parts[0].equals("shards")) {
+          doc.addField("shards_s", "true");
+        }
+
+        if(parts[0].equals("ids")) {
+          doc.addField("ids_s", "true");
+        }
+
         if(parts[0].equals("isShard")) {
           String dr = URLDecoder.decode(parts[1], Charset.defaultCharset());
           doc.addField("isShard_s", dr);
@@ -494,6 +505,23 @@ public class SolrLogPostTool {
           String dr = URLDecoder.decode(parts[1], Charset.defaultCharset());
           doc.addField("facet_s", dr);
         }
+      }
+
+
+      //Special params used to determine what stage a query is.
+      //So we populate with defaults.
+      //The absence of the distrib params means its a distributed query.
+
+      if(doc.getField("distrib_s") == null) {
+        doc.addField("distrib_s", "true");
+      }
+
+      if(doc.getField("shards_s") == null) {
+        doc.addField("shards_s", "false");
+      }
+
+      if(doc.getField("ids_s") == null) {
+        doc.addField("ids_s", "false");
       }
     }
   }
