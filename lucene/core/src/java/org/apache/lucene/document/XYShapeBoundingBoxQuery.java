@@ -20,7 +20,7 @@ import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.XYRectangle;
 import org.apache.lucene.geo.XYRectangle2D;
-import org.apache.lucene.index.PointValues;
+import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.NumericUtils;
 
 import static org.apache.lucene.geo.XYEncodingUtils.decode;
@@ -30,14 +30,12 @@ import static org.apache.lucene.geo.XYEncodingUtils.decode;
  *
  * <p>The field must be indexed using
  * {@link org.apache.lucene.document.XYShape#createIndexableFields} added per document.
- *
- *  @lucene.experimental
  **/
 public class XYShapeBoundingBoxQuery extends ShapeQuery {
   final Component2D rectangle2D;
   final private XYRectangle rectangle;
 
-
+  /** construct a Bounding Box Query over cartesian geometries from the given ranges */
   public XYShapeBoundingBoxQuery(String field, QueryRelation queryRelation, double minX, double maxX, double minY, double maxY) {
     super(field, queryRelation);
     this.rectangle = new XYRectangle(minX, maxX, minY, maxY);
@@ -45,32 +43,32 @@ public class XYShapeBoundingBoxQuery extends ShapeQuery {
   }
 
   @Override
-  protected PointValues.Relation relateRangeBBoxToQuery(int minXOffset, int minYOffset, byte[] minTriangle,
+  protected Relation relateRangeBBoxToQuery(int minXOffset, int minYOffset, byte[] minTriangle,
                                                         int maxXOffset, int maxYOffset, byte[] maxTriangle) {
     double minY = decode(NumericUtils.sortableBytesToInt(minTriangle, minYOffset));
     double minX = decode(NumericUtils.sortableBytesToInt(minTriangle, minXOffset));
     double maxY = decode(NumericUtils.sortableBytesToInt(maxTriangle, maxYOffset));
     double maxX = decode(NumericUtils.sortableBytesToInt(maxTriangle, maxXOffset));
     // check internal node against query
-    PointValues.Relation rel = rectangle2D.relate(minX, maxX, minY, maxY);
+    Relation rel = rectangle2D.relate(minX, maxX, minY, maxY);
     // TODO: Check if this really helps
-    if (queryRelation == QueryRelation.INTERSECTS && rel == PointValues.Relation.CELL_CROSSES_QUERY) {
+    if (queryRelation == QueryRelation.INTERSECTS && rel == Relation.CELL_CROSSES_QUERY) {
       // for intersects we can restrict the conditions by using the inner box
       double innerMaxY = decode(NumericUtils.sortableBytesToInt(maxTriangle, minYOffset));
-      if (rectangle2D.relate(minX, maxX, minY, innerMaxY) == PointValues.Relation.CELL_INSIDE_QUERY) {
-        return PointValues.Relation.CELL_INSIDE_QUERY;
+      if (rectangle2D.relate(minX, maxX, minY, innerMaxY) == Relation.CELL_INSIDE_QUERY) {
+        return Relation.CELL_INSIDE_QUERY;
       }
       double innerMaX = decode(NumericUtils.sortableBytesToInt(maxTriangle, minXOffset));
-      if (rectangle2D.relate(minX, innerMaX, minY, maxY) == PointValues.Relation.CELL_INSIDE_QUERY) {
-        return PointValues.Relation.CELL_INSIDE_QUERY;
+      if (rectangle2D.relate(minX, innerMaX, minY, maxY) == Relation.CELL_INSIDE_QUERY) {
+        return Relation.CELL_INSIDE_QUERY;
       }
       double innerMinY = decode(NumericUtils.sortableBytesToInt(minTriangle, maxYOffset));
-      if (rectangle2D.relate(minX, maxX, innerMinY, maxY) == PointValues.Relation.CELL_INSIDE_QUERY) {
-        return PointValues.Relation.CELL_INSIDE_QUERY;
+      if (rectangle2D.relate(minX, maxX, innerMinY, maxY) == Relation.CELL_INSIDE_QUERY) {
+        return Relation.CELL_INSIDE_QUERY;
       }
       double innerMinX = decode(NumericUtils.sortableBytesToInt(minTriangle, maxXOffset));
-      if (rectangle2D.relate(innerMinX, maxX, minY, maxY) == PointValues.Relation.CELL_INSIDE_QUERY) {
-        return PointValues.Relation.CELL_INSIDE_QUERY;
+      if (rectangle2D.relate(innerMinX, maxX, minY, maxY) == Relation.CELL_INSIDE_QUERY) {
+        return Relation.CELL_INSIDE_QUERY;
       }
     }
     return rel;
@@ -90,9 +88,9 @@ public class XYShapeBoundingBoxQuery extends ShapeQuery {
     double cX = decode(scratchTriangle.cX);
 
     switch (queryRelation) {
-      case INTERSECTS: return rectangle2D.relateTriangle(aX, aY, bX, bY, cX, cY) != PointValues.Relation.CELL_OUTSIDE_QUERY;
+      case INTERSECTS: return rectangle2D.relateTriangle(aX, aY, bX, bY, cX, cY) != Relation.CELL_OUTSIDE_QUERY;
       case WITHIN: return rectangle2D.contains(aX, aY) && rectangle2D.contains(bX, bY) && rectangle2D.contains(cX, cY);
-      case DISJOINT: return rectangle2D.relateTriangle(aX, aY, bX, bY, cX, cY) == PointValues.Relation.CELL_OUTSIDE_QUERY;
+      case DISJOINT: return rectangle2D.relateTriangle(aX, aY, bX, bY, cX, cY) == Relation.CELL_OUTSIDE_QUERY;
       default: throw new IllegalArgumentException("Unsupported query type :[" + queryRelation + "]");
     }
   }

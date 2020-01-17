@@ -51,6 +51,8 @@ public class SolrLogPostToolTest extends SolrTestCaseJ4 {
     SolrInputField wt = doc.getField("wt_s");
     SolrInputField distrib = doc.getField("distrib_s");
     SolrInputField isShard = doc.getField("isShard_s");
+    SolrInputField ids = doc.getField("ids_s");
+    SolrInputField shards = doc.getField("shards_s");
 
     assertEquals(query.getValue(), "*:*");
     assertEquals(date.getValue(), "2019-12-09T15:05:01.931");
@@ -65,6 +67,9 @@ public class SolrLogPostToolTest extends SolrTestCaseJ4 {
     assertEquals(wt.getValue(), "javabin");
     assertEquals(distrib.getValue(), "false");
     assertEquals(isShard.getValue(), "true");
+    assertEquals(ids.getValue(), "false");
+    assertEquals(shards.getValue(), "false");
+
   }
 
   @Test

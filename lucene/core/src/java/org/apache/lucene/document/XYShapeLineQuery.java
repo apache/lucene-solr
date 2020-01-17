@@ -20,61 +20,69 @@ import java.util.Arrays;
 
 import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
-import org.apache.lucene.geo.XYEncodingUtils;
-import org.apache.lucene.geo.XYPolygon;
-import org.apache.lucene.geo.XYPolygon2D;
+import org.apache.lucene.geo.Line2D;
+import org.apache.lucene.geo.XYLine;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.NumericUtils;
 
 import static org.apache.lucene.geo.XYEncodingUtils.decode;
 
 /**
- * Finds all previously indexed cartesian shapes that intersect the specified arbitrary cartesian {@link XYPolygon}.
- *
+ * Finds all previously indexed cartesian shapes that intersect the specified arbitrary {@code XYLine}.
+ * <p>
+ * Note:
+ * <ul>
+ *    <li>{@code QueryRelation.WITHIN} queries are not yet supported</li>
+ * </ul>
+ * <p>
+ * todo:
+ * <ul>
+ *   <li>Add distance support for buffered queries</li>
+ * </ul>
  * <p>The field must be indexed using
  * {@link org.apache.lucene.document.XYShape#createIndexableFields} added per document.
- *
- *  @lucene.experimental
  **/
-final class XYShapePolygonQuery extends ShapeQuery {
-  final XYPolygon[] polygons;
-  final private Component2D poly2D;
+final class XYShapeLineQuery extends ShapeQuery {
+  final XYLine[] lines;
+  final private Component2D line2D;
 
-  /**
-   * Creates a query that matches all indexed shapes to the provided polygons
-   */
-  public XYShapePolygonQuery(String field, QueryRelation queryRelation, XYPolygon... polygons) {
+  /** construct a Line Query over cartesian geometries from the given line objects */
+  public XYShapeLineQuery(String field, QueryRelation queryRelation, XYLine... lines) {
     super(field, queryRelation);
-    if (polygons == null) {
-      throw new IllegalArgumentException("polygons must not be null");
+    /** line queries do not support within relations, only intersects and disjoint */
+    if (queryRelation == QueryRelation.WITHIN) {
+      throw new IllegalArgumentException("XYShapeLineQuery does not support " + QueryRelation.WITHIN + " queries");
     }
-    if (polygons.length == 0) {
-      throw new IllegalArgumentException("polygons must not be empty");
+
+    if (lines == null) {
+      throw new IllegalArgumentException("lines must not be null");
     }
-    for (int i = 0; i < polygons.length; i++) {
-      if (polygons[i] == null) {
-        throw new IllegalArgumentException("polygon[" + i + "] must not be null");
-      } else if (polygons[i].minX > polygons[i].maxX) {
-        throw new IllegalArgumentException("XYShapePolygonQuery: minX cannot be greater than maxX.");
-      } else if (polygons[i].minY > polygons[i].maxY) {
-        throw new IllegalArgumentException("XYShapePolygonQuery: minY cannot be greater than maxY.");
+    if (lines.length == 0) {
+      throw new IllegalArgumentException("lines must not be empty");
+    }
+    for (int i = 0; i < lines.length; ++i) {
+      if (lines[i] == null) {
+        throw new IllegalArgumentException("line[" + i + "] must not be null");
+      } else if (lines[i].minX > lines[i].maxX) {
+        throw new IllegalArgumentException("XYShapeLineQuery: minX cannot be greater than maxX.");
+      } else if (lines[i].minY > lines[i].maxY) {
+        throw new IllegalArgumentException("XYShapeLineQuery: minY cannot be greater than maxY.");
       }
     }
-    this.polygons = polygons.clone();
-    this.poly2D = XYPolygon2D.create(polygons);
+    this.lines = lines.clone();
+    this.line2D = Line2D.create(lines);
   }
 
   @Override
   protected Relation relateRangeBBoxToQuery(int minXOffset, int minYOffset, byte[] minTriangle,
                                             int maxXOffset, int maxYOffset, byte[] maxTriangle) {
-
-    double minLat = XYEncodingUtils.decode(NumericUtils.sortableBytesToInt(minTriangle, minYOffset));
-    double minLon = XYEncodingUtils.decode(NumericUtils.sortableBytesToInt(minTriangle, minXOffset));
-    double maxLat = XYEncodingUtils.decode(NumericUtils.sortableBytesToInt(maxTriangle, maxYOffset));
-    double maxLon = XYEncodingUtils.decode(NumericUtils.sortableBytesToInt(maxTriangle, maxXOffset));
+    double minY = decode(NumericUtils.sortableBytesToInt(minTriangle, minYOffset));
+    double minX = decode(NumericUtils.sortableBytesToInt(minTriangle, minXOffset));
+    double maxY = decode(NumericUtils.sortableBytesToInt(maxTriangle, maxYOffset));
+    double maxX = decode(NumericUtils.sortableBytesToInt(maxTriangle, maxXOffset));
 
     // check internal node against query
-    return poly2D.relate(minLon, maxLon, minLat, maxLat);
+    return line2D.relate(minX, maxX, minY, maxY);
   }
 
   @Override
@@ -89,9 +97,9 @@ final class XYShapePolygonQuery extends ShapeQuery {
     double clon = decode(scratchTriangle.cX);
 
     switch (queryRelation) {
-      case INTERSECTS: return poly2D.relateTriangle(alon, alat, blon, blat, clon, clat) != Relation.CELL_OUTSIDE_QUERY;
-      case WITHIN: return poly2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_INSIDE_QUERY;
-      case DISJOINT: return poly2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_OUTSIDE_QUERY;
+      case INTERSECTS: return line2D.relateTriangle(alon, alat, blon, blat, clon, clat) != Relation.CELL_OUTSIDE_QUERY;
+      case WITHIN: return line2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_INSIDE_QUERY;
+      case DISJOINT: return line2D.relateTriangle(alon, alat, blon, blat, clon, clat) == Relation.CELL_OUTSIDE_QUERY;
       default: throw new IllegalArgumentException("Unsupported query type :[" + queryRelation + "]");
     }
   }
@@ -107,7 +115,7 @@ final class XYShapePolygonQuery extends ShapeQuery {
     double clat = decode(scratchTriangle.cY);
     double clon = decode(scratchTriangle.cX);
 
-    return poly2D.withinTriangle(alon, alat, scratchTriangle.ab, blon, blat, scratchTriangle.bc, clon, clat, scratchTriangle.ca);
+    return line2D.withinTriangle(alon, alat, scratchTriangle.ab, blon, blat, scratchTriangle.bc, clon, clat, scratchTriangle.ca);
   }
 
   @Override
@@ -120,19 +128,19 @@ final class XYShapePolygonQuery extends ShapeQuery {
       sb.append(this.field);
       sb.append(':');
     }
-    sb.append("XYPolygon(").append(polygons[0].toGeoJSON()).append(")");
+    sb.append("XYLine(").append(lines[0].toGeoJSON()).append(")");
     return sb.toString();
   }
 
   @Override
   protected boolean equalsTo(Object o) {
-    return super.equalsTo(o) && Arrays.equals(polygons, ((XYShapePolygonQuery)o).polygons);
+    return super.equalsTo(o) && Arrays.equals(lines, ((XYShapeLineQuery)o).lines);
   }
 
   @Override
   public int hashCode() {
     int hash = super.hashCode();
-    hash = 31 * hash + Arrays.hashCode(polygons);
+    hash = 31 * hash + Arrays.hashCode(lines);
     return hash;
   }
 }

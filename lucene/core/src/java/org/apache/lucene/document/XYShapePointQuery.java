@@ -31,13 +31,12 @@ import static org.apache.lucene.geo.XYEncodingUtils.decode;
  *
  * <p>The field must be indexed using
  * {@link XYShape#createIndexableFields} added per document.
- *
- *  @lucene.experimental
  **/
 final class XYShapePointQuery extends ShapeQuery {
   final Component2D point2D;
   final float[][] points;
 
+  /** construct a Point or MultiPoint Query over cartesian geometries from the given point values */
   public XYShapePointQuery(String field, ShapeField.QueryRelation queryRelation, float[][] points) {
     super(field, queryRelation);
     this.points = points;

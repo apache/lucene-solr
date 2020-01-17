@@ -128,7 +128,7 @@ public class CdcrTestsUtil extends SolrTestCaseJ4 {
       }
       Thread.sleep(1000);
     }
-    return response != null ? response.getResults().getNumFound() : null;
+    return response != null ? response.getResults().getNumFound() : 0;
   }
 
   protected static boolean assertShardInSync(String collection, String shard, CloudSolrClient client) throws IOException, SolrServerException {
