@@ -6,6 +6,8 @@ allprojects {
     targetCompatibility = "11"
 
     compileJava.options.encoding = "UTF-8"
+    compileJava.options.compilerArgs << '-Xlint:unchecked'
+    compileJava.options.compilerArgs << '-Xlint:deprecation'
     compileTestJava.options.encoding = "UTF-8"
   }
 }
