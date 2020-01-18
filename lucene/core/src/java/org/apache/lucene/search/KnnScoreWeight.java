@@ -18,6 +18,8 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.index.FieldInfo;
@@ -29,11 +31,11 @@ import org.apache.lucene.util.hnsw.Neighbors;
 
 class KnnScoreWeight extends ConstantScoreWeight {
 
-  protected final String field;
+  private final String field;
   private final ScoreMode scoreMode;
-  protected final float[] queryVector;
-  protected final int ef;
-  protected AtomicLong visitedCounter;
+  private final float[] queryVector;
+  private final int ef;
+  private AtomicLong visitedCounter;
 
   KnnScoreWeight(Query query, float score, ScoreMode scoreMode, String field, float[] queryVector, int ef) {
     super(query, score);
