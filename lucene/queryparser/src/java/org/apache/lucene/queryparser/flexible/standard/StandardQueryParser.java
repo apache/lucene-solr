@@ -363,9 +363,10 @@ public class StandardQueryParser extends QueryParserHelper implements CommonQuer
    * Get the minimal similarity for fuzzy queries.
    */
   @Override
+  @SuppressWarnings("deprecation") // Pending resolution of deprecations in FuzzyQuery
   public float getFuzzyMinSim() {
     FuzzyConfig fuzzyConfig = getQueryConfigHandler().get(ConfigurationKeys.FUZZY_CONFIG);
-    
+
     if (fuzzyConfig == null) {
       return FuzzyQuery.defaultMinSimilarity;
     } else {
