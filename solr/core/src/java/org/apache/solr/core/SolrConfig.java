@@ -25,6 +25,7 @@ import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.ParseException;
@@ -756,6 +757,19 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
   }
 
   private void initLibs(boolean isConfigsetTrusted) {
+    SolrResourceLoader loader = getResourceLoader();
+
+    List<URL> urls = new ArrayList<>();
+
+    Path libPath = loader.getInstancePath().resolve("lib");
+    if (Files.exists(libPath)) {
+      try {
+        urls.addAll(SolrResourceLoader.getURLs(libPath));
+      } catch (IOException e) {
+        log.warn("Couldn't add files from {} to classpath: {}", libPath, e.getMessage());
+      }
+    }
+
     NodeList nodes = (NodeList) evaluate("lib", XPathConstants.NODESET);
     if (nodes == null || nodes.getLength() == 0) return;
     if (!isConfigsetTrusted) {
@@ -763,10 +777,6 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
           + " and use of <lib> is not available for collections with untrusted configsets. To use this component, re-upload the configset"
           + " after enabling authentication and authorization.");
     }
-
-    log.debug("Adding specified lib dirs to ClassLoader");
-    SolrResourceLoader loader = getResourceLoader();
-    List<URL> urls = new ArrayList<>();
 
     for (int i = 0; i < nodes.getLength(); i++) {
       Node node = nodes.item(i);
@@ -796,10 +806,8 @@ public class SolrConfig extends XmlConfigFile implements MapSerializable {
       }
     }
 
-    if (urls.size() > 0) {
-      loader.addToClassLoader(urls);
-      loader.reloadLuceneSPI();
-    }
+    loader.addToClassLoader(urls);
+    loader.reloadLuceneSPI();
   }
 
   public int getMultipartUploadLimitKB() {

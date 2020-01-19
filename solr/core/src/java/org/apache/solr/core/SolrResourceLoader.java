@@ -112,6 +112,9 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   // (such as the SolrZkClient) when XML docs are being parsed.    
   private RestManager.Registry managedResourceRegistry;
 
+  /** @see #reloadLuceneSPI() */
+  private boolean needToReloadLuceneSPI = false;
+
   public synchronized RestManager.Registry getManagedResourceRegistry() {
     if (managedResourceRegistry == null) {
       managedResourceRegistry = new RestManager.Registry();
@@ -123,13 +126,22 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
     this(SolrResourceLoader.locateSolrHome(), null);
   }
 
-  public SolrResourceLoader(String name, List<Path> classpath, Path instanceDir, ClassLoader parent) throws MalformedURLException {
+  /**
+   * Creates a loader.
+   * Note: we do NOT call {@link #reloadLuceneSPI()}.
+   */
+  public SolrResourceLoader(String name, List<Path> classpath, Path instanceDir, ClassLoader parent) {
     this(instanceDir, parent);
     this.name = name;
-    for (Path path : classpath) {
-      addToClassLoader(path.toUri().normalize().toURL());
+    final List<URL> libUrls = new ArrayList<>(classpath.size());
+    try {
+      for (Path path : classpath) {
+        libUrls.add(path.toUri().normalize().toURL());
+      }
+    } catch (MalformedURLException e) { // impossible?
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
-
+    addToClassLoader(libUrls);
   }
 
 
@@ -158,24 +170,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
       parent = getClass().getClassLoader();
     }
     this.classLoader = URLClassLoader.newInstance(new URL[0], parent);
-
-    /*
-     * Skip the lib subdirectory when we are loading from the solr home.
-     * Otherwise load it, so core lib directories still get loaded.
-     * The default sharedLib will pick this up later, and if the user has
-     * changed sharedLib, then we don't want to load that location anyway.
-     */
-    if (!this.instanceDir.equals(SolrResourceLoader.locateSolrHome())) {
-      Path libDir = this.instanceDir.resolve("lib");
-      if (Files.exists(libDir)) {
-        try {
-          addToClassLoader(getURLs(libDir));
-        } catch (IOException e) {
-          log.warn("Couldn't add files from {} to classpath: {}", libDir, e.getMessage());
-        }
-        reloadLuceneSPI();
-      }
-    }
   }
 
   /**
@@ -188,9 +182,12 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
    */
   void addToClassLoader(List<URL> urls) {
     URLClassLoader newLoader = addURLsToClassLoader(classLoader, urls);
-    if (newLoader != classLoader) {
-      this.classLoader = newLoader;
+    if (newLoader == classLoader) {
+      return; // short-circuit
     }
+
+    this.classLoader = newLoader;
+    this.needToReloadLuceneSPI = true;
 
     //nocommit validate core name needn't be present
     log.info("Added {} libs to classloader, from paths: {}",
@@ -202,23 +199,18 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   }
 
   /**
-   * Adds URLs to the ResourceLoader's internal classloader.  This method <b>MUST</b>
-   * only be called prior to using this ResourceLoader to get any resources, otherwise
-   * its behavior will be non-deterministic. You also have to {link @reloadLuceneSPI}
-   * before using this ResourceLoader.
-   *
-   * @param urls    the URLs of files to add
-   */
-  void addToClassLoader(URL... urls) {
-    addToClassLoader(Arrays.asList(urls));
-  }
-  
-  /**
    * Reloads all Lucene SPI implementations using the new classloader.
    * This method must be called after {@link #addToClassLoader(List)}
    * and before using this ResourceLoader.
    */
   void reloadLuceneSPI() {
+    // TODO improve to use a static Set<URL> to check when we need to
+    if (!needToReloadLuceneSPI) {
+      return;
+    }
+    needToReloadLuceneSPI = false; // reset
+    log.debug("Reloading Lucene SPI");
+
     // Codecs:
     PostingsFormat.reloadPostingsFormats(this.classLoader);
     DocValuesFormat.reloadDocValuesFormats(this.classLoader);

@@ -19,6 +19,7 @@ package org.apache.solr.core;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
@@ -606,12 +607,12 @@ public class CoreContainer {
     String libDir = cfg.getSharedLibDirectory();
     if (libDir != null) {
       Path libPath = loader.getInstancePath().resolve(libDir);
-      try {
-        loader.addToClassLoader(SolrResourceLoader.getURLs(libPath));
-        loader.reloadLuceneSPI();
-      } catch (IOException e) {
-        if (!libDir.equals("lib")) { // Don't complain if default "lib" dir does not exist
-          log.warn("Couldn't add files from {} to classpath: {}", libPath, e.getMessage());
+      if (Files.exists(libPath)) {
+        try {
+          loader.addToClassLoader(SolrResourceLoader.getURLs(libPath));
+          loader.reloadLuceneSPI();
+        } catch (IOException e) {
+          throw new SolrException(ErrorCode.SERVER_ERROR, "Couldn't load libs: " + e, e);
         }
       }
     }

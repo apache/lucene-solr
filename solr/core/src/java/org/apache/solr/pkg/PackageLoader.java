@@ -20,7 +20,6 @@ package org.apache.solr.pkg;
 import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.net.MalformedURLException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -265,15 +264,11 @@ public class PackageLoader implements Closeable {
           paths.add(coreContainer.getPackageStoreAPI().getPackageStore().getRealpath(file));
         }
 
-        try {
-          loader = new SolrResourceLoader(
-              "PACKAGE_LOADER: " + parent.name() + ":" + version,
-              paths,
-              coreContainer.getResourceLoader().getInstancePath(),
-              coreContainer.getResourceLoader().getClassLoader());
-        } catch (MalformedURLException e) {
-          log.error("Could not load classloader ", e);
-        }
+        loader = new SolrResourceLoader(
+            "PACKAGE_LOADER: " + parent.name() + ":" + version,
+            paths,
+            coreContainer.getResourceLoader().getInstancePath(),
+            coreContainer.getResourceLoader().getClassLoader());
       }
 
       public String getVersion() {
