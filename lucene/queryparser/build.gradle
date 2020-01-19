@@ -122,6 +122,7 @@ class JavaCC extends DefaultTask {
   @OutputDirectory
   File target
 
+  String lineSeparator = System.lineSeparator()
   @TaskAction
   void javacc() {
 
@@ -196,7 +197,7 @@ class JavaCC extends DefaultTask {
       "import org.apache.lucene.queryparser.surround.query.SrndPrefixQuery;",
       "import org.apache.lucene.queryparser.surround.query.SrndTruncQuery;"
     ].each {
-      ant.replaceregexp(match: "${it}.*${System.getProperty('line.separator')}", replace: "", encoding: "UTF-8") {
+      ant.replaceregexp(match: "${it}.*${lineSeparator}", replace: "", encoding: "UTF-8") {
         ant.fileset(dir: target.getAbsolutePath(), includes: "*TokenManager.java")
       }
     }
@@ -208,7 +209,7 @@ class JavaCC extends DefaultTask {
     [
         "import org.apache.lucene.analysis.TokenStream;",
     ].each {
-      ant.replaceregexp(match: "${it}.*${System.getProperty('line.separator')}", replace: "", encoding: "UTF-8") {
+      ant.replaceregexp(match: "${it}.*${lineSeparator}", replace: "", encoding: "UTF-8") {
         ant.fileset(dir: target.getAbsolutePath(), includes: "QueryParser.java")
       }
     }

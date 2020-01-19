@@ -25,6 +25,7 @@ public class FuzzyConfig {
   
   private int prefixLength = FuzzyQuery.defaultPrefixLength;
 
+  @SuppressWarnings("deprecation") // Pending resolution of deprecations in FuzzyQuery
   private float minSimilarity = FuzzyQuery.defaultMinSimilarity;
   
   public FuzzyConfig() {}
