@@ -35,7 +35,7 @@ public interface LatLonGeometry {
   /** max Lat value for the component **/
   double getMaxLat();
 
-  /** get a Component2D from this object */
+  /** get a {@link Component2D} from this object */
   Component2D toComponent2D();
 
   /** return the GeoJson representation */

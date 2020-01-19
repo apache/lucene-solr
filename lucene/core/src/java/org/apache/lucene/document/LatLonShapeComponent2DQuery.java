@@ -31,34 +31,34 @@ import org.apache.lucene.util.NumericUtils;
  * Note:
  * <ul>
  *    <li>Dateline crossing is not yet supported. Shapes should be cut at the dateline and provided as an array
- *    of LatLonSpatialComponents</li>
+ *    of {@link LatLonGeometry}</li>
  * </ul>
  *
  * <p>The field must be indexed using {@link LatLonShape#createIndexableFields} added per document.
  *
  **/
 final class LatLonShapeComponent2DQuery extends ShapeQuery {
-  final LatLonGeometry[] latLonGeometries;
+  final LatLonGeometry[] geometries;
   final private Component2D component2D;
 
   /**
    * Creates a query that matches all indexed shapes to the provided {@link Component2D}
    */
-  LatLonShapeComponent2DQuery(String field, QueryRelation queryRelation, LatLonGeometry[] latLonGeometries) {
+  LatLonShapeComponent2DQuery(String field, QueryRelation queryRelation, LatLonGeometry[] geometries) {
     super(field, queryRelation);
-    if (latLonGeometries == null) {
-      throw new IllegalArgumentException("shapes must not be null");
+    if (geometries == null) {
+      throw new IllegalArgumentException("geometries must not be null");
     }
-    if (latLonGeometries.length == 0) {
-      throw new IllegalArgumentException("shapes must not be empty");
+    if (geometries.length == 0) {
+      throw new IllegalArgumentException("geometries must not be empty");
     }
-    for (int i = 0; i < latLonGeometries.length; i++) {
-      if (latLonGeometries[i] == null) {
-        throw new IllegalArgumentException("shape[" + i + "] must not be null");
+    for (int i = 0; i < geometries.length; i++) {
+      if (geometries[i] == null) {
+        throw new IllegalArgumentException("geometries[" + i + "] must not be null");
       }
     }
-    this.latLonGeometries = latLonGeometries.clone();
-    this.component2D = LatLonGeometry.create(latLonGeometries);
+    this.geometries = geometries.clone();
+    this.component2D = LatLonGeometry.create(geometries);
   }
 
   @Override
@@ -118,8 +118,8 @@ final class LatLonShapeComponent2DQuery extends ShapeQuery {
       sb.append(':');
     }
     sb.append("[");
-    for (int i =0; i < latLonGeometries.length; i++) {
-      sb.append(latLonGeometries[i].toGeoJSON());
+    for (int i = 0; i < geometries.length; i++) {
+      sb.append(geometries[i].toGeoJSON());
       sb.append(',');
     }
     sb.append(']');
@@ -128,13 +128,13 @@ final class LatLonShapeComponent2DQuery extends ShapeQuery {
 
   @Override
   protected boolean equalsTo(Object o) {
-    return super.equalsTo(o) && Arrays.equals(latLonGeometries, ((LatLonShapeComponent2DQuery)o).latLonGeometries);
+    return super.equalsTo(o) && Arrays.equals(geometries, ((LatLonShapeComponent2DQuery)o).geometries);
   }
 
   @Override
   public int hashCode() {
     int hash = super.hashCode();
-    hash = 31 * hash + Arrays.hashCode(latLonGeometries);
+    hash = 31 * hash + Arrays.hashCode(geometries);
     return hash;
   }
 }
