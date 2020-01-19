@@ -3331,7 +3331,7 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
           if (mergeAwaitLatch.await(waitTimeMillis, TimeUnit.MILLISECONDS) == false) {
             synchronized (this) {
               // Need to do this in a synchronized block, to make sure none of our commit merges are currently
-              // executing mergeFinished (since mergeFinished itself is called from with the IndexWriter lock).
+              // executing mergeFinished (since mergeFinished itself is called from within the IndexWriter lock).
               // After we clear the value from mergeAwaitLatchRef, the merges we schedule will still execute as
               // usual, but when they finish, they won't attempt to update toCommit or modify segment reference
               // counts.
