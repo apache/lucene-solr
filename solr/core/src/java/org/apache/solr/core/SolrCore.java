@@ -134,7 +134,6 @@ import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
 import org.apache.solr.rest.RestManager;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.IndexSchema;
-import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.schema.ManagedIndexSchema;
 import org.apache.solr.schema.SimilarityFactory;
 import org.apache.solr.search.QParserPlugin;
@@ -687,9 +686,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       try {
         CoreDescriptor cd = new CoreDescriptor(name, getCoreDescriptor());
         cd.loadExtraProperties(); //Reload the extra properties
-        core = new SolrCore(coreContainer, getName(), getDataDir(), coreConfig.getSolrConfig(),
-            coreConfig.getIndexSchema(), coreConfig.getProperties(),
-            cd, updateHandler, solrDelPolicy, currentCore, true);
+        core = new SolrCore(coreContainer, getName(), coreConfig, cd, getDataDir(),
+            updateHandler, solrDelPolicy, currentCore, true);
 
         // we open a new IndexWriter to pick up the latest config
         core.getUpdateHandler().getSolrCoreState().newIndexWriter(core, false);
@@ -897,8 +895,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   }
 
   public SolrCore(CoreContainer coreContainer, CoreDescriptor cd, ConfigSet coreConfig) {
-    this(coreContainer, cd.getName(), null, coreConfig.getSolrConfig(), coreConfig.getIndexSchema(), coreConfig.getProperties(),
-        cd, null, null, null, false);
+    this(coreContainer, cd.getName(), coreConfig, cd, null,
+        null, null, null, false);
   }
 
   public CoreContainer getCoreContainer() {
@@ -909,15 +907,9 @@ public final class SolrCore implements SolrInfoBean, Closeable {
   /**
    * Creates a new core and register it in the list of cores. If a core with the
    * same name already exists, it will be stopped and replaced by this one.
-   *
-   * @param dataDir the index directory
-   * @param config  a solr config instance
-   * @param schema  a solr schema instance
-   * @since solr 1.3
    */
-  public SolrCore(CoreContainer coreContainer, String name, String dataDir, SolrConfig config,
-                  IndexSchema schema, NamedList configSetProperties,
-                  CoreDescriptor coreDescriptor, UpdateHandler updateHandler,
+  private SolrCore(CoreContainer coreContainer, String name, ConfigSet configSet, CoreDescriptor coreDescriptor,
+                  String dataDir, UpdateHandler updateHandler,
                   IndexDeletionPolicyWrapper delPolicy, SolrCore prev, boolean reload) {
 
     assert ObjectReleaseTracker.track(searcherExecutor); // ensure that in unclean shutdown tests we still close this
@@ -927,6 +919,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     final CountDownLatch latch = new CountDownLatch(1);
 
     try {
+      IndexSchema schema = configSet.getIndexSchema();
 
       CoreDescriptor cd = Objects.requireNonNull(coreDescriptor, "coreDescriptor cannot be null");
       coreContainer.solrCores.addCoreDescriptor(cd);
@@ -934,11 +927,11 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       setName(name);
       MDCLoggingContext.setCore(this);
 
-      resourceLoader = config.getResourceLoader();
-      this.solrConfig = config;
-      this.configSetProperties = configSetProperties;
+      this.solrConfig = configSet.getSolrConfig();
+      this.resourceLoader = configSet.getSolrConfig().getResourceLoader();
+      this.configSetProperties = configSet.getProperties();
       // Initialize the metrics manager
-      this.coreMetricManager = initCoreMetricManager(config);
+      this.coreMetricManager = initCoreMetricManager(solrConfig);
       solrMetricsContext = coreMetricManager.getSolrMetricsContext();
       this.coreMetricManager.loadReporters();
 
@@ -953,7 +946,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
         isReloaded = true;
       }
 
-      this.dataDir = initDataDir(dataDir, config, coreDescriptor);
+      this.dataDir = initDataDir(dataDir, solrConfig, coreDescriptor);
       this.ulogDir = initUpdateLogDir(coreDescriptor);
 
       log.info("[{}] Opening new SolrCore at [{}], dataDir=[{}]", logid, resourceLoader.getInstancePath(),
@@ -971,8 +964,8 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       solrFieldCacheBean.initializeMetrics(solrMetricsContext, "core");
       infoRegistry.put("fieldCache", solrFieldCacheBean);
 
-      this.maxWarmingSearchers = config.maxWarmingSearchers;
-      this.slowQueryThresholdMillis = config.slowQueryThresholdMillis;
+      this.maxWarmingSearchers = solrConfig.maxWarmingSearchers;
+      this.slowQueryThresholdMillis = solrConfig.slowQueryThresholdMillis;
 
       initListeners();
 
