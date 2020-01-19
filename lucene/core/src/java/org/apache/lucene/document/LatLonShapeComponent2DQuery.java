@@ -119,7 +119,7 @@ final class LatLonShapeComponent2DQuery extends ShapeQuery {
     }
     sb.append("[");
     for (int i = 0; i < geometries.length; i++) {
-      sb.append(geometries[i].toGeoJSON());
+      sb.append(geometries[i].toString());
       sb.append(',');
     }
     sb.append(']');

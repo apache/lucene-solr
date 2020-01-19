@@ -188,20 +188,6 @@ public final class Polygon implements LatLonGeometry {
     return Polygon2D.create(this);
   }
 
-  /** prints polygons as geojson */
-  @Override
-  public String toGeoJSON() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("[");
-    sb.append(verticesToGeoJSON(polyLats, polyLons));
-    for (Polygon hole : holes) {
-      sb.append(",");
-      sb.append(verticesToGeoJSON(hole.polyLats, hole.polyLons));
-    }
-    sb.append("]");
-    return sb.toString();
-  }
-
   @Override
   public int hashCode() {
     final int prime = 31;
@@ -255,6 +241,19 @@ public final class Polygon implements LatLonGeometry {
       }
     }
     sb.append(']');
+    return sb.toString();
+  }
+
+  /** prints polygons as geojson */
+  public String toGeoJSON() {
+    StringBuilder sb = new StringBuilder();
+    sb.append("[");
+    sb.append(verticesToGeoJSON(polyLats, polyLons));
+    for (Polygon hole : holes) {
+      sb.append(",");
+      sb.append(verticesToGeoJSON(hole.polyLats, hole.polyLons));
+    }
+    sb.append("]");
     return sb.toString();
   }
 

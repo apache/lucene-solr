@@ -83,15 +83,6 @@ public final class Point implements LatLonGeometry {
   }
 
   @Override
-  public String toGeoJSON() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("[");
-    sb.append(lon + "," + lat);
-    sb.append("]");
-    return sb.toString();
-  }
-
-  @Override
   public boolean equals(Object o) {
     if (this == o) return true;
     if (!(o instanceof Point)) return false;

@@ -23,25 +23,23 @@ package org.apache.lucene.geo;
  * @lucene.internal
  **/
 public interface LatLonGeometry {
-  /** min Lon value for the component **/
+
+  /** minimum longitude value for the geometry */
   double getMinLon();
 
-  /** max Lon value for the component **/
+  /** maximum Lon longitude for the geometry */
   double getMaxLon();
 
-  /** min Lat value for the component **/
+  /** minimum latitude value for the geometry */
   double getMinLat();
 
-  /** max Lat value for the component **/
+  /** maximum latitude value for the geometry */
   double getMaxLat();
 
-  /** get a {@link Component2D} from this object */
+  /** get a {@link Component2D} from this geometry */
   Component2D toComponent2D();
 
-  /** return the GeoJson representation */
-  String toGeoJSON();
-
-  /** Creates a Component2D from the provided LatLonGeometries array */
+  /** Creates a Component2D from the provided LatLonGeometry array */
   static Component2D create(LatLonGeometry... latLonGeometries) {
     if (latLonGeometries.length == 1) {
       return latLonGeometries[0].toComponent2D();
