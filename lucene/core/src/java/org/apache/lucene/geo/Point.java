@@ -38,7 +38,6 @@ public final class Point implements LatLonGeometry {
    * Creates a new Point from the supplied latitude/longitude.
    */
   public Point(double lat, double lon) {
-
     GeoUtils.checkLatitude(lat);
     GeoUtils.checkLongitude(lon);
     this.lat = lat;

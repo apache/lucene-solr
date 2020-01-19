@@ -131,8 +131,7 @@ public class LatLonShape {
     return newGeometryCollectionQuery(field, queryRelation, pointArray);
   }
 
-  /** create a query to find all indexed geo shapes that intersect a provided geometry collection
-   *  note: Components do not support dateline crossing
+  /** create a query to find all indexed geo shapes that intersect a provided geometry collection.
    **/
   public static Query newGeometryCollectionQuery(String field, QueryRelation queryRelation, LatLonGeometry... latLonGeometries) {
     if (queryRelation == QueryRelation.CONTAINS && latLonGeometries.length > 1) {
