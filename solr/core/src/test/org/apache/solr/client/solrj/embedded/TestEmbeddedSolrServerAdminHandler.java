@@ -36,11 +36,9 @@ public class TestEmbeddedSolrServerAdminHandler extends SolrTestCaseJ4 {
 
     @Test
     public void testPathIsAddedToContext() throws IOException, SolrServerException {
-        final Path path = createTempDir();
 
-        final SolrResourceLoader loader = new SolrResourceLoader(path);
-        final NodeConfig config = new NodeConfig.NodeConfigBuilder("testnode", loader)
-                .setConfigSetBaseDirectory(Paths.get(TEST_HOME()).resolve("configsets").toString())
+        final NodeConfig config = new NodeConfig.NodeConfigBuilder("testnode", TEST_PATH())
+                .setConfigSetBaseDirectory(TEST_PATH().resolve("configsets").toString())
                 .build();
 
         try (final EmbeddedSolrServer server = new EmbeddedSolrServer(config, "collection1")) {

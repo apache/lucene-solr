@@ -73,7 +73,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     System.setProperty("solr.test.sys.prop1", "propone");
     System.setProperty("solr.test.sys.prop2", "proptwo");
     String solrXml = FileUtils.readFileToString(Paths.get(home.toString(), "solr-metricreporter.xml").toFile(), "UTF-8");
-    NodeConfig cfg = SolrXmlConfig.fromString(new SolrResourceLoader(home), solrXml);
+    NodeConfig cfg = SolrXmlConfig.fromString(home, solrXml);
     cc = createCoreContainer(cfg, new TestHarness.TestCoresLocator
                              (DEFAULT_TEST_CORENAME, initAndGetDataDir().getAbsolutePath(),
                               "solrconfig.xml", "schema.xml"));

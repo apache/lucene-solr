@@ -140,7 +140,7 @@ public class TestHarness extends BaseTestHarness {
    * @param indexSchema schema resource name
    */
   public TestHarness(String coreName, String dataDir, String solrConfig, String indexSchema) {
-    this(buildTestNodeConfig(new SolrResourceLoader(SolrResourceLoader.locateSolrHome())),
+    this(buildTestNodeConfig(SolrResourceLoader.locateSolrHome()),
         new TestCoresLocator(coreName, dataDir, solrConfig, indexSchema));
     this.coreName = (coreName == null) ? SolrTestCaseJ4.DEFAULT_TEST_CORENAME : coreName;
   }
@@ -155,16 +155,7 @@ public class TestHarness extends BaseTestHarness {
    * @param solrXml the text of a solrxml
    */
   public TestHarness(Path solrHome, String solrXml) {
-    this(new SolrResourceLoader(solrHome), solrXml);
-  }
-
-  /**
-   * Create a TestHarness using a specific solr resource loader and solr xml
-   * @param loader the SolrResourceLoader to use
-   * @param solrXml the text of a solrxml
-   */
-  public TestHarness(SolrResourceLoader loader, String solrXml) {
-    this(SolrXmlConfig.fromString(loader, solrXml));
+    this(SolrXmlConfig.fromString(solrHome, solrXml));
   }
 
   public TestHarness(NodeConfig nodeConfig) {
@@ -182,7 +173,7 @@ public class TestHarness extends BaseTestHarness {
     updater.init(null);
   }
 
-  public static NodeConfig buildTestNodeConfig(SolrResourceLoader loader) {
+  public static NodeConfig buildTestNodeConfig(Path solrHome) {
     CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder(System.getProperty("host"),
                                                                  Integer.getInteger("hostPort", 8983),
                                                                  System.getProperty("hostContext", ""))
@@ -204,7 +195,7 @@ public class TestHarness extends BaseTestHarness {
         .setMetricReporterPlugins(new PluginInfo[] {defaultPlugin})
         .build();
 
-    return new NodeConfig.NodeConfigBuilder("testNode", loader)
+    return new NodeConfig.NodeConfigBuilder("testNode", solrHome)
         .setUseSchemaCache(Boolean.getBoolean("shareSchema"))
         .setCloudConfig(cloudConfig)
         .setUpdateShardHandlerConfig(updateShardHandlerConfig)

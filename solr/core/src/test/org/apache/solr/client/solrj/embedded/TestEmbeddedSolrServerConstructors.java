@@ -42,8 +42,7 @@ public class TestEmbeddedSolrServerConstructors extends SolrTestCaseJ4 {
   public void testNodeConfigConstructor() throws Exception {
     Path path = createTempDir();
 
-    SolrResourceLoader loader = new SolrResourceLoader(path);
-    NodeConfig config = new NodeConfig.NodeConfigBuilder("testnode", loader)
+    NodeConfig config = new NodeConfig.NodeConfigBuilder("testnode", path)
         .setConfigSetBaseDirectory(Paths.get(TEST_HOME()).resolve("configsets").toString())
         .build();
 

@@ -121,6 +121,6 @@ public class DirectoryFactoryTest extends SolrTestCase {
 
   private NodeConfig loadNodeConfig(String config) throws Exception {
     InputStream is = DirectoryFactoryTest.class.getResourceAsStream(config);
-    return SolrXmlConfig.fromInputStream(loader, is, new Properties());
+    return SolrXmlConfig.fromInputStream(solrHome, is, new Properties());
   }
 }

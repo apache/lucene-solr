@@ -47,8 +47,7 @@ public class TestConfigSets extends SolrTestCaseJ4 {
 
     System.setProperty("configsets", configSetsBaseDir);
 
-    SolrResourceLoader loader = new SolrResourceLoader(testDirectory);
-    CoreContainer container = new CoreContainer(SolrXmlConfig.fromString(loader, solrxml));
+    CoreContainer container = new CoreContainer(SolrXmlConfig.fromString(testDirectory, solrxml));
     container.load();
 
     return container;
@@ -56,17 +55,17 @@ public class TestConfigSets extends SolrTestCaseJ4 {
 
   @Test
   public void testDefaultConfigSetBasePathResolution() throws IOException {
-    try (SolrResourceLoader loader = new SolrResourceLoader(Paths.get("/path/to/solr/home"))) {
+    Path solrHome = Paths.get("/path/to/solr/home");
 
-      NodeConfig config
-          = SolrXmlConfig.fromString(loader, "<solr><str name=\"configSetBaseDir\">configsets</str></solr>");
-      assertThat(config.getConfigSetBaseDirectory().toAbsolutePath(),
-                  is(Paths.get("/path/to/solr/home/configsets").toAbsolutePath()));
+    NodeConfig config
+        = SolrXmlConfig.fromString(solrHome, "<solr><str name=\"configSetBaseDir\">configsets</str></solr>");
+    assertThat(config.getConfigSetBaseDirectory().toAbsolutePath(),
+                is(Paths.get("/path/to/solr/home/configsets").toAbsolutePath()));
 
-      NodeConfig absConfig
-          = SolrXmlConfig.fromString(loader, "<solr><str name=\"configSetBaseDir\">/path/to/configsets</str></solr>");
-      assertThat(absConfig.getConfigSetBaseDirectory().toAbsolutePath(), is(Paths.get("/path/to/configsets").toAbsolutePath()));
-    }
+    NodeConfig absConfig
+        = SolrXmlConfig.fromString(solrHome, "<solr><str name=\"configSetBaseDir\">/path/to/configsets</str></solr>");
+    assertThat(absConfig.getConfigSetBaseDirectory().toAbsolutePath(), is(Paths.get("/path/to/configsets").toAbsolutePath()));
+
   }
 
   @Test
@@ -113,8 +112,7 @@ public class TestConfigSets extends SolrTestCaseJ4 {
     String csd = configSetsDir.getAbsolutePath();
     System.setProperty("configsets", csd);
 
-    SolrResourceLoader loader = new SolrResourceLoader(testDirectory);
-    CoreContainer container = new CoreContainer(SolrXmlConfig.fromString(loader, solrxml));
+    CoreContainer container = new CoreContainer(SolrXmlConfig.fromString(testDirectory, solrxml));
     container.load();
 
     // We initially don't have a /dump handler defined

@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Properties;
 import java.util.Set;
 import java.util.function.Supplier;
 
@@ -92,7 +93,7 @@ public class EmbeddedSolrServer extends SolrClient {
    * @param defaultCoreName the core to route requests to by default (optional)
    */
   public EmbeddedSolrServer(Path solrHome, String defaultCoreName) {
-    this(load(new CoreContainer(SolrXmlConfig.fromSolrHome(solrHome))), defaultCoreName);
+    this(load(new CoreContainer(solrHome, new Properties())), defaultCoreName);
   }
 
   /**

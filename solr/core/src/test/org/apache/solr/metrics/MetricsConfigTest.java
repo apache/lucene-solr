@@ -46,24 +46,21 @@ public class MetricsConfigTest extends SolrTestCaseJ4 {
 
   // tmp dir, cleaned up automatically.
   private static File solrHome = null;
-  private static SolrResourceLoader loader = null;
 
   @BeforeClass
   public static void setupLoader() throws Exception {
     solrHome = createTempDir().toFile();
-    loader = new SolrResourceLoader(solrHome.toPath());
   }
 
   @AfterClass
   public static void cleanupLoader() throws Exception {
     solrHome = null;
-    loader = null;
   }
 
   @Test
   public void testDefaults() throws Exception {
     NodeConfig cfg = loadNodeConfig();
-    SolrMetricManager mgr = new SolrMetricManager(loader, cfg.getMetricsConfig());
+    SolrMetricManager mgr = new SolrMetricManager(cfg.getSolrResourceLoader(), cfg.getMetricsConfig());
     assertTrue(mgr.getCounterSupplier() instanceof MetricSuppliers.DefaultCounterSupplier);
     assertTrue(mgr.getMeterSupplier() instanceof MetricSuppliers.DefaultMeterSupplier);
     assertTrue(mgr.getTimerSupplier() instanceof MetricSuppliers.DefaultTimerSupplier);
@@ -81,7 +78,7 @@ public class MetricsConfigTest extends SolrTestCaseJ4 {
     System.setProperty("histogram.window", "600");
     System.setProperty("histogram.reservoir", SlidingTimeWindowReservoir.class.getName());
     NodeConfig cfg = loadNodeConfig();
-    SolrMetricManager mgr = new SolrMetricManager(loader, cfg.getMetricsConfig());
+    SolrMetricManager mgr = new SolrMetricManager(cfg.getSolrResourceLoader(), cfg.getMetricsConfig());
     assertTrue(mgr.getCounterSupplier() instanceof MetricSuppliers.DefaultCounterSupplier);
     assertTrue(mgr.getMeterSupplier() instanceof MetricSuppliers.DefaultMeterSupplier);
     assertTrue(mgr.getTimerSupplier() instanceof MetricSuppliers.DefaultTimerSupplier);
@@ -99,7 +96,7 @@ public class MetricsConfigTest extends SolrTestCaseJ4 {
     System.setProperty("timer.class", MockTimerSupplier.class.getName());
     System.setProperty("histogram.class", MockHistogramSupplier.class.getName());
     NodeConfig cfg = loadNodeConfig();
-    SolrMetricManager mgr = new SolrMetricManager(loader, cfg.getMetricsConfig());
+    SolrMetricManager mgr = new SolrMetricManager(cfg.getSolrResourceLoader(), cfg.getMetricsConfig());
     assertTrue(mgr.getCounterSupplier() instanceof MockCounterSupplier);
     assertTrue(mgr.getMeterSupplier() instanceof MockMeterSupplier);
     assertTrue(mgr.getTimerSupplier() instanceof MockTimerSupplier);
@@ -122,6 +119,6 @@ public class MetricsConfigTest extends SolrTestCaseJ4 {
 
   private NodeConfig loadNodeConfig() throws Exception {
     InputStream is = MetricsConfigTest.class.getResourceAsStream("/solr/solr-metricsconfig.xml");
-    return SolrXmlConfig.fromInputStream(loader, is, new Properties());
+    return SolrXmlConfig.fromInputStream(TEST_PATH(), is, new Properties()); //TODO pass in props
   }
 }
