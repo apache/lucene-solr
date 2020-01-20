@@ -59,6 +59,9 @@ import static org.apache.solr.common.params.CommonParams.NAME;
  */
 public class SolrXmlConfig {
 
+  // TODO should these from* methods return a NodeConfigBuilder so that the caller (a test) can make further
+  //  manipulations like add properties and set the CorePropertiesLocator and "async" mode?
+
   public final static String SOLR_XML_FILE = "solr.xml";
   public final static String SOLR_DATA_HOME = "solr.data.home";
 
@@ -189,7 +192,7 @@ public class SolrXmlConfig {
       Node node = ((NodeList) config.evaluate("solr", XPathConstants.NODESET)).item(0);
       XPath xpath = config.getXPath();
       NodeList props = (NodeList) xpath.evaluate("property", node, XPathConstants.NODESET);
-      Properties properties = new Properties();
+      Properties properties = new Properties(config.getSubstituteProperties());
       for (int i = 0; i < props.getLength(); i++) {
         Node prop = props.item(i);
         properties.setProperty(DOMUtil.getAttr(prop, NAME),

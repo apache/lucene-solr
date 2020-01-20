@@ -283,7 +283,7 @@ public class CoreContainer {
    * @see #load()
    */
   public CoreContainer(Path solrHome, Properties properties) {
-    this(SolrXmlConfig.fromSolrHome(solrHome, properties), properties);
+    this(SolrXmlConfig.fromSolrHome(solrHome, properties));
   }
 
   /**
@@ -295,24 +295,18 @@ public class CoreContainer {
    * @see #load()
    */
   public CoreContainer(NodeConfig config) {
-    this(config, new Properties());
+    this(config, new CorePropertiesLocator(config.getCoreRootDirectory()));
   }
 
-  // TODO remove "Properties" from the below constructors as it is redundant with config.getSolrProperties
-
-  public CoreContainer(NodeConfig config, Properties properties) {
-    this(config, properties, new CorePropertiesLocator(config.getCoreRootDirectory()));
+  public CoreContainer(NodeConfig config, boolean asyncSolrCoreLoad) {
+    this(config, new CorePropertiesLocator(config.getCoreRootDirectory()), asyncSolrCoreLoad);
   }
 
-  public CoreContainer(NodeConfig config, Properties properties, boolean asyncSolrCoreLoad) {
-    this(config, properties, new CorePropertiesLocator(config.getCoreRootDirectory()), asyncSolrCoreLoad);
+  public CoreContainer(NodeConfig config, CoresLocator locator) {
+    this(config, locator, false);
   }
 
-  public CoreContainer(NodeConfig config, Properties properties, CoresLocator locator) {
-    this(config, properties, locator, false);
-  }
-
-  public CoreContainer(NodeConfig config, Properties properties, CoresLocator locator, boolean asyncSolrCoreLoad) {
+  public CoreContainer(NodeConfig config, CoresLocator locator, boolean asyncSolrCoreLoad) {
     this.loader = config.getSolrResourceLoader();
     this.solrHome = config.getSolrHome();
     containerHandlers.put(PublicKeyHandler.PATH, new PublicKeyHandler());
@@ -321,7 +315,7 @@ public class CoreContainer {
       IndexSearcher.setMaxClauseCount(this.cfg.getBooleanQueryMaxClauseCount());
     }
     this.coresLocator = locator;
-    this.containerProperties = new Properties(properties);
+    this.containerProperties = new Properties(config.getSolrProperties());
     this.asyncSolrCoreLoad = asyncSolrCoreLoad;
     this.replayUpdatesExecutor = new OrderedExecutor(
         cfg.getReplayUpdatesThreads(),

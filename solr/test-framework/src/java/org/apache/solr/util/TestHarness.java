@@ -167,7 +167,7 @@ public class TestHarness extends BaseTestHarness {
    * @param config the ConfigSolr to use
    */
   public TestHarness(NodeConfig config, CoresLocator coresLocator) {
-    container = new CoreContainer(config, new Properties(), coresLocator);
+    container = new CoreContainer(config, coresLocator);
     container.load();
     updater = new UpdateRequestHandler();
     updater.init(null);
