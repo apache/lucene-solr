@@ -261,7 +261,7 @@ public class EdgeTree {
   }
 
   /** Returns true if the line crosses any edge in this edge subtree */
-  protected boolean crossesLine(double minX, double maxX, double minY, double maxY, double a2x, double a2y, double b2x, double b2y) {
+  protected boolean crossesLine(double minX, double maxX, double minY, double maxY, double a2x, double a2y, double b2x, double b2y, boolean includeBoundary) {
     if (minY <= max) {
       double a1x = x1;
       double a1y = y1;
@@ -272,14 +272,21 @@ public class EdgeTree {
           (a1y > maxY && b1y > maxY) ||
           (a1x < minX && b1x < minX) ||
           (a1x > maxX && b1x > maxX);
-      if (outside == false && lineCrossesLineWithBoundary(a1x, a1y, b1x, b1y, a2x, a2y, b2x, b2y)) {
+      if (outside == false) {
+        if (includeBoundary) {
+          if (lineCrossesLineWithBoundary(a1x, a1y, b1x, b1y, a2x, a2y, b2x, b2y)) {
+            return true;
+          }
+        } else {
+          if (lineCrossesLine(a1x, a1y, b1x, b1y, a2x, a2y, b2x, b2y)) {
+            return true;
+          }
+        }
+      }
+      if (left != null && left.crossesLine(minX, maxX, minY, maxY, a2x, a2y, b2x, b2y, includeBoundary)) {
         return true;
       }
-
-      if (left != null && left.crossesLine(minX, maxX, minY, maxY, a2x, a2y, b2x, b2y)) {
-        return true;
-      }
-      if (right != null && maxY >= low && right.crossesLine(minX, maxX, minY, maxY, a2x, a2y, b2x, b2y)) {
+      if (right != null && maxY >= low && right.crossesLine(minX, maxX, minY, maxY, a2x, a2y, b2x, b2y, includeBoundary)) {
         return true;
       }
     }
