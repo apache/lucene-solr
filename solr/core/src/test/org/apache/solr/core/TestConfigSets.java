@@ -73,11 +73,11 @@ public class TestConfigSets extends SolrTestCaseJ4 {
     CoreContainer container = null;
     try {
       container = setupContainer(TEST_PATH().resolve("configsets").toString());
-      Path testDirectory = container.getResourceLoader().getInstancePath();
+      Path solrHome = container.solrHome;
 
       SolrCore core1 = container.create("core1", ImmutableMap.of("configSet", "configset-2"));
       assertThat(core1.getCoreDescriptor().getName(), is("core1"));
-      assertThat(Paths.get(core1.getDataDir()).toString(), is(testDirectory.resolve("core1").resolve("data").toString()));
+      assertThat(Paths.get(core1.getDataDir()).toString(), is(solrHome.resolve("core1").resolve("data").toString()));
     }
     finally {
       if (container != null)
@@ -89,8 +89,6 @@ public class TestConfigSets extends SolrTestCaseJ4 {
   public void testNonExistentConfigSetThrowsException() {
     final CoreContainer container = setupContainer(getFile("solr/configsets").getAbsolutePath());
     try {
-      Path testDirectory = container.getResourceLoader().getInstancePath();
-
       Exception thrown = expectThrows(Exception.class, "Expected core creation to fail", () -> {
         container.create("core1", ImmutableMap.of("configSet", "nonexistent"));
       });

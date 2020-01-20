@@ -824,7 +824,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
   }
 
   public static CoreContainer createCoreContainer(NodeConfig config, CoresLocator locator) {
-    testSolrHome = config.getSolrResourceLoader().getInstancePath();
+    testSolrHome = config.getSolrHome();
     h = new TestHarness(config, locator);
     lrf = h.getRequestFactory("", 0, 20, CommonParams.VERSION, "2.2");
     return h.getCoreContainer();

@@ -21,6 +21,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -267,7 +268,7 @@ public class PackageLoader implements Closeable {
         loader = new SolrResourceLoader(
             "PACKAGE_LOADER: " + parent.name() + ":" + version,
             paths,
-            coreContainer.getResourceLoader().getInstancePath(),
+            Paths.get(coreContainer.getSolrHome()),
             coreContainer.getResourceLoader().getClassLoader());
       }
 

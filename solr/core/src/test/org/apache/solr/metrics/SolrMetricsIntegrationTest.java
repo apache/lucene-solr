@@ -181,7 +181,7 @@ public class SolrMetricsIntegrationTest extends SolrTestCaseJ4 {
     assertTrue(metrics.containsKey("CONTAINER.version.specification"));
     assertTrue(metrics.containsKey("CONTAINER.version.implementation"));
     Gauge<?> g = (Gauge<?>)metrics.get("CONTAINER.fs.path");
-    assertEquals(g.getValue(), cc.getResourceLoader().getInstancePath().toAbsolutePath().toString());
+    assertEquals(g.getValue(), cc.getSolrHome());
     boolean spins = IOUtils.spins(cc.getCoreRootDirectory());
     g = (Gauge<?>)metrics.get("CONTAINER.fs.coreRoot.spins");
     assertEquals(spins, g.getValue());

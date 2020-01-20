@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -575,12 +576,12 @@ public class CoreContainer {
    * Load the cores defined for this CoreContainer
    */
   public void load() {
-    log.debug("Loading cores into CoreContainer [instanceDir={}]", loader.getInstancePath());
+    log.debug("Loading cores into CoreContainer [instanceDir={}]", getSolrHome());
 
     // add the sharedLib to the shared resource loader before initializing cfg based plugins
     String libDir = cfg.getSharedLibDirectory();
     if (libDir != null) {
-      Path libPath = loader.getInstancePath().resolve(libDir);
+      Path libPath = Paths.get(getSolrHome()).resolve(libDir);
       if (Files.exists(libPath)) {
         try {
           loader.addToClassLoader(SolrResourceLoader.getURLs(libPath));
