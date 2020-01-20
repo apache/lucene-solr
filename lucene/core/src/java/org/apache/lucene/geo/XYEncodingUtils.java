@@ -22,7 +22,7 @@ import org.apache.lucene.util.NumericUtils;
 /**
  * reusable cartesian geometry encoding methods
  *
- * @lucene.experimental
+ * @lucene.internal
  */
 public final class XYEncodingUtils {
 
