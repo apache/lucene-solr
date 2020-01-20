@@ -202,7 +202,7 @@ public class Stats {
     }
     out.println("    " + totalBlockSuffixBytes + " compressed term suffix bytes" + (totalBlockCount != 0 ? " (" + String.format(Locale.ROOT, "%.2f", ((double) totalBlockSuffixBytes)/totalUncompressedBlockSuffixBytes) +
         " compression ratio - compression count by algorithm: " + compressionCounts : "") + ")");
-    out.println("    " + totalUncompressedBlockStatsBytes + " term stats bytes before compression" + (totalBlockCount != 0 ? " (" + String.format(Locale.ROOT, "%.1f", ((double) totalBlockStatsBytes)/totalBlockCount) + " stats-bytes/block)" : ""));
+    out.println("    " + totalUncompressedBlockStatsBytes + " term stats bytes before compression" + (totalBlockCount != 0 ? " (" + String.format(Locale.ROOT, "%.1f", ((double) totalUncompressedBlockStatsBytes)/totalBlockCount) + " stats-bytes/block)" : ""));
     out.println("    " + totalBlockStatsBytes + " compressed term stats bytes (" + String.format(Locale.ROOT, "%.2f", (double)totalBlockStatsBytes / totalUncompressedBlockStatsBytes) + " compression ratio)");
     out.println("    " + totalBlockOtherBytes + " other bytes" + (totalBlockCount != 0 ? " (" + String.format(Locale.ROOT, "%.1f", ((double) totalBlockOtherBytes)/totalBlockCount) + " other-bytes/block)" : ""));
     if (totalBlockCount != 0) {
