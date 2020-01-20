@@ -139,6 +139,8 @@ Bug Fixes
 
 * SOLR-14163: SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION needs to work with Jetty server/client SSL contexts (Kevin Risden)
 
+* SOLR-14192: Race condition between SchemaManager and ZkIndexSchemaReader. (ab)
+
 Other Changes
 ---------------------
 
