@@ -41,6 +41,7 @@ import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 
@@ -464,9 +465,12 @@ public final class Lucene84PostingsWriter extends PushPostingsWriterBase {
       assert lastState.docStartFP == 0;
     }
 
-    if (state.singletonDocID != -1 && absolute == false && state.docStartFP == lastState.docStartFP) {
+    if (lastState.singletonDocID != -1 && state.singletonDocID != -1 && state.docStartFP == lastState.docStartFP) {
       // With runs of rare values such as ID fields, the increment of pointers in the docs file is often 0.
-      out.writeVLong((((long) state.singletonDocID) << 1) | 1);
+      // Furthermore some ID schemes like auto-increment IDs or Flake IDs are monotonic, so we encode the delta
+      // between consecutive doc IDs to save space.
+      final long delta = (long) state.singletonDocID - lastState.singletonDocID;
+      out.writeVLong((BitUtil.zigZagEncode(delta) << 1) | 0x01);
     } else {
       out.writeVLong((state.docStartFP - lastState.docStartFP) << 1);
       if (state.singletonDocID != -1) {

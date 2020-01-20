@@ -45,6 +45,7 @@ import org.apache.lucene.index.SlowImpactsEnum;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -191,7 +192,8 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
         }
       } else {
         assert absolute == false;
-        termState.singletonDocID = Math.toIntExact(l >>> 1);
+        assert termState.singletonDocID != -1;
+        termState.singletonDocID += BitUtil.zigZagDecode(l >>> 1);
       }
     } else {
       termState.docStartFP += in.readVLong();
