@@ -29,6 +29,7 @@ import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.codecs.DocValuesConsumer;
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.index.BinaryDocValues;
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.EmptyDocValuesProducer;
 import org.apache.lucene.index.FieldInfo;
@@ -42,6 +43,8 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.SortedSetSelector;
 import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.ByteBuffersIndexOutput;
+import org.apache.lucene.store.ChecksumIndexInput;
+import org.apache.lucene.store.IOContext;
 import org.apache.lucene.store.IndexOutput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
@@ -49,6 +52,8 @@ import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.MathUtil;
 import org.apache.lucene.util.StringHelper;
+import org.apache.lucene.util.compress.LZ4;
+import org.apache.lucene.util.compress.LZ4.FastCompressionHashTable;
 import org.apache.lucene.util.packed.DirectMonotonicWriter;
 import org.apache.lucene.util.packed.DirectWriter;
 
@@ -61,11 +66,13 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
 
   IndexOutput data, meta;
   final int maxDoc;
+  private SegmentWriteState state;
 
   /** expert: Creates a new writer */
   public Lucene80DocValuesConsumer(SegmentWriteState state, String dataCodec, String dataExtension, String metaCodec, String metaExtension) throws IOException {
     boolean success = false;
     try {
+      this.state = state;
       String dataName = IndexFileNames.segmentFileName(state.segmentInfo.name, state.segmentSuffix, dataExtension);
       data = state.directory.createOutput(dataName, state.context);
       CodecUtil.writeIndexHeader(data, dataCodec, Lucene80DocValuesFormat.VERSION_CURRENT, state.segmentInfo.getId(), state.segmentSuffix);
@@ -353,67 +360,168 @@ final class Lucene80DocValuesConsumer extends DocValuesConsumer implements Close
     }
   }
 
+  class CompressedBinaryBlockWriter  implements Closeable {
+    FastCompressionHashTable ht = new LZ4.FastCompressionHashTable();    
+    int uncompressedBlockLength = 0;
+    int maxUncompressedBlockLength = 0;
+    int numDocsInCurrentBlock = 0;
+    int [] docLengths = new int[Lucene80DocValuesFormat.BINARY_DOCS_PER_COMPRESSED_BLOCK]; 
+    byte [] block = new byte [1024 * 16];
+    int totalChunks = 0;
+    long maxPointer = 0;
+    long blockAddressesStart = -1; 
+
+    private IndexOutput tempBinaryOffsets;
+    
+    
+    public CompressedBinaryBlockWriter() throws IOException {
+      tempBinaryOffsets = state.directory.createTempOutput(state.segmentInfo.name, "binary_pointers", state.context);
+      try {
+        CodecUtil.writeHeader(tempBinaryOffsets, Lucene80DocValuesFormat.META_CODEC + "FilePointers", Lucene80DocValuesFormat.VERSION_CURRENT);
+      } catch (Throwable exception) {
+        IOUtils.closeWhileHandlingException(this); //self-close because constructor caller can't 
+        throw exception;
+      }
+    }
+
+    void  addDoc(int doc, BytesRef v) throws IOException {
+      if (blockAddressesStart < 0) {
+        blockAddressesStart = data.getFilePointer();
+      }
+      docLengths[numDocsInCurrentBlock] = v.length;
+      block = ArrayUtil.grow(block, uncompressedBlockLength + v.length);
+      System.arraycopy(v.bytes, v.offset, block, uncompressedBlockLength, v.length);
+      uncompressedBlockLength += v.length;
+      numDocsInCurrentBlock++;
+      if (numDocsInCurrentBlock == Lucene80DocValuesFormat.BINARY_DOCS_PER_COMPRESSED_BLOCK) {
+        flushData();
+      }      
+    }
+
+    private void flushData() throws IOException {
+      if(numDocsInCurrentBlock > 0) {
+        // Write offset to this block to temporary offsets file
+        totalChunks++;
+        long thisBlockStartPointer = data.getFilePointer();
+        data.writeVInt(numDocsInCurrentBlock);
+        for (int i = 0; i < numDocsInCurrentBlock; i++) {
+          data.writeVInt(docLengths[i]);
+        }
+        maxUncompressedBlockLength = Math.max(maxUncompressedBlockLength, uncompressedBlockLength);
+        LZ4.compress(block,  0, uncompressedBlockLength, data, ht);
+        numDocsInCurrentBlock = 0;
+        uncompressedBlockLength = 0;
+        maxPointer = data.getFilePointer();
+        tempBinaryOffsets.writeVLong(maxPointer - thisBlockStartPointer);
+      }
+    }
+    
+    void writeMetaData() throws IOException {
+      if (blockAddressesStart < 0 ) {
+        return;
+      }
+      
+      long startDMW = data.getFilePointer();
+      meta.writeLong(startDMW);
+      
+      meta.writeInt(totalChunks);
+      meta.writeInt(maxUncompressedBlockLength);
+      meta.writeVInt(DIRECT_MONOTONIC_BLOCK_SHIFT);
+      
+    
+      CodecUtil.writeFooter(tempBinaryOffsets);
+      IOUtils.close(tempBinaryOffsets);             
+      //write the compressed block offsets info to the meta file by reading from temp file
+      try (ChecksumIndexInput filePointersIn = state.directory.openChecksumInput(tempBinaryOffsets.getName(), IOContext.READONCE)) {
+        CodecUtil.checkHeader(filePointersIn, Lucene80DocValuesFormat.META_CODEC + "FilePointers", Lucene80DocValuesFormat.VERSION_CURRENT,
+          Lucene80DocValuesFormat.VERSION_CURRENT);
+        Throwable priorE = null;
+        try {
+          final DirectMonotonicWriter filePointers = DirectMonotonicWriter.getInstance(meta, data, totalChunks, DIRECT_MONOTONIC_BLOCK_SHIFT);
+          long fp = blockAddressesStart;
+          for (int i = 0; i < totalChunks; ++i) {
+            filePointers.add(fp);
+            fp += filePointersIn.readVLong();
+          }
+          if (maxPointer < fp) {
+            throw new CorruptIndexException("File pointers don't add up", filePointersIn);
+          }
+          filePointers.finish();
+        } catch (Throwable e) {
+          priorE = e;
+        } finally {
+          CodecUtil.checkFooter(filePointersIn, priorE);
+        }
+      }
+      // Write the length of the DMW block in the data 
+      meta.writeLong(data.getFilePointer() - startDMW);
+    }
+
+    @Override
+    public void close() throws IOException {
+      if (tempBinaryOffsets != null) {
+        IOUtils.close(tempBinaryOffsets);             
+        state.directory.deleteFile(tempBinaryOffsets.getName());
+        tempBinaryOffsets = null;
+      }
+    }
+    
+  }
+  
+
   @Override
   public void addBinaryField(FieldInfo field, DocValuesProducer valuesProducer) throws IOException {
     meta.writeInt(field.number);
     meta.writeByte(Lucene80DocValuesFormat.BINARY);
 
-    BinaryDocValues values = valuesProducer.getBinary(field);
-    long start = data.getFilePointer();
-    meta.writeLong(start); // dataOffset
-    int numDocsWithField = 0;
-    int minLength = Integer.MAX_VALUE;
-    int maxLength = 0;
-    for (int doc = values.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = values.nextDoc()) {
-      numDocsWithField++;
-      BytesRef v = values.binaryValue();
-      int length = v.length;
-      data.writeBytes(v.bytes, v.offset, v.length);
-      minLength = Math.min(length, minLength);
-      maxLength = Math.max(length, maxLength);
-    }
-    assert numDocsWithField <= maxDoc;
-    meta.writeLong(data.getFilePointer() - start); // dataLength
-
-    if (numDocsWithField == 0) {
-      meta.writeLong(-2); // docsWithFieldOffset
-      meta.writeLong(0L); // docsWithFieldLength
-      meta.writeShort((short) -1); // jumpTableEntryCount
-      meta.writeByte((byte) -1);   // denseRankPower
-    } else if (numDocsWithField == maxDoc) {
-      meta.writeLong(-1); // docsWithFieldOffset
-      meta.writeLong(0L); // docsWithFieldLength
-      meta.writeShort((short) -1); // jumpTableEntryCount
-      meta.writeByte((byte) -1);   // denseRankPower
-    } else {
-      long offset = data.getFilePointer();
-      meta.writeLong(offset); // docsWithFieldOffset
-      values = valuesProducer.getBinary(field);
-      final short jumpTableEntryCount = IndexedDISI.writeBitSet(values, data, IndexedDISI.DEFAULT_DENSE_RANK_POWER);
-      meta.writeLong(data.getFilePointer() - offset); // docsWithFieldLength
-      meta.writeShort(jumpTableEntryCount);
-      meta.writeByte(IndexedDISI.DEFAULT_DENSE_RANK_POWER);
-    }
-
-    meta.writeInt(numDocsWithField);
-    meta.writeInt(minLength);
-    meta.writeInt(maxLength);
-    if (maxLength > minLength) {
-      start = data.getFilePointer();
-      meta.writeLong(start);
-      meta.writeVInt(DIRECT_MONOTONIC_BLOCK_SHIFT);
-
-      final DirectMonotonicWriter writer = DirectMonotonicWriter.getInstance(meta, data, numDocsWithField + 1, DIRECT_MONOTONIC_BLOCK_SHIFT);
-      long addr = 0;
-      writer.add(addr);
-      values = valuesProducer.getBinary(field);
+    try (CompressedBinaryBlockWriter blockWriter = new CompressedBinaryBlockWriter()){
+      BinaryDocValues values = valuesProducer.getBinary(field);
+      long start = data.getFilePointer();
+      meta.writeLong(start); // dataOffset
+      int numDocsWithField = 0;
+      int minLength = Integer.MAX_VALUE;
+      int maxLength = 0;
       for (int doc = values.nextDoc(); doc != DocIdSetIterator.NO_MORE_DOCS; doc = values.nextDoc()) {
-        addr += values.binaryValue().length;
-        writer.add(addr);
+        numDocsWithField++;
+        BytesRef v = values.binaryValue();      
+        blockWriter.addDoc(doc, v);      
+        int length = v.length;      
+        minLength = Math.min(length, minLength);
+        maxLength = Math.max(length, maxLength);
       }
-      writer.finish();
-      meta.writeLong(data.getFilePointer() - start);
+      blockWriter.flushData();
+
+      assert numDocsWithField <= maxDoc;
+      meta.writeLong(data.getFilePointer() - start); // dataLength
+
+      if (numDocsWithField == 0) {
+        meta.writeLong(-2); // docsWithFieldOffset
+        meta.writeLong(0L); // docsWithFieldLength
+        meta.writeShort((short) -1); // jumpTableEntryCount
+        meta.writeByte((byte) -1);   // denseRankPower
+      } else if (numDocsWithField == maxDoc) {
+        meta.writeLong(-1); // docsWithFieldOffset
+        meta.writeLong(0L); // docsWithFieldLength
+        meta.writeShort((short) -1); // jumpTableEntryCount
+        meta.writeByte((byte) -1);   // denseRankPower
+      } else {
+        long offset = data.getFilePointer();
+        meta.writeLong(offset); // docsWithFieldOffset
+        values = valuesProducer.getBinary(field);
+        final short jumpTableEntryCount = IndexedDISI.writeBitSet(values, data, IndexedDISI.DEFAULT_DENSE_RANK_POWER);
+        meta.writeLong(data.getFilePointer() - offset); // docsWithFieldLength
+        meta.writeShort(jumpTableEntryCount);
+        meta.writeByte(IndexedDISI.DEFAULT_DENSE_RANK_POWER);
+      }
+
+      meta.writeInt(numDocsWithField);
+      meta.writeInt(minLength);
+      meta.writeInt(maxLength);    
+      
+      blockWriter.writeMetaData();
+      
     }
+
   }
 
   @Override
