@@ -113,238 +113,6 @@ public class TestKnnGraph extends LuceneTestCase {
   }
 
   public void testDocsDeletionAndRecall() throws  Exception {
-    /**
-     * {@code KnnExactVectorValueWeight} applies in-set (i.e. the query vector is exactly in the index)
-     * deletion strategy to filter all unmatched results searched by {@link org.apache.lucene.search.KnnGraphQuery.KnnExactVectorValueQuery},
-     * and deletes at most ef*segmentCnt vectors that are the same to the specified queryVector.
-     */
-    final class KnnExactVectorValueWeight extends ConstantScoreWeight {
-      private final String field;
-      private final ScoreMode scoreMode;
-      private final float[] queryVector;
-      private final int ef;
-
-      KnnExactVectorValueWeight(Query query, float score, ScoreMode scoreMode, String field, float[] queryVector, int ef) {
-        super(query, score);
-        this.field = field;
-        this.scoreMode = scoreMode;
-        this.queryVector = queryVector;
-        this.ef = ef;
-      }
-
-      /**
-       * Returns a {@link Scorer} which can iterate in order over all matching
-       * documents and assign them a score.
-       * <p>
-       * <b>NOTE:</b> null can be returned if no documents will be scored by this
-       * query.
-       * <p>
-       * <b>NOTE</b>: The returned {@link Scorer} does not have
-       * {@link LeafReader#getLiveDocs()} applied, they need to be checked on top.
-       *
-       * @param context the {@link LeafReaderContext} for which to return the {@link Scorer}.
-       * @return a {@link Scorer} which scores documents in/out-of order.
-       * @throws IOException if there is a low-level I/O error
-       */
-      @Override
-      public Scorer scorer(LeafReaderContext context) throws IOException {
-        ScorerSupplier supplier = scorerSupplier(context);
-        if (supplier == null) {
-          return null;
-        }
-        return supplier.get(Long.MAX_VALUE);
-      }
-
-      @Override
-      public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
-        FieldInfo fi = context.reader().getFieldInfos().fieldInfo(field);
-        int numDimensions = fi.getVectorNumDimensions();
-        if (numDimensions != queryVector.length) {
-          throw new IllegalArgumentException("field=\"" + field + "\" was indexed with dimensions=" + numDimensions +
-              "; this is incompatible with query dimensions=" + queryVector.length);
-        }
-
-        final HNSWGraphReader hnswReader = new HNSWGraphReader(field, context);
-        final VectorValues vectorValues = context.reader().getVectorValues(field);
-        if (vectorValues == null) {
-          // No docs in this segment/field indexed any vector values
-          return null;
-        }
-
-        final Weight weight = this;
-        return new ScorerSupplier() {
-          @Override
-          public Scorer get(long leadCost) throws IOException {
-            final Neighbors neighbors = hnswReader.searchNeighbors(queryVector, ef, vectorValues);
-
-            if (neighbors.size() > 0) {
-              Neighbor top = neighbors.top();
-              if (top.distance() > 0) {
-                neighbors.clear();
-              } else {
-                final List<Neighbor> toDeleteNeighbors = new ArrayList<>(neighbors.size());
-                for (Neighbor neighbor : neighbors) {
-                  if (neighbor.distance() == 0) {
-                    toDeleteNeighbors.add(neighbor);
-                  } else {
-                    break;
-                  }
-                }
-
-                neighbors.clear();
-
-                toDeleteNeighbors.forEach(neighbors::add);
-              }
-            }
-
-            return new Scorer(weight) {
-
-              int doc = -1;
-              int size = neighbors.size();
-              int offset = 0;
-
-              @Override
-              public DocIdSetIterator iterator() {
-                return new DocIdSetIterator() {
-                  @Override
-                  public int docID() {
-                    return doc;
-                  }
-
-                  @Override
-                  public int nextDoc() {
-                    return advance(offset);
-                  }
-
-                  @Override
-                  public int advance(int target) {
-                    if (target > size || neighbors.size() == 0) {
-                      doc = NO_MORE_DOCS;
-                    } else {
-                      while (offset < target) {
-                        neighbors.pop();
-                        offset++;
-                      }
-                      Neighbor next = neighbors.pop();
-                      offset++;
-                      if (next == null) {
-                        doc = NO_MORE_DOCS;
-                      } else {
-                        doc = next.docId();
-                      }
-                    }
-                    return doc;
-                  }
-
-                  @Override
-                  public long cost() {
-                    return size;
-                  }
-                };
-              }
-
-              @Override
-              public float getMaxScore(int upTo) {
-                return Float.POSITIVE_INFINITY;
-              }
-
-              @Override
-              public float score() {
-                return 0.0f;
-              }
-
-              @Override
-              public int docID() {
-                return doc;
-              }
-            };
-          }
-
-          @Override
-          public long cost() {
-            return ef;
-          }
-        };
-      }
-
-      /**
-       * @param ctx
-       * @return {@code true} if the object can be cached against a given leaf
-       */
-      @Override
-      public boolean isCacheable(LeafReaderContext ctx) {
-        return false;
-      }
-    }
-
-    final class KnnExactVectorValueQuery extends Query {
-      protected final String field;
-      protected final float[] queryVector;
-      protected final int ef;
-
-      public KnnExactVectorValueQuery(String field, float[] queryVector, int maxDelNumPerSeg) {
-        this.field = field;
-        this.queryVector = queryVector;
-        this.ef = maxDelNumPerSeg;
-      }
-
-      /**
-       * Prints a query to a string, with <code>field</code> assumed to be the
-       * default field and omitted.
-       *
-       * @param field
-       */
-      @Override
-      public String toString(String field) {
-        return null;
-      }
-
-      @Override
-      public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) {
-        Weight weight = new KnnExactVectorValueWeight(this, boost, scoreMode, field, queryVector, ef);
-        return weight;
-      }
-
-      /**
-       * Recurse through the query tree, visiting any child queries
-       *
-       * @param visitor a QueryVisitor to be called by each query in the tree
-       */
-      @Override
-      public void visit(QueryVisitor visitor) {
-
-      }
-
-      /**
-       * Override and implement query instance equivalence properly in a subclass.
-       * This is required so that {@link QueryCache} works properly.
-       * <p>
-       * Typically a query will be equal to another only if it's an instance of
-       * the same class and its document-filtering properties are identical that other
-       * instance. Utility methods are provided for certain repetitive code.
-       *
-       * @param obj
-       * @see #sameClassAs(Object)
-       * @see #classHash()
-       */
-      @Override
-      public boolean equals(Object obj) {
-        /// TODO
-        return false;
-      }
-
-      /**
-       * Override and implement query hash code properly in a subclass.
-       * This is required so that {@link QueryCache} works properly.
-       *
-       * @see #equals(Object)
-       */
-      @Override
-      public int hashCode() {
-        return 0;
-      }
-    }
-
     try (Directory dir = newDirectory();
          IndexWriter iw = new IndexWriter(dir, newIndexWriterConfig(null)
              .setMaxBufferedDocs(2).setCodec(Codec.forName("Lucene90")))) {
@@ -624,4 +392,235 @@ public class TestKnnGraph extends LuceneTestCase {
     }
   }
 
+  /**
+   * {@code KnnExactVectorValueWeight} applies in-set (i.e. the query vector is exactly in the index)
+   * deletion strategy to filter all unmatched results searched by {@link KnnExactVectorValueQuery},
+   * and deletes at most ef*segmentCnt vectors that are the same to the specified queryVector.
+   */
+  private static final class KnnExactVectorValueWeight extends ConstantScoreWeight {
+    private final String field;
+    private final ScoreMode scoreMode;
+    private final float[] queryVector;
+    private final int ef;
+
+    KnnExactVectorValueWeight(Query query, float score, ScoreMode scoreMode, String field, float[] queryVector, int ef) {
+      super(query, score);
+      this.field = field;
+      this.scoreMode = scoreMode;
+      this.queryVector = queryVector;
+      this.ef = ef;
+    }
+
+    /**
+     * Returns a {@link Scorer} which can iterate in order over all matching
+     * documents and assign them a score.
+     * <p>
+     * <b>NOTE:</b> null can be returned if no documents will be scored by this
+     * query.
+     * <p>
+     * <b>NOTE</b>: The returned {@link Scorer} does not have
+     * {@link LeafReader#getLiveDocs()} applied, they need to be checked on top.
+     *
+     * @param context the {@link LeafReaderContext} for which to return the {@link Scorer}.
+     * @return a {@link Scorer} which scores documents in/out-of order.
+     * @throws IOException if there is a low-level I/O error
+     */
+    @Override
+    public Scorer scorer(LeafReaderContext context) throws IOException {
+      ScorerSupplier supplier = scorerSupplier(context);
+      if (supplier == null) {
+        return null;
+      }
+      return supplier.get(Long.MAX_VALUE);
+    }
+
+    @Override
+    public ScorerSupplier scorerSupplier(LeafReaderContext context) throws IOException {
+      FieldInfo fi = context.reader().getFieldInfos().fieldInfo(field);
+      int numDimensions = fi.getVectorNumDimensions();
+      if (numDimensions != queryVector.length) {
+        throw new IllegalArgumentException("field=\"" + field + "\" was indexed with dimensions=" + numDimensions +
+            "; this is incompatible with query dimensions=" + queryVector.length);
+      }
+
+      final HNSWGraphReader hnswReader = new HNSWGraphReader(field, context);
+      final VectorValues vectorValues = context.reader().getVectorValues(field);
+      if (vectorValues == null) {
+        // No docs in this segment/field indexed any vector values
+        return null;
+      }
+
+      final Weight weight = this;
+      return new ScorerSupplier() {
+        @Override
+        public Scorer get(long leadCost) throws IOException {
+          final Neighbors neighbors = hnswReader.searchNeighbors(queryVector, ef, vectorValues);
+
+          if (neighbors.size() > 0) {
+            Neighbor top = neighbors.top();
+            if (top.distance() > 0) {
+              neighbors.clear();
+            } else {
+              final List<Neighbor> toDeleteNeighbors = new ArrayList<>(neighbors.size());
+              for (Neighbor neighbor : neighbors) {
+                if (neighbor.distance() == 0) {
+                  toDeleteNeighbors.add(neighbor);
+                } else {
+                  break;
+                }
+              }
+
+              neighbors.clear();
+
+              toDeleteNeighbors.forEach(neighbors::add);
+            }
+          }
+
+          return new Scorer(weight) {
+
+            int doc = -1;
+            int size = neighbors.size();
+            int offset = 0;
+
+            @Override
+            public DocIdSetIterator iterator() {
+              return new DocIdSetIterator() {
+                @Override
+                public int docID() {
+                  return doc;
+                }
+
+                @Override
+                public int nextDoc() {
+                  return advance(offset);
+                }
+
+                @Override
+                public int advance(int target) {
+                  if (target > size || neighbors.size() == 0) {
+                    doc = NO_MORE_DOCS;
+                  } else {
+                    while (offset < target) {
+                      neighbors.pop();
+                      offset++;
+                    }
+                    Neighbor next = neighbors.pop();
+                    offset++;
+                    if (next == null) {
+                      doc = NO_MORE_DOCS;
+                    } else {
+                      doc = next.docId();
+                    }
+                  }
+                  return doc;
+                }
+
+                @Override
+                public long cost() {
+                  return size;
+                }
+              };
+            }
+
+            @Override
+            public float getMaxScore(int upTo) {
+              return Float.POSITIVE_INFINITY;
+            }
+
+            @Override
+            public float score() {
+              return 0.0f;
+            }
+
+            @Override
+            public int docID() {
+              return doc;
+            }
+          };
+        }
+
+        @Override
+        public long cost() {
+          return ef;
+        }
+      };
+    }
+
+    /**
+     * @param ctx
+     * @return {@code true} if the object can be cached against a given leaf
+     */
+    @Override
+    public boolean isCacheable(LeafReaderContext ctx) {
+      return false;
+    }
+  }
+
+  private static final class KnnExactVectorValueQuery extends Query {
+    protected final String field;
+    protected final float[] queryVector;
+    protected final int ef;
+
+    public KnnExactVectorValueQuery(String field, float[] queryVector, int maxDelNumPerSeg) {
+      this.field = field;
+      this.queryVector = queryVector;
+      this.ef = maxDelNumPerSeg;
+    }
+
+    /**
+     * Prints a query to a string, with <code>field</code> assumed to be the
+     * default field and omitted.
+     *
+     * @param field
+     */
+    @Override
+    public String toString(String field) {
+      return null;
+    }
+
+    @Override
+    public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) {
+      Weight weight = new KnnExactVectorValueWeight(this, boost, scoreMode, field, queryVector, ef);
+      return weight;
+    }
+
+    /**
+     * Recurse through the query tree, visiting any child queries
+     *
+     * @param visitor a QueryVisitor to be called by each query in the tree
+     */
+    @Override
+    public void visit(QueryVisitor visitor) {
+
+    }
+
+    /**
+     * Override and implement query instance equivalence properly in a subclass.
+     * This is required so that {@link QueryCache} works properly.
+     * <p>
+     * Typically a query will be equal to another only if it's an instance of
+     * the same class and its document-filtering properties are identical that other
+     * instance. Utility methods are provided for certain repetitive code.
+     *
+     * @param obj
+     * @see #sameClassAs(Object)
+     * @see #classHash()
+     */
+    @Override
+    public boolean equals(Object obj) {
+      /// TODO
+      return false;
+    }
+
+    /**
+     * Override and implement query hash code properly in a subclass.
+     * This is required so that {@link QueryCache} works properly.
+     *
+     * @see #equals(Object)
+     */
+    @Override
+    public int hashCode() {
+      return 0;
+    }
+  }
 }
