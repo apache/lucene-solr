@@ -1,0 +1,12 @@
+apply plugin: 'java-library'
+
+dependencies {
+  implementation project(':solr:core')
+
+  implementation ("io.jaegertracing:jaeger-thrift", {
+    exclude group: "com.squareup.okhttp3", module: "okhttp"
+    exclude group: "com.google.code.gson", module: "gson"
+  })
+
+  testImplementation project(':solr:test-framework')
+}

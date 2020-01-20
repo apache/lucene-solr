@@ -43,7 +43,6 @@ import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.update.AddUpdateCommand;
 import org.apache.solr.update.CommitUpdateCommand;
-import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.update.UpdateHandler;
 import org.apache.solr.util.ReadOnlyCoresLocator;
 import org.junit.BeforeClass;
@@ -798,8 +797,6 @@ public class TestLazyCores extends SolrTestCaseJ4 {
   // Cores 2, 3, 6, 7, 8, 9 are transient
   @Test
   public void testNoCommit() throws Exception {
-    DirectUpdateHandler2.commitOnClose = true;
-
     CoreContainer cc = init();
     String[] coreList = new String[]{
         "collection2",

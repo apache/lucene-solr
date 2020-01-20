@@ -1,0 +1,237 @@
+//
+// Configure test randomization seeds and derived test properties.
+//
+
+import java.nio.file.*
+import com.carrotsearch.randomizedtesting.SeedUtils
+import com.carrotsearch.randomizedtesting.generators.RandomPicks
+
+buildscript {
+  repositories {
+    mavenCentral()
+  }
+
+  dependencies {
+    classpath 'com.carrotsearch.randomizedtesting:randomizedtesting-runner:2.7.2'
+  }
+}
+
+// Pick the "root" seed from which everything else is derived.
+configure(rootProject) {
+  ext {
+    rootSeed = propertyOrDefault('tests.seed', String.format("%08X", new Random().nextLong()))
+    rootSeedLong = SeedUtils.parseSeedChain(rootSeed)[0]
+    projectSeedLong = rootSeedLong ^ project.path.hashCode()
+
+    // "base" version is stripped of the qualifier. Compute it.
+    baseVersion = {
+      def m = (rootProject.version =~ /^(\d+\.\d+\.\d+)(-(.+))?/)
+      if (!m) {
+        throw GradleException("Can't strip version to just x.y.z: " + rootProject.version)
+      }
+      return m[0][1]
+    }()
+  }
+
+  task randomizationInfo() {
+    doFirst {
+      logger.lifecycle("Running tests with randomization seed: tests.seed=${rootSeed}")
+    }
+  }
+}
+
+// Any test task will trigger display of randomization settings.
+allprojects {
+  tasks.withType(Test) { task ->
+    task.dependsOn rootProject.randomizationInfo
+  }
+}
+
+// Configure test property defaults and their descriptions.
+allprojects {
+  plugins.withType(JavaPlugin) {
+    ext {
+      testOptions = [
+          // seed, repetition and amplification.
+          [propName: 'tests.seed', value: "random", description: "Sets the master randomization seed."],
+          [propName: 'tests.iters', value: null, description: "Duplicate (re-run) each test N times."],
+          [propName: 'tests.multiplier', value: 1, description: "Value multiplier for randomized tests."],
+          [propName: 'tests.maxfailures', value: null, description: "Skip tests after a given number of failures."],
+          [propName: 'tests.timeoutSuite', value: null, description: "Timeout (in millis) for an entire suite."],
+          [propName: 'tests.failfast', value: "false", description: "Stop the build early on failure.", buildOnly: true],
+          // asserts, debug output.
+          [propName: 'tests.asserts', value: "true", description: "Enables or disables assertions mode."],
+          [propName: 'tests.verbose', value: false, description: "Emit verbose debug information from tests."],
+          [propName: 'tests.infostream', value: false, description: "Enables or disables infostream logs."],
+          [propName: 'tests.leaveTemporary', value: null, description: "Leave temporary directories after tests complete."],
+          [propName: 'tests.useSecurityManager', value: true, description: "Control security manager in tests.", buildOnly: true],
+          // component randomization
+          [propName: 'tests.codec', value: "random", description: "Sets the codec tests should run with."],
+          [propName: 'tests.directory', value: "random", description: "Sets the Directory implementation tests should run with."],
+          [propName: 'tests.postingsformat', value: "random", description: "Sets the postings format tests should run with."],
+          [propName: 'tests.docvaluesformat', value: "random", description: "Sets the doc values format tests should run with."],
+          [propName: 'tests.locale', value: "random", description: "Sets the default locale tests should run with."],
+          [propName: 'tests.timezone', value: "random", description: "Sets the default time zone tests should run with."],
+          // filtering
+          [propName: 'tests.filter', value: null, description: "Applies a test filter (see :helpTests)."],
+          [propName: 'tests.slow', value: true, description: "Enables or disables @Slow tests."],
+          [propName: 'tests.nightly', value: false, description: "Enables or disables @Nightly tests."],
+          [propName: 'tests.weekly', value: false, description: "Enables or disables @Weekly tests."],
+          [propName: 'tests.monster', value: false, description: "Enables or disables @Monster tests."],
+          [propName: 'tests.awaitsfix', value: null, description: "Enables or disables @AwaitsFix tests."],
+          [propName: 'tests.file.encoding', value: "random", description: "Sets the default file.encoding on test JVM.", buildOnly: true],
+          // test data
+          [propName: 'tests.linedocsfile', value: 'europarl.lines.txt.gz', description: "Test data file path."],
+          // miscellaneous; some of them very weird.
+          [propName: 'tests.LUCENE_VERSION', value: baseVersion, description: "Base Lucene version."],
+          [propName: 'tests.bwcdir', value: null, description: "Data for backward-compatibility indexes."],
+      ]
+    }
+  }
+}
+
+// Add Solr-specific test configs settings.
+configure(allprojects.findAll {project -> project.path.startsWith(":solr") }) {
+  plugins.withType(JavaPlugin) {
+    ext {
+      testOptions += [
+          [propName: 'tests.luceneMatchVersion', value: baseVersion, description: "Base Lucene version."],
+          [propName: 'common-solr.dir', value: file("${commonDir}/../solr").path, description: "Solr base dir."],
+          [propName: 'solr.directoryFactory', value: "org.apache.solr.core.MockDirectoryFactory", description: "Solr directory factory."],
+          [propName: 'tests.src.home', value: null, description: "See SOLR-14023."],
+          [propName: 'solr.tests.use.numeric.points', value: null, description: "Point implementation to use (true=numerics, false=trie)."],
+      ]
+    }
+  }
+}
+
+// Resolve test option values after all evaluation is complete.
+allprojects {
+  plugins.withType(JavaPlugin) {
+    afterEvaluate {
+      ext.testOptionsResolved = testOptions.findAll { opt ->
+        propertyOrDefault(opt.propName, opt.value) != null
+      }.collectEntries { opt ->
+        [(opt.propName): Objects.toString(propertyOrDefault(opt.propName, opt.value))]
+      }
+
+      // These are not official options or dynamically seed-derived options.
+      if (testOptionsResolved['tests.file.encoding'] == 'random') {
+        testOptionsResolved['tests.file.encoding'] = RandomPicks.randomFrom(
+            new Random(projectSeedLong), [
+                "US-ASCII", "ISO-8859-1", "UTF-8"
+            ])
+      }
+
+      if (testOptionsResolved['tests.seed'] == 'random') {
+        testOptionsResolved['tests.seed'] = rootSeed
+      }
+
+      // Compute the "reproduce with" string.
+      ext.testOptionsForReproduceLine = testOptions.findAll { opt ->
+        def defValue = Objects.toString(opt.value, null)
+        def value = testOptionsResolved[opt.propName]
+        return defValue != value
+      }.collect { opt ->
+        "-P" + opt.propName + "=" + testOptionsResolved[opt.propName]
+      }.join(" ")
+
+      // leaving temporary folder option has multiple aliases...
+      if ([
+         "tests.leaveTemporary",
+         "tests.leavetemporary",
+         "tests.leavetmpdir",
+         "solr.test.leavetmpdir",
+      ].find { prop ->
+        Boolean.parseBoolean(propertyOrDefault(prop, "false"))
+      }) {
+        testOptionsResolved['tests.leaveTemporary'] = "true"
+      }
+
+      // Append resolved test properties to the test task.
+      test {
+        // TODO: we could remove opts with "buildOnly: true" (?)
+        systemProperties testOptionsResolved
+
+        if (Boolean.parseBoolean(testOptionsResolved['tests.asserts'])) {
+          jvmArgs("-ea", "-esa")
+        } else {
+          enableAssertions = false
+        }
+
+        if (Boolean.parseBoolean(testOptionsResolved["tests.failfast"])) {
+          failFast true
+        }
+
+        // Enable security manager, if requested. We could move the selection of security manager and security policy
+        // to each project's build/ configuration but it seems compact enough to keep it here for now.
+        if (Boolean.parseBoolean(testOptionsResolved["tests.useSecurityManager"])) {
+          if (project.path == ":lucene:replicator") {
+            systemProperty 'java.security.manager', "org.apache.lucene.util.TestSecurityManager"
+            systemProperty 'java.security.policy', rootProject.file("gradle/testing/policies/replicator-tests.policy")
+          } else if (project.path.startsWith(":lucene")) {
+            systemProperty 'java.security.manager', "org.apache.lucene.util.TestSecurityManager"
+            systemProperty 'java.security.policy', rootProject.file("gradle/testing/policies/tests.policy")
+          } else {
+            systemProperty 'common-solr.dir', commonSolrDir
+            systemProperty 'java.security.manager', "org.apache.lucene.util.TestSecurityManager"
+            systemProperty 'java.security.policy', rootProject.file("gradle/testing/policies/solr-tests.policy")
+          }
+
+          systemProperty 'common.dir', commonDir
+
+          def gradleUserHome = project.gradle.getGradleUserHomeDir()
+          systemProperty 'gradle.lib.dir', Paths.get(project.class.location.toURI()).parent.toAbsolutePath().toString().replace('\\', '/')
+          systemProperty 'gradle.worker.jar', Paths.get("${gradleUserHome}/caches/${gradle.gradleVersion}/workerMain/gradle-worker.jar").toAbsolutePath().toString()
+          systemProperty 'gradle.user.home', gradleUserHome.toPath().toAbsolutePath().toString()
+        }
+
+        doFirst {
+          logger.debug("Will use test opts:\n" + testOptionsResolved.collect {k,v -> "${k}: ${v}"}.sort().join("\n"))
+        }
+      }
+    }
+  }
+}
+
+// Add a helper task to display resolved test property values with their defaults
+// and descriptions.
+allprojects {
+  plugins.withType(JavaPlugin) {
+    task testOpts() {
+      group = 'Help (developer guides and hints)'
+      description = "Display values of randomization settings for a given seed"
+
+      doFirst {
+        println "Test options for project ${project.path} and seed \"${rootSeed}\":"
+
+        testOptions.sort { a, b -> a.propName.compareTo(b.propName) }.each { opt ->
+          def defValue = Objects.toString(opt.value, null)
+          def value = testOptionsResolved[opt.propName]
+          println String.format(Locale.ROOT,
+              "%s%-23s = %-8s # %s",
+              (defValue != value ? "! " : "  "),
+              opt.propName,
+              value,
+              (defValue != value ? "(!= default: ${defValue}) " : "") + opt.description)
+        }
+      }
+    }
+  }
+}
+
+// Disable assertions for HashMap due to: LUCENE-8991 / JDK-8205399
+def vmName = System.getProperty("java.vm.name")
+def spec = System.getProperty("java.specification.version")
+if (vmName =~ /(?i)(hotspot|openjdk|jrockit)/ &&
+    spec =~ /^(1\.8|9|10|11)$/ &&
+    !Boolean.parseBoolean(propertyOrDefault('tests.asserts.hashmap', 'false'))) {
+  logger.debug("Enabling HashMap assertions.")
+  allprojects {
+    plugins.withType(JavaPlugin) {
+      test {
+        jvmArgs("-da:java.util.HashMap")
+      }
+    }
+  }
+}

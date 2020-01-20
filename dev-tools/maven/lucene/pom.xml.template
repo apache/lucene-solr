@@ -60,7 +60,6 @@
     <module>queryparser</module>
     <module>replicator</module>
     <module>sandbox</module>
-    <module>spatial</module>
     <module>spatial-extras</module>
     <module>spatial3d</module>
     <module>suggest</module>
