@@ -19,9 +19,7 @@ package org.apache.lucene.geo;
 
 /**
  * Lat/Lon Geometry object.
- *
- * @lucene.internal
- **/
+ */
 public abstract class LatLonGeometry {
 
   /** get a {@link Component2D} from this geometry */
@@ -38,5 +36,4 @@ public abstract class LatLonGeometry {
     }
     return ComponentTree.create(components);
   }
-
 }

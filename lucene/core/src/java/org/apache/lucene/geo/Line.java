@@ -28,7 +28,7 @@ import java.util.Arrays;
  *   <li>For more advanced GeoSpatial indexing and query operations see the {@code spatial-extras} module
  * </ol>
  */
-public final class Line extends LatLonGeometry {
+public class Line extends LatLonGeometry {
   /** array of latitude coordinates */
   private final double[] lats;
   /** array of longitude coordinates */
