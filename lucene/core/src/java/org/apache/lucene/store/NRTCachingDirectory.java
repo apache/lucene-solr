@@ -232,6 +232,8 @@ public class NRTCachingDirectory extends FilterDirectory implements Accountable 
       bytes = context.mergeInfo.estimatedMergeBytes;
     } else if (context.flushInfo != null) {
       bytes = context.flushInfo.estimatedSegmentSize;
+    } else {
+      return false;
     }
 
     return (bytes <= maxMergeSizeBytes) && (bytes + cacheSize.get()) <= maxCachedBytes;

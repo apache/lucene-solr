@@ -105,12 +105,16 @@ REM set SOLR_LOG_PRESTART_ROTATION=false
 REM Enables jetty request log for all requests
 REM set SOLR_REQUESTLOG_ENABLED=false
 
-REM Set the host interface to listen on. Jetty will listen on all interfaces (0.0.0.0) by default.
-REM This must be an IPv4 ("a.b.c.d") or bracketed IPv6 ("[x::y]") address, not a hostname!
-REM set SOLR_JETTY_HOST=0.0.0.0
-
 REM Sets the port Solr binds to, default is 8983
 REM set SOLR_PORT=8983
+
+REM Sets the network interface the Solr binds to. To prevent administrators from
+REM accidentally exposing Solr more widely than intended, this defaults to 127.0.0.1.
+REM Administrators should think carefully about their deployment environment and
+REM set this value as narrowly as required before going to production. In
+REM environments where security is not a concern, 0.0.0.0 can be used to allow
+REM Solr to accept connections on all network interfaces.
+REM set SOLR_JETTY_HOST=127.0.0.1
 
 REM Restrict access to solr by IP address.
 REM Specify a comma-separated list of addresses or networks, for example:

@@ -37,6 +37,9 @@ import java.io.Serializable;
  */
 public abstract class SolrResponse implements Serializable, MapWriter {
 
+  /** make this compatible with earlier versions */
+  private static final long serialVersionUID = -7931100103360242645L;
+
   /** Elapsed time in milliseconds for the request as seen from the client. */
   public abstract long getElapsedTime();
   

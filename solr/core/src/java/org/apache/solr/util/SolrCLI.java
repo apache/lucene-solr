@@ -60,6 +60,7 @@ import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -1424,19 +1425,17 @@ public class SolrCLI implements CLIO {
   private static final long MS_IN_HOUR = MS_IN_MIN * 60L;
   private static final long MS_IN_DAY = MS_IN_HOUR * 24L;
 
-  private static final String uptime(long uptimeMs) {
+  @VisibleForTesting
+  static final String uptime(long uptimeMs) {
     if (uptimeMs <= 0L) return "?";
 
-    long numDays = (uptimeMs >= MS_IN_DAY)
-        ? (long) Math.floor(uptimeMs / MS_IN_DAY) : 0L;
+    long numDays = (uptimeMs >= MS_IN_DAY) ? (uptimeMs / MS_IN_DAY) : 0L;
     long rem = uptimeMs - (numDays * MS_IN_DAY);
-    long numHours = (rem >= MS_IN_HOUR)
-        ? (long) Math.floor(rem / MS_IN_HOUR) : 0L;
+    long numHours = (rem >= MS_IN_HOUR) ?  (rem / MS_IN_HOUR) : 0L;
     rem = rem - (numHours * MS_IN_HOUR);
-    long numMinutes = (rem >= MS_IN_MIN)
-        ? (long) Math.floor(rem / MS_IN_MIN) : 0L;
+    long numMinutes = (rem >= MS_IN_MIN) ? (rem / MS_IN_MIN) : 0L;
     rem = rem - (numMinutes * MS_IN_MIN);
-    long numSeconds = Math.round(rem / 1000);
+    long numSeconds = Math.round(rem / 1000.0);
     return String.format(Locale.ROOT, "%d days, %d hours, %d minutes, %d seconds", numDays,
         numHours, numMinutes, numSeconds);
   }

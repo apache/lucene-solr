@@ -1,0 +1,80 @@
+import java.time.ZonedDateTime
+import java.time.format.DateTimeFormatter
+
+plugins {
+  id "base"
+  id "com.palantir.consistent-versions" version "1.14.0"
+  id 'de.thetaphi.forbiddenapis' version '2.7' apply false
+}
+
+// Project version and main properties. Applies to all projects.
+allprojects {
+  version = "9.0.0-SNAPSHOT"
+}
+
+ext {
+  def tstamp = ZonedDateTime.now()
+  buildDate = DateTimeFormatter.ofPattern("yyyy-MM-dd").format(tstamp)
+  buildTime = DateTimeFormatter.ofPattern("HH:mm:ss").format(tstamp)
+  buildYear = DateTimeFormatter.ofPattern("yyyy").format(tstamp)
+
+  // Workaround for this one, for now:
+  // https://github.com/palantir/gradle-consistent-versions/issues/383
+  scriptDepVersions = [
+      "apache-rat": "0.11"
+  ]
+}
+
+// Include smaller chunks configuring dedicated build areas.
+// Some of these intersect or add additional functionality.
+// The order of inclusion of these files shouldn't matter (but may
+// if the build file is incorrectly written and evaluates something
+// eagerly).
+
+apply from: file('gradle/generate-defaults.gradle')
+
+// Set up defaults and configure aspects for certain modules or functionality
+// (java, tests)
+apply from: file('gradle/defaults.gradle')
+apply from: file('gradle/defaults-java.gradle')
+apply from: file('gradle/defaults-javadoc.gradle')
+apply from: file('gradle/testing/defaults-tests.gradle')
+apply from: file('gradle/testing/randomization.gradle')
+apply from: file('gradle/testing/fail-on-no-tests.gradle')
+apply from: file('gradle/testing/runtime-jvm-support.gradle')
+
+// Maven publishing.
+apply from: file('gradle/maven/defaults-maven.gradle')
+
+// IDE settings and specials.
+apply from: file('gradle/defaults-idea.gradle')
+
+// Validation tasks
+apply from: file('gradle/validation/precommit.gradle')
+apply from: file('gradle/validation/forbidden-apis.gradle')
+apply from: file('gradle/validation/jar-checks.gradle')
+apply from: file('gradle/validation/git-status.gradle')
+apply from: file('gradle/validation/versions-props-sorted.gradle')
+apply from: file('gradle/validation/validate-source-patterns.gradle')
+apply from: file('gradle/validation/config-file-sanity.gradle')
+apply from: file('gradle/validation/rat-sources.gradle')
+
+// Additional development aids.
+apply from: file('gradle/maven/maven-local.gradle')
+apply from: file('gradle/testing/per-project-summary.gradle')
+apply from: file('gradle/testing/slowest-tests-at-end.gradle')
+apply from: file('gradle/testing/failed-tests-at-end.gradle')
+apply from: file('gradle/help.gradle')
+
+// Ant-compatibility layer. ALL OF THESE SHOULD BE GONE at some point. They are
+// here so that we can coexist with current ant build but they are indicative
+// of potential problems with the build conventions, dependencies, etc.
+apply from: file('gradle/ant-compat/force-versions.gradle')
+apply from: file('gradle/ant-compat/folder-layout.gradle')
+apply from: file('gradle/ant-compat/misc.gradle')
+apply from: file('gradle/ant-compat/resolve.gradle')
+apply from: file('gradle/ant-compat/post-jar.gradle')
+apply from: file('gradle/ant-compat/test-classes-cross-deps.gradle')
+apply from: file('gradle/ant-compat/artifact-naming.gradle')
+apply from: file('gradle/ant-compat/solr-forbidden-apis.gradle')
+apply from: file('gradle/ant-compat/forbidden-api-rules-in-sync.gradle')

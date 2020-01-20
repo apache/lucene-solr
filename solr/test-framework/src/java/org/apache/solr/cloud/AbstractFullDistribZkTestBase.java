@@ -41,7 +41,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.UnaryOperator;
+import java.util.function.Consumer;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
@@ -1822,7 +1822,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       cloudClient.waitForState(collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(numShards,
           numShards * (numNrtReplicas + numTlogReplicas + numPullReplicas)));
     } catch (TimeoutException e) {
-      new RuntimeException("Timeout waiting for " + numShards + " shards and " + (numNrtReplicas + numTlogReplicas + numPullReplicas) + " replicas.", e);
+      throw new RuntimeException("Timeout waiting for " + numShards + " shards and " + (numNrtReplicas + numTlogReplicas + numPullReplicas) + " replicas.", e);
     }
     return res;
   }
@@ -2422,10 +2422,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return restTestHarnesses.get(random.nextInt(restTestHarnesses.size()));
   }
 
-  protected void forAllRestTestHarnesses(UnaryOperator<RestTestHarness> op) {
-    for (RestTestHarness h : restTestHarnesses) {
-      op.apply(h);
-    }
+  protected void forAllRestTestHarnesses(Consumer<RestTestHarness> op) {
+    restTestHarnesses.forEach(op);
   }
 
 }

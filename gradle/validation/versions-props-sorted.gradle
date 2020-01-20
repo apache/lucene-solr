@@ -1,0 +1,17 @@
+// This ensures 'versions.props' file is sorted lexicographically.
+
+configure(rootProject) {
+  task versionsPropsAreSorted() {
+    doFirst {
+      def versionsProps = file('versions.props')
+      def lines = versionsProps.readLines("UTF-8")
+      def sorted = lines.toSorted()
+
+      if (!Objects.equals(lines, sorted)) {
+        def sortedFile = file("${buildDir}/versions.props")
+        sortedFile.write(sorted.join("\n"), "UTF-8")
+        throw new GradleException("${versionsProps} file is not sorted lexicographically. I wrote a sorted file to ${sortedFile} - please review and commit.")
+      }
+    }
+  }
+}
