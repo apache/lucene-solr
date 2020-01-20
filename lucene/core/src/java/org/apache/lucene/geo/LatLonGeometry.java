@@ -22,25 +22,13 @@ package org.apache.lucene.geo;
  *
  * @lucene.internal
  **/
-public interface LatLonGeometry {
-
-  /** minimum longitude value for the geometry */
-  double getMinLon();
-
-  /** maximum Lon longitude for the geometry */
-  double getMaxLon();
-
-  /** minimum latitude value for the geometry */
-  double getMinLat();
-
-  /** maximum latitude value for the geometry */
-  double getMaxLat();
+public abstract class LatLonGeometry {
 
   /** get a {@link Component2D} from this geometry */
-  Component2D toComponent2D();
+  protected abstract Component2D toComponent2D();
 
   /** Creates a Component2D from the provided LatLonGeometry array */
-  static Component2D create(LatLonGeometry... latLonGeometries) {
+  public static Component2D create(LatLonGeometry... latLonGeometries) {
     if (latLonGeometries.length == 1) {
       return latLonGeometries[0].toComponent2D();
     }

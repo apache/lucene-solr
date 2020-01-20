@@ -28,7 +28,7 @@ import java.util.Arrays;
  *   <li>For more advanced GeoSpatial indexing and query operations see the {@code spatial-extras} module
  * </ol>
  */
-public final class Line implements LatLonGeometry {
+public final class Line extends LatLonGeometry {
   /** array of latitude coordinates */
   private final double[] lats;
   /** array of longitude coordinates */
@@ -82,26 +82,6 @@ public final class Line implements LatLonGeometry {
     this.maxLon = maxLon;
   }
 
-  @Override
-  public double getMinLon() {
-    return minLon;
-  }
-
-  @Override
-  public double getMaxLon() {
-    return maxLon;
-  }
-
-  @Override
-  public double getMinLat() {
-    return minLat;
-  }
-
-  @Override
-  public double getMaxLat() {
-    return maxLat;
-  }
-
   /** returns the number of vertex points */
   public int numPoints() {
     return lats.length;
@@ -128,7 +108,7 @@ public final class Line implements LatLonGeometry {
   }
 
   @Override
-  public Component2D toComponent2D() {
+  protected Component2D toComponent2D() {
     return Line2D.create(this);
   }
 

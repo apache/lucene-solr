@@ -37,7 +37,7 @@ import org.apache.lucene.geo.GeoUtils.WindingOrder;
  * </ol>
  * @lucene.experimental
  */
-public final class Polygon implements LatLonGeometry {
+public final class Polygon extends LatLonGeometry {
   private final double[] polyLats;
   private final double[] polyLons;
   private final Polygon[] holes;
@@ -119,26 +119,6 @@ public final class Polygon implements LatLonGeometry {
     this.windingOrder = (windingSum < 0) ? GeoUtils.WindingOrder.CCW : GeoUtils.WindingOrder.CW;
   }
 
-  @Override
-  public double getMinLon() {
-    return minLon;
-  }
-
-  @Override
-  public double getMaxLon() {
-    return maxLon;
-  }
-
-  @Override
-  public double getMinLat() {
-    return minLat;
-  }
-
-  @Override
-  public double getMaxLat() {
-    return maxLat;
-  }
-
   /** returns the number of vertex points */
   public int numPoints() {
     return polyLats.length;
@@ -184,7 +164,7 @@ public final class Polygon implements LatLonGeometry {
   }
 
   @Override
-  public Component2D toComponent2D() {
+  protected Component2D toComponent2D() {
     return Polygon2D.create(this);
   }
 

@@ -27,7 +27,7 @@ package org.apache.lucene.geo;
  *   <li>For more advanced GeoSpatial indexing and query operations see the {@code spatial-extras} module
  * </ol>
  */
-public final class Point implements LatLonGeometry {
+public final class Point extends LatLonGeometry {
 
   /** latitude coordinate */
   private final double lat;
@@ -44,26 +44,6 @@ public final class Point implements LatLonGeometry {
     this.lon = lon;
   }
 
-  @Override
-  public double getMinLon() {
-    return lon;
-  }
-
-  @Override
-  public double getMaxLon() {
-    return lon;
-  }
-
-  @Override
-  public double getMinLat() {
-    return lat;
-  }
-
-  @Override
-  public double getMaxLat() {
-    return lat;
-  }
-
   /** Returns latitude value at given index */
   public double getLat() {
     return lat;
@@ -75,7 +55,7 @@ public final class Point implements LatLonGeometry {
   }
 
   @Override
-  public Component2D toComponent2D() {
+  protected Component2D toComponent2D() {
     double qLat = GeoEncodingUtils.decodeLatitude(GeoEncodingUtils.encodeLatitude(lat));
     double qLon = GeoEncodingUtils.decodeLongitude(GeoEncodingUtils.encodeLongitude(lon));
     return Point2D.create(new double[] {qLat, qLon});
