@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.blocktree;
 
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.index.CorruptIndexException;
@@ -200,11 +201,17 @@ final class IntersectTermsEnumFrame {
       compressionAlg.read(ite.in, suffixBytes, numSuffixBytes);
       suffixesReader.reset(suffixBytes, 0, numSuffixBytes);
 
-      final int numSuffixLengthBytes = ite.in.readVInt();
+      int numSuffixLengthBytes = ite.in.readVInt();
+      final boolean allEqual = (numSuffixLengthBytes & 0x01) != 0;
+      numSuffixLengthBytes >>>= 1;
       if (suffixLengthBytes.length < numSuffixLengthBytes) {
         suffixLengthBytes = new byte[ArrayUtil.oversize(numSuffixLengthBytes, 1)];
       }
-      LZ4.decompress(ite.in, numSuffixLengthBytes, suffixLengthBytes, 0);
+      if (allEqual) {
+        Arrays.fill(suffixLengthBytes, 0, numSuffixLengthBytes, ite.in.readByte());
+      } else {
+        LZ4.decompress(ite.in, numSuffixLengthBytes, suffixLengthBytes, 0);
+      }
       suffixLengthsReader.reset(suffixLengthBytes, 0, numSuffixLengthBytes);
     } else {
       code = ite.in.readVInt();
@@ -219,12 +226,21 @@ final class IntersectTermsEnumFrame {
 
     // stats
     int numBytes = ite.in.readVInt();
-    if (statBytes.length < numBytes) {
-      statBytes = new byte[ArrayUtil.oversize(numBytes, 1)];
-    }
     if (version >= BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
-      LZ4.decompress(ite.in, numBytes, statBytes, 0);
+      final boolean allOnes = (numBytes & 0x01) != 0;
+      numBytes >>>= 1;
+      if (statBytes.length < numBytes) {
+        statBytes = new byte[ArrayUtil.oversize(numBytes, 1)];
+      }
+      if (allOnes) {
+        Arrays.fill(statBytes, 0, numBytes, (byte) 1);
+      } else {
+        LZ4.decompress(ite.in, numBytes, statBytes, 0);
+      }
     } else {
+      if (statBytes.length < numBytes) {
+        statBytes = new byte[ArrayUtil.oversize(numBytes, 1)];
+      }
       ite.in.readBytes(statBytes, 0, numBytes);
     }
     statsReader.reset(statBytes, 0, numBytes);

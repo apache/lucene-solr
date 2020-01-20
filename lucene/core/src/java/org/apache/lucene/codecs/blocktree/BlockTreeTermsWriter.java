@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.codecs.CodecUtil;
@@ -638,6 +639,16 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
       newBlocks.clear();
     }
 
+    private boolean allEqual(byte[] b, int startOffset, int endOffset, byte value) {
+      Objects.checkFromToIndex(startOffset, endOffset, b.length);
+      for (int i = startOffset; i < endOffset; ++i) {
+        if (b[i] != value) {
+          return false;
+        }
+      }
+      return true;
+    }
+
     /** Writes the specified slice (start is inclusive, end is exclusive)
      *  from pending stack as a new block.  If isFloor is true, there
      *  were too many (more than maxItemsInBlock) entries sharing the
@@ -833,19 +844,33 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
       // Write suffix lengths
       // Structured fields like IDs often have most values of the same length so we give LZ4 a chance
       final int numSuffixBytes = Math.toIntExact(suffixLengthsWriter.size());
-      termsOut.writeVInt(numSuffixBytes);
       spareBytes = ArrayUtil.grow(spareBytes, numSuffixBytes);
       suffixLengthsWriter.copyTo(new ByteArrayDataOutput(spareBytes));
       suffixLengthsWriter.reset();
-      LZ4.compress(spareBytes, 0, numSuffixBytes, termsOut, compressionHashTable);
+      if (allEqual(spareBytes, 1, numSuffixBytes, spareBytes[0])) {
+        // Structured fields like IDs often have most values of the same length
+        termsOut.writeVInt((numSuffixBytes << 1) | 1);
+        termsOut.writeByte(spareBytes[0]);
+      } else {
+        // Still give LZ4 a chance, there might be runs of terms with the same length
+        termsOut.writeVInt(numSuffixBytes << 1);
+        LZ4.compress(spareBytes, 0, numSuffixBytes, termsOut, compressionHashTable);
+      }
 
-      // Term stats might have long runs of 1s for rare fields like ID fields so we give LZ4 a chance
+      // Stats
       final int numStatsBytes = Math.toIntExact(statsWriter.size());
-      termsOut.writeVInt(numStatsBytes);
       spareBytes = ArrayUtil.grow(spareBytes, numStatsBytes);
       statsWriter.copyTo(new ByteArrayDataOutput(spareBytes));
       statsWriter.reset();
-      LZ4.compress(spareBytes, 0, numStatsBytes, termsOut, compressionHashTable);
+      if (allEqual(spareBytes, 0, numStatsBytes, (byte) 1)) {
+        // ID fields would typically have blocks full of ones
+        // LZ4 would optimize this as well but we keep explicit specialization because the decoding logic is a bit faster
+        termsOut.writeVInt((numStatsBytes << 1) | 1);
+      } else {
+        // Still give LZ4 a chance otherwise, there might be runs of ones even if not all values are ones
+        termsOut.writeVInt(numStatsBytes << 1);
+        LZ4.compress(spareBytes, 0, numStatsBytes, termsOut, compressionHashTable);
+      }
 
       // Write term meta data byte[] blob
       termsOut.writeVInt((int) metaWriter.size());
