@@ -57,13 +57,13 @@ public final class ShapeField {
    */
   public static class Triangle extends Field {
 
-    // constructor for points
+    /** constructor for points */
     Triangle(String name, int aXencoded, int aYencoded) {
       super(name, TYPE);
       setTriangleValue(aXencoded, aYencoded);
     }
 
-    // constructor for lines
+    /** constructor for lines */
     Triangle(String name, int aXencoded, int aYencoded, int bXencoded, int bYencoded) {
       super(name, TYPE);
       if (aXencoded == bXencoded && aYencoded == bYencoded) {
@@ -73,7 +73,7 @@ public final class ShapeField {
       }
     }
 
-    // constructor for triangles
+    /** constructor for triangles */
     Triangle(String name, Tessellator.Triangle t) {
       super(name, TYPE);
       int aX = t.getEncodedX(0);
@@ -129,7 +129,14 @@ public final class ShapeField {
 
   /** Query Relation Types **/
   public enum QueryRelation {
-    INTERSECTS, WITHIN, DISJOINT, CONTAINS
+    /** used for INTERSECT Queries */
+    INTERSECTS,
+    /** used for WITHIN Queries */
+    WITHIN,
+    /** used for DISJOINT Queries */
+    DISJOINT,
+    /** used for CONTAINS Queries */
+    CONTAINS
   }
 
   private static final int MINY_MINX_MAXY_MAXX_Y_X = 0;
@@ -141,7 +148,7 @@ public final class ShapeField {
   private static final int MAXY_MINX_MINY_X_Y_MAXX = 6;
   private static final int MINY_MINX_Y_MAXX_MAXY_X = 7;
 
-  public static void encodePoint(byte[] bytes, int aY, int aX) {
+  private static void encodePoint(byte[] bytes, int aY, int aX) {
     int bits =  MINY_MINX_MAXY_MAXX_Y_X;
     NumericUtils.intToSortableBytes(aY, bytes, 0);
     NumericUtils.intToSortableBytes(aX, bytes, BYTES);
@@ -156,7 +163,7 @@ public final class ShapeField {
     NumericUtils.intToSortableBytes(bits, bytes, 6 * BYTES);
   }
 
-  public static void encodeLine(byte[] bytes, int aY, int aX, int bY, int bX) {
+  private static void encodeLine(byte[] bytes, int aY, int aX, int bY, int bX) {
     int bits;
     if (aX > bX) {
       if (aY > bY) {
@@ -381,7 +388,8 @@ public final class ShapeField {
     final int typeBits = (bits >>> 6) & 0x03;
     switch (typeBits) {
       case 0:
-        triangle.type = DecodedTriangle.TYPE.UNKNOWN;
+        // triangle type type is resolved during decoding
+        triangle.type = null;
         decodeTriangle(t, triangle, bits);
         break;
       case 1:
@@ -406,10 +414,6 @@ public final class ShapeField {
     triangle.bX = triangle.aX;
     triangle.cY = triangle.aY;
     triangle.cX = triangle.aX;
-    triangle.minX = triangle.aX;
-    triangle.maxX = triangle.aX;
-    triangle.minY = triangle.aY;
-    triangle.maxY = triangle.aY;
     triangle.ab = true;
     triangle.bc = true;
     triangle.ca = true;
@@ -425,10 +429,6 @@ public final class ShapeField {
         triangle.bX = NumericUtils.sortableBytesToInt(t, 3 * BYTES);
         triangle.cY = triangle.aY;
         triangle.cX = triangle.aX;
-        triangle.minX = triangle.aX;
-        triangle.maxX = triangle.bX;
-        triangle.minY = triangle.aY;
-        triangle.maxY = triangle.bY;
         break;
       case MAXY_MINX_MINY_MAXX_Y_X:
         triangle.aY = NumericUtils.sortableBytesToInt(t, 2 * BYTES);
@@ -437,18 +437,10 @@ public final class ShapeField {
         triangle.bX = NumericUtils.sortableBytesToInt(t, 3 * BYTES);
         triangle.cY = triangle.aY;
         triangle.cX = triangle.aX;
-        triangle.minX = triangle.aX;
-        triangle.maxX = triangle.bX;
-        triangle.minY = triangle.bY;
-        triangle.maxY = triangle.aY;
         break;
       default:
         throw new IllegalArgumentException("Could not decode the provided line");
     }
-    assert triangle.minX <= triangle.aX && triangle.minX <= triangle.bX && triangle.minX <= triangle.cX;
-    assert triangle.minY <= triangle.aY && triangle.minY <= triangle.bY && triangle.minY <= triangle.cY;
-    assert triangle.maxX >= triangle.aX && triangle.maxX >= triangle.bX && triangle.maxX >= triangle.cX;
-    assert triangle.maxY >= triangle.aY && triangle.maxY >= triangle.bY && triangle.maxY >= triangle.cY;
     triangle.ab = (bits & 1 << 3) == 1 << 3;
     triangle.bc = (bits & 1 << 4) == 1 << 4;
     triangle.ca = (bits & 1 << 5) == 1 << 5;
@@ -465,10 +457,6 @@ public final class ShapeField {
         triangle.bX = NumericUtils.sortableBytesToInt(t, 3 * BYTES);
         triangle.cY = NumericUtils.sortableBytesToInt(t, 4 * BYTES);
         triangle.cX = NumericUtils.sortableBytesToInt(t, 5 * BYTES);
-        triangle.minX = triangle.aX;
-        triangle.maxX = triangle.bX;
-        triangle.minY = triangle.aY;
-        triangle.maxY = triangle.bY;
         break;
       case MINY_MINX_Y_X_MAXY_MAXX:
         triangle.aY = NumericUtils.sortableBytesToInt(t, 0 * BYTES);
@@ -477,10 +465,6 @@ public final class ShapeField {
         triangle.bX = NumericUtils.sortableBytesToInt(t, 5 * BYTES);
         triangle.cY = NumericUtils.sortableBytesToInt(t, 2 * BYTES);
         triangle.cX = NumericUtils.sortableBytesToInt(t, 3 * BYTES);
-        triangle.minX = triangle.aX;
-        triangle.maxX = triangle.cX;
-        triangle.minY = triangle.aY;
-        triangle.maxY = triangle.cY;
         break;
       case MAXY_MINX_Y_X_MINY_MAXX:
         triangle.aY = NumericUtils.sortableBytesToInt(t, 2 * BYTES);
@@ -489,10 +473,6 @@ public final class ShapeField {
         triangle.bX = NumericUtils.sortableBytesToInt(t, 5 * BYTES);
         triangle.cY = NumericUtils.sortableBytesToInt(t, 0 * BYTES);
         triangle.cX = NumericUtils.sortableBytesToInt(t, 3 * BYTES);
-        triangle.minX = triangle.aX;
-        triangle.maxX = triangle.cX;
-        triangle.minY = triangle.cY;
-        triangle.maxY = triangle.aY;
         break;
       case MAXY_MINX_MINY_MAXX_Y_X:
         triangle.aY = NumericUtils.sortableBytesToInt(t, 2 * BYTES);
@@ -501,10 +481,6 @@ public final class ShapeField {
         triangle.bX = NumericUtils.sortableBytesToInt(t, 3 * BYTES);
         triangle.cY = NumericUtils.sortableBytesToInt(t, 4 * BYTES);
         triangle.cX = NumericUtils.sortableBytesToInt(t, 5 * BYTES);
-        triangle.minX = triangle.aX;
-        triangle.maxX = triangle.bX;
-        triangle.minY = triangle.bY;
-        triangle.maxY = triangle.aY;
         break;
       case Y_MINX_MINY_X_MAXY_MAXX:
         triangle.aY = NumericUtils.sortableBytesToInt(t, 4 * BYTES);
@@ -513,10 +489,6 @@ public final class ShapeField {
         triangle.bX = NumericUtils.sortableBytesToInt(t, 5 * BYTES);
         triangle.cY = NumericUtils.sortableBytesToInt(t, 2 * BYTES);
         triangle.cX = NumericUtils.sortableBytesToInt(t, 3 * BYTES);
-        triangle.minX = triangle.aX;
-        triangle.maxX = triangle.cX;
-        triangle.minY = triangle.bY;
-        triangle.maxY = triangle.cY;
         break;
       case Y_MINX_MINY_MAXX_MAXY_X:
         triangle.aY = NumericUtils.sortableBytesToInt(t, 4 * BYTES);
@@ -525,10 +497,6 @@ public final class ShapeField {
         triangle.bX = NumericUtils.sortableBytesToInt(t, 3 * BYTES);
         triangle.cY = NumericUtils.sortableBytesToInt(t, 2 * BYTES);
         triangle.cX = NumericUtils.sortableBytesToInt(t, 5 * BYTES);
-        triangle.minX = triangle.aX;
-        triangle.maxX = triangle.bX;
-        triangle.minY = triangle.bY;
-        triangle.maxY = triangle.cY;
         break;
       case MAXY_MINX_MINY_X_Y_MAXX:
         triangle.aY = NumericUtils.sortableBytesToInt(t, 2 * BYTES);
@@ -537,10 +505,6 @@ public final class ShapeField {
         triangle.bX = NumericUtils.sortableBytesToInt(t, 5 * BYTES);
         triangle.cY = NumericUtils.sortableBytesToInt(t, 4 * BYTES);
         triangle.cX = NumericUtils.sortableBytesToInt(t, 3 * BYTES);
-        triangle.minX = triangle.aX;
-        triangle.maxX = triangle.cX;
-        triangle.minY = triangle.bY;
-        triangle.maxY = triangle.aY;
         break;
       case MINY_MINX_Y_MAXX_MAXY_X:
         triangle.aY = NumericUtils.sortableBytesToInt(t, 0 * BYTES);
@@ -549,27 +513,20 @@ public final class ShapeField {
         triangle.bX = NumericUtils.sortableBytesToInt(t, 3 * BYTES);
         triangle.cY = NumericUtils.sortableBytesToInt(t, 2 * BYTES);
         triangle.cX = NumericUtils.sortableBytesToInt(t, 5 * BYTES);
-        triangle.minX = triangle.aX;
-        triangle.maxX = triangle.bX;
-        triangle.minY = triangle.aY;
-        triangle.maxY = triangle.cY;
         break;
       default:
         throw new IllegalArgumentException("Could not decode the provided triangle");
     }
     // Points of the decoded triangle must be co-planar or CCW oriented
     assert GeoUtils.orient(triangle.aX, triangle.aY, triangle.bX, triangle.bY, triangle.cX, triangle.cY) >= 0;
-    assert triangle.minX <= triangle.aX && triangle.minX <= triangle.bX && triangle.minX <= triangle.cX;
-    assert triangle.minY <= triangle.aY && triangle.minY <= triangle.bY && triangle.minY <= triangle.cY;
-    assert triangle.maxX >= triangle.aX && triangle.maxX >= triangle.bX && triangle.maxX >= triangle.cX;
-    assert triangle.maxY >= triangle.aY && triangle.maxY >= triangle.bY && triangle.maxY >= triangle.cY;
     triangle.ab = (bits & 1 << 3) == 1 << 3;
     triangle.bc = (bits & 1 << 4) == 1 << 4;
     triangle.ca = (bits & 1 << 5) == 1 << 5;
-    if (triangle.type == DecodedTriangle.TYPE.UNKNOWN) {
+    if (triangle.type == null) {
       // Encoding does not contain type information
       resolveTriangleType(triangle);
     }
+    assert triangle.type != null;
   }
 
   private static void resolveTriangleType(DecodedTriangle triangle) {
@@ -598,28 +555,37 @@ public final class ShapeField {
    * Represents a encoded triangle using {@link ShapeField#decodeTriangle(byte[], DecodedTriangle)}.
    */
   public static class DecodedTriangle {
-    /**
-     * type of triangle:
-     * <p><ul>
-     * <li>POINT: all coordinates are equal
-     * <li>LINE: first and third coordinates are equal
-     * <li>TRIANGLE: all coordinates are different
-     * <li>UNKNOWN: Stored triangle does not contain type information. The type is resolved during decoding.
-     * </ul><p>
-     */
+    /** type of triangle */
     public enum TYPE {
-      POINT, LINE, TRIANGLE, UNKNOWN
+      /** all coordinates are equal */
+      POINT,
+      /** first and third coordinates are equal */
+      LINE,
+      /** all coordinates are different */
+      TRIANGLE
     }
-
-    // Triangle vertices
-    public int aX, aY, bX, bY, cX, cY;
-    // Triangle bounding box
-    public int minX, maxX, minY, maxY;
-    // Represent if edges belongs to original shape
-    public boolean ab, bc, ca;
-    // Triangle type
+    /** x coordinate, vertex one */
+    public int aX;
+    /** y coordinate, vertex one */
+    public int aY;
+    /** x coordinate, vertex two */
+    public int bX;
+    /** y coordinate, vertex two */
+    public int bY;
+    /** x coordinate, vertex three */
+    public int cX;
+    /** y coordinate, vertex three */
+    public int cY;
+    /** represent if edge ab belongs to original shape */
+    public boolean ab;
+    /** represent if edge bc belongs to original shape */
+    public boolean bc;
+    /** represent if edge ca belongs to original shape */
+    public boolean ca;
+    /** triangle type */
     public TYPE type;
 
+    /** default xtor */
     public DecodedTriangle() {
     }
 
@@ -636,7 +602,7 @@ public final class ShapeField {
           && ab == other.ab && bc == other.bc && ca == other.ca;
     }
 
-    /** pretty print the triangle vertices */
+    @Override
     public String toString() {
       String result = aX + ", " + aY + " " +
           bX + ", " + bY + " " +
