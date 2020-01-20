@@ -38,7 +38,7 @@ import org.apache.lucene.util.NumericUtils;
  *
  **/
 final class LatLonShapeComponent2DQuery extends ShapeQuery {
-  final LatLonGeometry[] geometries;
+  final private LatLonGeometry[] geometries;
   final private Component2D component2D;
 
   /**
@@ -46,19 +46,8 @@ final class LatLonShapeComponent2DQuery extends ShapeQuery {
    */
   LatLonShapeComponent2DQuery(String field, QueryRelation queryRelation, LatLonGeometry[] geometries) {
     super(field, queryRelation);
-    if (geometries == null) {
-      throw new IllegalArgumentException("geometries must not be null");
-    }
-    if (geometries.length == 0) {
-      throw new IllegalArgumentException("geometries must not be empty");
-    }
-    for (int i = 0; i < geometries.length; i++) {
-      if (geometries[i] == null) {
-        throw new IllegalArgumentException("geometries[" + i + "] must not be null");
-      }
-    }
-    this.geometries = geometries.clone();
     this.component2D = LatLonGeometry.create(geometries);
+    this.geometries = geometries.clone();
   }
 
   @Override

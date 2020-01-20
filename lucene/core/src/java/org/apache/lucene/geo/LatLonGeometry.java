@@ -27,11 +27,23 @@ public abstract class LatLonGeometry {
 
   /** Creates a Component2D from the provided LatLonGeometry array */
   public static Component2D create(LatLonGeometry... latLonGeometries) {
+    if (latLonGeometries == null) {
+      throw new IllegalArgumentException("geometries must not be null");
+    }
+    if (latLonGeometries.length == 0) {
+      throw new IllegalArgumentException("geometries must not be empty");
+    }
     if (latLonGeometries.length == 1) {
+      if (latLonGeometries[0] == null) {
+        throw new IllegalArgumentException("geometries[0] must not be null");
+      }
       return latLonGeometries[0].toComponent2D();
     }
     Component2D[] components = new Component2D[latLonGeometries.length];
     for (int i = 0; i < latLonGeometries.length; i++) {
+      if (latLonGeometries[i] == null) {
+        throw new IllegalArgumentException("geometries[" + i + "] must not be null");
+      }
       components[i] = latLonGeometries[i].toComponent2D();
     }
     return ComponentTree.create(components);
