@@ -53,8 +53,6 @@ import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
  * and 8.381903171539307E-8 for longitude).
  * @see PointValues
  * @see LatLonDocValuesField
- *
- * @lucene.experimental
  */
 public class LatLonShape {
 

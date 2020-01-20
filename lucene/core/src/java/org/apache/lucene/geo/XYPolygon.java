@@ -21,8 +21,6 @@ import java.util.Arrays;
 /**
  * Represents a polygon in cartesian space. You can construct the Polygon directly with {@code double[]}, {@code double[]} x, y arrays
  * coordinates.
- *
- * @lucene.experimental
  */
 public class XYPolygon {
   private final double[] x;

@@ -49,8 +49,6 @@ import static org.apache.lucene.geo.XYEncodingUtils.encode;
  * original {@code double} values.
  * @see PointValues
  * @see LatLonDocValuesField
- *
- * @lucene.experimental
  */
 public class XYShape {
 

@@ -190,20 +190,11 @@ public final class Lucene84PostingsWriter extends PushPostingsWriterBase {
   }
 
   @Override
-  public int setField(FieldInfo fieldInfo) {
+  public void setField(FieldInfo fieldInfo) {
     super.setField(fieldInfo);
     skipWriter.setField(writePositions, writeOffsets, writePayloads);
     lastState = emptyState;
     fieldHasNorms = fieldInfo.hasNorms();
-    if (writePositions) {
-      if (writePayloads || writeOffsets) {
-        return 3;  // doc + pos + pay FP
-      } else {
-        return 2;  // doc + pos FP
-      }
-    } else {
-      return 1;    // doc FP
-    }
   }
 
   @Override
@@ -466,16 +457,16 @@ public final class Lucene84PostingsWriter extends PushPostingsWriterBase {
   }
   
   @Override
-  public void encodeTerm(long[] longs, DataOutput out, FieldInfo fieldInfo, BlockTermState _state, boolean absolute) throws IOException {
+  public void encodeTerm(DataOutput out, FieldInfo fieldInfo, BlockTermState _state, boolean absolute) throws IOException {
     IntBlockTermState state = (IntBlockTermState)_state;
     if (absolute) {
       lastState = emptyState;
     }
-    longs[0] = state.docStartFP - lastState.docStartFP;
+    out.writeVLong(state.docStartFP - lastState.docStartFP);
     if (writePositions) {
-      longs[1] = state.posStartFP - lastState.posStartFP;
+      out.writeVLong(state.posStartFP - lastState.posStartFP);
       if (writePayloads || writeOffsets) {
-        longs[2] = state.payStartFP - lastState.payStartFP;
+        out.writeVLong(state.payStartFP - lastState.payStartFP);
       }
     }
     if (state.singletonDocID != -1) {
