@@ -237,6 +237,20 @@ public class LocalStorageClient implements CoreStorageClient {
   public void shutdown() {
       
   }
+  
+  @Override
+  public List<String> listCoreBlobFiles(String prefix) throws BlobException {
+    try {
+      Path path = Paths.get(getBlobAbsolutePath(prefix));
+      List<String> blobFiles =
+        Files.walk(path).map(Path::toFile)
+        .map(file -> BlobClientUtils.concatenatePaths(prefix, file.getName()))
+        .collect(Collectors.toList());
+      return blobFiles;
+    } catch (Exception ex) {
+      throw new BlobException(ex);
+    }
+  }
     
   @Override
   public List<String> listCoreBlobFilesOlderThan(String blobName, long timestamp) throws BlobException {

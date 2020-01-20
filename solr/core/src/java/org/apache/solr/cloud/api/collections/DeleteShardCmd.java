@@ -31,13 +31,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.overseer.OverseerAction;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.Slice;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -47,6 +50,10 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.store.blob.process.BlobDeleteManager;
+import org.apache.solr.store.blob.process.BlobDeleteProcessor;
+import org.apache.solr.store.blob.process.BlobDeleterTask.BlobDeleterTaskResult;
+import org.apache.solr.store.shared.SharedStoreManager;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,7 +82,8 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
     }
 
     log.info("Delete shard invoked");
-    Slice slice = clusterState.getCollection(collectionName).getSlice(sliceId);
+    DocCollection docCollection = clusterState.getCollection(collectionName);
+    Slice slice = docCollection.getSlice(sliceId);
     if (slice == null) throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
         "No shard with name " + sliceId + " exists for collection " + collectionName);
 
@@ -136,7 +144,30 @@ public class DeleteShardCmd implements OverseerCollectionMessageHandler.Cmd {
       log.debug("Waiting for delete shard action to complete");
       cleanupLatch.await(1, TimeUnit.MINUTES);
       
-      ocmh.overseer.getShardSharedMetadataController().cleanUpMetadataNodes(collectionName, slice.getName());
+      if (docCollection != null && docCollection.getSharedIndex()) {
+        ocmh.overseer.getShardSharedMetadataController().cleanUpMetadataNodes(collectionName, slice.getName());
+        
+        SharedStoreManager sharedStoreManager = ocmh.overseer.getCoreContainer().getSharedStoreManager();
+        BlobDeleteManager deleteManager = sharedStoreManager.getBlobDeleteManager();
+        BlobDeleteProcessor deleteProcessor = deleteManager.getOverseerDeleteProcessor();
+        
+        String sharedShardName = (String) slice.get(ZkStateReader.SHARED_SHARD_NAME);
+        CompletableFuture<BlobDeleterTaskResult> deleteFuture =
+            deleteProcessor.deleteShard(collectionName, sharedShardName, false);
+        try {
+          // TODO: Find a reasonable timeout value
+          BlobDeleterTaskResult result = deleteFuture.get(60, TimeUnit.SECONDS);
+          if (!result.isSuccess()) {
+            log.warn("Deleting all shard files belonging to shared collection " + collectionName +
+                " and shard " +  slice.getName() + " was not successful! Files belonging to this "
+                    + "collection may be orphaned.");
+          }
+        } catch (TimeoutException tex) {
+          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, "Could not complete deleting shard" + 
+              slice.getName() + " from shared store belonging to collection " + collectionName +
+              " in a reasonable amount of time, files belonging to this shard may be orphaned.", tex);
+        }
+      }
 
       ZkNodeProps m = new ZkNodeProps(Overseer.QUEUE_OPERATION, DELETESHARD.toLower(), ZkStateReader.COLLECTION_PROP,
           collectionName, ZkStateReader.SHARD_ID_PROP, sliceId);

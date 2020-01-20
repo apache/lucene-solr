@@ -270,6 +270,28 @@ public class S3StorageClient implements CoreStorageClient {
   public void shutdown() {
     s3Client.shutdown();
   }
+  
+  @Override
+  public List<String> listCoreBlobFiles(String prefix) throws BlobException {
+    ListObjectsRequest listRequest = new ListObjectsRequest();
+    listRequest.setBucketName(blobBucketName);
+    listRequest.setPrefix(prefix);
+    
+    List<String> blobFiles = new LinkedList<>();
+    try {
+      ObjectListing objectListing = s3Client.listObjects(listRequest);
+      iterateObjectListingAndConsume(objectListing, object -> {
+        blobFiles.add(object.getKey());
+      });
+      return blobFiles;
+    } catch (AmazonServiceException ase) {
+      throw handleAmazonServiceException(ase);
+    } catch (AmazonClientException ace) {
+      throw new BlobClientException(ace);
+    } catch (Exception ex) {
+      throw new BlobException(ex);
+    }
+  }
 
   @Override
   public List<String> listCoreBlobFilesOlderThan(String blobName, long timestamp) throws BlobException {

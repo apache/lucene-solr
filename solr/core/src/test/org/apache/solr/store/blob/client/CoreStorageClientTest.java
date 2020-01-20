@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Collection;
+import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.commons.io.FileUtils;
@@ -86,6 +87,22 @@ public class CoreStorageClientTest extends SolrTestCaseJ4 {
     // core name length + uuid4 length + 1 for delimiter + 4 for the "xxx." prepended
     int expectedBlobKeyLength = TEST_CORE_NAME_1.length() + uuid4length + 1 + 4;
     Assert.assertEquals(blobPath.length(), expectedBlobKeyLength);
+  }
+  
+  @Test
+  public void testListBlobFiles() throws Exception {
+    List<String> expectedPaths = new LinkedList<>();
+    expectedPaths.add(
+        blobClient.pushStream(TEST_CORE_NAME_1, new ByteArrayInputStream(EMPTY_BYTES_ARR), EMPTY_BYTES_ARR.length, "xxx"));
+    expectedPaths.add(
+        blobClient.pushStream(TEST_CORE_NAME_1, new ByteArrayInputStream(EMPTY_BYTES_ARR), EMPTY_BYTES_ARR.length, "yyy"));
+    expectedPaths.add(
+        blobClient.pushStream(TEST_CORE_NAME_2, new ByteArrayInputStream(EMPTY_BYTES_ARR), EMPTY_BYTES_ARR.length, "zzzz"));
+    expectedPaths.add(
+        blobClient.pushStream(TEST_CORE_NAME_2, new ByteArrayInputStream(EMPTY_BYTES_ARR), EMPTY_BYTES_ARR.length, "1234"));
+    // the common prefix is s_test_core_name for these blob files
+    List<String> blobFiles = blobClient.listCoreBlobFiles("s_test_core_name");
+    Assert.assertTrue(blobFiles.containsAll(expectedPaths));
   }
     
   @Test

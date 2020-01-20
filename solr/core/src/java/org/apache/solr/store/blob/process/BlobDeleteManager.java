@@ -18,28 +18,55 @@
 package org.apache.solr.store.blob.process;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Set;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingDeque;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.apache.lucene.util.NamedThreadFactory;
-import org.apache.solr.common.util.ExecutorUtil.MDCAwareThreadPoolExecutor;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.store.blob.client.CoreStorageClient;
 import org.apache.solr.store.blob.metadata.CorePushPull;
+import org.apache.solr.store.blob.metadata.ServerSideMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.annotations.VisibleForTesting;
+
 /**
- * Manager of blobs (files) to delete, putting them in a queue (if space left on the queue) then consumed and processed
- * by {@link BlobDeleterTask}
+ * This class manages the deletion machinery required by shared storage enabled collections. Its responsibilities
+ * include the allocation and management of bounded deletion task queues and their consumers. 
+ * 
+ * Deletion of blob files from shared store happen on two paths:
+ *  1. In the indexing path, the local {@link SolrCore}'s index files represented by an instance of a
+ *  {@link ServerSideMetadata} object is resolved against the blob store's core.metadata file, or the
+ *  the source of truth for what index files a {@link SolrCore} should have. As the difference between 
+ *  these two metadata instances are resolved, we add files to be deleted to the BlobDeleteManager which
+ *  enqueues a {@link BlobDeleterTask} for asynchronous processing.
+ *  2. In the collection admin API, we may delete a collection or collection shard. In the former, all index
+ *  files belonging to the specified collection on shared storage should be deleted while in the latter 
+ *  all index files belonging to a particular collection/shard pair should be deleted.   
+ * 
+ * Shard leaders are the only replicas receiving indexing traffic and pushing to shared store in a shared collection
+ * so all Solr nodes in a cluster may be sending deletion requests to the shared storage provider at a given moment.
+ * Collection commands are only processed by the Overseer and therefore only the Overseer should be deleting entire
+ * collections or shard files from shared storage.
+ * 
+ * The BlobDeleteManager maintains two queues to prevent any potential starvation, one for the incremental indexing 
+ * deletion path that is always initiated when a Solr node with shared collections starts up and one that is only
+ * used when the current node is Overseer and handles Overseer specific actions.
  */
 public class BlobDeleteManager {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  
+  /**
+   * Identifier for a BlobDeleteProcessor that runs on all Solr nodes containing shared collections
+   */
+  public static final String BLOB_FILE_DELETER = "BlobFileDeleter";
+  
+  /**
+   * Identifier for a BlobDeleteProcessor that runs on the Overseer if the Solr cluster contains
+   * any shared collection
+   */
+  public static final String OVERSEER_BLOB_FILE_DELETER = "OverseerBlobFileDeleter";
   
   /**
    * Limit to the number of blob files to delete accepted on the delete queue (and lost in case of server crash). When
@@ -48,10 +75,20 @@ public class BlobDeleteManager {
    * be deleted. If that constant is reduced to 100 for example, some enqueues in the test will fail and there will be
    * files left to be deleted where we've expected none. So don't reduce it too much :)
    */
-  private static final int ALMOST_MAX_DELETER_QUEUE_SIZE = 200;
+  private static final int DEFAULT_ALMOST_MAX_DELETER_QUEUE_SIZE = 200;
   
-  private final CoreStorageClient client;
-  private final RejecterThreadPoolExecutor deleteExecutor;
+  private static final int DEFAULT_THREAD_POOL_SIZE = 5;
+  
+  // TODO: 30 seconds is currently chosen arbitrarily and these values should be based as configurable values
+  private static final int DEFAULT_DELETE_DELAY_MS = 30000;
+
+  private static int MAX_DELETE_ATTEMPTS = 50;
+  private static long SLEEP_MS_FAILED_ATTEMPT = TimeUnit.SECONDS.toMillis(10);
+  
+  private final CoreStorageClient storageClient;
+  
+  private final BlobDeleteProcessor deleteProcessor;
+  private final BlobDeleteProcessor overseerDeleteProcessor;
 
   /**
    * After a core push has marked a file as deleted, wait at least this long before actually deleting its blob from the
@@ -71,92 +108,81 @@ public class BlobDeleteManager {
    * delete until we know for sure the file can be resuscitated...
    */
   private final long deleteDelayMs;
+  
+  private AtomicBoolean isShutdown; 
 
   /**
-   * TODO : Creates a default delete client, should have config based one  
+   * Creates a new BlobDeleteManager with the provided {@link CoreStorageClient} and instantiates
+   * it with a default deletedelayMs, queue size, and thread pool size. A default {@link BlobDeleteProcessor}
+   * is also created.
    */
   public BlobDeleteManager(CoreStorageClient client) {
-    // 30 seconds
-    this(client, ALMOST_MAX_DELETER_QUEUE_SIZE, 5, 30000);
+    this(client, DEFAULT_ALMOST_MAX_DELETER_QUEUE_SIZE, DEFAULT_THREAD_POOL_SIZE, DEFAULT_DELETE_DELAY_MS);
   }
   
-  public BlobDeleteManager(CoreStorageClient client, int almostMaxQueueSize, int numDeleterThreads, long deleteDelayMs) {
-    NamedThreadFactory threadFactory = new NamedThreadFactory("BlobFileDeleter");
-
-    // Note this queue MUST NOT BE BOUNDED, or we risk deadlocks given that BlobDeleterTask's reenqueue themselves upon failure
-    BlockingQueue<Runnable> deleteQueue = new LinkedBlockingDeque<>();
-
-    deleteExecutor = new RejecterThreadPoolExecutor(numDeleterThreads, deleteQueue, almostMaxQueueSize, threadFactory);
-
+  /**
+   * Creates a new BlobDeleteManager with the specified BlobDeleteProcessors.
+   */
+  @VisibleForTesting
+  public BlobDeleteManager(CoreStorageClient client, long deleteDelayMs, BlobDeleteProcessor deleteProcessor,
+      BlobDeleteProcessor overseerDeleteProcessor) {
     this.deleteDelayMs = deleteDelayMs;
-    this.client = client;
+    this.storageClient = client;
+    this.isShutdown = new AtomicBoolean(false);
+    this.deleteProcessor = deleteProcessor;
+    this.overseerDeleteProcessor = overseerDeleteProcessor;
+  }
+  
+  /**
+   * Creates a new BlobDeleteManager and default {@link BlobDeleteProcessor}.
+   */
+  public BlobDeleteManager(CoreStorageClient client, int almostMaxQueueSize, int numDeleterThreads, long deleteDelayMs) {
+    this.deleteDelayMs = deleteDelayMs;
+    this.storageClient = client;
+    this.isShutdown = new AtomicBoolean(false);
+    
+    deleteProcessor = new BlobDeleteProcessor(BLOB_FILE_DELETER, storageClient, almostMaxQueueSize, numDeleterThreads,
+        MAX_DELETE_ATTEMPTS, SLEEP_MS_FAILED_ATTEMPT);
+    
+    // Non-Overseer nodes will initiate a delete processor but the underlying pool will sit idle
+    // until the node is elected and tasks are added. The overhead should be small.
+    overseerDeleteProcessor = new BlobDeleteProcessor(OVERSEER_BLOB_FILE_DELETER, storageClient, almostMaxQueueSize, numDeleterThreads,
+        MAX_DELETE_ATTEMPTS, SLEEP_MS_FAILED_ATTEMPT);
+  }
+  
+  /**
+   * Returns a delete processor for normal indexing flow shared store deletion
+   */
+  public BlobDeleteProcessor getDeleteProcessor() {
+    return deleteProcessor;
+  }
+  
+  /**
+   * Returns a delete processor specifically allocated for Overseer use
+   */
+  public BlobDeleteProcessor getOverseerDeleteProcessor() {
+    return overseerDeleteProcessor;
   }
 
+  /**
+   * Shuts down all {@link BlobDeleteProcessor} currently managed by the BlobDeleteManager
+   */
   public void shutdown() {
-    deleteExecutor.shutdown();
+    isShutdown.set(true);
+    log.info("BlobDeleteManager is shutting down");
+    
+    deleteProcessor.shutdown();
+    log.info("BlobDeleteProcessor " + deleteProcessor.getName() + " has shutdown");
+    overseerDeleteProcessor.shutdown();
+    log.info("BlobDeleteProcessor " + overseerDeleteProcessor.getName() + " has shutdown");
   }
 
+  /**
+   * Get the delay that a file being deleted via the indexing flow must wait before it is 
+   * eligible for deletion from shared storage. See {@link BlobDeleteManager#deleteDelayMs} for more
+   * details  
+   */
   public long getDeleteDelayMs() {
     return deleteDelayMs;
-  }
-
-  /**
-   * This method is called 'externally" (i.e. not by tasks needing to reenqueue) and enq
-   * @return <code>true</code> if the delete was enqueued, <code>false</code> if can't be enqueued (deleter turned off
-   * by config or current queue of blobs file deletes too full).
-   */
-  public boolean enqueueForDelete(String sharedBlobName, Set<String> blobNames) {
-    BlobDeleterTask command = new BlobDeleterTask(client, sharedBlobName, blobNames, deleteExecutor);
-    return deleteExecutor.executeIfPossible(command);
-  }
-
-  /**
-   * Subclass of {@link ThreadPoolExecutor} that has an additional command enqueue method {@link #executeIfPossible(Runnable)}
-   * that rejects the enqueue if the underlying queue is over a configured size.<p>
-   * The created thread pool executor has a fixed number of threads because the undelying blocking queue is unbounded.
-   */
-  private class RejecterThreadPoolExecutor extends MDCAwareThreadPoolExecutor {
-    private final int targetMaxQueueSize;
-    /**
-     * @param poolSize the number of threads to keep in the pool. There is a fixed number of threads in that pool,
-     *                 because a {@link ThreadPoolExecutor} using an unbounded queue will not have the pool create more threads
-     *                 than the core pool size, even tasks are slow to execute.
-     * @param workQueue the queue to use for holding tasks before they are
-     *        executed.  This queue will hold only the {@code Runnable}
-     *        tasks submitted by the {@code execute} method.
-     * @param targetMaxQueueSize max queue size to accept enqueues through {@link #executeIfPossible(Runnable)} but having
-     *        no impact on enqueues through {@link #execute(Runnable)}.
-     * @param threadFactory the factory to use when the executor
-     *        creates a new thread
-     */
-    RejecterThreadPoolExecutor(int poolSize,
-                              BlockingQueue<Runnable> workQueue,
-                              int targetMaxQueueSize,
-                              ThreadFactory threadFactory) {
-      super(poolSize, poolSize, 0L, TimeUnit.SECONDS, workQueue, threadFactory);
-      this.targetMaxQueueSize = targetMaxQueueSize;
-    }
-
-    /**
-     * Enqueues the passed <code>command</code> for execution just like a call to superclass' {@link ThreadPoolExecutor#execute(Runnable)}
-     * if the work queue is not too full (below or at size <code>targetMaxQueueSize</code> passed in the constructor).
-     * @param command the task to execute
-     * @return <code>true</code> if the <code>command</code> was accepted and enqueued for execution (or executed),
-     * <code>false</code> if the underlying queue was too full and the <code>command</code> was not enqueued for execution
-     * (i.e. nothing happened).
-     */
-    boolean executeIfPossible(Runnable command) {
-      if (getQueue().size() > targetMaxQueueSize) {
-        return false;
-      }
-
-      try {
-        execute(command);
-      } catch (RejectedExecutionException ree) {
-        // pool might be shutting down
-        return false;
-      }
-      return true;
-    }
   }
 }

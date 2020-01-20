@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.invoke.MethodHandles;
-import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -31,7 +30,6 @@ import java.util.Set;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.store.Directory;
@@ -50,10 +48,13 @@ import org.apache.solr.store.blob.client.ToFromJson;
 import org.apache.solr.store.blob.metadata.ServerSideMetadata.CoreFileData;
 import org.apache.solr.store.blob.metadata.SharedStoreResolutionUtil.SharedMetadataResolutionResult;
 import org.apache.solr.store.blob.process.BlobDeleteManager;
+import org.apache.solr.store.blob.process.BlobDeleteProcessor;
 import org.apache.solr.store.blob.util.BlobStoreUtils;
 import org.apache.solr.store.shared.metadata.SharedShardMetadataController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.annotations.VisibleForTesting;
 
 /**
  * Class pushing updates from the local core to the Blob Store and pulling updates from Blob store to local core.
@@ -502,6 +503,9 @@ public class CorePushPull {
       return System.nanoTime() - file.getDeletedAt() >= deleteManager.getDeleteDelayMs();
     }
     
+    /**
+     * @return true if the files were enqueued for deletion successfully
+     */
     @VisibleForTesting
     protected boolean enqueueForDelete(String coreName, Set<BlobCoreMetadata.BlobFileToDelete> blobFiles) {
       if (blobFiles == null || blobFiles.isEmpty()) {
@@ -510,7 +514,14 @@ public class CorePushPull {
       Set<String> blobNames = blobFiles.stream()
                                 .map(blobFile -> blobFile.getBlobName())
                                 .collect(Collectors.toCollection(HashSet::new));
-      return deleteManager.enqueueForDelete(coreName, blobNames);
+      
+      BlobDeleteProcessor deleteProcessor = deleteManager.getDeleteProcessor();
+      try {
+        deleteProcessor.deleteFiles(coreName, blobNames, true);
+        return true;
+      } catch (Exception ex) {
+        return false;
+      }
     }
 
     /**

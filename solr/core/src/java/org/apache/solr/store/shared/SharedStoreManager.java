@@ -84,9 +84,6 @@ public class SharedStoreManager {
     return blobStorageProvider;
   }
   
-  /*
-   * Initiates a BlobDeleteManager if it doesn't exist and returns one 
-   */
   public BlobDeleteManager getBlobDeleteManager() {
     if (blobDeleteManager != null) {
       return blobDeleteManager;
@@ -122,6 +119,14 @@ public class SharedStoreManager {
   @VisibleForTesting
   public void initConcurrencyController(SharedCoreConcurrencyController concurrencyController) {
     this.sharedCoreConcurrencyController = concurrencyController;
+  }
+  
+  @VisibleForTesting
+  public void initBlobDeleteManager(BlobDeleteManager blobDeleteManager) {
+    if (this.blobDeleteManager != null) {
+      blobDeleteManager.shutdown();
+    }
+    this.blobDeleteManager = blobDeleteManager;
   }
 
 }
