@@ -22,6 +22,7 @@ import org.apache.lucene.document.ShapeField.QueryRelation;
 import org.apache.lucene.geo.Component2D;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.geo.LatLonGeometry;
+import org.apache.lucene.geo.Line;
 import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.NumericUtils;
 
@@ -46,6 +47,14 @@ final class LatLonShapeComponent2DQuery extends ShapeQuery {
    */
   LatLonShapeComponent2DQuery(String field, QueryRelation queryRelation, LatLonGeometry[] geometries) {
     super(field, queryRelation);
+    if (queryRelation == QueryRelation.WITHIN) {
+      for (LatLonGeometry geometry : geometries) {
+        if (geometry instanceof Line) {
+          throw new IllegalArgumentException("LatLonShapeComponent2DQuery does not support " + QueryRelation.WITHIN + " queries with line geometries");
+        }
+      }
+
+    }
     this.component2D = LatLonGeometry.create(geometries);
     this.geometries = geometries.clone();
   }
