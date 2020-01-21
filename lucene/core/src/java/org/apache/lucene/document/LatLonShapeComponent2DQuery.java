@@ -50,6 +50,7 @@ final class LatLonShapeComponent2DQuery extends ShapeQuery {
     if (queryRelation == QueryRelation.WITHIN) {
       for (LatLonGeometry geometry : geometries) {
         if (geometry instanceof Line) {
+          // TODO: line queries do not support within relations
           throw new IllegalArgumentException("LatLonShapeComponent2DQuery does not support " + QueryRelation.WITHIN + " queries with line geometries");
         }
       }
