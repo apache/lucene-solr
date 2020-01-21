@@ -227,6 +227,8 @@ Bug Fixes
 
 * SOLR-14192: Race condition between SchemaManager and ZkIndexSchemaReader. (ab)
 
+* SOLR-14196: AdminUI login not working for JWTAuth when blockUnknown=false (janhoy)
+
 Other Changes
 ---------------------
 
