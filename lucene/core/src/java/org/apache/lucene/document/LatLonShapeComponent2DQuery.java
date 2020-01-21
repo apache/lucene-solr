@@ -27,13 +27,8 @@ import org.apache.lucene.index.PointValues.Relation;
 import org.apache.lucene.util.NumericUtils;
 
 /**
- * Finds all previously indexed geo shapes that intersect the specified arbitrary.
- * <p>
- * Note:
- * <ul>
- *    <li>Dateline crossing is not yet supported. Shapes should be cut at the dateline and provided as an array
- *    of {@link LatLonGeometry}</li>
- * </ul>
+ * Finds all previously indexed cartesian shapes that comply the given {@link QueryRelation} with
+ * the specified array of {@link LatLonGeometry}.
  *
  * <p>The field must be indexed using {@link LatLonShape#createIndexableFields} added per document.
  *
