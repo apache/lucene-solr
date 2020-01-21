@@ -40,7 +40,6 @@ import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.junit.After;
@@ -64,11 +63,11 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
   // we also want to ensure that our leader doesn't do a "Commit on close"
   //
   // TODO: once SOLR-13486 is fixed, we should randomize this...
-  private static final boolean TEST_VALUE_FOR_COMMIT_ON_CLOSE = false;
+  private static final boolean TEST_VALUE_FOR_SKIP_COMMIT_ON_CLOSE = true;
   
   @Before
   public void setupCluster() throws Exception {
-    DirectUpdateHandler2.commitOnClose = TEST_VALUE_FOR_COMMIT_ON_CLOSE;
+    TestInjection.skipIndexWriterCommitOnClose = TEST_VALUE_FOR_SKIP_COMMIT_ON_CLOSE;
     
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     System.setProperty("solr.ulog.numRecordsToKeep", "1000");
@@ -99,7 +98,6 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
   @After
   public void tearDownCluster() throws Exception {
     TestInjection.reset();
-    DirectUpdateHandler2.commitOnClose = true;
     
     if (null != proxies) {
       for (SocketProxy proxy : proxies.values()) {
@@ -163,8 +161,8 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
     addDocs(false, uncommittedDocs, committedDocs + 1);
 
     log.info("Stopping leader node...");
-    assertEquals("Something broke our expected commitOnClose",
-                 TEST_VALUE_FOR_COMMIT_ON_CLOSE, DirectUpdateHandler2.commitOnClose);
+    assertEquals("Something broke our expected skipIndexWriterCommitOnClose",
+                 TEST_VALUE_FOR_SKIP_COMMIT_ON_CLOSE, TestInjection.skipIndexWriterCommitOnClose);
     NODE0.stop();
     cluster.waitForJettyToStop(NODE0);
 

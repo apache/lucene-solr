@@ -17,35 +17,47 @@ buildscript {
   }
 }
 
+def gitStatus(dir) {
+  try {
+    def repository = new FileRepositoryBuilder()
+        .setWorkTree(dir)
+        .setMustExist(true)
+        .build()
+
+    def status = new Git(repository).status().call()
+    return status
+  } catch (RepositoryNotFoundException | NoWorkTreeException e) {
+    logger.warn("WARNING: Directory is not a valid GIT checkout (won't check dirty files): ${dir}")
+    return null
+  } catch (NotSupportedException e) {
+    throw new GradleException("jgit does not support git repository version at this location: ${dir}", e)
+  }
+}
+
 configure(rootProject) {
-  // Verify git working copy does not have any modified files.
-  task checkWorkingCopyPristine() {
+  // Verify git working copy does not have any unstaged modified files.
+  task checkWorkingCopyClean() {
     doFirst {
-      def gitDir = rootProject.projectDir
-      try {
-        def repository = new FileRepositoryBuilder()
-            .setWorkTree(gitDir)
-            .setMustExist(true)
-            .build()
+      def status = gitStatus(rootProject.projectDir)
+      if (status == null) {
+        // Ignore the check. This isn't a git checkout.
+      } else {
+        def offenders = [
+            // Exclude staged changes. These are fine in precommit.
+            // "(added)": status.added,
+            // "(changed)": status.changed,
+            // "(removed)": status.removed,
+            "(conflicting)": status.conflicting,
+            "(missing)": status.missing,
+            "(modified)": status.modified,
+            "(untracked)": [status.untracked, status.untrackedFolders].flatten()
+        ].collectMany { fileStatus, files ->
+          files.collect {file -> "  - ${file} ${fileStatus}" }
+        }.sort()
 
-        def status = new Git(repository).status().call()
-        if (!status.clean) {
-          def offenders = [
-              "(added)": status.added,
-              "(changed)": status.changed,
-              "(conflicting)": status.conflicting,
-              "(missing)": status.missing,
-              "(modified)": status.modified,
-              "(removed)": status.removed,
-              "(untracked)": [status.untracked, status.untrackedFolders].flatten()
-          ].collectMany { fileStatus, files ->
-            files.collect {file -> "  - ${file} ${fileStatus}" }
-          }.sort()
-
+        if (offenders) {
           throw new GradleException("Working copy is not a clean git checkout, offending files:\n${offenders.join("\n")}")
         }
-      } catch (RepositoryNotFoundException | NoWorkTreeException | NotSupportedException e) {
-        logger.warn("WARNING: Directory is not a valid GIT checkout (won't check dirty files): ${gitDir}")
       }
     }
   }

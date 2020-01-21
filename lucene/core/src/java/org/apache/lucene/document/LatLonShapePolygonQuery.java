@@ -36,8 +36,6 @@ import org.apache.lucene.util.NumericUtils;
  *
  * <p>The field must be indexed using
  * {@link org.apache.lucene.document.LatLonShape#createIndexableFields} added per document.
- *
- *  @lucene.experimental
  **/
 final class LatLonShapePolygonQuery extends ShapeQuery {
   final Polygon[] polygons;

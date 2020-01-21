@@ -187,7 +187,6 @@ public class CdcrBidirectionalTest extends SolrTestCaseJ4 {
       req = new UpdateRequest();
       doc = new SolrInputDocument();
       String atomicFieldName = "abc";
-      ImmutableMap.of("", "");
       String atomicUpdateId = "cluster2_" + random().nextInt(numDocs_c2);
       doc.addField("id", atomicUpdateId);
       doc.addField("xyz", ImmutableMap.of("delete", ""));

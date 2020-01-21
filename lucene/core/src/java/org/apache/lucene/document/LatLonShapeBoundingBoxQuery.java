@@ -27,8 +27,6 @@ import org.apache.lucene.index.PointValues.Relation;
  *
  * <p>The field must be indexed using
  * {@link org.apache.lucene.document.LatLonShape#createIndexableFields} added per document.
- *
- *  @lucene.experimental
  **/
 final class LatLonShapeBoundingBoxQuery extends ShapeQuery {
   final Rectangle rectangle;
