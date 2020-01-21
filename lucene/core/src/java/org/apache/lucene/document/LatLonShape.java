@@ -141,6 +141,6 @@ public class LatLonShape {
       }
       return builder.build();
     }
-    return new LatLonShapeComponent2DQuery(field, queryRelation, latLonGeometries);
+    return new LatLonShapeQuery(field, queryRelation, latLonGeometries);
   }
 }

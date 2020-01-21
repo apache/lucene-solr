@@ -33,20 +33,20 @@ import org.apache.lucene.util.NumericUtils;
  * <p>The field must be indexed using {@link LatLonShape#createIndexableFields} added per document.
  *
  **/
-final class LatLonShapeComponent2DQuery extends ShapeQuery {
+final class LatLonShapeQuery extends ShapeQuery {
   final private LatLonGeometry[] geometries;
   final private Component2D component2D;
 
   /**
    * Creates a query that matches all indexed shapes to the provided array of {@link LatLonGeometry}
    */
-  LatLonShapeComponent2DQuery(String field, QueryRelation queryRelation, LatLonGeometry[] geometries) {
+  LatLonShapeQuery(String field, QueryRelation queryRelation, LatLonGeometry[] geometries) {
     super(field, queryRelation);
     if (queryRelation == QueryRelation.WITHIN) {
       for (LatLonGeometry geometry : geometries) {
         if (geometry instanceof Line) {
           // TODO: line queries do not support within relations
-          throw new IllegalArgumentException("LatLonShapeComponent2DQuery does not support " + QueryRelation.WITHIN + " queries with line geometries");
+          throw new IllegalArgumentException("LatLonShapeQuery does not support " + QueryRelation.WITHIN + " queries with line geometries");
         }
       }
 
@@ -122,7 +122,7 @@ final class LatLonShapeComponent2DQuery extends ShapeQuery {
 
   @Override
   protected boolean equalsTo(Object o) {
-    return super.equalsTo(o) && Arrays.equals(geometries, ((LatLonShapeComponent2DQuery)o).geometries);
+    return super.equalsTo(o) && Arrays.equals(geometries, ((LatLonShapeQuery)o).geometries);
   }
 
   @Override
