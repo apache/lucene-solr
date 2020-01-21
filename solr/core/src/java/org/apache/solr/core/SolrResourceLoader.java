@@ -64,7 +64,6 @@ import org.apache.lucene.codecs.DocValuesFormat;
 import org.apache.lucene.codecs.PostingsFormat;
 import org.apache.lucene.util.IOUtils;
 import org.apache.solr.common.SolrException;
-import org.apache.solr.handler.admin.CoreAdminHandler;
 import org.apache.solr.handler.component.SearchComponent;
 import org.apache.solr.handler.component.ShardHandlerFactory;
 import org.apache.solr.request.SolrRequestHandler;
@@ -575,35 +574,6 @@ public class SolrResourceLoader implements ResourceLoader, Closeable {
   public <T> T newInstance(String cname, Class<T> expectedType, String... subpackages) {
     return newInstance(cname, expectedType, subpackages, NO_CLASSES, NO_OBJECTS);
   }
-
-  public CoreAdminHandler newAdminHandlerInstance(final CoreContainer coreContainer, String cname, String... subpackages) {
-    Class<? extends CoreAdminHandler> clazz = findClass(cname, CoreAdminHandler.class, subpackages);
-    if (clazz == null) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Can not find class: " + cname + " in " + classLoader);
-    }
-
-    CoreAdminHandler obj = null;
-    try {
-      Constructor<? extends CoreAdminHandler> ctor = clazz.getConstructor(CoreContainer.class);
-      obj = ctor.newInstance(coreContainer);
-    } catch (Exception e) {
-      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-          "Error instantiating class: '" + clazz.getName() + "'", e);
-    }
-
-    if (!live) {
-      //TODO: Does SolrCoreAware make sense here since in a multi-core context
-      // which core are we talking about ?
-      if (obj instanceof ResourceLoaderAware) {
-        assertAwareCompatibility(ResourceLoaderAware.class, obj);
-        waitingForResources.add((ResourceLoaderAware) obj);
-      }
-    }
-
-    return obj;
-  }
-
 
   public <T> T newInstance(String cName, Class<T> expectedType, String[] subPackages, Class[] params, Object[] args) {
     Class<? extends T> clazz = findClass(cName, expectedType, subPackages);
