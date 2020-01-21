@@ -225,6 +225,8 @@ Bug Fixes
 
 * SOLR-6613: TextField.analyzeMultiTerm does not throw an exception when Analyzer returns no terms. (Bruno Roustant)
 
+* SOLR-14192: Race condition between SchemaManager and ZkIndexSchemaReader. (ab)
+
 Other Changes
 ---------------------
 
