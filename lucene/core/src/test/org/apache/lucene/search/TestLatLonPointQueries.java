@@ -22,11 +22,15 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.document.LatLonPoint;
 import org.apache.lucene.geo.BaseGeoPointTestCase;
 import org.apache.lucene.geo.GeoEncodingUtils;
+import org.apache.lucene.geo.GeoTestUtil;
 import org.apache.lucene.geo.Polygon;
+import org.apache.lucene.geo.Rectangle;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.bkd.BKDWriter;
 
 public class TestLatLonPointQueries extends BaseGeoPointTestCase {
@@ -87,5 +91,107 @@ public class TestLatLonPointQueries extends BaseGeoPointTestCase {
         assertEquals(numMatchingDocs, searcher.count(newDistanceQuery("field", 18, -65, 50_000)));
       }
     }
+  }
+
+  public void testPointInPositivePole() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    // document in positive pole
+    Document doc = new Document();
+    LatLonPoint latLonPoint = new LatLonPoint("test", 90, GeoTestUtil.nextLongitude());
+    doc.add(latLonPoint);
+    w.addDocument(doc);
+    // document in close to the pole with same encoding value
+    doc = new Document();
+    latLonPoint = new LatLonPoint("test", 89.99999995809049, GeoTestUtil.nextLongitude());
+    doc.add(latLonPoint);
+    w.addDocument(doc);
+
+    ///// search //////
+    IndexReader reader = w.getReader();
+    w.close();
+    IndexSearcher searcher = newSearcher(reader);
+
+    // both documents should match
+    Rectangle rectangle = new Rectangle(90, 90, -180, 180);
+    Query q2 = LatLonPoint.newBoxQuery("test", rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon);
+    assertEquals(2, searcher.count(q2));
+
+    IOUtils.close(w, reader, dir);
+  }
+
+  public void testPointInNegativePole() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    // document in negative pole
+    Document doc = new Document();
+    LatLonPoint latLonPoint = new LatLonPoint("test", -90, GeoTestUtil.nextLongitude());
+    doc.add(latLonPoint);
+    w.addDocument(doc);
+    // document in close to the pole with same encoding value
+    doc = new Document();
+    latLonPoint = new LatLonPoint("test", -89.99999995809051, GeoTestUtil.nextLongitude());
+    doc.add(latLonPoint);
+    w.addDocument(doc);
+
+    ///// search //////
+    IndexReader reader = w.getReader();
+    w.close();
+    IndexSearcher searcher = newSearcher(reader);
+
+    // both documents should match
+    Rectangle rectangle = new Rectangle(-90, -90, -180, 180);
+    Query q2 = LatLonPoint.newBoxQuery("test", rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon);
+    assertEquals(2, searcher.count(q2));
+
+    IOUtils.close(w, reader, dir);
+  }
+
+  public void testPointInDateLine() throws Exception {
+    Directory dir = newDirectory();
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir);
+    // Point on the positive dateline
+    Document doc = new Document();
+    LatLonPoint latLonPoint = new LatLonPoint("test", GeoTestUtil.nextLatitude(), 180);
+    doc.add(latLonPoint);
+    w.addDocument(doc);
+    // Point on the negative dateline
+    doc = new Document();
+    latLonPoint = new LatLonPoint("test", GeoTestUtil.nextLatitude(), -180);
+    doc.add(latLonPoint);
+    w.addDocument(doc);
+    // Point at (0,0)
+    doc = new Document();
+    latLonPoint = new LatLonPoint("test", 0, 0);
+    doc.add(latLonPoint);
+    w.addDocument(doc);
+
+    ///// search //////
+    IndexReader reader = w.getReader();
+    w.close();
+    IndexSearcher searcher = newSearcher(reader);
+
+    // if minLon = -180 then 180 is not included
+    Rectangle rectangle = new Rectangle(-90, 90, -180, -170);
+    Query q = LatLonPoint.newBoxQuery("test", rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon);
+    assertEquals(1, searcher.count(q));
+    // if maxLon = 180 then -180 is not included
+    rectangle = new Rectangle(-90, 90, 170, 180);
+    q = LatLonPoint.newBoxQuery("test", rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon);
+    assertEquals(1, searcher.count(q));
+    // if minLon = 180 then -180 is included
+    rectangle = new Rectangle(-90, 90, 180, -170);
+    q = LatLonPoint.newBoxQuery("test", rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon);
+    assertEquals(2, searcher.count(q));
+    // if maxLon = -180 then 180 is included
+    rectangle = new Rectangle(-90, 90, 170, -180);
+    q = LatLonPoint.newBoxQuery("test", rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon);
+    assertEquals(2, searcher.count(q));
+    // if maxLon < minLon but they encode to the same value, all longitude values are included
+    rectangle = new Rectangle(-90, 90, 1e-10, 0);
+    q = LatLonPoint.newBoxQuery("test", rectangle.minLat, rectangle.maxLat, rectangle.minLon, rectangle.maxLon);
+    assertEquals(3, searcher.count(q));
+
+    IOUtils.close(w, reader, dir);
   }
 }

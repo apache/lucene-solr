@@ -67,21 +67,6 @@ public final class GeoEncodingUtils {
   }
 
   /**
-   * Quantizes double (64 bit) latitude into 32 bits (rounding up: in the direction of +90)
-   * @param latitude latitude value: must be within standard +/-90 coordinate bounds.
-   * @return encoded value as a 32-bit {@code int}
-   * @throws IllegalArgumentException if latitude is out of bounds
-   */
-  public static int encodeLatitudeCeil(double latitude) {
-    GeoUtils.checkLatitude(latitude);
-    // the maximum possible value cannot be encoded without overflow
-    if (latitude == 90.0D) {
-      latitude = Math.nextDown(latitude);
-    }
-    return (int) Math.ceil(latitude / LAT_DECODE);
-  }
-
-  /**
    * Quantizes double (64 bit) longitude into 32 bits (rounding down: in the direction of -180)
    * @param longitude longitude value: must be within standard +/-180 coordinate bounds.
    * @return encoded value as a 32-bit {@code int}
@@ -94,21 +79,6 @@ public final class GeoEncodingUtils {
       longitude = Math.nextDown(longitude);
     }
     return (int) Math.floor(longitude / LON_DECODE);
-  }
-
-  /**
-   * Quantizes double (64 bit) longitude into 32 bits (rounding up: in the direction of +180)
-   * @param longitude longitude value: must be within standard +/-180 coordinate bounds.
-   * @return encoded value as a 32-bit {@code int}
-   * @throws IllegalArgumentException if longitude is out of bounds
-   */
-  public static int encodeLongitudeCeil(double longitude) {
-    GeoUtils.checkLongitude(longitude);
-    // the maximum possible value cannot be encoded without overflow
-    if (longitude == 180.0D) {
-      longitude = Math.nextDown(longitude);
-    }
-    return (int) Math.ceil(longitude / LON_DECODE);
   }
 
   /**
@@ -196,9 +166,9 @@ public final class GeoEncodingUtils {
   }
 
   private static Grid createSubBoxes(Rectangle boundingBox, Function<Rectangle, Relation> boxToRelation) {
-    final int minLat = encodeLatitudeCeil(boundingBox.minLat);
+    final int minLat = encodeLatitude(boundingBox.minLat);
     final int maxLat = encodeLatitude(boundingBox.maxLat);
-    final int minLon = encodeLongitudeCeil(boundingBox.minLon);
+    final int minLon = encodeLongitude(boundingBox.minLon);
     final int maxLon = encodeLongitude(boundingBox.maxLon);
 
     if (maxLat < minLat || (boundingBox.crossesDateline() == false && maxLon < minLon)) {

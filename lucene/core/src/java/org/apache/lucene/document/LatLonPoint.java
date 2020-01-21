@@ -16,6 +16,8 @@
  */
 package org.apache.lucene.document;
 
+import org.apache.lucene.geo.GeoEncodingUtils;
+import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.PointValues;
@@ -24,6 +26,7 @@ import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.PointRangeQuery;
 import org.apache.lucene.search.Query;
@@ -33,9 +36,7 @@ import org.apache.lucene.util.NumericUtils;
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitudeCeil;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitudeCeil;
 
 /** 
  * An indexed location field.
@@ -135,14 +136,6 @@ public class LatLonPoint extends Field {
     NumericUtils.intToSortableBytes(encodeLongitude(longitude), bytes, Integer.BYTES);
     return bytes;
   }
-  
-  /** sugar encodes a single point as a byte array, rounding values up */
-  private static byte[] encodeCeil(double latitude, double longitude) {
-    byte[] bytes = new byte[2 * Integer.BYTES];
-    NumericUtils.intToSortableBytes(encodeLatitudeCeil(latitude), bytes, 0);
-    NumericUtils.intToSortableBytes(encodeLongitudeCeil(longitude), bytes, Integer.BYTES);
-    return bytes;
-  }
 
   /** helper: checks a fieldinfo and throws exception if its definitely not a LatLonPoint */
   static void checkCompatible(FieldInfo fieldInfo) {
@@ -174,25 +167,16 @@ public class LatLonPoint extends Field {
    * @throws IllegalArgumentException if {@code field} is null, or the box has invalid coordinates.
    */
   public static Query newBoxQuery(String field, double minLatitude, double maxLatitude, double minLongitude, double maxLongitude) {
-    // exact double values of lat=90.0D and lon=180.0D must be treated special as they are not represented in the encoding
-    // and should not drag in extra bogus junk! TODO: should encodeCeil just throw ArithmeticException to be less trappy here?
-    if (minLatitude == 90.0) {
-      // range cannot match as 90.0 can never exist
-      return new MatchNoDocsQuery("LatLonPoint.newBoxQuery with minLatitude=90.0");
+    if (maxLongitude < minLongitude && GeoEncodingUtils.encodeLongitude(maxLongitude) == GeoEncodingUtils.encodeLongitude(minLongitude)) {
+      // handle the situation where we cross the dateline but encoding equals minLon & maxLon
+      minLongitude = GeoUtils.MIN_LON_INCL;
+      maxLongitude = GeoUtils.MAX_LON_INCL;
     }
-    if (minLongitude == 180.0) {
-      if (maxLongitude == 180.0) {
-        // range cannot match as 180.0 can never exist
-        return new MatchNoDocsQuery("LatLonPoint.newBoxQuery with minLongitude=maxLongitude=180.0");
-      } else if (maxLongitude < minLongitude) {
-        // encodeCeil() with dateline wrapping!
-        minLongitude = -180.0;
-      }
-    }
-    byte[] lower = encodeCeil(minLatitude, minLongitude);
+    byte[] lower = encode(minLatitude, minLongitude);
     byte[] upper = encode(maxLatitude, maxLongitude);
     // Crosses date line: we just rewrite into OR of two bboxes, with longitude as an open range:
     if (maxLongitude < minLongitude) {
+
       // Disable coord here because a multi-valued doc could match both rects and get unfairly boosted:
       BooleanQuery.Builder q = new BooleanQuery.Builder();
 

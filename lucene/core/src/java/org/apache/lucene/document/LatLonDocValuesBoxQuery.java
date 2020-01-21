@@ -50,9 +50,9 @@ final class LatLonDocValuesBoxQuery extends Query {
     }
     this.field = field;
     this.crossesDateline = minLongitude > maxLongitude; // make sure to compute this before rounding
-    this.minLatitude = GeoEncodingUtils.encodeLatitudeCeil(minLatitude);
+    this.minLatitude = GeoEncodingUtils.encodeLatitude(minLatitude);
     this.maxLatitude = GeoEncodingUtils.encodeLatitude(maxLatitude);
-    this.minLongitude = GeoEncodingUtils.encodeLongitudeCeil(minLongitude);
+    this.minLongitude = GeoEncodingUtils.encodeLongitude(minLongitude);
     this.maxLongitude = GeoEncodingUtils.encodeLongitude(maxLongitude);
   }
 

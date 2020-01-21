@@ -162,17 +162,7 @@ public abstract class BaseXYShapeTestCase extends BaseShapeTestCase {
       }
 
       @Override
-      double quantizeXCeil(double raw) {
-        return decode(encode(raw));
-      }
-
-      @Override
       double quantizeY(double raw) {
-        return decode(encode(raw));
-      }
-
-      @Override
-      double quantizeYCeil(double raw) {
         return decode(encode(raw));
       }
 

@@ -27,9 +27,7 @@ import static java.lang.Integer.BYTES;
 import static org.apache.lucene.geo.GeoEncodingUtils.MAX_LON_ENCODED;
 import static org.apache.lucene.geo.GeoEncodingUtils.MIN_LON_ENCODED;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitudeCeil;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
-import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitudeCeil;
 import static org.apache.lucene.geo.GeoUtils.orient;
 
 /**
@@ -46,14 +44,17 @@ public class Rectangle2D {
   protected final int maxY;
 
   protected Rectangle2D(double minLat, double maxLat, double minLon, double maxLon) {
-    this.bbox = new byte[4 * BYTES];
-    int minXenc = encodeLongitudeCeil(minLon);
-    int maxXenc = encodeLongitude(maxLon);
-    int minYenc = encodeLatitudeCeil(minLat);
-    int maxYenc = encodeLatitude(maxLat);
-    if (minYenc > maxYenc) {
-      minYenc = maxYenc;
+    if (maxLon < minLon && encodeLongitude(minLon) == encodeLongitude(maxLon)) {
+      // handle the situation where we cross the dateline but encoding equals minLon & maxLon
+      minLon = GeoUtils.MIN_LON_INCL;;
+      maxLon = GeoUtils.MAX_LON_INCL;;
     }
+    this.bbox = new byte[4 * BYTES];
+    int minXenc = encodeLongitude(minLon);
+    int maxXenc = encodeLongitude(maxLon);
+    int minYenc = encodeLatitude(minLat);
+    int maxYenc = encodeLatitude(maxLat);
+
     this.minY = minYenc;
     this.maxY = maxYenc;
 

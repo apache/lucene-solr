@@ -312,34 +312,21 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
         assertEquals(docID, docIDToID.nextDoc());
         int id = (int) docIDToID.longValue();
         boolean expected;
-        double qMinLon = ENCODER.quantizeXCeil(rectMinX(rect));
-        double qMaxLon = ENCODER.quantizeX(rectMaxX(rect));
-        double qMinLat = ENCODER.quantizeYCeil(rectMinY(rect));
-        double qMaxLat = ENCODER.quantizeY(rectMaxY(rect));
         if (liveDocs != null && liveDocs.get(docID) == false) {
           // document is deleted
           expected = false;
         } else if (shapes[id] == null) {
           expected = false;
         } else {
-          if (qMinLat > qMaxLat) {
-            qMinLat = ENCODER.quantizeY(rectMaxY(rect));
-          }
           if (queryRelation == QueryRelation.CONTAINS && rectCrossesDateline(rect)) {
             //For contains we need to call the validator for each section. It is only expected
             //if both sides are contained.
-            expected = VALIDATOR.setRelation(queryRelation).testBBoxQuery(qMinLat, qMaxLat, qMinLon, GeoUtils.MAX_LON_INCL, shapes[id]);
+            expected = VALIDATOR.setRelation(queryRelation).testBBoxQuery(rectMinY(rect), rectMaxY(rect), rectMinX(rect), GeoUtils.MAX_LON_INCL, shapes[id]);
             if (expected) {
-              expected = VALIDATOR.setRelation(queryRelation).testBBoxQuery(qMinLat, qMaxLat, GeoUtils.MIN_LON_INCL, qMaxLon, shapes[id]);
+              expected = VALIDATOR.setRelation(queryRelation).testBBoxQuery(rectMinY(rect), rectMaxY(rect), GeoUtils.MIN_LON_INCL, rectMaxX(rect), shapes[id]);
             }
           } else {
-            // check quantized poly against quantized query
-            if (qMinLon > qMaxLon && rectCrossesDateline(rect) == false) {
-              // if the quantization creates a false dateline crossing (because of encodeCeil):
-              // then do not use encodeCeil
-              qMinLon = ENCODER.quantizeX(rectMinX(rect));
-            }
-            expected = VALIDATOR.setRelation(queryRelation).testBBoxQuery(qMinLat, qMaxLat, qMinLon, qMaxLon, shapes[id]);
+            expected = VALIDATOR.setRelation(queryRelation).testBBoxQuery(rectMinY(rect), rectMaxY(rect), rectMinX(rect), rectMaxX(rect), shapes[id]);
           }
         }
 
@@ -359,7 +346,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
             b.append("  shape=" + shapes[id] + "\n");
           }
           b.append("  deleted?=" + (liveDocs != null && liveDocs.get(docID) == false));
-          b.append("  rect=Rectangle(lat=" + ENCODER.quantizeYCeil(rectMinY(rect)) + " TO " + ENCODER.quantizeY(rectMaxY(rect)) + " lon=" + qMinLon + " TO " + ENCODER.quantizeX(rectMaxX(rect)) + ")\n");
+          b.append("  rect=Rectangle(lat=" + rectMinY(rect) + " TO " + rectMaxY(rect) + " lon=" + rectMinX(rect)  + " TO " + rectMaxX(rect) + ")\n");
           if (true) {
             fail("wrong hit (first of possibly more):\n\n" + b);
           } else {
@@ -661,9 +648,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
     abstract double decodeX(int encoded);
     abstract double decodeY(int encoded);
     abstract double quantizeX(double raw);
-    abstract double quantizeXCeil(double raw);
     abstract double quantizeY(double raw);
-    abstract double quantizeYCeil(double raw);
     abstract double[] quantizeTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca);
     abstract ShapeField.DecodedTriangle encodeDecodeTriangle(double ax, double ay, boolean ab, double bx, double by, boolean bc, double cx, double cy, boolean ca);
   }

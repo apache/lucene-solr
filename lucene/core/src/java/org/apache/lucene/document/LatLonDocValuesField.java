@@ -21,6 +21,8 @@ import static org.apache.lucene.geo.GeoEncodingUtils.decodeLongitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLatitude;
 import static org.apache.lucene.geo.GeoEncodingUtils.encodeLongitude;
 
+import org.apache.lucene.geo.GeoEncodingUtils;
+import org.apache.lucene.geo.GeoUtils;
 import org.apache.lucene.geo.Polygon;
 import org.apache.lucene.index.DocValuesType;
 import org.apache.lucene.index.FieldInfo;
@@ -145,20 +147,10 @@ public class LatLonDocValuesField extends Field {
    * {@link LatLonPoint#newBoxQuery}.
    */
   public static Query newSlowBoxQuery(String field, double minLatitude, double maxLatitude, double minLongitude, double maxLongitude) {
-    // exact double values of lat=90.0D and lon=180.0D must be treated special as they are not represented in the encoding
-    // and should not drag in extra bogus junk! TODO: should encodeCeil just throw ArithmeticException to be less trappy here?
-    if (minLatitude == 90.0) {
-      // range cannot match as 90.0 can never exist
-      return new MatchNoDocsQuery("LatLonDocValuesField.newBoxQuery with minLatitude=90.0");
-    }
-    if (minLongitude == 180.0) {
-      if (maxLongitude == 180.0) {
-        // range cannot match as 180.0 can never exist
-        return new MatchNoDocsQuery("LatLonDocValuesField.newBoxQuery with minLongitude=maxLongitude=180.0");
-      } else if (maxLongitude < minLongitude) {
-        // encodeCeil() with dateline wrapping!
-        minLongitude = -180.0;
-      }
+    if (maxLongitude < minLongitude && GeoEncodingUtils.encodeLongitude(maxLongitude) == GeoEncodingUtils.encodeLongitude(minLongitude)) {
+      // handle the situation where we cross the dateline but encoding equals minLon & maxLon
+      minLongitude = GeoUtils.MIN_LON_INCL;
+      maxLongitude = GeoUtils.MAX_LON_INCL;
     }
     return new LatLonDocValuesBoxQuery(field, minLatitude, maxLatitude, minLongitude, maxLongitude);
   }
