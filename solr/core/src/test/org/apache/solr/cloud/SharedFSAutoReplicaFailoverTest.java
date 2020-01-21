@@ -57,10 +57,10 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreDescriptor;
-import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.apache.solr.util.LogLevel;
+import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -146,10 +146,10 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
   public void test() throws Exception {
     try {
       // to keep uncommitted docs during failover
-      DirectUpdateHandler2.commitOnClose = false;
+      TestInjection.skipIndexWriterCommitOnClose = true;
       testBasics();
     } finally {
-      DirectUpdateHandler2.commitOnClose = true;
+      TestInjection.reset();
       if (DEBUG) {
         super.printLayout();
       }

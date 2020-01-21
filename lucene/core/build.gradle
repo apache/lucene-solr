@@ -1,0 +1,7 @@
+
+apply plugin: 'java-library'
+
+dependencies {
+  testImplementation project(':lucene:codecs')
+  testImplementation project(':lucene:test-framework')
+}

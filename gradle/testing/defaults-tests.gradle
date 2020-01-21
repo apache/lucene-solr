@@ -1,0 +1,108 @@
+import org.apache.tools.ant.taskdefs.condition.Os
+import org.gradle.api.tasks.testing.logging.*
+import org.apache.lucene.gradle.ErrorReportingTestListener
+
+def verboseModeHookInstalled = false
+
+allprojects {
+  plugins.withType(JavaPlugin) {
+    def verboseMode = Boolean.parseBoolean(propertyOrDefault("tests.verbose", "false"))
+
+    project.ext {
+      testsWorkDir = file("${buildDir}/tmp/tests-cwd")
+      testsTmpDir = file("${buildDir}/tmp/tests-tmp")
+      commonDir = project(":lucene").projectDir
+      commonSolrDir = project(":solr").projectDir
+    }
+
+    // If we're running in verbose mode and:
+    // 1) worker count > 1
+    // 2) number of 'test' tasks in the build is > 1
+    // then the output would very likely be mangled on the
+    // console. Fail and let the user know what to do.
+    if (verboseMode && !verboseModeHookInstalled) {
+      verboseModeHookInstalled = true
+      if (gradle.startParameter.maxWorkerCount > 1) {
+        gradle.taskGraph.whenReady { graph ->
+          def testTasks = graph.allTasks.findAll { task -> task instanceof Test }
+          if (testTasks.size() > 1) {
+            throw new GradleException("Run your tests in verbose mode only with --max-workers=1 option passed to gradle.")
+          }
+        }
+      }
+    }
+
+    test {
+      ext {
+        testOutputsDir = file("${reports.junitXml.destination}/outputs")
+      }
+
+      if (verboseMode) {
+        maxParallelForks = 1
+      } else {
+        maxParallelForks = propertyOrDefault("tests.jvms", (int) Math.max(1, Math.min(Runtime.runtime.availableProcessors() / 2.0, 4.0)))
+      }
+
+      workingDir testsWorkDir
+      useJUnit()
+
+      minHeapSize = "256m"
+      maxHeapSize = "512m"
+
+      systemProperty 'java.util.logging.config.file', file("${commonDir}/tools/junit4/logging.properties")
+      systemProperty 'java.awt.headless', 'true'
+      systemProperty 'jdk.map.althashing.threshold', '0'
+
+      if (!Os.isFamily(Os.FAMILY_WINDOWS)) {
+        systemProperty 'java.security.egd', 'file:/dev/./urandom'
+      }
+
+      // jetty-related.
+      systemProperty 'jetty.testMode', '1'
+      systemProperty 'jetty.insecurerandom', '1'
+
+      // Turn jenkins blood red for hashmap bugs, even on jdk7
+      systemProperty 'jdk.map.althashing.threshold', '0'
+
+      // Pass these to RandomizedRunner so that it doesn't attempt to set them.
+      systemProperty 'junit4.childvm.count', '1'
+      systemProperty 'junit4.childvm.id', '0'
+
+      // Set up cwd and temp locations.
+      systemProperty("java.io.tmpdir", testsTmpDir)
+      systemProperty("tempDir", testsTmpDir)
+      doFirst {
+        testsWorkDir.mkdirs()
+        testsTmpDir.mkdirs()
+      }
+
+      // Disable HTML report generation. The reports are big and slow to generate.
+      reports.html.enabled = false
+
+      // Set up logging.
+      testLogging {
+        events TestLogEvent.FAILED
+        exceptionFormat TestExceptionFormat.FULL
+        showExceptions true
+        showCauses true
+        showStackTraces true
+        showStandardStreams false
+      }
+
+      // Set up custom test output handler.
+      doFirst {
+        project.delete testOutputsDir
+      }
+
+      def spillDir = getTemporaryDir().toPath()
+      def listener = new ErrorReportingTestListener(test.testLogging, spillDir, testOutputsDir.toPath(), verboseMode)
+      addTestOutputListener(listener)
+      addTestListener(listener)
+
+      doFirst {
+        // Print some diagnostics about locations used.
+        logger.info("Test folders for {}: cwd={}, tmp={}", project.path, testsWorkDir, testsTmpDir)
+      }
+    }
+  }
+}

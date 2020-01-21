@@ -73,6 +73,9 @@ Bug fixes
 * LUCENE-8663: NRTCachingDirectory.slowFileExists may open a file while 
   it's inaccessible. (Dawid Weiss)
 
+* LUCENE-9117: RamUsageEstimator hangs with AOT compilation. Removed any attempt to 
+  estimate Long.valueOf cache size. (Cleber Muramoto, Dawid Weiss)
+
 Other
 
 * LUCENE-8768: Fix Javadocs build in Java 11. (Namgyu Kim)
@@ -88,9 +91,20 @@ API Changes
   yield Passages sized a little different due to the fact that the sizing pivot is now the center of the first match and
   not its left edge.
 
+* LUCENE-9116: PostingsWriterBase and PostingsReaderBase no longer support
+  setting a field's metadata via a `long[]`. (Adrien Grand)
+
+* LUCENE-9116: The FSTOrd postings format has been removed.
+  (Adrien Grand)
+
+* LUCENE-8369: Remove obsolete spatial module. (Nick Knize, David Smiley)
+
+* LUCENE-8621: Refactor LatLonShape, XYShape, and all query and utility classes to core. (Nick Knize)
+
 New Features
 ---------------------
-(No changes)
+
+* LUCENE-8903: Add LatLonShape point query. (Ignacio Vera)
 
 Improvements
 ---------------------
@@ -128,11 +142,22 @@ Bug Fixes
 * LUCENE-9115: NRTCachingDirectory no longer caches files of unknown size.
   (Adrien Grand)
 
+* LUCENE-9144: Fix error message on OneDimensionBKDWriter when too many points are added to the writer.
+  (Ignacio Vera)
+
 Other
 ---------------------
 
 * LUCENE-9096: Simplification of CompressingTermVectorsWriter#flushOffsets.
   (kkewwei via Adrien Grand)
+
+* LUCENE-9068: FuzzyQuery builds its Automaton up-front (Alan Woodward, Mike Drob)
+
+======================= Lucene 8.4.1 =======================
+
+Bug Fixes
+---------------------
+(No changes)
 
 ======================= Lucene 8.4.0 =======================
 

@@ -227,6 +227,8 @@ Bug Fixes
 
 * SOLR-6613: TextField.analyzeMultiTerm does not throw an exception when Analyzer returns no terms. (Bruno Roustant)
 
+* SOLR-14192: Race condition between SchemaManager and ZkIndexSchemaReader. (ab)
+
 Other Changes
 ---------------------
 
@@ -240,6 +242,10 @@ Other Changes
   (very likely a hard-closed socket connection).
 
 * SOLR-14169: Fix 20 Resource Leak warnings in SolrJ's apache/solr/common (Andras Salamon via Tomás Fernández Löbbe)
+
+* SOLR-14184: Internal 'test' variable DirectUpdateHandler2.commitOnClose has been removed and replaced with
+  TestInjection.skipIndexWriterCommitOnClose.  Users that modified DUH2.commitOnClose in test cases for custom
+  plugins/modicitations should now use TestInjection instead.  (hossman)
 
 ==================  8.4.1 ==================
 

@@ -39,13 +39,11 @@ import org.apache.lucene.search.BoostAttribute;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.FuzzyTermsEnum;
-import org.apache.lucene.search.MaxNonCompetitiveBoostAttribute;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.TFIDFSimilarity;
-import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
@@ -206,10 +204,7 @@ public class FuzzyLikeThisQuery extends Query
           ScoreTermQueue variantsQ = new ScoreTermQueue(MAX_VARIANTS_PER_TERM); //maxNum variants considered for any one term
           float minScore = 0;
           Term startTerm = new Term(f.fieldName, term);
-          AttributeSource atts = new AttributeSource();
-          MaxNonCompetitiveBoostAttribute maxBoostAtt =
-            atts.addAttribute(MaxNonCompetitiveBoostAttribute.class);
-          FuzzyTermsEnum fe = new FuzzyTermsEnum(terms, atts, startTerm, f.maxEdits, f.prefixLength, true);
+          FuzzyTermsEnum fe = new FuzzyTermsEnum(terms, startTerm, f.maxEdits, f.prefixLength, true);
           //store the df so all variants use same idf
           int df = reader.docFreq(startTerm);
           int numVariants = 0;
@@ -226,7 +221,7 @@ public class FuzzyLikeThisQuery extends Query
               variantsQ.insertWithOverflow(st);
               minScore = variantsQ.top().score; // maintain minScore
             }
-            maxBoostAtt.setMaxNonCompetitiveBoost(variantsQ.size() >= MAX_VARIANTS_PER_TERM ? minScore : Float.NEGATIVE_INFINITY);
+            fe.setMaxNonCompetitiveBoost(variantsQ.size() >= MAX_VARIANTS_PER_TERM ? minScore : Float.NEGATIVE_INFINITY);
           }
 
           if (numVariants > 0) {

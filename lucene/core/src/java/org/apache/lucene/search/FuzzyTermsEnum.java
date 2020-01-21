@@ -18,18 +18,13 @@ package org.apache.lucene.search;
 
 
 import java.io.IOException;
-import java.util.Arrays;
 
-import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.ImpactsEnum;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
-import org.apache.lucene.util.Attribute;
-import org.apache.lucene.util.AttributeImpl;
-import org.apache.lucene.util.AttributeReflector;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
@@ -46,10 +41,12 @@ import org.apache.lucene.util.automaton.TooComplexToDeterminizeException;
  * {@link BytesRef#compareTo}.  Each term in the enumeration is
  * greater than all that precede it.</p>
  */
-public final class FuzzyTermsEnum extends BaseTermsEnum {
+public final class FuzzyTermsEnum extends TermsEnum {
 
   // NOTE: we can't subclass FilteredTermsEnum here because we need to sometimes change actualEnum:
   private TermsEnum actualEnum;
+
+  private final AttributeSource atts;
   
   // We use this to communicate the score (boost) of the current matched term we are on back to
   // MultiTermQuery.TopTermsBlendedFreqScoringRewrite that is collecting the best (default 50) matched terms:
@@ -59,30 +56,46 @@ public final class FuzzyTermsEnum extends BaseTermsEnum {
   // which we use to know when we can reduce the automaton from ed=2 to ed=1, or ed=0 if only single top term is collected:
   private final MaxNonCompetitiveBoostAttribute maxBoostAtt;
 
-  // We use this to share the pre-built (once for the query) Levenshtein automata across segments:
-  private final LevenshteinAutomataAttribute dfaAtt;
+  private final CompiledAutomaton[] automata;
   
   private float bottom;
   private BytesRef bottomTerm;
-  private final CompiledAutomaton automata[];
 
   private BytesRef queuedBottom;
 
-  final int termLength;
+  private final int termLength;
 
   // Maximum number of edits we will accept.  This is either 2 or 1 (or, degenerately, 0) passed by the user originally,
   // but as we collect terms, we can lower this (e.g. from 2 to 1) if we detect that the term queue is full, and all
   // collected terms are ed=1:
   private int maxEdits;
 
-  final Terms terms;
-  final Term term;
-  final int termText[];
-  final int realPrefixLength;
+  private final Terms terms;
+  private final Term term;
 
-  // True (the default, in FuzzyQuery) if a transposition should count as a single edit:
-  final boolean transpositions;
-  
+  /**
+   * Constructor for enumeration of all terms from specified <code>reader</code> which share a prefix of
+   * length <code>prefixLength</code> with <code>term</code> and which have at most {@code maxEdits} edits.
+   * <p>
+   * After calling the constructor the enumeration is already pointing to the first
+   * valid term if such a term exists.
+   *
+   * @param terms Delivers terms.
+   * @param term Pattern term.
+   * @param maxEdits Maximum edit distance.
+   * @param prefixLength the length of the required common prefix
+   * @param transpositions whether transpositions should count as a single edit
+   * @throws IOException if there is a low-level IO error
+   */
+  public FuzzyTermsEnum(Terms terms, Term term, int maxEdits, int prefixLength, boolean transpositions) throws IOException {
+    this(terms, term, stringToUTF32(term.text()), maxEdits, prefixLength, transpositions);
+  }
+
+  private FuzzyTermsEnum(Terms terms, Term term, int[] codePoints, int maxEdits, int prefixLength, boolean transpositions) throws IOException {
+    this(terms, new AttributeSource(), term, codePoints.length, maxEdits,
+        buildAutomata(term.text(), codePoints, prefixLength, transpositions, maxEdits));
+  }
+
   /**
    * Constructor for enumeration of all terms from specified <code>reader</code> which share a prefix of
    * length <code>prefixLength</code> with <code>term</code> and which have at most {@code maxEdits} edits.
@@ -92,76 +105,62 @@ public final class FuzzyTermsEnum extends BaseTermsEnum {
    * 
    * @param terms Delivers terms.
    * @param atts {@link AttributeSource} created by the rewrite method of {@link MultiTermQuery}
-   * thats contains information about competitive boosts during rewrite. It is also used
-   * to cache DFAs between segment transitions.
+   *              that contains information about competitive boosts during rewrite
    * @param term Pattern term.
    * @param maxEdits Maximum edit distance.
-   * @param prefixLength Length of required common prefix. Default value is 0.
+   * @param automata An array of levenshtein automata to match against terms,
+   *                 see {@link #buildAutomata(String, int[], int, boolean, int)}
    * @throws IOException if there is a low-level IO error
    */
-  public FuzzyTermsEnum(Terms terms, AttributeSource atts, Term term, 
-      final int maxEdits, final int prefixLength, boolean transpositions) throws IOException {
-    if (maxEdits < 0 || maxEdits > LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE) {
-      throw new IllegalArgumentException("max edits must be 0.." + LevenshteinAutomata.MAXIMUM_SUPPORTED_DISTANCE + ", inclusive; got: " + maxEdits);
-    }
-    if (prefixLength < 0) {
-      throw new IllegalArgumentException("prefixLength cannot be less than 0");
-    }
+  public FuzzyTermsEnum(Terms terms, AttributeSource atts, Term term, int termLength,
+      final int maxEdits, CompiledAutomaton[] automata) throws IOException {
+
     this.maxEdits = maxEdits;
     this.terms = terms;
     this.term = term;
-    
-    // convert the string into a utf32 int[] representation for fast comparisons
-    this.termText = stringToUTF32(term.text());
-    this.termLength = termText.length;
+    this.atts = atts;
+    this.termLength = termLength;
 
-    this.dfaAtt = atts.addAttribute(LevenshteinAutomataAttribute.class);
     this.maxBoostAtt = atts.addAttribute(MaxNonCompetitiveBoostAttribute.class);
+    this.boostAtt = atts.addAttribute(BoostAttribute.class);
 
-    // NOTE: boostAtt must pulled from attributes() not from atts!  This is because TopTermsRewrite looks for boostAtt from this TermsEnum's
-    // private attributes() and not the global atts passed to us from MultiTermQuery:
-    this.boostAtt = attributes().addAttribute(BoostAttribute.class);
+    this.automata = automata;
 
-    //The prefix could be longer than the word.
-    //It's kind of silly though.  It means we must match the entire word.
-    this.realPrefixLength = prefixLength > termLength ? termLength : prefixLength;
-    this.transpositions = transpositions;
-
-    CompiledAutomaton[] prevAutomata = dfaAtt.automata();
-    if (prevAutomata == null) {
-      prevAutomata = new CompiledAutomaton[maxEdits+1];
-      Automaton[] automata = buildAutomata(termText, prefixLength, transpositions, maxEdits);
-      for (int i = 0; i <= maxEdits; i++) {
-        try {
-          prevAutomata[i] = new CompiledAutomaton(automata[i], true, false);
-        } catch (TooComplexToDeterminizeException e) {
-          throw new FuzzyTermsException(term.text(), e);
-        }
-      }
-      // first segment computes the automata, and we share with subsequent segments via this Attribute:
-      dfaAtt.setAutomata(prevAutomata);
-    }
-
-    this.automata = prevAutomata;
     bottom = maxBoostAtt.getMaxNonCompetitiveBoost();
     bottomTerm = maxBoostAtt.getCompetitiveTerm();
     bottomChanged(null);
   }
 
   /**
-   * Builds a binary Automaton to match a fuzzy term
-   * @param text            the term to match
-   * @param prefixLength    length of a required common prefix
-   * @param transpositions  {@code true} if transpositions should count as a single edit
-   * @param maxEdits        the maximum edit distance of matching terms
+   * Sets the maximum non-competitive boost, which may allow switching to a
+   * lower max-edit automaton at run time
    */
-  public static Automaton buildAutomaton(String text, int prefixLength, boolean transpositions, int maxEdits) {
-    int[] termText = stringToUTF32(text);
-    Automaton[] automata = buildAutomata(termText, prefixLength, transpositions, maxEdits);
-    return automata[automata.length - 1];
+  public void setMaxNonCompetitiveBoost(float boost) {
+    this.maxBoostAtt.setMaxNonCompetitiveBoost(boost);
   }
 
-  private static int[] stringToUTF32(String text) {
+  /**
+   * Gets the boost of the current term
+   */
+  public float getBoost() {
+    return boostAtt.getBoost();
+  }
+
+  static CompiledAutomaton[] buildAutomata(String text, int[] termText, int prefixLength, boolean transpositions, int maxEdits) {
+    CompiledAutomaton[] compiled = new CompiledAutomaton[maxEdits + 1];
+    Automaton[] automata = buildAutomata(termText, prefixLength, transpositions, maxEdits);
+    for (int i = 0; i <= maxEdits; i++) {
+      try {
+        compiled[i] = new CompiledAutomaton(automata[i], true, false);
+      }
+      catch (TooComplexToDeterminizeException e) {
+        throw new FuzzyTermsException(text, e);
+      }
+    }
+    return compiled;
+  }
+
+  static int[] stringToUTF32(String text) {
     int[] termText = new int[text.codePointCount(0, text.length())];
     for (int cp, i = 0, j = 0; i < text.length(); i += Character.charCount(cp)) {
       termText[j++] = cp = text.codePointAt(i);
@@ -328,7 +327,12 @@ public final class FuzzyTermsEnum extends BaseTermsEnum {
   public long ord() throws IOException {
     return actualEnum.ord();
   }
-  
+
+  @Override
+  public AttributeSource attributes() {
+    return atts;
+  }
+
   @Override
   public boolean seekExact(BytesRef text) throws IOException {
     return actualEnum.seekExact(text);
@@ -350,70 +354,6 @@ public final class FuzzyTermsEnum extends BaseTermsEnum {
   }
 
   /**
-   * reuses compiled automata across different segments,
-   * because they are independent of the index
-   * @lucene.internal */
-  public static interface LevenshteinAutomataAttribute extends Attribute {
-    public CompiledAutomaton[] automata();
-    public void setAutomata(CompiledAutomaton[] automata);
-  }
-    
-  /** 
-   * Stores compiled automata as a list (indexed by edit distance)
-   * @lucene.internal */
-  public static final class LevenshteinAutomataAttributeImpl extends AttributeImpl implements LevenshteinAutomataAttribute {
-    private CompiledAutomaton[] automata;
-      
-    @Override
-    public CompiledAutomaton[] automata() {
-      return automata;
-    }
-
-    @Override
-    public void setAutomata(CompiledAutomaton[] automata) {
-      this.automata = automata;
-    }
-
-    @Override
-    public void clear() {
-      automata = null;
-    }
-
-    @Override
-    public int hashCode() {
-      if (automata == null) {
-        return 0;
-      } else {
-        return automata.hashCode();
-      }
-    }
-
-    @Override
-    public boolean equals(Object other) {
-      if (this == other)
-        return true;
-      if (!(other instanceof LevenshteinAutomataAttributeImpl))
-        return false;
-      return Arrays.equals(automata, ((LevenshteinAutomataAttributeImpl) other).automata);
-    }
-
-    @Override
-    public void copyTo(AttributeImpl _target) {
-      LevenshteinAutomataAttribute target = (LevenshteinAutomataAttribute) _target;
-      if (automata == null) {
-        target.setAutomata(null);
-      } else {
-        target.setAutomata(automata);
-      }
-    }
-
-    @Override
-    public void reflectWith(AttributeReflector reflector) {
-      reflector.reflect(LevenshteinAutomataAttribute.class, "automata", automata);
-    }
-  }
-
-  /**
    * Thrown to indicate that there was an issue creating a fuzzy query for a given term.
    * Typically occurs with terms longer than 220 UTF-8 characters,
    * but also possible with shorter terms consisting of UTF-32 code points.
@@ -423,4 +363,5 @@ public final class FuzzyTermsEnum extends BaseTermsEnum {
       super("Term too complex: " + term, cause);
     }
   }
+
 }

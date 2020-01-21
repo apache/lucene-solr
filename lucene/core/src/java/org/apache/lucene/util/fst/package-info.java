@@ -34,7 +34,9 @@
  * <p>
  * FST Construction example:
  * <pre class="prettyprint">
- *     // Input values (keys). These must be provided to Builder in Unicode sorted order!
+ *     // Input values (keys). These must be provided to Builder in Unicode code point (UTF8 or UTF32) sorted order.
+ *     // Note that sorting by Java's String.compareTo, which is UTF16 sorted order, is not correct and can lead to
+ *     // exceptions while building the FST:
  *     String inputValues[] = {"cat", "dog", "dogs"};
  *     long outputValues[] = {5, 7, 12};
  *     
