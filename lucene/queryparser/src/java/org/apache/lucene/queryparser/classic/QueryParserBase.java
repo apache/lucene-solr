@@ -65,7 +65,6 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
 
   protected String field;
   int phraseSlop = 0;
-  @SuppressWarnings("deprecation") // Pending resolution of deprecations in FuzzyQuery
   float fuzzyMinSim = FuzzyQuery.defaultMinSimilarity;
   int fuzzyPrefixLength = FuzzyQuery.defaultPrefixLength;
   Locale locale = Locale.getDefault();
@@ -592,7 +591,6 @@ public abstract class QueryParserBase extends QueryBuilder implements CommonQuer
   protected Query newFuzzyQuery(Term term, float minimumSimilarity, int prefixLength) {
     // FuzzyQuery doesn't yet allow constant score rewrite
     String text = term.text();
-    @SuppressWarnings("deprecation") // Pending resolution of deprecations in FuzzyQuery
     int numEdits = FuzzyQuery.floatToEdits(minimumSimilarity, 
         text.codePointCount(0, text.length()));
     return new FuzzyQuery(term,numEdits,prefixLength);

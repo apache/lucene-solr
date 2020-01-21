@@ -35,8 +35,7 @@ public class FuzzyQueryNodeBuilder implements StandardQueryBuilder {
   public FuzzyQuery build(QueryNode queryNode) throws QueryNodeException {
     FuzzyQueryNode fuzzyNode = (FuzzyQueryNode) queryNode;
     String text = fuzzyNode.getTextAsString();
-
-    @SuppressWarnings("deprecation") // Pending resolution of deprecations in FuzzyQuery
+    
     int numEdits = FuzzyQuery.floatToEdits(fuzzyNode.getSimilarity(), 
         text.codePointCount(0, text.length()));
     

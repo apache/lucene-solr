@@ -490,7 +490,6 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
   boolean endInc=false;
   QueryNode q =null;
   FieldQueryNode qLower, qUpper;
-  @SuppressWarnings("deprecation") // Pending resolution of deprecations in FuzzyQuery
   float defaultMinSimilarity = org.apache.lucene.search.FuzzyQuery.defaultMinSimilarity;
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
     case TERM:
@@ -708,8 +707,24 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
     finally { jj_save(1, xla); }
   }
 
+  private boolean jj_3R_12() {
+    if (jj_scan_token(RANGEIN_START)) return true;
+    return false;
+  }
+
   private boolean jj_3R_11() {
     if (jj_scan_token(REGEXPTERM)) return true;
+    return false;
+  }
+
+  private boolean jj_3_1() {
+    if (jj_scan_token(TERM)) return true;
+    Token xsp;
+    xsp = jj_scanpos;
+    if (jj_scan_token(15)) {
+    jj_scanpos = xsp;
+    if (jj_scan_token(16)) return true;
+    }
     return false;
   }
 
@@ -725,17 +740,6 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
 
   private boolean jj_3R_10() {
     if (jj_scan_token(TERM)) return true;
-    return false;
-  }
-
-  private boolean jj_3_1() {
-    if (jj_scan_token(TERM)) return true;
-    Token xsp;
-    xsp = jj_scanpos;
-    if (jj_scan_token(15)) {
-    jj_scanpos = xsp;
-    if (jj_scan_token(16)) return true;
-    }
     return false;
   }
 
@@ -813,11 +817,6 @@ public class StandardSyntaxParser implements SyntaxParser, StandardSyntaxParserC
     jj_scanpos = xsp;
     if (jj_3R_5()) return true;
     }
-    return false;
-  }
-
-  private boolean jj_3R_12() {
-    if (jj_scan_token(RANGEIN_START)) return true;
     return false;
   }
 
