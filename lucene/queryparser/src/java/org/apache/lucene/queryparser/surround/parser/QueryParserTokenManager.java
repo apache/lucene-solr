@@ -2,6 +2,7 @@
 package org.apache.lucene.queryparser.surround.parser;
 
 /** Token Manager. */
+@SuppressWarnings("cast")
 public class QueryParserTokenManager implements QueryParserConstants
 {
 

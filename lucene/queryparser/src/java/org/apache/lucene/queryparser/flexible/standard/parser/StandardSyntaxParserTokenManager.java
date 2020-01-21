@@ -17,8 +17,8 @@ package org.apache.lucene.queryparser.flexible.standard.parser;
  * limitations under the License.
  */
 
-
 /** Token Manager. */
+@SuppressWarnings("cast")
 public class StandardSyntaxParserTokenManager implements StandardSyntaxParserConstants
 {
 
