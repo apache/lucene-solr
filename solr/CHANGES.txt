@@ -221,6 +221,8 @@ Bug Fixes
 
 * SOLR-13089: Fix lsof edge cases in the solr CLI script (Martijn Koster via janhoy)
 
+* SOLR-14198: Nullpointer exception in AuditEvent when initialized from AuthorizationContext (janhoy)
+
 * SOLR-14163: SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION needs to work with Jetty server/client SSL contexts (Kevin Risden)
 
 * SOLR-6613: TextField.analyzeMultiTerm does not throw an exception when Analyzer returns no terms. (Bruno Roustant)
