@@ -63,65 +63,73 @@ public class TopLevelJoinQuery extends JoinQuery {
     final SolrIndexSearcher fromSearcher = weight.fromSearcher;
     final SolrIndexSearcher toSearcher = weight.toSearcher;
 
-    BitsetBounds toBitsetBounds;
-    SortedSetDocValues topLevelToFieldValues;
-    LongBitSet toOrdBitSet;
     try {
-      ensureJoinFieldExistsAndHasDocValues(fromSearcher, fromField, "from");
-      ensureJoinFieldExistsAndHasDocValues(toSearcher, toField, "to");
+      final DocValuesWrapper topLevelFromDocValues = validateAndFetchDocValues(fromSearcher, fromField, "from");
+      final DocValuesWrapper topLevelToDocValues = validateAndFetchDocValues(toSearcher, toField, "to");
+      if (topLevelFromDocValues.getValueCount() == 0 || topLevelToDocValues.getValueCount() == 0) {
+        return createNoMatchesWeight(boost);
+      }
 
-      topLevelToFieldValues = DocValues.getSortedSet(toSearcher.getSlowAtomicReader(), toField);
-      ensureDocValuesAreNonEmpty(topLevelToFieldValues, toField, "to");
-      toOrdBitSet = new LongBitSet(topLevelToFieldValues.getValueCount());
+      final LongBitSet fromOrdBitSet = findOrdinalsMatchingFromQuery(fromSearcher, topLevelFromDocValues);
+      final LongBitSet toOrdBitSet = new LongBitSet(topLevelToDocValues.getValueCount());
+      final BitsetBounds toBitsetBounds = convertFromOrdinalsIntoToField(fromOrdBitSet, topLevelFromDocValues, toOrdBitSet, topLevelToDocValues);
 
-      final boolean multivalued = fromSearcher.getSchema().getField(fromField).multiValued();
-      long start = System.currentTimeMillis();
-      toBitsetBounds = (multivalued) ? populateToBitsetMultivalued(fromSearcher, topLevelToFieldValues, toOrdBitSet) : populateToBitsetSinglevalued(fromSearcher, topLevelToFieldValues, toOrdBitSet);
-      long end = System.currentTimeMillis();
+      final boolean toMultivalued = toSearcher.getSchema().getFieldOrNull(toField).multiValued();
+      return new ConstantScoreWeight(this, boost) {
+        public Scorer scorer(LeafReaderContext context) throws IOException {
+          if (toBitsetBounds.lower == BitsetBounds.NO_MATCHES) {
+            return null;
+          }
+
+          final DocIdSetIterator toApproximation = (toMultivalued) ? context.reader().getSortedSetDocValues(toField) :
+              context.reader().getSortedDocValues(toField);
+          if (toApproximation == null) {
+            return null;
+          }
+
+          final int docBase = context.docBase;
+          return new ConstantScoreScorer(this, this.score(), scoreMode, new TwoPhaseIterator(toApproximation) {
+            public boolean matches() throws IOException {
+              final boolean hasDoc = topLevelToDocValues.advanceExact(docBase + approximation.docID());
+              if (hasDoc) {
+                if (topLevelToDocValues.currentPositionMatchesOrdinals(toOrdBitSet)) {
+                  return true;
+                }
+              }
+              return false;
+            }
+
+            public float matchCost() {
+              return 10.0F;
+            }
+          });
+
+        }
+
+        public boolean isCacheable(LeafReaderContext ctx) {
+          return false;
+        }
+      };
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+  }
 
-    final boolean toMultivalued = toSearcher.getSchema().getFieldOrNull(toField).multiValued();
+  private Weight createNoMatchesWeight(float boost) {
     return new ConstantScoreWeight(this, boost) {
+      @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
-        if (toBitsetBounds.lower == BitsetBounds.NO_MATCHES) {
-          return null;
-        }
-
-        final DocIdSetIterator toApproximation = (toMultivalued) ? context.reader().getSortedSetDocValues(toField) :
-            context.reader().getSortedDocValues(toField);
-        if (toApproximation == null) {
-          return null;
-        }
-
-        final int docBase = context.docBase;
-        return new ConstantScoreScorer(this, this.score(), scoreMode, new TwoPhaseIterator(toApproximation) {
-          public boolean matches() throws IOException {
-            final boolean hasDoc = topLevelToFieldValues.advanceExact(docBase + approximation.docID());
-            for(long ord = topLevelToFieldValues.nextOrd(); ord != -1L; ord = topLevelToFieldValues.nextOrd()) {
-              if (toOrdBitSet.get(ord)) {
-                return true;
-              }
-            }
-
-            return false;
-          }
-
-          public float matchCost() {
-            return 10.0F;
-          }
-        });
-
+        return null;
       }
 
+      @Override
       public boolean isCacheable(LeafReaderContext ctx) {
         return false;
       }
     };
   }
 
-  private void ensureJoinFieldExistsAndHasDocValues(SolrIndexSearcher solrSearcher, String fieldName, String querySide) {
+  private DocValuesWrapper validateAndFetchDocValues(SolrIndexSearcher solrSearcher, String fieldName, String querySide) throws IOException {
     final IndexSchema schema = solrSearcher.getSchema();
     final SchemaField field = schema.getFieldOrNull(fieldName);
     if (field == null) {
@@ -130,39 +138,36 @@ public class TopLevelJoinQuery extends JoinQuery {
 
     if (!field.hasDocValues()) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "Postfilter join queries require 'to' and 'from' fields to have docvalues enabled: '" +
+          "'top-level' join queries require 'to' and 'from' fields to have docvalues enabled: '" +
               querySide + "' field '" + fieldName + "' doesn't");
     }
-  }
 
-  private void ensureDocValuesAreNonEmpty(SortedDocValues docValues, String fieldName, String type) {
-    if (docValues.getValueCount() == 0) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'" + type + "' field " + fieldName+ " has no docvalues");
+    if (field.multiValued()) {
+      return new DocValuesWrapper(DocValues.getSortedSet(solrSearcher.getSlowAtomicReader(), fieldName));
     }
+    return new DocValuesWrapper(DocValues.getSorted(solrSearcher.getSlowAtomicReader(), fieldName));
   }
 
-  private void ensureDocValuesAreNonEmpty(SortedSetDocValues docValues, String fieldName, String type) {
-    if (docValues.getValueCount() == 0) {
-      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "'" + type + "' field " + fieldName+ " has no docvalues");
-    }
-  }
-
-  private BitsetBounds populateToBitsetMultivalued(SolrIndexSearcher fromSearcher, SortedSetDocValues toValues, LongBitSet toOrdBitSet) throws IOException {
-    final SortedSetDocValues fromValues = DocValues.getSortedSet(fromSearcher.getSlowAtomicReader(), fromField);
-    ensureDocValuesAreNonEmpty(fromValues, fromField, "from");
-    final LongBitSet fromOrdBitSet = new LongBitSet(fromValues.getValueCount());
-    final Collector fromCollector = new MVTermOrdinalCollector(fromField, fromValues, fromOrdBitSet);
+  private LongBitSet findOrdinalsMatchingFromQuery(SolrIndexSearcher fromSearcher, DocValuesWrapper fromDocValues) throws IOException {
+    final LongBitSet fromOrdBitSet = new LongBitSet(fromDocValues.getValueCount());
+    final Collector fromCollector = fromDocValues.isMultivalued() ?
+        new MVTermOrdinalCollector(fromField, fromDocValues.getSortedSetDocValues(), fromOrdBitSet) :
+        new SVTermOrdinalCollector(fromField, fromDocValues.getSortedDocValues(), fromOrdBitSet);
 
     fromSearcher.search(q, fromCollector);
 
+    return fromOrdBitSet;
+  }
+
+  private BitsetBounds convertFromOrdinalsIntoToField(LongBitSet fromOrdBitSet, DocValuesWrapper fromDocValuesWrapper,
+                                                      LongBitSet toOrdBitSet, DocValuesWrapper toValues) throws IOException {
     long fromOrdinal = 0;
     long firstToOrd = BitsetBounds.NO_MATCHES;
     long lastToOrd = 0;
-    int count = 0;
+
     while (fromOrdinal < fromOrdBitSet.length() && (fromOrdinal = fromOrdBitSet.nextSetBit(fromOrdinal)) >= 0) {
-      ++count;
-      final BytesRef fromBytesRef = fromValues.lookupOrd((int)fromOrdinal);
-      final long toOrdinal = lookupTerm(toValues, fromBytesRef, lastToOrd);//toValues.lookupTerm(fromBytesRef);
+      final BytesRef fromBytesRef = fromDocValuesWrapper.lookupOrd(fromOrdinal);
+      final long toOrdinal = lookupTerm(toValues, fromBytesRef, lastToOrd);
       if (toOrdinal >= 0) {
         toOrdBitSet.set(toOrdinal);
         if (firstToOrd == BitsetBounds.NO_MATCHES) firstToOrd = toOrdinal;
@@ -171,34 +176,7 @@ public class TopLevelJoinQuery extends JoinQuery {
       fromOrdinal++;
     }
 
-    return new BitsetBounds(firstToOrd, lastToOrd);
-  }
-
-  private BitsetBounds populateToBitsetSinglevalued(SolrIndexSearcher fromSearcher, SortedSetDocValues toValues, LongBitSet toOrdBitSet) throws IOException {
-    final SortedDocValues fromValues = DocValues.getSorted(fromSearcher.getSlowAtomicReader(), fromField);
-    ensureDocValuesAreNonEmpty(fromValues, fromField, "from");
-    final LongBitSet fromOrdBitSet = new LongBitSet(fromValues.getValueCount());
-    final Collector fromCollector = new SVTermOrdinalCollector(fromField, fromValues, fromOrdBitSet);
-
-    fromSearcher.search(q, fromCollector);
-
-    long fromOrdinal = 0;
-    long firstToOrd = BitsetBounds.NO_MATCHES;
-    long lastToOrd = 0;
-    int count = 0;
-    while (fromOrdinal < fromOrdBitSet.length() && (fromOrdinal = fromOrdBitSet.nextSetBit(fromOrdinal)) >= 0) {
-      ++count;
-      final BytesRef fromBytesRef = fromValues.lookupOrd((int)fromOrdinal);
-      final long toOrdinal = lookupTerm(toValues, fromBytesRef, lastToOrd);//toValues.lookupTerm(fromBytesRef);
-      if (toOrdinal >= 0) {
-        toOrdBitSet.set(toOrdinal);
-        if (firstToOrd == BitsetBounds.NO_MATCHES) firstToOrd = toOrdinal;
-        lastToOrd = toOrdinal;
-      }
-      fromOrdinal++;
-    }
-
-    return new BitsetBounds(firstToOrd, lastToOrd);
+      return new BitsetBounds(firstToOrd, lastToOrd);
   }
 
   /*
@@ -206,7 +184,7 @@ public class TopLevelJoinQuery extends JoinQuery {
    * optimization to narrow the search space where possible by providing a startOrd instead of beginning each search
    * at 0.
    */
-  private long lookupTerm(SortedSetDocValues docValues, BytesRef key, long startOrd) throws IOException {
+  private long lookupTerm(DocValuesWrapper docValues, BytesRef key, long startOrd) throws IOException {
     long low = startOrd;
     long high = docValues.getValueCount()-1;
 
@@ -225,6 +203,59 @@ public class TopLevelJoinQuery extends JoinQuery {
     }
 
     return -(low + 1);  // key not found.
+  }
+
+  /**
+   * {@Link SortedDocValues} and {@link SortedSetDocValues} share several methods with identical signatures and semantics.
+   *
+   * But since these methods don't belong to any shared interface or parent class, there's no type declaration that
+   * holds objects of both types and allows these methods to be invoked.  This makes it tricky to write client code using
+   * these objects without a lot of conditionals and casting.
+   *
+   * This class wraps one or the other of these objects and provides access to some of their shared methods.
+   */
+  class DocValuesWrapper {
+    SortedSetDocValues docValuesSet;
+    SortedDocValues docValues;
+    boolean multivalued;
+
+    public DocValuesWrapper(SortedSetDocValues docValuesSet) { this.docValuesSet = docValuesSet; this.multivalued = true;}
+    public DocValuesWrapper(SortedDocValues docValues) { this.docValues = docValues; }
+
+    public BytesRef lookupOrd(long fromOrdinal) throws IOException {
+      return docValues == null ? docValuesSet.lookupOrd(fromOrdinal) : docValues.lookupOrd((int) fromOrdinal);
+    }
+
+    public long getValueCount() {
+      return docValues == null ? docValuesSet.getValueCount() : docValues.getValueCount();
+    }
+
+    public boolean isMultivalued() {
+      return multivalued;
+    }
+
+    public SortedSetDocValues getSortedSetDocValues() { return docValuesSet; }
+    public SortedDocValues getSortedDocValues() { return docValues; }
+    public boolean advanceExact(int target) throws IOException {
+      if (multivalued) {
+        return docValuesSet.advanceExact(target);
+      }
+      return docValues.advanceExact(target);
+    }
+
+    public boolean currentPositionMatchesOrdinals(LongBitSet ordinalsToMatch) throws IOException {
+      if (multivalued) {
+        for (long ord = docValuesSet.nextOrd(); ord != -1L; ord = docValuesSet.nextOrd()) {
+          if (ordinalsToMatch.get(ord)) {
+            return true;
+          }
+        }
+      } else {
+        return ordinalsToMatch.get(docValues.ordValue());
+      }
+
+      return false;
+    }
   }
 
   private static class BitsetBounds {
