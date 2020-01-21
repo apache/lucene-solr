@@ -38,7 +38,7 @@ final class LatLonShapeComponent2DQuery extends ShapeQuery {
   final private Component2D component2D;
 
   /**
-   * Creates a query that matches all indexed shapes to the provided {@link Component2D}
+   * Creates a query that matches all indexed shapes to the provided array of {@link LatLonGeometry}
    */
   LatLonShapeComponent2DQuery(String field, QueryRelation queryRelation, LatLonGeometry[] geometries) {
     super(field, queryRelation);
