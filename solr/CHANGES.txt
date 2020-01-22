@@ -1,32 +1,11 @@
                               Apache Solr Release Notes
 
-Introduction
-------------
-Apache Solr is an open source enterprise search server based on the Apache Lucene Java
-search library, with XML/HTTP and JSON APIs, hit highlighting, faceted search,
-caching, replication, and a web administration interface.
-
-See http://lucene.apache.org/solr for more information.
-
-
-Getting Started
----------------
-You need a Java 11 VM or later installed.
-In this release, there is an example Solr server including a bundled
-servlet container in the directory named "example".
-See the Solr tutorial at https://lucene.apache.org/solr/guide/solr-tutorial.html
+This file lists Solr's raw release notes with details of every change to Solr.
+Most people will find the solr-upgrade-notes.adoc file more approachable.
 
 ==================  9.0.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
-
-Versions of Major Components
----------------------
-Apache Tika 1.23
-Carrot2 3.16.2
-Velocity 2.0 and Velocity Tools 3.0
-Apache ZooKeeper 3.5.5
-Jetty 9.4.24.v20191120
 
 Upgrade Notes
 ----------------------
