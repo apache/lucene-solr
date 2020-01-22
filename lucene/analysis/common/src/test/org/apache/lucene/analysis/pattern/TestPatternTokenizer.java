@@ -147,6 +147,7 @@ public class TestPatternTokenizer extends BaseTokenStreamTestCase
   }
 
   // LUCENE-6814
+  @Nightly
   public void testHeapFreedAfterClose() throws Exception {
     // TODO: can we move this to BaseTSTC to catch other "hangs onto heap"ers?
 

@@ -972,7 +972,7 @@ public class TestTermsEnum extends LuceneTestCase {
   }
 
   // Stresses out many-terms-in-root-block case:
-  @Slow
+  @Nightly
   public void testVaryingTermsPerSegment() throws Exception {
     Directory dir = newDirectory();
     Set<BytesRef> terms = new HashSet<BytesRef>();

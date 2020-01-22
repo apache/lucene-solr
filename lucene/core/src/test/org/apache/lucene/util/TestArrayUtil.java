@@ -148,8 +148,9 @@ public class TestArrayUtil extends LuceneTestCase {
   }
   
   // This is a test for LUCENE-3054 (which fails without the merge sort fall back with stack overflow in most cases)
+  @Slow
   public void testQuickToHeapSortFallback() {
-    int num = atLeast(50);
+    int num = atLeast(10);
     for (int i = 0; i < num; i++) {
       Integer[] a1 = createSparseRandomArray(40000), a2 = a1.clone();
       ArrayUtil.introSort(a1);

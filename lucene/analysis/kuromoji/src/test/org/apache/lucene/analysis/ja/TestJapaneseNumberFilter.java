@@ -256,12 +256,12 @@ public class TestJapaneseNumberFilter extends BaseTokenStreamTestCase {
 
   @Test
   public void testRandomHugeStrings() throws Exception {
-    checkRandomData(random(), analyzer, 50 * RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random(), analyzer, 5 * RANDOM_MULTIPLIER, 8192);
   }
 
   @Test
   public void testRandomSmallStrings() throws Exception {
-    checkRandomData(random(), analyzer, 500 * RANDOM_MULTIPLIER, 128);
+    checkRandomData(random(), analyzer, 100 * RANDOM_MULTIPLIER, 128);
   }
 
   @Test
