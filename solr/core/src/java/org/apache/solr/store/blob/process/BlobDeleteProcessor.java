@@ -27,6 +27,7 @@ import org.apache.lucene.util.NamedThreadFactory;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.ExecutorUtil.MDCAwareThreadPoolExecutor;
+import org.apache.solr.store.blob.client.BlobClientUtils;
 import org.apache.solr.store.blob.client.CoreStorageClient;
 import org.apache.solr.store.blob.process.BlobDeleterTask.BlobDeleterTaskResult;
 import org.apache.solr.store.blob.process.BlobDeleterTask.BlobFileDeletionTask;
@@ -120,8 +121,8 @@ public class BlobDeleteProcessor {
    * @param allowRetry flag indicating if the task should be retried if it fails
    */
   public CompletableFuture<BlobDeleterTaskResult> deleteShard(String collectionName, String sharedShardName, boolean allowRetry) {
-    BlobDeleterTask task = new BlobPrefixedFileDeletionTask(client, collectionName, sharedShardName, 
-        allowRetry, defaultMaxDeleteAttempts);
+    BlobDeleterTask task = new BlobPrefixedFileDeletionTask(client, collectionName, 
+        sharedShardName + BlobClientUtils.BLOB_FILE_PATH_DELIMITER, allowRetry, defaultMaxDeleteAttempts);
     return enqueue(task, false);
   }
   

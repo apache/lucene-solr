@@ -22,6 +22,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
+import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -33,6 +34,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.apache.lucene.util.IOUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Class that handles reads and writes of solr blob files to the local file system.
@@ -238,13 +241,22 @@ public class LocalStorageClient implements CoreStorageClient {
       
   }
   
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   @Override
   public List<String> listCoreBlobFiles(String prefix) throws BlobException {
     try {
-      Path path = Paths.get(getBlobAbsolutePath(prefix));
+      String rootBlobDir = getBlobAbsolutePath("");
+      Path path = Paths.get(rootBlobDir);
       List<String> blobFiles =
         Files.walk(path).map(Path::toFile)
-        .map(file -> BlobClientUtils.concatenatePaths(prefix, file.getName()))
+          .filter(file -> (!file.isDirectory()))
+          .map(file -> {
+            log.info("DEBUG " + file.getAbsolutePath().substring(rootBlobDir.length()));
+            // extracts just the file system blob file name without the root dir
+            return file.getAbsolutePath().substring(rootBlobDir.length());
+          })
+        .filter(name -> name.startsWith(prefix))
+        .distinct()
         .collect(Collectors.toList());
       return blobFiles;
     } catch (Exception ex) {
