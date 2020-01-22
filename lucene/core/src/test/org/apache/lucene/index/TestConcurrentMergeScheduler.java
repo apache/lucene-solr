@@ -352,7 +352,7 @@ public class TestConcurrentMergeScheduler extends LuceneTestCase {
     if (d instanceof MockDirectoryWrapper) {
       ((MockDirectoryWrapper)d).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
     }
-    IndexWriterConfig iwc = newIndexWriterConfig(new MockAnalyzer(random()));
+    IndexWriterConfig iwc = new IndexWriterConfig(new MockAnalyzer(random()));
     iwc.setMaxBufferedDocs(5);
     CountDownLatch atLeastOneMerge = new CountDownLatch(1);
     iwc.setMergeScheduler(new TrackingCMS(atLeastOneMerge));

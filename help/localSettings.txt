@@ -33,6 +33,17 @@ it too high may not help.
 You can always override these settings locally using command line as well:
 gradlew -Ptests.jvms=N --max-workers=X
 
+Test JVMS
+---------
+
+Test JVMs have their own set of arguments which can be customized. These are configured
+separately from the gradle workers, for example:
+
+tests.jvms=3
+tests.heapsize=512m
+tests.minheapsize=512m
+tests.jvmargs=-XX:+UseParallelGC -XX:TieredStopAtLevel=1
+
 Gradle Daemon
 -------------
 
