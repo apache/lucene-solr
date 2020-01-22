@@ -27,7 +27,8 @@ import org.apache.lucene.util.BytesRef;
  * This can be used if you want to have one multi-valued implementation
  * that works for single or multi-valued types.
  */
-final class SingletonSortedSetDocValues extends SortedSetDocValues {
+// NOCOMMIT Need to raise this in a separate JIRA with Lucene folks
+public final class SingletonSortedSetDocValues extends SortedSetDocValues {
   private final SortedDocValues in;
   private long ord;
   
