@@ -1945,7 +1945,7 @@ public class TestASCIIFoldingFilter extends BaseTokenStreamTestCase {
           new ASCIIFoldingFilter(tokenizer, random().nextBoolean()));
       } 
     };
-    checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), a, 200 * RANDOM_MULTIPLIER);
     a.close();
   }
   

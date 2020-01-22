@@ -320,7 +320,16 @@ public class
   }
 
   /** blast some random large strings through the analyzer */
+  @Slow
   public void testRandomHugeStrings() throws Exception {
+    Random random = random();
+    checkRandomData(random, analyzer, RANDOM_MULTIPLIER, 4096);
+    checkRandomData(random, analyzerNoPunct, RANDOM_MULTIPLIER, 4096);
+    checkRandomData(random, analyzerNormalNBest, RANDOM_MULTIPLIER, 4096);
+  }
+  
+  @Nightly
+  public void testRandomHugeStringsAtNight() throws Exception {
     Random random = random();
     checkRandomData(random, analyzer, 3*RANDOM_MULTIPLIER, 8192);
     checkRandomData(random, analyzerNoPunct, 3*RANDOM_MULTIPLIER, 8192);
@@ -338,9 +347,26 @@ public class
         return new TokenStreamComponents(tokenizer, graph);
       }
     };
+    checkRandomData(random, analyzer, RANDOM_MULTIPLIER, 4096);
+    analyzer.close();
+  }
+  
+  @Nightly
+  public void testRandomHugeStringsMockGraphAfterAtNight() throws Exception {
+    // Randomly inject graph tokens after JapaneseTokenizer:
+    Random random = random();
+    Analyzer analyzer = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new JapaneseTokenizer(newAttributeFactory(), readDict(), false, Mode.SEARCH);
+        TokenStream graph = new MockGraphTokenFilter(random(), tokenizer);
+        return new TokenStreamComponents(tokenizer, graph);
+      }
+    };
     checkRandomData(random, analyzer, 3*RANDOM_MULTIPLIER, 8192);
     analyzer.close();
   }
+
 
   public void testLargeDocReliability() throws Exception {
     for (int i = 0; i < 10; i++) {

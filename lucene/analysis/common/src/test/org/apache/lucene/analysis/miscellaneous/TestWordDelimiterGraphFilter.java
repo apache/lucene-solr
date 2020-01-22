@@ -895,7 +895,7 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
   }
 
   public void testRandomPaths() throws Exception {
-    int iters = atLeast(100);
+    int iters = atLeast(10);
     for(int iter=0;iter<iters;iter++) {
       String text = randomWDFText();
       if (VERBOSE) {

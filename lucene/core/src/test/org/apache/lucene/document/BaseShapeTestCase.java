@@ -70,7 +70,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
 
   // A particularly tricky adversary for BKD tree:
   public void testSameShapeManyTimes() throws Exception {
-    int numShapes = atLeast(50);
+    int numShapes = TEST_NIGHTLY ? atLeast(50) : atLeast(10);
 
     // Every doc has 2 points:
     Object theShape = nextShape();

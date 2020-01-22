@@ -79,7 +79,15 @@ public abstract class BaseDocIdSetTestCase<T extends DocIdSet> extends LuceneTes
     copy = copyOf(set, numBits); // then random index
     assertEquals(numBits, set, copy);
     // test regular increments
+    int maxIterations = TEST_NIGHTLY ? Integer.MAX_VALUE : 10;
+    int iterations = 0;
     for (int inc = 2; inc < 1000; inc += TestUtil.nextInt(random(), 1, 100)) {
+      // don't let this test run too many times, even if it gets unlucky with "inc"
+      if (iterations >= maxIterations) {
+        break;
+      }
+      iterations++;
+
       set = new BitSet(numBits);
       for (int d = random().nextInt(10); d < numBits; d += inc) {
         set.set(d);

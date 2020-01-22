@@ -508,7 +508,7 @@ public abstract class BasePointsFormatTestCase extends BaseIndexFileFormatTestCa
   }
 
   public void testRandomBinaryMedium() throws Exception {
-    doTestRandomBinary(10000);
+    doTestRandomBinary(1000);
   }
 
   @Nightly
