@@ -842,7 +842,6 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
       spareWriter.reset();
 
       // Write suffix lengths
-      // Structured fields like IDs often have most values of the same length so we give LZ4 a chance
       final int numSuffixBytes = Math.toIntExact(suffixLengthsWriter.size());
       spareBytes = ArrayUtil.grow(spareBytes, numSuffixBytes);
       suffixLengthsWriter.copyTo(new ByteArrayDataOutput(spareBytes));
