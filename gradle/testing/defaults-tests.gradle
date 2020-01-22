@@ -1,4 +1,5 @@
 import org.apache.tools.ant.taskdefs.condition.Os
+import org.apache.tools.ant.types.Commandline
 import org.gradle.api.tasks.testing.logging.*
 import org.apache.lucene.gradle.ErrorReportingTestListener
 
@@ -9,8 +10,8 @@ allprojects {
     def verboseMode = Boolean.parseBoolean(propertyOrDefault("tests.verbose", "false"))
 
     project.ext {
-      testsWorkDir = file("${buildDir}/tmp/tests-cwd")
-      testsTmpDir = file("${buildDir}/tmp/tests-tmp")
+      testsCwd = file("${buildDir}/tmp/tests-cwd")
+      testsTmpDir = file(propertyOrDefault("tests.workDir", "${buildDir}/tmp/tests-tmp"))
       commonDir = project(":lucene").projectDir
       commonSolrDir = project(":solr").projectDir
     }
@@ -43,11 +44,13 @@ allprojects {
         maxParallelForks = propertyOrDefault("tests.jvms", (int) Math.max(1, Math.min(Runtime.runtime.availableProcessors() / 2.0, 4.0)))
       }
 
-      workingDir testsWorkDir
+      workingDir testsCwd
       useJUnit()
 
-      minHeapSize = "256m"
-      maxHeapSize = "512m"
+      minHeapSize = propertyOrDefault("tests.minheapsize", "256m")
+      maxHeapSize = propertyOrDefault("tests.heapsize", "512m")
+
+      jvmArgs Commandline.translateCommandline(propertyOrDefault("tests.jvmargs", "-XX:TieredStopAtLevel=1"))
 
       systemProperty 'java.util.logging.config.file', file("${commonDir}/tools/junit4/logging.properties")
       systemProperty 'java.awt.headless', 'true'
@@ -72,7 +75,7 @@ allprojects {
       systemProperty("java.io.tmpdir", testsTmpDir)
       systemProperty("tempDir", testsTmpDir)
       doFirst {
-        testsWorkDir.mkdirs()
+        testsCwd.mkdirs()
         testsTmpDir.mkdirs()
       }
 
@@ -101,7 +104,7 @@ allprojects {
 
       doFirst {
         // Print some diagnostics about locations used.
-        logger.info("Test folders for {}: cwd={}, tmp={}", project.path, testsWorkDir, testsTmpDir)
+        logger.info("Test folders for {}: cwd={}, tmp={}", project.path, testsCwd, testsTmpDir)
       }
     }
   }
