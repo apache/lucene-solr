@@ -106,7 +106,7 @@
   </path>
 
   <!-- default arguments to pass to JVM executing tests -->
-  <property name="args" value=""/>
+  <property name="args" value="-XX:TieredStopAtLevel=1"/>
 
   <property name="tests.seed" value="" />
 
