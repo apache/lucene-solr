@@ -211,7 +211,7 @@ public class CoreDescriptor {
 
     // TODO maybe make this a CloudCoreDescriptor subclass?
     if (zkController != null) {
-      cloudDesc = new CloudDescriptor(this, name, coreProperties, zkController);
+      cloudDesc = new CloudDescriptor(this, name, coreProperties);
     } else {
       cloudDesc = null;
     }
@@ -369,6 +369,11 @@ public class CoreDescriptor {
   public String getConfigSet() {
     //TODO consider falling back on "collection.configName" ( CollectionAdminParams.COLL_CONF )
     return coreProperties.getProperty(CORE_CONFIGSET);
+  }
+
+  /** TODO remove mutability or at least make this non-public? */
+  public void setConfigSet(String configSetName) {
+    coreProperties.setProperty(CORE_CONFIGSET, configSetName);
   }
 
   public String getConfigSetPropertiesName() {
