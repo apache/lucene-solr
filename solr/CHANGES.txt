@@ -146,6 +146,8 @@ Bug Fixes
 * SOLR-12859: Fixed DocExpirationUpdateProcessorFactory to work with BasicAuth and other auth plugins
   that delegate to PKI for server initiated node-to-node communication. (hossman)
 
+* SOLR-11746: Adding existence queries for PointFields. DocValuesFieldExistsQuery and NormsFieldExistsQuery are used for existence queries when possible. (Houston Putman, hossman, Kai Chan)
+
 Other Changes
 ---------------------
 
