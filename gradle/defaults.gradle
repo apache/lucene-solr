@@ -24,7 +24,7 @@ allprojects {
   repositories {
     mavenCentral()
     maven {
-      url "https://maven.restlet.com"
+      url "https://maven.restlet.talend.com"
     }
   }
 
