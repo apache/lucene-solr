@@ -486,6 +486,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     doTestOperationsOnDiskFull(false);
   }
 
+  @Slow
   public void testUpdatesOnDiskFull() throws IOException {
     doTestOperationsOnDiskFull(true);
   }
@@ -978,6 +979,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     dir.close();
   }
   
+  @Slow
   public void testIndexingThenDeleting() throws Exception {
     // TODO: move this test to its own class and just @SuppressCodecs?
     // TODO: is it enough to just use newFSDirectory?
@@ -998,7 +1000,7 @@ public class TestIndexWriterDelete extends LuceneTestCase {
                                     .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH));
     Document doc = new Document();
     doc.add(newTextField("field", "go 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20", Field.Store.NO));
-    int num = atLeast(3);
+    int num = atLeast(1);
     for (int iter = 0; iter < num; iter++) {
       int count = 0;
 

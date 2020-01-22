@@ -205,7 +205,7 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
 
     final CoreContainer cc = new CoreContainer(SolrXmlConfig.fromString(resourceLoader, CONFIGSETS_SOLR_XML), new Properties(), cl);
     Path corePath = resourceLoader.getInstancePath().resolve("badcore");
-    CoreDescriptor badcore = new CoreDescriptor("badcore", corePath, cc.getContainerProperties(), cc.isZooKeeperAware(),
+    CoreDescriptor badcore = new CoreDescriptor("badcore", corePath, cc,
         "configSet", "nosuchconfigset");
 
     cl.add(badcore);
@@ -455,10 +455,10 @@ public class TestCoreContainer extends SolrTestCaseJ4 {
     System.setProperty("configsets", getFile("solr/configsets").getAbsolutePath());
 
     final CoreContainer cc = new CoreContainer(SolrXmlConfig.fromString(resourceLoader, CONFIGSETS_SOLR_XML), new Properties(), cl);
-    cl.add(new CoreDescriptor("col_ok", resourceLoader.getInstancePath().resolve("col_ok"),
-        cc.getContainerProperties(), cc.isZooKeeperAware(), "configSet", "minimal"));
-    cl.add(new CoreDescriptor("col_bad", resourceLoader.getInstancePath().resolve("col_bad"),
-        cc.getContainerProperties(), cc.isZooKeeperAware(), "configSet", "bad-mergepolicy"));
+    cl.add(new CoreDescriptor("col_ok", resourceLoader.getInstancePath().resolve("col_ok"), cc,
+        "configSet", "minimal"));
+    cl.add(new CoreDescriptor("col_bad", resourceLoader.getInstancePath().resolve("col_bad"), cc,
+        "configSet", "bad-mergepolicy"));
     cc.load();
 
     // check that we have the cores we expect

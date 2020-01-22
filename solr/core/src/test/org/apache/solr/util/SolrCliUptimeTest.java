@@ -14,17 +14,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.asserting;
+package org.apache.solr.util;
 
-import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.BaseStoredFieldsFormatTestCase;
+import org.junit.Test;
 
-/** Test AssertingStoredFieldsFormat directly */
-public class TestAssertingStoredFieldsFormat extends BaseStoredFieldsFormatTestCase {
-  private final Codec codec = new AssertingCodec();
-  
-  @Override
-  protected Codec getCodec() {
-    return codec;
-  } 
+import static org.junit.Assert.assertEquals;
+
+public class SolrCliUptimeTest {
+    @Test
+    public void testUptime() {
+        assertEquals("?", SolrCLI.uptime(0));
+        assertEquals("0 days, 0 hours, 0 minutes, 0 seconds", SolrCLI.uptime(1));
+
+        assertEquals("Should have rounded down", "0 days, 0 hours, 0 minutes, 0 seconds", SolrCLI.uptime(499));
+        assertEquals("Should have rounded up", "0 days, 0 hours, 0 minutes, 1 seconds", SolrCLI.uptime(501));
+
+        // Overflow
+        assertEquals("24 days, 20 hours, 31 minutes, 24 seconds", SolrCLI.uptime(Integer.MAX_VALUE));
+        assertEquals("106751991167 days, 7 hours, 12 minutes, 56 seconds", SolrCLI.uptime(Long.MAX_VALUE));
+    }
 }

@@ -2637,7 +2637,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
   }
   
   /** Tests dv against stored fields with threads (all types + missing) */
-  @Slow
+  @Nightly
   public void testThreads2() throws Exception {
     Directory dir = newDirectory();
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
@@ -2786,7 +2786,7 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
     dir.close();
   }
   
-  @Slow
+  @Nightly
   public void testThreads3() throws Exception {
     Directory dir = newFSDirectory(createTempDir());
     IndexWriterConfig conf = newIndexWriterConfig(new MockAnalyzer(random()));
@@ -3456,7 +3456,8 @@ public abstract class BaseDocValuesFormatTestCase extends BaseIndexFileFormatTes
       }
     }
     
-    for(int iter=0;iter<100;iter++) {
+    int numIters = atLeast(10);
+    for(int iter=0;iter<numIters;iter++) {
       DocIdSetIterator values = fieldCreator.iterator(r);
       assertEquals(-1, values.docID());
 

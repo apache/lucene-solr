@@ -99,6 +99,8 @@ API Changes
 
 * LUCENE-8369: Remove obsolete spatial module. (Nick Knize, David Smiley)
 
+* LUCENE-8621: Refactor LatLonShape, XYShape, and all query and utility classes to core. (Nick Knize)
+
 New Features
 ---------------------
 
@@ -142,6 +144,8 @@ Bug Fixes
 
 * LUCENE-9144: Fix error message on OneDimensionBKDWriter when too many points are added to the writer.
   (Ignacio Vera)
+
+* LUCENE-9135: Make UniformSplit FieldMetadata counters long. (Bruno Roustant)
 
 Other
 ---------------------
