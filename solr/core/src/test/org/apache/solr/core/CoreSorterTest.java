@@ -128,7 +128,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
       p.setProperty(CoreDescriptor.CORE_SHARD, "shard_" + slice);
       p.setProperty(CoreDescriptor.CORE_COLLECTION, "coll_" + slice);
       p.setProperty(CoreDescriptor.CORE_NODE_NAME, replicaName);
-      cd = new CloudDescriptor(null, replicaName, p, null);
+      cd = new CloudDescriptor(null, replicaName, p);
     }
 
     @Override
