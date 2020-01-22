@@ -314,17 +314,17 @@ public class
 
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), analyzer, 500*RANDOM_MULTIPLIER);
-    checkRandomData(random(), analyzerNoPunct, 500*RANDOM_MULTIPLIER);
-    checkRandomData(random(), analyzerNormalNBest, 500*RANDOM_MULTIPLIER);
+    checkRandomData(random(), analyzer, 100*RANDOM_MULTIPLIER);
+    checkRandomData(random(), analyzerNoPunct, 100*RANDOM_MULTIPLIER);
+    checkRandomData(random(), analyzerNormalNBest, 100*RANDOM_MULTIPLIER);
   }
 
   /** blast some random large strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
     Random random = random();
-    checkRandomData(random, analyzer, 20*RANDOM_MULTIPLIER, 8192);
-    checkRandomData(random, analyzerNoPunct, 20*RANDOM_MULTIPLIER, 8192);
-    checkRandomData(random, analyzerNormalNBest, 20*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, analyzer, 3*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, analyzerNoPunct, 3*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, analyzerNormalNBest, 3*RANDOM_MULTIPLIER, 8192);
   }
 
   public void testRandomHugeStringsMockGraphAfter() throws Exception {
@@ -338,7 +338,7 @@ public class
         return new TokenStreamComponents(tokenizer, graph);
       }
     };
-    checkRandomData(random, analyzer, 20*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, analyzer, 3*RANDOM_MULTIPLIER, 8192);
     analyzer.close();
   }
 
@@ -362,7 +362,7 @@ public class
 
   /** random test ensuring we don't ever split supplementaries */
   public void testSurrogates2() throws IOException {
-    int numIterations = atLeast(10000);
+    int numIterations = atLeast(500);
     for (int i = 0; i < numIterations; i++) {
       if (VERBOSE) {
         System.out.println("\nTEST: iter=" + i);
