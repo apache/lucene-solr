@@ -215,15 +215,9 @@ Bug Fixes
 
 * SOLR-14017: Ensure bin/solr's -q and -v options work with examples (Andy Vuong via Jason Gerlowski)
 
-* SOLR-14106: Cleanup Jetty SslContextFactory usage (Ryan Rockenbaugh, Jan Hoydahl, Kevin Risden)
-
-* SOLR-14109: Always log to stdout from server/scripts/cloud-scripts/zkcli.{bat|sh} (janhoy)
-
 * SOLR-14122: SimUtils converts v2 to v1 request params incorrectly. (Li Cao, ab)
 
 * SOLR-13089: Fix lsof edge cases in the solr CLI script (Martijn Koster via janhoy)
-
-* SOLR-14163: SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION needs to work with Jetty server/client SSL contexts (Kevin Risden)
 
 * SOLR-6613: TextField.analyzeMultiTerm does not throw an exception when Analyzer returns no terms. (Bruno Roustant)
 
