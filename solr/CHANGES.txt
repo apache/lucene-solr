@@ -139,6 +139,9 @@ Bug Fixes
 
 * SOLR-14192: Race condition between SchemaManager and ZkIndexSchemaReader. (ab)
 
+* SOLR-12859: Fixed DocExpirationUpdateProcessorFactory to work with BasicAuth and other auth plugins
+  that delegate to PKI for server initiated node-to-node communication. (hossman)
+
 Other Changes
 ---------------------
 
