@@ -15,19 +15,22 @@
  * limitations under the License.
  */
 
-// Policy file for :solr tests. Please keep minimal and avoid wildcards.
+// Policy file for solr. Please keep minimal and avoid wildcards.
 
+// permissions needed for tests to pass, based on properties set by the build system
+// NOTE: if the property is not set, the permission entry is ignored.
 grant {
   // 3rd party jar resources (where symlinks are not supported), test-files/ resources
   permission java.io.FilePermission "${common.dir}${/}-", "read";
-  permission java.io.FilePermission "${common-solr.dir}${/}-", "read";
+  permission java.io.FilePermission "${common.dir}${/}..${/}solr${/}-", "read";
 
   // system jar resources
   permission java.io.FilePermission "${java.home}${/}-", "read";
 
-  // write only to sandbox
+  // Test launchers (randomizedtesting, etc.)
   permission java.io.FilePermission "${java.io.tmpdir}", "read,write";
   permission java.io.FilePermission "${java.io.tmpdir}${/}-", "read,write,delete";
+
   permission java.io.FilePermission "${tests.linedocsfile}", "read";
   // DirectoryFactoryTest messes with these (wtf?)
   permission java.io.FilePermission "/tmp/inst1/conf/solrcore.properties", "read";
@@ -50,8 +53,8 @@ grant {
   permission java.util.PropertyPermission "*", "read,write";
 
   // needed by randomizedtesting runner to identify test methods.
-  permission java.lang.RuntimePermission "accessDeclaredMembers";
   permission java.lang.reflect.ReflectPermission "suppressAccessChecks";
+  permission java.lang.RuntimePermission "accessDeclaredMembers";
   // needed by certain tests to redirect sysout/syserr:
   permission java.lang.RuntimePermission "setIO";
   // needed by randomized runner to catch failures from other threads:
@@ -158,6 +161,42 @@ grant {
 
   // used by solr to create sandboxes (e.g. script execution)
   permission java.security.SecurityPermission "createAccessControlContext";
+};
+
+// additional permissions based on system properties set by /bin/solr
+// NOTE: if the property is not set, the permission entry is ignored.
+grant {
+  permission java.io.FilePermission "${hadoop.security.credential.provider.path}", "read,write,delete,readlink";
+  permission java.io.FilePermission "${hadoop.security.credential.provider.path}${/}-", "read,write,delete,readlink";
+
+  permission java.io.FilePermission "${solr.jetty.keystore}", "read,write,delete,readlink";
+  permission java.io.FilePermission "${solr.jetty.keystore}${/}-", "read,write,delete,readlink";
+
+  permission java.io.FilePermission "${solr.jetty.truststore}", "read,write,delete,readlink";
+  permission java.io.FilePermission "${solr.jetty.truststore}${/}-", "read,write,delete,readlink";
+
+  permission java.io.FilePermission "${solr.install.dir}", "read,write,delete,readlink";
+  permission java.io.FilePermission "${solr.install.dir}${/}-", "read,write,delete,readlink";
+
+  permission java.io.FilePermission "${jetty.home}", "read,write,delete,readlink";
+  permission java.io.FilePermission "${jetty.home}${/}-", "read,write,delete,readlink";
+
+  permission java.io.FilePermission "${solr.solr.home}", "read,write,delete,readlink";
+  permission java.io.FilePermission "${solr.solr.home}${/}-", "read,write,delete,readlink";
+
+  permission java.io.FilePermission "${solr.data.home}", "read,write,delete,readlink";
+  permission java.io.FilePermission "${solr.data.home}${/}-", "read,write,delete,readlink";
+
+  permission java.io.FilePermission "${solr.default.confdir}", "read,write,delete,readlink";
+  permission java.io.FilePermission "${solr.default.confdir}${/}-", "read,write,delete,readlink";
+
+  permission java.io.FilePermission "${solr.log.dir}", "read,write,delete,readlink";
+  permission java.io.FilePermission "${solr.log.dir}${/}-", "read,write,delete,readlink";
+
+  permission java.io.FilePermission "${log4j.configurationFile}", "read,write,delete,readlink";
+
+  // expanded to a wildcard if set, allows all networking everywhere
+  permission java.net.SocketPermission "${solr.internal.network.permission}", "accept,listen,connect,resolve";
 };
 
 // Grant all permissions to Gradle test runner classes.

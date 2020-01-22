@@ -105,6 +105,7 @@ def expand_jinja(text, vars=None):
         'rename_cmd': 'ren' if is_windows() else 'mv',
         'vote_close_72h': vote_close_72h_date().strftime("%Y-%m-%d %H:00 UTC"),
         'vote_close_72h_epoch': unix_time_millis(vote_close_72h_date()),
+        'vote_close_72h_holidays': vote_close_72h_holidays(),
         'lucene_highlights_file': lucene_highlights_file,
         'solr_highlights_file': solr_highlights_file,
         'tlp_news_draft': tlp_news_draft,
@@ -1891,25 +1892,35 @@ def create_ical(todo):
 
 
 today = datetime.utcnow().date()
-weekends = {(today + timedelta(days=x)): 'Saturday' for x in range(10) if (today + timedelta(days=x)).weekday() == 5}
-weekends.update({(today + timedelta(days=x)): 'Sunday' for x in range(10) if (today + timedelta(days=x)).weekday() == 6})
+sundays = {(today + timedelta(days=x)): 'Sunday' for x in range(10) if (today + timedelta(days=x)).weekday() == 6}
 y = datetime.utcnow().year
 years = [y, y+1]
 non_working = holidays.CA(years=years) + holidays.US(years=years) + holidays.England(years=years) \
-              + holidays.DE(years=years) + holidays.NO(years=years) + holidays.SE(years=years) + holidays.RU(years=years)
+              + holidays.DE(years=years) + holidays.NO(years=years) + holidays.IND(years=years) + holidays.RU(years=years)
 
 
 def vote_close_72h_date():
-    working_days = 0
+    # Voting open at least 72 hours according to ASF policy
+    return datetime.utcnow() + timedelta(hours=73)
+
+
+def vote_close_72h_holidays():
+    days = 0
     day_offset = -1
-    # Require voting open for 3 working days, not counting todays date
-    # Working day is defined as saturday, sunday or a public holiday observed by 3 or more [CA, US, EN, DE, NO, SE, RU]
-    while working_days < 4:
+    holidays = []
+    # Warn RM about major holidays coming up that should perhaps extend the voting deadline
+    # Warning will be given for Sunday or a public holiday observed by 3 or more [CA, US, EN, DE, NO, IND, RU]
+    while days < 3:
         day_offset += 1
         d = today + timedelta(days=day_offset)
-        if not (d in weekends or (d in non_working and len(non_working[d]) >= 3)):
-            working_days += 1
-    return datetime.utcnow() + timedelta(days=day_offset) + timedelta(hours=1)
+        if not (d in sundays or (d in non_working and len(non_working[d]) >= 2)):
+            days += 1
+        else:
+            if d in sundays:
+                holidays.append("%s (Sunday)" % d)
+            else:
+                holidays.append("%s (%s)" % (d, non_working[d]))
+    return holidays if len(holidays) > 0 else None
 
 
 def website_javadoc_redirect(todo):

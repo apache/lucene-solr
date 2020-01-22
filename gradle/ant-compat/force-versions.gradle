@@ -9,3 +9,12 @@ subprojects {
     }
   }
 }
+
+configure(project(":solr:server")) {
+  afterEvaluate {
+    dependencies {
+      libExt enforcedPlatform('org.slf4j:slf4j-api:1.7.24')
+      libExt enforcedPlatform('commons-logging:commons-logging:1.1.3')
+    }
+  }
+}

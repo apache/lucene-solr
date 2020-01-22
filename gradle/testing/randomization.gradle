@@ -53,7 +53,7 @@ allprojects {
     ext {
       testOptions = [
           // seed, repetition and amplification.
-          [propName: 'tests.seed', value: rootSeed, description: "Sets the master randomization seed."],
+          [propName: 'tests.seed', value: "random", description: "Sets the master randomization seed."],
           [propName: 'tests.iters', value: null, description: "Duplicate (re-run) each test N times."],
           [propName: 'tests.multiplier', value: 1, description: "Value multiplier for randomized tests."],
           [propName: 'tests.maxfailures', value: null, description: "Skip tests after a given number of failures."],
@@ -123,6 +123,19 @@ allprojects {
             ])
       }
 
+      if (testOptionsResolved['tests.seed'] == 'random') {
+        testOptionsResolved['tests.seed'] = rootSeed
+      }
+
+      // Compute the "reproduce with" string.
+      ext.testOptionsForReproduceLine = testOptions.findAll { opt ->
+        def defValue = Objects.toString(opt.value, null)
+        def value = testOptionsResolved[opt.propName]
+        return defValue != value
+      }.collect { opt ->
+        "-P" + opt.propName + "=" + testOptionsResolved[opt.propName]
+      }.join(" ")
+
       // leaving temporary folder option has multiple aliases...
       if ([
          "tests.leaveTemporary",
@@ -155,10 +168,10 @@ allprojects {
         if (Boolean.parseBoolean(testOptionsResolved["tests.useSecurityManager"])) {
           if (project.path == ":lucene:replicator") {
             systemProperty 'java.security.manager', "org.apache.lucene.util.TestSecurityManager"
-            systemProperty 'java.security.policy', rootProject.file("gradle/testing/policies/replicator-tests.policy")
+            systemProperty 'java.security.policy', rootProject.file("lucene/tools/junit4/replicator-tests.policy")
           } else if (project.path.startsWith(":lucene")) {
             systemProperty 'java.security.manager', "org.apache.lucene.util.TestSecurityManager"
-            systemProperty 'java.security.policy', rootProject.file("gradle/testing/policies/tests.policy")
+            systemProperty 'java.security.policy', rootProject.file("lucene/tools/junit4/tests.policy")
           } else {
             systemProperty 'common-solr.dir', commonSolrDir
             systemProperty 'java.security.manager', "org.apache.lucene.util.TestSecurityManager"

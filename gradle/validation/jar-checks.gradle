@@ -27,7 +27,7 @@ configure(project(":lucene")) {
   ext.licensesDir = file("licenses")
 }
 configure(project(":solr")) {
-  ext.licensesDir = file("licenses-gradle")
+  ext.licensesDir = file("licenses")
 }
 
 // All known license types. If 'noticeOptional' is true then
@@ -86,46 +86,65 @@ subprojects {
     doFirst {
       def isSolr = project.path.startsWith(":solr")
 
-      // We only care about this module's direct dependencies. Anything imported
-      // from other modules will be taken care of over there.
-      //
-      // ... unless it's solr in which case we need to consider transitive deps from
-      // Lucene modules.
-      def ownDeps = configurations.detachedConfiguration()
-          .extendsFrom(configurations.jarValidation)
-          .copyRecursive { dep ->
-            if (isSolr) {
-              if ((dep instanceof org.gradle.api.artifacts.ProjectDependency) &&
-                  dep.dependencyProject.path.startsWith(":solr")) {
-                return false
-              } else {
-                return true
-              }
-            } else {
-              return !(dep instanceof org.gradle.api.artifacts.ProjectDependency)
-            }
-          }
+      // When gradle resolves a configuration it applies exclude rules from inherited configurations
+      // globally (this seems like a bug to me). So we process each inherited configuration independently
+      // but make sure there are no other dependencies on jarValidation itself.
+      if (!configurations.jarValidation.dependencies.isEmpty()) {
+        throw new GradleException("jarValidation must only inherit from other configurations (can't have its own dependencies).")
+      }
 
-      def resolved = ownDeps.resolvedConfiguration.resolvedArtifacts
-      if (isSolr) {
-        resolved = resolved.findAll { resolvedArtifact ->
-          return resolvedArtifact.moduleVersion.id.group != "org.apache.lucene"
+      def excludeRules = configurations.jarValidation.excludeRules
+
+      ArrayDeque<ResolvedDependency> queue = new ArrayDeque<>()
+      configurations.jarValidation.extendsFrom.each { conf ->
+        if (excludeRules) {
+          conf = configurations.detachedConfiguration().extendsFrom(conf)
+          conf.excludeRules = excludeRules
+        }
+        if (conf.canBeResolved) {
+          queue.addAll(conf.resolvedConfiguration.firstLevelModuleDependencies)
         }
       }
 
-      project.ext.jarInfos = resolved.collect { resolvedArtifact ->
-        def file = resolvedArtifact.file
-        return [
-            name           : resolvedArtifact.name,
-            jarName        : file.toPath().getFileName().toString(),
-            path           : file,
-            module         : resolvedArtifact.moduleVersion,
-            checksum       : provider { new DigestUtils(MessageDigestAlgorithms.SHA_1).digestAsHex(file).trim() },
-            // We keep track of the files referenced by this dependency (sha, license, notice, etc.)
-            // so that we can determine unused dangling files later on.
-            referencedFiles: []
-        ]
+      def visited = new HashSet<>()
+      def infos = []
+
+      while (!queue.isEmpty()) {
+        def dep = queue.removeFirst()
+
+        // Skip any artifacts from other Solr modules (they will be resolved there).
+        if (dep.moduleGroup == "org.apache.solr") {
+          continue
+        }
+
+        // Skip any artifacts from Lucene modules.
+        if (dep.moduleGroup.startsWith("org.apache.lucene")) {
+          // ... but process their transitive dependencies for Solr compatibility.
+          if (isSolr) {
+            queue.addAll(dep.children)
+          }
+        } else {
+          queue.addAll(dep.children)
+          dep.moduleArtifacts.each { resolvedArtifact ->
+            def file = resolvedArtifact.file
+            if (visited.add(file)) {
+              infos.add([
+                  name           : resolvedArtifact.name,
+                  jarName        : file.toPath().getFileName().toString(),
+                  path           : file,
+                  module         : resolvedArtifact.moduleVersion,
+                  checksum       : provider { new DigestUtils(MessageDigestAlgorithms.SHA_1).digestAsHex(file).trim() },
+                  // We keep track of the files referenced by this dependency (sha, license, notice, etc.)
+                  // so that we can determine unused dangling files later on.
+                  referencedFiles: []
+              ])
+            }
+          }
+        }
       }
+
+      project.ext.jarInfos = infos.sort {a, b -> "${a.module}".compareTo("${b.module}")}
+      // jarInfos.each { info -> println "${info.module}" }
     }
   }
 
@@ -335,6 +354,15 @@ configure(project(":solr")) {
   checkDanglingLicenseFiles {
     exclude += [
         "README.committers.txt",
+
+        // solr-ref-guide compilation-only dependencies.
+        "android-json-*",
+        "ant-*",
+        "asciidoctor-ant-*",
+        "jsoup-*",
+        "junit4-ant-*",
+        "slf4j-simple-*",
+        "start.jar.sha1"
     ]
   }
 }

@@ -82,6 +82,13 @@ public final class Version {
   public static final Version LUCENE_8_4_0 = new Version(8, 4, 0);
 
   /**
+   * Match settings and bugs in Lucene's 8.4.1 release.
+   * @deprecated Use latest
+   */
+  @Deprecated
+  public static final Version LUCENE_8_4_1 = new Version(8, 4, 1);
+
+  /**
    * Match settings and bugs in Lucene's 8.5.0 release.
    * @deprecated Use latest
    */

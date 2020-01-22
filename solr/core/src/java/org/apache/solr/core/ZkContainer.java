@@ -185,7 +185,8 @@ public class ZkContainer {
       try {
         try {
           if (testing_beforeRegisterInZk != null) {
-            testing_beforeRegisterInZk.test(cd);
+            boolean didTrigger = testing_beforeRegisterInZk.test(cd);
+            log.debug((didTrigger ? "Ran" : "Skipped") + " pre-zk hook");
           }
           if (!core.getCoreContainer().isShutDown()) {
             zkController.register(core.getName(), cd, skipRecovery);

@@ -33,7 +33,7 @@ import java.util.Locale;
  * files, roughly following the conventions of IPADIC. JapaneseTokenizer uses dictionaries built
  * with this tool. Note that the input files required by this build generally must be generated from
  * a corpus of real text using tools that are not part of Lucene.  </p>
- * @lucene.experimenal
+ * @lucene.experimental
  */
 public class DictionaryBuilder {
 

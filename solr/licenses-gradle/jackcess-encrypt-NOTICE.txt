@@ -1,2 +1,0 @@
-Jackcess: http://jackcess.sourceforge.net/
-Copyright (C) 2008-2016 James Ahlborn

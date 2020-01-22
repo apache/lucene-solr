@@ -937,7 +937,7 @@ public class TestPackedInts extends LuceneTestCase {
   }
 
   public void testPackedLongValues() {
-    final long[] arr = new long[RandomNumbers.randomIntBetween(random(), 1, TEST_NIGHTLY ? 1000000 : 100000)];
+    final long[] arr = new long[RandomNumbers.randomIntBetween(random(), 1, TEST_NIGHTLY ? 1000000 : 10000)];
     float[] ratioOptions = new float[]{PackedInts.DEFAULT, PackedInts.COMPACT, PackedInts.FAST};
     for (int bpv : new int[]{0, 1, 63, 64, RandomNumbers.randomIntBetween(random(), 2, 62)}) {
       for (DataType dataType : Arrays.asList(DataType.DELTA_PACKED)) {
@@ -981,7 +981,7 @@ public class TestPackedInts extends LuceneTestCase {
 
         for (int i = 0; i < arr.length; ++i) {
           buf.add(arr[i]);
-          if (rarely()) {
+          if (rarely() && !TEST_NIGHTLY) {
             final long expectedBytesUsed = RamUsageTester.sizeOf(buf);
             final long computedBytesUsed = buf.ramBytesUsed();
             assertEquals(expectedBytesUsed, computedBytesUsed);

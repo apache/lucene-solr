@@ -45,6 +45,7 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
 import org.apache.solr.common.SolrException;
@@ -588,9 +589,17 @@ public class SolrConfigHandler extends RequestHandlerBase implements SolrCoreAwa
     private boolean verifyClass(CommandOperation op, String clz, Class expected) {
       if (clz == null) return true;
       if (!"true".equals(String.valueOf(op.getStr("runtimeLib", null)))) {
+        PluginInfo info = new PluginInfo(SolrRequestHandler.TYPE, op.getDataMap());
         //this is not dynamically loaded so we can verify the class right away
         try {
-          req.getCore().createInitInstance(new PluginInfo(SolrRequestHandler.TYPE, op.getDataMap()), expected, clz, "");
+          if(expected == Expressible.class) {
+            SolrResourceLoader resourceLoader = info.pkgName == null ?
+                req.getCore().getResourceLoader() :
+                req.getCore().getResourceLoader(info.pkgName);
+            resourceLoader.findClass(info.className, expected);
+          } else {
+            req.getCore().createInitInstance(info, expected, clz, "");
+          }
         } catch (Exception e) {
           log.error("Error checking plugin : ", e);
           op.addError(e.getMessage());

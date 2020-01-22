@@ -9,10 +9,7 @@
 // through ant -- we could use gradle's expand when copying or at least use some more humane
 // property names.
 
-// TODO 3: task names currently roughly correspond to ant tasks. Simpler aliases (such as 'html')
-// would be much clearer.
-
-// TODO 4: currently buildscript dependencies are hardcoded (asciidoctor) because they can't be resolved
+// TODO 3: currently buildscript dependencies are hardcoded (asciidoctor) because they can't be resolved
 // using Palantir's plugin. This is another reason to switch to gradle-based tools -- then
 // only the build script dependencies would be needed and asciidoctorj would be removed from version
 // properties entirely (it is only used locally in this build file).
@@ -25,6 +22,7 @@ import org.asciidoctor.*
 buildscript {
     repositories {
         mavenCentral()
+        jcenter()
     }
 
     dependencies {
@@ -34,7 +32,12 @@ buildscript {
 
 plugins {
     id 'java'
-    id 'com.github.jruby-gradle.base' version '1.6.0'
+    id 'com.github.jruby-gradle.base' version '2.0.0-alpha.7'
+}
+
+// Use an internal proxy to ruby gems.
+repositories {
+    ruby.gems()
 }
 
 configurations {
@@ -63,14 +66,14 @@ dependencies {
     depVer('org.apache.zookeeper:zookeeper')
 
     // jekyll dependencies
-    jrubyExec 'rubygems:jekyll:3.5.2'
-    jrubyExec 'rubygems:jekyll-asciidoc:3.0.0'
+    gems 'rubygems:jekyll:3.5.2'
+    gems 'rubygems:jekyll-asciidoc:3.0.0'
 
     // don't know why we have to explicitly add these deps but it doesn't resolve them
     // automatically.
-    jrubyExec 'rubygems:tilt:2.0.10'
-    jrubyExec 'rubygems:slim:4.0.1'
-    jrubyExec 'rubygems:concurrent-ruby:1.0.5'
+    gems 'rubygems:tilt:2.0.10'
+    gems 'rubygems:slim:4.0.1'
+    gems 'rubygems:concurrent-ruby:1.0.5'
 }
 
 sourceSets {
@@ -116,13 +119,8 @@ ext {
 
     bareBonesDir = file("${buildDir}/bare-bones-html")
 
-    def tstamp = ZonedDateTime.now()
-    buildDate = DateTimeFormatter.ofPattern("yyyy-MM-dd").format(tstamp)
-    buildTime = DateTimeFormatter.ofPattern("HH:mm:ss").format(tstamp)
-    buildYear = DateTimeFormatter.ofPattern("yyyy").format(tstamp)
-
     // Some additional version properties are lazily computed
-    // in setupProps (because they need to be computed after evalution is complete).
+    // in setupLazyProps (because they need to be computed after evaluation is complete).
     props = [
             "solr-root-path"         : solrRootPath,
             "solr-guide-draft-status": solrGuideDraftStatus,
@@ -159,11 +157,9 @@ ext {
     ]
 }
 
-// Tasks modeled after ant file until we have a working build.
-
-task setupProps {
+task setupLazyProps {
     doFirst {
-        // These properties have to be resolved after configuration phase (palantir's constraint)
+        // These properties have to be resolved after the configuration phase is complete (palantir's constraint)
         // so we can't use them as input for caches.
         [
                 ["ivyversions./commons-codec/commons-codec", "commons-codec", "commons-codec"],
@@ -190,16 +186,16 @@ task setupProps {
     }
 }
 
-task buildInit(type: Sync) {
-    dependsOn setupProps
+task prepareSources(type: Sync) {
+    dependsOn setupLazyProps
+
+    // If replaceable properties change, we have to rerun the task.
+    inputs.properties props
 
     def dummyAntProject = new org.apache.tools.ant.Project()
 
-    // If replaceable properties change, we have to rerun.
-    inputs.properties props
-
     from(file("src"), {
-        exclude '**/*.template'
+       exclude '**/*.template'
     })
 
     from(file("src"), {
@@ -219,7 +215,7 @@ task buildInit(type: Sync) {
 }
 
 task buildNavDataFiles(type: JavaExec) {
-    dependsOn buildInit, classes
+    dependsOn prepareSources, classes
     classpath = sourceSets.main.runtimeClasspath
 
     main = 'BuildNavDataFiles'
@@ -325,4 +321,8 @@ task buildSite(type: JavaExec) {
     }
 }
 
+// Hook up custom tasks with standard tasks.
 check.dependsOn bareBonesHtmlValidation
+
+// Do not hook site building to assemble, at least for now.
+// assemble.dependsOn buildSite

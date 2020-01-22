@@ -20,51 +20,96 @@ import java.lang.invoke.MethodHandles;
 
 import org.apache.solr.cloud.api.collections.CreateCollectionCmd;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.cloud.ZkConfigManager;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.cloud.ZooKeeperException;
+import org.apache.solr.common.util.NamedList;
+import org.apache.solr.core.ConfigSetProperties;
 import org.apache.solr.core.ConfigSetService;
 import org.apache.solr.core.CoreDescriptor;
+import org.apache.solr.core.SolrConfig;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+/**
+ * SolrCloud ConfigSetService impl.
+ */
 public class CloudConfigSetService extends ConfigSetService {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private final ZkController zkController;
 
-  public CloudConfigSetService(SolrResourceLoader loader, ZkController zkController) {
-    super(loader);
+  public CloudConfigSetService(SolrResourceLoader loader, boolean shareSchema, ZkController zkController) {
+    super(loader, shareSchema);
     this.zkController = zkController;
   }
 
   @Override
   public SolrResourceLoader createCoreResourceLoader(CoreDescriptor cd) {
+    final String colName = cd.getCollectionName();
+
+    // For back compat with cores that can create collections without the collections API
     try {
-      // for back compat with cores that can create collections without the collections API
-      if (!zkController.getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + cd.getCollectionName(), true)) {
-        CreateCollectionCmd.createCollectionZkNode(zkController.getSolrCloudManager().getDistribStateManager(), cd.getCollectionName(), cd.getCloudDescriptor().getParams());
+      if (!zkController.getZkClient().exists(ZkStateReader.COLLECTIONS_ZKNODE + "/" + colName, true)) {
+        // TODO remove this functionality or maybe move to a CLI mechanism
+        log.warn("Auto-creating collection (in ZK) from core descriptor (on disk).  This feature may go away!");
+        CreateCollectionCmd.createCollectionZkNode(zkController.getSolrCloudManager().getDistribStateManager(), colName, cd.getCloudDescriptor().getParams());
       }
-    } catch (KeeperException e) {
-      SolrException.log(log, null, e);
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
-      SolrException.log(log, null, e);
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "Interrupted auto-creating collection", e);
+    } catch (KeeperException e) {
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "Failure auto-creating collection", e);
     }
 
-    String configName;
+    // The configSet is read from ZK and populated.  Ignore CD's pre-existing configSet; only populated in standalone
+    final String configSetName;
     try {
-      configName = zkController.getZkStateReader().readConfigName(cd.getCollectionName());
+      //TODO readConfigName() also validates the configSet exists but seems needless.  We'll get errors soon enough.
+      configSetName = zkController.getZkStateReader().readConfigName(colName);
+      cd.setConfigSet(configSetName);
     } catch (KeeperException ex) {
-      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "Specified config does not exist in ZooKeeper: " + cd.getCollectionName());
+      throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "Trouble resolving configSet for collection " + colName + ": " + ex.getMessage());
     }
-    return new ZkSolrResourceLoader(cd.getInstanceDir(), configName, parentLoader.getClassLoader(),
+
+    return new ZkSolrResourceLoader(cd.getInstanceDir(), configSetName, parentLoader.getClassLoader(),
         cd.getSubstitutableProperties(), zkController);
   }
 
   @Override
-  public String configName(CoreDescriptor cd) {
-    return "collection " + cd.getCloudDescriptor().getCollectionName();
+  protected NamedList loadConfigSetFlags(CoreDescriptor cd, SolrResourceLoader loader) {
+    try {
+      return ConfigSetProperties.readFromResourceLoader(loader, ".");
+    } catch (Exception ex) {
+      log.debug("No configSet flags", ex);
+      return null;
+    }
+  }
+
+  @Override
+  protected Long getCurrentSchemaModificationVersion(String configSet, SolrConfig solrConfig, String schemaFile) {
+    String zkPath = ZkConfigManager.CONFIGS_ZKNODE + "/" + configSet + "/" + schemaFile;
+    Stat stat;
+    try {
+      stat = zkController.getZkClient().exists(zkPath, null, true);
+    } catch (KeeperException e) {
+      log.warn("Unexpected exception when getting modification time of " + zkPath, e);
+      return null; // debatable; we'll see an error soon if there's a real problem
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
+    if (stat == null) { // not found
+      return null;
+    }
+    return (long) stat.getVersion();
+  }
+
+  @Override
+  public String configSetName(CoreDescriptor cd) {
+    return "configset " + cd.getConfigSet();
   }
 }

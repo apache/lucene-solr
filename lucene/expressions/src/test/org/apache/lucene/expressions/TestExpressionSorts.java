@@ -83,7 +83,7 @@ public class TestExpressionSorts extends LuceneTestCase {
   }
   
   public void testQueries() throws Exception {
-    int n = atLeast(4);
+    int n = atLeast(1);
     for (int i = 0; i < n; i++) {
       assertQuery(new MatchAllDocsQuery());
       assertQuery(new TermQuery(new Term("english", "one")));

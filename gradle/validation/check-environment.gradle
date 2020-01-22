@@ -5,8 +5,8 @@ import org.gradle.util.GradleVersion
 
 configure(rootProject) {
   ext {
-    expectedGradleVersion = '5.6.4'
-    expectedJavaVersion = JavaVersion.VERSION_11
+    expectedGradleVersion = '6.0.1'
+    minJavaVersion = JavaVersion.VERSION_11
   }
 
   wrapper {
@@ -15,8 +15,8 @@ configure(rootProject) {
   }
 
   def currentJavaVersion = JavaVersion.current()
-  if (currentJavaVersion < expectedJavaVersion) {
-    throw new GradleException("Java version ${expectedJavaVersion} is required: this Java is ${currentJavaVersion} "
+  if (currentJavaVersion < minJavaVersion) {
+    throw new GradleException("At least Java ${minJavaVersion} is required, you are running Java ${currentJavaVersion} "
       + "[${System.getProperty('java.vm.name')} ${System.getProperty('java.vm.version')}]")
   }
 
