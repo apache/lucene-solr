@@ -66,7 +66,7 @@ public class TopLevelJoinQuery extends JoinQuery {
     try {
       final DocValuesWrapper topLevelFromDocValues = validateAndFetchDocValues(fromSearcher, fromField, "from");
       final DocValuesWrapper topLevelToDocValues = validateAndFetchDocValues(toSearcher, toField, "to");
-      if (topLevelFromDocValues.getValueCount() == 0 || topLevelToDocValues.getValueCount() == 0) {
+      if (topLevelFromDocValues == null || topLevelToDocValues == null) {
         return createNoMatchesWeight(boost);
       }
 
@@ -138,14 +138,18 @@ public class TopLevelJoinQuery extends JoinQuery {
 
     if (!field.hasDocValues()) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
-          "'top-level' join queries require 'to' and 'from' fields to have docvalues enabled: '" +
-              querySide + "' field '" + fieldName + "' doesn't");
+          "'top-level' join queries require both 'from' and 'to' fields to have docValues, but " + querySide +
+              " field [" + fieldName +  "] does not.");
     }
 
-    if (field.multiValued()) {
-      return new DocValuesWrapper(DocValues.getSortedSet(solrSearcher.getSlowAtomicReader(), fieldName));
+
+    final DocValuesWrapper wrapper = (field.multiValued()) ?
+        new DocValuesWrapper(DocValues.getSortedSet(solrSearcher.getSlowAtomicReader(), fieldName)) :
+        new DocValuesWrapper(DocValues.getSorted(solrSearcher.getSlowAtomicReader(), fieldName));
+    if (wrapper.getValueCount() == 0) {
+      return null;
     }
-    return new DocValuesWrapper(DocValues.getSorted(solrSearcher.getSlowAtomicReader(), fieldName));
+    return wrapper;
   }
 
   private LongBitSet findOrdinalsMatchingFromQuery(SolrIndexSearcher fromSearcher, DocValuesWrapper fromDocValues) throws IOException {

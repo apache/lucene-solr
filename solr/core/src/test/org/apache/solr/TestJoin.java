@@ -27,10 +27,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
-import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.Utils;
-import org.apache.solr.request.LocalSolrQueryRequest;
 import org.apache.solr.request.SolrQueryRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -53,38 +52,60 @@ public class TestJoin extends SolrTestCaseJ4 {
     initCore("solrconfig.xml","schema12.xml");
   }
 
-  private void indexEmployeeDocs() {
-    assertU(add(doc("id", "1","name", "john", "title", "Director", "dept_ss_dv","Engineering")));
-    assertU(add(doc("id", "2","name", "mark", "title", "VP", "dept_ss_dv","Marketing")));
-    assertU(add(doc("id", "3","name", "nancy", "title", "MTS", "dept_ss_dv","Sales")));
-    assertU(add(doc("id", "4","name", "dave", "title", "MTS", "dept_ss_dv","Support", "dept_ss_dv","Engineering")));
-    assertU(add(doc("id", "5","name", "tina", "title", "VP", "dept_ss_dv","Engineering")));
+  private static final String PRIMARY_DEPT_FIELD = "primary_dept_indexed_sdv";
+  private static final String DEPT_FIELD = "dept_ss_dv";
+  private static final String DEPT_ID_FIELD = "dept_id_indexed_sdv";
 
-    assertU(add(doc("id","10", "dept_id_ss_dv", "Engineering", "text","These guys develop stuff")));
-    assertU(add(doc("id","11", "dept_id_ss_dv", "Marketing", "text","These guys make you look good")));
-    assertU(add(doc("id","12", "dept_id_ss_dv", "Sales", "text","These guys sell stuff")));
-    assertU(add(doc("id","13", "dept_id_ss_dv", "Support", "text","These guys help customers")));
+  private void indexEmployeeDocs() {
+    assertU(add(doc("id", "1","name", "john", "title", "Director", PRIMARY_DEPT_FIELD, "Engineering", DEPT_FIELD,"Engineering")));
+    assertU(add(doc("id", "2","name", "mark", "title", "VP", PRIMARY_DEPT_FIELD, "Marketing", DEPT_FIELD,"Marketing")));
+    assertU(add(doc("id", "3","name", "nancy", "title", "MTS", PRIMARY_DEPT_FIELD, "Sales", DEPT_FIELD,"Sales")));
+    assertU(add(doc("id", "4","name", "dave", "title", "MTS", PRIMARY_DEPT_FIELD, "Support", DEPT_FIELD,"Support", DEPT_FIELD,"Engineering")));
+    assertU(add(doc("id", "5","name", "tina", "title", "VP", PRIMARY_DEPT_FIELD, "Engineering", DEPT_FIELD,"Engineering")));
+
+    assertU(add(doc("id","10", DEPT_ID_FIELD, "Engineering", "text","These guys develop stuff")));
+    assertU(add(doc("id","11", DEPT_ID_FIELD, "Marketing", "text","These guys make you look good")));
+    assertU(add(doc("id","12", DEPT_ID_FIELD, "Sales", "text","These guys sell stuff")));
+    assertU(add(doc("id","13", DEPT_ID_FIELD, "Support", "text","These guys help customers")));
 
     assertU(commit());
   }
 
-  /**
-   * Tests join behavior scenarios that work with or without a postfilter.
-   *
-   * Standard vs post-filter execution is chosen using randomization on a per-query basis.
+  /*
+   * Exercises behavior shared by all join methods.
    */
   @Test
-  public void testJoinPostfilterCompatible() throws Exception {
+  public void testJoinAllMethods() throws Exception {
     indexEmployeeDocs();
     ModifiableSolrParams p = params("sort","id asc");
 
-    assertJQ(joinreq(p, buildJoinRequest("dept_ss_dv", "dept_id_ss_dv", "title:MTS"), "fl","id")
+    assertJQ(req(p, "q", buildJoinRequest(DEPT_FIELD, DEPT_ID_FIELD, "title:MTS"), "fl","id")
         ,"/response=={'numFound':3,'start':0,'docs':[{'id':'10'},{'id':'12'},{'id':'13'}]}"
     );
 
-    // find people that develop stuff
-    assertJQ(joinreq(p, buildJoinRequest("dept_id_ss_dv", "dept_ss_dv", "text:develop"), "fl","id")
+    // empty from
+    assertJQ(req(p, "q", buildJoinRequest("noexist_ss_dv", DEPT_ID_FIELD, "*:*", "fl","id"))
+        ,"/response=={'numFound':0,'start':0,'docs':[]}"
+    );
+
+    // empty to
+    assertJQ(req(p, "q", buildJoinRequest(DEPT_FIELD, "noexist_ss_dv", "*:*"), "fl","id")
+        ,"/response=={'numFound':0,'start':0,'docs':[]}"
+    );
+
+    // self join... return everyone in same dept(s) as Dave
+    assertJQ(req(p, "q", buildJoinRequest(DEPT_FIELD, DEPT_FIELD, "name:dave"), "fl","id")
         ,"/response=={'numFound':3,'start':0,'docs':[{'id':'1'},{'id':'4'},{'id':'5'}]}"
+    );
+
+    // from single-value to multi-value
+    assertJQ(req(p, "q", buildJoinRequest(DEPT_ID_FIELD, DEPT_FIELD, "text:develop"), "fl","id")
+        ,"/response=={'numFound':3,'start':0,'docs':[{'id':'1'},{'id':'4'},{'id':'5'}]}"
+    );
+
+    // from multi-value to single-value
+    assertJQ(req(p, "q",buildJoinRequest(DEPT_FIELD, DEPT_ID_FIELD, "title:MTS"), "fl","id", "debugQuery","true")
+        ,"/response=={'numFound':3,'start':0,'docs':[{'id':'10'},{'id':'12'},{'id':'13'}]}"
     );
 
     // expected outcome for a sub query matching dave joined against departments
@@ -92,68 +113,63 @@ public class TestJoin extends SolrTestCaseJ4 {
         "/response=={'numFound':2,'start':0,'docs':[{'id':'10'},{'id':'13'}]}";
 
     // straight forward query
-    assertJQ(joinreq(p, buildJoinRequest("dept_ss_dv", "dept_id_ss_dv", "name:dave"), "fl","id"),
+    assertJQ(req(p, "q", buildJoinRequest(DEPT_FIELD, DEPT_ID_FIELD, "name:dave"), "fl","id"),
         davesDepartments);
 
-    // variable deref for sub-query parsing
-    assertJQ(joinreq(p, buildJoinRequest("dept_ss_dv", "dept_id_ss_dv", "$qq"), "qq","{!dismax}dave", "qf","name", "fl","id", "debugQuery","true"),
+    // variable deref in 'from' query
+    assertJQ(req(p, "q", buildJoinRequest(DEPT_FIELD, DEPT_ID_FIELD, "$qq"), "qq","{!dismax}dave", "qf","name",
+        "fl","id", "debugQuery","true"),
         davesDepartments);
 
-    // variable deref for sub-query parsing w/localparams
-    assertJQ(joinreq(p, buildJoinRequest("dept_ss_dv", "dept_id_ss_dv", "$qq"),
-        "qq","{!dismax qf=name}dave",
-        "fl","id",
-        "debugQuery","true"),
+    // variable deref in 'from' query (w/ localparams)
+    assertJQ(req(p, "q", buildJoinRequest(DEPT_FIELD, DEPT_ID_FIELD, "$qq"), "qq","{!dismax qf=name}dave",
+        "fl","id", "debugQuery","true"),
         davesDepartments);
 
     // defType local param to control sub-query parsing
-    assertJQ(joinreq(p, buildJoinRequest("dept_ss_dv", "dept_id_ss_dv", "dave", "defType=dismax"),
-        "qf","name",
-        "fl","id",
-        "debugQuery","true"),
+    assertJQ(req(p, "q", buildJoinRequest(DEPT_FIELD, DEPT_ID_FIELD, "dave", "defType=dismax"), "qf","name",
+        "fl","id", "debugQuery","true"),
         davesDepartments);
 
     // find people that develop stuff - but limit via filter query to a name of "john"
     // this tests filters being pushed down to queries (SOLR-3062)
-    assertJQ(joinreq(p, buildJoinRequest("dept_id_ss_dv", "dept_ss_dv", "text:develop"), "fl","id", "fq", "name:john")
+    assertJQ(req(p, "q", buildJoinRequest(DEPT_ID_FIELD, DEPT_FIELD, "text:develop"), "fl","id", "fq", "name:john")
         ,"/response=={'numFound':1,'start':0,'docs':[{'id':'1'}]}"
-    );
-
-    assertJQ(joinreq(p, buildJoinRequest("dept_ss_dv", "dept_id_ss_dv", "title:MTS"), "fl","id", "debugQuery","true")
-        ,"/response=={'numFound':3,'start':0,'docs':[{'id':'10'},{'id':'12'},{'id':'13'}]}"
     );
   }
 
   /*
-   * Test join behavior scenarios that are only supported when the join runs regularly (i.e. not as a postfilter)
+   * Exercises behavior specific to method=topLevel join queries
    */
   @Test
-  public void testJoinNonPostfilterCompatible() throws Exception {
+  public void testTopLevelDVJoin() throws Exception {
+    indexEmployeeDocs();
+    ModifiableSolrParams p = params("sort","id asc");
+
+    // "from" field missing docValues
+    expectThrows(SolrException.class, () -> {
+      h.query(req(p, "q", "{!join from=nodocvalues_s to=dept_ss_dv method=topLevelDV}*:*", "fl","id"));
+    });
+
+    // "to" field missing docValues
+    expectThrows(SolrException.class, () -> {
+      h.query(req(p, "q", "{!join from=dept_ss_dv to=nodocvalues_s method=topLevelDV}*:*", "fl","id"));
+    });
+  }
+
+
+  @Test
+  public void testIndexJoin() throws Exception {
     indexEmployeeDocs();
 
     ModifiableSolrParams p = params("sort","id asc");
 
-    // Join debug statistics
-    assertJQ(req(p, "q","{!join from=dept_ss_dv to=dept_id_ss_dv}title:MTS", "fl","id", "debugQuery","true")
-        ,"/debug/join/{!join from=dept_ss_dv to=dept_id_ss_dv}title:MTS=={'_MATCH_':'fromSetSize,toSetSize', 'fromSetSize':2, 'toSetSize':3}"
+    // Debugging information
+    assertJQ(req(p, "q", "{!join from=dept_ss_dv to=dept_id_indexed_sdv}title:MTS", "fl","id", "debugQuery","true")
+        ,"/debug/join/{!join from=dept_ss_dv to=dept_id_indexed_sdv}title:MTS=={'_MATCH_':'fromSetSize,toSetSize', 'fromSetSize':2, 'toSetSize':3}"
     );
 
-    // Empty/nonexistent "from" field
-    assertJQ(req(p, "q","{!join from=noexist_s to=dept_id_ss_dv}*:*", "fl","id")
-        ,"/response=={'numFound':0,'start':0,'docs':[]}"
-    );
-
-    // Empty/nonexistent "to" field
-    assertJQ(req(p, "q","{!join from=dept_ss_dv to=noexist_s}*:*", "fl","id")
-        ,"/response=={'numFound':0,'start':0,'docs':[]}"
-    );
-
-    // Self join on text field... return everyone with the same title as Dave
-    assertJQ(req(p, "q","{!join from=title to=title}name:dave", "fl","id")
-        ,"/response=={'numFound':2,'start':0,'docs':[{'id':'3'},{'id':'4'}]}"
-    );
-
-    // Self join on multivalued text field
+    // non-DV/text field.
     assertJQ(req(p, "q","{!join from=title to=title}name:dave", "fl","id")
         ,"/response=={'numFound':2,'start':0,'docs':[{'id':'3'},{'id':'4'}]}"
     );
@@ -301,35 +317,21 @@ public class TestJoin extends SolrTestCaseJ4 {
     return ids;
   }
 
-
   private static String buildJoinRequest(String fromField, String toField, String fromQuery, String... otherLocalParams) {
     final String baseJoinParams = "from=" + fromField + " to=" + toField + " v=" + fromQuery;
     final String optionalParamsJoined = (otherLocalParams != null && otherLocalParams.length > 0) ? String.join(" ", otherLocalParams) : " ";
     final String allProvidedParams = baseJoinParams + " " + optionalParamsJoined;
 
-    if (random().nextBoolean()) {
-      return "{!join " + allProvidedParams + " cost=101 cache=false}";
+    final int joinMethod = random().nextInt(4);
+    switch (joinMethod) {
+      case 0: // No explicit method specified
+        return "{!join " + allProvidedParams + " }";
+      case 1: // method=persegment
+        return "{!join " + allProvidedParams + " method=index}";
+      case 2: // method=score
+        return "{!join " + allProvidedParams + " method=indexWithScore score=none}";
+     default: // method=toplevel
+        return "{!join " + allProvidedParams + " method=topLevelDV}";
     }
-    return "{!join " + allProvidedParams + " }";
   }
-
-  /**
-   * Similar interface to {@link SolrTestCaseJ4#req(SolrParams, String...)}, but chooses whether the join runs as a
-   * normal query or postfilter
-   */
-  private static SolrQueryRequest joinreq(SolrParams params, String joinQuery, String... moreParams) {
-    ModifiableSolrParams mp = new ModifiableSolrParams(params);
-    if (joinQuery.contains("cost=101")) {
-      mp.set("q", "*:*");
-      mp.set("fq", joinQuery);
-    } else {
-      mp.set("q", joinQuery);
-    }
-
-    for (int i=0; i<moreParams.length; i+=2) {
-      mp.add(moreParams[i], moreParams[i+1]);
-    }
-    return new LocalSolrQueryRequest(h.getCore(), mp);
-  }
-
 }

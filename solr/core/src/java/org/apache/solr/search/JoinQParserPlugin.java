@@ -98,8 +98,8 @@ public class JoinQParserPlugin extends QParserPlugin {
     }
   }
 
-  private static enum Method {
-    perSegment {
+  private enum Method {
+    index {
       @Override
       Query makeFilter(QParser qparser) throws SyntaxError {
         final JoinParams jParams = parseJoin(qparser);
@@ -108,19 +108,19 @@ public class JoinQParserPlugin extends QParserPlugin {
         return q;
       }
     },
-    topLevel {
+    indexWithScore {
+      @Override
+      Query makeFilter(QParser qparser) throws SyntaxError {
+        return new ScoreJoinQParserPlugin().createParser(qparser.qstr, qparser.localParams, qparser.params, qparser.req).parse();
+      }
+    },
+    topLevelDV {
       @Override
       Query makeFilter(QParser qparser) throws SyntaxError {
         final JoinParams jParams = parseJoin(qparser);
         final JoinQuery q = new TopLevelJoinQuery(jParams.fromField, jParams.toField, jParams.fromCore, jParams.fromQuery);
         q.fromCoreOpenTime = jParams.fromCoreOpenTime;
         return q;
-      }
-    },
-    score {
-      @Override
-      Query makeFilter(QParser qparser) throws SyntaxError {
-        return new ScoreJoinQParserPlugin().createParser(qparser.qstr, qparser.localParams, qparser.params, qparser.req).parse();
       }
     };
 
@@ -188,7 +188,7 @@ public class JoinQParserPlugin extends QParserPlugin {
         if(localParams!=null && localParams.get(ScoreJoinQParserPlugin.SCORE)!=null) {
           return new ScoreJoinQParserPlugin().createParser(qstr, localParams, params, req).parse();
         } else {
-          return Method.perSegment.makeFilter(this);
+          return Method.index.makeFilter(this);
         }
       }
     };
