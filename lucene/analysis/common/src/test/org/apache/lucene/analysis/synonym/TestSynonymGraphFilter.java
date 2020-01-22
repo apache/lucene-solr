@@ -1406,7 +1406,7 @@ public class TestSynonymGraphFilter extends BaseTokenStreamTestCase {
       a = getAnalyzer(b, true);
     }
 
-    int iters = atLeast(20);
+    int iters = atLeast(10);
     for(int iter=0;iter<iters;iter++) {
 
       String doc = toTokenString(randomBinaryChars(50, 100, bias, 'a'));

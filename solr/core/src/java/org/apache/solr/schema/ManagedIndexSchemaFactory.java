@@ -35,6 +35,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.SystemIdResolver;
 import org.apache.solr.util.plugin.SolrCoreAware;
+import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -44,7 +45,7 @@ import org.xml.sax.InputSource;
 /** Factory for ManagedIndexSchema */
 public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements SolrCoreAware {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final String UPGRADED_SCHEMA_EXTENSION = ".bak";
+  public static final String UPGRADED_SCHEMA_EXTENSION = ".bak";
   private static final String SCHEMA_DOT_XML = "schema.xml";
 
   public static final String DEFAULT_MANAGED_SCHEMA_RESOURCE_NAME = "managed-schema";
@@ -83,6 +84,11 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
       log.error(msg);
       throw new SolrException(ErrorCode.SERVER_ERROR, msg);
     }
+  }
+
+  @Override
+  public String getSchemaResourceName(String cdResourceName) {
+    return managedSchemaResourceName; // actually a guess; reality depends on the actual files in the config set :-(
   }
 
   /**
@@ -326,9 +332,19 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
     } else {
       // Rename the non-managed schema znode in ZooKeeper
       ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader)loader;
+      ZkController zkController = zkLoader.getZkController();
+      SolrZkClient zkClient = zkController.getZkClient();
       final String nonManagedSchemaPath = zkLoader.getConfigSetZkPath() + "/" + resourceName;
+      final String lockPath = nonManagedSchemaPath + ".lock";
+      boolean locked = false;
       try {
-        ZkController zkController = zkLoader.getZkController();
+        try {
+          zkClient.makePath(lockPath, null, CreateMode.EPHEMERAL, null, true, true);
+          locked = true;
+        } catch (Exception e) {
+          // some other node already started the upgrade, or an error occurred - bail out
+          return;
+        }
         ZkCmdExecutor zkCmdExecutor = new ZkCmdExecutor(zkController.getClientTimeout());
         if (zkController.pathExists(nonManagedSchemaPath)) {
           // First, copy the non-managed schema znode content to the upgraded schema znode
@@ -360,6 +376,17 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
         }
         final String msg = "Error persisting managed schema resource " + managedSchemaResourceName;
         log.warn(msg, e); // Log as warning and suppress the exception
+      } finally {
+        if (locked) {
+          // unlock
+          try {
+            zkClient.delete(lockPath, -1, true);
+          } catch (KeeperException.NoNodeException nne) {
+            // ignore - someone else deleted it
+          } catch (Exception e) {
+            log.warn("Unable to delete schema upgrade lock file " + lockPath, e);
+          }
+        }
       }
     }
   }

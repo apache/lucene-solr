@@ -69,7 +69,7 @@ public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
   }
 
   public void testRandomMedium() throws Exception {
-    doTestRandom(10000, false);
+    doTestRandom(1000, false);
   }
 
   @Nightly
@@ -78,11 +78,11 @@ public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
   }
 
   public void testMultiValued() throws Exception {
-    doTestRandom(10000, true);
+    doTestRandom(1000, true);
   }
 
   public void testAllEqual() throws Exception {
-    int numDocs = atLeast(10000);
+    int numDocs = atLeast(1000);
     int dimensions = dimension();
     Range[][] ranges = new Range[numDocs][];
     Range[] theRange =  new Range[] {nextRange(dimensions)};
@@ -92,7 +92,7 @@ public abstract class BaseRangeFieldQueryTestCase extends LuceneTestCase {
 
   // Force low cardinality leaves
   public void testLowCardinality() throws Exception {
-    int numDocs = atLeast(10000);
+    int numDocs = atLeast(1000);
     int dimensions = dimension();
 
     int cardinality = TestUtil.nextInt(random(), 2, 20);
