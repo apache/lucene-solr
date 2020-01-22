@@ -1,7 +1,117 @@
-
 apply plugin: 'java-library'
+apply plugin: "de.undercouch.download"
 
 dependencies {
   testImplementation project(':lucene:codecs')
   testImplementation project(':lucene:test-framework')
 }
+
+def momanCommitHash = "5c5c2a1e4dea"
+def momanUrl = "https://bitbucket.org/jpbarrette/moman/get/${momanCommitHash}.zip"
+def python_exe = "python"
+
+def jflexUrl = "https://jflex.de/release/jflex-1.7.0.zip"
+
+// Download and extract Moman
+task installJFlex(type: Download) {
+  src jflexUrl
+  dest file("${buildDir}/jflex.zip")
+  onlyIfModified true
+  doLast {
+    ant.unzip(src: file("${buildDir}/jflex.zip"), dest: file("${buildDir}/jflex"), overwrite: "true") {
+      ant.cutdirsmapper(dirs: "1")
+    }
+  }
+}
+
+task installMoman(type: Download) {
+  src momanUrl
+  dest file("${buildDir}/moman.zip")
+  onlyIfModified true
+
+  doLast {
+    ant.unzip(src: file("${buildDir}/moman.zip"), dest: file("${buildDir}/moman"), overwrite: "true") {
+      ant.cutdirsmapper(dirs: "1")
+    }
+  }
+}
+
+task createPackedIntSources {
+  doLast {
+    exec {
+      workingDir 'src/java/org/apache/lucene/util/packed'
+      executable "${python_exe}"
+      args = ['-B', 'gen_BulkOperation.py']
+    }
+    exec {
+      workingDir 'src/java/org/apache/lucene/util/packed'
+      executable "${python_exe}"
+      args = ['-B', 'gen_Packed64SingleBlock.py']
+    }
+    ant.fixcrlf(srcdir: 'src/java/org/apache/lucene/util/packed', includes: 'Packed64SingleBlock.java', encoding: 'UTF-8')
+    ant.fixcrlf(srcdir: 'src/java/org/apache/lucene/util/packed', includes: 'BulkOperation*.java', encoding: 'UTF-8')
+  }
+}
+
+task createLevAutomaton(dependsOn: installMoman) {
+  doLast {
+    exec {
+      workingDir 'src/java/org/apache/lucene/util/automaton'
+      executable "${python_exe}"
+      args = ['-B', 'createLevAutomata.py', '1', 'True']
+    }
+    exec {
+      workingDir 'src/java/org/apache/lucene/util/automaton'
+      executable "${python_exe}"
+      args = ['-B', 'createLevAutomata.py', '1', 'False']
+    }
+    exec {
+      workingDir 'src/java/org/apache/lucene/util/automaton'
+      executable "${python_exe}"
+      args = ['-B', 'createLevAutomata.py', '2', 'True']
+    }
+    exec {
+      workingDir 'src/java/org/apache/lucene/util/automaton'
+      executable "${python_exe}"
+      args = ['-B', 'createLevAutomata.py', '2', 'False']
+    }
+    ant.fixcrlf(srcdir: 'src/java/org/apache/lucene/util/automaton', includes: '*ParametricDescription.java', encoding: 'UTF-8')
+  }
+}
+
+task runJFlex(dependsOn: installJFlex, type: JavaExec) {
+  classpath = files("${buildDir}/jflex/lib/jflex-full-1.7.0.jar")
+  main = "jflex.Main"
+
+  // arguments to pass to the application
+  args = ['--skel', project.project(":lucene:core").projectDir.getAbsolutePath() + "/src/data/jflex/skeleton.disable.buffer.expansion.txt",
+          '--nobak',
+          'src/java/org/apache/lucene/analysis/standard/StandardTokenizerImpl.jflex'
+  ]
+  doLast {
+    //Since the ZZ_BUFFERSIZE declaration is generated rather than in the skeleton, we have to transform it here.
+    ant.replace(token: "private static final int ZZ_BUFFERSIZE", value: "private int ZZ_BUFFERSIZE", encoding: "UTF-8") {
+      ant.fileset(dir: "src/java/org/apache/lucene/analysis/standard", includes: "StandardTokenizerImpl.java")
+    }
+  }
+}
+
+task cleanJFlex {
+  doLast {
+    println "Cleaning JFlex"
+    ant.delete(failonerror: 'false') {
+      ant.fileset(dir: file("src/java/org/apache/lucene/analysis/standard"), includes: "**/*.java") {
+        ant.containsregexp(expression: "generated.*by.*JFlex")
+      }
+    }
+  }
+}
+
+task regenerate {
+  group = 'Build Regenerate'
+  description = "Regenerates various generated src files, automoton, packedints, jfles"
+  dependsOn cleanJFlex, createPackedIntSources, createLevAutomaton, runJFlex
+}
+
+
+

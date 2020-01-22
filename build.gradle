@@ -5,6 +5,7 @@ plugins {
   id "base"
   id "com.palantir.consistent-versions" version "1.14.0"
   id 'de.thetaphi.forbiddenapis' version '2.7' apply false
+  id "de.undercouch.download" version "4.0.2" apply false
 }
 
 // Project version and main properties. Applies to all projects.

@@ -2,7 +2,6 @@
 package org.apache.lucene.queryparser.classic;
 
 /** Token Manager. */
-@SuppressWarnings("cast")
 public class QueryParserTokenManager implements QueryParserConstants
 {
 
@@ -481,7 +480,7 @@ private int jjMoveNfa_2(int startState, int curPos)
       }
       else
       {
-         int hiByte = (int)(curChar >> 8);
+         int hiByte = curChar >> 8;
          int i1 = hiByte >> 6;
          long l1 = 1L << (hiByte & 077);
          int i2 = (curChar & 0xff) >> 6;
@@ -675,7 +674,7 @@ private int jjMoveNfa_0(int startState, int curPos)
       }
       else
       {
-         int hiByte = (int)(curChar >> 8);
+         int hiByte = curChar >> 8;
          int i1 = hiByte >> 6;
          long l1 = 1L << (hiByte & 077);
          int i2 = (curChar & 0xff) >> 6;
@@ -848,7 +847,7 @@ private int jjMoveNfa_1(int startState, int curPos)
       }
       else
       {
-         int hiByte = (int)(curChar >> 8);
+         int hiByte = curChar >> 8;
          int i1 = hiByte >> 6;
          long l1 = 1L << (hiByte & 077);
          int i2 = (curChar & 0xff) >> 6;

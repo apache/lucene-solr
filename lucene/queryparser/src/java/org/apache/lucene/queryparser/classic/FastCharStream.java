@@ -106,10 +106,12 @@ public final class FastCharStream implements CharStream {
   }
 
   @Override
+  @SuppressWarnings("deprecation") // Pending resolution of deprecations in FuzzyQuery
   public final int getColumn() {
     return bufferStart + bufferPosition;
   }
   @Override
+  @SuppressWarnings("deprecation") // Pending resolution of deprecations in FuzzyQuery
   public final int getLine() {
     return 1;
   }
