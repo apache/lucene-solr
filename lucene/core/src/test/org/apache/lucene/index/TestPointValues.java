@@ -492,7 +492,8 @@ public class TestPointValues extends LuceneTestCase {
     IndexWriter w = new IndexWriter(dir, iwc);
     Document doc = new Document();
     doc.add(new IntPoint("int", 17));
-    for(int i=0;i<300000;i++) {
+    int numDocs = TEST_NIGHTLY ? 300000 : 3000;
+    for(int i=0;i<numDocs;i++) {
       w.addDocument(doc);
       if (random().nextInt(1000) == 17) {
         w.commit();
