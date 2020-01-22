@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM openjdk:11-slim
+FROM openjdk:11-jre-slim
 
 ARG SOLR_VERSION="9.0.0-SNAPSHOT"
 
