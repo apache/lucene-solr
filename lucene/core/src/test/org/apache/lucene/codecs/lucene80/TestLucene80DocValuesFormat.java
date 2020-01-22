@@ -115,7 +115,7 @@ public class TestLucene80DocValuesFormat extends BaseCompressingDocValuesFormatT
     }
   }
   
-  @Slow
+  @Nightly
   public void testTermsEnumFixedWidth() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
@@ -123,7 +123,7 @@ public class TestLucene80DocValuesFormat extends BaseCompressingDocValuesFormatT
     }
   }
   
-  @Slow
+  @Nightly
   public void testTermsEnumVariableWidth() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
@@ -139,6 +139,7 @@ public class TestLucene80DocValuesFormat extends BaseCompressingDocValuesFormatT
     }
   }
 
+  @Nightly
   public void testTermsEnumLongSharedPrefixes() throws Exception {
     int numIterations = atLeast(1);
     for (int i = 0; i < numIterations; i++) {
@@ -533,12 +534,12 @@ public class TestLucene80DocValuesFormat extends BaseCompressingDocValuesFormatT
     }
   }
 
-  @Slow
+  @Nightly
   public void testSortedNumericBlocksOfVariousBitsPerValue() throws Exception {
     doTestSortedNumericBlocksOfVariousBitsPerValue(() -> TestUtil.nextInt(random(), 1, 3));
   }
 
-  @Slow
+  @Nightly
   public void testSparseSortedNumericBlocksOfVariousBitsPerValue() throws Exception {
     doTestSortedNumericBlocksOfVariousBitsPerValue(() -> TestUtil.nextInt(random(), 0, 2));
   }
@@ -548,14 +549,14 @@ public class TestLucene80DocValuesFormat extends BaseCompressingDocValuesFormatT
     doTestSparseNumericBlocksOfVariousBitsPerValue(1);
   }
 
-  @Slow
+  @Nightly
   public void testSparseNumericBlocksOfVariousBitsPerValue() throws Exception {
     doTestSparseNumericBlocksOfVariousBitsPerValue(random().nextDouble());
   }
 
   // The LUCENE-8585 jump-tables enables O(1) skipping of IndexedDISI blocks, DENSE block lookup
   // and numeric multi blocks. This test focuses on testing these jumps.
-  @Slow
+  @Nightly
   public void testNumericFieldJumpTables() throws Exception {
     // IndexedDISI block skipping only activated if target >= current+2, so we need at least 5 blocks to
     // trigger consecutive block skips
