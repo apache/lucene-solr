@@ -242,6 +242,8 @@ Bug Fixes
 
 * SOLR-14196: AdminUI login not working for JWTAuth when blockUnknown=false (janhoy)
 
+* SOLR-14205: Do not fail when given timeout to connectionImpl.isValid() = 0 (Nick Vercammen via Kevin Risden)
+
 Other Changes
 ---------------------
 
