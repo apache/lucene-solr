@@ -86,6 +86,11 @@ public class ManagedIndexSchemaFactory extends IndexSchemaFactory implements Sol
     }
   }
 
+  @Override
+  public String getSchemaResourceName(String cdResourceName) {
+    return managedSchemaResourceName; // actually a guess; reality depends on the actual files in the config set :-(
+  }
+
   /**
    * First, try to locate the managed schema file named in the managedSchemaResourceName
    * param. If the managed schema file exists and is accessible, it is used to instantiate

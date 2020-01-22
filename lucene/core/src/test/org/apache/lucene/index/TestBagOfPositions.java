@@ -44,7 +44,7 @@ import org.apache.lucene.util.TestUtil;
 public class TestBagOfPositions extends LuceneTestCase {
   public void test() throws Exception {
     List<String> postingsList = new ArrayList<>();
-    int numTerms = atLeast(300);
+    int numTerms = atLeast(100);
     final int maxTermsPerDoc = TestUtil.nextInt(random(), 10, 20);
     boolean isSimpleText = "SimpleText".equals(TestUtil.getPostingsFormat("field"));
 

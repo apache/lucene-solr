@@ -43,6 +43,7 @@ public class TestIndexedDISI extends LuceneTestCase {
   }
 
   // EMPTY blocks are special with regard to jumps as they have size 0
+  @Nightly
   public void testEmptyBlocks() throws IOException {
     final int B = 65536;
     int maxDoc = B*11;

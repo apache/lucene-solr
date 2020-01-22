@@ -15,38 +15,36 @@
  * limitations under the License.
  */
 
-// Policy file for lucene replicator tests. Please keep minimal and avoid wildcards.
+// Policy file for :lucene:replicator tests. Please keep minimal and avoid wildcards.
 // this differs from the standard lucene policy in that it must allow read-write access
-// to all system properties, because of jetty
+// to all system properties, because of jetty calls to System.getProperties()
 
 grant {
-  // contain read access to only what we need:
-  // 3rd party jar resources (where symlinks are not supported), test-files/ resources
-  permission java.io.FilePermission "${common.dir}${/}-", "read";
-  // 3rd party jar resources (where symlinks are supported)
-  permission java.io.FilePermission "${user.home}${/}.ivy2${/}cache${/}-", "read";
-  // system jar resources, and let TestIndexWriterOnJRECrash fork its jvm
+  // jetty-specific:
+  permission java.lang.RuntimePermission "getenv.JETTY_AVAILABLE_PROCESSORS";
+  permission java.lang.RuntimePermission "getenv.JETTY_WORKER_INSTANCE";
+  // servlet stuff
+  permission java.lang.RuntimePermission "setContextClassLoader";
+  // allow TestNRTReplication fork its jvm
   permission java.io.FilePermission "${java.home}${/}-", "read,execute";
-  // should be enclosed within common.dir, but just in case:
-  permission java.io.FilePermission "${junit4.childvm.cwd}", "read";
+  // read/write access to all system properties (required by jetty in these tests)
+  permission java.util.PropertyPermission "*", "read,write";
+  // all possibilities of accepting/binding/connecting on localhost with ports >= 1024:
+  permission java.net.SocketPermission "localhost:1024-", "accept,connect,resolve";
+  permission java.net.SocketPermission "127.0.0.1:1024-", "accept,connect,resolve";
+  permission java.net.SocketPermission "[::1]:1024-", "accept,connect,resolve";
+
+  // test-files/ resources
+  permission java.io.FilePermission "${common.dir}${/}-", "read";
 
   // write only to sandbox
-  permission java.io.FilePermission "${junit4.childvm.cwd}${/}temp", "read,write,delete";
-  permission java.io.FilePermission "${junit4.childvm.cwd}${/}temp${/}-", "read,write,delete";
-  permission java.io.FilePermission "${junit4.childvm.cwd}${/}jacoco.db", "write";
-  permission java.io.FilePermission "${junit4.tempDir}${/}*", "read,write,delete";
-  permission java.io.FilePermission "${clover.db.dir}${/}-", "read,write,delete";
   permission java.io.FilePermission "${tests.linedocsfile}", "read";
+  permission java.io.FilePermission "${java.io.tmpdir}", "read,write";
+  permission java.io.FilePermission "${java.io.tmpdir}${/}-", "read,write,delete";
 
-  // misc HardlinkCopyDirectoryWrapper needs this to test if hardlinks can be created
-  permission java.nio.file.LinkPermission "hard";
-  // needed by SSD detection tests in TestIOUtils (creates symlinks)
-  permission java.nio.file.LinkPermission "symbolic";
-
-  // needed by gson serialization of junit4 runner: TODO clean that up
+  // needed by randomizedtesting runner to identify test methods.
   permission java.lang.RuntimePermission "accessDeclaredMembers";
-  permission java.lang.reflect.ReflectPermission "suppressAccessChecks";
-  // needed by junit4 runner to capture sysout/syserr:
+  // needed by certain tests to redirect sysout/syserr:
   permission java.lang.RuntimePermission "setIO";
   // needed by randomized runner to catch failures from other threads:
   permission java.lang.RuntimePermission "setDefaultUncaughtExceptionHandler";
@@ -58,34 +56,32 @@ grant {
   permission java.lang.RuntimePermission "getStackTrace";
   // needed for mock filesystems in tests
   permission java.lang.RuntimePermission "fileSystemProvider";
-  // needed for test of IOUtils.spins (maybe it can be avoided)
-  permission java.lang.RuntimePermission "getFileStoreAttributes";
-  // analyzers/uima: needed by lucene expressions' JavascriptCompiler
-  permission java.lang.RuntimePermission "createClassLoader";
   // needed to test unmap hack on platforms that support it
   permission java.lang.RuntimePermission "accessClassInPackage.sun.misc";
-  // needed by cyberneko usage by benchmarks on J9
-  permission java.lang.RuntimePermission "accessClassInPackage.org.apache.xerces.util";
-  // needed by jacoco to dump coverage
+};
+
+// Permissions to support ant build
+grant {
+  permission java.io.FilePermission "${user.home}${/}.ivy2${/}cache${/}-", "read";
+  permission java.io.FilePermission "${junit4.tempDir}${/}*", "read,write,delete";
+  permission java.io.FilePermission "${clover.db.dir}${/}-", "read,write,delete";
+  permission java.io.FilePermission "${junit4.childvm.cwd}${/}jacoco.db", "write";
+  // needed by jacoco to dump coverage on shutdown
   permission java.lang.RuntimePermission "shutdownHooks";
-  // needed by org.apache.logging.log4j
-  permission java.lang.RuntimePermission "getenv.*";
-  permission java.lang.RuntimePermission "getClassLoader";
-  permission java.lang.RuntimePermission "setContextClassLoader";
+};
 
-  // read/write access to all system properties (required by jetty in these tests)
-  permission java.util.PropertyPermission "*", "read,write";
+// Grant all permissions to Gradle test runner classes.
+grant codeBase "file:${gradle.lib.dir}${/}-" {
+  permission java.security.AllPermission;
+};
 
-  // replicator: jetty tests require some network permissions:
-  // all possibilities of accepting/binding/connecting on localhost with ports >= 1024:
-  permission java.net.SocketPermission "localhost:1024-", "accept,listen,connect,resolve";
-  permission java.net.SocketPermission "127.0.0.1:1024-", "accept,listen,connect,resolve";
-  permission java.net.SocketPermission "[::1]:1024-", "accept,listen,connect,resolve";
-  
-  // SSL related properties for jetty
-  permission java.security.SecurityPermission "getProperty.ssl.KeyManagerFactory.algorithm";
-  permission java.security.SecurityPermission "getProperty.ssl.TrustManagerFactory.algorithm";
-  
-  // allows LuceneTestCase#runWithRestrictedPermissions to execute with lower (or no) permission
-  permission java.security.SecurityPermission "createAccessControlContext";
+grant codeBase "file:${gradle.worker.jar}" {
+  permission java.security.AllPermission;
+};
+
+grant {
+  // Allow reading gradle worker JAR.
+  permission java.io.FilePermission "${gradle.worker.jar}", "read";
+  // Allow reading from classpath JARs (resources).
+  permission java.io.FilePermission "${gradle.user.home}${/}-", "read";
 };

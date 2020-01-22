@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import org.apache.lucene.spatial.SpatialTestData;
 import org.apache.lucene.spatial.composite.CompositeSpatialStrategy;
 import org.apache.lucene.spatial.prefix.RandomSpatialOpStrategyTestCase;
@@ -123,7 +122,6 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
   }
 
   @Test
-  @Repeat(iterations = 30)
   public void testOperations() throws IOException {
     setupStrategy();
 

@@ -551,6 +551,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
     dir.close();
   }
 
+  @Slow
   public void testConcurrentIndexCloseSearchAndRefresh() throws Exception {
     final Directory dir = newFSDirectory(createTempDir());
     AtomicReference<IndexWriter> writerRef = new AtomicReference<>();
@@ -567,7 +568,7 @@ public class TestSearcherManager extends ThreadedIndexingAndSearchingTestCase {
         public void run() {
           try {
             LineFileDocs docs = new LineFileDocs(random());
-            long runTimeSec = TEST_NIGHTLY ? atLeast(10) : atLeast(2);
+            long runTimeSec = TEST_NIGHTLY ? atLeast(10) : 1;
             long endTime = System.nanoTime() + runTimeSec * 1000000000;
             while (System.nanoTime() < endTime) {
               IndexWriter w = writerRef.get();

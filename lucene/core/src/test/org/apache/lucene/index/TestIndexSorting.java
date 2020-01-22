@@ -1691,7 +1691,7 @@ public class TestIndexSorting extends LuceneTestCase {
     Sort indexSort = new Sort(new SortField("foo", SortField.Type.LONG));
     iwc.setIndexSort(indexSort);
     IndexWriter w = new IndexWriter(dir, iwc);
-    final int numDocs = atLeast(1000);
+    final int numDocs = atLeast(200);
     final FixedBitSet deleted = new FixedBitSet(numDocs);
     for (int i = 0; i < numDocs; ++i) {
       Document doc = new Document();
@@ -1762,7 +1762,7 @@ public class TestIndexSorting extends LuceneTestCase {
     Sort indexSort = new Sort(new SortedNumericSortField("foo", SortField.Type.LONG));
     iwc.setIndexSort(indexSort);
     IndexWriter w = new IndexWriter(dir, iwc);
-    final int numDocs = atLeast(1000);
+    final int numDocs = atLeast(200);
     final FixedBitSet deleted = new FixedBitSet(numDocs);
     for (int i = 0; i < numDocs; ++i) {
       Document doc = new Document();

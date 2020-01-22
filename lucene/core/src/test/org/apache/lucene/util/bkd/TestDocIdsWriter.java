@@ -31,8 +31,9 @@ import org.apache.lucene.util.TestUtil;
 public class TestDocIdsWriter extends LuceneTestCase {
 
   public void testRandom() throws Exception {
+    int numIters = atLeast(100);
     try (Directory dir = newDirectory()) {
-      for (int iter = 0; iter < 1000; ++iter) {
+      for (int iter = 0; iter < numIters; ++iter) {
         int[] docIDs = new int[random().nextInt(5000)];
         final int bpv = TestUtil.nextInt(random(), 1, 32);
         for (int i = 0; i < docIDs.length; ++i) {
@@ -44,8 +45,9 @@ public class TestDocIdsWriter extends LuceneTestCase {
   }
 
   public void testSorted() throws Exception {
+    int numIters = atLeast(100);
     try (Directory dir = newDirectory()) {
-      for (int iter = 0; iter < 1000; ++iter) {
+      for (int iter = 0; iter < numIters; ++iter) {
         int[] docIDs = new int[random().nextInt(5000)];
         final int bpv = TestUtil.nextInt(random(), 1, 32);
         for (int i = 0; i < docIDs.length; ++i) {
