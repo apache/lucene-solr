@@ -132,7 +132,7 @@ public class TestPatternTokenizer extends BaseTokenStreamTestCase
         return new TokenStreamComponents(tokenizer);
       }    
     };
-    checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), a, 200 * RANDOM_MULTIPLIER);
     a.close();
     
     Analyzer b = new Analyzer() {

@@ -80,7 +80,7 @@ public class TestKoreanAnalyzer extends BaseTokenStreamTestCase {
   public void testRandom() throws IOException {
     Random random = random();
     final Analyzer a = new KoreanAnalyzer();
-    checkRandomData(random, a, atLeast(1000));
+    checkRandomData(random, a, atLeast(200));
     a.close();
   }
 
@@ -90,7 +90,15 @@ public class TestKoreanAnalyzer extends BaseTokenStreamTestCase {
   public void testRandomHugeStrings() throws Exception {
     Random random = random();
     final Analyzer a = new KoreanAnalyzer();
-    checkRandomData(random, a, 2 * RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, a, RANDOM_MULTIPLIER, 4096);
+    a.close();
+  }
+  
+  @Nightly
+  public void testRandomHugeStringsAtNight() throws Exception {
+    Random random = random();
+    final Analyzer a = new KoreanAnalyzer();
+    checkRandomData(random, a, 3 * RANDOM_MULTIPLIER, 8192);
     a.close();
   }
 

@@ -748,7 +748,7 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     };
 
     final int NUM_THREAD = 3;
-    final int NUM_ITER = 100;
+    final int NUM_ITER = atLeast(10);
 
     for(int i=0;i<2;i++) {
       Directory dir = newDirectory();
@@ -1943,6 +1943,8 @@ public class TestIndexWriterExceptions extends LuceneTestCase {
     }
   }
 
+  // TODO: can be super slow in pathological cases (merge config?)
+  @Nightly
   public void testMergeExceptionIsTragic() throws Exception {
     MockDirectoryWrapper dir = newMockDirectory();
     final AtomicBoolean didFail = new AtomicBoolean();

@@ -486,7 +486,8 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     doTestOperationsOnDiskFull(false);
   }
 
-  @Slow
+  // TODO: can we tone this test down so it isn't crazy slow?
+  @Nightly
   public void testUpdatesOnDiskFull() throws IOException {
     doTestOperationsOnDiskFull(true);
   }
