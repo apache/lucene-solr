@@ -23,7 +23,6 @@ import java.lang.invoke.MethodHandles;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.SingletonSortedSetDocValues;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.ConstantScoreScorer;
@@ -148,7 +147,7 @@ public class TopLevelJoinQuery extends JoinQuery {
     if (field.multiValued()) {
       return DocValues.getSortedSet(leafReader, fieldName);
     }
-    return new SingletonSortedSetDocValues(DocValues.getSorted(leafReader, fieldName));
+    return DocValues.singleton(DocValues.getSorted(leafReader, fieldName));
   }
 
   private LongBitSet findOrdinalsMatchingFromQuery(SolrIndexSearcher fromSearcher, SortedSetDocValues fromDocValues) throws IOException {
