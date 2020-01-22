@@ -158,11 +158,11 @@ public class TestSuggestField extends LuceneTestCase {
     assertTokenStreamContents(stream, new String[] {"input"}, null, null, new String[]{payload.utf8ToString()}, new int[]{1}, null, null);
   }
 
-  @Test
+  @Test @Slow
   public void testDupSuggestFieldValues() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
-    final int num = Math.min(1000, atLeast(300));
+    final int num = Math.min(1000, atLeast(100));
     int[] weights = new int[num];
     for(int i = 0; i < num; i++) {
       Document document = new Document();
@@ -246,10 +246,11 @@ public class TestSuggestField extends LuceneTestCase {
     iw.close();
   }
 
+  @Slow
   public void testExtremeDeduplication() throws Exception {
     Analyzer analyzer = new MockAnalyzer(random());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
-    final int num = atLeast(5000);
+    final int num = atLeast(500);
     int bestWeight = Integer.MIN_VALUE;
     for(int i = 0; i < num; i++) {
       Document document = new Document();
@@ -678,7 +679,7 @@ public class TestSuggestField extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
 
-    int num = Math.min(1000, atLeast(100));
+    int num = Math.min(1000, atLeast(50));
     String[] prefixes = {"abc", "bac", "cab"};
     Map<String, Integer> mappings = new HashMap<>();
     for (int i = 0; i < num; i++) {
@@ -721,7 +722,7 @@ public class TestSuggestField extends LuceneTestCase {
     Analyzer analyzer = new MockAnalyzer(random());
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir, iwcWithSuggestField(analyzer, "suggest_field"));
     LineFileDocs lineFileDocs = new LineFileDocs(random());
-    int num = Math.min(1000, atLeast(100));
+    int num = Math.min(1000, atLeast(50));
     Map<String, Integer> mappings = new HashMap<>();
     for (int i = 0; i < num; i++) {
       Document document = lineFileDocs.nextDoc();
