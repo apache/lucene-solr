@@ -15,7 +15,7 @@ The package manager (CLI) internally uses various Solr APIs to install, deploy a
 
 At the heart of the system, we have classloader isolation. To achieve this, the system is simplified into two layered classloaders:
 The root classloader which has all the jars from Solr classpath. This requires Solr node restart to change anything.
-A set of named classloaders that inherit from the root classloader. The life cycles of the named classloaders are tied to the package configuration in ZK. As soon as the configuration is modified, the corresponding classloaders are reloaded and components are asked to reload.
+A set of named classloaders that inherit from the root classloader. The life cycles of the named classloaders are tied to the package configuration in ZooKeeper. As soon as the configuration is modified, the corresponding classloaders are reloaded and components are asked to reload.
 
 == Package Loading Security
 Packages are disabled by default. Start all your nodes with the system property `-Denable.packages=true` to use this feature.
@@ -28,7 +28,7 @@ $ bin/solr -c -Denable.packages=true
 ----
 
 === Upload Your Keys
-Package binaries must be signed with your private keys and ensure your public keys are published in ZooKeeper.
+Package binaries must be signed with your private keys and ensure your public keys are published in package store's trusted store.
 
 *Example*
 [source,bash]
@@ -36,9 +36,8 @@ Package binaries must be signed with your private keys and ensure your public ke
 $ openssl genrsa -out my_key.pem 512
 # create the public key in .der format
 $ openssl rsa -in my_key.pem -pubout -outform DER -out my_key.der
-# upload to ZooKeeper
-$ server/scripts/cloud-scripts/zkcli.sh -zkhost 127.0.0.1:9983 -cmd makepath /keys/exe/
-$ server/scripts/cloud-scripts/zkcli.sh -zkhost 127.0.0.1:9983 -cmd putfile /keys/exe/my_key.der my_key.der
+# upload key to package store
+$ bin/solr package add-key my_key.der
 ----
 
 == Package Store

@@ -1,0 +1,22 @@
+// Configure Java project defaults.
+
+allprojects {
+  plugins.withType(JavaPlugin) {
+    sourceCompatibility = "11"
+    targetCompatibility = "11"
+
+    tasks.withType(JavaCompile) {
+      options.encoding = "UTF-8"
+      options.compilerArgs += [
+        "-Xlint", 
+        "-Xlint:-deprecation",
+        "-Xlint:-serial",
+
+        "-Xdoclint:all/protected",
+        "-Xdoclint:-missing", 
+        "-Xdoclint:-accessibility", 
+        "-proc:none",  // proc:none was added because of LOG4J2-1925 / JDK-8186647
+      ]
+    }
+  }
+}

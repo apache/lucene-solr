@@ -58,7 +58,6 @@ public final class FieldReader extends Terms implements Accountable {
   final BytesRef rootCode;
   final BytesRef minTerm;
   final BytesRef maxTerm;
-  final int longsSize;
   final BlockTreeTermsReader parent;
 
   final FST<BytesRef> index;
@@ -66,7 +65,7 @@ public final class FieldReader extends Terms implements Accountable {
   //private boolean DEBUG;
 
   FieldReader(BlockTreeTermsReader parent, FieldInfo fieldInfo, long numTerms, BytesRef rootCode, long sumTotalTermFreq, long sumDocFreq, int docCount,
-              long indexStartFP, int longsSize, IndexInput indexIn, BytesRef minTerm, BytesRef maxTerm, boolean openedFromWriter, BlockTreeTermsReader.FSTLoadMode fstLoadMode) throws IOException {
+              long indexStartFP, IndexInput indexIn, BytesRef minTerm, BytesRef maxTerm, boolean openedFromWriter, BlockTreeTermsReader.FSTLoadMode fstLoadMode) throws IOException {
     assert numTerms > 0;
     this.fieldInfo = fieldInfo;
     //DEBUG = BlockTreeTermsReader.DEBUG && fieldInfo.name.equals("id");
@@ -77,7 +76,6 @@ public final class FieldReader extends Terms implements Accountable {
     this.docCount = docCount;
     this.indexStartFP = indexStartFP;
     this.rootCode = rootCode;
-    this.longsSize = longsSize;
     this.minTerm = minTerm;
     this.maxTerm = maxTerm;
     // if (DEBUG) {

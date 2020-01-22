@@ -1,0 +1,11 @@
+apply plugin: 'java-library'
+
+dependencies {
+  api project(':lucene:core')
+  api project(':lucene:analysis:common')
+
+  implementation 'commons-codec:commons-codec'
+
+  testImplementation project(':lucene:test-framework')
+} 
+

@@ -1,0 +1,47 @@
+// Add "help" tasks which display plain text files under 'help' folder.
+
+configure(rootProject) {
+  def helpFiles = [
+      ["Workflow", "help/workflow.txt", "Typical workflow commands."],
+      ["Ant", "help/ant.txt", "Ant-gradle migration help."],
+      ["Tests", "help/tests.txt", "Tests, filtering, beasting, etc."],
+      ["Deps", "help/dependencies.txt", "Declaring, inspecting and excluding dependencies."],
+      ["ForbiddenApis", "help/forbiddenApis.txt", "How to add/apply rules for forbidden APIs."],
+      ["LocalSettings", "help/localSettings.txt", "Local settings, overrides and build performance tweaks."],
+      ["Git", "help/git.txt", "Git assistance and guides."],
+  ]
+
+  helpFiles.each { section, path, sectionInfo ->
+    task "help${section}" {
+      group = 'Help (developer guides and hints)'
+      description = sectionInfo
+      doFirst {
+        println "\n" + rootProject.file(path).getText("UTF-8")
+      }
+    }
+  }
+
+  help {
+    doLast {
+      println ""
+      println "This is an experimental Lucene/Solr gradle build. See some"
+      println "guidelines, ant-equivalent commands etc. under help/*; or type:"
+      helpFiles.each { section, path, sectionInfo ->
+        println String.format(Locale.ROOT,
+            "  gradlew :help%-14s # %s", section, sectionInfo)
+      }
+    }
+  }
+
+  task allHelpFilesExit() {
+    doFirst {
+      helpFiles.each { section, path, sectionInfo ->
+        if (!rootProject.file(path).exists()) {
+          throw new GradleException("Help file missing: ${path} (correct help.gradle)")
+        }
+      }
+    }
+  }
+
+  check.dependsOn allHelpFilesExit
+}

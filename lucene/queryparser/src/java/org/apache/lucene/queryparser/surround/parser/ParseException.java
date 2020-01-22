@@ -173,7 +173,7 @@ public class ParseException extends Exception {
            default:
               if ((ch = str.charAt(i)) < 0x20 || ch > 0x7e) {
                  String s = "0000" + Integer.toString(ch, 16);
-                 retval.append("\\u").append(s.substring(s.length() - 4, s.length()));
+                 retval.append("\\u" + s.substring(s.length() - 4, s.length()));
               } else {
                  retval.append(ch);
               }
@@ -184,4 +184,4 @@ public class ParseException extends Exception {
    }
 
 }
-/* JavaCC - OriginalChecksum=be6f55e3bf157e8c96b4c06cca5ec81b (do not edit this line) */
+/* JavaCC - OriginalChecksum=bd8163f41bf2fd1bb00f025fce3dcaaf (do not edit this line) */

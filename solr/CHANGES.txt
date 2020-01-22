@@ -99,6 +99,8 @@ Other Changes
 
 * LUCENE-9092: Upgrade Carrot2 to 3.16.2 (Dawid Weiss).
 
+* LUCENE-9080: Upgrade ICU4j to 62.2 and make regenerate work (Erick Erickson)
+
 ==================  8.5.0 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
@@ -197,7 +199,14 @@ Improvements
 
 Optimizations
 ---------------------
-(No changes)
+
+* SOLR-13890: Add "top-level" DV implementation for {!terms} queries.  This approach tends to be more efficient for
+  queries with very large numbers of terms.  The new implementation is used by default for method=docValuesTermsFilter
+  terms queries that are searching 500 or more terms.  Users wishing to ignore this heuristic can choose the
+  docValuesTermsFilterTopLevel or docValuesTermsFilterPerSegment methods directly. (Jason Gerlowski, Joel Bernstein, David Smiley)
+
+* SOLR-14040: The shareSchema solr.xml option now supports SolrCloud.  shareSchema is useful when you have many
+  cores per node and large schemas.  (David Smiley)
 
 Bug Fixes
 ---------------------
@@ -206,11 +215,13 @@ Bug Fixes
 
 * SOLR-14017: Ensure bin/solr's -q and -v options work with examples (Andy Vuong via Jason Gerlowski)
 
-* SOLR-14106: Cleanup Jetty SslContextFactory usage (Ryan Rockenbaugh, Jan Hoydahl, Kevin Risden)
-
-* SOLR-14109: Always log to stdout from server/scripts/cloud-scripts/zkcli.{bat|sh} (janhoy)
-
 * SOLR-14122: SimUtils converts v2 to v1 request params incorrectly. (Li Cao, ab)
+
+* SOLR-13089: Fix lsof edge cases in the solr CLI script (Martijn Koster via janhoy)
+
+* SOLR-6613: TextField.analyzeMultiTerm does not throw an exception when Analyzer returns no terms. (Bruno Roustant)
+
+* SOLR-14192: Race condition between SchemaManager and ZkIndexSchemaReader. (ab)
 
 Other Changes
 ---------------------
@@ -223,6 +234,48 @@ Other Changes
 
 * SOLR-13778: Solrj client will retry requests on SSLException with a suppressed SocketException
   (very likely a hard-closed socket connection).
+
+* SOLR-14169: Fix 20 Resource Leak warnings in SolrJ's apache/solr/common (Andras Salamon via Tomás Fernández Löbbe)
+
+* SOLR-14184: Internal 'test' variable DirectUpdateHandler2.commitOnClose has been removed and replaced with
+  TestInjection.skipIndexWriterCommitOnClose.  Users that modified DUH2.commitOnClose in test cases for custom
+  plugins/modicitations should now use TestInjection instead.  (hossman)
+
+==================  8.4.1 ==================
+
+Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
+
+Versions of Major Components
+---------------------
+Apache Tika 1.19.1
+Carrot2 3.16.0
+Velocity 2.0 and Velocity Tools 3.0
+Apache ZooKeeper 3.5.5
+Jetty 9.4.19.v20190610
+
+Upgrade Notes
+---------------------
+
+* SOLR-14158: Package manager now stores keys in package store instead of ZK. If you're using package manager and have already
+  added any repositories, then you would need to re-add all the keys from /keys/exe location, one-by-one, using:
+  "bin/solr add-key <keyfile.der>"
+
+Bug Fixes
+----------------------
+
+* SOLR-14106: Cleanup Jetty SslContextFactory usage (Ryan Rockenbaugh, Jan Hoydahl, Kevin Risden)
+
+* SOLR-14109: Always log to stdout from server/scripts/cloud-scripts/zkcli.{bat|sh} (janhoy)
+
+* SOLR-14165: SolrResponse serialVersionUID has changed in a backward incompatible way (Andy Webb via noble)
+
+* SOLR-14163: SOLR_SSL_CLIENT_HOSTNAME_VERIFICATION needs to work with Jetty server/client SSL contexts (Kevin Risden)
+
+Improvements
+---------------------
+
+* SOLR-14158: Package manager to store public keys in a special "trusted" location instead of in ZooKeeper
+  (noble, Ishan Chattopadhyaya)
 
 ==================  8.4.0 ==================
 

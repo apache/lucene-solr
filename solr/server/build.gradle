@@ -1,0 +1,115 @@
+apply plugin: 'java-library'
+
+configurations {
+  api {
+    exclude group: "org.slf4j"
+  }
+  startJar
+  libExt
+  webapp
+  packaging
+}
+
+dependencies {
+  api('org.eclipse.jetty:jetty-alpn-java-server', {
+    exclude group: "org.eclipse.jetty.alpn", module: "alpn-api"
+  })
+
+  api('io.dropwizard.metrics:metrics-core', {
+    exclude group: "com.rabbitmq", module: "amqp-client"
+  })
+  api('io.dropwizard.metrics:metrics-graphite', {
+    exclude group: "com.rabbitmq", module: "amqp-client"
+  })
+  api 'io.dropwizard.metrics:metrics-jetty9'
+  api 'io.dropwizard.metrics:metrics-jvm'
+  api 'io.dropwizard.metrics:metrics-jmx'
+
+  api 'org.eclipse.jetty:jetty-continuation'
+  api 'org.eclipse.jetty:jetty-deploy'
+  api 'org.eclipse.jetty:jetty-http'
+  api 'org.eclipse.jetty:jetty-io'
+  api 'org.eclipse.jetty:jetty-jmx'
+  api 'org.eclipse.jetty:jetty-rewrite'
+  api 'org.eclipse.jetty:jetty-security'
+  api 'org.eclipse.jetty:jetty-server'
+  api 'org.eclipse.jetty:jetty-servlet'
+  api 'org.eclipse.jetty:jetty-servlets'
+  api 'org.eclipse.jetty:jetty-util'
+  api 'org.eclipse.jetty:jetty-webapp'
+  api 'org.eclipse.jetty:jetty-xml'
+  api 'org.eclipse.jetty:jetty-alpn-server'
+
+  api 'org.eclipse.jetty.http2:http2-server'
+  api 'org.eclipse.jetty.http2:http2-common'
+  api 'org.eclipse.jetty.http2:http2-hpack'
+
+  api 'javax.servlet:javax.servlet-api'
+
+  libExt 'com.lmax:disruptor'
+  libExt 'org.slf4j:jcl-over-slf4j'
+  libExt 'org.slf4j:jul-to-slf4j'
+  libExt 'org.slf4j:slf4j-api'
+  libExt 'org.apache.logging.log4j:log4j-1.2-api'
+  libExt 'org.apache.logging.log4j:log4j-api'
+  libExt 'org.apache.logging.log4j:log4j-core'
+  libExt 'org.apache.logging.log4j:log4j-slf4j-impl'
+  libExt 'org.apache.logging.log4j:log4j-web'
+
+  webapp project(path: ":solr:webapp", configuration: "war")
+
+  startJar('org.eclipse.jetty:jetty-start::shaded', {
+    transitive false
+  })
+}
+
+// Add the following non-standard configurations to JAR validation.
+afterEvaluate {
+  configurations {
+    jarValidation.extendsFrom startJar
+    jarValidation.extendsFrom libExt
+  }
+}
+
+ext {
+  packagingDir = file("${buildDir}/packaging")
+}
+
+task assemblePackaging(type: Sync) {
+  from(projectDir, {
+    include "contexts/**"
+    include "etc/**"
+    include "modules/**"
+    include "resources/**"
+    include "scripts/**"
+    include "solr/**"
+    include "README.txt"
+  })
+
+  from(configurations.compileClasspath, {
+    into "lib/"
+  })
+
+  from(configurations.libExt, {
+    into "lib/ext"
+  })
+
+  from { project.configurations.startJar.singleFile } {
+    rename { file -> 'start.jar' }
+  }
+
+  dependsOn configurations.webapp
+  from( { zipTree(configurations.webapp.asPath) }, {
+    into "solr-webapp/webapp"
+  })
+
+  into packagingDir
+}
+
+artifacts {
+  packaging packagingDir, {
+    builtBy assemblePackaging
+  }
+}
+
+assemble.dependsOn assemblePackaging

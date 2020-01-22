@@ -165,6 +165,16 @@ public class TextField extends FieldType {
     return new SolrRangeQuery(field.getName(), lower, upper, minInclusive, maxInclusive);
   }
 
+  /**
+   * Analyzes a text part using the provided {@link Analyzer} for a multi-term query.
+   * <p>
+   * Expects a single token to be used as multi-term term. This single token might also be filtered out
+   * so zero token is supported and null is returned in this case.
+   *
+   * @return The multi-term term bytes; or null if there is no multi-term terms.
+   * @throws SolrException If the {@link Analyzer} tokenizes more than one token;
+   * or if an underlying {@link IOException} occurs.
+   */
   public static BytesRef analyzeMultiTerm(String field, String part, Analyzer analyzerIn) {
     if (part == null || analyzerIn == null) return null;
 
@@ -173,8 +183,10 @@ public class TextField extends FieldType {
 
       TermToBytesRefAttribute termAtt = source.getAttribute(TermToBytesRefAttribute.class);
 
-      if (!source.incrementToken())
-        throw  new SolrException(SolrException.ErrorCode.BAD_REQUEST,"analyzer returned no terms for multiTerm term: " + part);
+      if (!source.incrementToken()) {
+        // Accept no tokens because it may have been filtered out by a StopFilter for example.
+        return null;
+      }
       BytesRef bytes = BytesRef.deepCopyOf(termAtt.getBytesRef());
       if (source.incrementToken())
         throw  new SolrException(SolrException.ErrorCode.BAD_REQUEST,"analyzer returned too many terms for multiTerm term: " + part);

@@ -16,19 +16,6 @@
  */
 package org.apache.lucene.search.spell;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiTerms;
-import org.apache.lucene.index.Term;
-import org.apache.lucene.index.Terms;
-import org.apache.lucene.search.BoostAttribute;
-import org.apache.lucene.search.FuzzyTermsEnum;
-import org.apache.lucene.search.MaxNonCompetitiveBoostAttribute;
-import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.AttributeSource;
-import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.CharsRefBuilder;
-import org.apache.lucene.util.automaton.LevenshteinAutomata;
-
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
@@ -36,6 +23,16 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.PriorityQueue;
+
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.MultiTerms;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.search.FuzzyTermsEnum;
+import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.CharsRefBuilder;
+import org.apache.lucene.util.automaton.LevenshteinAutomata;
 
 /**
  * Simple automaton-based spellchecker.
@@ -420,25 +417,20 @@ public class DirectSpellChecker {
    */
   protected Collection<ScoreTerm> suggestSimilar(Term term, int numSug, IndexReader ir, int docfreq, int editDistance,
                                                  float accuracy, final CharsRefBuilder spare) throws IOException {
-    
-    AttributeSource atts = new AttributeSource();
-    MaxNonCompetitiveBoostAttribute maxBoostAtt =
-      atts.addAttribute(MaxNonCompetitiveBoostAttribute.class);
+
     Terms terms = MultiTerms.getTerms(ir, term.field());
     if (terms == null) {
       return Collections.emptyList();
     }
-    FuzzyTermsEnum e = new FuzzyTermsEnum(terms, atts, term, editDistance, Math.max(minPrefix, editDistance-1), true);
+    FuzzyTermsEnum e = new FuzzyTermsEnum(terms, term, editDistance, Math.max(minPrefix, editDistance - 1), true);
     final PriorityQueue<ScoreTerm> stQueue = new PriorityQueue<>();
     
     BytesRef queryTerm = new BytesRef(term.text());
     BytesRef candidateTerm;
     ScoreTerm st = new ScoreTerm();
-    BoostAttribute boostAtt =
-      e.attributes().addAttribute(BoostAttribute.class);
     while ((candidateTerm = e.next()) != null) {
       // For FuzzyQuery, boost is the score:
-      float score = boostAtt.getBoost();
+      float score = e.getBoost();
       // ignore uncompetitive hits
       if (stQueue.size() >= numSug && score <= stQueue.peek().boost) {
         continue;
@@ -479,7 +471,7 @@ public class DirectSpellChecker {
       stQueue.offer(st);
       // possibly drop entries from queue
       st = (stQueue.size() > numSug) ? stQueue.poll() : new ScoreTerm();
-      maxBoostAtt.setMaxNonCompetitiveBoost((stQueue.size() >= numSug) ? stQueue.peek().boost : Float.NEGATIVE_INFINITY);
+      e.setMaxNonCompetitiveBoost((stQueue.size() >= numSug) ? stQueue.peek().boost : Float.NEGATIVE_INFINITY);
     }
       
     return stQueue;

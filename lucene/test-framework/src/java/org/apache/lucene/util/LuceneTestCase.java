@@ -947,7 +947,7 @@ public abstract class LuceneTestCase extends Assert {
       c.setInfoStream(new TestRuleSetupAndRestoreClassEnv.ThreadNameFixingPrintStreamInfoStream(System.out));
     }
 
-    if (r.nextBoolean()) {
+    if (rarely(r)) {
       c.setMergeScheduler(new SerialMergeScheduler());
     } else if (rarely(r)) {
       ConcurrentMergeScheduler cms;
@@ -1063,7 +1063,7 @@ public abstract class LuceneTestCase extends Assert {
       return new MockRandomMergePolicy(r);
     } else if (r.nextBoolean()) {
       return newTieredMergePolicy(r);
-    } else if (r.nextInt(5) == 0) { 
+    } else if (rarely(r) ) { 
       return newAlcoholicMergePolicy(r, classEnvRule.timeZone);
     }
     return newLogMergePolicy(r);
@@ -1095,7 +1095,7 @@ public abstract class LuceneTestCase extends Assert {
     if (rarely(r)) {
       logmp.setMergeFactor(TestUtil.nextInt(r, 2, 9));
     } else {
-      logmp.setMergeFactor(TestUtil.nextInt(r, 10, 50));
+      logmp.setMergeFactor(TestUtil.nextInt(r, 100, 500));
     }
     configureRandom(r, logmp);
     return logmp;
@@ -1127,7 +1127,7 @@ public abstract class LuceneTestCase extends Assert {
     if (rarely(r)) {
       tmp.setMaxMergedSegmentMB(0.2 + r.nextDouble() * 2.0);
     } else {
-      tmp.setMaxMergedSegmentMB(r.nextDouble() * 100);
+      tmp.setMaxMergedSegmentMB(10 + r.nextDouble() * 100);
     }
     tmp.setFloorSegmentMB(0.2 + r.nextDouble() * 2.0);
     tmp.setForceMergeDeletesPctAllowed(0.0 + r.nextDouble() * 30.0);
@@ -1332,7 +1332,7 @@ public abstract class LuceneTestCase extends Assert {
    * See {@link #newDirectory()} for more information.
    */
   public static BaseDirectoryWrapper newDirectory(Random r) {
-    return wrapDirectory(r, newDirectoryImpl(r, TEST_DIRECTORY), rarely(r));
+    return wrapDirectory(r, newDirectoryImpl(r, TEST_DIRECTORY), rarely(r), false);
   }
 
   /**
@@ -1340,7 +1340,7 @@ public abstract class LuceneTestCase extends Assert {
    * See {@link #newDirectory()} for more information.
    */
   public static BaseDirectoryWrapper newDirectory(Random r, LockFactory lf) {
-    return wrapDirectory(r, newDirectoryImpl(r, TEST_DIRECTORY, lf), rarely(r));
+    return wrapDirectory(r, newDirectoryImpl(r, TEST_DIRECTORY, lf), rarely(r), false);
   }
 
   public static MockDirectoryWrapper newMockDirectory() {
@@ -1348,11 +1348,11 @@ public abstract class LuceneTestCase extends Assert {
   }
 
   public static MockDirectoryWrapper newMockDirectory(Random r) {
-    return (MockDirectoryWrapper) wrapDirectory(r, newDirectoryImpl(r, TEST_DIRECTORY), false);
+    return (MockDirectoryWrapper) wrapDirectory(r, newDirectoryImpl(r, TEST_DIRECTORY), false, false);
   }
 
   public static MockDirectoryWrapper newMockDirectory(Random r, LockFactory lf) {
-    return (MockDirectoryWrapper) wrapDirectory(r, newDirectoryImpl(r, TEST_DIRECTORY, lf), false);
+    return (MockDirectoryWrapper) wrapDirectory(r, newDirectoryImpl(r, TEST_DIRECTORY, lf), false, false);
   }
 
   public static MockDirectoryWrapper newMockFSDirectory(Path f) {
@@ -1416,10 +1416,7 @@ public abstract class LuceneTestCase extends Assert {
       }
 
       Directory fsdir = newFSDirectoryImpl(clazz, f, lf);
-      if (rarely()) {
-
-      }
-      BaseDirectoryWrapper wrapped = wrapDirectory(random(), fsdir, bare);
+      BaseDirectoryWrapper wrapped = wrapDirectory(random(), fsdir, bare, true);
       return wrapped;
     } catch (Exception e) {
       Rethrow.rethrow(e);
@@ -1447,11 +1444,13 @@ public abstract class LuceneTestCase extends Assert {
         impl.copyFrom(d, file, file, newIOContext(r));
       }
     }
-    return wrapDirectory(r, impl, rarely(r));
+    return wrapDirectory(r, impl, rarely(r), false);
   }
   
-  private static BaseDirectoryWrapper wrapDirectory(Random random, Directory directory, boolean bare) {
-    if (rarely(random) && !bare) {
+  private static BaseDirectoryWrapper wrapDirectory(Random random, Directory directory, boolean bare, boolean filesystem) {
+    // IOContext randomization might make NRTCachingDirectory make bad decisions, so avoid
+    // using it if the user requested a filesystem directory.
+    if (rarely(random) && !bare && filesystem == false) {
       directory = new NRTCachingDirectory(directory, random.nextDouble(), random.nextDouble());
     }
 

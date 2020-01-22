@@ -1,0 +1,12 @@
+
+apply plugin: 'java-library'
+
+
+dependencies { 
+  api project(':lucene:core')
+
+  implementation 'com.carrotsearch:hppc'
+
+  testImplementation project(':lucene:test-framework')
+  testImplementation project(':lucene:queries')
+}
