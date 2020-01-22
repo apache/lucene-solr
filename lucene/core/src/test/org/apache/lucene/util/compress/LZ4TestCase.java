@@ -31,7 +31,9 @@ public abstract class LZ4TestCase extends LuceneTestCase {
   protected abstract LZ4.HashTable newHashTable();
 
   private void doTest(byte[] data, LZ4.HashTable hashTable) throws IOException {
-    int offset = random().nextInt(10);
+    int offset = random().nextBoolean()
+        ? random().nextInt(10)
+        : (1<<16) - data.length / 2; // this triggers special reset logic for high compression
     byte[] copy = new byte[data.length + offset + random().nextInt(10)];
     System.arraycopy(data, 0, copy, offset, data.length);
     doTest(copy, offset, data.length, hashTable);

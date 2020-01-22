@@ -233,7 +233,9 @@ public final class LZ4 {
       if (hashTable == null || hashTable.size() < 1 << hashLog || hashTable.getBitsPerValue() < bitsPerOffset) {
         hashTable = PackedInts.getMutable(1 << hashLog, bitsPerOffset, PackedInts.DEFAULT);
       } else {
-        hashTable.clear();
+        // Avoid calling hashTable.clear(), this makes it costly to compress many short sequences otherwise.
+        // Instead, get() checks that references are less than the current offset.
+        get(off); // this sets the hashTable for the first 4 bytes as a side-effect
       }
     }
 
@@ -249,7 +251,7 @@ public final class LZ4 {
       hashTable.set(h, off - base);
       lastOff = off;
 
-      if (off - ref < MAX_DISTANCE && readInt(bytes, ref) == v) {
+      if (ref < off && off - ref < MAX_DISTANCE && readInt(bytes, ref) == v) {
         return ref;
       } else {
         return -1;
@@ -283,17 +285,45 @@ public final class LZ4 {
     /** Sole constructor */
     public HighCompressionHashTable() {
       hashTable = new int[HASH_TABLE_SIZE_HC];
+      Arrays.fill(hashTable, -1);
       chainTable = new short[MAX_DISTANCE];
+      Arrays.fill(chainTable, (short) 0xFFFF);
+    }
+
+    private boolean assertReset() {
+      for (int i = 0; i < chainTable.length; ++i) {
+        assert chainTable[i] == (short) 0xFFFF : i;
+      }
+      return true;
     }
 
     @Override
     void reset(byte[] bytes, int off, int len) {
       Objects.checkFromIndexSize(off, len, bytes.length);
+      if (end - base < chainTable.length) {
+        // The last call to compress was done on less than 64kB, let's not reset
+        // the hashTable and only reset the relevant parts of the chainTable.
+        // This helps avoid slowing down calling compress() many times on short
+        // inputs.
+        int startOffset = base & MASK;
+        int endOffset = end == 0 ? 0 : ((end - 1) & MASK) + 1;
+        if (startOffset < endOffset) {
+          Arrays.fill(chainTable, startOffset, endOffset, (short) 0xFFFF);
+        } else {
+          Arrays.fill(chainTable, 0, endOffset, (short) 0xFFFF);
+          Arrays.fill(chainTable, startOffset, chainTable.length, (short) 0xFFFF);
+        }
+      } else {
+        // The last call to compress was done on a large enough amount of data
+        // that it's fine to reset both tables
+        Arrays.fill(hashTable, -1);
+        Arrays.fill(chainTable, (short) 0xFFFF);
+      }
+      assert assertReset();
       this.bytes = bytes;
+      this.base = off;
       this.next = off;
       this.end = off + len;
-      Arrays.fill(hashTable, -1);
-      Arrays.fill(chainTable, (short) 0xFFFF);
     }
 
     @Override
@@ -309,7 +339,12 @@ public final class LZ4 {
       final int h = hashHC(v);
 
       attempts = 0;
-      for (int ref = hashTable[h], min = Math.max(base, off - MAX_DISTANCE + 1);
+      int ref = hashTable[h];
+      if (ref >= off) {
+        // remainder from a previous call to compress()
+        return -1;
+      }
+      for (int min = Math.max(base, off - MAX_DISTANCE + 1);
           ref >= min && attempts < MAX_ATTEMPTS;
           ref -= chainTable[ref & MASK] & 0xFFFF, attempts++) {
         if (readInt(bytes, ref) == v) {
@@ -323,8 +358,10 @@ public final class LZ4 {
       final int v = readInt(bytes, off);
       final int h = hashHC(v);
       int delta = off - hashTable[h];
-      assert delta > 0 : delta;
-      chainTable[off & MASK] = (short) Math.min(delta, MAX_DISTANCE - 1);
+      if (delta <= 0 || delta >= MAX_DISTANCE) {
+        delta = MAX_DISTANCE - 1;
+      }
+      chainTable[off & MASK] = (short) delta;
       hashTable[h] = off;
     }
 
@@ -371,6 +408,7 @@ public final class LZ4 {
           }
           ref = ht.get(off);
           if (ref != -1) {
+            assert ref >= base && ref < off;
             assert readInt(bytes, ref) == readInt(bytes, off);
             break;
           }
