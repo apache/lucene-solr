@@ -164,6 +164,8 @@ New Features
    Query DSL queries. It's optional and doesn't impact response without explicit referencing these queries by names 
    (Anatolii Siuniaev via Mikhail Khludnev)
 
+ * SOLR-14130: Add postlogs command line tool for indexing Solr logs (Joel Bernstein)
+
 Improvements
 ---------------------
 * SOLR-14120: Define JavaScript methods 'includes' and 'startsWith' to ensure AdminUI can be displayed when using
