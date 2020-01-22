@@ -1,10 +1,10 @@
 // This adds OWASP vulnerability validation of project dependencies
-
-// This should be false only for debugging.
-def failOnError = true
+// Not part of 'check' task by default, must be called explicitly with gradlew dependencyCheckAnalyze
+// Start build with -Pvalidation.failOn=owasp to fail build on owasp errors
 
 dependencyCheck {
-  autoUpdate=false
+  autoUpdate=true
+  failOnError=propertyOrDefault("validation.failOn", '').split(',').contains("owasp")
   formats=['HTML', 'JSON']
   suppressionFile='gradle/validation/dependency-check/exclusions.xml'
 }
