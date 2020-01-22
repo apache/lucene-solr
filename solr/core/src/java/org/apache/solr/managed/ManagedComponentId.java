@@ -32,6 +32,11 @@ public class ManagedComponentId {
   private final String[] path;
   private final String id;
 
+  /**
+   * Create managed component id.
+   * @param component component instance.
+   * @param path elements of the logical hierarchy starting from the root, may be null.
+   */
   public ManagedComponentId(Object component, String... path) {
     this(SolrMetricProducer.getUniqueMetricTag(component, null), path);
   }
@@ -55,10 +60,16 @@ public class ManagedComponentId {
     id = sb.toString();
   }
 
+  /**
+   * Return component name.
+   */
   public String getName() {
     return name;
   }
 
+  /**
+   * Return component path.
+   */
   public String[] getPath() {
     return path;
   }
@@ -67,6 +78,11 @@ public class ManagedComponentId {
     return id;
   }
 
+  /**
+   * Return hierarchical id from a string representation.
+   * @param fullName full name of the component
+   * @return hierarchical managed component id
+   */
   public static ManagedComponentId of(String fullName) {
     if (fullName == null || fullName.isEmpty()) {
       return null;

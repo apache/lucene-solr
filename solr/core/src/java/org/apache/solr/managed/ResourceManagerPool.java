@@ -22,14 +22,15 @@ import java.lang.invoke.MethodHandles;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.locks.ReentrantLock;
 
+import com.codahale.metrics.Meter;
 import com.codahale.metrics.Timer;
 import org.apache.solr.core.SolrInfoBean;
 import org.apache.solr.metrics.MetricsMap;
@@ -38,36 +39,46 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- *
+ * Base class pools that manage a specific component class.
  */
 public abstract class ResourceManagerPool<T extends ManagedComponent> implements SolrInfoBean, Closeable {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
+  /** How frequently this pool is scheduled - resource manager calls the {@link #manage()} method this often.
+   * If this parameter is set to less than 1 the scheduling of this pool is disabled.
+   */
   public static final String SCHEDULE_DELAY_SECONDS_PARAM = "scheduleDelaySeconds";
+  /** Default schedule delay. */
   public static final int DEFAULT_SCHEDULE_DELAY_SECONDS = 10;
 
   protected final String name;
   protected final String type;
-  protected Map<String, Object> poolLimits;
+  protected final Map<String, Object> poolLimits = new ConcurrentHashMap<>();
   protected final Map<String, T> components = new ConcurrentHashMap<>();
   protected final ResourceManager resourceManager;
   protected final Class<? extends ManagedComponent> componentClass;
-  protected Map<String, Object> poolParams;
+  protected final Map<String, Object> poolParams = new ConcurrentHashMap<>();
   protected final ResourcePoolContext poolContext = new ResourcePoolContext();
   protected final Set<ChangeListener> listeners = new CopyOnWriteArraySet<>();
-  protected final ReentrantLock manageLock = new ReentrantLock();
   protected int scheduleDelaySeconds;
   protected ScheduledFuture<?> scheduledFuture;
   protected SolrMetricsContext solrMetricsContext;
   protected Timer manageTimer;
-  protected Map<ChangeListener.Reason, AtomicLong> changeCounts = new ConcurrentHashMap<>();
+  protected Meter manageErrors;
+  protected final Map<ChangeListener.Reason, AtomicLong> changeCounts = new ConcurrentHashMap<>();
 
   public ResourceManagerPool(String name, String type, ResourceManager resourceManager,
                                 Map<String, Object> poolLimits, Map<String, Object> poolParams) {
+    Objects.nonNull(name);
+    Objects.nonNull(type);
+    Objects.nonNull(resourceManager);
+
     this.name = name;
     this.type = type;
     this.resourceManager = resourceManager;
     this.componentClass = resourceManager.getResourceManagerPoolFactory().getComponentClassByType(type);
+    Objects.nonNull(componentClass);
+
     setPoolLimits(poolLimits);
     setPoolParams(poolParams);
   }
@@ -94,9 +105,8 @@ public abstract class ResourceManagerPool<T extends ManagedComponent> implements
   public void initializeMetrics(SolrMetricsContext parentContext, String childScope) {
     solrMetricsContext = parentContext.getChildContext(this, childScope);
     manageTimer = solrMetricsContext.timer("manageTimes", getCategory().toString(), "pool", getType());
-    MetricsMap changeMap = new MetricsMap((detailed, map) -> {
-      changeCounts.forEach((k, v) -> map.put(k.toString(), v.get()));
-    });
+    manageErrors = solrMetricsContext.meter("manageErrors", getCategory().toString(), "pool", getType());
+    MetricsMap changeMap = new MetricsMap((detailed, map) -> changeCounts.forEach((k, v) -> map.put(k.toString(), v.get())));
     solrMetricsContext.gauge(changeMap, true, "changes", getCategory().toString(), "pool", getType());
     solrMetricsContext.gauge(new MetricsMap((detailed, map) -> map.putAll(poolLimits)), true, "poolLimits", getCategory().toString(), "pool", getType());
     solrMetricsContext.gauge(new MetricsMap((detailed, map) -> {
@@ -114,14 +124,17 @@ public abstract class ResourceManagerPool<T extends ManagedComponent> implements
     return solrMetricsContext;
   }
 
+  /**
+   * Return instance of the resource manager where this pool is managed.
+   */
   public ResourceManager getResourceManager() {
     return resourceManager;
   }
 
-  /** Add component to this pool. */
+  /** Add component to this pool. Note: component class must be a subclass of the type that this pool can manage. */
   public void registerComponent(T managedComponent) {
     if (!componentClass.isAssignableFrom(managedComponent.getClass())) {
-      log.debug("Pool type '" + type + "' is not supported by the component " + managedComponent.getManagedComponentId());
+      log.warn("Pool type '" + type + "' is not supported by the component " + managedComponent.getManagedComponentId());
       return;
     }
     ManagedComponent existing = components.putIfAbsent(managedComponent.getManagedComponentId().toString(), managedComponent);
@@ -175,8 +188,19 @@ public abstract class ResourceManagerPool<T extends ManagedComponent> implements
     return Collections.unmodifiableMap(currentValues);
   }
 
+  /**
+   * Return values of monitored parameters of this component.
+   * @param component component instance.
+   * @return current monitored values.
+   */
   public abstract Map<String, Object> getMonitoredValues(T component) throws Exception;
 
+  /**
+   * Set resource limits for a component managed by this pool.
+   * @param component component instance
+   * @param limits map of limit name to the new limit value
+   * @param reason reason for the change
+   */
   public void setResourceLimits(T component, Map<String, Object> limits, ChangeListener.Reason reason) throws Exception {
     if (limits == null || limits.isEmpty()) {
       return;
@@ -186,6 +210,14 @@ public abstract class ResourceManagerPool<T extends ManagedComponent> implements
     }
   }
 
+  /**
+   * Set resource limit for a component managed by this pool.
+   * @param component component instance.
+   * @param limitName limit name.
+   * @param value new limit value.
+   * @param reason reason for the change.
+   * @return the actual limit value accepted by the component.
+   */
   public Object setResourceLimit(T component, String limitName, Object value, ChangeListener.Reason reason) throws Exception {
     try {
       Object newActualLimit = doSetResourceLimit(component, limitName, value);
@@ -204,12 +236,20 @@ public abstract class ResourceManagerPool<T extends ManagedComponent> implements
 
   protected abstract Object doSetResourceLimit(T component, String limitName, Object value) throws Exception;
 
+  /**
+   * Get current resource limits for a component.
+   * @param component component managed by this pool.
+   * @return map of limit names to limit values.
+   */
   public abstract Map<String, Object> getResourceLimits(T component) throws Exception;
 
   /**
    * Calculate aggregated monitored values.
    * <p>Default implementation of this method simply sums up all non-negative numeric values across
-   * components and ignores any non-numeric values.</p>
+   * components and ignores any negative or non-numeric values. Values equal to {@link Integer#MAX_VALUE} or
+   * {@link Long#MAX_VALUE} are also ignored.</p>
+   * @param perComponentValues per-component monitored values, as returned by {@link #getCurrentValues()}.
+   * @return aggregated monitored values.
    */
   public Map<String, Object> aggregateTotalValues(Map<String, Map<String, Object>> perComponentValues) {
     // calculate the totals
@@ -219,9 +259,9 @@ public abstract class ResourceManagerPool<T extends ManagedComponent> implements
       if (!(v instanceof Number)) {
         return;
       }
-      Double val = ((Number)v).doubleValue();
+      Number val = (Number)v;
       // -1 and MAX_VALUE are our special guard values
-      if (val < 0 || val.longValue() == Long.MAX_VALUE || val.longValue() == Integer.MAX_VALUE) {
+      if (val.longValue() < 0 || val.longValue() == Long.MAX_VALUE || val.intValue() == Integer.MAX_VALUE) {
         return;
       }
       newTotalValues.merge(k, val, (v1, v2) -> ((Number)v1).doubleValue() + ((Number)v2).doubleValue());
@@ -229,29 +269,52 @@ public abstract class ResourceManagerPool<T extends ManagedComponent> implements
     return newTotalValues;
   }
 
-  /** Get current pool limits. */
+  /** Get current pool limits.
+   * @return map of limit names to (total) limit values for this pool.
+   */
   public Map<String, Object> getPoolLimits() {
     return Collections.unmodifiableMap(poolLimits);
   }
 
   /**
-   * Pool limits are defined using controlled tags.
+   * Set new pool limits. By convention only the values present in this map will be modified,
+   * all other limits will remain unchanged. In order to remove a limit use null value.
+   * Pool limits are defined using controlled limit names.
+   * @param poolLimits map of limit names to new (total) limit values for this pool.
    */
   public void setPoolLimits(Map<String, Object> poolLimits) {
     if (poolLimits != null) {
-      this.poolLimits = new HashMap(poolLimits);
+      poolLimits.forEach((k, v) -> {
+        if (v == null) {
+          this.poolLimits.remove(k);
+        } else {
+          this.poolLimits.put(k, v);
+        }
+      });
     }
   }
 
-  /** Get parameters specified during creation. */
+  /** Get current pool parameters. */
   public Map<String, Object> getPoolParams() {
     return Collections.unmodifiableMap(poolParams);
   }
 
+  /**
+   * Set new pool parameters. By convention only the values present in this map will be modified,
+   * all other params will remain unchanged. In order to remove a param use null value.
+   * <p>Note: when invoking this method directly be sure to check if the pool's schedule parameters have
+   * changed and re-schedule the pool if needed.</p>
+   */
   public void setPoolParams(Map<String, Object> poolParams) {
     if (poolParams != null) {
-      this.poolParams = new HashMap<>(poolParams);
-      this.scheduleDelaySeconds = Integer.parseInt(String.valueOf(poolParams.getOrDefault(SCHEDULE_DELAY_SECONDS_PARAM, DEFAULT_SCHEDULE_DELAY_SECONDS)));
+      poolParams.forEach((k, v) -> {
+        if (v == null) {
+          this.poolParams.remove(k);
+        } else {
+          this.poolParams.put(k, v);
+        }
+      });
+      this.scheduleDelaySeconds = Integer.parseInt(String.valueOf(this.poolParams.getOrDefault(SCHEDULE_DELAY_SECONDS_PARAM, DEFAULT_SCHEDULE_DELAY_SECONDS)));
     }
   }
 
@@ -262,13 +325,17 @@ public abstract class ResourceManagerPool<T extends ManagedComponent> implements
     return poolContext;
   }
 
+  /**
+   * Manage resources used by components in this pool. This method is periodically called according to
+   * {@link #SCHEDULE_DELAY_SECONDS_PARAM}.
+   */
   public void manage() {
-    manageLock.lock();
     Timer.Context ctx = manageTimer.time();
     try {
       doManage();
     } catch (Exception e) {
       log.warn("Exception caught managing pool " + getName(), e);
+      manageErrors.mark();
     } finally {
       long time = ctx.stop();
       long timeSec = TimeUnit.NANOSECONDS.toSeconds(time);
@@ -276,12 +343,16 @@ public abstract class ResourceManagerPool<T extends ManagedComponent> implements
         log.warn("Execution of pool " + getName() + "/" + getType() + " took " + timeSec +
             " seconds, which is longer than the schedule delay of " + scheduleDelaySeconds + " seconds!");
       }
-      manageLock.unlock();
     }
   }
 
+  /**
+   * Implementation-specific resource management logic for this type of components.
+   * @throws Exception on fatal errors.
+   */
   protected abstract void doManage() throws Exception;
 
+  @Override
   public void close() throws IOException {
     if (scheduledFuture != null) {
       scheduledFuture.cancel(true);

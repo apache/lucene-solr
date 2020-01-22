@@ -28,10 +28,15 @@ public interface ManagedComponent extends AutoCloseable {
   void initializeManagedComponent(ResourceManager resourceManager, String poolName, String... otherPools);
 
   /**
-   * Component context used for managing additional component state for the purpose of resource management.
+   * Component context for managing additional state related to the resource management.
    */
   SolrResourceContext getSolrResourceContext();
 
+  /**
+   * Close and unregister this component from any resource pools. IMPORTANT: implementations must
+   * call this method or otherwise close the component's resource context.
+   * @throws Exception on context close errors
+   */
   default void close() throws Exception {
     if (getSolrResourceContext() != null) {
       getSolrResourceContext().close();

@@ -34,23 +34,29 @@ import org.slf4j.LoggerFactory;
 public class DefaultResourceManagerPoolFactory implements ResourceManagerPoolFactory {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
-  private static final Map<String, Class<? extends ResourceManagerPool>> typeToPoolClass = new HashMap<>();
-  private static final Map<String, Class<? extends ManagedComponent>> typeToComponentClass = new HashMap<>();
+  private final Map<String, Class<? extends ResourceManagerPool>> typeToPoolClass = new HashMap<>();
+  private final Map<String, Class<? extends ManagedComponent>> typeToComponentClass = new HashMap<>();
 
   public static final String TYPE_TO_POOL = "typeToPool";
   public static final String TYPE_TO_COMPONENT = "typeToComponent";
 
+  private static final Map<String, Class<? extends ResourceManagerPool>> DEFAULT_TYPE_TO_POOL_CLASS = new HashMap<>();
+  private static final Map<String, Class<? extends ManagedComponent>> DEFAULT_TYPE_TO_COMPONENT_CLASS = new HashMap<>();
   static {
-    typeToPoolClass.put(CacheManagerPool.TYPE, CacheManagerPool.class);
-    typeToPoolClass.put(NoOpResourceManager.NOOP, NoOpResourceManager.NoOpResourcePool.class);
-    typeToComponentClass.put(CacheManagerPool.TYPE, SolrCache.class);
-    typeToComponentClass.put(NoOpResourceManager.NOOP, NoOpResourceManager.NoOpManagedComponent.class);
+    DEFAULT_TYPE_TO_POOL_CLASS.put(CacheManagerPool.TYPE, CacheManagerPool.class);
+    DEFAULT_TYPE_TO_POOL_CLASS.put(NoOpResourceManager.NOOP, NoOpResourceManager.NoOpResourcePool.class);
+    DEFAULT_TYPE_TO_COMPONENT_CLASS.put(CacheManagerPool.TYPE, SolrCache.class);
+    DEFAULT_TYPE_TO_COMPONENT_CLASS.put(NoOpResourceManager.NOOP, NoOpResourceManager.NoOpManagedComponent.class);
   }
 
   private final SolrResourceLoader loader;
 
   public DefaultResourceManagerPoolFactory(SolrResourceLoader loader, Map<String, Object> config) {
     this.loader = loader;
+
+    typeToPoolClass.putAll(DEFAULT_TYPE_TO_POOL_CLASS);
+    typeToComponentClass.putAll(DEFAULT_TYPE_TO_COMPONENT_CLASS);
+
     Map<String, String> typeToPoolMap = (Map<String, String>)config.getOrDefault(TYPE_TO_POOL, Collections.emptyMap());
     Map<String, String> typeToComponentMap = (Map<String, String>)config.getOrDefault(TYPE_TO_COMPONENT, Collections.emptyMap());
     Map<String, Class<? extends ResourceManagerPool>> newPlugins = new HashMap<>();
@@ -60,7 +66,7 @@ public class DefaultResourceManagerPoolFactory implements ResourceManagerPoolFac
         Class<? extends ResourceManagerPool> pluginClazz = loader.findClass(className, ResourceManagerPool.class);
         newPlugins.put(type, pluginClazz);
       } catch (Exception e) {
-        log.warn("Error finding plugin class", e);
+        log.warn("Error finding plugin class {} for type {}, disabling: {}", type, className, e);
       }
     });
     typeToComponentMap.forEach((type, className) -> {
@@ -70,7 +76,7 @@ public class DefaultResourceManagerPoolFactory implements ResourceManagerPoolFac
           newComponents.put(type, componentClazz);
         }
       } catch (Exception e) {
-        log.warn("Error finding plugin class", e);
+        log.warn("Error finding component class {} for type {}, disabling: {}", type, className, e);
         newPlugins.remove(type);
       }
     });
@@ -103,7 +109,7 @@ public class DefaultResourceManagerPoolFactory implements ResourceManagerPoolFac
         new Class[]{String.class, String.class, ResourceManager.class, Map.class, Map.class},
         new Object[]{name, type, resourceManager, poolLimits, poolParams});
     if (poolParams != null) {
-      SolrPluginUtils.invokeSetters(resourceManagerPool, poolParams.entrySet());
+      SolrPluginUtils.invokeSetters(resourceManagerPool, poolParams.entrySet(), true);
     }
     resourceManagerPool.initializeMetrics(resourceManager.getSolrMetricsContext(), name);
     return resourceManagerPool;

@@ -53,14 +53,16 @@ public class TestCacheManagerPool extends SolrTestCaseJ4 {
   public void setupTest() throws Exception {
     initCore("solrconfig.xml", "schema.xml");
     // disable automatic scheduling of pool runs
-    resourceManager = new DefaultResourceManager(h.getCore().getResourceLoader(), h.getCoreContainer().getMetricManager(), null);
+    resourceManager = new DefaultResourceManager(h.getCore().getResourceLoader(), null);
     resourceManager.initializeMetrics(h.getCoreContainer().getSolrMetricsContext(), "test");
     resourceManager.init(null);
   }
 
   @Test
   public void testPoolLimits() throws Exception {
-    ResourceManagerPool pool = resourceManager.createPool("testPoolLimits", CacheManagerPool.TYPE, Collections.singletonMap("maxRamMB", 200), Collections.emptyMap());
+    Map<String, Object> poolParams = new HashMap<>();
+    poolParams.put(CacheManagerPool.OPTIMIZE_SHRINK_PARAM, true);
+    ResourceManagerPool pool = resourceManager.createPool("testPoolLimits", CacheManagerPool.TYPE, Collections.singletonMap("maxRamMB", 200), poolParams);
     SolrMetricManager metricManager = new SolrMetricManager();
     SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, "fooRegistry", "barScope", "bazTag");
     List<SolrCache> caches = new ArrayList<>();
@@ -160,7 +162,9 @@ public class TestCacheManagerPool extends SolrTestCaseJ4 {
 
   @Test
   public void testHitRatioOptimization() throws Exception {
-    ResourceManagerPool pool = resourceManager.createPool("testHitRatio", CacheManagerPool.TYPE, Collections.singletonMap("maxSize", 200), Collections.emptyMap());
+    Map<String, Object> poolParams = new HashMap<>();
+    poolParams.put(CacheManagerPool.OPTIMIZE_SHRINK_PARAM, true);
+    ResourceManagerPool pool = resourceManager.createPool("testHitRatio", CacheManagerPool.TYPE, Collections.singletonMap("maxSize", 200), poolParams);
     SolrMetricManager metricManager = new SolrMetricManager();
     SolrMetricsContext solrMetricsContext = new SolrMetricsContext(metricManager, "fooRegistry", "barScope", "bazTag");
     SolrCache<Integer, Accountable> cache = new CaffeineCache<>();

@@ -19,27 +19,29 @@ package org.apache.solr.managed;
 import java.util.Map;
 
 /**
- * Factory for creating instances of {@link ResourceManagerPool}-s.
+ * Factory for creating instances of {@link ResourceManagerPool}-s specialized for managing resources of
+ * particular class of components.
  */
 public interface ResourceManagerPoolFactory {
 
   /**
-   * Create a pool of a given symbolic type.
-   * @param type pool symbolic type
-   * @param poolParams pool parameters
+   * Create a pool given a symbolic pool type.
+   * @param type pool symbolic type.
+   * @param poolLimits initial total resource limits for this pool.
+   * @param poolParams initial pool parameters.
    */
   <T extends ManagedComponent> ResourceManagerPool<T> create(String name, String type, ResourceManager resourceManager,
                                                              Map<String, Object> poolLimits, Map<String, Object> poolParams) throws Exception;
 
   /**
-   * Get the implementation class for a component of a given symbolic type.
-   * @param type symbolic type
+   * Get the component class for a pool of a given symbolic type.
+   * @param type symbolic pool type
    */
   Class<? extends ManagedComponent> getComponentClassByType(String type);
 
   /**
-   * Get the implementation class for a plugin of a given symbolic type.
-   * @param type symbolic type
+   * Get the implementation class for a pool of a given symbolic type.
+   * @param type symbolic pool type
    */
   Class<? extends ResourceManagerPool> getPoolClassByType(String type);
 }

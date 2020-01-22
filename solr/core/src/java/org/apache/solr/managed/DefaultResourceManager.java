@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -33,7 +34,6 @@ import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.managed.types.CacheManagerPool;
-import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.slf4j.Logger;
@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Default implementation of {@link ResourceManager}.
- * <p>Resource pools managed by this implementation are run periodically, each according to
+ * <p>Resource pools managed by this implementation are managed periodically, each according to
  * its schedule defined by {@link ResourceManagerPool#SCHEDULE_DELAY_SECONDS_PARAM} parameter during the pool creation.</p>
  */
 public class DefaultResourceManager extends ResourceManager {
@@ -50,12 +50,20 @@ public class DefaultResourceManager extends ResourceManager {
 
   public static final String MAX_NUM_POOLS_PARAM = "maxNumPools";
 
-  public static final int DEFAULT_MAX_POOLS = 200;
+  /**
+   * Maximum number of pools.
+   */
+  public static final int DEFAULT_MAX_POOLS = 500;
 
+  /** {@link org.apache.solr.search.SolrIndexSearcher}'s document cache pool. */
   public static final String DOCUMENT_CACHE_POOL = "searcherDocumentCache";
+  /** {@link org.apache.solr.search.SolrIndexSearcher}'s filter cache pool. */
   public static final String FILTER_CACHE_POOL = "searcherFilterCache";
+  /** {@link org.apache.solr.search.SolrIndexSearcher}'s field value (for uninverted fields) cache pool. */
   public static final String FIELD_VALUE_CACHE_POOL = "searcherFieldValueCache";
+  /** {@link org.apache.solr.search.SolrIndexSearcher}'s query result cache pool. */
   public static final String QUERY_RESULT_CACHE_POOL = "searcherQueryResultCache";
+  /** {@link org.apache.solr.search.SolrIndexSearcher}'s generic user cache pool. */
   public static final String USER_SEARCHER_CACHE_POOL = "searcherUserCache";
 
   public static final Map<String, Map<String, Object>> DEFAULT_NODE_POOLS = new HashMap<>();
@@ -63,9 +71,9 @@ public class DefaultResourceManager extends ResourceManager {
   static {
     Map<String, Object> params = new HashMap<>();
     params.put(CommonParams.TYPE, CacheManagerPool.TYPE);
-    // unlimited RAM
+    // unlimited cache RAM
     params.put(SolrCache.MAX_RAM_MB_PARAM, -1L);
-    // unlimited size
+    // unlimited cache size
     params.put(SolrCache.MAX_SIZE_PARAM, -1L);
     DEFAULT_NODE_POOLS.put(DOCUMENT_CACHE_POOL, new HashMap<>(params));
     DEFAULT_NODE_POOLS.put(FILTER_CACHE_POOL, new HashMap<>(params));
@@ -75,27 +83,23 @@ public class DefaultResourceManager extends ResourceManager {
   }
 
 
-  protected int maxNumPools = DEFAULT_MAX_POOLS;
-
-  protected Map<String, ResourceManagerPool> resourcePools = new ConcurrentHashMap<>();
-
-
-  private TimeSource timeSource;
+  private int maxNumPools = DEFAULT_MAX_POOLS;
+  private final Map<String, ResourceManagerPool> resourcePools = new ConcurrentHashMap<>();
+  private final TimeSource timeSource;
+  private final SolrResourceLoader loader;
 
   /**
    * Thread pool for scheduling the pool runs.
    */
   private ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
-
-  protected ResourceManagerPoolFactory resourceManagerPoolFactory;
-  protected SolrResourceLoader loader;
-  protected SolrMetricManager metricManager;
+  private ResourceManagerPoolFactory resourceManagerPoolFactory;
 
 
-  public DefaultResourceManager(SolrResourceLoader loader, SolrMetricManager metricManager, TimeSource timeSource) {
+  public DefaultResourceManager(SolrResourceLoader loader, TimeSource timeSource) {
+    Objects.nonNull(loader);
     this.loader = loader;
+    // timeSource may be null in tests where we want to disable automatic scheduling
     this.timeSource = timeSource;
-    this.metricManager = metricManager;
   }
 
   protected void doInit() throws Exception {
@@ -104,12 +108,11 @@ public class DefaultResourceManager extends ResourceManager {
     scheduledThreadPoolExecutor.setMaximumPoolSize(maxNumPools);
     scheduledThreadPoolExecutor.setRemoveOnCancelPolicy(true);
     scheduledThreadPoolExecutor.setExecuteExistingDelayedTasksAfterShutdownPolicy(false);
-    // TODO: make configurable based on plugin info
     resourceManagerPoolFactory = new DefaultResourceManagerPoolFactory(loader,
         pluginInfo != null ?
             (Map<String, Object>)pluginInfo.initArgs.toMap(new HashMap<>()).getOrDefault("plugins", Collections.emptyMap()) :
             Collections.emptyMap());
-    log.info("Resource manager initialized.");
+    log.debug("Default resource manager initialized for loader {}.", loader);
   }
 
   // setter invoked by PluginUtils.invokeSetters
@@ -149,14 +152,18 @@ public class DefaultResourceManager extends ResourceManager {
     }
     newPool.initializeMetrics(metricsContext, name);
     if (timeSource != null) {
-      newPool.scheduledFuture = scheduledThreadPoolExecutor.scheduleWithFixedDelay(() -> {
-            log.debug("- running pool {} / {}", newPool.getName(), newPool.getType());
-            newPool.manage();
-          }, 0,
-          timeSource.convertDelay(TimeUnit.SECONDS, newPool.scheduleDelaySeconds, TimeUnit.MILLISECONDS),
-          TimeUnit.MILLISECONDS);
+      if (newPool.scheduleDelaySeconds > 0) {
+        newPool.scheduledFuture = scheduledThreadPoolExecutor.scheduleWithFixedDelay(() -> {
+              log.debug("- running pool {} / {}", newPool.getName(), newPool.getType());
+              newPool.manage();
+            }, 0,
+            timeSource.convertDelay(TimeUnit.SECONDS, newPool.scheduleDelaySeconds, TimeUnit.MILLISECONDS),
+            TimeUnit.MILLISECONDS);
+      } else {
+        log.info(" - disabling automatic scheduling for pool {} / {}", newPool.getName(), newPool.getType());
+      }
     }
-    log.info("- created pool " + newPool.getName() + " / " + newPool.getType());
+    log.debug("- created pool " + newPool.getName() + " / " + newPool.getType());
     return newPool;
   }
 
@@ -178,12 +185,12 @@ public class DefaultResourceManager extends ResourceManager {
       throw new IllegalArgumentException("Pool '" + name + "' doesn't exist.");
     }
     pool.setPoolLimits(poolLimits);
-    log.info("- modified pool limits {} / {}: {}", pool.getName(), pool.getType(), poolLimits);
+    log.debug("- modified pool limits {} / {}: {}", pool.getName(), pool.getType(), poolLimits);
 
   }
 
   @Override
-  public void setPoolParams(String name, Map<String, Object> params) throws Exception {
+  public void setPoolParams(String name, Map<String, Object> poolParams) throws Exception {
     ensureActive();
     ResourceManagerPool pool = resourcePools.get(name);
     if (pool == null) {
@@ -191,21 +198,25 @@ public class DefaultResourceManager extends ResourceManager {
     }
     // schedule delay may have changed, re-schedule if needed
     int oldDelay = pool.scheduleDelaySeconds;
-    pool.setPoolParams(params);
+    pool.setPoolParams(poolParams);
     int newDelay = pool.scheduleDelaySeconds;
     if (newDelay != oldDelay && timeSource != null) {
       // re-schedule
-      log.info("- modified pool params {} / {}, re-scheduling due to new schedule delay: {}",
-          pool.getName(), pool.getType(), params);
       if (pool.scheduledFuture != null) {
         pool.scheduledFuture.cancel(false);
       }
-      pool.scheduledFuture = scheduledThreadPoolExecutor.scheduleWithFixedDelay(() -> {
-            log.debug("- running pool {} / {}", pool.getName(), pool.getType());
-            pool.manage();
-          }, 0,
-          timeSource.convertDelay(TimeUnit.SECONDS, newDelay, TimeUnit.MILLISECONDS),
-          TimeUnit.MILLISECONDS);
+      if (newDelay > 0) {
+        log.debug("- modified pool params {} / {}, re-scheduling due to a new schedule delay: {}",
+            pool.getName(), pool.getType(), poolParams);
+        pool.scheduledFuture = scheduledThreadPoolExecutor.scheduleWithFixedDelay(() -> {
+              log.debug("- running pool {} / {}", pool.getName(), pool.getType());
+              pool.manage();
+            }, 0,
+            timeSource.convertDelay(TimeUnit.SECONDS, newDelay, TimeUnit.MILLISECONDS),
+            TimeUnit.MILLISECONDS);
+      } else {
+        log.info(" - disabling automatic scheduling for pool {} / {}", pool.getName(), pool.getType());
+      }
     }
   }
 
@@ -218,7 +229,7 @@ public class DefaultResourceManager extends ResourceManager {
       return;
     }
     IOUtils.closeQuietly(pool);
-    log.info("- removed pool " + pool.getName() + " / " + pool.getType());
+    log.debug("- removed pool " + pool.getName() + " / " + pool.getType());
   }
 
   @Override
@@ -258,13 +269,11 @@ public class DefaultResourceManager extends ResourceManager {
   @Override
   public void close() throws Exception {
     super.close();
-    synchronized (this) {
-      log.debug("Closing all pools.");
-      for (ResourceManagerPool pool : resourcePools.values()) {
-        IOUtils.closeQuietly(pool);
-      }
-      resourcePools.clear();
+    log.debug("Closing all pools.");
+    for (ResourceManagerPool pool : resourcePools.values()) {
+      IOUtils.closeQuietly(pool);
     }
+    resourcePools.clear();
     log.debug("Shutting down scheduled thread pool executor now");
     scheduledThreadPoolExecutor.shutdownNow();
     log.debug("Awaiting termination of scheduled thread pool executor");

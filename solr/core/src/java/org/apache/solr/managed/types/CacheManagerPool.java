@@ -59,10 +59,19 @@ public class CacheManagerPool extends ResourceManagerPool<SolrCache> {
 
   public static String TYPE = "cache";
 
-  /** Controller dead-band - changes smaller than this ratio will be ignored. */
+  /** Controller dead-band - changes smaller than this fraction of the total limit will be ignored. */
   public static final String DEAD_BAND_PARAM = "deadBand";
-  /** Use soft optimization when not under resource shortage. */
+  /** Use soft optimization when not under resource shortage. This defaults to true. */
   public static final String OPTIMIZE_PARAM = "optimize";
+  /** Use soft optimization to shrink cache sizes when not under resource shortage. This defaults to false. */
+  public static final String OPTIMIZE_SHRINK_PARAM = "optimize_shrink";
+  /** Use soft optimization to expand cache sizes when not under resource shortage.
+   * <p>NOTE: this option defaults to true and in most situations should not be changed because there's
+   * no other mechanism to automatically expand cache sizes when additional resources become available.
+   * If this option is set to false and there's a resource shortage the cache sizes will be trimmed and
+   * they will never automatically bounce back once the shortage is over.</p>
+   */
+  public static final String OPTIMIZE_EXPAND_PARAM = "optimize_expand";
   /** Target hit ratio - high enough to be useful, low enough to avoid excessive cache size. */
   public static final String TARGET_HIT_RATIO_PARAM = "targetHitRatio";
   /** Minimum delta in the number of lookups before attempting optimization. */
@@ -111,6 +120,8 @@ public class CacheManagerPool extends ResourceManagerPool<SolrCache> {
   protected long lookupDelta = DEFAULT_LOOKUP_DELTA;
   protected double maxAdjustRatio = DEFAULT_MAX_ADJUST_RATIO;
   protected boolean optimize = true;
+  protected boolean optimize_shrink = false;
+  protected boolean optimize_expand = true;
   protected Map<String, Long> lookups = new HashMap<>();
   protected Map<String, Long> hits = new HashMap<>();
   protected Map<String, Map<String, Object>> initialComponentLimits = new HashMap<>();
@@ -148,6 +159,18 @@ public class CacheManagerPool extends ResourceManagerPool<SolrCache> {
       optimize = Boolean.parseBoolean(str);
     } catch (Exception e) {
       log.warn("Invalid optimize parameter value '" + str + "', using default " + true);
+    }
+    str = String.valueOf(poolParams.getOrDefault(OPTIMIZE_SHRINK_PARAM, false));
+    try {
+      optimize_shrink = Boolean.parseBoolean(str);
+    } catch (Exception e) {
+      log.warn("Invalid optimize_shrink parameter value '" + str + "', using default " + false);
+    }
+    str = String.valueOf(poolParams.getOrDefault(OPTIMIZE_EXPAND_PARAM, true));
+    try {
+      optimize_expand = Boolean.parseBoolean(str);
+    } catch (Exception e) {
+      log.warn("Invalid optimize_expand parameter value '" + str + "', using default " + true);
     }
   }
 
@@ -339,6 +362,10 @@ public class CacheManagerPool extends ResourceManagerPool<SolrCache> {
         return;
       }
       if (currentHitRatio < targetHitRatio) {
+        // EXPAND ?
+        if (!optimize_expand) {
+          return;
+        }
         if (changeRatio.get() <= 1.0) {
           // don't expand if we're already short on resources
           return;
@@ -372,6 +399,10 @@ public class CacheManagerPool extends ResourceManagerPool<SolrCache> {
               " from " + currentLimit + " to " + newLimit + " on " + component.getManagedComponentId(), e);
         }
       } else {
+        // SHRINK ?
+        if (!optimize_shrink) {
+          return;
+        }
         // shrink to release some resources but not more than maxAdjustRatio from the initialLimit
         double newLimit = targetHitRatio / currentHitRatio * currentLimit;
         if (newLimit * maxAdjustRatio < initialLimit.doubleValue()) {

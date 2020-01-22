@@ -160,7 +160,7 @@ public class TestResourceManagerPool extends SolrTestCaseJ4 {
   public void initManager() {
     loader = new SolrResourceLoader(TEST_PATH());
     SolrMetricManager metricManager = new SolrMetricManager();
-    resourceManager = new DefaultResourceManager(loader, metricManager, TimeSource.get("simTime:" + SPEED));
+    resourceManager = new DefaultResourceManager(loader, TimeSource.get("simTime:" + SPEED));
     resourceManager.initializeMetrics(new SolrMetricsContext(metricManager, "node", SolrMetricProducer.getUniqueMetricTag(loader, null)), null);
     Map<String, Object> initArgs = new HashMap<>();
     Map<String, Object> config = new HashMap<>();

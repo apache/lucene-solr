@@ -17,13 +17,14 @@
 package org.apache.solr.managed;
 
 /**
- * Listen to changes in resource limit settings caused by resource management framework
+ * Listen to the changes in resource limit settings caused by resource management framework
  * (or by users via resource management API).
  * <p>Note: implementations must provide unique and stable {@link Object#equals(Object)} / {@link Object#hashCode()} methods
  * to avoid duplicates when registering.</p>
  */
 public interface ChangeListener {
 
+  /** Reason for the change of resource limits in a component. */
   enum Reason {
     /** Administrative user action. */
     USER,
@@ -42,23 +43,24 @@ public interface ChangeListener {
   }
 
   /**
-   * Notify about changing a limit of a resource.
-   * @param poolName pool name where resource is managed.
-   * @param component managed component
-   * @param limitName limit name
+   * Notify about changing a resource limit of a component.
+   * @param poolName pool name where the component is managed.
+   * @param component managed component.
+   * @param limitName limit name.
    * @param newRequestedVal requested new value of the resource limit.
    * @param newActualVal actual value applied to the resource configuration. Note: this may differ from the
    *                     value requested due to internal logic of the component.
-   * @param reason reason of the change
+   * @param reason reason for the change.
    */
   void changedLimit(String poolName, ManagedComponent component, String limitName, Object newRequestedVal, Object newActualVal, Reason reason);
 
   /**
+   * Notify about an error when changing resource limit.
    * @param poolName pool name where resource is managed.
-   * @param component managed component
-   * @param limitName limit name
+   * @param component managed component.
+   * @param limitName limit name.
    * @param newRequestedVal requested new value of the resource limit.
-   * @param reason reason of the change
+   * @param reason reason for the change.
    * @param error error encountered while changing. When an error occurs the actual current value of the
    *              limit is unknown and must be verified.
    */

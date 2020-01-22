@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.TimeSource;
@@ -51,9 +52,9 @@ public abstract class ResourceManager implements PluginInfoInitialized, SolrMetr
 
   protected PluginInfo pluginInfo;
   protected SolrMetricsContext metricsContext;
-  protected boolean isClosed = false;
+  protected AtomicBoolean isClosed = new AtomicBoolean();
   protected boolean enabled = true;
-  protected boolean initialized = false;
+  protected AtomicBoolean initialized = new AtomicBoolean();
 
   /**
    * Create a resource manager and optionally create configured pools.
@@ -61,11 +62,11 @@ public abstract class ResourceManager implements PluginInfoInitialized, SolrMetr
    * @param timeSource time source instance
    * @param resourceManagerClass implementation class for the resource manager
    * @param pluginInfo resource manager plugin info
-   * @param config resource manager and pool configurations
+   * @param config a map containing resource manager and pool configurations in {@link #RESOURCE_MANAGER_PARAM} element.
    */
   public static ResourceManager load(SolrResourceLoader loader, SolrMetricManager metricManager, TimeSource timeSource,
                                      Class<? extends ResourceManager> resourceManagerClass, PluginInfo pluginInfo,
-                                     Map<String, Object> config) throws Exception {
+                                     Map<String, Object> config) {
     Map<String, Object> managerOverrides = (Map<String, Object>)config.getOrDefault(RESOURCE_MANAGER_PARAM, Collections.emptyMap());
     if (!managerOverrides.isEmpty()) {
       Map<String, Object> pluginMap = new HashMap<>();
@@ -81,8 +82,8 @@ public abstract class ResourceManager implements PluginInfoInitialized, SolrMetr
         resourceManagerClass.getName(),
         resourceManagerClass,
         null,
-        new Class[]{SolrResourceLoader.class, SolrMetricManager.class, TimeSource.class},
-        new Object[]{loader, metricManager, timeSource});
+        new Class[]{SolrResourceLoader.class, TimeSource.class},
+        new Object[]{loader, timeSource});
     SolrPluginUtils.invokeSetters(resourceManager, pluginInfo.initArgs);
     resourceManager.init(pluginInfo);
     resourceManager.initializeMetrics(new SolrMetricsContext(metricManager, "node", SolrMetricProducer.getUniqueMetricTag(loader, null)), null);
@@ -120,13 +121,13 @@ public abstract class ResourceManager implements PluginInfoInitialized, SolrMetr
     }
     try {
       doInit();
-      initialized = true;
+      initialized.set(true);
     } catch (Exception e) {
       log.warn("Exception initializing resource manager " + getClass().getSimpleName() + ", disabling!");
       try {
         close();
       } catch (Exception e1) {
-        log.warn("Exception closing resource manager " + getClass().getSimpleName(), e1);
+        log.debug("Exception closing resource manager " + getClass().getSimpleName(), e1);
       }
     }
   }
@@ -167,14 +168,14 @@ public abstract class ResourceManager implements PluginInfoInitialized, SolrMetr
    * @param newPoolLimits a map of pool names to a map of updated limits. Only existing pools will be affected.
    */
   public void updatePoolLimits(Map<String, Object> newPoolLimits) {
+    ensureActive();
     if (newPoolLimits == null || newPoolLimits.isEmpty()) {
       return;
     }
-
     for (Map.Entry<String, Object> entry : newPoolLimits.entrySet()) {
       String poolName = entry.getKey();
       Map<String, Object> params = (Map<String, Object>)entry.getValue();
-      ResourceManagerPool pool = getPool(poolName);
+      ResourceManagerPool<? extends ManagedComponent> pool = getPool(poolName);
       if (pool == null) {
         log.warn("Cannot update config - pool '" + poolName + "' not found.");
         continue;
@@ -197,7 +198,7 @@ public abstract class ResourceManager implements PluginInfoInitialized, SolrMetr
    * @param poolParams other parameters (must not be null).
    * @return newly created and scheduled resource pool
    */
-  public abstract ResourceManagerPool createPool(String name, String type, Map<String, Object> poolLimits, Map<String, Object> poolParams) throws Exception;
+  public abstract ResourceManagerPool<? extends ManagedComponent> createPool(String name, String type, Map<String, Object> poolLimits, Map<String, Object> poolParams) throws Exception;
 
   /**
    * List all currently existing pool names.
@@ -211,6 +212,7 @@ public abstract class ResourceManager implements PluginInfoInitialized, SolrMetr
   public boolean hasPool(String name) {
     return getPool(name) != null;
   }
+
   /**
    * Modify pool limits of an existing pool.
    * @param name existing pool name
@@ -222,22 +224,23 @@ public abstract class ResourceManager implements PluginInfoInitialized, SolrMetr
   /**
    * Modify parameters of an existing pool.
    * @param name existing pool name
-   * @param params new parameter values.
+   * @param poolParams new parameter values.By convention only the values present in this map will be modified,
+   *                   all other params will remain unchanged. In order to remove a param use null value.
    * @throws Exception when an invalid value or unsupported parameter is requested, or the parameter
-   * value cannot be changed after creation
+   * value cannot be changed after creation.
    */
-  public abstract void setPoolParams(String name, Map<String, Object> params) throws Exception;
+  public abstract void setPoolParams(String name, Map<String, Object> poolParams) throws Exception;
 
   /**
    * Remove pool. This also stops the management of resources registered with that pool.
-   * @param name existing pool name
+   * @param name existing pool name.
    */
   public abstract void removePool(String name) throws Exception;
 
   /**
    * Add managed components to a pool.
    * @param pool existing pool name.
-   * @param managedComponents components to add
+   * @param managedComponents components to add.
    */
   public void registerComponents(String pool, Collection<ManagedComponent> managedComponents) {
     ensureActive();
@@ -258,8 +261,8 @@ public abstract class ResourceManager implements PluginInfoInitialized, SolrMetr
   /**
    * Remove a managed component from a pool.
    * @param pool existing pool name.
-   * @param componentId component id to remove
-   * @return true if a component was actually registered and has been removed
+   * @param componentId component id to remove.
+   * @return true if a component was actually registered and has been removed.
    */
   public boolean unregisterComponent(String pool, ManagedComponentId componentId) {
     return unregisterComponent(pool, componentId.toString());
@@ -267,7 +270,7 @@ public abstract class ResourceManager implements PluginInfoInitialized, SolrMetr
 
   /**
    * Unregister component from all pools.
-   * @param componentId component id
+   * @param componentId component id.
    * @return true if a component was actually registered and removed from at least one pool.
    */
   public boolean unregisterComponent(String componentId) {
@@ -281,25 +284,23 @@ public abstract class ResourceManager implements PluginInfoInitialized, SolrMetr
   /**
    * Remove a managed component from a pool.
    * @param pool existing pool name.
-   * @param componentId component id to remove
-   * @return true if a component was actually registered and has been removed
+   * @param componentId component id to remove.
+   * @return true if a component was actually registered and has been removed.
    */
   public abstract boolean unregisterComponent(String pool, String componentId);
 
   protected void ensureActive() {
-    if (isClosed) {
-      throw new IllegalStateException("Already closed.");
+    if (isClosed.get()) {
+      throw new IllegalStateException("Resource manager is already closed.");
     }
-    if (!initialized) {
-      throw new IllegalStateException("Not initialized.");
+    if (!initialized.get()) {
+      throw new IllegalStateException("Resource manager not initialized.");
     }
   }
 
   @Override
   public void close() throws Exception {
-    synchronized (this) {
-      isClosed = true;
-      SolrMetricProducer.super.close();
-    }
+    isClosed.set(true);
+    SolrMetricProducer.super.close();
   }
 }

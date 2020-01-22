@@ -23,7 +23,7 @@ import java.util.Collections;
 import java.util.Map;
 
 /**
- *
+ * An implementation of {@link ResourceManager} that does nothing.
  */
 public class NoOpResourceManager extends ResourceManager {
   public static final String NOOP = "--noop--";
@@ -107,7 +107,7 @@ public class NoOpResourceManager extends ResourceManager {
   }
 
   @Override
-  public void setPoolParams(String name, Map<String, Object> params) throws Exception {
+  public void setPoolParams(String name, Map<String, Object> poolParams) throws Exception {
     // no-op
   }
 
