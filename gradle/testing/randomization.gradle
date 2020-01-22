@@ -168,10 +168,10 @@ allprojects {
         if (Boolean.parseBoolean(testOptionsResolved["tests.useSecurityManager"])) {
           if (project.path == ":lucene:replicator") {
             systemProperty 'java.security.manager', "org.apache.lucene.util.TestSecurityManager"
-            systemProperty 'java.security.policy', rootProject.file("gradle/testing/policies/replicator-tests.policy")
+            systemProperty 'java.security.policy', rootProject.file("lucene/tools/junit4/replicator-tests.policy")
           } else if (project.path.startsWith(":lucene")) {
             systemProperty 'java.security.manager', "org.apache.lucene.util.TestSecurityManager"
-            systemProperty 'java.security.policy', rootProject.file("gradle/testing/policies/tests.policy")
+            systemProperty 'java.security.policy', rootProject.file("lucene/tools/junit4/tests.policy")
           } else {
             systemProperty 'common-solr.dir', commonSolrDir
             systemProperty 'java.security.manager', "org.apache.lucene.util.TestSecurityManager"

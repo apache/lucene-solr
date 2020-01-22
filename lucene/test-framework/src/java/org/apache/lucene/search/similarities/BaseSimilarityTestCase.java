@@ -251,11 +251,11 @@ public abstract class BaseSimilarityTestCase extends LuceneTestCase {
    */
   public void testRandomScoring() throws Exception {
     Random random = random();
-    final int iterations = atLeast(10);
+    final int iterations = atLeast(3);
     for (int i = 0; i < iterations; i++) {
       // pull a new similarity to switch up parameters
       Similarity similarity = getSimilarity(random);
-      for (int j = 0; j < 10; j++) {
+      for (int j = 0; j < 3; j++) {
         // for each norm value...
         for (int k = 1; k < 256; k++) {
           CollectionStatistics corpus = newCorpus(random, k);

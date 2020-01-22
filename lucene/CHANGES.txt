@@ -145,6 +145,8 @@ Bug Fixes
 * LUCENE-9144: Fix error message on OneDimensionBKDWriter when too many points are added to the writer.
   (Ignacio Vera)
 
+* LUCENE-9135: Make UniformSplit FieldMetadata counters long. (Bruno Roustant)
+
 Other
 ---------------------
 
