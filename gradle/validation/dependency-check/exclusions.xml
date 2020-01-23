@@ -30,4 +30,20 @@
     <packageUrl regex="true">^pkg:maven/com\.carrotsearch\.thirdparty/simple\-xml\-safe@.*$</packageUrl>
     <cve>CVE-2017-1000190</cve>
   </suppress>
+  <suppress>
+    <notes><![CDATA[
+   file name: netty-transport-native-epoll-4.1.29.Final.jar
+   We only use netty as a client towards Zookeeper
+   ]]></notes>
+    <packageUrl regex="true">^pkg:maven/io\.netty/netty\-.*@.*$</packageUrl>
+    <cpe>cpe:/a:netty:netty</cpe>
+  </suppress>
+  <suppress>
+    <notes><![CDATA[
+   file name: dirgra-0.3.jar
+   We will sandbox JRuby
+   ]]></notes>
+    <packageUrl regex="true">^pkg:maven/org\.jruby/dirgra@.*$</packageUrl>
+    <cpe>cpe:/a:jruby:jruby</cpe>
+  </suppress>
 </suppressions>
