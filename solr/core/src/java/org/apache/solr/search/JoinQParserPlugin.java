@@ -197,16 +197,11 @@ public class JoinQParserPlugin extends QParserPlugin {
 
 
 class JoinQuery extends Query {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-
   String fromField;
   String toField;
   String fromIndex; // TODO: name is missleading here compared to JoinQParserPlugin usage - here it must be a core name
   Query q;
   long fromCoreOpenTime;
-  private boolean cache;
-  private boolean cacheSep;
-  private int cost;
 
   public JoinQuery(String fromField, String toField, String coreName, Query subQuery) {
     assert null != fromField;
