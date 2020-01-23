@@ -168,7 +168,7 @@ public class SystemCollectionCompatTest extends SolrCloudTestCase {
     CollectionAdminResponse adminResponse = status.process(solrClient);
     NamedList<Object> response = adminResponse.getResponse();
     String leader = (String) response.get("leader");
-    log.info("Overseer Status indicates that the overseer is: {}");
+    log.info("Overseer Status indicates that the overseer is: {}", leader);
     JettySolrRunner overseerNode = null;
     List<JettySolrRunner> jettySolrRunners = cluster.getJettySolrRunners();
     for (int i = 0; i < jettySolrRunners.size(); i++) {

@@ -114,7 +114,7 @@ public class JsonLoader extends ContentStreamLoader {
         reader = stream.getReader();
         if (log.isTraceEnabled()) {
           String body = IOUtils.toString(reader);
-          log.trace("body", body);
+          log.trace("body: {}", body);
           reader = new StringReader(body);
         }
 
