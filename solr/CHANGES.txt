@@ -299,6 +299,8 @@ Other Changes
 
 * SOLR-14248: Improve ClusterStateMockUtil and make its methods public. (shalin)
 
+* SOLR-14209: Upgrade JQuery to 3.4.1 (Kevin Risden)
+
 ==================  8.4.1 ==================
 
 Consult the LUCENE_CHANGES.txt file for additional, low level, changes in this release.
