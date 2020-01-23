@@ -195,7 +195,7 @@ public class TestGeoUtils extends LuceneTestCase {
   // TODO: does not really belong here, but we test it like this for now
   // we can make a fake IndexReader to send boxes directly to Point visitors instead?
   public void testCircleOpto() throws Exception {
-    int iters = atLeast(20);
+    int iters = atLeast(3);
     for (int i = 0; i < iters; i++) {
       // circle
       final double centerLat = -90 + 180.0 * random().nextDouble();

@@ -70,7 +70,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
 
   // A particularly tricky adversary for BKD tree:
   public void testSameShapeManyTimes() throws Exception {
-    int numShapes = atLeast(500);
+    int numShapes = TEST_NIGHTLY ? atLeast(50) : atLeast(10);
 
     // Every doc has 2 points:
     Object theShape = nextShape();
@@ -82,8 +82,9 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
   }
 
   // Force low cardinality leaves
+  @Slow
   public void testLowCardinalityShapeManyTimes() throws Exception {
-    int numShapes = atLeast(500);
+    int numShapes = atLeast(20);
     int cardinality = TestUtil.nextInt(random(), 2, 20);
 
     Object[] diffShapes = new Object[cardinality];
@@ -106,7 +107,7 @@ public abstract class BaseShapeTestCase extends LuceneTestCase {
 
   @Slow
   public void testRandomMedium() throws Exception {
-    doTestRandom(1000);
+    doTestRandom(atLeast(20));
   }
 
   @Slow
