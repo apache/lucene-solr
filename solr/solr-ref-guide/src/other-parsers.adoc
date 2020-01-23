@@ -724,7 +724,6 @@ At query time, the `JoinQParser` will access the local replica of the *movie_dir
 
 For more information about join queries, see the Solr Wiki page on http://wiki.apache.org/solr/Join[Joins]. Erick Erickson has also written a blog post about join performance titled https://lucidworks.com/2012/06/20/solr-and-joins/[Solr and Joins].
 
-
 == Lucene Query Parser
 
 The `LuceneQParser` extends the `QParserPlugin` by parsing Solr's variant on the Lucene QueryParser syntax. This is effectively the same query parser that is used in Lucene. It uses the operators `q.op`, the default operator ("OR" or "AND") and `df`, the default field name.
