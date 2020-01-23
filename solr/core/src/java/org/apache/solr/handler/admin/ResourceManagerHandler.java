@@ -35,6 +35,7 @@ import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.managed.ChangeListener;
+import org.apache.solr.managed.DefaultResourceManager;
 import org.apache.solr.managed.ManagedComponent;
 import org.apache.solr.managed.ResourceManager;
 import org.apache.solr.managed.ResourceManagerPool;
@@ -171,7 +172,7 @@ public class ResourceManagerHandler extends RequestHandlerBase implements Permis
           perPool.add("size", pool.getComponents().size());
           perPool.add("poolLimits", pool.getPoolLimits());
           perPool.add("poolParams", pool.getPoolParams());
-          perPool.add("resources", new TreeSet<>(pool.getComponents().keySet()));
+          perPool.add("components", new TreeSet<>(pool.getComponents().keySet()));
           try {
             Map<String, Map<String, Object>> values = pool.getCurrentValues();
             perPool.add("totalValues", new TreeMap<>(pool.aggregateTotalValues(values)));
@@ -197,6 +198,11 @@ public class ResourceManagerHandler extends RequestHandlerBase implements Permis
         break;
       case DELETE:
         poolNames.forEach(p -> {
+          // don't delete pre-defined pools - they are always needed!
+          if (DefaultResourceManager.DEFAULT_NODE_POOLS.containsKey(p)) {
+            result.add(p, "ignored - cannot delete a required pool");
+            return;
+          }
           try {
             resourceManager.removePool(p);
             result.add(p, "success");
