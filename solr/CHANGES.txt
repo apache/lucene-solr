@@ -160,6 +160,8 @@ Bug Fixes
 
 * SOLR-14205: Do not fail when given timeout to connectionImpl.isValid() = 0 (Nick Vercammen via Kevin Risden)
 
+* SOLR-11554: Support handling OPTIONS request for Hadoop authentication filter (Peter Cseh via Kevin Risden)
+
 Other Changes
 ---------------------
 
