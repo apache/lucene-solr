@@ -329,7 +329,7 @@ public class TestJoin extends SolrTestCaseJ4 {
       case 1: // method=persegment
         return "{!join " + allProvidedParams + " method=index}";
       case 2: // method=score
-        return "{!join " + allProvidedParams + " method=indexWithScore score=none}";
+        return "{!join " + allProvidedParams + " method=dvWithScore score=none}";
      default: // method=toplevel
         return "{!join " + allProvidedParams + " method=topLevelDV}";
     }

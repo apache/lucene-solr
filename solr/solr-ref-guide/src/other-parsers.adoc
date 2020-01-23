@@ -644,15 +644,15 @@ An optional parameter that instructs Solr to return information about the "from"
 The value of this parameter controls what type of aggregation information is returned.
 Options include `avg` (average), `max` (maximum), `min` (minimum), `total` (total), or `none`.
 +
-If `method` is not specified but `score` is, then the `indexWithScore` method is used.
-If `method` is specified and is not `indexWithScore`, then the `score` value is ignored.
+If `method` is not specified but `score` is, then the `dvWithScore` method is used.
+If `method` is specified and is not `dvWithScore`, then the `score` value is ignored.
 See the `method` parameter documentation below for more details.
 
 
 `method`::
 An optional parameter used to determine which of several query implementations should be used by Solr.
-Options are restricted to: `index`, `indexWithScore`, and `topLevelDV`.
-If unspecified the default value is `index`, unless the `score` parameter is present which overrides it to `indexWithScore`.
+Options are restricted to: `index`, `dvWithScore`, and `topLevelDV`.
+If unspecified the default value is `index`, unless the `score` parameter is present which overrides it to `dvWithScore`.
 Each implementation has its own performance characteristics, and users are encouraged to experiment to determine which implementation is most performant for their use-case.
 Details and performance heuristics are given below.
 +
@@ -662,16 +662,16 @@ Performance scales linearly with the number of values matched in the "from" fiel
 Consider this method when the "from" query matches few documents, when the "to" side returns a large number of documents, or when sporadic post-commit slowdowns cannot be tolerated (this a disadvantage of other methods that `index` avoids).
 
 +
-`indexWithScore` returns an optional "score" statistic alongside result documents.
+`dvWithScore` returns an optional "score" statistic alongside result documents.
 Uses docValues structures if available, but falls back to uninverted values when necessary.
 Uninversion slows down the initial requests following a commit and takes up additional space on the JVM heap, so docValues are recommended in most situations.
 Performance scales linearly with the number of values matched in the "from" field.
 This method must be used if score information is required, and should also be considered when the "from" query matches few documents, regardless of the number of "to" side documents returned.
 +
-.indexWithScore and single value numerics
+.dvWithScore and single value numerics
 [WARNING]
 ====
-The `indexWithScore` method doesn't support single value numeric fields. Users migrating from versions prior to 7.0 are encouraged to change field types to string and rebuild indexes during migration.
+The `dvWithScore` method doesn't support single value numeric fields. Users migrating from versions prior to 7.0 are encouraged to change field types to string and rebuild indexes during migration.
 ====
 +
 `topLevelDV` can only be used when `to` and `from` fields have docValues data, and does not currently support numeric fields.

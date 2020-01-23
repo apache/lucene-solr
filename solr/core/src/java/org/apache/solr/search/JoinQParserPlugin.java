@@ -67,8 +67,6 @@ public class JoinQParserPlugin extends QParserPlugin {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String NAME = "join";
-  public static final String COST = "cost";
-  public static final String CACHE = "cache";
   /** Choose the internal algorithm */
   private static final String METHOD = "method";
 
@@ -98,7 +96,7 @@ public class JoinQParserPlugin extends QParserPlugin {
         return q;
       }
     },
-    indexWithScore {
+    dvWithScore {
       @Override
       Query makeFilter(QParser qparser) throws SyntaxError {
         return new ScoreJoinQParserPlugin().createParser(qparser.qstr, qparser.localParams, qparser.params, qparser.req).parse();
