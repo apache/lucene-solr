@@ -148,6 +148,8 @@ Bug Fixes
 
 * SOLR-11746: Adding existence queries for PointFields. DocValuesFieldExistsQuery and NormsFieldExistsQuery are used for existence queries when possible. (Houston Putman, hossman, Kai Chan)
 
+* SOLR-14207: Fix logging statements with less or more arguments than placeholders. (shalin)
+
 Other Changes
 ---------------------
 
