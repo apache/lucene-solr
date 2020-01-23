@@ -3773,7 +3773,28 @@ public class TestIndexWriter extends LuceneTestCase {
       stopped.set(true);
       indexer.join();
       refresher.join();
+      assertNull("should not consider ACE a tragedy on a closed IW", w.getTragicException());
       IOUtils.close(sm, dir);
     }
+  }
+
+  public void testIgnoreACEOnTragicEvent() throws Exception {
+    Directory dir = newDirectory();
+    IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig());
+    Exception tragedy = new AlreadyClosedException("IW was closed");
+    writer.onTragicEvent(tragedy, "test");
+    assertSame("do not ignore ACE if IW is open", tragedy, writer.getTragicException());
+    writer.rollback();
+
+    writer = new IndexWriter(dir, newIndexWriterConfig());
+    writer.close();
+    writer.onTragicEvent(tragedy, "test");
+    assertNull("ignore ACE if IW is closed", writer.getTragicException());
+
+    tragedy = new IOException("file not found");
+    writer.onTragicEvent(tragedy, "test");
+    assertSame("do not ignore other exceptions", tragedy, writer.getTragicException());
+    writer.rollback();
+    dir.close();
   }
 }

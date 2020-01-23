@@ -4867,6 +4867,10 @@ public class IndexWriter implements Closeable, TwoPhaseCommit, Accountable,
     assert tragedy instanceof MergePolicy.MergeAbortedException == false;
     // How can it be a tragedy when nothing happened?
     assert tragedy != null;
+    if (tragedy instanceof AlreadyClosedException && isOpen() == false) {
+      // AlreadyClosedException should not be considered a tragedy if IndexWriter is closed.
+      return;
+    }
     if (infoStream.isEnabled("IW")) {
       infoStream.message("IW", "hit tragic " + tragedy.getClass().getSimpleName() + " inside " + location);
     }
