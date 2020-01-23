@@ -238,6 +238,8 @@ Bug Fixes
   an inability to assign a node based on existing autoscaling policy resulted in a server error instead of a bad request.
   (Andras Salamon, Kevin Risden, shalin)
 
+* SOLR-14196: AdminUI login not working for JWTAuth when blockUnknown=false (janhoy)
+
 Other Changes
 ---------------------
 
