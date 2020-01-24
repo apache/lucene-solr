@@ -131,8 +131,11 @@ public final class BlockTreeTermsReader extends FieldsProducer {
   /** The long[] + byte[] metadata has been replaced with a single byte[]. */
   public static final int VERSION_META_LONGS_REMOVED = 4;
 
+  /** Suffixes are compressed to save space. */
+  public static final int VERSION_COMPRESSED_SUFFIXES = 5;
+
   /** Current terms format. */
-  public static final int VERSION_CURRENT = VERSION_META_LONGS_REMOVED;
+  public static final int VERSION_CURRENT = VERSION_COMPRESSED_SUFFIXES;
 
   /** Extension of terms index file */
   static final String TERMS_INDEX_EXTENSION = "tip";

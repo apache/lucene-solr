@@ -23,6 +23,7 @@ import static org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat.MAX_SKIP_
 import static org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat.PAY_CODEC;
 import static org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat.POS_CODEC;
 import static org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat.TERMS_CODEC;
+import static org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat.VERSION_COMPRESSED_TERMS_DICT_IDS;
 import static org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat.VERSION_CURRENT;
 import static org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat.VERSION_START;
 
@@ -44,6 +45,7 @@ import org.apache.lucene.index.SlowImpactsEnum;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.IndexInput;
 import org.apache.lucene.util.ArrayUtil;
+import org.apache.lucene.util.BitUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.RamUsageEstimator;
@@ -179,17 +181,36 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
       termState.payStartFP = 0;
     }
 
-    termState.docStartFP += in.readVLong();
+    if (version >= VERSION_COMPRESSED_TERMS_DICT_IDS) {
+      final long l = in.readVLong();
+      if ((l & 0x01) == 0) {
+        termState.docStartFP += l >>> 1;
+        if (termState.docFreq == 1) {
+          termState.singletonDocID = in.readVInt();
+        } else {
+          termState.singletonDocID = -1;
+        }
+      } else {
+        assert absolute == false;
+        assert termState.singletonDocID != -1;
+        termState.singletonDocID += BitUtil.zigZagDecode(l >>> 1);
+      }
+    } else {
+      termState.docStartFP += in.readVLong();
+    }
+
     if (fieldHasPositions) {
       termState.posStartFP += in.readVLong();
       if (fieldHasOffsets || fieldHasPayloads) {
         termState.payStartFP += in.readVLong();
       }
     }
-    if (termState.docFreq == 1) {
-      termState.singletonDocID = in.readVInt();
-    } else {
-      termState.singletonDocID = -1;
+    if (version < VERSION_COMPRESSED_TERMS_DICT_IDS) {
+      if (termState.docFreq == 1) {
+        termState.singletonDocID = in.readVInt();
+      } else {
+        termState.singletonDocID = -1;
+      }
     }
     if (fieldHasPositions) {
       if (termState.totalTermFreq > BLOCK_SIZE) {
@@ -203,6 +224,7 @@ public final class Lucene84PostingsReader extends PostingsReaderBase {
     } else {
       termState.skipOffset = -1;
     }
+
   }
     
   @Override

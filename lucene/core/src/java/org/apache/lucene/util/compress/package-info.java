@@ -14,14 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.lucene.codecs.compressing;
 
-public class TestFastDecompressionMode extends AbstractTestCompressionMode {
-
-  @Override
-  public void setUp() throws Exception {
-    super.setUp();
-    mode = CompressionMode.FAST_DECOMPRESSION;
-  }
-
-}
+/**
+ * Compression utilities.
+ */
+package org.apache.lucene.util.compress;
