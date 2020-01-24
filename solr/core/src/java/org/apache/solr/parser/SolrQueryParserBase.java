@@ -673,6 +673,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
    */
   @Override
   protected Query newGraphSynonymQuery(Iterator<Query> sidePaths, Iterator<BytesRef[]> payloads ) {
+    if(super.synonymsBoostByPayload){
     switch (synonymQueryStyle) {
       case PICK_BEST:{
         List<Query> sidePathsQueries = boostQueriesByPayload(sidePaths, payloads);
@@ -689,9 +690,9 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
           return graphBooleanSynonymQuery.clauses().get(0).getQuery();
         }
         return graphBooleanSynonymQuery;}
-      default:
-        return super.newGraphSynonymQuery(sidePaths, payloads);
     }
+    }
+    return super.newGraphSynonymQuery(sidePaths, payloads);
   }
 
   private List<Query> boostQueriesByPayload(Iterator<Query> sidePaths, Iterator<BytesRef[]> sidePathsPayloads) {
