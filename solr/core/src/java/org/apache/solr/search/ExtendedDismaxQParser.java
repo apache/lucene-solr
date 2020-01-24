@@ -1085,7 +1085,7 @@ public class ExtendedDismaxQParser extends QParser {
     
     @Override
     protected Query newFieldQuery(Analyzer analyzer, String field, String queryText, 
-                                  boolean quoted, boolean fieldAutoGenPhraseQueries, boolean enableGraphQueries,
+                                  boolean quoted, boolean fieldAutoGenPhraseQueries, boolean enableGraphQueries, boolean fieldSynonymsBoostByPayload,
                                   SynonymQueryStyle synonymQueryStyle)
         throws SyntaxError {
       Analyzer actualAnalyzer;
@@ -1100,7 +1100,7 @@ public class ExtendedDismaxQParser extends QParser {
       } else {
         actualAnalyzer = parser.getReq().getSchema().getFieldType(field).getQueryAnalyzer();
       }
-      return super.newFieldQuery(actualAnalyzer, field, queryText, quoted, fieldAutoGenPhraseQueries, enableGraphQueries, synonymQueryStyle);
+      return super.newFieldQuery(actualAnalyzer, field, queryText, quoted, fieldAutoGenPhraseQueries, enableGraphQueries, fieldSynonymsBoostByPayload, synonymQueryStyle);
     }
     
     @Override

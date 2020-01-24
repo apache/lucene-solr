@@ -52,14 +52,14 @@ public class QueryParser extends SolrQueryParserBase implements QueryParserConst
 
   @Override
   protected Query newFieldQuery(Analyzer analyzer, String field, String queryText,
-                                boolean quoted, boolean fieldAutoGenPhraseQueries, boolean fieldEnableGraphQueries,
+                                boolean quoted, boolean fieldAutoGenPhraseQueries, boolean fieldEnableGraphQueries, boolean fieldSynonymsBoostByPayload,
                                 SynonymQueryStyle synonymQueryStyle)
       throws SyntaxError {
     setAutoGenerateMultiTermSynonymsPhraseQuery(fieldAutoGenPhraseQueries || getAutoGeneratePhraseQueries());
     // Don't auto-quote graph-aware field queries 
     boolean treatAsQuoted = getSplitOnWhitespace()
         ? (quoted || fieldAutoGenPhraseQueries || getAutoGeneratePhraseQueries()) : quoted;
-    return super.newFieldQuery(analyzer, field, queryText, treatAsQuoted, false, fieldEnableGraphQueries, synonymQueryStyle);
+    return super.newFieldQuery(analyzer, field, queryText, treatAsQuoted, false, fieldEnableGraphQueries, fieldSynonymsBoostByPayload, synonymQueryStyle);
   }
 
 // *   Query  ::= ( Clause )*

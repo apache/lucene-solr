@@ -26,12 +26,14 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.tokenattributes.PayloadAttributeImpl;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.AttributeSource;
+import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.FiniteStringsIterator;
@@ -123,7 +125,7 @@ public final class GraphTokenStreamFiniteStrings {
         .map(s -> new Term(field, s.addAttribute(TermToBytesRefAttribute.class).getBytesRef()))
         .toArray(Term[]::new);
   }
-
+  
   /**
    * Get all finite strings from the automaton.
    */

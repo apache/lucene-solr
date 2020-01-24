@@ -2081,10 +2081,10 @@ public class TestExtendedDismaxParser extends SolrTestCaseJ4 {
       @Override
       protected Query newFieldQuery(Analyzer analyzer, String field, String queryText,
                                     boolean quoted, boolean fieldAutoGenPhraseQueries,
-                                    boolean fieldEnableGraphQueries, SynonymQueryStyle synonymQueryStyle)
+                                    boolean fieldEnableGraphQueries, boolean fieldSynonymsBoostByPayload, SynonymQueryStyle synonymQueryStyle)
           throws SyntaxError {
         Query q = super.newFieldQuery
-            (analyzer, field, queryText, quoted, fieldAutoGenPhraseQueries, fieldEnableGraphQueries, synonymQueryStyle);
+            (analyzer, field, queryText, quoted, fieldAutoGenPhraseQueries, fieldEnableGraphQueries, fieldSynonymsBoostByPayload, synonymQueryStyle);
         if (q instanceof BooleanQuery) {
           boolean rewrittenSubQ = false; // dirty flag: rebuild the repacked query?
           BooleanQuery.Builder builder = newBooleanQuery();
