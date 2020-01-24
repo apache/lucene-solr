@@ -229,7 +229,6 @@ public class CorePushPull {
      */
     public void pullUpdateFromBlob(long requestQueuedTimeMs, boolean waitForSearcher, int attempt) throws Exception {
         long startTimeMs = System.nanoTime() / 1000000;
-        boolean isSuccessful = false;
 
         try {
           SolrCore solrCore = container.getCore(pushPullData.getCoreName());
