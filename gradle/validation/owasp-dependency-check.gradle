@@ -1,0 +1,17 @@
+// This adds OWASP vulnerability validation of project dependencies
+// Not part of 'check' task by default, must be called explicitly, e.g. gradlew dependencyCheckAnalyze
+// Start build with -Pvalidation.owasp.fail=true to fail build on owasp errors (CVSS >= 7)
+// Start build with -Pvalidation.owasp.skip=true to skip OWASP checks during 'check' phase
+
+configure(rootProject) {
+  dependencyCheck {
+    // TODO: Flip this to true once the ist is empty
+    skip = !propertyOrDefault("validation.owasp", false).toBoolean()
+    failBuildOnCVSS = propertyOrDefault("validation.owasp.threshold", 7) as Integer
+    formats = ['HTML', 'JSON']
+    suppressionFile = 'gradle/validation/dependency-check/exclusions.xml'
+  }
+
+  // Included in 'check' but it won't do anything since 'skip' defaults to true (inverse of validation.owasp property)
+  check.dependsOn dependencyCheckAnalyze
+}
