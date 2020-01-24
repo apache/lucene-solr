@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.EqualToEvaluator;
 import org.apache.solr.client.solrj.io.eval.RawValueEvaluator;
@@ -30,7 +30,7 @@ import org.junit.Test;
 
 import junit.framework.Assert;
 
-public class EqualToEvaluatorTest extends LuceneTestCase {
+public class EqualToEvaluatorTest extends SolrTestCase {
 
   StreamFactory factory;
   Map<String, Object> values;

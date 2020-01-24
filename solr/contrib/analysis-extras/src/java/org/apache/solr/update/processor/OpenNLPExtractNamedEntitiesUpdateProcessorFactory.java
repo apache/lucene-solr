@@ -17,8 +17,6 @@
 
 package org.apache.solr.update.processor;
 
-import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
@@ -56,6 +54,8 @@ import org.apache.solr.update.processor.FieldMutatingUpdateProcessorFactory.Sele
 import org.apache.solr.util.plugin.SolrCoreAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.SolrException.ErrorCode.SERVER_ERROR;
 
 /**
  * Extracts named entities using an OpenNLP NER <code>modelFile</code> from the values found in
@@ -500,13 +500,13 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory
               SolrInputField destField = null;
               String entityName = entity.first();
               String entityType = entity.second();
-              resolvedDest = resolvedDest.replace(ENTITY_TYPE, entityType);
-              if (doc.containsKey(resolvedDest)) {
-                destField = doc.getField(resolvedDest);
+              final String resolved = resolvedDest.replace(ENTITY_TYPE, entityType);
+              if (doc.containsKey(resolved)) {
+                destField = doc.getField(resolved);
               } else {
-                SolrInputField targetField = destMap.get(resolvedDest);
+                SolrInputField targetField = destMap.get(resolved);
                 if (targetField == null) {
-                  destField = new SolrInputField(resolvedDest);
+                  destField = new SolrInputField(resolved);
                 } else {
                   destField = targetField;
                 }
@@ -514,7 +514,7 @@ public class OpenNLPExtractNamedEntitiesUpdateProcessorFactory
               destField.addValue(entityName);
 
               // put it in map to avoid concurrent modification...
-              destMap.put(resolvedDest, destField);
+              destMap.put(resolved, destField);
             }
           }
         }

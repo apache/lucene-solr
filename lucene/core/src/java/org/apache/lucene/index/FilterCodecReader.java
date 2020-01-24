@@ -39,8 +39,17 @@ import org.apache.lucene.util.Bits;
  * {@link #getCoreCacheHelper()} and {@link #getReaderCacheHelper()}.
  */
 public abstract class FilterCodecReader extends CodecReader {
-  /** 
-   * The underlying CodecReader instance. 
+
+  /** Get the wrapped instance by <code>reader</code> as long as this reader is
+   *  an instance of {@link FilterCodecReader}.  */
+  public static CodecReader unwrap(CodecReader reader) {
+    while (reader instanceof FilterCodecReader) {
+      reader = ((FilterCodecReader) reader).getDelegate();
+    }
+    return reader;
+  }
+  /**
+   * The underlying CodecReader instance.
    */
   protected final CodecReader in;
   
@@ -127,4 +136,32 @@ public abstract class FilterCodecReader extends CodecReader {
     in.checkIntegrity();
   }
 
+  /** Returns the wrapped {@link CodecReader}. */
+  public CodecReader getDelegate() {
+    return in;
+  }
+
+  /**
+   * Returns a filtered codec reader with the given live docs and numDocs.
+   */
+  static FilterCodecReader wrapLiveDocs(CodecReader reader, Bits liveDocs, int numDocs) {
+    return new FilterCodecReader(reader) {
+      @Override
+      public CacheHelper getCoreCacheHelper() {
+        return reader.getCoreCacheHelper();
+      }
+      @Override
+      public CacheHelper getReaderCacheHelper() {
+        return null; // we are altering live docs
+      }
+      @Override
+      public Bits getLiveDocs() {
+        return liveDocs;
+      }
+      @Override
+      public int numDocs() {
+        return numDocs;
+      }
+    };
+  }
 }

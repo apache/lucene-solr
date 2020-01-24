@@ -49,10 +49,11 @@ public abstract class NormsProducer implements Closeable, Accountable {
   public abstract void checkIntegrity() throws IOException;
   
   /** 
-   * Returns an instance optimized for merging.
+   * Returns an instance optimized for merging. This instance may only be used
+   * from the thread that acquires it.
    * <p>
    * The default implementation returns {@code this} */
-  public NormsProducer getMergeInstance() throws IOException {
+  public NormsProducer getMergeInstance() {
     return this;
   }
 }

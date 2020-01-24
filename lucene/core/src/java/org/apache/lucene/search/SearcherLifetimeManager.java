@@ -238,7 +238,7 @@ public class SearcherLifetimeManager implements Closeable {
    *  entries are passed to the Pruner in sorted (newest to
    *  oldest IndexSearcher) order.
    * 
-   *  <p><b>NOTE</b>: you must peridiocally call this, ideally
+   *  <p><b>NOTE</b>: you must periodically call this, ideally
    *  from the same background thread that opens new
    *  searchers. */
   public synchronized void prune(Pruner pruner) throws IOException {

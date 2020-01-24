@@ -81,8 +81,7 @@ public class FingerprintFilter extends TokenFilter {
 
   @Override
   public final boolean incrementToken() throws IOException {
-    if (uniqueTerms != null) {
-      // We have already built the single output token - there's no more 
+    if (inputEnded) {
       return false;
     }
     boolean result = buildSingleOutputToken();
@@ -177,6 +176,7 @@ public class FingerprintFilter extends TokenFilter {
       }
     });
 
+    //TODO lets append directly to termAttribute?
     StringBuilder sb = new StringBuilder();
     for (Object item : items) {
       if (sb.length() >= 1) {

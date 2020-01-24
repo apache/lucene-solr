@@ -54,8 +54,8 @@ import java.util.concurrent.atomic.AtomicReference;
  * @since solr 1.3
  */
 public class XPathEntityProcessor extends EntityProcessorBase {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final XMLErrorLogger xmllog = new XMLErrorLogger(LOG);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final XMLErrorLogger xmllog = new XMLErrorLogger(log);
 
   private static final Map<String, Object> END_MARKER = new HashMap<>();
   
@@ -136,7 +136,7 @@ public class XPathEntityProcessor extends EntityProcessorBase {
           // some XML parsers are broken and don't close the byte stream (but they should according to spec)
           IOUtils.closeQuietly(xsltSource.getInputStream());
         }
-        LOG.info("Using xslTransformer: "
+        log.info("Using xslTransformer: "
                         + xslTransformer.getClass().getName());
       } catch (Exception e) {
         throw new DataImportHandlerException(SEVERE,
@@ -293,10 +293,10 @@ public class XPathEntityProcessor extends EntityProcessorBase {
         if (ABORT.equals(onError)) {
           wrapAndThrow(SEVERE, e);
         } else if (SKIP.equals(onError)) {
-          if (LOG.isDebugEnabled()) LOG.debug("Skipping url : " + s, e);
+          if (log.isDebugEnabled()) log.debug("Skipping url : " + s, e);
           wrapAndThrow(DataImportHandlerException.SKIP, e);
         } else {
-          LOG.warn("Failed for url : " + s, e);
+          log.warn("Failed for url : " + s, e);
           rowIterator = Collections.EMPTY_LIST.iterator();
           return;
         }
@@ -313,7 +313,7 @@ public class XPathEntityProcessor extends EntityProcessorBase {
           } else if (SKIP.equals(onError)) {
             wrapAndThrow(DataImportHandlerException.SKIP, e);
           } else {
-            LOG.warn("Failed for url : " + s, e);
+            log.warn("Failed for url : " + s, e);
             rowIterator = Collections.EMPTY_LIST.iterator();
             return;
           }
@@ -330,12 +330,12 @@ public class XPathEntityProcessor extends EntityProcessorBase {
           if (ABORT.equals(onError)) {
             wrapAndThrow(SEVERE, e, msg);
           } else if (SKIP.equals(onError)) {
-            LOG.warn(msg, e);
+            log.warn(msg, e);
             Map<String, Object> map = new HashMap<>();
             map.put(DocBuilder.SKIP_DOC, Boolean.TRUE);
             rows.add(map);
           } else if (CONTINUE.equals(onError)) {
-            LOG.warn(msg, e);
+            log.warn(msg, e);
           }
         }
         rowIterator = rows.iterator();
@@ -457,7 +457,7 @@ public class XPathEntityProcessor extends EntityProcessorBase {
         try {
           while (!blockingQueue.offer(row, blockingQueueTimeOut, blockingQueueTimeOutUnits)) {
             if (isEnd.get()) return;
-            LOG.debug("Timeout elapsed writing records.  Perhaps buffer size should be increased.");
+            log.debug("Timeout elapsed writing records.  Perhaps buffer size should be increased.");
           }
         } catch (InterruptedException e) {
           return;
@@ -488,10 +488,10 @@ public class XPathEntityProcessor extends EntityProcessorBase {
           try {
             row = blockingQueue.poll(blockingQueueTimeOut, blockingQueueTimeOutUnits);
             if (row == null) {
-              LOG.debug("Timeout elapsed reading records.");
+              log.debug("Timeout elapsed reading records.");
             }
           } catch (InterruptedException e) {
-            LOG.debug("Caught InterruptedException while waiting for row.  Aborting.");
+            log.debug("Caught InterruptedException while waiting for row.  Aborting.");
             isEnd.set(true);
             return null;
           }
@@ -507,7 +507,7 @@ public class XPathEntityProcessor extends EntityProcessorBase {
             } else if (SKIP.equals(onError)) {
               wrapAndThrow(DataImportHandlerException.SKIP, exp.get());
             } else {
-              LOG.warn(msg, exp.get());
+              log.warn(msg, exp.get());
             }
           }
           return null;

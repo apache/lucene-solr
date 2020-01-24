@@ -34,7 +34,7 @@ public abstract class FilterLeafCollector implements LeafCollector {
   }
 
   @Override
-  public void setScorer(Scorer scorer) throws IOException {
+  public void setScorer(Scorable scorer) throws IOException {
     in.setScorer(scorer);
   }
 

@@ -20,11 +20,13 @@ import org.apache.lucene.search.similarities.BM25Similarity;
 import org.junit.After;
 
 /**
- * Verifies that the default behavior of the implicit {@link ClassicSimilarityFactory} 
+ * Verifies that the default behavior of the implicit {@link BM25Similarity} 
  * (ie: no similarity configured in schema.xml at all) is consistent with 
  * expectations based on the luceneMatchVersion
  * @see <a href="https://issues.apache.org/jira/browse/SOLR-5561">SOLR-5561</a>
  * @see <a href="https://issues.apache.org/jira/browse/SOLR-8057">SOLR-8057</a>
+ * @see <a href="https://issues.apache.org/jira/browse/SOLR-13025">SOLR-13025</a>
+ * @see <a href="https://issues.apache.org/jira/browse/LUCENE-8563">LUCENE-8563</a>
  */
 public class TestNonDefinedSimilarityFactory extends BaseSimilarityTestCase {
 
@@ -33,10 +35,11 @@ public class TestNonDefinedSimilarityFactory extends BaseSimilarityTestCase {
     deleteCore();
   }
 
-  public void testCurrentBM25() throws Exception {
+  public void testCurrentBM25FromV8() throws Exception {
     // no sys prop set, rely on LATEST
     initCore("solrconfig-basic.xml","schema-tiny.xml");
     BM25Similarity sim = getSimilarity("text", BM25Similarity.class);
     assertEquals(0.75F, sim.getB(), 0.0F);
   }
+
 }

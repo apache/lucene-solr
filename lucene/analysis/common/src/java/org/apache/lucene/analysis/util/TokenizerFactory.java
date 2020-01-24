@@ -27,6 +27,8 @@ import java.util.Set;
 /**
  * Abstract parent class for analysis factories that create {@link Tokenizer}
  * instances.
+ *
+ * @since 3.1
  */
 public abstract class TokenizerFactory extends AbstractAnalysisFactory {
 
@@ -47,7 +49,16 @@ public abstract class TokenizerFactory extends AbstractAnalysisFactory {
   public static Set<String> availableTokenizers() {
     return loader.availableServices();
   }
-  
+
+  /** looks up a SPI name for the specified tokenizer factory */
+  public static String findSPIName(Class<? extends TokenizerFactory> serviceClass) {
+    try {
+      return lookupSPIName(serviceClass);
+    } catch (NoSuchFieldException | IllegalAccessException | IllegalStateException e) {
+      throw new IllegalStateException(e);
+    }
+  }
+
   /** 
    * Reloads the factory list from the given {@link ClassLoader}.
    * Changes to the factories are visible after the method ends, all

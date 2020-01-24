@@ -35,11 +35,11 @@ import com.google.common.collect.Iterables;
  */
 public abstract class SortableFacet extends AnalyticsFacet {
   protected FacetSortSpecification sort = null;
-  
+
   protected SortableFacet(String name) {
     super(name);
   }
-  
+
   @Override
   public NamedList<Object> createOldResponse() {
     final NamedList<Object> results = new NamedList<>();
@@ -49,7 +49,7 @@ public abstract class SortableFacet extends AnalyticsFacet {
     }
     return results;
   }
-  
+
   @Override
   public Iterable<Map<String,Object>> createResponse() {
     final LinkedList<Map<String,Object>> results = new LinkedList<>();
@@ -62,20 +62,20 @@ public abstract class SortableFacet extends AnalyticsFacet {
     }
     return results;
   }
-  
+
   private Iterable<FacetBucket> getBuckets() {
     final List<FacetBucket> facetResults = new ArrayList<>();
     reductionData.forEach((facetVal, dataCol) -> {
       collectionManager.setData(dataCol);
       facetResults.add(new FacetBucket(facetVal,expressionCalculator.getResults()));
     });
-    
+
     return applyOptions(facetResults);
   }
 
   /**
    * Apply the sorting options to the given facet results.
-   * 
+   *
    * @param facetResults to apply sorting options to
    * @return the sorted results
    */
@@ -87,7 +87,7 @@ public abstract class SortableFacet extends AnalyticsFacet {
     }
     Comparator comp = sort.getComparator();
     Collections.sort(facetResults, comp);
-    
+
     Iterable<FacetBucket> facetResultsIter = facetResults;
     // apply the limit
     if (sort.getLimit() > 0) {
@@ -100,7 +100,7 @@ public abstract class SortableFacet extends AnalyticsFacet {
     }
     return facetResultsIter;
   }
-  
+
   /**
    * Specifies how to sort the buckets of a sortable facet.
    */
@@ -108,7 +108,7 @@ public abstract class SortableFacet extends AnalyticsFacet {
     private FacetResultsComparator comparator;
     protected int limit;
     protected int offset;
-    
+
     public FacetSortSpecification(FacetResultsComparator comparator, int limit, int offset) {
       this.comparator = comparator;
       this.limit = limit;
@@ -121,7 +121,7 @@ public abstract class SortableFacet extends AnalyticsFacet {
 
     /**
      * Get the maximum number of buckets to be returned.
-     * 
+     *
      * @return the limit
      */
     public int getLimit() {
@@ -129,16 +129,16 @@ public abstract class SortableFacet extends AnalyticsFacet {
     }
     /**
      * Set the maximum number of buckets to be returned.
-     * 
+     *
      * @param limit the maximum number of buckets
      */
     public void setLimit(int limit) {
       this.limit = limit;
     }
-    
+
     /**
      * Get the first bucket to return, has to be used with the {@code limit} option.
-     * 
+     *
      * @return the bucket offset
      */
     public int getOffset() {
@@ -153,24 +153,24 @@ public abstract class SortableFacet extends AnalyticsFacet {
   public void setSort(SortableFacet.FacetSortSpecification sort) {
     this.sort = sort;
   }
-  
+
   public static class FacetBucket {
     private final String facetValue;
     private final Map<String,Object> expressionResults;
-    
+
     public FacetBucket(String facetValue, Map<String,Object> expressionResults) {
       this.facetValue = facetValue;
       this.expressionResults = expressionResults;
     }
-    
+
     public Object getResult(String expression) {
       return expressionResults.get(expression);
     }
-    
+
     public Map<String,Object> getResults() {
       return expressionResults;
     }
-    
+
     public String getFacetValue() {
       return facetValue;
     }

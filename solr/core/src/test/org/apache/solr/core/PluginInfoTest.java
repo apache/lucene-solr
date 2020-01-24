@@ -63,15 +63,16 @@ public class PluginInfoTest extends DOMUtilTestBase {
   @Test
   public void testNameRequired() throws Exception {
     Node nodeWithNoName = getNode("<plugin></plugin>", "plugin");
-    SolrTestCaseJ4.ignoreException("missing mandatory attribute");
     try {
-      PluginInfo pi = new PluginInfo(nodeWithNoName, "Node with No name", true, false);
-      fail("Exception should have been thrown");
-    } catch (RuntimeException e) {
-      assertTrue(e.getMessage().contains("missing mandatory attribute"));
+      SolrTestCaseJ4.ignoreException("missing mandatory attribute");
+      RuntimeException thrown = expectThrows(RuntimeException.class, () -> {
+        PluginInfo pi = new PluginInfo(nodeWithNoName, "Node with No name", true, false);
+      });
+      assertTrue(thrown.getMessage().contains("missing mandatory attribute"));
     } finally {
       SolrTestCaseJ4.resetExceptionIgnores();
     }
+
     Node nodeWithAName = getNode("<plugin name=\"myName\" />", "plugin");
     PluginInfo pi2 = new PluginInfo(nodeWithAName, "Node with a Name", true, false);
     assertTrue(pi2.name.equals("myName"));
@@ -80,20 +81,21 @@ public class PluginInfoTest extends DOMUtilTestBase {
   @Test
   public void testClassRequired() throws Exception {
     Node nodeWithNoClass = getNode("<plugin></plugin>", "plugin");
-    SolrTestCaseJ4.ignoreException("missing mandatory attribute");
     try {
-      @SuppressWarnings("unused")
-      PluginInfo pi = new PluginInfo(nodeWithNoClass, "Node with No Class", false, true);
-      fail("Exception should have been thrown");
-    } catch (RuntimeException e) {
-      assertTrue(e.getMessage().contains("missing mandatory attribute"));
+      SolrTestCaseJ4.ignoreException("missing mandatory attribute");
+      RuntimeException thrown = expectThrows(RuntimeException.class, () -> {
+        PluginInfo pi = new PluginInfo(nodeWithNoClass, "Node with No Class", false, true);
+      });
+      assertTrue(thrown.getMessage().contains("missing mandatory attribute"));
     } finally {
       SolrTestCaseJ4.resetExceptionIgnores();
     }
+
     Node nodeWithAClass = getNode("<plugin class=\"myName\" />", "plugin");
     PluginInfo pi2 = new PluginInfo(nodeWithAClass, "Node with a Class", false, true);
     assertTrue(pi2.className.equals("myName"));
   }
+
   @Test
   public void testIsEnabled() throws Exception {
     Node node = getNode("<plugin enable=\"true\" />", "plugin");
@@ -104,6 +106,7 @@ public class PluginInfoTest extends DOMUtilTestBase {
     assertFalse(pi.isEnabled());
     
   }
+
   @Test
   public void testIsDefault() throws Exception {
     Node node = getNode("<plugin default=\"true\" />", "plugin");
@@ -114,6 +117,7 @@ public class PluginInfoTest extends DOMUtilTestBase {
     assertFalse(pi.isDefault());
     
   }
+
   @Test
   public void testNoChildren() throws Exception{
     Node node = getNode(configWithNoChildren, "/plugin");
@@ -142,9 +146,8 @@ public class PluginInfoTest extends DOMUtilTestBase {
     PluginInfo pi2 = new PluginInfo(node2, "with No Children", false, false);
     PluginInfo noChild = pi2.getChild("long");
     assertNull(noChild);
-    
-    
   }
+
   @Test
   public void testChildren() throws Exception {
     Node node = getNode(configWith2Children, "plugin");
@@ -156,6 +159,7 @@ public class PluginInfoTest extends DOMUtilTestBase {
       assertTrue( childInfo instanceof PluginInfo );
     }
   }
+
   @Test
   public void testInitArgsCount() throws Exception {
     Node node = getNode(configWithNoChildren, "plugin");

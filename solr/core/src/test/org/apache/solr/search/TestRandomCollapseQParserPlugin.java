@@ -163,7 +163,7 @@ public class TestRandomCollapseQParserPlugin extends SolrTestCaseJ4 {
             
             if (null == collapseVal) {
               if (NULL_EXPAND.equals(nullPolicy)) {
-                // nothing to check for this doc, it's in it's own group
+                // nothing to check for this doc, it's in its own group
                 continue;
               }
               

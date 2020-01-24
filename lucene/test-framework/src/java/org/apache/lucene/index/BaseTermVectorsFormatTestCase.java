@@ -586,6 +586,7 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
     }
   }
 
+  @Slow
   public void testLotsOfFields() throws IOException {
     final RandomDocumentFactory docFactory = new RandomDocumentFactory(5000, 10);
     for (Options options : validOptions()) {
@@ -630,7 +631,7 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
 
   public void testRandom() throws IOException {
     final RandomDocumentFactory docFactory = new RandomDocumentFactory(5, 20);
-    final int numDocs = atLeast(100);
+    final int numDocs = atLeast(50);
     final RandomDocument[] docs = new RandomDocument[numDocs];
     for (int i = 0; i < numDocs; ++i) {
       docs[i] = docFactory.newDocument(TestUtil.nextInt(random(), 1, 3), TestUtil.nextInt(random(), 10, 50), randomOptions());
@@ -693,7 +694,7 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
   // don't share mutable data
   public void testClone() throws IOException, InterruptedException {
     final RandomDocumentFactory docFactory = new RandomDocumentFactory(5, 20);
-    final int numDocs = atLeast(100);
+    final int numDocs = atLeast(50);
     for (Options options : validOptions()) {
       final RandomDocument[] docs = new RandomDocument[numDocs];
       for (int i = 0; i < numDocs; ++i) {

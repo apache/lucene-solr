@@ -28,9 +28,9 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.util.ExecutorUtil;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,13 +45,6 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
 
   private static final int MAX_WAIT_TIMEOUT = 30;
 
-  @BeforeClass
-  public static void startCluster() throws Exception {
-    configureCluster(CLUSTER_SIZE)
-        .addConfig("config", getFile("solrj/solr/collection1/conf").toPath())
-        .configure();
-  }
-
   @AfterClass
   public static void shutdownBackgroundExecutors() {
     executor.shutdown();
@@ -59,14 +52,24 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
 
   @Before
   public void prepareCluster() throws Exception {
+    configureCluster(CLUSTER_SIZE)
+    .addConfig("config", getFile("solrj/solr/collection1/conf").toPath())
+    .configure();
+    
     int missingServers = CLUSTER_SIZE - cluster.getJettySolrRunners().size();
     for (int i = 0; i < missingServers; i++) {
       cluster.startJettySolrRunner();
     }
     cluster.waitForAllNodes(30);
   }
+  
+  @After
+  public void afterTest() throws Exception {
+    shutdownCluster();
+  }
 
   @Test
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 17-Aug-2018
   public void testSimpleCloudCollectionsListener() throws Exception {
 
     CloudSolrClient client = cluster.getSolrClient();
@@ -108,8 +111,7 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection("testcollection2", "config", 4, 1)
         .processAndWait(client, MAX_WAIT_TIMEOUT);
-    client.waitForState("testcollection2", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
-        (n, c) -> DocCollection.isFullyActive(n, c, 4, 1));
+    cluster.waitForActiveCollection("testcollection2", 4, 4);
 
 
     assertFalse("CloudCollectionsListener notified after removal", oldResults.get(1).contains("testcollection1"));
@@ -128,19 +130,18 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
   }
 
   @Test
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 23-Aug-2018
   public void testCollectionDeletion() throws Exception {
 
     CloudSolrClient client = cluster.getSolrClient();
 
     CollectionAdminRequest.createCollection("testcollection1", "config", 4, 1)
         .processAndWait(client, MAX_WAIT_TIMEOUT);
-    client.waitForState("testcollection1", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
-        (n, c) -> DocCollection.isFullyActive(n, c, 4, 1));
-
+    cluster.waitForActiveCollection("testcollection1", 4, 4);
+    
     CollectionAdminRequest.createCollection("testcollection2", "config", 4, 1)
         .processAndWait(client, MAX_WAIT_TIMEOUT);
-    client.waitForState("testcollection2", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
-        (n, c) -> DocCollection.isFullyActive(n, c, 4, 1));
+    cluster.waitForActiveCollection("testcollection2", 4, 4);
 
     Map<Integer, Set<String>> oldResults = new HashMap<>();
     Map<Integer, Set<String>> newResults = new HashMap<>();
@@ -194,6 +195,7 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
   }
 
   @Test
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 17-Aug-2018
   public void testWatchesWorkForBothStateFormats() throws Exception {
     CloudSolrClient client = cluster.getSolrClient();
 
@@ -223,8 +225,7 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection("testcollection1", "config", 4, 1)
         .setStateFormat(1)
         .processAndWait(client, MAX_WAIT_TIMEOUT);
-    client.waitForState("testcollection1", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
-        (n, c) -> DocCollection.isFullyActive(n, c, 4, 1));
+    cluster.waitForActiveCollection("testcollection1", 4, 4);
 
     assertEquals("CloudCollectionsListener has old collections with size > 0 after collection created with old stateFormat", 0, oldResults.get(1).size());
     assertEquals("CloudCollectionsListener has old collections with size > 0 after collection created with old stateFormat", 0, oldResults.get(2).size());
@@ -237,8 +238,7 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
 
     CollectionAdminRequest.createCollection("testcollection2", "config", 4, 1)
         .processAndWait(client, MAX_WAIT_TIMEOUT);
-    client.waitForState("testcollection2", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
-        (n, c) -> DocCollection.isFullyActive(n, c, 4, 1));
+    cluster.waitForActiveCollection("testcollection2", 4, 4);
 
     assertEquals("CloudCollectionsListener has incorrect old collections after collection created with new stateFormat", 1, oldResults.get(1).size());
     assertEquals("CloudCollectionsListener has incorrect old collections after collection created with new stateFormat", 1, oldResults.get(2).size());
@@ -254,8 +254,7 @@ public class TestCloudCollectionsListeners extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection("testcollection3", "config", 4, 1)
         .setStateFormat(1)
         .processAndWait(client, MAX_WAIT_TIMEOUT);
-    client.waitForState("testcollection1", MAX_WAIT_TIMEOUT, TimeUnit.SECONDS,
-        (n, c) -> DocCollection.isFullyActive(n, c, 4, 1));
+    cluster.waitForActiveCollection("testcollection3", 4, 4);
 
     assertEquals("CloudCollectionsListener has incorrect old collections after collection created with old stateFormat", 2, oldResults.get(1).size());
     assertEquals("CloudCollectionsListener updated after removal", 1, oldResults.get(2).size());

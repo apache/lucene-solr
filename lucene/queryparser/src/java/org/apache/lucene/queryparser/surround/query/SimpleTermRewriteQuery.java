@@ -15,15 +15,17 @@
  * limitations under the License.
  */
 package org.apache.lucene.queryparser.surround.query;
+
 import java.io.IOException;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
-import org.apache.lucene.search.BooleanClause;
-import org.apache.lucene.index.Term;
+import org.apache.lucene.search.QueryVisitor;
 
 class SimpleTermRewriteQuery extends RewriteQuery<SimpleTerm> {
 
@@ -49,6 +51,12 @@ class SimpleTermRewriteQuery extends RewriteQuery<SimpleTerm> {
     : SrndBooleanQuery.makeBooleanQuery(
       /* luceneSubQueries all have default weight */
       luceneSubQueries, BooleanClause.Occur.SHOULD); /* OR the subquery terms */
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    // TODO: implement this
+    visitor.visitLeaf(this);
   }
 }
 

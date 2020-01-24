@@ -75,6 +75,12 @@ public abstract class Query {
   }
 
   /**
+   * Recurse through the query tree, visiting any child queries
+   * @param visitor a QueryVisitor to be called by each query in the tree
+   */
+  public abstract void visit(QueryVisitor visitor);
+
+  /**
    * Override and implement query instance equivalence properly in a subclass. 
    * This is required so that {@link QueryCache} works properly.
    * 

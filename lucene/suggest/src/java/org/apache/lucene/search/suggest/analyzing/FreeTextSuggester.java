@@ -49,7 +49,7 @@ import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.suggest.InputIterator;
@@ -66,7 +66,7 @@ import org.apache.lucene.util.CharsRefBuilder;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.IntsRefBuilder;
-import org.apache.lucene.util.fst.Builder;
+import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.FST.Arc;
 import org.apache.lucene.util.fst.FST.BytesReader;
@@ -236,7 +236,7 @@ public class FreeTextSuggester extends Lookup implements Accountable {
         protected TokenStreamComponents wrapComponents(String fieldName, TokenStreamComponents components) {
           ShingleFilter shingles = new ShingleFilter(components.getTokenStream(), 2, grams);
           shingles.setTokenSeparator(Character.toString((char) separator));
-          return new TokenStreamComponents(components.getTokenizer(), shingles);
+          return new TokenStreamComponents(components.getSource(), shingles);
         }
       };
     }
@@ -295,7 +295,7 @@ public class FreeTextSuggester extends Lookup implements Accountable {
       }
       reader = DirectoryReader.open(writer);
 
-      Terms terms = MultiFields.getTerms(reader, "body");
+      Terms terms = MultiTerms.getTerms(reader, "body");
       if (terms == null) {
         throw new IllegalArgumentException("need at least one suggestion");
       }
@@ -304,7 +304,7 @@ public class FreeTextSuggester extends Lookup implements Accountable {
       TermsEnum termsEnum = terms.iterator();
 
       Outputs<Long> outputs = PositiveIntOutputs.getSingleton();
-      Builder<Long> builder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
+      FSTCompiler<Long> fstCompiler = new FSTCompiler<>(FST.INPUT_TYPE.BYTE1, outputs);
 
       IntsRefBuilder scratchInts = new IntsRefBuilder();
       while (true) {
@@ -320,10 +320,10 @@ public class FreeTextSuggester extends Lookup implements Accountable {
           totTokens += termsEnum.totalTermFreq();
         }
 
-        builder.add(Util.toIntsRef(term, scratchInts), encodeWeight(termsEnum.totalTermFreq()));
+        fstCompiler.add(Util.toIntsRef(term, scratchInts), encodeWeight(termsEnum.totalTermFreq()));
       }
 
-      fst = builder.finish();
+      fst = fstCompiler.compile();
       if (fst == null) {
         throw new IllegalArgumentException("need at least one suggestion");
       }
@@ -599,7 +599,7 @@ public class FreeTextSuggester extends Lookup implements Accountable {
             
             @Override
             protected void addIfCompetitive(Util.FSTPath<Long> path) {
-              if (path.arc.label != separator) {
+              if (path.arc.label() != separator) {
                 //System.out.println("    keep path: " + Util.toBytesRef(path.input, new BytesRef()).utf8ToString() + "; " + path + "; arc=" + path.arc);
                 super.addIfCompetitive(path);
               } else {
@@ -718,7 +718,7 @@ public class FreeTextSuggester extends Lookup implements Accountable {
       if (fst.findTargetArc(bytes[pos++] & 0xff, arc, arc, bytesReader) == null) {
         return null;
       } else {
-        output = fst.outputs.add(output, arc.output);
+        output = fst.outputs.add(output, arc.output());
       }
     }
     

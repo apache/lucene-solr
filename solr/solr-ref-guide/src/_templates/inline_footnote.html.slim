@@ -1,0 +1,9 @@
+- if (index = local_attr :index)
+  a.footnote-ref [
+      id=(footnoteref_id unless type == :xref)
+      href="##{footnote_id}"
+      title="View footnote #{index}"
+      role='doc-noteref' ]
+    | [#{index}]
+- else
+  a.footnote-ref.broken title="Unresolved footnote reference." [#{text}]

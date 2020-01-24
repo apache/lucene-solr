@@ -28,6 +28,8 @@ import org.apache.lucene.document.SortedNumericDocValuesField;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedNumericDocValues;
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.RamUsageEstimator;
 
 /**
  * Like {@link DocValuesTermsQuery}, but this query only
@@ -43,7 +45,8 @@ import org.apache.lucene.index.SortedNumericDocValues;
  *
  * @lucene.experimental
  */
-public class DocValuesNumbersQuery extends Query {
+public class DocValuesNumbersQuery extends Query implements Accountable {
+  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(DocValuesNumbersQuery.class);
 
   private final String field;
   private final LongHashSet numbers;
@@ -78,6 +81,13 @@ public class DocValuesNumbersQuery extends Query {
     return 31 * classHash() + Objects.hash(field, numbers);
   }
 
+  @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(field)) {
+      visitor.visitLeaf(this);
+    }
+  }
+
   public String getField() {
     return field;
   }
@@ -96,13 +106,20 @@ public class DocValuesNumbersQuery extends Query {
   }
 
   @Override
+  public long ramBytesUsed() {
+    return BASE_RAM_BYTES +
+        RamUsageEstimator.sizeOfObject(field) +
+        RamUsageEstimator.sizeOfObject(numbers);
+  }
+
+  @Override
   public Weight createWeight(IndexSearcher searcher, ScoreMode scoreMode, float boost) throws IOException {
     return new ConstantScoreWeight(this, boost) {
 
       @Override
       public Scorer scorer(LeafReaderContext context) throws IOException {
         final SortedNumericDocValues values = DocValues.getSortedNumeric(context.reader(), field);
-        return new ConstantScoreScorer(this, score(), new TwoPhaseIterator(values) {
+        return new ConstantScoreScorer(this, score(), scoreMode, new TwoPhaseIterator(values) {
 
           @Override
           public boolean matches() throws IOException {
@@ -129,4 +146,5 @@ public class DocValuesNumbersQuery extends Query {
 
     };
   }
+
 }

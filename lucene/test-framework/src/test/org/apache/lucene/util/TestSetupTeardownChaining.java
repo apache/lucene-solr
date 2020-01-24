@@ -16,7 +16,6 @@
  */
 package org.apache.lucene.util;
 
-import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.JUnitCore;

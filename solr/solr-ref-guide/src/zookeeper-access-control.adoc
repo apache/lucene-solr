@@ -30,7 +30,7 @@ Content stored in ZooKeeper is critical to the operation of a SolrCloud cluster.
 * Changing cluster state information into something wrong or inconsistent might very well make a SolrCloud cluster behave strangely.
 * Adding a delete-collection job to be carried out by the Overseer will cause data to be deleted from the cluster.
 
-You may want to enable ZooKeeper ACLs with Solr if you grant access to your ZooKeeper ensemble to entities you do not trust, or if you want to reduce risk of bad actions resulting from, e.g.:
+You may want to enable ZooKeeper ACLs with Solr if you grant access to your ZooKeeper ensemble to entities you do not trust, or if you want to reduce risk of bad actions resulting from, for example:
 
 * Malware that found its way into your system.
 * Other systems using the same ZooKeeper ensemble (a "bad thing" might be done by accident).
@@ -97,7 +97,7 @@ There are two scripts that impact ZooKeeper ACLs:
 * For *nix systems: `bin/solr` & `server/scripts/cloud-scripts/zkcli.sh`
 * For Windows systems: `bin/solr.cmd` & `server/scripts/cloud-scripts/zkcli.bat`
 
-These Solr scripts can enable use of ZK ACLs by setting the appropriate system properties: uncomment the following and replace the passwords with ones you choose to enable the above-described VM parameters ACL and credentials providers in the following files:
+These Solr scripts can enable use of ZooKeeper ACLs by setting the appropriate system properties: uncomment the following and replace the passwords with ones you choose to enable the above-described VM parameters ACL and credentials providers in the following files:
 
 .solr.in.sh
 [source,bash]

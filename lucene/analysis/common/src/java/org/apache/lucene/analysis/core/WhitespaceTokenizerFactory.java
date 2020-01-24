@@ -45,8 +45,15 @@ import static org.apache.lucene.analysis.standard.StandardTokenizer.MAX_TOKEN_LE
  *       It is rare to need to change this
  *      else {@link CharTokenizer}::DEFAULT_MAX_TOKEN_LEN</li>
  * </ul>
+ *
+ * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class WhitespaceTokenizerFactory extends TokenizerFactory {
+
+  /** SPI name */
+  public static final String NAME = "whitespace";
+
   public static final String RULE_JAVA = "java";
   public static final String RULE_UNICODE = "unicode";
   private static final Collection<String> RULE_NAMES = Arrays.asList(RULE_JAVA, RULE_UNICODE);

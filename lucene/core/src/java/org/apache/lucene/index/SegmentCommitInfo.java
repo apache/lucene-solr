@@ -38,6 +38,9 @@ public class SegmentCommitInfo {
   // How many deleted docs in the segment:
   private int delCount;
 
+  // How many soft-deleted docs in the segment that are not also hard-deleted:
+  private int softDelCount;
+
   // Generation number of the live docs file (-1 if there
   // are no deletes yet):
   private long delGen;
@@ -73,7 +76,7 @@ public class SegmentCommitInfo {
   // NOTE: only used in-RAM by IW to track buffered deletes;
   // this is never written to/read from the Directory
   private long bufferedDeletesGen = -1;
-  
+
   /**
    * Sole constructor.
    * 
@@ -88,9 +91,10 @@ public class SegmentCommitInfo {
    * @param docValuesGen
    *          DocValues generation number (used to name doc-values updates files)
    */
-  public SegmentCommitInfo(SegmentInfo info, int delCount, long delGen, long fieldInfosGen, long docValuesGen) {
+  public SegmentCommitInfo(SegmentInfo info, int delCount, int softDelCount, long delGen, long fieldInfosGen, long docValuesGen) {
     this.info = info;
     this.delCount = delCount;
+    this.softDelCount = softDelCount;
     this.delGen = delGen;
     this.nextWriteDelGen = delGen == -1 ? 1 : delGen + 1;
     this.fieldInfosGen = fieldInfosGen;
@@ -313,11 +317,27 @@ public class SegmentCommitInfo {
     return delCount;
   }
 
+  /**
+   * Returns the number of only soft-deleted docs.
+   */
+  public int getSoftDelCount() {
+    return softDelCount;
+  }
+
   void setDelCount(int delCount) {
     if (delCount < 0 || delCount > info.maxDoc()) {
       throw new IllegalArgumentException("invalid delCount=" + delCount + " (maxDoc=" + info.maxDoc() + ")");
     }
+    assert softDelCount + delCount <= info.maxDoc() : "maxDoc=" + info.maxDoc() + ",delCount=" + delCount + ",softDelCount=" + softDelCount;
     this.delCount = delCount;
+  }
+
+  void setSoftDelCount(int softDelCount) {
+    if (softDelCount < 0 || softDelCount > info.maxDoc()) {
+      throw new IllegalArgumentException("invalid softDelCount=" + softDelCount + " (maxDoc=" + info.maxDoc() + ")");
+    }
+    assert softDelCount + delCount <= info.maxDoc() : "maxDoc=" + info.maxDoc() + ",delCount=" + delCount + ",softDelCount=" + softDelCount;
+    this.softDelCount = softDelCount;
   }
 
   /** Returns a description of this segment. */
@@ -332,6 +352,10 @@ public class SegmentCommitInfo {
     if (docValuesGen != -1) {
       s += ":dvGen=" + docValuesGen;
     }
+    if (softDelCount > 0) {
+      s += " :softDel=" + softDelCount;
+    }
+
     return s;
   }
 
@@ -342,7 +366,7 @@ public class SegmentCommitInfo {
 
   @Override
   public SegmentCommitInfo clone() {
-    SegmentCommitInfo other = new SegmentCommitInfo(info, delCount, delGen, fieldInfosGen, docValuesGen);
+    SegmentCommitInfo other = new SegmentCommitInfo(info, delCount, softDelCount, delGen, fieldInfosGen, docValuesGen);
     // Not clear that we need to carry over nextWriteDelGen
     // (i.e. do we ever clone after a failed write and
     // before the next successful write?), but just do it to
@@ -359,5 +383,9 @@ public class SegmentCommitInfo {
     other.fieldInfosFiles.addAll(fieldInfosFiles);
     
     return other;
+  }
+
+  final int getDelCount(boolean includeSoftDeletes) {
+    return includeSoftDeletes ? getDelCount() + getSoftDelCount() : getDelCount();
   }
 }

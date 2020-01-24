@@ -21,8 +21,8 @@ import org.apache.lucene.codecs.PostingsFormat; // javadocs
 import org.apache.lucene.codecs.perfield.PerFieldPostingsFormat; // javadocs
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.IOContext;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.InfoStream;
-import org.apache.lucene.util.MutableBits;
 
 /**
  * Holder class for common parameters used during write.
@@ -47,7 +47,9 @@ public class SegmentWriteState {
   /** Number of deleted documents set while flushing the
    *  segment. */
   public int delCountOnFlush;
-
+  /** Number of only soft deleted documents set while flushing the
+   *  segment. */
+  public int softDelCountOnFlush;
   /**
    * Deletes and updates to apply while we are flushing the segment. A Term is
    * enrolled in here if it was deleted/updated at one point, and it's mapped to
@@ -56,9 +58,9 @@ public class SegmentWriteState {
    */
   public final BufferedUpdates segUpdates;
 
-  /** {@link MutableBits} recording live documents; this is
+  /** {@link FixedBitSet} recording live documents; this is
    *  only set if there is one or more deleted documents. */
-  public MutableBits liveDocs;
+  public FixedBitSet liveDocs;
 
   /** Unique suffix for any postings files written for this
    *  segment.  {@link PerFieldPostingsFormat} sets this for
@@ -112,7 +114,7 @@ public class SegmentWriteState {
   }
   
   // currently only used by assert? clean up and make real check?
-  // either it's a segment suffix (_X_Y) or it's a parseable generation
+  // either it's a segment suffix (_X_Y) or it's a parsable generation
   // TODO: this is very confusing how ReadersAndUpdates passes generations via
   // this mechanism, maybe add 'generation' explicitly to ctor create the 'actual suffix' here?
   private boolean assertSegmentSuffix(String segmentSuffix) {

@@ -52,9 +52,16 @@ import static org.apache.lucene.analysis.miscellaneous.WordDelimiterFilter.*;
  * @deprecated Use {@link WordDelimiterGraphFilterFactory} instead: it produces a correct
  * token graph so that e.g. {@link PhraseQuery} works correctly when it's used in
  * the search time analyzer.
+ *
+ * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 @Deprecated
 public class WordDelimiterFilterFactory extends TokenFilterFactory implements ResourceLoaderAware {
+
+  /** SPI name */
+  public static final String NAME = "wordDelimiter";
+
   public static final String PROTECTED_TOKENS = "protected";
   public static final String TYPES = "types";
 

@@ -53,8 +53,7 @@ public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(COLLECTION_NAME, "config", 1, 1)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
 
-    cluster.getSolrClient().waitForState(COLLECTION_NAME, DEFAULT_TIMEOUT, TimeUnit.SECONDS,
-        (n, c) -> DocCollection.isFullyActive(n, c, 1, 1));
+    cluster.waitForActiveCollection(COLLECTION_NAME, 1, 1);
   }
 
   @Test
@@ -81,7 +80,7 @@ public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
     }
 
     // kill the leader
-    ChaosMonkey.kill(replicaJetty);
+    replicaJetty.stop();
 
     // add a replica (asynchronously)
     CollectionAdminRequest.AddReplica addReplica = CollectionAdminRequest.addReplicaToShard(COLLECTION_NAME, "shard1");
@@ -91,7 +90,7 @@ public class TestLeaderElectionWithEmptyReplica extends SolrCloudTestCase {
     Thread.sleep(1000);
 
     // bring the old leader node back up
-    ChaosMonkey.start(replicaJetty);
+    replicaJetty.start();
 
     // wait until everyone is active
     solrClient.waitForState(COLLECTION_NAME, DEFAULT_TIMEOUT, TimeUnit.SECONDS,

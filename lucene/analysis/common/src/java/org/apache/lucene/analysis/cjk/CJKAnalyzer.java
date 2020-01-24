@@ -33,6 +33,8 @@ import org.apache.lucene.analysis.standard.StandardTokenizer;
  * normalizes content with {@link CJKWidthFilter}, folds case with
  * {@link LowerCaseFilter}, forms bigrams of CJK with {@link CJKBigramFilter},
  * and filters stopwords with {@link StopFilter}
+ *
+ * @since 3.1
  */
 public final class CJKAnalyzer extends StopwordAnalyzerBase {
 

@@ -47,6 +47,8 @@ public interface HighlightParams {
 
   // sizing
   public static final String FRAGSIZE    = HIGHLIGHT+".fragsize"; // OH, FVH, UH
+  public static final String FRAGSIZEISMINIMUM = HIGHLIGHT+".fragsizeIsMinimum"; // UH
+  public static final String FRAGALIGNRATIO = HIGHLIGHT+".fragAlignRatio"; // UH
   public static final String FRAGMENTER  = HIGHLIGHT+".fragmenter"; // OH
   public static final String INCREMENT   = HIGHLIGHT+".increment"; // OH
   public static final String REGEX       = "regex"; // OH
@@ -91,4 +93,5 @@ public interface HighlightParams {
   public static final String PHRASE_LIMIT = HIGHLIGHT + ".phraseLimit"; // FVH
   public static final String OFFSET_SOURCE = HIGHLIGHT + ".offsetSource"; // UH
   public static final String CACHE_FIELD_VAL_CHARS_THRESHOLD = HIGHLIGHT + ".cacheFieldValCharsThreshold"; // UH
+  public static final String WEIGHT_MATCHES = HIGHLIGHT + ".weightMatches"; // UH
 }

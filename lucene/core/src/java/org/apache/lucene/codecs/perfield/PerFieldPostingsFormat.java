@@ -20,17 +20,18 @@ package org.apache.lucene.codecs.perfield;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.ServiceLoader; // javadocs
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.TreeSet;
 
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
@@ -41,13 +42,13 @@ import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.FilterLeafReader.FilterFields;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.MergeState;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.SegmentReadState;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.IOUtils;
+import org.apache.lucene.util.MergedIterator;
 import org.apache.lucene.util.RamUsageEstimator;
 
 /**
@@ -85,13 +86,41 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
 
   /** Group of fields written by one PostingsFormat */
   static class FieldsGroup {
-    final Set<String> fields = new TreeSet<>();
-    int suffix;
-
+    final List<String> fields;
+    final int suffix;
     /** Custom SegmentWriteState for this group of fields,
      *  with the segmentSuffix uniqueified for this
      *  PostingsFormat */
-    SegmentWriteState state;
+    final SegmentWriteState state;
+
+    private FieldsGroup(List<String> fields, int suffix, SegmentWriteState state) {
+      this.fields = fields;
+      this.suffix = suffix;
+      this.state = state;
+    }
+
+    static class Builder {
+      final Set<String> fields;
+      final int suffix;
+      final SegmentWriteState state;
+
+      Builder(int suffix, SegmentWriteState state) {
+        this.suffix = suffix;
+        this.state = state;
+        fields = new HashSet<>();
+      }
+
+      Builder addField(String field) {
+        fields.add(field);
+        return this;
+      }
+
+      FieldsGroup build() {
+        List<String> fieldList = new ArrayList<>(fields);
+        fieldList.sort(null);
+        return new FieldsGroup(fieldList, suffix, state);
+      }
+    }
   };
 
   static String getSuffix(String formatName, String suffix) {
@@ -150,7 +179,10 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
 
     @Override
     public void merge(MergeState mergeState, NormsProducer norms) throws IOException {
-      Map<PostingsFormat, FieldsGroup> formatToGroups = buildFieldsGroupMapping(new MultiFields(mergeState.fieldsProducers, null));
+      @SuppressWarnings("unchecked") Iterable<String> indexedFieldNames = () ->
+          new MergedIterator<>(true,
+              Arrays.stream(mergeState.fieldsProducers).map(FieldsProducer::iterator).toArray(Iterator[]::new));
+      Map<PostingsFormat, FieldsGroup> formatToGroups = buildFieldsGroupMapping(indexedFieldNames);
 
       // Merge postings
       PerFieldMergeState pfMergeState = new PerFieldMergeState(mergeState);
@@ -173,29 +205,27 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
       }
     }
 
-    private Map<PostingsFormat, FieldsGroup> buildFieldsGroupMapping(Fields fields) {
-      // Maps a PostingsFormat instance to the suffix it
-      // should use
-      Map<PostingsFormat,FieldsGroup> formatToGroups = new HashMap<>();
+    private Map<PostingsFormat, FieldsGroup> buildFieldsGroupMapping(Iterable<String> indexedFieldNames) {
+      // Maps a PostingsFormat instance to the suffix it should use
+      Map<PostingsFormat,FieldsGroup.Builder> formatToGroupBuilders = new HashMap<>();
 
       // Holds last suffix of each PostingFormat name
       Map<String,Integer> suffixes = new HashMap<>();
 
       // Assign field -> PostingsFormat
-      for(String field : fields) {
+      for(String field : indexedFieldNames) {
         FieldInfo fieldInfo = writeState.fieldInfos.fieldInfo(field);
-
+        // TODO: This should check current format from the field attribute?
         final PostingsFormat format = getPostingsFormatForField(field);
-  
+
         if (format == null) {
           throw new IllegalStateException("invalid null PostingsFormat for field=\"" + field + "\"");
         }
         String formatName = format.getName();
-      
-        FieldsGroup group = formatToGroups.get(format);
-        if (group == null) {
-          // First time we are seeing this format; create a
-          // new instance
+
+        FieldsGroup.Builder groupBuilder = formatToGroupBuilders.get(format);
+        if (groupBuilder == null) {
+          // First time we are seeing this format; create a new instance
 
           // bump the suffix
           Integer suffix = suffixes.get(formatName);
@@ -209,31 +239,23 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
           String segmentSuffix = getFullSegmentSuffix(field,
                                                       writeState.segmentSuffix,
                                                       getSuffix(formatName, Integer.toString(suffix)));
-          group = new FieldsGroup();
-          group.state = new SegmentWriteState(writeState, segmentSuffix);
-          group.suffix = suffix;
-          formatToGroups.put(format, group);
+          groupBuilder = new FieldsGroup.Builder(suffix, new SegmentWriteState(writeState, segmentSuffix));
+          formatToGroupBuilders.put(format, groupBuilder);
         } else {
           // we've already seen this format, so just grab its suffix
           if (!suffixes.containsKey(formatName)) {
-            throw new IllegalStateException("no suffix for format name: " + formatName + ", expected: " + group.suffix);
+            throw new IllegalStateException("no suffix for format name: " + formatName + ", expected: " + groupBuilder.suffix);
           }
         }
 
-        group.fields.add(field);
+        groupBuilder.addField(field);
 
-        String previousValue = fieldInfo.putAttribute(PER_FIELD_FORMAT_KEY, formatName);
-        if (previousValue != null) {
-          throw new IllegalStateException("found existing value for " + PER_FIELD_FORMAT_KEY + 
-                                          ", field=" + fieldInfo.name + ", old=" + previousValue + ", new=" + formatName);
-        }
-
-        previousValue = fieldInfo.putAttribute(PER_FIELD_SUFFIX_KEY, Integer.toString(group.suffix));
-        if (previousValue != null) {
-          throw new IllegalStateException("found existing value for " + PER_FIELD_SUFFIX_KEY + 
-                                          ", field=" + fieldInfo.name + ", old=" + previousValue + ", new=" + group.suffix);
-        }
+        fieldInfo.putAttribute(PER_FIELD_FORMAT_KEY, formatName);
+        fieldInfo.putAttribute(PER_FIELD_SUFFIX_KEY, Integer.toString(groupBuilder.suffix));
       }
+
+      Map<PostingsFormat,FieldsGroup> formatToGroups = new HashMap<>((int) (formatToGroupBuilders.size() / 0.75f) + 1);
+      formatToGroupBuilders.forEach((postingsFormat, builder) -> formatToGroups.put(postingsFormat, builder.build()));
       return formatToGroups;
     }
 
@@ -252,7 +274,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
     private final String segment;
     
     // clone for merge
-    FieldsReader(FieldsReader other) throws IOException {
+    FieldsReader(FieldsReader other) {
       Map<FieldsProducer,FieldsProducer> oldToNew = new IdentityHashMap<>();
       // First clone all formats
       for(Map.Entry<String,FieldsProducer> ent : other.formats.entrySet()) {
@@ -351,7 +373,7 @@ public abstract class PerFieldPostingsFormat extends PostingsFormat {
     }
 
     @Override
-    public FieldsProducer getMergeInstance() throws IOException {
+    public FieldsProducer getMergeInstance() {
       return new FieldsReader(this);
     }
 

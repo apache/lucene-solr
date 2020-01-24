@@ -39,7 +39,7 @@ import org.slf4j.LoggerFactory;
  */
 public class DateFormatTransformer extends Transformer {
   private Map<String, SimpleDateFormat> fmtCache = new HashMap<>();
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   @SuppressWarnings("unchecked")
@@ -80,7 +80,7 @@ public class DateFormatTransformer extends Transformer {
           }
         }
       } catch (ParseException e) {
-        LOG.warn("Could not parse a Date field ", e);
+        log.warn("Could not parse a Date field ", e);
       }
     }
     return aRow;

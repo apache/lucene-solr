@@ -293,7 +293,7 @@ public class TestSpans extends LuceneTestCase {
 
   // LUCENE-1404
   private long hitCount(IndexSearcher searcher, String word) throws Throwable {
-    return searcher.search(new TermQuery(new Term("text", word)), 10).totalHits;
+    return searcher.count(new TermQuery(new Term("text", word)));
   }
 
   // LUCENE-1404
@@ -341,7 +341,7 @@ public class TestSpans extends LuceneTestCase {
     assertEquals(1,
                  searcher.search(createSpan(0, true,                                 
                                             new SpanQuery[] {createSpan(4, false, "chased", "cat"),
-                                                             createSpan("ate")}), 10).totalHits);
+                                                             createSpan("ate")}), 10).totalHits.value);
     reader.close();
     dir.close();
   }

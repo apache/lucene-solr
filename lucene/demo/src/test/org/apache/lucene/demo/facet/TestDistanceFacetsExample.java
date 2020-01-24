@@ -36,7 +36,7 @@ public class TestDistanceFacetsExample extends LuceneTestCase {
     DistanceFacetsExample example = new DistanceFacetsExample();
     example.index();
     TopDocs hits = example.drillDown(example.FIVE_KM);
-    assertEquals(2, hits.totalHits);
+    assertEquals(2, hits.totalHits.value);
     example.close();
   }
 }

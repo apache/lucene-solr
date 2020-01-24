@@ -63,6 +63,8 @@ public class SearchRateTrigger extends TriggerBase {
   public static final String MIN_REPLICAS_PROP = "minReplicas";
   public static final String ABOVE_RATE_PROP = "aboveRate";
   public static final String BELOW_RATE_PROP = "belowRate";
+  public static final String ABOVE_NODE_RATE_PROP = "aboveNodeRate";
+  public static final String BELOW_NODE_RATE_PROP = "belowNodeRate";
   public static final String ABOVE_OP_PROP = "aboveOp";
   public static final String BELOW_OP_PROP = "belowOp";
   public static final String ABOVE_NODE_OP_PROP = "aboveNodeOp";
@@ -81,6 +83,7 @@ public class SearchRateTrigger extends TriggerBase {
   public static final String COLD_COLLECTIONS = "coldCollections";
   public static final String COLD_SHARDS = "coldShards";
   public static final String COLD_REPLICAS = "coldReplicas";
+  public static final String VIOLATION_PROP = "violationType";
 
   public static final int DEFAULT_MAX_OPS = 3;
   public static final String DEFAULT_METRIC = "QUERY./select.requestTimes:1minRate";
@@ -93,6 +96,8 @@ public class SearchRateTrigger extends TriggerBase {
   private String node;
   private double aboveRate;
   private double belowRate;
+  private double aboveNodeRate;
+  private double belowNodeRate;
   private CollectionParams.CollectionAction aboveOp, belowOp, aboveNodeOp, belowNodeOp;
   private final Map<String, Long> lastCollectionEvent = new ConcurrentHashMap<>();
   private final Map<String, Long> lastNodeEvent = new ConcurrentHashMap<>();
@@ -117,6 +122,8 @@ public class SearchRateTrigger extends TriggerBase {
         BELOW_NODE_OP_PROP,
         ABOVE_RATE_PROP,
         BELOW_RATE_PROP,
+        ABOVE_NODE_RATE_PROP,
+        BELOW_NODE_RATE_PROP,
         // back-compat props
         BC_COLLECTION_PROP,
         BC_RATE_PROP);
@@ -192,6 +199,28 @@ public class SearchRateTrigger extends TriggerBase {
       belowRate = -1;
     }
 
+    // node rates
+    above = properties.get(ABOVE_NODE_RATE_PROP);
+    below = properties.get(BELOW_NODE_RATE_PROP);
+    if (above != null) {
+      try {
+        aboveNodeRate = Double.parseDouble(String.valueOf(above));
+      } catch (Exception e) {
+        throw new TriggerValidationException(name, ABOVE_NODE_RATE_PROP, "Invalid configuration value: '" + above + "': " + e.toString());
+      }
+    } else {
+      aboveNodeRate = Double.MAX_VALUE;
+    }
+    if (below != null) {
+      try {
+        belowNodeRate = Double.parseDouble(String.valueOf(below));
+      } catch (Exception e) {
+        throw new TriggerValidationException(name, BELOW_NODE_RATE_PROP, "Invalid configuration value: '" + below + "': " + e.toString());
+      }
+    } else {
+      belowNodeRate = -1;
+    }
+
     String aboveOpStr = String.valueOf(properties.getOrDefault(ABOVE_OP_PROP, CollectionParams.CollectionAction.ADDREPLICA.toLower()));
     String belowOpStr = String.valueOf(properties.getOrDefault(BELOW_OP_PROP, CollectionParams.CollectionAction.DELETEREPLICA.toLower()));
     aboveOp = CollectionParams.CollectionAction.get(aboveOpStr);
@@ -231,6 +260,8 @@ public class SearchRateTrigger extends TriggerBase {
     config.put(MIN_REPLICAS_PROP, minReplicas);
     config.put(ABOVE_RATE_PROP, aboveRate);
     config.put(BELOW_RATE_PROP, belowRate);
+    config.put(ABOVE_NODE_RATE_PROP, aboveNodeRate);
+    config.put(BELOW_NODE_RATE_PROP, belowNodeRate);
     config.put(ABOVE_OP_PROP, aboveOp);
     config.put(ABOVE_NODE_OP_PROP, aboveNodeOp);
     config.put(BELOW_OP_PROP, belowOp);
@@ -339,6 +370,10 @@ public class SearchRateTrigger extends TriggerBase {
         continue;
       }
       Map<String, Object> rates = cloudManager.getNodeStateProvider().getNodeValues(node, metricTags.keySet());
+      if (log.isDebugEnabled()) {
+        log.debug("### rates for node " + node);
+        rates.forEach((tag, rate) -> log.debug("###  " + tag + "\t" + rate));
+      }
       rates.forEach((tag, rate) -> {
         ReplicaInfo info = metricTags.get(tag);
         if (info == null) {
@@ -355,18 +390,28 @@ public class SearchRateTrigger extends TriggerBase {
       });
     }
 
+    if (log.isDebugEnabled()) {
+      collectionRates.forEach((coll, collRates) -> {
+        log.debug("## Collection: {}", coll);
+        collRates.forEach((s, replicas) -> {
+          log.debug("##  - {}", s);
+          replicas.forEach(ri -> log.debug("##     {}  {}", ri.getCore(), ri.getVariable(AutoScalingParams.RATE)));
+        });
+      });
+    }
     long now = cloudManager.getTimeSource().getTimeNs();
     Map<String, Double> hotNodes = new HashMap<>();
     Map<String, Double> coldNodes = new HashMap<>();
+
     // check for exceeded rates and filter out those with less than waitFor from previous events
     nodeRates.entrySet().stream()
         .filter(entry -> node.equals(Policy.ANY) || node.equals(entry.getKey()))
         .forEach(entry -> {
-          if (entry.getValue().get() > aboveRate) {
+          if (entry.getValue().get() > aboveNodeRate) {
             if (waitForElapsed(entry.getKey(), now, lastNodeEvent)) {
               hotNodes.put(entry.getKey(), entry.getValue().get());
             }
-          } else if (entry.getValue().get() < belowRate) {
+          } else if (entry.getValue().get() < belowNodeRate) {
             if (waitForElapsed(entry.getKey(), now, lastNodeEvent)) {
               coldNodes.put(entry.getKey(), entry.getValue().get());
             }
@@ -383,7 +428,7 @@ public class SearchRateTrigger extends TriggerBase {
     List<ReplicaInfo> coldReplicas = new ArrayList<>();
     collectionRates.forEach((coll, shardRates) -> {
       shardRates.forEach((sh, replicaRates) -> {
-        double shardRate = replicaRates.stream()
+        double totalShardRate = replicaRates.stream()
             .map(r -> {
               String elapsedKey = r.getCollection() + "." + r.getCore();
               if ((Double)r.getVariable(AutoScalingParams.RATE) > aboveRate) {
@@ -401,7 +446,10 @@ public class SearchRateTrigger extends TriggerBase {
               return r;
             })
             .mapToDouble(r -> (Double)r.getVariable(AutoScalingParams.RATE)).sum();
+        // calculate average shard rate over all searchable replicas (see SOLR-12470)
+        double shardRate = totalShardRate / searchableReplicationFactors.get(coll).get(sh).doubleValue();
         String elapsedKey = coll + "." + sh;
+        log.debug("-- {}: totalShardRate={}, shardRate={}", elapsedKey, totalShardRate, shardRate);
         if ((collections.isEmpty() || collections.contains(coll)) &&
             (shard.equals(Policy.ANY) || shard.equals(sh))) {
           if (shardRate > aboveRate) {
@@ -411,6 +459,13 @@ public class SearchRateTrigger extends TriggerBase {
           } else if (shardRate < belowRate) {
             if (waitForElapsed(elapsedKey, now, lastShardEvent)) {
               coldShards.computeIfAbsent(coll, s -> new HashMap<>()).put(sh, shardRate);
+              log.debug("-- coldShard waitFor elapsed {}", elapsedKey);
+            } else {
+              if (log.isDebugEnabled()) {
+                Long lastTime = lastShardEvent.computeIfAbsent(elapsedKey, s -> now);
+                long elapsed = TimeUnit.SECONDS.convert(now - lastTime, TimeUnit.NANOSECONDS);
+                log.debug("-- waitFor didn't elapse for {}, waitFor={}, elapsed={}", elapsedKey, getWaitForSecond(), elapsed);
+              }
             }
           } else {
             // no violation - clear waitForElapsed
@@ -511,9 +566,10 @@ public class SearchRateTrigger extends TriggerBase {
     });
 
     final List<TriggerEvent.Op> ops = new ArrayList<>();
+    final Set<String> violations = new HashSet<>();
 
-    calculateHotOps(ops, searchableReplicationFactors, hotNodes, hotCollections, hotShards, hotReplicas);
-    calculateColdOps(ops, clusterState, searchableReplicationFactors, coldNodes, coldCollections, coldShards, coldReplicas);
+    calculateHotOps(ops, violations, searchableReplicationFactors, hotNodes, hotCollections, hotShards, hotReplicas);
+    calculateColdOps(ops, violations, clusterState, searchableReplicationFactors, coldNodes, coldCollections, coldShards, coldReplicas);
 
     if (ops.isEmpty()) {
       return;
@@ -521,7 +577,7 @@ public class SearchRateTrigger extends TriggerBase {
 
     if (processor.process(new SearchRateEvent(getName(), eventTime.get(), ops,
         hotNodes, hotCollections, hotShards, hotReplicas,
-        coldNodes, coldCollections, coldShards, coldReplicas))) {
+        coldNodes, coldCollections, coldShards, coldReplicas, violations))) {
       // update lastEvent times
       hotNodes.keySet().forEach(node -> lastNodeEvent.put(node, now));
       coldNodes.keySet().forEach(node -> lastNodeEvent.put(node, now));
@@ -537,6 +593,7 @@ public class SearchRateTrigger extends TriggerBase {
   }
 
   private void calculateHotOps(List<TriggerEvent.Op> ops,
+                               Set<String> violations,
                                Map<String, Map<String, AtomicInteger>> searchableReplicationFactors,
                                Map<String, Double> hotNodes,
                                Map<String, Double> hotCollections,
@@ -545,40 +602,47 @@ public class SearchRateTrigger extends TriggerBase {
     // calculate the number of replicas to add to each hot shard, based on how much the rate was
     // exceeded - but within limits.
 
-    // first resolve a situation when only a node is hot but no collection / shard / replica is hot
+    // first resolve a situation when only a node is hot but no collection / shard is hot
     // TODO: eventually we may want to commission a new node
-    if (!hotNodes.isEmpty() && hotShards.isEmpty() && hotCollections.isEmpty() && hotReplicas.isEmpty()) {
-      // move replicas around
-      if (aboveNodeOp != null) {
-        hotNodes.forEach((n, r) -> {
-          ops.add(new TriggerEvent.Op(aboveNodeOp, Suggester.Hint.SRC_NODE, n));
-        });
-      }
-    } else {
-      // add replicas
-      Map<String, Map<String, List<Pair<String, String>>>> hints = new HashMap<>();
-
-      hotShards.forEach((coll, shards) -> shards.forEach((s, r) -> {
-        List<Pair<String, String>> perShard = hints
-            .computeIfAbsent(coll, c -> new HashMap<>())
-            .computeIfAbsent(s, sh -> new ArrayList<>());
-        addReplicaHints(coll, s, r, searchableReplicationFactors.get(coll).get(s).get(), perShard);
-      }));
-      hotReplicas.forEach(ri -> {
-        double r = (Double)ri.getVariable(AutoScalingParams.RATE);
-        // add only if not already accounted for in hotShards
-        List<Pair<String, String>> perShard = hints
-            .computeIfAbsent(ri.getCollection(), c -> new HashMap<>())
-            .computeIfAbsent(ri.getShard(), sh -> new ArrayList<>());
-        if (perShard.isEmpty()) {
-          addReplicaHints(ri.getCollection(), ri.getShard(), r, searchableReplicationFactors.get(ri.getCollection()).get(ri.getShard()).get(), perShard);
+    if (!hotNodes.isEmpty()) {
+      if (hotShards.isEmpty() && hotCollections.isEmpty()) {
+        // move replicas around
+        if (aboveNodeOp != null) {
+          hotNodes.forEach((n, r) -> {
+            ops.add(new TriggerEvent.Op(aboveNodeOp, Suggester.Hint.SRC_NODE, n));
+            violations.add(HOT_NODES);
+          });
         }
-      });
-
-      hints.values().forEach(m -> m.values().forEach(lst -> lst.forEach(p -> {
-        ops.add(new TriggerEvent.Op(aboveOp, Suggester.Hint.COLL_SHARD, p));
-      })));
+      } else {
+        // ignore - hot shards will result in changes that will change hot node status anyway
+      }
     }
+    // add replicas
+    Map<String, Map<String, List<Pair<String, String>>>> hints = new HashMap<>();
+
+    // HOT COLLECTIONS
+    // currently we don't do anything for hot collections. Theoretically we could add
+    // 1 replica more to each shard, based on how close to the threshold each shard is
+    // but it's probably better to wait for a shard to become hot and be more precise.
+
+    // HOT SHARDS
+
+    hotShards.forEach((coll, shards) -> shards.forEach((s, r) -> {
+      List<Pair<String, String>> perShard = hints
+          .computeIfAbsent(coll, c -> new HashMap<>())
+          .computeIfAbsent(s, sh -> new ArrayList<>());
+      addReplicaHints(coll, s, r, searchableReplicationFactors.get(coll).get(s).get(), perShard);
+      violations.add(HOT_SHARDS);
+    }));
+
+    // HOT REPLICAS
+    // Hot replicas (while their shards are not hot) may be caused by
+    // dumb clients that use direct replica URLs - this is beyond our control
+    // so ignore them.
+
+    hints.values().forEach(m -> m.values().forEach(lst -> lst.forEach(p -> {
+      ops.add(new TriggerEvent.Op(aboveOp, Suggester.Hint.COLL_SHARD, p));
+    })));
 
   }
 
@@ -601,6 +665,7 @@ public class SearchRateTrigger extends TriggerBase {
   }
 
   private void calculateColdOps(List<TriggerEvent.Op> ops,
+                                Set<String> violations,
                                 ClusterState clusterState,
                                 Map<String, Map<String, AtomicInteger>> searchableReplicationFactors,
                                 Map<String, Double> coldNodes,
@@ -611,12 +676,13 @@ public class SearchRateTrigger extends TriggerBase {
     // Probably can't do anything reasonable about whole cold collections
     // because they may be needed even if not used.
 
-    // COLD SHARDS:
-    // Cold shards mean that there are too many replicas per shard - but it also
-    // means that all replicas in these shards are cold too, so we can simply
-    // address this by deleting cold replicas
+    // COLD SHARDS & COLD REPLICAS:
+    // We remove cold replicas only from cold shards, otherwise we are susceptible to uneven
+    // replica routing (which is beyond our control).
+    // If we removed replicas from non-cold shards we could accidentally bring that shard into
+    // the hot range, which would result in adding replica, and that replica could again stay cold due to
+    // the same routing issue, which then would lead to removing that replica, etc, etc...
 
-    // COLD REPLICAS:
     // Remove cold replicas but only when there's at least a minimum number of searchable
     // replicas still available (additional non-searchable replicas may exist, too)
     // NOTE: do this before adding ops for DELETENODE because we don't want to attempt
@@ -627,11 +693,18 @@ public class SearchRateTrigger extends TriggerBase {
           .computeIfAbsent(ri.getShard(), s -> new ArrayList<>())
           .add(ri);
     });
-    byCollectionByShard.forEach((coll, shards) -> {
-      shards.forEach((shard, replicas) -> {
+    coldShards.forEach((coll, perShard) -> {
+      perShard.forEach((shard, rate) -> {
+        List<ReplicaInfo> replicas = byCollectionByShard
+            .getOrDefault(coll, Collections.emptyMap())
+            .getOrDefault(shard, Collections.emptyList());
+        if (replicas.isEmpty()) {
+          return;
+        }
         // only delete if there's at least minRF searchable replicas left
         int rf = searchableReplicationFactors.get(coll).get(shard).get();
-        // we only really need a leader and we may be allowed to remove other replicas
+        // assume first that we only really need a leader and we may be
+        // allowed to remove other replicas
         int minRF = 1;
         // but check the official RF and don't go below that
         Integer RF = clusterState.getCollection(coll).getReplicationFactor();
@@ -660,6 +733,7 @@ public class SearchRateTrigger extends TriggerBase {
                 Suggester.Hint.COLL_SHARD, new Pair<>(ri.getCollection(), ri.getShard()));
             op.addHint(Suggester.Hint.REPLICA, ri.getName());
             ops.add(op);
+            violations.add(COLD_SHARDS);
             limit.decrementAndGet();
           });
         }
@@ -669,7 +743,7 @@ public class SearchRateTrigger extends TriggerBase {
     // COLD NODES:
     // Unlike the case of hot nodes, if a node is cold then any monitored
     // collections / shards / replicas located on that node are cold, too.
-    // HOWEVER, we check only non-pull replicas and only from selected collections / shards,
+    // HOWEVER, we check only replicas from selected collections / shards,
     // so deleting a cold node is dangerous because it may interfere with these
     // non-monitored resources - this is the reason the default belowNodeOp is null / ignored.
     //
@@ -679,6 +753,7 @@ public class SearchRateTrigger extends TriggerBase {
     if (belowNodeOp != null) {
       coldNodes.forEach((node, rate) -> {
         ops.add(new TriggerEvent.Op(belowNodeOp, Suggester.Hint.SRC_NODE, node));
+        violations.add(COLD_NODES);
       });
     }
 
@@ -688,7 +763,7 @@ public class SearchRateTrigger extends TriggerBase {
   private boolean waitForElapsed(String name, long now, Map<String, Long> lastEventMap) {
     Long lastTime = lastEventMap.computeIfAbsent(name, s -> now);
     long elapsed = TimeUnit.SECONDS.convert(now - lastTime, TimeUnit.NANOSECONDS);
-    log.trace("name={}, lastTime={}, elapsed={}", name, lastTime, elapsed);
+    log.trace("name={}, lastTime={}, elapsed={}, waitFor={}", name, lastTime, elapsed, getWaitForSecond());
     if (TimeUnit.SECONDS.convert(now - lastTime, TimeUnit.NANOSECONDS) < getWaitForSecond()) {
       return false;
     }
@@ -704,7 +779,8 @@ public class SearchRateTrigger extends TriggerBase {
                            Map<String, Double> coldNodes,
                            Map<String, Double> coldCollections,
                            Map<String, Map<String, Double>> coldShards,
-                           List<ReplicaInfo> coldReplicas) {
+                           List<ReplicaInfo> coldReplicas,
+                           Set<String> violations) {
       super(TriggerEventType.SEARCHRATE, source, eventTime, null);
       properties.put(TriggerEvent.REQUESTED_OPS, ops);
       properties.put(HOT_NODES, hotNodes);
@@ -715,6 +791,7 @@ public class SearchRateTrigger extends TriggerBase {
       properties.put(COLD_COLLECTIONS, coldCollections);
       properties.put(COLD_SHARDS, coldShards);
       properties.put(COLD_REPLICAS, coldReplicas);
+      properties.put(VIOLATION_PROP, violations);
     }
   }
 }

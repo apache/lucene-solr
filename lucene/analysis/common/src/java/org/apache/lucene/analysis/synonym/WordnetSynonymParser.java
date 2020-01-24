@@ -21,16 +21,16 @@ import java.io.IOException;
 import java.io.LineNumberReader;
 import java.io.Reader;
 import java.text.ParseException;
-import java.util.Arrays;
 
 import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.CharsRef;
 import org.apache.lucene.util.CharsRefBuilder;
 
 /**
  * Parser for wordnet prolog format
  * <p>
- * See http://wordnet.princeton.edu/man/prologdb.5WN.html for a description of the format.
+ * See https://wordnet.princeton.edu/documentation/prologdb5wn for a description of the format.
  * @lucene.experimental
  */
 // TODO: allow you to specify syntactic categories (e.g. just nouns, etc)
@@ -59,10 +59,7 @@ public class WordnetSynonymParser extends SynonymMap.Parser {
           synsetSize = 0;
         }
 
-        if (synset.length <= synsetSize+1) {
-          synset = Arrays.copyOf(synset, synset.length * 2);
-        }
-        
+        synset = ArrayUtil.grow(synset, synsetSize + 1);
         synset[synsetSize] = parseSynonym(line, new CharsRefBuilder());
         synsetSize++;
         lastSynSetID = synSetID;
@@ -99,7 +96,9 @@ public class WordnetSynonymParser extends SynonymMap.Parser {
     if (expand) {
       for (int i = 0; i < size; i++) {
         for (int j = 0; j < size; j++) {
-          add(synset[i], synset[j], false);
+          if (i != j) {
+            add(synset[i], synset[j], true);
+          }
         }
       }
     } else {

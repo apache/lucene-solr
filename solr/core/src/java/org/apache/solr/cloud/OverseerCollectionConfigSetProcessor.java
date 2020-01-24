@@ -16,16 +16,16 @@
  */
 package org.apache.solr.cloud;
 
+import static org.apache.solr.cloud.OverseerConfigSetMessageHandler.CONFIGSETS_ACTION_PREFIX;
+
 import java.io.IOException;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.common.cloud.ZkNodeProps;
 import org.apache.solr.common.cloud.ZkStateReader;
-import org.apache.solr.handler.component.ShardHandler;
-import org.apache.solr.handler.component.ShardHandlerFactory;
-
-import static org.apache.solr.cloud.OverseerConfigSetMessageHandler.CONFIGSETS_ACTION_PREFIX;
+import org.apache.solr.handler.component.HttpShardHandler;
+import org.apache.solr.handler.component.HttpShardHandlerFactory;
 
 /**
  * An {@link OverseerTaskProcessor} that handles:
@@ -35,18 +35,18 @@ import static org.apache.solr.cloud.OverseerConfigSetMessageHandler.CONFIGSETS_A
 public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor {
 
    public OverseerCollectionConfigSetProcessor(ZkStateReader zkStateReader, String myId,
-                                               final ShardHandler shardHandler,
+                                               final HttpShardHandler shardHandler,
                                                String adminPath, Stats stats, Overseer overseer,
                                                OverseerNodePrioritizer overseerNodePrioritizer) {
     this(
         zkStateReader,
         myId,
-        shardHandler.getShardHandlerFactory(),
+        (HttpShardHandlerFactory) shardHandler.getShardHandlerFactory(),
         adminPath,
         stats,
         overseer,
         overseerNodePrioritizer,
-        Overseer.getCollectionQueue(zkStateReader.getZkClient(), stats),
+        overseer.getCollectionQueue(zkStateReader.getZkClient(), stats),
         Overseer.getRunningMap(zkStateReader.getZkClient()),
         Overseer.getCompletedMap(zkStateReader.getZkClient()),
         Overseer.getFailureMap(zkStateReader.getZkClient())
@@ -54,7 +54,7 @@ public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor 
   }
 
   protected OverseerCollectionConfigSetProcessor(ZkStateReader zkStateReader, String myId,
-                                        final ShardHandlerFactory shardHandlerFactory,
+                                        final HttpShardHandlerFactory shardHandlerFactory,
                                         String adminPath,
                                         Stats stats,
                                         Overseer overseer,
@@ -79,7 +79,7 @@ public class OverseerCollectionConfigSetProcessor extends OverseerTaskProcessor 
   private static OverseerMessageHandlerSelector getOverseerMessageHandlerSelector(
       ZkStateReader zkStateReader,
       String myId,
-      final ShardHandlerFactory shardHandlerFactory,
+      final HttpShardHandlerFactory shardHandlerFactory,
       String adminPath,
       Stats stats,
       Overseer overseer,

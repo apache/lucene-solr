@@ -8,7 +8,7 @@ run_solr_snapshot_tool() {
   if [ -n "$LOG4J_PROPS" ]; then
     log4j_config="file:${LOG4J_PROPS}"
   else
-    log4j_config="file:${scriptDir}/log4j2.xml"
+    log4j_config="file:${scriptDir}/../../resources/log4j2-console.xml"
   fi
   PATH=${JAVA_HOME}/bin:${PATH} ${JVM} ${ZKCLI_JVM_FLAGS} -Dlog4j.configurationFile=${log4j_config} \
   -classpath "${solrLibPath}" org.apache.solr.core.snapshots.SolrSnapshotsTool "$@" 2> /dev/null

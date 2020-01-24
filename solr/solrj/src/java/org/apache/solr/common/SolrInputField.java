@@ -87,8 +87,8 @@ public class SolrInputField implements Iterable<Object>, Serializable
       value = vals;
     }
     
-    // Add the new values to a collection
-    if( v instanceof Iterable ) {
+    // Add the new values to a collection, if childDoc add as is without iteration
+    if( v instanceof Iterable && !(v instanceof SolrDocumentBase)) {
       for( Object o : (Iterable<Object>)v ) {
         vals.add( o );
       }
@@ -105,12 +105,11 @@ public class SolrInputField implements Iterable<Object>, Serializable
 
   //---------------------------------------------------------------
   //---------------------------------------------------------------
-  
-  @SuppressWarnings("unchecked")
+
   public Object getFirstValue() {
-    if( value instanceof Collection ) {
-      Collection c = (Collection<Object>)value;
-      if( c.size() > 0 ) {
+    if (value instanceof Collection) {
+      Collection c = (Collection<Object>) value;
+      if (c.size() > 0) {
         return c.iterator().next();
       }
       return null;
@@ -132,12 +131,12 @@ public class SolrInputField implements Iterable<Object>, Serializable
    */
   @SuppressWarnings("unchecked")
   public Collection<Object> getValues() {
-    if( value instanceof Collection ) {
-      return (Collection<Object>)value;
+    if (value instanceof Collection) {
+      return (Collection<Object>) value;
     }
     if( value != null ) {
       Collection<Object> vals = new ArrayList<>(1);
-      vals.add( value );
+      vals.add(value);
       return vals;
     }
     return null;
@@ -166,7 +165,7 @@ public class SolrInputField implements Iterable<Object>, Serializable
 
   @Override
   @SuppressWarnings("unchecked")
-  public Iterator<Object> iterator() {
+  public Iterator<Object> iterator(){
     if( value instanceof Collection ) {
       return ((Collection)value).iterator();
     }

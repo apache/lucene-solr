@@ -79,7 +79,7 @@ public class SurroundQParserPlugin extends QParserPlugin {
         try {
           this.maxBasicQueries = Integer.parseInt(mbqparam);
         } catch (Exception e) {
-          LOG.warn("Couldn't parse maxBasicQueries value " + mbqparam +", using default of 1000");
+          log.warn("Couldn't parse maxBasicQueries value " + mbqparam +", using default of 1000");
           this.maxBasicQueries = DEFMAXBASICQUERIES;
         }
       }

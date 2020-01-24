@@ -39,6 +39,7 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
+import org.apache.solr.common.cloud.ConnectionManager.IsClosed;
 import org.apache.solr.common.util.Pair;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -55,7 +56,7 @@ import org.slf4j.LoggerFactory;
  * the results should be correct but inefficient
  */
 public class ZkDistributedQueue implements DistributedQueue {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   static final String PREFIX = "qn-";
 
@@ -113,11 +114,15 @@ public class ZkDistributedQueue implements DistributedQueue {
   public ZkDistributedQueue(SolrZkClient zookeeper, String dir, Stats stats) {
     this(zookeeper, dir, stats, 0);
   }
-
+  
   public ZkDistributedQueue(SolrZkClient zookeeper, String dir, Stats stats, int maxQueueSize) {
+    this(zookeeper, dir, stats, maxQueueSize, null);
+  }
+
+  public ZkDistributedQueue(SolrZkClient zookeeper, String dir, Stats stats, int maxQueueSize, IsClosed higherLevelIsClosed) {
     this.dir = dir;
 
-    ZkCmdExecutor cmdExecutor = new ZkCmdExecutor(zookeeper.getZkClientTimeout());
+    ZkCmdExecutor cmdExecutor = new ZkCmdExecutor(zookeeper.getZkClientTimeout(), higherLevelIsClosed);
     try {
       cmdExecutor.ensureExists(dir, zookeeper);
     } catch (KeeperException e) {
@@ -245,7 +250,7 @@ public class ZkDistributedQueue implements DistributedQueue {
             try {
               zookeeper.delete(ops.get(j).getPath(), -1, true);
             } catch (KeeperException.NoNodeException e2) {
-              LOG.debug("Can not remove node which is not exist : " + ops.get(j).getPath());
+              log.debug("Can not remove node which is not exist : " + ops.get(j).getPath());
             }
           }
         }
@@ -412,7 +417,7 @@ public class ZkDistributedQueue implements DistributedQueue {
         for (String childName : childNames) {
           // Check format
           if (!childName.regionMatches(0, PREFIX, 0, PREFIX.length())) {
-            LOG.debug("Found child node with improper name: " + childName);
+            log.debug("Found child node with improper name: " + childName);
             continue;
           }
           orderedChildren.add(childName);

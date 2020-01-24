@@ -39,15 +39,15 @@ import org.apache.solr.common.SolrException.ErrorCode;
  * Uses:
  * <ul>
  * <li>If a two comparable {@link AnalyticsValue}s are passed in, a {@link BooleanValue} representing the comparison of the two values for each document is returned.
- * <li>If a comparable {@link AnalyticsValue} and a comparable {@link AnalyticsValueStream} are passed in, 
+ * <li>If a comparable {@link AnalyticsValue} and a comparable {@link AnalyticsValueStream} are passed in,
  * a {@link BooleanValueStream} representing the comparison of the Value and each of the values of the ValueStream for the document is returned.
  * </ul>
  */
 public class ComparisonFunction {
-  
+
   /**
    * Create a comparison mapping function, comparing two analytics value (streams) of the same type.
-   * 
+   *
    * @param name name of the function
    * @param comp function to find the result of a comparison
    * @param params the parameters to compare
@@ -84,7 +84,7 @@ public class ComparisonFunction {
     }
     throw new SolrException(ErrorCode.BAD_REQUEST,"The "+name+" function requires that at least 1 parameter be single-valued.");
   }
-  
+
   /**
    * A comparison function that tests whether the first parameter is greater than the second parameter
    */
@@ -137,7 +137,7 @@ public class ComparisonFunction {
   public static interface CompResultFunction {
     public boolean apply(int compResult);
   }
-  
+
   private static CompResultFunction reverse(CompResultFunction original) {
     return val -> original.apply(val*-1);
   }
@@ -152,7 +152,7 @@ class CompareDoubleValueFunction extends AbstractBooleanValue {
   private final String name;
   private final String funcStr;
   private final ExpressionType funcType;
-  
+
   public CompareDoubleValueFunction(String name, DoubleValue exprA, DoubleValue exprB, CompResultFunction comp) {
     this.name = name;
     this.exprA = exprA;
@@ -198,7 +198,7 @@ class CompareDoubleStreamFunction extends AbstractBooleanValueStream {
   private final String name;
   private final String funcStr;
   private final ExpressionType funcType;
-  
+
   public CompareDoubleStreamFunction(String name, DoubleValue baseExpr, DoubleValueStream compExpr, CompResultFunction comp) throws SolrException {
     this.name = name;
     this.baseExpr = baseExpr;
@@ -239,7 +239,7 @@ class CompareDateValueFunction extends AbstractBooleanValue {
   private final String name;
   private final String funcStr;
   private final ExpressionType funcType;
-  
+
   public CompareDateValueFunction(String name, DateValue exprA, DateValue exprB, CompResultFunction comp) {
     this.name = name;
     this.exprA = exprA;
@@ -285,7 +285,7 @@ class CompareDateStreamFunction extends AbstractBooleanValueStream {
   private final String name;
   private final String funcStr;
   private final ExpressionType funcType;
-  
+
   public CompareDateStreamFunction(String name, DateValue baseExpr, DateValueStream compExpr, CompResultFunction comp) throws SolrException {
     this.name = name;
     this.baseExpr = baseExpr;

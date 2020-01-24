@@ -90,7 +90,7 @@ public class TestRegexpRandom extends LuceneTestCase {
   private void assertPatternHits(String pattern, int numHits) throws Exception {
     Query wq = new RegexpQuery(new Term("field", fillPattern(pattern)));
     TopDocs docs = searcher.search(wq, 25);
-    assertEquals("Incorrect hits for pattern: " + pattern, numHits, docs.totalHits);
+    assertEquals("Incorrect hits for pattern: " + pattern, numHits, docs.totalHits.value);
   }
 
   @Override

@@ -25,9 +25,7 @@ import org.apache.hadoop.hdfs.DistributedFileSystem;
 import org.apache.hadoop.hdfs.MiniDFSCluster;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.util.BadHdfsThreadsFilter;
-import org.junit.After;
 import org.junit.AfterClass;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -37,7 +35,6 @@ import com.carrotsearch.randomizedtesting.annotations.ThreadLeakFilters;
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
 public class HdfsThreadLeakTest extends SolrTestCaseJ4 {
-  
   private static MiniDFSCluster dfsCluster;
 
   @BeforeClass
@@ -47,38 +44,26 @@ public class HdfsThreadLeakTest extends SolrTestCaseJ4 {
 
   @AfterClass
   public static void afterClass() throws Exception {
-    HdfsTestUtil.teardownClass(dfsCluster);
-    dfsCluster = null;
-  }
-  
-  @Before
-  public void setUp() throws Exception {
-    super.setUp();
-  }
-  
-  @After
-  public void tearDown() throws Exception {
-    super.tearDown();
+    try {
+      HdfsTestUtil.teardownClass(dfsCluster);
+    } finally {
+      dfsCluster = null;
+    }
   }
   
   @Test
   public void testBasic() throws IOException {
     String uri = HdfsTestUtil.getURI(dfsCluster);
     Path path = new Path(uri);
-    Configuration conf = new Configuration();
-    conf.setBoolean("fs.hdfs.impl.disable.cache", true);
-    FileSystem fs = FileSystem.get(path.toUri(), conf);
-    Path testFile = new Path(uri.toString() + "/testfile");
-    FSDataOutputStream out = fs.create(testFile);
-    
-    out.write(5);
-    out.hflush();
-    out.close();
+    Configuration conf = HdfsTestUtil.getClientConfiguration(dfsCluster);
+    try(FileSystem fs = FileSystem.get(path.toUri(), conf)) {
+      Path testFile = new Path(uri + "/testfile");
+      try(FSDataOutputStream out = fs.create(testFile)) {
+        out.write(5);
+        out.hflush();
+      }
 
-    ((DistributedFileSystem) fs).recoverLease(testFile);
-
-    
-    fs.close();
+      ((DistributedFileSystem) fs).recoverLease(testFile);
+    }
   }
-
 }

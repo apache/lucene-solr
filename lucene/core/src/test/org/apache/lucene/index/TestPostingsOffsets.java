@@ -81,7 +81,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
     IndexReader r = w.getReader();
     w.close();
 
-    PostingsEnum dp = MultiFields.getTermPositionsEnum(r, "content", new BytesRef("a"));
+    PostingsEnum dp = MultiTerms.getTermPostingsEnum(r, "content", new BytesRef("a"));
     assertNotNull(dp);
     assertEquals(0, dp.nextDoc());
     assertEquals(2, dp.freq());
@@ -93,7 +93,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
     assertEquals(17, dp.endOffset());
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, dp.nextDoc());
 
-    dp = MultiFields.getTermPositionsEnum(r, "content", new BytesRef("b"));
+    dp = MultiTerms.getTermPostingsEnum(r, "content", new BytesRef("b"));
     assertNotNull(dp);
     assertEquals(0, dp.nextDoc());
     assertEquals(1, dp.freq());
@@ -102,7 +102,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
     assertEquals(9, dp.endOffset());
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, dp.nextDoc());
 
-    dp = MultiFields.getTermPositionsEnum(r, "content", new BytesRef("c"));
+    dp = MultiTerms.getTermPostingsEnum(r, "content", new BytesRef("c"));
     assertNotNull(dp);
     assertEquals(0, dp.nextDoc());
     assertEquals(1, dp.freq());
@@ -153,7 +153,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
     String terms[] = { "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "hundred" };
     
     for (String term : terms) {
-      PostingsEnum dp = MultiFields.getTermPositionsEnum(reader, "numbers", new BytesRef(term));
+      PostingsEnum dp = MultiTerms.getTermPostingsEnum(reader, "numbers", new BytesRef(term));
       int doc;
       while((doc = dp.nextDoc()) != DocIdSetIterator.NO_MORE_DOCS) {
         String storedNumbers = reader.document(doc).get("numbers");
@@ -181,7 +181,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
     
     for (int j = 0; j < numSkippingTests; j++) {
       int num = TestUtil.nextInt(random(), 100, Math.min(numDocs - 1, 999));
-      PostingsEnum dp = MultiFields.getTermPositionsEnum(reader, "numbers", new BytesRef("hundred"));
+      PostingsEnum dp = MultiTerms.getTermPostingsEnum(reader, "numbers", new BytesRef("hundred"));
       int doc = dp.advance(num);
       assertEquals(num, doc);
       int freq = dp.freq();
@@ -206,7 +206,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
     // check that other fields (without offsets) work correctly
     
     for (int i = 0; i < numDocs; i++) {
-      PostingsEnum dp = MultiFields.getTermDocsEnum(reader, "id", new BytesRef("" + i), 0);
+      PostingsEnum dp = MultiTerms.getTermPostingsEnum(reader, "id", new BytesRef("" + i), 0);
       assertEquals(i, dp.nextDoc());
       assertEquals(DocIdSetIterator.NO_MORE_DOCS, dp.nextDoc());
     }
@@ -381,7 +381,7 @@ public class TestPostingsOffsets extends LuceneTestCase {
       riw.addDocument(doc);
     }
     CompositeReader ir = riw.getReader();
-    FieldInfos fis = MultiFields.getMergedFieldInfos(ir);
+    FieldInfos fis = FieldInfos.getMergedFieldInfos(ir);
     assertEquals(IndexOptions.DOCS_AND_FREQS_AND_POSITIONS_AND_OFFSETS, fis.fieldInfo("foo").getIndexOptions());
     ir.close();
     ir.close();

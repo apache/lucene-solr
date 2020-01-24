@@ -18,6 +18,7 @@
 package org.apache.solr.search.facet;
 
 import java.io.IOException;
+import java.util.function.IntFunction;
 
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FixedBitSet;
@@ -50,7 +51,7 @@ class UniqueMultivaluedSlotAcc extends UniqueSlotAcc implements UnInvertedField.
   }
 
   @Override
-  public void collect(int doc, int slotNum) throws IOException {
+  public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext) throws IOException {
     bits = arr[slotNum];
     if (bits == null) {
       bits = new FixedBitSet(nTerms);

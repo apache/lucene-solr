@@ -27,6 +27,7 @@ import org.apache.lucene.document.LatLonDocValuesField;
 import org.apache.lucene.document.LatLonPoint;
 import org.apache.lucene.geo.GeoEncodingUtils;
 import org.apache.lucene.index.DocValues;
+import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.DoubleValues;
@@ -76,7 +77,15 @@ public class LatLonPointSpatialField extends AbstractSpatialFieldType implements
     SchemaField schemaField = schema.getField(fieldName); // TODO change AbstractSpatialFieldType so we get schemaField?
     return new LatLonPointSpatialStrategy(ctx, fieldName, schemaField.indexed(), schemaField.hasDocValues());
   }
-  
+
+  @Override
+  public String toExternal(IndexableField f) {
+    if (f.numericValue() != null) {
+      return decodeDocValueToString(f.numericValue().longValue());
+    }
+    return super.toExternal(f);
+  }
+
   /**
    * Decodes the docValues number into latitude and longitude components, formatting as "lat,lon".
    * The encoding is governed by {@code LatLonDocValuesField}.  The decimal output representation is reflective
@@ -87,7 +96,7 @@ public class LatLonPointSpatialField extends AbstractSpatialFieldType implements
   public static String decodeDocValueToString(long value) {
     final double latDouble = GeoEncodingUtils.decodeLatitude((int) (value >> 32));
     final double lonDouble = GeoEncodingUtils.decodeLongitude((int) (value & 0xFFFFFFFFL));
-    // This # decimal places gets us close to our available precision to 1.37cm; we have a test for it.
+    // This # decimal places gets us close to our available precision to 1.40cm; we have a test for it.
     // CEILING round-trips (decode then re-encode then decode to get identical results). Others did not. It also
     //   reverses the "floor" that occurred when we encoded.
     final int DECIMAL_PLACES = 7;

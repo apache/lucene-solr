@@ -31,8 +31,15 @@ import java.util.Map;
  *     &lt;tokenizer class="solr.EdgeNGramTokenizerFactory" minGramSize="1" maxGramSize="1"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
+ * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class EdgeNGramTokenizerFactory extends TokenizerFactory {
+
+  /** SPI name */
+  public static final String NAME = "edgeNGram";
+
   private final int maxGramSize;
   private final int minGramSize;
 

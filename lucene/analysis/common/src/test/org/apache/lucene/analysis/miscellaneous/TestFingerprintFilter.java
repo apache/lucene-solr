@@ -69,4 +69,13 @@ public class TestFingerprintFilter extends BaseTokenStreamTestCase {
     }
   }
 
+  public void testEmpty() throws Exception {
+    for (final boolean consumeAll : new boolean[] { true, false }) {
+      MockTokenizer tokenizer = whitespaceMockTokenizer("");
+      tokenizer.setEnableChecks(consumeAll);
+      TokenStream stream = new FingerprintFilter(tokenizer);
+      assertTokenStreamContents(stream, new String[0]);
+    }
+  }
+
 }

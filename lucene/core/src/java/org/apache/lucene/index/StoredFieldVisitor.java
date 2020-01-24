@@ -30,7 +30,7 @@ import org.apache.lucene.document.DocumentStoredFieldVisitor;
  * <p><b>NOTE</b>: a {@code StoredFieldVisitor} implementation
  * should not try to load or visit other stored documents in
  * the same reader because the implementation of stored
- * fields for most codecs is not reeentrant and you will see
+ * fields for most codecs is not reentrant and you will see
  * strange exceptions as a result.
  *
  * <p>See {@link DocumentStoredFieldVisitor}, which is a
@@ -53,8 +53,8 @@ public abstract class StoredFieldVisitor {
   public void binaryField(FieldInfo fieldInfo, byte[] value) throws IOException {
   }
 
-  /** Process a string field; the provided byte[] value is a UTF-8 encoded string value. */
-  public void stringField(FieldInfo fieldInfo, byte[] value) throws IOException {
+  /** Process a string field. */
+  public void stringField(FieldInfo fieldInfo, String value) throws IOException {
   }
 
   /** Process a int numeric field. */

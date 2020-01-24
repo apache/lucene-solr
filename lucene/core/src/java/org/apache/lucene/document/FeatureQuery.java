@@ -18,20 +18,20 @@ package org.apache.lucene.document;
 
 import java.io.IOException;
 import java.util.Objects;
-import java.util.Set;
 
 import org.apache.lucene.document.FeatureField.FeatureFunction;
 import org.apache.lucene.index.ImpactsEnum;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.PostingsEnum;
-import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
+import org.apache.lucene.search.ImpactsDISI;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.MaxScoreCache;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Weight;
@@ -48,6 +48,15 @@ final class FeatureQuery extends Query {
     this.fieldName = Objects.requireNonNull(fieldName);
     this.featureName = Objects.requireNonNull(featureName);
     this.function = Objects.requireNonNull(function);
+  }
+
+  @Override
+  public Query rewrite(IndexReader reader) throws IOException {
+    FeatureFunction rewritten = function.rewrite(reader);
+    if (function != rewritten) {
+      return new FeatureQuery(fieldName, featureName, rewritten);
+    }
+    return super.rewrite(reader);
   }
 
   @Override
@@ -78,9 +87,6 @@ final class FeatureQuery extends Query {
       public boolean isCacheable(LeafReaderContext ctx) {
         return false;
       }
-
-      @Override
-      public void extractTerms(Set<Term> terms) {}
 
       @Override
       public Explanation explain(LeafReaderContext context, int doc) throws IOException {
@@ -114,9 +120,9 @@ final class FeatureQuery extends Query {
           return null;
         }
 
-        SimScorer scorer = function.scorer(fieldName, boost);
-        ImpactsEnum impacts = termsEnum.impacts(PostingsEnum.FREQS);
-        MaxScoreCache maxScoreCache = new MaxScoreCache(impacts, scorer);
+        final SimScorer scorer = function.scorer(boost);
+        final ImpactsEnum impacts = termsEnum.impacts(PostingsEnum.FREQS);
+        final ImpactsDISI impactsDisi = new ImpactsDISI(impacts, impacts, scorer);
 
         return new Scorer(this) {
 
@@ -132,23 +138,34 @@ final class FeatureQuery extends Query {
 
           @Override
           public DocIdSetIterator iterator() {
-            return impacts;
+            return impactsDisi;
           }
 
           @Override
           public int advanceShallow(int target) throws IOException {
-            return maxScoreCache.advanceShallow(target);
+            return impactsDisi.advanceShallow(target);
           }
 
           @Override
           public float getMaxScore(int upTo) throws IOException {
-            return maxScoreCache.getMaxScore(upTo);
+            return impactsDisi.getMaxScore(upTo);
           }
 
+          @Override
+          public void setMinCompetitiveScore(float minScore) {
+            impactsDisi.setMinCompetitiveScore(minScore);
+          }
         };
       }
 
     };
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(fieldName)) {
+      visitor.visitLeaf(this);
+    }
   }
 
   @Override

@@ -80,11 +80,8 @@ final class IntersectTermsEnumFrame {
   FST.Arc<BytesRef> arc;
 
   final BlockTermState termState;
-  
-  // metadata buffer, holding monotonic values
-  final long[] longs;
 
-  // metadata buffer, holding general values
+  // metadata buffer
   byte[] bytes = new byte[32];
 
   final ByteArrayDataInput bytesReader = new ByteArrayDataInput();
@@ -95,17 +92,6 @@ final class IntersectTermsEnumFrame {
   int startBytePos;
   int suffix;
 
-  // When we are on an auto-prefix term this is the starting lead byte
-  // of the suffix (e.g. 'a' for the foo[a-m]* case):
-  int floorSuffixLeadStart;
-
-  // When we are on an auto-prefix term this is the ending lead byte
-  // of the suffix (e.g. 'm' for the foo[a-m]* case):
-  int floorSuffixLeadEnd;
-
-  // True if the term we are currently on is an auto-prefix term:
-  boolean isAutoPrefixTerm;
-
   private final IntersectTermsEnum ite;
 
   public IntersectTermsEnumFrame(IntersectTermsEnum ite, int ord) throws IOException {
@@ -113,7 +99,6 @@ final class IntersectTermsEnumFrame {
     this.ord = ord;
     this.termState = ite.fr.parent.postingsReader.newTermState();
     this.termState.totalTermFreq = -1;
-    this.longs = new long[ite.fr.longsSize];
   }
 
   void loadNextFloorBlock() throws IOException {
@@ -219,10 +204,6 @@ final class IntersectTermsEnumFrame {
       // written one after another -- tail recurse:
       fpEnd = ite.in.getFilePointer();
     }
-
-    // Necessary in case this ord previously was an auto-prefix
-    // term but now we recurse to a new leaf block
-    isAutoPrefixTerm = false;
   }
 
   // TODO: maybe add scanToLabel; should give perf boost
@@ -293,11 +274,8 @@ final class IntersectTermsEnumFrame {
       } else {
         termState.totalTermFreq = termState.docFreq + statsReader.readVLong();
       }
-      // metadata 
-      for (int i = 0; i < ite.fr.longsSize; i++) {
-        longs[i] = bytesReader.readVLong();
-      }
-      ite.fr.parent.postingsReader.decodeTerm(longs, bytesReader, ite.fr.fieldInfo, termState, absolute);
+      // metadata
+      ite.fr.parent.postingsReader.decodeTerm(bytesReader, ite.fr.fieldInfo, termState, absolute);
 
       metaDataUpto++;
       absolute = false;

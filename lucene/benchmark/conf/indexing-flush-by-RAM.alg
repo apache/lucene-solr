@@ -25,7 +25,7 @@ compound=cmpnd:true:true:true:true:false:false:false:false
 
 analyzer=org.apache.lucene.analysis.standard.StandardAnalyzer
 directory=FSDirectory
-#directory=RamDirectory
+#directory=ByteBuffersDirectory
 
 doc.stored=true
 doc.tokenized=true

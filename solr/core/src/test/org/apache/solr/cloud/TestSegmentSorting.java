@@ -86,13 +86,13 @@ public class TestSegmentSorting extends SolrCloudTestCase {
     }
     
     ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(collectionName, zkStateReader, true, true, 330);
+    cluster.waitForActiveCollection(collectionName, NUM_SHARDS, NUM_SHARDS * REPLICATION_FACTOR);
     
     cloudSolrClient.setDefaultCollection(collectionName);
   }
 
 
-  @Test@BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  // 12-Jun-2018 @Test@BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
   public void testSegmentTerminateEarly() throws Exception {
 
     final SegmentTerminateEarlyTestState tstes = new SegmentTerminateEarlyTestState(random());
@@ -123,7 +123,7 @@ public class TestSegmentSorting extends SolrCloudTestCase {
    * break the index sorting
    */
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 26-Mar-2018
+  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 26-Mar-2018
   public void testAtomicUpdateOfSegmentSortField() throws Exception {
 
     final CloudSolrClient cloudSolrClient = cluster.getSolrClient();

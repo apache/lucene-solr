@@ -31,7 +31,7 @@ public abstract class Compressor implements Closeable {
   protected Compressor() {}
 
   /**
-   * Compress bytes into <code>out</code>. It it the responsibility of the
+   * Compress bytes into <code>out</code>. It is the responsibility of the
    * compressor to add all necessary information so that a {@link Decompressor}
    * will know when to stop decompressing bytes from the stream.
    */

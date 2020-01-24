@@ -17,11 +17,13 @@
 package org.apache.solr.cloud;
 
 import org.apache.http.NoHttpResponseException;
+import org.apache.solr.client.solrj.cloud.SocketProxy;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.util.RTimer;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +40,15 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
 
   private final boolean onlyLeaderIndexes = random().nextBoolean();
 
+  @BeforeClass
+  public static void setupSysProps() {
+    System.setProperty("socketTimeout", "5000");
+    System.setProperty("distribUpdateSoTimeout", "5000");
+    System.setProperty("solr.httpclient.retries", "0");
+    System.setProperty("solr.retries.on.forward", "0");
+    System.setProperty("solr.retries.to.followers", "0"); 
+  }
+  
   public HttpPartitionOnCommitTest() {
     super();
     sliceCount = 1;
@@ -46,7 +57,7 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
 
   @Override
   protected boolean useTlogReplicas() {
-    return onlyLeaderIndexes;
+    return false; // TODO: tlog replicas makes commits take way to long due to what is likely a bug and it's TestInjection use
   }
 
   @Override
@@ -120,6 +131,7 @@ public class HttpPartitionOnCommitTest extends BasicDistributedZkTest {
     // let's put the leader in its own partition, no replicas can contact it now
     Replica leader = cloudClient.getZkStateReader().getLeaderRetry(testCollectionName, "shard1");
     log.info("Creating partition to leader at "+leader.getCoreUrl());
+
     SocketProxy leaderProxy = getProxyForReplica(leader);
     leaderProxy.close();
 

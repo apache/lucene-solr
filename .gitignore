@@ -26,3 +26,13 @@ pom.xml
 /nbproject
 /nb-build
 .pydevproject
+__pycache__
+/dev-tools/scripts/scripts.iml
+.DS_Store
+
+build/
+.gradle/
+.idea/
+
+# Ignore the generated local settings file.
+gradle.properties

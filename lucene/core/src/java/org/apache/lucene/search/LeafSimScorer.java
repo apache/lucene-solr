@@ -17,6 +17,7 @@
 package org.apache.lucene.search;
 
 import java.io.IOException;
+import java.util.Objects;
 
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.NumericDocValues;
@@ -29,15 +30,13 @@ public final class LeafSimScorer {
 
   private final SimScorer scorer;
   private final NumericDocValues norms;
-  private final float maxScore;
 
   /**
    * Sole constructor: Score documents of {@code reader} with {@code scorer}.
    */
-  public LeafSimScorer(SimScorer scorer, LeafReader reader, boolean needsScores, float maxFreq) throws IOException {
-    this.scorer = scorer;
-    norms = needsScores ? reader.getNormValues(scorer.getField()) : null;
-    maxScore = needsScores ? scorer.score(maxFreq, 1) : Float.MAX_VALUE;
+  public LeafSimScorer(SimScorer scorer, LeafReader reader, String field, boolean needsScores) throws IOException {
+    this.scorer = Objects.requireNonNull(scorer);
+    norms = needsScores ? reader.getNormValues(field) : null;
   }
 
   /** Return the wrapped {@link SimScorer}. */
@@ -69,10 +68,4 @@ public final class LeafSimScorer {
     return scorer.explain(freqExpl, getNormValue(doc));
   }
 
-  /**
-   * Return an upper bound of the score.
-   */
-  public float maxScore() {
-    return maxScore;
-  }
 }

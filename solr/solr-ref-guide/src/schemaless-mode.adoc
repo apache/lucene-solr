@@ -26,7 +26,7 @@ These Solr features, all controlled via `solrconfig.xml`, are:
 
 == Using the Schemaless Example
 
-The three features of schemaless mode are pre-configured in the `_default` <<config-sets.adoc#config-sets,config set>> in the Solr distribution. To start an example instance of Solr using these configs, run the following command:
+The three features of schemaless mode are pre-configured in the `_default` <<config-sets.adoc#config-sets,configset>> in the Solr distribution. To start an example instance of Solr using these configs, run the following command:
 
 [source,bash]
 ----
@@ -66,7 +66,7 @@ You can use the `/schema/fields` <<schema-api.adoc#schema-api,Schema API>> to co
 
 == Configuring Schemaless Mode
 
-As described above, there are three configuration elements that need to be in place to use Solr in schemaless mode. In the `_default` config set included with Solr these are already configured. If, however, you would like to implement schemaless on your own, you should make the following changes.
+As described above, there are three configuration elements that need to be in place to use Solr in schemaless mode. In the `_default` configset included with Solr these are already configured. If, however, you would like to implement schemaless on your own, you should make the following changes.
 
 === Enable Managed Schema
 
@@ -103,23 +103,13 @@ To start, you should define it as follows (see the javadoc links below for updat
   <updateProcessor class="solr.ParseDoubleFieldUpdateProcessorFactory" name="parse-double"/>
   <updateProcessor class="solr.ParseDateFieldUpdateProcessorFactory" name="parse-date">
     <arr name="format">
-      <str>yyyy-MM-dd'T'HH:mm:ss.SSSZ</str>
-      <str>yyyy-MM-dd'T'HH:mm:ss,SSSZ</str>
-      <str>yyyy-MM-dd'T'HH:mm:ss.SSS</str>
-      <str>yyyy-MM-dd'T'HH:mm:ss,SSS</str>
-      <str>yyyy-MM-dd'T'HH:mm:ssZ</str>
-      <str>yyyy-MM-dd'T'HH:mm:ss</str>
-      <str>yyyy-MM-dd'T'HH:mmZ</str>
-      <str>yyyy-MM-dd'T'HH:mm</str>
-      <str>yyyy-MM-dd HH:mm:ss.SSSZ</str>
-      <str>yyyy-MM-dd HH:mm:ss,SSSZ</str>
-      <str>yyyy-MM-dd HH:mm:ss.SSS</str>
-      <str>yyyy-MM-dd HH:mm:ss,SSS</str>
-      <str>yyyy-MM-dd HH:mm:ssZ</str>
-      <str>yyyy-MM-dd HH:mm:ss</str>
-      <str>yyyy-MM-dd HH:mmZ</str>
-      <str>yyyy-MM-dd HH:mm</str>
-      <str>yyyy-MM-dd</str>
+      <str>yyyy-MM-dd['T'[HH:mm[:ss[.SSS]][z</str>
+      <str>yyyy-MM-dd['T'[HH:mm[:ss[,SSS]][z</str>
+      <str>yyyy-MM-dd HH:mm[:ss[.SSS]][z</str>
+      <str>yyyy-MM-dd HH:mm[:ss[,SSS]][z</str>
+      <str>[EEE, ]dd MMM yyyy HH:mm[:ss] z</str>
+      <str>EEEE, dd-MMM-yy HH:mm:ss z</str>
+      <str>EEE MMM ppd HH:mm:ss [z ]yyyy</str>
     </arr>
   </updateProcessor>
   <updateProcessor class="solr.AddSchemaFieldsUpdateProcessorFactory" name="add-schema-fields"> <!--3-->
@@ -205,10 +195,10 @@ IMPORTANT: After all of these changes have been made, Solr should be restarted o
 
 === Disabling Automatic Field Guessing
 
-Automatic field creation can be disabled with the `update.autoCreateFields` property. To do this, you can use the <<config-api.adoc#config-api,Config API>> with a command such as:
+Automatic field creation can be disabled with the `update.autoCreateFields` property. To do this, you can use <<solr-control-script-reference.adoc#set-or-unset-configuration-properties,`bin/solr config`>> with a command such as:
 
 [source,bash]
-curl http://host:8983/solr/mycollection/config -d '{"set-user-property": {"update.autoCreateFields":"false"}}'
+bin/solr config -c mycollection -p 8983 -action set-user-property -property update.autoCreateFields -value false
 
 == Examples of Indexed Documents
 

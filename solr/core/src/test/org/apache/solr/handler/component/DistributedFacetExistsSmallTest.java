@@ -16,8 +16,6 @@
  */
 package org.apache.solr.handler.component;
 
-import static org.hamcrest.CoreMatchers.is;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.Random;
@@ -31,6 +29,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.Before;
+
+import static org.hamcrest.CoreMatchers.is;
 
 public class DistributedFacetExistsSmallTest extends BaseDistributedSearchTestCase {
 
@@ -125,7 +125,9 @@ public class DistributedFacetExistsSmallTest extends BaseDistributedSearchTestCa
       params.add("facet.prefix", prefixes[rand.nextInt(prefixes.length)]);
     }
 
-    if (rand.nextInt(100) < 20) {
+    // don't bother trying to to test facet.missing=true + facet.limit=0
+    // distrib & non-distrib are known to behave differently in this 
+    if (rand.nextInt(100) < 20 && 0 < params.getInt("facet.limit", 100)) {
       params.add("facet.missing", "true");
     }
     
@@ -133,16 +135,7 @@ public class DistributedFacetExistsSmallTest extends BaseDistributedSearchTestCa
       params.add("facet.mincount", rand.nextBoolean() ? "0": "1" );
     }
     
-    final boolean shardRespondsWithMissingEvenLimitIsZero = 
-          params.getBool("facet.missing", false) && params.getInt("facet.limit", 100)==0;
-    // skip miss count check, here cloud is different to non-distrib
-    if (shardRespondsWithMissingEvenLimitIsZero ) {
-      handle.put(null, SKIP);
-    }
     query(params);
-    if (shardRespondsWithMissingEvenLimitIsZero ) {
-      handle.remove(null);
-    }
   }
   
   private void checkInvalidMincount() throws SolrServerException, IOException {
@@ -157,8 +150,8 @@ public class DistributedFacetExistsSmallTest extends BaseDistributedSearchTestCa
     } else {
       params.set("f."+FLD+".facet.mincount",  ""+(2+random().nextInt(100)) );
     }
-    
-    try {
+
+    SolrException e = expectThrows(SolrException.class, () -> {
       if (random().nextBoolean()) {
         setDistributedParams(params);
         queryServer(params);
@@ -166,13 +159,11 @@ public class DistributedFacetExistsSmallTest extends BaseDistributedSearchTestCa
         params.set("distrib", "false");
         controlClient.query(params);
       }
-      fail();
-    } catch(SolrException e) { // check that distr and single index search fail the same
-      assertEquals(e.code(), ErrorCode.BAD_REQUEST.code);
-      assertTrue(e.getMessage().contains("facet.exists"));
-      assertTrue(e.getMessage().contains("facet.mincount"));
-      assertTrue(e.getMessage().contains(FLD));
-    }
+    });
+    assertEquals(e.code(), ErrorCode.BAD_REQUEST.code);
+    assertTrue(e.getMessage().contains("facet.exists"));
+    assertTrue(e.getMessage().contains("facet.mincount"));
+    assertTrue(e.getMessage().contains(FLD));
   }
 
   private void checkBasicRequest() throws Exception {

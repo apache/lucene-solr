@@ -29,8 +29,8 @@ import org.apache.solr.common.SolrException.ErrorCode;
  * Uses:
  * <ul>
  * <li>If two numeric Values are passed in, a {@link DoubleValue} representing the first taken to the power of the second is returned.
- * <li>If a numeric ValueStream and a numeric Value are passed in, a {@link DoubleValueStream} representing the power of 
- * the Value to each of the values of the ValueStream for a document is returned. 
+ * <li>If a numeric ValueStream and a numeric Value are passed in, a {@link DoubleValueStream} representing the power of
+ * the Value to each of the values of the ValueStream for a document is returned.
  * (Or the other way, since the Value and ValueStream can be used in either order)
  * </ul>
  */

@@ -20,7 +20,6 @@ package org.apache.lucene.codecs.blockterms;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.codecs.BlockTermState;
@@ -29,22 +28,21 @@ import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.NormsProducer;
 import org.apache.lucene.codecs.PostingsWriterBase;
 import org.apache.lucene.codecs.TermStats;
-import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexFileNames;
+import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.index.SegmentWriteState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.IndexOutput;
-import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.RamUsageEstimator;
 
 // TODO: currently we encode all terms between two indexed
 // terms as a block; but, we could decouple the two, ie
@@ -83,9 +81,8 @@ public class BlockTermsWriter extends FieldsConsumer implements Closeable {
     public final long sumTotalTermFreq;
     public final long sumDocFreq;
     public final int docCount;
-    public final int longsSize;
 
-    public FieldMetaData(FieldInfo fieldInfo, long numTerms, long termsStartPointer, long sumTotalTermFreq, long sumDocFreq, int docCount, int longsSize) {
+    public FieldMetaData(FieldInfo fieldInfo, long numTerms, long termsStartPointer, long sumTotalTermFreq, long sumDocFreq, int docCount) {
       assert numTerms > 0;
       this.fieldInfo = fieldInfo;
       this.termsStartPointer = termsStartPointer;
@@ -93,7 +90,6 @@ public class BlockTermsWriter extends FieldsConsumer implements Closeable {
       this.sumTotalTermFreq = sumTotalTermFreq;
       this.sumDocFreq = sumDocFreq;
       this.docCount = docCount;
-      this.longsSize = longsSize;
     }
   }
 
@@ -178,7 +174,6 @@ public class BlockTermsWriter extends FieldsConsumer implements Closeable {
           }
           out.writeVLong(field.sumDocFreq);
           out.writeVInt(field.docCount);
-          out.writeVInt(field.longsSize);
         }
         writeTrailer(dirStart);
         CodecUtil.writeFooter(out);
@@ -208,7 +203,6 @@ public class BlockTermsWriter extends FieldsConsumer implements Closeable {
     long sumTotalTermFreq;
     long sumDocFreq;
     int docCount;
-    int longsSize;
 
     private TermEntry[] pendingTerms;
 
@@ -228,7 +222,7 @@ public class BlockTermsWriter extends FieldsConsumer implements Closeable {
       }
       termsStartPointer = out.getFilePointer();
       this.postingsWriter = postingsWriter;
-      this.longsSize = postingsWriter.setField(fieldInfo);
+      postingsWriter.setField(fieldInfo);
     }
     
     private final BytesRefBuilder lastPrevTerm = new BytesRefBuilder();
@@ -260,11 +254,9 @@ public class BlockTermsWriter extends FieldsConsumer implements Closeable {
         //System.out.println("  index term!");
       }
 
-      if (pendingTerms.length == pendingCount) {
-        pendingTerms = Arrays.copyOf(pendingTerms, ArrayUtil.oversize(pendingCount+1, RamUsageEstimator.NUM_BYTES_OBJECT_REF));
-        for(int i=pendingCount;i<pendingTerms.length;i++) {
-          pendingTerms[i] = new TermEntry();
-        }
+      pendingTerms = ArrayUtil.grow(pendingTerms, pendingCount + 1);
+      for (int i = pendingCount; i < pendingTerms.length; i++) {
+        pendingTerms[i] = new TermEntry();
       }
       final TermEntry te = pendingTerms[pendingCount];
       te.term.copyBytes(text);
@@ -289,8 +281,7 @@ public class BlockTermsWriter extends FieldsConsumer implements Closeable {
                                      termsStartPointer,
                                      fieldInfo.getIndexOptions().compareTo(IndexOptions.DOCS_AND_FREQS) >= 0 ? sumTotalTermFreq : -1,
                                      sumDocFreq,
-                                     docsSeen.cardinality(),
-                                     longsSize));
+                                     docsSeen.cardinality()));
       }
     }
 
@@ -310,8 +301,7 @@ public class BlockTermsWriter extends FieldsConsumer implements Closeable {
       return pos1;
     }
 
-    private final RAMOutputStream bytesWriter = new RAMOutputStream();
-    private final RAMOutputStream bufferWriter = new RAMOutputStream();
+    private final ByteBuffersDataOutput bytesWriter = ByteBuffersDataOutput.newResettableInstance();
 
     private void flushBlock() throws IOException {
       //System.out.println("BTW.flushBlock seg=" + segment + " pendingCount=" + pendingCount + " fp=" + out.getFilePointer());
@@ -337,8 +327,8 @@ public class BlockTermsWriter extends FieldsConsumer implements Closeable {
         bytesWriter.writeVInt(suffix);
         bytesWriter.writeBytes(pendingTerms[termCount].term.bytes(), commonPrefix, suffix);
       }
-      out.writeVInt((int) bytesWriter.getFilePointer());
-      bytesWriter.writeTo(out);
+      out.writeVInt(Math.toIntExact(bytesWriter.size()));
+      bytesWriter.copyTo(out);
       bytesWriter.reset();
 
       // 3rd pass: write the freqs as byte[] blob
@@ -352,25 +342,19 @@ public class BlockTermsWriter extends FieldsConsumer implements Closeable {
           bytesWriter.writeVLong(state.totalTermFreq-state.docFreq);
         }
       }
-      out.writeVInt((int) bytesWriter.getFilePointer());
-      bytesWriter.writeTo(out);
+      out.writeVInt(Math.toIntExact(bytesWriter.size()));
+      bytesWriter.copyTo(out);
       bytesWriter.reset();
 
       // 4th pass: write the metadata 
-      long[] longs = new long[longsSize];
       boolean absolute = true;
       for(int termCount=0;termCount<pendingCount;termCount++) {
         final BlockTermState state = pendingTerms[termCount].state;
-        postingsWriter.encodeTerm(longs, bufferWriter, fieldInfo, state, absolute);
-        for (int i = 0; i < longsSize; i++) {
-          bytesWriter.writeVLong(longs[i]);
-        }
-        bufferWriter.writeTo(bytesWriter);
-        bufferWriter.reset();
+        postingsWriter.encodeTerm(bytesWriter, fieldInfo, state, absolute);
         absolute = false;
       }
-      out.writeVInt((int) bytesWriter.getFilePointer());
-      bytesWriter.writeTo(out);
+      out.writeVInt(Math.toIntExact(bytesWriter.size()));
+      bytesWriter.copyTo(out);
       bytesWriter.reset();
 
       lastPrevTerm.copyBytes(pendingTerms[pendingCount-1].term);

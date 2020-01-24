@@ -25,7 +25,6 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.zookeeper.KeeperException;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 public class ZkFailoverTest extends SolrCloudTestCase {
@@ -39,17 +38,13 @@ public class ZkFailoverTest extends SolrCloudTestCase {
         .configure();
   }
 
-  @AfterClass
-  public static void cleanUp() {
-    System.clearProperty("waitForZk");
-  }
-
   public void testRestartZkWhenClusterDown() throws Exception {
     String coll = "coll1";
     CollectionAdminRequest.createCollection(coll, 2, 1).process(cluster.getSolrClient());
+    cluster.waitForActiveCollection(coll, 2, 2);
     cluster.getSolrClient().add(coll, new SolrInputDocument("id", "1"));
     for (JettySolrRunner runner : cluster.getJettySolrRunners()) {
-      ChaosMonkey.stop(runner);
+      runner.stop();
     }
     ZkTestServer zkTestServer = cluster.getZkServer();
     zkTestServer.shutdown();
@@ -58,7 +53,7 @@ public class ZkFailoverTest extends SolrCloudTestCase {
       final JettySolrRunner runner = cluster.getJettySolrRunner(i);
       threads[i] = new Thread(() -> {
         try {
-          ChaosMonkey.start(runner);
+          runner.start();
         } catch (Exception e) {
           e.printStackTrace();
         }
@@ -67,12 +62,12 @@ public class ZkFailoverTest extends SolrCloudTestCase {
     }
     Thread.sleep(5000);
     zkTestServer = new ZkTestServer(zkTestServer.getZkDir(), zkTestServer.getPort());
-    zkTestServer.run();
+    zkTestServer.run(false);
     for (Thread thread : threads) {
       thread.join();
     }
     waitForLiveNodes(2);
-    waitForState("Timeout waiting for " + coll, coll, clusterShape(2, 1));
+    waitForState("Timeout waiting for " + coll, coll, clusterShape(2, 2));
     QueryResponse rsp = new QueryRequest(new SolrQuery("*:*")).process(cluster.getSolrClient(), coll);
     assertEquals(1, rsp.getResults().getNumFound());
     zkTestServer.shutdown();

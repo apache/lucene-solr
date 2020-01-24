@@ -55,7 +55,7 @@ When tlogs are enabled, documents being added to the index are written to the tl
 
 When Solr is shut down gracefully (using the `bin/solr stop` command) Solr will close the tlog file and index segments so no replay will be necessary on startup.
 
-One point of confusion is how much data is contained in a tlog. A tlog does not contain all documents, just the ones since the last hard commit. There are come low-level details involving `peer sync` that also involve the tlogs that are not relevant to this discussion. Older tlogs are deleted when no longer needed.
+One point of confusion is how much data is contained in a transaction log. A tlog does not contain all documents, only the ones since the last hard commit. Older transaction log files are deleted when no longer needed.
 
 WARNING: Implicit in the above is that transaction logs will grow forever if hard commits are disabled. Therefore it is important that hard commits be enabled when indexing.
 

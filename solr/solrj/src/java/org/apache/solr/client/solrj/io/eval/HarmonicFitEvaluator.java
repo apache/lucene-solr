@@ -70,6 +70,9 @@ public class HarmonicFitEvaluator extends RecursiveNumericEvaluator implements M
       points.add(x[i], y[i]);
     }
 
+    double[] guess = new HarmonicCurveFitter.ParameterGuesser(points.toList()).guess();
+    curveFitter = curveFitter.withStartPoint(guess);
+
     double[] coef = curveFitter.fit(points.toList());
     HarmonicOscillator pf = new HarmonicOscillator(coef[0], coef[1], coef[2]);
 
@@ -79,6 +82,12 @@ public class HarmonicFitEvaluator extends RecursiveNumericEvaluator implements M
       list.add(yvalue);
     }
 
-    return list;
+    VectorFunction vectorFunction =  new VectorFunction(pf, list);
+    vectorFunction.addToContext("amplitude", coef[0]);
+    vectorFunction.addToContext("angularFrequency", coef[1]);
+    vectorFunction.addToContext("phase", coef[2]);
+
+    return vectorFunction;
+
   }
 }

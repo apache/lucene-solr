@@ -23,7 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class IOUtils {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public static void closeQuietly(Closeable closeable) {
     try {
@@ -31,7 +31,7 @@ public class IOUtils {
         closeable.close();
       }
     } catch (Exception e) {
-      LOG.error("Error while closing", e);
+      log.error("Error while closing", e);
     }
   }
 }

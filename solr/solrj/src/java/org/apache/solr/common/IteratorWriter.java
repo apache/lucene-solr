@@ -38,6 +38,15 @@ public interface IteratorWriter {
      */
     ItemWriter add(Object o) throws IOException;
 
+    default ItemWriter addNoEx(Object o) {
+      try {
+        add(o);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+      return this;
+    }
+
     default ItemWriter add(int v) throws IOException {
       add((Integer) v);
       return this;

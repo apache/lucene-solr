@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
+
+/**
  * Facets supported by the analytics component.
  */
 package org.apache.solr.analytics.facet;

@@ -16,21 +16,22 @@
  */
 package org.apache.solr.handler.component;
 
+import java.util.Iterator;
+import java.util.Map;
+
 import org.apache.solr.BaseDistributedSearchTestCase;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import java.util.Map;
-import java.util.Iterator;
-
 /**
- * Test for QueryComponent's distributed querying
+ * Test for distributed ExpandComponent
  *
- * @see org.apache.solr.handler.component.QueryComponent
+ * @see org.apache.solr.handler.component.ExpandComponent
  */
 public class DistributedExpandComponentTest extends BaseDistributedSearchTestCase {
 
@@ -89,6 +90,12 @@ public class DistributedExpandComponentTest extends BaseDistributedSearchTestCas
     //Test page 2
     query("q", "*:*", "start","1", "rows", "1", "fq", "{!collapse field="+group+"}", "defType", "edismax", "bf", "field(test_i)", "expand", "true", "fl","*,score");
 
+
+    ignoreException("missing expand field");
+    SolrException e = expectThrows(SolrException.class, () -> query("q", "*:*", "expand", "true"));
+    assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+    assertTrue(e.getMessage().contains("missing expand field"));
+    resetExceptionIgnores();
 
     //First basic test case.
     ModifiableSolrParams params = new ModifiableSolrParams();

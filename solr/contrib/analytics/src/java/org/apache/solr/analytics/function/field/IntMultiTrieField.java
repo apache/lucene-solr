@@ -45,12 +45,12 @@ public class IntMultiTrieField extends AnalyticsField implements CastingIntValue
     count = 0;
     values = new int[initialArrayLength];
   }
-  
+
   @Override
   public void doSetNextReader(LeafReaderContext context) throws IOException {
     docValues = DocValues.getSortedSet(context.reader(), fieldName);
   }
-  
+
   @Override
   public void collect(int doc) throws IOException {
     count = 0;
@@ -64,7 +64,7 @@ public class IntMultiTrieField extends AnalyticsField implements CastingIntValue
       }
     }
   }
-  
+
   private void resizeValues() {
     int[] newValues = new int[values.length*2];
     for (int i = 0; i < count; ++i) {
@@ -72,7 +72,7 @@ public class IntMultiTrieField extends AnalyticsField implements CastingIntValue
     }
     values = newValues;
   }
-  
+
   @Override
   public void streamInts(IntConsumer cons) {
     for (int i = 0; i < count; ++i) {

@@ -60,19 +60,10 @@ public class TestCompressingTermVectorsFormat extends BaseTermVectorsFormatTestC
     assertNotNull(terms);
     TermsEnum termsEnum = terms.iterator();
     assertEquals(SeekStatus.FOUND, termsEnum.seekCeil(new BytesRef("this")));
-    try {
-      termsEnum.ord();
-      fail();
-    } catch (UnsupportedOperationException expected) {
-      // expected exception
-    }
-    
-    try {
-      termsEnum.seekExact(0);
-      fail();
-    } catch (UnsupportedOperationException expected) {
-      // expected exception
-    }
+
+    expectThrows(UnsupportedOperationException.class, termsEnum::ord);
+    expectThrows(UnsupportedOperationException.class, () -> termsEnum.seekExact(0));
+
     ir.close();
     iw.close();
     dir.close();

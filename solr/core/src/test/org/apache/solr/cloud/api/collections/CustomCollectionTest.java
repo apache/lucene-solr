@@ -55,6 +55,7 @@ public class CustomCollectionTest extends SolrCloudTestCase {
   }
 
   @Test
+  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 21-May-2018
   public void testCustomCollectionsAPI() throws Exception {
 
     final String collection = "implicitcoll";
@@ -148,6 +149,7 @@ public class CustomCollectionTest extends SolrCloudTestCase {
   }
 
   @Test
+  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 09-Aug-2018
   public void testRouteFieldForHashRouter()throws Exception{
     String collectionName = "routeFieldColl";
     int numShards = 4;
@@ -159,6 +161,8 @@ public class CustomCollectionTest extends SolrCloudTestCase {
         .setMaxShardsPerNode(maxShardsPerNode)
         .setRouterField(shard_fld)
         .process(cluster.getSolrClient());
+    
+    cluster.waitForActiveCollection(collectionName, numShards, numShards * replicationFactor);
 
     new UpdateRequest()
         .add("id", "6", shard_fld, "a")

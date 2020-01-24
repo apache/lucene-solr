@@ -24,8 +24,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.lucene.analysis.CharacterUtils;
-
 /**
  * A simple class that stores key Strings as char[]'s in a
  * hash table. Note that this is not a general purpose

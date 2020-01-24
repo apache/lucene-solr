@@ -28,6 +28,7 @@ solrAdminApp.controller('QueryController',
     $scope.facet = {facet: "on"};
     $scope.spatial = {};
     $scope.spellcheck = {spellcheck:"on"};
+    $scope.debugQuery = {debugQuery: "on"};
     $scope.qt = "/select";
 
     $scope.doQuery = function() {
@@ -43,7 +44,8 @@ solrAdminApp.controller('QueryController',
       var copy = function(params, query) {
         for (var key in query) {
           terms = query[key];
-          if (terms.length > 0 && key[0]!="$") {
+          // Booleans have no length property - only set them if true
+          if (((typeof(terms) == typeof(true) && terms) || terms.length > 0) && key[0]!="$") {
             set(key, terms);
           }
         }
@@ -57,6 +59,7 @@ solrAdminApp.controller('QueryController',
       if ($scope.isFacet)      copy(params, $scope.facet);
       if ($scope.isSpatial)    copy(params, $scope.spatial);
       if ($scope.isSpellcheck) copy(params, $scope.spellcheck);
+      if ($scope.isDebugQuery) copy(params, $scope.debugQuery);
 
       if ($scope.rawParams) {
         var rawParams = $scope.rawParams.split(/[&\n]/);

@@ -33,8 +33,15 @@ import java.util.Map;
  *     &lt;tokenizer class="solr.NGramTokenizerFactory" minGramSize="1" maxGramSize="2"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
+ * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class NGramTokenizerFactory extends TokenizerFactory {
+
+  /** SPI name */
+  public static final String NAME = "nGram";
+
   private final int maxGramSize;
   private final int minGramSize;
 

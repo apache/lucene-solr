@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.apache</groupId>
     <artifactId>apache</artifactId>
-    <version>13</version>
+    <version>21</version>
     <relativePath/>
   </parent>
   <groupId>org.apache.lucene</groupId>
@@ -32,20 +32,18 @@
   <packaging>pom</packaging>
   <name>Grandparent POM for Apache Lucene Core and Apache Solr</name>
   <description>Grandparent POM for Apache Lucene Core and Apache Solr</description>
-  <url>http://lucene.apache.org</url>
+  <url>https://lucene.apache.org</url>
   <modules>
     <module>lucene</module>
     <module>solr</module>
   </modules>
   <properties>
-    <vc-anonymous-base-url>http://git-wip-us.apache.org/repos/asf/lucene-solr.git</vc-anonymous-base-url>
-    <vc-dev-base-url>https://git-wip-us.apache.org/repos/asf/lucene-solr.git</vc-dev-base-url>
-    <vc-browse-base-url>https://git1-us-west.apache.org/repos/asf?p=lucene-solr.git;a=tree</vc-browse-base-url>
+    <vc-anonymous-base-url>https://gitbox.apache.org/repos/asf/lucene-solr.git</vc-anonymous-base-url>
+    <vc-dev-base-url>https://gitbox.apache.org/repos/asf/lucene-solr.git</vc-dev-base-url>
+    <vc-browse-base-url>https://gitbox.apache.org/repos/asf?p=lucene-solr.git</vc-browse-base-url>
     <specification.version>@spec.version@</specification.version>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
-    <java.compat.version>8</java.compat.version>
-    <!-- HACK: the enforce plugin does not like new versioning: -->
-    <java.legacy-compat.version>1.${java.compat.version}</java.legacy-compat.version>
+    <java.compat.version>11</java.compat.version>
     <jetty.version>9.3.8.v20160314</jetty.version>
 
     <!-- RandomizedTesting library system properties -->
@@ -82,7 +80,7 @@
       <subscribe>general-subscribe@lucene.apache.org</subscribe>
       <unsubscribe>general-unsubscribe@lucene.apache.org</unsubscribe>
       <archive>
-        http://mail-archives.apache.org/mod_mbox/lucene-general/
+        https://mail-archives.apache.org/mod_mbox/lucene-general/
       </archive>
     </mailingList>
     <mailingList>
@@ -90,21 +88,21 @@
       <subscribe>java-user-subscribe@lucene.apache.org</subscribe>
       <unsubscribe>java-user-unsubscribe@lucene.apache.org</unsubscribe>
       <archive>
-        http://mail-archives.apache.org/mod_mbox/lucene-java-user/
+        https://mail-archives.apache.org/mod_mbox/lucene-java-user/
       </archive>
     </mailingList>
     <mailingList>
       <name>Java Developer List</name>
       <subscribe>dev-subscribe@lucene.apache.org</subscribe>
       <unsubscribe>dev-unsubscribe@lucene.apache.org</unsubscribe>
-      <archive>http://mail-archives.apache.org/mod_mbox/lucene-dev/</archive>
+      <archive>https://mail-archives.apache.org/mod_mbox/lucene-dev/</archive>
     </mailingList>
     <mailingList>
       <name>Java Commits List</name>
       <subscribe>commits-subscribe@lucene.apache.org</subscribe>
       <unsubscribe>commits-unsubscribe@lucene.apache.org</unsubscribe>
       <archive>
-        http://mail-archives.apache.org/mod_mbox/lucene-java-commits/
+        https://mail-archives.apache.org/mod_mbox/lucene-java-commits/
       </archive>
     </mailingList>
   </mailingLists>
@@ -124,7 +122,7 @@
     <repository>
       <id>apache.snapshots</id>
       <name>Apache Snapshot Repository</name>
-      <url>http://repository.apache.org/snapshots</url>
+      <url>https://repository.apache.org/snapshots</url>
       <releases>
         <enabled>false</enabled>
       </releases>
@@ -161,7 +159,7 @@
         <plugin>
           <groupId>de.thetaphi</groupId>
           <artifactId>forbiddenapis</artifactId>
-          <version>2.4.1</version>
+          <version>2.7</version>
           <configuration>
             <!--
               This is the default setting, we don't support too new Java versions.
@@ -177,17 +175,17 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-antrun-plugin</artifactId>
-          <version>1.7</version>
+          <version>1.8</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-clean-plugin</artifactId>
-          <version>2.5</version>
+          <version>3.1.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-compiler-plugin</artifactId>
-          <version>3.1</version>
+          <version>3.8.0</version>
           <configuration>
             <source>${java.compat.version}</source>
             <target>${java.compat.version}</target>
@@ -200,27 +198,27 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-dependency-plugin</artifactId>
-          <version>2.8</version>
+          <version>3.1.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-deploy-plugin</artifactId>
-          <version>2.7</version>
+          <version>3.0.0-M1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-enforcer-plugin</artifactId>
-          <version>1.3</version>
+          <version>3.0.0-M2</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-install-plugin</artifactId>
-          <version>2.4</version>
+          <version>3.0.0-M1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
-          <version>2.4</version>
+          <version>3.1.1</version>
           <configuration>
             <archive>
               <manifest>
@@ -233,7 +231,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
-          <version>2.9.1</version>
+          <version>3.1.0</version>
           <configuration>
             <quiet>true</quiet>
             <additionalparam>-Xdoclint:all</additionalparam>
@@ -243,12 +241,17 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-resources-plugin</artifactId>
-          <version>2.6</version>
+          <version>3.1.0</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-remote-resources-plugin</artifactId>
+          <version>1.6.0</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-site-plugin</artifactId>
-          <version>3.3</version>
+          <version>3.7.1</version>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -264,7 +267,7 @@
               <tempDir>.</tempDir>
               <java.awt.headless>true</java.awt.headless>
 
-              <!-- See <http://wiki.apache.org/lucene-java/RunningTests>
+              <!-- See <https://cwiki.apache.org/confluence/display/lucene/RunningTests>
                    for a description of the tests.* system properties. -->
 
               <!-- RandomizedTesting library system properties -->
@@ -293,7 +296,7 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-war-plugin</artifactId>
-          <version>2.3</version>
+          <version>3.2.2</version>
           <configuration>
             <archive>
               <!-- This section should be *exactly* the same under -->
@@ -319,12 +322,12 @@
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>build-helper-maven-plugin</artifactId>
-          <version>1.8</version>
+          <version>3.0.0</version>
         </plugin>
         <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>buildnumber-maven-plugin</artifactId>
-          <version>1.2</version>
+          <version>1.4</version>
         </plugin>
         <plugin>
           <groupId>org.mortbay.jetty</groupId>
@@ -385,7 +388,7 @@
         <artifactId>maven-enforcer-plugin</artifactId>
         <executions>
           <execution>
-            <id>enforce-java-compat-version-and-maven-2.2.1</id>
+            <id>enforce-java-compat-version-and-maven-3.0.0</id>
             <goals>
               <goal>enforce</goal>
             </goals>
@@ -393,11 +396,11 @@
               <rules>
                 <requireJavaVersion>
                   <message>Java ${java.compat.version}+ is required.</message>
-                  <version>[${java.legacy-compat.version},)</version>
+                  <version>[${java.compat.version},)</version>
                 </requireJavaVersion>
                 <requireMavenVersion>
-                  <message>Maven 2.2.1+ is required.</message>
-                  <version>[2.2.1,)</version>
+                  <message>Maven 3.5.0+ is required.</message>
+                  <version>[3.5.0,)</version>
                 </requireMavenVersion>
                 <requirePluginVersions/>
               </rules>
@@ -418,7 +421,7 @@
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
-        <version>2.5.3</version>
+        <version>4.2.0</version>
         <configuration>
           <instructions>
             <Export-Package>*;-split-package:=merge-first</Export-Package>

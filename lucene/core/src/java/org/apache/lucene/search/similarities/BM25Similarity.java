@@ -187,11 +187,11 @@ public class BM25Similarity extends Similarity {
 
     float[] cache = new float[256];
     for (int i = 0; i < cache.length; i++) {
-      cache[i] = k1 * ((1 - b) + b * LENGTH_TABLE[i] / avgdl);
+      cache[i] = 1f / (k1 * ((1 - b) + b * LENGTH_TABLE[i] / avgdl));
     }
-    return new BM25Scorer(collectionStats.field(), boost, k1, b, idf, avgdl, cache);
+    return new BM25Scorer(boost, k1, b, idf, avgdl, cache);
   }
-  
+
   /** Collection statistics for the BM25 model. */
   private static class BM25Scorer extends SimScorer {
     /** query boost */
@@ -209,21 +209,29 @@ public class BM25Similarity extends Similarity {
     /** weight (idf * boost) */
     private final float weight;
 
-    BM25Scorer(String field, float boost, float k1, float b, Explanation idf, float avgdl, float[] cache) {
-      super(field);
+    BM25Scorer(float boost, float k1, float b, Explanation idf, float avgdl, float[] cache) {
       this.boost = boost;
       this.idf = idf;
       this.avgdl = avgdl;
       this.k1 = k1;
       this.b = b;
       this.cache = cache;
-      this.weight = (k1 + 1) * boost * idf.getValue().floatValue();
+      this.weight = boost * idf.getValue().floatValue();
     }
 
     @Override
     public float score(float freq, long encodedNorm) {
-      double norm = cache[((byte) encodedNorm) & 0xFF];
-      return weight * (float) (freq / (freq + norm));
+      // In order to guarantee monotonicity with both freq and norm without
+      // promoting to doubles, we rewrite freq / (freq + norm) to
+      // 1 - 1 / (1 + freq * 1/norm).
+      // freq * 1/norm is guaranteed to be monotonic for both freq and norm due
+      // to the fact that multiplication and division round to the nearest
+      // float. And then monotonicity is preserved through composition via
+      // x -> 1 + x and x -> 1 - 1/x.
+      // Finally we expand weight * (1 - 1 / (1 + freq * 1/norm)) to
+      // weight - weight / (1 + freq * 1/norm), which runs slightly faster.
+      float normInverse = cache[((byte) encodedNorm) & 0xFF];
+      return weight - weight / (1f + freq * normInverse);
     }
 
     @Override
@@ -231,8 +239,11 @@ public class BM25Similarity extends Similarity {
       List<Explanation> subs = new ArrayList<>(explainConstantFactors());
       Explanation tfExpl = explainTF(freq, encodedNorm);
       subs.add(tfExpl);
-      return Explanation.match(weight * tfExpl.getValue().floatValue(),
-          "score(freq="+freq.getValue()+"), product of:", subs);
+      float normInverse = cache[((byte) encodedNorm) & 0xFF];
+      // not using "product of" since the rewrite that we do in score()
+      // introduces a small rounding error that CheckHits complains about
+      return Explanation.match(weight - weight / (1f + freq.getValue().floatValue() * normInverse),
+          "score(freq="+freq.getValue()+"), computed as boost * idf * tf from:", subs);
     }
     
     private Explanation explainTF(Explanation freq, long norm) {
@@ -247,16 +258,14 @@ public class BM25Similarity extends Similarity {
         subs.add(Explanation.match(doclen, "dl, length of field"));
       }
       subs.add(Explanation.match(avgdl, "avgdl, average length of field"));
-      float normValue = k1 * ((1 - b) + b * doclen / avgdl);
+      float normInverse = 1f / (k1 * ((1 - b) + b * doclen / avgdl));
       return Explanation.match(
-          (float) (freq.getValue().floatValue() / (freq.getValue().floatValue() + (double) normValue)),
+          1f - 1f / (1 + freq.getValue().floatValue() * normInverse),
           "tf, computed as freq / (freq + k1 * (1 - b + b * dl / avgdl)) from:", subs);
     }
 
     private List<Explanation> explainConstantFactors() {
       List<Explanation> subs = new ArrayList<>();
-      // scale factor
-      subs.add(Explanation.match(k1 + 1, "scaling factor, k1 + 1"));
       // query boost
       if (boost != 1.0f) {
         subs.add(Explanation.match(boost, "boost"));

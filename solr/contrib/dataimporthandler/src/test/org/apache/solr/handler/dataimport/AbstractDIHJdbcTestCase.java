@@ -52,12 +52,12 @@ public abstract class AbstractDIHJdbcTestCase extends
   @BeforeClass
   public static void beforeClassDihJdbcTest() throws Exception {
     try {
-      Class.forName("org.hsqldb.jdbcDriver").newInstance();
+      Class.forName("org.hsqldb.jdbcDriver").getConstructor().newInstance();
       String oldProp = System.getProperty("derby.stream.error.field");
       System
           .setProperty("derby.stream.error.field",
               "org.apache.solr.handler.dataimport.AbstractDIHJdbcTestCase$DerbyUtil.DEV_NULL");
-      Class.forName("org.apache.derby.jdbc.EmbeddedDriver").newInstance();
+      Class.forName("org.apache.derby.jdbc.EmbeddedDriver").getConstructor().newInstance();
       if (oldProp != null) {
         System.setProperty("derby.stream.error.field", oldProp);
       }

@@ -66,7 +66,7 @@ public class AssertingScorer extends Scorer {
   }
 
   @Override
-  public void setMinCompetitiveScore(float score) {
+  public void setMinCompetitiveScore(float score) throws IOException {
     assert scoreMode == ScoreMode.TOP_SCORES;
     assert Float.isNaN(score) == false;
     assert score >= minCompetitiveScore;
@@ -76,6 +76,7 @@ public class AssertingScorer extends Scorer {
 
   @Override
   public int advanceShallow(int target) throws IOException {
+    assert scoreMode.needsScores();
     assert target >= lastShallowTarget : "called on decreasing targets: target = " + target + " < last target = " + lastShallowTarget;
     assert target >= docID() : "target = " + target + " < docID = " + docID();
     int upTo = in.advanceShallow(target);
@@ -87,6 +88,7 @@ public class AssertingScorer extends Scorer {
 
   @Override
   public float getMaxScore(int upTo) throws IOException {
+    assert scoreMode.needsScores();
     assert upTo >= lastShallowTarget : "uTo = " + upTo + " < last target = " + lastShallowTarget;
     assert docID() >= 0 || lastShallowTarget >= 0 : "Cannot get max scores until the iterator is positioned or advanceShallow has been called";
     float maxScore = in.getMaxScore(upTo);
@@ -105,12 +107,12 @@ public class AssertingScorer extends Scorer {
   }
 
   @Override
-  public Collection<ChildScorer> getChildren() {
+  public Collection<ChildScorable> getChildren() {
     // We cannot hide that we hold a single child, else
     // collectors (e.g. ToParentBlockJoinCollector) that
     // need to walk the scorer tree will miss/skip the
     // Scorer we wrap:
-    return Collections.singletonList(new ChildScorer(in, "SHOULD"));
+    return Collections.singletonList(new ChildScorable(in, "SHOULD"));
   }
 
   @Override

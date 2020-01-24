@@ -50,25 +50,22 @@
         range or wildcard queries that expand to big boolean
         queries.  An exception is thrown if exceeded.
     -->
-    <maxBooleanClauses>1024</maxBooleanClauses>
+    <maxBooleanClauses>${solr.max.booleanClauses:1024}</maxBooleanClauses>
 
     <!-- Cache specification for Filters or DocSets - unordered set of *all* documents
          that match a particular query.
       -->
     <filterCache
-      class="solr.search.FastLRUCache"
       size="512"
       initialSize="512"
       autowarmCount="256"/>
 
     <queryResultCache
-      class="solr.search.LRUCache"
       size="512"
       initialSize="512"
       autowarmCount="1024"/>
 
     <documentCache
-      class="solr.search.LRUCache"
       size="512"
       initialSize="512"
       autowarmCount="0"/>
@@ -92,7 +89,7 @@
 
   <!-- test elevation -->
   <searchComponent name="elevate" class="org.apache.solr.handler.component.QueryElevationComponent" >
-    <str name="queryFieldType">string</str>
+    <str name="queryFieldType">text</str>
     <str name="config-file">${elevate.file:elevate.xml}</str>
   </searchComponent>
 

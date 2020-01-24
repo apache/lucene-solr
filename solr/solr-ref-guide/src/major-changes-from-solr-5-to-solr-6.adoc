@@ -78,11 +78,11 @@ Please review the <<schema-factory-definition-in-solrconfig.adoc#schema-factory-
 
 Solr's default behavior when a Schema does not explicitly define a global <<other-schema-elements.adoc#other-schema-elements,`<similarity/>`>> is now dependent on the `luceneMatchVersion` specified in the `solrconfig.xml`. When `luceneMatchVersion < 6.0`, an instance of `ClassicSimilarityFactory` will be used, otherwise an instance of `SchemaSimilarityFactory` will be used. Most notably this change means that users can take advantage of per Field Type similarity declarations, without needing to also explicitly declare a global usage of `SchemaSimilarityFactory`.
 
-Regardless of whether it is explicitly declared, or used as an implicit global default, `SchemaSimilarityFactory` 's implicit behavior when a Field Types do not declare an explicit `<similarity />` has also been changed to depend on the the `luceneMatchVersion`. When `luceneMatchVersion < 6.0`, an instance of `ClassicSimilarity` will be used, otherwise an instance of `BM25Similarity` will be used. A `defaultSimFromFieldType` init option may be specified on the `SchemaSimilarityFactory` declaration to change this behavior. Please review the `SchemaSimilarityFactory` javadocs for more details
+Regardless of whether it is explicitly declared, or used as an implicit global default, `SchemaSimilarityFactory` 's implicit behavior when a Field Types do not declare an explicit `<similarity />` has also been changed to depend on the the `luceneMatchVersion`. When `luceneMatchVersion < 6.0`, an instance of `ClassicSimilarity` will be used, otherwise an instance of `BM25Similarity` will be used. A `defaultSimFromFieldType` init option may be specified on the `SchemaSimilarityFactory` declaration to change this behavior. Please review the `SchemaSimilarityFactory` javadocs for more details.
 
 == Replica & Shard Delete Command Changes
 
-DELETESHARD and DELETEREPLICA now default to deleting the instance directory, data directory, and index directory for any replica they delete. Please review the <<collections-api.adoc#collections-api,Collection API>> documentation for details on new request parameters to prevent this behavior if you wish to keep all data on disk when using these commands
+DELETESHARD and DELETEREPLICA now default to deleting the instance directory, data directory, and index directory for any replica they delete. Please review the <<collections-api.adoc#collections-api,Collection API>> documentation for details on new request parameters to prevent this behavior if you wish to keep all data on disk when using these commands.
 
 == facet.date.* Parameters Removed
 

@@ -18,52 +18,29 @@ package org.apache.solr.response;
 
 import java.io.IOException;
 import java.io.Writer;
-import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Date;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexableField;
 import org.apache.lucene.util.BytesRef;
-import org.apache.solr.common.EnumFieldValue;
-import org.apache.solr.common.IteratorWriter;
-import org.apache.solr.common.MapSerializable;
-import org.apache.solr.common.MapWriter;
-import org.apache.solr.common.PushWriter;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.params.CommonParams;
-import org.apache.solr.common.util.Base64;
-import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.FastWriter;
+import org.apache.solr.common.util.TextWriter;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.search.DocList;
 import org.apache.solr.search.ReturnFields;
-import org.apache.solr.util.FastWriter;
 
 /** Base class for text-oriented response writers.
  *
  *
  */
-public abstract class TextResponseWriter implements PushWriter {
+public abstract class TextResponseWriter implements TextWriter {
 
-  // indent up to 40 spaces
-  static final char[] indentChars = new char[81];
-  static {
-    Arrays.fill(indentChars,' ');
-    indentChars[0] = '\n';  // start with a newline
-  }
-
-  
   protected final FastWriter writer;
   protected final IndexSchema schema;
   protected final SolrQueryRequest req;
@@ -90,23 +67,29 @@ public abstract class TextResponseWriter implements PushWriter {
     returnFields = rsp.getReturnFields();
     if (req.getParams().getBool(CommonParams.OMIT_HEADER, false)) rsp.removeResponseHeader();
   }
+  //only for test purposes
+   TextResponseWriter(Writer writer, boolean indent) {
+    this.writer = writer == null ? null: FastWriter.wrap(writer);
+    this.schema = null;
+    this.req = null;
+    this.rsp = null;
+    returnFields = null;
+    this.doIndent = indent;
+  }
 
   /** done with this ResponseWriter... make sure any buffers are flushed to writer */
   public void close() throws IOException {
     if(writer != null) writer.flushBuffer();
   }
 
+  @Override
+  public boolean doIndent() {
+    return doIndent;
+  }
+
   /** returns the Writer that the response is being written to */
   public Writer getWriter() { return writer; }
 
-
-  public void indent() throws IOException {
-     if (doIndent) indent(level);
-  }
-
-  public void indent(int lev) throws IOException {
-    writer.write(indentChars, 0, Math.min((lev<<1)+1, indentChars.length));
-  }
 
   //
   // Functions to manipulate the current logical nesting level.
@@ -116,12 +99,11 @@ public abstract class TextResponseWriter implements PushWriter {
   public int level() { return level; }
   public int incLevel() { return ++level; }
   public int decLevel() { return --level; }
-  public void setIndent(boolean doIndent) {
+  public TextResponseWriter setIndent(boolean doIndent) {
     this.doIndent = doIndent;
+    return this;
   }
 
-
-  public abstract void writeNamedList(String name, NamedList val) throws IOException;
 
   public final void writeVal(String name, Object val) throws IOException {
 
@@ -132,10 +114,10 @@ public abstract class TextResponseWriter implements PushWriter {
     // go in order of most common to least common, however some of the more general types like Map belong towards the end
     if (val == null) {
       writeNull(name);
-    } else if (val instanceof String) {
-      writeStr(name, val.toString(), true);
-      // micro-optimization... using toString() avoids a cast first
-    } else if (val instanceof IndexableField) {
+      return;
+    }
+
+    if(val instanceof IndexableField) {
       IndexableField f = (IndexableField)val;
       SchemaField sf = schema.getFieldOrNull( f.name() );
       if( sf != null ) {
@@ -144,14 +126,6 @@ public abstract class TextResponseWriter implements PushWriter {
       else {
         writeStr(name, f.stringValue(), true);
       }
-    } else if (val instanceof Number) {
-      writeNumber(name, (Number) val);
-    } else if (val instanceof Boolean) {
-      writeBool(name, (Boolean) val);
-    } else if (val instanceof AtomicBoolean)  {
-      writeBool(name, ((AtomicBoolean) val).get());
-    } else if (val instanceof Date) {
-      writeDate(name, (Date) val);
     } else if (val instanceof Document) {
       SolrDocument doc = DocsStreamer.convertLuceneDocToSolrDoc((Document) val, schema, returnFields);
       writeSolrDocument(name, doc, returnFields, 0);
@@ -171,79 +145,13 @@ public abstract class TextResponseWriter implements PushWriter {
     // restricts the fields to write...?
     } else if (val instanceof SolrDocumentList) {
       writeSolrDocumentList(name, (SolrDocumentList)val, returnFields);
-    } else if (val instanceof NamedList) {
-      writeNamedList(name, (NamedList)val);
-    } else if (val instanceof Path) {
-      writeStr(name, ((Path) val).toAbsolutePath().toString(), true);
-    } else if (val instanceof IteratorWriter) {
-      writeIterator((IteratorWriter) val);
-    } else if (val instanceof MapWriter) {
-      writeMap((MapWriter) val);
-    } else if (val instanceof MapSerializable) {
-      //todo find a better way to reuse the map more efficiently
-      writeMap(name, ((MapSerializable) val).toMap(new LinkedHashMap<>()), false, true);
-    } else if (val instanceof Map) {
-      writeMap(name, (Map)val, false, true);
-    } else if (val instanceof Iterator) { // very generic; keep towards the end
-      writeArray(name, (Iterator) val);
-    } else if (val instanceof Iterable) { // very generic; keep towards the end
-      writeArray(name,((Iterable)val).iterator());
-    } else if (val instanceof Object[]) {
-      writeArray(name,(Object[])val);
-    } else if (val instanceof byte[]) {
-      byte[] arr = (byte[])val;
-      writeByteArr(name, arr, 0, arr.length);
     } else if (val instanceof BytesRef) {
       BytesRef arr = (BytesRef)val;
       writeByteArr(name, arr.bytes, arr.offset, arr.length);
-    } else if (val instanceof EnumFieldValue) {
-      writeStr(name, val.toString(), true);
-    } else if (val instanceof WriteableValue) {
-      ((WriteableValue)val).write(name, this);
     } else {
-      // default... for debugging only.  Would be nice to "assert false" ?
-      writeStr(name, val.getClass().getName() + ':' + val.toString(), true);
+      TextWriter.super.writeVal(name, val);
     }
   }
-  @Override
-  public void writeMap(MapWriter mw) throws IOException {
-    //todo
-  }
-
-  @Override
-  public void writeIterator(IteratorWriter iw) throws IOException {
-    /*todo*/
-  }
-
-  protected void writeBool(String name , Boolean val) throws IOException {
-    writeBool(name, val.toString());
-  }
-
-  protected void writeNumber(String name, Number val) throws IOException {
-    if (val instanceof Integer) {
-      writeInt(name, val.toString());
-    } else if (val instanceof Long) {
-      writeLong(name, val.toString());
-    } else if (val instanceof Float) {
-      // we pass the float instead of using toString() because
-      // it may need special formatting. same for double.
-      writeFloat(name, val.floatValue());
-    } else if (val instanceof Double) {
-      writeDouble(name, val.doubleValue());
-    } else if (val instanceof Short) {
-      writeInt(name, val.toString());
-    } else if (val instanceof Byte) {
-      writeInt(name, val.toString());
-    } else if (val instanceof AtomicInteger) {
-      writeInt(name, ((AtomicInteger) val).get());
-    } else if (val instanceof AtomicLong) {
-      writeLong(name, ((AtomicLong) val).get());
-    } else {
-      // default... for debugging only
-      writeStr(name, val.getClass().getName() + ':' + val.toString(), true);
-    }
-  }
-
   // names are passed when writing primitives like writeInt to allow many different
   // types of formats, including those where the name may come after the value (like
   // some XML formats).
@@ -269,7 +177,7 @@ public abstract class TextResponseWriter implements PushWriter {
     DocList ids = res.getDocList();
     Iterator<SolrDocument> docsStreamer = res.getProcessedDocuments();
     writeStartDocumentList(name, ids.offset(), ids.size(), ids.matches(),
-        res.wantsScores() ? new Float(ids.maxScore()) : null);
+        res.wantsScores() ? ids.maxScore() : null);
 
     int idx = 0;
     while (docsStreamer.hasNext()) {
@@ -277,85 +185,5 @@ public abstract class TextResponseWriter implements PushWriter {
       idx++;
     }
     writeEndDocumentList();
-  }
-  
-  
-  public abstract void writeStr(String name, String val, boolean needsEscaping) throws IOException;
-
-  public abstract void writeMap(String name, Map val, boolean excludeOuter, boolean isFirstVal) throws IOException;
-
-  public void writeArray(String name, Object[] val) throws IOException {
-    writeArray(name, Arrays.asList(val));
-  }
-
-  public void writeArray(String name, List l) throws IOException {
-    writeArray(name, l.iterator());
-  }
-  
-  public abstract void writeArray(String name, Iterator val) throws IOException;
-
-  public abstract void writeNull(String name) throws IOException;
-
-  /** if this form of the method is called, val is the Java string form of an int */
-  public abstract void writeInt(String name, String val) throws IOException;
-
-  public void writeInt(String name, int val) throws IOException {
-    writeInt(name,Integer.toString(val));
-  }
-
-  /** if this form of the method is called, val is the Java string form of a long */
-  public abstract void writeLong(String name, String val) throws IOException;
-
-  public  void writeLong(String name, long val) throws IOException {
-    writeLong(name,Long.toString(val));
-  }
-
-  /** if this form of the method is called, val is the Java string form of a boolean */
-  public abstract void writeBool(String name, String val) throws IOException;
-
-  public void writeBool(String name, boolean val) throws IOException {
-    writeBool(name,Boolean.toString(val));
-  }
-
-  /** if this form of the method is called, val is the Java string form of a float */
-  public abstract void writeFloat(String name, String val) throws IOException;
-
-  public void writeFloat(String name, float val) throws IOException {
-    String s = Float.toString(val);
-    // If it's not a normal number, write the value as a string instead.
-    // The following test also handles NaN since comparisons are always false.
-    if (val > Float.NEGATIVE_INFINITY && val < Float.POSITIVE_INFINITY) {
-      writeFloat(name,s);
-    } else {
-      writeStr(name,s,false);
-    }
-  }
-
-
-  /** if this form of the method is called, val is the Java string form of a double */
-  public abstract void writeDouble(String name, String val) throws IOException;
-
-  public void writeDouble(String name, double val) throws IOException {
-    String s = Double.toString(val);
-    // If it's not a normal number, write the value as a string instead.
-    // The following test also handles NaN since comparisons are always false.
-    if (val > Double.NEGATIVE_INFINITY && val < Double.POSITIVE_INFINITY) {
-      writeDouble(name,s);
-    } else {
-      writeStr(name,s,false);
-    }
-  }
-
-
-  public void writeDate(String name, Date val) throws IOException {
-    writeDate(name, val.toInstant().toString());
-  }
-  
-
-  /** if this form of the method is called, val is the Solr ISO8601 based date format */
-  public abstract void writeDate(String name, String val) throws IOException;
-
-  public void writeByteArr(String name, byte[] buf, int offset, int len) throws IOException {
-    writeStr(name, Base64.byteArrayToBase64(buf, offset, len), false);
   }
 }

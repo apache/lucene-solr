@@ -24,15 +24,16 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Weight;
 
@@ -226,13 +227,6 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
     }
 
     @Override
-    public void extractTerms(Set<Term> terms) {
-      for (SpanWeight w : subWeights) {
-        w.extractTerms(terms);
-      }
-    }
-
-    @Override
     public boolean isCacheable(LeafReaderContext ctx) {
       for (Weight w : subWeights) {
         if (w.isCacheable(ctx) == false)
@@ -263,6 +257,17 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
       }
     }
     return super.rewrite(reader);
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(getField()) == false) {
+      return;
+    }
+    QueryVisitor v = visitor.getSubVisitor(BooleanClause.Occur.MUST, this);
+    for (SpanQuery clause : clauses) {
+      clause.visit(v);
+    }
   }
 
   @Override
@@ -302,6 +307,11 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
     }
 
     @Override
+    public void visit(QueryVisitor visitor) {
+      visitor.visitLeaf(this);
+    }
+
+    @Override
     public String toString(String field) {
       return "SpanGap(" + field + ":" + width + ")";
     }
@@ -325,11 +335,6 @@ public class SpanNearQuery extends SpanQuery implements Cloneable {
       @Override
       public Spans getSpans(LeafReaderContext ctx, Postings requiredPostings) throws IOException {
         return new GapSpans(width);
-      }
-
-      @Override
-      public void extractTerms(Set<Term> terms) {
-
       }
 
       @Override

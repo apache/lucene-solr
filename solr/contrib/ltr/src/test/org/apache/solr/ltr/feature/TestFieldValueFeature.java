@@ -16,20 +16,22 @@
  */
 package org.apache.solr.ltr.feature;
 
+import java.util.LinkedHashMap;
+
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.FeatureLoggerTestUtils;
 import org.apache.solr.ltr.TestRerankBase;
 import org.apache.solr.ltr.model.LinearModel;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class TestFieldValueFeature extends TestRerankBase {
 
   private static final float FIELD_VALUE_FEATURE_DEFAULT_VAL = 0.0f;
 
-  @BeforeClass
-  public static void before() throws Exception {
+  @Before
+  public void before() throws Exception {
     setuptest(false);
 
     assertU(adoc("id", "1", "title", "w1", "description", "w1", "popularity",
@@ -61,8 +63,8 @@ public class TestFieldValueFeature extends TestRerankBase {
             new String[] {"popularity"}, "{\"weights\":{\"popularity\":1.0}}");
   }
 
-  @AfterClass
-  public static void after() throws Exception {
+  @After
+  public void after() throws Exception {
     aftertest();
   }
 
@@ -204,5 +206,11 @@ public class TestFieldValueFeature extends TestRerankBase {
 
   }
 
+  @Test
+  public void testParamsToMap() throws Exception {
+    final LinkedHashMap<String,Object> params = new LinkedHashMap<String,Object>();
+    params.put("field", "field"+random().nextInt(10));
+    doTestParamsToMap(FieldValueFeature.class.getName(), params);
+  }
 
 }

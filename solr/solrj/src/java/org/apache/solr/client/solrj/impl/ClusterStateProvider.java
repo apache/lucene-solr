@@ -24,6 +24,7 @@ import java.util.Set;
 import org.apache.solr.common.SolrCloseable;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.params.CollectionAdminParams;
 
 public interface ClusterStateProvider extends SolrCloseable {
 
@@ -43,6 +44,31 @@ public interface ClusterStateProvider extends SolrCloseable {
    * it's not an alias.
    */
   List<String> resolveAlias(String alias);
+
+  /**
+   * Return alias properties, or an empty map if the alias has no properties.
+   */
+  Map<String, String> getAliasProperties(String alias);
+
+  /**
+   * Given a collection alias, return a single collection it points to, or the original name if it's not an
+   * alias.
+   * @throws IllegalArgumentException if an alias points to more than 1 collection, either directly or indirectly.
+   */
+  default String resolveSimpleAlias(String alias) throws IllegalArgumentException {
+    List<String> aliases = resolveAlias(alias);
+    if (aliases.size() > 1) {
+      throw new IllegalArgumentException("Simple alias '" + alias + "' points to more than 1 collection: " + aliases);
+    }
+    return aliases.get(0);
+  }
+
+  /**
+   * Returns true if an alias exists and is a routed alias, false otherwise.
+   */
+  default boolean isRoutedAlias(String alias) {
+    return getAliasProperties(alias).entrySet().stream().anyMatch(e -> e.getKey().startsWith(CollectionAdminParams.ROUTER_PREFIX));
+  }
 
   /**
    * Obtain the current cluster state.

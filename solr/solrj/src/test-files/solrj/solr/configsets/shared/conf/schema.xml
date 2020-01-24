@@ -22,13 +22,11 @@
     <analyzer type="index">
       <tokenizer class="solr.StandardTokenizerFactory"/>
       <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords-fr.txt"/>
-      <filter class="solr.StandardFilterFactory"/>
       <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
     </analyzer>
     <analyzer type="query">
       <tokenizer class="solr.StandardTokenizerFactory"/>
       <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords-fr.txt"/>
-      <filter class="solr.StandardFilterFactory"/>
       <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
     </analyzer>
   </fieldType>
@@ -36,13 +34,11 @@
     <analyzer type="index">
       <tokenizer class="solr.StandardTokenizerFactory"/>
       <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords-en.txt"/>
-      <filter class="solr.StandardFilterFactory"/>
       <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
     </analyzer>
     <analyzer type="query">
       <tokenizer class="solr.StandardTokenizerFactory"/>
       <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords-en.txt"/>
-      <filter class="solr.StandardFilterFactory"/>
       <filter class="solr.RemoveDuplicatesTokenFilterFactory"/>
     </analyzer>
   </fieldType>

@@ -1,0 +1,13 @@
+apply plugin: 'java-library'
+
+dependencies {
+  api project(':lucene:core')
+  api project(':lucene:analysis:common')
+
+  api 'org.carrot2:morfologik-stemming'
+
+  implementation 'org.carrot2:morfologik-polish'
+  implementation 'ua.net.nlp:morfologik-ukrainian-search'
+
+  testImplementation project(':lucene:test-framework')
+}

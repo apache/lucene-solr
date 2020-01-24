@@ -17,19 +17,40 @@
 package org.apache.lucene.analysis.miscellaneous;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
 
-import org.apache.lucene.analysis.*;
+import org.apache.lucene.analysis.Analyzer;
+import org.apache.lucene.analysis.BaseTokenStreamTestCase;
+import org.apache.lucene.analysis.CannedTokenStream;
 import org.apache.lucene.analysis.CharArraySet;
+import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.StopFilter;
+import org.apache.lucene.analysis.Token;
+import org.apache.lucene.analysis.TokenFilter;
+import org.apache.lucene.analysis.TokenStream;
+import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
-import org.apache.lucene.analysis.standard.StandardAnalyzer;
+import org.apache.lucene.analysis.en.EnglishAnalyzer;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.TestUtil;
 
-import static org.apache.lucene.analysis.miscellaneous.WordDelimiterGraphFilter.*;
+import static org.apache.lucene.analysis.miscellaneous.WordDelimiterGraphFilter.CATENATE_ALL;
+import static org.apache.lucene.analysis.miscellaneous.WordDelimiterGraphFilter.CATENATE_NUMBERS;
+import static org.apache.lucene.analysis.miscellaneous.WordDelimiterGraphFilter.CATENATE_WORDS;
+import static org.apache.lucene.analysis.miscellaneous.WordDelimiterGraphFilter.GENERATE_NUMBER_PARTS;
+import static org.apache.lucene.analysis.miscellaneous.WordDelimiterGraphFilter.GENERATE_WORD_PARTS;
+import static org.apache.lucene.analysis.miscellaneous.WordDelimiterGraphFilter.IGNORE_KEYWORDS;
+import static org.apache.lucene.analysis.miscellaneous.WordDelimiterGraphFilter.PRESERVE_ORIGINAL;
+import static org.apache.lucene.analysis.miscellaneous.WordDelimiterGraphFilter.SPLIT_ON_CASE_CHANGE;
+import static org.apache.lucene.analysis.miscellaneous.WordDelimiterGraphFilter.SPLIT_ON_NUMERICS;
+import static org.apache.lucene.analysis.miscellaneous.WordDelimiterGraphFilter.STEM_ENGLISH_POSSESSIVE;
 import static org.apache.lucene.analysis.miscellaneous.WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE;
 
 /**
@@ -43,7 +64,8 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
     int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CATENATE_ALL | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE;
     // test that subwords and catenated subwords have
     // the correct offsets.
-    WordDelimiterGraphFilter wdf = new WordDelimiterGraphFilter(new CannedTokenStream(new Token("foo-bar", 5, 12)), DEFAULT_WORD_DELIM_TABLE, flags, null);
+    WordDelimiterGraphFilter wdf = new WordDelimiterGraphFilter(new CannedTokenStream(new Token("foo-bar", 5, 12)),
+        true, DEFAULT_WORD_DELIM_TABLE, flags, null);
 
     assertTokenStreamContents(wdf, 
                               new String[] { "foobar", "foo", "bar" },
@@ -51,7 +73,7 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
                               new int[] { 12, 8, 12 });
 
     // with illegal offsets:
-    wdf = new WordDelimiterGraphFilter(new CannedTokenStream(new Token("foo-bar", 5, 6)), DEFAULT_WORD_DELIM_TABLE, flags, null);
+    wdf = new WordDelimiterGraphFilter(new CannedTokenStream(new Token("foo-bar", 5, 6)), true, DEFAULT_WORD_DELIM_TABLE, flags, null);
     assertTokenStreamContents(wdf,
                               new String[] { "foobar", "foo", "bar" },
                               new int[] { 5, 5, 5 },
@@ -60,7 +82,8 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
   
   public void testOffsetChange() throws Exception {
     int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CATENATE_ALL | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE;
-    WordDelimiterGraphFilter wdf = new WordDelimiterGraphFilter(new CannedTokenStream(new Token("übelkeit)", 7, 16)), DEFAULT_WORD_DELIM_TABLE, flags, null);
+    WordDelimiterGraphFilter wdf = new WordDelimiterGraphFilter(new CannedTokenStream(new Token("übelkeit)", 7, 16)),
+        true, DEFAULT_WORD_DELIM_TABLE, flags, null);
     
     assertTokenStreamContents(wdf,
         new String[] { "übelkeit" },
@@ -70,7 +93,8 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
   
   public void testOffsetChange2() throws Exception {
     int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CATENATE_ALL | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE;
-    WordDelimiterGraphFilter wdf = new WordDelimiterGraphFilter(new CannedTokenStream(new Token("(übelkeit", 7, 17)), DEFAULT_WORD_DELIM_TABLE, flags, null);
+    WordDelimiterGraphFilter wdf = new WordDelimiterGraphFilter(new CannedTokenStream(new Token("(übelkeit", 7, 17)),
+        true, DEFAULT_WORD_DELIM_TABLE, flags, null);
     // illegal offsets:
     assertTokenStreamContents(wdf,
                               new String[] { "übelkeit" },
@@ -80,7 +104,8 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
   
   public void testOffsetChange3() throws Exception {
     int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CATENATE_ALL | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE;
-    WordDelimiterGraphFilter wdf = new WordDelimiterGraphFilter(new CannedTokenStream(new Token("(übelkeit", 7, 16)), DEFAULT_WORD_DELIM_TABLE, flags, null);
+    WordDelimiterGraphFilter wdf = new WordDelimiterGraphFilter(new CannedTokenStream(new Token("(übelkeit", 7, 16)),
+        true, DEFAULT_WORD_DELIM_TABLE, flags, null);
     assertTokenStreamContents(wdf,
                               new String[] { "übelkeit" },
                               new int[] { 8 },
@@ -89,7 +114,8 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
   
   public void testOffsetChange4() throws Exception {
     int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CATENATE_ALL | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE;
-    WordDelimiterGraphFilter wdf = new WordDelimiterGraphFilter(new CannedTokenStream(new Token("(foo,bar)", 7, 16)), DEFAULT_WORD_DELIM_TABLE, flags, null);
+    WordDelimiterGraphFilter wdf = new WordDelimiterGraphFilter(new CannedTokenStream(new Token("(foo,bar)", 7, 16)),
+        true, DEFAULT_WORD_DELIM_TABLE, flags, null);
     
     assertTokenStreamContents(wdf,
         new String[] { "foobar", "foo", "bar"},
@@ -99,7 +125,7 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
 
   public void doSplit(final String input, String... output) throws Exception {
     int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE;
-    WordDelimiterGraphFilter wdf = new WordDelimiterGraphFilter(keywordMockTokenizer(input),
+    WordDelimiterGraphFilter wdf = new WordDelimiterGraphFilter(keywordMockTokenizer(input), false,
         WordDelimiterIterator.DEFAULT_WORD_DELIM_TABLE, flags, null);
     
     assertTokenStreamContents(wdf, output);
@@ -161,7 +187,7 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
     // the correct offsets.
     Token token = new Token("foo-bar", 5, 12);
     token.setType("mytype");
-    WordDelimiterGraphFilter wdf = new WordDelimiterGraphFilter(new CannedTokenStream(token), DEFAULT_WORD_DELIM_TABLE, flags, null);
+    WordDelimiterGraphFilter wdf = new WordDelimiterGraphFilter(new CannedTokenStream(token), flags, null);
 
     assertTokenStreamContents(wdf, 
                               new String[] {"foobar", "foo", "bar"},
@@ -192,6 +218,19 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
   }
 
   public void testPositionIncrements() throws Exception {
+
+    Analyzer a4 = new Analyzer() {
+      @Override
+      protected TokenStreamComponents createComponents(String fieldName) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+        final int flags = SPLIT_ON_NUMERICS | GENERATE_WORD_PARTS | PRESERVE_ORIGINAL | GENERATE_NUMBER_PARTS | SPLIT_ON_CASE_CHANGE;
+        return new TokenStreamComponents(tokenizer, new WordDelimiterGraphFilter(tokenizer, flags, CharArraySet.EMPTY_SET));
+      }
+    };
+    assertAnalyzesTo(a4, "SAL_S8371 - SAL",
+        new String[]{ "SAL_S8371", "SAL", "S", "8371", "-", "SAL"},
+        new int[]{    1,            0,    1,    1,      1,    1});
+
     final int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CATENATE_ALL | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE;
     final CharArraySet protWords = new CharArraySet(new HashSet<>(Arrays.asList("NUTCH")), false);
     
@@ -201,7 +240,7 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
       public TokenStreamComponents createComponents(String field) {
         Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         return new TokenStreamComponents(tokenizer, new WordDelimiterGraphFilter(
-            tokenizer,
+            tokenizer, true, DEFAULT_WORD_DELIM_TABLE,
             flags, protWords));
       }
     };
@@ -238,7 +277,7 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
       public TokenStreamComponents createComponents(String field) {
         Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
         return new TokenStreamComponents(tokenizer, new WordDelimiterGraphFilter(
-            new LargePosIncTokenFilter(tokenizer),
+            new LargePosIncTokenFilter(tokenizer), true, DEFAULT_WORD_DELIM_TABLE,
             flags, protWords));
       }
     };
@@ -282,8 +321,8 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
       @Override
       public TokenStreamComponents createComponents(String field) {
         Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-        StopFilter filter = new StopFilter(tokenizer, StandardAnalyzer.STOP_WORDS_SET);
-        return new TokenStreamComponents(tokenizer, new WordDelimiterGraphFilter(filter, flags, protWords));
+        StopFilter filter = new StopFilter(tokenizer, EnglishAnalyzer.ENGLISH_STOP_WORDS_SET);
+        return new TokenStreamComponents(tokenizer, new WordDelimiterGraphFilter(filter, true, DEFAULT_WORD_DELIM_TABLE, flags, protWords));
       }
     };
 
@@ -306,7 +345,7 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
         null,
         false);
 
-    IOUtils.close(a, a2, a3);
+    IOUtils.close(a, a2, a3, a4);
   }
   
   public void testKeywordFilter() throws Exception {
@@ -316,8 +355,8 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
     assertAnalyzesTo(keywordTestAnalyzer(GENERATE_WORD_PARTS | IGNORE_KEYWORDS),
                      "abc-def klm-nop kpop",
                      new String[] {"abc", "def", "klm-nop", "kpop"},
-                     new int[]{0, 4, 8, 16},
-                     new int[]{3, 7, 15, 20},
+                     new int[]{0, 0, 8, 16},
+                     new int[]{7, 7, 15, 20},
                      null,
                      new int[]{1, 1, 1, 1},
                      null,
@@ -341,6 +380,51 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
     };
   }
 
+  public void testOriginalTokenEmittedFirst() throws Exception {
+    final int flags = PRESERVE_ORIGINAL | GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CATENATE_WORDS | CATENATE_NUMBERS | CATENATE_ALL | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE;
+
+    /* analyzer that uses whitespace + wdf */
+    Analyzer a = new Analyzer() {
+      @Override
+      public TokenStreamComponents createComponents(String field) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(tokenizer, new WordDelimiterGraphFilter(tokenizer, true, DEFAULT_WORD_DELIM_TABLE, flags, null));
+      }
+    };
+
+    assertAnalyzesTo(a, "abc-def abcDEF abc123",
+        new String[] { "abc-def", "abcdef", "abc", "def", "abcDEF", "abcDEF", "abc", "DEF", "abc123", "abc123", "abc", "123" });
+    a.close();
+  }
+
+  // https://issues.apache.org/jira/browse/LUCENE-9006
+  public void testCatenateAllEmittedBeforeParts() throws Exception {
+    // no number parts
+    final int flags = PRESERVE_ORIGINAL | GENERATE_WORD_PARTS | CATENATE_ALL;
+
+    //not using getAnalyzer because we want adjustInternalOffsets=true
+    Analyzer a = new Analyzer() {
+      @Override
+      public TokenStreamComponents createComponents(String field) {
+        Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
+        return new TokenStreamComponents(tokenizer, new WordDelimiterGraphFilter(tokenizer, true, DEFAULT_WORD_DELIM_TABLE, flags, null));
+      }
+    };
+
+    // input starts with a number, but we don't generate numbers.
+    //   Nonetheless preserve-original and concatenate-all show up first.
+    assertTokenStreamContents(a.tokenStream("dummy", "8-other"),
+        new String[] { "8-other", "8other", "other" }, new int[]{0, 0, 2}, new int[]{7, 7, 7});
+
+    boolean useCharFilter = true;
+    boolean graphOffsetsAreCorrect = false; // note: could solve via always incrementing wordPos on first word ('8')
+    checkAnalysisConsistency(random(), a, useCharFilter, "8-other", graphOffsetsAreCorrect);
+
+    verify("8-other", flags); // uses getAnalyzer which uses adjustInternalOffsets=false which works
+
+    a.close();
+  }
+
   /** concat numbers + words + all */
   public void testLotsOfConcatenating() throws Exception {
     final int flags = GENERATE_WORD_PARTS | GENERATE_NUMBER_PARTS | CATENATE_WORDS | CATENATE_NUMBERS | CATENATE_ALL | SPLIT_ON_CASE_CHANGE | SPLIT_ON_NUMERICS | STEM_ENGLISH_POSSESSIVE;    
@@ -350,7 +434,7 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
       @Override
       public TokenStreamComponents createComponents(String field) {
         Tokenizer tokenizer = new MockTokenizer(MockTokenizer.WHITESPACE, false);
-        return new TokenStreamComponents(tokenizer, new WordDelimiterGraphFilter(tokenizer, flags, null));
+        return new TokenStreamComponents(tokenizer, new WordDelimiterGraphFilter(tokenizer, true, DEFAULT_WORD_DELIM_TABLE, flags, null));
       }
     };
     
@@ -379,9 +463,9 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
     };
     
     assertAnalyzesTo(a, "abc-def-123-456", 
-                     new String[] { "abcdef123456", "abc-def-123-456", "abcdef", "abc", "def", "123456", "123", "456" }, 
-                     new int[] { 0, 0, 0, 0, 4, 8, 8, 12 }, 
-                     new int[] { 15, 15, 7, 3, 7, 15, 11, 15 },
+                     new String[] { "abc-def-123-456", "abcdef123456", "abcdef", "abc", "def", "123456", "123", "456" },
+                     new int[] { 0, 0, 0, 0, 0, 0, 0, 0 },
+                     new int[] { 15, 15, 15, 15, 15, 15, 15, 15 },
                      null,
                      new int[] { 1, 0, 0, 0, 1, 1, 0, 1 },
                      null,
@@ -391,7 +475,7 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    int numIterations = atLeast(5);
+    int numIterations = atLeast(3);
     for (int i = 0; i < numIterations; i++) {
       final int flags = random().nextInt(512);
       final CharArraySet protectedWords;
@@ -410,14 +494,14 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
         }
       };
       // TODO: properly support positionLengthAttribute
-      checkRandomData(random(), a, 200*RANDOM_MULTIPLIER, 20, false, false);
+      checkRandomData(random(), a, 100*RANDOM_MULTIPLIER, 20, false, false);
       a.close();
     }
   }
   
   /** blast some enormous random strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
-    int numIterations = atLeast(5);
+    int numIterations = atLeast(3);
     for (int i = 0; i < numIterations; i++) {
       final int flags = random().nextInt(512);
       final CharArraySet protectedWords;
@@ -437,7 +521,7 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
         }
       };
       // TODO: properly support positionLengthAttribute
-      checkRandomData(random(), a, 20*RANDOM_MULTIPLIER, 8192, false, false);
+      checkRandomData(random(), a, 10*RANDOM_MULTIPLIER, 8192, false, false);
       a.close();
     }
   }
@@ -811,7 +895,7 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
   }
 
   public void testRandomPaths() throws Exception {
-    int iters = atLeast(100);
+    int iters = atLeast(10);
     for(int iter=0;iter<iters;iter++) {
       String text = randomWDFText();
       if (VERBOSE) {
@@ -891,6 +975,9 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
 
       fail(b.toString());
     }
+
+    boolean useCharFilter = true;
+    checkAnalysisConsistency(random(), getAnalyzer(flags), useCharFilter, text);
   }
 
   public void testOnlyNumbers() throws Exception {
@@ -920,7 +1007,8 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
   }
 
   public void testEmptyString() throws Exception {
-    WordDelimiterGraphFilter wdf = new WordDelimiterGraphFilter(new CannedTokenStream(new Token("", 0, 0)), DEFAULT_WORD_DELIM_TABLE, GENERATE_WORD_PARTS | CATENATE_ALL | PRESERVE_ORIGINAL, null);
+    WordDelimiterGraphFilter wdf = new WordDelimiterGraphFilter(new CannedTokenStream(new Token("", 0, 0)),
+        GENERATE_WORD_PARTS | CATENATE_ALL | PRESERVE_ORIGINAL, null);
     wdf.reset();
     assertTrue(wdf.incrementToken());
     assertFalse(wdf.incrementToken());
@@ -933,7 +1021,7 @@ public class TestWordDelimiterGraphFilter extends BaseTokenStreamTestCase {
                                                new Token("foo-bar", 0, 7));
 
     CharArraySet protectedWords = new CharArraySet(new HashSet<>(Arrays.asList("foo17-BAR")), true);
-    WordDelimiterGraphFilter wdf = new WordDelimiterGraphFilter(tokens, DEFAULT_WORD_DELIM_TABLE, GENERATE_WORD_PARTS | PRESERVE_ORIGINAL | CATENATE_ALL, protectedWords);
+    WordDelimiterGraphFilter wdf = new WordDelimiterGraphFilter(tokens, GENERATE_WORD_PARTS | PRESERVE_ORIGINAL | CATENATE_ALL, protectedWords);
     assertGraphStrings(wdf,
                        "foo17-bar foo bar",
                        "foo17-bar foo-bar",

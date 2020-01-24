@@ -18,7 +18,6 @@ package org.apache.lucene.util;
 
 import java.util.Arrays;
 
-
 /** Represents long[], as a slice (offset + length) into an
  *  existing long[].  The {@link #longs} member should never be null; use
  *  {@link #EMPTY_LONGS} if necessary.
@@ -92,14 +91,14 @@ public final class LongsRef implements Comparable<LongsRef>, Cloneable {
   }
 
   public boolean longsEquals(LongsRef other) {
-    return FutureArrays.equals(this.longs, this.offset, this.offset + this.length, 
+    return Arrays.equals(this.longs, this.offset, this.offset + this.length, 
                                other.longs, other.offset, other.offset + other.length);
   }
 
   /** Signed int order comparison */
   @Override
   public int compareTo(LongsRef other) {
-    return FutureArrays.compare(this.longs, this.offset, this.offset + this.length, 
+    return Arrays.compare(this.longs, this.offset, this.offset + this.length, 
                                 other.longs, other.offset, other.offset + other.length);
   }
 
@@ -126,7 +125,7 @@ public final class LongsRef implements Comparable<LongsRef>, Cloneable {
    * and an offset of zero.
    */
   public static LongsRef deepCopyOf(LongsRef other) {
-    return new LongsRef(Arrays.copyOfRange(other.longs, other.offset, other.offset + other.length), 0, other.length);
+    return new LongsRef(ArrayUtil.copyOfSubArray(other.longs, other.offset, other.offset + other.length), 0, other.length);
   }
   
   /** 

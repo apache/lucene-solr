@@ -37,10 +37,10 @@ public class PositiveScoresOnlyCollector extends FilterCollector {
       throws IOException {
     return new FilterLeafCollector(super.getLeafCollector(context)) {
 
-      private Scorer scorer;
+      private Scorable scorer;
 
       @Override
-      public void setScorer(Scorer scorer) throws IOException {
+      public void setScorer(Scorable scorer) throws IOException {
         this.scorer = new ScoreCachingWrappingScorer(scorer);
         in.setScorer(this.scorer);
       }

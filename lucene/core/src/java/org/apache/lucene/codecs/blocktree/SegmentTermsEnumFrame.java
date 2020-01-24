@@ -18,6 +18,7 @@ package org.apache.lucene.codecs.blocktree;
 
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.codecs.BlockTermState;
 import org.apache.lucene.index.IndexOptions;
@@ -84,9 +85,7 @@ final class SegmentTermsEnumFrame {
 
   final BlockTermState state;
 
-  // metadata buffer, holding monotonic values
-  final long[] longs;
-  // metadata buffer, holding general values
+  // metadata buffer
   byte[] bytes = new byte[32];
   final ByteArrayDataInput bytesReader = new ByteArrayDataInput();
 
@@ -97,7 +96,6 @@ final class SegmentTermsEnumFrame {
     this.ord = ord;
     this.state = ste.fr.parent.postingsReader.newTermState();
     this.state.totalTermFreq = -1;
-    this.longs = new long[ste.fr.longsSize];
   }
 
   public void setFloorData(ByteArrayDataInput in, BytesRef source) {
@@ -423,11 +421,8 @@ final class SegmentTermsEnumFrame {
         state.totalTermFreq = state.docFreq + statsReader.readVLong();
         //if (DEBUG) System.out.println("    totTF=" + state.totalTermFreq);
       }
-      // metadata 
-      for (int i = 0; i < ste.fr.longsSize; i++) {
-        longs[i] = bytesReader.readVLong();
-      }
-      ste.fr.parent.postingsReader.decodeTerm(longs, bytesReader, ste.fr.fieldInfo, state, absolute);
+      // metadata
+      ste.fr.parent.postingsReader.decodeTerm(bytesReader, ste.fr.fieldInfo, state, absolute);
 
       metaDataUpto++;
       absolute = false;
@@ -523,8 +518,7 @@ final class SegmentTermsEnumFrame {
     assert prefixMatches(target);
 
     // Loop over each entry (term or sub-block) in this block:
-    //nextTerm: while(nextEnt < entCount) {
-    nextTerm: while (true) {
+    do {
       nextEnt++;
 
       suffix = suffixesReader.readVInt();
@@ -537,60 +531,37 @@ final class SegmentTermsEnumFrame {
       //   System.out.println("      cycle: term " + (nextEnt-1) + " (of " + entCount + ") suffix=" + brToString(suffixBytesRef));
       // }
 
-      final int termLen = prefix + suffix;
       startBytePos = suffixesReader.getPosition();
       suffixesReader.skipBytes(suffix);
 
-      final int targetLimit = target.offset + (target.length < termLen ? target.length : termLen);
-      int targetPos = target.offset + prefix;
+      // Loop over bytes in the suffix, comparing to the target
+      final int cmp = Arrays.compareUnsigned(
+          suffixBytes, startBytePos, startBytePos + suffix,
+          target.bytes, target.offset + prefix, target.offset + target.length);
 
-      // Loop over bytes in the suffix, comparing to
-      // the target
-      int bytePos = startBytePos;
-      while(true) {
-        final int cmp;
-        final boolean stop;
-        if (targetPos < targetLimit) {
-          cmp = (suffixBytes[bytePos++]&0xFF) - (target.bytes[targetPos++]&0xFF);
-          stop = false;
-        } else {
-          assert targetPos == targetLimit;
-          cmp = termLen - target.length;
-          stop = true;
-        }
+      if (cmp < 0) {
+        // Current entry is still before the target;
+        // keep scanning
+      } else if (cmp > 0) {
+        // Done!  Current entry is after target --
+        // return NOT_FOUND:
+        fillTerm();
 
-        if (cmp < 0) {
-          // Current entry is still before the target;
-          // keep scanning
+        //if (DEBUG) System.out.println("        not found");
+        return SeekStatus.NOT_FOUND;
+      } else {
+        // Exact match!
 
-          if (nextEnt == entCount) {
-            // We are done scanning this block
-            break nextTerm;
-          } else {
-            continue nextTerm;
-          }
-        } else if (cmp > 0) {
+        // This cannot be a sub-block because we
+        // would have followed the index to this
+        // sub-block from the start:
 
-          // Done!  Current entry is after target --
-          // return NOT_FOUND:
-          fillTerm();
-
-          //if (DEBUG) System.out.println("        not found");
-          return SeekStatus.NOT_FOUND;
-        } else if (stop) {
-          // Exact match!
-
-          // This cannot be a sub-block because we
-          // would have followed the index to this
-          // sub-block from the start:
-
-          assert ste.termExists;
-          fillTerm();
-          //if (DEBUG) System.out.println("        found!");
-          return SeekStatus.FOUND;
-        }
+        assert ste.termExists;
+        fillTerm();
+        //if (DEBUG) System.out.println("        found!");
+        return SeekStatus.FOUND;
       }
-    }
+    } while (nextEnt < entCount);
 
     // It is possible (and OK) that terms index pointed us
     // at this block, but, we scanned the entire block and
@@ -631,7 +602,7 @@ final class SegmentTermsEnumFrame {
     assert prefixMatches(target);
 
     // Loop over each entry (term or sub-block) in this block:
-    nextTerm: while(nextEnt < entCount) {
+    while(nextEnt < entCount) {
 
       nextEnt++;
 
@@ -658,65 +629,48 @@ final class SegmentTermsEnumFrame {
         lastSubFP = fp - subCode;
       }
 
-      final int targetLimit = target.offset + (target.length < termLen ? target.length : termLen);
-      int targetPos = target.offset + prefix;
+      final int cmp = Arrays.compareUnsigned(
+          suffixBytes, startBytePos, startBytePos + suffix,
+          target.bytes, target.offset + prefix, target.offset + target.length);
 
-      // Loop over bytes in the suffix, comparing to
-      // the target
-      int bytePos = startBytePos;
-      while (true) {
-        final int cmp;
-        final boolean stop;
-        if (targetPos < targetLimit) {
-          cmp = (suffixBytes[bytePos++]&0xFF) - (target.bytes[targetPos++]&0xFF);
-          stop = false;
-        } else {
-          assert targetPos == targetLimit;
-          cmp = termLen - target.length;
-          stop = true;
-        }
+      if (cmp < 0) {
+        // Current entry is still before the target;
+        // keep scanning
+      } else if (cmp > 0) {
+        // Done!  Current entry is after target --
+        // return NOT_FOUND:
+        fillTerm();
 
-        if (cmp < 0) {
-          // Current entry is still before the target;
-          // keep scanning
-          continue nextTerm;
-        } else if (cmp > 0) {
+        //if (DEBUG) System.out.println("        maybe done exactOnly=" + exactOnly + " ste.termExists=" + ste.termExists);
 
-          // Done!  Current entry is after target --
-          // return NOT_FOUND:
-          fillTerm();
-
-          //if (DEBUG) System.out.println("        maybe done exactOnly=" + exactOnly + " ste.termExists=" + ste.termExists);
-
-          if (!exactOnly && !ste.termExists) {
-            //System.out.println("  now pushFrame");
-            // TODO this 
-            // We are on a sub-block, and caller wants
-            // us to position to the next term after
-            // the target, so we must recurse into the
-            // sub-frame(s):
-            ste.currentFrame = ste.pushFrame(null, ste.currentFrame.lastSubFP, termLen);
+        if (!exactOnly && !ste.termExists) {
+          //System.out.println("  now pushFrame");
+          // TODO this 
+          // We are on a sub-block, and caller wants
+          // us to position to the next term after
+          // the target, so we must recurse into the
+          // sub-frame(s):
+          ste.currentFrame = ste.pushFrame(null, ste.currentFrame.lastSubFP, termLen);
+          ste.currentFrame.loadBlock();
+          while (ste.currentFrame.next()) {
+            ste.currentFrame = ste.pushFrame(null, ste.currentFrame.lastSubFP, ste.term.length());
             ste.currentFrame.loadBlock();
-            while (ste.currentFrame.next()) {
-              ste.currentFrame = ste.pushFrame(null, ste.currentFrame.lastSubFP, ste.term.length());
-              ste.currentFrame.loadBlock();
-            }
           }
-                
-          //if (DEBUG) System.out.println("        not found");
-          return SeekStatus.NOT_FOUND;
-        } else if (stop) {
-          // Exact match!
-
-          // This cannot be a sub-block because we
-          // would have followed the index to this
-          // sub-block from the start:
-
-          assert ste.termExists;
-          fillTerm();
-          //if (DEBUG) System.out.println("        found!");
-          return SeekStatus.FOUND;
         }
+
+        //if (DEBUG) System.out.println("        not found");
+        return SeekStatus.NOT_FOUND;
+      } else {
+        // Exact match!
+
+        // This cannot be a sub-block because we
+        // would have followed the index to this
+        // sub-block from the start:
+
+        assert ste.termExists;
+        fillTerm();
+        //if (DEBUG) System.out.println("        found!");
+        return SeekStatus.FOUND;
       }
     }
 

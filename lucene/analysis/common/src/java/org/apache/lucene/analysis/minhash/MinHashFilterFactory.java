@@ -25,8 +25,13 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
 /**
  * {@link TokenFilterFactory} for {@link MinHashFilter}.
  * @since 6.2.0
+ * @lucene.spi {@value #NAME}
  */
 public class MinHashFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "minHash";
+
   private int hashCount = MinHashFilter.DEFAULT_HASH_COUNT;
   
   private int bucketCount = MinHashFilter.DEFAULT_BUCKET_COUNT;

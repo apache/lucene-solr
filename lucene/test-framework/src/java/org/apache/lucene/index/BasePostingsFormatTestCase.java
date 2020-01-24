@@ -551,7 +551,7 @@ public abstract class BasePostingsFormatTestCase extends BaseIndexFileFormatTest
     IndexReader r = w.getReader();
     w.close();
 
-    Terms terms = MultiFields.getTerms(r, "body");
+    Terms terms = MultiTerms.getTerms(r, "body");
     assertEquals(sumDocFreq.get(), terms.getSumDocFreq());
     assertEquals(sumTotalTermFreq.get(), terms.getSumTotalTermFreq());
 

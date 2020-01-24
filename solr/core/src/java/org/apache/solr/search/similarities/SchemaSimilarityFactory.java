@@ -17,9 +17,9 @@
 package org.apache.solr.search.similarities;
 
 import org.apache.lucene.search.similarities.BM25Similarity;
-import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.similarities.PerFieldSimilarityWrapper;
 import org.apache.lucene.search.similarities.Similarity;
+import org.apache.lucene.search.similarity.LegacyBM25Similarity;
 import org.apache.lucene.util.Version;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
@@ -39,8 +39,8 @@ import org.apache.solr.util.plugin.SolrCoreAware;
  * matching configured:
  * </p>
  * <ul>
- *  <li><code>luceneMatchVersion &lt; 6.0</code> = {@link ClassicSimilarity}</li>
- *  <li><code>luceneMatchVersion &gt;= 6.0</code> = {@link BM25Similarity}</li>
+ *  <li><code>luceneMatchVersion &lt; 8.0</code> = {@link LegacyBM25Similarity}</li>
+ *  <li><code>luceneMatchVersion &gt;= 8.0</code> = {@link BM25Similarity}</li>
  * </ul>
  * <p>
  * The <code>defaultSimFromFieldType</code> option accepts the name of any fieldtype, and uses 
@@ -85,10 +85,12 @@ public class SchemaSimilarityFactory extends SimilarityFactory implements SolrCo
   
   private volatile SolrCore core; // set by inform(SolrCore)
   private volatile Similarity similarity; // lazy instantiated
+  private Version coreVersion = Version.LATEST;
 
   @Override
   public void inform(SolrCore core) {
     this.core = core;
+    this.coreVersion = this.core.getSolrConfig().luceneMatchVersion;
   }
   
   @Override
@@ -109,7 +111,9 @@ public class SchemaSimilarityFactory extends SimilarityFactory implements SolrCo
       Similarity defaultSim = null;
       if (null == defaultSimFromFieldType) {
         // nothing configured, choose a sensible implicit default...
-        defaultSim = new BM25Similarity();
+        defaultSim = coreVersion.onOrAfter(Version.LUCENE_8_0_0) ? 
+            new BM25Similarity() :
+            new LegacyBM25Similarity();
       } else {
         FieldType defSimFT = core.getLatestSchema().getFieldTypeByName(defaultSimFromFieldType);
         if (null == defSimFT) {

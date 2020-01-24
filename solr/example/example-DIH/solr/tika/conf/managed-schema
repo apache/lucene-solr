@@ -46,8 +46,8 @@
   -->
   <fieldType name="text_simple" class="solr.TextField" positionIncrementGap="100">
     <analyzer>
-      <tokenizer class="solr.StandardTokenizerFactory"/>
-      <filter class="solr.LowerCaseFilterFactory"/>
+      <tokenizer name="standard"/>
+      <filter name="lowercase"/>
     </analyzer>
   </fieldType>
 

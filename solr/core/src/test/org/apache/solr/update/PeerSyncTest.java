@@ -38,14 +38,13 @@ import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.update.processor.DistributedUpdateProcessor;
 import org.apache.solr.update.processor.DistributedUpdateProcessor.DistribPhase;
 import org.junit.Test;
-import static org.junit.internal.matchers.StringContains.containsString;
+import static org.hamcrest.core.StringContains.containsString;
 
 @SuppressSSL(bugUrl = "https://issues.apache.org/jira/browse/SOLR-5776")
 public class PeerSyncTest extends BaseDistributedSearchTestCase {
-  private static int numVersions = 100;  // number of versions to use when syncing
-  private final String FROM_LEADER = DistribPhase.FROMLEADER.toString();
-
-  private ModifiableSolrParams seenLeader = 
+  protected static int numVersions = 100;  // number of versions to use when syncing
+  protected static final String FROM_LEADER = DistribPhase.FROMLEADER.toString();
+  protected static final ModifiableSolrParams seenLeader =
     params(DISTRIB_UPDATE_PARAM, FROM_LEADER);
   
   public PeerSyncTest() {
@@ -117,24 +116,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
 
     validateDocs(docsAdded, client0, client1);
 
-    int toAdd = (int)(numVersions *.95);
-    for (int i=0; i<toAdd; i++) {
-      add(client0, seenLeader, sdoc("id",Integer.toString(i+11),"_version_",v+i+1));
-      docsAdded.add(i+11);
-    }
-
-    // sync should fail since there's not enough overlap to give us confidence
-    assertSync(client1, numVersions, false, shardsArr[0]);
-
-    // add some of the docs that were missing... just enough to give enough overlap
-    int toAdd2 = (int)(numVersions * .25);
-    for (int i=0; i<toAdd2; i++) {
-      add(client1, seenLeader, sdoc("id",Integer.toString(i+11),"_version_",v+i+1));
-    }
-
-    assertSync(client1, numVersions, true, shardsArr[0]);
-    validateDocs(docsAdded, client0, client1);
-
+    testOverlap(docsAdded, client0, client1, v);
     // test delete and deleteByQuery
     v=1000;
     SolrInputDocument doc = sdoc("id","1000","_version_",++v);
@@ -201,7 +183,7 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
     v = 4000;
     add(client0, seenLeader, sdoc("id",Integer.toString((int)v),"_version_",v));
     docsAdded.add(4000);
-    toAdd = numVersions+10;
+    int toAdd = numVersions+10;
     for (int i=0; i<toAdd; i++) {
       add(client0, seenLeader, sdoc("id",Integer.toString((int)v+i+1),"_version_",v+i+1));
       add(client1, seenLeader, sdoc("id",Integer.toString((int)v+i+1),"_version_",v+i+1));
@@ -326,7 +308,27 @@ public class PeerSyncTest extends BaseDistributedSearchTestCase {
 
   }
 
-  private void validateDocs(Set<Integer> docsAdded, SolrClient client0, SolrClient client1) throws SolrServerException, IOException {
+  protected void testOverlap(Set<Integer> docsAdded, SolrClient client0, SolrClient client1, long v) throws IOException, SolrServerException {
+    int toAdd = (int)(numVersions *.95);
+    for (int i=0; i<toAdd; i++) {
+      add(client0, seenLeader, sdoc("id",Integer.toString(i+11),"_version_",v+i+1));
+      docsAdded.add(i+11);
+    }
+
+    // sync should fail since there's not enough overlap to give us confidence
+    assertSync(client1, numVersions, false, shardsArr[0]);
+
+    // add some of the docs that were missing... just enough to give enough overlap
+    int toAdd2 = (int)(numVersions * .25);
+    for (int i=0; i<toAdd2; i++) {
+      add(client1, seenLeader, sdoc("id",Integer.toString(i+11),"_version_",v+i+1));
+    }
+
+    assertSync(client1, numVersions, true, shardsArr[0]);
+    validateDocs(docsAdded, client0, client1);
+  }
+
+  protected void validateDocs(Set<Integer> docsAdded, SolrClient client0, SolrClient client1) throws SolrServerException, IOException {
     client0.commit();
     client1.commit();
     QueryResponse qacResponse;

@@ -24,8 +24,8 @@ public abstract class SolrClientBuilder<B extends SolrClientBuilder<B>> {
 
   protected HttpClient httpClient;
   protected ResponseParser responseParser;
-  protected Integer connectionTimeoutMillis;
-  protected Integer socketTimeoutMillis;
+  protected Integer connectionTimeoutMillis = 15000;
+  protected Integer socketTimeoutMillis = 120000;
 
   /** The solution for the unchecked cast warning. */
   public abstract B getThis();

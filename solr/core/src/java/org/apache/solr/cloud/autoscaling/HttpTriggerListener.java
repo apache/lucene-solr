@@ -57,7 +57,7 @@ import org.slf4j.LoggerFactory;
  * </ul>
  */
 public class HttpTriggerListener extends TriggerListenerBase {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private String urlTemplate;
   private String payloadTemplate;
@@ -158,7 +158,7 @@ public class HttpTriggerListener extends TriggerListenerBase {
     try {
       cloudManager.httpRequest(url, SolrRequest.METHOD.POST, headers, payload, timeout, followRedirects);
     } catch (IOException e) {
-      LOG.warn("Exception sending request for event " + event, e);
+      log.warn("Exception sending request for event " + event, e);
     }
   }
 }

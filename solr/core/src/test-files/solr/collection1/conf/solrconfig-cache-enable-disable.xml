@@ -30,28 +30,25 @@
         range or wildcard queries that expand to big boolean
         queries.  An exception is thrown if exceeded.
     -->
-    <maxBooleanClauses>1024</maxBooleanClauses>
+    <maxBooleanClauses>${solr.max.booleanClauses:1024}</maxBooleanClauses>
 
     <!-- Cache specification for Filters or DocSets - unordered set of *all* documents
          that match a particular query.
       -->
     <filterCache
       enabled="${filterCache.enabled}"
-      class="solr.search.FastLRUCache"
       size="512"
       initialSize="512"
       autowarmCount="2"/>
 
     <queryResultCache
       enabled="${queryResultCache.enabled}"
-      class="solr.search.LRUCache"
       size="512"
       initialSize="512"
       autowarmCount="2"/>
 
     <documentCache
       enabled="${documentCache.enabled}"
-      class="solr.search.LRUCache"
       size="512"
       initialSize="512"
       autowarmCount="0"/>

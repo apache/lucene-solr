@@ -57,6 +57,6 @@ public class ScaleEvaluator extends RecursiveNumericEvaluator implements TwoValu
       scaleOver = ((List<?>)second).stream().mapToDouble(value -> ((Number)value).doubleValue()).toArray();
     }
       
-    return Arrays.stream(MathArrays.scale(((Number)first).doubleValue(), scaleOver)).mapToObj(Double::new).collect(Collectors.toList());    
+    return Arrays.stream(MathArrays.scale(((Number)first).doubleValue(), scaleOver)).boxed().collect(Collectors.toList());
   }
 }

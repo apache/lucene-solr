@@ -25,7 +25,7 @@ public class IntDataArrayWriter extends ReductionDataArrayWriter<IntSupplier> {
   public IntDataArrayWriter(DataOutput output, IntSupplier extractor, IntSupplier sizeSupplier) {
     super(output, extractor, sizeSupplier);
   }
-  
+
   @Override
   public void write(int size) throws IOException {
     for (int i = 0; i < size; ++i) {

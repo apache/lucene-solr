@@ -229,6 +229,10 @@ public class AutoScaling {
           "                'class':'solr.InactiveShardPlanAction'" +
           "            }," +
           "            {" +
+          "                'name':'inactive_markers_plan'," +
+          "                'class':'solr.InactiveMarkersPlanAction'" +
+          "            }," +
+          "            {" +
           "                'name':'execute_plan'," +
           "                'class':'solr.ExecutePlanAction'" +
           "            }" +

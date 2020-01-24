@@ -88,7 +88,7 @@ public class PointQueryNode extends QueryNodeImpl implements
    * 
    * @param escaper the {@link EscapeQuerySyntax} used to escape the value {@link String}
    * 
-   * @return the value converte to {@link String} and escaped
+   * @return the value converted to {@link String} and escaped
    */
   protected CharSequence getTermEscaped(EscapeQuerySyntax escaper) {
     return escaper.escape(numberFormat.format(this.value),

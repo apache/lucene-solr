@@ -22,13 +22,6 @@ import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
-import org.apache.lucene.util.FailureMarker;
-import org.apache.lucene.util.IOUtils;
-import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.TestRuleIgnoreAfterMaxFailures;
-import org.apache.lucene.util.TestRuleIgnoreTestSuites;
-import org.apache.lucene.util.TestRuleMarkFailure;
-import org.apache.lucene.util.TestRuleRestoreSystemProperties;
 import org.apache.lucene.util.LuceneTestCase.SuppressSysoutChecks;
 import org.junit.After;
 import org.junit.Assert;

@@ -157,6 +157,23 @@ public abstract class PrefixTreeStrategy extends SpatialStrategy {
     return new Field[]{field};
   }
 
+  public class ShapeTokenStream extends BytesRefIteratorTokenStream {
+
+    public void setShape(Shape shape) {
+      double distErr = SpatialArgs.calcDistanceFromErrPct(shape, distErrPct, ctx);
+      int detailLevel = grid.getLevelForDistance(distErr);
+      Iterator<Cell> cells = createCellIteratorToIndex(shape, detailLevel, null);
+      CellToBytesRefIterator cellToBytesRefIterator = newCellToBytesRefIterator();
+      cellToBytesRefIterator.reset(cells);
+      setBytesRefIterator(cellToBytesRefIterator);
+    }
+
+  }
+
+  public ShapeTokenStream tokenStream() {
+    return new ShapeTokenStream();
+  }
+
   protected CellToBytesRefIterator newCellToBytesRefIterator() {
     //subclasses could return one that never emits leaves, or does both, or who knows.
     return new CellToBytesRefIterator();

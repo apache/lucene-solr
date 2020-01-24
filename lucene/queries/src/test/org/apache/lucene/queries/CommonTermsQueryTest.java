@@ -85,7 +85,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       query.add(new Term("field", "universe"));
       query.add(new Term("field", "right"));
       TopDocs search = s.search(query, 10);
-      assertEquals(search.totalHits, 3);
+      assertEquals(search.totalHits.value, 3);
       assertEquals("0", r.document(search.scoreDocs[0].doc).get("id"));
       assertEquals("2", r.document(search.scoreDocs[1].doc).get("id"));
       assertEquals("3", r.document(search.scoreDocs[2].doc).get("id"));
@@ -98,7 +98,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       query.add(new Term("field", "this"));
       query.add(new Term("field", "end"));
       TopDocs search = s.search(query, 10);
-      assertEquals(search.totalHits, 2);
+      assertEquals(search.totalHits.value, 2);
       assertEquals("0", r.document(search.scoreDocs[0].doc).get("id"));
       assertEquals("2", r.document(search.scoreDocs[1].doc).get("id"));
     }
@@ -112,7 +112,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       query.add(new Term("field", "world"));
       
       TopDocs search = s.search(query, 10);
-      assertEquals(search.totalHits, 1);
+      assertEquals(search.totalHits.value, 1);
       assertEquals("0", r.document(search.scoreDocs[0].doc).get("id"));
     }
     
@@ -123,7 +123,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       query.add(new Term("field", "universe"));
       
       TopDocs search = s.search(query, 10);
-      assertEquals(search.totalHits, 1);
+      assertEquals(search.totalHits.value, 1);
       assertEquals("3", r.document(search.scoreDocs[0].doc).get("id"));
       
     }
@@ -212,7 +212,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       query.add(new Term("field", "right"));
       query.setLowFreqMinimumNumberShouldMatch(0.5f);
       TopDocs search = s.search(query, 10);
-      assertEquals(search.totalHits, 1);
+      assertEquals(search.totalHits.value, 1);
       assertEquals("0", r.document(search.scoreDocs[0].doc).get("id"));
     }
     {
@@ -226,7 +226,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       query.add(new Term("field", "right"));
       query.setLowFreqMinimumNumberShouldMatch(2.0f);
       TopDocs search = s.search(query, 10);
-      assertEquals(search.totalHits, 1);
+      assertEquals(search.totalHits.value, 1);
       assertEquals("0", r.document(search.scoreDocs[0].doc).get("id"));
     }
     
@@ -241,7 +241,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       query.add(new Term("field", "right"));
       query.setLowFreqMinimumNumberShouldMatch(0.49f);
       TopDocs search = s.search(query, 10);
-      assertEquals(search.totalHits, 3);
+      assertEquals(search.totalHits.value, 3);
       assertEquals("0", r.document(search.scoreDocs[0].doc).get("id"));
       assertEquals("2", r.document(search.scoreDocs[1].doc).get("id"));
       assertEquals("3", r.document(search.scoreDocs[2].doc).get("id"));
@@ -258,7 +258,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       query.add(new Term("field", "right"));
       query.setLowFreqMinimumNumberShouldMatch(1.0f);
       TopDocs search = s.search(query, 10);
-      assertEquals(search.totalHits, 3);
+      assertEquals(search.totalHits.value, 3);
       assertEquals("0", r.document(search.scoreDocs[0].doc).get("id"));
       assertEquals("2", r.document(search.scoreDocs[1].doc).get("id"));
       assertEquals("3", r.document(search.scoreDocs[2].doc).get("id"));
@@ -277,7 +277,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       query.setLowFreqMinimumNumberShouldMatch(1.0f);
       query.setHighFreqMinimumNumberShouldMatch(4.0f);
       TopDocs search = s.search(query, 10);
-      assertEquals(search.totalHits, 3);
+      assertEquals(search.totalHits.value, 3);
       assertEquals(search.scoreDocs[1].score, search.scoreDocs[2].score, 0.0f);
       assertEquals("0", r.document(search.scoreDocs[0].doc).get("id"));
       // doc 2 and 3 only get a score from low freq terms
@@ -298,7 +298,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       query.setLowFreqMinimumNumberShouldMatch(1.0f);
       query.setHighFreqMinimumNumberShouldMatch(2.0f);
       TopDocs search = s.search(query, 10);
-      assertEquals(search.totalHits, 4);
+      assertEquals(search.totalHits.value, 4);
     }
     
     {
@@ -311,7 +311,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       query.setLowFreqMinimumNumberShouldMatch(1.0f);
       query.setHighFreqMinimumNumberShouldMatch(2.0f);
       TopDocs search = s.search(query, 10);
-      assertEquals(search.totalHits, 2);
+      assertEquals(search.totalHits.value, 2);
       assertEquals(
           new HashSet<>(Arrays.asList("0", "2")),
           new HashSet<>(Arrays.asList(
@@ -367,7 +367,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       query.add(new Term("field", "universe"));
       query.add(new Term("field", "right"));
       TopDocs search = s.search(query, 10);
-      assertEquals(search.totalHits, 3);
+      assertEquals(search.totalHits.value, 3);
       assertEquals("0", r.document(search.scoreDocs[0].doc).get("id"));
       assertEquals("2", r.document(search.scoreDocs[1].doc).get("id"));
       assertEquals("3", r.document(search.scoreDocs[2].doc).get("id"));
@@ -384,7 +384,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       query.add(new Term("field", "universe"));
       query.add(new Term("field", "right"));
       TopDocs search = s.search(query, 10);
-      assertEquals(search.totalHits, 3);
+      assertEquals(search.totalHits.value, 3);
       assertEquals("2", r.document(search.scoreDocs[0].doc).get("id"));
       assertEquals("3", r.document(search.scoreDocs[1].doc).get("id"));
       assertEquals("0", r.document(search.scoreDocs[2].doc).get("id"));
@@ -466,7 +466,7 @@ public class CommonTermsQueryTest extends LuceneTestCase {
       TopDocs cqSearch = searcher.search(cq, reader.maxDoc());
       
       TopDocs verifySearch = searcher.search(verifyQuery.build(), reader.maxDoc());
-      assertEquals(verifySearch.totalHits, cqSearch.totalHits);
+      assertEquals(verifySearch.totalHits.value, cqSearch.totalHits.value);
       Set<Integer> hits = new HashSet<>();
       for (ScoreDoc doc : verifySearch.scoreDocs) {
         hits.add(doc.doc);

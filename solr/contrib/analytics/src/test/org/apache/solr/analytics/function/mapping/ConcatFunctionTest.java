@@ -34,7 +34,7 @@ public class ConcatFunctionTest extends SolrTestCaseJ4 {
   @Test
   public void oneMultiValueParameterUnseparatedTest() {
     TestStringValueStream val = new TestStringValueStream();
-    
+
     AnalyticsValueStream uncasted = ConcatFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
     assertTrue(uncasted instanceof StringValue);
     StringValue func = (StringValue) uncasted;
@@ -43,12 +43,12 @@ public class ConcatFunctionTest extends SolrTestCaseJ4 {
     val.setValues();
     func.getString();
     assertFalse(func.exists());
-    
+
     // One value
     val.setValues("abc");
     assertEquals("abc", func.getString());
     assertTrue(func.exists());
-    
+
     // Multiple values
     val.setValues("abc", "def", "ghi");
     assertEquals("abcdefghi", func.getString());
@@ -59,7 +59,7 @@ public class ConcatFunctionTest extends SolrTestCaseJ4 {
   public void oneMultiValueParameterSeparatedTest() {
     TestStringValueStream val = new TestStringValueStream();
     ConstantStringValue sep = new ConstantStringValue("===:---");
-    
+
     AnalyticsValueStream uncasted = SeparatedConcatFunction.creatorFunction.apply(new AnalyticsValueStream[] {sep, val});
     assertTrue(uncasted instanceof StringValue);
     StringValue func = (StringValue) uncasted;
@@ -68,12 +68,12 @@ public class ConcatFunctionTest extends SolrTestCaseJ4 {
     val.setValues();
     func.getString();
     assertFalse(func.exists());
-    
+
     // One value
     val.setValues("abc");
     assertEquals("abc", func.getString());
     assertTrue(func.exists());
-    
+
     // Multiple values
     val.setValues("abc", "def", "ghi");
     assertEquals("abc===:---def===:---ghi", func.getString());
@@ -84,7 +84,7 @@ public class ConcatFunctionTest extends SolrTestCaseJ4 {
   public void oneSingleOneMultiValueParameterUnseperatedTest() {
     TestStringValue val1 = new TestStringValue();
     TestStringValueStream val2 = new TestStringValueStream();
-    
+
     AnalyticsValueStream uncasted = ConcatFunction.creatorFunction.apply(new AnalyticsValueStream[] {val1, val2});
     assertTrue(uncasted instanceof StringValueStream);
     StringValueStream func = (StringValueStream) uncasted;
@@ -95,7 +95,7 @@ public class ConcatFunctionTest extends SolrTestCaseJ4 {
     func.streamStrings( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // One exists
     val1.setExists(false);
     val2.setValues("def");
@@ -108,7 +108,7 @@ public class ConcatFunctionTest extends SolrTestCaseJ4 {
     func.streamStrings( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Both exist
     val1.setValue("abc").setExists(true);
     val2.setValues("def", "ghi", "jkl");
@@ -125,7 +125,7 @@ public class ConcatFunctionTest extends SolrTestCaseJ4 {
     TestStringValue val1 = new TestStringValue();
     TestStringValueStream val2 = new TestStringValueStream();
     ConstantStringValue sep = new ConstantStringValue("+-;");
-    
+
     AnalyticsValueStream uncasted = SeparatedConcatFunction.creatorFunction.apply(new AnalyticsValueStream[] {sep, val1, val2});
     assertTrue(uncasted instanceof StringValueStream);
     StringValueStream func = (StringValueStream) uncasted;
@@ -136,7 +136,7 @@ public class ConcatFunctionTest extends SolrTestCaseJ4 {
     func.streamStrings( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // One exists
     val1.setExists(false);
     val2.setValues("def");
@@ -149,7 +149,7 @@ public class ConcatFunctionTest extends SolrTestCaseJ4 {
     func.streamStrings( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Both exist
     val1.setValue("abc").setExists(true);
     val2.setValues("def", "ghi", "jkl");
@@ -165,7 +165,7 @@ public class ConcatFunctionTest extends SolrTestCaseJ4 {
   public void oneMultiOneSingleValueParameterUnseperatedTest() {
     TestStringValueStream val1 = new TestStringValueStream();
     TestStringValue val2 = new TestStringValue();
-    
+
     AnalyticsValueStream uncasted = ConcatFunction.creatorFunction.apply(new AnalyticsValueStream[] {val1, val2});
     assertTrue(uncasted instanceof StringValueStream);
     StringValueStream func = (StringValueStream) uncasted;
@@ -176,7 +176,7 @@ public class ConcatFunctionTest extends SolrTestCaseJ4 {
     func.streamStrings( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // One exists
     val1.setValues("def");
     val2.setExists(false);
@@ -189,7 +189,7 @@ public class ConcatFunctionTest extends SolrTestCaseJ4 {
     func.streamStrings( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Both exist
     val1.setValues("def", "ghi", "jkl");
     val2.setValue("abc").setExists(true);
@@ -206,7 +206,7 @@ public class ConcatFunctionTest extends SolrTestCaseJ4 {
     TestStringValueStream val1 = new TestStringValueStream();
     TestStringValue val2 = new TestStringValue();
     ConstantStringValue sep = new ConstantStringValue("<");
-    
+
     AnalyticsValueStream uncasted = SeparatedConcatFunction.creatorFunction.apply(new AnalyticsValueStream[] {sep, val1, val2});
     assertTrue(uncasted instanceof StringValueStream);
     StringValueStream func = (StringValueStream) uncasted;
@@ -217,7 +217,7 @@ public class ConcatFunctionTest extends SolrTestCaseJ4 {
     func.streamStrings( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // One exists
     val1.setValues("def");
     val2.setExists(false);
@@ -230,7 +230,7 @@ public class ConcatFunctionTest extends SolrTestCaseJ4 {
     func.streamStrings( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // Both exist
     val1.setValues("def", "ghi", "jkl");
     val2.setValue("abc").setExists(true);
@@ -248,7 +248,7 @@ public class ConcatFunctionTest extends SolrTestCaseJ4 {
     TestStringValue val2 = new TestStringValue();
     TestStringValue val3 = new TestStringValue();
     TestStringValue val4 = new TestStringValue();
-    
+
     AnalyticsValueStream uncasted = ConcatFunction.creatorFunction.apply(new AnalyticsValueStream[] {val1, val2, val3, val4});
     assertTrue(uncasted instanceof StringValue);
     StringValue func = (StringValue) uncasted;
@@ -260,7 +260,7 @@ public class ConcatFunctionTest extends SolrTestCaseJ4 {
     val4.setExists(false);
     func.getString();
     assertFalse(func.exists());
-    
+
     // Some exist
     val1.setExists(false);
     val2.setValue("def").setExists(true);
@@ -268,7 +268,7 @@ public class ConcatFunctionTest extends SolrTestCaseJ4 {
     val4.setValue("jkl").setExists(true);
     assertEquals("defjkl", func.getString());
     assertTrue(func.exists());
-    
+
     // All exist values, one value
     val1.setValue("abc").setExists(true);
     val2.setValue("def").setExists(true);
@@ -285,7 +285,7 @@ public class ConcatFunctionTest extends SolrTestCaseJ4 {
     TestStringValue val3 = new TestStringValue();
     TestStringValue val4 = new TestStringValue();
     ConstantStringValue sep = new ConstantStringValue("+:-");
-    
+
     AnalyticsValueStream uncasted = SeparatedConcatFunction.creatorFunction.apply(new AnalyticsValueStream[] {sep, val1, val2, val3, val4});
     assertTrue(uncasted instanceof StringValue);
     StringValue func = (StringValue) uncasted;
@@ -297,7 +297,7 @@ public class ConcatFunctionTest extends SolrTestCaseJ4 {
     val4.setExists(false);
     func.getString();
     assertFalse(func.exists());
-    
+
     // Some exist
     val1.setExists(false);
     val2.setValue("def").setExists(true);
@@ -305,7 +305,7 @@ public class ConcatFunctionTest extends SolrTestCaseJ4 {
     val4.setValue("jkl").setExists(true);
     assertEquals("def+:-jkl", func.getString());
     assertTrue(func.exists());
-    
+
     // All exist values, one value
     val1.setValue("abc").setExists(true);
     val2.setValue("def").setExists(true);

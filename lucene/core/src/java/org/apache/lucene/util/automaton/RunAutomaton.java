@@ -31,12 +31,17 @@ package org.apache.lucene.util.automaton;
 
 import java.util.Arrays;
 
+import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.RamUsageEstimator;
+
 /**
  * Finite-state automaton with fast run operation.  The initial state is always 0.
  * 
  * @lucene.experimental
  */
-public abstract class RunAutomaton {
+public abstract class RunAutomaton implements Accountable {
+  private static final long BASE_RAM_BYTES = RamUsageEstimator.shallowSizeOfInstance(RunAutomaton.class);
+
   final Automaton automaton;
   final int alphabetSize;
   final int size;
@@ -73,10 +78,13 @@ public abstract class RunAutomaton {
     accept = new boolean[size];
     transitions = new int[size * points.length];
     Arrays.fill(transitions, -1);
+    Transition transition = new Transition();
     for (int n=0;n<size;n++) {
       accept[n] = a.isAccept(n);
+      transition.source = n;
+      transition.transitionUpto = -1;
       for (int c = 0; c < points.length; c++) {
-        int dest = a.step(n, points[c]);
+        int dest = a.next(transition, points[c]);
         assert dest == -1 || dest < size;
         transitions[n * points.length + c] = dest;
       }
@@ -103,7 +111,7 @@ public abstract class RunAutomaton {
     StringBuilder b = new StringBuilder();
     b.append("initial state: 0\n");
     for (int i = 0; i < size; i++) {
-      b.append("state " + i);
+      b.append("state ").append(i);
       if (accept[i]) b.append(" [accept]:\n");
       else b.append(" [reject]:\n");
       for (int j = 0; j < points.length; j++) {
@@ -203,5 +211,15 @@ public abstract class RunAutomaton {
     if (!Arrays.equals(accept, other.accept)) return false;
     if (!Arrays.equals(transitions, other.transitions)) return false;
     return true;
+  }
+
+  @Override
+  public long ramBytesUsed() {
+    return BASE_RAM_BYTES +
+        RamUsageEstimator.sizeOfObject(accept) +
+        RamUsageEstimator.sizeOfObject(automaton) +
+        RamUsageEstimator.sizeOfObject(classmap) +
+        RamUsageEstimator.sizeOfObject(points) +
+        RamUsageEstimator.sizeOfObject(transitions);
   }
 }

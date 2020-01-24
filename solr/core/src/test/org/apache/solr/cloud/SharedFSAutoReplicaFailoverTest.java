@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import org.apache.hadoop.hdfs.MiniDFSCluster;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import com.carrotsearch.randomizedtesting.annotations.Nightly;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
@@ -56,10 +57,10 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.core.CoreDescriptor;
-import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.BadHdfsThreadsFilter;
 import org.apache.solr.util.LogLevel;
+import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.TimeOut;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -77,6 +78,7 @@ import org.slf4j.LoggerFactory;
     BadHdfsThreadsFilter.class // hdfs currently leaks thread(s)
 })
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.cloud.*=DEBUG")
+@LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
 public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -90,7 +92,6 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
   CompletionService<Object> completionService;
   Set<Future<Object>> pending;
   private final Map<String, String> collectionUlogDirMap = new HashMap<>();
-
   
   @BeforeClass
   public static void hdfsFailoverBeforeClass() throws Exception {
@@ -102,9 +103,12 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
   
   @AfterClass
   public static void hdfsFailoverAfterClass() throws Exception {
-    HdfsTestUtil.teardownClass(dfsCluster);
-    System.clearProperty("solr.hdfs.blockcache.blocksperbank");
-    dfsCluster = null;
+    try {
+      HdfsTestUtil.teardownClass(dfsCluster);
+    } finally {
+      System.clearProperty("solr.hdfs.blockcache.blocksperbank");
+      dfsCluster = null;
+    }
   }
 
   @Before
@@ -137,14 +141,15 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
 
   @Test
   @ShardsFixed(num = 4)
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  // 12-Jun-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  //commented 23-AUG-2018  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
   public void test() throws Exception {
     try {
       // to keep uncommitted docs during failover
-      DirectUpdateHandler2.commitOnClose = false;
+      TestInjection.skipIndexWriterCommitOnClose = true;
       testBasics();
     } finally {
-      DirectUpdateHandler2.commitOnClose = true;
+      TestInjection.reset();
       if (DEBUG) {
         super.printLayout();
       }
@@ -214,8 +219,8 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
 
     assertUlogDir(collections);
 
-    ChaosMonkey.stop(jettys.get(1));
-    ChaosMonkey.stop(jettys.get(2));
+    jettys.get(1).stop();
+    jettys.get(2).stop();
 
     Thread.sleep(5000);
 
@@ -246,12 +251,12 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
     List<JettySolrRunner> stoppedJetties = allowOverseerRestart
         ? jettys.stream().filter(jettySolrRunner -> random().nextBoolean()).collect(Collectors.toList()) : notOverseerJetties();
     ChaosMonkey.stop(stoppedJetties);
-    ChaosMonkey.stop(controlJetty);
+    controlJetty.stop();
 
     assertTrue("Timeout waiting for all not live", waitingForReplicasNotLive(cloudClient.getZkStateReader(), 45000, stoppedJetties));
 
     ChaosMonkey.start(stoppedJetties);
-    ChaosMonkey.start(controlJetty);
+    controlJetty.start();
 
     assertSliceAndReplicaCount(collection1, 2, 2, 120000);
     assertSliceAndReplicaCount(collection3, 5, 1, 120000);
@@ -263,8 +268,8 @@ public class SharedFSAutoReplicaFailoverTest extends AbstractFullDistribZkTestBa
     assertUlogDir(collections);
 
     int jettyIndex = random().nextInt(jettys.size());
-    ChaosMonkey.stop(jettys.get(jettyIndex));
-    ChaosMonkey.start(jettys.get(jettyIndex));
+    jettys.get(jettyIndex).stop();
+    jettys.get(jettyIndex).start();
 
     assertSliceAndReplicaCount(collection1, 2, 2, 120000);
 

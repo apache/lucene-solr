@@ -71,13 +71,11 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     assertEquals("X1", x[0]);
     assertEquals("X2", x[1]);
     assertEquals("Y", m.get("y"));
-    try {
-      CollectionsHandler.copy(params.required(), null, "z");
-      fail("Error expected");
-    } catch (SolrException e) {
-      assertEquals(e.code(), SolrException.ErrorCode.BAD_REQUEST.code);
 
-    }
+    SolrException e = expectThrows(SolrException.class, () -> {
+      CollectionsHandler.copy(params.required(), null, "z");
+    });
+    assertEquals(e.code(), SolrException.ErrorCode.BAD_REQUEST.code);
   }
 
   public void testCommands() throws Exception {
@@ -88,20 +86,20 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     //test a simple create collection call
     compareOutput(apiBag, "/collections", POST,
         "{create:{name:'newcoll', config:'schemaless', numShards:2, replicationFactor:2 }}", null,
-        "{name:newcoll, fromApi:'true', replicationFactor:'2', collection.configName:schemaless, numShards:'2', stateFormat:'2', operation:create}");
+        "{name:newcoll, fromApi:'true', replicationFactor:'2', nrtReplicas:'2', collection.configName:schemaless, numShards:'2', stateFormat:'2', operation:create}");
     
     compareOutput(apiBag, "/collections", POST,
         "{create:{name:'newcoll', config:'schemaless', numShards:2, nrtReplicas:2 }}", null,
-        "{name:newcoll, fromApi:'true', nrtReplicas:'2', collection.configName:schemaless, numShards:'2', stateFormat:'2', operation:create}");
+        "{name:newcoll, fromApi:'true', nrtReplicas:'2', replicationFactor:'2', collection.configName:schemaless, numShards:'2', stateFormat:'2', operation:create}");
     
     compareOutput(apiBag, "/collections", POST,
         "{create:{name:'newcoll', config:'schemaless', numShards:2, nrtReplicas:2, tlogReplicas:2, pullReplicas:2 }}", null,
-        "{name:newcoll, fromApi:'true', nrtReplicas:'2', tlogReplicas:'2', pullReplicas:'2', collection.configName:schemaless, numShards:'2', stateFormat:'2', operation:create}");
+        "{name:newcoll, fromApi:'true', nrtReplicas:'2', replicationFactor:'2', tlogReplicas:'2', pullReplicas:'2', collection.configName:schemaless, numShards:'2', stateFormat:'2', operation:create}");
 
     //test a create collection with custom properties
     compareOutput(apiBag, "/collections", POST,
         "{create:{name:'newcoll', config:'schemaless', numShards:2, replicationFactor:2, properties:{prop1:'prop1val', prop2: prop2val} }}", null,
-        "{name:newcoll, fromApi:'true', replicationFactor:'2', collection.configName:schemaless, numShards:'2', stateFormat:'2', operation:create, property.prop1:prop1val, property.prop2:prop2val}");
+        "{name:newcoll, fromApi:'true', replicationFactor:'2', nrtReplicas:'2', collection.configName:schemaless, numShards:'2', stateFormat:'2', operation:create, property.prop1:prop1val, property.prop2:prop2val}");
 
 
     compareOutput(apiBag, "/collections", POST,
@@ -208,12 +206,9 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
   
   static void assertErrorContains(final ApiBag apiBag, final String path, final SolrRequest.METHOD method,
       final String payload, final CoreContainer cc, String expectedErrorMsg) throws Exception {
-    try {
-      makeCall(apiBag, path, method, payload, cc);
-      fail("Expected exception");
-    } catch (RuntimeException e) {
-      assertTrue("Expected exception with error message '" + expectedErrorMsg + "' but got: " + e.getMessage(), e.getMessage().contains(expectedErrorMsg));
-    }
+    RuntimeException e = expectThrows(RuntimeException.class, () -> makeCall(apiBag, path, method, payload, cc));
+    assertTrue("Expected exception with error message '" + expectedErrorMsg + "' but got: " + e.getMessage(),
+        e.getMessage().contains(expectedErrorMsg));
   }
 
   public static Pair<SolrQueryRequest, SolrQueryResponse> makeCall(final ApiBag apiBag, String path,
@@ -276,6 +271,11 @@ public class TestCollectionAPIs extends SolrTestCaseJ4 {
     LocalSolrQueryRequest req;
 
     MockCollectionsHandler() {
+    }
+
+    @Override
+    protected void copyFromClusterProp(Map<String, Object> props, String prop) {
+
     }
 
     @Override

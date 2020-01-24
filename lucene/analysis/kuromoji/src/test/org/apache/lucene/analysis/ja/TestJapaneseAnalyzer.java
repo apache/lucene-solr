@@ -133,7 +133,7 @@ public class TestJapaneseAnalyzer extends BaseTokenStreamTestCase {
     final Analyzer a = new JapaneseAnalyzer(null, Mode.SEARCH,
                                             JapaneseAnalyzer.getDefaultStopSet(),
                                             JapaneseAnalyzer.getDefaultStopTags());
-    checkRandomData(random, a, atLeast(1000));
+    checkRandomData(random, a, atLeast(100));
     a.close();
   }
   
@@ -159,7 +159,7 @@ public class TestJapaneseAnalyzer extends BaseTokenStreamTestCase {
                               new String[] { "a", "b", "cd"  },
                               new int[] { 0, 1, 2 },
                               new int[] { 1, 2, 4 },
-                              new Integer(4)
+                              4
     );
     a.close();
   }

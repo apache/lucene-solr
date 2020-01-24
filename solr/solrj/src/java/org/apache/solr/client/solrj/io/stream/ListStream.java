@@ -108,6 +108,10 @@ public class ListStream extends TupleStream implements Expressible {
       if (currentStream == null) {
         if (streamIndex < streams.length) {
           currentStream = streams[streamIndex];
+          // Set the stream to null in the array of streams once its been set to the current stream.
+          // This will remove the reference to the stream
+          // and should allow it to be garbage collected once it's no longer the current stream.
+          streams[streamIndex] = null;
           currentStream.open();
         } else {
           HashMap map = new HashMap();

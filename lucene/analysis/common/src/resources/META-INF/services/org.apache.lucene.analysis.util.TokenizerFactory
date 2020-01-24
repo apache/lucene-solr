@@ -15,7 +15,6 @@
 
 org.apache.lucene.analysis.core.KeywordTokenizerFactory
 org.apache.lucene.analysis.core.LetterTokenizerFactory
-org.apache.lucene.analysis.core.LowerCaseTokenizerFactory
 org.apache.lucene.analysis.core.WhitespaceTokenizerFactory
 org.apache.lucene.analysis.ngram.EdgeNGramTokenizerFactory
 org.apache.lucene.analysis.ngram.NGramTokenizerFactory

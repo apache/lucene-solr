@@ -20,14 +20,15 @@ package org.apache.lucene.search.spans;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermStates;
+import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.spans.FilterSpans.AcceptStatus;
 
@@ -83,11 +84,6 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
     }
 
     @Override
-    public void extractTerms(Set<Term> terms) {
-      matchWeight.extractTerms(terms);
-    }
-
-    @Override
     public boolean isCacheable(LeafReaderContext ctx) {
       return matchWeight.isCacheable(ctx);
     }
@@ -124,6 +120,13 @@ public abstract class SpanPositionCheckQuery extends SpanQuery implements Clonea
     }
 
     return super.rewrite(reader);
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    if (visitor.acceptField(getField())) {
+      match.visit(visitor.getSubVisitor(BooleanClause.Occur.MUST, this));
+    }
   }
 
   /** Returns true iff <code>other</code> is equal to this. */

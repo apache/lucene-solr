@@ -163,7 +163,7 @@ public class NegateFunctionTest extends SolrTestCaseJ4 {
   @Test
   public void multiValueBooleanTest() {
     TestBooleanValueStream val = new TestBooleanValueStream();
-    
+
     AnalyticsValueStream uncasted = NegateFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
     assertTrue(uncasted instanceof BooleanValueStream);
     BooleanValueStream func = (BooleanValueStream) uncasted;
@@ -173,7 +173,7 @@ public class NegateFunctionTest extends SolrTestCaseJ4 {
     func.streamBooleans( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // One value
     val.setValues(true);
     Iterator<Boolean> values1 = Arrays.asList(false).iterator();
@@ -182,7 +182,7 @@ public class NegateFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values1.next(), value);
     });
     assertFalse(values1.hasNext());
-    
+
     // Multiple values
     val.setValues(true, false, true, false);
     Iterator<Boolean> values2 = Arrays.asList(false, true, false, true).iterator();
@@ -196,7 +196,7 @@ public class NegateFunctionTest extends SolrTestCaseJ4 {
   @Test
   public void multiValueIntTest() {
     TestIntValueStream val = new TestIntValueStream();
-    
+
     AnalyticsValueStream uncasted = NegateFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
     assertTrue(uncasted instanceof IntValueStream);
     IntValueStream func = (IntValueStream) uncasted;
@@ -206,7 +206,7 @@ public class NegateFunctionTest extends SolrTestCaseJ4 {
     func.streamInts( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // One value
     val.setValues(-4);
     Iterator<Integer> values1 = Arrays.asList(4).iterator();
@@ -215,7 +215,7 @@ public class NegateFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values1.next().intValue(), value);
     });
     assertFalse(values1.hasNext());
-    
+
     // Multiple values
     val.setValues(4, -10, 50, -74);
     Iterator<Integer> values2 = Arrays.asList(-4, 10, -50, 74).iterator();
@@ -229,7 +229,7 @@ public class NegateFunctionTest extends SolrTestCaseJ4 {
   @Test
   public void multiValueLongTest() {
     TestLongValueStream val = new TestLongValueStream();
-    
+
     AnalyticsValueStream uncasted = NegateFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
     assertTrue(uncasted instanceof LongValueStream);
     LongValueStream func = (LongValueStream) uncasted;
@@ -239,7 +239,7 @@ public class NegateFunctionTest extends SolrTestCaseJ4 {
     func.streamLongs( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // One value
     val.setValues(-4L);
     Iterator<Long> values1 = Arrays.asList(4L).iterator();
@@ -248,7 +248,7 @@ public class NegateFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values1.next().longValue(), value);
     });
     assertFalse(values1.hasNext());
-    
+
     // Multiple values
     val.setValues(4L, -10L, 50L, -74L);
     Iterator<Long> values2 = Arrays.asList(-4L, 10L, -50L, 74L).iterator();
@@ -262,7 +262,7 @@ public class NegateFunctionTest extends SolrTestCaseJ4 {
   @Test
   public void multiValueFloatTest() {
     TestFloatValueStream val = new TestFloatValueStream();
-    
+
     AnalyticsValueStream uncasted = NegateFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
     assertTrue(uncasted instanceof FloatValueStream);
     FloatValueStream func = (FloatValueStream) uncasted;
@@ -272,7 +272,7 @@ public class NegateFunctionTest extends SolrTestCaseJ4 {
     func.streamFloats( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // One value
     val.setValues(-4.3F);
     Iterator<Float> values1 = Arrays.asList(4.3F).iterator();
@@ -281,7 +281,7 @@ public class NegateFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values1.next(), value, .000001);
     });
     assertFalse(values1.hasNext());
-    
+
     // Multiple values
     val.setValues(4.3F, -10F, 50.75F, -74.4446F);
     Iterator<Float> values2 = Arrays.asList(-4.3F, 10F, -50.75F, 74.4446F).iterator();
@@ -295,7 +295,7 @@ public class NegateFunctionTest extends SolrTestCaseJ4 {
   @Test
   public void multiValueDoubleTest() {
     TestDoubleValueStream val = new TestDoubleValueStream();
-    
+
     AnalyticsValueStream uncasted = NegateFunction.creatorFunction.apply(new AnalyticsValueStream[] {val});
     assertTrue(uncasted instanceof DoubleValueStream);
     DoubleValueStream func = (DoubleValueStream) uncasted;
@@ -305,7 +305,7 @@ public class NegateFunctionTest extends SolrTestCaseJ4 {
     func.streamDoubles( value -> {
       assertTrue("There should be no values to stream", false);
     });
-    
+
     // One value
     val.setValues(-4.3);
     Iterator<Double> values1 = Arrays.asList(4.3).iterator();
@@ -314,7 +314,7 @@ public class NegateFunctionTest extends SolrTestCaseJ4 {
       assertEquals(values1.next(), value, .000001);
     });
     assertFalse(values1.hasNext());
-    
+
     // Multiple values
     val.setValues(4.3, -10, 50.75, -74.4446);
     Iterator<Double> values2 = Arrays.asList(-4.3, 10.0, -50.75, 74.4446).iterator();

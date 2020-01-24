@@ -1,5 +1,5 @@
 = Using the Solr Administration User Interface
-:page-children: overview-of-the-solr-admin-ui, getting-assistance, logging, cloud-screens, collections-core-admin, java-properties, thread-dump, suggestions-screen, collection-specific-tools, core-specific-tools
+:page-children: overview-of-the-solr-admin-ui, logging, cloud-screens, collections-core-admin, java-properties, thread-dump, suggestions-screen, collection-specific-tools, core-specific-tools
 // Licensed to the Apache Software Foundation (ASF) under one
 // or more contributor license agreements.  See the NOTICE file
 // distributed with this work for additional information
@@ -21,7 +21,6 @@ This section discusses the Solr Administration User Interface ("Admin UI").
 
 The <<overview-of-the-solr-admin-ui.adoc#overview-of-the-solr-admin-ui,Overview of the Solr Admin UI>> explains the basic features of the user interface, what's on the initial Admin UI page, and how to configure the interface. In addition, there are pages describing each screen of the Admin UI:
 
-* *<<getting-assistance.adoc#getting-assistance,Getting Assistance>>* shows you how to get more information about the UI.
 * *<<logging.adoc#logging,Logging>>* shows recent messages logged by this Solr node and provides a way to change logging levels for specific classes.
 * *<<cloud-screens.adoc#cloud-screens,Cloud Screens>>* display information about nodes when running in SolrCloud mode.
 * *<<collections-core-admin.adoc#collections-core-admin,Collections / Core Admin>>* explains how to get management information about each core.

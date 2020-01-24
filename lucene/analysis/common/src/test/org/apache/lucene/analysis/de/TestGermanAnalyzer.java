@@ -23,7 +23,9 @@ import java.io.StringReader;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.CharArraySet;
-import org.apache.lucene.analysis.core.LowerCaseTokenizer;
+import org.apache.lucene.analysis.LowerCaseFilter;
+import org.apache.lucene.analysis.Tokenizer;
+import org.apache.lucene.analysis.core.LetterTokenizer;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 
 public class TestGermanAnalyzer extends BaseTokenStreamTestCase {
@@ -38,10 +40,10 @@ public class TestGermanAnalyzer extends BaseTokenStreamTestCase {
   public void testWithKeywordAttribute() throws IOException {
     CharArraySet set = new CharArraySet( 1, true);
     set.add("fischen");
-    final LowerCaseTokenizer in = new LowerCaseTokenizer();
+    final Tokenizer in = new LetterTokenizer();
     in.setReader(new StringReader("Fischen Trinken"));
     GermanStemFilter filter = new GermanStemFilter(
-        new SetKeywordMarkerFilter(in, set));
+        new SetKeywordMarkerFilter(new LowerCaseFilter(in), set));
     assertTokenStreamContents(filter, new String[] { "fischen", "trink" });
   }
 
@@ -66,7 +68,7 @@ public class TestGermanAnalyzer extends BaseTokenStreamTestCase {
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     GermanAnalyzer a = new GermanAnalyzer();
-    checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), a, 200 * RANDOM_MULTIPLIER);
     a.close();
   }
 }

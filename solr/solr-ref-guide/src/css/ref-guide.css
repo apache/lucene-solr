@@ -1,12 +1,10 @@
 /* Load Noto Sans for body and header text */
-@font-face
-{
+@font-face {
     font-family: 'Noto Sans';
     src: url(../fonts/Noto_Sans/NotoSans-Regular.ttf);
 }
 
-@font-face
-{
+@font-face {
     font-weight: bold;
     font-family: 'Noto Sans';
     src: url(../fonts/Noto_Sans/NotoSans-Bold.ttf);
@@ -35,44 +33,37 @@ hgroup,
 main,
 nav,
 section,
-summary
-{
+summary {
     display: block;
 }
 
 audio,
 canvas,
-video
-{
+video {
     display: inline-block;
 }
 
-audio:not([controls])
-{
+audio:not([controls]) {
     display: none;
     height: 0;
 }
 
 [hidden],
-template
-{
+template {
     display: none;
 }
 
-script
-{
+script {
     display: none!important;
 }
 
-html
-{
+html {
     font-family: 'Noto Sans', sans-serif;
     -ms-text-size-adjust: 100%;
     -webkit-text-size-adjust: 100%;
 }
 
-body
-{
+body {
     margin: 0;
 }
 
@@ -80,20 +71,17 @@ body.DRAFT {
     background-image: url("../images/draft-background.png");
 }
 
-a
-{
+a {
     background: transparent;
 }
 
-a:focus
-{
+a:focus {
     outline: thin dotted;
    outline-offset: -2px;
 }
 
 a:active,
-a:hover
-{
+a:hover {
     outline: 0;
 }
 
@@ -112,8 +100,7 @@ a[href^="https://"]:after {
 
 /* Strip the outbound icon when this class is present */
 a[href].noCrossRef::after,
-a.no_icon:after
- {
+a.no_icon:after {
     content:"" !important;
     padding-left: 0;
 }
@@ -128,6 +115,7 @@ ul#mysidebar li.sb-level3 a {
 ul#mysidebar li.sb-level4 a {
    padding-left: 40px;
 }
+
 /* we can style the 'current-tree' hierarchy in the sidebar independently of the 'active' page as
    the user clicks around expanding/collapsing the nav menus w/o clicking a link to load a diff page
 
@@ -147,14 +135,12 @@ ul#mysidebar li.current.active > a {
 }
 
 
-abbr[title]
-{
+abbr[title] {
     border-bottom: 1px dotted;
 }
 
 b,
-strong
-{
+strong {
     font-weight: bold;
 }
 
@@ -447,9 +433,11 @@ select
     width: 100%;
 }
 
+/* Defines size and line height for "lead" type sections, the first sentence of a page. */
 #preamble > .sectionbody > .paragraph:first-of-type p,
 .paragraph.lead > p,
-p.lead
+p.lead,
+#preamble > p:first-of-type
 {
     font-size: 1.21875em;
     line-height: 1.6;
@@ -473,7 +461,8 @@ p.lead
 .ulist > .title,
 .verseblock > .title,
 .videoblock > .title,
-table.tableblock > .title
+table.tableblock > .title,
+figcaption
 {
     margin-top: 0;
     margin-bottom: .25em;
@@ -483,7 +472,7 @@ table.tableblock > .title
 }
 
 #toctitle,
-.sidebarblock > .content > .title,
+.sidebarblock > .title,
 blockquote,
 dd,
 div,
@@ -538,7 +527,7 @@ p aside
 }
 
 #toctitle,
-.sidebarblock > .content > .title,
+.sidebarblock > .title,
 h1,
 h2,
 h3,
@@ -560,7 +549,7 @@ h6
 }
 
 #toctitle small,
-.sidebarblock > .content > .title small,
+.sidebarblock > .title small,
 h1 small,
 h2 small,
 h3 small,
@@ -574,7 +563,7 @@ h6 small
 }
 
 /* Pad the page title and sidebar header */
-h1.post-title-main,
+h1.title-main,
 li.sidebarTitle {
   padding-top: 20px;
 }
@@ -590,7 +579,7 @@ h2
 }
 
 #toctitle,
-.sidebarblock > .content > .title,
+.sidebarblock > .title,
 h3
 {
     font-size: 1.375em;
@@ -660,8 +649,9 @@ ul li ol,
 ul li ul
 {
     margin-bottom: 0;
-    margin-left: 1.25em;
+    margin-left: .25em;
     font-size: 1em;
+    padding-left: 10px;
 }
 
 ul.circle li ul,
@@ -761,7 +751,7 @@ blockquote p
        and (min-width : 768px)
 {
     #toctitle,
-    .sidebarblock > .content > .title,
+    .sidebarblock > .title,
     h1,
     h2,
     h3,
@@ -783,7 +773,7 @@ blockquote p
     }
 
     #toctitle,
-    .sidebarblock > .content > .title,
+    .sidebarblock > .title,
     h3
     {
         font-size: 1.6875em;
@@ -846,7 +836,7 @@ table tr td
 }
 
 #toctitle strong,
-.sidebarblock > .content > .title strong,
+.sidebarblock > .title strong,
 h1 strong,
 h2 strong,
 h3 strong,
@@ -883,6 +873,11 @@ h6 strong
     font-style: normal!important;
     font-size: 1em;
     line-height: 1.45;
+}
+
+p strong code,
+td strong code {
+  font-weight: bold;
 }
 
 pre,
@@ -1157,32 +1152,36 @@ body.toc2 #header > h1:nth-last-child(2)
     font-size: 1.2em;
 }
 
-div.toc ul li {
+nav.toc ul li {
     margin: 8px 0 8px 22px;
     list-style: disc;
     line-height: 1.25;
 }
 
-div.toc ul {
-    background-color: whitesmoke;
+nav.toc ul {
+    background-color: #f1f1f1;;
     padding: 5px;
     border-radius: 5px;
     color: gray;
 }
 
-div.toc ul li ul {
-    padding-left:8px;
-
+nav.toc ul li ul {
+    padding-left: 8px;
 }
 
-div.toc ul li ul li::before {
-    content: "–  ";
+nav.toc ul li ul li {
+    list-style: circle;
+    margin: 5px 0 0 0;
 }
 
-div.toc.section-toc >ul::before {
+nav.toc ul li ul li ul li {
+  list-style: square;
+}
+
+nav.toc.section-toc >ul::before {
     content: "In this section";
 }
-div.toc >ul::before {
+nav.toc >ul::before {
     content: "On this Page";
     font-weight: bold;
     color: #555;
@@ -1359,7 +1358,7 @@ div.toc >ul::before {
 
 #content h1 > a.anchor,
 #toctitle > a.anchor,
-.sidebarblock > .content > .title > a.anchor,
+.sidebarblock > .title > a.anchor,
 h2 > a.anchor,
 h3 > a.anchor,
 h4 > a.anchor,
@@ -1379,7 +1378,7 @@ h6 > a.anchor
 
 #content h1 > a.anchor:before,
 #toctitle > a.anchor:before,
-.sidebarblock > .content > .title > a.anchor:before,
+.sidebarblock > .title > a.anchor:before,
 h2 > a.anchor:before,
 h3 > a.anchor:before,
 h4 > a.anchor:before,
@@ -1396,8 +1395,8 @@ h6 > a.anchor:before
 #content h1 > a.anchor:hover,
 #toctitle:hover > a.anchor,
 #toctitle > a.anchor:hover,
-.sidebarblock > .content > .title:hover > a.anchor,
-.sidebarblock > .content > .title > a.anchor:hover,
+.sidebarblock > .title:hover > a.anchor,
+.sidebarblock > .title > a.anchor:hover,
 h2:hover > a.anchor,
 h2 > a.anchor:hover,
 h3:hover > a.anchor,
@@ -1414,7 +1413,7 @@ h6 > a.anchor:hover
 
 #content h1 > a.link,
 #toctitle > a.link,
-.sidebarblock > .content > .title > a.link,
+.sidebarblock > .title > a.link,
 h2 > a.link,
 h3 > a.link,
 h4 > a.link,
@@ -1427,7 +1426,7 @@ h6 > a.link
 
 #content h1 > a.link:hover,
 #toctitle > a.link:hover,
-.sidebarblock > .content > .title > a.link:hover,
+.sidebarblock > .title > a.link:hover,
 h2 > a.link:hover,
 h3 > a.link:hover,
 h4 > a.link:hover,
@@ -1457,8 +1456,10 @@ table.tableblock > caption.title
     white-space: nowrap;
 }
 
+/* Defines color for "lead" type sections, the first text on a page. */
 #preamble > .sectionbody > .paragraph:first-of-type p,
-.paragraph.lead > p
+.paragraph.lead > p,
+#preamble > p:first-of-type
 {
     color: rgba(0,0,0,.85);
 }
@@ -1507,24 +1508,25 @@ table.tableblock #preamble > .sectionbody > .paragraph:first-of-type p
     margin-bottom: 0;
 }
 
-.exampleblock > .content
+.exampleblock
 {
     margin-bottom: 1.25em;
     padding: 0 1em 1em 1em;
     border-width: 1px;
     border-style: solid;
     border-color: #e6e6e6;
-    -webkit-border-radius: 4px;
-            border-radius: 4px;
+    background-color: transparent;
+    -webkit-box-shadow: 0 1px 4px #e0e0dc;
+            box-shadow: 0 1px 4px #e0e0dc;
     background: #fff;
 }
 
-.exampleblock > .content > :first-child
+.exampleblock > :first-child
 {
     margin-top: 0;
 }
 
-.exampleblock > .content > :last-child
+.exampleblock > :last-child
 {
     margin-bottom: 0;
 }
@@ -1551,21 +1553,23 @@ table.tableblock #preamble > .sectionbody > .paragraph:first-of-type p
     margin-bottom: 0;
 }
 
-.sidebarblock > .content > .title
+h6.block-title
 {
     margin-top: 0;
     color: #7a2518;
     text-align: center;
+    padding-bottom: 10px;
+    font-size: 1.6875em;
 }
 
-.exampleblock > .content > :last-child>:last-child,
-.exampleblock > .content .olist > ol > li:last-child>:last-child,
-.exampleblock > .content .qlist > ol > li:last-child>:last-child,
-.exampleblock > .content .ulist > ul > li:last-child>:last-child,
-.sidebarblock > .content > :last-child>:last-child,
-.sidebarblock > .content .olist > ol > li:last-child>:last-child,
-.sidebarblock > .content .qlist > ol > li:last-child>:last-child,
-.sidebarblock > .content .ulist > ul > li:last-child>:last-child
+.exampleblock > :last-child>:last-child,
+.exampleblock > .olist > ol > li:last-child>:last-child,
+.exampleblock > .qlist > ol > li:last-child>:last-child,
+.exampleblock > .ulist > ul > li:last-child>:last-child,
+.sidebarblock > :last-child>:last-child,
+.sidebarblock > .olist > ol > li:last-child>:last-child,
+.sidebarblock > .qlist > ol > li:last-child>:last-child,
+.sidebarblock > .ulist > ul > li:last-child>:last-child
 {
     margin-bottom: 0;
 }
@@ -1660,7 +1664,7 @@ table.tableblock #preamble > .sectionbody > .paragraph:first-of-type p
     border-width: 0;
 }
 
-.listingblock > .content
+.listingblock
 {
     position: relative;
 }
@@ -2160,7 +2164,8 @@ ol.lowergreek
 }
 
 .colist > table > tbody>tr,
-.hdlist > table > tbody > tr
+.hdlist > table > tbody > tr,
+th.hdlist1
 {
     background: none;
 }
@@ -2173,6 +2178,7 @@ td.hdlist1 > code
 }
 
 td.hdlist1,
+th.hdlist1,
 td.hdlist2
 {
     vertical-align: top;
@@ -2654,14 +2660,6 @@ p.tableblock
     font-size: 1em;
 }
 
-.exampleblock > .content
-{
-    border-color: #e0e0dc;
-    background-color: transparent;
-    -webkit-box-shadow: 0 1px 4px #e0e0dc;
-            box-shadow: 0 1px 4px #e0e0dc;
-}
-
 .print-only
 {
     display: none!important;
@@ -2737,7 +2735,7 @@ p.tableblock
     }
 
     #toc,
-    .exampleblock > .content,
+    .exampleblock,
     .sidebarblock
     {
         background: none!important;

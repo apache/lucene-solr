@@ -23,8 +23,6 @@ import java.io.StringReader;
 
 import org.apache.lucene.util.LuceneTestCase;
 
-import org.apache.lucene.analysis.WordlistLoader;
-
 public class TestWordlistLoader extends LuceneTestCase {
 
   public void testWordlistLoading() throws IOException {

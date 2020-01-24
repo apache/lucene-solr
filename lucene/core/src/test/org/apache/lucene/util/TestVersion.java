@@ -32,20 +32,20 @@ public class TestVersion extends LuceneTestCase {
         assertTrue("LATEST must be always onOrAfter("+v+")", Version.LATEST.onOrAfter(v));
       }
     }
-    assertTrue(Version.LUCENE_8_0_0.onOrAfter(Version.LUCENE_7_0_0));;
+    assertTrue(Version.LUCENE_9_0_0.onOrAfter(Version.LUCENE_8_0_0));;
   }
 
   public void testToString() {
-    assertEquals("7.0.0", Version.LUCENE_7_0_0.toString());
     assertEquals("8.0.0", Version.LUCENE_8_0_0.toString());
+    assertEquals("9.0.0", Version.LUCENE_9_0_0.toString());
   }
 
   public void testParseLeniently() throws Exception {
-    assertEquals(Version.LUCENE_7_0_0, Version.parseLeniently("7.0"));
-    assertEquals(Version.LUCENE_7_0_0, Version.parseLeniently("7.0.0"));
-    assertEquals(Version.LUCENE_7_0_0, Version.parseLeniently("LUCENE_70"));
-    assertEquals(Version.LUCENE_7_0_0, Version.parseLeniently("LUCENE_7_0"));
-    assertEquals(Version.LUCENE_7_0_0, Version.parseLeniently("LUCENE_7_0_0"));
+    assertEquals(Version.LUCENE_9_0_0, Version.parseLeniently("9.0"));
+    assertEquals(Version.LUCENE_9_0_0, Version.parseLeniently("9.0.0"));
+    assertEquals(Version.LUCENE_9_0_0, Version.parseLeniently("LUCENE_90"));
+    assertEquals(Version.LUCENE_9_0_0, Version.parseLeniently("LUCENE_9_0"));
+    assertEquals(Version.LUCENE_9_0_0, Version.parseLeniently("LUCENE_9_0_0"));
     assertEquals(Version.LUCENE_8_0_0, Version.parseLeniently("8.0"));
     assertEquals(Version.LUCENE_8_0_0, Version.parseLeniently("8.0.0"));
     assertEquals(Version.LUCENE_8_0_0, Version.parseLeniently("LUCENE_80"));
@@ -95,7 +95,7 @@ public class TestVersion extends LuceneTestCase {
   }
 
   public void testParse() throws Exception {
-    assertEquals(Version.LUCENE_7_0_0, Version.parse("7.0.0"));
+    assertEquals(Version.LUCENE_9_0_0, Version.parse("9.0.0"));
     assertEquals(Version.LUCENE_8_0_0, Version.parse("8.0.0"));
     
     // Version does not pass judgement on the major version:
@@ -104,7 +104,7 @@ public class TestVersion extends LuceneTestCase {
   }
 
   public void testForwardsCompatibility() throws Exception {
-    assertTrue(Version.parse("7.10.20").onOrAfter(Version.LUCENE_7_0_0));
+    assertTrue(Version.parse("8.10.20").onOrAfter(Version.LUCENE_8_0_0));
   }
 
   public void testParseExceptions() {

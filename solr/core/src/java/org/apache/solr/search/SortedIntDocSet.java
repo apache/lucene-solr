@@ -804,4 +804,12 @@ public class SortedIntDocSet extends DocSetBase {
   public Collection<Accountable> getChildResources() {
     return Collections.emptyList();
   }
+
+  @Override
+  public String toString() {
+    return "SortedIntDocSet{" +
+        "size=" + size() + "," +
+        "ramUsed=" + RamUsageEstimator.humanReadableUnits(ramBytesUsed())+
+        '}';
+  }
 }

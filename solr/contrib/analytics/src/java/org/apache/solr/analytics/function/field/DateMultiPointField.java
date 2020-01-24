@@ -31,7 +31,7 @@ public class DateMultiPointField extends LongMultiPointField implements CastingD
   public DateMultiPointField(String fieldName) {
     super(fieldName);
   }
-  
+
   @Override
   public void streamDates(Consumer<Date> cons) {
     streamLongs(value -> cons.accept(new Date(value)));

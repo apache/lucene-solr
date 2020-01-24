@@ -93,9 +93,6 @@ public class SolrZooKeeper extends ZooKeeper {
   
   @Override
   public synchronized void close() throws InterruptedException {
-    for (Thread t : spawnedThreads) {
-      if (t.isAlive()) t.interrupt();
-    }
     super.close();
   }
   

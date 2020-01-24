@@ -83,8 +83,10 @@ final class SortingTermVectorsConsumer extends TermVectorsConsumer {
     try {
       super.abort();
     } finally {
-      IOUtils.deleteFilesIgnoringExceptions(tmpDirectory,
-          tmpDirectory.getTemporaryFiles().values());
+      if (tmpDirectory != null) {
+        IOUtils.deleteFilesIgnoringExceptions(tmpDirectory,
+            tmpDirectory.getTemporaryFiles().values());
+      }
     }
   }
 

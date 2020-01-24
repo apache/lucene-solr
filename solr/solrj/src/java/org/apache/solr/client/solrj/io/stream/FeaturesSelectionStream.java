@@ -259,7 +259,7 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
     try {
       ZkStateReader zkStateReader = cloudSolrClient.getZkStateReader();
 
-      Collection<Slice> slices = CloudSolrStream.getSlices(this.collection, zkStateReader, false);
+      Slice[] slices = CloudSolrStream.getSlices(this.collection, zkStateReader, false);
 
       ClusterState clusterState = zkStateReader.getClusterState();
       Set<String> liveNodes = clusterState.getLiveNodes();
@@ -424,8 +424,8 @@ public class FeaturesSelectionStream extends TupleStream implements Expressible{
       params.add(DISTRIB, "false");
       params.add("fq","{!igain}");
 
-      for(String key : paramsMap.keySet()) {
-        params.add(key, paramsMap.get(key));
+      for(Map.Entry<String, String> entry : paramsMap.entrySet()) {
+        params.add(entry.getKey(), entry.getValue());
       }
 
       params.add("outcome", outcome);

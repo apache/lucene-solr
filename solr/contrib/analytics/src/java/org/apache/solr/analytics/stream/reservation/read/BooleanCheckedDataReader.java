@@ -22,7 +22,7 @@ import java.io.IOException;
 import org.apache.solr.analytics.util.function.BooleanConsumer;
 
 public class BooleanCheckedDataReader extends ReductionCheckedDataReader<BooleanConsumer> {
-  
+
   public BooleanCheckedDataReader(DataInput inputStream, BooleanConsumer applier) {
     super(inputStream, applier);
   }

@@ -16,15 +16,6 @@
  */
 package org.apache.solr;
 
-import org.apache.solr.common.params.ModifiableSolrParams;
-import org.noggit.JSONUtil;
-import org.noggit.ObjectBuilder;
-import org.apache.solr.request.SolrQueryRequest;
-import org.junit.BeforeClass;
-import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -35,6 +26,14 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import org.apache.solr.common.params.ModifiableSolrParams;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.request.SolrQueryRequest;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class TestJoin extends SolrTestCaseJ4 {
 
@@ -232,13 +231,13 @@ public class TestJoin extends SolrTestCaseJ4 {
 
         String strResponse = h.query(req);
 
-        Object realResponse = ObjectBuilder.fromJSON(strResponse);
+        Object realResponse = Utils.fromJSONString(strResponse);
         String err = JSONTestUtil.matchObj("/response", realResponse, resultSet);
         if (err != null) {
           log.error("JOIN MISMATCH: " + err
            + "\n\trequest="+req
            + "\n\tresult="+strResponse
-           + "\n\texpected="+ JSONUtil.toJSON(resultSet)
+           + "\n\texpected="+ Utils.toJSONString(resultSet)
            + "\n\tmodel="+ model
           );
 

@@ -114,4 +114,4 @@ Solr provides a way to set your log verbosity threshold to WARN and be able to s
 <slowQueryThresholdMillis>1000</slowQueryThresholdMillis>
 ----
 
-Any queries that take longer than the specified threshold will be logged as "slow" queries at the WARN level.
+Any queries that take longer than the specified threshold will be logged as "slow" queries at the WARN level. The log file under which you can find all these queries is called `solr_slow_requests.log` and will be found in your `SOLR_LOGS_DIR` (see <<Permanent Logging Settings>> for more about defining log locations).

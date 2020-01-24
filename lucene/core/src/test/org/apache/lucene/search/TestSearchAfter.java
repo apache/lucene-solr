@@ -216,17 +216,26 @@ public class TestSearchAfter extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("\nassertQuery " + (iter++) + ": query=" + query + " sort=" + sort + " pageSize=" + pageSize);
     }
-    final boolean doMaxScore = random().nextBoolean();
-    final boolean doScores = random().nextBoolean();
+    final boolean doScores;
+    final TopDocsCollector allCollector;
     if (sort == null) {
-      all = searcher.search(query, maxDoc);
+      allCollector = TopScoreDocCollector.create(maxDoc, null, Integer.MAX_VALUE);
+      doScores = false;
     } else if (sort == Sort.RELEVANCE) {
-      all = searcher.search(query, maxDoc, sort, true, doMaxScore);
+      allCollector = TopFieldCollector.create(sort, maxDoc, Integer.MAX_VALUE);
+      doScores = true;
     } else {
-      all = searcher.search(query, maxDoc, sort, doScores, doMaxScore);
+      allCollector = TopFieldCollector.create(sort, maxDoc, Integer.MAX_VALUE);
+      doScores = random().nextBoolean();
     }
+    searcher.search(query, allCollector);
+    all = allCollector.topDocs();
+    if (doScores) {
+      TopFieldCollector.populateScores(all.scoreDocs, searcher, query);
+    }
+
     if (VERBOSE) {
-      System.out.println("  all.totalHits=" + all.totalHits);
+      System.out.println("  all.totalHits.value=" + all.totalHits.value);
       int upto = 0;
       for(ScoreDoc scoreDoc : all.scoreDocs) {
         System.out.println("    hit " + (upto++) + ": id=" + searcher.doc(scoreDoc.doc).get("id") + " " + scoreDoc);
@@ -234,23 +243,30 @@ public class TestSearchAfter extends LuceneTestCase {
     }
     int pageStart = 0;
     ScoreDoc lastBottom = null;
-    while (pageStart < all.totalHits) {
+    while (pageStart < all.totalHits.value) {
       TopDocs paged;
+      final TopDocsCollector pagedCollector;
       if (sort == null) {
         if (VERBOSE) {
           System.out.println("  iter lastBottom=" + lastBottom);
         }
-        paged = searcher.searchAfter(lastBottom, query, pageSize);
+        pagedCollector = TopScoreDocCollector.create(pageSize, lastBottom, Integer.MAX_VALUE);
       } else {
         if (VERBOSE) {
           System.out.println("  iter lastBottom=" + lastBottom);
         }
         if (sort == Sort.RELEVANCE) {
-          paged = searcher.searchAfter(lastBottom, query, pageSize, sort, true, doMaxScore);
+          pagedCollector = TopFieldCollector.create(sort, pageSize, (FieldDoc) lastBottom, Integer.MAX_VALUE);
         } else {
-          paged = searcher.searchAfter(lastBottom, query, pageSize, sort, doScores, doMaxScore);
+          pagedCollector = TopFieldCollector.create(sort, pageSize, (FieldDoc) lastBottom, Integer.MAX_VALUE);
         }
       }
+      searcher.search(query, pagedCollector);
+      paged = pagedCollector.topDocs();
+      if (doScores) {
+        TopFieldCollector.populateScores(paged.scoreDocs, searcher, query);
+      }
+
       if (VERBOSE) {
         System.out.println("    " + paged.scoreDocs.length + " hits on page");
       }
@@ -266,7 +282,7 @@ public class TestSearchAfter extends LuceneTestCase {
   }
 
   void assertPage(int pageStart, TopDocs all, TopDocs paged) throws IOException {
-    assertEquals(all.totalHits, paged.totalHits);
+    assertEquals(all.totalHits.value, paged.totalHits.value);
     for (int i = 0; i < paged.scoreDocs.length; i++) {
       ScoreDoc sd1 = all.scoreDocs[pageStart + i];
       ScoreDoc sd2 = paged.scoreDocs[i];

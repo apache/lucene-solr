@@ -36,10 +36,27 @@
     </similarity>
   </fieldType>
 
+  <!-- legacybm25 with default parameters -->
+  <fieldType name="legacy_text" class="solr.TextField">
+    <analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer"/>
+    <similarity class="solr.LegacyBM25SimilarityFactory"/>
+  </fieldType>
+
+  <!-- legacybm25 with parameters -->
+  <fieldType name="legacy_text_params" class="solr.TextField">
+    <analyzer class="org.apache.lucene.analysis.standard.StandardAnalyzer"/>
+    <similarity class="solr.LegacyBM25SimilarityFactory">
+      <float name="k1">1.2</float>
+      <float name="b">0.76</float>
+    </similarity>
+  </fieldType>
+  
 
   <field name="id" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
   <field name="text" type="text" indexed="true" stored="false"/>
   <field name="text_params" type="text_params" indexed="true" stored="false"/>
+  <field name="legacy_text" type="legacy_text" indexed="true" stored="false"/>
+  <field name="legacy_text_params" type="legacy_text_params" indexed="true" stored="false"/>
 
   <uniqueKey>id</uniqueKey>
 

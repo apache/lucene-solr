@@ -19,19 +19,22 @@ package org.apache.lucene.index;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.PriorityQueue;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.LongSupplier;
+import java.util.stream.Collectors;
 
 import org.apache.lucene.store.AlreadyClosedException;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.CollectionUtil;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 
@@ -51,6 +54,7 @@ final class ReaderPool implements Closeable {
   private final InfoStream infoStream;
   private final SegmentInfos segmentInfos;
   private final String softDeletesField;
+  private final Map<String, String> readerAttributes;
   // This is a "write once" variable (like the organic dye
   // on a DVD-R that may or may not be heated by a laser and
   // then cooled to permanently record the event): it's
@@ -68,7 +72,7 @@ final class ReaderPool implements Closeable {
 
   ReaderPool(Directory directory, Directory originalDirectory, SegmentInfos segmentInfos,
              FieldInfos.FieldNumbers fieldNumbers, LongSupplier completedDelGenSupplier, InfoStream infoStream,
-             String softDeletesField, StandardDirectoryReader reader) throws IOException {
+             String softDeletesField, StandardDirectoryReader reader, Map<String, String> readerAttributes) throws IOException {
     this.directory = directory;
     this.originalDirectory = originalDirectory;
     this.segmentInfos = segmentInfos;
@@ -76,6 +80,7 @@ final class ReaderPool implements Closeable {
     this.completedDelGenSupplier = completedDelGenSupplier;
     this.infoStream = infoStream;
     this.softDeletesField = softDeletesField;
+    this.readerAttributes = readerAttributes;
     if (reader != null) {
       // Pre-enroll all segment readers into the reader pool; this is necessary so
       // any in-memory NRT live docs are correctly carried over, and so NRT readers
@@ -86,9 +91,9 @@ final class ReaderPool implements Closeable {
         LeafReaderContext leaf = leaves.get(i);
         SegmentReader segReader = (SegmentReader) leaf.reader();
         SegmentReader newReader = new SegmentReader(segmentInfos.info(i), segReader, segReader.getLiveDocs(),
-            segReader.numDocs());
-        readerMap.put(newReader.getSegmentInfo(), new ReadersAndUpdates(segmentInfos.getIndexCreatedVersionMajor(),
-            newReader, newPendingDeletes(newReader, newReader.getSegmentInfo())));
+            segReader.getHardLiveDocs(), segReader.numDocs(), true);
+        readerMap.put(newReader.getOriginalSegmentInfo(), new ReadersAndUpdates(segmentInfos.getIndexCreatedVersionMajor(),
+            newReader, newPendingDeletes(newReader, newReader.getOriginalSegmentInfo()), readerAttributes));
       }
     }
   }
@@ -130,9 +135,9 @@ final class ReaderPool implements Closeable {
   /**
    * Returns <code>true</code> iff any of the buffered readers and updates has at least one pending delete
    */
-  synchronized boolean anyPendingDeletes() {
+  synchronized boolean anyDeletions() {
     for(ReadersAndUpdates rld : readerMap.values()) {
-      if (rld.getPendingDeleteCount() != 0) {
+      if (rld.getDelCount() > 0) {
         return true;
       }
     }
@@ -243,16 +248,36 @@ final class ReaderPool implements Closeable {
     return any;
   }
 
-  PriorityQueue<ReadersAndUpdates> getReadersByRam() {
-    // Sort by largest ramBytesUsed:
-    PriorityQueue<ReadersAndUpdates> queue = new PriorityQueue<>(readerMap.size(),
-        (a, b) -> Long.compare(b.ramBytesUsed.get(), a.ramBytesUsed.get()));
-    synchronized (this) {
-      for (ReadersAndUpdates rld : readerMap.values()) {
-        queue.add(rld);
+  /**
+   * Returns a list of all currently maintained ReadersAndUpdates sorted by it's ram consumption largest to smallest.
+   * This list can also contain readers that don't consume any ram at this point ie. don't have any updates buffered.
+   */
+  synchronized List<ReadersAndUpdates> getReadersByRam() {
+    class RamRecordingHolder {
+      final ReadersAndUpdates updates;
+      final long ramBytesUsed;
+      RamRecordingHolder(ReadersAndUpdates updates) {
+        this.updates = updates;
+        this.ramBytesUsed = updates.ramBytesUsed.get();
       }
     }
-    return queue;
+    final ArrayList<RamRecordingHolder> readersByRam;
+    synchronized (this) {
+      if (readerMap.isEmpty()) {
+        return Collections.emptyList();
+      }
+      readersByRam = new ArrayList<>(readerMap.size());
+      for (ReadersAndUpdates rld : readerMap.values()) {
+        // we have to record the ram usage once and then sort
+        // since the ram usage can change concurrently and that will confuse the sort or hit an assertion
+        // the we can acquire here is not enough we would need to lock all ReadersAndUpdates to make sure it doesn't
+        // change
+        readersByRam.add(new RamRecordingHolder(rld));
+      }
+    }
+    // Sort this outside of the lock by largest ramBytesUsed:
+    CollectionUtil.introSort(readersByRam, (a, b) -> Long.compare(b.ramBytesUsed, a.ramBytesUsed));
+    return Collections.unmodifiableList(readersByRam.stream().map(h -> h.updates).collect(Collectors.toList()));
   }
 
 
@@ -321,7 +346,6 @@ final class ReaderPool implements Closeable {
 
   /**
    * Returns <code>true</code> iff there are any buffered doc values updates. Otherwise <code>false</code>.
-   * @see #anyPendingDeletes()
    */
   synchronized boolean anyDocValuesChanges() {
     for (ReadersAndUpdates rld : readerMap.values()) {
@@ -350,7 +374,7 @@ final class ReaderPool implements Closeable {
       if (create == false) {
         return null;
       }
-      rld = new ReadersAndUpdates(segmentInfos.getIndexCreatedVersionMajor(), info, newPendingDeletes(info));
+      rld = new ReadersAndUpdates(segmentInfos.getIndexCreatedVersionMajor(), info, newPendingDeletes(info), readerAttributes);
       // Steal initial reference:
       readerMap.put(info, rld);
     } else {

@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.lucene.index.NumericDocValuesFieldUpdates.SingleValueNumericDocValuesFieldUpdates;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.LuceneTestCase;
 
@@ -68,5 +69,124 @@ public class TestDocValuesFieldUpdates extends LuceneTestCase {
     assertEquals(5, iterator.nextDoc());
     assertEquals(24, iterator.longValue());
     assertEquals(DocIdSetIterator.NO_MORE_DOCS, iterator.nextDoc());
+  }
+
+  public void testUpdateAndResetSameDoc() {
+    NumericDocValuesFieldUpdates updates = new NumericDocValuesFieldUpdates(0, "test", 2);
+    updates.add(0, 1);
+    updates.reset(0);
+    updates.finish();
+    NumericDocValuesFieldUpdates.Iterator iterator = updates.iterator();
+    assertEquals(0, iterator.nextDoc());
+    assertFalse(iterator.hasValue());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, iterator.nextDoc());
+  }
+
+  public void testUpdateAndResetUpdateSameDoc() {
+    NumericDocValuesFieldUpdates updates = new NumericDocValuesFieldUpdates(0, "test", 3);
+    updates.add(0, 1);
+    updates.add(0);
+    updates.add(0, 2);
+    updates.finish();
+    NumericDocValuesFieldUpdates.Iterator iterator = updates.iterator();
+    assertEquals(0, iterator.nextDoc());
+    assertTrue(iterator.hasValue());
+    assertEquals(2, iterator.longValue());
+    assertEquals(DocIdSetIterator.NO_MORE_DOCS, iterator.nextDoc());
+  }
+
+  public void testUpdatesAndResetRandom() {
+    NumericDocValuesFieldUpdates updates = new NumericDocValuesFieldUpdates(0, "test", 10);
+    int numUpdates = 10 + random().nextInt(100);
+    Integer[] values = new Integer[5];
+    for (int i = 0; i < 5; i++) {
+      values[i] = random().nextBoolean() ? null : random().nextInt(100);
+      if (values[i] == null) {
+        updates.reset(i);
+      } else {
+        updates.add(i, values[i]);
+      }
+    }
+    for (int i = 0; i < numUpdates; i++) {
+      int docId = random().nextInt(5);
+      values[docId] = random().nextBoolean() ? null : random().nextInt(100);
+      if (values[docId] == null) {
+        updates.reset(docId);
+      } else {
+        updates.add(docId, values[docId]);
+      }
+    }
+
+    updates.finish();
+    NumericDocValuesFieldUpdates.Iterator iterator = updates.iterator();
+    int idx = 0;
+    while (iterator.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+      assertEquals(idx, iterator.docID());
+      if (values[idx] == null) {
+        assertFalse(iterator.hasValue());
+      } else {
+        assertTrue(iterator.hasValue());
+        assertEquals(values[idx].longValue(), iterator.longValue());
+      }
+      idx++;
+    }
+  }
+
+  public void testSharedValueUpdates() {
+    int delGen = random().nextInt();
+    int maxDoc = 1 + random().nextInt(1000);
+    long value = random().nextLong();
+    SingleValueNumericDocValuesFieldUpdates update = new SingleValueNumericDocValuesFieldUpdates(delGen, "foo", maxDoc, value);
+    assertEquals(value, update.longValue());
+    Boolean[] values = new Boolean[maxDoc];
+    boolean any = false;
+    boolean noReset = random().nextBoolean(); // sometimes don't reset
+    for (int i = 0; i < maxDoc; i++) {
+      if (random().nextBoolean()) {
+        values[i] = Boolean.TRUE;
+        any = true;
+        update.add(i, value);
+      } else if (random().nextBoolean() && noReset == false) {
+        values[i] = null;
+        any = true;
+        update.reset(i);
+      } else {
+        values[i] = Boolean.FALSE;
+      }
+    }
+    if (noReset == false) {
+      for (int i = 0; i < values.length; i++) {
+        if (rarely()) {
+          if (values[i] == null) {
+            values[i] = Boolean.TRUE;
+            update.add(i, value);
+          } else if (values[i]) {
+            values[i] = null;
+            update.reset(i);
+          }
+        }
+      }
+    }
+    update.finish();
+    DocValuesFieldUpdates.Iterator iterator = update.iterator();
+    assertEquals(any, update.any());
+    assertEquals(delGen, iterator.delGen());
+    int index = 0;
+    while (iterator.nextDoc() != DocIdSetIterator.NO_MORE_DOCS) {
+      int doc = iterator.docID();
+      if (index < iterator.docID()) {
+        for (;index < doc; index++) {
+          assertFalse(values[index]);
+        }
+      }
+      if (index == doc) {
+        if (values[index++] == null) {
+          assertFalse(iterator.hasValue());
+        } else {
+          assertTrue(iterator.hasValue());
+          assertEquals(value, iterator.longValue());
+        }
+      }
+    }
   }
 }

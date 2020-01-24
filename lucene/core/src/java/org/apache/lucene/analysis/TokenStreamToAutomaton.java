@@ -208,14 +208,14 @@ public class TokenStreamToAutomaton {
 
     in.end();
 
-    int endState = -1;
-
     int endPosInc = posIncAtt.getPositionIncrement();
-
     if (endPosInc == 0 && finalOffsetGapAsHole && offsetAtt.endOffset() > maxOffset) {
       endPosInc = 1;
+    } else if (endPosInc > 0 && preservePositionIncrements==false) {
+      endPosInc = 0;
     }
-    
+
+    int endState;
     if (endPosInc > 0) {
       // there were hole(s) after the last token
       endState = builder.createState();

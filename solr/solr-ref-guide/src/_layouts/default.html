@@ -41,15 +41,16 @@
   <!-- Content Row -->
   <div class="row">
     <!-- Sidebar Column -->
-    <div class="col-md-3">
+    <nav class="col-md-3">
       {% include sidebar.html %}
-    </div>
+    </nav>
     <!-- Content Column -->
-    <div class="col-md-9">
+    <article class="col-md-9 post-content">
       {{content}}
-    </div>
+    </article>
     <!-- /.row -->
   </div>
+  {% include footer.html %}
   <!-- /.container -->
 </div>
 

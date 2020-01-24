@@ -212,7 +212,7 @@ public class TestCodecs extends LuceneTestCase {
       terms[i] = new TermData(text, docs, null);
     }
 
-    final FieldInfos.Builder builder = new FieldInfos.Builder();
+    final FieldInfos.Builder builder = new FieldInfos.Builder(new FieldInfos.FieldNumbers(null));
 
     final FieldData field = new FieldData("field", builder, terms, true, false);
     final FieldData[] fields = new FieldData[] {field};
@@ -222,7 +222,7 @@ public class TestCodecs extends LuceneTestCase {
     final SegmentInfo si = new SegmentInfo(dir, Version.LATEST, Version.LATEST, SEGMENT, 10000, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), null);
     
     this.write(si, fieldInfos, dir, fields);
-    final FieldsProducer reader = codec.postingsFormat().fieldsProducer(new SegmentReadState(dir, si, fieldInfos, newIOContext(random())));
+    final FieldsProducer reader = codec.postingsFormat().fieldsProducer(new SegmentReadState(dir, si, fieldInfos, false, newIOContext(random()), Collections.emptyMap()));
 
     final Iterator<String> fieldsEnum = reader.iterator();
     String fieldName = fieldsEnum.next();
@@ -259,7 +259,7 @@ public class TestCodecs extends LuceneTestCase {
   }
 
   public void testRandomPostings() throws Throwable {
-    final FieldInfos.Builder builder = new FieldInfos.Builder();
+    final FieldInfos.Builder builder = new FieldInfos.Builder(new FieldInfos.FieldNumbers(null));
 
     final FieldData[] fields = new FieldData[NUM_FIELDS];
     for(int i=0;i<NUM_FIELDS;i++) {
@@ -282,7 +282,7 @@ public class TestCodecs extends LuceneTestCase {
     if (VERBOSE) {
       System.out.println("TEST: now read postings");
     }
-    final FieldsProducer terms = codec.postingsFormat().fieldsProducer(new SegmentReadState(dir, si, fieldInfos, newIOContext(random())));
+    final FieldsProducer terms = codec.postingsFormat().fieldsProducer(new SegmentReadState(dir, si, fieldInfos, false, newIOContext(random()), Collections.emptyMap()));
 
     final Verify[] threads = new Verify[NUM_TEST_THREADS-1];
     for(int i=0;i<NUM_TEST_THREADS-1;i++) {
@@ -613,7 +613,7 @@ public class TestCodecs extends LuceneTestCase {
     }
   }
 
-  private static class DataTermsEnum extends TermsEnum {
+  private static class DataTermsEnum extends BaseTermsEnum {
     final FieldData fieldData;
     private int upto = -1;
 

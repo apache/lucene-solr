@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -44,7 +45,6 @@ public class ClusterStateUpdateTest extends SolrCloudTestCase  {
     configureCluster(3)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
-
   }
 
   @BeforeClass
@@ -112,7 +112,7 @@ public class ClusterStateUpdateTest extends SolrCloudTestCase  {
     assertEquals(3, liveNodes.size());
 
     // shut down node 2
-    cluster.stopJettySolrRunner(2);
+    JettySolrRunner j = cluster.stopJettySolrRunner(2);
 
     // slight pause (15s timeout) for watch to trigger
     for(int i = 0; i < (5 * 15); i++) {
@@ -121,6 +121,8 @@ public class ClusterStateUpdateTest extends SolrCloudTestCase  {
       }
       Thread.sleep(200);
     }
+    
+    cluster.waitForJettyToStop(j);
 
     assertEquals(2, zkController2.getClusterState().getLiveNodes().size());
 

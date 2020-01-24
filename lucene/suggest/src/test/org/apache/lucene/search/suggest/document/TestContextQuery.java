@@ -17,7 +17,6 @@
 package org.apache.lucene.search.suggest.document;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
@@ -521,7 +520,7 @@ public class TestContextQuery extends LuceneTestCase {
           query.addContext(contexts.get(i), i + 1);
         }
         TopSuggestDocs suggest = suggestIndexSearcher.suggest(query, 4, false);
-        assertSuggestions(suggest, Arrays.copyOfRange(expectedResults, 0, 4));
+        assertSuggestions(suggest, ArrayUtil.copyOfSubArray(expectedResults, 0, 4));
       }
     }
   }

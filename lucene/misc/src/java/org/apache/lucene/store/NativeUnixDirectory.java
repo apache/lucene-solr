@@ -25,7 +25,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 
-import org.apache.lucene.store.Directory; // javadoc
 import org.apache.lucene.store.IOContext.Context;
 import org.apache.lucene.util.SuppressForbidden;
 

@@ -16,8 +16,10 @@
  */
 package org.apache.solr.request;
 
+import javax.servlet.http.HttpServletRequest;
 import java.io.Closeable;
 import java.lang.invoke.MethodHandles;
+import java.security.Principal;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
@@ -29,6 +31,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.response.SolrQueryResponse;
+import org.apache.solr.servlet.SolrDispatchFilter;
 import org.apache.solr.util.TimeZoneUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,9 +43,11 @@ public class SolrRequestInfo {
   protected SolrQueryRequest req;
   protected SolrQueryResponse rsp;
   protected Date now;
+  public HttpServletRequest httpRequest;
   protected TimeZone tz;
   protected ResponseBuilder rb;
   protected List<Closeable> closeHooks;
+  protected SolrDispatchFilter.Action action;
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -55,7 +60,7 @@ public class SolrRequestInfo {
     SolrRequestInfo prev = threadLocal.get();
     if (prev != null) {
       log.error("Previous SolrRequestInfo was not closed!  req=" + prev.req.getOriginalParams().toString());
-      log.error("prev == info : {}", prev.req == info.req);
+      log.error("prev == info : {}", prev.req == info.req, new RuntimeException());
     }
     assert prev == null;
 
@@ -83,6 +88,27 @@ public class SolrRequestInfo {
     this.req = req;
     this.rsp = rsp;    
   }
+  public SolrRequestInfo(SolrQueryRequest req, SolrQueryResponse rsp, SolrDispatchFilter.Action action) {
+    this(req, rsp);
+    this.setAction(action);
+  }
+
+  public SolrRequestInfo(HttpServletRequest httpReq, SolrQueryResponse rsp) {
+    this.httpRequest = httpReq;
+    this.rsp = rsp;
+  }
+
+  public SolrRequestInfo(HttpServletRequest httpReq, SolrQueryResponse rsp, SolrDispatchFilter.Action action) {
+    this(httpReq, rsp);
+    this.action = action;
+  }
+
+  public Principal getUserPrincipal() {
+    if (req != null) return req.getUserPrincipal();
+    if (httpRequest != null) return httpRequest.getUserPrincipal();
+    return null;
+  }
+
 
   public Date getNOW() {    
     if (now != null) return now;
@@ -133,6 +159,14 @@ public class SolrRequestInfo {
       }
       closeHooks.add(hook);
     }
+  }
+
+  public SolrDispatchFilter.Action getAction() {
+    return action;
+  }
+
+  public void setAction(SolrDispatchFilter.Action action) {
+    this.action = action;
   }
 
   public static ExecutorUtil.InheritableThreadLocalProvider getInheritableThreadLocalProvider() {

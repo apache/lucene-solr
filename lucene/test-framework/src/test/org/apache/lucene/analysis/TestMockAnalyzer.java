@@ -109,7 +109,7 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
         new int[] { 0, 2 },
         new int[] { 2, 4 },
         new int[] { 1, 1 },
-        new Integer(5)
+        5
     );
     checkRandomData(random(), a, 100);
   }
@@ -130,7 +130,7 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
         new int[] { 0 },
         new int[] { 3 },
         new int[] { 1 },
-        new Integer(5)
+        5
     );
     checkRandomData(random(), a, 100);
   }
@@ -198,13 +198,13 @@ public class TestMockAnalyzer extends BaseTokenStreamTestCase {
         new String[] { "test", "123", "toolo", "ng", "ok" },
         new int[] { 0, 5, 9, 14, 17 },
         new int[] { 4, 8, 14, 16, 19 },
-        new Integer(20));
+        20);
     
     assertTokenStreamContents(whitespace.tokenStream("bogus", "test 123 toolo"),
         new String[] { "test", "123", "toolo" },
         new int[] { 0, 5, 9 },
         new int[] { 4, 8, 14 },
-        new Integer(14));
+        14);
   }
   
   public void testLUCENE_3042() throws Exception {

@@ -1,0 +1,2 @@
+# Ignore all differences in line endings for the lock file.
+versions.lock text eol=lf

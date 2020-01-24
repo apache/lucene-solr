@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.carrotsearch.randomizedtesting.RandomizedTest;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
@@ -35,6 +36,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.store.Directory;
@@ -43,6 +46,9 @@ import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
+import org.apache.lucene.util.automaton.Operations;
+
+import static org.hamcrest.CoreMatchers.containsString;
 
 /**
  * Tests {@link FuzzyQuery}.
@@ -367,7 +373,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
     IndexSearcher searcher = newSearcher(mr);
     FuzzyQuery fq = new FuzzyQuery(new Term("field", "z123456"), 1, 0, 2, false);
     TopDocs docs = searcher.search(fq, 2);
-    assertEquals(5, docs.totalHits); // 5 docs, from the a and b's
+    assertEquals(5, docs.totalHits.value); // 5 docs, from the a and b's
     mr.close();
     ir1.close();
     ir2.close();
@@ -492,7 +498,73 @@ public class TestFuzzyQuery extends LuceneTestCase {
     });
     assertTrue(expected.getMessage().contains("maxExpansions must be positive"));
   }
-  
+
+  private String randomRealisticMultiByteUnicode(int length) {
+    while (true) {
+      // There is 1 single-byte unicode block, and 194 multi-byte blocks
+      String value = RandomizedTest.randomRealisticUnicodeOfCodepointLength(length);
+      if (value.charAt(0) > Byte.MAX_VALUE) {
+        return value;
+      }
+    }
+  }
+
+  public void testErrorMessage() {
+    // 45 states per vector from Lev2TParametricDescription
+    final int length = (Operations.DEFAULT_MAX_DETERMINIZED_STATES / 45) + 10;
+    final String value = randomRealisticMultiByteUnicode(length);
+
+    FuzzyTermsEnum.FuzzyTermsException expected = expectThrows(FuzzyTermsEnum.FuzzyTermsException.class, () -> {
+      new FuzzyQuery(new Term("field", value)).getTermsEnum(new Terms() {
+        @Override
+        public TermsEnum iterator() {
+          return TermsEnum.EMPTY;
+        }
+
+        @Override
+        public long size() {
+          return 0;
+        }
+
+        @Override
+        public long getSumTotalTermFreq() {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long getSumDocFreq() {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int getDocCount() {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean hasFreqs() {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean hasOffsets() {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean hasPositions() {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean hasPayloads() {
+          throw new UnsupportedOperationException();
+        }
+      });
+    });
+    assertThat(expected.getMessage(), containsString(value));
+  }
+
   private void addDoc(String text, RandomIndexWriter writer) throws IOException {
     Document doc = new Document();
     doc.add(newTextField("field", text, Field.Store.YES));

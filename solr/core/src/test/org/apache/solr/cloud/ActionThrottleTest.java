@@ -46,8 +46,14 @@ public class ActionThrottleTest extends SolrTestCaseJ4 {
     }
 
     @Override
+    public long[] getTimeAndEpochNs() {
+      long time = getTimeNs();
+      return new long[]{time, time};
+    }
+
+    @Override
     public void sleep(long ms) throws InterruptedException {
-      throw new UnsupportedOperationException();
+      TimeSource.NANO_TIME.sleep(ms);
     }
 
     @Override

@@ -36,7 +36,7 @@ public abstract class FacetMerger {
     return null;
   }
   public abstract void finish(Context mcontext);
-  public abstract Object getMergedResult();
+  public abstract Object getMergedResult();  // TODO: we should pass mcontext through here as well
 
   // This class lets mergers know overall context such as what shard is being merged
   // and what buckets have been seen by what shard.
@@ -74,8 +74,12 @@ public abstract class FacetMerger {
       sawShard.set( bucketNum * numShards + shardNum );
     }
 
-    public boolean getShardFlag(int bucketNum) {
+    public boolean getShardFlag(int bucketNum, int shardNum) {
       return sawShard.get( bucketNum * numShards + shardNum );
+    }
+
+    public boolean getShardFlag(int bucketNum) {
+      return getShardFlag(bucketNum, shardNum);
     }
 
     public boolean bucketWasMissing() {
@@ -120,8 +124,10 @@ public abstract class FacetMerger {
 
       subs = null;
       for (Map.Entry<String,FacetRequest> entry : freq.subFacets.entrySet()) {
-        Collection<String> childSubs = getSubsWithPartial(entry.getValue());
-        if (childSubs.size() > 0 || entry.getValue().returnsPartial()) {
+        final FacetRequest entryVal = entry.getValue();
+        Collection<String> childSubs = getSubsWithPartial(entryVal);
+        // TODO: should returnsPartial() check processEmpty internally?
+        if (childSubs.size() > 0 || entryVal.returnsPartial() || entryVal.processEmpty) {
           if (subs == null) {
             subs = new ArrayList<>(freq.getSubFacets().size());
           }

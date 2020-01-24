@@ -27,16 +27,17 @@ import org.apache.lucene.document.IntPoint;
 import org.apache.lucene.document.LongPoint;
 import org.apache.lucene.index.FilteredTermsEnum;
 import org.apache.lucene.index.PointValues;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.MultiTermQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.TermRangeQuery;
 import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.NumericUtils;
-import org.apache.lucene.index.Term; // for javadocs
 
 /**
  * <p>A {@link Query} that matches numeric values within a
@@ -532,6 +533,11 @@ public final class LegacyNumericRangeQuery<T extends Number> extends MultiTermQu
       return AcceptStatus.YES;
     }
 
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
   }
   
 }

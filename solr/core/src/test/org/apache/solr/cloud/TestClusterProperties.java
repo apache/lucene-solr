@@ -18,6 +18,7 @@
 package org.apache.solr.cloud;
 
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
+import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ClusterProperties;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.BeforeClass;
@@ -25,14 +26,21 @@ import org.junit.Test;
 
 public class TestClusterProperties extends SolrCloudTestCase {
 
+  private ClusterProperties props;
+  
   @BeforeClass
   public static void setupCluster() throws Exception {
     configureCluster(1).configure();
   }
 
+  @Override
+  public void setUp() throws Exception {
+    super.setUp();
+    props = new ClusterProperties(zkClient());
+  }
+
   @Test
   public void testClusterProperties() throws Exception {
-    ClusterProperties props = new ClusterProperties(zkClient());
     assertEquals("false", props.getClusterProperty(ZkStateReader.LEGACY_CLOUD, "false"));
 
     CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, "true").process(cluster.getSolrClient());
@@ -40,6 +48,21 @@ public class TestClusterProperties extends SolrCloudTestCase {
 
     CollectionAdminRequest.setClusterProperty(ZkStateReader.LEGACY_CLOUD, "false").process(cluster.getSolrClient());
     assertEquals("false", props.getClusterProperty(ZkStateReader.LEGACY_CLOUD, "true"));
+  }
+  
+  @Test
+  public void testSetPluginClusterProperty() throws Exception {
+    String propertyName = ClusterProperties.EXT_PROPRTTY_PREFIX + "pluginA.propertyA";
+    CollectionAdminRequest.setClusterProperty(propertyName, "valueA")
+        .process(cluster.getSolrClient());
+    assertEquals("valueA", props.getClusterProperty(propertyName, null));
+  }
+  
+  @Test(expected = SolrException.class)
+  public void testSetInvalidPluginClusterProperty() throws Exception {
+    String propertyName = "pluginA.propertyA";
+    CollectionAdminRequest.setClusterProperty(propertyName, "valueA")
+        .process(cluster.getSolrClient());
   }
 
 }

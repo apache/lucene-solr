@@ -16,7 +16,6 @@
  */
 package org.apache.solr.ltr.model;
 
-import java.lang.Math;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -31,7 +30,7 @@ import org.apache.solr.util.SolrPluginUtils;
  * A scoring model that computes document scores using a neural network.
  * <p>
  * Supported <a href="https://en.wikipedia.org/wiki/Activation_function">activation functions</a> are:
- * <code>identity</code>, <code>relu</code>, <code>sigmoid</code> and
+ * <code>identity</code>, <code>relu</code>, <code>sigmoid</code>, <code>tanh</code>, <code>leakyrelu</code> and
  * contributions to support additional activation functions are welcome.
  * <p>
  * Example configuration:
@@ -60,8 +59,20 @@ import org.apache.solr.util.SolrPluginUtils;
                 "activation" : "relu"
             },
             {
-                "matrix" : [ [ 27.0, 28.0 ] ],
-                "bias" : [ 29.0 ],
+                "matrix" : [ [ 27.0, 28.0 ],
+                             [ 29.0, 30.0 ] ],
+                "bias" : [ 31.0, 32.0 ],
+                "activation" : "leakyrelu"
+            },
+            {
+                "matrix" : [ [ 33.0, 34.0 ],
+                             [ 35.0, 36.0 ] ],
+                "bias" : [ 37.0, 38.0 ],
+                "activation" : "tanh"
+            },
+            {
+                "matrix" : [ [ 39.0, 40.0 ] ],
+                "bias" : [ 41.0 ],
                 "activation" : "identity"
             }
         ]
@@ -83,6 +94,11 @@ import org.apache.solr.util.SolrPluginUtils;
  */
 public class NeuralNetworkModel extends LTRScoringModel {
 
+  /**
+   * layers is part of the LTRScoringModel params map
+   * and therefore here it does not individually
+   * influence the class hashCode, equals, etc.
+   */
   private List<Layer> layers;
 
   protected interface Activation {
@@ -141,6 +157,22 @@ public class NeuralNetworkModel extends LTRScoringModel {
             @Override
             public float apply(float in) {
               return in < 0 ? 0 : in;
+            }
+          };
+          break;
+        case "leakyrelu":
+          this.activation = new Activation() {
+            @Override
+            public float apply(float in) {
+              return in < 0 ? 0.01f * in : in;
+            }
+          };
+          break;
+        case "tanh":
+          this.activation = new Activation() {
+            @Override
+            public float apply(float in) {
+              return (float)Math.tanh(in);
             }
           };
           break;

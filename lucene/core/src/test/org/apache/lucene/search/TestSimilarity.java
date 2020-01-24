@@ -70,9 +70,9 @@ public class TestSimilarity extends LuceneTestCase {
     Term c = new Term("field", "c");
 
     searcher.search(new TermQuery(b), new SimpleCollector() {
-         private Scorer scorer;
+         private Scorable scorer;
          @Override
-        public void setScorer(Scorer scorer) {
+        public void setScorer(Scorable scorer) {
            this.scorer = scorer; 
          }
          @Override
@@ -91,9 +91,9 @@ public class TestSimilarity extends LuceneTestCase {
     //System.out.println(bq.toString("field"));
     searcher.search(bq.build(), new SimpleCollector() {
          private int base = 0;
-         private Scorer scorer;
+         private Scorable scorer;
          @Override
-        public void setScorer(Scorer scorer) {
+        public void setScorer(Scorable scorer) {
            this.scorer = scorer; 
          }
          @Override
@@ -115,9 +115,9 @@ public class TestSimilarity extends LuceneTestCase {
     //System.out.println(pq.toString("field"));
     searcher.search(pq,
        new SimpleCollector() {
-         private Scorer scorer;
+         private Scorable scorer;
          @Override
-         public void setScorer(Scorer scorer) {
+         public void setScorer(Scorable scorer) {
           this.scorer = scorer; 
          }
          @Override
@@ -134,9 +134,9 @@ public class TestSimilarity extends LuceneTestCase {
     pq = new PhraseQuery(2, a.field(), a.bytes(), b.bytes());
     //System.out.println(pq.toString("field"));
     searcher.search(pq, new SimpleCollector() {
-      private Scorer scorer;
+      private Scorable scorer;
       @Override
-      public void setScorer(Scorer scorer) {
+      public void setScorer(Scorable scorer) {
         this.scorer = scorer; 
       }
       @Override

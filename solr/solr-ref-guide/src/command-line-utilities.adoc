@@ -29,7 +29,7 @@ Many of the functions provided by the zkCli.sh script are also provided by the <
 .Solr's zkcli.sh vs ZooKeeper's zkCli.sh
 [IMPORTANT]
 ====
-The `zkcli.sh` provided by Solr is not the same as the https://zookeeper.apache.org/doc/trunk/zookeeperStarted.html#sc_ConnectingToZooKeeper[`zkCli.sh` included in ZooKeeper distributions].
+The `zkcli.sh` provided by Solr is not the same as the https://zookeeper.apache.org/doc/current/zookeeperStarted.html#sc_ConnectingToZooKeeper[`zkCli.sh` included in ZooKeeper distributions].
 
 ZooKeeper's `zkCli.sh` provides a completely general, application-agnostic shell for manipulating data in ZooKeeper. Solr's `zkcli.sh` – discussed in this section – is specific to Solr, and has command line arguments specific to dealing with Solr data in ZooKeeper.
 ====
@@ -128,7 +128,7 @@ Using the boostrap command with a ZooKeeper chroot in the `-zkhost` parameter, e
 ./server/scripts/cloud-scripts/zkcli.sh -zkhost 127.0.0.1:9983 -cmd putfile /my_zk_file.txt /tmp/my_local_file.txt
 ----
 
-=== Link a Collection to a ConfigSet
+=== Link a Collection to a Configset
 
 [source,bash]
 ----
@@ -148,7 +148,7 @@ This can be useful to create a chroot path in ZooKeeper before first cluster sta
 
 This command will add or modify a single cluster property in `clusterprops.json`. Use this command instead of the usual getfile \-> edit \-> putfile cycle.
 
-Unlike the CLUSTERPROP command on the <<collections-api.adoc#clusterprop,Collections API>>, this command does *not* require a running Solr cluster.
+Unlike the CLUSTERPROP command on the <<cluster-node-management.adoc#clusterprop,Collections API>>, this command does *not* require a running Solr cluster.
 
 [source,bash]
 ----

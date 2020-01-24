@@ -73,9 +73,9 @@
  *     your searching needs.
  *     However, in some applications it may be necessary to customize your <a
  *         href="Similarity.html">Similarity</a> implementation. For instance, some
- *     applications do not need to
- *     distinguish between shorter and longer documents (see <a
- *         href="http://www.gossamer-threads.com/lists/lucene/java-user/38967#38967">a "fair" similarity</a>).
+ *     applications do not need to distinguish between shorter and longer documents
+ *     and could set BM25's {@link org.apache.lucene.search.similarities.BM25Similarity#BM25Similarity(float,float) b}
+ *     parameter to {@code 0}.
  * 
  * <p>To change {@link org.apache.lucene.search.similarities.Similarity}, one must do so for both indexing and
  *     searching, and the changes must happen before
@@ -83,15 +83,27 @@
  *     just isn't well-defined what is going to happen.
  * 
  * <p>To make this change, implement your own {@link org.apache.lucene.search.similarities.Similarity} (likely
- *     you'll want to simply subclass an existing method, be it
- *     {@link org.apache.lucene.search.similarities.ClassicSimilarity} or a descendant of
- *     {@link org.apache.lucene.search.similarities.SimilarityBase}), and
+ *     you'll want to simply subclass {@link org.apache.lucene.search.similarities.SimilarityBase}), and
  *     then register the new class by calling
  *     {@link org.apache.lucene.index.IndexWriterConfig#setSimilarity(Similarity)}
  *     before indexing and
  *     {@link org.apache.lucene.search.IndexSearcher#setSimilarity(Similarity)}
  *     before searching.
  * 
+ * <h3>Tuning {@linkplain org.apache.lucene.search.similarities.BM25Similarity}</h3>
+ * <p>{@link org.apache.lucene.search.similarities.BM25Similarity} has
+ * two parameters that may be tuned:
+ * <ul>
+ *   <li><tt>k1</tt>, which calibrates term frequency saturation and must be
+ *   positive or null. A value of {@code 0} makes term frequency completely
+ *   ignored, making documents scored only based on the value of the <tt>IDF</tt>
+ *   of the matched terms. Higher values of <tt>k1</tt> increase the impact of
+ *   term frequency on the final score. Default value is {@code 1.2}.</li>
+ *   <li><tt>b</tt>, which controls how much document length should normalize
+ *   term frequency values and must be in {@code [0, 1]}. A value of {@code 0}
+ *   disables length normalization completely. Default value is {@code 0.75}.</li>
+ * </ul> 
+ *
  * <h3>Extending {@linkplain org.apache.lucene.search.similarities.SimilarityBase}</h3>
  * <p>
  * The easiest way to quickly implement a new ranking method is to extend
@@ -112,33 +124,5 @@
  * subclassing the Similarity, one can simply introduce a new basic model and tell
  * {@link org.apache.lucene.search.similarities.DFRSimilarity} to use it.
  * 
- * <h3>Changing {@linkplain org.apache.lucene.search.similarities.ClassicSimilarity}</h3>
- * <p>
- *     If you are interested in use cases for changing your similarity, see the Lucene users's mailing list at <a
- *         href="http://www.gossamer-threads.com/lists/lucene/java-user/39125">Overriding Similarity</a>.
- *     In summary, here are a few use cases:
- *     <ol>
- *         <li><p>The <code>SweetSpotSimilarity</code> in
- *             <code>org.apache.lucene.misc</code> gives small
- *             increases as the frequency increases a small amount
- *             and then greater increases when you hit the "sweet spot", i.e. where
- *             you think the frequency of terms is more significant.</li>
- *         <li><p>Overriding tf &mdash; In some applications, it doesn't matter what the score of a document is as long as a
- *             matching term occurs. In these
- *             cases people have overridden Similarity to return 1 from the tf() method.</li>
- *         <li><p>Changing Length Normalization &mdash; By overriding
- *             {@link org.apache.lucene.search.similarities.Similarity#computeNorm(org.apache.lucene.index.FieldInvertState state)},
- *             it is possible to discount how the length of a field contributes
- *             to a score. In {@link org.apache.lucene.search.similarities.ClassicSimilarity},
- *             lengthNorm = 1 / (numTerms in field)^0.5, but if one changes this to be
- *             1 / (numTerms in field), all fields will be treated
- *             <a href="http://www.gossamer-threads.com/lists/lucene/java-user/38967#38967">"fairly"</a>.</li>
- *     </ol>
- *     In general, Chris Hostetter sums it up best in saying (from <a
- *         href="http://www.gossamer-threads.com/lists/lucene/java-user/39125#39125">the Lucene users's mailing list</a>):
- *     <blockquote>[One would override the Similarity in] ... any situation where you know more about your data then just
- *         that
- *         it's "text" is a situation where it *might* make sense to to override your
- *         Similarity method.</blockquote>
  */
 package org.apache.lucene.search.similarities;

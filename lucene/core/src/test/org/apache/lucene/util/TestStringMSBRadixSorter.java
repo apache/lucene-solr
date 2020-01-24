@@ -21,7 +21,7 @@ import java.util.Arrays;
 public class TestStringMSBRadixSorter extends LuceneTestCase {
 
   private void test(BytesRef[] refs, int len) {
-    BytesRef[] expected = Arrays.copyOf(refs, len);
+    BytesRef[] expected = ArrayUtil.copyOfSubArray(refs, 0, len);
     Arrays.sort(expected);
 
     new StringMSBRadixSorter() {
@@ -38,7 +38,7 @@ public class TestStringMSBRadixSorter extends LuceneTestCase {
         refs[j] = tmp;
       }
     }.sort(0, len);
-    BytesRef[] actual = Arrays.copyOf(refs, len);
+    BytesRef[] actual = ArrayUtil.copyOfSubArray(refs, 0, len);
     assertArrayEquals(expected, actual);
   }
 
@@ -72,25 +72,29 @@ public class TestStringMSBRadixSorter extends LuceneTestCase {
   }
 
   public void testRandom() {
-    for (int iter = 0; iter < 10; ++iter) {
+    int numIters = atLeast(3);
+    for (int iter = 0; iter < numIters; ++iter) {
       testRandom(0, 10);
     }
   }
 
   public void testRandomWithLotsOfDuplicates() {
-    for (int iter = 0; iter < 10; ++iter) {
+    int numIters = atLeast(3);
+    for (int iter = 0; iter < numIters; ++iter) {
       testRandom(0, 2);
     }
   }
 
   public void testRandomWithSharedPrefix() {
-    for (int iter = 0; iter < 10; ++iter) {
+    int numIters = atLeast(3);
+    for (int iter = 0; iter < numIters; ++iter) {
       testRandom(TestUtil.nextInt(random(), 1, 30), 10);
     }
   }
 
   public void testRandomWithSharedPrefixAndLotsOfDuplicates() {
-    for (int iter = 0; iter < 10; ++iter) {
+    int numIters = atLeast(3);
+    for (int iter = 0; iter < numIters; ++iter) {
       testRandom(TestUtil.nextInt(random(), 1, 30), 2);
     }
   }

@@ -55,9 +55,13 @@ import org.slf4j.LoggerFactory;
  * @deprecated Use {@link ManagedSynonymGraphFilterFactory} instead, but be sure to also
  * use {@link FlattenGraphFilterFactory} at index time (not at search time) as well.
  * @since 4.8.0
+ * @lucene.spi {@value #NAME}
  */
 @Deprecated
 public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "managedSynonym";
   
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
@@ -138,7 +142,8 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
       synonymMappings = new TreeMap<>();
       if (managedData != null) {
         Map<String,Object> storedSyns = (Map<String,Object>)managedData;
-        for (String key : storedSyns.keySet()) {
+        for (Map.Entry<String, Object> entry : storedSyns.entrySet()) {
+          String key = entry.getKey();
 
           String caseKey = applyCaseSetting(ignoreCase, key);
           CasePreservedSynonymMappings cpsm = synonymMappings.get(caseKey);
@@ -149,15 +154,14 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
           
           // give the nature of our JSON parsing solution, we really have
           // no guarantees on what is in the file
-          Object mapping = storedSyns.get(key);
+          Object mapping = entry.getValue();
           if (!(mapping instanceof List)) {
             throw new SolrException(ErrorCode.SERVER_ERROR, 
                 "Invalid synonym file format! Expected a list of synonyms for "+key+
                 " but got "+mapping.getClass().getName());
           }
-                    
-          Set<String> sortedVals = new TreeSet<>();
-          sortedVals.addAll((List<String>)storedSyns.get(key));          
+
+          Set<String> sortedVals = new TreeSet<>((List<String>) entry.getValue());
           cpsm.mappings.put(key, sortedVals);        
         }
       }
@@ -190,8 +194,7 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
         if (cpsm == null)
           cpsm = new CasePreservedSynonymMappings();
 
-        Set<String> treeTerms = new TreeSet<>();
-        treeTerms.addAll(jsonList);
+        Set<String> treeTerms = new TreeSet<>(jsonList);
         cpsm.mappings.put(origTerm, treeTerms);
         madeChanges = true;
         // only add the cpsm to the synonymMappings if it has valid data
@@ -265,8 +268,8 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
     protected Map<String,Set<String>> getStoredView() {
       Map<String,Set<String>> storedView = new TreeMap<>();
       for (CasePreservedSynonymMappings cpsm : synonymMappings.values()) {
-        for (String key : cpsm.mappings.keySet()) {
-          storedView.put(key, cpsm.mappings.get(key));
+        for (Map.Entry<String, Set<String>> entry : cpsm.mappings.entrySet()) {
+          storedView.put(entry.getKey(), entry.getValue());
         }
       }
       return storedView;
@@ -362,10 +365,10 @@ public class ManagedSynonymFilterFactory extends BaseManagedTokenFilterFactory {
     public void parse(Reader in) throws IOException, ParseException {
       boolean ignoreCase = synonymManager.getIgnoreCase();
       for (CasePreservedSynonymMappings cpsm : synonymManager.synonymMappings.values()) {
-        for (String term : cpsm.mappings.keySet()) {
-          for (String mapping : cpsm.mappings.get(term)) {
+        for (Map.Entry<String, Set<String>> entry : cpsm.mappings.entrySet()) {
+          for (String mapping : entry.getValue()) {
             // apply the case setting to match the behavior of the SynonymMap builder
-            CharsRef casedTerm = analyze(synonymManager.applyCaseSetting(ignoreCase, term), new CharsRefBuilder());
+            CharsRef casedTerm = analyze(synonymManager.applyCaseSetting(ignoreCase, entry.getKey()), new CharsRefBuilder());
             CharsRef casedMapping = analyze(synonymManager.applyCaseSetting(ignoreCase, mapping), new CharsRefBuilder());
             add(casedTerm, casedMapping, false);
           }          

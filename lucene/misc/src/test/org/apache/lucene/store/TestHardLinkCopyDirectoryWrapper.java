@@ -18,12 +18,17 @@
 package org.apache.lucene.store;
 
 import java.io.IOException;
+import java.net.URI;
+import java.nio.file.FileSystem;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.Collections;
 
 import org.apache.lucene.codecs.CodecUtil;
+import org.apache.lucene.mockfile.FilterPath;
+import org.apache.lucene.mockfile.WindowsFS;
+import org.apache.lucene.util.Constants;
 import org.apache.lucene.util.IOUtils;
 
 // See: https://issues.apache.org/jira/browse/SOLR-12028 Tests cannot remove files on Windows machines occasionally
@@ -33,7 +38,7 @@ public class TestHardLinkCopyDirectoryWrapper extends BaseDirectoryTestCase {
   protected Directory getDirectory(Path file) throws IOException {
     Directory open;
     if (random().nextBoolean()) {
-      open = new RAMDirectory();
+      open = new ByteBuffersDirectory();
     } else {
       open = FSDirectory.open(file);
     }
@@ -86,5 +91,36 @@ public class TestHardLinkCopyDirectoryWrapper extends BaseDirectoryTestCase {
       IOUtils.close(luceneDir_1, luceneDir_2);
     }
 
+  }
+
+  public void testRenameWithHardLink() throws Exception {
+    // irony: currently we don't emulate windows well enough to work on windows!
+    assumeFalse("windows is not supported", Constants.WINDOWS);
+    Path path = createTempDir();
+    FileSystem fs = new WindowsFS(path.getFileSystem()).getFileSystem(URI.create("file:///"));
+    Directory dir1 = new SimpleFSDirectory(new FilterPath(path, fs));
+    Directory dir2 = new SimpleFSDirectory(new FilterPath(path.resolve("link"), fs));
+
+    IndexOutput target = dir1.createOutput("target.txt", IOContext.DEFAULT);
+    target.writeInt(1);
+    target.close();
+
+    HardlinkCopyDirectoryWrapper wrapper = new HardlinkCopyDirectoryWrapper(dir2);
+    wrapper.copyFrom(dir1, "target.txt", "link.txt", IOContext.DEFAULT);
+
+    IndexOutput source = dir1.createOutput("source.txt", IOContext.DEFAULT);
+    source.writeInt(2);
+    source.close();
+
+    IndexInput link = dir2.openInput("link.txt", IOContext.DEFAULT);
+    // Rename while opening a hard-link file
+    dir1.rename("source.txt", "target.txt");
+    link.close();
+
+    IndexInput in = dir1.openInput("target.txt", IOContext.DEFAULT);
+    assertEquals(2, in.readInt());
+    in.close();
+
+    IOUtils.close(dir1, dir2);
   }
 }

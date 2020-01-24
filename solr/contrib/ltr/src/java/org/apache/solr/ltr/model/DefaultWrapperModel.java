@@ -52,6 +52,11 @@ import org.noggit.ObjectBuilder;
  */
 public class DefaultWrapperModel extends WrapperModel {
 
+  /**
+   * resource is part of the LTRScoringModel params map
+   * and therefore here it does not individually
+   * influence the class hashCode, equals, etc.
+   */
   private String resource;
 
   public DefaultWrapperModel(String name, List<Feature> features, List<Normalizer> norms, String featureStoreName,
@@ -89,7 +94,7 @@ public class DefaultWrapperModel extends WrapperModel {
   @SuppressWarnings("unchecked")
   protected Map<String, Object> parseInputStream(InputStream in) throws IOException {
     try (Reader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
-      return (Map<String, Object>) new ObjectBuilder(new JSONParser(reader)).getVal();
+      return (Map<String, Object>) new ObjectBuilder(new JSONParser(reader)).getValStrict();
     }
   }
 

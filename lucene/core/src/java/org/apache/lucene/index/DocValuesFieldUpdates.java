@@ -18,10 +18,13 @@ package org.apache.lucene.index;
 
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Accountable;
+import org.apache.lucene.util.BitSet;
+import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.BytesRef;
-import org.apache.lucene.util.InPlaceMergeSorter;
+import org.apache.lucene.util.IntroSorter;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.RamUsageEstimator;
+import org.apache.lucene.util.SparseFixedBitSet;
 import org.apache.lucene.util.packed.PackedInts;
 import org.apache.lucene.util.packed.PagedMutable;
 
@@ -35,6 +38,9 @@ import static org.apache.lucene.search.DocIdSetIterator.NO_MORE_DOCS;
 abstract class DocValuesFieldUpdates implements Accountable {
   
   protected static final int PAGE_SIZE = 1024;
+  private static final long HAS_VALUE_MASK = 1;
+  private static final long HAS_NO_VALUE_MASK = 0;
+  private static final int SHIFT = 1; // we use the first bit of each value to mark if the doc has a value or not
 
   /**
    * An iterator over documents and their updated values. Only documents with
@@ -72,6 +78,11 @@ abstract class DocValuesFieldUpdates implements Accountable {
 
     /** Returns delGen for this packet. */
     abstract long delGen();
+
+    /**
+     * Returns true if this doc has a value
+     */
+    abstract boolean hasValue();
 
     /**
      * Wraps the given iterator as a BinaryDocValues instance.
@@ -217,6 +228,11 @@ abstract class DocValuesFieldUpdates implements Accountable {
       public long delGen() {
         throw new UnsupportedOperationException();
       }
+
+      @Override
+      boolean hasValue() {
+        return queue.top().hasValue();
+      }
     };
   }
 
@@ -237,8 +253,8 @@ abstract class DocValuesFieldUpdates implements Accountable {
       throw new NullPointerException("DocValuesType must not be null");
     }
     this.type = type;
-    bitsPerValue = PackedInts.bitsRequired(maxDoc - 1);
-    docs = new PagedMutable(1, PAGE_SIZE, bitsPerValue, PackedInts.COMPACT);
+    bitsPerValue = PackedInts.bitsRequired(maxDoc - 1) + SHIFT;
+    docs = new PagedMutable(1, PAGE_SIZE, bitsPerValue, PackedInts.DEFAULT);
   }
 
   final boolean getFinished() {
@@ -269,29 +285,65 @@ abstract class DocValuesFieldUpdates implements Accountable {
       throw new IllegalStateException("already finished");
     }
     finished = true;
-
     // shrink wrap
     if (size < docs.size()) {
       resize(size);
     }
-    new InPlaceMergeSorter() {
-      @Override
-      protected void swap(int i, int j) {
-        DocValuesFieldUpdates.this.swap(i, j);
+    if (size > 0) {
+      // We need a stable sort but InPlaceMergeSorter performs lots of swaps
+      // which hurts performance due to all the packed ints we are using.
+      // Another option would be TimSorter, but it needs additional API (copy to
+      // temp storage, compare with item in temp storage, etc.) so we instead
+      // use quicksort and record ords of each update to guarantee stability.
+      final PackedInts.Mutable ords = PackedInts.getMutable(size, PackedInts.bitsRequired(size - 1), PackedInts.DEFAULT);
+      for (int i = 0; i < size; ++i) {
+        ords.set(i, i);
       }
+      new IntroSorter() {
+        @Override
+        protected void swap(int i, int j) {
+          final long tmpOrd = ords.get(i);
+          ords.set(i, ords.get(j));
+          ords.set(j, tmpOrd);
 
-      @Override
-      protected int compare(int i, int j) {
-        // increasing docID order:
-        // NOTE: we can have ties here, when the same docID was updated in the same segment, in which case we rely on sort being
-        // stable and preserving original order so the last update to that docID wins
-        return Long.compare(docs.get(i), docs.get(j));
-      }
-    }.sort(0, size);
+          DocValuesFieldUpdates.this.swap(i, j);
+        }
+
+        @Override
+        protected int compare(int i, int j) {
+          // increasing docID order:
+          // NOTE: we can have ties here, when the same docID was updated in the same segment, in which case we rely on sort being
+          // stable and preserving original order so the last update to that docID wins
+          int cmp = Long.compare(docs.get(i)>>>1, docs.get(j)>>>1);
+          if (cmp == 0) {
+            cmp = (int) (ords.get(i) - ords.get(j));
+          }
+          return cmp;
+        }
+
+        long pivotDoc;
+        int pivotOrd;
+
+        @Override
+        protected void setPivot(int i) {
+          pivotDoc = docs.get(i) >>> 1;
+          pivotOrd = (int) ords.get(i);
+        }
+
+        @Override
+        protected int comparePivot(int j) {
+          int cmp = Long.compare(pivotDoc, docs.get(j) >>> 1);
+          if (cmp == 0) {
+            cmp = pivotOrd - (int) ords.get(j);
+          }
+          return cmp;
+        }
+      }.sort(0, size);
+    }
   }
-  
+
   /** Returns true if this instance contains any updates. */
-  synchronized final boolean any() {
+  synchronized boolean any() {
     return size > 0;
   }
 
@@ -299,7 +351,18 @@ abstract class DocValuesFieldUpdates implements Accountable {
     return size;
   }
 
+  /**
+   * Adds an update that resets the documents value.
+   * @param doc the doc to update
+   */
+  synchronized void reset(int doc) {
+    addInternal(doc, HAS_NO_VALUE_MASK);
+  }
   final synchronized int add(int doc) {
+    return addInternal(doc, HAS_VALUE_MASK);
+  }
+
+  private synchronized int addInternal(int doc, long hasValueMask) {
     if (finished) {
       throw new IllegalStateException("already finished");
     }
@@ -313,8 +376,7 @@ abstract class DocValuesFieldUpdates implements Accountable {
     if (docs.size() == size) {
       grow(size+1);
     }
-
-    docs.set(size, doc);
+    docs.set(size, (((long)doc) << SHIFT) | hasValueMask);
     ++size;
     return size-1;
   }
@@ -354,6 +416,7 @@ abstract class DocValuesFieldUpdates implements Accountable {
     private long idx = 0; // long so we don't overflow if size == Integer.MAX_VALUE
     private int doc = -1;
     private final long delGen;
+    private boolean hasValue;
 
     AbstractIterator(int size, PagedMutable docs, long delGen) {
       this.size = size;
@@ -366,13 +429,21 @@ abstract class DocValuesFieldUpdates implements Accountable {
       if (idx >= size) {
         return doc = DocIdSetIterator.NO_MORE_DOCS;
       }
-      doc = (int) docs.get(idx);
+      long longDoc = docs.get(idx);
       ++idx;
-      while (idx < size && docs.get(idx) == doc) {
+      for (; idx < size; idx++) {
         // scan forward to last update to this doc
-        ++idx;
+        final long nextLongDoc = docs.get(idx);
+        if ((longDoc >>> 1) != (nextLongDoc >>> 1)) {
+          break;
+        }
+        longDoc = nextLongDoc;
       }
-      set(idx-1);
+      hasValue = (longDoc & HAS_VALUE_MASK) >  0;
+      if (hasValue) {
+        set(idx - 1);
+      }
+      doc = (int)(longDoc >> SHIFT);
       return doc;
     }
 
@@ -390,6 +461,110 @@ abstract class DocValuesFieldUpdates implements Accountable {
     @Override
     final long delGen() {
       return delGen;
+    }
+
+    @Override
+    final boolean hasValue() {
+      return hasValue;
+    }
+  }
+
+  static abstract class SingleValueDocValuesFieldUpdates extends DocValuesFieldUpdates {
+    private final BitSet bitSet;
+    private BitSet hasNoValue;
+    private boolean hasAtLeastOneValue;
+    protected SingleValueDocValuesFieldUpdates(int maxDoc, long delGen, String field, DocValuesType type) {
+      super(maxDoc, delGen, field, type);
+      this.bitSet = new SparseFixedBitSet(maxDoc);
+    }
+
+    @Override
+    void add(int doc, long value) {
+      assert longValue() == value;
+      bitSet.set(doc);
+      this.hasAtLeastOneValue = true;
+      if (hasNoValue != null) {
+        hasNoValue.clear(doc);
+      }
+    }
+
+    @Override
+    void add(int doc, BytesRef value) {
+      assert binaryValue().equals(value);
+      bitSet.set(doc);
+      this.hasAtLeastOneValue = true;
+      if (hasNoValue != null) {
+        hasNoValue.clear(doc);
+      }
+    }
+
+    @Override
+    synchronized void reset(int doc) {
+      bitSet.set(doc);
+      this.hasAtLeastOneValue = true;
+      if (hasNoValue == null) {
+        hasNoValue = new SparseFixedBitSet(maxDoc);
+      }
+      hasNoValue.set(doc);
+    }
+
+    @Override
+    void add(int docId, Iterator iterator) {
+      throw new UnsupportedOperationException();
+    }
+
+    protected abstract BytesRef binaryValue();
+    
+    protected abstract long longValue();
+
+    @Override
+    synchronized boolean any() {
+      return super.any() || hasAtLeastOneValue;
+    }
+
+    @Override
+    public long ramBytesUsed() {
+      return super.ramBytesUsed() + bitSet.ramBytesUsed() + (hasNoValue == null ? 0 : hasNoValue.ramBytesUsed());
+    }
+
+    @Override
+    Iterator iterator() {
+      BitSetIterator iterator = new BitSetIterator(bitSet, maxDoc);
+      return new DocValuesFieldUpdates.Iterator() {
+
+        @Override
+        public int docID() {
+          return iterator.docID();
+        }
+
+        @Override
+        public int nextDoc() {
+          return iterator.nextDoc();
+        }
+
+        @Override
+        long longValue() {
+          return SingleValueDocValuesFieldUpdates.this.longValue();
+        }
+
+        @Override
+        BytesRef binaryValue() {
+          return SingleValueDocValuesFieldUpdates.this.binaryValue();
+        }
+
+        @Override
+        long delGen() {
+          return delGen;
+        }
+
+        @Override
+        boolean hasValue() {
+          if (hasNoValue != null) {
+            return hasNoValue.get(docID()) == false;
+          }
+          return true;
+        }
+      };
     }
   }
 }

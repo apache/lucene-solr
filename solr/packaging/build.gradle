@@ -1,0 +1,95 @@
+
+// This project puts together a "distribution", assembling dependencies from
+// various other projects.
+
+plugins {
+  id 'base'
+}
+
+ext {
+  distDir = file("$buildDir/solr-${version}")
+}
+
+configurations {
+  distSolr {
+    transitive = false
+  }
+  distSolrj
+  contrib
+  example
+  server
+}
+
+dependencies {
+  distSolrj project(":solr:solrj")
+
+  [":solr:contrib:analysis-extras",
+   ":solr:contrib:analytics",
+   ":solr:contrib:extraction",
+   ":solr:contrib:clustering",
+   ":solr:contrib:dataimporthandler",
+   ":solr:contrib:dataimporthandler-extras",
+   ":solr:contrib:jaegertracer-configurator",
+   ":solr:contrib:langid",
+   ":solr:contrib:ltr",
+   ":solr:contrib:prometheus-exporter",
+   ":solr:contrib:velocity",
+  ].each { contribName ->
+    distSolr project(contribName)
+    contrib  project(path: contribName, configuration: "packaging")
+  }
+
+  distSolr project(":solr:core")
+  distSolr project(":solr:solrj")
+  distSolr project(":solr:test-framework")
+
+  example project(path: ":solr:example", configuration: "packaging")
+  server project(path: ":solr:server", configuration: "packaging")
+}
+
+task toDir(type: Sync) {
+  from(project(":solr").projectDir, {
+    include "bin/**"
+    include "licenses/**"
+    include "CHANGES.txt"
+    include "LICENSE.txt"
+    include "NOTICE.txt"
+    include "README.txt"
+  })
+
+  from(project(":lucene").projectDir, {
+    include "CHANGES.txt"
+    rename { file -> 'LUCENE_CHANGES.txt' }
+  })
+
+  from(configurations.contrib, {
+    into "contrib"
+  })
+
+  from(configurations.distSolr, {
+    into "dist"
+  })
+
+  from(configurations.distSolrj - configurations.distSolr, {
+    into "dist/solrj-lib"
+  })
+
+  from(configurations.example, {
+    into "example"
+  })
+
+  from(configurations.server, {
+    into "server"
+  })
+
+  // docs/   - TODO: this is assembled via XSLT... leaving out for now.
+
+  into distDir
+
+  doLast {
+    logger.lifecycle "Solr distribution assembled under: ${distDir}"
+  }
+}
+
+assemble.dependsOn toDir
+

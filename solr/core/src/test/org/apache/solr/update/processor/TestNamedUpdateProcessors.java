@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.function.UnaryOperator;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -44,6 +43,7 @@ import org.junit.Test;
 public class TestNamedUpdateProcessors extends AbstractFullDistribZkTestBase {
 
   @Test
+  //17-Aug-2018 commented @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Jul-2018
   public void test() throws Exception {
     System.setProperty("enable.runtime.lib", "true");
     setupRestTestHarnesses();
@@ -79,20 +79,16 @@ public class TestNamedUpdateProcessors extends AbstractFullDistribZkTestBase {
 
     client = randomRestTestHarness();
     TestSolrConfigHandler.runConfigCommand(client, "/config", payload);
-    forAllRestTestHarnesses( new UnaryOperator<RestTestHarness>() {
-      @Override
-      public RestTestHarness apply(RestTestHarness restTestHarness) {
-        try {
-          TestSolrConfigHandler.testForResponseElement(restTestHarness,
-              null,
-              "/config/overlay",
-              null,
-              Arrays.asList("overlay", "updateProcessor", "firstFld", "fieldName"),
-              "test_s", 10);
-        } catch (Exception ex) {
-          fail("Caught exception: "+ex);
-        }
-        return restTestHarness;
+    forAllRestTestHarnesses(restTestHarness -> {
+      try {
+        TestSolrConfigHandler.testForResponseElement(restTestHarness,
+            null,
+            "/config/overlay",
+            null,
+            Arrays.asList("overlay", "updateProcessor", "firstFld", "fieldName"),
+            "test_s", 10);
+      } catch (Exception ex) {
+        fail("Caught exception: "+ex);
       }
     });
 
@@ -148,19 +144,18 @@ public class TestNamedUpdateProcessors extends AbstractFullDistribZkTestBase {
 
 
   public static ByteBuffer generateZip(Class... classes) throws IOException {
-    ZipOutputStream zipOut = null;
     SimplePostTool.BAOS bos = new SimplePostTool.BAOS();
-    zipOut = new ZipOutputStream(bos);
-    zipOut.setLevel(ZipOutputStream.DEFLATED);
-    for (Class c : classes) {
-      String path = c.getName().replace('.', '/').concat(".class");
-      ZipEntry entry = new ZipEntry(path);
-      ByteBuffer b = SimplePostTool.inputStreamToByteArray(c.getClassLoader().getResourceAsStream(path));
-      zipOut.putNextEntry(entry);
-      zipOut.write(b.array(), 0, b.limit());
-      zipOut.closeEntry();
+    try (ZipOutputStream zipOut = new ZipOutputStream(bos)) {
+      zipOut.setLevel(ZipOutputStream.DEFLATED);
+      for (Class c : classes) {
+        String path = c.getName().replace('.', '/').concat(".class");
+        ZipEntry entry = new ZipEntry(path);
+        ByteBuffer b = SimplePostTool.inputStreamToByteArray(c.getClassLoader().getResourceAsStream(path));
+        zipOut.putNextEntry(entry);
+        zipOut.write(b.array(), 0, b.limit());
+        zipOut.closeEntry();
+      }
     }
-    zipOut.close();
     return bos.getByteBuffer();
   }
 

@@ -124,7 +124,8 @@ All of the following sample queries work with Solr's "`bin/solr -e techproducts`
 
 In this example, we will group results based on the `manu_exact` field, which specifies the manufacturer of the items in the sample dataset.
 
-`\http://localhost:8983/solr/techproducts/select?fl=id,name&q=solr+memory&group=true&group.field=manu_exact`
+[source,text]
+http://localhost:8983/solr/techproducts/select?fl=id,name&q=solr+memory&group=true&group.field=manu_exact
 
 [source,json]
 ----
@@ -175,7 +176,8 @@ The response indicates that there are six total matches for our query. For each 
 
 We can run the same query with the request parameter `group.main=true`. This will format the results as a single flat document list. This flat format does not include as much information as the normal result grouping query results – notably the `numFound` in each group – but it may be easier for existing Solr clients to parse.
 
-`\http://localhost:8983/solr/techproducts/select?fl=id,name,manufacturer&q=solr+memory&group=true&group.field=manu_exact&group.main=true`
+[source,text]
+http://localhost:8983/solr/techproducts/select?fl=id,name,manufacturer&q=solr+memory&group=true&group.field=manu_exact&group.main=true
 
 [source,json]
 ----
@@ -215,7 +217,8 @@ We can run the same query with the request parameter `group.main=true`. This wil
 
 In this example, we will use the `group.query` parameter to find the top three results for "memory" in two different price ranges: 0.00 to 99.99, and over 100.
 
-`\http://localhost:8983/solr/techproducts/select?indent=true&fl=name,price&q=memory&group=true&group.query=price:[0+TO+99.99]&group.query=price:[100+TO+*]&group.limit=3`
+[source,text]
+http://localhost:8983/solr/techproducts/select?indent=true&fl=name,price&q=memory&group=true&group.query=price:[0+TO+99.99]&group.query=price:[100+TO+*]&group.limit=3
 
 [source,json]
 ----

@@ -19,6 +19,7 @@ package org.apache.solr.handler.component;
 import java.io.IOException;
 import java.util.*;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
@@ -778,7 +779,7 @@ class StringStatsValues extends AbstractStatsValues<String> {
 
   @Override
   public long hash(String v) {
-    return hasher.hashString(v).asLong();
+    return hasher.hashString(v, StandardCharsets.UTF_8).asLong();
   }
   
   @Override

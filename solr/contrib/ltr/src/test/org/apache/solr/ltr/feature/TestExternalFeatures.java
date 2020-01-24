@@ -70,7 +70,7 @@ public class TestExternalFeatures extends TestRerankBase {
     query.add("rq", "{!ltr reRankDocs=10 model=externalmodel efi.user_query=w3 efi.userTitlePhrase1=w4 efi.userTitlePhrase2=w5}");
 
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='3'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==0.7693934");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==0.34972426");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/score==0.0");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/score==0.0");
 
@@ -80,7 +80,7 @@ public class TestExternalFeatures extends TestRerankBase {
     query.add("fl", "*,score,[fv efi.user_query=w2 efi.userTitlePhrase1=w4 efi.userTitlePhrase2=w5]");
 
     assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/id=='3'");
-    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==0.7693934");
+    assertJQ("/query" + query.toQueryString(), "/response/docs/[0]/score==0.34972426");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[1]/score==0.0");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[2]/score==0.0");
   }

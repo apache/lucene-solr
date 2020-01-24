@@ -24,6 +24,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.index.LeafReader;
 import org.apache.lucene.index.LeafReaderContext;
@@ -44,6 +45,7 @@ import org.apache.solr.search.DocIterator;
 import org.apache.solr.search.DocSet;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.search.facet.SlotAcc.SlotContext;
 import org.apache.solr.uninverting.DocTermOrds;
 import org.apache.solr.util.TestInjection;
 import org.slf4j.Logger;
@@ -146,7 +148,7 @@ public class UnInvertedField extends DocTermOrds {
       if (deState == null) {
         deState = new SolrIndexSearcher.DocsEnumState();
         deState.fieldName = field;
-        deState.liveDocs = searcher.getSlowAtomicReader().getLiveDocs();
+        deState.liveDocs = searcher.getLiveDocsBits();
         deState.termsEnum = te;  // TODO: check for MultiTermsEnum in SolrIndexSearcher could now fail?
         deState.postingsEnum = postingsEnum;
         deState.minSetSizeCached = maxTermDocFreq;
@@ -431,7 +433,8 @@ public class UnInvertedField extends DocTermOrds {
       if (tt.termNum >= startTermIndex && tt.termNum < endTermIndex) {
         // handle the biggest terms
         DocSet intersection = searcher.getDocSet(tt.termQuery, docs);
-        int collected = processor.collectFirstPhase(intersection, tt.termNum - startTermIndex);
+        int collected = processor.collectFirstPhase(intersection, tt.termNum - startTermIndex,
+                                                    slotNum -> { return new SlotContext(tt.termQuery); });
         countAcc.incrementCount(tt.termNum - startTermIndex, collected);
         if (collected > 0) {
           uniqueTerms++;
@@ -493,7 +496,7 @@ public class UnInvertedField extends DocTermOrds {
             if (arrIdx < 0) continue;
             if (arrIdx >= nTerms) break;
             countAcc.incrementCount(arrIdx, 1);
-            processor.collectFirstPhase(segDoc, arrIdx);
+            processor.collectFirstPhase(segDoc, arrIdx, processor.slotContext);
           }
         } else {
           int tnum = 0;
@@ -507,7 +510,7 @@ public class UnInvertedField extends DocTermOrds {
               if (arrIdx >= 0) {
                 if (arrIdx >= nTerms) break;
                 countAcc.incrementCount(arrIdx, 1);
-                processor.collectFirstPhase(segDoc, arrIdx);
+                processor.collectFirstPhase(segDoc, arrIdx, processor.slotContext);
               }
               delta = 0;
             }
@@ -562,66 +565,84 @@ public class UnInvertedField extends DocTermOrds {
 
   @SuppressWarnings("unchecked")
   public static UnInvertedField getUnInvertedField(String field, SolrIndexSearcher searcher) throws IOException {
-    SolrCache cache = searcher.getFieldValueCache();
+    SolrCache<String, UnInvertedField> cache = searcher.getFieldValueCache();
     if (cache == null) {
       return new UnInvertedField(field, searcher);
     }
-
-    Boolean doWait = false;
-    synchronized (cache) {
-      final Object val = cache.get(field);
-      if (val == null || (val instanceof Throwable)) {
-        /**
-         * We use this place holder object to pull the UninvertedField construction out of the sync
-         * so that if many fields are accessed in a short time, the UninvertedField can be
-         * built for these fields in parallel rather than sequentially.
-         */
-        cache.put(field, uifPlaceholder);
-      } else {
-        if (val != uifPlaceholder) {
-          return (UnInvertedField) val;
-        }
-        doWait = true; // Someone else has put the place holder in, wait for that to complete.
-      }
-    }
-    while (doWait) {
+    AtomicReference<Throwable> throwableRef = new AtomicReference<>();
+    UnInvertedField uif = cache.computeIfAbsent(field, f -> {
+      UnInvertedField newUif;
       try {
-        synchronized (cache) {
-          final Object val = cache.get(field);
-          if (val != uifPlaceholder) { // OK, another thread put this in the cache we should be good.
-            if (val instanceof Throwable) {
-              rethrowAsSolrException(field, (Throwable) val);
-            } else {
-              return (UnInvertedField) val;
-            }
-          }
-          cache.wait();
-        }
-      } catch (InterruptedException e) {
-        rethrowAsSolrException(field, e);
+        newUif = new UnInvertedField(field, searcher);
+      } catch (Throwable t) {
+        throwableRef.set(t);
+        newUif = null;
       }
-    }
-
-    UnInvertedField uif = null;
-    try {
-      uif = new UnInvertedField(field, searcher);
-    }catch(Throwable e) {
-      synchronized (cache) {
-        cache.put(field, e); // signaling the failure
-        cache.notifyAll();
-      }
-      rethrowAsSolrException(field, e);
-    }
-    synchronized (cache) {
-      cache.put(field, uif); // Note, this cleverly replaces the placeholder.
-      cache.notifyAll();
+      return newUif;
+    });
+    if (throwableRef.get() != null) {
+      rethrowAsSolrException(field, throwableRef.get());
     }
     return uif;
+
+    // (ab) if my understanding is correct this whole block tried to mimic the
+    // semantics of computeIfAbsent
+
+//    Boolean doWait = false;
+//    synchronized (cache) {
+//      final Object val = cache.get(field);
+//      if (val == null || (val instanceof Throwable)) {
+//        /**
+//         * We use this place holder object to pull the UninvertedField construction out of the sync
+//         * so that if many fields are accessed in a short time, the UninvertedField can be
+//         * built for these fields in parallel rather than sequentially.
+//         */
+//        cache.put(field, uifPlaceholder);
+//      } else {
+//        if (val != uifPlaceholder) {
+//          return (UnInvertedField) val;
+//        }
+//        doWait = true; // Someone else has put the place holder in, wait for that to complete.
+//      }
+//    }
+//    while (doWait) {
+//      try {
+//        synchronized (cache) {
+//          final Object val = cache.get(field);
+//          if (val != uifPlaceholder) { // OK, another thread put this in the cache we should be good.
+//            if (val instanceof Throwable) {
+//              rethrowAsSolrException(field, (Throwable) val);
+//            } else {
+//              return (UnInvertedField) val;
+//            }
+//          }
+//          cache.wait();
+//        }
+//      } catch (InterruptedException e) {
+//        rethrowAsSolrException(field, e);
+//      }
+//    }
+//
+//    UnInvertedField uif = null;
+//    try {
+//      uif = new UnInvertedField(field, searcher);
+//    }catch(Throwable e) {
+//      synchronized (cache) {
+//        cache.put(field, e); // signaling the failure
+//        cache.notifyAll();
+//      }
+//      rethrowAsSolrException(field, e);
+//    }
+//    synchronized (cache) {
+//      cache.put(field, uif); // Note, this cleverly replaces the placeholder.
+//      cache.notifyAll();
+//    }
+//    return uif;
   }
 
   protected static void rethrowAsSolrException(String field, Throwable e) {
     throw new SolrException(ErrorCode.SERVER_ERROR, 
-            "Exception occurs during uninverting "+field, e);
+            "Exception occured during uninverting " + field, e);
   }
 
   // Returns null if not already populated

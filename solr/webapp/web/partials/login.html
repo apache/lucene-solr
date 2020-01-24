@@ -1,0 +1,160 @@
+<!--
+Licensed to the Apache Software Foundation (ASF) under one or more
+contributor license agreements.  See the NOTICE file distributed with
+this work for additional information regarding copyright ownership.
+The ASF licenses this file to You under the Apache License, Version 2.0
+(the "License"); you may not use this file except in compliance with
+the License.  You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<div id="login" class="clearfix">
+
+  <div ng-show="authScheme === 'Basic'">
+    <h1>Basic Authentication</h1>
+    <div class="login-error" ng-show="statusText !== 'require authentication' || authParamsError !== null">
+      {{statusText}}{{authParamsError}}
+    </div>
+    <div ng-show="!isLoggedIn()">
+      <p>
+        Solr requires authentication for resource {{authLocation === '/' ? 'Dashboard' : authLocation}}.<br/>
+        Please log in with your username and password for realm {{authRealm}}.
+      </p>
+      <br/>
+      <div ng-show="error" class="alert alert-danger">{{error}}</div>
+      <form name="form" ng-submit="login()" role="form">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input type="text" name="username" id="username" class="form-control" ng-model="username" required />
+          <span ng-show="form.username.$dirty && form.username.$error.required" class="help-block">Username is required</span>
+        </div>
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" name="password" id="password" class="form-control" ng-model="password" required />
+          <span ng-show="form.password.$dirty && form.password.$error.required" class="help-block">Password is required</span>
+        </div>
+        <br/>
+        <div class="form-actions">
+          <button type="submit" ng-disabled="form.$invalid" class="btn btn-danger">Login</button>
+        </div>
+      </form>
+    </div>
+
+    <div ng-show="isLoggedIn()">
+      <p>
+        Logged in as user {{authLoggedinUser}}. Realm={{authRealm}}.<br/>
+      </p>
+      <br/>
+      <form name="logoutForm" ng-submit="logout()" role="form" ng-show="isLoggedIn()">
+        <div class="form-actions">
+          <button type="submit" class="btn btn-danger">Logout</button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+
+  <div ng-show="authScheme === 'Negotiate'">
+    <h1>Kerberos Authentication</h1>
+    <p>Your browser did not provide the required information to authenticate using Kerberos. 
+      Please check that your computer has a valid ticket for communicating with Solr, 
+      and that your browser is properly configured to provide that ticket when required. 
+      For more information, consult 
+      <a href="https://lucene.apache.org/solr/guide/kerberos-authentication-plugin.html">
+        Solr's Kerberos documentation
+      </a>.
+    </p>
+    The response from the server was:
+    <hr/>
+    <pre>HTTP 401 {{statusText}}
+WWW-Authenticate: {{wwwAuthHeader}}</pre>
+    <hr/>
+  </div>
+  
+  <div ng-show="authScheme === 'Bearer'">
+    <h1>OpenID Connect (JWT) authentication</h1>
+    <div class="login-error" ng-show="statusText || authParamsError || error">
+      {{statusText}} {{authParamsError}} {{error}} {{errorDescription}}
+    </div>
+    <div ng-show="isCallback">
+      Callback from ID Provider received.
+      <p ng-show="error">
+        There were errors during login with ID Provider. Please try again.<br/>
+      </p>
+    </div>
+    <div ng-show="!isLoggedIn() && !isCallback">
+      <p>
+        Solr requires authentication for resource {{authLocation === '/' ? 'Dashboard' : authLocation}}.
+      </p>
+      <div ng-show="authData !== null && jwtIsLoginNode()">
+        <p>
+          Please log in with your Identity Provider (IdP) for realm {{authRealm}}.
+        </p>
+        <p>
+          Clicking the button below, you will be redirected to the authorization endpoint of the ID provider:<br/>
+          {{authData['authorizationEndpoint']}}
+        </p>
+        <br/>
+        <div ng-show="error" class="alert alert-danger">{{error}}</div>
+        <form name="form" ng-submit="jwtLogin()" role="form">
+          <div class="form-actions">
+            <button type="submit" class="btn btn-danger">Redirect to Identity Provider</button>
+          </div>
+        </form>
+      </div>
+      <div ng-show="authData !== null && !jwtIsLoginNode()">
+        <p>
+          In order to log in to the identity provider, you need to load this page from the Solr node registered as callback node:<br/>
+          {{jwtFindLoginNode()}}<br/>
+          After successful login you will be able to navigate to other nodes. 
+        </p>
+        <p>
+          <form name="form" ng-submit="jwtGotoLoginNode()" role="form">
+            <div class="form-actions">
+              <button type="submit" class="btn btn-danger">Redirect to {{jwtFindLoginNode()}}</button>
+            </div>
+          </form>
+        </p>
+      </div>
+      <div class="login-error" ng-show="authData === null">
+        Unable to login. There is a problem with the Solr backend. Please consult Solr logs.
+      </div>
+    </div>
+
+    <div ng-show="isLoggedIn()">
+      <p>
+        Logged in as user {{authLoggedinUser}}. Realm={{authRealm}}.<br/>
+      </p>
+      <br/>
+      <form name="logoutForm" ng-submit="jwtLogout()" role="form" ng-show="isLoggedIn()">
+        <div class="form-actions">
+          <button type="submit" class="btn btn-danger">Logout</button>
+        </div>
+      </form>
+    </div>
+
+  </div>
+  
+  <div ng-show="!authSchemeSupported">
+    <h1>Authentication scheme not supported</h1>
+
+    <div class="login-error">
+      {{statusText}}
+    </div>
+    
+    <p>Some or all Solr operations are protected by an authentication scheme that is not yet supported by this Admin UI ({{authScheme}}).</p>
+    <p>Solr returned an error response:
+    <hr/>
+    <pre>HTTP 401 {{statusText}}
+WWW-Authenticate: {{wwwAuthHeader}}</pre>
+    <hr/>
+    </p>
+    <p>A possible workaround may be to use another client that supports this scheme.</p>
+  </div>
+</div>

@@ -1,0 +1,22 @@
+
+apply plugin: 'java-library'
+
+dependencies {  
+  api project(':lucene:core')
+
+  implementation project(':lucene:analysis:common')
+  implementation project(':lucene:facet')
+  implementation project(':lucene:highlighter')
+  implementation project(':lucene:queries')
+  implementation project(':lucene:spatial-extras')
+  implementation project(':lucene:queryparser')
+
+  implementation "org.apache.commons:commons-compress"
+  implementation "com.ibm.icu:icu4j"
+  implementation "org.locationtech.spatial4j:spatial4j"
+  implementation("net.sourceforge.nekohtml:nekohtml", {
+    exclude module: "xml-apis"
+  })
+
+  testImplementation project(':lucene:test-framework')
+}

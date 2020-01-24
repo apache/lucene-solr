@@ -33,7 +33,6 @@ import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
-import org.apache.solr.cloud.ChaosMonkey;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.junit.Test;
@@ -67,7 +66,7 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
   @ShardsFixed(num = 2)
   public void testFullReplication() throws Exception {
     List<CloudJettyRunner> slaves = this.getShardToSlaveJetty(SOURCE_COLLECTION, SHARD1);
-    ChaosMonkey.stop(slaves.get(0).jetty);
+    slaves.get(0).jetty.stop();
 
     for (int i = 0; i < 10; i++) {
       List<SolrInputDocument> docs = new ArrayList<>();
@@ -101,7 +100,7 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
     }
 
     List<CloudJettyRunner> slaves = this.getShardToSlaveJetty(SOURCE_COLLECTION, SHARD1);
-    ChaosMonkey.stop(slaves.get(0).jetty);
+    slaves.get(0).jetty.stop();
 
     for (int i = 5; i < 10; i++) {
       List<SolrInputDocument> docs = new ArrayList<>();
@@ -138,7 +137,7 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
 
           // Stop the slave in the middle of a batch to create a truncated tlog on the slave
           if (j == 45) {
-            ChaosMonkey.stop(slaves.get(0).jetty);
+            slaves.get(0).jetty.stop();
           }
 
         }
@@ -175,7 +174,7 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
     }
 
     List<CloudJettyRunner> slaves = this.getShardToSlaveJetty(SOURCE_COLLECTION, SHARD1);
-    ChaosMonkey.stop(slaves.get(0).jetty);
+    slaves.get(0).jetty.stop();
 
     for (int i = 5; i < 10; i++) {
       List<SolrInputDocument> docs = new ArrayList<>();
@@ -191,7 +190,7 @@ public class CdcrReplicationHandlerTest extends BaseCdcrDistributedZkTest {
     // (the update windows between leader and slave is small enough)
     this.restartServer(slaves.get(0));
 
-    ChaosMonkey.stop(slaves.get(0).jetty);
+    slaves.get(0).jetty.stop();
 
     for (int i = 10; i < 15; i++) {
       List<SolrInputDocument> docs = new ArrayList<>();

@@ -38,7 +38,6 @@ import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SynonymQuery;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.join.ToParentBlockJoinQuery;
 import org.apache.lucene.search.vectorhighlight.FieldTermStack.TermInfo;
 
 /**
@@ -62,7 +61,7 @@ public class FieldQuery {
   // The maximum number of different matching terms accumulated from any one MultiTermQuery
   private static final int MAX_MTQ_TERMS = 1024;
 
-  FieldQuery( Query query, IndexReader reader, boolean phraseHighlight, boolean fieldMatch ) throws IOException {
+  public FieldQuery(Query query, IndexReader reader, boolean phraseHighlight, boolean fieldMatch) throws IOException {
     this.fieldMatch = fieldMatch;
     Set<Query> flatQueries = new LinkedHashSet<>();
     flatten( query, reader, flatQueries, 1f );
@@ -95,7 +94,7 @@ public class FieldQuery {
     this (query, null, phraseHighlight, fieldMatch);
   }
 
-  void flatten( Query sourceQuery, IndexReader reader, Collection<Query> flatQueries, float boost ) throws IOException{
+  protected void flatten( Query sourceQuery, IndexReader reader, Collection<Query> flatQueries, float boost ) throws IOException {
     while (sourceQuery instanceof BoostQuery) {
       BoostQuery bq = (BoostQuery) sourceQuery;
       sourceQuery = bq.getQuery();
@@ -141,14 +140,9 @@ public class FieldQuery {
         flatten( q, reader, flatQueries, boost);
       }
     } else if (sourceQuery instanceof FunctionScoreQuery) {
-      final Query q = ((FunctionScoreQuery)sourceQuery).getWrappedQuery();
+      final Query q = ((FunctionScoreQuery) sourceQuery).getWrappedQuery();
       if (q != null) {
         flatten(q, reader, flatQueries, boost);
-      }
-    } else if (sourceQuery instanceof ToParentBlockJoinQuery) {
-      Query childQuery = ((ToParentBlockJoinQuery) sourceQuery).getChildQuery();
-      if (childQuery != null) {
-        flatten(childQuery, reader, flatQueries, boost);
       }
     } else if (reader != null) {
       Query query = sourceQuery;

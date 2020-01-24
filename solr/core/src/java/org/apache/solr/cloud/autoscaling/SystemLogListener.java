@@ -36,6 +36,8 @@ import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.cloud.ClusterState;
+import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.params.CollectionAdminParams;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.params.SolrParams;
@@ -81,6 +83,12 @@ public class SystemLogListener extends TriggerListenerBase {
   public void onEvent(TriggerEvent event, TriggerEventProcessorStage stage, String actionName, ActionContext context,
                Throwable error, String message) throws Exception {
     try {
+      ClusterState clusterState = cloudManager.getClusterStateProvider().getClusterState();
+      DocCollection coll = clusterState.getCollectionOrNull(collection);
+      if (coll == null) {
+        log.debug("Collection {} missing, skip sending event {}", collection, event);
+        return;
+      }
       SolrInputDocument doc = new SolrInputDocument();
       doc.addField(CommonParams.TYPE, DOC_TYPE);
       doc.addField(SOURCE_FIELD, SOURCE);
@@ -118,11 +126,10 @@ public class SystemLogListener extends TriggerListenerBase {
       cloudManager.request(req);
     } catch (Exception e) {
       if ((e instanceof SolrException) && e.getMessage().contains("Collection not found")) {
-        // relatively benign
-        log.info("Collection " + collection + " does not exist, disabling logging.");
-        enabled = false;
+        // relatively benign but log this - collection still existed when we started
+        log.info("Collection {} missing, skip sending event {}", collection, event);
       } else {
-        log.warn("Exception sending event to collection " + collection, e);
+        log.warn("Exception sending event. Collection: {}, event: {}, exception: {}", collection, event, e);
       }
     }
   }

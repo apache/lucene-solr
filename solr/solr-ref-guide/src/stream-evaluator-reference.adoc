@@ -594,8 +594,8 @@ OR
 === distance Syntax
 
 [source,text]
-distance(numericArray1, numuericArray2) // Computes the euclidean distance for two numeric arrays.
-distance(numericArray1, numuericArray2, type=manhattan) // Computes the manhattan distance for two numeric arrays.
+distance(numericArray1, numericArray2) // Computes the euclidean distance for two numeric arrays.
+distance(numericArray1, numericArray2, type=manhattan) // Computes the manhattan distance for two numeric arrays.
 distance(matrix) // Computes the euclidean distance matrix for a matrix.
 distance(matrix, type=canberra) // Computes the canberra distance matrix for a matrix.
 
@@ -626,10 +626,11 @@ div(fieldA,add(fieldA,fieldB)) // fieldA / (fieldA + fieldB)
 
 == dotProduct
 
-The `dotProduct` function returns the https://en.wikipedia.org/wiki/Dot_product[dotproduct] of a numeric array.
+The `dotProduct` function returns the https://en.wikipedia.org/wiki/Dot_product[dotproduct] of two numeric arrays.
 
 === dotProduct Parameters
 
+* `numeric array`
 * `numeric array`
 
 === dotProduct Returns
@@ -639,7 +640,7 @@ A number.
 === dotProduct Syntax
 
 [source,text]
-dotProduct(numericArray)
+dotProduct(numericArray, numericArray)
 
 == ebeAdd
 
@@ -1017,6 +1018,23 @@ getRowLabels(matrix)
 === getRowLabels Returns
 
 string array: The labels for each row in the matrix
+
+== getValue
+
+The `getValue` function returns the value of a single Tuple entry by key.
+
+=== getValue Parameters
+
+* `tuple`: The Tuple to return the entry from.
+* `key`: The key of the entry to return the value for.
+
+=== getValue Syntax
+
+getValue(tuple, key)
+
+=== getValue Returns
+
+object: Returns an object of the same type as the Tuple entry.
 
 == grandSum
 
@@ -2062,6 +2080,24 @@ setRowLabels(matrix, labels)
 === setRowLabels Returns
 
 matrix: The matrix with the labels set.
+
+== setValue
+
+The `setValue` function sets a new value for a Tuple entry.
+
+=== setValue Parameters
+
+* `tuple`: The Tuple to return the entry from.
+* `key`: The key of the entry to set.
+* `value`: The value to set.
+
+=== setValue Syntax
+
+setValue(tuple, key, value)
+
+=== setValue Returns
+
+tuple: Returns the new modified tuple
 
 == sin
 

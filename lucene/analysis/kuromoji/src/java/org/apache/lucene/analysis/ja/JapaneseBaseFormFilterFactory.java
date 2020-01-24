@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.ja;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.ja.JapaneseBaseFormFilter;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
@@ -34,8 +33,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * &lt;/fieldType&gt;
  * </pre>
  * @since 3.6.0
+ * @lucene.spi {@value #NAME}
  */
 public class JapaneseBaseFormFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "japaneseBaseForm";
 
   /** Creates a new JapaneseBaseFormFilterFactory */
   public JapaneseBaseFormFilterFactory(Map<String,String> args) {

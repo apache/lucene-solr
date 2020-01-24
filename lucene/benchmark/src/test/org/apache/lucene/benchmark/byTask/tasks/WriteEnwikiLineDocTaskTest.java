@@ -58,7 +58,7 @@ public class WriteEnwikiLineDocTaskTest extends BenchmarkTestCase {
     Properties props = new Properties();
     props.setProperty("doc.maker", docMakerName);
     props.setProperty("line.file.out", file.toAbsolutePath().toString());
-    props.setProperty("directory", "RAMDirectory"); // no accidental FS dir.
+    props.setProperty("directory", "ByteBuffersDirectory"); // no accidental FS dir.
     Config config = new Config(props);
     return new PerfRunData(config);
   }

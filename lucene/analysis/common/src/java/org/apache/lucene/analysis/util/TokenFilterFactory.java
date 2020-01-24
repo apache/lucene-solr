@@ -25,13 +25,14 @@ import org.apache.lucene.analysis.TokenStream;
 /**
  * Abstract parent class for analysis factories that create {@link org.apache.lucene.analysis.TokenFilter}
  * instances.
+ *
+ * @since 3.1
  */
 public abstract class TokenFilterFactory extends AbstractAnalysisFactory {
 
   private static final AnalysisSPILoader<TokenFilterFactory> loader =
-      new AnalysisSPILoader<>(TokenFilterFactory.class,
-          new String[] { "TokenFilterFactory", "FilterFactory" });
-  
+      new AnalysisSPILoader<>(TokenFilterFactory.class);
+
   /** looks up a tokenfilter by name from context classpath */
   public static TokenFilterFactory forName(String name, Map<String,String> args) {
     return loader.newInstance(name, args);
@@ -46,7 +47,16 @@ public abstract class TokenFilterFactory extends AbstractAnalysisFactory {
   public static Set<String> availableTokenFilters() {
     return loader.availableServices();
   }
-  
+
+  /** looks up a SPI name for the specified token filter factory */
+  public static String findSPIName(Class<? extends TokenFilterFactory> serviceClass) {
+    try {
+      return lookupSPIName(serviceClass);
+    } catch (NoSuchFieldException | IllegalAccessException | IllegalStateException e) {
+      throw new IllegalStateException(e);
+    }
+  }
+
   /** 
    * Reloads the factory list from the given {@link ClassLoader}.
    * Changes to the factories are visible after the method ends, all
@@ -71,4 +81,13 @@ public abstract class TokenFilterFactory extends AbstractAnalysisFactory {
 
   /** Transform the specified input TokenStream */
   public abstract TokenStream create(TokenStream input);
+
+  /**
+   * Normalize the specified input TokenStream
+   * While the default implementation returns input unchanged,
+   * filters that should be applied at normalization time can delegate to {@code create} method.
+   */
+  public TokenStream normalize(TokenStream input) {
+    return input;
+  }
 }

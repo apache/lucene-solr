@@ -47,10 +47,13 @@ The number of updates that have occurred since the last commit.
 `maxTime`::
 The number of milliseconds since the oldest uncommitted update.
 
+`maxSize`::
+The maximum size of the transaction log (tlog) on disk, after which a hard commit is triggered. This is useful when the size of documents is unknown and the intention is to restrict the size of the transaction log to reasonable size. Valid values can be bytes (default with no suffix), kilobytes (if defined with a `k` suffix, as in `25k`), megabytes (`m`) or gigabytes (`g`).
+
 `openSearcher`::
 Whether to open a new searcher when performing a commit. If this is `false`, the commit will flush recent index changes to stable storage, but does not cause a new searcher to be opened to make those changes visible. The default is `true`.
 
-If either of the `maxDocs` or `maxTime` limits are reached, Solr automatically performs a commit operation. If the `autoCommit` tag is missing, then only explicit commits will update the index. The decision whether to use auto-commit or not depends on the needs of your application.
+If any of the `maxDocs`, `maxTime`, or `maxSize` limits are reached, Solr automatically performs a commit operation. If the `autoCommit` tag is missing, then only explicit commits will update the index. The decision whether to use auto-commit or not depends on the needs of your application.
 
 Determining the best auto-commit settings is a tradeoff between performance and accuracy. Settings that cause frequent updates will improve the accuracy of searches because new content will be searchable more quickly, but performance may suffer because of the frequent updates. Less frequent updates may improve performance but it will take longer for updates to show up in queries.
 
@@ -59,6 +62,7 @@ Determining the best auto-commit settings is a tradeoff between performance and 
 <autoCommit>
   <maxDocs>10000</maxDocs>
   <maxTime>30000</maxTime>
+  <maxSize>512m</maxSize>
   <openSearcher>false</openSearcher>
 </autoCommit>
 ----
@@ -126,4 +130,28 @@ An example, to be included under `<config><updateHandler>` in `solrconfig.xml`, 
   <int name="maxNumLogsToKeep">20</int>
   <int name="numVersionBuckets">65536</int>
 </updateLog>
+----
+
+== Other Options
+In some cases complex updates (such as spatial/shape) may take very long time to complete. In the default
+configuration other updates that fall into the same internal version bucket will wait indefinitely and
+eventually these outstanding requests may pile up and lead to thread exhaustion and eventually to
+OutOfMemory errors.
+
+The option `versionBucketLockTimeoutMs` in the `updateHandler` section helps to prevent that by
+specifying a limited timeout for such extremely long running update requests. If this limit
+is reached this update will fail but it won't block forever all other updates. See SOLR-12833 for more details.
+
+There's a memory cost associated with this setting. Values greater than the default 0 (meaning unlimited timeout)
+cause Solr to use a different internal implementation of the version bucket, which increases memory consumption
+from ~1.5MB to ~6.8MB per Solr core.
+
+An example of specifying this option under `<config>` section of `solrconfig.xml`:
+
+[source,xml]
+----
+<updateHandler class="solr.DirectUpdateHandler2">
+  ...
+  <int name="versionBucketLockTimeoutMs">10000</int>
+</updateHandler>
 ----

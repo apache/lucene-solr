@@ -19,7 +19,6 @@ package org.apache.lucene.analysis.standard;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.standard.UAX29URLEmailAnalyzer;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -355,21 +354,21 @@ public class TestUAX29URLEmailAnalyzer extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), a, 200 * RANDOM_MULTIPLIER);
   }
 
   public void testMaxTokenLengthDefault() throws Exception {
 
     StringBuilder bToken = new StringBuilder();
     // exact max length:
-    for(int i=0;i<StandardAnalyzer.DEFAULT_MAX_TOKEN_LENGTH;i++) {
+    for(int i=0;i<UAX29URLEmailAnalyzer.DEFAULT_MAX_TOKEN_LENGTH;i++) {
       bToken.append('b');
     }
 
     String bString = bToken.toString();
     // first bString is exact max default length; next one is 1 too long
     String input = "x " + bString + " " + bString + "b";
-    assertAnalyzesTo(a, input.toString(), new String[] {"x", bString, bString, "b"});
+    assertAnalyzesTo(a, input, new String[] {"x", bString, bString, "b"});
     a.close();
   }
 

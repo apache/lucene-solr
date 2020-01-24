@@ -40,7 +40,7 @@ public class DoubleMultiPointField extends AnalyticsField implements CastingDoub
     count = 0;
     values = new double[initialArrayLength];
   }
-  
+
   @Override
   public void doSetNextReader(LeafReaderContext context) throws IOException {
     docValues = DocValues.getSortedNumeric(context.reader(), fieldName);
@@ -57,13 +57,13 @@ public class DoubleMultiPointField extends AnalyticsField implements CastingDoub
       count = 0;
     }
   }
-  
+
   private void resizeEmptyValues(int count) {
     if (count > values.length) {
       values = new double[count];
     }
   }
-  
+
   @Override
   public void streamDoubles(DoubleConsumer cons) {
     for (int i = 0; i < count; ++i) {

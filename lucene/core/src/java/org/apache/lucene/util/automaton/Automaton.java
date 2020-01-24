@@ -23,11 +23,11 @@ package org.apache.lucene.util.automaton;
 import java.util.Arrays;
 import java.util.BitSet;
 import java.util.HashSet;
+import java.util.Objects;
 import java.util.Set;
 
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.ArrayUtil;
-import org.apache.lucene.util.FutureObjects;
 import org.apache.lucene.util.InPlaceMergeSorter;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.Sorter;
@@ -115,7 +115,7 @@ public class Automaton implements Accountable {
 
   /** Set or clear this state as an accept state. */
   public void setAccept(int state, boolean accept) {
-    FutureObjects.checkIndex(state, getNumStates());
+    Objects.checkIndex(state, getNumStates());
     isAccept.set(state, accept);
   }
 
@@ -157,8 +157,8 @@ public class Automaton implements Accountable {
     assert nextTransition%3 == 0;
 
     int bounds = nextState/2;
-    FutureObjects.checkIndex(source, bounds);
-    FutureObjects.checkIndex(dest, bounds);
+    Objects.checkIndex(source, bounds);
+    Objects.checkIndex(dest, bounds);
 
     growTransitions();
     if (curState != source) {
@@ -496,7 +496,7 @@ public class Automaton implements Accountable {
 
     int upto = t.transitionUpto;
     if (upto == states[2*t.source]) {
-      // Transition isn't initialzed yet (this is the first transition); don't check:
+      // Transition isn't initialized yet (this is the first transition); don't check:
       return true;
     }
 
@@ -589,9 +589,9 @@ public class Automaton implements Accountable {
       b.append("  ");
       b.append(state);
       if (isAccept(state)) {
-        b.append(" [shape=doublecircle,label=\"" + state + "\"]\n");
+        b.append(" [shape=doublecircle,label=\"").append(state).append("\"]\n");
       } else {
-        b.append(" [shape=circle,label=\"" + state + "\"]\n");
+        b.append(" [shape=circle,label=\"").append(state).append("\"]\n");
       }
       int numTransitions = initTransition(state, t);
       //System.out.println("toDot: state " + state + " has " + numTransitions + " transitions; t.nextTrans=" + t.transitionUpto);
@@ -656,22 +656,77 @@ public class Automaton implements Accountable {
    * @return destination state, -1 if no matching outgoing transition
    */
   public int step(int state, int label) {
+    return next(state, 0, label, null);
+  }
+
+  /**
+   * Looks for the next transition that matches the provided label, assuming determinism.
+   * <p>
+   * This method is similar to {@link #step(int, int)} but is used more efficiently
+   * when iterating over multiple transitions from the same source state. It keeps
+   * the latest reached transition index in {@code transition.transitionUpto} so
+   * the next call to this method can continue from there instead of restarting
+   * from the first transition.
+   *
+   * @param transition The transition to start the lookup from (inclusive, using its
+   *                   {@link Transition#source} and {@link Transition#transitionUpto}).
+   *                   It is updated with the matched transition;
+   *                   or with {@link Transition#dest} = -1 if no match.
+   * @param label      The codepoint to look up.
+   * @return The destination state; or -1 if no matching outgoing transition.
+   */
+  public int next(Transition transition, int label) {
+    return next(transition.source, transition.transitionUpto, label, transition);
+  }
+
+  /**
+   * Looks for the next transition that matches the provided label, assuming determinism.
+   *
+   * @param state               The source state.
+   * @param fromTransitionIndex The transition index to start the lookup from (inclusive); negative interpreted as 0.
+   * @param label               The codepoint to look up.
+   * @param transition          The output transition to update with the matching transition; or null for no update.
+   * @return The destination state; or -1 if no matching outgoing transition.
+   */
+  private int next(int state, int fromTransitionIndex, int label, Transition transition) {
     assert state >= 0;
     assert label >= 0;
-    int trans = states[2*state];
-    int limit = trans + 3*states[2*state+1];
-    // TODO: we could do bin search; transitions are sorted
-    while (trans < limit) {
-      int dest = transitions[trans];
-      int min = transitions[trans+1];
-      int max = transitions[trans+2];
-      if (min <= label && label <= max) {
-        return dest;
-      }
-      trans += 3;
-    }
+    int stateIndex = 2 * state;
+    int firstTransitionIndex = states[stateIndex];
+    int numTransitions = states[stateIndex + 1];
 
-    return -1;
+    // Since transitions are sorted,
+    // binary search the transition for which label is within [minLabel, maxLabel].
+    int low = Math.max(fromTransitionIndex, 0);
+    int high = numTransitions - 1;
+    while (low <= high) {
+      int mid = (low + high) >>> 1;
+      int transitionIndex = firstTransitionIndex + 3 * mid;
+      int minLabel = transitions[transitionIndex + 1];
+      if (minLabel > label) {
+        high = mid - 1;
+      } else {
+        int maxLabel = transitions[transitionIndex + 2];
+        if (maxLabel < label){
+          low = mid + 1;
+        } else {
+          int destState = transitions[transitionIndex];
+          if (transition != null) {
+            transition.dest = destState;
+            transition.min = minLabel;
+            transition.max = maxLabel;
+            transition.transitionUpto = mid;
+          }
+          return destState;
+        }
+      }
+    }
+    int destState = -1;
+    if (transition != null) {
+      transition.dest = destState;
+      transition.transitionUpto = low;
+    }
+    return destState;
   }
 
   /** Records new states and transitions and then {@link
@@ -834,7 +889,7 @@ public class Automaton implements Accountable {
 
     /** Set or clear this state as an accept state. */
     public void setAccept(int state, boolean accept) {
-      FutureObjects.checkIndex(state, getNumStates());      
+      Objects.checkIndex(state, getNumStates());      
       this.isAccept.set(state, accept);
     }
 

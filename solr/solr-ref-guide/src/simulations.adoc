@@ -18,56 +18,59 @@
 
 
 Monte Carlo simulations are commonly used to model the behavior of
-stochastic systems. This section of the user guide describes
-how to perform both *uncorrelated* and *correlated* Monte Carlo simulations
-using the *sampling* capabilities of the probability distribution framework.
+stochastic systems. This section describes
+how to perform both uncorrelated and correlated Monte Carlo simulations
+using the sampling capabilities of the probability distribution framework.
 
 == Uncorrelated Simulations
 
 Uncorrelated Monte Carlo simulations model stochastic systems with the assumption
- that the underlying random variables move independently of each other.
- A simple example of a Monte Carlo simulation using two independently changing random variables
- is described below.
+that the underlying random variables move independently of each other.
+A simple example of a Monte Carlo simulation using two independently changing random variables
+is described below.
 
 In this example a Monte Carlo simulation is used to determine the probability that a simple hinge assembly will
 fall within a required length specification.
 
-The hinge has two components *A* and *B*. The combined length of the two components must be less then 5 centimeters
+The hinge has two components A and B. The combined length of the two components must be less then 5 centimeters
 to fall within specification.
 
-A random sampling of lengths for component *A* has shown that its length conforms to a
+A random sampling of lengths for component A has shown that its length conforms to a
 normal distribution with a mean of 2.2 centimeters and a standard deviation of .0195
 centimeters.
 
-A random sampling of lengths for component *B* has shown that its length conforms
+A random sampling of lengths for component B has shown that its length conforms
 to a normal distribution with a mean of 2.71 centimeters and a standard deviation of .0198 centimeters.
-
-The Monte Carlo simulation below performs the following steps:
-
-* A normal distribution with a mean of 2.2 and a standard deviation of .0195 is created to model the length of componentA.
-* A normal distribution with a mean of 2.71 and a standard deviation of .0198 is created to model the length of componentB.
-* The `monteCarlo` function is used to simulate component pairs. The `monteCarlo` function
-  calls the *add(sample(componentA), sample(componentB))* function 100000 times and collects the results in an array. Each
-  time the function is called a random sample is drawn from the componentA
-  and componentB length distributions. The `add` function adds the two samples to calculate the combined length.
-  The result of each function run is collected in an array and assigned to the *simresults* variable.
-* An `empiricalDistribution` function is then created from the *simresults* array to model the distribution of the
-  simulation results.
-* Finally, the `cumulativeProbability` function is called on the *simmodel* to determine the cumulative probability
-  that the combined length of the components is 5 or less.
-* Based on the simulation there is .9994371944629039 probability that the combined length of a component pair will
-be 5 or less.
 
 [source,text]
 ----
-let(componentA=normalDistribution(2.2,  .0195),
-    componentB=normalDistribution(2.71, .0198),
-    simresults=monteCarlo(add(sample(componentA), sample(componentB)), 100000),
-    simmodel=empiricalDistribution(simresults),
-    prob=cumulativeProbability(simmodel,  5))
+let(componentA=normalDistribution(2.2, .0195),  <1>
+    componentB=normalDistribution(2.71, .0198),  <2>
+    simresults=monteCarlo(sampleA=sample(componentA),  <3>
+                          sampleB=sample(componentB),
+                          add(sampleA, sampleB),  <4>
+                          100000),  <5>
+    simmodel=empiricalDistribution(simresults),  <6>
+    prob=cumulativeProbability(simmodel,  5))  <7>
 ----
 
-When this expression is sent to the /stream handler it responds with:
+The Monte Carlo simulation below performs the following steps:
+
+<1> A normal distribution with a mean of 2.2 and a standard deviation of .0195 is created to model the length of `componentA`.
+<2> A normal distribution with a mean of 2.71 and a standard deviation of .0198 is created to model the length of `componentB`.
+<3> The `monteCarlo` function samples from the `componentA` and `componentB` distributions and sets the values to variables `sampleA` and `sampleB`.
+<4> It then calls the `add(sampleA, sampleB)`* function to find the combined lengths of the samples.
+<5> The `monteCarlo` function runs a set number of times, 100000, and collects the results in an array. Each
+  time the function is called new samples are drawn from the `componentA`
+  and `componentB` distributions. On each run, the `add` function adds the two samples to calculate the combined length.
+  The result of each run is collected in an array and assigned to the `simresults` variable.
+<6> An `empiricalDistribution` function is then created from the `simresults` array to model the distribution of the
+  simulation results.
+<7> Finally, the `cumulativeProbability` function is called on the `simmodel` to determine the cumulative probability
+  that the combined length of the components is 5 or less.
+
+Based on the simulation there is .9994371944629039 probability that the combined length of a component pair will
+be 5 or less:
 
 [source,json]
 ----
@@ -88,36 +91,32 @@ When this expression is sent to the /stream handler it responds with:
 
 == Correlated Simulations
 
-The simulation above assumes that the lengths of *componentA* and *componentB* vary independently.
+The simulation above assumes that the lengths of `componentA` and `componentB` vary independently.
 What would happen to the probability model if there was a correlation between the lengths of
-*componentA* and *componentB*.
+`componentA` and `componentB`?
 
 In the example below a database containing assembled pairs of components is used to determine
 if there is a correlation between the lengths of the components, and how the correlation effects the model.
 
 Before performing a simulation of the effects of correlation on the probability model its
-useful to understand what the correlation is between the lengths of *componentA* and *componentB*.
-
-In the example below 5000 random samples are selected from a collection
-of assembled hinges. Each sample contains
-lengths of the components in the fields *componentA_d* and *componentB_d*.
-
-Both fields are then vectorized. The *componentA_d* vector is stored in
-variable *b* and the *componentB_d* variable is stored in variable *c*.
-
-Then the correlation of the two vectors is calculated using the `corr` function. Note that the outcome
-from `corr` is 0.9996931313216989. This means that *componentA_d* and *componentB_d* are almost
-perfectly correlated.
+useful to understand what the correlation is between the lengths of `componentA` and `componentB`.
 
 [source,text]
 ----
-let(a=random(collection5, q="*:*", rows="5000", fl="componentA_d, componentB_d"),
-    b=col(a, componentA_d)),
+let(a=random(collection5, q="*:*", rows="5000", fl="componentA_d, componentB_d"), <1>
+    b=col(a, componentA_d)), <2>
     c=col(a, componentB_d)),
-    d=corr(b, c))
+    d=corr(b, c))  <3>
 ----
 
-When this expression is sent to the /stream handler it responds with:
+<1> In the example, 5000 random samples are selected from a collection of assembled hinges.
+Each sample contains lengths of the components in the fields `componentA_d` and `componentB_d`.
+<2> Both fields are then vectorized. The *componentA_d* vector is stored in
+variable *`b`* and the *componentB_d* variable is stored in variable *`c`*.
+<3> Then the correlation of the two vectors is calculated using the `corr` function.
+
+Note from the result that the outcome from `corr` is 0.9996931313216989.
+This means that `componentA_d` and *`componentB_d` are almost perfectly correlated.
 
 [source,json]
 ----
@@ -136,35 +135,34 @@ When this expression is sent to the /stream handler it responds with:
 }
 ----
 
-How does correlation effect the probability model?
+=== Correlation Effects on the Probability Model
 
-The example below explores how to use a *multivariate normal distribution* function
+The example below explores how to use a multivariate normal distribution function
 to model how correlation effects the probability of hinge defects.
 
 In this example 5000 random samples are selected from a collection
 containing length data for assembled hinges. Each sample contains
-the fields *componentA_d* and *componentB_d*.
+the fields `componentA_d` and `componentB_d`.
 
-Both fields are then vectorized. The *componentA_d* vector is stored in
-variable *b* and the *componentB_d* variable is stored in variable *c*.
+Both fields are then vectorized. The `componentA_d` vector is stored in
+variable *`b`* and the `componentB_d` variable is stored in variable *`c`*.
 
-An array is created that contains the *means* of the two vectorized fields.
+An array is created that contains the means of the two vectorized fields.
 
 Then both vectors are added to a matrix which is transposed. This creates
-an *observation* matrix where each row contains one observation of
-*componentA_d* and *componentB_d*. A covariance matrix is then created from the columns of
+an observation matrix where each row contains one observation of
+`componentA_d` and `componentB_d`. A covariance matrix is then created from the columns of
 the observation matrix with the
-`cov` function. The covariance matrix describes the covariance between
-*componentA_d* and *componentB_d*.
+`cov` function. The covariance matrix describes the covariance between `componentA_d` and `componentB_d`.
 
 The `multivariateNormalDistribution` function is then called with the
 array of means for the two fields and the covariance matrix. The model
-for the multivariate normal distribution is stored in variable *g*.
+for the multivariate normal distribution is stored in variable *`g`*.
 
-The `monteCarlo` function then calls the function *add(sample(g))* 50000 times
+The `monteCarlo` function then calls the function `add(sample(g))` 50000 times
 and collections the results in a vector. Each time the function is called a single sample
 is drawn from the multivariate normal distribution. Each sample is a vector containing
-one *componentA* and *componentB* pair. the `add` function adds the values in the vector to
+one `componentA` and `componentB` pair. The `add` function adds the values in the vector to
 calculate the length of the pair. Over the long term the samples drawn from the
 multivariate normal distribution will conform to the covariance matrix used to construct it.
 
@@ -192,7 +190,7 @@ let(a=random(hinges, q="*:*", rows="5000", fl="componentA_d, componentB_d"),
     j=cumulativeProbability(i, 5))
 ----
 
-When this expression is sent to the /stream handler it responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----

@@ -43,7 +43,7 @@ public class DoubleMultiTrieField extends AnalyticsField implements CastingDoubl
     count = 0;
     values = new double[initialArrayLength];
   }
-  
+
   @Override
   public void doSetNextReader(LeafReaderContext context) throws IOException {
     docValues = DocValues.getSortedSet(context.reader(), fieldName);
@@ -61,7 +61,7 @@ public class DoubleMultiTrieField extends AnalyticsField implements CastingDoubl
       }
     }
   }
-  
+
   private void resizeValues() {
     double[] newValues = new double[values.length*2];
     for (int i = 0; i < count; ++i) {
@@ -69,7 +69,7 @@ public class DoubleMultiTrieField extends AnalyticsField implements CastingDoubl
     }
     values = newValues;
   }
-  
+
   @Override
   public void streamDoubles(DoubleConsumer cons) {
     for (int i = 0; i < count; ++i) {

@@ -48,7 +48,7 @@ import java.util.Properties;
  * @since 1.4
  */
 public class FieldReaderDataSource extends DataSource<Reader> {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   protected VariableResolver vr;
   protected String dataField;
   private String encoding;
@@ -77,7 +77,7 @@ public class FieldReaderDataSource extends DataSource<Reader> {
         // so let us just check it
         return readCharStream(clob);
       } catch (Exception e) {
-        LOG.info("Unable to get data from CLOB");
+        log.info("Unable to get data from CLOB");
         return null;
 
       }
@@ -87,7 +87,7 @@ public class FieldReaderDataSource extends DataSource<Reader> {
       try {
         return getReader(blob);
       } catch (Exception e) {
-        LOG.info("Unable to get data from BLOB");
+        log.info("Unable to get data from BLOB");
         return null;
 
       }

@@ -52,10 +52,10 @@ public abstract class StoredFieldsReader implements Cloneable, Closeable, Accoun
   public abstract void checkIntegrity() throws IOException;
   
   /** 
-   * Returns an instance optimized for merging.
+   * Returns an instance optimized for merging. This instance may not be cloned.
    * <p>
    * The default implementation returns {@code this} */
-  public StoredFieldsReader getMergeInstance() throws IOException {
+  public StoredFieldsReader getMergeInstance() {
     return this;
   }
 }

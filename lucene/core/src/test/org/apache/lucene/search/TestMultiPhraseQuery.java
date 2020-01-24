@@ -29,12 +29,12 @@ import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.junit.Ignore;
@@ -71,7 +71,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     
     // this TermEnum gives "piccadilly", "pie" and "pizza".
     String prefix = "pi";
-    TermsEnum te = MultiFields.getTerms(reader,"body").iterator();
+    TermsEnum te = MultiTerms.getTerms(reader,"body").iterator();
     te.seekCeil(new BytesRef(prefix));
     do {
       String s = te.term().utf8ToString();
@@ -153,7 +153,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     qb.add(new Term("body", "blueberry"));
     qb.add(new Term("body", "chocolate"));
     qb.add(new Term[] {new Term("body", "pie"), new Term("body", "tart")});
-    assertEquals(2, searcher.search(qb.build(), 1).totalHits);
+    assertEquals(2, searcher.count(qb.build()));
     r.close();
     indexStore.close();
   }
@@ -173,7 +173,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     qb.add(new Term[] {new Term("body", "a"), new Term("body", "b")});
     qb.add(new Term[] {new Term("body", "a")});
     qb.setSlop(6);
-    assertEquals(1, searcher.search(qb.build(), 1).totalHits); // should match on "a b"
+    assertEquals(1, searcher.count(qb.build())); // should match on "a b"
     
     r.close();
     indexStore.close();
@@ -190,7 +190,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     MultiPhraseQuery.Builder qb = new MultiPhraseQuery.Builder();
     qb.add(new Term[] {new Term("body", "a"), new Term("body", "d")}, 0);
     qb.add(new Term[] {new Term("body", "a"), new Term("body", "f")}, 2);
-    assertEquals(1, searcher.search(qb.build(), 1).totalHits); // should match on "a b"
+    assertEquals(1, searcher.count(qb.build())); // should match on "a b"
     r.close();
     indexStore.close();
   }
@@ -277,7 +277,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     qb.add(new Term[] {new Term("body", "nope"), new Term("body", "nope")});
     MultiPhraseQuery q = qb.build();
     assertEquals("Wrong number of hits", 0,
-        searcher.search(q, 1).totalHits);
+        searcher.count(q));
     
     // just make sure no exc:
     searcher.explain(q, 0);
@@ -337,7 +337,7 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
   }
 
   public void testZeroPosIncr() throws IOException {
-    Directory dir = new RAMDirectory();
+    Directory dir = new ByteBuffersDirectory();
     final Token[] tokens = new Token[3];
     tokens[0] = new Token();
     tokens[0].append("a");
@@ -376,10 +376,10 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
       mpqb.add(new Term[] {new Term("field", "b"), new Term("field", "c")}, 0);
     }
     TopDocs hits = s.search(mpqb.build(), 2);
-    assertEquals(2, hits.totalHits);
+    assertEquals(2, hits.totalHits.value);
     assertEquals(hits.scoreDocs[0].score, hits.scoreDocs[1].score, 1e-5);
     /*
-    for(int hit=0;hit<hits.totalHits;hit++) {
+    for(int hit=0;hit<hits.totalHits.value;hit++) {
       ScoreDoc sd = hits.scoreDocs[hit];
       System.out.println("  hit doc=" + sd.doc + " score=" + sd.score);
     }
@@ -463,10 +463,10 @@ public class TestMultiPhraseQuery extends LuceneTestCase {
     }
     
     TopDocs hits = s.search(q, 1);
-    assertEquals("wrong number of results", nExpected, hits.totalHits);
+    assertEquals("wrong number of results", nExpected, hits.totalHits.value);
     
     if (VERBOSE) {
-      for(int hit=0;hit<hits.totalHits;hit++) {
+      for(int hit=0;hit<hits.totalHits.value;hit++) {
         ScoreDoc sd = hits.scoreDocs[hit];
         System.out.println("  hit doc=" + sd.doc + " score=" + sd.score);
       }

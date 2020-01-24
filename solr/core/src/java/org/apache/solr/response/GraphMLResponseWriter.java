@@ -20,7 +20,6 @@ package org.apache.solr.response;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.Writer;
-import java.lang.invoke.MethodHandles;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
@@ -31,13 +30,9 @@ import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.handler.GraphHandler;
 import org.apache.solr.request.SolrQueryRequest;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 
 public class GraphMLResponseWriter implements QueryResponseWriter {
-
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public void init(NamedList args) {
     /* NOOP */

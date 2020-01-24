@@ -16,6 +16,7 @@
  */
 package org.apache.solr.common.util;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.MultiMapSolrParams;
 import org.apache.solr.common.params.SolrParams;
@@ -59,7 +61,7 @@ import org.apache.solr.common.params.SolrParams;
  * </p>
  *
  */
-public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry<String,T>> {
+public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry<String,T>> , MapWriter {
 
   private static final long serialVersionUID = 1957981902839867821L;
   protected final List<Object> nvPairs;
@@ -74,6 +76,12 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
     nvPairs = new ArrayList<>(sz<<1);
   }
 
+  @Override
+  public void writeMap(EntryWriter ew) throws IOException {
+    for (int i = 0; i < nvPairs.size(); i+=2) {
+      ew.put((CharSequence) nvPairs.get(i), nvPairs.get(i + 1));
+    }
+  }
 
   /**
    * Creates a NamedList instance containing the "name,value" pairs contained in the
@@ -393,7 +401,7 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
     sb.append('{');
     int sz = size();
     for (int i=0; i<sz; i++) {
-      if (i != 0) sb.append(',');
+      if (i != 0) sb.append(", ");
       sb.append(getName(i));
       sb.append('=');
       sb.append(getVal(i));
@@ -409,6 +417,9 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
   }
 
   public Map<String,T> asShallowMap() {
+    return asShallowMap(false);
+  }
+  public Map<String,T> asShallowMap(boolean allowDps) {
     return new Map<String, T>() {
       @Override
       public int size() {
@@ -436,13 +447,17 @@ public class NamedList<T> implements Cloneable, Serializable, Iterable<Map.Entry
 
       @Override
       public T put(String  key, T value) {
+        if (allowDps) {
+          NamedList.this.add(key, value);
+          return null;
+        }
         int idx = NamedList.this.indexOf(key, 0);
         if (idx == -1) {
           NamedList.this.add(key, value);
         } else {
           NamedList.this.setVal(idx, value);
         }
-        return  null;
+        return null;
       }
 
       @Override

@@ -42,7 +42,7 @@ public class IndexFormatTooOldException extends IOException {
    * @lucene.internal */
   public IndexFormatTooOldException(String resourceDescription, String reason) {
     super("Format version is not supported (resource " + resourceDescription + "): " +
-        reason + ". This version of Lucene only supports indexes created with release 7.0 and later.");
+        reason + ". This version of Lucene only supports indexes created with release 8.0 and later.");
     this.resourceDescription = resourceDescription;
     this.reason = reason;
     this.version = null;
@@ -72,7 +72,7 @@ public class IndexFormatTooOldException extends IOException {
   public IndexFormatTooOldException(String resourceDescription, int version, int minVersion, int maxVersion) {
     super("Format version is not supported (resource " + resourceDescription + "): " +
         version + " (needs to be between " + minVersion + " and " + maxVersion +
-        "). This version of Lucene only supports indexes created with release 6.0 and later.");
+        "). This version of Lucene only supports indexes created with release 8.0 and later.");
     this.resourceDescription = resourceDescription;
     this.version = version;
     this.minVersion = minVersion;

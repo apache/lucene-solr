@@ -16,21 +16,20 @@
 // specific language governing permissions and limitations
 // under the License.
 
-This section of the math expression user guide covers *interpolation*, *derivatives* and *integrals*.
-These three interrelated topics are part of the field of mathematics called *numerical analysis*.
+Interpolation, derivatives and integrals are three interrelated topics which are part of the field of mathematics called numerical analysis. This section explores the math expressions available for numerical anlysis.
 
 == Interpolation
 
 Interpolation is used to construct new data points between a set of known control of points.
-The ability to *predict* new data points allows for *sampling* along the curve defined by the
+The ability to predict new data points allows for sampling along the curve defined by the
 control points.
 
-The interpolation functions described below all return an *interpolation model*
+The interpolation functions described below all return an _interpolation model_
 that can be passed to other functions which make use of the sampling capability.
 
 If returned directly the interpolation model returns an array containing predictions for each of the
 control points. This is useful in the case of `loess` interpolation which first smooths the control points
-and then interpolates the smoothed points. All other interpolation function simply return the original
+and then interpolates the smoothed points. All other interpolation functions simply return the original
 control points because interpolation predicts a curve that passes through the original control points.
 
 There are different algorithms for interpolation that will result in different predictions
@@ -54,29 +53,25 @@ samples every second. In order to do this the data points between the minutes mu
 The `predict` function can be used to predict values anywhere within the bounds of the interpolation
 range.  The example below shows a very simple example of upsampling.
 
-In the example linear interpolation is performed on the arrays in variables *x* and *y*. The *x* variable,
-which is the x axis, is a sequence from 0 to 20 with a stride of 2. The *y* variable defines the curve
-along the x axis.
-
-The `lerp` function performs the interpolation and returns the interpolation model.
-
-The `u` value is an array from 0 to 20 with a stride of 1. This fills in the gaps of the original x axis.
-The `predict` function then uses the interpolation function in variable *l* to predict values for
-every point in the array assigned to variable *u*.
-
-The variable *p* is the array of predictions, which is the upsampled set of y values.
-
 [source,text]
 ----
-let(x=array(0, 2,  4,  6,  8,   10, 12,  14, 16, 18, 20),
-    y=array(5, 10, 60, 190, 100, 130, 100, 20, 30, 10, 5),
-    l=lerp(x, y),
-    u=array(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20),
-    p=predict(l, u))
+let(x=array(0, 2,  4,  6,  8,   10, 12,  14, 16, 18, 20),  <1>
+    y=array(5, 10, 60, 190, 100, 130, 100, 20, 30, 10, 5),  <2>
+    l=lerp(x, y),  <3>
+    u=array(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20),  <4>
+    p=predict(l, u))  <5>
 ----
 
-When this expression is sent to the /stream handler it
-responds with:
+<1> In the example linear interpolation is performed on the arrays in variables *`x`* and *`y`*. The *`x`* variable,
+which is the x-axis, is a sequence from 0 to 20 with a stride of 2.
+<2> The *`y`* variable defines the curve along the x-axis.
+<3> The `lerp` function performs the interpolation and returns the interpolation model.
+<4> The `u` value is an array from 0 to 20 with a stride of 1. This fills in the gaps of the original x axis.
+The `predict` function then uses the interpolation function in variable *`l`* to predict values for
+every point in the array assigned to variable *`u`*.
+<5> The variable *`p`* is the array of predictions, which is the upsampled set of *`y`* values.
+
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -127,20 +122,14 @@ A technique known as local regression is used to compute the smoothed curve.  Th
 neighborhood of the local regression can be adjusted
 to control how close the new curve conforms to the original control points.
 
-The `loess` function is passed *x* and *y* axises and fits a smooth curve to the data.
-If only a single array is provided it is treated as the *y* axis and a sequence is generated
-for the *x* axis.
+The `loess` function is passed *`x`*- and *`y`*-axes and fits a smooth curve to the data.
+If only a single array is provided it is treated as the *`y`*-axis and a sequence is generated
+for the *`x`*-axis.
 
-The example below uses the `loess` function to fit a curve to a set of *y* values in an array.
-The bandwidth parameter defines the percent of data to use for the local
+The example below uses the `loess` function to fit a curve to a set of *`y`* values in an array.
+The `bandwidth` parameter defines the percent of data to use for the local
 regression. The lower the percent the smaller the neighborhood used for the local
 regression and the closer the curve will be to the original data.
-
-In the example the fitted curve is subtracted from the original curve using the
-`ebeSubtract` function. The output shows the error between the
-fitted curve and the original curve, known as the residuals. The output also includes
-the sum-of-squares of the residuals which provides a measure
-of how large the error is.
 
 [source,text]
 ----
@@ -151,8 +140,11 @@ let(echo="residuals, sumSqError",
     sumSqError=sumSq(residuals))
 ----
 
-When this expression is sent to the /stream handler it
-responds with:
+In the example the fitted curve is subtracted from the original curve using the
+`ebeSubtract` function. The output shows the error between the
+fitted curve and the original curve, known as the residuals. The output also includes
+the sum-of-squares of the residuals which provides a measure
+of how large the error is:
 
 [source,json]
 ----
@@ -194,9 +186,7 @@ responds with:
 }
 ----
 
-In the next example the curve is fit using a bandwidth of .25. Notice that the curve
-is a closer fit, shown by the smaller residuals and lower value for the sum-of-squares of the
-residuals.
+In the next example the curve is fit using a `bandwidth` of `.25`:
 
 [source,text]
 ----
@@ -207,8 +197,8 @@ let(echo="residuals, sumSqError",
     sumSqError=sumSq(residuals))
 ----
 
-When this expression is sent to the /stream handler it
-responds with:
+Notice that the curve is a closer fit, shown by the smaller `residuals` and lower value for the sum-of-squares of the
+residuals:
 
 [source,json]
 ----
@@ -252,11 +242,11 @@ responds with:
 
 == Derivatives
 
-The derivative of a function measures the rate of change of the *y* value in respects to the
-rate of change of the *x* value.
+The derivative of a function measures the rate of change of the *`y`* value in respects to the
+rate of change of the *`x`* value.
 
-The `derivative` function can compute the derivative of any *interpolation* function.
-The `derivative` function can also compute the derivative of a derivative.
+The `derivative` function can compute the derivative of any interpolation function.
+It can also compute the derivative of a derivative.
 
 The example below computes the derivative for a `loess` interpolation function.
 
@@ -268,7 +258,7 @@ let(x=array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
     derivative=derivative(curve))
 ----
 
-When this expression is sent to the /stream handler it
+When this expression is sent to the `/stream` handler it
 responds with:
 
 [source,json]
@@ -327,7 +317,7 @@ let(x=array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19
     integral=integrate(curve,  0, 20))
 ----
 
-When this expression is sent to the /stream handler it
+When this expression is sent to the `/stream` handler it
 responds with:
 
 [source,json]
@@ -357,7 +347,7 @@ let(x=array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19
     integral=integrate(curve,  0, 10))
 ----
 
-When this expression is sent to the /stream handler it
+When this expression is sent to the `/stream` handler it
 responds with:
 
 [source,json]
@@ -382,18 +372,7 @@ responds with:
 The `bicubicSpline` function can be used to interpolate and predict values
 anywhere within a grid of data.
 
-A simple example will make this more clear.
-
-In example below a bicubic spline is used to interpolate a matrix of real estate data.
-Each row of the matrix represents a specific *year*. Each column of the matrix
-represents a *floor* of the building. The grid of numbers is the average selling price of
-an apartment for each year and floor. For example in 2002 the average selling price for
-the 9th floor was 415000 (row 3, column 3).
-
-The `bicubicSpline` function is then used to
-interpolate the grid, and the `predict` function is used to predict a value for year 2003, floor 8.
-Notice that the matrix does not included a data point for year 2003, floor 8. The `bicupicSpline`
-function creates that data point based on the surrounding data in the matrix.
+A simple example will make this more clear:
 
 [source,text]
 ----
@@ -408,8 +387,16 @@ let(years=array(1998, 2000, 2002, 2004, 2006),
     prediction=predict(bspline, 2003, 8))
 ----
 
-When this expression is sent to the /stream handler it
-responds with:
+In this example a bicubic spline is used to interpolate a matrix of real estate data.
+Each row of the matrix represent specific `years`. Each column of the matrix
+represents `floors` of the building. The grid of numbers is the average selling price of
+an apartment for each year and floor. For example in 2002 the average selling price for
+the 9th floor was `415000` (row 3, column 3).
+
+The `bicubicSpline` function is then used to
+interpolate the grid, and the `predict` function is used to predict a value for year 2003, floor 8.
+Notice that the matrix does not include a data point for year 2003, floor 8. The `bicupicSpline`
+function creates that data point based on the surrounding data in the matrix:
 
 [source,json]
 ----
@@ -427,4 +414,3 @@ responds with:
   }
 }
 ----
-

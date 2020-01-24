@@ -37,7 +37,7 @@ public class StringMultiField extends AnalyticsField implements CastingStringVal
     super(fieldName);
     values = new ArrayList<>(initialArrayLength);
   }
-  
+
   @Override
   public void doSetNextReader(LeafReaderContext context) throws IOException {
     docValues = DocValues.getSortedSet(context.reader(), fieldName);
@@ -52,7 +52,7 @@ public class StringMultiField extends AnalyticsField implements CastingStringVal
       }
     }
   }
-  
+
   @Override
   public void streamStrings(Consumer<String> cons) {
     values.forEach(value -> cons.accept(value));

@@ -18,7 +18,6 @@ package org.apache.lucene.spatial.composite;
 
 import java.io.IOException;
 
-import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import org.apache.lucene.spatial.prefix.RandomSpatialOpStrategyTestCase;
 import org.apache.lucene.spatial.prefix.RecursivePrefixTreeStrategy;
 import org.apache.lucene.spatial.prefix.tree.GeohashPrefixTree;
@@ -74,7 +73,6 @@ public class CompositeStrategyTest extends RandomSpatialOpStrategyTestCase {
   }
 
   @Test
-  @Repeat(iterations = 20)
   public void testOperations() throws IOException {
     //setup
     if (randomBoolean()) {

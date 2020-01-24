@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 package org.apache.solr.rest;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.io.StringReader;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -31,14 +31,14 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.rest.ManagedResourceStorage.StorageIO;
 import org.junit.Test;
-import org.noggit.JSONParser;
-import org.noggit.ObjectBuilder;
 
 /**
  * Tests {@link ManagedResource} functionality.
@@ -121,12 +121,14 @@ public class TestManagedResource extends SolrTestCaseJ4 {
   /**
    * Implements a Java serialization based storage format.
    */
+  @SuppressForbidden(reason = "XXX: security hole")
   private static class SerializableStorage extends ManagedResourceStorage {
     
     SerializableStorage(StorageIO storageIO, SolrResourceLoader loader) {
       super(storageIO, loader);
     }
 
+    @SuppressForbidden(reason = "XXX: security hole")
     @Override
     public Object load(String resourceId) throws IOException {
       String storedId = getStoredResourceId(resourceId);
@@ -152,6 +154,7 @@ public class TestManagedResource extends SolrTestCaseJ4 {
       return serialized;      
     }
 
+    @SuppressForbidden(reason = "XXX: security hole")
     @Override
     public void store(String resourceId, Object toStore) throws IOException {
       if (!(toStore instanceof Serializable))
@@ -228,11 +231,9 @@ public class TestManagedResource extends SolrTestCaseJ4 {
     updatedData.add("3");
     updatedData.add("4");    
     res.storeManagedData(updatedData);
-    
-    StringReader stringReader = 
-        new StringReader(storageIO.storage.get(storedResourceId).utf8ToString());
-    Map<String,Object> jsonObject = 
-        (Map<String,Object>) ObjectBuilder.getVal(new JSONParser(stringReader)); 
+
+    Map<String,Object> jsonObject =
+        (Map<String,Object>) Utils.fromJSONString(storageIO.storage.get(storedResourceId).utf8ToString());
     List<String> jsonList = 
         (List<String>)jsonObject.get(ManagedResource.MANAGED_JSON_LIST_FIELD);
     
@@ -308,6 +309,7 @@ public class TestManagedResource extends SolrTestCaseJ4 {
   /**
    * Converts the given Serializable object to bytes
    */
+  @SuppressForbidden(reason = "XXX: security hole")
   private BytesRef ser2bytes(Serializable ser) throws Exception {
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     ObjectOutputStream oos = null;

@@ -238,6 +238,11 @@ final class NumericFacets {
       }
     }
 
+    final NamedList<Integer> result = new NamedList<>();
+    if (limit == 0) {
+      return finalize(result, missingCount, missing);
+    }
+
     // 2. select top-k facet values
     final int pqSize = limit < 0 ? hashTable.size : Math.min(offset + limit, hashTable.size);
     final PriorityQueue<Entry> pq;
@@ -275,7 +280,6 @@ final class NumericFacets {
 
     // 4. build the NamedList
     final ValueSource vs = ft.getValueSource(sf, null);
-    final NamedList<Integer> result = new NamedList<>();
 
     // This stuff is complicated because if facet.mincount=0, the counts needs
     // to be merged with terms from the terms dict
@@ -399,10 +403,7 @@ final class NumericFacets {
       }
     }
 
-    if (missing) {
-      result.add(null, missingCount);
-    }
-    return result;
+    return finalize(result, missingCount, missing);
   }
 
   private static NamedList<Integer> getCountsMultiValued(SolrIndexSearcher searcher, DocSet docs, String fieldName, int offset, int limit, int mincount, boolean missing, String sort) throws IOException {
@@ -436,7 +437,7 @@ final class NumericFacets {
       if (valuesDocID == doc - ctx.docBase) {
         long l = longs.nextValue(); // This document must have at least one value
         hashTable.add(l, 1);
-        for (int i = 1; i < longs.docValueCount(); i++) {
+        for (int i = 1, count = longs.docValueCount(); i < count; i++) {
           long lnew = longs.nextValue();
           if (lnew > l) { // Skip the value if it's equal to the last one, we don't want to double-count it
             hashTable.add(lnew, 1);
@@ -447,6 +448,11 @@ final class NumericFacets {
       } else {
         ++missingCount;
       }
+    }
+
+    if (limit == 0) {
+      NamedList<Integer> result = new NamedList<>();
+      return finalize(result, missingCount, missing);
     }
 
     // 2. select top-k facet values
@@ -498,6 +504,10 @@ final class NumericFacets {
     // Once facet.mincount=0 is supported we'll need to add logic similar to the SingleValue case, but obtaining values
     // with count 0 from DocValues
 
+    return finalize(result, missingCount, missing);
+  }
+
+  private static NamedList<Integer> finalize(NamedList<Integer> result, int missingCount, boolean missing) {
     if (missing) {
       result.add(null, missingCount);
     }

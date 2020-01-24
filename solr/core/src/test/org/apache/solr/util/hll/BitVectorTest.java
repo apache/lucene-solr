@@ -18,14 +18,14 @@ package org.apache.solr.util.hll;
 
 import java.util.Locale;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.util.LongIterator;
 import org.junit.Test;
 
 /**
  * Unit tests for {@link BitVector}.
  */
-public class BitVectorTest extends LuceneTestCase {
+public class BitVectorTest extends SolrTestCase {
     /**
      * Tests {@link BitVector#getRegister(long)} and {@link BitVector#setRegister(long, long)}.
      */

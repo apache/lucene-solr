@@ -27,20 +27,18 @@ import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermStates;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.BoostAttribute;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.FuzzyTermsEnum;
-import org.apache.lucene.search.MaxNonCompetitiveBoostAttribute;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.util.AttributeSource;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.PriorityQueue;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
@@ -62,7 +60,7 @@ public class NearestFuzzyQuery extends Query {
   /**
    * Default constructor
    *
-   * @param analyzer the analyzer used to proecss the query text
+   * @param analyzer the analyzer used to process the query text
    */
   public NearestFuzzyQuery(Analyzer analyzer) {
     this.analyzer = analyzer;
@@ -114,11 +112,8 @@ public class NearestFuzzyQuery extends Query {
       if (prefixLength != other.prefixLength)
         return false;
       if (queryString == null) {
-        if (other.queryString != null)
-          return false;
-      } else if (!queryString.equals(other.queryString))
-        return false;
-      return true;
+        return other.queryString == null;
+      } else return queryString.equals(other.queryString);
     }
 
 
@@ -140,7 +135,7 @@ public class NearestFuzzyQuery extends Query {
 
   private void addTerms(IndexReader reader, FieldVals f, ScoreTermQueue q) throws IOException {
     if (f.queryString == null) return;
-    final Terms terms = MultiFields.getTerms(reader, f.fieldName);
+    final Terms terms = MultiTerms.getTerms(reader, f.fieldName);
     if (terms == null) {
       return;
     }
@@ -157,27 +152,22 @@ public class NearestFuzzyQuery extends Query {
           ScoreTermQueue variantsQ = new ScoreTermQueue(MAX_VARIANTS_PER_TERM); //maxNum variants considered for any one term
           float minScore = 0;
           Term startTerm = new Term(f.fieldName, term);
-          AttributeSource atts = new AttributeSource();
-          MaxNonCompetitiveBoostAttribute maxBoostAtt =
-              atts.addAttribute(MaxNonCompetitiveBoostAttribute.class);
-          FuzzyTermsEnum fe = new FuzzyTermsEnum(terms, atts, startTerm, f.maxEdits, f.prefixLength, true);
+          FuzzyTermsEnum fe = new FuzzyTermsEnum(terms, startTerm, f.maxEdits, f.prefixLength, true);
           //store the df so all variants use same idf
           int df = reader.docFreq(startTerm);
           int numVariants = 0;
           int totalVariantDocFreqs = 0;
           BytesRef possibleMatch;
-          BoostAttribute boostAtt =
-              fe.attributes().addAttribute(BoostAttribute.class);
           while ((possibleMatch = fe.next()) != null) {
             numVariants++;
             totalVariantDocFreqs += fe.docFreq();
-            float score = boostAtt.getBoost();
+            float score = fe.getBoost();
             if (variantsQ.size() < MAX_VARIANTS_PER_TERM || score > minScore) {
               ScoreTerm st = new ScoreTerm(new Term(startTerm.field(), BytesRef.deepCopyOf(possibleMatch)), score, startTerm);
               variantsQ.insertWithOverflow(st);
               minScore = variantsQ.top().score; // maintain minScore
             }
-            maxBoostAtt.setMaxNonCompetitiveBoost(variantsQ.size() >= MAX_VARIANTS_PER_TERM ? minScore : Float.NEGATIVE_INFINITY);
+            fe.setMaxNonCompetitiveBoost(variantsQ.size() >= MAX_VARIANTS_PER_TERM ? minScore : Float.NEGATIVE_INFINITY);
           }
 
           if (numVariants > 0) {
@@ -328,6 +318,11 @@ public class NearestFuzzyQuery extends Query {
   private boolean equalsTo(NearestFuzzyQuery other) {
     return Objects.equals(analyzer, other.analyzer) &&
         Objects.equals(fieldVals, other.fieldVals);
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
   }
 
 }

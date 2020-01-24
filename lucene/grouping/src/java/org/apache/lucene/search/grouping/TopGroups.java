@@ -21,6 +21,8 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldDocs;
+import org.apache.lucene.search.TotalHits;
+import org.apache.lucene.search.TotalHits.Relation;
 
 /** Represents result returned by a grouping search.
  *
@@ -78,6 +80,19 @@ public class TopGroups<T> {
     Avg,
   }
 
+  /**
+   * If either value is NaN then return the other value, otherwise
+   * return the greater of the two values by calling Math.max.
+   * @param a - one value
+   * @param b - another value
+   * @return ignoring any NaN return the greater of a and b
+   */
+  private static float nonNANmax(float a, float b) {
+    if (Float.isNaN(a)) return b;
+    if (Float.isNaN(b)) return a;
+    return Math.max(a, b);
+  }
+
   /** Merges an array of TopGroups, for example obtained
    *  from the second-pass collector across multiple
    *  shards.  Each TopGroups must have been sorted by the
@@ -133,12 +148,12 @@ public class TopGroups<T> {
     } else {
       shardTopDocs = new TopFieldDocs[shardGroups.length];
     }
-    float totalMaxScore = Float.MIN_VALUE;
+    float totalMaxScore = Float.NaN;
 
     for(int groupIDX=0;groupIDX<numGroups;groupIDX++) {
       final T groupValue = shardGroups[0].groups[groupIDX].groupValue;
       //System.out.println("  merge groupValue=" + groupValue + " sortValues=" + Arrays.toString(shardGroups[0].groups[groupIDX].groupSortValues));
-      float maxScore = Float.MIN_VALUE;
+      float maxScore = Float.NaN;
       int totalHits = 0;
       double scoreSum = 0.0;
       for(int shardIDX=0;shardIDX<shardGroups.length;shardIDX++) {
@@ -161,16 +176,20 @@ public class TopGroups<T> {
 
         if (docSort.equals(Sort.RELEVANCE)) {
           shardTopDocs[shardIDX] = new TopDocs(shardGroupDocs.totalHits,
-                                               shardGroupDocs.scoreDocs,
-                                               shardGroupDocs.maxScore);
+                                               shardGroupDocs.scoreDocs);
         } else {
           shardTopDocs[shardIDX] = new TopFieldDocs(shardGroupDocs.totalHits,
               shardGroupDocs.scoreDocs,
-              docSort.getSort(),
-              shardGroupDocs.maxScore);
+              docSort.getSort());
         }
-        maxScore = Math.max(maxScore, shardGroupDocs.maxScore);
-        totalHits += shardGroupDocs.totalHits;
+
+        for (int i = 0; i < shardTopDocs[shardIDX].scoreDocs.length; i++) {
+          shardTopDocs[shardIDX].scoreDocs[i].shardIndex = shardIDX;
+        }
+
+        maxScore =  nonNANmax(maxScore, shardGroupDocs.maxScore);
+        assert shardGroupDocs.totalHits.relation == Relation.EQUAL_TO;
+        totalHits += shardGroupDocs.totalHits.value;
         scoreSum += shardGroupDocs.score;
       }
 
@@ -218,11 +237,11 @@ public class TopGroups<T> {
       //System.out.println("SHARDS=" + Arrays.toString(mergedTopDocs.shardIndex));
       mergedGroupDocs[groupIDX] = new GroupDocs<>(groupScore,
                                                    maxScore,
-                                                   totalHits,
+                                                   new TotalHits(totalHits, TotalHits.Relation.EQUAL_TO),
                                                    mergedScoreDocs,
                                                    groupValue,
                                                    shardGroups[0].groups[groupIDX].groupSortValues);
-      totalMaxScore = Math.max(totalMaxScore, maxScore);
+      totalMaxScore = nonNANmax(totalMaxScore, maxScore);
     }
 
     if (totalGroupCount != null) {

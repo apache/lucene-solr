@@ -24,18 +24,14 @@
 Here's a simple example how to use Lucene for indexing and searching (using JUnit
 to check if the results are what we expect):</p>
 
-<!-- code comes from org.apache.lucene.TestDemo: -->
-<!-- ======================================================== -->
-<!-- = Java Sourcecode to HTML automatically converted code = -->
-<!-- =   Java2Html Converter 5.0 [2006-03-04] by Markus Gebhard  markus@jave.de   = -->
-<!-- =     Further information: http://www.java2html.de     = -->
+<!-- code comes from org.apache.lucene.TestDemo.
+     See LUCENE-8481 for reasons why it's out of sync with the code.
+ -->
 <pre class="prettyprint">
     Analyzer analyzer = new StandardAnalyzer();
 
-    // Store the index in memory:
-    Directory directory = new RAMDirectory();
-    // To store an index on disk, use this instead:
-    //Directory directory = FSDirectory.open("/tmp/testindex");
+    Path indexPath = Files.createTempDirectory("tempIndex");
+    Directory directory = FSDirectory.open(indexPath)
     IndexWriterConfig config = new IndexWriterConfig(analyzer);
     IndexWriter iwriter = new IndexWriter(directory, config);
     Document doc = new Document();
@@ -50,16 +46,16 @@ to check if the results are what we expect):</p>
     // Parse a simple query that searches for "text":
     QueryParser parser = new QueryParser("fieldname", analyzer);
     Query query = parser.parse("text");
-    ScoreDoc[] hits = isearcher.search(query, null, 1000).scoreDocs;
+    ScoreDoc[] hits = isearcher.search(query, 10).scoreDocs;
     assertEquals(1, hits.length);
     // Iterate through the results:
-    for (int i = 0; i < hits.length; i++) {
+    for (int i = 0; i &lt; hits.length; i++) {
       Document hitDoc = isearcher.doc(hits[i].doc);
       assertEquals("This is the text to be indexed.", hitDoc.get("fieldname"));
     }
     ireader.close();
-    directory.close();</pre>
-<!-- =       END of automatically generated HTML code       = -->
+    directory.close();
+    IOUtils.rm(indexPath);</pre>
 <!-- ======================================================== -->
 
 
@@ -112,9 +108,8 @@ query structures from strings or xml.
 defines an abstract class for storing persistent data, the {@link org.apache.lucene.store.Directory Directory},
 which is a collection of named files written by an {@link org.apache.lucene.store.IndexOutput IndexOutput}
 and read by an {@link org.apache.lucene.store.IndexInput IndexInput}.&nbsp;
-Multiple implementations are provided, including {@link org.apache.lucene.store.FSDirectory FSDirectory},
-which uses a file system directory to store files, and {@link org.apache.lucene.store.RAMDirectory RAMDirectory}
-which implements files as memory-resident data structures.</li>
+Multiple implementations are provided, but {@link org.apache.lucene.store.FSDirectory FSDirectory} is generally
+recommended as it tries to use operating system disk buffer caches efficiently.</li>
 
 <li>
 <b>{@link org.apache.lucene.util}</b>
@@ -152,11 +147,11 @@ index for all the files contained in a directory.</li>
 queries and searches an index.</li>
 </ul>
 To demonstrate these, try something like:
-<blockquote><tt>> <b>java -cp lucene-core.jar:lucene-demo.jar:lucene-analyzers-common.jar org.apache.lucene.demo.IndexFiles -index index -docs rec.food.recipes/soups</b></tt>
+<blockquote><tt>&gt; <b>java -cp lucene-core.jar:lucene-demo.jar:lucene-analyzers-common.jar org.apache.lucene.demo.IndexFiles -index index -docs rec.food.recipes/soups</b></tt>
 <br><tt>adding rec.food.recipes/soups/abalone-chowder</tt>
 <br><tt>&nbsp; </tt>[ ... ]
 
-<p><tt>> <b>java -cp lucene-core.jar:lucene-demo.jar:lucene-queryparser.jar:lucene-analyzers-common.jar org.apache.lucene.demo.SearchFiles</b></tt>
+<p><tt>&gt; <b>java -cp lucene-core.jar:lucene-demo.jar:lucene-queryparser.jar:lucene-analyzers-common.jar org.apache.lucene.demo.SearchFiles</b></tt>
 <br><tt>Query: <b>chowder</b></tt>
 <br><tt>Searching for: chowder</tt>
 <br><tt>34 total matching documents</tt>

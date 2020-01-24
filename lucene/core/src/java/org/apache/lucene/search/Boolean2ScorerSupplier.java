@@ -30,13 +30,13 @@ import org.apache.lucene.search.BooleanClause.Occur;
 
 final class Boolean2ScorerSupplier extends ScorerSupplier {
 
-  private final BooleanWeight weight;
+  private final Weight weight;
   private final Map<BooleanClause.Occur, Collection<ScorerSupplier>> subs;
   private final ScoreMode scoreMode;
   private final int minShouldMatch;
   private long cost = -1;
 
-  Boolean2ScorerSupplier(BooleanWeight weight,
+  Boolean2ScorerSupplier(Weight weight,
       Map<Occur, Collection<ScorerSupplier>> subs,
       ScoreMode scoreMode, int minShouldMatch) {
     if (minShouldMatch < 0) {
@@ -85,6 +85,19 @@ final class Boolean2ScorerSupplier extends ScorerSupplier {
 
   @Override
   public Scorer get(long leadCost) throws IOException {
+    Scorer scorer = getInternal(leadCost);
+    if (scoreMode == ScoreMode.TOP_SCORES &&
+          subs.get(Occur.SHOULD).isEmpty() && subs.get(Occur.MUST).isEmpty()) {
+      // no scoring clauses but scores are needed so we wrap the scorer in
+      // a constant score in order to allow early termination
+      return scorer.twoPhaseIterator() != null ?
+          new ConstantScoreScorer(weight, 0f, scoreMode, scorer.twoPhaseIterator()) :
+            new ConstantScoreScorer(weight, 0f, scoreMode, scorer.iterator());
+    }
+    return scorer;
+  }
+
+  private Scorer getInternal(long leadCost) throws IOException {
     // three cases: conjunction, disjunction, or mix
     leadCost = Math.min(leadCost, cost());
 
@@ -111,7 +124,7 @@ final class Boolean2ScorerSupplier extends ScorerSupplier {
       assert scoreMode.needsScores();
       return new ReqOptSumScorer(
           excl(req(subs.get(Occur.FILTER), subs.get(Occur.MUST), leadCost), subs.get(Occur.MUST_NOT), leadCost),
-          opt(subs.get(Occur.SHOULD), minShouldMatch, scoreMode, leadCost));
+          opt(subs.get(Occur.SHOULD), minShouldMatch, scoreMode, leadCost), scoreMode);
     }
   }
 
@@ -187,7 +200,7 @@ final class Boolean2ScorerSupplier extends ScorerSupplier {
       } else if (scoreMode == ScoreMode.TOP_SCORES) {
         return new WANDScorer(weight, optionalScorers);
       } else {
-        return new DisjunctionSumScorer(weight, optionalScorers, scoreMode.needsScores());
+        return new DisjunctionSumScorer(weight, optionalScorers, scoreMode);
       }
     }
   }

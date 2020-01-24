@@ -29,7 +29,6 @@
          based on the Unicode Text Segmentation algorithm.)
          {@link org.apache.lucene.analysis.standard.ClassicAnalyzer ClassicAnalyzer} includes
          {@link org.apache.lucene.analysis.standard.ClassicTokenizer ClassicTokenizer},
-         {@link org.apache.lucene.analysis.standard.StandardFilter StandardFilter}, 
          {@link org.apache.lucene.analysis.LowerCaseFilter LowerCaseFilter}
          and {@link org.apache.lucene.analysis.StopFilter StopFilter}.
      </li>
@@ -41,14 +40,13 @@
          <br>
          {@link org.apache.lucene.analysis.standard.UAX29URLEmailAnalyzer UAX29URLEmailAnalyzer} includes
          {@link org.apache.lucene.analysis.standard.UAX29URLEmailTokenizer UAX29URLEmailTokenizer},
-         {@link org.apache.lucene.analysis.standard.StandardFilter StandardFilter},
          {@link org.apache.lucene.analysis.LowerCaseFilter LowerCaseFilter}
          and {@link org.apache.lucene.analysis.StopFilter StopFilter}.
      </li>
  </ul>
  <p>
- This Java package additionally contains {@code StandardAnalyzer}, {@code StandardTokenizer},
- and {@code StandardFilter}, which are not visible here, because they moved to Lucene Core.
+ This Java package additionally contains {@code StandardAnalyzer} and {@code StandardTokenizer},
+ which are not visible here, because they moved to Lucene Core.
  The factories for those components (e.g., used in Solr) are still part of this module.
 </body>
 </html>

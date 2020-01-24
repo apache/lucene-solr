@@ -1,0 +1,37 @@
+plugins {
+  id 'java'
+  id 'war'
+}
+
+configurations {
+  war {}
+}
+
+dependencies {
+  implementation(project(":solr:core"), {
+    exclude module: "server"
+
+    // Exclude additional deps from core and logging deps to sync up with ant.
+    // This is suspicious that we have to do it though.
+    exclude group: "org.apache.kerby", module: "kerby-config"
+    exclude group: "org.apache.kerby", module: "kerby-util"
+    exclude group: "org.apache.kerby", module: "kerb-crypto"
+    exclude group: "org.slf4j"
+    exclude group: "org.apache.logging.log4j"
+  })
+}
+
+war {
+  // Why are they in the source code at all if they're excluded from the distribution?
+  exclude "libs/angular-cookies.js"
+  exclude "libs/angular-route.js"
+  exclude "libs/angular-sanitize.js"
+  exclude "libs/angular-utf8-base.js"
+  exclude "libs/angular.js"
+  exclude "libs/chosen.jquery.js"
+}
+
+// Expose 'war' archive as an artifact so that it can be packaged in the distribution.
+artifacts {
+  war tasks.war
+}

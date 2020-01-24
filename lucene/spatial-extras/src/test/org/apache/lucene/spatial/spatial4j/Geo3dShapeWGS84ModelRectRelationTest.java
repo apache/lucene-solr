@@ -38,7 +38,7 @@ public class Geo3dShapeWGS84ModelRectRelationTest extends ShapeRectRelationTestC
     Geo3dSpatialContextFactory factory = new Geo3dSpatialContextFactory();
     factory.planetModel = planetModel;
     this.ctx = factory.newSpatialContext();
-    this.maxRadius = 178;
+    this.maxRadius = 175;
     ((Geo3dShapeFactory)ctx.getShapeFactory()).setCircleAccuracy(1e-12);
   }
 
@@ -114,5 +114,23 @@ public class Geo3dShapeWGS84ModelRectRelationTest extends ShapeRectRelationTestC
     assertEquals(d, distance, 10-8);
 
     assertEquals(circle.relate(bPoint), SpatialRelation.CONTAINS);
+  }
+  
+  // very slow, test sources are not all here, no clue how to fix it
+  @Nightly
+  public void testGeoCircleRect() {
+    super.testGeoCircleRect();
+  }
+  
+  // very slow, test sources are not all here, no clue how to fix it
+  @Nightly
+  public void testGeoPolygonRect() {
+    super.testGeoPolygonRect();
+  }
+
+  // very slow, test sources are not all here, no clue how to fix it
+  @Nightly
+  public void testGeoPathRect() {
+    super.testGeoPathRect();
   }
 }

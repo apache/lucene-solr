@@ -59,7 +59,7 @@ final class AssertingBulkScorer extends BulkScorer {
   @Override
   public void score(LeafCollector collector, Bits acceptDocs) throws IOException {
     assert max == 0;
-    collector = new AssertingLeafCollector(random, collector, 0, PostingsEnum.NO_MORE_DOCS, scoreMode);
+    collector = new AssertingLeafCollector(collector, 0, PostingsEnum.NO_MORE_DOCS);
     if (random.nextBoolean()) {
       try {
         final int next = score(collector, acceptDocs, 0, PostingsEnum.NO_MORE_DOCS);
@@ -77,7 +77,7 @@ final class AssertingBulkScorer extends BulkScorer {
     assert min >= this.max: "Scoring backward: min=" + min + " while previous max was max=" + this.max;
     assert min <= max : "max must be greater than min, got min=" + min + ", and max=" + max;
     this.max = max;
-    collector = new AssertingLeafCollector(random, collector, min, max, scoreMode);
+    collector = new AssertingLeafCollector(collector, min, max);
     final int next = in.score(collector, acceptDocs, min, max);
     assert next >= max;
     if (max >= maxDoc || next >= maxDoc) {

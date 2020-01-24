@@ -22,7 +22,9 @@ import java.util.Map;
 
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.util.JavaBinCodec;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.util.SimplePostTool;
 import org.junit.Test;
 
 public class ZkNodePropsTest extends SolrTestCaseJ4 {
@@ -39,13 +41,14 @@ public class ZkNodePropsTest extends SolrTestCaseJ4 {
     
     ZkNodeProps zkProps = new ZkNodeProps(props);
     byte[] bytes = Utils.toJSON(zkProps);
-    
     ZkNodeProps props2 = ZkNodeProps.load(bytes);
-    assertEquals("value1", props2.getStr("prop1"));
-    assertEquals("value2", props2.getStr("prop2"));
-    assertEquals("value3", props2.getStr("prop3"));
-    assertEquals("value4", props2.getStr("prop4"));
-    assertEquals("value5", props2.getStr("prop5"));
-    assertEquals("value6", props2.getStr("prop6"));
+
+    props.forEach((s, o) -> assertEquals(o, props2.get(s)));
+    SimplePostTool.BAOS baos = new SimplePostTool.BAOS();
+    new JavaBinCodec().marshal(zkProps.getProperties(), baos);
+    bytes = baos.toByteArray();
+    System.out.println("BIN size : " + bytes.length);
+    ZkNodeProps props3 = ZkNodeProps.load(bytes);
+    props.forEach((s, o) -> assertEquals(o, props3.get(s)));
   }
 }

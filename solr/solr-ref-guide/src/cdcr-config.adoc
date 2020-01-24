@@ -272,17 +272,12 @@ Buffering is designed to augment maintenance windows. The following points shoul
 
 == Initial Startup
 
-.CDCR Bootstrapping
-[TIP]
-====
-Solr 6.2 added the functionality to allow CDCR to replicate the entire index from the Source to the Target data centers on first time startup as an alternative to the following procedure. For very large indexes, time should be allocated for the initial synchronization if this option is chosen.
-====
+=== Uni-Directional Approach
 
-This is a general approach for initializing CDCR in a production environment based upon an approach taken by the initial working installation of CDCR and generously contributed to illustrate a "real world" scenario.
+This is a general approach for initializing CDCR in a production environment. It's based upon an approach taken by the initial working installation of CDCR and generously contributed to illustrate a "real world" scenario.
 
-
-* Customer uses the CDCR approach to keep a remote disaster-recovery instance available for production backup. This is a uni-directional solution.
-* Customer has 26 clouds with 200 million assets per cloud (15GB indexes). Total document count is over 4.8 billion.
+* CDCR is used to keep a remote disaster-recovery instance available for production backup.
+* This example as 26 clouds with 200 million assets per cloud (15GB indexes). Total document count is over 4.8 billion.
 ** Source and Target clouds were synched in 2-3 hour maintenance windows to establish the base index for the Targets.
 
 As usual, it is good to start small. Sync a single cloud and monitor for a period of time before doing the others. You may need to adjust your settings several times before finding the right balance.
@@ -292,7 +287,7 @@ As usual, it is good to start small. Sync a single cloud and monitor for a perio
 * Upload the modified `solrconfig.xml` to ZooKeeper on both Source and Target as appropriate, see the examples above.
 * Sync the index directories from the Source collection to Target collection across to the corresponding shard nodes. `rsync` works well for this.
 +
-For example, if there are 2 shards on collection1 with 2 replicas for each shard, copy the corresponding index directories from:
+For example, if there are two shards on collection1 with 2 replicas for each shard, copy the corresponding index directories from:
 +
 [width="75%",cols="45,10,45"]
 |===
@@ -302,17 +297,58 @@ For example, if there are 2 shards on collection1 with 2 replicas for each shard
 |shard2replica2Source |to |shard2replica2Target
 |===
 
-* Start the ZooKeeper on the Target (DR) side.
-* Start the SolrCloud on the Target (DR) side.
-* Start the ZooKeeper on the Source side.
-* Start the SolrCloud on the Source side. As a general rule, the Target (DR) side of the SolrCloud should be started before the Source side.
-* Activate the CDCR on Source instance using the CDCR API:
+* Start ZooKeeper on the Target (DR).
+* Start SolrCloud on the Target (DR).
+* Start ZooKeeper on the Source.
+* Start SolrCloud on the Source. As a general rule, the Target (DR) should be started before the Source.
+* Activate CDCR on Source instance using the CDCR API:
 +
 [source,text]
 http://host:port/solr/<collection_name>/cdcr?action=START
 +
 There is no need to run the `/cdcr?action=START` command on the Target.
 * Disable the buffer on the Target and Source:
++
+[source,text]
+http://host:port/solr/collection_name/cdcr?action=DISABLEBUFFER
++
+* Re-enable indexing.
+
+=== Bi-Directional Approach
+
+[TIP]
+====
+When using the bi-directional approach, it is highly recommended to enable CDCR on both cluster-collections before any indexing has taken place.
+====
+
+Based on the same example from uni-directional solution, let's walk through the necessary steps:
+
+* Before you begin, stop or pause any indexing processes. This is best done during a small maintenance window.
+* Stop the SolrCloud instances in both Cluster 1 and Cluster 2.
+* Upload the modified `solrconfig.xml` to ZooKeeper on both Cluster 1 and Cluster 2 as appropriate, see the examples above in the section <<Bi-Directional Updates>>.
+* If documents were indexed prior to this exercise, sync the index directories from the Cluster 1 collection to the Cluster 2 collection to the corresponding shard nodes or vice versa. The `rsync` utility works well for this if it's available on your server. Check to be sure the the updated index is copied across.
++
+For example, if there are 2 shards on collection 'cluster1' (the updated collection) with 2 replicas for each shard, copy the corresponding index directories from:
++
+[width="75%",cols="45,10,45"]
+|===
+|shard1replica1cluster1 |to |shard1replica1cluster2
+|shard1replica2cluster1 |to |shard1replica2cluster2
+|shard2replica1cluster1 |to |shard2replica1cluster2
+|shard2replica2cluster1 |to |shard2replica2cluster2
+|===
+
+* Start ZooKeeper on Cluster 1.
+* Start ZooKeeper on Cluster 2.
+* Start SolrCloud on Cluster 1.
+* Start SolrCloud on Cluster 2.
+* If not present, create respective collections in both Cluster 1 and Cluster 2.
+* Activate the CDCR on Cluster 1 and Cluster 2 instance using the CDCR API:
++
+[source,text]
+http://host:port/solr/<collection_name>/cdcr?action=START
++
+* Disable the buffer on Cluster 1 and Cluster 2:
 +
 [source,text]
 http://host:port/solr/collection_name/cdcr?action=DISABLEBUFFER

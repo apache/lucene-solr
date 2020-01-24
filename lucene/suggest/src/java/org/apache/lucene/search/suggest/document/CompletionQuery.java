@@ -27,7 +27,7 @@ import org.apache.lucene.search.Query;
 import org.apache.lucene.search.suggest.BitsProducer;
 
 import static org.apache.lucene.search.suggest.document.CompletionAnalyzer.HOLE_CHARACTER;
-import static org.apache.lucene.search.suggest.document.CompletionAnalyzer.SEP_LABEL;
+import static org.apache.lucene.analysis.miscellaneous.ConcatenateGraphFilter.SEP_LABEL;
 
 /**
  * Abstract {@link Query} that match documents containing terms with a specified prefix

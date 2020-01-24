@@ -36,7 +36,7 @@ import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetricManager;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.RawResponseWriter;
 import org.apache.solr.response.SolrQueryResponse;
@@ -68,7 +68,7 @@ import static org.apache.solr.handler.dataimport.DataImporter.IMPORT_CMD;
 public class DataImportHandler extends RequestHandlerBase implements
         SolrCoreAware {
 
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private DataImporter importer;
 
@@ -80,6 +80,9 @@ public class DataImportHandler extends RequestHandlerBase implements
 
   private static final String PARAM_WRITER_IMPL = "writerImpl";
   private static final String DEFAULT_WRITER_NAME = "SolrWriter";
+  static final String ENABLE_DIH_DATA_CONFIG_PARAM = "enable.dih.dataConfigParam";
+
+  final boolean dataConfigParam_enabled = Boolean.getBoolean(ENABLE_DIH_DATA_CONFIG_PARAM);
 
   public DataImporter getImporter() {
     return this.importer;
@@ -107,7 +110,7 @@ public class DataImportHandler extends RequestHandlerBase implements
       debugEnabled = StrUtils.parseBool((String)initArgs.get(ENABLE_DEBUG), true);
       importer = new DataImporter(core, myName);         
     } catch (Exception e) {
-      LOG.error( DataImporter.MSG.LOAD_EXP, e);
+      log.error( DataImporter.MSG.LOAD_EXP, e);
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, DataImporter.MSG.LOAD_EXP, e);
     }
   }
@@ -134,7 +137,7 @@ public class DataImportHandler extends RequestHandlerBase implements
     
     if (DataImporter.SHOW_CONF_CMD.equals(command)) {    
       String dataConfigFile = params.get("config");
-      String dataConfig = params.get("dataConfig");
+      String dataConfig = params.get("dataConfig"); // needn't check dataConfigParam_enabled; we don't execute it
       if(dataConfigFile != null) {
         dataConfig = SolrWriter.getResourceAsString(req.getCore().getResourceLoader().openResource(dataConfigFile));
       }
@@ -149,6 +152,12 @@ public class DataImportHandler extends RequestHandlerBase implements
         rsp.add(RawResponseWriter.CONTENT, content);
       }
       return;
+    }
+
+    if (params.get("dataConfig") != null && dataConfigParam_enabled == false) {
+      throw new SolrException(SolrException.ErrorCode.FORBIDDEN,
+          "Use of the dataConfig param (DIH debug mode) requires the system property " +
+              ENABLE_DIH_DATA_CONFIG_PARAM + " because it's a security risk.");
     }
 
     rsp.add("initArgs", initArgs);
@@ -257,7 +266,7 @@ public class DataImportHandler extends RequestHandlerBase implements
           try {
             return super.upload(document);
           } catch (RuntimeException e) {
-            LOG.error("Exception while adding: " + document, e);
+            log.error("Exception while adding: " + document, e);
             return false;
           }
         }
@@ -266,8 +275,8 @@ public class DataImportHandler extends RequestHandlerBase implements
   }
 
   @Override
-  public void initializeMetrics(SolrMetricManager manager, String registryName, String tag, String scope) {
-    super.initializeMetrics(manager, registryName, tag, scope);
+  public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+    super.initializeMetrics(parentContext, scope);
     metrics = new MetricsMap((detailed, map) -> {
       if (importer != null) {
         DocBuilder.Statistics cumulative = importer.cumulativeStatistics;
@@ -290,7 +299,7 @@ public class DataImportHandler extends RequestHandlerBase implements
         map.put(DataImporter.MSG.TOTAL_DOCS_SKIPPED, cumulative.skipDocCount);
       }
     });
-    manager.registerGauge(this, registryName, metrics, tag, true, "importer", getCategory().toString(), scope);
+    solrMetricsContext.gauge(metrics, true, "importer", getCategory().toString(), scope);
   }
 
   // //////////////////////SolrInfoMBeans methods //////////////////////

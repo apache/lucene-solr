@@ -93,12 +93,12 @@ In addition to returning the top N sorted results (where you can control N using
 
 === Constraints when using Cursors
 
-There are a few important constraints to be aware of when using `cursorMark` parameter in a Solr request
+There are a few important constraints to be aware of when using `cursorMark` parameter in a Solr request.
 
 . `cursorMark` and `start` are mutually exclusive parameters.
 * Your requests must either not include a `start` parameter, or it must be specified with a value of "```0```".
 . `sort` clauses must include the uniqueKey field (either `asc` or `desc`).
-* If `id` is your uniqueKey field, then sort params like `id asc` and `name asc, id desc` would both work fine, but `name asc` by itself would not
+* If `id` is your uniqueKey field, then sort parameters like `id asc` and `name asc, id desc` would both work fine, but `name asc` by itself would not
 . Sorts including <<working-with-dates.adoc#working-with-dates,Date Math>> based functions that involve calculations relative to `NOW` will cause confusing results, since every document will get a new sort value on every subsequent request. This can easily result in cursors that never end, and constantly return the same documents over and over – even if the documents are never updated.
 +
 In this situation, choose & re-use a fixed value for the <<working-with-dates.adoc#now,`NOW` request param>> in all of your cursor requests.

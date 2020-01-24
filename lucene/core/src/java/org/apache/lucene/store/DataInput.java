@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -103,8 +104,8 @@ public abstract class DataInput implements Cloneable {
   }
 
   /** Reads an int stored in variable-length format.  Reads between one and
-   * five bytes.  Smaller values take fewer bytes.  Negative numbers are not
-   * supported.
+   * five bytes.  Smaller values take fewer bytes.  Negative numbers are
+   * supported, but should be avoided.
    * <p>
    * The format is described further in {@link DataOutput#writeVInt(int)}.
    * 
@@ -155,6 +156,26 @@ public abstract class DataInput implements Cloneable {
    */
   public long readLong() throws IOException {
     return (((long)readInt()) << 32) | (readInt() & 0xFFFFFFFFL);
+  }
+
+  /**
+   * Read a specified number of longs with the little endian byte order.
+   * <p>This method can be used to read longs whose bytes have been
+   * {@link Long#reverseBytes reversed} at write time:
+   * <pre class="prettyprint">
+   * for (long l : longs) {
+   *   output.writeLong(Long.reverseBytes(l));
+   * }
+   * </pre>
+   * @lucene.experimental
+   */
+  // TODO: LUCENE-9047: Make the entire DataInput/DataOutput API little endian
+  // Then this would just be `readLongs`?
+  public void readLELongs(long[] dst, int offset, int length) throws IOException {
+    Objects.checkFromIndexSize(offset, length, dst.length);
+    for (int i = 0; i < length; ++i) {
+      dst[offset + i] = Long.reverseBytes(readLong());
+    }
   }
 
   /** Reads a long stored in variable-length format.  Reads between one and

@@ -29,12 +29,14 @@ class TermMatchesIterator implements MatchesIterator {
   private int upto;
   private int pos;
   private final PostingsEnum pe;
+  private final Query query;
 
   /**
    * Create a new {@link TermMatchesIterator} for the given term and postings list
    */
-  TermMatchesIterator(PostingsEnum pe) throws IOException {
+  TermMatchesIterator(Query query, PostingsEnum pe) throws IOException {
     this.pe = pe;
+    this.query = query;
     this.upto = pe.freq();
   }
 
@@ -67,4 +69,13 @@ class TermMatchesIterator implements MatchesIterator {
     return pe.endOffset();
   }
 
+  @Override
+  public MatchesIterator getSubMatches() throws IOException {
+    return null;
+  }
+
+  @Override
+  public Query getQuery() {
+    return query;
+  }
 }

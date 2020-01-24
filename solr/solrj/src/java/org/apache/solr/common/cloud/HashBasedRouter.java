@@ -59,11 +59,12 @@ public abstract class HashBasedRouter extends DocRouter {
   }
 
   protected Slice hashToSlice(int hash, DocCollection collection) {
-    for (Slice slice : collection.getActiveSlices()) {
+    final Slice[] slices = collection.getActiveSlicesArr();
+    for (Slice slice : slices) {
       Range range = slice.getRange();
       if (range != null && range.includes(hash)) return slice;
     }
-    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No active slice servicing hash code " + Integer.toHexString(hash) + " in " + collection);
+    throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "No active slice servicing hash code " + Integer.toHexString(hash) + " in " + collection.getName());
   }
 
 

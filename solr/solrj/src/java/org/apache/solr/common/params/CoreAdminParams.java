@@ -84,7 +84,9 @@ public abstract class CoreAdminParams
 
   /** The hash ranges to be used to split a shard or an index */
   public final static String RANGES = "ranges";
-  
+
+  public final static String GET_RANGES = "getRanges";
+
   public static final String ROLES = "roles";
 
   public static final String REQUESTID = "requestid";
@@ -100,6 +102,8 @@ public abstract class CoreAdminParams
   public static final String DELETE_DATA_DIR = "deleteDataDir";
 
   public static final String DELETE_INSTANCE_DIR = "deleteInstanceDir";
+
+  public static final String DELETE_METRICS_HISTORY = "deleteMetricsHistory";
 
   public static final String LOAD_ON_STARTUP = "loadOnStartup";
   

@@ -49,7 +49,7 @@ abstract public class RestTestBase extends SolrJettyTestBase {
       (String solrHome, String configFile, String schemaFile, String context,
        boolean stopAtShutdown, SortedMap<ServletHolder,String> extraServlets) throws Exception {
 
-    createJetty(solrHome, configFile, schemaFile, context, stopAtShutdown, extraServlets);
+    createAndStartJetty(solrHome, configFile, schemaFile, context, stopAtShutdown, extraServlets);
 
     restTestHarness = new RestTestHarness(() -> jetty.getBaseUrl().toString() + "/" + DEFAULT_TEST_CORENAME);
   }

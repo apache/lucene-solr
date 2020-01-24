@@ -57,8 +57,8 @@ import org.slf4j.LoggerFactory;
  * @since solr 1.3
  */
 public class XPathRecordReader {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-  private static final XMLErrorLogger XMLLOG = new XMLErrorLogger(LOG);
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final XMLErrorLogger XMLLOG = new XMLErrorLogger(log);
 
   private Node rootNode = new Node("/", null);
 
@@ -645,7 +645,7 @@ public class XPathRecordReader {
     } catch (IllegalArgumentException ex) {
       // Other implementations will likely throw this exception since "reuse-instance"
       // isimplementation specific.
-      LOG.debug("Unable to set the 'reuse-instance' property for the input chain: " + factory);
+      log.debug("Unable to set the 'reuse-instance' property for the input chain: " + factory);
     }
   }
 

@@ -412,7 +412,7 @@ public abstract class FieldComparator<T> {
   public static final class RelevanceComparator extends FieldComparator<Float> implements LeafFieldComparator {
     private final float[] scores;
     private float bottom;
-    private Scorer scorer;
+    private Scorable scorer;
     private float topValue;
 
     /** Creates a new comparator based on relevance for {@code numHits}. */
@@ -454,7 +454,7 @@ public abstract class FieldComparator<T> {
     }
 
     @Override
-    public void setScorer(Scorer scorer) {
+    public void setScorer(Scorable scorer) {
       // wrap with a ScoreCachingWrappingScorer so that successive calls to
       // score() will not incur score computation over and
       // over again.
@@ -546,7 +546,7 @@ public abstract class FieldComparator<T> {
     }
 
     @Override
-    public void setScorer(Scorer scorer) {}
+    public void setScorer(Scorable scorer) {}
   }
   
   /** Sorts by field's natural Term sort order, using
@@ -818,7 +818,7 @@ public abstract class FieldComparator<T> {
     }
 
     @Override
-    public void setScorer(Scorer scorer) {}
+    public void setScorer(Scorable scorer) {}
   }
   
   /** Sorts by field's natural Term sort order.  All
@@ -926,6 +926,6 @@ public abstract class FieldComparator<T> {
     }
 
     @Override
-    public void setScorer(Scorer scorer) {}
+    public void setScorer(Scorable scorer) {}
   }
 }

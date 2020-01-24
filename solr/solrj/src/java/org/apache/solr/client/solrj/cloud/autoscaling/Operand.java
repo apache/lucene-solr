@@ -17,6 +17,7 @@
 
 package org.apache.solr.client.solrj.cloud.autoscaling;
 
+import java.util.List;
 import java.util.Objects;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.Clause.TestStatus;
@@ -35,20 +36,75 @@ public enum Operand {
     }
 
   },
+
+  RANGE_EQUAL("", 0) {
+    @Override
+    public TestStatus match(Object ruleVal, Object testVal) {
+      return ((RangeVal) ruleVal).match((Number) testVal) ? PASS : FAIL;
+    }
+
+    @Override
+    public Double delta(Object expected, Object actual) {
+      return ((RangeVal) expected).delta(((Number) actual).doubleValue());
+    }
+
+    @Override
+    public Object readRuleValue(Condition condition) {
+      if (condition.val instanceof String) {
+        String strVal = ((String) condition.val).trim();
+        int hyphenIdx = strVal.indexOf('-');
+        if (hyphenIdx > 0) {
+          String minS = strVal.substring(0, hyphenIdx).trim();
+          String maxS = strVal.substring(hyphenIdx + 1, strVal.length()).trim();
+          return new RangeVal(
+              (Number) condition.varType.validate(condition.name, minS, true),
+              (Number) condition.varType.validate(condition.name, maxS, true),
+              null
+          );
+
+        }
+
+      }
+
+
+      Number num = (Number) condition.varType.validate(condition.name, condition.val, true);
+      return new RangeVal(Math.floor(num.doubleValue()), Math.ceil(num.doubleValue()), num);
+    }
+  },
   EQUAL("", 0) {
     @Override
-    public long _delta(long expected, long actual) {
-      return expected - actual;
+    public double _delta(double expected, double actual) {
+      return actual - expected;
     }
+  },
+  IN("", 0) {
+    @Override
+    public TestStatus match(Object ruleVal, Object testVal) {
+      List l = (List) ruleVal;
+      return (l.contains(testVal)) ?  PASS: FAIL;
+    }
+  },
+  RANGE_NOT_EQUAL("", 2) {
+    @Override
+    public TestStatus match(Object ruleVal, Object testVal) {
+      return ((RangeVal) ruleVal).match((Number) testVal) ? FAIL : PASS;
+    }
+
+    @Override
+    public Object readRuleValue(Condition condition) {
+      return RANGE_EQUAL.readRuleValue(condition);
+    }
+
   },
   NOT_EQUAL("!", 2) {
     @Override
     public TestStatus match(Object ruleVal, Object testVal) {
+      if(testVal == null) return PASS;
       return super.match(ruleVal, testVal) == PASS ? FAIL : PASS;
     }
 
     @Override
-    public long _delta(long expected, long actual) {
+    public double _delta(double expected, double actual) {
       return expected - actual;
     }
 
@@ -59,9 +115,14 @@ public enum Operand {
       if (testVal == null) return NOT_APPLICABLE;
       if (ruleVal instanceof String) ruleVal = Clause.parseDouble("", ruleVal);
       if (ruleVal instanceof Double) {
-        return Double.compare(Clause.parseDouble("", testVal), (Double) ruleVal) == 1 ? PASS : FAIL;
+        return Double.compare(Clause.parseDouble("", testVal), (Double) ruleVal) == -1 ? FAIL : PASS;
       }
      return getLong(testVal) > getLong(ruleVal) ? PASS: FAIL ;
+    }
+
+    @Override
+    public String wrap(Object val) {
+      return ">" + (((Number) val).doubleValue() - 1);
     }
 
     @Override
@@ -70,8 +131,8 @@ public enum Operand {
     }
 
     @Override
-    protected long _delta(long expected, long actual) {
-      return actual > expected ? 0 : (expected + 1) - actual;
+    protected double _delta(double expected, double actual) {
+      return actual > expected ? 0 : expected - actual;
     }
   },
   LESS_THAN("<", 2) {
@@ -80,14 +141,19 @@ public enum Operand {
       if (testVal == null) return NOT_APPLICABLE;
       if (ruleVal instanceof String) ruleVal = Clause.parseDouble("", ruleVal);
       if (ruleVal instanceof Double) {
-        return Double.compare(Clause.parseDouble("", testVal), (Double) ruleVal) == -1 ? PASS : FAIL;
+        return Double.compare(Clause.parseDouble("", testVal), (Double) ruleVal) == 1 ? FAIL : PASS;
       }
       return getLong(testVal) < getLong(ruleVal) ? PASS: FAIL ;
     }
 
     @Override
-    protected long _delta(long expected, long actual) {
-      return actual < expected ? 0 : (actual + 1) - expected;
+    public String wrap(Object val) {
+      return "<" + (((Number) val).doubleValue() + 1);
+    }
+
+    @Override
+    protected double _delta(double expected, double actual) {
+      return actual < expected ? 0 : actual - expected;
     }
 
     @Override
@@ -118,18 +184,26 @@ public enum Operand {
 
   }
 
-  public Long delta(Object expected, Object actual) {
+  public Double delta(Object expected, Object actual) {
     if (expected instanceof Number && actual instanceof Number) {
-      Long expectedL = ((Number) expected).longValue();
-      Long actualL = ((Number) actual).longValue();
+      Double expectedL = ((Number) expected).doubleValue();
+      Double actualL = ((Number) actual).doubleValue();
       return _delta(expectedL, actualL);
     } else {
-      return 0L;
+      return 0d;
     }
 
   }
 
-  protected long _delta(long expected, long actual) {
+  protected double _delta(double expected, double actual) {
     return 0;
+  }
+
+  public String wrap(Object val) {
+    return operand + val.toString();
+  }
+
+  public Object readRuleValue(Condition condition) {
+    return condition.val;
   }
 }

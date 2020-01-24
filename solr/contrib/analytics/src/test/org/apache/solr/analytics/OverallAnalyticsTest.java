@@ -24,7 +24,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 public class OverallAnalyticsTest extends SolrAnalyticsFacetTestCase {
-  
+
   @BeforeClass
   public static void populate() throws Exception {
     for (int j = 0; j < NUM_LOOPS; ++j) {
@@ -37,37 +37,37 @@ public class OverallAnalyticsTest extends SolrAnalyticsFacetTestCase {
       String s = "str" + (j%STRING);
       List<String> fields = new ArrayList<>();
       fields.add("id"); fields.add("1000"+j);
-      
+
       if ( i != 0 ) {
         fields.add("int_i"); fields.add("" + i);
         fields.add("int_im"); fields.add("" + i);
         fields.add("int_im"); fields.add("" + (i+10));
       }
-      
+
       if ( l != 0l ) {
         fields.add("long_l"); fields.add("" + l);
         fields.add("long_lm"); fields.add("" + l);
         fields.add("long_lm"); fields.add("" + (l+10));
       }
-      
+
       if ( f != 0.0f ) {
         fields.add("float_f"); fields.add("" + f);
         fields.add("float_fm"); fields.add("" + f);
         fields.add("float_fm"); fields.add("" + (f+10));
       }
-      
+
       if ( d != 0.0d ) {
         fields.add("double_d"); fields.add("" + d);
         fields.add("double_dm"); fields.add("" + d);
         fields.add("double_dm"); fields.add("" + (d+10));
       }
-      
+
       if ( (j%DATE) != 0 ) {
         fields.add("date_dt"); fields.add(dt);
         fields.add("date_dtm"); fields.add(dt);
         fields.add("date_dtm"); fields.add(dtm);
       }
-      
+
       if ( (j%STRING) != 0 ) {
         fields.add("string_s"); fields.add(s);
         fields.add("string_sm"); fields.add(s);
@@ -78,7 +78,7 @@ public class OverallAnalyticsTest extends SolrAnalyticsFacetTestCase {
     }
     commitDocs();
   }
-  
+
   static public final int INT = 7;
   static public final int LONG = 2;
   static public final int FLOAT = 6;
@@ -86,7 +86,7 @@ public class OverallAnalyticsTest extends SolrAnalyticsFacetTestCase {
   static public final int DATE = 3;
   static public final int STRING = 4;
   static public final int NUM_LOOPS = 20;
-  
+
   @Test
   public void pivotFacetTest() throws Exception {
     String analyticsRequest = "{"
@@ -97,7 +97,7 @@ public class OverallAnalyticsTest extends SolrAnalyticsFacetTestCase {
         + "\n 'functions' : { "
         + "\n   'mod(a,b..)' : 'concat_sep(a, b:concat(_,\\'-con\\'))', "
         + "\n   'rep_0(num)' : 'fill_missing(num,0)' "
-        + "\n }, " 
+        + "\n }, "
         + "\n 'groupings': { "
         + "\n   'grouping0' : { "
         + "\n     'expressions' : { "
@@ -175,7 +175,7 @@ public class OverallAnalyticsTest extends SolrAnalyticsFacetTestCase {
         + "\n   } "
         + "\n } "
         + "\n} ";
-    
+
     String test = "== {"
         + "\n 'results' : { "
         + "\n   'floor_mean_add' : 9, "
@@ -314,7 +314,7 @@ public class OverallAnalyticsTest extends SolrAnalyticsFacetTestCase {
         + "\n   }"
         + "\n }"
         + "\n}";
-    
+
     testAnalytics(analyticsRequest, test);
   }
 }

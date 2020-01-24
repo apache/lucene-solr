@@ -64,7 +64,7 @@ public class TestIsCurrent extends LuceneTestCase {
     DirectoryReader reader = writer.getReader();
 
     // assert index has a document and reader is up2date 
-    assertEquals("One document should be in the index", 1, writer.numDocs());
+    assertEquals("One document should be in the index", 1, writer.getDocStats().numDocs);
     assertTrue("One document added, reader should be current", reader.isCurrent());
 
     // remove document
@@ -73,7 +73,7 @@ public class TestIsCurrent extends LuceneTestCase {
     writer.commit();
 
     // assert document has been deleted (index changed), reader is stale
-    assertEquals("Document should be removed", 0, writer.numDocs());
+    assertEquals("Document should be removed", 0, writer.getDocStats().numDocs);
     assertFalse("Reader should be stale", reader.isCurrent());
 
     reader.close();
@@ -89,7 +89,7 @@ public class TestIsCurrent extends LuceneTestCase {
     DirectoryReader reader = writer.getReader();
 
     // assert index has a document and reader is up2date 
-    assertEquals("One document should be in the index", 1, writer.numDocs());
+    assertEquals("One document should be in the index", 1, writer.getDocStats().numDocs);
     assertTrue("Document added, reader should be stale ", reader.isCurrent());
 
     // remove all documents
@@ -97,7 +97,7 @@ public class TestIsCurrent extends LuceneTestCase {
     writer.commit();
 
     // assert document has been deleted (index changed), reader is stale
-    assertEquals("Document should be removed", 0, writer.numDocs());
+    assertEquals("Document should be removed", 0, writer.getDocStats().numDocs);
     assertFalse("Reader should be stale", reader.isCurrent());
 
     reader.close();

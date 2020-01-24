@@ -54,6 +54,7 @@ public abstract class FieldProperties {
   protected final static int STORE_TERMPAYLOADS  = 0b10000000000000000;
   protected final static int USE_DOCVALUES_AS_STORED  = 0b100000000000000000;
   protected final static int LARGE_FIELD         = 0b1000000000000000000;
+  protected final static int UNINVERTIBLE        = 0b10000000000000000000;
 
   static final String[] propertyNames = {
           "indexed", "tokenized", "stored",
@@ -61,7 +62,8 @@ public abstract class FieldProperties {
           "termVectors", "termPositions", "termOffsets",
           "multiValued",
           "sortMissingFirst","sortMissingLast","required", "omitPositions",
-          "storeOffsetsWithPositions", "docValues", "termPayloads", "useDocValuesAsStored", "large"
+          "storeOffsetsWithPositions", "docValues", "termPayloads", "useDocValuesAsStored", "large",
+          "uninvertible"
   };
 
   static final Map<String,Integer> propertyMap = new HashMap<>();
@@ -71,6 +73,8 @@ public abstract class FieldProperties {
     }
   }
 
+  static final String POSTINGS_FORMAT = "postingsFormat";
+  static final String DOC_VALUES_FORMAT = "docValuesFormat";
 
   /** Returns the symbolic name for the property. */
   static String getPropertyName(int property) {
@@ -83,13 +87,16 @@ public abstract class FieldProperties {
         return 1 << i;
       }
     }
-    if (failOnError && !"default".equals(name)) {
+    if (failOnError && !isPropertyIgnored(name)) {
       throw new IllegalArgumentException("Invalid field property: " + name);
     } else {
       return 0;
     }
   }
 
+  private static boolean isPropertyIgnored(String name) {
+    return name.equals("default") || name.equals(POSTINGS_FORMAT) || name.equals(DOC_VALUES_FORMAT);
+  }
 
   static String propertiesToString(int properties) {
     StringBuilder sb = new StringBuilder();

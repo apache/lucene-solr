@@ -29,12 +29,12 @@ import java.util.Map;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
 
-import junit.framework.Assert;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.core.KeywordTokenizerFactory;
 import org.apache.lucene.analysis.ngram.NGramFilterFactory;
 import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
+import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.handler.admin.LukeRequestHandler;
@@ -43,6 +43,7 @@ import org.apache.solr.response.JSONResponseWriter;
 import org.apache.solr.util.plugin.SolrCoreAware;
 
 import static org.apache.solr.core.SolrResourceLoader.assertAwareCompatibility;
+import static org.apache.solr.core.SolrResourceLoader.clearCache;
 import static org.hamcrest.core.Is.is;
 
 public class ResourceLoaderTest extends SolrTestCaseJ4 {
@@ -59,6 +60,7 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
     Files.write(temp.resolve("dummy.txt"), new byte[]{});
     Path instanceDir = temp.resolve("instance");
     Files.createDirectories(instanceDir.resolve("conf"));
+
     try (SolrResourceLoader loader = new SolrResourceLoader(instanceDir)) {
       loader.openResource("../../dummy.txt").close();
       fail();
@@ -70,47 +72,40 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
 
   public void testAwareCompatibility() throws Exception {
     
-    Class<?> clazz = ResourceLoaderAware.class;
+    final Class<?> clazz1 = ResourceLoaderAware.class;
     // Check ResourceLoaderAware valid objects
-    assertAwareCompatibility(clazz, new NGramFilterFactory(new HashMap<>()));
-    assertAwareCompatibility(clazz, new KeywordTokenizerFactory(new HashMap<>()));
+    //noinspection unchecked
+    assertAwareCompatibility(clazz1, new NGramFilterFactory(map("minGramSize", "1", "maxGramSize", "2")));
+    assertAwareCompatibility(clazz1, new KeywordTokenizerFactory(new HashMap<>()));
     
     // Make sure it throws an error for invalid objects
     Object[] invalid = new Object[] {
         // new NGramTokenFilter( null ),
-        "hello",  new Float( 12.3f ),
+        "hello", 12.3f,
         new LukeRequestHandler(),
         new JSONResponseWriter()
     };
     for( Object obj : invalid ) {
-      try {
-        assertAwareCompatibility(clazz, obj);
-        Assert.fail( "Should be invalid class: "+obj + " FOR " + clazz );
-      }
-      catch( SolrException ex ) { } // OK
+      expectThrows(SolrException.class, () -> assertAwareCompatibility(clazz1, obj));
     }
     
 
-    clazz = SolrCoreAware.class;
+    final Class<?> clazz2 = SolrCoreAware.class;
     // Check ResourceLoaderAware valid objects
-    assertAwareCompatibility(clazz, new LukeRequestHandler());
-    assertAwareCompatibility(clazz, new FacetComponent());
-    assertAwareCompatibility(clazz, new JSONResponseWriter());
+    assertAwareCompatibility(clazz2, new LukeRequestHandler());
+    assertAwareCompatibility(clazz2, new FacetComponent());
+    assertAwareCompatibility(clazz2, new JSONResponseWriter());
     
     // Make sure it throws an error for invalid objects
+    //noinspection unchecked
     invalid = new Object[] {
-        new NGramFilterFactory(new HashMap<>()),
-        "hello",  new Float( 12.3f ),
+        new NGramFilterFactory(map("minGramSize", "1", "maxGramSize", "2")),
+        "hello",   12.3f ,
         new KeywordTokenizerFactory(new HashMap<>())
     };
     for( Object obj : invalid ) {
-      try {
-        assertAwareCompatibility(clazz, obj);
-        Assert.fail( "Should be invalid class: "+obj + " FOR " + clazz );
-      }
-      catch( SolrException ex ) { } // OK
+      expectThrows(SolrException.class, () -> assertAwareCompatibility(clazz2, obj));
     }
-
   }
   
   public void testBOMMarkers() throws Exception {
@@ -143,15 +138,11 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
   
   public void testWrongEncoding() throws Exception {
     String wrongEncoding = "stopwordsWrongEncoding.txt";
-    SolrResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"));
-    // ensure we get our exception
-    try {
-      loader.getLines(wrongEncoding);
-      fail();
-    } catch (SolrException expected) {
-      assertTrue(expected.getCause() instanceof CharacterCodingException);
+    try(SolrResourceLoader loader = new SolrResourceLoader(TEST_PATH().resolve("collection1"))) {
+      // ensure we get our exception
+      SolrException thrown = expectThrows(SolrException.class, () -> loader.getLines(wrongEncoding));
+      assertTrue(thrown.getCause() instanceof CharacterCodingException);
     }
-    loader.close();
   }
 
   public void testClassLoaderLibs() throws Exception {
@@ -216,5 +207,22 @@ public class ResourceLoaderTest extends SolrTestCaseJ4 {
         new Class[] { Map.class }, new Object[] { new HashMap<String,String>() });
     // TODO: How to check that a warning was printed to log file?
     loader.close();    
+  }
+
+  public void testCacheWrongType() {
+    clearCache();
+
+    SolrResourceLoader loader = new SolrResourceLoader();
+    Class[] params = { Map.class };
+    Map<String,String> args = Map.of("minGramSize", "1", "maxGramSize", "2");
+    final String className = "solr.NGramTokenizerFactory";
+
+    // We could fail here since the class name and expected type don't match, but instead we try to infer what the user actually meant
+    TokenFilterFactory tff = loader.newInstance(className, TokenFilterFactory.class, new String[0], params, new Object[]{new HashMap<>(args)});
+    assertNotNull("Did not load TokenFilter when asking for corresponding Tokenizer", tff);
+
+    // This should work, but won't if earlier call succeeding corrupting the cache
+    TokenizerFactory tf = loader.newInstance(className, TokenizerFactory.class, new String[0], params, new Object[]{new HashMap<>(args)});
+    assertNotNull("Did not load Tokenizer after bad call earlier", tf);
   }
 }

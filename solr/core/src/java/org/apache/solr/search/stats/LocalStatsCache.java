@@ -20,7 +20,6 @@ import java.lang.invoke.MethodHandles;
 
 import java.util.List;
 
-import org.apache.solr.core.PluginInfo;
 import org.apache.solr.handler.component.ResponseBuilder;
 import org.apache.solr.handler.component.ShardRequest;
 import org.apache.solr.handler.component.ShardResponse;
@@ -34,48 +33,46 @@ import org.slf4j.LoggerFactory;
  * uses local term statistics.
  */
 public class LocalStatsCache extends StatsCache {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
-  public StatsSource get(SolrQueryRequest req) {
-    LOG.debug("## GET {}", req);
-    return new LocalStatsSource();
-  }
-
-  @Override
-  public void init(PluginInfo info) {
+  protected StatsSource doGet(SolrQueryRequest req) {
+    log.debug("## GET {}", req);
+    return new LocalStatsSource(statsCacheMetrics);
   }
 
   // by returning null we don't create additional round-trip request.
   @Override
-  public ShardRequest retrieveStatsRequest(ResponseBuilder rb) {
-    LOG.debug("## RDR {}", rb.req);
+  protected ShardRequest doRetrieveStatsRequest(ResponseBuilder rb) {
+    log.debug("## RSR {}", rb.req);
+    // already incremented the stats - decrement it now
+    statsCacheMetrics.retrieveStats.decrement();
     return null;
   }
 
   @Override
-  public void mergeToGlobalStats(SolrQueryRequest req,
+  protected void doMergeToGlobalStats(SolrQueryRequest req,
           List<ShardResponse> responses) {
-    if (LOG.isDebugEnabled()) {
-      LOG.debug("## MTGD {}", req);
+    if (log.isDebugEnabled()) {
+      log.debug("## MTGS {}", req);
       for (ShardResponse r : responses) {
-        LOG.debug(" - {}", r);
+        log.debug(" - {}", r);
       }
     }
   }
 
   @Override
-  public void returnLocalStats(ResponseBuilder rb, SolrIndexSearcher searcher) {
-    LOG.debug("## RLD {}", rb.req);
+  protected void doReturnLocalStats(ResponseBuilder rb, SolrIndexSearcher searcher) {
+    log.debug("## RLS {}", rb.req);
   }
 
   @Override
-  public void receiveGlobalStats(SolrQueryRequest req) {
-    LOG.debug("## RGD {}", req);
+  protected void doReceiveGlobalStats(SolrQueryRequest req) {
+    log.debug("## RGS {}", req);
   }
 
   @Override
-  public void sendGlobalStats(ResponseBuilder rb, ShardRequest outgoing) {
-    LOG.debug("## SGD {}", outgoing);
+  protected void doSendGlobalStats(ResponseBuilder rb, ShardRequest outgoing) {
+    log.debug("## SGS {}", outgoing);
   }
 }

@@ -19,7 +19,7 @@ package org.apache.solr.client.solrj.io.stream.eval;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.AddEvaluator;
 import org.apache.solr.client.solrj.io.eval.AndEvaluator;
@@ -34,7 +34,7 @@ import org.junit.Test;
 
 import junit.framework.Assert;
 
-public class RecursiveEvaluatorTest extends LuceneTestCase {
+public class RecursiveEvaluatorTest extends SolrTestCase {
 
   StreamFactory factory;
   Map<String, Object> values;
@@ -67,8 +67,7 @@ public class RecursiveEvaluatorTest extends LuceneTestCase {
     values.put("f", 2);
     values.put("g", 5);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(-16L, result);
+    Assert.assertEquals(-16D, result);
     
     values.clear();
     values.put("a", .1);

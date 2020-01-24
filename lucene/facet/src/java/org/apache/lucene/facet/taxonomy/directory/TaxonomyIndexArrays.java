@@ -26,7 +26,7 @@ import org.apache.lucene.facet.taxonomy.ParallelTaxonomyArrays;
 import org.apache.lucene.facet.taxonomy.TaxonomyReader;
 import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.PostingsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.Accountable;
@@ -132,10 +132,10 @@ class TaxonomyIndexArrays extends ParallelTaxonomyArrays implements Accountable 
       return;
     }
     
-    // it's ok to use MultiFields because we only iterate on one posting list.
+    // it's ok to use MultiTerms because we only iterate on one posting list.
     // breaking it to loop over the leaves() only complicates code for no
     // apparent gain.
-    PostingsEnum positions = MultiFields.getTermPositionsEnum(reader,
+    PostingsEnum positions = MultiTerms.getTermPostingsEnum(reader,
         Consts.FIELD_PAYLOADS, Consts.PAYLOAD_PARENT_BYTES_REF,
         PostingsEnum.PAYLOADS);
 
@@ -223,7 +223,7 @@ class TaxonomyIndexArrays extends ParallelTaxonomyArrays implements Accountable 
 
   @Override
   public synchronized long ramBytesUsed() {
-    long ramBytesUsed = RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 3 * RamUsageEstimator.NUM_BYTES_OBJECT_REF + RamUsageEstimator.NUM_BYTES_BOOLEAN;
+    long ramBytesUsed = RamUsageEstimator.NUM_BYTES_OBJECT_HEADER + 3 * RamUsageEstimator.NUM_BYTES_OBJECT_REF + 1;
     ramBytesUsed += RamUsageEstimator.shallowSizeOf(parents);
     if (children != null) {
       ramBytesUsed += RamUsageEstimator.shallowSizeOf(children);

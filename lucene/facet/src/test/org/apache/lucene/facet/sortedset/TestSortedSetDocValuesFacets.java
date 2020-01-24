@@ -92,7 +92,7 @@ public class TestSortedSetDocValuesFacets extends FacetTestCase {
     q.add("a", "foo");
     q.add("b", "baz");
     TopDocs hits = searcher.search(q, 1);
-    assertEquals(1, hits.totalHits);
+    assertEquals(1, hits.totalHits.value);
 
     if (exec != null) {
       exec.shutdownNow();

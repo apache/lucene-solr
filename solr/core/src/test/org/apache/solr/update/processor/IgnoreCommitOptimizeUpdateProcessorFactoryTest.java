@@ -47,7 +47,7 @@ public class IgnoreCommitOptimizeUpdateProcessorFactoryTest extends SolrTestCase
     rsp = processCommit("ignore-optimize-only-from-client-403", true);
     assertNotNull("Sending an optimize should have resulted in an exception in the response", rsp.getException());
     // commit should happen if DistributedUpdateProcessor.COMMIT_END_POINT == true
-    rsp = processCommit("ignore-commit-from-client-403", false, new Boolean(true));
+    rsp = processCommit("ignore-commit-from-client-403", false, Boolean.TRUE);
     shouldBeNull = rsp.getException();
     assertNull("Sending a commit should NOT have resulted in an exception in the response: "+shouldBeNull, shouldBeNull);
   }

@@ -16,8 +16,6 @@
  */
 package org.apache.solr.update.processor;
 
-import org.apache.solr.update.processor.UpdateRequestProcessor;
-
 
 /**
  * A passthrough processor that does nothing.

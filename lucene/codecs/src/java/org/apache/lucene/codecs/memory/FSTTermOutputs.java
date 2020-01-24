@@ -41,7 +41,6 @@ class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
   private final static TermData NO_OUTPUT = new TermData();
   //private static boolean TEST = false;
   private final boolean hasPos;
-  private final int longsSize;
 
   /** 
    * Represents the metadata for one term.
@@ -50,18 +49,15 @@ class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
    */
   static class TermData implements Accountable {
     private static final long BASE_RAM_BYTES_USED = RamUsageEstimator.shallowSizeOfInstance(TermData.class);
-    long[] longs;
     byte[] bytes;
     int docFreq;
     long totalTermFreq;
     TermData() {
-      this.longs = null;
       this.bytes = null;
       this.docFreq = 0;
       this.totalTermFreq = -1;
     }
-    TermData(long[] longs, byte[] bytes, int docFreq, long totalTermFreq) {
-      this.longs = longs;
+    TermData(byte[] bytes, int docFreq, long totalTermFreq) {
       this.bytes = bytes;
       this.docFreq = docFreq;
       this.totalTermFreq = totalTermFreq;
@@ -70,9 +66,6 @@ class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
     @Override
     public long ramBytesUsed() {
       long ramBytesUsed = BASE_RAM_BYTES_USED;
-      if (longs != null) {
-        ramBytesUsed += RamUsageEstimator.sizeOf(longs);
-      }
       if (bytes != null) {
         ramBytesUsed += RamUsageEstimator.sizeOf(bytes);
       }
@@ -85,14 +78,7 @@ class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
     @Override
     public int hashCode() {
       int hash = 0;
-      if (longs != null) {
-        final int end = longs.length;
-        for (int i = 0; i < end; i++) {
-          hash -= longs[i];
-        }
-      }
       if (bytes != null) {
-        hash = -hash;
         final int end = bytes.length;
         for (int i = 0; i < end; i++) {
           hash += bytes[i];
@@ -104,7 +90,7 @@ class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
 
     @Override
     public String toString() {
-      return "FSTTermOutputs$TermData longs=" + Arrays.toString(longs) + " bytes=" + Arrays.toString(bytes) + " docFreq=" + docFreq + " totalTermFreq=" + totalTermFreq;
+      return "FSTTermOutputs$TermData bytes=" + Arrays.toString(bytes) + " docFreq=" + docFreq + " totalTermFreq=" + totalTermFreq;
     }
 
     @Override
@@ -116,15 +102,13 @@ class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
       }
       TermData other = (TermData) other_;
       return statsEqual(this, other) && 
-             longsEqual(this, other) && 
              bytesEqual(this, other);
 
     }
   }
   
-  protected FSTTermOutputs(FieldInfo fieldInfo, int longsSize) {
+  protected FSTTermOutputs(FieldInfo fieldInfo) {
     this.hasPos = fieldInfo.getIndexOptions() != IndexOptions.DOCS;
-    this.longsSize = longsSize;
   }
 
   @Override
@@ -145,37 +129,13 @@ class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
       //if (TEST) System.out.println("ret:"+NO_OUTPUT);
       return NO_OUTPUT;
     }
-    assert t1.longs.length == t2.longs.length;
 
-    long[] min = t1.longs, max = t2.longs;
-    int pos = 0;
     TermData ret;
 
-    while (pos < longsSize && min[pos] == max[pos]) {
-      pos++;
-    }
-    if (pos < longsSize) {  // unequal long[]
-      if (min[pos] > max[pos]) {
-        min = t2.longs;
-        max = t1.longs;
-      }
-      // check whether strictly smaller
-      while (pos < longsSize && min[pos] <= max[pos]) {
-        pos++;
-      }
-      if (pos < longsSize || allZero(min)) {  // not comparable or all-zero
-        ret = NO_OUTPUT;
-      } else {
-        ret = new TermData(min, null, 0, -1);
-      }
-    } else {  // equal long[]
-      if (statsEqual(t1, t2) && bytesEqual(t1, t2)) {
-        ret = t1;
-      } else if (allZero(min)) {
-        ret = NO_OUTPUT;
-      } else {
-        ret = new TermData(min, null, 0, -1);
-      }
+    if (statsEqual(t1, t2) && bytesEqual(t1, t2)) {
+      ret = t1;
+    } else {
+      ret = NO_OUTPUT;
     }
     //if (TEST) System.out.println("ret:"+ret);
     return ret;
@@ -188,23 +148,12 @@ class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
       //if (TEST) System.out.println("ret:"+t1);
       return t1;
     }
-    assert t1.longs.length == t2.longs.length;
-
-    int pos = 0;
-    long diff = 0;
-    long[] share = new long[longsSize];
-
-    while (pos < longsSize) {
-      share[pos] = t1.longs[pos] - t2.longs[pos];
-      diff += share[pos];
-      pos++;
-    }
 
     TermData ret;
-    if (diff == 0 && statsEqual(t1, t2) && bytesEqual(t1, t2)) {
+    if (statsEqual(t1, t2) && bytesEqual(t1, t2)) {
       ret = NO_OUTPUT;
     } else {
-      ret = new TermData(share, t1.bytes, t1.docFreq, t1.totalTermFreq);
+      ret = new TermData(t1.bytes, t1.docFreq, t1.totalTermFreq);
     }
     //if (TEST) System.out.println("ret:"+ret);
     return ret;
@@ -223,21 +172,12 @@ class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
       //if (TEST) System.out.println("ret:"+t1);
       return t1;
     }
-    assert t1.longs.length == t2.longs.length;
-
-    int pos = 0;
-    long[] accum = new long[longsSize];
-
-    while (pos < longsSize) {
-      accum[pos] = t1.longs[pos] + t2.longs[pos];
-      pos++;
-    }
 
     TermData ret;
     if (t2.bytes != null || t2.docFreq > 0) {
-      ret = new TermData(accum, t2.bytes, t2.docFreq, t2.totalTermFreq);
+      ret = new TermData(t2.bytes, t2.docFreq, t2.totalTermFreq);
     } else {
-      ret = new TermData(accum, t1.bytes, t1.docFreq, t1.totalTermFreq);
+      ret = new TermData(t1.bytes, t1.docFreq, t1.totalTermFreq);
     }
     //if (TEST) System.out.println("ret:"+ret);
     return ret;
@@ -246,13 +186,12 @@ class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
   @Override
   public void write(TermData data, DataOutput out) throws IOException {
     assert hasPos || data.totalTermFreq == -1;
-    int bit0 = allZero(data.longs) ? 0 : 1;
-    int bit1 = ((data.bytes == null || data.bytes.length == 0) ? 0 : 1) << 1;
-    int bit2 = ((data.docFreq == 0)  ? 0 : 1) << 2;
-    int bits = bit0 | bit1 | bit2;
-    if (bit1 > 0) {  // determine extra length
+    int bit0 = ((data.bytes == null || data.bytes.length == 0) ? 0 : 1);
+    int bit1 = ((data.docFreq == 0)  ? 0 : 1) << 1;
+    int bits = bit0 | bit1;
+    if (bit0 > 0) {  // determine extra length
       if (data.bytes.length < 32) {
-        bits |= (data.bytes.length << 3);
+        bits |= (data.bytes.length << 2);
         out.writeByte((byte)bits);
       } else {
         out.writeByte((byte)bits);
@@ -261,15 +200,10 @@ class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
     } else {
       out.writeByte((byte)bits);
     }
-    if (bit0 > 0) {  // not all-zero case
-      for (int pos = 0; pos < longsSize; pos++) {
-        out.writeVLong(data.longs[pos]);
-      }
-    }
-    if (bit1 > 0) {  // bytes exists
+    if (bit0 > 0) {  // bytes exists
       out.writeBytes(data.bytes, 0, data.bytes.length);
     }
-    if (bit2 > 0) {  // stats exist
+    if (bit1 > 0) {  // stats exist
       if (hasPos) {
         if (data.docFreq == data.totalTermFreq) {
           out.writeVInt((data.docFreq << 1) | 1);
@@ -285,28 +219,21 @@ class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
 
   @Override
   public TermData read(DataInput in) throws IOException {
-    long[] longs = new long[longsSize];
     byte[] bytes = null;
     int docFreq = 0;
     long totalTermFreq = -1;
     int bits = in.readByte() & 0xff;
     int bit0 = bits & 1;
     int bit1 = bits & 2;
-    int bit2 = bits & 4;
-    int bytesSize = (bits >>> 3);
-    if (bit1 > 0 && bytesSize == 0) {  // determine extra length
+    int bytesSize = (bits >>> 2);
+    if (bit0 > 0 && bytesSize == 0) {  // determine extra length
       bytesSize = in.readVInt();
     }
-    if (bit0 > 0) {  // not all-zero case
-      for (int pos = 0; pos < longsSize; pos++) {
-        longs[pos] = in.readVLong();
-      }
-    }
-    if (bit1 > 0) {  // bytes exists
+    if (bit0 > 0) {  // bytes exists
       bytes = new byte[bytesSize];
       in.readBytes(bytes, 0, bytesSize);
     }
-    if (bit2 > 0) {  // stats exist
+    if (bit1 > 0) {  // stats exist
       int code = in.readVInt();
       if (hasPos) {
         totalTermFreq = docFreq = code >>> 1;
@@ -317,7 +244,7 @@ class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
         docFreq = code;
       }
     }
-    return new TermData(longs, bytes, docFreq, totalTermFreq);
+    return new TermData(bytes, docFreq, totalTermFreq);
   }
   
 
@@ -326,20 +253,14 @@ class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
     int bits = in.readByte() & 0xff;
     int bit0 = bits & 1;
     int bit1 = bits & 2;
-    int bit2 = bits & 4;
-    int bytesSize = (bits >>> 3);
-    if (bit1 > 0 && bytesSize == 0) {  // determine extra length
+    int bytesSize = (bits >>> 2);
+    if (bit0 > 0 && bytesSize == 0) {  // determine extra length
       bytesSize = in.readVInt();
     }
-    if (bit0 > 0) {  // not all-zero case
-      for (int pos = 0; pos < longsSize; pos++) {
-        in.readVLong();
-      }
-    }
-    if (bit1 > 0) {  // bytes exists
+    if (bit0 > 0) {  // bytes exists
       in.skipBytes(bytesSize);
     }
-    if (bit2 > 0) {  // stats exist
+    if (bit1 > 0) {  // stats exist
       int code = in.readVInt();
       if (hasPos && (code & 1) == 0) {
         in.readVLong();
@@ -365,19 +286,5 @@ class FSTTermOutputs extends Outputs<FSTTermOutputs.TermData> {
       return true;
     }
     return t1.bytes != null && t2.bytes != null && Arrays.equals(t1.bytes, t2.bytes);
-  }
-  static boolean longsEqual(final TermData t1, final TermData t2) {
-    if (t1.longs == null && t2.longs == null) {
-      return true;
-    }
-    return t1.longs != null && t2.longs != null && Arrays.equals(t1.longs, t2.longs);
-  }
-  static boolean allZero(final long[] l) {
-    for (int i = 0; i < l.length; i++) {
-      if (l[i] != 0) {
-        return false;
-      }
-    }
-    return true;
   }
 }

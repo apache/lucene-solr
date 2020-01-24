@@ -30,7 +30,7 @@ import org.apache.solr.common.SolrException.ErrorCode;
  * <ul>
  * <li>If two numeric Values are passed in, a {@link DoubleValue} representing the first subtracted by the second is returned.
  * <li>If a numeric ValueStream and a numeric Value are passed in, a {@link DoubleValueStream} representing the Value subtracted by
- * each of the values of the ValueStream for a document is returned. 
+ * each of the values of the ValueStream for a document is returned.
  * (Or the other way, since the Value and ValueStream can be used in either order)
  * </ul>
  */

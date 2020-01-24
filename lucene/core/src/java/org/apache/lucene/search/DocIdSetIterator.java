@@ -91,6 +91,47 @@ public abstract class DocIdSetIterator {
     };
   }
 
+  /** A {@link DocIdSetIterator} that matches a range documents from
+   *  minDocID (inclusive) to maxDocID (exclusive). */
+  public static final DocIdSetIterator range(int minDoc, int maxDoc) {
+    if (minDoc >= maxDoc) {
+        throw new IllegalArgumentException("minDoc must be < maxDoc but got minDoc=" + minDoc + " maxDoc=" + maxDoc);
+    }
+    if (minDoc < 0) {
+      throw new IllegalArgumentException("minDoc must be >= 0 but got minDoc=" + minDoc);
+    }
+    return new DocIdSetIterator() {
+      private int doc = -1;
+
+      @Override
+      public int docID() {
+        return doc;
+      }
+
+      @Override
+      public int nextDoc() throws IOException {
+        return advance(doc + 1);
+      }
+
+      @Override
+      public int advance(int target) throws IOException {
+        if (target < minDoc) {
+            doc = minDoc;
+        } else if (target >= maxDoc) {
+            doc = NO_MORE_DOCS;
+        } else {
+            doc = target;
+        }
+        return doc;
+      }
+
+      @Override
+      public long cost() {
+        return maxDoc - minDoc;
+      }
+    };
+  }
+
   /**
    * When returned by {@link #nextDoc()}, {@link #advance(int)} and
    * {@link #docID()} it means there are no more docs in the iterator.

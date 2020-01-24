@@ -33,7 +33,7 @@ import org.apache.solr.common.cloud.ZkStateReader;
 public class AutoAddReplicasPlanAction extends ComputePlanAction {
 
   @Override
-  protected Suggester getSuggester(Policy.Session session, TriggerEvent event, ActionContext context, SolrCloudManager cloudManager) {
+  protected Suggester getSuggester(Policy.Session session, TriggerEvent event, ActionContext context, SolrCloudManager cloudManager) throws IOException {
     // for backward compatibility
     ClusterStateProvider stateProvider = cloudManager.getClusterStateProvider();
     String autoAddReplicas = stateProvider.getClusterProperty(ZkStateReader.AUTO_ADD_REPLICAS, (String) null);

@@ -33,6 +33,7 @@ import org.apache.lucene.search.join.ScoreMode;
 import org.apache.solr.JSONTestUtil;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.params.MapSolrParams;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestInfo;
 import org.apache.solr.response.SolrQueryResponse;
@@ -41,10 +42,10 @@ import org.apache.solr.search.QParser;
 import org.apache.solr.search.SyntaxError;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.noggit.JSONUtil;
-import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.common.util.Utils.toJSONString;
 
 public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
 
@@ -205,6 +206,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
       return " score="+vals[random().nextInt(vals.length)]+" ";
   }
 
+  @SuppressWarnings({"rawtypes", "unchecked"})
   @Test
   public void testRandomJoin() throws Exception {
     int indexIter=50 * RANDOM_MULTIPLIER;
@@ -290,13 +292,13 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
 
         String strResponse = h.query(req);
 
-        Object realResponse = ObjectBuilder.fromJSON(strResponse);
+        Object realResponse = Utils.fromJSONString(strResponse);
         String err = JSONTestUtil.matchObj("/response", realResponse, resultSet);
         if (err != null) {
           final String m = "JOIN MISMATCH: " + err
            + "\n\trequest="+req
            + "\n\tresult="+strResponse
-           + "\n\texpected="+ JSONUtil.toJSON(resultSet)
+           + "\n\texpected="+ toJSONString(resultSet)
           ;// + "\n\tmodel="+ JSONUtil.toJSON(model);
           log.error(m);
           {
@@ -321,7 +323,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
           final Map<String,String> ps = ((MapSolrParams)req.getParams()).getMap();
           final String q = ps.get("q");
           ps.put("q", q.replaceAll("\\}", " cache=false\\}"));
-          String rsp = h.query(req);
+          h.query(req);
           }
           fail(err);
         }
@@ -330,6 +332,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
     }
   }
 
+  @SuppressWarnings("rawtypes")
   Map<Comparable, Set<Comparable>> createJoinMap(Map<Comparable, Doc> model, String fromField, String toField) {
     Map<Comparable, Set<Comparable>> id_to_id = new HashMap<Comparable, Set<Comparable>>();
 
@@ -356,6 +359,7 @@ public class TestScoreJoinQPNoScore extends SolrTestCaseJ4 {
   }
 
 
+  @SuppressWarnings("rawtypes")
   Set<Comparable> join(Collection<Doc> input, Map<Comparable, Set<Comparable>> joinMap) {
     Set<Comparable> ids = new HashSet<Comparable>();
     for (Doc doc : input) {

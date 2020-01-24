@@ -20,7 +20,6 @@ package org.apache.lucene.analysis.cz;
 import java.util.Map;
 
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.cz.CzechStemFilter;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 
 /**
@@ -34,8 +33,12 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
  * @since 3.1.0
+ * @lucene.spi {@value #NAME}
  */
 public class CzechStemFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "czechStem";
   
   /** Creates a new CzechStemFilterFactory */
   public CzechStemFilterFactory(Map<String,String> args) {

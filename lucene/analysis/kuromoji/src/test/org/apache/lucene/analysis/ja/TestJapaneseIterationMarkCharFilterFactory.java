@@ -18,12 +18,12 @@ package org.apache.lucene.analysis.ja;
 
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.CharFilter;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 
 import java.io.IOException;
+import java.io.Reader;
 import java.io.StringReader;
 import java.util.HashMap;
 import java.util.Map;
@@ -36,7 +36,7 @@ public class TestJapaneseIterationMarkCharFilterFactory extends BaseTokenStreamT
   public void testIterationMarksWithKeywordTokenizer() throws IOException {
     final String text = "時々馬鹿々々しいところゞゝゝミスヾ";
     JapaneseIterationMarkCharFilterFactory filterFactory = new JapaneseIterationMarkCharFilterFactory(new HashMap<String,String>());
-    CharFilter filter = filterFactory.create(new StringReader(text));
+    Reader filter = filterFactory.create(new StringReader(text));
     TokenStream tokenStream = new MockTokenizer(MockTokenizer.KEYWORD, false);
     ((Tokenizer)tokenStream).setReader(filter);
     assertTokenStreamContents(tokenStream, new String[]{"時時馬鹿馬鹿しいところどころミスズ"});
@@ -47,7 +47,7 @@ public class TestJapaneseIterationMarkCharFilterFactory extends BaseTokenStreamT
     tokenizerFactory.inform(new StringMockResourceLoader(""));
 
     JapaneseIterationMarkCharFilterFactory filterFactory = new JapaneseIterationMarkCharFilterFactory(new HashMap<String,String>());
-    CharFilter filter = filterFactory.create(
+    Reader filter = filterFactory.create(
         new StringReader("時々馬鹿々々しいところゞゝゝミスヾ")
     );
     TokenStream tokenStream = tokenizerFactory.create(newAttributeFactory());
@@ -64,7 +64,7 @@ public class TestJapaneseIterationMarkCharFilterFactory extends BaseTokenStreamT
     filterArgs.put("normalizeKana", "false");
     JapaneseIterationMarkCharFilterFactory filterFactory = new JapaneseIterationMarkCharFilterFactory(filterArgs);
     
-    CharFilter filter = filterFactory.create(
+    Reader filter = filterFactory.create(
         new StringReader("時々馬鹿々々しいところゞゝゝミスヾ")
     );
     TokenStream tokenStream = tokenizerFactory.create(newAttributeFactory());
@@ -81,7 +81,7 @@ public class TestJapaneseIterationMarkCharFilterFactory extends BaseTokenStreamT
     filterArgs.put("normalizeKana", "true");
     JapaneseIterationMarkCharFilterFactory filterFactory = new JapaneseIterationMarkCharFilterFactory(filterArgs);
 
-    CharFilter filter = filterFactory.create(
+    Reader filter = filterFactory.create(
         new StringReader("時々馬鹿々々しいところゞゝゝミスヾ")
     );
     TokenStream tokenStream = tokenizerFactory.create(newAttributeFactory());

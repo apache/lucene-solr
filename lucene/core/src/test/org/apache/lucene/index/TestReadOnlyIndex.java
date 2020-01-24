@@ -83,10 +83,10 @@ public class TestReadOnlyIndex extends LuceneTestCase {
     
     // borrows from TestDemo, but not important to keep in sync with demo
 
-    assertEquals(1, isearcher.search(new TermQuery(new Term("fieldname", longTerm)), 1).totalHits);
+    assertEquals(1, isearcher.count(new TermQuery(new Term("fieldname", longTerm))));
     Query query = new TermQuery(new Term("fieldname", "text"));
     TopDocs hits = isearcher.search(query, 1);
-    assertEquals(1, hits.totalHits);
+    assertEquals(1, hits.totalHits.value);
     // Iterate through the results:
     for (int i = 0; i < hits.scoreDocs.length; i++) {
       Document hitDoc = isearcher.doc(hits.scoreDocs[i].doc);
@@ -95,7 +95,7 @@ public class TestReadOnlyIndex extends LuceneTestCase {
 
     // Test simple phrase query
     PhraseQuery phraseQuery = new PhraseQuery("fieldname", "to", "be");
-    assertEquals(1, isearcher.search(phraseQuery, 1).totalHits);
+    assertEquals(1, isearcher.count(phraseQuery));
 
     ireader.close();
     return null; // void

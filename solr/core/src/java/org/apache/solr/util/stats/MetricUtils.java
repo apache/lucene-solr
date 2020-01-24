@@ -57,7 +57,7 @@ import org.slf4j.LoggerFactory;
  * Metrics specific utility functions.
  */
 public class MetricUtils {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String METRIC_NAME = "metric";
   public static final String VALUE = "value";
@@ -274,7 +274,7 @@ public class MetricUtils {
         convertGauge(n, gauge, propertyFilter, simple, compact, separator, consumer);
       } catch (InternalError ie) {
         if (n.startsWith("memory.") && ie.getMessage().contains("Memory Pool not found")) {
-          LOG.warn("Error converting gauge '" + n + "', possible JDK bug: SOLR-10362", ie);
+          log.warn("Error converting gauge '" + n + "', possible JDK bug: SOLR-10362", ie);
           consumer.accept(n, null);
         } else {
           throw ie;
@@ -554,11 +554,11 @@ public class MetricUtils {
    * Returns an instrumented wrapper over the given executor service.
    */
   public static ExecutorService instrumentedExecutorService(ExecutorService delegate, SolrInfoBean info, MetricRegistry metricRegistry, String scope)  {
-    if (info != null && info.getMetricNames() != null) {
-      info.getMetricNames().add(MetricRegistry.name(scope, "submitted"));
-      info.getMetricNames().add(MetricRegistry.name(scope, "running"));
-      info.getMetricNames().add(MetricRegistry.name(scope, "completed"));
-      info.getMetricNames().add(MetricRegistry.name(scope, "duration"));
+    if (info != null && info.getSolrMetricsContext() != null) {
+      info.getSolrMetricsContext().registerMetricName(MetricRegistry.name(scope, "submitted"));
+      info.getSolrMetricsContext().registerMetricName(MetricRegistry.name(scope, "running"));
+      info.getSolrMetricsContext().registerMetricName(MetricRegistry.name(scope, "completed"));
+      info.getSolrMetricsContext().registerMetricName(MetricRegistry.name(scope, "duration"));
     }
     return new InstrumentedExecutorService(delegate, metricRegistry, scope);
   }
@@ -577,7 +577,7 @@ public class MetricUtils {
       try {
         beanInfo = Introspector.getBeanInfo(intf, intf.getSuperclass(), Introspector.IGNORE_ALL_BEANINFO);
       } catch (IntrospectionException e) {
-        LOG.warn("Unable to fetch properties of MXBean " + obj.getClass().getName());
+        log.warn("Unable to fetch properties of MXBean " + obj.getClass().getName());
         return;
       }
       for (final PropertyDescriptor desc : beanInfo.getPropertyDescriptors()) {

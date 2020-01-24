@@ -26,7 +26,6 @@ import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.transform.DocTransformer;
 import org.apache.solr.response.transform.TransformerFactory;
-import org.bouncycastle.util.Strings;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -75,7 +74,7 @@ public class TestCustomDocTransformer extends SolrTestCaseJ4 {
       String[] extra = null;
       String ext = params.get("extra");
       if(ext!=null) {
-        extra = Strings.split(ext, ',');
+        extra = ext.split(",");
       }
       return new CustomTransformer(field, extra);
     }

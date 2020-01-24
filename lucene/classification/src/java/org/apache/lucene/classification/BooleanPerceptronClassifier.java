@@ -28,7 +28,7 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexableField;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -41,7 +41,7 @@ import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.lucene.util.IntsRefBuilder;
-import org.apache.lucene.util.fst.Builder;
+import org.apache.lucene.util.fst.FSTCompiler;
 import org.apache.lucene.util.fst.FST;
 import org.apache.lucene.util.fst.PositiveIntOutputs;
 import org.apache.lucene.util.fst.Util;
@@ -80,7 +80,7 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
    */
   public BooleanPerceptronClassifier(IndexReader indexReader, Analyzer analyzer, Query query, Integer batchSize,
                                      Double bias, String classFieldName, String textFieldName) throws IOException {
-    this.textTerms = MultiFields.getTerms(indexReader, textFieldName);
+    this.textTerms = MultiTerms.getTerms(indexReader, textFieldName);
 
     if (textTerms == null) {
       throw new IOException("term vectors need to be available for field " + textFieldName);
@@ -183,15 +183,15 @@ public class BooleanPerceptronClassifier implements Classifier<Boolean> {
 
   private void updateFST(SortedMap<String, Double> weights) throws IOException {
     PositiveIntOutputs outputs = PositiveIntOutputs.getSingleton();
-    Builder<Long> fstBuilder = new Builder<>(FST.INPUT_TYPE.BYTE1, outputs);
+    FSTCompiler<Long> fstCompiler = new FSTCompiler<>(FST.INPUT_TYPE.BYTE1, outputs);
     BytesRefBuilder scratchBytes = new BytesRefBuilder();
     IntsRefBuilder scratchInts = new IntsRefBuilder();
     for (Map.Entry<String, Double> entry : weights.entrySet()) {
       scratchBytes.copyChars(entry.getKey());
-      fstBuilder.add(Util.toIntsRef(scratchBytes.get(), scratchInts), entry
+      fstCompiler.add(Util.toIntsRef(scratchBytes.get(), scratchInts), entry
               .getValue().longValue());
     }
-    fst = fstBuilder.finish();
+    fst = fstCompiler.compile();
   }
 
 

@@ -76,31 +76,28 @@
         range or wildcard queries that expand to big boolean
         queries.  An exception is thrown if exceeded.
     -->
-    <maxBooleanClauses>1024</maxBooleanClauses>
+    <maxBooleanClauses>${solr.max.booleanClauses:1024}</maxBooleanClauses>
 
     <!-- Cache specification for Filters or DocSets - unordered set of *all* documents
          that match a particular query.
       -->
     <filterCache
-        class="solr.search.FastLRUCache"
         size="512"
         initialSize="512"
         autowarmCount="2"/>
 
     <queryResultCache
-        class="solr.search.LRUCache"
         size="512"
         initialSize="512"
         autowarmCount="2"/>
 
     <documentCache
-        class="solr.search.LRUCache"
         size="512"
         initialSize="512"
         autowarmCount="0"/>
 
     <cache name="perSegFilter"
-           class="solr.search.LRUCache"
+           class="solr.CaffeineCache"
            size="10"
            initialSize="0"
            autowarmCount="10" />
@@ -112,7 +109,7 @@
     <!--
 
     <cache name="myUserCache"
-      class="solr.search.LRUCache"
+      class="solr.search.CaffeineCache"
       size="4096"
       initialSize="1024"
       autowarmCount="1024"
@@ -457,7 +454,7 @@ based HashBitset. -->
   <propTest attr1="${solr.test.sys.prop1}-$${literal}"
             attr2="${non.existent.sys.prop:default-from-config}">prefix-${solr.test.sys.prop2}-suffix</propTest>
 
-  <queryParser name="rank" class="org.apache.solr.search.TestRankQueryPlugin"/>
+  <queryParser name="rank" class="org.apache.solr.search.RankQueryTestPlugin"/>
 
   <updateRequestProcessorChain name="dedupe">
     <processor class="org.apache.solr.update.processor.SignatureUpdateProcessorFactory">

@@ -30,7 +30,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 
-import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
@@ -39,6 +38,8 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.cloud.CloudTestUtils;
+import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
 import org.apache.solr.cloud.Overseer;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.ZkNodeProps;
@@ -49,13 +50,13 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.LogLevel;
 import org.apache.zookeeper.data.Stat;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.apache.solr.cloud.autoscaling.AutoScalingHandlerTest.createAutoScalingRequest;
 import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_PATH;
 
 /**
@@ -64,6 +65,7 @@ import static org.apache.solr.common.cloud.ZkStateReader.SOLR_AUTOSCALING_CONF_P
 @LogLevel("org.apache.solr.cloud.autoscaling=DEBUG;org.apache.solr.client.solrj.cloud.autoscaling=DEBUG")
 public class TriggerIntegrationTest extends SolrCloudTestCase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final int NODE_COUNT = 2;
 
   private static volatile CountDownLatch actionConstructorCalled;
   private static volatile CountDownLatch actionInitCalled;
@@ -74,27 +76,24 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
   private static volatile CountDownLatch actionCompleted;
   private static AtomicBoolean triggerFired;
   private static Set<TriggerEvent> events = ConcurrentHashMap.newKeySet();
-  public static volatile long eventQueueActionWait = 5000;
   private static SolrCloudManager cloudManager;
-
-  // use the same time source as triggers use
-  static final TimeSource timeSource = TimeSource.CURRENT_TIME;
 
   static final long WAIT_FOR_DELTA_NANOS = TimeUnit.MILLISECONDS.toNanos(5);
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(2)
+    configureCluster(NODE_COUNT)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
-    // disable .scheduled_maintenance
-    String suspendTriggerCommand = "{" +
-        "'suspend-trigger' : {'name' : '.scheduled_maintenance'}" +
-        "}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, suspendTriggerCommand);
-    SolrClient solrClient = cluster.getSolrClient();
-    NamedList<Object> response = solrClient.request(req);
-    assertEquals(response.get("result").toString(), "success");
+
+    // disable .scheduled_maintenance (once it exists)
+    CloudTestUtils.waitForTriggerToBeScheduled(cluster.getOpenOverseer().getSolrCloudManager(), ".scheduled_maintenance");
+    CloudTestUtils.suspendTrigger(cluster.getOpenOverseer().getSolrCloudManager(), ".scheduled_maintenance");
+  }
+
+  @AfterClass
+  public static void cleanUpAfterClass() throws Exception {
+    cloudManager = null;
   }
 
   private static CountDownLatch getTriggerFiredLatch() {
@@ -115,19 +114,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
 
   @Before
   public void setupTest() throws Exception {
-    // ensure that exactly 2 jetty nodes are running
-    int numJetties = cluster.getJettySolrRunners().size();
-    log.info("Found {} jetty instances running", numJetties);
-    for (int i = 2; i < numJetties; i++)  {
-      int r = random().nextInt(cluster.getJettySolrRunners().size());
-      log.info("Shutdown extra jetty instance at port {}", cluster.getJettySolrRunner(r).getLocalPort());
-      cluster.stopJettySolrRunner(r);
-    }
-    for (int i = cluster.getJettySolrRunners().size(); i < 2; i++) {
-      // start jetty instances
-      cluster.startJettySolrRunner();
-    }
-    cluster.waitForAllNodes(5);
+    SolrCloudTestCase.ensureRunningJettys(NODE_COUNT, 5);
 
     NamedList<Object> overSeerStatus = cluster.getSolrClient().request(CollectionAdminRequest.getOverseerStatus());
     String overseerLeader = (String) overSeerStatus.get("leader");
@@ -153,7 +140,8 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
 
     // restart Overseer. Even though we reset the autoscaling config some already running
     // trigger threads may still continue to execute and produce spurious events
-    cluster.stopJettySolrRunner(overseerLeaderIndex);
+    JettySolrRunner j = cluster.stopJettySolrRunner(overseerLeaderIndex);
+    cluster.waitForJettyToStop(j);
     Thread.sleep(5000);
 
     throttlingDelayMs.set(TimeUnit.SECONDS.toMillis(ScheduledTriggers.DEFAULT_ACTION_THROTTLE_PERIOD_SECONDS));
@@ -168,12 +156,12 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     events.clear();
     listenerEvents.clear();
     lastActionExecutedAt.set(0);
-    eventQueueActionWait = 5000;
     while (cluster.getJettySolrRunners().size() < 2) {
       // perhaps a test stopped a node but didn't start it back
       // lets start a node
       cluster.startJettySolrRunner();
     }
+    cluster.waitForAllNodes(30);
     cloudManager = cluster.getJettySolrRunner(0).getCoreContainer().getZkController().getSolrCloudManager();
     // clear any events or markers
     // todo: consider the impact of such cleanup on regular cluster restarts
@@ -188,6 +176,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
   }
 
   @Test
+  // commented out on: 17-Feb-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void testTriggerThrottling() throws Exception  {
     // for this test we want to create two triggers so we must assert that the actions were created twice
     actionInitCalled = new CountDownLatch(2);
@@ -205,7 +194,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
         "'enabled' : true," +
         "'actions' : [{'name':'test','class':'" + ThrottlingTesterAction.class.getName() + "'}]" +
         "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -218,20 +207,19 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
         "'enabled' : true," +
         "'actions' : [{'name':'test','class':'" + ThrottlingTesterAction.class.getName() + "'}]" +
         "}}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
     // wait until the two instances of action are created
-    if (!actionInitCalled.await(3, TimeUnit.SECONDS))  {
-      fail("Two TriggerAction instances should have been created by now");
-    }
+    assertTrue("Two TriggerAction instances were not created "+
+               "even after await()ing an excessive amount of time",
+               actionInitCalled.await(60, TimeUnit.SECONDS));
 
     JettySolrRunner newNode = cluster.startJettySolrRunner();
-
-    if (!triggerFiredLatch.await(30, TimeUnit.SECONDS)) {
-      fail("Both triggers should have fired by now");
-    }
+    cluster.waitForAllNodes(30);
+    assertTrue("Both triggers did not fire event after await()ing an excessive amount of time",
+               triggerFiredLatch.await(60, TimeUnit.SECONDS));
 
     // reset shared state
     lastActionExecutedAt.set(0);
@@ -246,7 +234,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
         "'enabled' : true," +
         "'actions' : [{'name':'test','class':'" + ThrottlingTesterAction.class.getName() + "'}]" +
         "}}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -258,28 +246,28 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
         "'enabled' : true," +
         "'actions' : [{'name':'test','class':'" + ThrottlingTesterAction.class.getName() + "'}]" +
         "}}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
     // wait until the two instances of action are created
-    if (!actionInitCalled.await(3, TimeUnit.SECONDS))  {
-      fail("Two TriggerAction instances should have been created by now");
-    }
+    assertTrue("Two TriggerAction instances were not created "+
+               "even after await()ing an excessive amount of time",
+               actionInitCalled.await(60, TimeUnit.SECONDS));
 
     // stop the node we had started earlier
     List<JettySolrRunner> jettySolrRunners = cluster.getJettySolrRunners();
     for (int i = 0; i < jettySolrRunners.size(); i++) {
       JettySolrRunner jettySolrRunner = jettySolrRunners.get(i);
       if (jettySolrRunner == newNode) {
-        cluster.stopJettySolrRunner(i);
+        JettySolrRunner j = cluster.stopJettySolrRunner(i);
+        cluster.waitForJettyToStop(j);
         break;
       }
     }
 
-    if (!triggerFiredLatch.await(30, TimeUnit.SECONDS)) {
-      fail("Both triggers should have fired by now");
-    }
+    assertTrue("Both triggers did not fire event after await()ing an excessive amount of time",
+               triggerFiredLatch.await(60, TimeUnit.SECONDS));
   }
 
   static AtomicLong lastActionExecutedAt = new AtomicLong(0);
@@ -300,7 +288,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
         return;
       }
       try {
-        long currentTime = timeSource.getTimeNs();
+        long currentTime = actionContext.getCloudManager().getTimeSource().getTimeNs();
         if (lastActionExecutedAt.get() != 0)  {
           long minDiff = TimeUnit.MILLISECONDS.toNanos(throttlingDelayMs.get() - DELTA_MS);
           log.info("last action at " + lastActionExecutedAt.get() + " current time = " + currentTime +
@@ -353,19 +341,20 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
         "'enabled' : true," +
         "'actions' : [{'name':'test','class':'" + TestTriggerAction.class.getName() + "'}]" +
         "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
-    if (!actionInitCalled.await(3, TimeUnit.SECONDS))  {
-      fail("The TriggerAction should have been created by now");
-    }
+    assertTrue("Trigger was not init()ed even after await()ing an excessive amount of time",
+               actionInitCalled.await(60, TimeUnit.SECONDS));
 
     // stop the overseer, somebody else will take over as the overseer
-    cluster.stopJettySolrRunner(index);
+    JettySolrRunner j = cluster.stopJettySolrRunner(index);
+    cluster.waitForJettyToStop(j);
     Thread.sleep(10000);
     JettySolrRunner newNode = cluster.startJettySolrRunner();
-    boolean await = triggerFiredLatch.await(20, TimeUnit.SECONDS);
-    assertTrue("The trigger did not fire at all", await);
+    cluster.waitForAllNodes(30);
+    assertTrue("trigger did not fire even after await()ing an excessive amount of time",
+               triggerFiredLatch.await(60, TimeUnit.SECONDS));
     assertTrue(triggerFired.get());
     NodeAddedTrigger.NodeAddedEvent nodeAddedEvent = (NodeAddedTrigger.NodeAddedEvent) events.iterator().next();
     assertNotNull(nodeAddedEvent);
@@ -384,7 +373,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
       try {
         if (triggerFired.compareAndSet(false, true))  {
           events.add(event);
-          long currentTimeNanos = timeSource.getTimeNs();
+          long currentTimeNanos = actionContext.getCloudManager().getTimeSource().getTimeNs();
           long eventTimeNanos = event.getEventTime();
           long waitForNanos = TimeUnit.NANOSECONDS.convert(waitForSeconds, TimeUnit.SECONDS) - WAIT_FOR_DELTA_NANOS;
           if (currentTimeNanos - eventTimeNanos <= waitForNanos) {
@@ -409,25 +398,29 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
   }
 
   public static class TestEventQueueAction extends TriggerActionBase {
-
+    private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+    public static volatile CountDownLatch stall = new CountDownLatch(0);
     public TestEventQueueAction() {
       log.info("TestEventQueueAction instantiated");
     }
 
     @Override
     public void process(TriggerEvent event, ActionContext actionContext) {
-      log.info("-- event: " + event);
+      // make a local copy of the latch so we're using it consistently even as test thread changes tings
+      final CountDownLatch stallLatch = stall;
+      log.info("processing: stall={} event={} ", stallLatch, event);
       events.add(event);
-      long eventQueueActionWaitCopy = eventQueueActionWait;
       getActionStarted().countDown();
       try {
-        log.info("-- Going to sleep for {} ms", eventQueueActionWaitCopy);
-        Thread.sleep(eventQueueActionWaitCopy);
-        log.info("-- Woke up after sleeping for {} ms", eventQueueActionWaitCopy);
-        triggerFired.compareAndSet(false, true);
+        if (stallLatch.await(60, TimeUnit.SECONDS)) {
+          log.info("Firing trigger event after await()ing 'stall' countdown");
+          triggerFired.set(true);
+        } else {
+          log.error("Timed out await()ing 'stall' countdown");
+        }
         getActionCompleted().countDown();
       } catch (InterruptedException e) {
-        log.info("-- Interrupted");
+        log.info("Interrupted");
         getActionInterrupted().countDown();
       }
     }
@@ -462,59 +455,87 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
         break;
       }
     }
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
-    if (!actionInitCalled.await(3, TimeUnit.SECONDS))  {
-      fail("The TriggerAction should have been created by now");
-    }
+    assertTrue("Trigger was not init()ed even after await()ing an excessive amount of time",
+               actionInitCalled.await(60, TimeUnit.SECONDS));
 
+    // setup the trigger action to stall so we can test interupting it w/overseer change
+    // NOTE: we will never release this latch, instead we expect the interupt on overseer shutdown
+    TestEventQueueAction.stall = new CountDownLatch(1);
+    
     // add node to generate the event
     JettySolrRunner newNode = cluster.startJettySolrRunner();
-    boolean await = actionStarted.await(60, TimeUnit.SECONDS);
-    assertTrue("action did not start", await);
-    eventQueueActionWait = 1;
+    cluster.waitForAllNodes(30);
+    assertTrue("Action did not start even after await()ing an excessive amount of time",
+               actionStarted.await(60, TimeUnit.SECONDS));
+    
     // event should be there
-    NodeAddedTrigger.NodeAddedEvent nodeAddedEvent = (NodeAddedTrigger.NodeAddedEvent) events.iterator().next();
+    final TriggerEvent nodeAddedEvent = events.iterator().next();
     assertNotNull(nodeAddedEvent);
+    assertNotNull(nodeAddedEvent.getId());
+    assertNotNull(nodeAddedEvent.getEventType());
+    assertNotNull(nodeAddedEvent.getProperty(TriggerEventQueue.ENQUEUE_TIME));
+
     // but action did not complete yet so the event is still enqueued
     assertFalse(triggerFired.get());
+
+    // we know the event action has started, so we can re-set state for the next instance
+    // that will run after the overseer change
     events.clear();
     actionStarted = new CountDownLatch(1);
+    TestEventQueueAction.stall = new CountDownLatch(0); // so replay won't wait
+    
     // kill overseer leader
-    cluster.stopJettySolrRunner(overseerLeaderIndex);
+    JettySolrRunner j = cluster.stopJettySolrRunner(overseerLeaderIndex);
+    cluster.waitForJettyToStop(j);
     Thread.sleep(5000);
     // new overseer leader should be elected and run triggers
-    await = actionInterrupted.await(3, TimeUnit.SECONDS);
-    assertTrue("action wasn't interrupted", await);
+    assertTrue("Action was not interupted even after await()ing an excessive amount of time",
+               actionInterrupted.await(60, TimeUnit.SECONDS));
     // it should fire again from enqueued event
-    await = actionStarted.await(60, TimeUnit.SECONDS);
-    assertTrue("action wasn't started", await);
-    TriggerEvent replayedEvent = events.iterator().next();
-    assertTrue(replayedEvent.getProperty(TriggerEventQueue.ENQUEUE_TIME) != null);
-    assertTrue(events + "\n" + replayedEvent.toString(), replayedEvent.getProperty(TriggerEventQueue.DEQUEUE_TIME) != null);
-    await = actionCompleted.await(10, TimeUnit.SECONDS);
-    assertTrue("action wasn't completed", await);
+    assertTrue("Action did not (re-)start even after await()ing an excessive amount of time",
+               actionStarted.await(60, TimeUnit.SECONDS));
+    
+    final TriggerEvent replayedEvent = events.iterator().next();
+    assertNotNull(replayedEvent);
+
+    assertTrue("Action did not complete even after await()ing an excessive amount of time",
+               actionCompleted.await(60, TimeUnit.SECONDS));
     assertTrue(triggerFired.get());
+    
+    assertEquals(nodeAddedEvent.getId(), replayedEvent.getId());
+    assertEquals(nodeAddedEvent.getEventTime(), replayedEvent.getEventTime());
+    assertEquals(nodeAddedEvent.getEventType(), replayedEvent.getEventType());
+    assertEquals(nodeAddedEvent.getProperty(TriggerEventQueue.ENQUEUE_TIME),
+                 replayedEvent.getProperty(TriggerEventQueue.ENQUEUE_TIME));
+    assertEquals(Boolean.TRUE, replayedEvent.getProperty(TriggerEvent.REPLAYING));
   }
 
   static Map<String, List<CapturedEvent>> listenerEvents = new HashMap<>();
+  static List<CapturedEvent> allListenerEvents = new ArrayList<>();
   static CountDownLatch listenerCreated = new CountDownLatch(1);
   static boolean failDummyAction = false;
 
   public static class TestTriggerListener extends TriggerListenerBase {
+    private TimeSource timeSource;
     @Override
     public void configure(SolrResourceLoader loader, SolrCloudManager cloudManager, AutoScalingConfig.TriggerListenerConfig config) throws TriggerValidationException {
       super.configure(loader, cloudManager, config);
       listenerCreated.countDown();
+      timeSource = cloudManager.getTimeSource();
     }
 
     @Override
     public synchronized void onEvent(TriggerEvent event, TriggerEventProcessorStage stage, String actionName,
                                      ActionContext context, Throwable error, String message) {
       List<CapturedEvent> lst = listenerEvents.computeIfAbsent(config.name, s -> new ArrayList<>());
-      lst.add(new CapturedEvent(timeSource.getTimeNs(), context, config, stage, actionName, event, message));
+      CapturedEvent ev = new CapturedEvent(timeSource.getTimeNs(), context, config, stage, actionName, event, message);
+                                           
+      lst.add(ev);
+      allListenerEvents.add(ev);
     }
   }
 
@@ -543,13 +564,12 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
         "{'name':'test1','class':'" + TestDummyAction.class.getName() + "'}," +
         "]" +
         "}}";
-    SolrRequest req = createAutoScalingRequest(SolrRequest.METHOD.POST, setTriggerCommand);
+    SolrRequest req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setTriggerCommand);
     NamedList<Object> response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
-    if (!actionInitCalled.await(3, TimeUnit.SECONDS))  {
-      fail("The TriggerAction should have been created by now");
-    }
+    assertTrue("Trigger was not init()ed even after await()ing an excessive amount of time",
+               actionInitCalled.await(60, TimeUnit.SECONDS));
 
     String setListenerCommand = "{" +
         "'set-listener' : " +
@@ -562,7 +582,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
         "'class' : '" + TestTriggerListener.class.getName() + "'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListenerCommand);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -577,7 +597,7 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
         "'class' : '" + TestTriggerListener.class.getName() + "'" +
         "}" +
         "}";
-    req = createAutoScalingRequest(SolrRequest.METHOD.POST, setListenerCommand1);
+    req = AutoScalingRequest.create(SolrRequest.METHOD.POST, setListenerCommand1);
     response = solrClient.request(req);
     assertEquals(response.get("result").toString(), "success");
 
@@ -585,8 +605,8 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
     failDummyAction = false;
 
     JettySolrRunner newNode = cluster.startJettySolrRunner();
-    boolean await = triggerFiredLatch.await(20, TimeUnit.SECONDS);
-    assertTrue("The trigger did not fire at all", await);
+    assertTrue("trigger did not fire even after await()ing an excessive amount of time",
+               triggerFiredLatch.await(60, TimeUnit.SECONDS));
     assertTrue(triggerFired.get());
 
     assertEquals("both listeners should have fired", 2, listenerEvents.size());
@@ -627,15 +647,33 @@ public class TriggerIntegrationTest extends SolrCloudTestCase {
 
     assertEquals(TriggerEventProcessorStage.SUCCEEDED, capturedEvents.get(3).stage);
 
+    // check global ordering of events (SOLR-12668)
+    int fooIdx = -1;
+    int barIdx = -1;
+    for (int i = 0; i < allListenerEvents.size(); i++) {
+      CapturedEvent ev = allListenerEvents.get(i);
+      if (ev.stage == TriggerEventProcessorStage.BEFORE_ACTION && ev.actionName.equals("test")) {
+        if (ev.config.name.equals("foo")) {
+          fooIdx = i;
+        } else if (ev.config.name.equals("bar")) {
+          barIdx = i;
+        }
+      }
+    }
+    assertTrue("fooIdx not found", fooIdx != -1);
+    assertTrue("barIdx not found", barIdx != -1);
+    assertTrue("foo fired later than bar: fooIdx=" + fooIdx + ", barIdx=" + barIdx, fooIdx < barIdx);
+
     // reset
     triggerFired.set(false);
     triggerFiredLatch = new CountDownLatch(1);
     listenerEvents.clear();
+    allListenerEvents.clear();
     failDummyAction = true;
 
     newNode = cluster.startJettySolrRunner();
-    await = triggerFiredLatch.await(20, TimeUnit.SECONDS);
-    assertTrue("The trigger did not fire at all", await);
+    assertTrue("trigger did not fire event after await()ing an excessive amount of time",
+               triggerFiredLatch.await(60, TimeUnit.SECONDS));
 
     Thread.sleep(2000);
 

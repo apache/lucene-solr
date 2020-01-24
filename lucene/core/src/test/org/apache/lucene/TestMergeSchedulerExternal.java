@@ -34,9 +34,9 @@ import org.apache.lucene.index.MergePolicy.OneMerge;
 import org.apache.lucene.index.MergePolicy;
 import org.apache.lucene.index.MergeScheduler;
 import org.apache.lucene.index.MergeTrigger;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.LuceneTestCase;
@@ -89,18 +89,15 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
   private static class FailOnlyOnMerge extends MockDirectoryWrapper.Failure {
     @Override
     public void eval(MockDirectoryWrapper dir)  throws IOException {
-      StackTraceElement[] trace = new Exception().getStackTrace();
-      for (int i = 0; i < trace.length; i++) {
-        if ("doMerge".equals(trace[i].getMethodName())) {
-          IOException ioe = new IOException("now failing during merge");
-          StringWriter sw = new StringWriter();
-          PrintWriter pw = new PrintWriter(sw);
-          ioe.printStackTrace(pw);
-          if (infoStream.isEnabled("IW")) {
-            infoStream.message("IW", "TEST: now throw exc:\n" + sw.toString());
-          }
-          throw ioe;
+      if (callStackContainsAnyOf("doMerge")) {
+        IOException ioe = new IOException("now failing during merge");
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        ioe.printStackTrace(pw);
+        if (infoStream.isEnabled("IW")) {
+          infoStream.message("IW", "TEST: now throw exc:\n" + sw.toString());
         }
+        throw ioe;
       }
     }
   }
@@ -175,7 +172,7 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
     // we don't really need to execute anything, just to make sure the custom MS
     // compiles. But ensure that it can be used as well, e.g., no other hidden
     // dependencies or something. Therefore, don't use any random API !
-    Directory dir = new RAMDirectory();
+    Directory dir = new ByteBuffersDirectory();
     IndexWriterConfig conf = new IndexWriterConfig(null);
     conf.setMergeScheduler(new ReportingMergeScheduler());
     IndexWriter writer = new IndexWriter(dir, conf);
@@ -187,5 +184,4 @@ public class TestMergeSchedulerExternal extends LuceneTestCase {
     writer.close();
     dir.close();
   }
-  
 }

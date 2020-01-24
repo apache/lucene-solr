@@ -17,26 +17,17 @@
 package org.apache.solr.core;
 
 
-import static org.apache.solr.common.params.CommonParams.NAME;
-import static org.apache.solr.common.params.CommonParams.PATH;
-import static org.apache.solr.common.util.Utils.makeMap;
-import static org.apache.solr.core.ConfigOverlay.ZNODEVER;
-import static org.apache.solr.core.SolrConfig.PluginOpts.LAZY;
-import static org.apache.solr.core.SolrConfig.PluginOpts.MULTI_OK;
-import static org.apache.solr.core.SolrConfig.PluginOpts.NOOP;
-import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_CLASS;
-import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME;
-import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME_IN_OVERLAY;
-
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.xpath.XPathConstants;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.lang.invoke.MethodHandles;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -48,15 +39,14 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.xpath.XPathConstants;
-
+import com.google.common.collect.ImmutableList;
 import org.apache.commons.io.FileUtils;
 import org.apache.lucene.index.IndexDeletionPolicy;
-import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.util.Version;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.cloud.RecoveryStrategy;
@@ -70,9 +60,10 @@ import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.QueryResponseWriter;
 import org.apache.solr.response.transform.TransformerFactory;
 import org.apache.solr.rest.RestManager;
+import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.IndexSchemaFactory;
 import org.apache.solr.search.CacheConfig;
-import org.apache.solr.search.FastLRUCache;
+import org.apache.solr.search.CaffeineCache;
 import org.apache.solr.search.QParserPlugin;
 import org.apache.solr.search.SolrCache;
 import org.apache.solr.search.ValueSourceParser;
@@ -84,8 +75,6 @@ import org.apache.solr.update.UpdateLog;
 import org.apache.solr.update.processor.UpdateRequestProcessorChain;
 import org.apache.solr.update.processor.UpdateRequestProcessorFactory;
 import org.apache.solr.util.DOMUtil;
-import org.noggit.JSONParser;
-import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
@@ -93,7 +82,17 @@ import org.w3c.dom.NodeList;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-import com.google.common.collect.ImmutableList;
+import static org.apache.solr.common.params.CommonParams.NAME;
+import static org.apache.solr.common.params.CommonParams.PATH;
+import static org.apache.solr.common.util.Utils.fromJSON;
+import static org.apache.solr.common.util.Utils.makeMap;
+import static org.apache.solr.core.ConfigOverlay.ZNODEVER;
+import static org.apache.solr.core.SolrConfig.PluginOpts.LAZY;
+import static org.apache.solr.core.SolrConfig.PluginOpts.MULTI_OK;
+import static org.apache.solr.core.SolrConfig.PluginOpts.NOOP;
+import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_CLASS;
+import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME;
+import static org.apache.solr.core.SolrConfig.PluginOpts.REQUIRE_NAME_IN_OVERLAY;
 
 
 /**
@@ -101,11 +100,12 @@ import com.google.common.collect.ImmutableList;
  * configuration data for a a Solr instance -- typically found in
  * "solrconfig.xml".
  */
-public class SolrConfig extends Config implements MapSerializable {
+public class SolrConfig extends XmlConfigFile implements MapSerializable {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   public static final String DEFAULT_CONF_FILE = "solrconfig.xml";
+
   private RequestParams requestParams;
 
   public enum PluginOpts {
@@ -133,53 +133,20 @@ public class SolrConfig extends Config implements MapSerializable {
   private final SolrRequestParsers solrRequestParsers;
 
   /**
-   * Creates a default instance from the solrconfig.xml.
-   */
-  public SolrConfig()
-      throws ParserConfigurationException, IOException, SAXException {
-    this((SolrResourceLoader) null, DEFAULT_CONF_FILE, null);
-  }
-
-  /**
-   * Creates a configuration instance from a configuration name.
-   * A default resource loader will be created (@see SolrResourceLoader)
-   *
-   * @param name the configuration name used by the loader
-   */
-  public SolrConfig(String name)
-      throws ParserConfigurationException, IOException, SAXException {
-    this((SolrResourceLoader) null, name, null);
-  }
-
-  /**
-   * Creates a configuration instance from a configuration name and stream.
-   * A default resource loader will be created (@see SolrResourceLoader).
-   * If the stream is null, the resource loader will open the configuration stream.
-   * If the stream is not null, no attempt to load the resource will occur (the name is not used).
-   *
-   * @param name the configuration name
-   * @param is   the configuration stream
-   */
-  public SolrConfig(String name, InputSource is)
-      throws ParserConfigurationException, IOException, SAXException {
-    this((SolrResourceLoader) null, name, is);
-  }
-
-  /**
    * Creates a configuration instance from an instance directory, configuration name and stream.
    *
    * @param instanceDir the directory used to create the resource loader
    * @param name        the configuration name used by the loader if the stream is null
    * @param is          the configuration stream
    */
-  public SolrConfig(Path instanceDir, String name, InputSource is)
+  public SolrConfig(Path instanceDir, String name, InputSource is, boolean isConfigsetTrusted)
       throws ParserConfigurationException, IOException, SAXException {
-    this(new SolrResourceLoader(instanceDir), name, is);
+    this(new SolrResourceLoader(instanceDir), name, is, isConfigsetTrusted);
   }
 
-  public static SolrConfig readFromResourceLoader(SolrResourceLoader loader, String name) {
+  public static SolrConfig readFromResourceLoader(SolrResourceLoader loader, String name, boolean isConfigsetTrusted) {
     try {
-      return new SolrConfig(loader, name, null);
+      return new SolrConfig(loader, name, null, isConfigsetTrusted);
     } catch (Exception e) {
       String resource;
       if (loader instanceof ZkSolrResourceLoader) {
@@ -196,17 +163,20 @@ public class SolrConfig extends Config implements MapSerializable {
    * If the stream is null, the resource loader will open the configuration stream.
    * If the stream is not null, no attempt to load the resource will occur (the name is not used).
    *
-   * @param loader the resource loader
-   * @param name   the configuration name
-   * @param is     the configuration stream
+   * @param                     loader the resource loader
+   * @param name                the configuration name
+   * @param is                  the configuration stream
+   * @param isConfigsetTrusted  false if configset was uploaded using unsecured configset upload API, true otherwise
    */
-  public SolrConfig(SolrResourceLoader loader, String name, InputSource is)
+  private SolrConfig(SolrResourceLoader loader, String name, InputSource is, boolean isConfigsetTrusted)
       throws ParserConfigurationException, IOException, SAXException {
     super(loader, name, is, "/config/");
     getOverlay();//just in case it is not initialized
     getRequestParams();
-    initLibs();
-    luceneMatchVersion = getLuceneVersion("luceneMatchVersion");
+    initLibs(isConfigsetTrusted);
+    luceneMatchVersion = SolrConfig.parseLuceneVersionString(getVal(IndexSchema.LUCENE_MATCH_VERSION_PARAM, true));
+    log.info("Using Lucene MatchVersion: {}", luceneMatchVersion);
+
     String indexConfigPrefix;
 
     // Old indexDefaults and mainIndex sections are deprecated and fails fast for luceneMatchVersion=>LUCENE_4_0_0.
@@ -233,9 +203,13 @@ public class SolrConfig extends Config implements MapSerializable {
     // Parse indexConfig section, using mainIndex as backup in case old config is used
     indexConfig = new SolrIndexConfig(this, "indexConfig", null);
 
-    booleanQueryMaxClauseCount = getInt("query/maxBooleanClauses", BooleanQuery.getMaxClauseCount());
-    log.info("Using Lucene MatchVersion: {}", luceneMatchVersion);
-
+    booleanQueryMaxClauseCount = getInt("query/maxBooleanClauses", IndexSearcher.getMaxClauseCount());
+    if (IndexSearcher.getMaxClauseCount() < booleanQueryMaxClauseCount) {
+      log.warn("solrconfig.xml: <maxBooleanClauses> of {} is greater than global limit of {} "+
+               "and will have no effect", booleanQueryMaxClauseCount, IndexSearcher.getMaxClauseCount());
+      log.warn("set 'maxBooleanClauses' in solr.xml to increase global limit");
+    }
+    
     // Warn about deprecated / discontinued parameters
     // boolToFilterOptimizer has had no effect since 3.1
     if (get("query/boolTofilterOptimizer", null) != null)
@@ -265,7 +239,7 @@ public class SolrConfig extends Config implements MapSerializable {
       args.put("size", "10000");
       args.put("initialSize", "10");
       args.put("showItems", "-1");
-      conf = new CacheConfig(FastLRUCache.class, args, null);
+      conf = new CacheConfig(CaffeineCache.class, args, null);
     }
     fieldValueCacheConfig = conf;
     useColdSearcher = getBool("query/useColdSearcher", false);
@@ -314,7 +288,7 @@ public class SolrConfig extends Config implements MapSerializable {
         "requestDispatcher/requestParsers/@enableStreamBody", false);
 
     handleSelect = getBool(
-        "requestDispatcher/@handleSelect", !luceneMatchVersion.onOrAfter(Version.LUCENE_7_0_0));
+        "requestDispatcher/@handleSelect", false);
 
     addHttpRequestToContext = getBool(
         "requestDispatcher/requestParsers/@addHttpRequestToContext", false);
@@ -332,6 +306,29 @@ public class SolrConfig extends Config implements MapSerializable {
 
     solrRequestParsers = new SolrRequestParsers(this);
     log.debug("Loaded SolrConfig: {}", name);
+  }
+
+  private static final AtomicBoolean versionWarningAlreadyLogged = new AtomicBoolean(false);
+
+  public static final Version parseLuceneVersionString(final String matchVersion) {
+    final Version version;
+    try {
+      version = Version.parseLeniently(matchVersion);
+    } catch (ParseException pe) {
+      throw new SolrException(ErrorCode.SERVER_ERROR,
+          "Invalid luceneMatchVersion.  Should be of the form 'V.V.V' (e.g. 4.8.0)", pe);
+    }
+
+    if (version == Version.LATEST && !versionWarningAlreadyLogged.getAndSet(true)) {
+      log.warn(
+          "You should not use LATEST as luceneMatchVersion property: "+
+              "if you use this setting, and then Solr upgrades to a newer release of Lucene, "+
+              "sizable changes may happen. If precise back compatibility is important "+
+              "then you should instead explicitly specify an actual Lucene version."
+      );
+    }
+
+    return version;
   }
 
   public static final List<SolrPluginInfo> plugins = ImmutableList.<SolrPluginInfo>builder()
@@ -371,21 +368,10 @@ public class SolrConfig extends Config implements MapSerializable {
   public static final Map<String, SolrPluginInfo> classVsSolrPluginInfo;
 
   static {
-    // Raise the Lucene static limit so we can control this with higher granularity.  See SOLR-10921
-    BooleanQuery.setMaxClauseCount(Integer.MAX_VALUE-1);
-
     Map<String, SolrPluginInfo> map = new HashMap<>();
     for (SolrPluginInfo plugin : plugins) map.put(plugin.clazz.getName(), plugin);
     classVsSolrPluginInfo = Collections.unmodifiableMap(map);
   }
-
-  {
-    // non-static setMaxClauseCount because the test framework sometimes reverts the value on us and
-    // the static setting above is only executed once.  This re-sets the value every time a SolrConfig
-    // obect is created. See SOLR-10921
-    BooleanQuery.setMaxClauseCount(Integer.MAX_VALUE-1);
-  }
-
 
   public static class SolrPluginInfo {
 
@@ -428,8 +414,7 @@ public class SolrConfig extends Config implements MapSerializable {
         version = ((ZkSolrResourceLoader.ZkByteArrayInputStream) in).getStat().getVersion();
         log.debug("Config overlay loaded. version : {} ", version);
       }
-      isr = new InputStreamReader(in, StandardCharsets.UTF_8);
-      Map m = (Map) ObjectBuilder.getVal(new JSONParser(isr));
+      Map m = (Map) fromJSON(in);
       return new ConfigOverlay(m, version);
     } catch (Exception e) {
       throw new SolrException(ErrorCode.SERVER_ERROR, "Error reading config overlay", e);
@@ -769,9 +754,14 @@ public class SolrConfig extends Config implements MapSerializable {
         "Multiple plugins configured for type: " + type);
   }
 
-  private void initLibs() {
+  private void initLibs(boolean isConfigsetTrusted) {
     NodeList nodes = (NodeList) evaluate("lib", XPathConstants.NODESET);
     if (nodes == null || nodes.getLength() == 0) return;
+    if (!isConfigsetTrusted) {
+      throw new SolrException(ErrorCode.UNAUTHORIZED, "The configset for this collection was uploaded without any authentication in place,"
+          + " and use of <lib> is not available for collections with untrusted configsets. To use this component, re-upload the configset"
+          + " after enabling authentication and authorization.");
+    }
 
     log.debug("Adding specified lib dirs to ClassLoader");
     SolrResourceLoader loader = getResourceLoader();
@@ -870,7 +860,7 @@ public class SolrConfig extends Config implements MapSerializable {
   @Override
   public Map<String, Object> toMap(Map<String, Object> result) {
     if (getZnodeVersion() > -1) result.put(ZNODEVER, getZnodeVersion());
-    result.put("luceneMatchVersion", luceneMatchVersion);
+    result.put(IndexSchema.LUCENE_MATCH_VERSION_PARAM, luceneMatchVersion);
     result.put("updateHandler", getUpdateHandlerInfo());
     Map m = new LinkedHashMap();
     result.put("query", m);
@@ -886,7 +876,11 @@ public class SolrConfig extends Config implements MapSerializable {
       tag = tag.replace("/", "");
       if (plugin.options.contains(PluginOpts.REQUIRE_NAME)) {
         LinkedHashMap items = new LinkedHashMap();
-        for (PluginInfo info : infos) items.put(info.name, info);
+        for (PluginInfo info : infos) {
+          //TODO remove after fixing https://issues.apache.org/jira/browse/SOLR-13706
+          if (info.type.equals("searchComponent") && info.name.equals("highlight")) continue;
+          items.put(info.name, info);
+        }
         for (Map.Entry e : overlay.getNamedPlugins(plugin.tag).entrySet()) items.put(e.getKey(), e.getValue());
         result.put(tag, items);
       } else {

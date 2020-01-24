@@ -135,8 +135,9 @@ public abstract class AbstractUpdateRequest extends SolrRequest<UpdateResponse> 
     return commitWithin;
   }
 
-  public void setCommitWithin(int commitWithin) {
+  public AbstractUpdateRequest setCommitWithin(int commitWithin) {
     this.commitWithin = commitWithin;
+    return this;
   }
 
 

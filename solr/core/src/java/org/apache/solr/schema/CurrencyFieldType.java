@@ -33,16 +33,14 @@ import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.ConstantScoreQuery;
 import org.apache.lucene.search.DocValuesFieldExistsQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SortField;
-import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.response.TextResponseWriter;
-import org.apache.solr.search.Filter;
 import org.apache.solr.search.QParser;
-import org.apache.solr.search.QueryWrapperFilter;
-import org.apache.solr.search.SolrConstantScoreQuery;
 import org.apache.solr.search.function.ValueSourceRangeFilter;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 import org.slf4j.Logger;
@@ -124,7 +122,7 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
     try {
       Class<? extends ExchangeRateProvider> c
           = schema.getResourceLoader().findClass(exchangeRateProviderClass, ExchangeRateProvider.class);
-      provider = c.newInstance();
+      provider = c.getConstructor().newInstance();
       provider.init(args);
     } catch (Exception e) {
       throw new SolrException(ErrorCode.SERVER_ERROR,
@@ -253,7 +251,7 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
     CurrencyValue valueDefault;
     valueDefault = value.convertTo(provider, defaultCurrency);
 
-    return getRangeQuery(parser, field, valueDefault, valueDefault, true, true);
+    return getRangeQueryInternal(parser, field, valueDefault, valueDefault, true, true);
   }
 
   /**
@@ -266,10 +264,10 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
    * <p>
    * For example: If the default Currency specified for a field is 
    * <code>USD</code>, then the values returned by this value source would 
-   * represent the equivilent number of "cents" (ie: value in dollars * 100) 
+   * represent the equivalent number of "cents" (ie: value in dollars * 100)
    * after converting each document's native currency to USD -- because the 
    * default fractional digits for <code>USD</code> is "<code>2</code>".  
-   * So for a document whose indexed value was currently equivilent to 
+   * So for a document whose indexed value was currently equivalent to
    * "<code>5.43,USD</code>" using the the exchange provider for this field, 
    * this ValueSource would return a value of "<code>543</code>"
    * </p>
@@ -296,9 +294,9 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
    * <p>
    * For example: If the <code>targetCurrencyCode</code> param is set to
    * <code>USD</code>, then the values returned by this value source would 
-   * represent the equivilent number of dollars after converting each 
+   * represent the equivalent number of dollars after converting each
    * document's raw value to <code>USD</code>.  So for a document whose 
-   * indexed value was currently equivilent to "<code>5.43,USD</code>" 
+   * indexed value was currently equivalent to "<code>5.43,USD</code>"
    * using the the exchange provider for this field, this ValueSource would 
    * return a value of "<code>5.43</code>"
    * </p>
@@ -318,8 +316,18 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
         source);
   }
 
+  /**
+   * Override the default existenceQuery implementation to run an existence query on the underlying amountField instead.
+   */
   @Override
-  public Query getRangeQuery(QParser parser, SchemaField field, String part1, String part2, final boolean minInclusive, final boolean maxInclusive) {
+  public Query getExistenceQuery(QParser parser, SchemaField field) {
+    // Use an existence query of the underlying amount field
+    SchemaField amountField = getAmountField(field);
+    return amountField.getType().getExistenceQuery(parser, amountField);
+  }
+
+  @Override
+  protected Query getSpecializedRangeQuery(QParser parser, SchemaField field, String part1, String part2, final boolean minInclusive, final boolean maxInclusive) {
     final CurrencyValue p1 = CurrencyValue.parse(part1, defaultCurrency);
     final CurrencyValue p2 = CurrencyValue.parse(part2, defaultCurrency);
 
@@ -329,25 +337,23 @@ public class CurrencyFieldType extends FieldType implements SchemaAware, Resourc
               ": range queries only supported when upper and lower bound have same currency.");
     }
 
-    return getRangeQuery(parser, field, p1, p2, minInclusive, maxInclusive);
+    return getRangeQueryInternal(parser, field, p1, p2, minInclusive, maxInclusive);
   }
 
-  public Query getRangeQuery(QParser parser, SchemaField field, final CurrencyValue p1, final CurrencyValue p2, final boolean minInclusive, final boolean maxInclusive) {
+  private Query getRangeQueryInternal(QParser parser, SchemaField field, final CurrencyValue p1, final CurrencyValue p2, final boolean minInclusive, final boolean maxInclusive) {
     String currencyCode = (p1 != null) ? p1.getCurrencyCode() :
         (p2 != null) ? p2.getCurrencyCode() : defaultCurrency;
 
     // ValueSourceRangeFilter doesn't check exists(), so we have to
-    final Filter docsWithValues = new QueryWrapperFilter(new DocValuesFieldExistsQuery(getAmountField(field).getName()));
-    final Filter vsRangeFilter = new ValueSourceRangeFilter
+    final Query docsWithValues = new DocValuesFieldExistsQuery(getAmountField(field).getName());
+    final Query vsRangeFilter = new ValueSourceRangeFilter
         (new RawCurrencyValueSource(field, currencyCode, parser),
             p1 == null ? null : p1.getAmount() + "",
             p2 == null ? null : p2.getAmount() + "",
             minInclusive, maxInclusive);
-    final BooleanQuery.Builder docsInRange = new BooleanQuery.Builder();
-    docsInRange.add(docsWithValues, Occur.FILTER);
-    docsInRange.add(vsRangeFilter, Occur.FILTER);
-
-    return new SolrConstantScoreQuery(new QueryWrapperFilter(docsInRange.build()));
+    return new ConstantScoreQuery(new BooleanQuery.Builder()
+        .add(docsWithValues, Occur.FILTER)
+        .add(vsRangeFilter, Occur.FILTER).build());
   }
 
   @Override

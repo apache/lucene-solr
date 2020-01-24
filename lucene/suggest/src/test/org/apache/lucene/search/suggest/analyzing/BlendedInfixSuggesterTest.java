@@ -44,22 +44,58 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
    * of the matching term.
    */
   public void testBlendedSort() throws IOException {
-
     BytesRef payload = new BytesRef("star");
-
     Input keys[] = new Input[]{
         new Input("star wars: episode v - the empire strikes back", 8, payload)
     };
+    BlendedInfixSuggester suggester = getBlendedInfixSuggester(keys);
 
-    Path tempDir = createTempDir("BlendedInfixSuggesterTest");
+    assertSuggestionsRanking(payload, suggester);
+  }
 
-    Analyzer a = new StandardAnalyzer(CharArraySet.EMPTY_SET);
-    BlendedInfixSuggester suggester = new BlendedInfixSuggester(newFSDirectory(tempDir), a, a,
-                                                                AnalyzingInfixSuggester.DEFAULT_MIN_PREFIX_CHARS,
-                                                                BlendedInfixSuggester.BlenderType.POSITION_LINEAR,
-                                                                BlendedInfixSuggester.DEFAULT_NUM_FACTOR, false);
-    suggester.build(new InputArrayIterator(keys));
+  /**
+   * Test to validate the suggestions ranking according to the position coefficient,
+   * even if the weight associated to the suggestion is unitary.
+   */
+  public void testBlendedSort_fieldWeightUnitary_shouldRankSuggestionsByPositionMatch() throws IOException {
+    BytesRef payload = new BytesRef("star");
+    Input keys[] = new Input[]{
+        new Input("star wars: episode v - the empire strikes back", 1, payload)
+    };
+    BlendedInfixSuggester suggester = getBlendedInfixSuggester(keys);
 
+    assertSuggestionsRanking(payload, suggester);
+  }
+
+  /**
+   * Test to validate the suggestions ranking according to the position coefficient,
+   * even if the weight associated to the suggestion is zero.
+   */
+  public void testBlendedSort_fieldWeightZero_shouldRankSuggestionsByPositionMatch() throws IOException {
+    BytesRef payload = new BytesRef("star");
+    Input keys[] = new Input[]{
+        new Input("star wars: episode v - the empire strikes back", 0, payload)
+    };
+    BlendedInfixSuggester suggester = getBlendedInfixSuggester(keys);
+
+    assertSuggestionsRanking(payload, suggester);
+  }
+
+  /**
+   * Test to validate the suggestions ranking according to the position coefficient,
+   * even if the weight associated to the suggestion is very big, no overflow should happen.
+   */
+  public void testBlendedSort_fieldWeightLongMax_shouldRankSuggestionsByPositionMatchWithNoOverflow() throws IOException {
+    BytesRef payload = new BytesRef("star");
+    Input keys[] = new Input[]{
+        new Input("star wars: episode v - the empire strikes back", Long.MAX_VALUE, payload)
+    };
+    BlendedInfixSuggester suggester = getBlendedInfixSuggester(keys);
+
+    assertSuggestionsRanking(payload, suggester);
+  }
+
+  private void assertSuggestionsRanking(BytesRef payload, BlendedInfixSuggester suggester) throws IOException {
     // we query for star wars and check that the weight
     // is smaller when we search for tokens that are far from the beginning
 
@@ -76,6 +112,18 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
     assertTrue(w4 < 0);
 
     suggester.close();
+  }
+
+  private BlendedInfixSuggester getBlendedInfixSuggester(Input[] keys) throws IOException {
+    Path tempDir = createTempDir("BlendedInfixSuggesterTest");
+
+    Analyzer a = new StandardAnalyzer(CharArraySet.EMPTY_SET);
+    BlendedInfixSuggester suggester = new BlendedInfixSuggester(newFSDirectory(tempDir), a, a,
+        AnalyzingInfixSuggester.DEFAULT_MIN_PREFIX_CHARS,
+        BlendedInfixSuggester.BlenderType.POSITION_LINEAR,
+        BlendedInfixSuggester.DEFAULT_NUM_FACTOR, false);
+    suggester.build(new InputArrayIterator(keys));
+    return suggester;
   }
 
   /**
@@ -195,14 +243,7 @@ public class BlendedInfixSuggesterTest extends LuceneTestCase {
         new Input("top of the lake", 8, payload)
     };
 
-    Path tempDir = createTempDir("BlendedInfixSuggesterTest");
-
-    Analyzer a = new StandardAnalyzer(CharArraySet.EMPTY_SET);
-    BlendedInfixSuggester suggester = new BlendedInfixSuggester(newFSDirectory(tempDir), a, a,
-                                                                AnalyzingInfixSuggester.DEFAULT_MIN_PREFIX_CHARS,
-                                                                BlendedInfixSuggester.BlenderType.POSITION_LINEAR,
-                                                                BlendedInfixSuggester.DEFAULT_NUM_FACTOR, false);
-    suggester.build(new InputArrayIterator(keys));
+    BlendedInfixSuggester suggester = getBlendedInfixSuggester(keys);
 
     getInResults(suggester, "of ", payload, 1);
     getInResults(suggester, "the ", payload, 1);

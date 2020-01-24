@@ -17,6 +17,8 @@
 package org.apache.lucene.index;
 
 
+import java.util.Collection;
+
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.store.Directory;
@@ -73,10 +75,9 @@ public class TestSumDocFreq extends LuceneTestCase {
   
   private void assertSumDocFreq(IndexReader ir) throws Exception {
     // compute sumDocFreq across all fields
-    Fields fields = MultiFields.getFields(ir);
-
+    final Collection<String> fields = FieldInfos.getIndexedFields(ir);
     for (String f : fields) {
-      Terms terms = fields.terms(f);
+      Terms terms = MultiTerms.getTerms(ir, f);
       long sumDocFreq = terms.getSumDocFreq();
       if (sumDocFreq == -1) {
         if (VERBOSE) {

@@ -16,7 +16,7 @@
  */
 package org.apache.solr.common.cloud;
 
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -46,11 +46,8 @@ public class VMParamsSingleSetCredentialsDigestZkCredentialsProvider extends Def
     String digestUsername = System.getProperty(zkDigestUsernameVMParamName);
     String digestPassword = System.getProperty(zkDigestPasswordVMParamName);
     if (!StringUtils.isEmpty(digestUsername) && !StringUtils.isEmpty(digestPassword)) {
-      try {
-        result.add(new ZkCredentials("digest", (digestUsername + ":" + digestPassword).getBytes("UTF-8")));
-      } catch (UnsupportedEncodingException e) {
-        throw new RuntimeException(e);
-      }
+      result.add(new ZkCredentials("digest",
+          (digestUsername + ":" + digestPassword).getBytes(StandardCharsets.UTF_8)));
     }
     return result;
   }

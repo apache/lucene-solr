@@ -1,9 +1,0 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<fields>
-  <field name="language" type="string" indexed="true" stored="true" required="false"/>
-  <field name="concept" type="string" indexed="true" stored="true" multiValued="true" required="false"/>
-  <field name="keyword" type="string" indexed="true" stored="true" multiValued="true" required="false"/>
-  <field name="suggested_category" type="string" indexed="true" stored="true" multiValued="false" required="false"/>
-  <field name="sentence" type="text" indexed="true" stored="true" multiValued="true" required="false" />
-  <dynamicField name="entity*" type="text" indexed="true" stored="true" multiValued="true"/>
-</fields>

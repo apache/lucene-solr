@@ -22,7 +22,6 @@ import java.util.List;
 import java.util.Random;
 
 import org.apache.lucene.index.BinaryDocValues;
-import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.IndexReader;
@@ -43,13 +42,13 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.util.BitSetIterator;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
-import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.Version;
+import org.apache.solr.SolrTestCase;
 
 /**
  *
  */
-public class TestDocSet extends LuceneTestCase {
+public class TestDocSet extends SolrTestCase {
   Random rand;
   float loadfactor;
 
@@ -391,7 +390,7 @@ public class TestDocSet extends LuceneTestCase {
 
       @Override
       public FieldInfos getFieldInfos() {
-        return new FieldInfos(new FieldInfo[0]);
+        return FieldInfos.EMPTY;
       }
 
       @Override

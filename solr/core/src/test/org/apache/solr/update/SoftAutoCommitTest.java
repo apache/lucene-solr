@@ -491,7 +491,7 @@ public class SoftAutoCommitTest extends SolrTestCaseJ4 {
     // these will be modified in each iteration of our assertion loop
     long prevTimestampNanos = startTimestampNanos;
     int count = 1;
-    Long commitNanos = queue.poll(commitWaitMillis * 3, MILLISECONDS);
+    Long commitNanos = queue.poll(commitWaitMillis * 6, MILLISECONDS);
     assertNotNull(debug + ": did not find a single commit", commitNanos);
     
     while (null != commitNanos) {

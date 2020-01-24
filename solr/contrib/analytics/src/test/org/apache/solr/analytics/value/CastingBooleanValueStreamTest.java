@@ -28,10 +28,10 @@ public class CastingBooleanValueStreamTest extends SolrTestCaseJ4 {
   @Test
   public void stringStreamCastingTest() {
     TestBooleanValueStream val = new TestBooleanValueStream();
-    
+
     assertTrue(val instanceof StringValueStream);
     StringValueStream casted = (StringValueStream)val;
-    
+
     // No values
     val.setValues();
     casted.streamStrings( value -> {
@@ -51,10 +51,10 @@ public class CastingBooleanValueStreamTest extends SolrTestCaseJ4 {
   @Test
   public void objectStreamCastingTest() {
     TestBooleanValueStream val = new TestBooleanValueStream();
-    
+
     assertTrue(val instanceof AnalyticsValueStream);
     AnalyticsValueStream casted = (AnalyticsValueStream)val;
-    
+
     // No values
     val.setValues();
     casted.streamObjects( value -> {
@@ -63,14 +63,14 @@ public class CastingBooleanValueStreamTest extends SolrTestCaseJ4 {
 
     // Multiple Values
     val.setValues(false, true, false);
-    Iterator<Object> values = Arrays.<Object>asList(new Boolean(false), new Boolean(true), new Boolean(false)).iterator();
+    Iterator<Object> values = Arrays.<Object>asList(Boolean.FALSE, Boolean.TRUE, Boolean.FALSE).iterator();
     casted.streamObjects( value -> {
       assertTrue(values.hasNext());
       assertEquals(values.next(), value);
     });
     assertFalse(values.hasNext());
   }
-  
+
   @Test
   public void constantConversionTest() {
     AnalyticsValueStream val = new TestBooleanValueStream();

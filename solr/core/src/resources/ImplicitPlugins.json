@@ -91,6 +91,10 @@
       "class": "solr.LoggingHandler",
       "useParams":"_ADMIN_LOGGING"
     },
+    "/admin/health": {
+      "class": "solr.HealthCheckHandler",
+      "useParams":"_ADMIN_HEALTH"
+    },
     "/admin/file": {
       "class": "solr.ShowFileRequestHandler",
       "useParams":"_ADMIN_FILE"

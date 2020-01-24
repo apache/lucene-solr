@@ -206,11 +206,11 @@ public class XYZBounds implements Bounds {
   public Bounds addXValue(final double x) {
     final double small = x - FUDGE_FACTOR;
     if (minX == null || minX > small) {
-      minX = new Double(small);
+      minX = small;
     }
     final double large = x + FUDGE_FACTOR;
     if (maxX == null || maxX < large) {
-      maxX = new Double(large);
+      maxX = large;
     }
     return this;
   }
@@ -227,11 +227,11 @@ public class XYZBounds implements Bounds {
   public Bounds addYValue(final double y) {
     final double small = y - FUDGE_FACTOR;
     if (minY == null || minY > small) {
-      minY = new Double(small);
+      minY = small;
     }
     final double large = y + FUDGE_FACTOR;
     if (maxY == null || maxY < large) {
-      maxY = new Double(large);
+      maxY = large;
     }
     return this;
   }
@@ -248,11 +248,11 @@ public class XYZBounds implements Bounds {
   public Bounds addZValue(final double z) {
     final double small = z - FUDGE_FACTOR;
     if (minZ == null || minZ > small) {
-      minZ = new Double(small);
+      minZ = small;
     }
     final double large = z + FUDGE_FACTOR;
     if (maxZ == null || maxZ < large) {
-      maxZ = new Double(large);
+      maxZ = large;
     }
     return this;
   }

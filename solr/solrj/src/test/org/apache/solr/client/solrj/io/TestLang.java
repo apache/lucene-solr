@@ -20,23 +20,32 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
+import java.util.function.Supplier;
 
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.LuceneTestCase.Slow;
-import org.apache.solr.client.solrj.io.eval.*;
+import org.apache.solr.SolrTestCase;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorDay;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorDayOfQuarter;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorDayOfYear;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorEpoch;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorHour;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorMinute;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorMonth;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorQuarter;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorSecond;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorWeek;
+import org.apache.solr.client.solrj.io.eval.TemporalEvaluatorYear;
 import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-
-
 import org.junit.Test;
 
 @Slow
 @LuceneTestCase.SuppressCodecs({"Lucene3x", "Lucene40","Lucene41","Lucene42","Lucene45"})
-public class TestLang extends LuceneTestCase {
+public class TestLang extends SolrTestCase {
 
   private static final String[] allFunctions = {
-      "search", "facet", "update", "jdbc", "topic", "commit", "random", "knnSearch", "merge",
+      "search", "facet", "facet2D", "update", "jdbc", "topic", "commit", "random", "knnSearch", "merge",
       "unique", "top", "group", "reduce", "parallel", "rollup", "stats", "innerJoin",
       "leftOuterJoin", "hashJoin", "outerHashJoin", "intersect", "complement", "sort",
       "train", "features", "daemon", "shortestPath", "gatherNodes", "nodes",
@@ -52,11 +61,11 @@ public class TestLang extends LuceneTestCase {
       "poissonDistribution", "enumeratedDistribution", "probability", "sumDifference", "meanDifference",
       "primes", "factorial", "movingMedian", "binomialCoefficient", "expMovingAvg", "monteCarlo", "constantDistribution",
       "weibullDistribution", "mean", "mode", "logNormalDistribution", "zipFDistribution", "gammaDistribution",
-      "betaDistribution", "polyfit", "harmonicFit", "loess", "matrix", "transpose", "unitize",
+      "betaDistribution", "polyfit", "harmonicFit", "harmfit", "loess", "matrix", "transpose", "unitize",
       "triangularDistribution", "precision", "minMaxScale", "markovChain", "grandSum",
       "scalarAdd", "scalarSubtract", "scalarMultiply", "scalarDivide", "sumRows",
       "sumColumns", "diff", "corrPValues", "normalizeSum", "geometricDistribution", "olsRegress",
-      "derivative", "spline", "ttest", "pairedTtest", "multiVariateNormalDistribution", "integrate",
+      "derivative", "spline", "ttest", "pairedTtest", "multiVariateNormalDistribution", "integral",
       "density", "mannWhitney", "sumSq", "akima", "lerp", "chiSquareDataSet", "gtestDataSet",
       "termVectors", "getColumnLabels", "getRowLabels", "getAttribute", "kmeans", "getCentroids",
       "getCluster", "topFeatures", "featureSelect", "rowAt", "colAt", "setColumnLabels",
@@ -69,7 +78,14 @@ public class TestLang extends LuceneTestCase {
        TemporalEvaluatorDayOfQuarter.FUNCTION_NAME, "abs", "add", "div", "mult", "sub", "log", "pow",
       "mod", "ceil", "floor", "sin", "asin", "sinh", "cos", "acos", "cosh", "tan", "atan", "tanh", "round", "sqrt",
       "cbrt", "coalesce", "uuid", "if", "convert", "valueAt", "memset", "fft", "ifft", "euclidean","manhattan",
-      "earthMovers", "canberra", "chebyshev", "ones", "zeros"};
+      "earthMovers", "canberra", "chebyshev", "ones", "zeros", "setValue", "getValue", "knnRegress", "gaussfit",
+      "outliers", "stream", "getCache", "putCache", "listCache", "removeCache", "zscores", "latlonVectors",
+      "convexHull", "getVertices", "getBaryCenter", "getArea", "getBoundarySize","oscillate",
+      "getAmplitude", "getPhase", "getAngularFrequency", "enclosingDisk", "getCenter", "getRadius",
+      "getSupportPoints", "pairSort", "log10", "plist", "recip", "pivot", "ltrim", "rtrim", "export",
+      "zplot", "natural", "repeat", "movingMAD", "hashRollup", "noop", "var", "stddev", "recNum", "isNull",
+      "notNull", "matches", "projectToBorder", "double", "long", "parseCSV", "parseTSV", "dateTime",
+       "split", "upper", "trim", "lower", "trunc", "cosine", "dbscan"};
 
   @Test
   public void testLang() {
@@ -79,7 +95,7 @@ public class TestLang extends LuceneTestCase {
     }
     StreamFactory factory = new StreamFactory();
     Lang.register(factory);
-    Map<String,Class<? extends Expressible>> registeredFunctions = factory.getFunctionNames();
+    Map<String, Supplier<Class<? extends Expressible>>> registeredFunctions = factory.getFunctionNames();
 
     //Check that each function that is expected is registered.
     for(String func : functions) {

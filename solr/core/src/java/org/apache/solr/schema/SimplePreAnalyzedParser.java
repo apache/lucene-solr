@@ -495,23 +495,23 @@ public final class SimplePreAnalyzedParser implements PreAnalyzedParser {
           } else {
             if (tok.length() > 0) tok.append(',');
             if (cl.isAssignableFrom(FlagsAttribute.class)) {
-              tok.append("f=" + Integer.toHexString(((FlagsAttribute)att).getFlags()));
+              tok.append("f=").append(Integer.toHexString(((FlagsAttribute) att).getFlags()));
             } else if (cl.isAssignableFrom(OffsetAttribute.class)) {
-              tok.append("s=" + ((OffsetAttribute)att).startOffset() + ",e=" + ((OffsetAttribute)att).endOffset());
+              tok.append("s=").append(((OffsetAttribute) att).startOffset()).append(",e=").append(((OffsetAttribute) att).endOffset());
             } else if (cl.isAssignableFrom(PayloadAttribute.class)) {
               BytesRef p = ((PayloadAttribute)att).getPayload();
               if (p != null && p.length > 0) {
-                tok.append("p=" + bytesToHex(p.bytes, p.offset, p.length));
+                tok.append("p=").append(bytesToHex(p.bytes, p.offset, p.length));
               } else if (tok.length() > 0) {
                 tok.setLength(tok.length() - 1); // remove the last comma
               }
             } else if (cl.isAssignableFrom(PositionIncrementAttribute.class)) {
-              tok.append("i=" + ((PositionIncrementAttribute)att).getPositionIncrement());
+              tok.append("i=").append(((PositionIncrementAttribute) att).getPositionIncrement());
             } else if (cl.isAssignableFrom(TypeAttribute.class)) {
-              tok.append("y=" + escape(((TypeAttribute)att).type()));
+              tok.append("y=").append(escape(((TypeAttribute) att).type()));
             } else {
               
-              tok.append(cl.getName() + "=" + escape(att.toString()));
+              tok.append(cl.getName()).append('=').append(escape(att.toString()));
             }
           }
         }

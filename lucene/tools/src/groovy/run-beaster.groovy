@@ -23,24 +23,32 @@ import org.apache.tools.ant.BuildException;
 import org.apache.tools.ant.BuildLogger;
 import org.apache.tools.ant.Project;
 
+
+static boolean logFailOutput(Object task, String outdir) {
+  def logFile = new File(outdir, "tests-failures.txt");
+  if (logFile.exists()) {
+    logFile.eachLine("UTF-8", { line ->
+      task.log(line, Project.MSG_ERR);
+    });
+  }
+}
+
 int iters = (properties['beast.iters'] ?: '1') as int;
 if (iters <= 1) {
   throw new BuildException("Please give -Dbeast.iters with an int value > 1.");
 }
 
-def antcall = project.createTask('antcall');
-antcall.with {
-  target = '-test';
-  inheritAll = true;
-  inheritRefs = true;
-  createParam().with {
-    name = "tests.isbeasting";
-    value = "true";
-  };
-};
+def antcall = project.createTask('antcallback');
+
+def junitOutDir = properties["junit.output.dir"];
+
+def failed = false;
 
 (1..iters).each { i ->
-  task.log('Beast round: ' + i, Project.MSG_INFO);
+
+  def outdir = junitOutDir + "/" + i;
+  task.log('Beast round ' + i + " results: " + outdir, Project.MSG_INFO);
+  
   try {
     // disable verbose build logging:
     project.buildListeners.each { listener ->
@@ -49,15 +57,46 @@ antcall.with {
       }
     };
     
+    new File(outdir).mkdirs();
+    
+    properties["junit.output.dir"] = outdir;
+    
+    antcall.setReturn("tests.failed");
+    antcall.setTarget("-test");
+    antcall.setInheritAll(true);
+    antcall.setInheritRefs(true);
+    
+    antcall.with {
+
+      createParam().with {
+        name = "tests.isbeasting";
+        value = "true";
+      };
+      createParam().with {
+        name = "tests.timeoutSuite";
+        value = "900000";
+      };
+      createParam().with {
+        name = "junit.output.dir";
+        value = outdir;
+      };
+
+    };
+    
+    properties["junit.output.dir"] = outdir;
+
     antcall.execute();
+
+    def antcallResult = project.properties.'tests.failed' as boolean;
+
+    if (antcallResult) {
+      failed = true;
+      logFailOutput(task, outdir)
+    }
     
   } catch (BuildException be) {
-    def logFile = new File(properties["junit.output.dir"], "tests-failures.txt");
-    if (logFile.exists()) {
-      logFile.eachLine("UTF-8", { line ->
-        task.log(line, Project.MSG_ERR);
-      });
-    }
+    task.log(be.getMessage(), Project.MSG_ERR);
+    logFailOutput(task, outdir)
     throw be;
   } finally {
     // restore build logging (unfortunately there is no way to get the original logging level (write-only property):
@@ -68,4 +107,15 @@ antcall.with {
     };
   }
 };
-task.log('Beasting finished.', Project.MSG_INFO);
+
+// restore junit output dir
+properties["junit.output.dir"] = junitOutDir;
+
+
+if (failed) {
+  task.log('Beasting finished with failure.', Project.MSG_INFO);
+  throw new BuildException("Beasting Failed!");
+} else {
+  task.log('Beasting finished Successfully.', Project.MSG_INFO);
+}
+

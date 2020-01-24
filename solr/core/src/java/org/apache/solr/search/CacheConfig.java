@@ -124,7 +124,7 @@ public class CacheConfig implements MapSerializable{
 
     SolrResourceLoader loader = solrConfig.getResourceLoader();
     config.cacheImpl = config.args.get("class");
-    if(config.cacheImpl == null) config.cacheImpl = "solr.LRUCache";
+    if(config.cacheImpl == null) config.cacheImpl = "solr.CaffeineCache";
     config.regenImpl = config.args.get("regenerator");
     config.clazz = loader.findClass(config.cacheImpl, SolrCache.class);
     if (config.regenImpl != null) {
@@ -136,7 +136,7 @@ public class CacheConfig implements MapSerializable{
 
   public SolrCache newInstance() {
     try {
-      SolrCache cache = clazz.newInstance();
+      SolrCache cache = clazz.getConstructor().newInstance();
       persistence[0] = cache.init(args, persistence[0], regenerator);
       return cache;
     } catch (Exception e) {

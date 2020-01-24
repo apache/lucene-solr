@@ -21,7 +21,7 @@ import java.util.Collection;
 import java.util.List;
 
 import org.apache.lucene.analysis.core.WhitespaceAnalyzer;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
 
@@ -32,7 +32,7 @@ import org.junit.Test;
  *
  * @since solr 1.3
  */
-public class SpellingQueryConverterTest extends LuceneTestCase {
+public class SpellingQueryConverterTest extends SolrTestCase {
 
   @Test
   public void test() throws Exception {

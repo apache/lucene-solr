@@ -21,8 +21,6 @@ import java.lang.annotation.Inherited;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 
-import org.apache.lucene.util.LuceneTestCase;
-
 import com.carrotsearch.randomizedtesting.annotations.TestGroup;
 
 public class TestGroupFiltering extends LuceneTestCase {

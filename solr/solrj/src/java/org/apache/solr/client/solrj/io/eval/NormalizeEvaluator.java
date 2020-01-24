@@ -44,7 +44,7 @@ public class NormalizeEvaluator extends RecursiveObjectEvaluator implements OneV
       return null;
     }
     else if(value instanceof List){
-      return Arrays.stream(StatUtils.normalize(((List<?>)value).stream().mapToDouble(innerValue -> ((Number)innerValue).doubleValue()).toArray())).mapToObj(Double::new).collect(Collectors.toList());
+      return Arrays.stream(StatUtils.normalize(((List<?>)value).stream().mapToDouble(innerValue -> ((Number)innerValue).doubleValue()).toArray())).boxed().collect(Collectors.toList());
     } else if (value instanceof Matrix) {
       Matrix matrix = (Matrix) value;
       double[][] data = matrix.getData();
@@ -53,7 +53,10 @@ public class NormalizeEvaluator extends RecursiveObjectEvaluator implements OneV
         double[] row = data[i];
         standardized[i] = StatUtils.normalize(row);
       }
-      return new Matrix(standardized);
+      Matrix m = new Matrix(standardized);
+      m.setRowLabels(matrix.getRowLabels());
+      m.setColumnLabels(matrix.getColumnLabels());
+      return m;
     } else {
       return doWork(Arrays.asList((BigDecimal)value));
     }

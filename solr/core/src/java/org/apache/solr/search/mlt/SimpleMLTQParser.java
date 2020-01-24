@@ -63,8 +63,8 @@ public class SimpleMLTQParser extends QParser {
     Map<String,Float> boostFields = new HashMap<>();
 
     try {
-      TopDocs td = searcher.search(docIdQuery, 1);
-      if (td.totalHits != 1) throw new SolrException(
+      TopDocs td = searcher.search(docIdQuery, 2);
+      if (td.totalHits.value != 1) throw new SolrException(
           SolrException.ErrorCode.BAD_REQUEST, "Error completing MLT request. Could not fetch " +
           "document with id [" + uniqueValue + "]");
       ScoreDoc[] scoreDocs = td.scoreDocs;
@@ -100,10 +100,10 @@ public class SimpleMLTQParser extends QParser {
       } else {
         Map<String, SchemaField> fieldDefinitions = req.getSearcher().getSchema().getFields();
         ArrayList<String> fields = new ArrayList();
-        for (String fieldName : fieldDefinitions.keySet()) {
-          if (fieldDefinitions.get(fieldName).indexed() && fieldDefinitions.get(fieldName).stored())
-            if (fieldDefinitions.get(fieldName).getType().getNumberType() == null)
-              fields.add(fieldName);
+        for (Map.Entry<String, SchemaField> entry : fieldDefinitions.entrySet()) {
+          if (entry.getValue().indexed() && entry.getValue().stored())
+            if (entry.getValue().getType().getNumberType() == null)
+              fields.add(entry.getKey());
         }
         fieldNames = fields.toArray(new String[0]);
       }

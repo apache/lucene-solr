@@ -24,6 +24,8 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 import org.apache.lucene.analysis.ko.POS;
 import org.apache.lucene.codecs.CodecUtil;
@@ -36,6 +38,14 @@ import org.apache.lucene.util.IntsRef;
  * Base class for a binary-encoded in-memory dictionary.
  */
 public abstract class BinaryDictionary implements Dictionary {
+
+  /**
+   * Used to specify where (dictionary) resources get loaded from.
+   */
+  public enum ResourceScheme {
+    CLASSPATH, FILE
+  }
+
   public static final String TARGETMAP_FILENAME_SUFFIX = "$targetMap.dat";
   public static final String DICT_FILENAME_SUFFIX = "$buffer.dat";
   public static final String POSDICT_FILENAME_SUFFIX = "$posDict.dat";
@@ -45,15 +55,34 @@ public abstract class BinaryDictionary implements Dictionary {
   public static final String POSDICT_HEADER = "ko_dict_pos";
   public static final int VERSION = 1;
 
+  private final ResourceScheme resourceScheme;
+  private final String resourcePath;
   private final ByteBuffer buffer;
   private final int[] targetMapOffsets, targetMap;
   private final POS.Tag[] posDict;
 
   protected BinaryDictionary() throws IOException {
+    this(ResourceScheme.CLASSPATH, null);
+  }
+
+  /**
+   * @param resourceScheme - scheme for loading resources (FILE or CLASSPATH).
+   * @param resourcePath - where to load resources (dictionaries) from. If null, with CLASSPATH scheme only, use
+   * this class's name as the path.
+   */
+  protected BinaryDictionary(ResourceScheme resourceScheme, String resourcePath) throws IOException {
+    this.resourceScheme = resourceScheme;
+    if (resourcePath == null) {
+      if (resourceScheme != ResourceScheme.CLASSPATH) {
+        throw new IllegalArgumentException("resourcePath must be supplied with FILE resource scheme");
+      }
+      this.resourcePath = getClass().getName().replace('.', '/');
+    } else {
+      this.resourcePath = resourcePath;
+    }
     InputStream mapIS = null, dictIS = null, posIS = null;
-    int[] targetMapOffsets = null, targetMap = null;
-    ByteBuffer buffer = null;
-    boolean success = false;
+    int[] targetMapOffsets, targetMap;
+    ByteBuffer buffer;
     try {
       mapIS = getResource(TARGETMAP_FILENAME_SUFFIX);
       mapIS = new BufferedInputStream(mapIS);
@@ -72,7 +101,9 @@ public abstract class BinaryDictionary implements Dictionary {
         targetMap[ofs] = accum;
       }
       if (sourceId + 1 != targetMapOffsets.length)
-        throw new IOException("targetMap file format broken");
+        throw new IOException("targetMap file format broken; targetMap.length=" + targetMap.length
+            + ", targetMapOffsets.length=" + targetMapOffsets.length
+            + ", sourceId=" + sourceId);
       targetMapOffsets[sourceId] = targetMap.length;
       mapIS.close(); mapIS = null;
 
@@ -100,13 +131,8 @@ public abstract class BinaryDictionary implements Dictionary {
       }
       dictIS.close(); dictIS = null;
       buffer = tmpBuffer.asReadOnlyBuffer();
-      success = true;
     } finally {
-      if (success) {
-        IOUtils.close(mapIS, dictIS);
-      } else {
-        IOUtils.closeWhileHandlingException(mapIS, dictIS);
-      }
+      IOUtils.closeWhileHandlingException(mapIS, posIS, dictIS);
     }
 
     this.targetMap = targetMap;
@@ -115,14 +141,30 @@ public abstract class BinaryDictionary implements Dictionary {
   }
   
   protected final InputStream getResource(String suffix) throws IOException {
-    return getClassResource(getClass(), suffix);
+    switch(resourceScheme) {
+      case CLASSPATH:
+        return getClassResource(resourcePath + suffix);
+      case FILE:
+        return Files.newInputStream(Paths.get(resourcePath + suffix));
+      default:
+        throw new IllegalStateException("unknown resource scheme " + resourceScheme);
+    }
   }
   
   // util, reused by ConnectionCosts and CharacterDefinition
-  public static final InputStream getClassResource(Class<?> clazz, String suffix) throws IOException {
+  public static InputStream getClassResource(Class<?> clazz, String suffix) throws IOException {
     final InputStream is = clazz.getResourceAsStream(clazz.getSimpleName() + suffix);
-    if (is == null)
-      throw new FileNotFoundException("Not in classpath: " + clazz.getName().replace('.','/') + suffix);
+    if (is == null) {
+      throw new FileNotFoundException("Not in classpath: " + clazz.getName().replace('.', '/') + suffix);
+    }
+    return is;
+  }
+
+  private InputStream getClassResource(String path) throws IOException {
+    final InputStream is = BinaryDictionary.class.getClassLoader().getResourceAsStream(path);
+    if (is == null) {
+      throw new FileNotFoundException("Not in classpath: " + path);
+    }
     return is;
   }
 
@@ -188,7 +230,7 @@ public abstract class BinaryDictionary implements Dictionary {
     int offset = wordId + 6;
     boolean hasSinglePos = hasSinglePOS(wordId);
     if (hasSinglePos == false) {
-      offset ++; // skip rightPOS
+      offset++; // skip rightPOS
     }
     int length = buffer.get(offset++);
     if (length == 0) {
@@ -216,7 +258,7 @@ public abstract class BinaryDictionary implements Dictionary {
   private String readString(int offset) {
     int strOffset = offset;
     int len = buffer.get(strOffset++);
-    char text[] = new char[len];
+    char[] text = new char[len];
     for (int i = 0; i < len; i++) {
       text[i] = buffer.getChar(strOffset + (i<<1));
     }

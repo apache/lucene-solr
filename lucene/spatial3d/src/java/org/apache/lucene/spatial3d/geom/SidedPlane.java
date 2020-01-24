@@ -145,6 +145,22 @@ public class SidedPlane extends Plane implements Membership {
    * Construct a sided plane with a normal vector and offset.
    *
    * @param p point to evaluate.
+   * @param vX is the normal vector X.
+   * @param vY is the normal vector Y.
+   * @param vZ is the normal vector Z.
+   * @param D is the origin offset for the plan.
+   */
+  public SidedPlane(Vector p, double vX, double vY, double vZ, double D) {
+    super(vX, vY, vZ, D);
+    sigNum = Math.signum(evaluate(p));
+    if (sigNum == 0.0)
+      throw new IllegalArgumentException("Cannot determine sidedness because check point is on plane.");
+  }
+
+  /**
+   * Construct a sided plane with a normal vector and offset.
+   *
+   * @param p point to evaluate.
    * @param v is the normal vector.
    * @param D is the origin offset for the plan.
    */

@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory;
  * @lucene.experimental
  */
 public class LuceneCarrot2TokenizerFactory implements ITokenizerFactory {
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   public ITokenizer getTokenizer(LanguageCode language) {
@@ -78,7 +78,7 @@ public class LuceneCarrot2TokenizerFactory implements ITokenizerFactory {
         ReflectionUtils.classForName(
             "org.apache.lucene.analysis.cn.smart.SentenceTokenizer", false);
       } catch (Throwable e) {
-        logger
+        log
             .warn("Could not instantiate Smart Chinese Analyzer, clustering quality "
                 + "of Chinese content may be degraded. For best quality clusters, "
                 + "make sure Lucene's Smart Chinese Analyzer JAR is in the classpath");

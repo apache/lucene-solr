@@ -33,8 +33,15 @@ import java.util.regex.Pattern;
  *     &lt;tokenizer class="solr.WhitespaceTokenizerFactory"/&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
+ * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class HTMLStripCharFilterFactory extends CharFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "htmlStrip";
+
   final Set<String> escapedTags;
   static final Pattern TAG_NAME_PATTERN = Pattern.compile("[^\\s,]+");
   

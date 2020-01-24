@@ -24,6 +24,7 @@ public enum FieldFlag {
   TOKENIZED('T', "Tokenized"), 
   STORED('S', "Stored"), 
   DOC_VALUES('D', "DocValues"),
+  UNINVERTIBLE('U', "UnInvertible"),
   MULTI_VALUED('M', "Multivalued"),
   TERM_VECTOR_STORED('V', "TermVector Stored"), 
   TERM_VECTOR_OFFSET('o', "Store Offset With TermVector"),
@@ -43,8 +44,7 @@ public enum FieldFlag {
 
   FieldFlag(char abbreviation, String display) {
     this.abbreviation = abbreviation;
-    this.display = display;
-    this.display.intern();//QUESTION:  Need we bother here?
+    this.display = display.intern();//QUESTION:  Need we bother here?
   }
 
   public static FieldFlag getFlag(char abbrev){
@@ -65,5 +65,9 @@ public enum FieldFlag {
 
   public String getDisplay() {
     return display;
+  }
+
+  public String toString() {
+    return abbreviation + " - " + display;
   }
 }

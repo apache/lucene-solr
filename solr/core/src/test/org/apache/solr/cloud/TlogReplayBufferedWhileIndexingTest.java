@@ -22,7 +22,6 @@ import java.util.List;
 
 import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.solr.SolrTestCaseJ4.SuppressSSL;
-import org.apache.solr.SolrTestCaseJ4.SuppressObjectReleaseTracker;
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.embedded.JettySolrRunner;
@@ -35,7 +34,6 @@ import org.junit.Test;
 @Slow
 @Nightly
 @SuppressSSL
-@SuppressObjectReleaseTracker(bugUrl="Testing purposes")
 public class TlogReplayBufferedWhileIndexingTest extends AbstractFullDistribZkTestBase {
 
   private List<StoppableIndexingThread> threads;
@@ -79,7 +77,7 @@ public class TlogReplayBufferedWhileIndexingTest extends AbstractFullDistribZkTe
     allJetty.addAll(jettys);
     allJetty.remove(shardToLeaderJetty.get("shard1").jetty);
     assert allJetty.size() == 1 : allJetty.size();
-    ChaosMonkey.stop(allJetty.get(0));
+    allJetty.get(0).stop();
     
     StoppableIndexingThread indexThread;
     for (int i = 0; i < numThreads; i++) {
@@ -92,7 +90,7 @@ public class TlogReplayBufferedWhileIndexingTest extends AbstractFullDistribZkTe
 
     Thread.sleep(2000);
     
-    ChaosMonkey.start(allJetty.get(0));
+    allJetty.get(0).start();
     
     Thread.sleep(45000);
   

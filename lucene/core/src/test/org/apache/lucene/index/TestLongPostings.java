@@ -35,7 +35,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
-@SuppressCodecs({ "SimpleText", "Memory", "Direct" })
+@SuppressCodecs({ "SimpleText", "Direct" })
 public class TestLongPostings extends LuceneTestCase {
 
   // Produces a realistic unicode random string that
@@ -78,7 +78,7 @@ public class TestLongPostings extends LuceneTestCase {
     // randomness (ie same seed will point to same dir):
     Directory dir = newFSDirectory(createTempDir("longpostings" + "." + random().nextLong()));
 
-    final int NUM_DOCS = atLeast(2000);
+    final int NUM_DOCS = atLeast(1000);
 
     if (VERBOSE) {
       System.out.println("TEST: NUM_DOCS=" + NUM_DOCS);
@@ -166,7 +166,7 @@ public class TestLongPostings extends LuceneTestCase {
         System.out.println("\nTEST: iter=" + iter + " doS1=" + doS1);
       }
         
-      final PostingsEnum postings = MultiFields.getTermPositionsEnum(r, "field", new BytesRef(term));
+      final PostingsEnum postings = MultiTerms.getTermPostingsEnum(r, "field", new BytesRef(term));
 
       int docID = -1;
       while(docID < DocIdSetIterator.NO_MORE_DOCS) {
@@ -275,7 +275,7 @@ public class TestLongPostings extends LuceneTestCase {
     // randomness (ie same seed will point to same dir):
     Directory dir = newFSDirectory(createTempDir("longpostings" + "." + random().nextLong()));
 
-    final int NUM_DOCS = atLeast(2000);
+    final int NUM_DOCS = atLeast(1000);
 
     if (VERBOSE) {
       System.out.println("TEST: NUM_DOCS=" + NUM_DOCS);

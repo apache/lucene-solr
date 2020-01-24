@@ -114,4 +114,27 @@ public abstract class DocTransformer {
   public String toString() {
     return getName();
   }
+
+  /**
+   * Trivial Impl that ensure that the specified field is requested as an "extra" field,
+   * but then does nothing during the transformation phase.
+   */
+  public static final class NoopFieldTransformer extends DocTransformer {
+    final String field;
+
+    public NoopFieldTransformer() {
+      this.field = null;
+    }
+
+    public NoopFieldTransformer(String field ) {
+      this.field = field;
+    }
+    public String getName() { return "noop"; }
+    public String[] getExtraRequestFields() {
+      return this.field==null? null: new String[] { field };
+    }
+    public void transform(SolrDocument doc, int docid) {
+      // No-Op
+    }
+  }
 }

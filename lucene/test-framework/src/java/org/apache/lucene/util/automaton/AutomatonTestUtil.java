@@ -17,7 +17,6 @@
 package org.apache.lucene.util.automaton;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -253,8 +252,7 @@ public class AutomatonTestUtil {
         codePoints[codepointCount++] = getRandomCodePoint(r, t.min, t.max);
         s = t.dest;
       }
-
-      return Arrays.copyOf(codePoints, codepointCount);
+      return ArrayUtil.copyOfSubArray(codePoints, 0, codepointCount);
     }
   }
 

@@ -304,9 +304,7 @@ outer:
     if (foundLicenses.isEmpty()) {
       this.failures = true;
       StringBuilder message = new StringBuilder();
-      message.append(
-          "MISSING LICENSE for the following file:\n  " + jarFile.getAbsolutePath()
-          + "\n  Expected locations below:\n");
+      message.append("MISSING LICENSE for the following file:\n  ").append(jarFile.getAbsolutePath()).append("\n  Expected locations below:\n");
       for (File location : expectedLocations) {
         message.append("  => ").append(location.getAbsolutePath()).append("\n");
       }

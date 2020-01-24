@@ -16,12 +16,12 @@
  */
 package org.apache.lucene.search;
 
-import org.apache.lucene.index.LeafReaderContext;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+
+import org.apache.lucene.index.LeafReaderContext;
 
 /**
  * A {@link CollectorManager} implements which wrap a set of {@link CollectorManager}
@@ -97,7 +97,7 @@ public class MultiCollectorManager implements CollectorManager<MultiCollectorMan
       }
 
       @Override
-      final public void setScorer(final Scorer scorer) throws IOException {
+      final public void setScorer(final Scorable scorer) throws IOException {
         for (LeafCollector leafCollector : leafCollectors)
           if (leafCollector != null)
             leafCollector.setScorer(scorer);

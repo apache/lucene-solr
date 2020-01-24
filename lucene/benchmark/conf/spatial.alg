@@ -54,7 +54,7 @@ doc.tokenized=false
 
 ### Directory
 directory=FSDirectory
-#directory=RamDirectory
+#directory=ByteBuffersDirectory
 compound=false
 merge.factor=10
 ram.flush.mb=64

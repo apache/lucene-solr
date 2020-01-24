@@ -134,9 +134,9 @@ Any other key is silently ignored.
   "v":"1",
   "str":"test ąćęłńóśźż",
   "tokens": [
-    {"t":"one","s":123,"e":128,"i":22,"p":"DQ4KDQsODg8=","y":"word"},
     {"t":"two","s":5,"e":8,"i":1,"y":"word"},
-    {"t":"three","s":20,"e":22,"i":1,"y":"foobar"}
+    {"t":"three","s":20,"e":22,"i":1,"y":"foobar"},
+    {"t":"one","s":123,"e":128,"i":22,"p":"DQ4KDQsODg8=","y":"word"}
   ]
 }
 ----
@@ -200,7 +200,7 @@ Token positions are tracked and implicitly added to the token stream - the start
 
 ==== Example Token Streams
 
-// TODO: in cwiki each of these examples was in it's own "panel" ... do we want something like that here?
+// TODO: in cwiki each of these examples was in its own "panel" ... do we want something like that here?
 // TODO: these examples match what was in cwiki, but I'm honestly not sure if the formatting there was correct to start?
 
 [source,text]

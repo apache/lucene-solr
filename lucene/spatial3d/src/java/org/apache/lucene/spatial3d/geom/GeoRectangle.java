@@ -56,6 +56,8 @@ class GeoRectangle extends GeoBaseBBox {
   protected final SidedPlane leftPlane;
   /** The right plane */
   protected final SidedPlane rightPlane;
+  /** Backing plane (for narrow angles) */
+  protected final SidedPlane backingPlane;
 
   /** Notable points for the top plane */
   protected final GeoPoint[] topPlanePoints;
@@ -138,6 +140,11 @@ class GeoRectangle extends GeoBaseBBox {
     this.leftPlane = new SidedPlane(centerPoint, cosLeftLon, sinLeftLon);
     this.rightPlane = new SidedPlane(centerPoint, cosRightLon, sinRightLon);
 
+    // Compute the backing plane
+    // The normal for this plane is a unit vector through the origin that goes through the middle lon.  The plane's D is 0,
+    // because it goes through the origin.
+    this.backingPlane = new SidedPlane(this.centerPoint, cosMiddleLon, sinMiddleLon, 0.0, 0.0);
+
     this.topPlanePoints = new GeoPoint[]{ULHC, URHC};
     this.bottomPlanePoints = new GeoPoint[]{LLHC, LRHC};
     this.leftPlanePoints = new GeoPoint[]{ULHC, LLHC};
@@ -182,7 +189,8 @@ class GeoRectangle extends GeoBaseBBox {
 
   @Override
   public boolean isWithin(final double x, final double y, final double z) {
-    return topPlane.isWithin(x, y, z) &&
+    return backingPlane.isWithin(x,y,z) &&
+        topPlane.isWithin(x, y, z) &&
         bottomPlane.isWithin(x, y, z) &&
         leftPlane.isWithin(x, y, z) &&
         rightPlane.isWithin(x, y, z);
@@ -232,7 +240,7 @@ class GeoRectangle extends GeoBaseBBox {
       .addVerticalPlane(planetModel, rightLon, rightPlane, topPlane, bottomPlane, leftPlane)
       .addHorizontalPlane(planetModel, bottomLat, bottomPlane, topPlane, leftPlane, rightPlane)
       .addVerticalPlane(planetModel, leftLon, leftPlane, topPlane, bottomPlane, rightPlane)
-      .addIntersection(planetModel, leftPlane, rightPlane, topPlane, bottomPlane)
+      //.addIntersection(planetModel, leftPlane, rightPlane, topPlane, bottomPlane)
       .addPoint(ULHC).addPoint(URHC).addPoint(LLHC).addPoint(LRHC);
   }
 

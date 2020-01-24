@@ -35,7 +35,8 @@ import org.apache.lucene.util.BytesRefBuilder;
 
 class SimpleTextPointsWriter extends PointsWriter {
 
-  public final static BytesRef NUM_DIMS      = new BytesRef("num dims ");
+  public final static BytesRef NUM_DATA_DIMS  = new BytesRef("num data dims ");
+  public final static BytesRef NUM_INDEX_DIMS = new BytesRef("num index dims ");
   public final static BytesRef BYTES_PER_DIM = new BytesRef("bytes per dim ");
   public final static BytesRef MAX_LEAF_POINTS = new BytesRef("max leaf points ");
   public final static BytesRef INDEX_COUNT = new BytesRef("index count ");
@@ -70,18 +71,17 @@ class SimpleTextPointsWriter extends PointsWriter {
   public void writeField(FieldInfo fieldInfo, PointsReader reader) throws IOException {
 
     PointValues values = reader.getValues(fieldInfo.name);
-    boolean singleValuePerDoc = values.size() == values.getDocCount();
 
     // We use our own fork of the BKDWriter to customize how it writes the index and blocks to disk:
     try (SimpleTextBKDWriter writer = new SimpleTextBKDWriter(writeState.segmentInfo.maxDoc(),
                                                               writeState.directory,
                                                               writeState.segmentInfo.name,
-                                                              fieldInfo.getPointDimensionCount(),
+                                                              fieldInfo.getPointDataDimensionCount(),
+                                                              fieldInfo.getPointIndexDimensionCount(),
                                                               fieldInfo.getPointNumBytes(),
                                                               SimpleTextBKDWriter.DEFAULT_MAX_POINTS_IN_LEAF_NODE,
                                                               SimpleTextBKDWriter.DEFAULT_MAX_MB_SORT_IN_HEAP,
-                                                              values.size(),
-                                                              singleValuePerDoc)) {
+                                                              values.size())) {
 
       values.intersect(new IntersectVisitor() {
           @Override

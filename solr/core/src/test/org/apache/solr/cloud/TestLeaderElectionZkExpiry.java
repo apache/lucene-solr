@@ -41,9 +41,8 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
   private static final int MIN_NODES = 4;
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 17-Mar-2018
   public void testLeaderElectionWithZkExpiry() throws Exception {
-    String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
+    Path zkDir = createTempDir("zkData");
     Path ccDir = createTempDir("testLeaderElectionWithZkExpiry-solr");
     CoreContainer cc = createCoreContainer(ccDir, SOLRXML);
     final ZkTestServer server = new ZkTestServer(zkDir);
@@ -51,8 +50,6 @@ public class TestLeaderElectionZkExpiry extends SolrTestCaseJ4 {
     SolrZkClient zc = null;
     try {
       server.run();
-      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
-      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
 
       CloudConfig cloudConfig = new CloudConfig.CloudConfigBuilder("dummy.host.com", 8984, "solr")
           .setLeaderConflictResolveWait(180000)

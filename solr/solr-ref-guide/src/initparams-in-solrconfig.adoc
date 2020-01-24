@@ -40,13 +40,13 @@ For example, here is one of the `<initParams>` sections defined by default in th
 
 This sets the default search field ("df") to be "_text_" for all of the request handlers named in the path section. If we later want to change the `/query` request handler to search a different field by default, we could override the `<initParams>` by defining the parameter in the `<requestHandler>` section for `/query`.
 
-The syntax and semantics are similar to that of a `<requestHandler>`. The following are the attributes
+The syntax and semantics are similar to that of a `<requestHandler>`. The following are the attributes:
 
 `path`::
 A comma-separated list of paths which will use the parameters. Wildcards can be used in paths to define nested paths, as described below.
 
 `name`::
-The name of this set of parameters. The name can be used directly in a requestHandler definition if a path is not explicitly named. If you give your `<initParams>` a name, you can refer to the params in a `<requestHandler>` that is not defined as a path.
+The name of this set of parameters. The name can be used directly in a requestHandler definition if a path is not explicitly named. If you give your `<initParams>` a name, you can refer to the parameters in a `<requestHandler>` that is not defined as a path.
 +
 For example, if an `<initParams>` section has the name "myParams", you can call the name when defining your request handler:
 +

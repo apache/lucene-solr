@@ -39,7 +39,7 @@ public class TestRangeFacetsExample extends LuceneTestCase {
     RangeFacetsExample example = new RangeFacetsExample();
     example.index();
     TopDocs hits = example.drillDown(example.PAST_SIX_HOURS);
-    assertEquals(22, hits.totalHits);
+    assertEquals(22, hits.totalHits.value);
     example.close();
   }
 }

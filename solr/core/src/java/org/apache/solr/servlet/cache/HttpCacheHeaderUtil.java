@@ -17,7 +17,7 @@
 package org.apache.solr.servlet.cache;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 
@@ -70,16 +70,9 @@ public final class HttpCacheHeaderUtil {
     public String calcEtag(final long currentIndexVersion) {
       if (currentIndexVersion != indexVersionCache) {
         indexVersionCache=currentIndexVersion;
-        
-        try {
-          etagCache = "\""
-           + new String(Base64.encodeBase64((Long.toHexString
-                                             (Long.reverse(indexVersionCache))
-                                             + etagSeed).getBytes("US-ASCII")), "US-ASCII")
-           + "\"";
-        } catch (UnsupportedEncodingException e) {
-          throw new RuntimeException(e); // may not happen
-        }
+        etagCache = "\""
+            + new String(Base64.encodeBase64((Long.toHexString(Long.reverse(indexVersionCache)) + etagSeed)
+            .getBytes(StandardCharsets.US_ASCII)), StandardCharsets.US_ASCII) + "\"";
       }
       
       return etagCache;

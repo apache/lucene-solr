@@ -20,6 +20,8 @@ package org.apache.solr.response.transform;
 import java.util.Set;
 
 import org.apache.lucene.index.IndexableField;
+import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.BytesRefBuilder;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.schema.FieldType;
 
@@ -47,9 +49,9 @@ public abstract class BaseEditorialTransformer extends DocTransformer {
   @Override
   public void transform(SolrDocument doc, int docid) {
     //this only gets added if QueryElevationParams.MARK_EXCLUDED is true
-    Set<String> ids = getIdSet();
+    Set<BytesRef> ids = getIdSet();
     if (ids != null && ids.isEmpty() == false) {
-      String key = getKey(doc);
+      BytesRef key = getKey(doc);
       doc.setField(name, ids.contains(key));
     } else {
       //if we have no ids, that means we weren't marking, but the user still asked for the field to be added, so just mark everything as false
@@ -57,17 +59,22 @@ public abstract class BaseEditorialTransformer extends DocTransformer {
     }
   }
 
-  protected abstract Set<String> getIdSet();
+  protected abstract Set<BytesRef> getIdSet();
 
-  protected String getKey(SolrDocument doc) {
+  protected BytesRef getKey(SolrDocument doc) {
     Object obj = doc.get(idFieldName);
     if (obj instanceof IndexableField) {
       IndexableField f = (IndexableField) obj;
+      BytesRefBuilder bytesRefBuilder = new BytesRefBuilder();
       Number n = f.numericValue();
       if (n != null) {
-        return ft.readableToIndexed(n.toString());
+        ft.readableToIndexed(n.toString(), bytesRefBuilder);
+      } else {
+        ft.readableToIndexed(f.stringValue(), bytesRefBuilder);
       }
-      return ft.readableToIndexed(f.stringValue());
+      return bytesRefBuilder.get();
+    } else if (obj instanceof String) { // Allows the idField to be stored=false, docValues=true
+      return new BytesRef(((String)obj));
     }
     throw new AssertionError("Expected an IndexableField but got: " + obj.getClass());
   }

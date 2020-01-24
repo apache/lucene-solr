@@ -1,5 +1,5 @@
 {
-  "documentation": "https://lucene.apache.org/solr/guide/collections-api.html#deletereplica",
+  "documentation": "https://lucene.apache.org/solr/guide/replica-management.html#deletereplica",
   "description": "Deletes a replica. If the responding node is up, the core is unloaded, the entry removed from clusterstate.json, and the instanceDir and dataDir removed. If the node is not up, the entry for the replica is removed from clusterstate.json; if the nodes comes up later, the replica is automatically de-registered.",
   "methods": [
     "DELETE"

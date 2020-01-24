@@ -21,7 +21,6 @@ package org.apache.lucene.collation;
 import com.ibm.icu.text.Collator;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
-import org.apache.lucene.collation.CollationKeyAnalyzer; // javadocs
 
 /**
  * <p>
@@ -62,6 +61,8 @@ import org.apache.lucene.collation.CollationKeyAnalyzer; // javadocs
  *   generation timing and key length comparisons between ICU4J and
  *   java.text.Collator over several languages.
  * </p>
+ *
+ * @since 3.1
  */
 public final class ICUCollationKeyAnalyzer extends Analyzer {
   private final ICUCollationAttributeFactory factory;

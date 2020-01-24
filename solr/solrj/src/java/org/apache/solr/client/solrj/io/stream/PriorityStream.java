@@ -18,7 +18,6 @@
 package org.apache.solr.client.solrj.io.stream;
 
 import java.io.IOException;
-import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -31,8 +30,6 @@ import org.apache.solr.client.solrj.io.stream.expr.Expressible;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExplanation;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpression;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * The priority function wraps two topics that represent high priority and low priority task queues.
@@ -47,8 +44,6 @@ import org.slf4j.LoggerFactory;
  **/
 
 public class PriorityStream extends TupleStream implements Expressible {
-
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private PushBackStream highPriorityTasks;
   private PushBackStream tasks;

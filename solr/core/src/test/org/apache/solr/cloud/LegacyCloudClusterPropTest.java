@@ -36,9 +36,9 @@ import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.core.CorePropertiesLocator;
+import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
 
 public class LegacyCloudClusterPropTest extends SolrCloudTestCase {
 
@@ -50,6 +50,11 @@ public class LegacyCloudClusterPropTest extends SolrCloudTestCase {
     configureCluster(1)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
+  }
+  
+  @After
+  public void afterTest() throws Exception {
+    cluster.deleteAllCollections();
   }
 
 
@@ -65,7 +70,9 @@ public class LegacyCloudClusterPropTest extends SolrCloudTestCase {
   };
 
   @Test
-  @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  //2018-06-18 (commented) @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028")
+  //Commented 14-Oct-2018 @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 17-Aug-2018
+  // commented out on: 01-Apr-2019   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // annotated on: 24-Dec-2018
   public void testCreateCollectionSwitchLegacyCloud() throws Exception {
     createAndTest("legacyTrue", true);
     createAndTest("legacyFalse", false);
@@ -85,6 +92,9 @@ public class LegacyCloudClusterPropTest extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(coll, "conf", 1, 1)
         .setMaxShardsPerNode(1)
         .process(cluster.getSolrClient());
+    
+    cluster.waitForActiveCollection(coll, 1, 1);
+    
     assertTrue(ClusterStateUtil.waitForAllActiveAndLiveReplicas(cluster.getSolrClient().getZkStateReader(), 120000));
     
     // Insure all mandatory properties are there.
@@ -101,7 +111,13 @@ public class LegacyCloudClusterPropTest extends SolrCloudTestCase {
     // Now restart Solr, this should repair the removal on core load no matter the value of legacyCloud
     JettySolrRunner jetty = cluster.getJettySolrRunner(0);
     jetty.stop();
+    
+    cluster.waitForJettyToStop(jetty);
+    
     jetty.start();
+    
+    cluster.waitForAllNodes(30);
+    
     checkMandatoryProps(coll);
     checkCollectionActive(coll);
   }

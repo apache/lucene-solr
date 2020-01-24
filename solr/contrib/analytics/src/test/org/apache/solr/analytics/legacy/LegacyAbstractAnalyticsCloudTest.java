@@ -20,6 +20,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.solr.analytics.util.AnalyticsResponseHeadings;
 import org.apache.solr.analytics.util.MedianCalculator;
@@ -29,14 +30,15 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.response.SolrQueryResponse;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
 public class LegacyAbstractAnalyticsCloudTest extends SolrCloudTestCase {
-  
+
   protected static final String COLLECTIONORALIAS = "collection1";
   protected static final int TIMEOUT = DEFAULT_TIMEOUT;
   protected static final String id = "id";
@@ -48,17 +50,20 @@ public class LegacyAbstractAnalyticsCloudTest extends SolrCloudTestCase {
         .configure();
 
     CollectionAdminRequest.createCollection(COLLECTIONORALIAS, "conf", 2, 1).process(cluster.getSolrClient());
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTIONORALIAS, cluster.getSolrClient().getZkStateReader(),
-        false, true, TIMEOUT);
-    cleanIndex();
+    cluster.waitForActiveCollection(COLLECTIONORALIAS, 2, 2);
   }
 
-  public static void cleanIndex() throws Exception {
+  @AfterClass
+  public static void teardownCollection() throws Exception {
+    shutdownCluster();
+  }
+
+  public void cleanIndex() throws Exception {
     new UpdateRequest()
         .deleteByQuery("*:*")
         .commit(cluster.getSolrClient(), COLLECTIONORALIAS);
   }
-  
+
   protected static final String[] BASEPARMS = new String[]{ "q", "*:*", "indent", "true", "olap", "true", "rows", "0" };
 
   public static enum VAL_TYPE {
@@ -81,7 +86,8 @@ public class LegacyAbstractAnalyticsCloudTest extends SolrCloudTestCase {
     }
   }
 
-  protected NamedList<Object> queryLegacyCloudAnalytics(String[] testParams) throws SolrServerException, IOException, InterruptedException {
+  
+  protected NamedList<Object> queryLegacyCloudAnalytics(String[] testParams) throws SolrServerException, IOException, InterruptedException, TimeoutException {
     ModifiableSolrParams params = new ModifiableSolrParams();
     params.set("q", "*:*");
     params.set("indent", "true");
@@ -93,9 +99,25 @@ public class LegacyAbstractAnalyticsCloudTest extends SolrCloudTestCase {
     cluster.waitForAllNodes(10000);
     QueryRequest qreq = new QueryRequest(params);
     QueryResponse resp = qreq.process(cluster.getSolrClient(), COLLECTIONORALIAS);
-    return resp.getResponse();
+    final NamedList<Object> response = resp.getResponse();
+    assertRequestTimeout(params);
+    return response;
   }
-  
+
+  /** caveat: the given params are modified */
+  protected void assertRequestTimeout(ModifiableSolrParams params)
+      throws IOException, InterruptedException, TimeoutException, SolrServerException {
+    params.set("timeAllowed", 0);
+    cluster.waitForAllNodes(10000);
+    final QueryResponse maybeTimeout = new QueryRequest(params).process(cluster.getSolrClient(), COLLECTIONORALIAS);
+    assertEquals(maybeTimeout.getHeader() + "", 0, maybeTimeout.getStatus());
+    final Boolean partial = maybeTimeout.getHeader()
+        .getBooleanArg(SolrQueryResponse.RESPONSE_HEADER_PARTIAL_RESULTS_KEY);
+    assertNotNull("No partial results header returned", partial);
+    assertTrue("The request " + params
+        + "was not stopped halfway through, the partial results header was false", partial);
+  }
+
   @SuppressWarnings("unchecked")
   protected <T> T getValue(NamedList<Object> response, String infoName, String exprName) {
     return (T)response.findRecursive(AnalyticsResponseHeadings.COMPLETED_OLD_HEADER,

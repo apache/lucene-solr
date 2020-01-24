@@ -154,7 +154,7 @@ final class IndexFileDeleter implements Closeable {
           // Add this file to refCounts with initial count 0:
           getRefCount(fileName);
           
-          if (fileName.startsWith(IndexFileNames.SEGMENTS) && !fileName.equals(IndexFileNames.OLD_SEGMENTS_GEN)) {
+          if (fileName.startsWith(IndexFileNames.SEGMENTS)) {
             
             // This is a commit (segments or segments_N), and
             // it's valid (<= the max gen).  Load it, then
@@ -208,9 +208,13 @@ final class IndexFileDeleter implements Closeable {
 
     // We keep commits list in sorted order (oldest to newest):
     CollectionUtil.timSort(commits);
-
+    Collection<String> relevantFiles = new HashSet<>(refCounts.keySet());
+    Set<String> pendingDeletions = directoryOrig.getPendingDeletions();
+    if (pendingDeletions.isEmpty() == false) {
+      relevantFiles.addAll(pendingDeletions);
+    }
     // refCounts only includes "normal" filenames (does not include write.lock)
-    inflateGens(segmentInfos, refCounts.keySet(), infoStream);
+    inflateGens(segmentInfos, relevantFiles, infoStream);
 
     // Now delete anything with ref count at 0.  These are
     // presumably abandoned files eg due to crash of
@@ -265,7 +269,7 @@ final class IndexFileDeleter implements Closeable {
     Map<String,Long> maxPerSegmentGen = new HashMap<>();
 
     for(String fileName : files) {
-      if (fileName.equals(IndexFileNames.OLD_SEGMENTS_GEN) || fileName.equals(IndexWriter.WRITE_LOCK_NAME)) {
+      if (fileName.equals(IndexWriter.WRITE_LOCK_NAME)) {
         // do nothing
       } else if (fileName.startsWith(IndexFileNames.SEGMENTS)) {
         try {

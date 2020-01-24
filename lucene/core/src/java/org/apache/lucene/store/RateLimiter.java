@@ -30,6 +30,8 @@ public abstract class RateLimiter {
 
   /**
    * Sets an updated MB per second rate limit.
+   * A subclass is allowed to perform dynamic updates of the rate limit
+   * during use.
    */
   public abstract void setMBPerSec(double mbPerSec);
 
@@ -47,7 +49,11 @@ public abstract class RateLimiter {
    * */
   public abstract long pause(long bytes) throws IOException;
   
-  /** How many bytes caller should add up itself before invoking {@link #pause}. */
+  /** How many bytes caller should add up itself before invoking {@link #pause}.
+   *  NOTE: The value returned by this method may change over time and is not guaranteed
+   *  to be constant throughout the lifetime of the RateLimiter. Users are advised to
+   *  refresh their local values with calls to this method to ensure consistency.
+   */
   public abstract long getMinPauseCheckBytes();
 
   /**
@@ -60,10 +66,6 @@ public abstract class RateLimiter {
     private volatile double mbPerSec;
     private volatile long minPauseCheckBytes;
     private long lastNS;
-
-    // TODO: we could also allow eg a sub class to dynamically
-    // determine the allowed rate, eg if an app wants to
-    // change the allowed rate over time or something
 
     /** mbPerSec is the MB/sec max IO rate */
     public SimpleRateLimiter(double mbPerSec) {

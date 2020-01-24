@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
  * {@link org.apache.solr.metrics.SolrMetricReporter}.
  */
 public class ReporterClientCache<T> implements Closeable {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final Map<String, T> cache = new ConcurrentHashMap<>();
 
@@ -59,7 +59,7 @@ public class ReporterClientCache<T> implements Closeable {
         item = clientProvider.get();
         cache.put(id, item);
       } catch (Exception e) {
-        LOG.warn("Error providing a new client for id=" + id, e);
+        log.warn("Error providing a new client for id=" + id, e);
         item = null;
       }
     }
@@ -75,7 +75,7 @@ public class ReporterClientCache<T> implements Closeable {
         try {
           ((Closeable)client).close();
         } catch (Exception e) {
-          LOG.warn("Error closing client " + client + ", ignoring...", e);
+          log.warn("Error closing client " + client + ", ignoring...", e);
         }
       }
     }

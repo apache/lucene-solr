@@ -56,8 +56,13 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  * &lt;/fieldType&gt;</pre>
  *
  * @since solr 1.3
+ * @lucene.spi {@value #NAME}
  */
 public class CapitalizationFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "capitalization";
+
   public static final String KEEP = "keep";
   public static final String KEEP_IGNORE_CASE = "keepIgnoreCase";
   public static final String OK_PREFIX = "okPrefix";

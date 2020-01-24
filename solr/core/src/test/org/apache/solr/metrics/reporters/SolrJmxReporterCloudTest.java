@@ -35,6 +35,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.metrics.SolrMetricReporter;
 import org.apache.solr.metrics.reporters.jmx.JmxMetricsReporter;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
@@ -60,6 +61,11 @@ public class SolrJmxReporterCloudTest extends SolrCloudTestCase {
         .setMaxShardsPerNode(2)
         .process(cluster.getSolrClient());
   }
+  @AfterClass
+  public static void releaseMBeanServer() {
+    mBeanServer = null;
+  }
+  
 
   @Test
   public void testJmxReporter() throws Exception {

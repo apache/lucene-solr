@@ -327,10 +327,10 @@ class FacetFieldProcessorByArrayDV extends FacetFieldProcessorByArray {
     if (arrIdx >= 0 && arrIdx < nTerms) {
       countAcc.incrementCount(arrIdx, 1);
       if (collectAcc != null) {
-        collectAcc.collect(doc, arrIdx);
+        collectAcc.collect(doc, arrIdx, slotContext);
       }
       if (allBucketsAcc != null) {
-        allBucketsAcc.collect(doc, arrIdx);
+        allBucketsAcc.collect(doc, arrIdx, slotContext);
       }
     }
   }

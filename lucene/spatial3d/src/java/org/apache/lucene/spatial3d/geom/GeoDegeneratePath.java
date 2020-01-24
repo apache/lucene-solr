@@ -582,7 +582,7 @@ class GeoDegeneratePath extends GeoBasePath {
       synchronized (fullDistanceCache) {
         Double dist = fullDistanceCache.get(distanceStyle);
         if (dist == null) {
-          dist = new Double(distanceStyle.toAggregationForm(distanceStyle.computeDistance(start, end.x, end.y, end.z)));
+          dist = distanceStyle.toAggregationForm(distanceStyle.computeDistance(start, end.x, end.y, end.z));
           fullDistanceCache.put(distanceStyle, dist);
         }
         return dist.doubleValue();

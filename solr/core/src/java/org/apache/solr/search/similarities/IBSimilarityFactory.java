@@ -27,7 +27,6 @@ import org.apache.lucene.search.similarities.Normalization;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.schema.SimilarityFactory;
-import org.apache.solr.search.similarities.DFRSimilarityFactory; // javadoc
 
 /**
  * Factory for {@link IBSimilarity}

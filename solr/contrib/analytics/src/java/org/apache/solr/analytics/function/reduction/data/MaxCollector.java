@@ -18,7 +18,6 @@ package org.apache.solr.analytics.function.reduction.data;
 
 import java.util.function.Consumer;
 
-import org.apache.solr.analytics.function.reduction.data.ReductionData;
 import org.apache.solr.analytics.stream.reservation.DoubleCheckedReservation;
 import org.apache.solr.analytics.stream.reservation.FloatCheckedReservation;
 import org.apache.solr.analytics.stream.reservation.IntCheckedReservation;
@@ -50,16 +49,16 @@ import org.apache.solr.analytics.value.StringValueStream;
 public abstract class MaxCollector<T extends ReductionData> extends ReductionDataCollector<T> {
   public static final String name = "max";
   private final String exprStr;
-  
+
   protected MaxCollector(AnalyticsValueStream param) {
     this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
   }
-  
+
   private boolean exists;
-  
+
   /**
    * Returns true if any of the values being reduce exist, and false if none of them do.
-   * 
+   *
    * @return whether a max value exists
    */
   public boolean exists() {
@@ -87,7 +86,7 @@ public abstract class MaxCollector<T extends ReductionData> extends ReductionDat
 
   public static class IntMaxCollector extends MaxCollector<IntMaxCollector.MaxData> {
     private IntValueStream param;
-    
+
     public IntMaxCollector(IntValueStream param) {
       super(param);
       this.param = param;
@@ -101,10 +100,10 @@ public abstract class MaxCollector<T extends ReductionData> extends ReductionDat
     }
 
     int max;
-    
+
     /**
      * Returns the max value of the set data.
-     * 
+     *
      * @return the max
      */
     public int max() {
@@ -130,7 +129,7 @@ public abstract class MaxCollector<T extends ReductionData> extends ReductionDat
         data.exists = true;
       }
     }
-    
+
     @Override
     public void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer) {
       consumer.accept(new IntCheckedReservation(
@@ -156,17 +155,17 @@ public abstract class MaxCollector<T extends ReductionData> extends ReductionDat
       super.setData(data);
       max = ((MaxData)data).val;
     }
-    
+
     public static class MaxData extends ReductionData {
       int val;
     }
   }
-  
+
 
 
   public static class LongMaxCollector extends MaxCollector<LongMaxCollector.MaxData> {
     private LongValueStream param;
-    
+
     public LongMaxCollector(LongValueStream param) {
       super(param);
       this.param = param;
@@ -180,10 +179,10 @@ public abstract class MaxCollector<T extends ReductionData> extends ReductionDat
     }
 
     long max;
-    
+
     /**
      * Returns the max value of the set data.
-     * 
+     *
      * @return the max
      */
     public long max() {
@@ -209,7 +208,7 @@ public abstract class MaxCollector<T extends ReductionData> extends ReductionDat
         data.exists = true;
       }
     }
-    
+
     @Override
     public void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer) {
       consumer.accept(new LongCheckedReservation(
@@ -235,7 +234,7 @@ public abstract class MaxCollector<T extends ReductionData> extends ReductionDat
       super.setData(data);
       max = ((MaxData)data).val;
     }
-    
+
     public static class MaxData extends ReductionData {
       long val;
     }
@@ -243,7 +242,7 @@ public abstract class MaxCollector<T extends ReductionData> extends ReductionDat
 
   public static class FloatMaxCollector extends MaxCollector<FloatMaxCollector.MaxData> {
     private FloatValueStream param;
-    
+
     public FloatMaxCollector(FloatValueStream param) {
       super(param);
       this.param = param;
@@ -257,10 +256,10 @@ public abstract class MaxCollector<T extends ReductionData> extends ReductionDat
     }
 
     float max;
-    
+
     /**
      * Returns the max value of the set data.
-     * 
+     *
      * @return the max
      */
     public float max() {
@@ -286,7 +285,7 @@ public abstract class MaxCollector<T extends ReductionData> extends ReductionDat
         data.exists = true;
       }
     }
-    
+
     @Override
     public void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer) {
       consumer.accept(new FloatCheckedReservation(
@@ -312,7 +311,7 @@ public abstract class MaxCollector<T extends ReductionData> extends ReductionDat
       super.setData(data);
       max = ((MaxData)data).val;
     }
-    
+
     public static class MaxData extends ReductionData {
       float val;
     }
@@ -320,7 +319,7 @@ public abstract class MaxCollector<T extends ReductionData> extends ReductionDat
 
   public static class DoubleMaxCollector extends MaxCollector<DoubleMaxCollector.MaxData> {
     private DoubleValueStream param;
-    
+
     public DoubleMaxCollector(DoubleValueStream param) {
       super(param);
       this.param = param;
@@ -334,10 +333,10 @@ public abstract class MaxCollector<T extends ReductionData> extends ReductionDat
     }
 
     double max;
-    
+
     /**
      * Returns the max value of the set data.
-     * 
+     *
      * @return the max
      */
     public double max() {
@@ -363,7 +362,7 @@ public abstract class MaxCollector<T extends ReductionData> extends ReductionDat
         data.exists = true;
       }
     }
-    
+
     @Override
     public void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer) {
       consumer.accept(new DoubleCheckedReservation(
@@ -389,17 +388,17 @@ public abstract class MaxCollector<T extends ReductionData> extends ReductionDat
       super.setData(data);
       max = ((MaxData)data).val;
     }
-    
+
     public static class MaxData extends ReductionData {
       double val;
     }
   }
-  
+
 
 
   public static class StringMaxCollector extends MaxCollector<StringMaxCollector.MaxData> {
     private StringValueStream param;
-    
+
     public StringMaxCollector(StringValueStream param) {
       super(param);
       this.param = param;
@@ -413,10 +412,10 @@ public abstract class MaxCollector<T extends ReductionData> extends ReductionDat
     }
 
     String max;
-    
+
     /**
      * Returns the max value of the set data.
-     * 
+     *
      * @return the max
      */
     public String max() {
@@ -442,7 +441,7 @@ public abstract class MaxCollector<T extends ReductionData> extends ReductionDat
         data.exists = true;
       }
     }
-    
+
     @Override
     public void submitReservations(Consumer<ReductionDataReservation<?,?>> consumer) {
       consumer.accept(new StringCheckedReservation(
@@ -468,7 +467,7 @@ public abstract class MaxCollector<T extends ReductionData> extends ReductionDat
       super.setData(data);
       max = ((MaxData)data).val;
     }
-    
+
     public static class MaxData extends ReductionData {
       String val;
     }

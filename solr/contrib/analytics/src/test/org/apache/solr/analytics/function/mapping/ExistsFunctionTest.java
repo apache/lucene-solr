@@ -17,7 +17,6 @@
 package org.apache.solr.analytics.function.mapping;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.analytics.function.mapping.ExistsFunction;
 import org.apache.solr.analytics.value.AnalyticsValueStream;
 import org.apache.solr.analytics.value.BooleanValue;
 import org.apache.solr.analytics.value.FillableTestValue.TestBooleanValue;

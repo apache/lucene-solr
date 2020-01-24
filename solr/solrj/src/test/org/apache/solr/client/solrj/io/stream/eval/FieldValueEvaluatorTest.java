@@ -22,14 +22,14 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.PriorityQueue;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.FieldValueEvaluator;
 import org.junit.Test;
 
 import junit.framework.Assert;
 
-public class FieldValueEvaluatorTest extends LuceneTestCase {
+public class FieldValueEvaluatorTest extends SolrTestCase {
 
   Map<String, Object> values;
   

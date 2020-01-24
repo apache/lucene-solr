@@ -1,0 +1,12 @@
+- case type
+- when :xref
+  a href=target =xref_text
+- when :ref
+  / "target" is for backward compat. with Asciidoctor <1.5.6
+  a id=(id || target) aria-hidden='true'
+- when :bibref
+  / "target" is for backward compat. with Asciidoctor <1.5.6
+  a id=(id || target) aria-hidden='true'
+  =bibref_text
+- else
+  a id=id class=role href=target target=(attr :window) rel=link_rel title=(attr :title) =text

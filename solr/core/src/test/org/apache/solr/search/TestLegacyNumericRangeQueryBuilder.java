@@ -17,7 +17,7 @@
 package org.apache.solr.search;
 
 import org.apache.lucene.search.Query;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.legacy.LegacyNumericRangeQuery;
 import org.apache.lucene.queryparser.xml.ParserException;
 import org.w3c.dom.Document;
@@ -32,7 +32,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
-public class TestLegacyNumericRangeQueryBuilder extends LuceneTestCase {
+public class TestLegacyNumericRangeQueryBuilder extends SolrTestCase {
 
   public void testGetFilterHandleNumericParseErrorStrict() throws Exception {
     LegacyNumericRangeQueryBuilder filterBuilder = new LegacyNumericRangeQueryBuilder();

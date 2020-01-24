@@ -33,8 +33,6 @@ import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Observable;
-import java.util.Observer;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
@@ -42,7 +40,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 
-class SolrCores implements Observer {
+class SolrCores {
 
   private static Object modifyLock = new Object(); // for locking around manipulating any of the core maps.
   private final Map<String, SolrCore> cores = new LinkedHashMap<>(); // For "permanent" cores
@@ -184,10 +182,9 @@ class SolrCores implements Observer {
    */
 
   List<SolrCore> getCores() {
-    List<SolrCore> lst = new ArrayList<>();
 
     synchronized (modifyLock) {
-      lst.addAll(cores.values());
+      List<SolrCore> lst = new ArrayList<>(cores.values());
       return lst;
     }
   }
@@ -203,10 +200,10 @@ class SolrCores implements Observer {
    * @return List of currently loaded cores.
    */
   Set<String> getLoadedCoreNames() {
-    Set<String> set = new TreeSet<>();
+    Set<String> set;
 
     synchronized (modifyLock) {
-      set.addAll(cores.keySet());
+      set = new TreeSet<>(cores.keySet());
       if (getTransientCacheHandler() != null) {
         set.addAll(getTransientCacheHandler().getLoadedCoreNames());
       }
@@ -241,9 +238,9 @@ class SolrCores implements Observer {
    * @return all cores names, whether loaded or unloaded, transient or permanent.
    */
   public Collection<String> getAllCoreNames() {
-    Set<String> set = new TreeSet<>();
+    Set<String> set;
     synchronized (modifyLock) {
-      set.addAll(cores.keySet());
+      set = new TreeSet<>(cores.keySet());
       if (getTransientCacheHandler() != null) {
         set.addAll(getTransientCacheHandler().getAllCoreNames());
       }
@@ -534,22 +531,9 @@ class SolrCores implements Observer {
     return false;
   }
 
-  // Let transient cache implementation tell us when it ages out a core
-  @Override
-  public void update(Observable o, Object arg) {
+  public void queueCoreToClose(SolrCore coreToClose) {
     synchronized (modifyLock) {
-      // Erick Erickson debugging TestLazyCores. With this un-commented, we get no testLazyCores failures.
-//      SolrCore core = (SolrCore) arg;
-//      SolrQueryRequest req = new LocalSolrQueryRequest(core, new ModifiableSolrParams());
-//      CommitUpdateCommand cmd = new CommitUpdateCommand(req, false);
-//      cmd.openSearcher = false;
-//      cmd.waitSearcher = false;
-//      try {
-//        core.getUpdateHandler().commit(cmd);
-//      } catch (IOException e) {
-//        log.warn("Caught exception trying to close a transient core, ignoring as it should be benign");
-//      }
-      pendingCloses.add((SolrCore) arg); // Essentially just queue this core up for closing.
+      pendingCloses.add(coreToClose); // Essentially just queue this core up for closing.
       modifyLock.notifyAll(); // Wakes up closer thread too
     }
   }
@@ -563,6 +547,5 @@ class SolrCores implements Observer {
     }
     return transientCoreCache.getTransientSolrCoreCache();
   }
-
 
 }

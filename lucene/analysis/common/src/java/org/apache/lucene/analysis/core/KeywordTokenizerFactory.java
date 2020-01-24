@@ -38,8 +38,15 @@ import static org.apache.lucene.analysis.standard.StandardTokenizer.MAX_TOKEN_LE
  *        MAX_TOKEN_LENGTH_LIMIT (1024*1024). It is rare to need to change this
  *      else {@link KeywordTokenizer}::DEFAULT_BUFFER_SIZE</li>
  * </ul>
+ *
+ * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class KeywordTokenizerFactory extends TokenizerFactory {
+
+  /** SPI name */
+  public static final String NAME = "keyword";
+
   private final int maxTokenLen;
   
   /** Creates a new KeywordTokenizerFactory */

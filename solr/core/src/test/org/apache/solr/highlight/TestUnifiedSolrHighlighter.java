@@ -69,17 +69,12 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
   }
 
   public void testImpossibleOffsetSource() {
-    try {
-      assertQ("impossible offset source",
-          req("q", "text2:document", "hl.offsetSource", "postings", "hl.fl", "text2", "sort", "id asc", "hl", "true"),
-          "count(//lst[@name='highlighting']/*)=2",
-          "//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/str='<em>document</em> one'",
-          "//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/str='second <em>document</em>'");
-      fail("Did not encounter exception for no offsets");
-    } catch (Exception e) {
-      assertTrue("Cause should be illegal argument", e.getCause() instanceof IllegalArgumentException);
-      assertTrue("Should warn no offsets", e.getCause().getMessage().contains("indexed without offsets"));
-    }
+    IllegalArgumentException e = expectThrows(IllegalArgumentException.class, () -> {
+      h.query(req("q", "text2:document", "hl.offsetSource", "postings",
+          "hl.fl", "text2", "sort", "id asc", "hl", "true"));
+    });
+    assertTrue("Should warn no offsets", e.getMessage().contains("indexed without offsets"));
+
   }
 
   public void testMultipleSnippetsReturned() {
@@ -103,7 +98,7 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
     assertQ("strict phrase handling",
         req("q", "text:\"strict phrases\"", "sort", "id asc", "hl", "true"),
         "count(//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/*)=1",
-        "//lst[@name='highlighting']/lst[@name='101']/arr/str[1]='<em>Strict</em> <em>phrases</em> should be enabled for phrases'");
+        "//lst[@name='highlighting']/lst[@name='101']/arr/str[1]='<em>Strict phrases</em> should be enabled for phrases'");
   }
 
   public void testStrictPhrasesCanBeDisabled() {
@@ -249,15 +244,24 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
     assertU(adoc("text", "This document contains # special characters, while the other document contains the same # special character.", "id", "103"));
     assertU(adoc("text", "While the other document contains the same # special character.", "id", "104"));
     assertU(commit());
-    assertQ("CUSTOM breakiterator", 
+    assertQ("CUSTOM breakiterator",
         req("q", "text:document", "sort", "id asc", "hl", "true", "hl.bs.type", "SEPARATOR","hl.bs.separator","#","hl.fragsize", "-1"),
         "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='This <em>document</em> contains #'");
-    assertQ("different breakiterator", 
+    assertQ("different breakiterator",
         req("q", "text:document", "sort", "id asc", "hl", "true", "hl.bs.type", "SEPARATOR","hl.bs.separator","#","hl.fragsize", "-1"),
         "//lst[@name='highlighting']/lst[@name='104']/arr[@name='text']/str='While the other <em>document</em> contains the same #'");
 
+    assertQ("CUSTOM breakiterator with fragsize 70 minimum",
+        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.bs.type", "SEPARATOR","hl.bs.separator","#","hl.fragsize", "70", "hl.fragsizeIsMinimum", "true"),
+        "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='This <em>document</em> contains # special characters, while the other <em>document</em> contains the same #'");
     assertQ("CUSTOM breakiterator with fragsize 70",
         req("q", "text:document", "sort", "id asc", "hl", "true", "hl.bs.type", "SEPARATOR","hl.bs.separator","#","hl.fragsize", "70"),
+        "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='This <em>document</em> contains #'");
+    assertQ("CUSTOM breakiterator with fragsize 90",
+        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.bs.type", "SEPARATOR","hl.bs.separator","#","hl.fragsize", "90"),
+        "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='This <em>document</em> contains #'");
+    assertQ("CUSTOM breakiterator with fragsize 100",
+        req("q", "text:document", "sort", "id asc", "hl", "true", "hl.bs.type", "SEPARATOR","hl.bs.separator","#","hl.fragsize", "100"),
         "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='This <em>document</em> contains # special characters, while the other <em>document</em> contains the same #'");
   }
 
@@ -267,11 +271,17 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
     assertU(adoc("id", "10", "text", "This is a sentence just under seventy chars in length blah blah. Next sentence is here."));
     assertU(commit());
     assertQ("default fragsize",
-        req("q", "text:seventy", "hl", "true"),
+        req("q", "text:seventy", "hl", "true", "hl.fragsizeIsMinimum", "true"),
         "//lst[@name='highlighting']/lst[@name='10']/arr[@name='text']/str='This is a sentence just under <em>seventy</em> chars in length blah blah. Next sentence is here.'");
-    assertQ("smaller fragsize",
-        req("q", "text:seventy", "hl", "true", "hl.fragsize", "60"), // a bit smaller
+    assertQ("default fragsize",
+        req("q", "text:seventy", "hl", "true", "hl.fragsizeIsMinimum", "true", "hl.fragsize", "60"),
         "//lst[@name='highlighting']/lst[@name='10']/arr[@name='text']/str='This is a sentence just under <em>seventy</em> chars in length blah blah. '");
+    assertQ("smaller fragsize",
+        req("q", "text:seventy", "hl", "true"),
+        "//lst[@name='highlighting']/lst[@name='10']/arr[@name='text']/str='This is a sentence just under <em>seventy</em> chars in length blah blah. '");
+    assertQ("default fragsize",
+        req("q", "text:seventy", "hl", "true", "hl.fragsize", "90"),
+        "//lst[@name='highlighting']/lst[@name='10']/arr[@name='text']/str='This is a sentence just under <em>seventy</em> chars in length blah blah. Next sentence is here.'");
   }
   
   public void testEncoder() {
@@ -279,7 +289,12 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
     assertU(commit());
     assertQ("html escaped", 
         req("q", "text:document", "sort", "id asc", "hl", "true", "hl.encoder", "html"),
-        "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='<em>Document</em>&#32;one&#32;has&#32;a&#32;first&#32;&lt;i&gt;sentence&lt;&#x2F;i&gt;&#46;'");
+        "//lst[@name='highlighting']/lst[@name='103']/arr[@name='text']/str='<em>Document</em> one has a first &lt;i&gt;sentence&lt;&#x2F;i&gt;.'");
+  }
+
+  public void testRangeQuery() {
+    assertQ(req("q", "id:101", "hl", "true", "hl.q", "text:[dob TO doe]"),
+        "count(//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/*)=1");
   }
 
   public void testRequireFieldMatch() {
@@ -291,5 +306,27 @@ public class TestUnifiedSolrHighlighter extends SolrTestCaseJ4 {
     assertQ(req("q", "id:101", "hl", "true", "hl.q", "text:document", "hl.fl", "text3", "hl.requireFieldMatch", "true"),
         "count(//lst[@name='highlighting']/lst[@name='101']/arr[@name='text3']/*)=0");
   }
-  
+
+  public void testWeightMatchesDisabled() {
+    clearIndex();
+    assertU(adoc("text", "alpha bravo charlie", "id", "101"));
+    assertU(commit());
+    assertQ("weight matches disabled, phrase highlights separately",
+        req("q", "text:\"alpha bravo\"", "hl", "true", "hl.weightMatches", "false"),
+        "count(//lst[@name='highlighting']/lst[@name='101']/arr[@name='text']/*)=1",
+        "//lst[@name='highlighting']/lst[@name='101']/arr/str[1]='<em>alpha</em> <em>bravo</em> charlie'");
+  }
+
+  // LUCENE-8492
+  public void testSurroundQParser() {
+    assertQ(req("q", "{!surround df=text}2w(second, document)", "hl", "true", "hl.fl", "text"),
+        "count(//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/*)=1");
+  }
+
+  // LUCENE-7757
+  public void testComplexPhraseQParser() {
+    assertQ(req("q", "{!complexphrase df=text}(\"sec* doc*\")", "hl", "true", "hl.fl", "text"),
+        "count(//lst[@name='highlighting']/lst[@name='102']/arr[@name='text']/*)=1");
+  }
+
 }

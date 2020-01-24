@@ -1,0 +1,350 @@
+= Shard Management Commands
+:page-toclevels: 1
+:page-tocclass: right
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+//
+//   http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing,
+// software distributed under the License is distributed on an
+// "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+// KIND, either express or implied.  See the License for the
+// specific language governing permissions and limitations
+// under the License.
+
+In SolrCloud, a shard is a logical partition of a collection. This partition stores part of the entire index for a collection.
+
+The number of shards you have helps to determine how many documents a single collection can contain in total, and also impacts search performance.
+
+[[splitshard]]
+== SPLITSHARD: Split a Shard
+
+`/admin/collections?action=SPLITSHARD&collection=_name_&shard=_shardID_`
+
+Splitting a shard will take an existing shard and break it into two pieces which are written to disk as two (new) shards. The original shard will continue to contain the same data as-is but it will start re-routing requests to the new shards. The new shards will have as many replicas as the original shard. A soft commit is automatically issued after splitting a shard so that documents are made visible on sub-shards. An explicit commit (hard or soft) is not necessary after a split operation because the index is automatically persisted to disk during the split operation.
+
+This command allows for seamless splitting and requires no downtime. A shard being split will continue to accept query and indexing requests and will automatically start routing requests to the new shards once this operation is complete. This command can only be used for SolrCloud collections created with `numShards` parameter, meaning collections which rely on Solr's hash-based routing mechanism.
+
+The split is performed by dividing the original shard's hash range into two equal partitions and dividing up the documents in the original shard according to the new sub-ranges. Two parameters discussed below, `ranges` and `split.key` provide further control over how the split occurs.
+
+The newly created shards will have as many replicas as the parent shard, of the same replica types.
+
+When using `splitMethod=rewrite` (default) you must ensure that the node running the leader of the parent shard has enough free disk space i.e., more than twice the index size, for the split to succeed. The API uses the Autoscaling framework to find nodes that can satisfy the disk requirements for the new replicas but only when an Autoscaling policy is configured. Refer to <<solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Policy and Preferences>> section for more details.
+
+Also, the first replicas of resulting sub-shards will always be placed on the shard leader node, which may cause Autoscaling policy violations that need to be resolved either automatically (when appropriate triggers are in use) or manually.
+
+Shard splitting can be a long running process. In order to avoid timeouts, you should run this as an <<collections-api.adoc#asynchronous-calls,asynchronous call>>.
+
+=== SPLITSHARD Parameters
+
+`collection`::
+The name of the collection that includes the shard to be split. This parameter is required.
+
+`shard`::
+The name of the shard to be split. This parameter is required when `split.key` is not specified.
+
+`ranges`::
+A comma-separated list of hash ranges in hexadecimal, such as `ranges=0-1f4,1f5-3e8,3e9-5dc`.
++
+This parameter can be used to divide the original shard's hash range into arbitrary hash range intervals specified in hexadecimal. For example, if the original hash range is `0-1500` then adding the parameter: `ranges=0-1f4,1f5-3e8,3e9-5dc` will divide the original shard into three shards with hash range `0-500`, `501-1000`, and `1001-1500` respectively.
+
+`split.key`::
+The key to use for splitting the index.
++
+This parameter can be used to split a shard using a route key such that all documents of the specified route key end up in a single dedicated sub-shard. Providing the `shard` parameter is not required in this case because the route key is enough to figure out the right shard. A route key which spans more than one shard is not supported.
++
+For example, suppose `split.key=A!` hashes to the range `12-15` and belongs to shard 'shard1' with range `0-20`. Splitting by this route key would yield three sub-shards with ranges `0-11`, `12-15` and `16-20`. Note that the sub-shard with the hash range of the route key may also contain documents for other route keys whose hash ranges overlap.
+
+`numSubShards`::
+The number of sub-shards to split the parent shard into. Allowed values for this are in the range of `2`-`8` and defaults to `2`.
++
+This parameter can only be used when `ranges` or `split.key` are not specified.
+
+`splitMethod`::
+Currently two methods of shard splitting are supported:
+* `splitMethod=rewrite` (default) after selecting documents to retain in each partition this method creates sub-indexes from
+scratch, which is a lengthy CPU- and I/O-intensive process but results in optimally-sized sub-indexes that don't contain
+any data from documents not belonging to each partition.
+* `splitMethod=link` uses file system-level hard links for creating copies of the original index files and then only modifies the
+file that contains the list of deleted documents in each partition. This method is many times quicker and lighter on resources than the
+`rewrite` method but the resulting sub-indexes are still as large as the original index because they still contain data from documents not
+belonging to the partition. This slows down the replication process and consumes more disk space on replica nodes (the multiple hard-linked
+copies don't occupy additional disk space on the leader node, unless hard-linking is not supported).
+
+`splitFuzz`::
+A float value (default is 0.0f, must be smaller than 0.5f) that allows to vary the sub-shard ranges
+by this percentage of total shard range, odd shards being larger and even shards being smaller.
+
+`property._name_=_value_`::
+Set core property _name_ to _value_. See the section <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details on supported properties and values.
+
+`waitForFinalState`::
+If `true`, the request will complete only when all affected replicas become active. The default is `false`, which means that the API will return the status of the single action, which may be before the new replica is online and active.
+
+`timing`::
+If `true` then each stage of processing will be timed and a `timing` section will be included in response.
+
+`async`::
+Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>
+
+`splitByPrefix`::
+If `true`, the split point will be selected by taking into account the distribution of compositeId values in the shard.
+A compositeId has the form `<prefix>!<suffix>`, where all documents with the same prefix are colocated on in the hash space.
+If there are multiple prefixes in the shard being split, then the split point will be selected to divide up the prefixes into as equal sized shards as possible without splitting any prefix.
+If there is only a single prefix in a shard, the range of the prefix will be divided in half.
++
+The id field is usually scanned to determine the number of documents with each prefix.
+As an optimization, if an optional field called `id_prefix` exists and has the document prefix indexed (including the !) for each document,
+then that will be used to generate the counts.
++
+One simple way to populate `id_prefix` is a copyField in the schema:
+[source,xml]
+----
+  <!-- OPTIONAL, for optimization used by splitByPrefix if it exists -->
+  <field name="id_prefix" type="composite_id_prefix" indexed="true" stored="false"/>
+  <copyField source="id" dest="id_prefix"/>
+  <fieldtype name="composite_id_prefix" class="solr.TextField">
+    <analyzer>
+      <tokenizer class="solr.PatternTokenizerFactory" pattern=".*!" group="0"/>
+    </analyzer>
+  </fieldtype>
+----
+
+Current implementation details and limitations:
+
+* Prefix size is calculated using number of documents with the prefix.
+* Only two level compositeIds are supported.
+* The shard can only be split into two.
+
+=== SPLITSHARD Response
+
+The output will include the status of the request and the new shard names, which will use the original shard as their basis, adding an underscore and a number. For example, "shard1" will become "shard1_0" and "shard1_1". If the status is anything other than "success", an error message will explain why the request failed.
+
+=== Examples using SPLITSHARD
+
+*Input*
+
+Split shard1 of the "anotherCollection" collection.
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=SPLITSHARD&collection=anotherCollection&shard=shard1&wt=xml
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">6120</int>
+  </lst>
+  <lst name="success">
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">3673</int>
+      </lst>
+      <str name="core">anotherCollection_shard1_1_replica1</str>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">3681</int>
+      </lst>
+      <str name="core">anotherCollection_shard1_0_replica1</str>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">6008</int>
+      </lst>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">6007</int>
+      </lst>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">71</int>
+      </lst>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">0</int>
+      </lst>
+      <str name="core">anotherCollection_shard1_1_replica1</str>
+      <str name="status">EMPTY_BUFFER</str>
+    </lst>
+    <lst>
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">0</int>
+      </lst>
+      <str name="core">anotherCollection_shard1_0_replica1</str>
+      <str name="status">EMPTY_BUFFER</str>
+    </lst>
+  </lst>
+</response>
+----
+
+[[createshard]]
+== CREATESHARD: Create a Shard
+
+Shards can only created with this API for collections that use the 'implicit' router (i.e., when the collection was created, `router.name=implicit`). A new shard with a name can be created for an existing 'implicit' collection.
+
+Use SPLITSHARD for collections created with the 'compositeId' router (`router.key=compositeId`).
+
+`/admin/collections?action=CREATESHARD&shard=_shardName_&collection=_name_`
+
+The default values for `replicationFactor` or `nrtReplicas`, `tlogReplicas`, `pullReplicas` from the collection is used to determine the number of replicas to be created for the new shard. This can be customized by explicitly passing the corresponding parameters to the request.
+
+The API uses the Autoscaling framework to find the best possible nodes in the cluster when an Autoscaling preferences or policy is configured. Refer to <<solrcloud-autoscaling-policy-preferences.adoc#solrcloud-autoscaling-policy-preferences,Autoscaling Policy and Preferences>> section for more details.
+
+=== CREATESHARD Parameters
+
+`collection`::
+The name of the collection that includes the shard to be split. This parameter is required.
+
+`shard`::
+The name of the shard to be created. This parameter is required.
+
+`createNodeSet`::
+Allows defining the nodes to spread the new collection across. If not provided, the CREATESHARD operation will create shard-replica spread across all live Solr nodes.
++
+The format is a comma-separated list of node_names, such as `localhost:8983_solr,localhost:8984_solr,localhost:8985_solr`.
+
+`nrtReplicas`::
+The number of `nrt` replicas that should be created for the new shard (optional, the defaults for the collection is used if omitted)
+
+`tlogReplicas`::
+The number of `tlog` replicas that should be created for the new shard (optional, the defaults for the collection is used if omitted)
+
+`pullReplicas`::
+The number of `pull` replicas that should be created for the new shard (optional, the defaults for the collection is used if omitted)
+
+`property._name_=_value_`::
+Set core property _name_ to _value_. See the section <<defining-core-properties.adoc#defining-core-properties,Defining core.properties>> for details on supported properties and values.
+
+`waitForFinalState`::
+If `true`, the request will complete only when all affected replicas become active. The default is `false`, which means that the API will return the status of the single action, which may be before the new replica is online and active.
+
+`async`::
+Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
+
+=== CREATESHARD Response
+
+The output will include the status of the request. If the status is anything other than "success", an error message will explain why the request failed.
+
+=== Examples using CREATESHARD
+
+*Input*
+
+Create 'shard-z' for the "anImplicitCollection" collection.
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=CREATESHARD&collection=anImplicitCollection&shard=shard-z&wt=xml
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">558</int>
+  </lst>
+</response>
+----
+
+[[deleteshard]]
+== DELETESHARD: Delete a Shard
+
+Deleting a shard will unload all replicas of the shard, remove them from `clusterstate.json`, and (by default) delete the instanceDir and dataDir for each replica. It will only remove shards that are inactive, or which have no range given for custom sharding.
+
+`/admin/collections?action=DELETESHARD&shard=_shardID_&collection=_name_`
+
+=== DELETESHARD Parameters
+
+`collection`::
+The name of the collection that includes the shard to be deleted. This parameter is required.
+
+`shard`::
+The name of the shard to be deleted. This parameter is required.
+
+`deleteInstanceDir`::
+By default Solr will delete the entire instanceDir of each replica that is deleted. Set this to `false` to prevent the instance directory from being deleted.
+
+`deleteDataDir`::
+By default Solr will delete the dataDir of each replica that is deleted. Set this to `false` to prevent the data directory from being deleted.
+
+`deleteIndex`::
+By default Solr will delete the index of each replica that is deleted. Set this to `false` to prevent the index directory from being deleted.
+
+`async`::
+Request ID to track this action which will be <<collections-api.adoc#asynchronous-calls,processed asynchronously>>.
+
+=== DELETESHARD Response
+
+The output will include the status of the request. If the status is anything other than "success", an error message will explain why the request failed.
+
+=== Examples using DELETESHARD
+
+*Input*
+
+Delete 'shard1' of the "anotherCollection" collection.
+
+[source,text]
+----
+http://localhost:8983/solr/admin/collections?action=DELETESHARD&collection=anotherCollection&shard=shard1&wt=xml
+----
+
+*Output*
+
+[source,xml]
+----
+<response>
+  <lst name="responseHeader">
+    <int name="status">0</int>
+    <int name="QTime">558</int>
+  </lst>
+  <lst name="success">
+    <lst name="10.0.1.4:8983_solr">
+      <lst name="responseHeader">
+        <int name="status">0</int>
+        <int name="QTime">27</int>
+      </lst>
+    </lst>
+  </lst>
+</response>
+----
+
+[[forceleader]]
+== FORCELEADER: Force Shard Leader
+
+In the unlikely event of a shard losing its leader, this command can be invoked to force the election of a new leader.
+
+`/admin/collections?action=FORCELEADER&collection=<collectionName>&shard=<shardName>`
+
+=== FORCELEADER Parameters
+
+`collection`::
+The name of the collection. This parameter is required.
+
+`shard`::
+The name of the shard where leader election should occur. This parameter is required.
+
+WARNING: This is an expert level command, and should be invoked only when regular leader election is not working. This may potentially lead to loss of data in the event that the new leader doesn't have certain updates, possibly recent ones, which were acknowledged by the old leader before going down.

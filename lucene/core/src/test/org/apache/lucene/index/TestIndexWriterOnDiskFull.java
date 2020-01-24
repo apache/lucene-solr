@@ -18,7 +18,6 @@ package org.apache.lucene.index;
 
 
 import java.io.IOException;
-
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.LiveDocsFormat;
 import org.apache.lucene.document.Document;
@@ -32,9 +31,9 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.store.AlreadyClosedException;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.IOSupplier;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -62,7 +61,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
         if (VERBOSE) {
           System.out.println("TEST: cycle: diskFree=" + diskFree);
         }
-        MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), new RAMDirectory());
+        MockDirectoryWrapper dir = new MockDirectoryWrapper(random(), new ByteBuffersDirectory());
         dir.setMaxSizeInBytes(diskFree);
         IndexWriter writer = new IndexWriter(dir, newIndexWriterConfig(new MockAnalyzer(random())));
         MergeScheduler ms = writer.getConfig().getMergeScheduler();
@@ -162,7 +161,6 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
 
     final String idFormat = TestUtil.getPostingsFormat("id");
     final String contentFormat = TestUtil.getPostingsFormat("content");
-    assumeFalse("This test cannot run with Memory codec", idFormat.equals("Memory") || contentFormat.equals("Memory"));
 
     int START_COUNT = 57;
     int NUM_DIR = TEST_NIGHTLY ? 50 : 5;
@@ -479,16 +477,13 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
       if (!doFail) {
         return;
       }
-      StackTraceElement[] trace = new Exception().getStackTrace();
-      for (int i = 0; i < trace.length; i++) {
-        if (SegmentMerger.class.getName().equals(trace[i].getClassName()) && "mergeTerms".equals(trace[i].getMethodName()) && !didFail1) {
-          didFail1 = true;
-          throw new IOException("fake disk full during mergeTerms");
-        }
-        if (LiveDocsFormat.class.getName().equals(trace[i].getClassName()) && "writeLiveDocs".equals(trace[i].getMethodName()) && !didFail2) {
-          didFail2 = true;
-          throw new IOException("fake disk full while writing LiveDocs");
-        }
+      if (callStackContains(SegmentMerger.class, "mergeTerms") && !didFail1) {
+        didFail1 = true;
+        throw new IOException("fake disk full during mergeTerms");
+      }
+      if (callStackContains(LiveDocsFormat.class, "writeLiveDocs") && !didFail2) {
+        didFail2 = true;
+        throw new IOException("fake disk full while writing LiveDocs");
       }
     }
   }
@@ -548,7 +543,7 @@ public class TestIndexWriterOnDiskFull extends LuceneTestCase {
                                                 .setMergeScheduler(new ConcurrentMergeScheduler())
                                                 .setCommitOnClose(false));
     writer.commit(); // empty commit, to not create confusing situation with first commit
-    dir.setMaxSizeInBytes(Math.max(1, dir.getRecomputedActualSizeInBytes()));
+    dir.setMaxSizeInBytes(Math.max(1, dir.sizeInBytes()));
     final Document doc = new Document();
     FieldType customType = new FieldType(TextField.TYPE_STORED);
     doc.add(newField("field", "aaa bbb ccc ddd eee fff ggg hhh iii jjj", customType));

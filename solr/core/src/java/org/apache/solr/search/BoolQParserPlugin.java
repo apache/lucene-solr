@@ -21,6 +21,7 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.Query;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.query.FilterQuery;
 import org.apache.solr.request.SolrQueryRequest;
 
 /**
@@ -49,7 +50,18 @@ public class BoolQParserPlugin extends QParserPlugin {
       private void addQueries(BooleanQuery.Builder builder, String[] subQueries, BooleanClause.Occur occur) throws SyntaxError {
         if (subQueries != null) {
           for (String subQuery : subQueries) {
-            builder.add(subQuery(subQuery, null).parse(), occur);
+            final QParser subParser = subQuery(subQuery, null);
+            Query extQuery;
+            if (BooleanClause.Occur.FILTER.equals(occur)) {
+              extQuery = subParser.getQuery();
+              if (!(extQuery instanceof ExtendedQuery) || (
+                  ((ExtendedQuery) extQuery).getCache())) {
+                  extQuery = new FilterQuery(extQuery);
+              }
+            } else {
+              extQuery = subParser.parse();
+            }
+            builder.add(extQuery, occur);
           }
         }
       }

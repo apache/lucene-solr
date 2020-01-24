@@ -83,7 +83,7 @@ public class DocSetUtil {
         searcher.setLiveDocs( collector.getDocSet() );
       }
       try {
-        return searcher.getLiveDocs();
+        return searcher.getLiveDocSet();
       } catch (IOException e) {
         // should be impossible... liveDocs should exist, so no IO should be necessary
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
@@ -106,7 +106,7 @@ public class DocSetUtil {
       try {
         // if this docset has the same cardinality as liveDocs, return liveDocs instead
         // so this set will be short lived garbage.
-        return searcher.getLiveDocs();
+        return searcher.getLiveDocSet();
       } catch (IOException e) {
         // should be impossible... liveDocs should exist, so no IO should be necessary
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);

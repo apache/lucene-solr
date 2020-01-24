@@ -78,4 +78,9 @@ public final class AssertingQuery extends Query {
     }
   }
 
+  @Override
+  public void visit(QueryVisitor visitor) {
+    in.visit(visitor);
+  }
+
 }

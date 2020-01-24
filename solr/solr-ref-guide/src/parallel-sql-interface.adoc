@@ -154,6 +154,12 @@ Solr supports a broad range of SQL syntax.
 The SQL parser being used by Solr to translate the SQL statements is case insensitive. However, for ease of reading, all examples on this page use capitalized keywords.
 ====
 
+.SELECT * is not supported
+[IMPORTANT]
+====
+The SQL parser being used by Solr does not support the SELECT * syntax, you must specify each field you wish to return.
+====
+
 === Escaping Reserved Words
 
 The SQL parser will return an error if a reserved word is used in the SQL query. Reserved words can be escaped and included in the query using the back tick. For example:
@@ -320,10 +326,6 @@ The Column Identifiers can contain both fields in the Solr index and aggregate f
 * `max:(field)`: Returns the max value of a numerics over a set of buckets.
 
 The non-function fields in the field list determine the fields to calculate the aggregations over.
-
-*`GROUP BY` Clause*
-
-The `GROUP BY` clause can contain up to 4 fields in the Solr index. These fields should correspond with the non-function fields in the field list.
 
 === HAVING Clause
 

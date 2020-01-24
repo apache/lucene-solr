@@ -36,6 +36,7 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 
 import org.apache.solr.client.solrj.cloud.autoscaling.VersionedData;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
@@ -49,7 +50,7 @@ import org.slf4j.LoggerFactory;
  * It handles state snapshot / restore in ZK.
  */
 public abstract class TriggerBase implements AutoScaling.Trigger {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   protected final String name;
   protected SolrCloudManager cloudManager;
@@ -128,7 +129,7 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
     } catch (AlreadyExistsException e) {
       // ignore
     } catch (InterruptedException | KeeperException | IOException e) {
-      LOG.warn("Exception checking ZK path " + ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH, e);
+      log.warn("Exception checking ZK path " + ZkStateReader.SOLR_AUTOSCALING_TRIGGER_STATE_PATH, e);
       throw e;
     }
     for (TriggerAction action : actions) {
@@ -221,9 +222,20 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
    */
   protected abstract void setState(Map<String,Object> state);
 
+  /**
+   * Returns an immutable deep copy of this trigger's state, suitible for saving.
+   * This method is public only for tests that wish to do grey-box introspection
+   *
+   * @see #getState
+   * @lucene.internal
+   */
+  public Map<String,Object> deepCopyState() {
+    return Utils.getDeepCopy(getState(), 10, false, true);
+  }
+  
   @Override
   public void saveState() {
-    Map<String,Object> state = Utils.getDeepCopy(getState(), 10, false, true);
+    Map<String,Object> state = deepCopyState();
     if (lastState != null && lastState.equals(state)) {
       // skip saving if identical
       return;
@@ -239,8 +251,10 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
         stateManager.createData(path, data, CreateMode.PERSISTENT);
       }
       lastState = state;
-    } catch (InterruptedException | BadVersionException | AlreadyExistsException | IOException | KeeperException e) {
-      LOG.warn("Exception updating trigger state '" + path + "'", e);
+    } catch (AlreadyExistsException e) {
+      
+    } catch (InterruptedException | BadVersionException | IOException | KeeperException e) {
+      log.warn("Exception updating trigger state '" + path + "'", e);
     }
   }
 
@@ -253,8 +267,10 @@ public abstract class TriggerBase implements AutoScaling.Trigger {
         VersionedData versionedData = stateManager.getData(path);
         data = versionedData.getData();
       }
+    } catch (AlreadyClosedException e) {
+     
     } catch (Exception e) {
-      LOG.warn("Exception getting trigger state '" + path + "'", e);
+      log.warn("Exception getting trigger state '" + path + "'", e);
     }
     if (data != null) {
       Map<String, Object> restoredState = (Map<String, Object>)Utils.fromJSON(data);

@@ -24,7 +24,7 @@ import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.facet.FacetTestCase;
-import org.apache.lucene.facet.SlowRAMDirectory;
+import org.apache.lucene.facet.SlowDirectory;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyReader;
 import org.apache.lucene.facet.taxonomy.directory.DirectoryTaxonomyWriter;
 import org.apache.lucene.store.Directory;
@@ -706,7 +706,7 @@ public class TestTaxonomyCombined extends FacetTestCase {
     final int abOrd = trBase.getOrdinal(abPath);
     final int abYoungChildBase1 = ca1.children()[abOrd]; 
     
-    final int numCategories = atLeast(800);
+    final int numCategories = atLeast(200);
     for (int i = 0; i < numCategories; i++) {
       twBase.addCategory(new FacetLabel("a", "b", Integer.toString(i)));
     }
@@ -720,7 +720,7 @@ public class TestTaxonomyCombined extends FacetTestCase {
     final ParallelTaxonomyArrays ca2 = trBase.getParallelTaxonomyArrays();
     final int abYoungChildBase2 = ca2.children()[abOrd];
     
-    int numRetries = atLeast(50);
+    int numRetries = atLeast(10);
     for (int retry = 0; retry < numRetries; retry++) {
       assertConsistentYoungestChild(abPath, abOrd, abYoungChildBase1, abYoungChildBase2, retry, numCategories);
     }
@@ -732,7 +732,7 @@ public class TestTaxonomyCombined extends FacetTestCase {
   private void assertConsistentYoungestChild(final FacetLabel abPath,
       final int abOrd, final int abYoungChildBase1, final int abYoungChildBase2, final int retry, int numCategories)
       throws Exception {
-    SlowRAMDirectory indexDir = new SlowRAMDirectory(-1, null); // no slowness for initialization
+    SlowDirectory indexDir = new SlowDirectory(-1, null); // no slowness for initialization
     TaxonomyWriter tw = new DirectoryTaxonomyWriter(indexDir);
     tw.addCategory(new FacetLabel("a", "0"));
     tw.addCategory(abPath);

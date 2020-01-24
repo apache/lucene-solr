@@ -23,11 +23,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.function.IntFunction;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionValues;
 import org.apache.lucene.queries.function.ValueSource;
 import org.apache.lucene.search.DocIdSetIterator;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.util.FixedBitSet;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.search.DocIterator;
@@ -65,9 +67,31 @@ public abstract class SlotAcc implements Closeable {
     }
   }
 
-  public abstract void collect(int doc, int slot) throws IOException;
+  /**
+   * All subclasses must override this method to collect documents.  This method is called by the 
+   * default impl of {@link #collect(DocSet,int,IntFunction)} but it's also neccessary if this accumulator 
+   * is used for sorting.
+   *
+   * @param doc Single Segment docId (relative to the current {@link LeafReaderContext} to collect
+   * @param slot The slot number to collect this document in
+   * @param slotContext A callback that can be used for Accumulators that would like additional info 
+   *        about the current slot -- the {@link IntFunction} is only garunteed to be valid for 
+   *        the current slot, and the {@link SlotContext} returned is only valid for the duration 
+   *        of the <code>collect()</code> call.
+   */
+  public abstract void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException;
 
-  public int collect(DocSet docs, int slot) throws IOException {
+  /**
+   * Bulk collection of all documents in a slot.  The default implementation calls {@link #collect(int,int,IntFunction)}
+   *
+   * @param docs (global) Documents to collect
+   * @param slot The slot number to collect these documents in
+   * @param slotContext A callback that can be used for Accumulators that would like additional info 
+   *        about the current slot -- the {@link IntFunction} is only garunteed to be valid for 
+   *        the current slot, and the {@link SlotContext} returned is only valid for the duration 
+   *        of the <code>collect()</code> call.
+   */
+  public int collect(DocSet docs, int slot, IntFunction<SlotContext> slotContext) throws IOException {
     int count = 0;
     SolrIndexSearcher searcher = fcontext.searcher;
 
@@ -94,7 +118,7 @@ public abstract class SlotAcc implements Closeable {
         setNextReader(ctx);
       }
       count++;
-      collect(doc - segBase, slot); // per-seg collectors
+      collect(doc - segBase, slot, slotContext); // per-seg collectors
     }
     return count;
   }
@@ -212,6 +236,19 @@ public abstract class SlotAcc implements Closeable {
 
   } // end class Resizer
 
+  /**
+   * Incapsulates information about the current slot, for Accumulators that may want 
+   * additional info during collection.
+   */
+  public static final class SlotContext {
+    private final Query slotQuery;
+    public SlotContext(Query slotQuery) {
+      this.slotQuery = slotQuery;
+    }
+    public Query getSlotQuery() {
+      return slotQuery;
+    }
+  }
 }
 
 // TODO: we should really have a decoupled value provider...
@@ -349,7 +386,7 @@ class SumSlotAcc extends DoubleFuncSlotAcc {
     super(values, fcontext, numSlots);
   }
 
-  public void collect(int doc, int slotNum) throws IOException {
+  public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext) throws IOException {
     double val = values.doubleVal(doc); // todo: worth trying to share this value across multiple stats that need it?
     result[slotNum] += val;
   }
@@ -361,7 +398,7 @@ class SumsqSlotAcc extends DoubleFuncSlotAcc {
   }
 
   @Override
-  public void collect(int doc, int slotNum) throws IOException {
+  public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext) throws IOException {
     double val = values.doubleVal(doc);
     val = val * val;
     result[slotNum] += val;
@@ -386,7 +423,7 @@ class AvgSlotAcc extends DoubleFuncSlotAcc {
   }
 
   @Override
-  public void collect(int doc, int slotNum) throws IOException {
+  public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext) throws IOException {
     double val = values.doubleVal(doc);
     if (val != 0 || values.exists(doc)) {
       result[slotNum] += val;
@@ -394,13 +431,8 @@ class AvgSlotAcc extends DoubleFuncSlotAcc {
     }
   }
 
-  private double avg(double tot, int count) {
-    return count == 0 ? 0 : tot / count; // returns 0 instead of NaN.. todo - make configurable? if NaN, we need to
-                                         // handle comparisons though...
-  }
-
   private double avg(int slot) {
-    return avg(result[slot], counts[slot]); // calc once and cache in result?
+    return AggUtil.avg(result[slot], counts[slot]); // calc once and cache in result?
   }
 
   @Override
@@ -451,13 +483,8 @@ class VarianceSlotAcc extends DoubleFuncSlotAcc {
     this.sum = resizer.resize(this.sum, 0);
   }
 
-  private double variance(double sumSq, double sum, int count) {
-    double val = count == 0 ? 0 : (sumSq / count) - Math.pow(sum / count, 2);
-    return val;
-  }
-
   private double variance(int slot) {
-    return variance(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
+    return AggUtil.uncorrectedVariance(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
   }
 
   @Override
@@ -479,7 +506,7 @@ class VarianceSlotAcc extends DoubleFuncSlotAcc {
   }
 
   @Override
-  public void collect(int doc, int slot) throws IOException {
+  public void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
     double val = values.doubleVal(doc);
     if (values.exists(doc)) {
       counts[slot]++;
@@ -513,13 +540,8 @@ class StddevSlotAcc extends DoubleFuncSlotAcc {
     this.result = resizer.resize(this.result, 0);
   }
 
-  private double stdDev(double sumSq, double sum, int count) {
-    double val = count == 0 ? 0 : Math.sqrt((sumSq / count) - Math.pow(sum / count, 2)); 
-    return val;
-  }
-
   private double stdDev(int slot) {
-    return stdDev(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
+    return AggUtil.uncorrectedStdDev(result[slot], sum[slot], counts[slot]); // calc once and cache in result?
   }
 
   @Override
@@ -541,7 +563,7 @@ class StddevSlotAcc extends DoubleFuncSlotAcc {
   }
 
   @Override
-  public void collect(int doc, int slot) throws IOException {
+  public void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
     double val = values.doubleVal(doc);
     if (values.exists(doc)) {
       counts[slot]++;
@@ -570,8 +592,9 @@ class CountSlotArrAcc extends CountSlotAcc {
   }
 
   @Override
-  public void collect(int doc, int slotNum) { // TODO: count arrays can use fewer bytes based on the number of docs in
-                                              // the base set (that's the upper bound for single valued) - look at ttf?
+  public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext) {
+    // TODO: count arrays can use fewer bytes based on the number of docs in
+    // the base set (that's the upper bound for single valued) - look at ttf?
     result[slotNum]++;
   }
 
@@ -615,7 +638,7 @@ class SortSlotAcc extends SlotAcc {
   }
 
   @Override
-  public void collect(int doc, int slot) throws IOException {
+  public void collect(int doc, int slot, IntFunction<SlotContext> slotContext) throws IOException {
     // no-op
   }
 

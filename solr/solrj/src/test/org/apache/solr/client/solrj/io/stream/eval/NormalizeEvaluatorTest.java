@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.math3.stat.StatUtils;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.client.solrj.io.Tuple;
 import org.apache.solr.client.solrj.io.eval.NormalizeEvaluator;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
@@ -31,7 +31,7 @@ import org.junit.Test;
 
 import junit.framework.Assert;
 
-public class NormalizeEvaluatorTest extends LuceneTestCase {
+public class NormalizeEvaluatorTest extends SolrTestCase {
 
   StreamFactory factory;
   Map<String,Object> values;
@@ -57,10 +57,10 @@ public class NormalizeEvaluatorTest extends LuceneTestCase {
     values.put("singleInt", singleInt);
     Tuple tuple = new Tuple(values);
 
-    assertSimilar(StatUtils.normalize(Arrays.stream(ints).mapToDouble(Double::new).toArray()), factory.constructEvaluator("norm(ints)").evaluate(tuple));
-    assertSimilar(StatUtils.normalize(Arrays.stream(longs).mapToDouble(Double::new).toArray()), factory.constructEvaluator("norm(longs)").evaluate(tuple));
+    assertSimilar(StatUtils.normalize(Arrays.stream(ints).mapToDouble(Double::valueOf).toArray()), factory.constructEvaluator("norm(ints)").evaluate(tuple));
+    assertSimilar(StatUtils.normalize(Arrays.stream(longs).mapToDouble(Double::valueOf).toArray()), factory.constructEvaluator("norm(longs)").evaluate(tuple));
     assertSimilar(StatUtils.normalize(doubles), factory.constructEvaluator("norm(doubles)").evaluate(tuple));
-    assertSimilar(StatUtils.normalize(Arrays.stream(singleInt).mapToDouble(Double::new).toArray()), factory.constructEvaluator("norm(singleInt)").evaluate(tuple));
+    assertSimilar(StatUtils.normalize(Arrays.stream(singleInt).mapToDouble(Double::valueOf).toArray()), factory.constructEvaluator("norm(singleInt)").evaluate(tuple));
   }
   
   private void assertSimilar(double[] expected, Object actual){

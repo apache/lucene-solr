@@ -18,6 +18,7 @@
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Locale;
 import java.util.List;
 
@@ -39,8 +40,17 @@ public class SetRowLabelsEvaluator extends RecursiveObjectEvaluator implements T
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for value, expecting an array of labels.",toExpression(constructingFactory), value2.getClass().getSimpleName()));
     } else {
       Matrix matrix = (Matrix)value1;
-      List<String> rowlabels =  (List<String>)value2;
-      matrix.setRowLabels(rowlabels);
+      List rowlabels =  (List)value2;
+
+      //Convert numeric labels to strings.
+
+      List<String> strLabels = new ArrayList(rowlabels.size());
+
+      for(Object o : rowlabels) {
+        strLabels.add(o.toString());
+      }
+
+      matrix.setRowLabels(strLabels);
       return matrix;
     }
   }

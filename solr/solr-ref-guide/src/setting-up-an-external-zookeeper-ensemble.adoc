@@ -83,6 +83,7 @@ The file should have the following information to start:
 tickTime=2000
 dataDir=/var/lib/zookeeper
 clientPort=2181
+4lw.commands.whitelist=mntr,conf,ruok
 ----
 
 The parameters are as follows:
@@ -92,6 +93,8 @@ The parameters are as follows:
 `dataDir`:: This is the directory in which ZooKeeper will store data about the cluster. This directory must be empty before starting ZooKeeper for the first time.
 
 `clientPort`:: This is the port on which Solr will access ZooKeeper.
+
+`4lw.commands.whitelist`:: This allows the Solr admin UI to query ZooKeeper. Optionally use "*" to enable all "4 letter words", the three listed will enable the admin UI.
 
 These are the basic parameters that need to be in use on each ZooKeeper node, so this file must be copied to or created on each node.
 
@@ -110,6 +113,7 @@ Once complete, your `zoo.cfg` file might look like this:
 tickTime=2000
 dataDir=/var/lib/zookeeper
 clientPort=2181
+4lw.commands.whitelist=mntr,conf,ruok
 
 initLimit=5
 syncLimit=2
@@ -153,6 +157,7 @@ On the second node, update `<ZOOKEEPER_HOME>/conf/zoo.cfg` file so it matches th
 tickTime=2000
 dataDir=/var/lib/zookeeper
 clientPort=2181
+4lw.commands.whitelist=mntr,conf,ruok
 
 initLimit=5
 syncLimit=2
@@ -176,6 +181,7 @@ On the third node, update `<ZOOKEEPER_HOME>/conf/zoo.cfg` file so it matches the
 tickTime=2000
 dataDir=/var/lib/zookeeper
 clientPort=2181
+4lw.commands.whitelist=mntr,conf,ruok
 
 initLimit=5
 syncLimit=2
@@ -195,7 +201,7 @@ And create the `myid` file in the `/var/lib/zookeeper` directory:
 Repeat this for servers 4 and 5 if you are creating a 5-node ensemble (a rare case).
 
 
-===  ZooKeeper Environment Configuration
+=== ZooKeeper Environment Configuration
 
 To ease troubleshooting in case of problems with the ensemble later, it's recommended to run ZooKeeper with logging enabled and with proper JVM garbage collection (GC) settings.
 
@@ -289,9 +295,9 @@ For example, to point the Solr instance to the ZooKeeper you've started on port 
 bin/solr start -e cloud -z zk1:2181,zk2:2181,zk3:2181/solr
 ----
 
-=== Updating Solr's Include Files
+=== Updating Solr Include Files
 
-If you update Solr's include file (`solr.in.sh` or `solr.in.cmd`), which overrides defaults used with `bin/solr`, you will not have to use the `-z` parameter with `bin/solr` commands.
+If you update Solr include files (`solr.in.sh` or `solr.in.cmd`), which overrides defaults used with `bin/solr`, you will not have to use the `-z` parameter with `bin/solr` commands.
 
 
 [.dynamic-tabs]
@@ -349,33 +355,33 @@ set ZK_HOST=zk1:2181,zk2:2181,zk3:2181/solr
 
 Now you will not have to enter the connection string when starting Solr.
 
-== Increasing ZooKeeper's 1MB File Size Limit
+== Increasing the File Size Limit
 
-ZooKeeper is designed to hold small files, on the order of kilobytes.  By default, ZooKeeper's file size limit is 1MB.  Attempting to write or read files larger than this will cause errors. 
+ZooKeeper is designed to hold small files, on the order of kilobytes.  By default, ZooKeeper's file size limit is 1MB.  Attempting to write or read files larger than this will cause errors.
 
-Some Solr features, e.g. text analysis synonyms, LTR, and OpenNLP named entity recognition, require configuration resources that can be larger than the default limit.  ZooKeeper can be configured, via Java system property https://zookeeper.apache.org/doc/r{ivy-zookeeper-version}/zookeeperAdmin.html#Unsafe+Options[`jute.maxbuffer`], to increase this limit.  Note that this configuration, which is required both for ZooKeeper server(s) and for all clients that connect to the server(s), must be the same everywhere it is specified.
+Some Solr features, e.g., text analysis synonyms, LTR, and OpenNLP named entity recognition, require configuration resources that can be larger than the default limit.  ZooKeeper can be configured, via Java system property https://zookeeper.apache.org/doc/r{ivy-zookeeper-version}/zookeeperAdmin.html#Unsafe+Options[`jute.maxbuffer`], to increase this limit.  Note that this configuration, which is required both for ZooKeeper server(s) and for all clients that connect to the server(s), must be the same everywhere it is specified.
 
-=== Configuring jute.maxbuffer on ZooKeeper nodes
+=== Configuring jute.maxbuffer on ZooKeeper Nodes
 
-`jute.maxbuffer` must be configured on each external ZooKeeper node.  This can be achieved in any of the following ways; note though that only the first option works on Windows:  
+`jute.maxbuffer` must be configured on each external ZooKeeper node.  This can be achieved in any of the following ways; note though that only the first option works on Windows:
 
-. In `<ZOOKEEPER_HOME>/conf/zoo.cfg`, e.g. to increase the file size limit to one byte less than 10MB, add this line:
+. In `<ZOOKEEPER_HOME>/conf/zoo.cfg`, e.g., to increase the file size limit to one byte less than 10MB, add this line:
 +
 [source,properties]
 jute.maxbuffer=0x9fffff
-. In `<ZOOKEEPER_HOME>/conf/zookeeper-env.sh`, e.g. to increase the file size limit to 50MiB, add this line:
+. In `<ZOOKEEPER_HOME>/conf/zookeeper-env.sh`, e.g., to increase the file size limit to 50MiB, add this line:
 +
 [source,properties]
 JVMFLAGS="$JVMFLAGS -Djute.maxbuffer=50000000"
-. In `<ZOOKEEPER_HOME>/bin/zkServer.sh`, add a `JVMFLAGS` environment variable assignment near the top of the script, e.g. to increase the file size limit to 5MiB:
+. In `<ZOOKEEPER_HOME>/bin/zkServer.sh`, add a `JVMFLAGS` environment variable assignment near the top of the script, e.g., to increase the file size limit to 5MiB:
 +
 [source,properties]
 JVMFLAGS="$JVMFLAGS -Djute.maxbuffer=5000000"
 
-=== Configuring jute.maxbuffer for ZooKeeper clients
+=== Configuring jute.maxbuffer for ZooKeeper Clients
 
-The `bin/solr` script invokes Java programs that act as ZooKeeper clients.  (When you use Solr's bundled ZooKeeper server instead of setting up an external ZooKeeper ensemble, the configuration described below will also configure the ZooKeeper server.) 
-  
+The `bin/solr` script invokes Java programs that act as ZooKeeper clients. When you use Solr's bundled ZooKeeper server instead of setting up an external ZooKeeper ensemble, the configuration described below will also configure the ZooKeeper server.
+
 Add the setting to the `SOLR_OPTS` environment variable in Solr's include file (`bin/solr.in.sh` or `solr.in.cmd`):
 
 [.dynamic-tabs]
@@ -415,7 +421,9 @@ REM -a option on start script, those options will be appended as well. Examples:
 Add the following line to increase the file size limit to 2MB:
 
 [source,bat]
+----
 set SOLR_OPTS=%SOLR_OPTS% -Djute.maxbuffer=0x200000
+----
 ====
 --
 

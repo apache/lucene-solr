@@ -32,7 +32,6 @@ that just finds leaf <fieldType> and <field> nodes and there's no reason to brea
     <fieldType name="text" class="solr.TextField">
       <analyzer>
         <tokenizer class="solr.StandardTokenizerFactory"/>
-        <filter class="solr.StandardFilterFactory"/>
         <filter class="solr.LowerCaseFilterFactory"/>
         <filter class="solr.StopFilterFactory"/>
         <filter class="solr.PorterStemFilterFactory"/>

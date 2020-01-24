@@ -20,8 +20,9 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
-import java.util.Set;
+import java.util.List;
 
+import com.carrotsearch.randomizedtesting.generators.RandomPicks;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.NumericDocValuesField;
@@ -31,11 +32,13 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause.Occur;
+import org.apache.lucene.search.similarities.BM25Similarity;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
 import org.apache.lucene.store.Directory;
+import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
@@ -53,6 +56,94 @@ public class TestQueryRescorer extends LuceneTestCase {
   public static IndexWriterConfig newIndexWriterConfig() {
     // We rely on more tokens = lower score:
     return LuceneTestCase.newIndexWriterConfig().setSimilarity(new ClassicSimilarity());
+  }
+
+  static List<String> dictionary = Arrays.asList("river","quick","brown","fox","jumped","lazy","fence");
+
+  String randomSentence() {
+    final int length = random().nextInt(10);
+    StringBuilder sentence = new StringBuilder(dictionary.get(0)+" ");
+    for (int i = 0; i < length; i++) {
+      sentence.append(dictionary.get(random().nextInt(dictionary.size()-1))+" ");
+    }
+    return sentence.toString();
+  }
+
+  private IndexReader publishDocs(int numDocs, String fieldName, Directory dir) throws Exception {
+
+    RandomIndexWriter w = new RandomIndexWriter(random(), dir, newIndexWriterConfig());
+    for (int i = 0; i < numDocs; i++) {
+      Document d = new Document();
+      d.add(newStringField("id", Integer.toString(i), Field.Store.YES));
+      d.add(newTextField(fieldName, randomSentence(), Field.Store.NO));
+      w.addDocument(d);
+    }
+    IndexReader reader = w.getReader();
+    w.close();
+    return reader;
+  }
+
+  public void testRescoreOfASubsetOfHits() throws Exception {
+    Directory dir = newDirectory();
+    int numDocs = 100;
+    String fieldName = "field";
+    IndexReader reader = publishDocs(numDocs, fieldName, dir);
+
+    // Construct a query that will get numDocs hits.
+    String wordOne = dictionary.get(0);
+    TermQuery termQuery = new TermQuery(new Term(fieldName, wordOne));
+    IndexSearcher searcher = getSearcher(reader);
+    searcher.setSimilarity(new BM25Similarity());
+    TopDocs hits = searcher.search(termQuery, numDocs);
+
+    // Next, use a more specific phrase query that will return different scores
+    // from the above term query
+    String wordTwo = RandomPicks.randomFrom(random(), dictionary);
+    PhraseQuery phraseQuery = new PhraseQuery(1, fieldName, wordOne, wordTwo);
+
+    // rescore, requesting a smaller topN
+    int topN = random().nextInt(numDocs-1);
+    TopDocs phraseQueryHits = QueryRescorer.rescore(searcher, hits, phraseQuery, 2.0, topN);
+    assertEquals(topN, phraseQueryHits.scoreDocs.length);
+
+    for (int i = 1; i < phraseQueryHits.scoreDocs.length; i++) {
+      assertTrue(phraseQueryHits.scoreDocs[i].score <= phraseQueryHits.scoreDocs[i-1].score);
+    }
+    reader.close();
+    dir.close();
+  }
+
+  public void testRescoreIsIdempotent() throws Exception {
+    Directory dir = newDirectory();
+    int numDocs = 100;
+    String fieldName = "field";
+    IndexReader reader = publishDocs(numDocs, fieldName, dir);
+
+    // Construct a query that will get numDocs hits.
+    String wordOne = dictionary.get(0);
+    TermQuery termQuery = new TermQuery(new Term(fieldName, wordOne));
+    IndexSearcher searcher = getSearcher(reader);
+    searcher.setSimilarity(new BM25Similarity());
+    TopDocs hits1 = searcher.search(termQuery, numDocs);
+    TopDocs hits2 = searcher.search(termQuery, numDocs);
+
+    // Next, use a more specific phrase query that will return different scores
+    // from the above term query
+    String wordTwo = RandomPicks.randomFrom(random(), dictionary);
+    PhraseQuery phraseQuery = new PhraseQuery(1, fieldName, wordOne, wordTwo);
+
+    // rescore, requesting the same hits as topN
+    int topN = numDocs;
+    TopDocs firstRescoreHits = QueryRescorer.rescore(searcher, hits1, phraseQuery, 2.0, topN);
+
+    // now rescore again, where topN is less than numDocs
+    topN = random().nextInt(numDocs-1);
+    ScoreDoc[] secondRescoreHits = QueryRescorer.rescore(searcher, hits2, phraseQuery, 2.0, topN).scoreDocs;
+    ScoreDoc[] expectedTopNScoreDocs = ArrayUtil.copyOfSubArray(firstRescoreHits.scoreDocs, 0, topN);
+    CheckHits.checkEqual(phraseQuery, expectedTopNScoreDocs, secondRescoreHits);
+
+    reader.close();
+    dir.close();
   }
 
   public void testBasic() throws Exception {
@@ -79,7 +170,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     searcher.setSimilarity(new ClassicSimilarity());
 
     TopDocs hits = searcher.search(bq.build(), 10);
-    assertEquals(2, hits.totalHits);
+    assertEquals(2, hits.totalHits.value);
     assertEquals("0", searcher.doc(hits.scoreDocs[0].doc).get("id"));
     assertEquals("1", searcher.doc(hits.scoreDocs[1].doc).get("id"));
 
@@ -89,7 +180,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     TopDocs hits2 = QueryRescorer.rescore(searcher, hits, pq, 2.0, 10);
 
     // Resorting changed the order:
-    assertEquals(2, hits2.totalHits);
+    assertEquals(2, hits2.totalHits.value);
     assertEquals("1", searcher.doc(hits2.scoreDocs[0].doc).get("id"));
     assertEquals("0", searcher.doc(hits2.scoreDocs[1].doc).get("id"));
 
@@ -101,7 +192,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     TopDocs hits3 = QueryRescorer.rescore(searcher, hits, snq, 2.0, 10);
 
     // Resorting changed the order:
-    assertEquals(2, hits3.totalHits);
+    assertEquals(2, hits3.totalHits.value);
     assertEquals("1", searcher.doc(hits3.scoreDocs[0].doc).get("id"));
     assertEquals("0", searcher.doc(hits3.scoreDocs[1].doc).get("id"));
 
@@ -134,7 +225,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     searcher.setSimilarity(new ClassicSimilarity());
 
     TopDocs hits = searcher.search(bq.build(), 10);
-    assertEquals(2, hits.totalHits);
+    assertEquals(2, hits.totalHits.value);
     assertEquals("0", searcher.doc(hits.scoreDocs[0].doc).get("id"));
     assertEquals("1", searcher.doc(hits.scoreDocs[1].doc).get("id"));
 
@@ -143,7 +234,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     TopDocs hits2 = QueryRescorer.rescore(searcher, hits, tq, 2.0, 10);
 
     // Just testing that null scorer is handled.
-    assertEquals(2, hits2.totalHits);
+    assertEquals(2, hits2.totalHits.value);
 
     r.close();
     dir.close();
@@ -172,7 +263,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     IndexSearcher searcher = getSearcher(r);
 
     TopDocs hits = searcher.search(bq.build(), 10);
-    assertEquals(2, hits.totalHits);
+    assertEquals(2, hits.totalHits.value);
     assertEquals("0", searcher.doc(hits.scoreDocs[0].doc).get("id"));
     assertEquals("1", searcher.doc(hits.scoreDocs[1].doc).get("id"));
 
@@ -192,7 +283,7 @@ public class TestQueryRescorer extends LuceneTestCase {
       }.rescore(searcher, hits, 10);
 
     // Resorting didn't change the order:
-    assertEquals(2, hits2.totalHits);
+    assertEquals(2, hits2.totalHits.value);
     assertEquals("0", searcher.doc(hits2.scoreDocs[0].doc).get("id"));
     assertEquals("1", searcher.doc(hits2.scoreDocs[1].doc).get("id"));
 
@@ -223,7 +314,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     IndexSearcher searcher = getSearcher(r);
 
     TopDocs hits = searcher.search(bq.build(), 10);
-    assertEquals(2, hits.totalHits);
+    assertEquals(2, hits.totalHits.value);
     assertEquals("0", searcher.doc(hits.scoreDocs[0].doc).get("id"));
     assertEquals("1", searcher.doc(hits.scoreDocs[1].doc).get("id"));
 
@@ -244,7 +335,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     TopDocs hits2 = rescorer.rescore(searcher, hits, 10);
 
     // Resorting changed the order:
-    assertEquals(2, hits2.totalHits);
+    assertEquals(2, hits2.totalHits.value);
     assertEquals("1", searcher.doc(hits2.scoreDocs[0].doc).get("id"));
     assertEquals("0", searcher.doc(hits2.scoreDocs[1].doc).get("id"));
 
@@ -298,7 +389,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     IndexSearcher searcher = getSearcher(r);
 
     TopDocs hits = searcher.search(bq.build(), 10);
-    assertEquals(2, hits.totalHits);
+    assertEquals(2, hits.totalHits.value);
     assertEquals("0", searcher.doc(hits.scoreDocs[0].doc).get("id"));
     assertEquals("1", searcher.doc(hits.scoreDocs[1].doc).get("id"));
 
@@ -308,7 +399,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     TopDocs hits2 = QueryRescorer.rescore(searcher, hits, pq, 2.0, 10);
 
     // Resorting changed the order:
-    assertEquals(2, hits2.totalHits);
+    assertEquals(2, hits2.totalHits.value);
     assertEquals("1", searcher.doc(hits2.scoreDocs[0].doc).get("id"));
     assertEquals("0", searcher.doc(hits2.scoreDocs[1].doc).get("id"));
 
@@ -320,7 +411,7 @@ public class TestQueryRescorer extends LuceneTestCase {
     TopDocs hits3 = QueryRescorer.rescore(searcher, hits, snq, 2.0, 10);
 
     // Resorting changed the order:
-    assertEquals(2, hits3.totalHits);
+    assertEquals(2, hits3.totalHits.value);
     assertEquals("1", searcher.doc(hits3.scoreDocs[0].doc).get("id"));
     assertEquals("0", searcher.doc(hits3.scoreDocs[1].doc).get("id"));
 
@@ -423,13 +514,9 @@ public class TestQueryRescorer extends LuceneTestCase {
       return new Weight(FixedScoreQuery.this) {
 
         @Override
-        public void extractTerms(Set<Term> terms) {
-        }
-
-        @Override
         public Scorer scorer(final LeafReaderContext context) throws IOException {
 
-          return new Scorer(null) {
+          return new Scorer(this) {
             int docID = -1;
 
             @Override
@@ -497,6 +584,11 @@ public class TestQueryRescorer extends LuceneTestCase {
           return null;
         }
       };
+    }
+
+    @Override
+    public void visit(QueryVisitor visitor) {
+
     }
 
     @Override

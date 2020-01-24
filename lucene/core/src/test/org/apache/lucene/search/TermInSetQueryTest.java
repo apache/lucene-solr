@@ -105,7 +105,7 @@ public class TermInSetQueryTest extends LuceneTestCase {
     final int maxDoc = searcher.getIndexReader().maxDoc();
     final TopDocs td1 = searcher.search(q1, maxDoc, scores ? Sort.RELEVANCE : Sort.INDEXORDER);
     final TopDocs td2 = searcher.search(q2, maxDoc, scores ? Sort.RELEVANCE : Sort.INDEXORDER);
-    assertEquals(td1.totalHits, td2.totalHits);
+    assertEquals(td1.totalHits.value, td2.totalHits.value);
     for (int i = 0; i < td1.scoreDocs.length; ++i) {
       assertEquals(td1.scoreDocs[i].doc, td2.scoreDocs[i].doc);
       if (scores) {
@@ -175,7 +175,7 @@ public class TermInSetQueryTest extends LuceneTestCase {
 
   public void testRamBytesUsed() {
     List<BytesRef> terms = new ArrayList<>();
-    final int numTerms = 1000 + random().nextInt(1000);
+    final int numTerms = 10000 + random().nextInt(1000);
     for (int i = 0; i < numTerms; ++i) {
       terms.add(new BytesRef(RandomStrings.randomUnicodeOfLength(random(), 10)));
     }
@@ -183,7 +183,7 @@ public class TermInSetQueryTest extends LuceneTestCase {
     final long actualRamBytesUsed = RamUsageTester.sizeOf(query);
     final long expectedRamBytesUsed = query.ramBytesUsed();
     // error margin within 5%
-    assertEquals(actualRamBytesUsed, expectedRamBytesUsed, actualRamBytesUsed / 20);
+    assertEquals(expectedRamBytesUsed, actualRamBytesUsed, actualRamBytesUsed / 20);
   }
 
   private static class TermsCountingDirectoryReaderWrapper extends FilterDirectoryReader {

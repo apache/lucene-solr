@@ -16,16 +16,19 @@
  */
 package org.apache.solr.search.grouping.endresulttransformer;
 
+import java.util.Map;
+
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.grouping.GroupDocs;
 import org.apache.lucene.search.grouping.TopGroups;
 import org.apache.lucene.util.BytesRef;
+import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrDocumentList;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.handler.component.ResponseBuilder;
-
-import java.util.Map;
+import org.apache.solr.search.grouping.distributed.command.QueryCommandResult;
 
 /**
  * Implementation of {@link EndResultTransformer} that transforms the grouped result into a single flat list.
@@ -46,20 +49,44 @@ public class SimpleEndResultTransformer implements EndResultTransformer {
           command.add("ngroups", topGroups.totalGroupCount);
         }
         SolrDocumentList docList = new SolrDocumentList();
-        docList.setStart(rb.getGroupingSpec().getOffset());
+        docList.setStart(rb.getGroupingSpec().getGroupSortSpec().getOffset());
         docList.setNumFound(topGroups.totalHitCount);
 
-        Float maxScore = Float.NEGATIVE_INFINITY;
+        float maxScore = Float.NEGATIVE_INFINITY;
         for (GroupDocs<BytesRef> group : topGroups.groups) {
           for (ScoreDoc scoreDoc : group.scoreDocs) {
             if (maxScore < scoreDoc.score) {
               maxScore = scoreDoc.score;
             }
-            docList.add(solrDocumentSource.retrieve(scoreDoc));
+            SolrDocument solrDocument = solrDocumentSource.retrieve(scoreDoc);
+            if (solrDocument != null) {
+              docList.add(solrDocument);
+            }
           }
         }
         if (maxScore != Float.NEGATIVE_INFINITY) {
           docList.setMaxScore(maxScore);
+        }
+        command.add("doclist", docList);
+        commands.add(entry.getKey(), command);
+      } else if (value instanceof QueryCommandResult) {
+        QueryCommandResult queryCommandResult = (QueryCommandResult) value;
+        NamedList<Object> command = new SimpleOrderedMap<>();
+        command.add("matches", queryCommandResult.getMatches());
+
+        TopDocs topDocs = queryCommandResult.getTopDocs();
+        SolrDocumentList docList = new SolrDocumentList();
+        docList.setStart(rb.getGroupingSpec().getGroupSortSpec().getOffset());
+        docList.setNumFound(topDocs.totalHits.value);
+
+        if (!Float.isNaN(queryCommandResult.getMaxScore())) {
+          docList.setMaxScore(queryCommandResult.getMaxScore());
+        }
+        for (ScoreDoc scoreDoc : topDocs.scoreDocs) {
+          SolrDocument solrDocument = solrDocumentSource.retrieve(scoreDoc);
+          if (solrDocument != null) {
+            docList.add(solrDocument);
+          }
         }
         command.add("doclist", docList);
         commands.add(entry.getKey(), command);

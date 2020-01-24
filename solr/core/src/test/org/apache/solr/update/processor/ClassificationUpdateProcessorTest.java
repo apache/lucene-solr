@@ -73,9 +73,18 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
 
   @Override
   public void tearDown() throws Exception {
-    reader.close();
-    directory.close();
-    analyzer.close();
+    if (null != reader) {
+      reader.close();
+      reader = null;
+    }
+    if (null != directory) {
+      directory.close();
+      directory = null;
+    }
+    if (null != analyzer) {
+      analyzer.close();
+      analyzer = null;
+    }
     super.tearDown();
   }
 
@@ -502,6 +511,6 @@ public class ClassificationUpdateProcessorTest extends SolrTestCaseJ4 {
 
   private int addDoc(RandomIndexWriter writer, Document doc) throws IOException {
     writer.addDocument(doc);
-    return writer.numDocs() - 1;
+    return writer.getDocStats().numDocs - 1;
   }
 }

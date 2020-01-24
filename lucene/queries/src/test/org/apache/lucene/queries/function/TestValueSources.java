@@ -17,6 +17,7 @@
 package org.apache.lucene.queries.function;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -36,46 +37,13 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.queries.function.docvalues.FloatDocValues;
-import org.apache.lucene.queries.function.valuesource.BytesRefFieldSource;
-import org.apache.lucene.queries.function.valuesource.ConstValueSource;
-import org.apache.lucene.queries.function.valuesource.DivFloatFunction;
-import org.apache.lucene.queries.function.valuesource.DocFreqValueSource;
-import org.apache.lucene.queries.function.valuesource.DoubleConstValueSource;
-import org.apache.lucene.queries.function.valuesource.DoubleFieldSource;
-import org.apache.lucene.queries.function.valuesource.FloatFieldSource;
-import org.apache.lucene.queries.function.valuesource.IDFValueSource;
-import org.apache.lucene.queries.function.valuesource.IfFunction;
-import org.apache.lucene.queries.function.valuesource.IntFieldSource;
-import org.apache.lucene.queries.function.valuesource.JoinDocFreqValueSource;
-import org.apache.lucene.queries.function.valuesource.LinearFloatFunction;
-import org.apache.lucene.queries.function.valuesource.LiteralValueSource;
-import org.apache.lucene.queries.function.valuesource.LongFieldSource;
-import org.apache.lucene.queries.function.valuesource.MaxDocValueSource;
-import org.apache.lucene.queries.function.valuesource.MaxFloatFunction;
-import org.apache.lucene.queries.function.valuesource.MinFloatFunction;
-import org.apache.lucene.queries.function.valuesource.MultiFloatFunction;
-import org.apache.lucene.queries.function.valuesource.MultiFunction;
-import org.apache.lucene.queries.function.valuesource.MultiValuedDoubleFieldSource;
-import org.apache.lucene.queries.function.valuesource.MultiValuedFloatFieldSource;
-import org.apache.lucene.queries.function.valuesource.MultiValuedIntFieldSource;
-import org.apache.lucene.queries.function.valuesource.MultiValuedLongFieldSource;
-import org.apache.lucene.queries.function.valuesource.NormValueSource;
-import org.apache.lucene.queries.function.valuesource.NumDocsValueSource;
-import org.apache.lucene.queries.function.valuesource.PowFloatFunction;
-import org.apache.lucene.queries.function.valuesource.ProductFloatFunction;
-import org.apache.lucene.queries.function.valuesource.QueryValueSource;
-import org.apache.lucene.queries.function.valuesource.RangeMapFloatFunction;
-import org.apache.lucene.queries.function.valuesource.ReciprocalFloatFunction;
-import org.apache.lucene.queries.function.valuesource.ScaleFloatFunction;
-import org.apache.lucene.queries.function.valuesource.SumFloatFunction;
-import org.apache.lucene.queries.function.valuesource.SumTotalTermFreqValueSource;
-import org.apache.lucene.queries.function.valuesource.TFValueSource;
-import org.apache.lucene.queries.function.valuesource.TermFreqValueSource;
-import org.apache.lucene.queries.function.valuesource.TotalTermFreqValueSource;
+import org.apache.lucene.queries.function.valuesource.*;
 import org.apache.lucene.search.CheckHits;
+import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.ScoreDoc;
+import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedNumericSelector.Type;
@@ -519,6 +487,31 @@ public class TestValueSources extends LuceneTestCase {
     assertHits(new FunctionQuery(vs), new float[] { 0F, 0F });
     assertAllExist(vs);
   }
+
+  public void testMultiBoolFunction() throws Exception {
+    // verify toString and description
+    List<ValueSource> valueSources = new ArrayList<>(Arrays.asList(
+        new ConstValueSource(4.1f), new ConstValueSource(1.2f), new DoubleFieldSource("some_double")
+    ));
+    ValueSource vs = new MultiBoolFunction(valueSources) {
+      @Override
+      protected String name() {
+        return "test";
+      }
+
+      @Override
+      protected boolean func(int doc, FunctionValues[] vals) throws IOException {
+        return false;
+      }
+    };
+    assertEquals("test(const(4.1),const(1.2),double(some_double))", vs.description());
+
+    final LeafReaderContext leaf = searcher.getIndexReader().leaves().get(0);
+    FunctionValues fv = vs.getValues(ValueSource.newContext(searcher), leaf);
+    // doesn't matter what is the docId, verify toString
+    assertEquals("test(const(4.1),const(1.2),double(some_double)=0.0)", fv.toString(1));
+
+  }
   
   public void testTF() throws Exception {
     Similarity saved = searcher.getSimilarity();
@@ -600,6 +593,25 @@ public class TestValueSources extends LuceneTestCase {
       }
     }
   }
+
+  public void testWrappingAsDoubleValues() throws IOException {
+
+    FunctionScoreQuery q = FunctionScoreQuery.boostByValue(new TermQuery(new Term("f", "t")),
+        new DoubleFieldSource("double").asDoubleValuesSource());
+
+    searcher.createWeight(searcher.rewrite(q), ScoreMode.COMPLETE, 1);
+
+    // assert that the query has not cached a reference to the IndexSearcher
+    FunctionScoreQuery.MultiplicativeBoostValuesSource source1 = (FunctionScoreQuery.MultiplicativeBoostValuesSource) q.getSource();
+    ValueSource.WrappedDoubleValuesSource source2 = (ValueSource.WrappedDoubleValuesSource) source1.boost;
+    assertNull(source2.searcher);
+
+  }
+
+  public void testBuildingFromDoubleValues() throws Exception {
+    DoubleValuesSource dvs = ValueSource.fromDoubleValuesSource(DoubleValuesSource.fromDoubleField("double")).asDoubleValuesSource();
+    assertHits(new FunctionQuery(ValueSource.fromDoubleValuesSource(dvs)), new float[] { 3.63f, 5.65f });
+  }
     
   /** 
    * Asserts that for every doc, the {@link FunctionValues#exists} value 
@@ -648,7 +660,7 @@ public class TestValueSources extends LuceneTestCase {
       expected[i] = new ScoreDoc(i, scores[i]);
     }
     TopDocs docs = searcher.search(q, documents.size(),
-        new Sort(new SortField("id", SortField.Type.STRING)), true, false);
+        new Sort(new SortField("id", SortField.Type.STRING)), true);
     CheckHits.checkHits(random(), q, "", searcher, expectedDocs);
     CheckHits.checkHitsQuery(q, expected, docs.scoreDocs, expectedDocs);
     CheckHits.checkExplanations(q, "", searcher);

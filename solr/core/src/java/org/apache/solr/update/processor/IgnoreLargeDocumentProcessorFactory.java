@@ -24,6 +24,7 @@ import java.util.Map;
 
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
+import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
@@ -63,7 +64,7 @@ public class IgnoreLargeDocumentProcessorFactory extends UpdateRequestProcessorF
     return new UpdateRequestProcessor(next) {
       @Override
       public void processAdd(AddUpdateCommand cmd) throws IOException {
-        long docSize = ObjectSizeEstimator.fastEstimate(cmd.getSolrInputDocument());
+        long docSize = ObjectSizeEstimator.estimate(cmd.getSolrInputDocument());
         if (docSize / 1024 > maxDocumentSize) {
           throw new SolrException(BAD_REQUEST, "Size of the document "+cmd.getPrintableId()+" is too large, around:"+docSize);
         }
@@ -108,37 +109,36 @@ public class IgnoreLargeDocumentProcessorFactory extends UpdateRequestProcessorF
       primitiveSizes.put(Long.class, Long.BYTES);
     }
 
-    static long fastEstimate(SolrInputDocument doc) {
+    static long estimate(SolrInputDocument doc) {
       if (doc == null) return 0L;
       long size = 0;
-      if (doc.getFieldNames() != null) {
-        for (String fieldName : doc.getFieldNames()) {
-          size += fastEstimate(fieldName) + fastEstimate(doc.getField(fieldName).getValue());
-        }
+      for (SolrInputField inputField : doc.values()) {
+        size += primitiveEstimate(inputField.getName(), 0L);
+        size += estimate(inputField.getValue());
       }
+
       if (doc.hasChildDocuments()) {
         for (SolrInputDocument childDoc : doc.getChildDocuments()) {
-          size += fastEstimate(childDoc);
+          size += estimate(childDoc);
         }
       }
       return size;
     }
 
-    static long fastEstimate(Object obj) {
-      if (obj == null) return 0;
-
-      long size = primitiveEstimate(obj, -1);
-      if (size != -1) return size;
+    static long estimate(Object obj) {
+      if (obj instanceof SolrInputDocument) {
+        return estimate((SolrInputDocument) obj);
+      }
 
       if (obj instanceof Map) {
-        return fastEstimate((Map) obj);
+        return estimate((Map) obj);
       }
 
       if (obj instanceof Collection) {
-        return fastEstimate((Collection) obj);
+        return estimate((Collection) obj);
       }
 
-      return 0L;
+      return primitiveEstimate(obj, 0L);
     }
 
     private static long primitiveEstimate(Object obj, long def) {
@@ -152,20 +152,21 @@ public class IgnoreLargeDocumentProcessorFactory extends UpdateRequestProcessorF
       return def;
     }
 
-    private static long fastEstimate(Map<Object, Object> map) {
+    private static long estimate(Map<Object, Object> map) {
       if (map.isEmpty()) return 0;
       long size = 0;
       for (Map.Entry<Object, Object> entry : map.entrySet()) {
-        size += primitiveEstimate(entry.getKey(), 0L) + primitiveEstimate(entry.getValue(), 0L);
+        size += primitiveEstimate(entry.getKey(), 0L);
+        size += estimate(entry.getValue());
       }
       return size;
     }
 
-    private static long fastEstimate(Collection collection) {
+    private static long estimate(Collection collection) {
       if (collection.isEmpty()) return 0;
       long size = 0;
       for (Object obj : collection) {
-        size += primitiveEstimate(obj, 0L);
+        size += estimate(obj);
       }
       return size;
     }

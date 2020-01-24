@@ -20,9 +20,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Comparator;
 
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.FieldComparator;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.SortField;
 import org.apache.lucene.search.SortedNumericSelector;
@@ -445,30 +443,5 @@ final class Sorter {
   public String toString() {
     return getID();
   }
-
-  static final Scorer FAKESCORER = new Scorer(null) {
-
-    float score;
-    int doc = -1;
-
-    @Override
-    public int docID() {
-      return doc;
-    }
-
-    public DocIdSetIterator iterator() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public float score() throws IOException {
-      return score;
-    }
-
-    @Override
-    public float getMaxScore(int upTo) throws IOException {
-      return Float.POSITIVE_INFINITY;
-    }
-  };
   
 }

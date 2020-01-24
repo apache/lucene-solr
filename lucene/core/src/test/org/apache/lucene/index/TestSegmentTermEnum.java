@@ -104,7 +104,7 @@ public class TestSegmentTermEnum extends LuceneTestCase {
       throws IOException
   {
       IndexReader reader = DirectoryReader.open(dir);
-      TermsEnum termEnum = MultiFields.getTerms(reader, "content").iterator();
+      TermsEnum termEnum = MultiTerms.getTerms(reader, "content").iterator();
 
     // create enumeration of all terms
     // go to the first term (aaa)

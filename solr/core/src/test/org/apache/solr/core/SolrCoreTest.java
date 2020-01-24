@@ -27,6 +27,7 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.search.SolrIndexSearcher;
+import org.apache.solr.update.SolrCoreState;
 import org.apache.solr.util.DefaultSolrThreadFactory;
 import org.apache.solr.util.RefCounted;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -86,6 +87,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
 
     int ihCount = 0;
     {
+      ++ihCount; assertEquals(pathToClassMap.get("/admin/health"), "solr.HealthCheckHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/admin/file"), "solr.ShowFileRequestHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/admin/logging"), "solr.LoggingHandler");
       ++ihCount; assertEquals(pathToClassMap.get("/admin/luke"), "solr.LukeRequestHandler");
@@ -190,7 +192,7 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
     final CoreContainer cores = h.getCoreContainer();
     for (int i = 0; i < MT; ++i) {
       Callable<Integer> call = new Callable<Integer>() {
-        void yield(int n) {
+        void yieldInt(int n) {
           try {
             Thread.sleep(0, (n % 13 + 1) * 10);
           } catch (InterruptedException xint) {
@@ -206,16 +208,16 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
               r += 1;
               core = cores.getCore(SolrTestCaseJ4.DEFAULT_TEST_CORENAME);
               // sprinkle concurrency hinting...
-              yield(l);
+              yieldInt(l);
               assertTrue("Refcount < 1", core.getOpenCount() >= 1);              
-              yield(l);
+              yieldInt(l);
               assertTrue("Refcount > 17", core.getOpenCount() <= 17);             
-              yield(l);
+              yieldInt(l);
               assertTrue("Handler is closed", handler1.closed == false);
-              yield(l);
+              yieldInt(l);
               core.close();
               core = null;
-              yield(l);
+              yieldInt(l);
             }
             return r;
           } finally {
@@ -309,6 +311,8 @@ public class SolrCoreTest extends SolrTestCaseJ4 {
           RefCounted<SolrIndexSearcher> newSearcher = null;
           try {
             newSearcher = core.openNewSearcher(true, true);
+          } catch (SolrCoreState.CoreIsClosedException e) {
+            // closed
           } finally {
             if (newSearcher != null) {
               newSearcher.decref();

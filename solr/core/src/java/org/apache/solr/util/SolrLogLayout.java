@@ -160,16 +160,16 @@ public class SolrLogLayout extends AbstractStringLayout {
         coreInfoMap.put(core.hashCode(), info);
         
         if (sb.length() == 0) sb.append("ASYNC ");
-        sb.append(" NEW_CORE " + info.shortId);
-        sb.append(" name=" + core.getName());
-        sb.append(" " + core);
+        sb.append(" NEW_CORE ").append(info.shortId);
+        sb.append(" name=").append(core.getName());
+        sb.append(" ").append(core);
       }
 
       zkController = core.getCoreContainer().getZkController();
       if (zkController != null) {
         if (info.url == null) {
           info.url = zkController.getBaseUrl() + "/" + core.getName();
-          sb.append(" url=" + info.url + " node=" + zkController.getNodeName());
+          sb.append(" url=").append(info.url).append(" node=").append(zkController.getNodeName());
         }
         
         Map<String,Object> coreProps = getReplicaProps(zkController, core);
@@ -179,7 +179,7 @@ public class SolrLogLayout extends AbstractStringLayout {
               + core.getCoreDescriptor().getCloudDescriptor()
                   .getCollectionName() + " core:" + core.getName() + " props:"
               + coreProps;
-          sb.append(" " + info.shortId + "_STATE=" + corePropsString);
+          sb.append(" ").append(info.shortId).append("_STATE=").append(corePropsString);
         }
       }
     }

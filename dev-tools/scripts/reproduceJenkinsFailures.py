@@ -17,6 +17,7 @@ import argparse
 import http.client
 import os
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -158,7 +159,15 @@ def prepareWorkspace(useGit, gitRef):
     checkoutCmd = 'git checkout %s' % gitRef
     code = run(checkoutCmd)
     if 0 != code:
-      raise RuntimeError('ERROR: "%s" failed.  See above.' % checkoutCmd)
+      addWantedBranchCmd = "git remote set-branches --add origin %s" % gitRef
+      checkoutBranchCmd = 'git checkout -t -b %s origin/%s' % (gitRef, gitRef) # Checkout remote branch as new local branch
+      print('"%s" failed. Trying "%s" and "%s".' % (checkoutCmd, addWantedBranchCmd, checkoutBranchCmd))
+      code = run(addWantedBranchCmd)
+      if 0 != code:
+        raise RuntimeError('ERROR: "%s" failed.  See above.' % addWantedBranchCmd)
+      code = run(checkoutBranchCmd)
+      if 0 != code:
+        raise RuntimeError('ERROR: "%s" failed.  See above.' % checkoutBranchCmd)
     gitCheckoutSucceeded = True
     run('git merge --ff-only', rememberFailure=False) # Ignore failure on non-branch ref
   
@@ -203,7 +212,7 @@ def runTests(testIters, modules, tests):
     finally:
       os.chdir(cwd)
       
-def printReport(testIters, location):
+def printAndMoveReports(testIters, newSubDir, location):
   failures = {}
   for start in ('lucene/build', 'solr/build'):
     for (dir, _, files) in os.walk(start):
@@ -213,12 +222,17 @@ def printReport(testIters, location):
           testcase = testOutputFileMatch.group(1)
           if testcase not in failures:
             failures[testcase] = 0
-          with open(os.path.join(dir, file), encoding='UTF-8') as testOutputFile:
+          filePath = os.path.join(dir, file)
+          with open(filePath, encoding='UTF-8') as testOutputFile:
             for line in testOutputFile:
               errorFailureMatch = reErrorFailure.search(line)
               if errorFailureMatch is not None:
                 failures[testcase] += 1
                 break
+          # have to play nice with 'ant clean'...
+          newDirPath = os.path.join('repro-reports', newSubDir, dir)
+          os.makedirs(newDirPath, exist_ok=True)
+          os.rename(filePath, os.path.join(newDirPath, file))
   print("[repro] Failures%s:" % location)
   for testcase in sorted(failures, key=lambda t: (failures[t],t)): # sort by failure count, then by testcase 
     print("[repro]   %d/%d failed: %s" % (failures[testcase], testIters, testcase))
@@ -238,10 +252,17 @@ def main():
     localGitBranch = getLocalGitBranch()
 
   try:
+    # have to play nice with ant clean, so printAndMoveReports will move all the junit XML files here...
+    print('[repro] JUnit rest result XML files will be moved to: ./repro-reports')
+    if os.path.isdir('repro-reports'):
+      print('[repro]   Deleting old ./repro-reports');
+      shutil.rmtree('repro-reports')
     prepareWorkspace(config.useGit, revisionFromLog)
     modules = groupTestsByModule(tests)
     runTests(config.testIters, modules, tests)
-    failures = printReport(config.testIters, '')
+    failures = printAndMoveReports(config.testIters, 'orig',
+                                   ' w/original seeds' + (' at %s' % revisionFromLog if config.useGit else ''))
+                                  
     
     if config.useGit:
       # Retest 100% failures at the tip of the branch
@@ -253,10 +274,11 @@ def main():
           tests[testcase] = oldTests[testcase]
       if len(tests) > 0:
         print('\n[repro] Re-testing 100%% failures at the tip of %s' % branchFromLog)
-        prepareWorkspace(False, branchFromLog)
+        prepareWorkspace(True, branchFromLog)
         modules = groupTestsByModule(tests)
         runTests(config.testIters, modules, tests)
-        failures = printReport(config.testIters, ' at the tip of %s' % branchFromLog)
+        failures = printAndMoveReports(config.testIters, 'branch-tip',
+                                       ' original seeds at the tip of %s' % branchFromLog)
       
         # Retest 100% tip-of-branch failures without a seed
         oldTests = tests
@@ -270,7 +292,8 @@ def main():
           prepareWorkspace(False, branchFromLog)
           modules = groupTestsByModule(tests)
           runTests(config.testIters, modules, tests)
-          printReport(config.testIters, ' at the tip of %s without a seed' % branchFromLog)
+          printAndMoveReports(config.testIters, 'branch-tip-no-seed',
+                              ' at the tip of %s without a seed' % branchFromLog)
   except Exception as e:
     print('[repro] %s' % traceback.format_exc())
     sys.exit(1)

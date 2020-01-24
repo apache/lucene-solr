@@ -60,7 +60,7 @@ public class RequestContinuesRecorderAuthenticationHandler implements Authentica
                                      HttpServletResponse response)
       throws IOException, AuthenticationException {
     boolean result = authHandler.managementOperation(token, request, response);
-    request.setAttribute(RequestContinuesRecorderAuthenticationHandler.REQUEST_CONTINUES_ATTR, new Boolean(result).toString());
+    request.setAttribute(RequestContinuesRecorderAuthenticationHandler.REQUEST_CONTINUES_ATTR, Boolean.toString(result));
     return result;
   }
 

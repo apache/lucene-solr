@@ -22,7 +22,7 @@ import java.io.IOException;
 import org.apache.lucene.util.LuceneTestCase;
 
 /**
- * Used by MockRAMDirectory to create an output stream that
+ * Used to create an output stream that
  * will throw an IOException on fake disk full, track max
  * disk space actually used, and maybe throw random
  * IOExceptions.
@@ -45,9 +45,9 @@ public class MockIndexOutputWrapper extends IndexOutput {
   }
 
   private void checkCrashed() throws IOException {
-    // If MockRAMDir crashed since we were opened, then don't write anything
+    // If crashed since we were opened, then don't write anything
     if (dir.crashed) {
-      throw new IOException("MockRAMDirectory was crashed; cannot write to " + name);
+      throw new IOException(dir.getClass().getSimpleName() + " has crashed; cannot write to " + name);
     }
   }
   
@@ -59,7 +59,7 @@ public class MockIndexOutputWrapper extends IndexOutput {
     if (dir.maxSize != 0 && freeSpace <= len) {
       // Compute the real disk free.  This will greatly slow
       // down our test but makes it more accurate:
-      realUsage = dir.getRecomputedActualSizeInBytes();
+      realUsage = dir.sizeInBytes();
       freeSpace = dir.maxSize - realUsage;
     }
 
@@ -75,7 +75,7 @@ public class MockIndexOutputWrapper extends IndexOutput {
       if (realUsage > dir.maxUsedSize) {
         dir.maxUsedSize = realUsage;
       }
-      String message = "fake disk full at " + dir.getRecomputedActualSizeInBytes() + " bytes when writing " + name + " (file length=" + delegate.getFilePointer();
+      String message = "fake disk full at " + dir.sizeInBytes() + " bytes when writing " + name + " (file length=" + delegate.getFilePointer();
       if (freeSpace > 0) {
         message += "; wrote " + freeSpace + " of " + len + " bytes";
       }
@@ -106,7 +106,7 @@ public class MockIndexOutputWrapper extends IndexOutput {
       if (dir.trackDiskUsage) {
         // Now compute actual disk usage & track the maxUsedSize
         // in the MockDirectoryWrapper:
-        long size = dir.getRecomputedActualSizeInBytes();
+        long size = dir.sizeInBytes();
         if (size > dir.maxUsedSize) {
           dir.maxUsedSize = size;
         }

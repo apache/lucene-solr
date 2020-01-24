@@ -76,7 +76,7 @@ public interface LeafCollector {
    * {@link #collect(int)}), should save the passed-in Scorer and call
    * scorer.score() when needed.
    */
-  void setScorer(Scorer scorer) throws IOException;
+  void setScorer(Scorable scorer) throws IOException;
   
   /**
    * Called once for every document matching a query, with the unbased document

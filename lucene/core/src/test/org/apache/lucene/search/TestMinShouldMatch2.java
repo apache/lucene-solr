@@ -329,11 +329,11 @@ public class TestMinShouldMatch2 extends LuceneTestCase {
         if (ord >= 0) {
           boolean success = ords.add(ord);
           assert success; // no dups
-          TermStates context = TermStates.build(reader.getContext(), term, true);
+          TermStates ts = TermStates.build(reader.getContext(), term, true);
           SimScorer w = weight.similarity.scorer(1f,
                         searcher.collectionStatistics("field"),
-                        searcher.termStatistics(term, context));
-          sims[(int)ord] = new LeafSimScorer(w, reader, true, 1);
+                        searcher.termStatistics(term, ts.docFreq(), ts.totalTermFreq()));
+          sims[(int)ord] = new LeafSimScorer(w, reader, "field", true);
         }
       }
     }

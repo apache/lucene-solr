@@ -94,6 +94,7 @@ public class GetMavenDependenciesTask extends Task {
 
   private static final Set<String> globalOptionalExternalDependencies = new HashSet<>();
   private static final Map<String,Set<String>> perModuleOptionalExternalDependencies = new HashMap<>();
+  private static final Set<String> modulesWithTransitiveDependencies = new HashSet<>();
   static {
     // Add modules here that have split compile and test POMs
     // - they need compile-scope deps to also be test-scope deps.
@@ -105,6 +106,11 @@ public class GetMavenDependenciesTask extends Task {
     // Format is "groupId:artifactId"
     globalOptionalExternalDependencies.addAll(Arrays.asList
         ("org.slf4j:jul-to-slf4j", "org.slf4j:slf4j-log4j12"));
+
+    // Add modules here that should NOT have their dependencies
+    // excluded in the grandparent POM's dependencyManagement section,
+    // thus enabling their dependencies to be transitive.
+    modulesWithTransitiveDependencies.addAll(Arrays.asList("lucene-test-framework"));
   }
 
   private final XPath xpath = XPathFactory.newInstance().newXPath();
@@ -306,10 +312,10 @@ public class GetMavenDependenciesTask extends Task {
     // Delay adding shared compile-scope dependencies until after all have been processed,
     // so dependency sharing is limited to a depth of one.
     Map<String,SortedSet<ExternalDependency>> sharedDependencies = new HashMap<>();
-    for (String module : interModuleExternalCompileScopeDependencies.keySet()) {
+    for (Map.Entry<String, Set<String>> entry : interModuleExternalCompileScopeDependencies.entrySet()) {
       TreeSet<ExternalDependency> deps = new TreeSet<>();
-      sharedDependencies.put(module, deps);
-      Set<String> moduleDependencies = interModuleExternalCompileScopeDependencies.get(module);
+      sharedDependencies.put(entry.getKey(), deps);
+      Set<String> moduleDependencies = entry.getValue();
       if (null != moduleDependencies) {
         for (String otherArtifactId : moduleDependencies) {
           SortedSet<ExternalDependency> otherExtDeps = allExternalDependencies.get(otherArtifactId); 
@@ -323,13 +329,14 @@ public class GetMavenDependenciesTask extends Task {
         }
       }
     }
-    for (String module : interModuleExternalTestScopeDependencies.keySet()) {
+    for (Map.Entry<String, Set<String>> entry : interModuleExternalTestScopeDependencies.entrySet()) {
+      String module = entry.getKey();
       SortedSet<ExternalDependency> deps = sharedDependencies.get(module);
       if (null == deps) {
         deps = new TreeSet<>();
         sharedDependencies.put(module, deps);
       }
-      Set<String> moduleDependencies = interModuleExternalTestScopeDependencies.get(module);
+      Set<String> moduleDependencies = entry.getValue();
       if (null != moduleDependencies) {
         for (String otherArtifactId : moduleDependencies) {
           int testScopePos = otherArtifactId.indexOf(":test");
@@ -356,13 +363,14 @@ public class GetMavenDependenciesTask extends Task {
         }
       }
     }
-    for (String module : sharedDependencies.keySet()) {
+    for (Map.Entry<String, SortedSet<ExternalDependency>> entry : sharedDependencies.entrySet()) {
+      String module = entry.getKey();
       SortedSet<ExternalDependency> deps = allExternalDependencies.get(module);
       if (null == deps) {
         deps = new TreeSet<>();
         allExternalDependencies.put(module, deps);
       }
-      for (ExternalDependency dep : sharedDependencies.get(module)) {
+      for (ExternalDependency dep : entry.getValue()) {
         String dependencyCoordinate = dep.groupId + ":" + dep.artifactId;
         if (globalOptionalExternalDependencies.contains(dependencyCoordinate)
             || (perModuleOptionalExternalDependencies.containsKey(module)
@@ -433,9 +441,9 @@ public class GetMavenDependenciesTask extends Task {
    * dependencies.
    */
   private void appendAllInternalDependencies(StringBuilder builder) {
-    for (String artifactId : internalCompileScopeDependencies.keySet()) {
-      List<String> exclusions = new ArrayList<>();
-      exclusions.addAll(internalCompileScopeDependencies.get(artifactId));
+    for (Map.Entry<String, SortedSet<String>> entry : internalCompileScopeDependencies.entrySet()) {
+      String artifactId = entry.getKey();
+      List<String> exclusions = new ArrayList<>(entry.getValue());
       SortedSet<ExternalDependency> extDeps = allExternalDependencies.get(artifactId);
       if (null != extDeps) {
         for (ExternalDependency externalDependency : extDeps) {
@@ -894,7 +902,7 @@ public class GetMavenDependenciesTask extends Task {
     if (null != classifier) {
       builder.append(indent).append("  <classifier>").append(classifier).append("</classifier>\n");
     }
-    if (null != exclusions && ! exclusions.isEmpty()) {
+    if ( ! modulesWithTransitiveDependencies.contains(artifactId) && null != exclusions && ! exclusions.isEmpty()) {
       builder.append(indent).append("  <exclusions>\n");
       for (String dependency : exclusions) {
         int splitPos = dependency.indexOf(':');

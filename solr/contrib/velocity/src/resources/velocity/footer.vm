@@ -3,7 +3,7 @@
   <span>Options:</span>
 
   #if($debug)
-    <a href="#url_for_home?#q#if($list.size($request.params.getParams('fq')) > 0)&#fqs($request.params.getParams('fq'))#end">
+    <a href="#url_for_home?#q#if($request.params.getParams('fq').size() > 0)&#fqs($request.params.getParams('fq'))#end">
       disable debug</a>
   #else
     <a href="#url_for_lens&debug=true&fl=*,score">enable debug</a>

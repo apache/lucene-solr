@@ -31,7 +31,6 @@ import java.util.function.IntFunction;
 
 import org.apache.lucene.codecs.DocValuesProducer;
 import org.apache.lucene.index.*;
-import org.apache.lucene.index.NumericDocValues;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.BufferedChecksumIndexInput;
 import org.apache.lucene.store.ChecksumIndexInput;

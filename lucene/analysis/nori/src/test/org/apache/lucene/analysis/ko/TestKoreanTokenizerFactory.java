@@ -23,7 +23,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
-import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.Tokenizer;
 
 /**
@@ -33,8 +32,8 @@ public class TestKoreanTokenizerFactory extends BaseTokenStreamTestCase {
   public void testSimple() throws IOException {
     KoreanTokenizerFactory factory = new KoreanTokenizerFactory(Collections.emptyMap());
     factory.inform(new StringMockResourceLoader(""));
-    TokenStream ts = factory.create(newAttributeFactory());
-    ((Tokenizer)ts).setReader(new StringReader("안녕하세요"));
+    Tokenizer ts = factory.create(newAttributeFactory());
+    ts.setReader(new StringReader("안녕하세요"));
     assertTokenStreamContents(ts,
         new String[] { "안녕", "하", "시", "어요" },
         new int[] { 0, 2, 3, 3 },
@@ -50,8 +49,8 @@ public class TestKoreanTokenizerFactory extends BaseTokenStreamTestCase {
     args.put("decompoundMode", "discard");
     KoreanTokenizerFactory factory = new KoreanTokenizerFactory(args);
     factory.inform(new StringMockResourceLoader(""));
-    TokenStream ts = factory.create(newAttributeFactory());
-    ((Tokenizer)ts).setReader(new StringReader("갠지스강"));
+    Tokenizer ts = factory.create(newAttributeFactory());
+    ts.setReader(new StringReader("갠지스강"));
     assertTokenStreamContents(ts,
         new String[] { "갠지스", "강" }
     );
@@ -62,8 +61,8 @@ public class TestKoreanTokenizerFactory extends BaseTokenStreamTestCase {
     args.put("decompoundMode", "none");
     KoreanTokenizerFactory factory = new KoreanTokenizerFactory(args);
     factory.inform(new StringMockResourceLoader(""));
-    TokenStream ts = factory.create(newAttributeFactory());
-    ((Tokenizer)ts).setReader(new StringReader("갠지스강"));
+    Tokenizer ts = factory.create(newAttributeFactory());
+    ts.setReader(new StringReader("갠지스강"));
     assertTokenStreamContents(ts,
         new String[] { "갠지스강" }
     );
@@ -74,8 +73,8 @@ public class TestKoreanTokenizerFactory extends BaseTokenStreamTestCase {
     args.put("decompoundMode", "mixed");
     KoreanTokenizerFactory factory = new KoreanTokenizerFactory(args);
     factory.inform(new StringMockResourceLoader(""));
-    TokenStream ts = factory.create(newAttributeFactory());
-    ((Tokenizer)ts).setReader(new StringReader("갠지스강"));
+    Tokenizer ts = factory.create(newAttributeFactory());
+    ts.setReader(new StringReader("갠지스강"));
     assertTokenStreamContents(ts,
         new String[] { "갠지스강", "갠지스", "강" }
     );
@@ -94,20 +93,50 @@ public class TestKoreanTokenizerFactory extends BaseTokenStreamTestCase {
     args.put("userDictionary", "userdict.txt");
     KoreanTokenizerFactory factory = new KoreanTokenizerFactory(args);
     factory.inform(new StringMockResourceLoader(userDict));
-    TokenStream ts = factory.create(newAttributeFactory());
-    ((Tokenizer)ts).setReader(new StringReader("세종시"));
+    Tokenizer ts = factory.create(newAttributeFactory());
+    ts.setReader(new StringReader("세종시"));
     assertTokenStreamContents(ts,
         new String[] { "세종", "시" }
     );
   }
 
+  /**
+   * Test discardPunctuation True
+   */
+  public void testDiscardPunctuation_true() throws IOException {
+    Map<String,String> args = new HashMap<>();
+    args.put("discardPunctuation", "true");
+    KoreanTokenizerFactory factory = new KoreanTokenizerFactory(args);
+    factory.inform(new StringMockResourceLoader(""));
+    Tokenizer ts = factory.create(newAttributeFactory());
+    ts.setReader(new StringReader("10.1 인치 모니터"));
+    assertTokenStreamContents(ts,
+        new String[] { "10", "1", "인치", "모니터" }
+    );
+  }
+
+  /**
+   * Test discardPunctuation False
+   */
+  public void testDiscardPunctuation_false() throws IOException {
+    Map<String,String> args = new HashMap<>();
+    args.put("discardPunctuation", "false");
+    KoreanTokenizerFactory factory = new KoreanTokenizerFactory(args);
+    factory.inform(new StringMockResourceLoader(""));
+    Tokenizer ts = factory.create(newAttributeFactory());
+    ts.setReader(new StringReader("10.1 인치 모니터"));
+    assertTokenStreamContents(ts,
+        new String[] { "10", ".", "1", " ", "인치", " ", "모니터" }
+    );
+  }
+
   /** Test that bogus arguments result in exception */
-  public void testBogusArguments() throws Exception {
-    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () -> {
-      new KoreanTokenizerFactory(new HashMap<String,String>() {{
-        put("bogusArg", "bogusValue");
-      }});
-    });
+  public void testBogusArguments() {
+    IllegalArgumentException expected = expectThrows(IllegalArgumentException.class, () ->
+        new KoreanTokenizerFactory(new HashMap<>() {{
+          put("bogusArg", "bogusValue");
+        }})
+    );
     assertTrue(expected.getMessage().contains("Unknown parameters"));
   }
 }

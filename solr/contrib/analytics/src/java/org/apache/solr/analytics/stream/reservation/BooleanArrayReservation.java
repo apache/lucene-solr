@@ -27,7 +27,7 @@ import org.apache.solr.analytics.stream.reservation.write.BooleanDataArrayWriter
 import org.apache.solr.analytics.util.function.BooleanConsumer;
 
 public class BooleanArrayReservation extends ReductionDataArrayReservation<BooleanConsumer, BooleanSupplier> {
-  
+
   public BooleanArrayReservation(BooleanConsumer applier, IntConsumer sizeApplier, BooleanSupplier extractor, IntSupplier sizeExtractor) {
     super(applier, sizeApplier, extractor, sizeExtractor);
   }

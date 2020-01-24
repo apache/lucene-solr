@@ -17,7 +17,7 @@
 package org.apache.solr.analysis;
 
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.core.Config;
+import org.apache.solr.core.SolrConfig;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.FieldType;
 import org.apache.lucene.analysis.Analyzer;
@@ -37,7 +37,7 @@ public class TestLuceneMatchVersion extends SolrTestCaseJ4 {
   
   // this must match the solrconfig.xml version for this test
   public static final Version DEFAULT_VERSION =
-    Config.parseLuceneVersionString(System.getProperty("tests.luceneMatchVersion", "LATEST"));
+    SolrConfig.parseLuceneVersionString(System.getProperty("tests.luceneMatchVersion", "LATEST"));
 
   public void testStandardTokenizerVersions() throws Exception {
     assertEquals(DEFAULT_VERSION, solrConfig.luceneMatchVersion);

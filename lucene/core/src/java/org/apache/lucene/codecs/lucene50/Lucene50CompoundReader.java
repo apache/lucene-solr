@@ -23,6 +23,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.lucene.codecs.CodecUtil;
 import org.apache.lucene.index.CorruptIndexException;
@@ -211,5 +212,10 @@ final class Lucene50CompoundReader extends Directory {
   @Override
   public String toString() {
     return "CompoundFileDirectory(segment=\"" + segmentName + "\" in dir=" + directory + ")";
+  }
+
+  @Override
+  public Set<String> getPendingDeletions() {
+    return Collections.emptySet();
   }
 }

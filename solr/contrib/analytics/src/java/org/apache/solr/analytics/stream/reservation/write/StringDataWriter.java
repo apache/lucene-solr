@@ -21,7 +21,7 @@ import java.io.IOException;
 import java.util.function.Supplier;
 
 public class StringDataWriter extends ReductionDataWriter<Supplier<String>> {
-  
+
   public StringDataWriter(DataOutput output, Supplier<String> extractor) {
     super(output, extractor);
   }

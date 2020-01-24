@@ -21,7 +21,6 @@ import java.util.List;
 import org.apache.lucene.analysis.cn.smart.CharType;
 import org.apache.lucene.analysis.cn.smart.Utility;
 import org.apache.lucene.analysis.cn.smart.WordType;
-import org.apache.lucene.analysis.cn.smart.hhmm.SegToken;//javadoc @link
 
 /**
  * Finds the optimal segmentation of a sentence into Chinese words
@@ -33,7 +32,7 @@ public class HHMMSegmenter {
 
   /**
    * Create the {@link SegGraph} for a sentence.
-   * 
+   *
    * @param sentence input sentence, without start and end markers
    * @return {@link SegGraph} corresponding to the input sentence.
    */
@@ -57,11 +56,20 @@ public class HHMMSegmenter {
         case CharType.SPACE_LIKE:
           i++;
           break;
+        case CharType.SURROGATE:
+          int state = Character.codePointAt(sentence, i);
+          int count = Character.charCount(state);
+          charArray = new char[count];
+          sentence.getChars(i, i + count, charArray, 0);
+          token = new SegToken(charArray, i, i + count, WordType.CHINESE_WORD, 0);
+          segGraph.addToken(token);
+          i += count;
+          break;
         case CharType.HANZI:
           j = i + 1;
           wordBuf.delete(0, wordBuf.length());
-          // It doesn't matter if a single Chinese character (Hanzi) can form a phrase or not, 
-          // it will store that single Chinese character (Hanzi) in the SegGraph.  Otherwise, it will 
+          // It doesn't matter if a single Chinese character (Hanzi) can form a phrase or not,
+          // it will store that single Chinese character (Hanzi) in the SegGraph.  Otherwise, it will
           // cause word division.
           wordBuf.append(sentence.charAt(i));
           charArray = new char[] { sentence.charAt(i) };
@@ -175,7 +183,7 @@ public class HHMMSegmenter {
 
   /**
    * Get the character types for every character in a sentence.
-   * 
+   *
    * @see Utility#getCharType(char)
    * @param sentence input sentence
    * @return array of character types corresponding to character positions in the sentence

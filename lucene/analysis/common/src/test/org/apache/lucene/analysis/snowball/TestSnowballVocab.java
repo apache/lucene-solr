@@ -23,19 +23,20 @@ import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.Tokenizer;
 import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.util.LuceneTestCase;
-import org.apache.lucene.util.LuceneTestCase.Slow;
+import org.apache.lucene.util.LuceneTestCase.Nightly;
 
 import static org.apache.lucene.analysis.VocabularyAssert.*;
 
 /**
  * Test the snowball filters against the snowball data tests
  */
-@Slow
+@Nightly
 public class TestSnowballVocab extends LuceneTestCase {
   /**
    * Run all languages against their snowball vocabulary tests.
    */
   public void testStemmers() throws IOException {
+    assertCorrectOutput("Arabic", "arabic");
     assertCorrectOutput("Danish", "danish");
     assertCorrectOutput("Dutch", "dutch");
     assertCorrectOutput("English", "english");

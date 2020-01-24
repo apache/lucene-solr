@@ -174,6 +174,11 @@ class PerSegmentSingleValuedFaceting {
       }
     }
 
+    if (limit == 0) {
+      NamedList<Integer> res = new NamedList<>();
+      return finalize(res, missingCount, hasMissingCount);
+    }
+
     FacetCollector collector;
     if (sort.equals(FacetParams.FACET_SORT_COUNT) || sort.equals(FacetParams.FACET_SORT_COUNT_LEGACY)) {
       collector = new CountSortedFacetCollector(offset, limit, mincount);
@@ -237,6 +242,11 @@ class PerSegmentSingleValuedFaceting {
       res.setName(i, ft.indexedToReadable(res.getName(i)));
     }
 
+    return finalize(res, missingCount, hasMissingCount);
+  }
+
+  private NamedList<Integer> finalize(NamedList<Integer> res, int missingCount, boolean hasMissingCount)
+      throws IOException {
     if (missing) {
       if (!hasMissingCount) {
         missingCount = SimpleFacets.getFieldMissingCount(searcher,docs,fieldName);

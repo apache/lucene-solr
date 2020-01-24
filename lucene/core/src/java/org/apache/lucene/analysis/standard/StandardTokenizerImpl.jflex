@@ -34,12 +34,13 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
  *   <li>&lt;HIRAGANA&gt;: A single hiragana character</li>
  *   <li>&lt;KATAKANA&gt;: A sequence of katakana characters</li>
  *   <li>&lt;HANGUL&gt;: A sequence of Hangul characters</li>
+ *   <li>&lt;EMOJI&gt;: A sequence of Emoji characters</li>
  * </ul>
  */
 @SuppressWarnings("fallthrough")
 %%
 
-%unicode 6.3
+%unicode 9.0
 %integer
 %final
 %public
@@ -48,22 +49,67 @@ import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
 %char
 %buffer 255
 
-// UAX#29 WB4. X (Extend | Format)* --> X
+
+//////////////////////////////////////////////////////////////////////////
+// Begin Emoji Macros - see documentation below, near the EMOJI_TYPE rule
+
+// TODO: Remove this include file when JFlex supports these properties directly (in Unicode 11.0+)
+%include ../../../../../../data/jflex/UnicodeEmojiProperties.jflex
+
+// UAX#29 WB4.  X (Extend | Format | ZWJ)* --> X
 //
-HangulEx            = [\p{Script:Hangul}&&[\p{WB:ALetter}\p{WB:Hebrew_Letter}]] [\p{WB:Format}\p{WB:Extend}]*
-HebrewOrALetterEx   = [\p{WB:HebrewLetter}\p{WB:ALetter}]                       [\p{WB:Format}\p{WB:Extend}]*
-NumericEx           = [\p{WB:Numeric}[\p{Blk:HalfAndFullForms}&&\p{Nd}]]        [\p{WB:Format}\p{WB:Extend}]*
-KatakanaEx          = \p{WB:Katakana}                                           [\p{WB:Format}\p{WB:Extend}]* 
-MidLetterEx         = [\p{WB:MidLetter}\p{WB:MidNumLet}\p{WB:SingleQuote}]      [\p{WB:Format}\p{WB:Extend}]* 
-MidNumericEx        = [\p{WB:MidNum}\p{WB:MidNumLet}\p{WB:SingleQuote}]         [\p{WB:Format}\p{WB:Extend}]*
-ExtendNumLetEx      = \p{WB:ExtendNumLet}                                       [\p{WB:Format}\p{WB:Extend}]*
-HanEx               = \p{Script:Han}                                            [\p{WB:Format}\p{WB:Extend}]*
-HiraganaEx          = \p{Script:Hiragana}                                       [\p{WB:Format}\p{WB:Extend}]*
-SingleQuoteEx       = \p{WB:Single_Quote}                                       [\p{WB:Format}\p{WB:Extend}]*
-DoubleQuoteEx       = \p{WB:Double_Quote}                                       [\p{WB:Format}\p{WB:Extend}]*
-HebrewLetterEx      = \p{WB:Hebrew_Letter}                                      [\p{WB:Format}\p{WB:Extend}]*
-RegionalIndicatorEx = \p{WB:RegionalIndicator}                                  [\p{WB:Format}\p{WB:Extend}]*
-ComplexContextEx    = \p{LB:Complex_Context}                                    [\p{WB:Format}\p{WB:Extend}]*
+//   \uFE0E (Text Presentation Selector) and \uFE0F (Emoji Presentation Selector) - included in \p{WB:Extend}
+//   - are explicitly excluded here so that we can properly handle Emoji sequences.
+//
+ExtFmtZwjSansPresSel = [[\p{WB:Format}\p{WB:Extend}\p{WB:ZWJ}]--[\uFE0E\uFE0F]]*
+
+KeyCapBaseChar = [0-9#*]
+KeyCapBaseCharEx = {KeyCapBaseChar} {ExtFmtZwjSansPresSel}
+KeyCap = \u20E3
+KeyCapEx = {KeyCap} {ExtFmtZwjSansPresSel}
+
+// # \u3030 = WAVY DASH; \u303D = PART ALTERNATION MARK
+AccidentalEmoji = [©®™\u3030\u303D]
+EmojiRKAM = ( \p{WB:Regional_Indicator} | {KeyCapBaseChar} | {AccidentalEmoji} | {Emoji_Modifier} )
+
+// Unlike Unicode properties, macros are not allowed in character classes, so we achieve set difference
+// by applying DeMorgan: the expression that matches everything of 'a' not matched by 'b' is: !(!a|b)
+// TODO: Convert this expression to character class difference when JFlex supports the properties directly (in Unicode 11.0+)
+EmojiSansRKAM = !( ! {Emoji} | {EmojiRKAM} )
+
+EmojiChar = ( {Extended_Pictographic} | {EmojiSansRKAM} )
+
+EmojiCharEx         = {EmojiChar}           {ExtFmtZwjSansPresSel}
+EmojiModifierBaseEx = {Emoji_Modifier_Base} {ExtFmtZwjSansPresSel}
+EmojiModifierEx     = {Emoji_Modifier}      {ExtFmtZwjSansPresSel}
+
+EmojiPresentationSelector = \uFE0F
+EmojiCharOrPresSeqOrModSeq = ( \p{WB:ZWJ}* {EmojiCharEx} {EmojiPresentationSelector}? ) | ( ( \p{WB:ZWJ}* {EmojiModifierBaseEx} )? {EmojiModifierEx} )
+TagSpec = [\u{E0020}-\u{E007E}]
+TagTerm = \u{E007F}
+
+// End Emoji Macros
+//////////////////////////////////////////////////////////////////////////
+
+
+// UAX#29 WB4.  X (Extend | Format | ZWJ)* --> X
+//
+ExtFmtZwj           = [\p{WB:Format}\p{WB:Extend}\p{WB:ZWJ}]*
+
+HangulEx            = [\p{Script:Hangul}&&[\p{WB:ALetter}\p{WB:Hebrew_Letter}]] {ExtFmtZwj}
+AHLetterEx          = [\p{WB:ALetter}\p{WB:Hebrew_Letter}]                      {ExtFmtZwj}
+NumericEx           = [\p{WB:Numeric}[\p{Blk:HalfAndFullForms}&&\p{Nd}]]        {ExtFmtZwj}
+KatakanaEx          = \p{WB:Katakana}                                           {ExtFmtZwj} 
+MidLetterEx         = [\p{WB:MidLetter}\p{WB:MidNumLet}\p{WB:SingleQuote}]      {ExtFmtZwj} 
+MidNumericEx        = [\p{WB:MidNum}\p{WB:MidNumLet}\p{WB:SingleQuote}]         {ExtFmtZwj}
+ExtendNumLetEx      = \p{WB:ExtendNumLet}                                       {ExtFmtZwj}
+HanEx               = \p{Script:Han}                                            {ExtFmtZwj}
+HiraganaEx          = \p{Script:Hiragana}                                       {ExtFmtZwj}
+SingleQuoteEx       = \p{WB:Single_Quote}                                       {ExtFmtZwj}
+DoubleQuoteEx       = \p{WB:Double_Quote}                                       {ExtFmtZwj}
+HebrewLetterEx      = \p{WB:Hebrew_Letter}                                      {ExtFmtZwj}
+RegionalIndicatorEx = \p{WB:Regional_Indicator}                                 {ExtFmtZwj}
+ComplexContextEx    = \p{LB:Complex_Context}                                    {ExtFmtZwj}
 
 %{
   /** Alphanumeric sequences */
@@ -93,6 +139,9 @@ ComplexContextEx    = \p{LB:Complex_Context}                                    
 
   /** Hangul token type */
   public static final int HANGUL_TYPE = StandardTokenizer.HANGUL;
+  
+  /** Emoji token type */
+  public static final int EMOJI_TYPE = StandardTokenizer.EMOJI;
 
   /** Character count processed so far */
   public final int yychar()
@@ -120,18 +169,64 @@ ComplexContextEx    = \p{LB:Complex_Context}                                    
 
 %%
 
-// UAX#29 WB1.   sot   ÷
-//        WB2.     ÷   eot
+// UAX#29 WB1.    sot ÷ Any
+//        WB2.    Any ÷ eot
 //
 <<EOF>> { return YYEOF; }
 
-// UAX#29 WB8.   Numeric × Numeric
-//        WB11.  Numeric (MidNum | MidNumLet | Single_Quote) × Numeric
-//        WB12.  Numeric × (MidNum | MidNumLet | Single_Quote) Numeric
-//        WB13a. (ALetter | Hebrew_Letter | Numeric | Katakana | ExtendNumLet) × ExtendNumLet
-//        WB13b. ExtendNumLet × (ALetter | Hebrew_Letter | Numeric | Katakana) 
+// Instead of these: UAX#29 WB3c. ZWJ × (Glue_After_Zwj | EBG)
+//                          WB14. (E_Base | EBG) × E_Modifier
+//                          WB15. ^ (RI RI)* RI × RI
+//                          WB16. [^RI] (RI RI)* RI × RI
 //
-{ExtendNumLetEx}* {NumericEx} ( ( {ExtendNumLetEx}* | {MidNumericEx} ) {NumericEx} )* {ExtendNumLetEx}* 
+// We use the "emoji_sequence" rule from http://www.unicode.org/reports/tr51/tr51-14.html (Unicode 11.0)
+// and the Emoji data from http://unicode.org/Public/emoji/11.0/emoji-data.txt (in included file UnicodeEmojiProperties.jflex)
+// 
+// emoji_sequence :=
+//    Top-level EBNF           Expanded #1                       Expanded #2                       Expanded #3
+//    ---------------------    ----------------------------      -----------------------------     ----------------------------------------------
+//      emoji_core_sequence      emoji_combining_sequence          emoji_character                 ( \p{Emoji}
+//                                                               | emoji_presentation_sequence     | \p{Emoji} \uFE0F
+//                                                               | emoji_keycap_sequence           | [0-9#*] \u{FE0F 20E3}      [1]
+//                             | emoji_modifier_sequence                                           | \p{Emoji_Modifier_Base} \p{Emoji_Modifier}
+//                             | emoji_flag_sequence                                               | \p{WB:Regional_Indicator}{2}               )
+//
+//    | emoji_zwj_sequence       emoji_zwj_element                 emoji_character                 ( \p{Emoji}
+//                                                               | emoji_presentation_sequence     | \p{Emoji} \uFE0F
+//                                                               | emoji_modifier_sequence         | \p{Emoji_Modifier_Base} \p{Emoji_Modifier} )
+//                             ( ZWJ emoji_zwj_element )+                                          ( \p{WB:ZWJ} ^^ )+
+// 
+//    | emoji_tag_sequence     tag_base                            emoji_character                 ( \p{Emoji}
+//                                                               | emoji_presentation_sequence     | \p{Emoji} \uFE0F
+//                                                               | emoji_modifier_sequence         | \p{Emoji_Modifier_Base} \p{Emoji_Modifier} )
+//                             tag_spec                                                            [\u{E0020}-\u{E007E}]+
+//                             tag_term                                                            \u{E007F}
+//
+// [1] https://unicode.org/Public/emoji/11.0/emoji-test.txt includes key cap sequences 
+//     WITHOUT \uFE0F (emoji presentation indicator), annotating them as "non-fully-qualified";
+//     TR#51 says about non-fully-qualified *ZWJ sequences* that implementations may
+//     choose whether to support them for segmentation.  This implementation will
+//     recognize /[0-9#*]\u20E3/ - i.e. without \uFE0F - as Emoji. 
+//
+// See also: http://www.unicode.org/L2/L2016/16315-handling-seg-emoji.pdf
+//           https://docs.google.com/document/d/1yDZ5TUZNVVKaM9zYCCLbRIAKGNZANsAGl0bcNzGGvn8
+//
+//     In particular, the above docs recommend a modified UAX#29 WB3c rule (covered by TR#51's "emoji_zwj_sequence"):
+//
+//         WB3c′ ZWJ × ​(Extended_Pictographic | EmojiNRK)
+//
+  {EmojiCharOrPresSeqOrModSeq} ( ( \p{WB:ZWJ} {EmojiCharOrPresSeqOrModSeq} )* | {TagSpec}+ {TagTerm} ) 
+| {KeyCapBaseCharEx} {EmojiPresentationSelector}? {KeyCapEx} 
+| {RegionalIndicatorEx}{2} 
+  { return EMOJI_TYPE; }
+
+// UAX#29 WB8.    Numeric × Numeric
+//        WB11.   Numeric (MidNum | MidNumLetQ) × Numeric
+//        WB12.   Numeric × (MidNum | MidNumLetQ) Numeric
+//        WB13a.  (AHLetter | Numeric | Katakana | ExtendNumLet) × ExtendNumLet
+//        WB13b.  ExtendNumLet × (AHLetter | Numeric | Katakana)
+//
+{ExtendNumLetEx}* {NumericEx} ( ( {ExtendNumLetEx}* | {MidNumericEx} ) {NumericEx} )* {ExtendNumLetEx}*
   { return NUMERIC_TYPE; }
 
 // subset of the below for typing purposes only!
@@ -141,28 +236,28 @@ ComplexContextEx    = \p{LB:Complex_Context}                                    
 {KatakanaEx}+
   { return KATAKANA_TYPE; }
 
-// UAX#29 WB5.   (ALetter | Hebrew_Letter) × (ALetter | Hebrew_Letter)
-//        WB6.   (ALetter | Hebrew_Letter) × (MidLetter | MidNumLet | Single_Quote) (ALetter | Hebrew_Letter)
-//        WB7.   (ALetter | Hebrew_Letter) (MidLetter | MidNumLet | Single_Quote) × (ALetter | Hebrew_Letter)
-//        WB7a.  Hebrew_Letter × Single_Quote
-//        WB7b.  Hebrew_Letter × Double_Quote Hebrew_Letter
-//        WB7c.  Hebrew_Letter Double_Quote × Hebrew_Letter
-//        WB9.   (ALetter | Hebrew_Letter) × Numeric
-//        WB10.  Numeric × (ALetter | Hebrew_Letter)
-//        WB13.  Katakana × Katakana
-//        WB13a. (ALetter | Hebrew_Letter | Numeric | Katakana | ExtendNumLet) × ExtendNumLet
-//        WB13b. ExtendNumLet × (ALetter | Hebrew_Letter | Numeric | Katakana) 
+// UAX#29 WB5.    AHLetter × AHLetter
+//        WB6.    AHLetter × (MidLetter | MidNumLetQ) AHLetter
+//        WB7.    AHLetter (MidLetter | MidNumLetQ) × AHLetter
+//        WB7a.   Hebrew_Letter × Single_Quote
+//        WB7b.   Hebrew_Letter × Double_Quote Hebrew_Letter
+//        WB7c.   Hebrew_Letter Double_Quote × Hebrew_Letter
+//        WB9.    AHLetter × Numeric
+//        WB10.   Numeric × AHLetter
+//        WB13.   Katakana × Katakana
+//        WB13a.  (ALetter | Hebrew_Letter | Numeric | Katakana | ExtendNumLet) × ExtendNumLet
+//        WB13b.  ExtendNumLet × (ALetter | Hebrew_Letter | Numeric | Katakana) 
 //
-{ExtendNumLetEx}*  ( {KatakanaEx}          ( {ExtendNumLetEx}*   {KatakanaEx}                           )*
-                   | ( {HebrewLetterEx}    ( {SingleQuoteEx}     | {DoubleQuoteEx}  {HebrewLetterEx}    )
-                     | {NumericEx}         ( ( {ExtendNumLetEx}* | {MidNumericEx} ) {NumericEx}         )*
-                     | {HebrewOrALetterEx} ( ( {ExtendNumLetEx}* | {MidLetterEx}  ) {HebrewOrALetterEx} )*
+{ExtendNumLetEx}*  ( {KatakanaEx}          ( {ExtendNumLetEx}*   {KatakanaEx}                        )*
+                   | ( {HebrewLetterEx}    ( {SingleQuoteEx}     | {DoubleQuoteEx}  {HebrewLetterEx} )
+                     | {NumericEx}         ( ( {ExtendNumLetEx}* | {MidNumericEx} ) {NumericEx}      )*
+                     | {AHLetterEx}        ( ( {ExtendNumLetEx}* | {MidLetterEx}  ) {AHLetterEx}     )*
                      )+
                    )
-({ExtendNumLetEx}+ ( {KatakanaEx}          ( {ExtendNumLetEx}*   {KatakanaEx}                           )*
-                   | ( {HebrewLetterEx}    ( {SingleQuoteEx}     | {DoubleQuoteEx}  {HebrewLetterEx}    )
-                     | {NumericEx}         ( ( {ExtendNumLetEx}* | {MidNumericEx} ) {NumericEx}         )*
-                     | {HebrewOrALetterEx} ( ( {ExtendNumLetEx}* | {MidLetterEx}  ) {HebrewOrALetterEx} )*
+({ExtendNumLetEx}+ ( {KatakanaEx}          ( {ExtendNumLetEx}*   {KatakanaEx}                        )*
+                   | ( {HebrewLetterEx}    ( {SingleQuoteEx}     | {DoubleQuoteEx}  {HebrewLetterEx} )
+                     | {NumericEx}         ( ( {ExtendNumLetEx}* | {MidNumericEx} ) {NumericEx}      )*
+                     | {AHLetterEx}        ( ( {ExtendNumLetEx}* | {MidLetterEx}  ) {AHLetterEx}     )*
                      )+
                    )
 )*
@@ -172,13 +267,13 @@ ComplexContextEx    = \p{LB:Complex_Context}                                    
 
 // From UAX #29:
 //
-//    [C]haracters with the Line_Break property values of Contingent_Break (CB), 
-//    Complex_Context (SA/South East Asian), and XX (Unknown) are assigned word 
+//    [C]haracters with the Line_Break property values of Contingent_Break (CB),
+//    Complex_Context (SA/South East Asian), and XX (Unknown) are assigned word
 //    boundary property values based on criteria outside of the scope of this
 //    annex.  That means that satisfactory treatment of languages like Chinese
 //    or Thai requires special handling.
 // 
-// In Unicode 6.3, only one character has the \p{Line_Break = Contingent_Break}
+// In Unicode 9.0, only one character has the \p{Line_Break = Contingent_Break}
 // property: U+FFFC ( ￼ ) OBJECT REPLACEMENT CHARACTER.
 //
 // In the ICU implementation of UAX#29, \p{Line_Break = Complex_Context}
@@ -191,17 +286,14 @@ ComplexContextEx    = \p{LB:Complex_Context}                                    
 //
 {ComplexContextEx}+ { return SOUTH_EAST_ASIAN_TYPE; }
 
-// UAX#29 WB14.  Any ÷ Any
+// UAX#29 WB999.  Any ÷ Any
 //
 {HanEx} { return IDEOGRAPHIC_TYPE; }
 {HiraganaEx} { return HIRAGANA_TYPE; }
 
-
-// UAX#29 WB3.   CR × LF
-//        WB3a.  (Newline | CR | LF) ÷
-//        WB3b.  ÷ (Newline | CR | LF)
-//        WB13c. Regional_Indicator × Regional_Indicator
-//        WB14.  Any ÷ Any
+// UAX#29 WB3.    CR × LF
+//        WB3a.   (Newline | CR | LF) ÷
+//        WB3b.   ÷ (Newline | CR | LF)
+//        WB999.  Any ÷ Any
 //
-{RegionalIndicatorEx} {RegionalIndicatorEx}+ | [^]
-  { /* Break so we don't hit fall-through warning: */ break; /* Not numeric, word, ideographic, hiragana, or SE Asian -- ignore it. */ }
+[^] { /* Break so we don't hit fall-through warning: */ break; /* Not numeric, word, ideographic, hiragana, emoji or SE Asian -- ignore it. */ }

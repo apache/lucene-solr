@@ -18,9 +18,6 @@
 
 package org.apache.solr.update;
 
-import static org.junit.internal.matchers.StringContains.containsString;
-import static org.apache.solr.update.UpdateLogTest.buildAddUpdateCommand;
-
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -44,17 +41,20 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.CommonParams;
+import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.index.NoMergePolicyFactory;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.schema.IndexSchema;
 import org.apache.solr.schema.SchemaField;
-import org.apache.solr.search.SolrIndexSearcher;
 import org.apache.solr.update.processor.AtomicUpdateDocumentMerger;
 import org.apache.solr.util.RefCounted;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.apache.solr.update.UpdateLogTest.buildAddUpdateCommand;
+import static org.hamcrest.core.StringContains.containsString;
 
 
 /**
@@ -290,6 +290,93 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
   }
 
   @Test
+  public void testUpdatingFieldNotPresentInDoc() throws Exception {
+    long version1 = addAndGetVersion(sdoc("id", "1", "title_s", "first"), null);
+    long version2 = addAndGetVersion(sdoc("id", "2", "title_s", "second"), null);
+    long version3 = addAndGetVersion(sdoc("id", "3", "title_s", "third"), null);
+    assertU(commit("softCommit", "false"));
+    assertQ(req("q", "*:*"), "//*[@numFound='3']");
+
+    // subsequent updates shouldn't cause docid changes
+    int docid1 = getDocId("1");
+    int docid2 = getDocId("2");
+    int docid3 = getDocId("3");
+
+    // updating fields which are not present in the document
+    // tests both set and inc with different fields
+    version1 = addAndAssertVersion(version1, "id", "1", "inplace_updatable_float", map("set", 200));
+    version2 = addAndAssertVersion(version2, "id", "2", "inplace_updatable_float", map("inc", 100));
+    version3 = addAndAssertVersion(version3, "id", "3", "inplace_updatable_float", map("set", 300));
+    version1 = addAndAssertVersion(version1, "id", "1", "inplace_updatable_int", map("set", 300));
+    assertU(commit("softCommit", "false"));
+
+    assertQ(req("q", "*:*", "sort", "id asc", "fl", "*,[docid]"),
+        "//*[@numFound='3']",
+        "//result/doc[1]/float[@name='inplace_updatable_float'][.='200.0']",
+        "//result/doc[1]/int[@name='inplace_updatable_int'][.='300']",
+        "//result/doc[2]/float[@name='inplace_updatable_float'][.='100.0']",
+        "//result/doc[3]/float[@name='inplace_updatable_float'][.='300.0']",
+        "//result/doc[1]/long[@name='_version_'][.='"+version1+"']",
+        "//result/doc[2]/long[@name='_version_'][.='"+version2+"']",
+        "//result/doc[3]/long[@name='_version_'][.='"+version3+"']",
+        "//result/doc[1]/int[@name='[docid]'][.='"+docid1+"']",
+        "//result/doc[2]/int[@name='[docid]'][.='"+docid2+"']",
+        "//result/doc[3]/int[@name='[docid]'][.='"+docid3+"']"
+    );
+
+    // adding new field which is not present in any docs but matches dynamic field rule
+    // and satisfies inplace condition should be treated as inplace update
+    version1 = addAndAssertVersion(version1, "id", "1", "inplace_updatable_i_dvo", map("set", 200));
+    assertU(commit("softCommit", "false"));
+    assertQ(req("q", "id:1", "sort", "id asc", "fl", "*,[docid]"),
+        "//*[@numFound='1']",
+        "//result/doc[1]/float[@name='inplace_updatable_float'][.='200.0']",
+        "//result/doc[1]/int[@name='inplace_updatable_int'][.='300']",
+        "//result/doc[1]/int[@name='[docid]'][.='"+docid1+"']",
+        "//result/doc[1]/int[@name='inplace_updatable_i_dvo'][.='200']"
+        );
+
+    // delete everything
+    deleteAllAndCommit();
+
+    // test for document with child documents
+    SolrInputDocument doc = new SolrInputDocument();
+    doc.setField("id", "1");
+    doc.setField("title_s", "parent");
+
+    SolrInputDocument child1 = new SolrInputDocument();
+    child1.setField("id", "1_1");
+    child1.setField("title_s", "child1");
+    SolrInputDocument child2 = new SolrInputDocument();
+    child2.setField("id", "1_2");
+    child2.setField("title_s", "child2");
+
+    doc.addChildDocument(child1);
+    doc.addChildDocument(child2);
+    long version = addAndGetVersion(doc, null);
+    assertU(commit("softCommit", "false"));
+    assertQ(req("q", "*:*"), "//*[@numFound='3']");
+
+    int parentDocId = getDocId("1");
+    int childDocid1 = getDocId("1_1");
+    int childDocid2 = getDocId("1_2");
+    version = addAndAssertVersion(version, "id", "1", "inplace_updatable_float", map("set", 200));
+    version = addAndAssertVersion(version, "id", "1", "inplace_updatable_int", map("inc", 300));
+    assertU(commit("softCommit", "false"));
+
+    // first child docs would be returned followed by parent doc
+    assertQ(req("q", "*:*", "fl", "*,[docid]"),
+        "//*[@numFound='3']",
+        "//result/doc[3]/float[@name='inplace_updatable_float'][.='200.0']",
+        "//result/doc[3]/int[@name='inplace_updatable_int'][.='300']",
+        "//result/doc[3]/int[@name='[docid]'][.='"+parentDocId+"']",
+        "//result/doc[1]/int[@name='[docid]'][.='"+childDocid1+"']",
+        "//result/doc[2]/int[@name='[docid]'][.='"+childDocid2+"']"
+    );
+  }
+
+
+  @Test
   public void testUpdateTwoDifferentFields() throws Exception {
     long version1 = addAndGetVersion(sdoc("id", "1", "title_s", "first", "inplace_updatable_float", 42), null);
     assertU(commit("softCommit", "false"));
@@ -333,6 +420,27 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
     assertJQ(req("qt","/get", "id","1", "fl","id,inplace_updatable_float,inplace_updatable_int"),
         "=={'doc':{'id':'1', 'inplace_updatable_float':" + 202.0 + ",'inplace_updatable_int':" + 12 + "}}");
 
+  }
+
+  @Test
+  public void testUpdateWithValueNull() throws Exception {
+    long doc = addAndGetVersion(sdoc("id", "1", "title_s", "first", "inplace_updatable_float", 42), null);
+    assertU(commit("softCommit", "false"));
+
+    assertQ(req("q", "*:*", "fq", "inplace_updatable_float:[* TO *]"), "//*[@numFound='1']");
+    // RTG before update
+    assertJQ(req("qt","/get", "id","1", "fl","id,inplace_updatable_float,title_s"),
+        "=={'doc':{'id':'1', 'inplace_updatable_float':" + 42.0 + ",'title_s':" + "first" + "}}");
+
+    // set the value to null
+    doc = addAndAssertVersion(doc, "id", "1", "inplace_updatable_float", map("set", null));
+    assertU(commit("softCommit", "false"));
+
+    // numProducts should be 0
+    assertQ(req("q", "*:*", "fq", "inplace_updatable_float:[* TO *]"), "//*[@numFound='0']");
+    // after update
+    assertJQ(req("qt","/get", "id","1", "fl","id,inplace_updatable_float,title_s"),
+        "=={'doc':{'id':'1','title_s':first}}");
   }
 
   @Test
@@ -402,7 +510,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
    * Helper method to search for the specified (uniqueKey field) id using <code>fl=[docid]</code> 
    * and return the internal lucene docid.
    */
-  private int getDocId(String id) throws NumberFormatException, Exception {
+  private int getDocId(String id) throws Exception {
     SolrDocumentList results = client.query(params("q","id:" + id, "fl", "[docid]")).getResults();
     assertEquals(1, results.getNumFound());
     assertEquals(1, results.size());
@@ -414,13 +522,8 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
   @Test
   public void testUpdateOfNonExistentDVsShouldNotFail() throws Exception {
     // schema sanity check: assert that the nonexistent_field_i_dvo doesn't exist already
-    FieldInfo fi;
-    RefCounted<SolrIndexSearcher> holder = h.getCore().getSearcher();
-    try {
-      fi = holder.get().getSlowAtomicReader().getFieldInfos().fieldInfo("nonexistent_field_i_dvo");
-    } finally {
-      holder.decref();
-    }
+    FieldInfo fi = h.getCore().withSearcher(searcher ->
+        searcher.getSlowAtomicReader().getFieldInfos().fieldInfo("nonexistent_field_i_dvo"));
     assertNull(fi);
 
     // Partial update
@@ -969,10 +1072,10 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
                                                "inplace_updatable_int_with_default");
     Collections.shuffle(fieldsToCheck, random()); // ... and regardless of order checked
     for (String field : fieldsToCheck) {
-      // In-place updatable field updated before it exists SHOULD NOT BE in-place updated:
+      // In-place updatable field updated before it exists SHOULD NOW BE in-place updated (since LUCENE-8316):
       inPlaceUpdatedFields = callComputeInPlaceUpdatableFields(sdoc("id", "1", "_version_", 42L,
                                                                     field, map("set", 10)));
-      assertFalse(field, inPlaceUpdatedFields.contains(field));
+      assertTrue(field, inPlaceUpdatedFields.contains(field));
       
       // In-place updatable field updated after it exists SHOULD BE in-place updated:
       addAndGetVersion(sdoc("id", "1", field, "0"), params()); // setting up the dv
@@ -1007,7 +1110,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
                callComputeInPlaceUpdatableFields(sdoc("id", "1", "_version_", 42L,
                                                       "inplace_updatable_int_with_default", "100")).isEmpty());
   
-    assertTrue("non existent dynamic dv field updated first time",
+    assertFalse("non existent dynamic dv field updated first time",
                callComputeInPlaceUpdatableFields(sdoc("id", "1", "_version_", 42L,
                                                       "new_updatable_int_i_dvo", map("set", 10))).isEmpty());
     
@@ -1020,7 +1123,7 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
                                                                   "new_updatable_int_i_dvo", map("set", 10)));
     assertTrue(inPlaceUpdatedFields.contains("new_updatable_int_i_dvo"));
 
-    // for copy fields, regardless of wether the source & target support inplace updates,
+    // for copy fields, regardless of whether the source & target support inplace updates,
     // it won't be inplace if the DVs don't exist yet...
     assertTrue("inplace fields should be empty when doc has no copyfield src values yet",
                callComputeInPlaceUpdatableFields(sdoc("id", "1", "_version_", 42L,
@@ -1092,7 +1195,30 @@ public class TestInPlaceUpdatesStandalone extends SolrTestCaseJ4 {
       assertEquals(version1, cmd.prevVersion);
     }
   }
-  
+
+  public void testFailOnVersionConflicts() throws Exception {
+
+    assertU(add(doc("id", "1", "title_s", "first")));
+    assertU(commit());
+    assertQ(req("q", "title_s:first"), "//*[@numFound='1']");
+    assertU(add(doc("id", "1", "title_s", "first1")));
+    assertU(commit());
+    assertQ(req("q", "title_s:first1"), "//*[@numFound='1']");
+    assertFailedU(add(doc("id", "1", "title_s", "first2", "_version_", "-1")));
+    ModifiableSolrParams params = new ModifiableSolrParams();
+    params.add("_version_", "-1");
+    SolrInputDocument doc = new SolrInputDocument("id", "1", "title_s", "first2");
+    SolrInputDocument doc2 = new SolrInputDocument("id", "2", "title_s", "second");
+    SolrException ex = expectThrows(SolrException.class, "This should have failed", () -> updateJ(jsonAdd(doc, doc2), params));
+
+    assertTrue(ex.getMessage().contains("version conflict for"));
+    params.add(CommonParams.FAIL_ON_VERSION_CONFLICTS, "false");
+    updateJ(jsonAdd(doc, doc2), params);//this should not throw any error
+    assertU(commit());
+    assertQ(req("q", "title_s:second"), "//*[@numFound='1']");
+    assertQ(req("q", "title_s:first1"), "//*[@numFound='1']");// but the old value exists
+    assertQ(req("q", "title_s:first2"), "//*[@numFound='0']");// and the new value does not reflect
+  }
   /** 
    * Helper method that sets up a req/cmd to run {@link AtomicUpdateDocumentMerger#computeInPlaceUpdatableFields} 
    * on the specified solr input document.

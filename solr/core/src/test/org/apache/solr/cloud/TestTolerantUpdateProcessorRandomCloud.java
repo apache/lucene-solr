@@ -41,7 +41,6 @@ import org.apache.solr.cloud.TestTolerantUpdateProcessorCloud.ExpectedErr;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
-import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.SolrParams;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -96,8 +95,6 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
     configureCluster(numServers)
       .addConfig(configName, configDir.toPath())
       .configure();
-
-    TestTolerantUpdateProcessorCloud.assertSpinLoopAllJettyAreRunning(cluster);
     
     Map<String, String> collectionProperties = new HashMap<>();
     collectionProperties.put("config", "solrconfig-distrib-update-processor-chains.xml");
@@ -110,6 +107,8 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
         .setProperties(collectionProperties)
         .process(CLOUD_CLIENT);
 
+    cluster.waitForActiveCollection(COLLECTION_NAME, numShards, numShards * repFactor);
+    
     if (NODE_CLIENTS != null) {
       for (HttpSolrClient client : NODE_CLIENTS) {
         client.close();
@@ -122,9 +121,6 @@ public class TestTolerantUpdateProcessorRandomCloud extends SolrCloudTestCase {
       NODE_CLIENTS.add(getHttpSolrClient(jettyURL.toString() + "/" + COLLECTION_NAME + "/"));
     }
     assertEquals(numServers, NODE_CLIENTS.size());
-    
-    ZkStateReader zkStateReader = CLOUD_CLIENT.getZkStateReader();
-    AbstractDistribZkTestBase.waitForRecoveriesToFinish(COLLECTION_NAME, zkStateReader, true, true, 330);
     
   }
   

@@ -36,7 +36,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
  * Test indexes ~82M docs with 52 positions each, so you get &gt; Integer.MAX_VALUE positions
  * @lucene.experimental
  */
-@SuppressCodecs({ "SimpleText", "Memory", "Direct" })
+@SuppressCodecs({ "SimpleText", "Direct" })
 @Monster("uses lots of space and takes a few minutes")
 public class Test2BPositions extends LuceneTestCase {
 

@@ -16,16 +16,23 @@
  */
 package org.apache.solr.cloud;
 
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.SolrTestCaseJ4;
-import org.apache.solr.common.cloud.*;
+import org.apache.solr.common.cloud.ClusterProperties;
+import org.apache.solr.common.cloud.DocCollection;
+import org.apache.solr.common.cloud.SolrZkClient;
+import org.apache.solr.common.cloud.ZkConfigManager;
+import org.apache.solr.common.cloud.ZkNodeProps;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.CloudConfig;
@@ -87,14 +94,11 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
                  ZkController.generateNodeName("foo-bar", "77", "/solr/sub_dir/"));
 
     // setup a SolrZkClient to do some getBaseUrlForNodeName testing
-    String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
+    Path zkDir = createTempDir("zkData");
 
     ZkTestServer server = new ZkTestServer(zkDir);
     try {
       server.run();
-
-      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
-      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
 
       try (SolrZkClient client = new SolrZkClient(server.getZkAddress(), TIMEOUT)) {
 
@@ -169,15 +173,12 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
   @Test
   public void testReadConfigName() throws Exception {
-    String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
+    Path zkDir = createTempDir("zkData");
     CoreContainer cc = null;
 
     ZkTestServer server = new ZkTestServer(zkDir);
     try {
       server.run();
-
-      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
-      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
 
       SolrZkClient zkClient = new SolrZkClient(server.getZkAddress(), TIMEOUT);
       String actualConfigName = "firstConfig";
@@ -221,15 +222,12 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
   }
 
   public void testGetHostName() throws Exception {
-    String zkDir = createTempDir("zkData").toFile().getAbsolutePath();
+    Path zkDir = createTempDir("zkData");
     CoreContainer cc = null;
 
     ZkTestServer server = new ZkTestServer(zkDir);
     try {
       server.run();
-
-      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
-      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
 
       cc = getCoreContainer();
       ZkController zkController = null;
@@ -273,7 +271,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
 
     assumeWorkingMockito();
     final String collectionName = "testPublishAndWaitForDownStates";
-    String zkDir = createTempDir(collectionName).toFile().getAbsolutePath();
+    Path zkDir = createTempDir(collectionName);
     CoreContainer cc = null;
 
     String nodeName = "127.0.0.1:8983_solr";
@@ -282,13 +280,11 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
     try {
       server.run();
 
-      AbstractZkTestCase.tryCleanSolrZkNode(server.getZkHost());
-      AbstractZkTestCase.makeSolrZkNode(server.getZkHost());
-
+      AtomicReference<ZkController> zkControllerRef = new AtomicReference<>();
       cc = new MockCoreContainer()  {
         @Override
         public List<CoreDescriptor> getCoreDescriptors() {
-          CoreDescriptor descriptor = new CoreDescriptor(collectionName, TEST_PATH(), Collections.emptyMap(), new Properties(), true);
+          CoreDescriptor descriptor = new CoreDescriptor(collectionName, TEST_PATH(), Collections.emptyMap(), new Properties(), zkControllerRef.get());
           // non-existent coreNodeName, this will cause zkController.publishAndWaitForDownStates to wait indefinitely
           // when using coreNodeName but usage of core name alone will return immediately
           descriptor.getCloudDescriptor().setCoreNodeName("core_node0");
@@ -307,6 +303,7 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
             return null;
           }
         });
+        zkControllerRef.set(zkController);
 
         zkController.getZkClient().makePath(ZkStateReader.getCollectionPathRoot(collectionName), new byte[0], CreateMode.PERSISTENT, true);
 
@@ -336,8 +333,8 @@ public class ZkControllerTest extends SolrTestCaseJ4 {
         zkController.getZkStateReader().forciblyRefreshAllClusterStateSlow();
 
         long now = System.nanoTime();
-        long timeout = now + TimeUnit.NANOSECONDS.convert(ZkController.WAIT_DOWN_STATES_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-        zkController.publishAndWaitForDownStates();
+        long timeout = now + TimeUnit.NANOSECONDS.convert(5, TimeUnit.SECONDS);
+        zkController.publishAndWaitForDownStates(5);
         assertTrue("The ZkController.publishAndWaitForDownStates should have timed out but it didn't", System.nanoTime() >= timeout);
       } finally {
         if (zkController != null)

@@ -60,8 +60,8 @@ public class TestSegmentMerger extends LuceneTestCase {
     SegmentCommitInfo info1 = DocHelper.writeDoc(random(), merge1Dir, doc1);
     DocHelper.setupDoc(doc2);
     SegmentCommitInfo info2 = DocHelper.writeDoc(random(), merge2Dir, doc2);
-    reader1 = new SegmentReader(info1, Version.LATEST.major, newIOContext(random()));
-    reader2 = new SegmentReader(info2, Version.LATEST.major, newIOContext(random()));
+    reader1 = new SegmentReader(info1, Version.LATEST.major, false, newIOContext(random()), Collections.emptyMap());
+    reader2 = new SegmentReader(info2, Version.LATEST.major, false, newIOContext(random()), Collections.emptyMap());
   }
 
   @Override
@@ -88,7 +88,7 @@ public class TestSegmentMerger extends LuceneTestCase {
 
     SegmentMerger merger = new SegmentMerger(Arrays.<CodecReader>asList(reader1, reader2),
                                              si, InfoStream.getDefault(), mergedDir,
-                                             new FieldInfos.FieldNumbers(),
+                                             new FieldInfos.FieldNumbers(null),
                                              newIOContext(random(), new IOContext(new MergeInfo(-1, -1, false, -1))));
     MergeState mergeState = merger.merge();
     int docsMerged = mergeState.segmentInfo.maxDoc();
@@ -96,9 +96,9 @@ public class TestSegmentMerger extends LuceneTestCase {
     //Should be able to open a new SegmentReader against the new directory
     SegmentReader mergedReader = new SegmentReader(new SegmentCommitInfo(
                                                          mergeState.segmentInfo,
-                                                         0, -1L, -1L, -1L),
+                                                         0, 0, -1L, -1L, -1L),
                                                    Version.LATEST.major,
-                                                   newIOContext(random()));
+        false, newIOContext(random()), Collections.emptyMap());
     assertTrue(mergedReader != null);
     assertTrue(mergedReader.numDocs() == 2);
     Document newDoc1 = mergedReader.document(0);

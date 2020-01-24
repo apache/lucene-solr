@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
+
+/**
  * Writing classes for a single type of data being stored by one Reduction Data Collector.
  * These writers are used to export data between shards during the streaming process.
  */

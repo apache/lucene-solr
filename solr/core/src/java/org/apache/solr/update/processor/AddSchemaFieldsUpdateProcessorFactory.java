@@ -424,11 +424,12 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
           builder.append("]");
           builder.append("\nCopyFields to be added to the schema: [");
           isFirst = true;
-          for (String fieldName : newCopyFields.keySet()) {
+          for (Map.Entry<String, Map<Integer, List<CopyFieldDef>>> entry : newCopyFields.entrySet()) {
+            String fieldName = entry.getKey();
             builder.append(isFirst ? "" : ",");
             isFirst = false;
             builder.append("source=").append(fieldName).append("{");
-            for (List<CopyFieldDef> copyFieldDefList : newCopyFields.get(fieldName).values()) {
+            for (List<CopyFieldDef> copyFieldDefList : entry.getValue().values()) {
               for (CopyFieldDef copyFieldDef : copyFieldDefList) {
                 builder.append("{dest=").append(copyFieldDef.getDest(fieldName));
                 builder.append(", maxChars=").append(copyFieldDef.getMaxChars()).append("}");
@@ -445,10 +446,11 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
           try {
             IndexSchema newSchema = oldSchema.addFields(newFields, Collections.emptyMap(), false);
             // Add copyFields
-            for (String srcField : newCopyFields.keySet()) {
-              for (Integer maxChars : newCopyFields.get(srcField).keySet()) {
-                newSchema = newSchema.addCopyFields(srcField, 
-                  newCopyFields.get(srcField).get(maxChars).stream().map(f -> f.getDest(srcField)).collect(Collectors.toList()), 
+            for (Map.Entry<String, Map<Integer, List<CopyFieldDef>>> entry : newCopyFields.entrySet()) {
+              String srcField = entry.getKey();
+              for (Integer maxChars : entry.getValue().keySet()) {
+                newSchema = newSchema.addCopyFields(srcField,
+                    entry.getValue().get(maxChars).stream().map(f -> f.getDest(srcField)).collect(Collectors.toList()),
                   maxChars);
               }
             }
@@ -481,13 +483,18 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
     private void getUnknownFields
     (FieldNameSelector selector, SolrInputDocument doc, Map<String,List<SolrInputField>> unknownFields) {
       for (final String fieldName : doc.getFieldNames()) {
-        if (selector.shouldMutate(fieldName)) { // returns false if the field already exists in the current schema
-          List<SolrInputField> solrInputFields = unknownFields.get(fieldName);
-          if (null == solrInputFields) {
-            solrInputFields = new ArrayList<>();
-            unknownFields.put(fieldName, solrInputFields);
+        //We do a assert and a null check because even after SOLR-12710 is addressed
+        //older SolrJ versions can send null values causing an NPE
+        assert fieldName != null;
+        if (fieldName != null) {
+          if (selector.shouldMutate(fieldName)) { // returns false if the field already exists in the current schema
+            List<SolrInputField> solrInputFields = unknownFields.get(fieldName);
+            if (null == solrInputFields) {
+              solrInputFields = new ArrayList<>();
+              unknownFields.put(fieldName, solrInputFields);
+            }
+            solrInputFields.add(doc.getField(fieldName));
           }
-          solrInputFields.add(doc.getField(fieldName));
         }
       }
       List<SolrInputDocument> childDocs = doc.getChildDocuments();
@@ -506,15 +513,20 @@ public class AddSchemaFieldsUpdateProcessorFactory extends UpdateRequestProcesso
     private TypeMapping mapValueClassesToFieldType(List<SolrInputField> fields) {
       NEXT_TYPE_MAPPING: for (TypeMapping typeMapping : typeMappings) {
         for (SolrInputField field : fields) {
-          NEXT_FIELD_VALUE: for (Object fieldValue : field.getValues()) {
-            for (Class<?> valueClass : typeMapping.valueClasses) {
-              if (valueClass.isInstance(fieldValue)) {
-                continue NEXT_FIELD_VALUE;
+          //We do a assert and a null check because even after SOLR-12710 is addressed
+          //older SolrJ versions can send null values causing an NPE
+          assert field.getValues() != null;
+          if (field.getValues() != null) {
+            NEXT_FIELD_VALUE: for (Object fieldValue : field.getValues()) {
+              for (Class<?> valueClass : typeMapping.valueClasses) {
+                if (valueClass.isInstance(fieldValue)) {
+                  continue NEXT_FIELD_VALUE;
+                }
               }
+              // This fieldValue is not an instance of any of the mapped valueClass-s,
+              // so mapping fails - go try the next type mapping.
+              continue NEXT_TYPE_MAPPING;
             }
-            // This fieldValue is not an instance of any of the mapped valueClass-s,
-            // so mapping fails - go try the next type mapping.
-            continue NEXT_TYPE_MAPPING;
           }
         }
         // Success! Each of this field's values is an instance of a mapped valueClass

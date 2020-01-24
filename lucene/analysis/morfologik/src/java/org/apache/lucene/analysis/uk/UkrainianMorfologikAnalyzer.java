@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 
+import morfologik.stemming.Dictionary;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CharArraySet;
 import org.apache.lucene.analysis.LowerCaseFilter;
@@ -33,14 +34,13 @@ import org.apache.lucene.analysis.charfilter.MappingCharFilter;
 import org.apache.lucene.analysis.charfilter.NormalizeCharMap;
 import org.apache.lucene.analysis.miscellaneous.SetKeywordMarkerFilter;
 import org.apache.lucene.analysis.morfologik.MorfologikFilter;
-import org.apache.lucene.analysis.standard.StandardFilter;
 import org.apache.lucene.analysis.standard.StandardTokenizer;
 import org.apache.lucene.util.IOUtils;
 
-import morfologik.stemming.Dictionary;
-
 /**
  * A dictionary-based {@link Analyzer} for Ukrainian.
+ *
+ * @since 6.2.0
  */
 public final class UkrainianMorfologikAnalyzer extends StopwordAnalyzerBase {
   private final CharArraySet stemExclusionSet;
@@ -132,15 +132,14 @@ public final class UkrainianMorfologikAnalyzer extends StopwordAnalyzerBase {
    * @return A
    *         {@link org.apache.lucene.analysis.Analyzer.TokenStreamComponents}
    *         built from an {@link StandardTokenizer} filtered with
-   *         {@link StandardFilter}, {@link LowerCaseFilter}, {@link StopFilter}
+   *         {@link LowerCaseFilter}, {@link StopFilter}
    *         , {@link SetKeywordMarkerFilter} if a stem exclusion set is
    *         provided and {@link MorfologikFilter} on the Ukrainian dictionary.
    */
   @Override
   protected TokenStreamComponents createComponents(String fieldName) {
     Tokenizer source = new StandardTokenizer();
-    TokenStream result = new StandardFilter(source);
-    result = new LowerCaseFilter(result);
+    TokenStream result = new LowerCaseFilter(source);
     result = new StopFilter(result, stopwords);
 
     if (stemExclusionSet.isEmpty() == false) {

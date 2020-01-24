@@ -54,7 +54,6 @@ public class DeleteNodeTest extends SolrCloudTestCase {
 
   @Test
   public void test() throws Exception {
-    cluster.waitForAllNodes(5000);
     CloudSolrClient cloudClient = cluster.getSolrClient();
     String coll = "deletenodetest_coll";
     ClusterState state = cloudClient.getZkStateReader().getClusterState();

@@ -300,7 +300,7 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
 
       UnusualList<Integer> ints = new UnusualList<>(3);
       for (int val : new int[] {42, 66, 34}) {
-        docA.addField("ints_is", new Integer(val));
+        docA.addField("ints_is", val);
         ints.add(val);
       }
       docB.addField("ints_is", ints);
@@ -318,7 +318,7 @@ public class SignatureUpdateProcessorFactoryTest extends SolrTestCaseJ4 {
       doc.addField("v_t", "same");
       doc.addField("weight", 3.0f);
       for (int val : new int[] {66, 42, 34}) {
-        doc.addField("ints_is", new Integer(val));
+        doc.addField("ints_is", val);
       }
       ureq.add(doc);
     }

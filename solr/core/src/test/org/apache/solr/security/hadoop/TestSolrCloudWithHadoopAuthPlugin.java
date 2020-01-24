@@ -20,20 +20,20 @@ import java.io.File;
 import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.lucene.util.Constants;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.KerberosTestServices;
-import org.apache.solr.cloud.SolrCloudTestCase;
+import org.apache.solr.cloud.SolrCloudAuthTestCase;
+import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.SolrInputDocument;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudTestCase {
+public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudAuthTestCase {
   protected static final int NUM_SERVERS = 1;
   protected static final int NUM_SHARDS = 1;
   protected static final int REPLICATION_FACTOR = 1;
@@ -41,14 +41,14 @@ public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupClass() throws Exception {
-    assumeFalse("Hadoop does not work on Windows", Constants.WINDOWS);
-    assumeFalse("FIXME: SOLR-8182: This test fails under Java 9", Constants.JRE_IS_MINIMUM_JAVA9);
+    HdfsTestUtil.checkAssumptions();
 
     setupMiniKdc();
 
     configureCluster(NUM_SERVERS)// nodes
         .withSecurityJson(TEST_PATH().resolve("security").resolve("hadoop_kerberos_config.json"))
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .withDefaultClusterProperty("useLegacyReplicaAssignment", "false")
         .configure();
   }
 
@@ -118,11 +118,14 @@ public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudTestCase {
     CollectionAdminRequest.Create create = CollectionAdminRequest.createCollection(collectionName, "conf1",
         NUM_SHARDS, REPLICATION_FACTOR);
     create.process(solrClient);
+    // The metrics counter for wrong credentials here really just means  
+    assertAuthMetricsMinimums(6, 3, 0, 3, 0, 0);
 
     SolrInputDocument doc = new SolrInputDocument();
     doc.setField("id", "1");
     solrClient.add(collectionName, doc);
     solrClient.commit(collectionName);
+    assertAuthMetricsMinimums(10, 5, 0, 5, 0, 0);
 
     SolrQuery query = new SolrQuery();
     query.setQuery("*:*");
@@ -133,6 +136,6 @@ public class TestSolrCloudWithHadoopAuthPlugin extends SolrCloudTestCase {
     deleteReq.process(solrClient);
     AbstractDistribZkTestBase.waitForCollectionToDisappear(collectionName,
         solrClient.getZkStateReader(), true, true, 330);
+    assertAuthMetricsMinimums(14, 8, 0, 6, 0, 0);
   }
-
 }

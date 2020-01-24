@@ -22,6 +22,7 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Writer;
 
+import org.apache.lucene.util.SuppressForbidden;
 import org.apache.solr.analytics.AnalyticsRequestManager;
 import org.apache.solr.analytics.stream.AnalyticsShardResponseParser;
 import org.apache.solr.client.solrj.impl.BinaryResponseParser;
@@ -55,7 +56,7 @@ public class AnalyticsShardResponseWriter implements BinaryQueryResponseWriter {
 
   @Override
   public void init(NamedList args) {}
-  
+
   /**
    * Manages the streaming of analytics reduction data if no exception occurred.
    * Otherwise the exception is streamed over.
@@ -63,21 +64,22 @@ public class AnalyticsShardResponseWriter implements BinaryQueryResponseWriter {
   public static class AnalyticsResponse {
     private final AnalyticsRequestManager manager;
     private final SolrException exception;
-    
+
     private final boolean requestSuccessful;
-    
+
     public AnalyticsResponse(AnalyticsRequestManager manager) {
       this.manager = manager;
       this.exception = null;
       this.requestSuccessful = true;
     }
-    
+
     public AnalyticsResponse(SolrException exception) {
       this.manager = null;
       this.exception = exception;
       this.requestSuccessful = false;
     }
-    
+
+    @SuppressForbidden(reason = "XXX: security hole")
     public void write(DataOutputStream output) throws IOException {
       output.writeBoolean(requestSuccessful);
       if (requestSuccessful) {

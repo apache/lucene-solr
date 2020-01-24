@@ -27,34 +27,39 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.lucene.util.InfoStream;
+import org.apache.lucene.util.NamedThreadFactory;
 
 /** Basic tests for VerboseFS */
 public class TestVerboseFS extends MockFileSystemTestCase {
-  
+
   @Override
   protected Path wrap(Path path) {
     return wrap(path, InfoStream.NO_OUTPUT);
   }
-  
+
   Path wrap(Path path, InfoStream stream) {
     FileSystem fs = new VerboseFS(path.getFileSystem(), stream).getFileSystem(URI.create("file:///"));
     return new FilterPath(path, fs);
   }
-  
+
   /** InfoStream that looks for a substring and indicates if it saw it */
   static class InfoStreamListener extends InfoStream {
     /** True if we saw the message */
     final AtomicBoolean seenMessage = new AtomicBoolean(false);
-    /** Expected message */ 
+    /** Expected message */
     final String messageStartsWith;
-    
+
     InfoStreamListener(String messageStartsWith) {
       this.messageStartsWith = messageStartsWith;
     }
-    
+
     @Override
     public void close() throws IOException {}
 
@@ -69,12 +74,12 @@ public class TestVerboseFS extends MockFileSystemTestCase {
     public boolean isEnabled(String component) {
       return true;
     }
-    
+
     boolean sawMessage() {
       return seenMessage.get();
     }
   }
-  
+
   /** Test createDirectory */
   public void testCreateDirectory() throws IOException {
     InfoStreamListener stream = new InfoStreamListener("createDirectory");
@@ -82,12 +87,9 @@ public class TestVerboseFS extends MockFileSystemTestCase {
     Files.createDirectory(dir.resolve("subdir"));
     assertTrue(stream.sawMessage());
 
-    try {
-      Files.createDirectory(dir.resolve("subdir"));
-      fail("didn't get expected exception");
-    } catch (IOException expected) {}
+    expectThrows(IOException.class, () -> Files.createDirectory(dir.resolve("subdir")));
   }
-  
+
   /** Test delete */
   public void testDelete() throws IOException {
     InfoStreamListener stream = new InfoStreamListener("delete");
@@ -96,12 +98,9 @@ public class TestVerboseFS extends MockFileSystemTestCase {
     Files.delete(dir.resolve("foobar"));
     assertTrue(stream.sawMessage());
 
-    try {
-      Files.delete(dir.resolve("foobar"));
-      fail("didn't get expected exception");
-    } catch (IOException expected) {}
+    expectThrows(IOException.class, () -> Files.delete(dir.resolve("foobar")));
   }
-  
+
   /** Test deleteIfExists */
   public void testDeleteIfExists() throws IOException {
     InfoStreamListener stream = new InfoStreamListener("deleteIfExists");
@@ -113,7 +112,7 @@ public class TestVerboseFS extends MockFileSystemTestCase {
     // no exception
     Files.deleteIfExists(dir.resolve("foobar"));
   }
-  
+
   /** Test copy */
   public void testCopy() throws IOException {
     InfoStreamListener stream = new InfoStreamListener("copy");
@@ -122,12 +121,9 @@ public class TestVerboseFS extends MockFileSystemTestCase {
     Files.copy(dir.resolve("foobar"), dir.resolve("baz"));
     assertTrue(stream.sawMessage());
 
-    try {
-      Files.copy(dir.resolve("nonexistent"), dir.resolve("something"));
-      fail("didn't get expected exception");
-    } catch (IOException expected) {}
+    expectThrows(IOException.class, () -> Files.copy(dir.resolve("nonexistent"), dir.resolve("something")));
   }
-  
+
   /** Test move */
   public void testMove() throws IOException {
     InfoStreamListener stream = new InfoStreamListener("move");
@@ -136,12 +132,9 @@ public class TestVerboseFS extends MockFileSystemTestCase {
     Files.move(dir.resolve("foobar"), dir.resolve("baz"));
     assertTrue(stream.sawMessage());
 
-    try {
-      Files.move(dir.resolve("nonexistent"), dir.resolve("something"));
-      fail("didn't get expected exception");
-    } catch (IOException expected) {}
+    expectThrows(IOException.class, () -> Files.move(dir.resolve("nonexistent"), dir.resolve("something")));
   }
-  
+
   /** Test newOutputStream */
   public void testNewOutputStream() throws IOException {
     InfoStreamListener stream = new InfoStreamListener("newOutputStream");
@@ -149,13 +142,10 @@ public class TestVerboseFS extends MockFileSystemTestCase {
     OutputStream file = Files.newOutputStream(dir.resolve("output"));
     assertTrue(stream.sawMessage());
     file.close();
-    
-    try {
-      Files.newOutputStream(dir.resolve("output"), StandardOpenOption.CREATE_NEW);
-      fail("didn't get expected exception");
-    } catch (IOException expected) {}
+
+    expectThrows(IOException.class, () -> Files.newOutputStream(dir.resolve("output"), StandardOpenOption.CREATE_NEW));
   }
-  
+
   /** Test FileChannel.open */
   public void testFileChannel() throws IOException {
     InfoStreamListener stream = new InfoStreamListener("newFileChannel");
@@ -163,27 +153,38 @@ public class TestVerboseFS extends MockFileSystemTestCase {
     FileChannel channel = FileChannel.open(dir.resolve("foobar"), StandardOpenOption.CREATE_NEW, StandardOpenOption.READ, StandardOpenOption.WRITE);
     assertTrue(stream.sawMessage());
     channel.close();
-    
-    try {
-      FileChannel.open(dir.resolve("foobar"), StandardOpenOption.CREATE_NEW, StandardOpenOption.READ, StandardOpenOption.WRITE);
-      fail("didn't get expected exception");
-    } catch (IOException expected) {}
+
+    expectThrows(IOException.class, () -> FileChannel.open(dir.resolve("foobar"),
+        StandardOpenOption.CREATE_NEW, StandardOpenOption.READ, StandardOpenOption.WRITE));
   }
-  
+
   /** Test AsynchronousFileChannel.open */
-  public void testAsyncFileChannel() throws IOException {
+  public void testAsyncFileChannel() throws IOException, InterruptedException {
     InfoStreamListener stream = new InfoStreamListener("newAsynchronousFileChannel");
     Path dir = wrap(createTempDir(), stream);
-    AsynchronousFileChannel channel = AsynchronousFileChannel.open(dir.resolve("foobar"), StandardOpenOption.CREATE_NEW, StandardOpenOption.READ, StandardOpenOption.WRITE);
-    assertTrue(stream.sawMessage());
-    channel.close();
-    
+
+    ExecutorService executorService = Executors.newFixedThreadPool(1,
+        new NamedThreadFactory("async-io"));
     try {
-      AsynchronousFileChannel.open(dir.resolve("foobar"), StandardOpenOption.CREATE_NEW, StandardOpenOption.READ, StandardOpenOption.WRITE);
-      fail("didn't get expected exception");
-    } catch (IOException expected) {}
+      Set<StandardOpenOption> opts = Set
+          .of(StandardOpenOption.CREATE_NEW, StandardOpenOption.READ,
+              StandardOpenOption.WRITE);
+      AsynchronousFileChannel channel = AsynchronousFileChannel
+          .open(dir.resolve("foobar"), opts, executorService);
+      assertTrue(stream.sawMessage());
+      channel.close();
+
+      expectThrows(IOException.class, () -> AsynchronousFileChannel.open(dir.resolve("foobar"),
+          opts, executorService));
+
+      expectThrows(NoSuchFileException.class,
+          () -> AsynchronousFileChannel.open(dir.resolve("doesNotExist.rip")));
+    } finally {
+      executorService.shutdown();
+      executorService.awaitTermination(5, TimeUnit.SECONDS);
+    }
   }
-  
+
   /** Test newByteChannel */
   public void testByteChannel() throws IOException {
     InfoStreamListener stream = new InfoStreamListener("newByteChannel");
@@ -191,33 +192,15 @@ public class TestVerboseFS extends MockFileSystemTestCase {
     SeekableByteChannel channel = Files.newByteChannel(dir.resolve("foobar"), StandardOpenOption.CREATE_NEW, StandardOpenOption.READ, StandardOpenOption.WRITE);
     assertTrue(stream.sawMessage());
     channel.close();
-    
-    try {
-      Files.newByteChannel(dir.resolve("foobar"), StandardOpenOption.CREATE_NEW, StandardOpenOption.READ, StandardOpenOption.WRITE);
-      fail("didn't get expected exception");
-    } catch (IOException expected) {}
+
+    expectThrows(IOException.class, () -> Files.newByteChannel(dir.resolve("foobar"),
+        StandardOpenOption.CREATE_NEW, StandardOpenOption.READ, StandardOpenOption.WRITE));
   }
-  
-  /** Test that verbose does not corrumpt file not found exceptions */
-  public void testVerboseFSNoSuchFileException() throws IOException {
+
+  /** Test that verbose does not corrupt file not found exceptions */
+  public void testVerboseFSNoSuchFileException() {
     Path dir = wrap(createTempDir());
-    try {
-      AsynchronousFileChannel.open(dir.resolve("doesNotExist.rip"));
-      fail("did not hit exception");
-    } catch (NoSuchFileException nsfe) {
-      // expected
-    }
-    try {
-      FileChannel.open(dir.resolve("doesNotExist.rip"));
-      fail("did not hit exception");
-    } catch (NoSuchFileException nsfe) {
-      // expected
-    }
-    try {
-      Files.newByteChannel(dir.resolve("stillopen"));
-      fail("did not hit exception");
-    } catch (NoSuchFileException nsfe) {
-      // expected
-    }
+    expectThrows(NoSuchFileException.class, () -> FileChannel.open(dir.resolve("doesNotExist.rip")));
+    expectThrows(NoSuchFileException.class, () -> Files.newByteChannel(dir.resolve("stillopen")));
   }
 }

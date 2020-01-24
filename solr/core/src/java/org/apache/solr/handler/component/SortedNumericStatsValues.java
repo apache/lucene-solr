@@ -51,7 +51,7 @@ public class SortedNumericStatsValues implements StatsValues {
     if (!sndv.advanceExact(docId)) {
       missing();
     } else {
-      for (int i = 0 ; i < sndv.docValueCount(); i++) {
+      for (int i = 0, count = sndv.docValueCount(); i < count; i++) {
         nsv.accumulate(toCorrectType(sndv.nextValue()), 1);
       }
     }

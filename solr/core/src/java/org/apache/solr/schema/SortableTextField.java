@@ -29,6 +29,7 @@ import org.apache.lucene.queries.function.valuesource.SortedSetFieldSource;
 import org.apache.lucene.search.*;
 import org.apache.lucene.util.BytesRef;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.util.ByteArrayUtf8CharSequence;
 import org.apache.solr.search.QParser;
 import org.apache.solr.uninverting.UninvertingReader.Type;
 
@@ -103,6 +104,13 @@ public class SortableTextField extends TextField {
     if (! field.hasDocValues()) {
       return Collections.singletonList(f);
     }
+    if (value instanceof ByteArrayUtf8CharSequence) {
+      ByteArrayUtf8CharSequence utf8 = (ByteArrayUtf8CharSequence) value;
+      if (utf8.size() < maxCharsForDocValues) {
+        BytesRef bytes = new BytesRef(utf8.getBuf(), utf8.offset(), utf8.size());
+        return getIndexableFields(field, f, bytes);
+      }
+    }
     final String origString = value.toString();
     final int origLegth = origString.length();
     final boolean truncate = maxCharsForDocValues < origLegth;
@@ -116,7 +124,11 @@ public class SortableTextField extends TextField {
          maxCharsForDocValues + " when useDocValuesAsStored=true (length=" + origLegth + ")");
     }
     final BytesRef bytes = new BytesRef(truncate ? origString.subSequence(0, maxCharsForDocValues) : origString);
-                                        
+
+    return getIndexableFields(field, f, bytes);
+  }
+
+  private static List<IndexableField> getIndexableFields(SchemaField field, IndexableField f, BytesRef bytes) {
     final IndexableField docval = field.multiValued()
       ? new SortedSetDocValuesField(field.getName(), bytes)
       : new SortedDocValuesField(field.getName(), bytes);

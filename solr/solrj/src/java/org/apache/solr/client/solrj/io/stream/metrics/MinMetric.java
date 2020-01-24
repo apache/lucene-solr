@@ -71,9 +71,21 @@ public class MinMetric extends Metric {
   public void update(Tuple tuple) {
     Object o = tuple.get(columnName);
     if(o instanceof Double) {
-      double d = (double)o;
-      if(d < doubleMin) {
+      double d = (double) o;
+      if (d < doubleMin) {
         doubleMin = d;
+      }
+    } else if(o instanceof Float) {
+      Float f = (Float) o;
+      double d = f.doubleValue();
+      if (d < doubleMin) {
+        doubleMin = d;
+      }
+    } else if(o instanceof Integer) {
+      Integer i = (Integer)o;
+      long l = i.longValue();
+      if(l < longMin) {
+        longMin = l;
       }
     } else {
       long l = (long)o;

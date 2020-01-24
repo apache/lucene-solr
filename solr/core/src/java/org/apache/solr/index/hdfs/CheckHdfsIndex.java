@@ -52,13 +52,14 @@ public class CheckHdfsIndex {
       System.out.println("\nIgnoring specified -dir-impl, instead using " + HdfsDirectory.class.getSimpleName());
     }
 
-    System.out.println("\nOpening index @ " + opts.getIndexPath() + "\n");
+    Path indexPath = new Path(opts.getIndexPath());
+    System.out.println("\nOpening index @ " + indexPath + "\n");
 
     Directory directory;
     try {
-      directory = new HdfsDirectory(new Path(opts.getIndexPath()), getConf());
+      directory = new HdfsDirectory(indexPath, getConf(indexPath));
     } catch (IOException e) {
-      System.out.println("ERROR: could not open hdfs directory \"" + opts.getIndexPath() + "\"; exiting");
+      System.out.println("ERROR: could not open hdfs directory \"" + indexPath + "\"; exiting");
       e.printStackTrace(System.out);
       return 1;
     }
@@ -69,11 +70,15 @@ public class CheckHdfsIndex {
     }
   }
 
-  private static Configuration getConf() {
+  private static Configuration getConf(Path path) {
     Configuration conf = new Configuration();
     String confDir = System.getProperty(HdfsDirectoryFactory.CONFIG_DIRECTORY);
     HdfsUtil.addHdfsResources(conf, confDir);
-    conf.setBoolean("fs.hdfs.impl.disable.cache", true);
+
+    String fsScheme = path.toUri().getScheme();
+    if(fsScheme != null) {
+      conf.setBoolean("fs." + fsScheme + ".impl.disable.cache", true);
+    }
     return conf;
   }
 }

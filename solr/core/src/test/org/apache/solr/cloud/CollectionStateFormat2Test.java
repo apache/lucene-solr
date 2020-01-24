@@ -20,6 +20,7 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.zookeeper.data.Stat;
+import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -31,15 +32,12 @@ public class CollectionStateFormat2Test extends SolrCloudTestCase {
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
   }
-
-  @Test
-  public void testConfNameAndCollectionNameSame() throws Exception {
-
-    // .system collection precreates the configset
-    CollectionAdminRequest.createCollection(".system", 2, 1)
-        .process(cluster.getSolrClient());
+  
+  @After
+  public void afterTest() throws Exception {
+    cluster.deleteAllCollections();
   }
-
+  
   @Test
   public void testZkNodeLocation() throws Exception {
 
@@ -47,6 +45,8 @@ public class CollectionStateFormat2Test extends SolrCloudTestCase {
     CollectionAdminRequest.createCollection(collectionName, "conf", 2, 2)
         .process(cluster.getSolrClient());
 
+    cluster.waitForActiveCollection(collectionName, 2, 4);
+    
     waitForState("Collection not created", collectionName, (n, c) -> DocCollection.isFullyActive(n, c, 2, 2));
     assertTrue("State Format 2 collection path does not exist",
         zkClient().exists(ZkStateReader.getCollectionPath(collectionName), true));

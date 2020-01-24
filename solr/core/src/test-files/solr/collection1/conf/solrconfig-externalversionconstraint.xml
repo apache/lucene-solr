@@ -126,5 +126,49 @@
   <requestHandler name="/select" class="solr.SearchHandler">
   </requestHandler>
 
+  <updateRequestProcessorChain name="no-external-version">
+    <!-- this chain lets us index docs without a version field. It's to let us test the optional
+         'supportMissingVersionOnOldDocs' param in the 'external-version-support-missing' chain
+         below.
+    -->
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
+
+  <updateRequestProcessorChain name="external-version-support-missing">
+    <!-- this chain sets the supportMissingVersionOnOldDocs param to true so that we can update
+         docs that were originally indexed without an external version field, e.g. by using the
+         'no-external-version' chain.
+    -->
+
+    <!-- process the external version constraint, ignoring any updates that
+         don't satisfy the constraint -->
+    <processor class="solr.DocBasedVersionConstraintsProcessorFactory">
+      <bool name="ignoreOldUpdates">true</bool>
+      <str name="versionField">my_version_l</str>
+      <str name="deleteVersionParam">del_version</str>
+      <bool name="supportMissingVersionOnOldDocs">true</bool>
+    </processor>
+
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
+  
+  <updateRequestProcessorChain name="tombstone-config">
+    <!-- process the external version constraint, ignoring any updates that
+         don't satisfy the constraint -->
+    <processor class="solr.DocBasedVersionConstraintsProcessorFactory">
+      <str name="versionField">my_version_l</str>
+      <str name="deleteVersionParam">del_version</str>
+      <lst name="tombstoneConfig">
+          <bool name="foo_b">true</bool>
+          <int name="foo_i">1</int>
+          <long name="foo_l">1</long>
+          <float name="foo_f">1.5</float>
+          <str name="foo_s">bar</str>
+          <str name="foo_ss">bar1</str>
+          <str name="foo_ss">bar2</str>
+      </lst>
+    </processor>
+    <processor class="solr.RunUpdateProcessorFactory" />
+  </updateRequestProcessorChain>
 
 </config>

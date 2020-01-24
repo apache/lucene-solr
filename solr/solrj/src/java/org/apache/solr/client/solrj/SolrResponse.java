@@ -16,15 +16,18 @@
  */
 package org.apache.solr.client.solrj;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
-
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
 import org.apache.solr.common.util.NamedList;
+import org.apache.solr.common.util.SuppressForbidden;
+
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 
 
 /**
@@ -32,7 +35,10 @@ import org.apache.solr.common.util.NamedList;
  * 
  * @since solr 1.3
  */
-public abstract class SolrResponse implements Serializable {
+public abstract class SolrResponse implements Serializable, MapWriter {
+
+  /** make this compatible with earlier versions */
+  private static final long serialVersionUID = -7931100103360242645L;
 
   /** Elapsed time in milliseconds for the request as seen from the client. */
   public abstract long getElapsedTime();
@@ -42,6 +48,11 @@ public abstract class SolrResponse implements Serializable {
   public abstract void setElapsedTime(long elapsedTime);
   
   public abstract NamedList<Object> getResponse();
+
+  @Override
+  public void writeMap(EntryWriter ew) throws IOException {
+    getResponse().writeMap(ew);
+  }
 
   public Exception getException() {
     NamedList exp = (NamedList) getResponse().get("exception");
@@ -53,6 +64,8 @@ public abstract class SolrResponse implements Serializable {
     return new SolrException(errorCode, (String)exp.get("msg"));
   }
   
+  @SuppressForbidden(reason = "XXX: security hole")
+  @Deprecated
   public static byte[] serializable(SolrResponse response) {
     try {
       ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
@@ -64,6 +77,8 @@ public abstract class SolrResponse implements Serializable {
     }
   }
   
+  @SuppressForbidden(reason = "XXX: security hole")
+  @Deprecated
   public static SolrResponse deserialize(byte[] bytes) {
     try {
       ByteArrayInputStream byteStream = new ByteArrayInputStream(bytes);

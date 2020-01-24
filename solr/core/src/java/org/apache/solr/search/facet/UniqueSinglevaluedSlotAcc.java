@@ -18,6 +18,7 @@
 package org.apache.solr.search.facet;
 
 import java.io.IOException;
+import java.util.function.IntFunction;
 
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.MultiDocValues;
@@ -73,11 +74,8 @@ class UniqueSinglevaluedSlotAcc extends UniqueSlotAcc {
   }
 
   @Override
-  public void collect(int doc, int slotNum) throws IOException {
-    if (doc > subDv.docID()) {
-      subDv.advance(doc);
-    }
-    if (doc == subDv.docID()) {
+  public void collect(int doc, int slotNum, IntFunction<SlotContext> slotContext) throws IOException {
+    if (subDv.advanceExact(doc)) {
       int segOrd = subDv.ordValue();
       int ord = toGlobal==null ? segOrd : (int)toGlobal.get(segOrd);
 

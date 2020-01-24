@@ -37,7 +37,6 @@
    <pathelement path="${facet.jar}"/>
    <pathelement path="${expressions.jar}"/>
    <fileset dir="../expressions/lib"/>
-   <fileset dir="lib"/>
   </path>
 
   <target name="javadocs" depends="javadocs-analyzers-common,javadocs-queryparser,javadocs-facet,javadocs-expressions,compile-core,check-javadocs-uptodate"
@@ -59,23 +58,4 @@
 
   <target name="compile-core" depends="jar-analyzers-common,jar-queryparser,jar-queries,jar-facet,jar-expressions,common.compile-core" />
 
-  <target name="default" depends="jar-core,build-web-demo"/>
-
-  <target name="build-artifacts-and-tests" depends="jar, compile-test,build-web-demo" />
-
-  <target name="build-web-demo"  description="Compiles demo">
-    <echo>Compiling XML QueryParser Demo WAR</echo>
-
-    <war destfile="${build.dir}/lucene-xml-query-demo.war" webxml="src/resources/org/apache/lucene/demo/xmlparser/WEB-INF/web.xml">
-      <fileset dir="${resources.dir}/org/apache/lucene/demo/xmlparser/"/>
-      <lib dir="${build.dir}">
-        <include name="${final.name}.jar"/>
-      </lib>
-      <lib file="${queries.jar}"/>
-      <lib file="${queryparser.jar}"/>
-      <lib file="${lucene-core.jar}"/>
-      <lib file="${facet.jar}"/>
-    </war>
-  </target>
-  
 </project>

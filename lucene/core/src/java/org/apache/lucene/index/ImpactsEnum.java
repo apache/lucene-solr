@@ -16,41 +16,14 @@
  */
 package org.apache.lucene.index;
 
-import java.io.IOException;
-
 /**
  * Extension of {@link PostingsEnum} which also provides information about
  * upcoming impacts.
  * @lucene.experimental
  */
-public abstract class ImpactsEnum extends PostingsEnum {
+public abstract class ImpactsEnum extends PostingsEnum implements ImpactsSource {
 
   /** Sole constructor. */
   protected ImpactsEnum() {}
-
-  /**
-   * Shallow-advance to {@code target}. This is cheaper than calling
-   * {@link #advance(int)} and allows further calls to {@link #getImpacts()}
-   * to ignore doc IDs that are less than {@code target} in order to get more
-   * precise information about impacts.
-   * This method may not be called on targets that are less than the current
-   * {@link #docID()}.
-   * After this method has been called, {@link #nextDoc()} may not be called
-   * if the current doc ID is less than {@code target - 1} and
-   * {@link #advance(int)} may not be called on targets that are less than
-   * {@code target}.
-   */
-  public abstract void advanceShallow(int target) throws IOException;
-
-  /**
-   * Get information about upcoming impacts for doc ids that are greater than
-   * or equal to the maximum of {@link #docID()} and the last target that was
-   * passed to {@link #advanceShallow(int)}.
-   * This method may not be called on an unpositioned iterator on which
-   * {@link #advanceShallow(int)} has never been called.
-   * NOTE: advancing this iterator may invalidate the returned impacts, so they
-   * should not be used after the iterator has been advanced.
-   */
-  public abstract Impacts getImpacts() throws IOException;
 
 }

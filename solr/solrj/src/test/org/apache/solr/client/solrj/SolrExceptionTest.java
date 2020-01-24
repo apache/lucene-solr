@@ -19,17 +19,21 @@ package org.apache.solr.client.solrj;
 import static org.apache.solr.SolrTestCaseJ4.getHttpSolrClient;
 
 import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.junit.Test;
 
 /**
  * 
  *
  * @since solr 1.3
  */
-public class SolrExceptionTest extends LuceneTestCase {
+public class SolrExceptionTest extends SolrTestCase {
 
+  @Test
+  // commented out on: 24-Dec-2018   @BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // added 20-Sep-2018
   public void testSolrException() throws Throwable {
     // test a connection to a solr server that probably doesn't exist
     // this is a very simple test and most of the test should be considered verified 
@@ -40,7 +44,7 @@ public class SolrExceptionTest extends LuceneTestCase {
       // switched to a local address to avoid going out on the net, ns lookup issues, etc.
       // set a 1ms timeout to let the connection fail faster.
       httpClient = HttpClientUtil.createClient(null);
-      try (HttpSolrClient client = getHttpSolrClient("http://[ff01::114]:11235/solr/", httpClient, 1)) {
+      try (HttpSolrClient client = getHttpSolrClient("http://" + SolrTestCaseJ4.DEAD_HOST_1 + "/solr/", httpClient, 1)) {
         SolrQuery query = new SolrQuery("test123");
         client.query(query);
       }

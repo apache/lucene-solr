@@ -21,7 +21,7 @@ import java.util.Random;
 
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.codecs.memory.MemoryPostingsFormat;
+import org.apache.lucene.codecs.memory.DirectPostingsFormat;
 import org.apache.lucene.document.*;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.TermQuery;
@@ -42,9 +42,9 @@ public class TestRollingUpdates extends LuceneTestCase {
     
     final LineFileDocs docs = new LineFileDocs(random);
 
-    //provider.register(new MemoryCodec());
     if (random().nextBoolean()) {
-      Codec.setDefault(TestUtil.alwaysPostingsFormat(new MemoryPostingsFormat(random().nextBoolean(), random.nextFloat())));
+      Codec.setDefault(TestUtil.alwaysPostingsFormat(
+          new DirectPostingsFormat()));
     }
 
     MockAnalyzer analyzer = new MockAnalyzer(random());
@@ -79,7 +79,7 @@ public class TestRollingUpdates extends LuceneTestCase {
       final boolean doUpdate;
       if (s != null && updateCount < SIZE) {
         TopDocs hits = s.search(new TermQuery(idTerm), 1);
-        assertEquals(1, hits.totalHits);
+        assertEquals(1, hits.totalHits.value);
         doUpdate = w.tryDeleteDocument(r, hits.scoreDocs[0].doc) == -1;
         if (VERBOSE) {
           if (doUpdate) {
@@ -136,7 +136,7 @@ public class TestRollingUpdates extends LuceneTestCase {
     }
 
     w.commit();
-    assertEquals(SIZE, w.numDocs());
+    assertEquals(SIZE, w.getDocStats().numDocs);
 
     w.close();
 

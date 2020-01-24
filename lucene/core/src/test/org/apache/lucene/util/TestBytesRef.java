@@ -48,4 +48,12 @@ public class TestBytesRef extends LuceneTestCase {
     // only for 4.x
     assertEquals("\uFFFF", new BytesRef("\uFFFF").utf8ToString());
   }
+
+  public void testInvalidDeepCopy() {
+    BytesRef from = new BytesRef(new byte[] { 1, 2 });
+    from.offset += 1; // now invalid
+    expectThrows(IndexOutOfBoundsException.class, () -> {
+      BytesRef.deepCopyOf(from);
+    });
+  }
 }

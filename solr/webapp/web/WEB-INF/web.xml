@@ -22,29 +22,6 @@
          metadata-complete="true"
 >
 
-
-  <!-- Uncomment if you are trying to use a Resin version before 3.0.19.
-    Their XML implementation isn't entirely compatible with Xerces.
-    Below are the implementations to use with Sun's JVM.
-  <system-property javax.xml.xpath.XPathFactory=
-             "com.sun.org.apache.xpath.internal.jaxp.XPathFactoryImpl"/>
-  <system-property javax.xml.parsers.DocumentBuilderFactory=
-             "com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl"/>
-  <system-property javax.xml.parsers.SAXParserFactory=
-             "com.sun.org.apache.xerces.internal.jaxp.SAXParserFactoryImpl"/>
-   -->
-
-  <!-- People who want to hardcode their "Solr Home" directly into the
-       WAR File can set the JNDI property here...
-   -->
-  <!--
-    <env-entry>
-       <env-entry-name>solr/home</env-entry-name>
-       <env-entry-value>/put/your/solr/home/here</env-entry-value>
-       <env-entry-type>java.lang.String</env-entry-type>
-    </env-entry>
-   -->
-   
   <!-- Any path (name) registered in solrconfig.xml will be sent to that filter -->
   <filter>
     <filter-name>SolrRequestFilter</filter-name>
@@ -56,21 +33,11 @@
     -->
     <init-param>
       <param-name>excludePatterns</param-name>
-      <param-value>/partials/.+,/libs/.+,/css/.+,/js/.+,/img/.+,/tpl/.+</param-value>
+      <param-value>/partials/.+,/libs/.+,/css/.+,/js/.+,/img/.+,/templates/.+</param-value>
     </init-param>
   </filter>
 
   <filter-mapping>
-    <!--
-      NOTE: When using multicore, /admin JSP URLs with a core specified
-      such as /solr/coreName/admin/stats.jsp get forwarded by a
-      RequestDispatcher to /solr/admin/stats.jsp with the specified core
-      put into request scope keyed as "org.apache.solr.SolrCore".
-
-      It is unnecessary, and potentially problematic, to have the SolrDispatchFilter
-      configured to also filter on forwards.  Do not configure
-      this dispatcher as <dispatcher>FORWARD</dispatcher>.
-    -->
     <filter-name>SolrRequestFilter</filter-name>
     <url-pattern>/*</url-pattern>
   </filter-mapping>
@@ -78,35 +45,6 @@
   <servlet>
     <servlet-name>LoadAdminUI</servlet-name>
     <servlet-class>org.apache.solr.servlet.LoadAdminUiServlet</servlet-class>
-  </servlet>
-  
-  <!-- Remove in Solr 5.0 -->
-  <!-- This sends SC_MOVED_PERMANENTLY (301) for resources that changed in 4.0 -->
-  <servlet>
-    <servlet-name>RedirectOldAdminUI</servlet-name>
-    <servlet-class>org.apache.solr.servlet.RedirectServlet</servlet-class>
-    <init-param>
-      <param-name>destination</param-name>
-      <param-value>${context}/#/</param-value>
-    </init-param>
-  </servlet>
-  
-  <servlet>
-    <servlet-name>RedirectOldZookeeper</servlet-name>
-    <servlet-class>org.apache.solr.servlet.RedirectServlet</servlet-class>
-    <init-param>
-      <param-name>destination</param-name>
-      <param-value>${context}/admin/zookeeper</param-value>
-    </init-param>
-  </servlet>
-
-  <servlet>
-    <servlet-name>RedirectLogging</servlet-name>
-    <servlet-class>org.apache.solr.servlet.RedirectServlet</servlet-class>
-    <init-param>
-      <param-name>destination</param-name>
-      <param-value>${context}/#/~logging</param-value>
-    </init-param>
   </servlet>
 
   <servlet>
@@ -117,27 +55,6 @@
       <param-value>org.apache.solr.rest.SolrSchemaRestApi</param-value>
     </init-param>
   </servlet>
-
-  <servlet-mapping>
-    <servlet-name>RedirectOldAdminUI</servlet-name>
-    <url-pattern>/admin/</url-pattern>
-  </servlet-mapping>
-  <servlet-mapping>
-    <servlet-name>RedirectOldAdminUI</servlet-name>
-    <url-pattern>/admin</url-pattern>
-  </servlet-mapping>
-  <servlet-mapping>
-    <servlet-name>RedirectOldZookeeper</servlet-name>
-    <url-pattern>/zookeeper.jsp</url-pattern>
-  </servlet-mapping>
-  <servlet-mapping>
-    <servlet-name>RedirectOldZookeeper</servlet-name>
-    <url-pattern>/zookeeper</url-pattern>
-  </servlet-mapping>
-  <servlet-mapping>
-    <servlet-name>RedirectLogging</servlet-name>
-    <url-pattern>/logging</url-pattern>
-  </servlet-mapping>
 
   <servlet-mapping>
     <servlet-name>LoadAdminUI</servlet-name>
@@ -176,4 +93,22 @@
     </web-resource-collection>
   </security-constraint>
 
+  <!--
+    RedirectServlet can be used to redirect old endpoints to a new location to support back compatibility.
+    Example below
+  -->
+<!--
+  <servlet>
+    <servlet-name>RedirectOldZookeeper</servlet-name>
+    <servlet-class>org.apache.solr.servlet.RedirectServlet</servlet-class>
+    <init-param>
+      <param-name>destination</param-name>
+      <param-value>${context}/admin/zookeeper</param-value>
+    </init-param>
+  </servlet>
+  <servlet-mapping>
+    <servlet-name>RedirectOldZookeeper</servlet-name>
+    <url-pattern>/zookeeper</url-pattern>
+  </servlet-mapping>
+-->  
 </web-app>

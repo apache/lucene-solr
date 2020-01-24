@@ -28,30 +28,16 @@ public class TestRunWithRestrictedPermissions extends LuceneTestCase {
   }
 
   public void testNormallyAllowedStuff() throws Exception {
-    try {
-      runWithRestrictedPermissions(this::doSomeForbiddenStuff);
-      fail("this should not pass!");
-    } catch (SecurityException se) {
-      // pass
-    }
+    expectThrows(SecurityException.class, () -> runWithRestrictedPermissions(this::doSomeForbiddenStuff));
   }
 
   public void testCompletelyForbidden1() throws Exception {
-    try {
-      runWithRestrictedPermissions(this::doSomeCompletelyForbiddenStuff);
-      fail("this should not pass!");
-    } catch (SecurityException se) {
-      // pass
-    }
+    expectThrows(SecurityException.class, () -> runWithRestrictedPermissions(this::doSomeCompletelyForbiddenStuff));
   }
 
   public void testCompletelyForbidden2() throws Exception {
-    try {
-      runWithRestrictedPermissions(this::doSomeCompletelyForbiddenStuff, new AllPermission());
-      fail("this should not pass (not even with AllPermission)");
-    } catch (SecurityException se) {
-      // pass
-    }
+    expectThrows(SecurityException.class, () ->
+        runWithRestrictedPermissions(this::doSomeCompletelyForbiddenStuff, new AllPermission()));
   }
 
   private Void doSomeForbiddenStuff() throws IOException {

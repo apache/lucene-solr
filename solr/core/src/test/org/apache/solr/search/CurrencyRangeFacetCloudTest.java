@@ -42,7 +42,7 @@ import org.junit.Test;
 
 public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
 
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   private static final String COLLECTION = MethodHandles.lookup().lookupClass().getName();
   private static final String CONF = COLLECTION + "_configSet";
@@ -51,7 +51,7 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
 
   private static final List<String> STR_VALS = Arrays.asList("x0", "x1", "x2");
   // NOTE: in our test conversions EUR uses an asynetric echange rate
-  // these are the equivilent values relative to:                                USD        EUR        GBP
+  // these are the equivalent values relative to:                                USD        EUR        GBP
   private static final List<String> VALUES = Arrays.asList("10.00,USD",     // 10.00,USD  25.00,EUR   5.00,GBP
                                                            "15.00,EUR",     //  7.50,USD  15.00,EUR   7.50,GBP
                                                            "6.00,GBP",      // 12.00,USD  12.00,EUR   6.00,GBP
@@ -95,7 +95,6 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
   }
 
   public void testSimpleRangeFacetsOfSymetricRates() throws Exception {
-
     for (boolean use_mincount : Arrays.asList(true, false)) {
     
       // exchange rates relative to USD...
@@ -201,7 +200,6 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
         } catch (AssertionError|RuntimeException ae) {
           throw new AssertionError(solrQuery.toString() + " -> " + rsp.toString() + " ===> " + ae.getMessage(), ae);
         }
-        
       }
     }
   }
@@ -342,10 +340,15 @@ public class CurrencyRangeFacetCloudTest extends SolrCloudTestCase {
     // the *facet* results should be the same regardless of wether we filter via fq, or using a domain filter on the top facet
     for (boolean use_domain : Arrays.asList(true, false)) {
       final String domain = use_domain ? "domain: { filter:'" + filter + "'}," : "";
+
+      // both of these options should produce same results since hardened:false is default
+      final String end = random().nextBoolean() ? "end:'20,EUR'" : "end:'15,EUR'";
+        
+      
       final SolrQuery solrQuery = new SolrQuery("q", (use_domain ? "*:*" : filter),
                                                 "rows", "0", "json.facet",
                                                 "{ bar:{ type:range, field:"+FIELD+", " + domain + 
-                                                "        start:'0,EUR', gap:'10,EUR', end:'20,EUR', other:all " +
+                                                "        start:'0,EUR', gap:'10,EUR', "+end+", other:all " +
                                                 "        facet: { foo:{ type:terms, field:x_s, " +
                                                 "                       refine:true, limit:2, overrequest:0" +
                                                 " } } } }");

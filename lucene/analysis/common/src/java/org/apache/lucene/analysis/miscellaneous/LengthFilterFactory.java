@@ -31,8 +31,15 @@ import org.apache.lucene.analysis.util.TokenFilterFactory;
  *     &lt;filter class="solr.LengthFilterFactory" min="0" max="1" /&gt;
  *   &lt;/analyzer&gt;
  * &lt;/fieldType&gt;</pre>
+ *
+ * @since 3.1
+ * @lucene.spi {@value #NAME}
  */
 public class LengthFilterFactory extends TokenFilterFactory {
+
+  /** SPI name */
+  public static final String NAME = "length";
+
   final int min;
   final int max;
   public static final String MIN_KEY = "min";

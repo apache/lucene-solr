@@ -25,7 +25,7 @@ import org.apache.lucene.index.OrdinalMap;
 import org.apache.lucene.index.SortedDocValues;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.LeafCollector;
-import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Scorable;
 import org.apache.lucene.util.LongBitSet;
 import org.apache.lucene.util.LongValues;
 
@@ -104,7 +104,7 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
 
     private final SortedDocValues docTermOrds;
     private final LongValues segmentOrdToGlobalOrdLookup;
-    private Scorer scorer;
+    private Scorable scorer;
 
     OrdinalMapCollector(SortedDocValues docTermOrds, LongValues segmentOrdToGlobalOrdLookup) {
       this.docTermOrds = docTermOrds;
@@ -126,7 +126,7 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
     }
 
     @Override
-    public void setScorer(Scorer scorer) throws IOException {
+    public void setScorer(Scorable scorer) throws IOException {
       this.scorer = scorer;
     }
   }
@@ -134,7 +134,7 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
   final class SegmentOrdinalCollector implements LeafCollector {
 
     private final SortedDocValues docTermOrds;
-    private Scorer scorer;
+    private Scorable scorer;
 
     SegmentOrdinalCollector(SortedDocValues docTermOrds) {
       this.docTermOrds = docTermOrds;
@@ -155,7 +155,7 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
     }
 
     @Override
-    public void setScorer(Scorer scorer) throws IOException {
+    public void setScorer(Scorable scorer) throws IOException {
       this.scorer = scorer;
     }
   }
@@ -247,7 +247,7 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
         return new LeafCollector() {
 
           @Override
-          public void setScorer(Scorer scorer) throws IOException {
+          public void setScorer(Scorable scorer) throws IOException {
           }
 
           @Override
@@ -262,7 +262,7 @@ abstract class GlobalOrdinalsWithScoreCollector implements Collector {
       } else {
         return new LeafCollector() {
           @Override
-          public void setScorer(Scorer scorer) throws IOException {
+          public void setScorer(Scorable scorer) throws IOException {
           }
 
           @Override

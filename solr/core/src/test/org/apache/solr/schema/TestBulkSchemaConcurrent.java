@@ -16,13 +16,10 @@
  */
 package org.apache.solr.schema;
 
-import static org.apache.solr.rest.schema.TestBulkSchemaAPI.getSourceCopyFields;
-import static org.apache.solr.rest.schema.TestBulkSchemaAPI.getObj;
-
-import java.io.StringReader;
 import java.lang.invoke.MethodHandles;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -36,10 +33,11 @@ import org.apache.solr.common.util.Utils;
 import org.apache.solr.util.RestTestHarness;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.noggit.JSONParser;
-import org.noggit.ObjectBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.apache.solr.rest.schema.TestBulkSchemaAPI.getObj;
+import static org.apache.solr.rest.schema.TestBulkSchemaAPI.getSourceCopyFields;
 
 public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
@@ -60,7 +58,7 @@ public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
     final int threadCount = 5;
     setupRestTestHarnesses();
     Thread[] threads = new Thread[threadCount];
-    final List<List> collectErrors = new ArrayList<>();
+    final List<List> collectErrors = Collections.synchronizedList(new ArrayList<>());
 
     for (int i = 0 ; i < threadCount ; i++) {
       final int finalI = i;
@@ -132,7 +130,7 @@ public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
 
     RestTestHarness publisher = randomRestTestHarness(r);
     String response = publisher.post("/schema", SolrTestCaseJ4.json(payload));
-    Map map = (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+    Map map = (Map) Utils.fromJSONString(response);
     Object errors = map.get("errors");
     if (errors != null) {
       errs.add(new String(Utils.toJSON(errors), StandardCharsets.UTF_8));
@@ -202,7 +200,7 @@ public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
 
     RestTestHarness publisher = randomRestTestHarness(r);
     String response = publisher.post("/schema", SolrTestCaseJ4.json(payload));
-    Map map = (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+    Map map = (Map) Utils.fromJSONString(response);
     Object errors = map.get("errors");
     if (errors != null) {
       errs.add(new String(Utils.toJSON(errors), StandardCharsets.UTF_8));
@@ -264,7 +262,7 @@ public class TestBulkSchemaConcurrent  extends AbstractFullDistribZkTestBase {
 
     RestTestHarness publisher = randomRestTestHarness(r);
     String response = publisher.post("/schema", SolrTestCaseJ4.json(payload));
-    Map map = (Map) ObjectBuilder.getVal(new JSONParser(new StringReader(response)));
+    Map map = (Map) Utils.fromJSONString(response);
     Object errors = map.get("errors");
     if (errors != null) {
       errs.add(new String(Utils.toJSON(errors), StandardCharsets.UTF_8));

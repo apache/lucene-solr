@@ -89,7 +89,7 @@
     <property name="skipRegexChecksum" value=""/>
     <license-check-macro dir="${basedir}" licensedir="${common.dir}/licenses">
       <additional-filters>
-        <replaceregex pattern="jetty([^/]+)$" replace="jetty" flags="gi" />
+        <replaceregex pattern="^jetty([^/]+)$" replace="jetty" flags="gi" />
         <replaceregex pattern="slf4j-([^/]+)$" replace="slf4j" flags="gi" />
         <replaceregex pattern="javax\.servlet([^/]+)$" replace="javax.servlet" flags="gi" />
         <replaceregex pattern="(bcmail|bcprov)-([^/]+)$" replace="\1" flags="gi" />
@@ -167,7 +167,6 @@
     <check-missing-javadocs dir="build/docs/analyzers-phonetic" level="method"/>
     <!-- analyzers-smartcn: problems -->
     <check-missing-javadocs dir="build/docs/analyzers-stempel" level="method"/>
-    <!-- analyzers-uima: problems -->
     <!-- benchmark: problems -->
     <check-missing-javadocs dir="build/docs/classification" level="method"/>
     <!-- codecs: problems -->
@@ -183,7 +182,6 @@
     <!-- queries: problems -->
     <!-- queryparser: problems -->
     <!-- sandbox: problems -->
-    <check-missing-javadocs dir="build/docs/spatial" level="method"/>
     <!-- spatial-extras: problems -->
     <check-missing-javadocs dir="build/docs/suggest" level="method"/>
     <!-- test-framework: problems -->
@@ -288,6 +286,7 @@
       <zipfileset prefix="lucene-${version}" dir="${build.dir}">
         <patternset refid="binary.build.dist.patterns"/>
       </zipfileset>
+      <zipfileset prefix="lucene-${version}" dir="${build.dir}" includes="**/*.sh,**/*.bat" filemode="755"/>
     </zip>
     <make-checksums file="${dist.dir}/lucene-${version}.zip"/>
   </target>
@@ -311,6 +310,7 @@
       <tarfileset prefix="lucene-${version}" dir="${build.dir}">
         <patternset refid="binary.build.dist.patterns"/>
       </tarfileset>
+      <tarfileset prefix="lucene-${version}" dir="${build.dir}" includes="**/*.sh,**/*.bat" filemode="755"/>
     </tar>
     <make-checksums file="${dist.dir}/lucene-${version}.tgz"/>
   </target>
@@ -388,7 +388,7 @@
   <!-- ================================================================== -->
   <target name="dist-src" depends="package-tgz-src"/>
 
-  <target name="dist-all" depends="dist, dist-src, -dist-changes, -dist-keys"/>
+  <target name="dist-all" depends="dist, dist-src, -dist-changes"/>
 
   <!-- copy changes/ to the release folder -->
   <target name="-dist-changes">
@@ -397,21 +397,8 @@
    </copy>
   </target>
 
-  <!-- copy KEYS to the release folder -->
-  <target name="-dist-keys">
-   <get src="http://home.apache.org/keys/group/lucene.asc" 
-        dest="${dist.dir}/KEYS"/>
-  </target>
-
-  <target name="copy-to-stage">
-    <copy-to-stage-macro artifacts.dir="${dist.dir}"/>
-  </target>
-
   <target name="prepare-release-no-sign" depends="clean, dist-all, generate-maven-artifacts"/>
   <target name="prepare-release" depends="prepare-release-no-sign, sign-artifacts"/>
-  <target name="stage" depends="prepare-release, copy-to-stage">
-
-  </target>
 
   <target name="-dist-maven" depends="install-maven-tasks">
     <sequential>
@@ -555,7 +542,7 @@
   </target>
 
   <!-- Override common-build.xml definition to check for the jar already being up-to-date -->
-  <target name="jar-core" depends="resolve-groovy,check-lucene-core-uptodate,compile-lucene-core" unless="lucene-core.uptodate">
+  <target name="jar-core" depends="check-lucene-core-uptodate,compile-lucene-core" unless="lucene-core.uptodate">
     <ant dir="${common.dir}/core" target="jar-core" inheritAll="false">
       <propertyset refid="uptodate.and.compiled.properties"/>
     </ant>

@@ -26,18 +26,18 @@ import java.util.function.BooleanSupplier;
  */
 public abstract class ReductionCheckedDataWriter<C> extends ReductionDataWriter<C> {
   private final BooleanSupplier existsSupplier;
-  
+
   public ReductionCheckedDataWriter(DataOutput output, C extractor, BooleanSupplier existsSupplier) {
     super(output, extractor);
-    
+
     this.existsSupplier = existsSupplier;
   }
-  
+
   /**
    * Write a piece of data, retrieved from the extractor, to the output stream.
    * <br>
    * First writes whether the data exists, then if it does exists writes the data.
-   * 
+   *
    * @throws IOException if an exception occurs while writing to the output stream
    */
   @Override
@@ -48,12 +48,12 @@ public abstract class ReductionCheckedDataWriter<C> extends ReductionDataWriter<
       checkedWrite();
     }
   }
-  
+
   /**
    * Write a piece of data, retrieved from the extractor, to the output stream.
    * <br>
    * The data being written is guaranteed to exist.
-   * 
+   *
    * @throws IOException if an exception occurs while writing to the output stream
    */
   protected abstract void checkedWrite() throws IOException;

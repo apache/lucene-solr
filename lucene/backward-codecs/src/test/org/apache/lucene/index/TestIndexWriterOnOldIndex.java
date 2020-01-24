@@ -29,8 +29,8 @@ import org.apache.lucene.util.Version;
 public class TestIndexWriterOnOldIndex extends LuceneTestCase {
 
   public void testOpenModeAndCreatedVersion() throws IOException {
-    assumeTrue("Reenable when 7.0 is released", false);
-    InputStream resource = getClass().getResourceAsStream("unsupported.index.single-empty-doc.7.0.0.zip");
+    assumeTrue("Reenable when 8.0 is released", false);
+    InputStream resource = getClass().getResourceAsStream("index.single-empty-doc.8.0.0.zip");
     assertNotNull(resource);
     Path path = createTempDir();
     TestUtil.unzip(resource, path);

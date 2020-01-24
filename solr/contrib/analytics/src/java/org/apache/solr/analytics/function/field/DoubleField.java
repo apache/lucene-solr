@@ -23,7 +23,6 @@ import java.util.function.DoubleConsumer;
 import org.apache.lucene.index.DocValues;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NumericDocValues;
-import org.apache.lucene.util.NumericUtils;
 import org.apache.solr.analytics.facet.compare.ExpressionComparator;
 import org.apache.solr.analytics.value.DoubleValue.CastingDoubleValue;
 import org.apache.solr.schema.DoublePointField;
@@ -40,7 +39,7 @@ public class DoubleField extends AnalyticsField implements CastingDoubleValue {
   public DoubleField(String fieldName) {
     super(fieldName);
   }
-  
+
   @Override
   public void doSetNextReader(LeafReaderContext context) throws IOException {
     docValues = DocValues.getNumeric(context.reader(), fieldName);
@@ -50,7 +49,7 @@ public class DoubleField extends AnalyticsField implements CastingDoubleValue {
   public void collect(int doc) throws IOException {
     exists = docValues.advanceExact(doc);
     if (exists) {
-      value = NumericUtils.sortableLongToDouble(docValues.longValue());
+      value = Double.longBitsToDouble(docValues.longValue());
     }
   }
 
@@ -70,7 +69,7 @@ public class DoubleField extends AnalyticsField implements CastingDoubleValue {
   public boolean exists() {
     return exists;
   }
-  
+
   @Override
   public void streamDoubles(DoubleConsumer cons) {
     if (exists) {

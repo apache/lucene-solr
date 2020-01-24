@@ -47,10 +47,7 @@ public class TestCheckJoinIndex extends LuceneTestCase {
     w.close();
     BitSetProducer parentsFilter = new QueryBitSetProducer(new MatchNoDocsQuery());
     try {
-      CheckJoinIndex.check(reader, parentsFilter);
-      fail("Invalid index");
-    } catch (IllegalStateException e) {
-      // expected
+      expectThrows(IllegalStateException.class, () -> CheckJoinIndex.check(reader, parentsFilter));
     } finally {
       reader.close();
       dir.close();
@@ -88,10 +85,7 @@ public class TestCheckJoinIndex extends LuceneTestCase {
     w.close();
     BitSetProducer parentsFilter = new QueryBitSetProducer(new TermQuery(new Term("parent", "true")));
     try {
-      CheckJoinIndex.check(reader, parentsFilter);
-      fail("Invalid index");
-    } catch (IllegalStateException e) {
-      // expected
+      expectThrows(IllegalStateException.class, () -> CheckJoinIndex.check(reader, parentsFilter));
     } finally {
       reader.close();
       dir.close();
@@ -128,10 +122,7 @@ public class TestCheckJoinIndex extends LuceneTestCase {
 
     BitSetProducer parentsFilter = new QueryBitSetProducer(new TermQuery(new Term("parent", "true")));
     try {
-      CheckJoinIndex.check(reader, parentsFilter);
-      fail("Invalid index");
-    } catch (IllegalStateException e) {
-      // expected
+      expectThrows(IllegalStateException.class, () -> CheckJoinIndex.check(reader, parentsFilter));
     } finally {
       reader.close();
       dir.close();

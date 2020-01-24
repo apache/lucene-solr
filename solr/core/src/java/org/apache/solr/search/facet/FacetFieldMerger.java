@@ -33,7 +33,7 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
   FacetBucket missingBucket;
   FacetBucket allBuckets;
   FacetMerger numBuckets;
-  int[] numReturnedPerShard;
+  int[] numReturnedPerShard;  // TODO: this is currently unused?
 
   // LinkedHashMap<Object,FacetBucket> buckets = new LinkedHashMap<>();
   // List<FacetBucket> sortedBuckets;
@@ -46,6 +46,7 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
 
   @Override
   public void merge(Object facetResult, Context mcontext) {
+    super.merge(facetResult, mcontext);
     if (numReturnedPerShard == null) {
       numReturnedPerShard = new int[mcontext.numShards];
     }
@@ -101,7 +102,7 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
       result.add("numBuckets", ((Number)numBuckets.getMergedResult()).longValue());
     }
 
-    sortBuckets();
+    sortBuckets(freq.sort);
 
     long first = freq.offset;
     long end = freq.limit >=0 ? first + (int) freq.limit : Integer.MAX_VALUE;
@@ -118,10 +119,15 @@ public class FacetFieldMerger extends FacetRequestSortedMerger<FacetField> {
 
     // TODO: change effective offsets + limits at shards...
 
+    boolean refine = freq.refine != null && freq.refine != FacetRequest.RefineMethod.NONE;
+
     int off = (int)freq.offset;
     int lim = freq.limit >= 0 ? (int)freq.limit : Integer.MAX_VALUE;
     for (FacetBucket bucket : sortedBuckets) {
       if (bucket.getCount() < freq.mincount) {
+        continue;
+      }
+      if (refine && !isBucketComplete(bucket,mcontext)) {
         continue;
       }
 

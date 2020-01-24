@@ -36,12 +36,12 @@ import org.apache.solr.analytics.value.constant.ConstantValue;
  * <ul>
  * <li>If a single {@link StringValueStream} is passed in, a {@link StringValue} representing the concatenation of the values for each document is returned.
  * No ordering is guaranteed while concatenating.
- * <li>If a {@link StringValue} and a {@link StringValueStream} are passed in, a {@link StringValueStream} representing the concatenation of 
+ * <li>If a {@link StringValue} and a {@link StringValueStream} are passed in, a {@link StringValueStream} representing the concatenation of
  * the Value and each of the values of the ValueStream for a document is returned.
  * (Or the other way, since the Value and ValueStream can be used in either order)
  * <li>If any number (more than 0) of {@link StringValue}s are passed in, a {@link StringValue} representing the concatenation of all values is returned.
  * If any values don't exist, the overall concatenation value will still exist with an empty string used for any missing values. If none of the parameter
- * values exist, then the overall concatenation value will not exist. 
+ * values exist, then the overall concatenation value will not exist.
  * </ul>
  */
 public class ConcatFunction {
@@ -49,7 +49,7 @@ public class ConcatFunction {
   public static final CreatorFunction creatorFunction = (params -> {
     return createConcatFunction(name, name, (a,b) -> a + b, params);
   });
-  
+
   /**
    * A concatenation mapping function, combining the string values of the given parameters with a given separating string.
    * <br>
@@ -77,7 +77,7 @@ public class ConcatFunction {
       return createConcatFunction(name, uniqueName, (a,b) -> a + sep + b, Arrays.copyOfRange(params, 1, params.length));
     });
   }
-  
+
   private static StringValueStream createConcatFunction(String functionName, String uniqueName, TwoStringInStringOutLambda lambda, AnalyticsValueStream[] params) {
     if (params.length == 0) {
       throw new SolrException(ErrorCode.BAD_REQUEST, "The "+functionName+" function requires parameters.");

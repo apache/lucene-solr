@@ -239,7 +239,7 @@ public class Diff {
       switch (way[x][y]) {
         case X:
           if (equals != base) {
-            result.append("-" + (equals));
+            result.append('-').append(equals);
             equals = base;
           }
           deletes++;
@@ -248,11 +248,11 @@ public class Diff {
         // delete
         case Y:
           if (deletes != base) {
-            result.append("D" + (deletes));
+            result.append('D').append(deletes);
             deletes = base;
           }
           if (equals != base) {
-            result.append("-" + (equals));
+            result.append('-').append(equals);
             equals = base;
           }
           result.append('I');
@@ -261,11 +261,11 @@ public class Diff {
         // insert
         case R:
           if (deletes != base) {
-            result.append("D" + (deletes));
+            result.append('D').append(deletes);
             deletes = base;
           }
           if (equals != base) {
-            result.append("-" + (equals));
+            result.append('-').append(equals);
             equals = base;
           }
           result.append('R');
@@ -275,7 +275,7 @@ public class Diff {
         // replace
         case D:
           if (deletes != base) {
-            result.append("D" + (deletes));
+            result.append('D').append(deletes);
             deletes = base;
           }
           equals++;
@@ -286,7 +286,7 @@ public class Diff {
       }
     }
     if (deletes != base) {
-      result.append("D" + (deletes));
+      result.append('D').append(deletes);
       deletes = base;
     }
     

@@ -8,6 +8,13 @@
 <!-- ============================================================= -->
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
+  <Ref refid="sslContextFactory">
+    <Set name="CipherComparator">
+      <Get class="org.eclipse.jetty.http2.HTTP2Cipher" name="COMPARATOR"/>
+    </Set>
+    <Set name="useCipherSuitesOrder">true</Set>
+  </Ref>
+
   <!-- =========================================================== -->
   <!-- Add a HTTPS Connector.                                      -->
   <!-- Configure an o.e.j.server.ServerConnector with connection   -->
@@ -29,8 +36,24 @@
           <Array type="org.eclipse.jetty.server.ConnectionFactory">
             <Item>
               <New class="org.eclipse.jetty.server.SslConnectionFactory">
-                <Arg name="next">http/1.1</Arg>
+                <Arg name="next">alpn</Arg>
                 <Arg name="sslContextFactory"><Ref refid="sslContextFactory"/></Arg>
+              </New>
+            </Item>
+            <Item>
+              <New id="alpn" class="org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory">
+                <Arg name="protocols">
+                  <Array type="java.lang.String">
+                    <Item>h2</Item>
+                    <Item>http/1.1</Item>
+                  </Array>
+                </Arg>
+                <Set name="defaultProtocol">http/1.1</Set>
+              </New>
+            </Item>
+            <Item>
+              <New class="org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory">
+                <Arg name="config"><Ref refid="sslHttpConfig"/></Arg>
               </New>
             </Item>
             <Item>
@@ -40,13 +63,13 @@
             </Item>
           </Array>
         </Arg>
-        <Set name="host"><Property name="solr.jetty.host" /></Set>
+        <Set name="host"><Property name="solr.jetty.host" default="127.0.0.1"/></Set>
         <Set name="port"><Property name="solr.jetty.https.port" default="8983" /></Set>
         <Set name="idleTimeout"><Property name="solr.jetty.https.timeout" default="120000"/></Set>
-        <Set name="soLingerTime"><Property name="solr.jetty.https.soLingerTime" default="-1"/></Set>
         <Set name="acceptorPriorityDelta"><Property name="solr.jetty.ssl.acceptorPriorityDelta" default="0"/></Set>
         <Set name="acceptQueueSize"><Property name="solr.jetty.https.acceptQueueSize" default="0"/></Set>
       </New>
     </Arg>
   </Call>
+
 </Configure>

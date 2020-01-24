@@ -24,7 +24,7 @@ import org.apache.lucene.analysis.ngram.EdgeNGramTokenFilter;
 import org.apache.lucene.analysis.reverse.ReverseStringFilter;
 import org.apache.lucene.classification.utils.ConfusionMatrixGenerator;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.MultiFields;
+import org.apache.lucene.index.MultiTerms;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
@@ -87,14 +87,15 @@ public class BM25NBClassifierTest extends ClassificationTestBase<BytesRef> {
     @Override
     protected TokenStreamComponents createComponents(String fieldName) {
       final Tokenizer tokenizer = new KeywordTokenizer();
-      return new TokenStreamComponents(tokenizer, new ReverseStringFilter(new EdgeNGramTokenFilter(new ReverseStringFilter(tokenizer), 10, 20)));
+      return new TokenStreamComponents(tokenizer, new ReverseStringFilter(new EdgeNGramTokenFilter(new ReverseStringFilter(tokenizer), 10, 20, false)));
     }
   }
 
-  @Test
+  @Test @Slow
   public void testPerformance() throws Exception {
     MockAnalyzer analyzer = new MockAnalyzer(random());
-    LeafReader leafReader = getRandomIndex(analyzer, 100);
+    int numDocs = atLeast(10);
+    LeafReader leafReader = getRandomIndex(analyzer, numDocs);
     try {
       BM25NBClassifier classifier = new BM25NBClassifier(leafReader,
           analyzer, null, categoryFieldName, textFieldName);
@@ -122,7 +123,7 @@ public class BM25NBClassifierTest extends ClassificationTestBase<BytesRef> {
       assertTrue(precision >= 0d);
       assertTrue(precision <= 1d);
 
-      Terms terms = MultiFields.getTerms(leafReader, categoryFieldName);
+      Terms terms = MultiTerms.getTerms(leafReader, categoryFieldName);
       TermsEnum iterator = terms.iterator();
       BytesRef term;
       while ((term = iterator.next()) != null) {

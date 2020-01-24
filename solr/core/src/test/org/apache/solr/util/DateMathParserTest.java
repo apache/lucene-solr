@@ -26,14 +26,14 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCaseJ4;
 
 import static org.apache.solr.util.DateMathParser.UTC;
 
 /**
  * Tests that the functions in DateMathParser
  */
-public class DateMathParserTest extends LuceneTestCase {
+public class DateMathParserTest extends SolrTestCaseJ4 {
 
   /**
    * A formatter for specifying every last nuance of a Date for easy
@@ -319,14 +319,9 @@ public class DateMathParserTest extends LuceneTestCase {
     badCommands.put("?SECONDS", 0);
 
     for (String command : badCommands.keySet()) {
-      try {
-        Date out = p.parseMath(command);
-        fail("Didn't generate SyntaxError for: " + command);
-      } catch (ParseException e) {
-        assertEquals("Wrong pos for: " + command + " => " + e.getMessage(),
-                     badCommands.get(command).intValue(), e.getErrorOffset());
-
-      }
+      ParseException e = expectThrows(ParseException.class, () -> p.parseMath(command));
+      assertEquals("Wrong pos for: " + command + " => " + e.getMessage(),
+          badCommands.get(command).intValue(), e.getErrorOffset());
     }
     
   }

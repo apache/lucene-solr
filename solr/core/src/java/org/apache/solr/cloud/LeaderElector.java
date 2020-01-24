@@ -26,6 +26,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.solr.cloud.ZkController.ContextKey;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.SolrZkClient;
 import org.apache.solr.common.cloud.ZkCmdExecutor;
@@ -132,6 +133,7 @@ public  class LeaderElector {
     if (leaderSeqNodeName.equals(seqs.get(0))) {
       // I am the leader
       try {
+        if (zkClient.isClosed()) return; // but our zkClient is already closed
         runIamLeaderProcess(context, replacement);
       } catch (KeeperException.NodeExistsException e) {
         log.error("node exists",e);
@@ -346,6 +348,8 @@ public  class LeaderElector {
       try {
         // am I the next leader?
         checkIfIamLeader(context, true);
+      } catch (AlreadyClosedException e) {
+
       } catch (Exception e) {
         if (!zkClient.isClosed()) {
           log.warn("", e);

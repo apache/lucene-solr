@@ -14,8 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- 
-/** 
+
+/**
  * Reading classes for a single type of data being stored by one Reduction Data Collector.
  * These writers are used to import data from shards during the streaming process.
  */

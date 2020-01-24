@@ -50,6 +50,8 @@ public class InfoHandler extends RequestHandlerBase  {
     handlers.put("properties", new PropertiesRequestHandler());
     handlers.put("logging", new LoggingHandler(coreContainer));
     handlers.put("system", new SystemInfoHandler(coreContainer));
+    handlers.put("health", new HealthCheckHandler(coreContainer));
+
   }
 
 

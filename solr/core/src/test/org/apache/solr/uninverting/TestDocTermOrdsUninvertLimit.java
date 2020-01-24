@@ -22,16 +22,18 @@ import java.io.IOException;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.index.ConcurrentMergeScheduler;
+import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.LeafReader;
-import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.solr.index.SlowCompositeReaderWrapper;
 
-@LuceneTestCase.SuppressCodecs({"Memory"})
-public class TestDocTermOrdsUninvertLimit extends LuceneTestCase {
+public class TestDocTermOrdsUninvertLimit extends SolrTestCase {
 
   /* UnInvertedField had a reference block limitation of 2^24. This unit test triggered it.
    *
@@ -47,9 +49,17 @@ public class TestDocTermOrdsUninvertLimit extends LuceneTestCase {
     final int DOCS = (1<<16)-1;                  // The number of documents within a single pass (simplified)
     final int TERMS = REF_LIMIT/DOCS;            // Each document must have this many references aka terms hit limit
 
-    Directory dir = newDirectory();
-    final RandomIndexWriter w = new RandomIndexWriter(random(), dir,
-        newIndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(newLogMergePolicy()));
+    // disk based Directory and IWC settings to reduce risk of OOM
+    Directory dir = newFSDirectory(createTempDir("TestDocTermOrdsUninvertLimit"));
+    final IndexWriter w = new IndexWriter(dir,
+                                          new IndexWriterConfig(new MockAnalyzer(random()))
+                                          .setMaxBufferedDocs(IndexWriterConfig.DISABLE_AUTO_FLUSH)
+                                          .setRAMBufferSizeMB(256.0)
+                                          .setMergeScheduler(new ConcurrentMergeScheduler())
+                                          .setMergePolicy(newLogMergePolicy(false, 10))
+                                          .setOpenMode(IndexWriterConfig.OpenMode.CREATE)
+                                          .setCodec(TestUtil.getDefaultCodec()));
+    
     Document doc = new Document();
     Field field = newTextField("field", "", Field.Store.NO);
     doc.add(field);
@@ -64,9 +74,9 @@ public class TestDocTermOrdsUninvertLimit extends LuceneTestCase {
       w.addDocument(doc);
     }
     //System.out.println("\n Finished adding " + DOCS + " documents of " + TERMS + " unique terms");
-    final IndexReader r = w.getReader();
     w.close();
-
+    
+    final IndexReader r = DirectoryReader.open(dir);
     try {
       final LeafReader ar = SlowCompositeReaderWrapper.wrap(r);
       TestUtil.checkReader(ar);

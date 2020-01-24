@@ -16,18 +16,16 @@
 // specific language governing permissions and limitations
 // under the License.
 
+
 == The Let Expression
 
 The `let` expression sets variables and returns
-the value of the last variable by default. The output of any streaming expression
-or math expression can be set to a variable.
+the value of the last variable by default. The output of any streaming expression or math expression can be set to a variable.
 
-Below is a simple example setting three variables *a*, *b*
-and *c*. Variables *a* and *b* are set to arrays. The variable *c* is set
+Below is a simple example setting three variables *`a`*, *`b`*
+and *`c`*. Variables *`a`* and *`b`* are set to arrays. The variable *`c`* is set
 to the output of the `ebeAdd` function which performs element-by-element
 addition of the two arrays.
-
-Notice that the last variable, *c*, is returned.
 
 [source,text]
 ----
@@ -36,8 +34,7 @@ let(a=array(1, 2, 3),
     c=ebeAdd(a, b))
 ----
 
-When this expression is sent to the /stream handler it
-responds with:
+In the response, notice that the last variable, *`c`*, is returned:
 
 [source,json]
 ----
@@ -62,7 +59,7 @@ responds with:
 
 == Echoing Variables
 
-All variables can be output by setting the *echo* variable to *true*.
+All variables can be output by setting the `echo` variable to `true`.
 
 [source,text]
 ----
@@ -72,7 +69,7 @@ let(echo=true,
     c=ebeAdd(a, b))
 ----
 
-When this expression is sent to the /stream handler it
+When this expression is sent to the `/stream` handler it
 responds with:
 
 [source,json]
@@ -106,8 +103,8 @@ responds with:
 }
 ----
 
-A specific set of variables can be echoed by providing a comma delimited
-list of variables to the echo parameter.
+A specific set of variables can be echoed by providing a comma delimited list of variables to the echo parameter.
+Because variables have been provided, the `true` value is assumed.
 
 [source,text]
 ----
@@ -117,8 +114,7 @@ let(echo="a,b",
     c=ebeAdd(a, b))
 ----
 
-When this expression is sent to the /stream handler it
-responds with:
+When this expression is sent to the `/stream` handler it responds with:
 
 [source,json]
 ----
@@ -135,6 +131,177 @@ responds with:
           10,
           20,
           30
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 0
+      }
+    ]
+  }
+}
+----
+
+== Caching Variables
+
+Variables can be cached in-memory on the Solr node where the math expression
+was run. A cached variable can then be used in future expressions. Any object
+that can be set to a variable, including data structures and mathematical models, can
+be cached in-memory for future use.
+
+The `putCache` function adds a variable to the cache.
+
+In the example below an array is cached in the `workspace` "workspace1"
+and bound to the `key` "key1". The workspace allows different users to cache
+objects in their own workspace. The `putCache` function returns
+the variable that was added to the cache.
+
+[source,text]
+----
+let(a=array(1, 2, 3),
+    b=array(10, 20, 30),
+    c=ebeAdd(a, b),
+    d=putCache(workspace1, key1, c))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "d": [
+          11,
+          22,
+          33
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 11
+      }
+    ]
+  }
+}
+----
+
+The `getCache` function retrieves an object from the cache by its workspace and key.
+
+In the example below the `getCache` function retrieves the array that was cached above and assigns it to variable *`a`*.
+
+[source,text]
+----
+let(a=getCache(workspace1, key1))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "a": [
+          11,
+          22,
+          33
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 11
+      }
+    ]
+  }
+}
+----
+
+The `listCache` function can be used to list the workspaces or the keys in a specific workspace.
+
+In the example below `listCache` returns all the workspaces in the cache as an array of strings.
+
+[source,text]
+----
+let(a=listCache())
+----
+
+When this expression is sent to the `/stream` handler it
+responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "a": [
+          "workspace1"
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 0
+      }
+    ]
+  }
+}
+----
+
+
+In the example below all the keys in a specific workspace are listed:
+
+[source,text]
+----
+let(a=listCache(workspace1))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "a": [
+          "key1"
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 0
+      }
+    ]
+  }
+}
+----
+
+The `removeCache` function can be used to remove a key from a specific
+workspace. The `removeCache` function removes the key from the cache
+and returns the object that was removed.
+
+In the example below the array that was cached above is removed from the cache.
+
+[source,text]
+----
+let(a=removeCache(workspace1, key1))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "a": [
+          11,
+          22,
+          33
         ]
       },
       {

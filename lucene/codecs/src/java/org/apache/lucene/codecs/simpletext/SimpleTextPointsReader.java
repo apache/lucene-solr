@@ -47,7 +47,8 @@ import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.INDEX_C
 import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.MAX_LEAF_POINTS;
 import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.MAX_VALUE;
 import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.MIN_VALUE;
-import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.NUM_DIMS;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.NUM_DATA_DIMS;
+import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.NUM_INDEX_DIMS;
 import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.POINT_COUNT;
 import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.SPLIT_COUNT;
 import static org.apache.lucene.codecs.simpletext.SimpleTextPointsWriter.SPLIT_DIM;
@@ -101,7 +102,10 @@ class SimpleTextPointsReader extends PointsReader {
     // NOTE: matches what writeIndex does in SimpleTextPointsWriter
     dataIn.seek(fp);
     readLine(dataIn);
-    int numDims = parseInt(NUM_DIMS);
+    int numDataDims = parseInt(NUM_DATA_DIMS);
+
+    readLine(dataIn);
+    int numIndexDims = parseInt(NUM_INDEX_DIMS);
 
     readLine(dataIn);
     int bytesPerDim = parseInt(BYTES_PER_DIM);
@@ -115,12 +119,12 @@ class SimpleTextPointsReader extends PointsReader {
     readLine(dataIn);
     assert startsWith(MIN_VALUE);
     BytesRef minValue = SimpleTextUtil.fromBytesRefString(stripPrefix(MIN_VALUE));
-    assert minValue.length == numDims*bytesPerDim;
+    assert minValue.length == numIndexDims*bytesPerDim;
 
     readLine(dataIn);
     assert startsWith(MAX_VALUE);
     BytesRef maxValue = SimpleTextUtil.fromBytesRefString(stripPrefix(MAX_VALUE));
-    assert maxValue.length == numDims*bytesPerDim;
+    assert maxValue.length == numIndexDims*bytesPerDim;
 
     readLine(dataIn);
     assert startsWith(POINT_COUNT);
@@ -140,7 +144,7 @@ class SimpleTextPointsReader extends PointsReader {
 
     byte[] splitPackedValues;
     int bytesPerIndexEntry;
-    if (numDims == 1) {
+    if (numIndexDims == 1) {
       bytesPerIndexEntry = bytesPerDim;
     } else {
       bytesPerIndexEntry = 1 + bytesPerDim;
@@ -150,7 +154,7 @@ class SimpleTextPointsReader extends PointsReader {
       readLine(dataIn);
       int address = bytesPerIndexEntry * i;
       int splitDim = parseInt(SPLIT_DIM);
-      if (numDims != 1) {
+      if (numIndexDims != 1) {
         splitPackedValues[address++] = (byte) splitDim;
       }
       readLine(dataIn);
@@ -160,7 +164,7 @@ class SimpleTextPointsReader extends PointsReader {
       System.arraycopy(br.bytes, br.offset, splitPackedValues, address, bytesPerDim);
     }
 
-    return new SimpleTextBKDReader(dataIn, numDims, maxPointsInLeafNode, bytesPerDim, leafBlockFPs, splitPackedValues, minValue.bytes, maxValue.bytes, pointCount, docCount);
+    return new SimpleTextBKDReader(dataIn, numDataDims, numIndexDims, maxPointsInLeafNode, bytesPerDim, leafBlockFPs, splitPackedValues, minValue.bytes, maxValue.bytes, pointCount, docCount);
   }
 
   private void readLine(IndexInput in) throws IOException {
@@ -191,7 +195,7 @@ class SimpleTextPointsReader extends PointsReader {
     if (fieldInfo == null) {
       throw new IllegalArgumentException("field=\"" + fieldName + "\" is unrecognized");
     }
-    if (fieldInfo.getPointDimensionCount() == 0) {
+    if (fieldInfo.getPointDataDimensionCount() == 0) {
       throw new IllegalArgumentException("field=\"" + fieldName + "\" did not index points");
     }
     return readers.get(fieldName);

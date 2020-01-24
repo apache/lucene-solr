@@ -62,8 +62,8 @@ public class TestLiveFieldValues extends LuceneTestCase {
         protected Integer lookupFromSearcher(IndexSearcher s, String id) throws IOException {
           TermQuery tq = new TermQuery(new Term("id", id));
           TopDocs hits = s.search(tq, 1);
-          assertTrue(hits.totalHits <= 1);
-          if (hits.totalHits == 0) {
+          assertTrue(hits.totalHits.value <= 1);
+          if (hits.totalHits.value == 0) {
             return null;
           } else {
             Document doc = s.doc(hits.scoreDocs[0].doc);

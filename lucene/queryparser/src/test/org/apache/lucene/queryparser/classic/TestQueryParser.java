@@ -169,18 +169,8 @@ public class TestQueryParser extends QueryParserTestBase {
   // doesn't work for some reason.
   @SuppressWarnings("rawtype")
   public void testProtectedCtors() throws Exception {
-    try {
-      QueryParser.class.getConstructor(CharStream.class);
-      fail("please switch public QueryParser(CharStream) to be protected");
-    } catch (NoSuchMethodException nsme) {
-      // expected
-    }
-    try {
-      QueryParser.class.getConstructor(QueryParserTokenManager.class);
-      fail("please switch public QueryParser(QueryParserTokenManager) to be protected");
-    } catch (NoSuchMethodException nsme) {
-      // expected
-    }
+    expectThrows(NoSuchMethodException.class, () -> QueryParser.class.getConstructor(CharStream.class));
+    expectThrows(NoSuchMethodException.class, () -> QueryParser.class.getConstructor(QueryParserTokenManager.class));
   }
   
   public void testFuzzySlopeExtendability() throws ParseException {
@@ -309,7 +299,10 @@ public class TestQueryParser extends QueryParserTestBase {
     /** ordinary behavior, synonyms form uncoordinated boolean query */
     QueryParser dumb = new QueryParser(FIELD,
         new Analyzer1());
-    Query expanded = new SynonymQuery(new Term(FIELD, "dogs"), new Term(FIELD, "dog"));
+    Query expanded = new SynonymQuery.Builder(FIELD)
+        .addTerm(new Term(FIELD, "dogs"))
+        .addTerm(new Term(FIELD, "dog"))
+        .build();
     assertEquals(expanded, dumb.parse("\"dogs\""));
     /** even with the phrase operator the behavior is the same */
     assertEquals(expanded, dumb.parse("dogs"));
@@ -326,7 +319,10 @@ public class TestQueryParser extends QueryParserTestBase {
 
   /** simple synonyms test */
   public void testSynonyms() throws Exception {
-    Query expected = new SynonymQuery(new Term(FIELD, "dogs"), new Term(FIELD, "dog"));
+    Query expected = new SynonymQuery.Builder(FIELD)
+        .addTerm(new Term(FIELD, "dogs"))
+        .addTerm(new Term(FIELD, "dog"))
+        .build();
     QueryParser qp = new QueryParser(FIELD, new MockSynonymAnalyzer());
     assertEquals(expected, qp.parse("dogs"));
     assertEquals(expected, qp.parse("\"dogs\""));
@@ -395,7 +391,10 @@ public class TestQueryParser extends QueryParserTestBase {
   
   /** simple CJK synonym test */
   public void testCJKSynonym() throws Exception {
-    Query expected = new SynonymQuery(new Term(FIELD, "国"), new Term(FIELD, "國"));
+    Query expected = new SynonymQuery.Builder(FIELD)
+        .addTerm(new Term(FIELD, "国"))
+        .addTerm(new Term(FIELD, "國"))
+        .build();
     QueryParser qp = new QueryParser(FIELD, new MockCJKSynonymAnalyzer());
     assertEquals(expected, qp.parse("国"));
     qp.setDefaultOperator(Operator.AND);
@@ -408,7 +407,10 @@ public class TestQueryParser extends QueryParserTestBase {
   public void testCJKSynonymsOR() throws Exception {
     BooleanQuery.Builder expectedB = new BooleanQuery.Builder();
     expectedB.add(new TermQuery(new Term(FIELD, "中")), BooleanClause.Occur.SHOULD);
-    Query inner = new SynonymQuery(new Term(FIELD, "国"), new Term(FIELD, "國"));
+    Query inner = new SynonymQuery.Builder(FIELD)
+        .addTerm(new Term(FIELD, "国"))
+        .addTerm(new Term(FIELD, "國"))
+        .build();
     expectedB.add(inner, BooleanClause.Occur.SHOULD);
     Query expected = expectedB.build();
     QueryParser qp = new QueryParser(FIELD, new MockCJKSynonymAnalyzer());
@@ -421,9 +423,15 @@ public class TestQueryParser extends QueryParserTestBase {
   public void testCJKSynonymsOR2() throws Exception {
     BooleanQuery.Builder expectedB = new BooleanQuery.Builder();
     expectedB.add(new TermQuery(new Term(FIELD, "中")), BooleanClause.Occur.SHOULD);
-    SynonymQuery inner = new SynonymQuery(new Term(FIELD, "国"), new Term(FIELD, "國"));
+    SynonymQuery inner = new SynonymQuery.Builder(FIELD)
+      .addTerm(new Term(FIELD, "国"))
+      .addTerm(new Term(FIELD, "國"))
+        .build();
     expectedB.add(inner, BooleanClause.Occur.SHOULD);
-    SynonymQuery inner2 = new SynonymQuery(new Term(FIELD, "国"), new Term(FIELD, "國"));
+    SynonymQuery inner2 = new SynonymQuery.Builder(FIELD)
+        .addTerm(new Term(FIELD, "国"))
+        .addTerm(new Term(FIELD, "國"))
+        .build();
     expectedB.add(inner2, BooleanClause.Occur.SHOULD);
     Query expected = expectedB.build();
     QueryParser qp = new QueryParser(FIELD, new MockCJKSynonymAnalyzer());
@@ -436,7 +444,10 @@ public class TestQueryParser extends QueryParserTestBase {
   public void testCJKSynonymsAND() throws Exception {
     BooleanQuery.Builder expectedB = new BooleanQuery.Builder();
     expectedB.add(new TermQuery(new Term(FIELD, "中")), BooleanClause.Occur.MUST);
-    Query inner = new SynonymQuery(new Term(FIELD, "国"), new Term(FIELD, "國"));
+    Query inner = new SynonymQuery.Builder(FIELD)
+        .addTerm(new Term(FIELD, "国"))
+        .addTerm(new Term(FIELD, "國"))
+        .build();
     expectedB.add(inner, BooleanClause.Occur.MUST);
     Query expected = expectedB.build();
     QueryParser qp = new QueryParser(FIELD, new MockCJKSynonymAnalyzer());
@@ -450,9 +461,15 @@ public class TestQueryParser extends QueryParserTestBase {
   public void testCJKSynonymsAND2() throws Exception {
     BooleanQuery.Builder expectedB = new BooleanQuery.Builder();
     expectedB.add(new TermQuery(new Term(FIELD, "中")), BooleanClause.Occur.MUST);
-    Query inner = new SynonymQuery(new Term(FIELD, "国"), new Term(FIELD, "國"));
+    Query inner = new SynonymQuery.Builder(FIELD)
+        .addTerm(new Term(FIELD, "国"))
+        .addTerm(new Term(FIELD, "國"))
+        .build();
     expectedB.add(inner, BooleanClause.Occur.MUST);
-    Query inner2 = new SynonymQuery(new Term(FIELD, "国"), new Term(FIELD, "國"));
+    Query inner2 = new SynonymQuery.Builder(FIELD)
+        .addTerm(new Term(FIELD, "国"))
+        .addTerm(new Term(FIELD, "國"))
+        .build();
     expectedB.add(inner2, BooleanClause.Occur.MUST);
     Query expected = expectedB.build();
     QueryParser qp = new QueryParser(FIELD, new MockCJKSynonymAnalyzer());
@@ -576,12 +593,13 @@ public class TestQueryParser extends QueryParserTestBase {
     dumb.setSplitOnWhitespace(false);
     dumb.setEnableGraphQueries(false);
     
-    TermQuery guinea = new TermQuery(new Term("field", "guinea"));
     TermQuery pig = new TermQuery(new Term("field", "pig"));
-    TermQuery cavy = new TermQuery(new Term("field", "cavy"));
 
     // A multi-word synonym source will just form a boolean query when graph queries are disabled:
-    Query inner = new SynonymQuery(new Term[] {new Term("field", "cavy"), new Term("field", "guinea")});
+    Query inner = new SynonymQuery.Builder("field")
+        .addTerm(new Term("field", "cavy"))
+        .addTerm(new Term("field", "guinea"))
+        .build();
     BooleanQuery.Builder b = new BooleanQuery.Builder();
     b.add(inner, BooleanClause.Occur.SHOULD);
     b.add(pig, BooleanClause.Occur.SHOULD);
@@ -942,7 +960,7 @@ public class TestQueryParser extends QueryParserTestBase {
     DirectoryReader ir = DirectoryReader.open(ramDir);
     IndexSearcher is = new IndexSearcher(ir);
       
-    long hits = is.search(q, 10).totalHits;
+    long hits = is.count(q);
     ir.close();
     ramDir.close();
     if (hits == 1){

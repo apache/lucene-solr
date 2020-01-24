@@ -104,20 +104,25 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
     try {
       for (ZkNodeProps sourceReplica : sourceReplicas) {
         NamedList nl = new NamedList();
-        log.info("Going to create replica for collection={} shard={} on node={}", sourceReplica.getStr(COLLECTION_PROP), sourceReplica.getStr(SHARD_ID_PROP), target);
+        String sourceCollection = sourceReplica.getStr(COLLECTION_PROP);
+        log.info("Going to create replica for collection={} shard={} on node={}", sourceCollection, sourceReplica.getStr(SHARD_ID_PROP), target);
         String targetNode = target;
         if (targetNode == null) {
           Replica.Type replicaType = Replica.Type.get(sourceReplica.getStr(ZkStateReader.REPLICA_TYPE));
-          targetNode = Assign.identifyNodes(ocmh.cloudManager,
-              clusterState,
-              new ArrayList<>(ocmh.cloudManager.getClusterStateProvider().getLiveNodes()),
-              sourceReplica.getStr(COLLECTION_PROP),
-              message,
-              Collections.singletonList(sourceReplica.getStr(SHARD_ID_PROP)),
-              replicaType == Replica.Type.NRT ? 1: 0,
-              replicaType == Replica.Type.TLOG ? 1 : 0,
-              replicaType == Replica.Type.PULL ? 1 : 0
-          ).get(0).node;
+          int numNrtReplicas = replicaType == Replica.Type.NRT ? 1 : 0;
+          int numTlogReplicas = replicaType == Replica.Type.TLOG ? 1 : 0;
+          int numPullReplicas = replicaType == Replica.Type.PULL ? 1 : 0;
+          Assign.AssignRequest assignRequest = new Assign.AssignRequestBuilder()
+              .forCollection(sourceCollection)
+              .forShard(Collections.singletonList(sourceReplica.getStr(SHARD_ID_PROP)))
+              .assignNrtReplicas(numNrtReplicas)
+              .assignTlogReplicas(numTlogReplicas)
+              .assignPullReplicas(numPullReplicas)
+              .onNodes(new ArrayList<>(ocmh.cloudManager.getClusterStateProvider().getLiveNodes()))
+              .build();
+          Assign.AssignStrategyFactory assignStrategyFactory = new Assign.AssignStrategyFactory(ocmh.cloudManager);
+          Assign.AssignStrategy assignStrategy = assignStrategyFactory.create(clusterState, clusterState.getCollection(sourceCollection));
+          targetNode = assignStrategy.assign(ocmh.cloudManager, assignRequest).get(0).node;
           sessionWrapperRef.set(PolicyHelper.getLastSessionWrapper(true));
         }
         ZkNodeProps msg = sourceReplica.plus("parallel", String.valueOf(parallel)).plus(CoreAdminParams.NODE, targetNode);
@@ -127,7 +132,7 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
               countDownLatch.countDown();
               if (nl.get("failure") != null) {
                 String errorString = String.format(Locale.ROOT, "Failed to create replica for collection=%s shard=%s" +
-                    " on node=%s", sourceReplica.getStr(COLLECTION_PROP), sourceReplica.getStr(SHARD_ID_PROP), target);
+                    " on node=%s", sourceCollection, sourceReplica.getStr(SHARD_ID_PROP), target);
                 log.warn(errorString);
                 // one replica creation failed. Make the best attempt to
                 // delete all the replicas created so far in the target
@@ -138,16 +143,16 @@ public class ReplaceNodeCmd implements OverseerCollectionMessageHandler.Cmd {
                 }
               } else {
                 log.debug("Successfully created replica for collection={} shard={} on node={}",
-                    sourceReplica.getStr(COLLECTION_PROP), sourceReplica.getStr(SHARD_ID_PROP), target);
+                    sourceCollection, sourceReplica.getStr(SHARD_ID_PROP), target);
               }
-            });
+            }).get(0);
 
         if (addedReplica != null) {
           createdReplicas.add(addedReplica);
           if (sourceReplica.getBool(ZkStateReader.LEADER_PROP, false) || waitForFinalState) {
             String shardName = sourceReplica.getStr(SHARD_ID_PROP);
             String replicaName = sourceReplica.getStr(ZkStateReader.REPLICA_PROP);
-            String collectionName = sourceReplica.getStr(COLLECTION_PROP);
+            String collectionName = sourceCollection;
             String key = collectionName + "_" + replicaName;
             CollectionStateWatcher watcher;
             if (waitForFinalState) {

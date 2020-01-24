@@ -598,12 +598,11 @@ public class TestReRankQParserPlugin extends SolrTestCaseJ4 {
     params.add("start", "0");
     params.add("rows", "2");
 
-    try {
-      h.query(req(params));
-      fail("A syntax error should be thrown when "+ReRankQParserPlugin.RERANK_QUERY+" parameter is not specified");
-    } catch (SolrException e) {
-      assertTrue(e.code() == SolrException.ErrorCode.BAD_REQUEST.code);
-    }
+    SolrException se = expectThrows(SolrException.class, "A syntax error should be thrown when "+ReRankQParserPlugin.RERANK_QUERY+" parameter is not specified",
+        () -> h.query(req(params))
+    );
+    assertTrue(se.code() == SolrException.ErrorCode.BAD_REQUEST.code);
+
   }
 
   @Test

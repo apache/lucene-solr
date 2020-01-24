@@ -55,9 +55,9 @@ public class TrieIntField extends TrieField implements IntValueFieldType {
     if(val==null) return null;
     if (val instanceof Number) return ((Number) val).intValue();
     try {
-      if (val instanceof String) return Integer.parseInt((String) val);
+      if (val instanceof CharSequence) return Integer.parseInt(val.toString());
     } catch (NumberFormatException e) {
-      Float v = Float.parseFloat((String) val);
+      Float v = Float.parseFloat(val.toString());
       return v.intValue();
     }
     return super.toNativeType(val);

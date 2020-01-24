@@ -16,13 +16,31 @@
  */
 package org.apache.lucene.search.uhighlight;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.BitSet;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
 import org.apache.lucene.document.FieldType;
-import org.apache.lucene.index.*;
+import org.apache.lucene.index.CheckIndex;
+import org.apache.lucene.index.DirectoryReader;
+import org.apache.lucene.index.Fields;
+import org.apache.lucene.index.FilterDirectoryReader;
+import org.apache.lucene.index.FilterLeafReader;
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.index.LeafReader;
+import org.apache.lucene.index.ParallelLeafReader;
+import org.apache.lucene.index.RandomIndexWriter;
+import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
@@ -34,13 +52,6 @@ import org.apache.lucene.util.LuceneTestCase;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.BitSet;
-import java.util.List;
-import java.util.Map;
 
 /**
  * Tests highlighting for matters *expressly* relating to term vectors.
@@ -100,7 +111,7 @@ public class TestUnifiedHighlighterTermVec extends LuceneTestCase {
     }
     BooleanQuery query = queryBuilder.build();
     TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
-    assertEquals(numDocs, topDocs.totalHits);
+    assertEquals(numDocs, topDocs.totalHits.value);
     Map<String, String[]> fieldToSnippets =
         highlighter.highlightFields(fields.toArray(new String[numTvFields]), query, topDocs);
     String[] expectedSnippetsByDoc = new String[numDocs];
@@ -122,8 +133,8 @@ public class TestUnifiedHighlighterTermVec extends LuceneTestCase {
           @Override
           public Fields getTermVectors(int docID) throws IOException {
             // if we're invoked by ParallelLeafReader then we can't do our assertion. TODO see LUCENE-6868
-            if (calledBy(ParallelLeafReader.class) == false
-                && calledBy(CheckIndex.class) == false) {
+            if (callStackContains(ParallelLeafReader.class) == false
+                && callStackContains(CheckIndex.class) == false) {
               assertFalse("Should not request TVs for doc more than once.", seenDocIDs.get(docID));
               seenDocIDs.set(docID);
             }
@@ -159,14 +170,6 @@ public class TestUnifiedHighlighterTermVec extends LuceneTestCase {
     }
   }
 
-  private static boolean calledBy(Class<?> clazz) {
-    for (StackTraceElement stackTraceElement : Thread.currentThread().getStackTrace()) {
-      if (stackTraceElement.getClassName().equals(clazz.getName()))
-        return true;
-    }
-    return false;
-  }
-
   @Test(expected = IllegalArgumentException.class)
   public void testUserFailedToIndexOffsets() throws IOException {
     FieldType fieldType = new FieldType(UHTestHelper.tvType); // note: it's indexed too
@@ -182,7 +185,12 @@ public class TestUnifiedHighlighterTermVec extends LuceneTestCase {
     iw.close();
 
     IndexSearcher searcher = newSearcher(ir);
-    UnifiedHighlighter highlighter = new UnifiedHighlighter(searcher, indexAnalyzer);
+    UnifiedHighlighter highlighter = new UnifiedHighlighter(searcher, indexAnalyzer) {
+      @Override
+      protected Set<HighlightFlag> getFlags(String field) {
+        return Collections.emptySet();//no WEIGHT_MATCHES
+      }
+    };
     TermQuery query = new TermQuery(new Term("body", "vectors"));
     TopDocs topDocs = searcher.search(query, 10, Sort.INDEXORDER);
     try {

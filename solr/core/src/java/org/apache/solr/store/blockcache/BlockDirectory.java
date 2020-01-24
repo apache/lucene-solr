@@ -38,7 +38,7 @@ import org.slf4j.LoggerFactory;
  * @lucene.experimental
  */
 public class BlockDirectory extends FilterDirectory implements ShutdownAwareDirectory {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   
   public static final long BLOCK_SHIFT = Integer.getInteger("solr.hdfs.blockcache.blockshift", 13);
 
@@ -118,11 +118,11 @@ public class BlockDirectory extends FilterDirectory implements ShutdownAwareDire
     }
     this.blockCacheReadEnabled = blockCacheReadEnabled;
     if (!blockCacheReadEnabled) {
-      LOG.info("Block cache on read is disabled");
+      log.info("Block cache on read is disabled");
     }
     this.blockCacheWriteEnabled = blockCacheWriteEnabled;
     if (!blockCacheWriteEnabled) {
-      LOG.info("Block cache on write is disabled");
+      log.info("Block cache on write is disabled");
     }
   }
   
@@ -238,7 +238,7 @@ public class BlockDirectory extends FilterDirectory implements ShutdownAwareDire
   
   @Override
   public void closeOnShutdown() throws IOException {
-    LOG.info("BlockDirectory closing on shutdown");
+    log.info("BlockDirectory closing on shutdown");
     // we are shutting down, no need to clean up cache
     super.close();
   }

@@ -16,16 +16,16 @@
 // specific language governing permissions and limitations
 // under the License.
 
+These functions support constructing a curve.
 
 == Polynomial Curve Fitting
 
-
 The `polyfit` function is a general purpose curve fitter used to model
-the *non-linear* relationship between two random variables.
+the non-linear relationship between two random variables.
 
-The `polyfit` function is passed *x* and *y* axises and fits a smooth curve to the data.
-If only a single array is provided it is treated as the *y* axis and a sequence is generated
-for the *x* axis.
+The `polyfit` function is passed x- and y-axes and fits a smooth curve to the data.
+If only a single array is provided it is treated as the y-axis and a sequence is generated
+for the x-axis.
 
 The `polyfit` function also has a parameter the specifies the degree of the polynomial. The higher
 the degree the more curves that can be modeled.
@@ -34,7 +34,7 @@ The example below uses the `polyfit` function to fit a curve to an array using
 a 3 degree polynomial. The fitted curve is then subtracted from the original curve. The output
 shows the error between the fitted curve and the original curve, known as the residuals.
 The output also includes the sum-of-squares of the residuals which provides a measure
-of how large the error is..
+of how large the error is.
 
 [source,text]
 ----
@@ -45,7 +45,7 @@ let(echo="residuals, sumSqError",
     sumSqError=sumSq(residuals))
 ----
 
-When this expression is sent to the /stream handler it
+When this expression is sent to the `/stream` handler it
 responds with:
 
 [source,json]
@@ -95,7 +95,7 @@ let(echo="residuals, sumSqError",
     sumSqError=sumSq(residuals))
 ----
 
-When this expression is sent to the /stream handler it
+When this expression is sent to the `/stream` handler it
 responds with:
 
 [source,json]
@@ -133,31 +133,25 @@ responds with:
 ----
 
 
-== Prediction, Derivatives and Integrals
+=== Prediction, Derivatives and Integrals
 
-The `polyfit` function returns an array which contains the *y* value data points
-of the fitted curve.
+The `polyfit` function returns a function that can be used with the `predict`
+function.
 
-In order to predict values along the curve an interpolation function must be created
-for the curve. Once an interpolation functin has been created the `predict`,
-`derivative` and `integral` functions can be applied to the curve.
-
-In the example below the x axis is included for clarity.
-The `polyfit` function returns an array with the fitted curve.
-A linear inpolation function is then created for the curve with the `lerp` function.
+In the example below the x-axis is included for clarity.
+The `polyfit` function returns a function for the fitted curve.
 The `predict` function is then used to predict a value along the curve, in this
-case the prediction is made for the *x* value of .5.
+case the prediction is made for the *`x`* value of 5.
 
 [source,text]
 ----
 let(x=array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14),
     y=array(0, 1, 2, 3, 4, 5.7, 6, 7, 6, 5, 5, 3, 2, 1, 0),
     curve=polyfit(x, y, 5),
-    interp=lerp(x, curve),
-    p=predict(interp, .5))
+    p=predict(curve, 5))
 ----
 
-When this expression is sent to the /stream handler it
+When this expression is sent to the `/stream` handler it
 responds with:
 
 [source,json]
@@ -166,7 +160,7 @@ responds with:
   "result-set": {
     "docs": [
       {
-        "p": 0.4481424148606813
+        "p": 5.439695598519129
       },
       {
         "EOF": true,
@@ -177,6 +171,230 @@ responds with:
 }
 ----
 
+The `derivative` and `integrate` functions can be used to compute the derivative
+and integrals for the fitted
+curve. The example below demonstrates how to compute a derivative
+for the fitted curve.
 
 
+[source,text]
+----
+let(x=array(0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14),
+    y=array(0, 1, 2, 3, 4, 5.7, 6, 7, 6, 5, 5, 3, 2, 1, 0),
+    curve=polyfit(x, y, 5),
+    d=derivative(curve))
+----
 
+When this expression is sent to the `/stream` handler it
+responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "d": [
+          0.3198918573686361,
+          0.9261492094077225,
+          1.2374272373653175,
+          1.30051359631081,
+          1.1628032287629813,
+          0.8722983646900058,
+          0.47760852150945,
+          0.02795050408827482,
+          -0.42685159525716865,
+          -0.8363663967611356,
+          -1.1495552332084857,
+          -1.3147721499346892,
+          -1.2797639048258267,
+          -0.9916699683185771,
+          -0.3970225234002308
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 0
+      }
+    ]
+  }
+}
+----
+
+== Harmonic Curve Fitting
+
+The `harmonicFit` function (or `harmfit`, for short) fits a smooth line through control points of a sine wave.
+The `harmfit` function is passed x- and y-axes and fits a smooth curve to the data.
+If a single array is provided it is treated as the y-axis and a sequence is generated
+for the x-axis.
+
+The example below shows `harmfit` fitting a single oscillation of a sine wave. The `harmfit` function
+returns the smoothed values at each control point. The return value is also a model which can be used by
+the `predict`, `derivative` and `integrate` functions.
+
+There are also three helper functions that can be used to retrieve the estimated parameters of the fitted model:
+
+* `getAmplitude`: Returns the amplitude of the sine wave.
+* `getAngularFrequency`: Returns the angular frequency of the sine wave.
+* `getPhase`: Returns the phase of the sine wave.
+
+NOTE: The `harmfit` function works best when run on a single oscillation rather than a long sequence of
+oscillations. This is particularly true if the sine wave has noise. After the curve has been fit it can be
+extrapolated to any point in time in the past or future.
+
+In the example below the `harmfit` function fits control points, provided as x and y axes, and then the
+angular frequency, phase and amplitude are retrieved from the fitted model.
+
+[source,text]
+----
+let(echo="freq, phase, amp",
+    x=array(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19),
+    y=array(-0.7441113653915925,-0.8997532112139415, -0.9853140681578838, -0.9941296760805463,
+            -0.9255133950087844, -0.7848096869247675, -0.5829778403072583, -0.33573836075915076,
+            -0.06234851460699166, 0.215897602691855, 0.47732764497752245, 0.701579055431586,
+             0.8711850882773975, 0.9729352782968976, 0.9989043923858761, 0.9470697190130273,
+             0.8214686154479715, 0.631884041542757, 0.39308257356494, 0.12366424851680227),
+    model=harmfit(x, y),
+    freq=getAngularFrequency(model),
+    phase=getPhase(model),
+    amp=getAmplitude(model))
+----
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "freq": 0.28,
+        "phase": 2.4100000000000006,
+        "amp": 0.9999999999999999
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 0
+      }
+    ]
+  }
+}
+----
+
+=== Interpolation and Extrapolation
+
+The `harmfit` function returns a fitted model of the sine wave that can used by the `predict` function to
+interpolate or extrapolate the sine wave.
+
+The example below uses the fitted model to extrapolate the sine wave beyond the control points
+to the x-axis points 20, 21, 22, 23.
+
+[source,text]
+----
+let(x=array(0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19),
+    y=array(-0.7441113653915925,-0.8997532112139415, -0.9853140681578838, -0.9941296760805463,
+            -0.9255133950087844, -0.7848096869247675, -0.5829778403072583, -0.33573836075915076,
+            -0.06234851460699166, 0.215897602691855, 0.47732764497752245, 0.701579055431586,
+             0.8711850882773975, 0.9729352782968976, 0.9989043923858761, 0.9470697190130273,
+             0.8214686154479715, 0.631884041542757, 0.39308257356494, 0.12366424851680227),
+    model=harmfit(x, y),
+    extrapolation=predict(model, array(20, 21, 22, 23)))
+----
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "extrapolation": [
+          -0.1553861764415666,
+          -0.42233370833176975,
+          -0.656386037906838,
+          -0.8393130343914845
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 0
+      }
+    ]
+  }
+}
+----
+
+== Gaussian Curve Fitting
+
+The `gaussfit` function fits a smooth curve through a Gaussian peak.
+This is shown in the example below.
+
+
+[source,text]
+----
+let(x=array(0,1,2,3,4,5,6,7,8,9, 10),
+    y=array(4,55,1200,3028,12000,18422,13328,6426,1696,239,20),
+    f=gaussfit(x, y))
+----
+
+When this expression is sent to the `/stream` handler it responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "f": [
+          2.81764431935644,
+          61.157417979413424,
+          684.2328985468831,
+          3945.9411154167447,
+          11729.758936952656,
+          17972.951897338007,
+          14195.201949425435,
+          5779.03836032222,
+          1212.7224502169634,
+          131.17742331530349,
+          7.3138931735866946
+        ]
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 0
+      }
+    ]
+  }
+}
+----
+
+Like the `polyfit` function, the `gaussfit` function returns a function that can
+be used directly by the `predict`, `derivative` and `integrate` functions.
+
+The example below demonstrates how to compute an integral for a fitted Gaussian curve.
+
+[source,text]
+----
+let(x=array(0,1,2,3,4,5,6,7,8,9, 10),
+    y=array(4,55,1200,3028,12000,18422,13328,6426,1696,239,20),
+    f=gaussfit(x, y),
+    i=integrate(f, 0, 5))
+
+----
+
+When this expression is sent to the `/stream` handler it
+responds with:
+
+[source,json]
+----
+{
+  "result-set": {
+    "docs": [
+      {
+        "i": 25261.666789766092
+      },
+      {
+        "EOF": true,
+        "RESPONSE_TIME": 3
+      }
+    ]
+  }
+}
+----

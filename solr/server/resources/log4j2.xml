@@ -16,8 +16,74 @@
   limitations under the License.
   -->
 
+<!-- Configuration for asynchronous logging -->
 <Configuration>
   <Appenders>
+
+    <Console name="STDOUT" target="SYSTEM_OUT">
+      <PatternLayout>
+        <Pattern>
+          %maxLen{%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%X{collection} %X{shard} %X{replica} %X{core}] %c{1.} %m%notEmpty{ =>%ex{short}}}{10240}%n
+        </Pattern>
+      </PatternLayout>
+    </Console>
+
+    <RollingRandomAccessFile
+        name="MainLogFile"
+        fileName="${sys:solr.log.dir}/solr.log"
+        filePattern="${sys:solr.log.dir}/solr.log.%i" >
+      <PatternLayout>
+        <Pattern>
+          %maxLen{%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%X{collection} %X{shard} %X{replica} %X{core}] %c{1.} %m%notEmpty{ =>%ex{short}}}{10240}%n
+        </Pattern>
+      </PatternLayout>
+      <Policies>
+        <OnStartupTriggeringPolicy />
+        <SizeBasedTriggeringPolicy size="32 MB"/>
+      </Policies>
+      <DefaultRolloverStrategy max="10"/>
+    </RollingRandomAccessFile>
+
+    <RollingRandomAccessFile
+        name="SlowLogFile"
+        fileName="${sys:solr.log.dir}/solr_slow_requests.log"
+        filePattern="${sys:solr.log.dir}/solr_slow_requests.log.%i" >
+      <PatternLayout>
+        <Pattern>
+          %maxLen{%d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%X{collection} %X{shard} %X{replica} %X{core}] %c{1.} %m%notEmpty{ =>%ex{short}}}{10240}%n
+        </Pattern>
+      </PatternLayout>
+      <Policies>
+        <OnStartupTriggeringPolicy />
+        <SizeBasedTriggeringPolicy size="32 MB"/>
+      </Policies>
+      <DefaultRolloverStrategy max="10"/>
+    </RollingRandomAccessFile>
+
+  </Appenders>
+  <Loggers>
+    <AsyncLogger name="org.apache.hadoop" level="warn"/>
+    <AsyncLogger name="org.apache.solr.update.LoggingInfoStream" level="off"/>
+    <AsyncLogger name="org.apache.zookeeper" level="warn"/>
+    <AsyncLogger name="org.apache.solr.core.SolrCore.SlowRequest" level="info" additivity="false">
+      <AppenderRef ref="SlowLogFile"/>
+    </AsyncLogger>
+
+    <AsyncRoot level="info">
+      <AppenderRef ref="MainLogFile"/>
+      <AppenderRef ref="STDOUT"/>
+    </AsyncRoot>
+  </Loggers>
+</Configuration>
+
+<!-- Configuration for synchronous logging
+     there _may_ be a very small window where log messages will not be flushed
+     to the log file on abnormal shutdown. If even this risk is unacceptable, use
+     the configuration below
+-->
+<!--Configuration>
+  <Appenders>
+
     <Console name="STDOUT" target="SYSTEM_OUT">
       <PatternLayout>
         <Pattern>
@@ -25,6 +91,7 @@
         </Pattern>
       </PatternLayout>
     </Console>
+
     <RollingFile
         name="RollingFile"
         fileName="${sys:solr.log.dir}/solr.log"
@@ -40,15 +107,36 @@
       </Policies>
       <DefaultRolloverStrategy max="10"/>
     </RollingFile>
+
+    <RollingFile
+        name="SlowFile"
+        fileName="${sys:solr.log.dir}/solr_slow_requests.log"
+        filePattern="${sys:solr.log.dir}/solr_slow_requests.log.%i" >
+      <PatternLayout>
+        <Pattern>
+          %d{yyyy-MM-dd HH:mm:ss.SSS} %-5p (%t) [%X{collection} %X{shard} %X{replica} %X{core}] %c{1.} %m%n
+        </Pattern>
+      </PatternLayout>
+      <Policies>
+        <OnStartupTriggeringPolicy />
+        <SizeBasedTriggeringPolicy size="32 MB"/>
+      </Policies>
+      <DefaultRolloverStrategy max="10"/>
+    </RollingFile>
+
   </Appenders>
   <Loggers>
     <Logger name="org.apache.hadoop" level="warn"/>
     <Logger name="org.apache.solr.update.LoggingInfoStream" level="off"/>
     <Logger name="org.apache.zookeeper" level="warn"/>
+    <Logger name="org.apache.solr.core.SolrCore.SlowRequest" level="info" additivity="false">
+      <AppenderRef ref="SlowFile"/>
+    </Logger>
 
     <Root level="info">
       <AppenderRef ref="RollingFile"/>
       <AppenderRef ref="STDOUT"/>
     </Root>
   </Loggers>
-</Configuration>
+</Configuration-->
+

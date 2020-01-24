@@ -22,11 +22,10 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.CoreAdminParams;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.IndexDeletionPolicyWrapper;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.snapshots.SolrSnapshotManager;
 import org.apache.solr.core.snapshots.SolrSnapshotMetaDataManager;
-import org.apache.solr.search.SolrIndexSearcher;
-import org.apache.solr.util.RefCounted;
 
 class CreateSnapshotOp implements CoreAdminHandler.CoreAdminOp {
   @Override
@@ -42,24 +41,25 @@ class CreateSnapshotOp implements CoreAdminHandler.CoreAdminOp {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Unable to locate core " + cname);
       }
 
-      String indexDirPath = core.getIndexDir();
-      IndexCommit ic = core.getDeletionPolicy().getLatestCommit();
-      if (ic == null) {
-        RefCounted<SolrIndexSearcher> searcher = core.getSearcher();
-        try {
-          ic = searcher.get().getIndexReader().getIndexCommit();
-        } finally {
-          searcher.decref();
+      final String indexDirPath = core.getIndexDir();
+      final IndexDeletionPolicyWrapper delPol = core.getDeletionPolicy();
+      final IndexCommit ic = delPol.getAndSaveLatestCommit();
+      try {
+        if (null == ic) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+                                  "No index commits to snapshot in core " + cname);
         }
-      }
-      SolrSnapshotMetaDataManager mgr = core.getSnapshotMetaDataManager();
-      mgr.snapshot(commitName, indexDirPath, ic.getGeneration());
+        final SolrSnapshotMetaDataManager mgr = core.getSnapshotMetaDataManager();
+        mgr.snapshot(commitName, indexDirPath, ic.getGeneration());
 
-      it.rsp.add(CoreAdminParams.CORE, core.getName());
-      it.rsp.add(CoreAdminParams.COMMIT_NAME, commitName);
-      it.rsp.add(SolrSnapshotManager.INDEX_DIR_PATH, indexDirPath);
-      it.rsp.add(SolrSnapshotManager.GENERATION_NUM, ic.getGeneration());
-      it.rsp.add(SolrSnapshotManager.FILE_LIST, ic.getFileNames());
+        it.rsp.add(CoreAdminParams.CORE, core.getName());
+        it.rsp.add(CoreAdminParams.COMMIT_NAME, commitName);
+        it.rsp.add(SolrSnapshotManager.INDEX_DIR_PATH, indexDirPath);
+        it.rsp.add(SolrSnapshotManager.GENERATION_NUM, ic.getGeneration());
+        it.rsp.add(SolrSnapshotManager.FILE_LIST, ic.getFileNames());
+      } finally {
+        delPol.releaseCommitPoint(ic);
+      }
     }
   }
 }

@@ -35,12 +35,9 @@ public final class TestRateLimiter extends LuceneTestCase {
     Thread t = new Thread() {
         @Override
         public void run() {
-          try {
+          expectThrows(ThreadInterruptedException.class, () -> {
             new SimpleRateLimiter(1).pause((long) (1.5*Integer.MAX_VALUE*1024*1024/1000));
-            fail("should have been interrupted");
-          } catch (ThreadInterruptedException tie) {
-            // expected
-          }
+          });
         }
       };
     t.start();

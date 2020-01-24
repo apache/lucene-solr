@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.queries.function.FunctionQuery;
 import org.apache.lucene.queries.function.ValueSource;
@@ -149,7 +149,7 @@ public class StatsField {
     }
     
     /**
-     * Given a String, returns the corrisponding Stat enum value if any, otherwise returns null.
+     * Given a String, returns the corresponding Stat enum value if any, otherwise returns null.
      */
     public static Stat forName(String paramKey) {
       try {
@@ -180,7 +180,7 @@ public class StatsField {
   }
 
   /**
-   * the equivilent stats if "calcdistinct" is specified
+   * the equivalent stats if "calcdistinct" is specified
    * @see Stat#countDistinct
    * @see Stat#distinctValues
    */
@@ -245,16 +245,20 @@ public class StatsField {
       } else {
         // we have a non trivial request to compute stats over a query (or function)
 
-        // NOTE we could use QParser.getParser(...) here, but that would redundently
+        // NOTE we could use QParser.getParser(...) here, but that would redundantly
         // reparse everything.  ( TODO: refactor a common method in QParser ?)
         QParserPlugin qplug = rb.req.getCore().getQueryPlugin(parserName);
-        QParser qp =  qplug.createParser(localParams.get(QueryParsing.V), 
+        if (qplug == null) {
+          throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "invalid query parser '" + parserName +
+              (originalParam == null? "'": "' for query '" + originalParam + "'"));
+        }
+        QParser qp = qplug.createParser(localParams.get(QueryParsing.V),
                                          localParams, params, rb.req);
 
         // figure out what type of query we are dealing, get the most direct ValueSource
         vs = extractValueSource(qp.parse());
 
-        // if this ValueSource directly corrisponds to a SchemaField, act as if
+        // if this ValueSource directly corresponds to a SchemaField, act as if
         // we were asked to compute stats on it directly
         // ie:  "stats.field={!func key=foo}field(foo)" == "stats.field=foo"
         sf = extractSchemaField(vs, searcher.getSchema());
@@ -639,7 +643,7 @@ public class StatsField {
       final NumberType hashableNumType = getHashableNumericType(field);
 
       // some sane defaults
-      int log2m = 13;   // roughly equivilent to "cardinality='0.33'"
+      int log2m = 13;   // roughly equivalent to "cardinality='0.33'"
       int regwidth = 6; // with decent hash, this is plenty for all valid long hashes
 
       if (NumberType.FLOAT.equals(hashableNumType) || NumberType.INTEGER.equals(hashableNumType)) {

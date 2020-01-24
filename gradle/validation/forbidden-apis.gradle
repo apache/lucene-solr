@@ -1,0 +1,116 @@
+// This configures application of forbidden API rules
+// via https://github.com/policeman-tools/forbidden-apis
+
+// Only apply forbidden-apis to java projects.
+allprojects { prj ->
+  plugins.withId("java", {
+    prj.apply plugin: 'de.thetaphi.forbiddenapis'
+
+    // This helper method appends signature files based on a set of true
+    // dependencies from a given configuration.
+    def dynamicSignatures = { configuration, suffix ->
+      def deps = configuration.resolvedConfiguration.resolvedArtifacts
+          .collect { a -> a.moduleVersion.id }
+          .collect { id -> [
+              "${id.group}.${id.name}.all.txt",
+              "${id.group}.${id.name}.${suffix}.txt",
+          ]}
+          .flatten()
+          .sort()
+
+      deps += ["defaults.all.txt", "defaults.${suffix}.txt"]
+
+      deps.each { sig ->
+        def signaturesFile = rootProject.file("gradle/validation/forbidden-apis/${sig}")
+        if (signaturesFile.exists()) {
+          logger.info("Signature file applied: ${sig}")
+          signaturesFiles += files(signaturesFile)
+        } else {
+          logger.debug("Signature file omitted (does not exist): ${sig}")
+        }
+      }
+    }
+
+    // Configure defaults for sourceSets.main
+    forbiddenApisMain {
+      bundledSignatures += [
+          'jdk-unsafe',
+          'jdk-deprecated',
+          'jdk-non-portable',
+          'jdk-reflection',
+          'jdk-system-out',
+      ]
+
+      suppressAnnotations += [
+          "**.SuppressForbidden"
+      ]
+    }
+
+    // Configure defaults for sourceSets.test
+    forbiddenApisTest {
+      bundledSignatures += [
+          'jdk-unsafe',
+          'jdk-deprecated',
+          'jdk-non-portable',
+          'jdk-reflection',
+      ]
+
+      signaturesFiles = files(
+          rootProject.file("gradle/validation/forbidden-apis/defaults.tests.txt")
+      )
+
+      suppressAnnotations += [
+          "**.SuppressForbidden"
+      ]
+    }
+
+    // Attach validation to check task.
+    check.dependsOn forbiddenApisMain, forbiddenApisTest
+
+    // Disable sysout signatures for these projects.
+    if (prj.path in [
+        ":lucene:demo",
+        ":lucene:benchmark",
+        ":lucene:test-framework",
+        ":solr:solr-ref-guide",
+        ":solr:test-framework"
+    ]) {
+      forbiddenApisMain.bundledSignatures -= [
+          'jdk-system-out'
+      ]
+    }
+
+    // Configure lucene-specific rules.
+    if (prj.path.startsWith(":lucene")) {
+      forbiddenApisMain {
+        doFirst dynamicSignatures.curry(configurations.compileClasspath, "lucene")
+      }
+
+      forbiddenApisTest {
+        doFirst dynamicSignatures.curry(configurations.testCompileClasspath, "lucene")
+      }
+    }
+
+    // Configure solr-specific rules.
+    if (prj.path.startsWith(":solr")) {
+      forbiddenApisMain {
+        doFirst dynamicSignatures.curry(configurations.compileClasspath, "solr")
+      }
+
+      forbiddenApisTest {
+        doFirst dynamicSignatures.curry(configurations.testCompileClasspath, "solr")
+      }
+    }
+
+    // We rely on resolved configurations to compute the relevant set of rule
+    // files for forbiddenApis. Since we don't want to resolve these configurations until
+    // the task is executed, we can't really use them as task inputs properly. This is a
+    // chicken-and-egg problem.
+    //
+    // This is the simplest workaround possible: just point at all the rule files and indicate
+    // them as inputs. This way if a rule is modified, checks will be reapplied.
+    configure([forbiddenApisMain, forbiddenApisTest]) { task ->
+      task.inputs.dir(rootProject.file("gradle/validation/forbidden-apis"))
+    }
+  })
+}

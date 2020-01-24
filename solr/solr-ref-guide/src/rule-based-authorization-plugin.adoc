@@ -16,69 +16,180 @@
 // specific language governing permissions and limitations
 // under the License.
 
-Solr allows configuring roles to control user access to the system.
+Solr's authentication plugins control whether users can access Solr in a binary fashion.  A user is either authenticated, or they aren't.  For more fine-grained access control, Solr's Rule-Based Authorization Plugin (hereafter, "RBAP") can be used.
 
-This is accomplished through rule-based permission definitions which are assigned to users. The roles are fully customizable, and provide the ability to limit access to specific collections, request handlers, request parameters, and request methods.
+[CAUTION]
+====
+Solr's Admin UI interacts with Solr using its regular APIs. When rule-based authorization is in use, logged-in users not authorized to access the full range of these APIs may see some sections of the UI that appear blank or "broken". For best results, the Admin UI should only be accessed by users with full API access.
+====
 
-The roles can be used with any of the authentication plugins or with a custom authentication plugin if you have created one. You will only need to ensure that you configure the role-to-user mappings with the proper user IDs that your authentication system provides.
+== Rule-Based Auth Concepts
 
-Once defined through the API, roles are stored in `security.json`.
+"Users", "roles" and "permissions" play a central role in configuring authorization correctly.
 
-== Enable the Authorization Plugin
+In Rule-Based Authorization, administrators define a series of roles based on the permissions they want those roles to confer.  Users are then assigned one or more roles.
 
-The plugin must be enabled in `security.json`. This file and where to put it in your system is described in detail in the section <<authentication-and-authorization-plugins.adoc#enable-plugins-with-security-json,Enable Plugins with security.json>>.
+=== Users
 
-This file has two parts, the `authentication` part and the `authorization` part. The `authentication` part stores information about the class being used for authentication.
+The users that RBAP sees come from whatever authentication plugin has been configured.  RBAP is compatible with all of the authentication plugins that Solr ships with out of the box.  It is also compatible with any custom authentication plugins users might write, provided that the plugin sets a user principal on the HttpServletRequest it receives.  The user value seen by RBAP in each case depends on the authentication plugin being used: the Kerberos principal if the <<kerberos-authentication-plugin.adoc#kerberos-authentication-plugin,Kerberos Authentication Plugin>> is being used, the "sub" JWT claim if the <<jwt-authentication-plugin.adoc#jwt-authentication-plugin,JWT Authentication Plugin>> is being used, etc.
 
-The `authorization` part is not related to Basic authentication, but is a separate authorization plugin designed to support fine-grained user access control. When creating `security.json` you can add the permissions to the file, or you can use the Authorization API described below to add them as needed.
+=== Roles
 
-This example `security.json` shows how the <<basic-authentication-plugin.adoc#basic-authentication-plugin,Basic authentication plugin>> can work with this authorization plugin:
+Roles help bridge the gap between users and permissions. Users are assigned one or more roles, and permissions are then given to each of these roles in `security.json`
+
+=== Permissions
+
+Permissions control which roles (and consequently, which users) have access to particular chunks of Solr's API.  Each permission has two main components: a description of the APIs this permission applies to, and a list of the roles that should be allowed to access to this set of APIs.
+
+Administrators can use permissions from a list of predefined options or define their own custom permissions, are are free to mix and match both.
+
+== Configuring the Rule-Based Authorization Plugin
+
+Like all of Solr's security plugins, configuration for RBAP lives in a file or ZooKeeper node with the name `security.json`.  See <<authentication-and-authorization-plugins.adoc#enable-plugins-with-security-json,here>> for more information on how to setup `security.json` in your cluster.
+
+Solr offers an <<Authorization API>> for making changes to RBAP configuration.  Authorized administrators should use this to make changes under most circumstances.  Users may also make edits to `security.json` directly if it is stored in ZooKeeper, but this is an expert-level feature and is discouraged in most circumstances.  The API simplifies some aspects of configuration, and provides error feedback that isn't provided when editing ZooKeeper directly.
+
+=== Configuration Syntax
+
+RBAP configuration consists of a small number of required configuration properties.  Each of these lives under the `authorization` top level property in `security.json`
+
+class:: The authorization plugin to use.  For RBAP, this value will always be `solr.RuleBasedAuthorizationPlugin`
+user-role:: A mapping of individual users to the roles they belong to.  The value of this property is a JSON map, where each property name is a user, and each property value is either the name of a single role or a JSON array of multiple roles that the specified user belongs to.  For example:
++
+[source,json]
+----
+"user-role": {
+  "user1": "role1",
+  "user2": ["role1", "role2"]
+}
+----
+permissions:: A JSON array of permission rules used to restrict access to sections of Solr's API.  For example:
++
+[source,json]
+----
+"permissions": [
+  { "name": "read", "collection": "techproducts", "role": ["admin", "dev"] },
+  { "name": "all", "role": "admin"}
+]
+----
++
+The syntax for individual permissions is more involved and is treated in greater detail <<Permissions,below>>.
+
+=== Complete Example
+
+The example below shows how the configuration properties above can be used to achieve a typical (if simple) RBAP use-case.
 
 [source,json]
 ----
 {
-"authentication":{
-   "class":"solr.BasicAuthPlugin", <1>
-   "blockUnknown": true, <2>
-   "credentials":{"solr":"IV0EHq1OnNrj6gvRCwvFwTrZ1+z1oBbnQdiVC3otuq0= Ndd7LKvVBAaZIF0QAVi1ekCfAJXr1GGfLtRUXhgrF8c="} <3>
-},
-"authorization":{
-   "class":"solr.RuleBasedAuthorizationPlugin", <4>
-   "permissions":[{"name":"security-edit",
-      "role":"admin"}], <5>
-   "user-role":{"solr":"admin"} <6>
-}}
+  "authentication": {
+    "class": "solr.BasicAuthPlugin", <1>
+    "blockUnknown": true,
+    "credentials": {
+      "admin-user": "IV0EHq1OnNrj6gvRCwvFwTrZ1+z1oBbnQdiVC3otuq0= Ndd7LKvVBAaZIF0QAVi1ekCfAJXr1GGfLtRUXhgrF8c=",
+      "dev-user": "IV0EHq1OnNrj6gvRCwvFwTrZ1+z1oBbnQdiVC3otuq0= Ndd7LKvVBAaZIF0QAVi1ekCfAJXr1GGfLtRUXhgrF8c="
+    }
+  },
+  "authorization": {
+    "class": "solr.RuleBasedAuthorizationPlugin", <2>
+    "user-role": { <3>
+      "admin-user": "admin",
+      "dev-user": "dev"
+    },
+    "permissions": [ <4>
+      { "name": "dev-private-collection", "collection": "dev-private", "role": "dev"},
+      { "name": "security-read", "role": "admin"},
+      { "name": "security-edit", "role": "admin"}
+    ]
+  }
+}
 ----
 
-There are several things defined in this example:
+<1> Solr is using the Basic Authentication plugin for authentication.  This configuration establishes two users: `admin-user` and `dev-user`.
+<2> The `authorization` property begins the authorization configuration.  Solr will use RBAP for authorization.
+<3> Two roles are defined: `admin` and `dev`.  Each user belongs to one role: `admin-user` is an `admin`, and `dev-user` is a `dev`.
+<4> Three permissions restrict access to Solr.  The first permission (a "custom" permission) indicates that only the `dev` role can read from a special collection with the name `dev-private`.  The last two permissions ("predefined" permissions) indicate that only the `admin` role is permitted to use Solr's security APIs.  See below for more information on permission syntax.
 
-<1> Basic authentication plugin is enabled.
-<2> All requests w/o credentials will be rejected with a 401 error. Set `'blockUnknown'` to false (or remove it altogether) if you wish to let unauthenticated requests to go through. However, if a particular resource is protected by a rule, they are rejected anyway with a 401 error.
-<3> A user named 'solr', with a password has been defined.
-<4> Rule-based authorization plugin is enabled.
-<5> The 'admin' role has been defined, and it has permission to edit security settings.
-<6> The 'solr' user has been defined to the 'admin' role.
+Altogether, this example carves out two restricted areas.  Only `admin-user` can access Solr's Authentication and Authorization APIs, and only `dev-user` can access their `dev-private` collection.  All other APIs are left open, and can be accessed by both users.
 
-== Permission Attributes
+== Permissions
 
-Each role is comprised of one or more permissions which define what the user is allowed to do. Each permission is made up of several attributes that define the allowed activity. There are some pre-defined permissions which cannot be modified.
+Solr's Rule-Based Authorization plugin supports a flexible and powerful permission syntax.  RBAP supports two types of permissions, each with a slightly different syntax.
 
-The permissions are consulted in order they appear in `security.json`. The first permission that matches is applied for each user, so the strictest permissions should be at the top of the list. Permissions order can be controlled with a parameter of the Authorization API, as described below.
+=== Custom Permissions
+
+Administrators can write their own custom permissions that can match requests based on the collection, request handler, HTTP method, particular request parameters, etc.
+
+Each custom permission is a JSON object under the `permissions` property, with one or more of the properties below:
+
+name:: An optional identifier for the permission.  For custom permissions, this is used only as a clue to administrators about what this permission does.  Even so, care must be taken when setting this property to avoid colliding with one of Solr's predefined permissions, whose names are semantically meaningful.  If this name matches a predefined permission, Solr ignores any other properties set and uses the semantics of the predefined permission instead.
+collection:: An optional property identifying which collection(s) this permission applies to.  The value can either be a single collection name, or a JSON array containing multiple collections.  The wildcard `\*` can be used to indicate that this rule applies to all collections.  Similarly the special value `null` can be used to indicate that this permission governs Solr's collection-agnostic ("admin") APIs.  If not specified, this property defaults to `"*"`.
++
+[NOTE]
+====
+The collection property can only be used to match _collections_.  It currently cannot be used to match aliases.  Aliases are resolved before Solr's security plugins are invoked; a `collection` property given an alias will never match because RBAP will be comparing an alias name to already-resolved collection names.  Instead, set a `collection` property that contains all collections in the alias concerned (or the `*` wildcard).
+====
+path:: An optional property identifying which paths this permission applies to.  The value can either be a single path string, or a JSON array containing multiple strings.  For APIs accessing collections, path values should start after the collection name, and often just look like the request handler (e.g., `"/select"`).  For collection-agnostic ("admin") APIs, path values should start at the `"/admin` path segment.  The wildcard `\*` can be used to indicate that this permission applies to all paths.  If not specified, this property defaults to `null`.
+method:: An optional property identifying which HTTP methods this permission applies to.  Options include `HEAD`, `POST`, `PUT`, `GET`, `DELETE`, and the wildcard `\*`.  Multiple values can also be specified using a JSON array.  If not specified, this property defaults to `*`.
+params:: An optional property identifying which query parameters this permission applies to.  The value is a JSON object containing the names and values of request parameters that must be matched for this permission to apply.
++
+For example, this property could be used to limit the actions a role is allowed to perform with the Collections API. If the role should only be allowed to perform the LIST or CLUSTERSTATUS requests, you would define this as follows:
++
+[source,json]
+----
+"params": {
+   "action": ["LIST", "CLUSTERSTATUS"]
+}
+----
++
+The request parameter value can be a simple string or a regular expression. Use the prefix `REGEX:` to use a regular expression match instead of simpler string matching
++
+If the commands LIST and CLUSTERSTATUS are case insensitive, the example above can be written as follows:
++
+[source,json]
+----
+"params": {
+   "action": ["REGEX:(?i)LIST", "REGEX:(?i)CLUSTERSTATUS"]
+}
+----
++
+If not specified, the permission is independent of any parameters.
+role:: A required property identifying which role (or roles) are allowed access to the APIs controlled by this permission.  Multiple values can be specified using a JSON array.  The wildcard `*` can be used to indicate that all roles can access the described functionality.
+
 
 === Predefined Permissions
 
-There are several permissions that are pre-defined. These have fixed default values, which cannot be modified, and new attributes cannot be added. To use these attributes, simply define a role that includes this permission, and then assign a user to that role.
+Custom permissions give administrators flexibility in configuring fine-grained access control.  But in an effort to make configuration as simple as possible, RBAP also offers a handful of predefined permissions, which cover many common use-cases.
 
-The pre-defined permissions are:
+Administrators invoke a predefined permission by choosing a `name` property that matches one of Solr's predefined permission options (listed below).  Solr has its own definition for each of these permissions, and uses this information when checking whether a predefined permission matches an incoming request.  This trades flexibility for simplicity: predefined permissions do not support the `path`, `params`, or `method` properties which custom permissions allow.
+
+The predefined permission names (and their effects) are:
 
 * *security-edit:* this permission is allowed to edit the security configuration, meaning any update action that modifies `security.json` through the APIs will be allowed.
 * *security-read*: this permission is allowed to read the security configuration, meaning any action that reads `security.json` settings through the APIs will be allowed.
 * *schema-edit*: this permission is allowed to edit a collection's schema using the <<schema-api.adoc#schema-api,Schema API>>. Note that this allows schema edit permissions for _all_ collections. If edit permissions should only be applied to specific collections, a custom permission would need to be created.
 * *schema-read*: this permission is allowed to read a collection's schema using the <<schema-api.adoc#schema-api,Schema API>>. Note that this allows schema read permissions for _all_ collections. If read permissions should only be applied to specific collections, a custom permission would need to be created.
 * *config-edit*: this permission is allowed to edit a collection's configuration using the <<config-api.adoc#config-api,Config API>>, the <<request-parameters-api.adoc#request-parameters-api,Request Parameters API>>, and other APIs which modify `configoverlay.json`. Note that this allows configuration edit permissions for _all_ collections. If edit permissions should only be applied to specific collections, a custom permission would need to be created.
-* *core-admin-read*: Read operations on the core admin API
-* *core-admin-edit*: Core admin commands that can mutate the system state.
 * *config-read*: this permission is allowed to read a collection's configuration using the <<config-api.adoc#config-api,Config API>>, the <<request-parameters-api.adoc#request-parameters-api,Request Parameters API>>, and other APIs which modify `configoverlay.json`. Note that this allows configuration read permissions for _all_ collections. If read permissions should only be applied to specific collections, a custom permission would need to be created.
+* *metrics-read*: this permission allows access to Solr's <<metrics-reporting.adoc#metrics-api,Metrics API>>
+* *metrics-history-read*: this permission allows access to Solr's <<metrics-history.adoc#metrics-history-api,Metrics History API>>, which provides long-term history for a select set of key Solr metrics.
+* *autoscaling-read*: this permission allows users to read Solr's <<solrcloud-autoscaling-api.adoc#read-api,autoscaling>> configuration.  This covers all read-only autoscaling APIs, including:
+** the "READ" API (`/solr/admin/autoscaling`)
+** the Diagnostics API (`/solr/admin/autoscaling/diagnostics`)
+** the Suggestions API (`/solr/admin/autoscaling/suggestions`)
+** The History API (`/solr/admin/autoscaling/history`)
+* *autoscaling-write*: this permission allows users to make changes to Solr's <<solrcloud-autoscaling-api.adoc#write-api,autoscaling>> configuration.  This covers all operations in the autoscaling Write API, including:
+** set-cluster-preferences
+** set-cluster-policy
+** set-policy
+** remove-policy
+** set-trigger
+** remove-trigger
+** set-listener
+** remove-listener
+** set-properties
+* *core-admin-edit*: Core admin commands that can mutate the system state.
+* *core-admin-read*: Read operations on the core admin API
 * *collection-admin-edit*: this permission is allowed to edit a collection's configuration using the <<collections-api.adoc#collections-api,Collections API>>. Note that this allows configuration edit permissions for _all_ collections. If edit permissions should only be applied to specific collections, a custom permission would need to be created. Specifically, the following actions of the Collections API would be allowed:
 ** CREATE
 ** RELOAD
@@ -107,6 +218,45 @@ The pre-defined permissions are:
 * *read*: this permission is allowed to perform any read action on any collection. This includes querying using search handlers (using <<requesthandlers-and-searchcomponents-in-solrconfig.adoc#searchhandlers,request handlers>>) such as `/select`, `/get`, `/browse`, `/tvrh`, `/terms`, `/clustering`, `/elevate`, `/export`, `/spell`, `/clustering`, and `/sql`. This applies to all collections by default ( `collection:"*"` ).
 * *all*: Any requests coming to Solr.
 
+=== Permission Ordering and Resolution
+
+The permission syntax discussed above doesn't do anything to prevent multiple permissions from overlapping and applying to the same Solr APIs.  In cases where multiple permissions match an incoming request, Solr chooses the first matching permission and ignores all others - even if those other permissions would match the incoming request!
+
+Since Solr only uses the first matching permission it finds, it's important for administrators to understand what ordering Solr uses when processing the permission list.
+
+The ordering Solr uses is complex.  Solr tries to check first any permissions which are specific or relevant to the incoming request, only moving on to more general permissions if none of the more-specific ones match.  In effect, this means that different requests may check the same permissions in very different orders.
+
+If the incoming request is collection-agnostic (doesn't apply to a paritcular collection), Solr checks permissions in the following order:
+
+. Permissions with a `collection` value of `null` and a `path` value matching the request's request handler
+. Permissions with a `collection` value of `null` and a `path` value of `*`
+. Permissions with a `collection` value of `null` and a `path` value of `null`
+
+If the incoming request is to a collection, Solr checks permissions in the following order:
+
+. Permissions with `collection` and `path` values matching the request specifically (not a wildcard match)
+. Permissions with `collection` matching the request specifically, and a `path` value of `*`
+. Permissions with `collection` matching the request specifically, and a `path` value of `null`
+. Permissions with `path` matching the request specifically, and a `collection` value of `*`
+. Permissions with both `collection` and `path` values of `*`.
+. Permissions with a `collection` value of `*` and a `path` value of `null`
+
+As an example, consider the permissions below:
+
+[source,json]
+----
+{"name": "read", "role": "dev"}, <1>
+{"name": "coll-read", "path": "/select", "role": "*"}, <2>
+{"name": "techproducts-read", "collection": "techproducts", "role": "other", "path": "/select"}, <3>
+{"name": "all", "role": "admin"} <4>
+----
+
+All of the permissions in this list match `/select` queries.  But different permissions will be used depending on the collection being queried.
+
+For a query to the `techproducts` collection, permission 3 will be used because it specifically targets `techproducts`.  Only users with the `other` role will be authorized.
+
+For a query to a collection called `collection1` on the other hand, the most specific permission present is permission 2, so _all_ roles are given access.
+
 == Authorization API
 
 === Authorization API Endpoint
@@ -121,53 +271,7 @@ Three commands control managing permissions:
 * `update-permission`: update some attributes of an existing permission definition.
 * `delete-permission`: remove a permission definition.
 
-Permissions need to be created if they are not on the list of pre-defined permissions above.
-
-Several properties can be used to define your custom permission.
-
-`name`::
-The name of the permission. This is required only if it is a predefined permission.
-
-`collection`::
-The collection or collections the permission will apply to.
-+
-When the path that will be allowed is collection-specific, such as when setting permissions to allow use of the Schema API, omitting the collection property will allow the defined path and/or method for all collections. However, when the path is one that is non-collection-specific, such as the Collections API, the collection value must be `null`. The default value is `*`, or all collections.
-
-`path`::
-A request handler name, such as `/update` or `/select`. A wild card is supported, to allow for all paths as appropriate (such as, `/update/*`).
-
-`method`:: HTTP methods that are allowed for this permission. You could allow only GET requests, or have a role that allows PUT and POST requests. The method values that are allowed for this property are GET, POST, PUT,DELETE and HEAD.
-
-`params`::
-The names and values of request parameters. This property can be omitted if all request parameters are to be matched, but will restrict access only to the values provided if defined.
-+
-For example, this property could be used to limit the actions a role is allowed to perform with the Collections API. If the role should only be allowed to perform the LIST or CLUSTERSTATUS requests, you would define this as follows:
-+
-[source,json]
-----
-{"params": {
-   "action": ["LIST", "CLUSTERSTATUS"]
-  }
-}
-----
-+
-The value of the parameter can be a simple string or it could be a regular expression. Use the prefix `REGEX:` to use a regular expression match instead of a string identity match
-+
-If the commands LIST and CLUSTERSTATUS are case insensitive, the above example should be as follows
-+
-[source,json]
-----
-{"params": {
-   "action": ["REGEX:(?i)LIST", "REGEX:(?i)CLUSTERSTATUS"]
-  }
-}
-----
-
-`before`::
-This property allows ordering of permissions. The value of this property is the index of the permission that this new permission should be placed before in `security.json`. The index is automatically assigned in the order they are created.
-
-`role`::
-The name of the role(s) to give this permission. This name will be used to map user IDs to the role to grant these permissions. The value can be wildcard such as (`*`), which means that any user is OK, but no user is NOT OK.
+Created properties can either be custom or predefined.  In addition to the permission syntax discussed above, these commands also allow permissions to have a `before` property, whose value matches the index of the permission that this new permission should be placed before in `security.json`.
 
 The following creates a new permission named "collection-mgr" that is allowed to create and list collections. The permission will be placed before the "read" permission. Note also that we have defined "collection as `null`, this is because requests to the Collections API are never collection-specific.
 

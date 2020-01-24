@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package org.apache.solr.client.solrj.io.eval;
 
 import java.io.IOException;
@@ -27,7 +28,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
 public class PowerEvaluator extends RecursiveNumericEvaluator implements TwoValueWorker {
   protected static final long serialVersionUID = 1L;
   
-  public PowerEvaluator(StreamExpression expression, StreamFactory factory) throws IOException{
+  public PowerEvaluator(StreamExpression expression, StreamFactory factory) throws IOException {
     super(expression, factory);
 
     if(2 != containedEvaluators.size()){
@@ -36,26 +37,56 @@ public class PowerEvaluator extends RecursiveNumericEvaluator implements TwoValu
   }
 
   @Override
-  public Object doWork(Object first, Object second) throws IOException{
+  public Object doWork(Object first, Object second) throws IOException {
     
-    if(null == first || null == second){
+    if(null == first || null == second) {
       return null;
     }
 
     if(first instanceof Number) {
       Number value = (Number) first;
-      Number exponent = (Number) second;
-      return Math.pow(value.doubleValue(), exponent.doubleValue());
-    } else {
-      List<Number> values = (List<Number>) first;
-      Number exponent = (Number) second;
-
-      List<Number> out = new ArrayList(values.size());
-      for(Number value : values) {
-        out.add(Math.pow(value.doubleValue(), exponent.doubleValue()));
+      if(second instanceof Number) {
+        Number exponent = (Number) second;
+        return Math.pow(value.doubleValue(), exponent.doubleValue());
+      } else if(second instanceof List)  {
+        List<Number> exponents = (List<Number>) second;
+        List<Number> pows = new ArrayList();
+        for(Number exponent : exponents) {
+          pows.add(Math.pow(value.doubleValue(), exponent.doubleValue()));
+        }
+        return pows;
+      } else {
+        throw new IOException("The second parameter to the pow function must either be a scalar or list of scalars");
       }
+    } else if(first instanceof List) {
+      List<Number> values = (List<Number>) first;
+      if(second instanceof Number) {
+        Number exponent = (Number) second;
 
-      return out;
+        List<Number> out = new ArrayList(values.size());
+        for (Number value : values) {
+          out.add(Math.pow(value.doubleValue(), exponent.doubleValue()));
+        }
+
+        return out;
+      } else if(second instanceof List) {
+
+        List<Number> out = new ArrayList(values.size());
+        List<Number> exponents = (List<Number>)second;
+        if(values.size() != exponents.size()) {
+          throw new IOException("The pow function requires vectors of equal size if two vectors are provided.");
+        }
+
+        for(int i=0; i<exponents.size(); i++) {
+          out.add(Math.pow(values.get(i).doubleValue(), exponents.get(i).doubleValue()));
+        }
+
+        return out;
+      } else {
+        throw new IOException("The second parameter to the pow function must either be a scalar or list of scalars");
+      }
+    } else {
+      throw new IOException("The first parameter to the pow function must either be a scalar or list of scalars");
     }
   }
 }

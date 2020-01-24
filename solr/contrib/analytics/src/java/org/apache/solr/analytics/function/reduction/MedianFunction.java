@@ -65,14 +65,14 @@ abstract class NumericMedianFunction<T extends Comparable<T>> extends AbstractDo
   protected SortedListCollector<T> collector;
   public static final String name = MedianFunction.name;
   private final String exprStr;
-  
+
   public NumericMedianFunction(DoubleValueStream param, SortedListCollector<T> collector) {
     this.collector = collector;
     this.exprStr = AnalyticsValueStream.createExpressionString(name,param);
   }
 
   protected abstract double collectOrd(int ord);
-  
+
   @Override
   public double getDouble() {
     int size = collector.size();
@@ -155,7 +155,7 @@ class DateMedianFunction extends AbstractDateValue implements ReductionFunction 
   private SortedLongListCollector collector;
   public static final String name = MedianFunction.name;
   private final String exprStr;
-  
+
   public DateMedianFunction(DateValueStream param) {
     this.collector = new SortedLongListCollector(param);
     this.exprStr = AnalyticsValueStream.createExpressionString(name,param);

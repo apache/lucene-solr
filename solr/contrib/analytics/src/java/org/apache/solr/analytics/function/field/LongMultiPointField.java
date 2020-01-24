@@ -40,12 +40,12 @@ public class LongMultiPointField extends AnalyticsField implements CastingLongVa
     count = 0;
     values = new long[initialArrayLength];
   }
-  
+
   @Override
   public void doSetNextReader(LeafReaderContext context) throws IOException {
     docValues = DocValues.getSortedNumeric(context.reader(), fieldName);
   }
-  
+
   @Override
   public void collect(int doc) throws IOException {
     if (docValues.advanceExact(doc)) {
@@ -58,13 +58,13 @@ public class LongMultiPointField extends AnalyticsField implements CastingLongVa
       count = 0;
     }
   }
-  
+
   private void resizeEmptyValues(int count) {
     if (count > values.length) {
       values = new long[count];
     }
   }
-  
+
   @Override
   public void streamLongs(LongConsumer cons) {
     for (int i = 0; i < count; ++i) {

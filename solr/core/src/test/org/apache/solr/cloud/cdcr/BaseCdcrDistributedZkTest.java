@@ -42,7 +42,6 @@ import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.cloud.AbstractDistribZkTestBase;
 import org.apache.solr.cloud.AbstractZkTestCase;
-import org.apache.solr.cloud.ChaosMonkey;
 import org.apache.solr.cloud.api.collections.OverseerCollectionMessageHandler;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.ClusterState;
@@ -447,7 +446,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
     }
     Integer replicationFactor = (Integer) collectionProps.get(REPLICATION_FACTOR);
     if (replicationFactor == null) {
-      replicationFactor = (Integer) OverseerCollectionMessageHandler.COLL_PROPS.get(REPLICATION_FACTOR);
+      replicationFactor = (Integer) OverseerCollectionMessageHandler.COLLECTION_PROPS_AND_DEFAULTS.get(REPLICATION_FACTOR);
     }
 
     if (confSetName != null) {
@@ -549,8 +548,8 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
     // it seems we need to set the collection property to have the jetty properly restarted
     System.setProperty("collection", server.collection);
     JettySolrRunner jetty = server.jetty;
-    ChaosMonkey.stop(jetty);
-    ChaosMonkey.start(jetty);
+    jetty.stop();
+    jetty.start();
     System.clearProperty("collection");
     waitForRecoveriesToFinish(server.collection, true);
     updateMappingsFromZk(server.collection); // must update the mapping as the core node name might have changed
@@ -579,6 +578,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
       jettyDir.mkdirs();
       setupJettySolrHome(jettyDir);
       JettySolrRunner jetty = createJetty(jettyDir, null, "shard" + i);
+      jetty.start();
       jettys.add(jetty);
     }
 
@@ -623,7 +623,7 @@ public class BaseCdcrDistributedZkTest extends AbstractDistribZkTestBase {
   protected void destroyServers() throws Exception {
     for (JettySolrRunner runner : jettys) {
       try {
-        ChaosMonkey.stop(runner);
+        runner.stop();
       } catch (Exception e) {
         log.error("", e);
       }

@@ -95,7 +95,7 @@ public class TestAutomatonQueryUnicode extends LuceneTestCase {
   }
 
   private long automatonQueryNrHits(AutomatonQuery query) throws IOException {
-    return searcher.search(query, 5).totalHits;
+    return searcher.search(query, 5).totalHits.value;
   }
 
   private void assertAutomatonHits(int expected, Automaton automaton)

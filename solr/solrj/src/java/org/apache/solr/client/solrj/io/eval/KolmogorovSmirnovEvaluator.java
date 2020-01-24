@@ -38,13 +38,13 @@ public class KolmogorovSmirnovEvaluator extends RecursiveObjectEvaluator impleme
   
   @Override
   public Object doWork(Object first, Object second) throws IOException{
-    if(null == first || (first instanceof List<?> && 0 != ((List<?>)first).stream().filter(item -> null == item).count())){
+    if(null == first || (first instanceof List<?> && ((List<?>) first).stream().anyMatch(item -> null == item))){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the first value",toExpression(constructingFactory)));
     }
-    if(null == second || (second instanceof List<?> && 0 != ((List<?>)second).stream().filter(item -> null == item).count())){
+    if(null == second || (second instanceof List<?> && ((List<?>) second).stream().anyMatch(item -> null == item))){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - null found for the second value",toExpression(constructingFactory)));
     }
-    if(!(second instanceof List<?>) || 0 != ((List<?>)second).stream().filter(item -> !(item instanceof Number)).count()){
+    if(!(second instanceof List<?>) || ((List<?>) second).stream().anyMatch(item -> !(item instanceof Number))){
       throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - found type %s for the second value, expecting a List of numbers",toExpression(constructingFactory), first.getClass().getSimpleName()));
     }
     
@@ -59,7 +59,7 @@ public class KolmogorovSmirnovEvaluator extends RecursiveObjectEvaluator impleme
       m.put("d-statistic", ks.kolmogorovSmirnovStatistic(realDistribution, data));
       return new Tuple(m);
     }
-    else if(first instanceof List<?> && 0 == ((List<?>)first).stream().filter(item -> !(item instanceof Number)).count()){
+    else if(first instanceof List<?> && ((List<?>) first).stream().noneMatch(item -> !(item instanceof Number))){
       double[] data2 = ((List<?>)first).stream().mapToDouble(item -> ((Number)item).doubleValue()).toArray();
       
       Map<String,Double> m = new HashMap<>();

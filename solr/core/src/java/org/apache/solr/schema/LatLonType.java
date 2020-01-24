@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 package org.apache.solr.schema;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +35,7 @@ import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.Explanation;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueryVisitor;
 import org.apache.lucene.search.ScoreMode;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SortField;
@@ -101,7 +103,7 @@ public class LatLonType extends AbstractSubTypeFieldType implements SpatialQuery
 
 
   @Override
-  public Query getRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
+  protected Query getSpecializedRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
     Point p1 = SpatialUtils.parsePointSolrException(part1, SpatialContext.GEO);
     Point p2 = SpatialUtils.parsePointSolrException(part2, SpatialContext.GEO);
 
@@ -592,6 +594,11 @@ class SpatialDistanceQuery extends ExtendedQueryBase implements PostFilter {
     hash = hash * 31 + Double.doubleToLongBits(latCenter);
     hash = hash * 31 + Double.doubleToLongBits(lonMin);
     return (int) (hash >> 32 + hash);
+  }
+
+  @Override
+  public void visit(QueryVisitor visitor) {
+    visitor.visitLeaf(this);
   }
 }
 

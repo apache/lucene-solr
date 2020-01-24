@@ -164,8 +164,7 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
     assertNull("Exception on create", resp.getException());
 
     // Try to create another core with a different name, but the same instance dir
-    SolrQueryResponse resp2 = new SolrQueryResponse();
-    try {
+    SolrException e = expectThrows(SolrException.class, () -> {
       admin.handleRequestBody
           (req(CoreAdminParams.ACTION,
               CoreAdminParams.CoreAdminAction.CREATE.toString(),
@@ -174,13 +173,9 @@ public class CoreAdminCreateDiscoverTest extends SolrTestCaseJ4 {
               CoreAdminParams.CONFIG, "solrconfig_ren.xml",
               CoreAdminParams.SCHEMA, "schema_ren.xml",
               CoreAdminParams.DATA_DIR, data.getAbsolutePath()),
-              resp2);
-      fail("Creating two cores with a shared instance dir should throw an exception");
-    }
-    catch (SolrException e) {
-      assertTrue(e.getMessage().contains("already defined there"));
-    }
-
+              new SolrQueryResponse());
+    });
+    assertTrue(e.getMessage().contains("already defined there"));
   }
 
   @Test

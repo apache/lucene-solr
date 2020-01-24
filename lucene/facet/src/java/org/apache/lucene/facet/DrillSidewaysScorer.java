@@ -26,9 +26,9 @@ import org.apache.lucene.search.BulkScorer;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.LeafCollector;
+import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.TwoPhaseIterator;
-import org.apache.lucene.search.Weight;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.FixedBitSet;
 
@@ -82,7 +82,7 @@ class DrillSidewaysScorer extends BulkScorer {
     //  System.out.println("\nscore: reader=" + context.reader());
     //}
     //System.out.println("score r=" + context.reader());
-    FakeScorer scorer = new FakeScorer();
+    ScoreAndDoc scorer = new ScoreAndDoc();
     collector.setScorer(scorer);
     if (drillDownCollector != null) {
       drillDownLeafCollector = drillDownCollector.getLeafCollector(context);
@@ -580,20 +580,11 @@ class DrillSidewaysScorer extends BulkScorer {
     sidewaysCollector.collect(collectDocID);
   }
 
-  private final class FakeScorer extends Scorer {
-
-    public FakeScorer() {
-      super(null);
-    }
+  private final class ScoreAndDoc extends Scorable {
 
     @Override
     public int docID() {
       return collectDocID;
-    }
-
-    @Override
-    public DocIdSetIterator iterator() {
-      throw new UnsupportedOperationException("FakeScorer doesn't support nextDoc()");
     }
     
     @Override
@@ -602,19 +593,10 @@ class DrillSidewaysScorer extends BulkScorer {
     }
 
     @Override
-    public float getMaxScore(int upTo) throws IOException {
-      return Float.POSITIVE_INFINITY;
+    public Collection<ChildScorable> getChildren() {
+      return Collections.singletonList(new ChildScorable(baseScorer, "MUST"));
     }
 
-    @Override
-    public Collection<ChildScorer> getChildren() {
-      return Collections.singletonList(new ChildScorer(baseScorer, "MUST"));
-    }
-
-    @Override
-    public Weight getWeight() {
-      throw new UnsupportedOperationException();
-    }
   }
 
   static class DocsAndCost {

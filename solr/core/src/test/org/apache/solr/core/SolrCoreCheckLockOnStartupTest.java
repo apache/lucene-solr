@@ -46,13 +46,13 @@ public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
     // test tests native and simple in the same jvm in the same exact directory:
     // the file will remain after the native test (it cannot safely be deleted without the risk of deleting another guys lock)
     // it's ok, these aren't "compatible" anyway: really this test should not re-use the same directory at all.
-    Files.deleteIfExists(new File(new File(initCoreDataDir, "index"), IndexWriter.WRITE_LOCK_NAME).toPath());
+    Files.deleteIfExists(new File(new File(initAndGetDataDir(), "index"), IndexWriter.WRITE_LOCK_NAME).toPath());
   }
 
   @Test
   public void testSimpleLockErrorOnStartup() throws Exception {
 
-    Directory directory = newFSDirectory(new File(initCoreDataDir, "index").toPath(), SimpleFSLockFactory.INSTANCE);
+    Directory directory = newFSDirectory(new File(initAndGetDataDir(), "index").toPath(), SimpleFSLockFactory.INSTANCE);
     //creates a new IndexWriter without releasing the lock yet
     IndexWriter indexWriter = new IndexWriter(directory, new IndexWriterConfig(null));
 
@@ -76,7 +76,7 @@ public class SolrCoreCheckLockOnStartupTest extends SolrTestCaseJ4 {
   @Test
   public void testNativeLockErrorOnStartup() throws Exception {
 
-    File indexDir = new File(initCoreDataDir, "index");
+    File indexDir = new File(initAndGetDataDir(), "index");
     log.info("Acquiring lock on {}", indexDir.getAbsolutePath());
     Directory directory = newFSDirectory(indexDir.toPath(), NativeFSLockFactory.INSTANCE);
     //creates a new IndexWriter without releasing the lock yet

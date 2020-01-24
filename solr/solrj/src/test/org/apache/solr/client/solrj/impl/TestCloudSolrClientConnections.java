@@ -22,8 +22,10 @@ import java.util.concurrent.TimeUnit;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.MiniSolrCloudCluster;
+import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkConfigManager;
+import org.apache.solr.common.cloud.ZkStateReader;
 import org.junit.Test;
 
 public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
@@ -38,15 +40,11 @@ public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
       CloudSolrClient client = cluster.getSolrClient();
       CollectionAdminRequest.List listReq = new CollectionAdminRequest.List();
 
-      try {
-        client.request(listReq);
-        fail("Requests to a non-running cluster should throw a SolrException");
-      }
-      catch (SolrException e) {
-        assertTrue("Unexpected message: " + e.getMessage(), e.getMessage().contains("cluster not found/not ready"));
-      }
+      SolrException e = expectThrows(SolrException.class, () -> client.request(listReq));
+      assertTrue("Unexpected message: " + e.getMessage(), e.getMessage().contains("cluster not found/not ready"));
 
       cluster.startJettySolrRunner();
+      cluster.waitForAllNodes(30);
       client.connect(20, TimeUnit.SECONDS);
 
       // should work now!
@@ -67,14 +65,13 @@ public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
     MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(0, createTempDir(), buildJettyConfig("/solr"));
     try {
       CloudSolrClient client = cluster.getSolrClient();
-      try {
+      SolrException e = expectThrows(SolrException.class, () -> {
         ((ZkClientClusterStateProvider)client.getClusterStateProvider()).uploadConfig(configPath, "testconfig");
-        fail("Requests to a non-running cluster should throw a SolrException");
-      } catch (SolrException e) {
-        assertTrue("Unexpected message: " + e.getMessage(), e.getMessage().contains("cluster not found/not ready"));
-      }
+      });
+      assertTrue("Unexpected message: " + e.getMessage(), e.getMessage().contains("cluster not found/not ready"));
 
       cluster.startJettySolrRunner();
+      cluster.waitForAllNodes(30);
       client.connect(20, TimeUnit.SECONDS);
 
       ((ZkClientClusterStateProvider)client.getClusterStateProvider()).uploadConfig(configPath, "testconfig");
@@ -85,6 +82,58 @@ public class TestCloudSolrClientConnections extends SolrTestCaseJ4 {
     } finally {
       cluster.shutdown();
     }
+  }
+
+  @Test
+  public void testAlreadyClosedClusterStateProvider() throws Exception {
+    
+    final MiniSolrCloudCluster cluster = new MiniSolrCloudCluster(1, createTempDir(),
+                                                                  buildJettyConfig("/solr"));
+    // from a client perspective the behavior of ZkClientClusterStateProvider should be
+    // consistent regardless of wether it's constructed with a zkhost or an existing ZkStateReader
+    try {
+      final ZkClientClusterStateProvider zkHost_provider
+        = new ZkClientClusterStateProvider(cluster.getZkServer().getZkAddress());
+      
+      checkAndCloseProvider(zkHost_provider);
+      
+      final ZkStateReader reusedZkReader = new ZkStateReader(cluster.getZkClient());
+      try {
+        reusedZkReader.createClusterStateWatchersAndUpdate();
+        final ZkClientClusterStateProvider reader_provider = new ZkClientClusterStateProvider(reusedZkReader);
+        checkAndCloseProvider(reader_provider);
+        
+        // but in the case of a reused StateZkReader,
+        // closing the provider must not have closed the ZkStateReader...
+        assertEquals(false, reusedZkReader.isClosed());
+        
+      } finally {
+        reusedZkReader.close();
+      }
+    } finally {
+      cluster.shutdown();
+    }
+  }
+
+  /** NOTE: will close the provider and assert it starts throwing AlreadyClosedException */
+  private void checkAndCloseProvider(final ZkClientClusterStateProvider provider) throws Exception {
+    if (random().nextBoolean()) {
+      // calling connect should be purely optional and affect nothing
+      provider.connect();
+    }
+    assertNotNull(provider.getClusterState());
+
+    provider.close();
+
+    if (random().nextBoolean()) {
+      expectThrows(AlreadyClosedException.class, () -> {
+          provider.connect();
+        });
+    }
+    expectThrows(AlreadyClosedException.class, () -> {
+        Object ignored = provider.getClusterState();
+      });
+    
   }
 
 }

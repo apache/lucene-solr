@@ -21,7 +21,8 @@ import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
-
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.invoke.MethodHandles;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
@@ -42,6 +43,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.google.common.collect.ImmutableMap;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.util.Base64;
 import org.slf4j.Logger;
@@ -50,7 +52,7 @@ import org.slf4j.LoggerFactory;
 /**A utility class to verify signatures
  *
  */
-public final class CryptoKeys {
+public final class CryptoKeys implements CLIO {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final Map<String, PublicKey> keys;
   private Exception exception;
@@ -61,7 +63,7 @@ public final class CryptoKeys {
       m.put(e.getKey(), getX509PublicKey(e.getValue()));
 
     }
-    this.keys = m;
+    this.keys = ImmutableMap.copyOf(m);
   }
 
   /**
@@ -73,17 +75,37 @@ public final class CryptoKeys {
       boolean verified;
       try {
         verified = CryptoKeys.verify(entry.getValue(), Base64.base64ToByteArray(sig), data);
-        log.info("verified {} ", verified);
+        log.debug("verified {} ", verified);
         if (verified) return entry.getKey();
       } catch (Exception e) {
         exception = e;
-        log.info("NOT verified  ");
+        log.debug("NOT verified  ");
       }
 
     }
 
     return null;
   }
+
+  public String verify(String sig, InputStream is) {
+    exception = null;
+    for (Map.Entry<String, PublicKey> entry : keys.entrySet()) {
+      boolean verified;
+      try {
+        verified = CryptoKeys.verify(entry.getValue(), Base64.base64ToByteArray(sig), is);
+        log.debug("verified {} ", verified);
+        if (verified) return entry.getKey();
+      } catch (Exception e) {
+        exception = e;
+        log.debug("NOT verified  ");
+      }
+
+    }
+
+    return null;
+  }
+
+
 
 
   /**
@@ -104,23 +126,42 @@ public final class CryptoKeys {
    * @param data      The data tha is signed
    */
   public static boolean verify(PublicKey publicKey, byte[] sig, ByteBuffer data) throws InvalidKeyException, SignatureException {
-    int oldPos = data.position();
-    Signature signature = null;
+    data = ByteBuffer.wrap(data.array(), data.arrayOffset(), data.limit());
     try {
-      signature = Signature.getInstance("SHA1withRSA");
+      Signature signature = Signature.getInstance("SHA1withRSA");
       signature.initVerify(publicKey);
       signature.update(data);
-      boolean verify = signature.verify(sig);
-      return verify;
+      return signature.verify(sig);
+    } catch (NoSuchAlgorithmException e) {
+      //wil not happen
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
+    }
 
+  }
+
+  public static boolean verify(PublicKey publicKey, byte[] sig, InputStream is)
+      throws InvalidKeyException, SignatureException, IOException {
+    try {
+      Signature signature = Signature.getInstance("SHA1withRSA");
+      signature.initVerify(publicKey);
+      byte[] buf = new byte[1024];
+      while (true) {
+        int sz = is.read(buf);
+        if (sz == -1) break;
+        signature.update(buf, 0, sz);
+      }
+      try {
+        return signature.verify(sig);
+      } catch (SignatureException e) {
+        return false;
+      }
     } catch (NoSuchAlgorithmException e) {
       //will not happen
-    } finally {
-      //Signature.update resets the position. set it back to old
-      data.position(oldPos);
+      throw new SolrException(SolrException.ErrorCode.SERVER_ERROR, e);
     }
-    return false;
+
   }
+
 
   private static byte[][] evpBytesTokey(int key_len, int iv_len, MessageDigest md,
                                         byte[] salt, byte[] data, int count) {
@@ -342,14 +383,14 @@ public final class CryptoKeys {
 
   public static void main(String[] args) throws Exception {
     RSAKeyPair keyPair = new RSAKeyPair();
-    System.out.println(keyPair.getPublicKeyStr());
+    CLIO.out(keyPair.getPublicKeyStr());
     PublicKey pk = deserializeX509PublicKey(keyPair.getPublicKeyStr());
     byte[] payload = "Hello World!".getBytes(StandardCharsets.UTF_8);
     byte[] encrypted = keyPair.encrypt(ByteBuffer.wrap(payload));
     String cipherBase64 = Base64.byteArrayToBase64(encrypted);
-    System.out.println("encrypted: "+ cipherBase64);
-    System.out.println("signed: "+ Base64.byteArrayToBase64(keyPair.signSha256(payload)));
-    System.out.println("decrypted "+  new String(decryptRSA(encrypted , pk), StandardCharsets.UTF_8));
+    CLIO.out("encrypted: "+ cipherBase64);
+    CLIO.out("signed: "+ Base64.byteArrayToBase64(keyPair.signSha256(payload)));
+    CLIO.out("decrypted "+  new String(decryptRSA(encrypted , pk), StandardCharsets.UTF_8));
   }
 
 }

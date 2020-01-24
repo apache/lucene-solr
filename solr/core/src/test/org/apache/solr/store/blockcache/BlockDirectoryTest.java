@@ -35,6 +35,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+// commented out on: 24-Dec-2018 @LuceneTestCase.BadApple(bugUrl="https://issues.apache.org/jira/browse/SOLR-12028") // 12-Jun-2018
 public class BlockDirectoryTest extends SolrTestCaseJ4 {
 
   private static class MapperCache implements Cache {
@@ -128,7 +129,10 @@ public class BlockDirectoryTest extends SolrTestCaseJ4 {
   @After
   public void tearDown() throws Exception {
     super.tearDown();
-    directory.close();
+    if (null != directory) {
+      directory.close();
+      directory = null;
+    }
   }
 
   @Test

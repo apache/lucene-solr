@@ -31,7 +31,7 @@ public class OrdinalCalculator {
    * Once the method returns, the each ordinal is guaranteed to have the correct value in the list.
    *
    * @param list the list of {@link Comparable} objects
-   * @param ordinals the collection ordinals to calculate (0 to (size of list) - 1) 
+   * @param ordinals the collection ordinals to calculate (0 to (size of list) - 1)
    */
   public static <T extends Comparable<T>> void putOrdinalsInPosition(List<T> list, Collection<Integer> ordinals) {
     int size = list.size();

@@ -17,6 +17,7 @@
 package org.apache.solr.search;
 
 import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -28,34 +29,52 @@ import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.ConstantScoreQuery;
+import org.apache.lucene.search.DocValuesFieldExistsQuery;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.NormsFieldExistsQuery;
 import org.apache.lucene.search.PointInSetQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermInSetQuery;
 import org.apache.lucene.search.TermQuery;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.params.MapSolrParams;
-import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.Utils;
+import org.apache.solr.metrics.MetricsMap;
 import org.apache.solr.metrics.SolrMetricManager;
 import org.apache.solr.parser.QueryParser;
 import org.apache.solr.query.FilterQuery;
 import org.apache.solr.request.SolrQueryRequest;
+import org.apache.solr.schema.IndexSchema;
+import org.apache.solr.schema.NumberType;
 import org.apache.solr.schema.SchemaField;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.noggit.ObjectBuilder;
 
+import static org.hamcrest.core.StringContains.containsString;
 
 public class TestSolrQueryParser extends SolrTestCaseJ4 {
   @BeforeClass
   public static void beforeClass() throws Exception {
     System.setProperty("enable.update.log", "false"); // schema12 doesn't support _version_
+    System.setProperty("solr.max.booleanClauses", "42"); // lower for testing
     initCore("solrconfig.xml", "schema12.xml");
     createIndex();
   }
 
+  private static final List<String> HAS_VAL_FIELDS = new ArrayList<String>(41);
+  private static final List<String> HAS_NAN_FIELDS = new ArrayList<String>(12);
+
+  @AfterClass
+  public static void afterClass() throws Exception {
+    HAS_VAL_FIELDS.clear();
+    HAS_NAN_FIELDS.clear();
+  }
+  
   public static void createIndex() {
     String v;
     v = "how now brown cow";
@@ -70,12 +89,98 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     assertU(adoc("id", "13", "eee_s", "'balance'", "rrr_s", "/leading_slash"));
 
     assertU(adoc("id", "20", "syn", "wifi ATM"));
-    
+
+    { // make a doc that has a value in *lots* of fields that no other doc has
+      SolrInputDocument doc = sdoc("id", "999");
+      
+      // numbers...
+      for (String t : Arrays.asList("i", "l", "f", "d")) { 
+        for (String s : Arrays.asList("", "s", "_dv", "s_dv", "_dvo", "_norms")) {
+          final String f = "has_val_" + t + s;
+          HAS_VAL_FIELDS.add(f);
+          doc.addField(f, "42");
+
+          if (t.equals("f") || t.equals("d")) {
+            String nanField = "nan_val_" + t + s;
+            doc.addField(nanField, "NaN");
+            HAS_NAN_FIELDS.add(nanField);
+
+            // Add a NaN & non-NaN value for multivalue fields, these should match :* and :[* TO *] equivalently
+            if (s.startsWith("s")) {
+              String bothField = "both_val_" + t + s;
+              doc.addField(bothField, "42");
+              doc.addField(bothField, "NaN");
+              HAS_VAL_FIELDS.add(bothField);
+            }
+          }
+        }
+      }
+      // boolean...booleans
+      for (String s : Arrays.asList("", "s", "_dv", "_norms")) {
+        final String f = "has_val_b" + s;
+        HAS_VAL_FIELDS.add(f);
+        doc.addField(f, "false");
+      }
+
+      // dates (and strings/text -- they don't care about the format)...
+      for (String s : Arrays.asList("dt", "s", "s1", "t", "t_on", "dt_norms", "s_norms", "dt_dv", "s_dv")) {
+        final String f = "has_val_" + s;
+        HAS_VAL_FIELDS.add(f);
+        doc.addField(f, "2019-01-12T00:00:00Z");
+      }
+      assertU(adoc(doc));
+    }
+            
     assertU(adoc("id", "30", "shingle23", "A B X D E"));
 
     assertU(commit());
   }
 
+  public void testDocsWithValuesInField() throws Exception {
+    assertEquals("someone changed the test setup of HAS_VAL_FIELDS, w/o updating the sanity check",
+                 41, HAS_VAL_FIELDS.size());
+    for (String f : HAS_VAL_FIELDS) {
+      // for all of these fields, these 2 syntaxes should be functionally equivilent
+      // in matching the one doc that contains these fields
+      for (String q : Arrays.asList( f + ":*", f + ":[* TO *]" )) {
+        assertJQ(req("q", q)
+                 , "/response/numFound==1"
+                 , "/response/docs/[0]/id=='999'"
+                 );
+        // the same syntaxes should be valid even if no doc has the field...
+        assertJQ(req("q", "bogus___" + q)
+                 , "/response/numFound==0"
+                 );
+
+      }
+    }
+  }
+
+  public void testDocsWithNaNInField() throws Exception {
+    assertEquals("someone changed the test setup of HAS_NAN_FIELDS, w/o updating the sanity check",
+        12, HAS_NAN_FIELDS.size());
+    for (String f : HAS_NAN_FIELDS) {
+      // for all of these fields, field:* should NOT be equivalent to field:[* TO *]
+      assertJQ(req("q", f + ":*")
+          , "/response/numFound==1"
+          , "/response/docs/[0]/id=='999'"
+      );
+      assertJQ(req("q", f + ":[* TO *]")
+          , "/response/numFound==0"
+      );
+      assertJQ(req("q", f + ":[-Infinity TO Infinity]")
+          , "/response/numFound==0"
+      );
+      for (String q : Arrays.asList( f + ":*", f + ":[* TO *]", f + ":[-Infinity TO Infinity]" )) {
+        // the same syntaxes should be valid even if no doc has the field...
+        assertJQ(req("q", "bogus___" + q)
+            , "/response/numFound==0"
+        );
+
+      }
+    }
+  }
+  
   @Test
   public void testPhrase() {
     // "text" field's type has WordDelimiterGraphFilter (WDGFF) and autoGeneratePhraseQueries=true
@@ -341,33 +446,62 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
   }
 
   @Test
-  public void testManyClauses() throws Exception {
-    String a = "1 a 2 b 3 c 10 d 11 12 "; // 10 terms
-    StringBuilder sb = new StringBuilder("id:(");
-    for (int i = 0; i < 1024; i++) { // historically, the max number of boolean clauses defaulted to 1024
+  public void testManyClauses_Solr() throws Exception {
+    final String a = "1 a 2 b 3 c 10 d 11 12 "; // 10 terms
+    
+    // this should exceed our solrconfig.xml level (solr specific) maxBooleanClauses limit
+    // even though it's not long enough to trip the Lucene level (global) limit
+    final String too_long = "id:(" + a + a + a + a + a + ")";
+
+    final String expectedMsg = "Too many clauses";
+    ignoreException(expectedMsg);
+    SolrException e = expectThrows(SolrException.class, "expected SolrException",
+                                   () -> assertJQ(req("q", too_long), "/response/numFound==6"));
+    assertThat(e.getMessage(), containsString(expectedMsg));
+    
+    // but should still work as a filter query since TermsQuery can be used...
+    assertJQ(req("q","*:*", "fq", too_long)
+             ,"/response/numFound==6");
+    assertJQ(req("q","*:*", "fq", too_long, "sow", "false")
+             ,"/response/numFound==6");
+    assertJQ(req("q","*:*", "fq", too_long, "sow", "true")
+             ,"/response/numFound==6");
+  }
+    
+  @Test
+  public void testManyClauses_Lucene() throws Exception {
+    final int numZ = IndexSearcher.getMaxClauseCount();
+    
+    final String a = "1 a 2 b 3 c 10 d 11 12 "; // 10 terms
+    final StringBuilder sb = new StringBuilder("id:(");
+    for (int i = 0; i < numZ; i++) {
       sb.append('z').append(i).append(' ');
     }
     sb.append(a);
     sb.append(")");
+    
+    // this should trip the lucene level global BooleanQuery.getMaxClauseCount() limit,
+    // causing a parsing error, before Solr even get's a chance to enforce it's lower level limit
+    final String way_too_long = sb.toString();
 
-    String q = sb.toString();
+    final String expectedMsg = "too many boolean clauses";
+    ignoreException(expectedMsg);
+    SolrException e = expectThrows(SolrException.class, "expected SolrException",
+                                   () -> assertJQ(req("q", way_too_long), "/response/numFound==6"));
+    assertThat(e.getMessage(), containsString(expectedMsg));
+    
+    assertNotNull(e.getCause());
+    assertEquals(SyntaxError.class, e.getCause().getClass());
+    
+    assertNotNull(e.getCause().getCause());
+    assertEquals(IndexSearcher.TooManyClauses.class, e.getCause().getCause().getClass());
 
-    // This will still fail when used as the main query, but will pass in a filter query since TermsQuery can be used.
-    try {
-      ignoreException("Too many clauses");
-      assertJQ(req("q",q)
-          ,"/response/numFound==6");
-      fail();
-    } catch (Exception e) {
-      // expect "too many clauses" exception... see SOLR-10921
-      assertTrue(e.getMessage().contains("many clauses"));
-    }
-
-    assertJQ(req("q","*:*", "fq", q)
+    // but should still work as a filter query since TermsQuery can be used...
+    assertJQ(req("q","*:*", "fq", way_too_long)
         ,"/response/numFound==6");
-    assertJQ(req("q","*:*", "fq", q, "sow", "false")
+    assertJQ(req("q","*:*", "fq", way_too_long, "sow", "false")
         ,"/response/numFound==6");
-    assertJQ(req("q","*:*", "fq", q, "sow", "true")
+    assertJQ(req("q","*:*", "fq", way_too_long, "sow", "true")
         ,"/response/numFound==6");
   }
 
@@ -932,7 +1066,7 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
         , "/response/numFound==1"
     );
 
-    Map all = (Map)ObjectBuilder.fromJSON(h.query(req("q", "*:*", "rows", "0", "wt", "json")));
+    Map all = (Map) Utils.fromJSONString(h.query(req("q", "*:*", "rows", "0", "wt", "json")));
     int totalDocs = Integer.parseInt(((Map)all.get("response")).get("numFound").toString());
     int allDocsExceptOne = totalDocs - 1;
 
@@ -1224,26 +1358,74 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
         "is_dv", "fs_dv", "ds_dv", "ls_dv",
         "i_dvo", "f_dvo", "d_dvo", "l_dvo",
     };
-    
+
     for (String suffix:fieldSuffix) {
       //Good queries
       qParser = QParser.getParser("foo_" + suffix + ":(1 2 3 4 5 6 7 8 9 10 20 19 18 17 16 15 14 13 12 25)", req);
       qParser.setIsFilter(true);
       qParser.getQuery();
     }
-    
+
     for (String suffix:fieldSuffix) {
       qParser = QParser.getParser("foo_" + suffix + ":(1 2 3 4 5 6 7 8 9 10 20 19 18 17 16 15 14 13 12 NOT_A_NUMBER)", req);
       qParser.setIsFilter(true); // this may change in the future
-      try {
-        qParser.getQuery();
-        fail("Expecting exception");
-      } catch (SolrException e) {
-        assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
-        assertTrue("Unexpected exception: " + e.getMessage(), e.getMessage().contains("Invalid Number: NOT_A_NUMBER"));
+      SolrException e = expectThrows(SolrException.class, "Expecting exception", qParser::getQuery);
+      assertEquals(SolrException.ErrorCode.BAD_REQUEST.code, e.code());
+      assertTrue("Unexpected exception: " + e.getMessage(), e.getMessage().contains("Invalid Number: NOT_A_NUMBER"));
+    }
+
+
+  }
+
+  @Test
+  public void testFieldExistsQueries() throws SyntaxError {
+    SolrQueryRequest req = req();
+    String[] fieldSuffix = new String[] {
+        "ti", "tf", "td", "tl", "tdt",
+        "pi", "pf", "pd", "pl", "pdt",
+        "i", "f", "d", "l", "dt", "s", "b",
+        "is", "fs", "ds", "ls", "dts", "ss", "bs",
+        "i_dv", "f_dv", "d_dv", "l_dv", "dt_dv", "s_dv", "b_dv",
+        "is_dv", "fs_dv", "ds_dv", "ls_dv", "dts_dv", "ss_dv", "bs_dv",
+        "i_dvo", "f_dvo", "d_dvo", "l_dvo", "dt_dvo",
+        "t",
+        "t_on", "b_norms", "s_norms", "dt_norms", "i_norms", "l_norms", "f_norms", "d_norms"
+    };
+    String[] existenceQueries = new String[] {
+        "*", "[* TO *]"
+    };
+
+    for (String existenceQuery : existenceQueries) {
+      for (String suffix : fieldSuffix) {
+        IndexSchema indexSchema = h.getCore().getLatestSchema();
+        String field = "foo_" + suffix;
+        String query = field + ":" + existenceQuery;
+        QParser qParser = QParser.getParser(query, req);
+        Query createdQuery = qParser.getQuery();
+        SchemaField schemaField = indexSchema.getField(field);
+
+        // Test float & double realNumber queries differently
+        if ("[* TO *]".equals(existenceQuery) && (schemaField.getType().getNumberType() == NumberType.DOUBLE || schemaField.getType().getNumberType() == NumberType.FLOAT)) {
+          assertFalse("For float and double fields \"" + query + "\" is not an existence query, so the query returned should not be a DocValuesFieldExistsQuery.", createdQuery instanceof DocValuesFieldExistsQuery);
+          assertFalse("For float and double fields \"" + query + "\" is not an existence query, so the query returned should not be a NormsFieldExistsQuery.", createdQuery instanceof NormsFieldExistsQuery);
+          assertFalse("For float and double fields \"" + query + "\" is not an existence query, so NaN should not be matched via a ConstantScoreQuery.", createdQuery instanceof ConstantScoreQuery);
+          assertFalse("For float and double fields\"" + query + "\" is not an existence query, so NaN should not be matched via a BooleanQuery (NaN and [* TO *]).", createdQuery instanceof BooleanQuery);
+        } else {
+          if (schemaField.hasDocValues()) {
+            assertTrue("Field has docValues, so existence query \"" + query + "\" should return DocValuesFieldExistsQuery", createdQuery instanceof DocValuesFieldExistsQuery);
+          } else if (!schemaField.omitNorms() && !schemaField.getType().isPointField()) { //TODO: Remove !isPointField() for SOLR-14199
+            assertTrue("Field has norms and no docValues, so existence query \"" + query + "\" should return NormsFieldExistsQuery", createdQuery instanceof NormsFieldExistsQuery);
+          } else if (schemaField.getType().getNumberType() == NumberType.DOUBLE || schemaField.getType().getNumberType() == NumberType.FLOAT) {
+            assertTrue("PointField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \"" + query + "\".", createdQuery instanceof ConstantScoreQuery);
+            assertTrue("PointField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \"" + query + "\".", ((ConstantScoreQuery)createdQuery).getQuery() instanceof BooleanQuery);
+            assertEquals("PointField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \"" + query + "\". This boolean query must be an OR.", 1, ((BooleanQuery)((ConstantScoreQuery)createdQuery).getQuery()).getMinimumNumberShouldMatch());
+            assertEquals("PointField with NaN values must include \"exists or NaN\" if the field doesn't have norms or docValues: \"" + query + "\". This boolean query must have 2 clauses.", 2, ((BooleanQuery)((ConstantScoreQuery)createdQuery).getQuery()).clauses().size());
+          } else {
+            assertFalse("Field doesn't have docValues, so existence query \"" + query + "\" should not return DocValuesFieldExistsQuery", createdQuery instanceof DocValuesFieldExistsQuery);
+            assertFalse("Field doesn't have norms, so existence query \"" + query + "\" should not return NormsFieldExistsQuery", createdQuery instanceof NormsFieldExistsQuery);
+          }
+        }
       }
     }
-    
-    
   }
 }

@@ -26,7 +26,8 @@ import java.util.TreeMap;
 import org.apache.lucene.codecs.FieldsConsumer;
 import org.apache.lucene.codecs.FieldsProducer;
 import org.apache.lucene.codecs.PostingsFormat;
-import org.apache.lucene.codecs.lucene50.Lucene50PostingsFormat;
+import org.apache.lucene.codecs.lucene84.Lucene84PostingsFormat;
+import org.apache.lucene.index.BaseTermsEnum;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.Fields;
 import org.apache.lucene.index.ImpactsEnum;
@@ -39,8 +40,8 @@ import org.apache.lucene.index.SlowImpactsEnum;
 import org.apache.lucene.index.TermState;
 import org.apache.lucene.index.Terms;
 import org.apache.lucene.index.TermsEnum;
+import org.apache.lucene.store.ByteBuffersDataOutput;
 import org.apache.lucene.store.IOContext;
-import org.apache.lucene.store.RAMOutputStream;
 import org.apache.lucene.util.Accountable;
 import org.apache.lucene.util.Accountables;
 import org.apache.lucene.util.ArrayUtil;
@@ -54,7 +55,7 @@ import org.apache.lucene.util.automaton.Transition;
 //   - build depth-N prefix hash?
 //   - or: longer dense skip lists than just next byte?
 
-/** Wraps {@link Lucene50PostingsFormat} format for on-disk
+/** Wraps {@link Lucene84PostingsFormat} format for on-disk
  *  storage, but then at read time loads and stores all
  *  terms and postings directly in RAM as byte[], int[].
  *
@@ -102,12 +103,12 @@ public final class DirectPostingsFormat extends PostingsFormat {
 
   @Override
   public FieldsConsumer fieldsConsumer(SegmentWriteState state) throws IOException {
-    return PostingsFormat.forName("Lucene50").fieldsConsumer(state);
+    return PostingsFormat.forName("Lucene84").fieldsConsumer(state);
   }
 
   @Override
   public FieldsProducer fieldsProducer(SegmentReadState state) throws IOException {
-    FieldsProducer postings = PostingsFormat.forName("Lucene50").fieldsProducer(state);
+    FieldsProducer postings = PostingsFormat.forName("Lucene84").fieldsProducer(state);
     if (state.context.context != IOContext.Context.MERGE) {
       FieldsProducer loadedPostings;
       try {
@@ -333,7 +334,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
       final IntArrayWriter scratch = new IntArrayWriter();
 
       // Used for payloads, if any:
-      final RAMOutputStream ros = new RAMOutputStream();
+      final ByteBuffersDataOutput ros = ByteBuffersDataOutput.newResettableInstance();
 
       // if (DEBUG) {
       //   System.out.println("\nLOAD terms seg=" + state.segmentInfo.name + " field=" + field + " hasOffsets=" + hasOffsets + " hasFreq=" + hasFreq + " hasPos=" + hasPos + " hasPayloads=" + hasPayloads);
@@ -374,7 +375,6 @@ public final class DirectPostingsFormat extends PostingsFormat {
         int docID;
 
         if (docFreq <= lowFreqCutoff) {
-
           ros.reset();
 
           // Pack postings for low-freq terms into a single int[]:
@@ -404,14 +404,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
             }
           }
 
-          final byte[] payloads;
-          if (hasPayloads) {
-            payloads = new byte[(int) ros.getFilePointer()];
-            ros.writeTo(payloads, 0);
-          } else {
-            payloads = null;
-          }
-
+          final byte[] payloads = hasPayloads ? ros.toArrayCopy() : null;
           final int[] postings = scratch.get();
 
           ent = new LowFreqTerm(postings, payloads, docFreq, (int) totalTermFreq);
@@ -707,7 +700,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
       return hasPayloads;
     }
 
-    private final class DirectTermsEnum extends TermsEnum {
+    private final class DirectTermsEnum extends BaseTermsEnum {
 
       private final BytesRef scratch = new BytesRef();
       private int termOrd;
@@ -952,7 +945,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
       }
     }
 
-    private final class DirectIntersectTermsEnum extends TermsEnum {
+    private final class DirectIntersectTermsEnum extends BaseTermsEnum {
       private final RunAutomaton runAutomaton;
       private final CompiledAutomaton compiledAutomaton;
       private int termOrd;
@@ -1515,6 +1508,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
       public void seekExact(long ord) {
         throw new UnsupportedOperationException();
       }
+      
     }
   }
 
@@ -1661,7 +1655,7 @@ public final class DirectPostingsFormat extends PostingsFormat {
     }
   }
 
-  // Docs + freqs + positions/offets:
+  // Docs + freqs + positions/offsets:
   private final static class LowFreqDocsEnum extends PostingsEnum {
     private int[] postings;
     private final int posMult;

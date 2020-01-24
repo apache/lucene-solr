@@ -17,21 +17,16 @@
 package org.apache.solr.schema;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.lang.invoke.MethodHandles;
 import java.util.Map;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.lucene.analysis.Analyzer;
-import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.core.KeywordTokenizer;
 import org.apache.lucene.spatial.prefix.PrefixTreeStrategy;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTree;
 import org.apache.lucene.spatial.prefix.tree.SpatialPrefixTreeFactory;
 import org.apache.lucene.spatial.query.SpatialArgsParser;
 import org.apache.solr.util.MapListener;
-
-import org.locationtech.spatial4j.shape.Shape;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,6 +48,8 @@ public abstract class AbstractSpatialPrefixTreeFieldType<T extends PrefixTreeStr
   @Override
   protected void init(IndexSchema schema, Map<String, String> args) {
     super.init(schema, args);
+
+    args.putIfAbsent(SpatialPrefixTreeFactory.VERSION, schema.getDefaultLuceneMatchVersion().toString());
 
     // Convert the maxDistErr to degrees (based on distanceUnits) since Lucene spatial layer depends on degrees
     if(args.containsKey(SpatialPrefixTreeFactory.MAX_DIST_ERR)) {
@@ -80,29 +77,19 @@ public abstract class AbstractSpatialPrefixTreeFieldType<T extends PrefixTreeStr
    * so that the analysis UI will show reasonable tokens.
    */
   @Override
-  public Analyzer getIndexAnalyzer()
-  {
+  public Analyzer getIndexAnalyzer() {
     return new Analyzer() {
-      
       @Override
-      protected TokenStreamComponents createComponents(final String fieldName) {
-        return new TokenStreamComponents(new KeywordTokenizer()) {
-          private Shape shape = null;
-          
-          protected void setReader(final Reader reader) {
-            source.setReader(reader);
-            try {
-              shape = parseShape(IOUtils.toString(reader));
-            } catch (IOException e) {
-              throw new RuntimeException(e);
-            }
+      protected TokenStreamComponents createComponents(String fieldName) {
+        PrefixTreeStrategy s = newSpatialStrategy(fieldName == null ? getTypeName() : fieldName);
+        PrefixTreeStrategy.ShapeTokenStream ts = s.tokenStream();
+        return new TokenStreamComponents(r -> {
+          try {
+            ts.setShape(parseShape(IOUtils.toString(r)));
+          } catch (IOException e) {
+            throw new RuntimeException(e);
           }
-          
-          public TokenStream getTokenStream() {
-            PrefixTreeStrategy s = newSpatialStrategy(fieldName==null ? getTypeName() : fieldName);
-            return s.createIndexableFields(shape)[0].tokenStreamValue();
-          }
-        };
+        }, ts);
       }
     };
   }

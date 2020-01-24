@@ -16,20 +16,17 @@
  */
 package org.apache.solr.update;
 
-
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
-import java.util.Set;
 import java.util.Vector;
-import java.util.concurrent.ConcurrentHashMap;
 
-import com.codahale.metrics.MetricRegistry;
 import org.apache.solr.core.DirectoryFactory;
 import org.apache.solr.core.HdfsDirectoryFactory;
 import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrEventListener;
 import org.apache.solr.core.SolrInfoBean;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.schema.FieldType;
 import org.apache.solr.schema.SchemaField;
 import org.apache.solr.util.plugin.SolrCoreAware;
@@ -43,7 +40,6 @@ import org.slf4j.LoggerFactory;
  *
  * @since solr 0.9
  */
-
 public abstract class UpdateHandler implements SolrInfoBean {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -58,8 +54,7 @@ public abstract class UpdateHandler implements SolrInfoBean {
 
   protected final UpdateLog ulog;
 
-  protected Set<String> metricNames = ConcurrentHashMap.newKeySet();
-  protected MetricRegistry registry;
+  protected SolrMetricsContext solrMetricsContext;
 
   private void parseEventListeners() {
     final Class<SolrEventListener> clazz = SolrEventListener.class;
@@ -123,47 +118,27 @@ public abstract class UpdateHandler implements SolrInfoBean {
     parseEventListeners();
     PluginInfo ulogPluginInfo = core.getSolrConfig().getPluginInfo(UpdateLog.class.getName());
 
-
     // If this is a replica of type PULL, don't create the update log
     boolean skipUpdateLog = core.getCoreDescriptor().getCloudDescriptor() != null && !core.getCoreDescriptor().getCloudDescriptor().requiresTransactionLog();
     if (updateLog == null && ulogPluginInfo != null && ulogPluginInfo.isEnabled() && !skipUpdateLog) {
-      String dataDir = (String)ulogPluginInfo.initArgs.get("dir");
-
-      String ulogDir = core.getCoreDescriptor().getUlogDir();
-      if (ulogDir != null) {
-        dataDir = ulogDir;
-      }
-      if (dataDir == null || dataDir.length()==0) {
-        dataDir = core.getDataDir();
-      }
-
-      if (dataDir != null && dataDir.startsWith("hdfs:/")) {
-        DirectoryFactory dirFactory = core.getDirectoryFactory();
-        if (dirFactory instanceof HdfsDirectoryFactory) {
-          ulog = new HdfsUpdateLog(((HdfsDirectoryFactory)dirFactory).getConfDir());
-        } else {
-          ulog = new HdfsUpdateLog();
-        }
-
+      DirectoryFactory dirFactory = core.getDirectoryFactory();
+      if (dirFactory instanceof HdfsDirectoryFactory) {
+        ulog = new HdfsUpdateLog(((HdfsDirectoryFactory)dirFactory).getConfDir());
       } else {
         String className = ulogPluginInfo.className == null ? UpdateLog.class.getName() : ulogPluginInfo.className;
         ulog = core.getResourceLoader().newInstance(className, UpdateLog.class);
       }
 
-      if (!core.isReloaded() && !core.getDirectoryFactory().isPersistent()) {
+      if (!core.isReloaded() && !dirFactory.isPersistent()) {
         ulog.clearLog(core, ulogPluginInfo);
       }
 
       log.info("Using UpdateLog implementation: " + ulog.getClass().getName());
-
       ulog.init(ulogPluginInfo);
-
       ulog.init(this, core);
     } else {
       ulog = updateLog;
     }
-    // ulog.init() when reusing an existing log is deferred (currently at the end of the DUH2 constructor
-
   }
 
   /**
@@ -184,7 +159,6 @@ public abstract class UpdateHandler implements SolrInfoBean {
   public abstract int mergeIndexes(MergeIndexesCommand cmd) throws IOException;
   public abstract void commit(CommitUpdateCommand cmd) throws IOException;
   public abstract void rollback(RollbackUpdateCommand cmd) throws IOException;
-  public abstract void close() throws IOException;
   public abstract UpdateLog getUpdateLog();
 
   /**
@@ -229,12 +203,9 @@ public abstract class UpdateHandler implements SolrInfoBean {
   public Category getCategory() {
     return Category.UPDATE;
   }
+
   @Override
-  public Set<String> getMetricNames() {
-    return metricNames;
-  }
-  @Override
-  public MetricRegistry getMetricRegistry() {
-    return registry;
+  public SolrMetricsContext getSolrMetricsContext() {
+    return solrMetricsContext;
   }
 }

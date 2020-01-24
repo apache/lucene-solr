@@ -16,7 +16,7 @@
  */
 package org.apache.solr.client.solrj.response;
 
-import org.apache.lucene.util.LuceneTestCase;
+import org.apache.solr.SolrTestCase;
 import org.apache.solr.common.util.NamedList;
 import org.junit.Test;
 
@@ -29,7 +29,7 @@ import java.util.List;
  *
  * @since solr 1.4
  */
-public class DocumentAnalysisResponseTest extends LuceneTestCase {
+public class DocumentAnalysisResponseTest extends SolrTestCase {
 
   /**
    * Tests the {@link DocumentAnalysisResponse#setResponse(org.apache.solr.common.util.NamedList)} method
@@ -47,7 +47,7 @@ public class DocumentAnalysisResponseTest extends LuceneTestCase {
     DocumentAnalysisResponse response = new DocumentAnalysisResponse() {
 
       @Override
-      protected List<AnalysisPhase> buildPhases(NamedList<List<NamedList<Object>>> phaseNL) {
+      protected List<AnalysisPhase> buildPhases(NamedList<Object> phaseNL) {
         return phases;
       }
     };

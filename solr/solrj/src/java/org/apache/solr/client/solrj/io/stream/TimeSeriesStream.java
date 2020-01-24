@@ -30,6 +30,7 @@ import java.util.Optional;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
 
+import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient.Builder;
 import org.apache.solr.client.solrj.io.SolrClientCache;
@@ -44,6 +45,7 @@ import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionNamedParamete
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionParameter;
 import org.apache.solr.client.solrj.io.stream.expr.StreamExpressionValue;
 import org.apache.solr.client.solrj.io.stream.expr.StreamFactory;
+import org.apache.solr.client.solrj.io.stream.metrics.CountMetric;
 import org.apache.solr.client.solrj.io.stream.metrics.Metric;
 import org.apache.solr.client.solrj.request.QueryRequest;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -88,40 +90,47 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
   public TimeSeriesStream(StreamExpression expression, StreamFactory factory) throws IOException{
     // grab all parameters out
     String collectionName = factory.getValueOperand(expression, 0);
+
+    if(collectionName.indexOf('"') > -1) {
+      collectionName = collectionName.replaceAll("\"", "").replaceAll(" ", "");
+    }
+
     List<StreamExpressionNamedParameter> namedParams = factory.getNamedOperands(expression);
     StreamExpressionNamedParameter startExpression = factory.getNamedOperand(expression, "start");
     StreamExpressionNamedParameter endExpression = factory.getNamedOperand(expression, "end");
     StreamExpressionNamedParameter fieldExpression = factory.getNamedOperand(expression, "field");
     StreamExpressionNamedParameter gapExpression = factory.getNamedOperand(expression, "gap");
     StreamExpressionNamedParameter formatExpression = factory.getNamedOperand(expression, "format");
-    StreamExpressionNamedParameter qExpression = factory.getNamedOperand(expression, "q");
 
     StreamExpressionNamedParameter zkHostExpression = factory.getNamedOperand(expression, "zkHost");
     List<StreamExpression> metricExpressions = factory.getExpressionOperandsRepresentingTypes(expression, Expressible.class, Metric.class);
 
-
-    if(qExpression == null) {
-      throw new IOException("The timeseries expression requires the q parameter");
-    }
-
     String start = null;
     if(startExpression != null) {
       start = ((StreamExpressionValue)startExpression.getParameter()).getValue();
+    } else {
+      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - start parameter is required",expression));
     }
 
     String end = null;
     if(endExpression != null) {
       end = ((StreamExpressionValue)endExpression.getParameter()).getValue();
+    }  else {
+      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - end parameter is required",expression));
     }
 
     String gap = null;
     if(gapExpression != null) {
       gap = ((StreamExpressionValue)gapExpression.getParameter()).getValue();
-    }
+    } else {
+    throw new IOException(String.format(Locale.ROOT,"invalid expression %s - gap parameter is required",expression));
+  }
 
     String field = null;
     if(fieldExpression != null) {
       field = ((StreamExpressionValue)fieldExpression.getParameter()).getValue();
+    } else {
+      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - field parameter is required",expression));
     }
 
     String format = null;
@@ -140,13 +149,15 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
     }
 
     // Construct the metrics
-    Metric[] metrics = new Metric[metricExpressions.size()];
-    for(int idx = 0; idx < metricExpressions.size(); ++idx){
-      metrics[idx] = factory.constructMetric(metricExpressions.get(idx));
-    }
-
-    if(0 == metrics.length){
-      throw new IOException(String.format(Locale.ROOT,"invalid expression %s - at least one metric expected.",expression,collectionName));
+    Metric[] metrics = null;
+    if(metricExpressions.size() > 0) {
+      metrics = new Metric[metricExpressions.size()];
+      for(int idx = 0; idx < metricExpressions.size(); ++idx){
+        metrics[idx] = factory.constructMetric(metricExpressions.get(idx));
+      }
+    } else {
+      metrics = new Metric[1];
+      metrics[0] = new CountMetric();
     }
 
     // pull out known named params
@@ -155,6 +166,10 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
       if(!namedParam.getName().equals("zkHost") && !namedParam.getName().equals("start") && !namedParam.getName().equals("end") && !namedParam.getName().equals("gap")){
         params.add(namedParam.getName(), namedParam.getParameter().toString().trim());
       }
+    }
+
+    if(params.get("q") == null) {
+      params.set("q", "*:*");
     }
 
     // zkHost, optional - if not provided then will look into factory list to get
@@ -211,7 +226,11 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
     // function name
     StreamExpression expression = new StreamExpression(factory.getFunctionName(this.getClass()));
     // collection
-    expression.addParameter(collection);
+    if(collection.indexOf(',') > -1) {
+      expression.addParameter("\""+collection+"\"");
+    } else {
+      expression.addParameter(collection);
+    }
 
     // parameters
     ModifiableSolrParams tmpParams = new ModifiableSolrParams(params);
@@ -288,7 +307,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
     paramsLoc.set("json.facet", json);
     paramsLoc.set("rows", "0");
 
-    QueryRequest request = new QueryRequest(paramsLoc);
+    QueryRequest request = new QueryRequest(paramsLoc, SolrRequest.METHOD.POST);
     try {
       NamedList response = cloudSolrClient.request(request, collection);
       getTuples(response, field, metrics);
@@ -334,10 +353,10 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
     buf.append('"');
     buf.append(":{");
     buf.append("\"type\":\"range\"");
-    buf.append(",\"field\":\""+field+"\"");
-    buf.append(",\"start\":\""+start+"\"");
-    buf.append(",\"end\":\""+end+"\"");
-    buf.append(",\"gap\":\""+gap+"\"");
+    buf.append(",\"field\":\"").append(field).append('"');
+    buf.append(",\"start\":\"").append(start).append('"');
+    buf.append(",\"end\":\"").append(end).append('"');
+    buf.append(",\"gap\":\"").append(gap).append('"');
 
     buf.append(",\"facet\":{");
     int metricCount = 0;
@@ -347,7 +366,7 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
         if(metricCount>0) {
           buf.append(",");
         }
-        buf.append("\"facet_" + metricCount + "\":\"" +identifier+"\"");
+        buf.append("\"facet_").append(metricCount).append("\":\"").append(identifier).append('"');
         ++metricCount;
       }
     }
@@ -397,6 +416,8 @@ public class TimeSeriesStream extends TupleStream implements Expressible  {
             } else {
               t.put(identifier, d.doubleValue());
             }
+          } else {
+            t.put(identifier, 0);
           }
           ++m;
         } else {

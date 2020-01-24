@@ -39,10 +39,10 @@ import org.apache.lucene.index.IndexWriterConfig.OpenMode;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.MockDirectoryWrapper;
 import org.apache.lucene.store.MockDirectoryWrapper.FakeIOException;
-import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.IOUtils;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
@@ -659,16 +659,13 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
         }
         //System.out.println("failOn: ");
         //new Throwable().printStackTrace(System.out);
-        StackTraceElement[] trace = new Exception().getStackTrace();
-        for (int i = 0; i < trace.length; i++) {
-          if ("readLiveDocs".equals(trace[i].getMethodName())) {
-            if (VERBOSE) {
-              System.out.println("TEST: now fail; exc:");
-              new Throwable().printStackTrace(System.out);
-            }
-            failed = true;
-            throw new FakeIOException();
+        if (callStackContainsAnyOf("readLiveDocs")) {
+          if (VERBOSE) {
+            System.out.println("TEST: now fail; exc:");
+            new Throwable().printStackTrace(System.out);
           }
+          failed = true;
+          throw new FakeIOException();
         }
       }
     });
@@ -680,7 +677,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     });
     
     IndexSearcher s = newSearcher(r);
-    assertEquals(1, s.search(new TermQuery(new Term("id", "id")), 1).totalHits);
+    assertEquals(1, s.count(new TermQuery(new Term("id", "id"))));
 
     r.close();
     w.close();
@@ -688,9 +685,9 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
   }
 
   public void testNPEAfterInvalidReindex1() throws Exception {
-    Directory dir = new RAMDirectory();
+    Directory dir = new ByteBuffersDirectory();
 
-    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.INSTANCE));
     Document doc = new Document();
     doc.add(newStringField("id", "id", Field.Store.NO));
     w.addDocument(doc);
@@ -735,9 +732,9 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
   }
 
   public void testNPEAfterInvalidReindex2() throws Exception {
-    Directory dir = new RAMDirectory();
+    Directory dir = new ByteBuffersDirectory();
 
-    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())));
+    IndexWriter w = new IndexWriter(dir, new IndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.INSTANCE));
     Document doc = new Document();
     doc.add(newStringField("id", "id", Field.Store.NO));
     w.addDocument(doc);
@@ -974,7 +971,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
   // LUCENE-5931: we make a "best effort" to catch this abuse and throw a clear(er)
   // exception than what would otherwise look like hard to explain index corruption during searching
   public void testDeleteIndexFilesWhileReaderStillOpen() throws Exception {
-    RAMDirectory dir = new RAMDirectory();
+    Directory dir = new ByteBuffersDirectory();
     IndexWriter w = new IndexWriter(dir,
                                     new IndexWriterConfig(new MockAnalyzer(random())));
     Document doc = new Document();
@@ -991,7 +988,7 @@ public class TestDirectoryReaderReopen extends LuceneTestCase {
     }
  
     w = new IndexWriter(dir,
-                        new IndexWriterConfig(new MockAnalyzer(random())));
+                        new IndexWriterConfig(new MockAnalyzer(random())).setMergePolicy(NoMergePolicy.INSTANCE));
     doc = new Document();
     doc.add(newStringField("field", "value", Field.Store.NO));
     w.addDocument(doc);

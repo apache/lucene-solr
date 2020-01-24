@@ -20,8 +20,6 @@ package org.apache.lucene.util;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-import org.apache.lucene.util.PriorityQueue;
-
 /**
  * Provides a merged sorted view from several sorted iterators.
  * <p>

@@ -33,7 +33,7 @@ import java.util.Map;
  * @since solr 1.4
  */
 public class LogTransformer extends Transformer {
-  private static final Logger LOG = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Override
   public Object transformRow(Map<String, Object> row, Context ctx) {
@@ -43,20 +43,20 @@ public class LogTransformer extends Transformer {
     if (expr == null || level == null) return row;
 
     if ("info".equals(level)) {
-      if (LOG.isInfoEnabled())
-        LOG.info(ctx.replaceTokens(expr));
+      if (log.isInfoEnabled())
+        log.info(ctx.replaceTokens(expr));
     } else if ("trace".equals(level)) {
-      if (LOG.isTraceEnabled())
-        LOG.trace(ctx.replaceTokens(expr));
+      if (log.isTraceEnabled())
+        log.trace(ctx.replaceTokens(expr));
     } else if ("warn".equals(level)) {
-      if (LOG.isWarnEnabled())
-        LOG.warn(ctx.replaceTokens(expr));
+      if (log.isWarnEnabled())
+        log.warn(ctx.replaceTokens(expr));
     } else if ("error".equals(level)) {
-      if (LOG.isErrorEnabled())
-        LOG.error(ctx.replaceTokens(expr));
+      if (log.isErrorEnabled())
+        log.error(ctx.replaceTokens(expr));
     } else if ("debug".equals(level)) {
-      if (LOG.isDebugEnabled())
-        LOG.debug(ctx.replaceTokens(expr));
+      if (log.isDebugEnabled())
+        log.debug(ctx.replaceTokens(expr));
     }
 
     return row;

@@ -138,6 +138,7 @@ public class JDBCStream extends TupleStream implements Expressible {
   private String connectionUrl;
   private String sqlQuery;
   private StreamComparator definedSort;
+  private int fetchSize;
   
   // Internal
   private Connection connection;
@@ -153,7 +154,7 @@ public class JDBCStream extends TupleStream implements Expressible {
   }
   
   public JDBCStream(String connectionUrl, String sqlQuery, StreamComparator definedSort, Properties connectionProperties, String driverClassName) throws IOException {
-    init(connectionUrl, sqlQuery, definedSort, connectionProperties, driverClassName);
+    init(connectionUrl, sqlQuery, definedSort, connectionProperties, driverClassName, 5000);
   }
   
   public JDBCStream(StreamExpression expression, StreamFactory factory) throws IOException{
@@ -163,7 +164,9 @@ public class JDBCStream extends TupleStream implements Expressible {
     StreamExpressionNamedParameter sqlQueryExpression = factory.getNamedOperand(expression, "sql");
     StreamExpressionNamedParameter definedSortExpression = factory.getNamedOperand(expression, SORT);
     StreamExpressionNamedParameter driverClassNameExpression = factory.getNamedOperand(expression, "driver");
-    
+    StreamExpressionNamedParameter fetchSizeExpression = factory.getNamedOperand(expression, "fetchSize");
+
+
     // Validate there are no unknown parameters - zkHost and alias are namedParameter so we don't need to count it twice
     if(expression.getParameters().size() != namedParams.size()){
       throw new IOException(String.format(Locale.ROOT,"invalid expression %s - unknown operands found", expression));
@@ -175,6 +178,12 @@ public class JDBCStream extends TupleStream implements Expressible {
       if(!namedParam.getName().equals("driver") && !namedParam.getName().equals("connection") && !namedParam.getName().equals("sql") && !namedParam.getName().equals(SORT)){
         connectionProperties.put(namedParam.getName(), namedParam.getParameter().toString().trim());
       }
+    }
+
+    int fetchSize = 5000;
+    if(null != fetchSizeExpression && fetchSizeExpression.getParameter() instanceof StreamExpressionValue){
+      String fetchSizeString = ((StreamExpressionValue)fetchSizeExpression.getParameter()).getValue();
+      fetchSize = Integer.parseInt(fetchSizeString);
     }
 
     // connectionUrl, required
@@ -211,15 +220,16 @@ public class JDBCStream extends TupleStream implements Expressible {
     }
 
     // We've got all the required items
-    init(connectionUrl, sqlQuery, definedSort, connectionProperties, driverClass);
+    init(connectionUrl, sqlQuery, definedSort, connectionProperties, driverClass, fetchSize);
   }
     
-  private void init(String connectionUrl, String sqlQuery, StreamComparator definedSort, Properties connectionProperties, String driverClassName) {
+  private void init(String connectionUrl, String sqlQuery, StreamComparator definedSort, Properties connectionProperties, String driverClassName, int fetchSize) {
     this.connectionUrl = connectionUrl;
     this.sqlQuery = sqlQuery;
     this.definedSort = definedSort;
     this.connectionProperties = connectionProperties;
     this.driverClassName = driverClassName;
+    this.fetchSize = fetchSize;
   }
   
   public void setStreamContext(StreamContext context) {
@@ -267,6 +277,7 @@ public class JDBCStream extends TupleStream implements Expressible {
     
     try{
       resultSet = statement.executeQuery(sqlQuery);
+      resultSet.setFetchSize(fetchSize);
     } catch (SQLException e) {
       throw new IOException(String.format(Locale.ROOT, "Failed to execute sqlQuery '%s' against JDBC connection '%s'.\n"
           + e.getMessage(), sqlQuery, connectionUrl), e);
@@ -531,7 +542,10 @@ public class JDBCStream extends TupleStream implements Expressible {
     
     // sql
     expression.addParameter(new StreamExpressionNamedParameter("sql", sqlQuery));
-    
+
+    // fetchSize
+    expression.addParameter(new StreamExpressionNamedParameter("fetchSize", Integer.toString(fetchSize)));
+
     // sort
     expression.addParameter(new StreamExpressionNamedParameter(SORT, definedSort.toExpression(factory)));
     

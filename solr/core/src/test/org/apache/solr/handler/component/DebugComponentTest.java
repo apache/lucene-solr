@@ -185,9 +185,11 @@ public class DebugComponentTest extends SolrTestCaseJ4 {
       //if the request has debugQuery=true or debug=track, the sreq should get debug=track always
       assertTrue(Arrays.asList(sreq.params.getParams(CommonParams.DEBUG)).contains(CommonParams.TRACK));
       //the purpose must be added as readable param to be included in the shard logs
-      assertEquals("GET_FIELDS,GET_DEBUG", sreq.params.get(CommonParams.REQUEST_PURPOSE));
+      assertEquals("GET_FIELDS,GET_DEBUG,SET_TERM_STATS", sreq.params.get(CommonParams.REQUEST_PURPOSE));
       //the rid must be added to be included in the shard logs
       assertEquals("123456-my_rid", sreq.params.get(CommonParams.REQUEST_ID));
+      // close requests - this method obtains a searcher in order to access its StatsCache
+      req.close();
     }
     
   }

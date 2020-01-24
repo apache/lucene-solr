@@ -21,7 +21,6 @@ import java.io.IOException;
 import java.util.Arrays;
 
 import org.apache.lucene.codecs.CodecUtil;
-import org.apache.lucene.index.LegacyNumericDocValues;
 import org.apache.lucene.store.DataInput;
 import org.apache.lucene.store.DataOutput;
 import org.apache.lucene.store.IndexInput;
@@ -104,7 +103,9 @@ public class PackedInts {
      * should never use it directly, but rather use
      * {@link PackedInts#fastestFormatAndBits(int, int, float)} to find the
      * format that best suits your needs.
+     * @deprecated Use {@link #PACKED} instead.
      */
+    @Deprecated
     PACKED_SINGLE_BLOCK(1) {
 
       @Override
@@ -245,8 +246,8 @@ public class PackedInts {
     int maxBitsPerValue = bitsPerValue + (int) acceptableOverheadPerValue;
 
     int actualBitsPerValue = -1;
-    Format format = Format.PACKED;
 
+    // rounded number of bits per value are usually the fastest
     if (bitsPerValue <= 8 && maxBitsPerValue >= 8) {
       actualBitsPerValue = 8;
     } else if (bitsPerValue <= 16 && maxBitsPerValue >= 16) {
@@ -255,28 +256,11 @@ public class PackedInts {
       actualBitsPerValue = 32;
     } else if (bitsPerValue <= 64 && maxBitsPerValue >= 64) {
       actualBitsPerValue = 64;
-    } else if (valueCount <= Packed8ThreeBlocks.MAX_SIZE && bitsPerValue <= 24 && maxBitsPerValue >= 24) {
-      actualBitsPerValue = 24;
-    } else if (valueCount <= Packed16ThreeBlocks.MAX_SIZE && bitsPerValue <= 48 && maxBitsPerValue >= 48) {
-      actualBitsPerValue = 48;
     } else {
-      for (int bpv = bitsPerValue; bpv <= maxBitsPerValue; ++bpv) {
-        if (Format.PACKED_SINGLE_BLOCK.isSupported(bpv)) {
-          float overhead = Format.PACKED_SINGLE_BLOCK.overheadPerValue(bpv);
-          float acceptableOverhead = acceptableOverheadPerValue + bitsPerValue - bpv;
-          if (overhead <= acceptableOverhead) {
-            actualBitsPerValue = bpv;
-            format = Format.PACKED_SINGLE_BLOCK;
-            break;
-          }
-        }
-      }
-      if (actualBitsPerValue < 0) {
-        actualBitsPerValue = bitsPerValue;
-      }
+      actualBitsPerValue = bitsPerValue;
     }
 
-    return new FormatAndBits(format, actualBitsPerValue);
+    return new FormatAndBits(Format.PACKED, actualBitsPerValue);
   }
 
   /**
@@ -449,7 +433,10 @@ public class PackedInts {
    * A read-only random access array of positive integers.
    * @lucene.internal
    */
-  public static abstract class Reader extends LegacyNumericDocValues implements Accountable {
+  public static abstract class Reader implements Accountable {
+
+    /** Get the long at the given index. Behavior is undefined for out-of-range indices. */
+    public abstract long get(int index);
 
     /**
      * Bulk get: read at least one and at most <code>len</code> longs starting
@@ -779,26 +766,6 @@ public class PackedInts {
       case PACKED_SINGLE_BLOCK:
         return Packed64SingleBlock.create(in, valueCount, bitsPerValue);
       case PACKED:
-        switch (bitsPerValue) {
-          case 8:
-            return new Direct8(version, in, valueCount);
-          case 16:
-            return new Direct16(version, in, valueCount);
-          case 32:
-            return new Direct32(version, in, valueCount);
-          case 64:
-            return new Direct64(version, in, valueCount);
-          case 24:
-            if (valueCount <= Packed8ThreeBlocks.MAX_SIZE) {
-              return new Packed8ThreeBlocks(version, in, valueCount);
-            }
-            break;
-          case 48:
-            if (valueCount <= Packed16ThreeBlocks.MAX_SIZE) {
-              return new Packed16ThreeBlocks(version, in, valueCount);
-            }
-            break;
-        }
         return new Packed64(version, in, valueCount, bitsPerValue);
       default:
         throw new AssertionError("Unknown Writer format: " + format);
@@ -888,7 +855,7 @@ public class PackedInts {
       case PACKED_SINGLE_BLOCK:
         return new DirectPacked64SingleBlockReader(bitsPerValue, valueCount, in);
       default:
-        throw new AssertionError("Unknwown format: " + format);
+        throw new AssertionError("Unknown format: " + format);
     }
   }
 
@@ -949,26 +916,6 @@ public class PackedInts {
       case PACKED_SINGLE_BLOCK:
         return Packed64SingleBlock.create(valueCount, bitsPerValue);
       case PACKED:
-        switch (bitsPerValue) {
-          case 8:
-            return new Direct8(valueCount);
-          case 16:
-            return new Direct16(valueCount);
-          case 32:
-            return new Direct32(valueCount);
-          case 64:
-            return new Direct64(valueCount);
-          case 24:
-            if (valueCount <= Packed8ThreeBlocks.MAX_SIZE) {
-              return new Packed8ThreeBlocks(valueCount);
-            }
-            break;
-          case 48:
-            if (valueCount <= Packed16ThreeBlocks.MAX_SIZE) {
-              return new Packed16ThreeBlocks(valueCount);
-            }
-            break;
-        }
         return new Packed64(valueCount, bitsPerValue);
       default:
         throw new AssertionError();

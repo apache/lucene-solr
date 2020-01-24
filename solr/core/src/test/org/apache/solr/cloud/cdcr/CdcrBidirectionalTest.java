@@ -44,11 +44,10 @@ public class CdcrBidirectionalTest extends SolrTestCaseJ4 {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   @Test
+  @AwaitsFix(bugUrl = "https://issues.apache.org/jira/browse/SOLR-12524")
   public void testBiDir() throws Exception {
     MiniSolrCloudCluster cluster2 = new MiniSolrCloudCluster(1, createTempDir("cdcr-cluster2"), buildJettyConfig("/solr"));
-    cluster2.waitForAllNodes(30);
     MiniSolrCloudCluster cluster1 = new MiniSolrCloudCluster(1, createTempDir("cdcr-cluster1"), buildJettyConfig("/solr"));
-    cluster1.waitForAllNodes(30);
     try {
       log.info("cluster2 zkHost = " + cluster2.getZkServer().getZkAddress());
       System.setProperty("cdcr.cluster2.zkHost", cluster2.getZkServer().getZkAddress());
@@ -188,7 +187,6 @@ public class CdcrBidirectionalTest extends SolrTestCaseJ4 {
       req = new UpdateRequest();
       doc = new SolrInputDocument();
       String atomicFieldName = "abc";
-      ImmutableMap.of("", "");
       String atomicUpdateId = "cluster2_" + random().nextInt(numDocs_c2);
       doc.addField("id", atomicUpdateId);
       doc.addField("xyz", ImmutableMap.of("delete", ""));

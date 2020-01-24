@@ -28,6 +28,7 @@ solrAdminApp.controller('CollectionsController',
               for (var name in data.cluster.collections) {
                   var collection = data.cluster.collections[name];
                   collection.name = name;
+                  collection.type = 'collection';
                   var shards = collection.shards;
                   collection.shards = [];
                   for (var shardName in shards) {
@@ -50,10 +51,28 @@ solrAdminApp.controller('CollectionsController',
                       $scope.collection = collection;
                   }
               }
-              if ($routeParams.collection && !$scope.collection) {
-                  alert("No collection called " + $routeParams.collection)
-                  $location.path("/~collections");
-              }
+              // Fetch aliases using LISTALIASES to get properties
+              Collections.listaliases(function (adata) {
+                  // TODO: Population of aliases array duplicated in app.js
+                  $scope.aliases = [];
+                  for (var key in adata.aliases) {
+                      props = {};
+                      if (key in adata.properties) {
+                          props = adata.properties[key];
+                      }
+                      var alias = {name: key, collections: adata.aliases[key], type: 'alias', properties: props};
+                      $scope.aliases.push(alias);
+                      if ($routeParams.collection == 'alias_' + key) {
+                          $scope.collection = alias;
+                      }
+                  }
+                  // Decide what is selected in list
+                  if ($routeParams.collection && !$scope.collection) {
+                      alert("No collection or alias called " + $routeParams.collection);
+                      $location.path("/~collections");
+                  }
+              });
+
               $scope.liveNodes = data.cluster.liveNodes;
           });
           Zookeeper.configs(function(data) {
@@ -96,14 +115,6 @@ solrAdminApp.controller('CollectionsController',
       $scope.toggleDeleteAlias = function() {
         $scope.hideAll();
         $scope.showDeleteAlias = true;
-        Zookeeper.aliases({}, function(data){
-          if (Object.keys(data.aliases).length == 0) {
-            delete $scope.aliases;
-          } else {
-            $scope.aliases = data.aliases;
-          }
-        });
-
       }
 
       $scope.cancelCreateAlias = $scope.cancelDeleteAlias = function() {
@@ -116,12 +127,16 @@ solrAdminApp.controller('CollectionsController',
           collections.push($scope.aliasCollections[i].name);
         }
         Collections.createAlias({name: $scope.aliasToCreate, collections: collections.join(",")}, function(data) {
-          $scope.hideAll();
+          $scope.cancelCreateAlias();
+          $scope.resetMenu("collections", Constants.IS_ROOT_PAGE);
+          $location.path("/~collections/alias_" + $scope.aliasToCreate);
         });
       }
       $scope.deleteAlias = function() {
-        Collections.deleteAlias({name: $scope.aliasToDelete}, function(data) {
+        Collections.deleteAlias({name: $scope.collection.name}, function(data) {
           $scope.hideAll();
+          $scope.resetMenu("collections", Constants.IS_ROOT_PAGE);
+          $location.path("/~collections/");
         });
 
       };

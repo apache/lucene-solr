@@ -218,7 +218,7 @@ However, the intent of this API implementation is that changes will be applied u
 
 [IMPORTANT]
 ====
-Changing things like stop words and synonym mappings typically require re-indexing existing documents if being used by index-time analyzers. The RestManager framework does not guard you from this, it simply makes it possible to programmatically build up a set of stop words, synonyms etc.
+Changing things like stop words and synonym mappings typically require reindexing existing documents if being used by index-time analyzers. The RestManager framework does not guard you from this, it simply makes it possible to programmatically build up a set of stop words, synonyms, etc. See the section <<reindexing.adoc#reindexing,Reindexing>> for more information about reindexing your documents.
 ====
 
 == RestManager Endpoint

@@ -380,7 +380,7 @@ public class RegExp {
    * <code>RegExp(s, ALL)</code>.
    * 
    * @param s regexp string
-   * @exception IllegalArgumentException if an error occured while parsing the
+   * @exception IllegalArgumentException if an error occurred while parsing the
    *              regular expression
    */
   public RegExp(String s) throws IllegalArgumentException {
@@ -393,7 +393,7 @@ public class RegExp {
    * @param s regexp string
    * @param syntax_flags boolean 'or' of optional syntax constructs to be
    *          enabled
-   * @exception IllegalArgumentException if an error occured while parsing the
+   * @exception IllegalArgumentException if an error occurred while parsing the
    *              regular expression
    */
   public RegExp(String s, int syntax_flags) throws IllegalArgumentException {

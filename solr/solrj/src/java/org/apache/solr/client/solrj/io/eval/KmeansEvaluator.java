@@ -78,7 +78,11 @@ public class KmeansEvaluator extends RecursiveObjectEvaluator implements TwoValu
 
     for(int i=0; i<data.length; i++) {
       double[] vec = data[i];
-      points.add(new ClusterPoint(ids.get(i), vec));
+      if(ids != null) {
+        points.add(new ClusterPoint(ids.get(i), vec));
+      } else {
+        points.add(new ClusterPoint(Integer.toString(i), vec));
+      }
     }
 
     Map fields = new HashMap();

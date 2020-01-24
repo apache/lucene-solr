@@ -65,8 +65,7 @@ public class TopGroupsShardRequestFactory implements ShardRequestFactory {
   private ShardRequest[] createRequestForSpecificShards(ResponseBuilder rb) {
     // Determine all unique shards to query for TopGroups
     Set<String> uniqueShards = new HashSet<>();
-    for (String command : rb.searchGroupToShards.keySet()) {
-      Map<SearchGroup<BytesRef>, Set<String>> groupsToShard = rb.searchGroupToShards.get(command);
+    for (Map<SearchGroup<BytesRef>, Set<String>> groupsToShard : rb.searchGroupToShards.values()) {
       for (Set<String> shards : groupsToShard.values()) {
         uniqueShards.addAll(shards);
       }

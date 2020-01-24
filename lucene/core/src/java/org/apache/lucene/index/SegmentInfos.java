@@ -122,8 +122,12 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
   public static final int VERSION_70 = 7;
   /** The version that updated segment name counter to be long instead of int. */
   public static final int VERSION_72 = 8;
+  /** The version that recorded softDelCount */
+  public static final int VERSION_74 = 9;
+  static final int VERSION_CURRENT = VERSION_74;
 
-  static final int VERSION_CURRENT = VERSION_72;
+  /** Name of the generation reference file name */
+  private static final String OLD_SEGMENTS_GEN = "segments.gen";
 
   /** Used to name new segments. */
   public long counter;
@@ -186,7 +190,9 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
   public static long getLastCommitGeneration(String[] files) {
     long max = -1;
     for (String file : files) {
-      if (file.startsWith(IndexFileNames.SEGMENTS) && !file.equals(IndexFileNames.OLD_SEGMENTS_GEN)) {
+      if (file.startsWith(IndexFileNames.SEGMENTS) &&
+          // skipping this file here helps deliver the right exception when opening an old index
+          file.startsWith(OLD_SEGMENTS_GEN) == false) {
         long gen = generationFromSegmentsFileName(file);
         if (gen > max) {
           max = gen;
@@ -245,7 +251,9 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
    * return it.
    */
   public static long generationFromSegmentsFileName(String fileName) {
-    if (fileName.equals(IndexFileNames.SEGMENTS)) {
+    if (fileName.equals(OLD_SEGMENTS_GEN)) {
+      throw new IllegalArgumentException("\"" + OLD_SEGMENTS_GEN + "\" is not a valid segment file name since 4.0");
+    } else if (fileName.equals(IndexFileNames.SEGMENTS)) {
       return 0;
     } else if (fileName.startsWith(IndexFileNames.SEGMENTS)) {
       return Long.parseLong(fileName.substring(1+IndexFileNames.SEGMENTS.length()),
@@ -359,7 +367,14 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
       }
       long fieldInfosGen = input.readLong();
       long dvGen = input.readLong();
-      SegmentCommitInfo siPerCommit = new SegmentCommitInfo(info, delCount, delGen, fieldInfosGen, dvGen);
+      int softDelCount = format > VERSION_72 ? input.readInt() : 0;
+      if (softDelCount < 0 || softDelCount > info.maxDoc()) {
+        throw new CorruptIndexException("invalid deletion count: " + softDelCount + " vs maxDoc=" + info.maxDoc(), input);
+      }
+      if (softDelCount + delCount > info.maxDoc()) {
+        throw new CorruptIndexException("invalid deletion count: " + softDelCount + delCount + " vs maxDoc=" + info.maxDoc(), input);
+      }
+      SegmentCommitInfo siPerCommit = new SegmentCommitInfo(info, delCount, softDelCount, delGen, fieldInfosGen, dvGen);
       siPerCommit.setFieldInfosFiles(input.readSetOfStrings());
       final Map<Integer,Set<String>> dvUpdateFiles;
       final int numDVFields = input.readInt();
@@ -517,6 +532,11 @@ public final class SegmentInfos implements Cloneable, Iterable<SegmentCommitInfo
       out.writeInt(delCount);
       out.writeLong(siPerCommit.getFieldInfosGen());
       out.writeLong(siPerCommit.getDocValuesGen());
+      int softDelCount = siPerCommit.getSoftDelCount();
+      if (softDelCount < 0 || softDelCount > si.maxDoc()) {
+        throw new IllegalStateException("cannot write segment: invalid maxDoc segment=" + si.name + " maxDoc=" + si.maxDoc() + " softDelCount=" + softDelCount);
+      }
+      out.writeInt(softDelCount);
       out.writeSetOfStrings(siPerCommit.getFieldInfosFiles());
       final Map<Integer,Set<String>> dvUpdatesFiles = siPerCommit.getDocValuesUpdatesFiles();
       out.writeInt(dvUpdatesFiles.size());

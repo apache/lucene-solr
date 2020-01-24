@@ -78,7 +78,7 @@ class StatementImpl implements Statement {
   protected SolrStream constructStream(String sql) throws IOException {
     try {
       ZkStateReader zkStateReader = this.connection.getClient().getZkStateReader();
-      Collection<Slice> slices = CloudSolrStream.getSlices(this.connection.getCollection(), zkStateReader, true);
+      Slice[] slices = CloudSolrStream.getSlices(this.connection.getCollection(), zkStateReader, true);
 
       List<Replica> shuffler = new ArrayList<>();
       for(Slice slice : slices) {

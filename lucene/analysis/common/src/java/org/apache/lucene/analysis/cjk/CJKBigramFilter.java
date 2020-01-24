@@ -43,6 +43,14 @@ import org.apache.lucene.util.ArrayUtil;
  * flag in {@link CJKBigramFilter#CJKBigramFilter(TokenStream, int, boolean)}.
  * This can be used for a combined unigram+bigram approach.
  * <p>
+ * Unlike ICUTokenizer, StandardTokenizer does not split at script boundaries.
+ * Korean Hangul characters are treated the same as many other scripts'
+ * letters, and as a result, StandardTokenizer can produce tokens that mix
+ * Hangul and non-Hangul characters, e.g. "한국abc".  Such mixed-script tokens
+ * are typed as <code>&lt;ALPHANUM&gt;</code> rather than
+ * <code>&lt;HANGUL&gt;</code>, and as a result, will not be converted to
+ * bigrams by CJKBigramFilter.
+ *
  * In all cases, all non-CJK input is passed thru unmodified.
  */
 public final class CJKBigramFilter extends TokenFilter {

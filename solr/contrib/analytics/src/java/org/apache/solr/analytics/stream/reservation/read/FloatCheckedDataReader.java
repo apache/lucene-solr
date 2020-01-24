@@ -22,7 +22,7 @@ import java.io.IOException;
 import org.apache.solr.analytics.util.function.FloatConsumer;
 
 public class FloatCheckedDataReader extends ReductionCheckedDataReader<FloatConsumer> {
-  
+
   public FloatCheckedDataReader(DataInput inputStream, FloatConsumer applier) {
     super(inputStream, applier);
   }

@@ -23,7 +23,6 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.apache.lucene.index.LeafReaderContext;
-import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.DoubleValues;
 import org.apache.lucene.search.DoubleValuesSource;
 import org.apache.lucene.search.Explanation;
@@ -32,7 +31,7 @@ import org.apache.lucene.search.FieldComparatorSource;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.LongValues;
 import org.apache.lucene.search.LongValuesSource;
-import org.apache.lucene.search.Scorer;
+import org.apache.lucene.search.Scorable;
 import org.apache.lucene.search.SimpleFieldComparator;
 import org.apache.lucene.search.SortField;
 
@@ -87,14 +86,10 @@ public abstract class ValueSource {
     return context;
   }
 
-  private static class FakeScorer extends Scorer {
+  private static class ScoreAndDoc extends Scorable {
 
     int current = -1;
     float score = 0;
-
-    FakeScorer() {
-      super(null);
-    }
 
     @Override
     public int docID() {
@@ -102,18 +97,8 @@ public abstract class ValueSource {
     }
 
     @Override
-    public float score() throws IOException {
+    public float score() {
       return score;
-    }
-
-    @Override
-    public float getMaxScore(int upTo) throws IOException {
-      return Float.POSITIVE_INFINITY;
-    }
-
-    @Override
-    public DocIdSetIterator iterator() {
-      throw new UnsupportedOperationException();
     }
   }
 
@@ -135,7 +120,7 @@ public abstract class ValueSource {
     @Override
     public LongValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
       Map context = new IdentityHashMap<>();
-      FakeScorer scorer = new FakeScorer();
+      ScoreAndDoc scorer = new ScoreAndDoc();
       context.put("scorer", scorer);
       final FunctionValues fv = in.getValues(context, ctx);
       return new LongValues() {
@@ -196,22 +181,23 @@ public abstract class ValueSource {
    * Expose this ValueSource as a DoubleValuesSource
    */
   public DoubleValuesSource asDoubleValuesSource() {
-    return new WrappedDoubleValuesSource(this);
+    return new WrappedDoubleValuesSource(this, null);
   }
 
-  private static class WrappedDoubleValuesSource extends DoubleValuesSource {
+  static class WrappedDoubleValuesSource extends DoubleValuesSource {
 
-    private final ValueSource in;
-    private IndexSearcher searcher;
+    final ValueSource in;
+    final IndexSearcher searcher;
 
-    private WrappedDoubleValuesSource(ValueSource in) {
+    private WrappedDoubleValuesSource(ValueSource in, IndexSearcher searcher) {
       this.in = in;
+      this.searcher = searcher;
     }
 
     @Override
     public DoubleValues getValues(LeafReaderContext ctx, DoubleValues scores) throws IOException {
       Map context = new HashMap<>();
-      FakeScorer scorer = new FakeScorer();
+      ScoreAndDoc scorer = new ScoreAndDoc();
       context.put("scorer", scorer);
       context.put("searcher", searcher);
       FunctionValues fv = in.getValues(context, ctx);
@@ -230,7 +216,10 @@ public abstract class ValueSource {
           }
           else
             scorer.score = 0;
-          return fv.exists(doc);
+          // ValueSource will return values even if exists() is false, generally a default
+          // of some kind.  To preserve this behaviour with the iterator, we need to always
+          // return 'true' here.
+          return true;
         }
       };
     }
@@ -248,7 +237,7 @@ public abstract class ValueSource {
     @Override
     public Explanation explain(LeafReaderContext ctx, int docId, Explanation scoreExplanation) throws IOException {
       Map context = new HashMap<>();
-      FakeScorer scorer = new FakeScorer();
+      ScoreAndDoc scorer = new ScoreAndDoc();
       scorer.score = scoreExplanation.getValue().floatValue();
       context.put("scorer", scorer);
       context.put("searcher", searcher);
@@ -258,8 +247,7 @@ public abstract class ValueSource {
 
     @Override
     public DoubleValuesSource rewrite(IndexSearcher searcher) throws IOException {
-      this.searcher = searcher;
-      return this;
+      return new WrappedDoubleValuesSource(in, searcher);
     }
 
     @Override
@@ -296,7 +284,7 @@ public abstract class ValueSource {
 
     @Override
     public FunctionValues getValues(Map context, LeafReaderContext readerContext) throws IOException {
-      Scorer scorer = (Scorer) context.get("scorer");
+      Scorable scorer = (Scorable) context.get("scorer");
       DoubleValues scores = scorer == null ? null : DoubleValuesSource.fromScorer(scorer);
 
       IndexSearcher searcher = (IndexSearcher) context.get("searcher");

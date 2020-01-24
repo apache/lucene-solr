@@ -24,7 +24,7 @@ import org.apache.lucene.util.LuceneTestCase.SuppressCodecs;
  * Just like TestDuelingCodecs, only with a lot more documents.
  */
 @Nightly
-@SuppressCodecs({"Memory", "Direct"}) // it can be too much for these codecs
+@SuppressCodecs({"Direct"}) // it can be too much for these codecs
 public class TestDuelingCodecsAtNight extends TestDuelingCodecs {
 
   // use a big number of documents

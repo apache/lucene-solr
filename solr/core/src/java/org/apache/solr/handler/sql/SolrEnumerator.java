@@ -30,7 +30,7 @@ import java.util.Map;
 
 /** Enumerator that reads from a Solr collection. */
 class SolrEnumerator implements Enumerator<Object> {
-  private static final Logger logger = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
   private final TupleStream tupleStream;
   private final List<Map.Entry<String, Class>> fields;
@@ -126,7 +126,7 @@ class SolrEnumerator implements Enumerator<Object> {
         return true;
       }
     } catch (IOException e) {
-      logger.error("IOException", e);
+      log.error("IOException", e);
       return false;
     }
   }

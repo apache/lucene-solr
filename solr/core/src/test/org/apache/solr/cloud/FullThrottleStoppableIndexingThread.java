@@ -16,21 +16,20 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.client.HttpClient;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.ConcurrentUpdateSolrClient;
-import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.util.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,19 +39,20 @@ class FullThrottleStoppableIndexingThread extends StoppableIndexingThread {
   /**
    * 
    */
-  private CloseableHttpClient httpClient = HttpClientUtil.createClient(null);
+  private final HttpClient httpClient;
   private volatile boolean stop = false;
   int clientIndex = 0;
   private ConcurrentUpdateSolrClient cusc;
   private List<SolrClient> clients;
   private AtomicInteger fails = new AtomicInteger();
   
-  public FullThrottleStoppableIndexingThread(SolrClient controlClient, CloudSolrClient cloudClient, List<SolrClient> clients,
+  public FullThrottleStoppableIndexingThread(HttpClient httpClient, SolrClient controlClient, CloudSolrClient cloudClient, List<SolrClient> clients,
                                              String id, boolean doDeletes, int clientSoTimeout) {
     super(controlClient, cloudClient, id, doDeletes);
     setName("FullThrottleStopableIndexingThread");
     setDaemon(true);
     this.clients = clients;
+    this.httpClient = httpClient;
 
     cusc = new ErrorLoggingConcurrentUpdateSolrClient.Builder(((HttpSolrClient) clients.get(0)).getBaseURL())
         .withHttpClient(httpClient)
@@ -128,9 +128,14 @@ class FullThrottleStoppableIndexingThread extends StoppableIndexingThread {
   @Override
   public void safeStop() {
     stop = true;
-    cusc.blockUntilFinished();
-    cusc.shutdownNow();
-    IOUtils.closeQuietly(httpClient);
+    try {
+      cusc.blockUntilFinished();
+    } catch (IOException e) {
+      log.warn("Exception waiting for the indexing client to finish", e);
+    } finally {
+      cusc.shutdownNow();
+    }
+
   }
 
   @Override

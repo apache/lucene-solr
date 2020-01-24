@@ -48,7 +48,7 @@ public abstract class BaseSortTestCase extends LuceneTestCase {
 
   public void assertSorted(Entry[] original, Entry[] sorted) {
     assertEquals(original.length, sorted.length);
-    Entry[] actuallySorted = Arrays.copyOf(original, original.length);
+    Entry[] actuallySorted = ArrayUtil.copyOfSubArray(original, 0, original.length);
     Arrays.sort(actuallySorted);
     for (int i = 0; i < original.length; ++i) {
       assertEquals(actuallySorted[i].value, sorted[i].value);
@@ -64,7 +64,7 @@ public abstract class BaseSortTestCase extends LuceneTestCase {
     System.arraycopy(arr, 0, toSort, o, arr.length);
     final Sorter sorter = newSorter(toSort);
     sorter.sort(o, o + arr.length);
-    assertSorted(arr, Arrays.copyOfRange(toSort, o, o + arr.length));
+    assertSorted(arr, ArrayUtil.copyOfSubArray(toSort, o, o + arr.length));
   }
 
   enum Strategy {

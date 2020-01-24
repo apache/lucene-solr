@@ -22,12 +22,13 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.util.IOUtils;
 
 /**
  * Base class for Analyzers that need to make use of stopword sets. 
- * 
+ *
+ *
+ * @since 3.1
  */
 public abstract class StopwordAnalyzerBase extends Analyzer {
 

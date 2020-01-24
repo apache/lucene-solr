@@ -111,7 +111,7 @@ final class DocumentsWriterPerThreadPool {
 
   private final List<ThreadState> freeList = new ArrayList<>();
 
-  private boolean aborted;
+  private int takenThreadStatePermits = 0;
 
   /**
    * Returns the active number of {@link ThreadState} instances.
@@ -120,15 +120,21 @@ final class DocumentsWriterPerThreadPool {
     return threadStates.size();
   }
 
-  synchronized void setAbort() {
-    aborted = true;
+  synchronized void lockNewThreadStates() {
+    // this is similar to a semaphore - we need to acquire all permits ie. takenThreadStatePermits must be == 0
+    // any call to lockNewThreadStates() must be followed by unlockNewThreadStates() otherwise we will deadlock at some
+    // point
+    assert takenThreadStatePermits >= 0;
+    takenThreadStatePermits++;
   }
 
-  synchronized void clearAbort() {
-    aborted = false;
-    notifyAll();
+  synchronized void unlockNewThreadStates() {
+    assert takenThreadStatePermits > 0;
+    takenThreadStatePermits--;
+    if (takenThreadStatePermits == 0) {
+      notifyAll();
+    }
   }
-
   /**
    * Returns a new {@link ThreadState} iff any new state is available otherwise
    * <code>null</code>.
@@ -140,18 +146,20 @@ final class DocumentsWriterPerThreadPool {
    *         <code>null</code>
    */
   private synchronized ThreadState newThreadState() {
-    while (aborted) {
+    assert takenThreadStatePermits >= 0;
+    while (takenThreadStatePermits > 0) {
+      // we can't create new thread-states while not all permits are available
       try {
         wait();
       } catch (InterruptedException ie) {
-        throw new ThreadInterruptedException(ie);        
+        throw new ThreadInterruptedException(ie);
       }
     }
     ThreadState threadState = new ThreadState(null);
     threadState.lock(); // lock so nobody else will get this ThreadState
     threadStates.add(threadState);
     return threadState;
-  }
+}
 
   DocumentsWriterPerThread reset(ThreadState threadState) {
     assert threadState.isHeldByCurrentThread();
@@ -168,7 +176,7 @@ final class DocumentsWriterPerThreadPool {
   // of items (docs, deletes, DV updates) to most take advantage of concurrency while flushing
 
   /** This method is used by DocumentsWriter/FlushControl to obtain a ThreadState to do an indexing operation (add/updateDocument). */
-  ThreadState getAndLock(Thread requestingThread, DocumentsWriter documentsWriter) {
+  ThreadState getAndLock() {
     ThreadState threadState = null;
     synchronized (this) {
       if (freeList.isEmpty()) {

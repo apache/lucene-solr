@@ -38,13 +38,13 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.TopDocs;
+import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
-import org.apache.lucene.store.RAMDirectory;
 
 /** Shows simple usage of dynamic range faceting. */
 public class RangeFacetsExample implements Closeable {
 
-  private final Directory indexDir = new RAMDirectory();
+  private final Directory indexDir = new ByteBuffersDirectory();
   private IndexSearcher searcher;
   private final long nowSec = System.currentTimeMillis();
 

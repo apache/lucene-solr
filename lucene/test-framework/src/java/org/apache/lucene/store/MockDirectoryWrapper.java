@@ -19,6 +19,8 @@ package org.apache.lucene.store;
 import java.io.Closeable;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.AccessDeniedException;
+import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.NoSuchFileException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -217,11 +219,11 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     }
     
     if (openFiles.containsKey(source) && assertNoDeleteOpenFile) {
-      throw (AssertionError) fillOpenTrace(new AssertionError("MockDirectoryWrapper: source file \"" + source + "\" is still open: cannot rename"), source, true);
+      throw fillOpenTrace(new AssertionError("MockDirectoryWrapper: source file \"" + source + "\" is still open: cannot rename"), source, true);
     }
 
     if (openFiles.containsKey(dest) && assertNoDeleteOpenFile) {
-      throw (AssertionError) fillOpenTrace(new AssertionError("MockDirectoryWrapper: dest file \"" + dest + "\" is still open: cannot rename"), dest, true);
+      throw fillOpenTrace(new AssertionError("MockDirectoryWrapper: dest file \"" + dest + "\" is still open: cannot rename"), dest, true);
     }
 
     boolean success = false;
@@ -253,20 +255,15 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
   }
 
   public synchronized final long sizeInBytes() throws IOException {
-    if (in instanceof RAMDirectory)
-      return ((RAMDirectory) in).ramBytesUsed();
-    else {
-      // hack
-      long size = 0;
-      for (String file : in.listAll()) {
-        // hack 2: see TODO in ExtrasFS (ideally it would always return 0 byte
-        // size for extras it creates, even though the size of non-regular files is not defined)
-        if (!file.startsWith("extra")) {
-          size += in.fileLength(file);
-        }
+    long size = 0;
+    for (String file : in.listAll()) {
+      // hack 2: see TODO in ExtrasFS (ideally it would always return 0 byte
+      // size for extras it creates, even though the size of non-regular files is not defined)
+      if (!file.startsWith("extra")) {
+        size += in.fileLength(file);
       }
-      return size;
     }
+    return size;
   }
 
   public synchronized void corruptUnknownFiles() throws IOException {
@@ -508,7 +505,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     return this.maxUsedSize;
   }
   public void resetMaxUsedSizeInBytes() throws IOException {
-    this.maxUsedSize = getRecomputedActualSizeInBytes();
+    this.maxUsedSize = sizeInBytes();
   }
 
   /**
@@ -595,7 +592,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     if (openFiles.containsKey(name)) {
       openFilesDeleted.add(name);
       if (assertNoDeleteOpenFile) {
-        throw (IOException) fillOpenTrace(new IOException("MockDirectoryWrapper: file \"" + name + "\" is still open: cannot delete"), name, true);
+        throw fillOpenTrace(new IOException("MockDirectoryWrapper: file \"" + name + "\" is still open: cannot delete"), name, true);
       }
     } else {
       openFilesDeleted.remove(name);
@@ -608,7 +605,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
 
   // sets the cause of the incoming ioe to be the stack
   // trace when the offending file name was opened
-  private synchronized Throwable fillOpenTrace(Throwable t, String name, boolean input) {
+  private synchronized <T extends Throwable> T fillOpenTrace(T t, String name, boolean input) {
     for(Map.Entry<Closeable,Exception> ent : openFileHandles.entrySet()) {
       if (input && ent.getKey() instanceof MockIndexInputWrapper && ((MockIndexInputWrapper) ent.getKey()).name.equals(name)) {
         t.initCause(ent.getValue());
@@ -649,11 +646,11 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       throw new IOException("cannot createOutput after crash");
     }
     init();
-    synchronized(this) {
-      if (createdFiles.contains(name) && !name.equals("segments.gen")) {
-        throw new IOException("file \"" + name + "\" was already written to");
-      }
+
+    if (createdFiles.contains(name)) {
+      throw new FileAlreadyExistsException("File \"" + name + "\" was already written to.");
     }
+
     if (assertNoDeleteOpenFile && openFiles.containsKey(name)) {
       throw new AssertionError("MockDirectoryWrapper: file \"" + name + "\" is still open: cannot overwrite");
     }
@@ -666,19 +663,24 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     final IndexOutput io = new MockIndexOutputWrapper(this, delegateOutput, name);
     addFileHandle(io, name, Handle.Output);
     openFilesForWrite.add(name);
-    
+    return maybeThrottle(name, io);
+
+
+  }
+
+  private IndexOutput maybeThrottle(String name, IndexOutput output) {
     // throttling REALLY slows down tests, so don't do it very often for SOMETIMES.
-    if (throttling == Throttling.ALWAYS || 
+    if (throttling == Throttling.ALWAYS ||
         (throttling == Throttling.SOMETIMES && randomState.nextInt(200) == 0)) {
       if (LuceneTestCase.VERBOSE) {
         System.out.println("MockDirectoryWrapper: throttling indexOutput (" + name + ")");
       }
-      return throttledOutput.newFromDelegate(io);
+      return throttledOutput.newFromDelegate(output);
     } else {
-      return io;
+      return output;
     }
   }
-  
+
   @Override
   public synchronized IndexOutput createTempOutput(String prefix, String suffix, IOContext context) throws IOException {
     maybeThrowDeterministicException();
@@ -704,16 +706,7 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     addFileHandle(io, name, Handle.Output);
     openFilesForWrite.add(name);
     
-    // throttling REALLY slows down tests, so don't do it very often for SOMETIMES.
-    if (throttling == Throttling.ALWAYS || 
-        (throttling == Throttling.SOMETIMES && randomState.nextInt(200) == 0)) {
-      if (LuceneTestCase.VERBOSE) {
-        System.out.println("MockDirectoryWrapper: throttling indexOutput (" + name + ")");
-      }
-      return throttledOutput.newFromDelegate(io);
-    } else {
-      return io;
-    }
+    return maybeThrottle(name, io);
   }
 
   private static enum Handle {
@@ -750,10 +743,9 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
       throw randomState.nextBoolean() ? new FileNotFoundException(name + " in dir=" + in) : new NoSuchFileException(name + " in dir=" + in);
     }
 
-    // cannot open a file for input if it's still open for
-    // output, except for segments.gen and segments_N
-    if (!allowReadingFilesStillOpenForWrite && openFilesForWrite.contains(name) && !name.startsWith("segments")) {
-      throw (IOException) fillOpenTrace(new IOException("MockDirectoryWrapper: file \"" + name + "\" is still open for writing"), name, false);
+    // cannot open a file for input if it's still open for output.
+    if (!allowReadingFilesStillOpenForWrite && openFilesForWrite.contains(name)) {
+      throw fillOpenTrace(new AccessDeniedException("MockDirectoryWrapper: file \"" + name + "\" is still open for writing"), name, false);
     }
 
     IndexInput delegateInput = in.openInput(name, LuceneTestCase.newIOContext(randomState, context));
@@ -776,35 +768,9 @@ public class MockDirectoryWrapper extends BaseDirectoryWrapper {
     addFileHandle(ii, name, Handle.Input);
     return ii;
   }
-  
-  /** Provided for testing purposes.  Use sizeInBytes() instead. */
-  public synchronized final long getRecomputedSizeInBytes() throws IOException {
-    if (!(in instanceof RAMDirectory))
-      return sizeInBytes();
-    long size = 0;
-    for(final RAMFile file: ((RAMDirectory)in).fileMap.values()) {
-      size += file.ramBytesUsed();
-    }
-    return size;
-  }
-
-  /** Like getRecomputedSizeInBytes(), but, uses actual file
-   * lengths rather than buffer allocations (which are
-   * quantized up to nearest
-   * RAMOutputStream.BUFFER_SIZE (now 1024) bytes.
-   */
-
-  public final synchronized long getRecomputedActualSizeInBytes() throws IOException {
-    if (!(in instanceof RAMDirectory))
-      return sizeInBytes();
-    long size = 0;
-    for (final RAMFile file : ((RAMDirectory)in).fileMap.values())
-      size += file.length;
-    return size;
-  }
 
   // NOTE: This is off by default; see LUCENE-5574
-  private boolean assertNoUnreferencedFilesOnClose;
+  private volatile boolean assertNoUnreferencedFilesOnClose;
 
   public void setAssertNoUnrefencedFilesOnClose(boolean v) {
     assertNoUnreferencedFilesOnClose = v;

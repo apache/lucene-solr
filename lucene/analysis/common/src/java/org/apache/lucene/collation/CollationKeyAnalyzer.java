@@ -71,6 +71,8 @@ import java.text.Collator;
  *   CollationKeyAnalyzer to generate index terms, do not use
  *   ICUCollationKeyAnalyzer on the query side, or vice versa.
  * </p>
+ *
+ * @since 3.1
  */
 public final class CollationKeyAnalyzer extends Analyzer {
   private final CollationAttributeFactory factory;

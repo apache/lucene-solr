@@ -50,7 +50,7 @@ public class AssertingNormsFormat extends NormsFormat {
     assert state.fieldInfos.hasNorms();
     NormsProducer producer = in.normsProducer(state);
     assert producer != null;
-    return new AssertingNormsProducer(producer, state.segmentInfo.maxDoc());
+    return new AssertingNormsProducer(producer, state.segmentInfo.maxDoc(), false);
   }
   
   static class AssertingNormsConsumer extends NormsConsumer {
@@ -88,10 +88,14 @@ public class AssertingNormsFormat extends NormsFormat {
   static class AssertingNormsProducer extends NormsProducer {
     private final NormsProducer in;
     private final int maxDoc;
+    private final boolean merging;
+    private final Thread creationThread;
     
-    AssertingNormsProducer(NormsProducer in, int maxDoc) {
+    AssertingNormsProducer(NormsProducer in, int maxDoc, boolean merging) {
       this.in = in;
       this.maxDoc = maxDoc;
+      this.merging = merging;
+      this.creationThread = Thread.currentThread();
       // do a few simple checks on init
       assert toString() != null;
       assert ramBytesUsed() >= 0;
@@ -100,6 +104,9 @@ public class AssertingNormsFormat extends NormsFormat {
 
     @Override
     public NumericDocValues getNorms(FieldInfo field) throws IOException {
+      if (merging) {
+        AssertingCodec.assertThread("NormsProducer", creationThread);
+      }
       assert field.hasNorms();
       NumericDocValues values = in.getNorms(field);
       assert values != null;
@@ -132,8 +139,8 @@ public class AssertingNormsFormat extends NormsFormat {
     }
     
     @Override
-    public NormsProducer getMergeInstance() throws IOException {
-      return new AssertingNormsProducer(in.getMergeInstance(), maxDoc);
+    public NormsProducer getMergeInstance() {
+      return new AssertingNormsProducer(in.getMergeInstance(), maxDoc, true);
     }
     
     @Override

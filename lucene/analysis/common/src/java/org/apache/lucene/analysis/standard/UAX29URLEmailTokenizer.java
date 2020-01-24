@@ -32,33 +32,32 @@ import org.apache.lucene.util.AttributeFactory;
  * algorithm, as specified in 
  * <a href="http://unicode.org/reports/tr29/">Unicode Standard Annex #29</a> 
  * URLs and email addresses are also tokenized according to the relevant RFCs.
- * <p>
- * Tokens produced are of the following types:
- * <ul>
- *   <li>&lt;ALPHANUM&gt;: A sequence of alphabetic and numeric characters</li>
- *   <li>&lt;NUM&gt;: A number</li>
- *   <li>&lt;URL&gt;: A URL</li>
- *   <li>&lt;EMAIL&gt;: An email address</li>
- *   <li>&lt;SOUTHEAST_ASIAN&gt;: A sequence of characters from South and Southeast
- *       Asian languages, including Thai, Lao, Myanmar, and Khmer</li>
- *   <li>&lt;IDEOGRAPHIC&gt;: A single CJKV ideographic character</li>
- *   <li>&lt;HIRAGANA&gt;: A single hiragana character</li>
- * </ul>
  */
 
 public final class UAX29URLEmailTokenizer extends Tokenizer {
   /** A private instance of the JFlex-constructed scanner */
   private final UAX29URLEmailTokenizerImpl scanner;
-  
-  public static final int ALPHANUM          = 0;
-  public static final int NUM               = 1;
-  public static final int SOUTHEAST_ASIAN   = 2;
-  public static final int IDEOGRAPHIC       = 3;
-  public static final int HIRAGANA          = 4;
-  public static final int KATAKANA          = 5;
-  public static final int HANGUL            = 6;
-  public static final int URL               = 7;
-  public static final int EMAIL             = 8;
+
+  /** Alpha/numeric token type */
+  public static final int ALPHANUM = 0;
+  /** Numeric token type */
+  public static final int NUM = 1;
+  /** Southeast Asian token type */
+  public static final int SOUTHEAST_ASIAN = 2;
+  /** Ideographic token type */
+  public static final int IDEOGRAPHIC = 3;
+  /** Hiragana token type */
+  public static final int HIRAGANA = 4;
+  /** Katakana token type */
+  public static final int KATAKANA = 5;
+  /** Hangul token type */
+  public static final int HANGUL = 6;
+  /** URL token type */
+  public static final int URL = 7;
+  /** Email token type */
+  public static final int EMAIL = 8;
+  /** Emoji token type. */
+  public static final int EMOJI = 9;
 
   /** String token types that correspond to token type int constants */
   public static final String [] TOKEN_TYPES = new String [] {
@@ -71,6 +70,7 @@ public final class UAX29URLEmailTokenizer extends Tokenizer {
     StandardTokenizer.TOKEN_TYPES[StandardTokenizer.HANGUL],
     "<URL>",
     "<EMAIL>",
+    StandardTokenizer.TOKEN_TYPES[StandardTokenizer.EMOJI]
   };
 
   /** Absolute maximum sized token */

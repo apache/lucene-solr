@@ -35,7 +35,7 @@ public abstract class TopDocsCollector<T extends ScoreDoc> implements Collector 
 
   /** This is used in case topDocs() is called with illegal parameters, or there
    *  simply aren't (enough) results. */
-  protected static final TopDocs EMPTY_TOPDOCS = new TopDocs(0, new ScoreDoc[0], Float.NaN);
+  protected static final TopDocs EMPTY_TOPDOCS = new TopDocs(new TotalHits(0, TotalHits.Relation.EQUAL_TO), new ScoreDoc[0]);
   
   /**
    * The priority queue which holds the top documents. Note that different
@@ -47,7 +47,10 @@ public abstract class TopDocsCollector<T extends ScoreDoc> implements Collector 
 
   /** The total number of documents that the collector encountered. */
   protected int totalHits;
-  
+
+  /** Whether {@link #totalHits} is exact or a lower bound. */
+  protected TotalHits.Relation totalHitsRelation = TotalHits.Relation.EQUAL_TO;
+
   protected TopDocsCollector(PriorityQueue<T> pq) {
     this.pq = pq;
   }
@@ -69,7 +72,7 @@ public abstract class TopDocsCollector<T extends ScoreDoc> implements Collector 
    * topDocs were invalid.
    */
   protected TopDocs newTopDocs(ScoreDoc[] results, int start) {
-    return results == null ? EMPTY_TOPDOCS : new TopDocs(totalHits, results);
+    return results == null ? EMPTY_TOPDOCS : new TopDocs(new TotalHits(totalHits, totalHitsRelation), results);
   }
   
   /** The total number of documents that matched this query. */
@@ -133,11 +136,16 @@ public abstract class TopDocsCollector<T extends ScoreDoc> implements Collector 
     // pq.size() or totalHits.
     int size = topDocsSize();
 
-    // Don't bother to throw an exception, just return an empty TopDocs in case
-    // the parameters are invalid or out of range.
-    // TODO: shouldn't we throw IAE if apps give bad params here so they dont
-    // have sneaky silent bugs?
-    if (start < 0 || start >= size || howMany <= 0) {
+    if (howMany < 0) {
+      throw new IllegalArgumentException("Number of hits requested must be greater than 0 but value was " + howMany);
+    }
+
+    if (start < 0) {
+      throw new IllegalArgumentException("Expected value of starting position is between 0 and " + size +
+          ", got " + start);
+    }
+
+    if (start >= size || howMany == 0) {
       return newTopDocs(null, start);
     }
 

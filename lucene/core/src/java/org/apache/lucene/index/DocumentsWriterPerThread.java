@@ -19,7 +19,6 @@ package org.apache.lucene.index;
 import java.io.IOException;
 import java.text.NumberFormat;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
@@ -28,6 +27,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.codecs.Codec;
 import org.apache.lucene.index.DocumentsWriterDeleteQueue.DeleteSlice;
+import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.search.similarities.Similarity;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FlushInfo;
@@ -37,9 +37,9 @@ import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.ByteBlockPool.Allocator;
 import org.apache.lucene.util.ByteBlockPool.DirectTrackingAllocator;
 import org.apache.lucene.util.Counter;
+import org.apache.lucene.util.FixedBitSet;
 import org.apache.lucene.util.InfoStream;
 import org.apache.lucene.util.IntBlockPool;
-import org.apache.lucene.util.MutableBits;
 import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.Version;
 
@@ -60,7 +60,7 @@ final class DocumentsWriterPerThread {
   private Throwable abortingException;
 
   final void onAbortingException(Throwable throwable) {
-    assert abortingException == null: "aborting excpetion has already been set";
+    assert abortingException == null: "aborting exception has already been set";
     abortingException = throwable;
   }
 
@@ -106,12 +106,12 @@ final class DocumentsWriterPerThread {
     final SegmentCommitInfo segmentInfo;
     final FieldInfos fieldInfos;
     final FrozenBufferedUpdates segmentUpdates;
-    final MutableBits liveDocs;
+    final FixedBitSet liveDocs;
     final Sorter.DocMap sortMap;
     final int delCount;
 
     private FlushedSegment(InfoStream infoStream, SegmentCommitInfo segmentInfo, FieldInfos fieldInfos,
-                           BufferedUpdates segmentUpdates, MutableBits liveDocs, int delCount, Sorter.DocMap sortMap)
+                           BufferedUpdates segmentUpdates, FixedBitSet liveDocs, int delCount, Sorter.DocMap sortMap)
       throws IOException {
       this.segmentInfo = segmentInfo;
       this.fieldInfos = fieldInfos;
@@ -189,7 +189,7 @@ final class DocumentsWriterPerThread {
     assert numDocsInRAM == 0 : "num docs " + numDocsInRAM;
     deleteSlice = deleteQueue.newSlice();
    
-    segmentInfo = new SegmentInfo(directoryOrig, Version.LATEST, Version.LATEST, segmentName, -1, false, codec, Collections.emptyMap(), StringHelper.randomId(), new HashMap<>(), indexWriterConfig.getIndexSort());
+    segmentInfo = new SegmentInfo(directoryOrig, Version.LATEST, Version.LATEST, segmentName, -1, false, codec, Collections.emptyMap(), StringHelper.randomId(), Collections.emptyMap(), indexWriterConfig.getIndexSort());
     assert numDocsInRAM == 0;
     if (INFO_VERBOSE && infoStream.isEnabled("DWPT")) {
       infoStream.message("DWPT", Thread.currentThread().getName() + " init seg=" + segmentName + " delQueue=" + deleteQueue);  
@@ -436,13 +436,13 @@ final class DocumentsWriterPerThread {
     // happens when an exception is hit processing that
     // doc, eg if analyzer has some problem w/ the text):
     if (pendingUpdates.deleteDocIDs.size() > 0) {
-      flushState.liveDocs = codec.liveDocsFormat().newLiveDocs(numDocsInRAM);
+      flushState.liveDocs = new FixedBitSet(numDocsInRAM);
+      flushState.liveDocs.set(0, numDocsInRAM);
       for(int delDocID : pendingUpdates.deleteDocIDs) {
         flushState.liveDocs.clear(delDocID);
       }
       flushState.delCountOnFlush = pendingUpdates.deleteDocIDs.size();
-      pendingUpdates.bytesUsed.addAndGet(-pendingUpdates.deleteDocIDs.size() * BufferedUpdates.BYTES_PER_DEL_DOCID);
-      pendingUpdates.deleteDocIDs.clear();
+      pendingUpdates.clearDeletedDocIds();
     }
 
     if (aborted) {
@@ -459,14 +459,27 @@ final class DocumentsWriterPerThread {
     }
     final Sorter.DocMap sortMap;
     try {
+      DocIdSetIterator softDeletedDocs;
+      if (indexWriterConfig.getSoftDeletesField() != null) {
+        softDeletedDocs = consumer.getHasDocValues(indexWriterConfig.getSoftDeletesField());
+      } else {
+        softDeletedDocs = null;
+      }
       sortMap = consumer.flush(flushState);
+      if (softDeletedDocs == null) {
+        flushState.softDelCountOnFlush = 0;
+      } else {
+        flushState.softDelCountOnFlush = PendingSoftDeletes.countSoftDeletes(softDeletedDocs, flushState.liveDocs);
+        assert flushState.segmentInfo.maxDoc() >= flushState.softDelCountOnFlush + flushState.delCountOnFlush;
+      }
       // We clear this here because we already resolved them (private to this segment) when writing postings:
       pendingUpdates.clearDeleteTerms();
       segmentInfo.setFiles(new HashSet<>(directory.getCreatedFiles()));
 
-      final SegmentCommitInfo segmentInfoPerCommit = new SegmentCommitInfo(segmentInfo, 0, -1L, -1L, -1L);
+      final SegmentCommitInfo segmentInfoPerCommit = new SegmentCommitInfo(segmentInfo, 0, flushState.softDelCountOnFlush, -1L, -1L, -1L);
       if (infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", "new segment has " + (flushState.liveDocs == null ? 0 : flushState.delCountOnFlush) + " deleted docs");
+        infoStream.message("DWPT", "new segment has " + flushState.softDelCountOnFlush + " soft-deleted docs");
         infoStream.message("DWPT", "new segment has " +
             (flushState.fieldInfos.hasVectors() ? "vectors" : "no vectors") + "; " +
             (flushState.fieldInfos.hasNorms() ? "norms" : "no norms") + "; " +
@@ -478,7 +491,7 @@ final class DocumentsWriterPerThread {
       }
 
       final BufferedUpdates segmentDeletes;
-      if (pendingUpdates.deleteQueries.isEmpty() && pendingUpdates.numericUpdates.isEmpty() && pendingUpdates.binaryUpdates.isEmpty()) {
+      if (pendingUpdates.deleteQueries.isEmpty() && pendingUpdates.numFieldUpdates.get() == 0) {
         pendingUpdates.clear();
         segmentDeletes = null;
       } else {
@@ -496,8 +509,7 @@ final class DocumentsWriterPerThread {
       assert segmentInfo != null;
 
       FlushedSegment fs = new FlushedSegment(infoStream, segmentInfoPerCommit, flushState.fieldInfos,
-          segmentDeletes, flushState.liveDocs, flushState.delCountOnFlush,
-          sortMap);
+          segmentDeletes, flushState.liveDocs, flushState.delCountOnFlush, sortMap);
       sealFlushedSegment(fs, sortMap, flushNotifications);
       if (infoStream.isEnabled("DWPT")) {
         infoStream.message("DWPT", "flush time " + ((System.nanoTime() - t0) / 1000000.0) + " msec");
@@ -529,9 +541,10 @@ final class DocumentsWriterPerThread {
     return filesToDelete;
   }
 
-  private MutableBits sortLiveDocs(Bits liveDocs, Sorter.DocMap sortMap) throws IOException {
+  private FixedBitSet sortLiveDocs(Bits liveDocs, Sorter.DocMap sortMap) throws IOException {
     assert liveDocs != null && sortMap != null;
-    MutableBits sortedLiveDocs = codec.liveDocsFormat().newLiveDocs(liveDocs.length());
+    FixedBitSet sortedLiveDocs = new FixedBitSet(liveDocs.length());
+    sortedLiveDocs.set(0, liveDocs.length());
     for (int i = 0; i < liveDocs.length(); i++) {
       if (liveDocs.get(i) == false) {
         sortedLiveDocs.clear(sortMap.oldToNew(i));
@@ -542,7 +555,7 @@ final class DocumentsWriterPerThread {
 
   /**
    * Seals the {@link SegmentInfo} for the new flushed segment and persists
-   * the deleted documents {@link MutableBits}.
+   * the deleted documents {@link FixedBitSet}.
    */
   void sealFlushedSegment(FlushedSegment flushedSegment, Sorter.DocMap sortMap, DocumentsWriter.FlushNotifications flushNotifications) throws IOException {
     assert flushedSegment != null;
@@ -593,7 +606,7 @@ final class DocumentsWriterPerThread {
           
         SegmentCommitInfo info = flushedSegment.segmentInfo;
         Codec codec = info.info.getCodec();
-        final MutableBits bits;
+        final FixedBitSet bits;
         if (sortMap == null) {
           bits = flushedSegment.liveDocs;
         } else {
@@ -621,7 +634,7 @@ final class DocumentsWriterPerThread {
   }
 
   long bytesUsed() {
-    return bytesUsed.get() + pendingUpdates.bytesUsed.get();
+    return bytesUsed.get() + pendingUpdates.ramBytesUsed();
   }
 
   /* Initial chunks size of the shared byte[] blocks used to

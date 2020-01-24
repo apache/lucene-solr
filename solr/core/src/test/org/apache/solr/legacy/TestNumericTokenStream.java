@@ -21,8 +21,6 @@ import org.apache.lucene.util.AttributeImpl;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.analysis.tokenattributes.TypeAttribute;
-import org.apache.solr.legacy.LegacyNumericTokenStream;
-import org.apache.solr.legacy.LegacyNumericUtils;
 import org.apache.solr.legacy.LegacyNumericTokenStream.LegacyNumericTermAttributeImpl;
 import org.apache.lucene.analysis.BaseTokenStreamTestCase;
 import org.apache.lucene.analysis.tokenattributes.CharTermAttribute;
@@ -178,7 +176,7 @@ public class TestNumericTokenStream extends BaseTokenStreamTestCase {
 
   public static <T extends AttributeImpl> T assertCopyIsEqual(T att) throws Exception {
     @SuppressWarnings("unchecked")
-    T copy = (T) att.getClass().newInstance();
+    T copy = (T) att.getClass().getConstructor().newInstance();
     att.copyTo(copy);
     assertEquals("Copied instance must be equal", att, copy);
     assertEquals("Copied instance's hashcode must be equal", att.hashCode(), copy.hashCode());

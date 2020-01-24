@@ -31,7 +31,6 @@ import org.apache.lucene.util.automaton.CompiledAutomaton;
  *
  * @lucene.experimental
  */
-
 public final class MultiTerms extends Terms {
   private final Terms[] subs;
   private final ReaderSlice[] subSlices;
@@ -40,13 +39,15 @@ public final class MultiTerms extends Terms {
   private final boolean hasPositions;
   private final boolean hasPayloads;
 
-  /** Sole constructor.
+  /**
+   * Sole constructor.  Use {@link #getTerms(IndexReader, String)} instead if possible.
    *
    * @param subs The {@link Terms} instances of all sub-readers. 
    * @param subSlices A parallel array (matching {@code
    *        subs}) describing the sub-reader slices.
+   * @lucene.internal
    */
-  public MultiTerms(Terms[] subs, ReaderSlice[] subSlices) throws IOException {
+  public MultiTerms(Terms[] subs, ReaderSlice[] subSlices) throws IOException { //TODO make private?
     this.subs = subs;
     this.subSlices = subSlices;
     
@@ -66,6 +67,60 @@ public final class MultiTerms extends Terms {
     hasOffsets = _hasOffsets;
     hasPositions = _hasPositions;
     hasPayloads = hasPositions && _hasPayloads; // if all subs have pos, and at least one has payloads.
+  }
+
+  /** This method may return null if the field does not exist or if it has no terms. */
+  public static Terms getTerms(IndexReader r, String field) throws IOException {
+    final List<LeafReaderContext> leaves = r.leaves();
+    if (leaves.size() == 1) {
+      return leaves.get(0).reader().terms(field);
+    }
+
+    final List<Terms> termsPerLeaf = new ArrayList<>(leaves.size());
+    final List<ReaderSlice> slicePerLeaf = new ArrayList<>(leaves.size());
+
+    for (int leafIdx = 0; leafIdx < leaves.size(); leafIdx++) {
+      LeafReaderContext ctx = leaves.get(leafIdx);
+      Terms subTerms = ctx.reader().terms(field);
+      if (subTerms != null) {
+        termsPerLeaf.add(subTerms);
+        slicePerLeaf.add(new ReaderSlice(ctx.docBase, r.maxDoc(), leafIdx));
+      }
+    }
+
+    if (termsPerLeaf.size() == 0) {
+      return null;
+    } else {
+      return new MultiTerms(termsPerLeaf.toArray(EMPTY_ARRAY),
+          slicePerLeaf.toArray(ReaderSlice.EMPTY_ARRAY));
+    }
+  }
+
+  /** Returns {@link PostingsEnum} for the specified
+   *  field and term.  This will return null if the field or
+   *  term does not exist or positions were not indexed.
+   *  @see #getTermPostingsEnum(IndexReader, String, BytesRef, int) */
+  public static PostingsEnum getTermPostingsEnum(IndexReader r, String field, BytesRef term) throws IOException {
+    return getTermPostingsEnum(r, field, term, PostingsEnum.ALL);
+  }
+
+  /** Returns {@link PostingsEnum} for the specified
+   *  field and term, with control over whether freqs, positions, offsets or payloads
+   *  are required.  Some codecs may be able to optimize
+   *  their implementation when offsets and/or payloads are not
+   *  required. This will return null if the field or term does not
+   *  exist. See {@link TermsEnum#postings(PostingsEnum,int)}. */
+  public static PostingsEnum getTermPostingsEnum(IndexReader r, String field, BytesRef term, int flags) throws IOException {
+    assert field != null;
+    assert term != null;
+    final Terms terms = getTerms(r, field);
+    if (terms != null) {
+      final TermsEnum termsEnum = terms.iterator();
+      if (termsEnum.seekExact(term)) {
+        return termsEnum.postings(null, flags);
+      }
+    }
+    return null;
   }
 
   /** Expert: returns the Terms being merged. */
