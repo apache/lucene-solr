@@ -72,6 +72,8 @@ public class SweetSpotSimilarityTest extends LuceneTestCase {
     return null;
   }
 
+  // TODO: rewrite this test to not make thosuands of indexes.
+  @Nightly
   public void testSweetSpotComputeNorm() throws IOException {
   
     final SweetSpotSimilarity ss = new SweetSpotSimilarity();

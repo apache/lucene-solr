@@ -316,7 +316,7 @@ public abstract class AbstractSpatialFieldType<T extends SpatialStrategy> extend
   }
 
   @Override
-  public Query getRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
+  protected Query getSpecializedRangeQuery(QParser parser, SchemaField field, String part1, String part2, boolean minInclusive, boolean maxInclusive) {
     if (!minInclusive || !maxInclusive)
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Both sides of spatial range query must be inclusive: " + field.getName());
     Point p1 = SpatialUtils.parsePointSolrException(part1, ctx);

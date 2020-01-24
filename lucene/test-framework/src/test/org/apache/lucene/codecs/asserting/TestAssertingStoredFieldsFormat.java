@@ -17,10 +17,10 @@
 package org.apache.lucene.codecs.asserting;
 
 import org.apache.lucene.codecs.Codec;
-import org.apache.lucene.index.BaseTermVectorsFormatTestCase;
+import org.apache.lucene.index.BaseStoredFieldsFormatTestCase;
 
-/** Test AssertingTermVectorsFormat directly */
-public class TestAssertingStoredFieldsFormat extends BaseTermVectorsFormatTestCase {
+/** Test AssertingStoredFieldsFormat directly */
+public class TestAssertingStoredFieldsFormat extends BaseStoredFieldsFormatTestCase {
   private final Codec codec = new AssertingCodec();
   
   @Override

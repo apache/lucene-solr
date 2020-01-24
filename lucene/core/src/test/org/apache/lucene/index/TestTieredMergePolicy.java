@@ -710,7 +710,7 @@ public class TestTieredMergePolicy extends BaseMergePolicyTestCase {
     doTestSimulateAppendOnly(mergePolicy, 100_000_000, 10_000);
   }
 
-  @Override
+  @Override @Slow
   public void testSimulateUpdates() throws IOException {
     TieredMergePolicy mergePolicy = mergePolicy();
     // Avoid low values of the max merged segment size which prevent this merge policy from scaling well

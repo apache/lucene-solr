@@ -1171,7 +1171,7 @@ public class CoreContainer {
    */
   public SolrCore create(String coreName, Path instancePath, Map<String, String> parameters, boolean newCollection) {
 
-    CoreDescriptor cd = new CoreDescriptor(coreName, instancePath, parameters, getContainerProperties(), isZooKeeperAware());
+    CoreDescriptor cd = new CoreDescriptor(coreName, instancePath, parameters, getContainerProperties(), getZkController());
 
     // TODO: There's a race here, isn't there?
     // Since the core descriptor is removed when a core is unloaded, it should never be anywhere when a core is created.
@@ -1285,7 +1285,7 @@ public class CoreContainer {
         zkSys.getZkController().preRegister(dcore, publishState);
       }
 
-      ConfigSet coreConfig = getConfigSet(dcore);
+      ConfigSet coreConfig = coreConfigService.loadConfigSet(dcore);
       dcore.setConfigSetTrusted(coreConfig.isTrusted());
       log.info("Creating SolrCore '{}' using configuration from {}, trusted={}", dcore.getName(), coreConfig.getName(), dcore.isConfigSetTrusted());
       try {
@@ -1331,14 +1331,10 @@ public class CoreContainer {
       if (core != null) {
         return core.getDirectoryFactory().isSharedStorage();
       } else {
-        ConfigSet configSet = getConfigSet(cd);
+        ConfigSet configSet = coreConfigService.loadConfigSet(cd);
         return DirectoryFactory.loadDirectoryFactory(configSet.getSolrConfig(), this, null).isSharedStorage();
       }
     }
-  }
-
-  private ConfigSet getConfigSet(CoreDescriptor cd) {
-    return coreConfigService.getConfig(cd);
   }
 
   /**
@@ -1543,7 +1539,7 @@ public class CoreContainer {
       boolean success = false;
       try {
         solrCores.waitAddPendingCoreOps(cd.getName());
-        ConfigSet coreConfig = coreConfigService.getConfig(cd);
+        ConfigSet coreConfig = coreConfigService.loadConfigSet(cd);
         log.info("Reloading SolrCore '{}' using configuration from {}", cd.getName(), coreConfig.getName());
         newCore = core.reload(coreConfig);
 

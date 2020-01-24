@@ -669,9 +669,10 @@ public class AnalyzingSuggesterTest extends LuceneTestCase {
 
   private static char SEP = '\u001F';
 
+  @Slow
   public void testRandom() throws Exception {
 
-    int numQueries = atLeast(1000);
+    int numQueries = atLeast(200);
     
     final List<TermFreq2> slowCompletor = new ArrayList<>();
     final TreeSet<String> allPrefixes = new TreeSet<>();

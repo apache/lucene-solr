@@ -114,7 +114,7 @@ public class DirectoryFactoryTest extends SolrTestCase {
   }
 
   private void assertDataHome(String expected, String instanceDir, DirectoryFactory df, CoreContainer cc, String... properties) throws IOException {
-    String dataHome = df.getDataHome(new CoreDescriptor("core_name", Paths.get(instanceDir), cc.containerProperties, cc.isZooKeeperAware(), properties));
+    String dataHome = df.getDataHome(new CoreDescriptor("core_name", Paths.get(instanceDir), cc, properties));
     assertEquals(Paths.get(expected).toAbsolutePath(), Paths.get(dataHome).toAbsolutePath());
   }
 

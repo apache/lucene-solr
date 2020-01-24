@@ -123,17 +123,7 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
     streamFactory.withSolrResourceLoader(core.getResourceLoader());
 
     // This pulls all the overrides and additions from the config
-    List<PluginInfo> pluginInfos = core.getSolrConfig().getPluginInfos(Expressible.class.getName());
-    for (PluginInfo pluginInfo : pluginInfos) {
-      if (pluginInfo.pkgName != null) {
-        ExpressibleHolder holder = new ExpressibleHolder(pluginInfo, core, SolrConfig.classVsSolrPluginInfo.get(Expressible.class));
-        streamFactory.withFunctionName(pluginInfo.name,
-            () -> holder.getClazz());
-      } else {
-        Class<? extends Expressible> clazz = core.getMemClassLoader().findClass(pluginInfo.className, Expressible.class);
-        streamFactory.withFunctionName(pluginInfo.name, clazz);
-      }
-    }
+    addExpressiblePlugins(streamFactory, core);
 
     core.addCloseHook(new CloseHook() {
       @Override
@@ -146,6 +136,20 @@ public class StreamHandler extends RequestHandlerBase implements SolrCoreAware, 
         clientCache.close();
       }
     });
+  }
+
+  public static void addExpressiblePlugins(StreamFactory streamFactory, SolrCore core) {
+    List<PluginInfo> pluginInfos = core.getSolrConfig().getPluginInfos(Expressible.class.getName());
+    for (PluginInfo pluginInfo : pluginInfos) {
+      if (pluginInfo.pkgName != null) {
+        ExpressibleHolder holder = new ExpressibleHolder(pluginInfo, core, SolrConfig.classVsSolrPluginInfo.get(Expressible.class));
+        streamFactory.withFunctionName(pluginInfo.name,
+            () -> holder.getClazz());
+      } else {
+        Class<? extends Expressible> clazz = core.getMemClassLoader().findClass(pluginInfo.className, Expressible.class);
+        streamFactory.withFunctionName(pluginInfo.name, clazz);
+      }
+    }
   }
 
   public static class ExpressibleHolder extends PackagePluginHolder {

@@ -16,17 +16,15 @@
  */
 package org.apache.solr.core;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.time.Instant;
-import java.util.Locale;
-import java.util.concurrent.ExecutionException;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import org.apache.solr.cloud.CloudConfigSetService;
 import org.apache.solr.cloud.ZkController;
 import org.apache.solr.cloud.ZkSolrResourceLoader;
@@ -44,41 +42,35 @@ import org.slf4j.LoggerFactory;
 public abstract class ConfigSetService {
 
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+
   public static ConfigSetService createConfigSetService(NodeConfig nodeConfig, SolrResourceLoader loader, ZkController zkController) {
-    if (zkController != null)
-      return new CloudConfigSetService(loader, zkController);
-
-    if (nodeConfig.hasSchemaCache())
-      return new SchemaCaching(loader, nodeConfig.getConfigSetBaseDirectory());
-
-    return new Default(loader, nodeConfig.getConfigSetBaseDirectory());
+    if (zkController == null) {
+      return new Standalone(loader, nodeConfig.hasSchemaCache(), nodeConfig.getConfigSetBaseDirectory());
+    } else {
+      return new CloudConfigSetService(loader, nodeConfig.hasSchemaCache(), zkController);
+    }
   }
 
   protected final SolrResourceLoader parentLoader;
 
-  /**
-   * Create a new ConfigSetService
-   * @param loader the CoreContainer's resource loader
-   */
-  public ConfigSetService(SolrResourceLoader loader) {
-    this.parentLoader = loader;
-  }
+  /** Optional cache of schemas, key'ed by a bunch of concatenated things */
+  private final Cache<String, IndexSchema> schemaCache;
 
   /**
    * Load the ConfigSet for a core
    * @param dcore the core's CoreDescriptor
    * @return a ConfigSet
    */
-  public final ConfigSet getConfig(CoreDescriptor dcore) {
+  public final ConfigSet loadConfigSet(CoreDescriptor dcore) {
 
     SolrResourceLoader coreLoader = createCoreResourceLoader(dcore);
 
     try {
 
       // ConfigSet properties are loaded from ConfigSetProperties.DEFAULT_FILENAME file.
+      NamedList properties = loadConfigSetProperties(dcore, coreLoader);
       // ConfigSet flags are loaded from the metadata of the ZK node of the configset.
-      NamedList properties = createConfigSetProperties(dcore, coreLoader);
-      NamedList flags = getConfigSetFlags(dcore, coreLoader);
+      NamedList flags = loadConfigSetFlags(dcore, coreLoader);
 
       boolean trusted =
           (coreLoader instanceof ZkSolrResourceLoader
@@ -89,13 +81,23 @@ public abstract class ConfigSetService {
 
       SolrConfig solrConfig = createSolrConfig(dcore, coreLoader, trusted);
       IndexSchema schema = createIndexSchema(dcore, solrConfig);
-      return new ConfigSet(configName(dcore), solrConfig, schema, properties, trusted);
+      return new ConfigSet(configSetName(dcore), solrConfig, schema, properties, trusted);
     } catch (Exception e) {
       throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
           "Could not load conf for core " + dcore.getName() +
               ": " + e.getMessage(), e);
     }
 
+  }
+
+  /**
+   * Create a new ConfigSetService
+   * @param loader the CoreContainer's resource loader
+   * @param shareSchema should we share the IndexSchema among cores of same config?
+   */
+  public ConfigSetService(SolrResourceLoader loader, boolean shareSchema) {
+    this.parentLoader = loader;
+    this.schemaCache = shareSchema ? Caffeine.newBuilder().weakValues().build() : null;
   }
 
   /**
@@ -110,35 +112,62 @@ public abstract class ConfigSetService {
   }
 
   /**
-   * Create an IndexSchema object for a core
+   * Create an IndexSchema object for a core.  It might be a cached lookup.
    * @param cd the core's CoreDescriptor
    * @param solrConfig the core's SolrConfig
    * @return an IndexSchema
    */
   protected IndexSchema createIndexSchema(CoreDescriptor cd, SolrConfig solrConfig) {
-    return IndexSchemaFactory.buildIndexSchema(cd.getSchemaName(), solrConfig);
+    // This is the schema name from the core descriptor.  Sometimes users specify a custom schema file.
+    //   Important:  indexSchemaFactory.create wants this!
+    String cdSchemaName = cd.getSchemaName();
+    // This is the schema name that we think will actually be used.  In the case of a managed schema,
+    //  we don't know for sure without examining what files exists in the configSet, and we don't
+    //  want to pay the overhead of that at this juncture.  If we guess wrong, no schema sharing.
+    //  The fix is usually to name your schema managed-schema instead of schema.xml.
+    IndexSchemaFactory indexSchemaFactory = IndexSchemaFactory.newIndexSchemaFactory(solrConfig);
+    String guessSchemaName = indexSchemaFactory.getSchemaResourceName(cdSchemaName);
+
+    String configSet = cd.getConfigSet();
+    if (configSet != null && schemaCache != null) {
+      Long modVersion = getCurrentSchemaModificationVersion(configSet, solrConfig, guessSchemaName);
+      if (modVersion != null) {
+        // note: luceneMatchVersion influences the schema
+        String cacheKey = configSet + "/" + guessSchemaName + "/" + modVersion + "/" + solrConfig.luceneMatchVersion;
+        return schemaCache.get(cacheKey,
+            (key) -> indexSchemaFactory.create(cdSchemaName, solrConfig));
+      } else {
+        log.warn("Unable to get schema modification version, configSet={} schema={}", configSet, guessSchemaName);
+        // see explanation above; "guessSchema" is a guess
+      }
+    }
+
+    return indexSchemaFactory.create(cdSchemaName, solrConfig);
   }
 
   /**
-   * Return the ConfigSet properties
+   * Returns a modification version for the schema file.
+   * Null may be returned if not known, and if so it defeats schema caching.
+   */
+  protected abstract Long getCurrentSchemaModificationVersion(String configSet, SolrConfig solrConfig, String schemaFile);
+
+  /**
+   * Return the ConfigSet properties or null if none.
+   * @see ConfigSetProperties
    * @param cd the core's CoreDescriptor
    * @param loader the core's resource loader
    * @return the ConfigSet properties
    */
-  protected NamedList createConfigSetProperties(CoreDescriptor cd, SolrResourceLoader loader) {
+  protected NamedList loadConfigSetProperties(CoreDescriptor cd, SolrResourceLoader loader) {
     return ConfigSetProperties.readFromResourceLoader(loader, cd.getConfigSetPropertiesName());
   }
 
-  protected NamedList getConfigSetFlags(CoreDescriptor cd, SolrResourceLoader loader) {
-    if (loader instanceof ZkSolrResourceLoader) {
-      try {
-        return ConfigSetProperties.readFromResourceLoader(loader, ".");
-      } catch (Exception ex) {
-        return null;
-      }
-    } else {
-      return null;
-    }
+  /**
+   * Return the ConfigSet flags or null if none.
+   */
+  // TODO should fold into configSetProps -- SOLR-14059
+  protected NamedList loadConfigSetFlags(CoreDescriptor cd, SolrResourceLoader loader) {
+    return null;
   }
 
   /**
@@ -149,31 +178,26 @@ public abstract class ConfigSetService {
   protected abstract SolrResourceLoader createCoreResourceLoader(CoreDescriptor cd);
 
   /**
-   * Return a name for the ConfigSet for a core
+   * Return a name for the ConfigSet for a core to be used for printing/diagnostic purposes.
    * @param cd the core's CoreDescriptor
    * @return a name for the core's ConfigSet
    */
-  public abstract String configName(CoreDescriptor cd);
+  public abstract String configSetName(CoreDescriptor cd);
 
   /**
-   * The default ConfigSetService.
+   * The Solr standalone version of ConfigSetService.
    *
    * Loads a ConfigSet defined by the core's configSet property,
    * looking for a directory named for the configSet property value underneath
    * a base directory.  If no configSet property is set, loads the ConfigSet
    * instead from the core's instance directory.
    */
-  public static class Default extends ConfigSetService {
+  public static class Standalone extends ConfigSetService {
 
     private final Path configSetBase;
 
-    /**
-     * Create a new ConfigSetService.Default
-     * @param loader the CoreContainer's resource loader
-     * @param configSetBase the base directory under which to look for config set directories
-     */
-    public Default(SolrResourceLoader loader, Path configSetBase) {
-      super(loader);
+    public Standalone(SolrResourceLoader loader, boolean shareSchema, Path configSetBase) {
+      super(loader, shareSchema);
       this.configSetBase = configSetBase;
     }
 
@@ -184,7 +208,7 @@ public abstract class ConfigSetService {
     }
 
     @Override
-    public String configName(CoreDescriptor cd) {
+    public String configSetName(CoreDescriptor cd) {
       return (cd.getConfigSet() == null ? "instancedir " : "configset ") + locateInstanceDir(cd);
     }
 
@@ -199,46 +223,19 @@ public abstract class ConfigSetService {
       return configSetDirectory;
     }
 
-  }
-
-  /**
-   * A ConfigSetService that shares schema objects between cores
-   */
-  public static class SchemaCaching extends Default {
-
-    private final Cache<String, IndexSchema> schemaCache = CacheBuilder.newBuilder().build();
-
-    public SchemaCaching(SolrResourceLoader loader, Path configSetBase) {
-      super(loader, configSetBase);
-    }
-
-    public static String cacheName(Path schemaFile) throws IOException {
-      long lastModified = Files.getLastModifiedTime(schemaFile).toMillis();
-      return String.format(Locale.ROOT, "%s:%s",
-                            schemaFile.toString(), Instant.ofEpochMilli(lastModified).toString());
-    }
-
     @Override
-    public IndexSchema createIndexSchema(final CoreDescriptor cd, final SolrConfig solrConfig) {
-      final String resourceNameToBeUsed = IndexSchemaFactory.getResourceNameToBeUsed(cd.getSchemaName(), solrConfig);
-      Path schemaFile = Paths.get(solrConfig.getResourceLoader().getConfigDir()).resolve(resourceNameToBeUsed);
-      if (Files.exists(schemaFile)) {
-        try {
-          String cachedName = cacheName(schemaFile);
-          return schemaCache.get(cachedName, () -> {
-            log.info("Creating new index schema for core {}", cd.getName());
-            return IndexSchemaFactory.buildIndexSchema(cd.getSchemaName(), solrConfig);
-          });
-        } catch (ExecutionException e) {
-          throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
-              "Error creating index schema for core " + cd.getName(), e);
-        } catch (IOException e) {
-          log.warn("Couldn't get last modified time for schema file {}: {}", schemaFile, e.getMessage());
-          log.warn("Will not use schema cache");
-        }
+    protected Long getCurrentSchemaModificationVersion(String configSet, SolrConfig solrConfig, String schemaFileName) {
+      Path schemaFile = Paths.get(solrConfig.getResourceLoader().getConfigDir()).resolve(schemaFileName);
+      try {
+        return Files.getLastModifiedTime(schemaFile).toMillis();
+      } catch (FileNotFoundException e) {
+        return null; // acceptable
+      } catch (IOException e) {
+        log.warn("Unexpected exception when getting modification time of " + schemaFile, e);
+        return null; // debatable; we'll see an error soon if there's a real problem
       }
-      return IndexSchemaFactory.buildIndexSchema(cd.getSchemaName(), solrConfig);
     }
+
   }
 
 }
