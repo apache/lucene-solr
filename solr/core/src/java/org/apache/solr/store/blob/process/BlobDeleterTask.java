@@ -57,12 +57,12 @@ class BlobDeleterTask implements Runnable {
     this.blobNames = blobNames;
     this.attempt = new AtomicInteger(0);
     this.executor = executor;
-    this.queuedTimeMs = System.nanoTime();
+    this.queuedTimeMs = System.nanoTime() / 1000000;
   }
 
   @Override
   public void run() {
-    final long startTimeMs = System.nanoTime();
+    final long startTimeMs = System.nanoTime() / 1000000;
     boolean isSuccess = true;
       
     try {
@@ -97,14 +97,14 @@ class BlobDeleterTask implements Runnable {
           executor.execute(this);
         }
       } finally {
-        long now = System.nanoTime();
-        long runTime = now - startTimeMs;
+        long now = System.nanoTime() / 1000000;
+        long runTimeMs = now - startTimeMs;
         long startLatency = now - this.queuedTimeMs;
         String message = String.format(Locale.ROOT,
                "sharedBlobName=%s action=DELETE storageProvider=%s bucketRegion=%s bucketName=%s "
                       + "runTime=%s startLatency=%s attempt=%s filesAffected=%s isSuccess=%s",
                       sharedBlobName, client.getStorageProvider().name(), client.getBucketRegion(),
-                      client.getBucketName(), runTime, startLatency, attempt.get(), this.blobNames.size(), isSuccess);
+                      client.getBucketName(), runTimeMs, startLatency, attempt.get(), this.blobNames.size(), isSuccess);
         log.info(message);
       }
   }
