@@ -79,6 +79,8 @@ New Features
    Query DSL queries. It's optional and doesn't impact response without explicit referencing these queries by names 
    (Anatolii Siuniaev via Mikhail Khludnev)
 
+ * SOLR-13749: New cross collection join filter (XCJF) (Dan Fox, Kevin Watters, via Gus Heck)
+
 Improvements
 ---------------------
 * SOLR-14120: Define JavaScript methods 'includes' and 'startsWith' to ensure AdminUI can be displayed when using
@@ -117,8 +119,6 @@ Improvements
   queries with very large numbers of terms.  The new implementation is used by default for method=docValuesTermsFilter
   terms queries that are searching 500 or more terms.  Users wishing to ignore this heuristic can choose the
   docValuesTermsFilterTopLevel or docValuesTermsFilterPerSegment methods directly. (Jason Gerlowski, Joel Bernstein, David Smiley)
-
-* SOLR-13749: New cross collection join filter (XCJF) (Dan Fox, Kevin Watters, via Gus Heck)
 
 Optimizations
 ---------------------
