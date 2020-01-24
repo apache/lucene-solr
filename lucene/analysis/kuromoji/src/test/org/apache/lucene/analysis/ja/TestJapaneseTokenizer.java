@@ -369,7 +369,8 @@ public class
 
 
   public void testLargeDocReliability() throws Exception {
-    for (int i = 0; i < 10; i++) {
+    int numIters = atLeast(1);
+    for (int i = 0; i < numIters; i++) {
       String s = TestUtil.randomUnicodeString(random(), 10000);
       try (TokenStream ts = analyzer.tokenStream("foo", s)) {
         ts.reset();

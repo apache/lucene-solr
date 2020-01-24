@@ -35,7 +35,8 @@ public class TestPagedBytes extends LuceneTestCase {
   // PagedBytes.Reader: 
   public void testDataInputOutput() throws Exception {
     Random random = random();
-    for(int iter=0;iter<5*RANDOM_MULTIPLIER;iter++) {
+    int numIters = atLeast(1);
+    for(int iter=0;iter<numIters;iter++) {
       BaseDirectoryWrapper dir = newFSDirectory(createTempDir("testOverflow"));
       if (dir instanceof MockDirectoryWrapper) {
         ((MockDirectoryWrapper)dir).setThrottling(MockDirectoryWrapper.Throttling.NEVER);
@@ -98,7 +99,8 @@ public class TestPagedBytes extends LuceneTestCase {
   // PagedBytes.getDataInput(): 
   public void testDataInputOutput2() throws Exception {
     Random random = random();
-    for(int iter=0;iter<5*RANDOM_MULTIPLIER;iter++) {
+    int numIters = atLeast(1);
+    for(int iter=0;iter<numIters;iter++) {
       final int blockBits = TestUtil.nextInt(random, 1, 20);
       final int blockSize = 1 << blockBits;
       final PagedBytes p = new PagedBytes(blockBits);

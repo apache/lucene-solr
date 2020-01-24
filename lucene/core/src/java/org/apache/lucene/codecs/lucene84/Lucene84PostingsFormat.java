@@ -386,7 +386,9 @@ public final class Lucene84PostingsFormat extends PostingsFormat {
 
   // Increment version to change it
   final static int VERSION_START = 0;
-  final static int VERSION_CURRENT = VERSION_START;
+  // Better compression of the terms dictionary in case most terms have a docFreq of 1
+  final static int VERSION_COMPRESSED_TERMS_DICT_IDS = 1;
+  final static int VERSION_CURRENT = VERSION_COMPRESSED_TERMS_DICT_IDS;
 
   private final int minTermBlockSize;
   private final int maxTermBlockSize;

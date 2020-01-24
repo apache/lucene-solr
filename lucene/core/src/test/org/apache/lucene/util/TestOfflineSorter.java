@@ -444,7 +444,7 @@ public class TestOfflineSorter extends LuceneTestCase {
     }
   }
 
-  @Slow
+  @Nightly
   public void testFixedLengthHeap() throws Exception {
     // Make sure the RAM accounting is correct, i.e. if we are sorting fixed width
     // ints (4 bytes) then the heap used is really only 4 bytes per value:

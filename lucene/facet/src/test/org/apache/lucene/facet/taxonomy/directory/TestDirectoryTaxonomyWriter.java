@@ -441,7 +441,8 @@ public class TestDirectoryTaxonomyWriter extends FacetTestCase {
     dir.close();
   }
 
-  @Test
+  // TODO: this test can hit pathological cases: it adds only a few docs, what is going on?
+  @Test @Nightly
   public void testHugeLabel() throws Exception {
     Directory indexDir = newDirectory(), taxoDir = newDirectory();
     IndexWriter indexWriter = new IndexWriter(indexDir, newIndexWriterConfig(new MockAnalyzer(random())));

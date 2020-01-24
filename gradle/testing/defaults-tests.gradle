@@ -41,7 +41,7 @@ allprojects {
       if (verboseMode) {
         maxParallelForks = 1
       } else {
-        maxParallelForks = propertyOrDefault("tests.jvms", (int) Math.max(1, Math.min(Runtime.runtime.availableProcessors() / 2.0, 4.0)))
+        maxParallelForks = propertyOrDefault("tests.jvms", (int) Math.max(1, Math.min(Runtime.runtime.availableProcessors() / 2.0, 4.0))) as Integer
       }
 
       workingDir testsCwd

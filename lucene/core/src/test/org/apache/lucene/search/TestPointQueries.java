@@ -2175,6 +2175,7 @@ public class TestPointQueries extends LuceneTestCase {
     assertTrue(Float.compare(Float.MAX_VALUE, FloatPoint.nextDown(Float.POSITIVE_INFINITY)) == 0);
   }
 
+  @Nightly
   public void testInversePointRange() throws IOException {
     Directory dir = newDirectory();
     IndexWriter w = new IndexWriter(dir, newIndexWriterConfig());
