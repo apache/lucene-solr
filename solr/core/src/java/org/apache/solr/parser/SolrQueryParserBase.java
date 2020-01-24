@@ -104,8 +104,6 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
    *  {@link #AS_SAME_TERM}
    *  {@link #PICK_BEST}
    *  {@link #AS_DISTINCT_TERMS}
-   *  {@link #PICK_BEST_BOOST_BY_PAYLOAD}
-   *  {@link #AS_DISTINCT_TERMS_BOOST_BY_PAYLOAD}
    */
   public enum SynonymQueryStyle {
     /** (default) synonym terms share doc freq
@@ -128,19 +126,17 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
      * appropriate when more specific synonyms should score higher, but we don't want to ignore
      * less specific synonyms
      */
-    AS_DISTINCT_TERMS,
+    AS_DISTINCT_TERMS;
 
-    /**
-     * this approach is an extension of the pick_best,
-     * it adds a boost to each synonym based on the payload associated to the term
-     */
-    PICK_BEST_BOOST_BY_PAYLOAD,
+    private boolean boostByPayload;
 
-    /**
-     * this approach is an extension of the as_distinct_terms,
-     * it adds a boost to each synonym based on the payload associated to the term
-     */
-    AS_DISTINCT_TERMS_BOOST_BY_PAYLOAD,
+    public boolean isBoostByPayload() {
+      return boostByPayload;
+    }
+
+    public void setBoostByPayload(boolean boostByPayload) {
+      this.boostByPayload = boostByPayload;
+    }
   }
 
   // make it possible to call setDefaultOperator() without accessing
@@ -631,13 +627,9 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
   protected Query newSynonymQuery(Term[] terms, TokenStream sourceTokenStream) {
     switch (synonymQueryStyle) {
       case PICK_BEST:
-        return getDisjunctionSynonymQuery(terms, sourceTokenStream, false);
-      case PICK_BEST_BOOST_BY_PAYLOAD:
-        return getDisjunctionSynonymQuery(terms, sourceTokenStream, true);
+        return getDisjunctionSynonymQuery(terms, sourceTokenStream, synonymQueryStyle.isBoostByPayload());
       case AS_DISTINCT_TERMS:
-        return getBooleanSynonymQuery(terms, sourceTokenStream,false);
-      case AS_DISTINCT_TERMS_BOOST_BY_PAYLOAD:
-        return getBooleanSynonymQuery(terms, sourceTokenStream,true);
+        return getBooleanSynonymQuery(terms, sourceTokenStream,synonymQueryStyle.isBoostByPayload());
       case AS_SAME_TERM:
         return super.newSynonymQuery(terms, sourceTokenStream);
       default:
@@ -666,7 +658,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
     List<Query> synonymQueries = new ArrayList<>(terms.length);
     BytesRef[] currentStreamPayloads = null;
     if (payloadBoost) {
-      currentStreamPayloads = super.getPayloadsFromStream(sourceTokenStream);
+      currentStreamPayloads = this.getPayloadsFromStream(sourceTokenStream);
     }
     BytesRef termPayload = null;
     for (int i = 0; i < terms.length; i++) {
@@ -692,14 +684,15 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
    * @return new Query instance
    */
   @Override
-  protected Query newGraphSynonymQuery(Iterator<Query> sidePaths, Iterator<BytesRef[]> sidePathsPayloads) {
+  protected Query newGraphSynonymQuery(Iterator<Query> sidePaths) {
     switch (synonymQueryStyle) {
-      case PICK_BEST_BOOST_BY_PAYLOAD:
+      case PICK_BEST:{
         List<Query> boostedSidePaths = boostQueriesByPayload(sidePaths, sidePathsPayloads);
         DisjunctionMaxQuery graphSynonymQuery = new DisjunctionMaxQuery(boostedSidePaths, 0.0f);
-        return graphSynonymQuery;
-      case AS_DISTINCT_TERMS_BOOST_BY_PAYLOAD:
-        boostedSidePaths = boostQueriesByPayload(sidePaths, sidePathsPayloads);
+        return graphSynonymQuery;}
+      case AS_DISTINCT_TERMS_BOOST_BY_PAYLOAD:{
+        Iterator<BytesRef[]> sidePathsPayloads = this.extractPayloadsFromTokenStreams(sidePathsTokenStreams);
+        List<Query> boostedSidePaths = boostQueriesByPayload(sidePaths, sidePathsPayloads);
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
         for (Query boostedSidePath : boostedSidePaths) {
           builder.add(boostedSidePath, BooleanClause.Occur.SHOULD);
@@ -708,9 +701,43 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
         if (graphBooleanSynonymQuery.clauses().size() == 1) {
           return graphBooleanSynonymQuery.clauses().get(0).getQuery();
         }
-        return graphBooleanSynonymQuery;
+        return graphBooleanSynonymQuery;}
       default:
-        return super.newGraphSynonymQuery(sidePaths, sidePathsPayloads);
+        return super.newGraphSynonymQuery(sidePaths, sidePathsTokenStreams);
+    }
+  }
+
+  private Iterator<BytesRef[]> extractPayloadsFromTokenStreams(Iterator<TokenStream> sidePathsTokenStreams) {
+    Iterator<BytesRef[]> sidePathsPayloads = new Iterator<BytesRef[]>() {
+      @Override
+      public boolean hasNext() {
+        return sidePathsTokenStreams.hasNext();
+      }
+
+      @Override
+      public BytesRef[] next() {
+        TokenStream sidePath = sidePathsTokenStreams.next();
+        return getPayloadsFromStream(sidePath);
+      }
+    };
+    return sidePathsPayloads;
+  }
+
+  protected BytesRef[] getPayloadsFromStream(TokenStream source) {
+    try (CachingTokenFilter stream = new CachingTokenFilter(source)) {
+      PayloadAttribute payloadAtt = stream.getAttribute(PayloadAttribute.class);
+      stream.reset();
+      List<BytesRef> payloads = new ArrayList<>();
+      while (stream.incrementToken()) {
+        if (payloadAtt != null) {
+          payloads.add(payloadAtt.getPayload());
+        }
+      }
+      stream.end();
+      stream.close();
+      return payloads.toArray(new BytesRef[payloads.size()]);
+    } catch (IOException e) {
+      throw new RuntimeException("Error analyzing query text", e);
     }
   }
 

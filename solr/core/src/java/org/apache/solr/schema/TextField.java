@@ -87,6 +87,12 @@ public class TextField extends FieldType {
     if (enableGraphQueriesStr != null)
       enableGraphQueries = Boolean.parseBoolean(enableGraphQueriesStr);
 
+    boolean boostByPayload = false;
+    String boostByPayloadStr = args.remove(BOOST_BY_PAYLOAD);
+    if (boostByPayloadStr != null)
+      boostByPayload = Boolean.parseBoolean(boostByPayloadStr);
+    this.synonymQueryStyle.setBoostByPayload(boostByPayload);
+
     super.init(schema, args);    
   }
 

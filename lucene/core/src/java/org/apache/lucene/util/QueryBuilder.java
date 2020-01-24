@@ -31,6 +31,7 @@ import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
+import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
@@ -63,6 +64,7 @@ public class QueryBuilder {
   protected boolean enablePositionIncrements = true;
   protected boolean enableGraphQueries = true;
   protected boolean autoGenerateMultiTermSynonymsPhraseQuery = false;
+  protected boolean synonymsBoostByPayload = false;
 
   /** Creates a new QueryBuilder using the given analyzer. */
   public QueryBuilder(Analyzer analyzer) {
@@ -218,6 +220,22 @@ public class QueryBuilder {
   }
 
   /**
+   * Returns true if synonyms should be automatically boosted by their payload.
+   * @see #setAutoGenerateMultiTermSynonymsPhraseQuery(boolean)
+   */
+  public boolean getSynonymsBoostByPayload() {
+    return synonymsBoostByPayload;
+  }
+
+  /**
+   * Set to <code>true</code> if synonyms should be automatically boosted by their payload.
+   * Default: false.
+   */
+  public void setSynonymsBoostByPayload(boolean enable) {
+    this.synonymsBoostByPayload = enable;
+  }
+
+  /**
    * Creates a query from the analysis chain.
    * <p>
    * Expert: this is more useful for subclasses such as queryparsers.
@@ -239,7 +257,7 @@ public class QueryBuilder {
     // Use the analyzer to get all the tokens, and then build an appropriate
     // query based on the analysis chain.
     try (TokenStream source = analyzer.tokenStream(field, queryText)) {
-      return createFieldQuery(source, operator, field, quoted, phraseSlop);
+      return createFieldQuery(source, operator, field, quoted, false, phraseSlop);
     } catch (IOException e) {
       throw new RuntimeException("Error analyzing query text", e);
     }
@@ -266,14 +284,18 @@ public class QueryBuilder {
    * @param operator   default boolean operator used for this query
    * @param field      field to create queries against
    * @param quoted     true if phrases should be generated when terms occur at more than one position
+   * @param boostByPayload     true if synonyms must be boosted by payload
    * @param phraseSlop slop factor for phrase/multiphrase queries
    */
-  protected Query createFieldQuery(TokenStream source, BooleanClause.Occur operator, String field, boolean quoted, int phraseSlop) {
+  protected Query createFieldQuery(TokenStream source, BooleanClause.Occur operator, String field, boolean quoted, boolean boostByPayload, int phraseSlop) {
     assert operator == BooleanClause.Occur.SHOULD || operator == BooleanClause.Occur.MUST;
 
     // Build an appropriate query based on the analysis chain.
     try (CachingTokenFilter stream = new CachingTokenFilter(source)) {
-      
+      PayloadAttribute payloadAtt = null;
+      if(boostByPayload){
+        payloadAtt = stream.getAttribute(PayloadAttribute.class);
+      }
       TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
       PositionIncrementAttribute posIncAtt = stream.addAttribute(PositionIncrementAttribute.class);
       PositionLengthAttribute posLenAtt = stream.addAttribute(PositionLengthAttribute.class);
@@ -289,9 +311,12 @@ public class QueryBuilder {
       int positionCount = 0;
       boolean hasSynonyms = false;
       boolean isGraph = false;
+      BytesRef payload ;
+      float decodedPayload = 0f;
 
       stream.reset();
       while (stream.incrementToken()) {
+        
         numTokens++;
         int positionIncrement = posIncAtt.getPositionIncrement();
         if (positionIncrement != 0) {
@@ -305,7 +330,13 @@ public class QueryBuilder {
           isGraph = true;
         }
       }
-      
+
+      if (payloadAtt != null) {
+        payload = payloadAtt.getPayload();
+        if(payload != null) {
+          decodedPayload = decodeFloat(payload.bytes, payload.offset);
+        }
+      }
       // phase 2: based on token count, presence of synonyms, and options
       // formulate a single term, boolean, or phrase.
       
@@ -313,11 +344,11 @@ public class QueryBuilder {
         return null;
       } else if (numTokens == 1) {
         // single term
-        return analyzeTerm(field, stream);
+        return new BoostQuery(analyzeTerm(field, stream),decodedPayload);
       } else if (isGraph) {
         // graph
         if (quoted) {
-          return analyzeGraphPhrase(stream, field, phraseSlop);
+          return analyzeGraphPhrase(stream, field, boostByPayload, phraseSlop);
         } else {
           return analyzeGraphBoolean(field, stream, operator);
         }
@@ -325,19 +356,19 @@ public class QueryBuilder {
         // phrase
         if (hasSynonyms) {
           // complex phrase with synonyms
-          return analyzeMultiPhrase(field, stream, phraseSlop);
+          return new BoostQuery(analyzeMultiPhrase(field, stream, phraseSlop),decodedPayload);
         } else {
           // simple phrase
-          return analyzePhrase(field, stream, phraseSlop);
+          return new BoostQuery(analyzePhrase(field, stream, phraseSlop),decodedPayload);
         }
       } else {
         // boolean
         if (positionCount == 1) {
           // only one position, with synonyms
-          return analyzeBoolean(field, stream);
+          return new BoostQuery(analyzeBoolean(field, stream),decodedPayload);
         } else {
           // complex case: multiple positions
-          return analyzeMultiBoolean(field, stream, operator);
+          return new BoostQuery(analyzeMultiBoolean(field, stream, operator),decodedPayload);
         }
       }
     } catch (IOException e) {
@@ -345,6 +376,16 @@ public class QueryBuilder {
     }
   }
 
+  public static final float decodeFloat(byte [] bytes, int offset){
+
+    return Float.intBitsToFloat(decodeInt(bytes, offset));
+  }
+
+  public static final int decodeInt(byte [] bytes, int offset){
+    return ((bytes[offset] & 0xFF) << 24) | ((bytes[offset + 1] & 0xFF) << 16)
+        | ((bytes[offset + 2] & 0xFF) <<  8) |  (bytes[offset + 3] & 0xFF);
+  }
+  
   /**
    * Creates a span query from the tokenstream.  In the case of a single token, a simple <code>SpanTermQuery</code> is
    * returned.  When multiple tokens, an ordered <code>SpanNearQuery</code> with slop 0 is returned.
@@ -522,23 +563,10 @@ public class QueryBuilder {
           @Override
           public Query next() {
             TokenStream sidePath = sidePaths.next();
-            return createFieldQuery(sidePath, BooleanClause.Occur.MUST, field, getAutoGenerateMultiTermSynonymsPhraseQuery(), 0);
+            return createFieldQuery(sidePath, BooleanClause.Occur.MUST, field, getAutoGenerateMultiTermSynonymsPhraseQuery(),getSynonymsBoostByPayload(), 0);
           }
         };
-        final Iterator<TokenStream> sidePathsForPayloads= graph.getFiniteStrings(start, end);
-        Iterator<BytesRef[]> sidePathsPayloads = new Iterator<BytesRef[]>() {
-          @Override
-          public boolean hasNext() {
-            return sidePathsForPayloads.hasNext();
-          }
-
-          @Override
-          public BytesRef[] next() {
-            TokenStream sidePath = sidePathsForPayloads.next();
-            return getPayloadsFromStream(sidePath);
-          }
-        };
-        queryClause = newGraphSynonymQuery(sidePathsQueries, sidePathsPayloads);
+        queryClause = newGraphSynonymQuery(sidePathsQueries);
       } else {
         Term[] terms = graph.getTerms(field, start);
         assert terms.length > 0;
@@ -554,29 +582,10 @@ public class QueryBuilder {
     }
     return builder.build();
   }
-
-  protected BytesRef[] getPayloadsFromStream(TokenStream source) {
-    try (CachingTokenFilter stream = new CachingTokenFilter(source)) {
-      PayloadAttribute payloadAtt = stream.getAttribute(PayloadAttribute.class);
-      stream.reset();
-      List<BytesRef> payloads = new ArrayList<>();
-      while (stream.incrementToken()) {
-        if (payloadAtt != null) {
-          payloads.add(payloadAtt.getPayload());
-        }
-      }
-      stream.end();
-      stream.close();
-      return payloads.toArray(new BytesRef[payloads.size()]);
-    } catch (IOException e) {
-      throw new RuntimeException("Error analyzing query text", e);
-    }
-  }
-
   /**
    * Creates graph phrase query from the tokenstream contents
    */
-  protected Query analyzeGraphPhrase(TokenStream source, String field, int phraseSlop)
+  protected Query analyzeGraphPhrase(TokenStream source, String field, boolean boostByPayload, int phraseSlop)
       throws IOException {
     source.reset();
     GraphTokenStreamFiniteStrings graph = new GraphTokenStreamFiniteStrings(source);
@@ -588,7 +597,7 @@ public class QueryBuilder {
       BooleanQuery.Builder builder = new BooleanQuery.Builder();
       Iterator<TokenStream> it = graph.getFiniteStrings();
       while (it.hasNext()) {
-        Query query = createFieldQuery(it.next(), BooleanClause.Occur.MUST, field, true, phraseSlop);
+        Query query = createFieldQuery(it.next(), BooleanClause.Occur.MUST, field, true, boostByPayload, phraseSlop);
         if (query != null) {
           builder.add(query, BooleanClause.Occur.SHOULD);
         }
@@ -700,7 +709,7 @@ public class QueryBuilder {
    * This is intended for subclasses that wish to customize the generated queries.
    * @return new Query instance
    */
-  protected Query newGraphSynonymQuery(Iterator<Query> queries, Iterator<BytesRef[]> sidePathsPayloads) {
+  protected Query newGraphSynonymQuery(Iterator<Query> queries) {
     BooleanQuery.Builder builder = new BooleanQuery.Builder();
     while (queries.hasNext()) {
       builder.add(queries.next(), BooleanClause.Occur.SHOULD);

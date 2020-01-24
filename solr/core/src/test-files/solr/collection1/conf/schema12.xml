@@ -197,7 +197,7 @@
     </analyzer>
   </fieldType>
 
-  <fieldType name="text_pick_best_boost_by_payload" class="solr.TextField" positionIncrementGap="100" synonymQueryStyle="pick_best_boost_by_payload" autoGeneratePhraseQueries="true">
+  <fieldType name="text_pick_best_boost_by_payload" class="solr.TextField" positionIncrementGap="100" synonymQueryStyle="pick_best" autoGeneratePhraseQueries="true" boostByPayload="true">
     <analyzer type="index">
       <tokenizer class="solr.MockTokenizerFactory"/>
     </analyzer>
@@ -209,7 +209,7 @@
     </analyzer>
   </fieldType>
 
-  <fieldType name="text_pick_best_boost_by_payload_flat" class="solr.TextField" positionIncrementGap="100" synonymQueryStyle="pick_best_boost_by_payload" autoGeneratePhraseQueries="true">
+  <fieldType name="text_pick_best_boost_by_payload_flat" class="solr.TextField" positionIncrementGap="100" synonymQueryStyle="pick_best" autoGeneratePhraseQueries="true" boostByPayload="true">
     <analyzer type="index">
       <tokenizer class="solr.MockTokenizerFactory"/>
     </analyzer>
@@ -251,7 +251,7 @@
     </analyzer>
   </fieldType>
 
-  <fieldType name="text_as_distinct_boost_by_payload" class="solr.TextField" positionIncrementGap="100"  synonymQueryStyle="as_distinct_terms_boost_by_payload" autoGeneratePhraseQueries="true">
+  <fieldType name="text_as_distinct_boost_by_payload" class="solr.TextField" positionIncrementGap="100"  synonymQueryStyle="as_distinct_terms" autoGeneratePhraseQueries="true" boostByPayload="true">
     <analyzer type="index">
       <tokenizer class="solr.MockTokenizerFactory"/>
     </analyzer>
@@ -263,7 +263,7 @@
     </analyzer>
   </fieldType>
 
-  <fieldType name="text_as_distinct_boost_by_payload_flat" class="solr.TextField" positionIncrementGap="100"  synonymQueryStyle="as_distinct_terms_boost_by_payload" autoGeneratePhraseQueries="true">
+  <fieldType name="text_as_distinct_boost_by_payload_flat" class="solr.TextField" positionIncrementGap="100"  synonymQueryStyle="as_distinct_terms" autoGeneratePhraseQueries="true" boostByPayload="true">
     <analyzer type="index">
       <tokenizer class="solr.MockTokenizerFactory"/>
     </analyzer>
