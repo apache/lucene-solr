@@ -164,6 +164,8 @@ New Features
    Query DSL queries. It's optional and doesn't impact response without explicit referencing these queries by names 
    (Anatolii Siuniaev via Mikhail Khludnev)
 
+ * SOLR-14130: Add postlogs command line tool for indexing Solr logs (Joel Bernstein)
+
 Improvements
 ---------------------
 * SOLR-14120: Define JavaScript methods 'includes' and 'startsWith' to ensure AdminUI can be displayed when using
@@ -197,6 +199,8 @@ Improvements
 
 * SOLR-14154: Return correct isolation level when retrieving it from the SQL Connection (Nick Vercammen, Kevin Risden)
 
+* SOLR-14132: Upgrade Angular JS 1.3.8 to 1.7.9 (Kevin Risden)
+
 Optimizations
 ---------------------
 
@@ -219,9 +223,28 @@ Bug Fixes
 
 * SOLR-13089: Fix lsof edge cases in the solr CLI script (Martijn Koster via janhoy)
 
+* SOLR-14198: Nullpointer exception in AuditEvent when initialized from AuthorizationContext (janhoy)
+
 * SOLR-6613: TextField.analyzeMultiTerm does not throw an exception when Analyzer returns no terms. (Bruno Roustant)
 
 * SOLR-14192: Race condition between SchemaManager and ZkIndexSchemaReader. (ab)
+
+* SOLR-12859: Fixed DocExpirationUpdateProcessorFactory to work with BasicAuth and other auth plugins
+  that delegate to PKI for server initiated node-to-node communication. (hossman)
+
+* SOLR-11746: Adding existence queries for PointFields. DocValuesFieldExistsQuery and NormsFieldExistsQuery are used for existence queries when possible. (Houston Putman, hossman, Kai Chan)
+
+* SOLR-14207: Fix logging statements with less or more arguments than placeholders. (shalin)
+
+* SOLR-14172: Collection metadata remains in zookeeper if too many shards are requested. This also fixes a bug where
+  an inability to assign a node based on existing autoscaling policy resulted in a server error instead of a bad request.
+  (Andras Salamon, Kevin Risden, shalin)
+
+* SOLR-14196: AdminUI login not working for JWTAuth when blockUnknown=false (janhoy)
+
+* SOLR-14205: Do not fail when given timeout to connectionImpl.isValid() = 0 (Nick Vercammen via Kevin Risden)
+
+* SOLR-11554: Support handling OPTIONS request for Hadoop authentication filter (Peter Cseh via Kevin Risden)
 
 Other Changes
 ---------------------

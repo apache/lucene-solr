@@ -122,6 +122,8 @@ public class TestIndexedDISI extends LuceneTestCase {
     }
   }
 
+  // TODO: can this be toned down?
+  @Nightly
   public void testRandomBlocks() throws IOException {
     final int BLOCKS = 5;
     FixedBitSet set = createSetWithRandomBlocks(BLOCKS);

@@ -586,6 +586,7 @@ public abstract class BaseTermVectorsFormatTestCase extends BaseIndexFileFormatT
     }
   }
 
+  @Slow
   public void testLotsOfFields() throws IOException {
     final RandomDocumentFactory docFactory = new RandomDocumentFactory(5000, 10);
     for (Options options : validOptions()) {

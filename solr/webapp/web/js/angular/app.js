@@ -56,6 +56,10 @@ var solrAdminApp = angular.module("solrAdminApp", [
 ]);
 
 solrAdminApp.config([
+  '$locationProvider', function($locationProvider) {
+    $locationProvider.hashPrefix('');
+}])
+.config([
   '$routeProvider', function($routeProvider) {
     $routeProvider.
       when('/', {

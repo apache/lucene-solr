@@ -51,6 +51,7 @@ import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpHead;
+import org.apache.http.client.methods.HttpOptions;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.client.methods.HttpRequestBase;
@@ -60,6 +61,7 @@ import org.apache.solr.client.solrj.impl.CloudSolrClient;
 import org.apache.solr.client.solrj.impl.HttpClientUtil;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.SolrException.ErrorCode;
+import org.apache.solr.common.annotation.SolrThreadSafe;
 import org.apache.solr.common.cloud.Aliases;
 import org.apache.solr.common.cloud.ClusterState;
 import org.apache.solr.common.cloud.DocCollection;
@@ -134,6 +136,7 @@ import static org.apache.solr.servlet.SolrDispatchFilter.Action.RETURN;
 /**
  * This class represents a call made to Solr
  **/
+@SolrThreadSafe
 public class HttpSolrCall {
   private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
 
@@ -414,14 +417,12 @@ public class HttpSolrCall {
           if (path.equals(req.getServletPath())) {
             // avoid endless loop - pass through to Restlet via webapp
             action = PASSTHROUGH;
-            SolrRequestInfo.getRequestInfo().setAction(action);
-            return;
           } else {
             // forward rewritten URI (without path prefix and core/collection name) to Restlet
             action = FORWARD;
-            SolrRequestInfo.getRequestInfo().setAction(action);
-            return;
           }
+          SolrRequestInfo.getRequestInfo().setAction(action);
+          return;
         }
       }
 
@@ -684,6 +685,8 @@ public class HttpSolrCall {
         method = entityRequest;
       } else if ("DELETE".equals(req.getMethod())) {
         method = new HttpDelete(urlstr);
+      } else if ("OPTIONS".equals(req.getMethod())) {
+        method = new HttpOptions(urlstr);
       } else {
         throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
             "Unexpected method type: " + req.getMethod());
@@ -1123,7 +1126,7 @@ public class HttpSolrCall {
       }
       
       @Override
-      public Enumeration getHeaderNames() {
+      public Enumeration<String> getHeaderNames() {
         return getReq().getHeaderNames();
       }
 

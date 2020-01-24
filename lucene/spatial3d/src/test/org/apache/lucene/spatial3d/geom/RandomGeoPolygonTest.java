@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import com.carrotsearch.randomizedtesting.generators.BiasedNumbers;
 import org.junit.Test;
 
@@ -30,7 +29,6 @@ import org.junit.Test;
 public class RandomGeoPolygonTest extends RandomGeo3dShapeGenerator {
 
   @Test
-  @Repeat(iterations = 10)
   public void testRandomLUCENE8157() {
     final PlanetModel planetModel = randomPlanetModel();
     final GeoPoint startPoint = randomGeoPoint(planetModel);
@@ -92,7 +90,6 @@ public class RandomGeoPolygonTest extends RandomGeo3dShapeGenerator {
    * biased doubles.
    */
   @Test
-  @Repeat(iterations = 10)
   //@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8281")
   public void testCompareBigPolygons() {
     testComparePolygons(Math.PI);
@@ -103,7 +100,6 @@ public class RandomGeoPolygonTest extends RandomGeo3dShapeGenerator {
    * biased doubles.
    */
   @Test
-  @Repeat(iterations = 10)
   //@AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/LUCENE-8281")
   public void testCompareSmallPolygons() {
     testComparePolygons(1e-4 * Math.PI);

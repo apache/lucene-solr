@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <module type="JAVA_MODULE" version="4">
-  <component name="NewModuleRootManager" inherit-compiler-output="false">
+  <component name="NewModuleRootManager">
     <output url="file://$MODULE_DIR$/../../idea-build/lucene/sandbox/classes/java" />
     <output-test url="file://$MODULE_DIR$/../../idea-build/lucene/sandbox/classes/test" />
     <exclude-output />
@@ -21,10 +21,8 @@
       </library>
     </orderEntry>
     <orderEntry type="library" scope="TEST" name="JUnit" level="project" />
-    <orderEntry type="module" scope="TEST" module-name="lucene-test-framework" />
-    <orderEntry type="module" scope="TEST" module-name="codecs" />
-    <orderEntry type="module" module-name="spatial" />
+    <orderEntry type="module" module-name="lucene-test-framework" scope="TEST" />
+    <orderEntry type="module" module-name="codecs" scope="TEST" />
     <orderEntry type="module" module-name="lucene-core" />
   </component>
 </module>
-
