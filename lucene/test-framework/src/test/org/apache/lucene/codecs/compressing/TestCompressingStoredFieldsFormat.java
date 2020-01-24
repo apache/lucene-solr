@@ -46,14 +46,18 @@ public class TestCompressingStoredFieldsFormat extends BaseStoredFieldsFormatTes
 
   @Override
   protected Codec getCodec() {
-    return CompressingCodec.randomInstance(random());
+    if (TEST_NIGHTLY) {
+      return CompressingCodec.randomInstance(random());
+    } else {
+      return CompressingCodec.reasonableInstance(random());
+    }
   }
 
   public void testDeletePartiallyWrittenFilesIfAbort() throws IOException {
     Directory dir = newDirectory();
     IndexWriterConfig iwConf = newIndexWriterConfig(new MockAnalyzer(random()));
     iwConf.setMaxBufferedDocs(RandomNumbers.randomIntBetween(random(), 2, 30));
-    iwConf.setCodec(CompressingCodec.randomInstance(random()));
+    iwConf.setCodec(getCodec());
     // disable CFS because this test checks file names
     iwConf.setMergePolicy(newLogMergePolicy(false));
     iwConf.setUseCompoundFile(false);

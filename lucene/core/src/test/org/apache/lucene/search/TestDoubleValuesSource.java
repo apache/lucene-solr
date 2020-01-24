@@ -36,6 +36,7 @@ import org.apache.lucene.util.English;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
+@LuceneTestCase.SuppressCodecs("SimpleText")
 public class TestDoubleValuesSource extends LuceneTestCase {
 
   private static final double LEAST_DOUBLE_VALUE = 45.72;

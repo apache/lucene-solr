@@ -669,7 +669,7 @@ public class TestBlockJoin extends LuceneTestCase {
     final BitSetProducer parentsFilter = new QueryBitSetProducer(new TermQuery(new Term("isParent", "x")));
     CheckJoinIndex.check(joinS.getIndexReader(), parentsFilter);
 
-    final int iters = 200*RANDOM_MULTIPLIER;
+    final int iters = 200 * RANDOM_MULTIPLIER;
 
     for(int iter=0;iter<iters;iter++) {
       if (VERBOSE) {

@@ -59,7 +59,7 @@ public class TestExpressionSorts extends LuceneTestCase {
     super.setUp();
     dir = newDirectory();
     RandomIndexWriter iw = new RandomIndexWriter(random(), dir);
-    int numDocs = TestUtil.nextInt(random(), 2049, 4000);
+    int numDocs = atLeast(500);
     for (int i = 0; i < numDocs; i++) {
       Document document = new Document();
       document.add(newTextField("english", English.intToEnglish(i), Field.Store.NO));

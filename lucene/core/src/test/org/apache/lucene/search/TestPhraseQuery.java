@@ -627,8 +627,8 @@ public class TestPhraseQuery extends LuceneTestCase {
 
     int NUM_DOCS = atLeast(10);
     for (int i = 0; i < NUM_DOCS; i++) {
-      // must be > 4096 so it spans multiple chunks
-      int termCount = TestUtil.nextInt(random(), 4097, 8200);
+      // at night, must be > 4096 so it spans multiple chunks
+      int termCount = TEST_NIGHTLY ? atLeast(4097) : atLeast(200);
 
       List<String> doc = new ArrayList<>();
 
@@ -675,7 +675,7 @@ public class TestPhraseQuery extends LuceneTestCase {
     w.close();
 
     // now search
-    int num = atLeast(10);
+    int num = atLeast(3);
     for(int i=0;i<num;i++) {
       int docID = r.nextInt(docs.size());
       List<String> doc = docs.get(docID);
