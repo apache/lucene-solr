@@ -20,18 +20,14 @@ package org.apache.lucene.search;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.lucene.document.Document;
 import org.apache.lucene.index.FieldInfo;
 import org.apache.lucene.index.FieldInfos;
 import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.index.MultiFields;
 import org.apache.lucene.index.MultiVectorValues;
 import org.apache.lucene.index.VectorValues;
 import org.apache.lucene.util.Accountable;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.RamUsageEstimator;
 import org.apache.lucene.util.hnsw.HNSWGraphReader;
 
@@ -101,8 +97,7 @@ public class KnnGraphQuery extends Query implements Accountable {
       throw new IllegalArgumentException("Doc " + docId + " has no vector values.");
     }
     VectorValues vectorValues = MultiVectorValues.getVectorValues(reader, field);
-    boolean found = vectorValues.seek(docId);
-    if (!found) {
+    if (vectorValues == null || !vectorValues.seek(docId)) {
       throw new IllegalArgumentException("Doc " + docId + " has no vector values.");
     }
     return new KnnGraphQuery(field, vectorValues.vectorValue(), ef, reader, forceReload);

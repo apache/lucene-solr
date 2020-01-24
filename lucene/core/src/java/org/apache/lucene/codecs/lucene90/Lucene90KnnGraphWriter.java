@@ -216,8 +216,11 @@ public final class Lucene90KnnGraphWriter extends KnnGraphWriter {
       int docid;
       while ((docid = sub.nextDoc()) != NO_MORE_DOCS) {
         int mappedDocId = docMap.get(docid);
+        /// deleted document (not alive)
+        if (mappedDocId == -1) {
+          continue;
+        }
         assert sub.values.docID() == docid;
-        assert docid == multiVectors.unmap(mappedDocId) : "unmap mismatch " + docid + " != " + multiVectors.unmap(mappedDocId);
         valuesWriter.addValue(mappedDocId, sub.values.binaryValue());
       }
     }
