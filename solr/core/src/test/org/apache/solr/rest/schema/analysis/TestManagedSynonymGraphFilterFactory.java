@@ -321,7 +321,7 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
     // now put a synonym
     syns.put("tiger", Arrays.asList("tiger|1.0"));
     assertJPut(endpoint,
-        JSONUtil.toJSON(syns),
+        toJSONString(syns),
         "/responseHeader/status==0");
 
     // and check if it exists
@@ -358,7 +358,7 @@ public class TestManagedSynonymGraphFilterFactory extends RestTestBase {
     // now put a synonym
     List<String> tigerSyonyms = Arrays.asList("tiger|1.0", "panthera tigris|0.9", "Shere Kan|0.8");
     syns.put("tiger", tigerSyonyms);
-    String jsonTigerSynonyms = JSONUtil.toJSON(syns);
+    String jsonTigerSynonyms = toJSONString(syns);
     assertJPut(endpoint,
         jsonTigerSynonyms,
         "/responseHeader/status==0");

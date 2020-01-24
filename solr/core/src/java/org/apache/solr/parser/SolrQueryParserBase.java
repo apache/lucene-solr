@@ -58,7 +58,6 @@ import org.apache.lucene.search.spans.SpanBoostQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanQuery;
 import org.apache.lucene.search.spans.SpanTermQuery;
-import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.QueryBuilder;
 import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Automaton;
@@ -105,8 +104,10 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
    *  {@link #AS_SAME_TERM}
    *  {@link #PICK_BEST}
    *  {@link #AS_DISTINCT_TERMS}
+   *  {@link #PICK_BEST_BOOST_BY_PAYLOAD}
+   *  {@link #AS_DISTINCT_TERMS_BOOST_BY_PAYLOAD}
    */
-  public static enum SynonymQueryStyle {
+  public enum SynonymQueryStyle {
     /** (default) synonym terms share doc freq
      *  so if "pants" has df 500, and "khakis" a df of 50, uses 500 df when scoring both terms
      *  appropriate for exact synonyms
@@ -752,7 +753,7 @@ public abstract class SolrQueryParserBase extends QueryBuilder {
    */
   @Override
   protected SpanQuery createSpanQuery(TokenStream source, String field) throws IOException {
-    if (synonymQueryStyle == PICK_BEST_BOOST_BY_PAYLOAD || synonymQueryStyle == AS_DISTINCT_TERMS_BOOST_BY_PAYLOAD) {
+    if (synonymQueryStyle == SynonymQueryStyle.PICK_BEST_BOOST_BY_PAYLOAD || synonymQueryStyle == SynonymQueryStyle.AS_DISTINCT_TERMS_BOOST_BY_PAYLOAD) {
       try (CachingTokenFilter stream = new CachingTokenFilter(source)) {
         TermToBytesRefAttribute termAtt = stream.getAttribute(TermToBytesRefAttribute.class);
         PayloadAttribute payloadAttribute = stream.getAttribute(PayloadAttribute.class);

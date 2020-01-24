@@ -615,7 +615,7 @@ public class QueryBuilder {
       final SpanQuery queryClause;
       if (graph.hasSidePath(start)) {
         Iterator<TokenStream> sidePaths = graph.getFiniteStrings(start, end);
-        List<SpanQuery> sidePathQueries = newGraphSpanQueries(field, sidePaths);
+        List<SpanQuery> sidePathQueries = newGraphSpanQueries(field, sidePaths, maxClauseCount);
         if (sidePathQueries.size() > 0) {
           queryClause = new SpanOrQuery(sidePathQueries.toArray(new SpanQuery[0]));
         } else {
@@ -655,7 +655,7 @@ public class QueryBuilder {
     }
   }
 
-  protected List<SpanQuery> newGraphSpanQueries(String field, Iterator<TokenStream> sidePaths) throws IOException {
+  protected List<SpanQuery> newGraphSpanQueries(String field, Iterator<TokenStream> sidePaths, int maxClauseCount) throws IOException {
     List<SpanQuery> queries = new ArrayList<>();
     while (sidePaths.hasNext()) {
       TokenStream sidePath = sidePaths.next();
