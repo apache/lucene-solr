@@ -367,7 +367,7 @@ public class GroupFacetCollectorTest extends AbstractGroupingTestCase {
 
   public void testRandom() throws Exception {
     Random random = random();
-    int numberOfRuns = TestUtil.nextInt(random, 3, 6);
+    int numberOfRuns = atLeast(1);
     for (int indexIter = 0; indexIter < numberOfRuns; indexIter++) {
       boolean multipleFacetsPerDocument = random.nextBoolean();
       IndexContext context = createIndexContext(multipleFacetsPerDocument);

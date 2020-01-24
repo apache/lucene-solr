@@ -339,7 +339,7 @@ public class TestICUTokenizer extends BaseTokenStreamTestCase {
   /** blast some random large strings through the analyzer */
   public void testRandomHugeStrings() throws Exception {
     Random random = random();
-    checkRandomData(random, a, 100*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, a, 10 * RANDOM_MULTIPLIER, 8192);
   }
   
   public void testTokenAttributes() throws Exception {

@@ -56,6 +56,7 @@ import org.apache.lucene.util.automaton.Automata;
 import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.Transition;
 
+@LuceneTestCase.SuppressCodecs("SimpleText")
 public class TestTermAutomatonQuery extends LuceneTestCase {
   // "comes * sun"
   public void testBasic1() throws Exception {

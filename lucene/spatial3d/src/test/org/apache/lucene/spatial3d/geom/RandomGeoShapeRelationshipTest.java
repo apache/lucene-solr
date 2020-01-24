@@ -181,7 +181,8 @@ public class RandomGeoShapeRelationshipTest extends RandomGeo3dShapeGenerator {
    * If shape is concave, the shape for reference should be concave as well.
    *
    */
-  @Test
+  // TODO: this test seems to hit pathological cases that cause it to run for many minutes?!
+  @Test @Nightly
   public void testRandomContains() {
     int referenceShapeType = CONVEX_SIMPLE_POLYGON;
     PlanetModel planetModel = randomPlanetModel();

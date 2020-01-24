@@ -980,7 +980,8 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     dir.close();
   }
   
-  @Slow
+  // TODO: this test can hit pathological cases (IW settings?) where it runs for far too long
+  @Nightly
   public void testIndexingThenDeleting() throws Exception {
     // TODO: move this test to its own class and just @SuppressCodecs?
     // TODO: is it enough to just use newFSDirectory?

@@ -662,8 +662,8 @@ public class TestIDVersionPostingsFormat extends LuceneTestCase {
       }
     }
 
-    // Run for 3 sec in normal tests, else 60 seconds for nightly:
-    final long stopTime = System.currentTimeMillis() + (TEST_NIGHTLY ? 60000 : 3000);
+    // Run for .5 sec in normal tests, else 60 seconds for nightly:
+    final long stopTime = System.currentTimeMillis() + (TEST_NIGHTLY ? 60000 : 500);
 
     for(int i=0;i<threads.length;i++) {
       threads[i] = new Thread() {
