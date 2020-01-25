@@ -67,7 +67,7 @@ public class TestShardSearching extends ShardSearchingTestBase {
   public void testSimple() throws Exception {
     final int numNodes = TestUtil.nextInt(random(), 1, 10);
 
-    final double runTimeSec = atLeast(3);
+    final double runTimeSec = TEST_NIGHTLY ? atLeast(5) : atLeast(1);
 
     final int minDocsToMakeTerms = TestUtil.nextInt(random(), 5, 20);
 

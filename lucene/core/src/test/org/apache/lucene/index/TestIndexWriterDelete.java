@@ -486,7 +486,8 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     doTestOperationsOnDiskFull(false);
   }
 
-  @Slow
+  // TODO: can we tone this test down so it isn't crazy slow?
+  @Nightly
   public void testUpdatesOnDiskFull() throws IOException {
     doTestOperationsOnDiskFull(true);
   }
@@ -979,7 +980,8 @@ public class TestIndexWriterDelete extends LuceneTestCase {
     dir.close();
   }
   
-  @Slow
+  // TODO: this test can hit pathological cases (IW settings?) where it runs for far too long
+  @Nightly
   public void testIndexingThenDeleting() throws Exception {
     // TODO: move this test to its own class and just @SuppressCodecs?
     // TODO: is it enough to just use newFSDirectory?

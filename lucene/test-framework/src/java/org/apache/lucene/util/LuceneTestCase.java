@@ -1095,7 +1095,7 @@ public abstract class LuceneTestCase extends Assert {
     if (rarely(r)) {
       logmp.setMergeFactor(TestUtil.nextInt(r, 2, 9));
     } else {
-      logmp.setMergeFactor(TestUtil.nextInt(r, 100, 500));
+      logmp.setMergeFactor(TestUtil.nextInt(r, 10, 50));
     }
     configureRandom(r, logmp);
     return logmp;

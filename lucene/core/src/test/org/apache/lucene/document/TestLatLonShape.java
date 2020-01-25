@@ -223,7 +223,7 @@ public class TestLatLonShape extends LuceneTestCase {
 
   /** test we can search for a point with a large number of vertices*/
   public void testLargeVertexPolygon() throws Exception {
-    int numVertices = TestUtil.nextInt(random(), 200000, 500000);
+    int numVertices = TEST_NIGHTLY ? TestUtil.nextInt(random(), 200000, 500000) : TestUtil.nextInt(random(), 20000, 50000);
     IndexWriterConfig iwc = newIndexWriterConfig();
     iwc.setMergeScheduler(new SerialMergeScheduler());
     int mbd = iwc.getMaxBufferedDocs();

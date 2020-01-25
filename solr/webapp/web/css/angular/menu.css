@@ -49,6 +49,12 @@ limitations under the License.
   padding-right: 10px;
 }
 
+#core-selector .chosen-container,
+#collection-selector .chosen-container
+{
+  width: 100% !important;
+}
+
 #core-selector a,
 #collection-selector a
 {

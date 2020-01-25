@@ -304,7 +304,7 @@ public class OverseerTaskProcessor implements Runnable, Closeable {
               continue;
             } catch (InterruptedException e) {
               lock.unlock();
-              log.error("Thread interrupted while trying to pick task for execution.", head.getId());
+              log.error("Thread interrupted while trying to pick task {} for execution.", head.getId());
               Thread.currentThread().interrupt();
               continue;
             }

@@ -75,10 +75,24 @@ public class Stats {
   /** Total number of bytes used to store term suffixes. */
   public long totalBlockSuffixBytes;
 
+  /**
+   * Number of times each compression method has been used.
+   * 0 = uncompressed
+   * 1 = lowercase_ascii
+   * 2 = LZ4
+   */
+  public final long[] compressionAlgorithms = new long[3];
+
+  /** Total number of suffix bytes before compression. */
+  public long totalUncompressedBlockSuffixBytes;
+
   /** Total number of bytes used to store term stats (not
    *  including what the {@link PostingsReaderBase}
    *  stores. */
   public long totalBlockStatsBytes;
+
+  /** Total number of bytes used to store stats. */
+  public long totalUncompressedBlockStatsBytes;
 
   /** Total bytes stored by the {@link PostingsReaderBase},
    *  plus the other few vInts stored in the frame. */
@@ -111,8 +125,14 @@ public class Stats {
     }
     blockCountByPrefixLen[frame.prefix]++;
     startBlockCount++;
-    totalBlockSuffixBytes += frame.suffixesReader.length();
-    totalBlockStatsBytes += frame.statsReader.length();
+    totalBlockSuffixBytes += frame.totalSuffixBytes;
+    totalUncompressedBlockSuffixBytes += frame.suffixesReader.length();
+    if (frame.suffixesReader != frame.suffixLengthsReader) {
+      totalUncompressedBlockSuffixBytes += frame.suffixLengthsReader.length();
+    }
+    totalBlockStatsBytes += frame.totalStatsBytes;
+    compressionAlgorithms[frame.compressionAlg.code]++;
+    totalUncompressedBlockStatsBytes += frame.statsReader.length();
   }
 
   void endBlock(SegmentTermsEnumFrame frame) {
@@ -129,7 +149,7 @@ public class Stats {
       throw new IllegalStateException();
     }
     endBlockCount++;
-    final long otherBytes = frame.fpEnd - frame.fp - frame.suffixesReader.length() - frame.statsReader.length();
+    final long otherBytes = frame.fpEnd - frame.fp - frame.totalSuffixBytes - frame.totalStatsBytes;
     assert otherBytes > 0 : "otherBytes=" + otherBytes + " frame.fp=" + frame.fp + " frame.fpEnd=" + frame.fpEnd;
     totalBlockOtherBytes += otherBytes;
   }
@@ -167,8 +187,23 @@ public class Stats {
     out.println("    " + floorBlockCount + " floor blocks");
     out.println("    " + (totalBlockCount-floorSubBlockCount) + " non-floor blocks");
     out.println("    " + floorSubBlockCount + " floor sub-blocks");
-    out.println("    " + totalBlockSuffixBytes + " term suffix bytes" + (totalBlockCount != 0 ? " (" + String.format(Locale.ROOT, "%.1f", ((double) totalBlockSuffixBytes)/totalBlockCount) + " suffix-bytes/block)" : ""));
-    out.println("    " + totalBlockStatsBytes + " term stats bytes" + (totalBlockCount != 0 ? " (" + String.format(Locale.ROOT, "%.1f", ((double) totalBlockStatsBytes)/totalBlockCount) + " stats-bytes/block)" : ""));
+    out.println("    " + totalUncompressedBlockSuffixBytes + " term suffix bytes before compression" + (totalBlockCount != 0 ? " (" + String.format(Locale.ROOT, "%.1f", ((double) totalBlockSuffixBytes)/totalBlockCount) + " suffix-bytes/block)" : ""));
+    StringBuilder compressionCounts = new StringBuilder();
+    for (int code = 0; code < compressionAlgorithms.length; ++code) {
+      if (compressionAlgorithms[code] == 0) {
+        continue;
+      }
+      if (compressionCounts.length() > 0) {
+        compressionCounts.append(", ");
+      }
+      compressionCounts.append(CompressionAlgorithm.byCode(code));
+      compressionCounts.append(": ");
+      compressionCounts.append(compressionAlgorithms[code]);
+    }
+    out.println("    " + totalBlockSuffixBytes + " compressed term suffix bytes" + (totalBlockCount != 0 ? " (" + String.format(Locale.ROOT, "%.2f", ((double) totalBlockSuffixBytes)/totalUncompressedBlockSuffixBytes) +
+        " compression ratio - compression count by algorithm: " + compressionCounts : "") + ")");
+    out.println("    " + totalUncompressedBlockStatsBytes + " term stats bytes before compression" + (totalBlockCount != 0 ? " (" + String.format(Locale.ROOT, "%.1f", ((double) totalUncompressedBlockStatsBytes)/totalBlockCount) + " stats-bytes/block)" : ""));
+    out.println("    " + totalBlockStatsBytes + " compressed term stats bytes (" + String.format(Locale.ROOT, "%.2f", (double)totalBlockStatsBytes / totalUncompressedBlockStatsBytes) + " compression ratio)");
     out.println("    " + totalBlockOtherBytes + " other bytes" + (totalBlockCount != 0 ? " (" + String.format(Locale.ROOT, "%.1f", ((double) totalBlockOtherBytes)/totalBlockCount) + " other-bytes/block)" : ""));
     if (totalBlockCount != 0) {
       out.println("    by prefix length:");

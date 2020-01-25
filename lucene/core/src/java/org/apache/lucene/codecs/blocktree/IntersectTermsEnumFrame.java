@@ -18,13 +18,16 @@ package org.apache.lucene.codecs.blocktree;
 
 
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.lucene.codecs.BlockTermState;
+import org.apache.lucene.index.CorruptIndexException;
 import org.apache.lucene.index.IndexOptions;
 import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.automaton.Transition;
+import org.apache.lucene.util.compress.LZ4;
 import org.apache.lucene.util.fst.FST;
 
 // TODO: can we share this with the frame in STE?
@@ -47,6 +50,9 @@ final class IntersectTermsEnumFrame {
 
   byte[] suffixBytes = new byte[128];
   final ByteArrayDataInput suffixesReader = new ByteArrayDataInput();
+
+  byte[] suffixLengthBytes;
+  final ByteArrayDataInput suffixLengthsReader;
 
   byte[] statBytes = new byte[64];
   final ByteArrayDataInput statsReader = new ByteArrayDataInput();
@@ -93,12 +99,21 @@ final class IntersectTermsEnumFrame {
   int suffix;
 
   private final IntersectTermsEnum ite;
+  private final int version;
 
   public IntersectTermsEnumFrame(IntersectTermsEnum ite, int ord) throws IOException {
     this.ite = ite;
     this.ord = ord;
     this.termState = ite.fr.parent.postingsReader.newTermState();
     this.termState.totalTermFreq = -1;
+    this.version = ite.fr.parent.version;
+    if (version >= BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
+      suffixLengthBytes = new byte[32];
+      suffixLengthsReader = new ByteArrayDataInput();
+    } else {
+      suffixLengthBytes = null;
+      suffixLengthsReader = suffixesReader;
+    }
   }
 
   void loadNextFloorBlock() throws IOException {
@@ -170,27 +185,70 @@ final class IntersectTermsEnumFrame {
     isLastInFloor = (code & 1) != 0;
 
     // term suffixes:
-    code = ite.in.readVInt();
-    isLeafBlock = (code & 1) != 0;
-    int numBytes = code >>> 1;
-    if (suffixBytes.length < numBytes) {
-      suffixBytes = new byte[ArrayUtil.oversize(numBytes, 1)];
+    if (version >= BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
+      final long codeL = ite.in.readVLong();
+      isLeafBlock = (codeL & 0x04) != 0;
+      final int numSuffixBytes = (int) (codeL >>> 3);
+      if (suffixBytes.length < numSuffixBytes) {
+        suffixBytes = new byte[ArrayUtil.oversize(numSuffixBytes, 1)];
+      }
+      final CompressionAlgorithm compressionAlg;
+      try {
+        compressionAlg = CompressionAlgorithm.byCode((int) codeL & 0x03);
+      } catch (IllegalArgumentException e) {
+        throw new CorruptIndexException(e.getMessage(), ite.in, e);
+      }
+      compressionAlg.read(ite.in, suffixBytes, numSuffixBytes);
+      suffixesReader.reset(suffixBytes, 0, numSuffixBytes);
+
+      int numSuffixLengthBytes = ite.in.readVInt();
+      final boolean allEqual = (numSuffixLengthBytes & 0x01) != 0;
+      numSuffixLengthBytes >>>= 1;
+      if (suffixLengthBytes.length < numSuffixLengthBytes) {
+        suffixLengthBytes = new byte[ArrayUtil.oversize(numSuffixLengthBytes, 1)];
+      }
+      if (allEqual) {
+        Arrays.fill(suffixLengthBytes, 0, numSuffixLengthBytes, ite.in.readByte());
+      } else {
+        LZ4.decompress(ite.in, numSuffixLengthBytes, suffixLengthBytes, 0);
+      }
+      suffixLengthsReader.reset(suffixLengthBytes, 0, numSuffixLengthBytes);
+    } else {
+      code = ite.in.readVInt();
+      isLeafBlock = (code & 1) != 0;
+      int numBytes = code >>> 1;
+      if (suffixBytes.length < numBytes) {
+        suffixBytes = new byte[ArrayUtil.oversize(numBytes, 1)];
+      }
+      ite.in.readBytes(suffixBytes, 0, numBytes);
+      suffixesReader.reset(suffixBytes, 0, numBytes);
     }
-    ite.in.readBytes(suffixBytes, 0, numBytes);
-    suffixesReader.reset(suffixBytes, 0, numBytes);
 
     // stats
-    numBytes = ite.in.readVInt();
-    if (statBytes.length < numBytes) {
-      statBytes = new byte[ArrayUtil.oversize(numBytes, 1)];
+    int numBytes = ite.in.readVInt();
+    if (version >= BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
+      final boolean allOnes = (numBytes & 0x01) != 0;
+      numBytes >>>= 1;
+      if (statBytes.length < numBytes) {
+        statBytes = new byte[ArrayUtil.oversize(numBytes, 1)];
+      }
+      if (allOnes) {
+        Arrays.fill(statBytes, 0, numBytes, (byte) 1);
+      } else {
+        LZ4.decompress(ite.in, numBytes, statBytes, 0);
+      }
+    } else {
+      if (statBytes.length < numBytes) {
+        statBytes = new byte[ArrayUtil.oversize(numBytes, 1)];
+      }
+      ite.in.readBytes(statBytes, 0, numBytes);
     }
-    ite.in.readBytes(statBytes, 0, numBytes);
     statsReader.reset(statBytes, 0, numBytes);
     metaDataUpto = 0;
 
     termState.termBlockOrd = 0;
     nextEnt = 0;
-         
+
     // metadata
     numBytes = ite.in.readVInt();
     if (bytes.length < numBytes) {
@@ -221,7 +279,7 @@ final class IntersectTermsEnumFrame {
   public void nextLeaf() {
     assert nextEnt != -1 && nextEnt < entCount: "nextEnt=" + nextEnt + " entCount=" + entCount + " fp=" + fp;
     nextEnt++;
-    suffix = suffixesReader.readVInt();
+    suffix = suffixLengthsReader.readVInt();
     startBytePos = suffixesReader.getPosition();
     suffixesReader.skipBytes(suffix);
   }
@@ -229,7 +287,7 @@ final class IntersectTermsEnumFrame {
   public boolean nextNonLeaf() {
     assert nextEnt != -1 && nextEnt < entCount: "nextEnt=" + nextEnt + " entCount=" + entCount + " fp=" + fp;
     nextEnt++;
-    final int code = suffixesReader.readVInt();
+    final int code = suffixLengthsReader.readVInt();
     suffix = code >>> 1;
     startBytePos = suffixesReader.getPosition();
     suffixesReader.skipBytes(suffix);
@@ -239,7 +297,7 @@ final class IntersectTermsEnumFrame {
       return false;
     } else {
       // A sub-block; make sub-FP absolute:
-      lastSubFP = fp - suffixesReader.readVLong();
+      lastSubFP = fp - suffixLengthsReader.readVLong();
       return true;
     }
   }

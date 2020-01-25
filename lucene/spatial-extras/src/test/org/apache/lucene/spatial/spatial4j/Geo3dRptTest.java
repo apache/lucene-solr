@@ -157,8 +157,11 @@ public class Geo3dRptTest extends RandomSpatialOpStrategyTestCase {
     final List<Shape> queryShapes = new ArrayList<>();
     while(querySpatialData.hasNext()) {
       queryShapes.add(querySpatialData.next().shape);
-      queryShapes.add(randomQueryShape());
+      if (TEST_NIGHTLY) {
+        queryShapes.add(randomQueryShape());
+      }
     }
+    queryShapes.add(randomQueryShape());
     testOperation(SpatialOperation.Intersects, indexedShapes, queryShapes, random().nextBoolean());
   }
 }

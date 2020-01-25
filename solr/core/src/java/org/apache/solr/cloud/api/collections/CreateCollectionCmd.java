@@ -193,7 +193,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
         ZkNodeProps deleteMessage = new ZkNodeProps("name", collectionName);
         new DeleteCollectionCmd(ocmh).call(clusterState, deleteMessage, results);
         // unwrap the exception
-        throw new SolrException(ErrorCode.SERVER_ERROR, e.getMessage(), e.getCause());
+        throw new SolrException(ErrorCode.BAD_REQUEST, e.getMessage(), e.getCause());
       }
 
       if (replicaPositions.isEmpty()) {
@@ -387,7 +387,7 @@ public class CreateCollectionCmd implements OverseerCollectionMessageHandler.Cmd
           maxShardsPerNode * nodeList.size();
       int requestedShardsToCreate = numSlices * totalNumReplicas;
       if (maxShardsAllowedToCreate < requestedShardsToCreate) {
-        throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, "Cannot create collection " + collectionName + ". Value of "
+        throw new Assign.AssignmentException("Cannot create collection " + collectionName + ". Value of "
             + MAX_SHARDS_PER_NODE + " is " + maxShardsPerNode
             + ", and the number of nodes currently live or live and part of your "+OverseerCollectionMessageHandler.CREATE_NODE_SET+" is " + nodeList.size()
             + ". This allows a maximum of " + maxShardsAllowedToCreate

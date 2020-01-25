@@ -897,7 +897,7 @@ public class TestTermsEnum extends LuceneTestCase {
     Set<String> terms = new HashSet<String>();
     //String prefix = TestUtil.randomSimpleString(random(), 1, 20);
     String prefix = TestUtil.randomRealisticUnicodeString(random(), 1, 20);
-    int numTerms = atLeast(1000);
+    int numTerms = atLeast(100);
     if (VERBOSE) {
       System.out.println("TEST: " + numTerms + " terms; prefix=" + prefix);
     }

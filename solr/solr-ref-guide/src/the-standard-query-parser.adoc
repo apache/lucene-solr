@@ -146,6 +146,15 @@ To perform a proximity search, add the tilde character ~ and a numeric value to 
 
 The distance referred to here is the number of term movements needed to match the specified phrase. In the example above, if "apache" and "jakarta" were 10 spaces apart in a field, but "apache" appeared before "jakarta", more than 10 term movements would be required to move the terms together and position "apache" to the right of "jakarta" with a space in between.
 
+=== Existence Searches
+
+An existence search for a field matches all documents where a value exists for that field.
+To query for a field existing, simply use a wildcard instead of a term in the search.
+
+`field:*`
+
+A field will be considered to "exist" if it has any value, even values which are often considered "not existent". (e.g. `NaN`, `""`, etc.)
+
 === Range Searches
 
 A range search specifies a range of values for a field (a range with an upper bound and a lower bound). The query matches documents whose values for the specified field or fields fall within the range. Range queries can be inclusive or exclusive of the upper and lower bounds. Sorting is done lexicographically, except on numeric fields. For example, the range query below matches all documents whose `popularity` field has a value between 52 and 10,000, inclusive.
@@ -163,6 +172,25 @@ The brackets around a query determine its inclusiveness.
 * Square brackets `[` & `]` denote an inclusive range query that matches values including the upper and lower bound.
 * Curly brackets `{` & `}` denote an exclusive range query that matches values between the upper and lower bounds, but excluding the upper and lower bounds themselves.
 * You can mix these types so one end of the range is inclusive and the other is exclusive. Here's an example: `count:{1 TO 10]`
+
+Wildcards, `*`, can also be used for either or both endpoints to specify an open-ended range query.
+This is a <<#differences-between-lucenes-classic-query-parser-and-solrs-standard-query-parser,divergence from Lucene's Classic Query Parser>>.
+
+* `field:[* TO 100]` finds all field values less than or equal to 100.
+* `field:[100 TO *]` finds all field values greater than or equal to 100.
+* `field:[* TO *]` finds any document with a value between the effective values of -Infinity and +Infinity for that field type.
+
+
+[NOTE]
+.Matching `NaN` values with wildcards
+====
+For most fields, unbounded range queries, `field:[* TO *]`, are equivalent to existence queries, `field: *` .
+However for float/double types that support `NaN` values, these two queries perform differently.
+
+* `field:*` matches all existing values, including `NaN`
+* `field:[* TO *]` matches all real values, excluding `NaN`
+====
+
 
 === Boosting a Term with "^"
 
@@ -322,13 +350,14 @@ Comments may be nested.
 
 Solr's standard query parser originated as a variation of Lucene's "classic" QueryParser.  It diverges in the following ways:
 
-* A `*` may be used for either or both endpoints to specify an open-ended range query
+* A `*` may be used for either or both endpoints to specify an open-ended range query, or by itself as an existence query.
 ** `field:[* TO 100]` finds all field values less than or equal to 100
 ** `field:[100 TO *]` finds all field values greater than or equal to 100
-** `field:[* TO *]` matches all documents with the field
+** `field:[* TO *]` finds all documents where the field has a value between `-Infinity` and `Infinity`, excluding `NaN`.
+** `field:*` finds all documents where the field exists (i.e. has any value).
 * Pure negative queries (all clauses prohibited) are allowed (only as a top-level clause)
 ** `-inStock:false` finds all field values where inStock is not false
-** `-field:[* TO *]` finds all documents without a value for field
+** `-field:*` finds all documents without a value for the field.
 * Support for embedded Solr queries (sub-queries) using any type of query parser as a nested clause using the local-params syntax.
 ** `inStock:true OR {!dismax qf='name manu' v='ipod'}`
 +
