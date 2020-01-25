@@ -58,7 +58,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
 
     public Query parse() throws SyntaxError {
       String reRankQueryString = localParams.get(RERANK_QUERY);
-      if (reRankQueryString == null || StringUtils.isWhitespace(reRankQueryString) ) {
+      if (StringUtils.isBlank(reRankQueryString)) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, RERANK_QUERY+" parameter is mandatory");
       }
       QParser reRankParser = QParser.getParser(reRankQueryString, req);

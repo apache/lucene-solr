@@ -134,7 +134,7 @@ public class ExtendedDismaxQParser extends QParser {
     parsedUserQuery = null;
     String userQuery = getString();
     altUserQuery = null;
-    if( userQuery == null || StringUtils.isWhitespace(userQuery) ) {
+    if (StringUtils.isBlank(userQuery)) {
       // If no query is specified, we may have an alternate
       if (config.altQ != null) {
         QParser altQParser = subQuery(config.altQ, null);

@@ -195,7 +195,7 @@ public class DisMaxQParser extends QParser {
     parsedUserQuery = null;
     String userQuery = getString();
     altUserQuery = null;
-    if (userQuery == null || StringUtils.isWhitespace(userQuery) ) {
+    if (StringUtils.isBlank(userQuery)) {
       // If no query is specified, we may have an alternate
       altUserQuery = getAlternateUserQuery(solrParams);
       if (altUserQuery == null)
