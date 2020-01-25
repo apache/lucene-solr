@@ -279,6 +279,8 @@ Bug Fixes
 
 * SOLR-13887: Use default idleTimeout instead of 0 for HTTP2 requests. (Houston Putman)
 
+* SOLR-14038: Admin UI display for "state.json" should be in a scollable region (Kevin Risden)
+
 Other Changes
 ---------------------
 
