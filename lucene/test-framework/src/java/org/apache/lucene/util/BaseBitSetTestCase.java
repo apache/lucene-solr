@@ -134,7 +134,7 @@ public abstract class BaseBitSetTestCase<T extends BitSet> extends LuceneTestCas
     for (float percentSet : new float[] {0, 0.01f, 0.1f, 0.5f, 0.9f, 0.99f, 1f}) {
       BitSet set1 = new JavaUtilBitSet(randomSet(numBits, percentSet), numBits);
       T set2 = copyOf(set1, numBits);
-      final int iters = 1 + random().nextInt(100);
+      final int iters = atLeast(10);
       for (int i = 0; i < iters; ++i) {
         final int from = random().nextInt(numBits);
         final int to = random().nextInt(numBits + 1);

@@ -494,7 +494,7 @@ public class TestBlockJoin extends LuceneTestCase {
     final Directory joinDir = newDirectory();
 
     final int maxNumChildrenPerParent = 20;
-    final int numParentDocs = TestUtil.nextInt(random(), 100 * RANDOM_MULTIPLIER, 300 * RANDOM_MULTIPLIER);
+    final int numParentDocs = TestUtil.nextInt(random(), 10* RANDOM_MULTIPLIER, 30 * RANDOM_MULTIPLIER);
     //final int numParentDocs = 30;
 
     // Values for parent fields:
@@ -639,7 +639,7 @@ public class TestBlockJoin extends LuceneTestCase {
     final BitSetProducer parentsFilter = new QueryBitSetProducer(new TermQuery(new Term("isParent", "x")));
     CheckJoinIndex.check(joinS.getIndexReader(), parentsFilter);
 
-    final int iters = 200*RANDOM_MULTIPLIER;
+    final int iters = 200 * RANDOM_MULTIPLIER;
 
     for(int iter=0;iter<iters;iter++) {
       if (VERBOSE) {

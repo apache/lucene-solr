@@ -38,6 +38,7 @@ import org.apache.lucene.analysis.util.ResourceLoaderAware;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
 import org.apache.lucene.analysis.util.TokenizerFactory;
 import org.apache.lucene.util.AttributeFactory;
+import org.apache.lucene.util.LuceneTestCase.Nightly;
 import org.apache.lucene.util.Version;
 
 /**
@@ -48,6 +49,7 @@ import org.apache.lucene.util.Version;
 // TODO: this was copied from the analysis/common module ... find a better way to share it!
 
 // TODO: fix this to use CustomAnalyzer instead of its own FactoryAnalyzer
+@Nightly
 public class TestFactories extends BaseTokenStreamTestCase {
   
   /** Factories that are excluded from testing it with random data */
@@ -78,7 +80,7 @@ public class TestFactories extends BaseTokenStreamTestCase {
         // beast it just a little, it shouldnt throw exceptions:
         // (it should have thrown them in initialize)
         Analyzer a = new FactoryAnalyzer(factory, null, null);
-        checkRandomData(random(), a, 20, 20, false, false);
+        checkRandomData(random(), a, 3, 20, false, false);
         a.close();
       }
     }
@@ -93,7 +95,7 @@ public class TestFactories extends BaseTokenStreamTestCase {
         // beast it just a little, it shouldnt throw exceptions:
         // (it should have thrown them in initialize)
         Analyzer a = new FactoryAnalyzer(assertingTokenizer, factory, null);
-        checkRandomData(random(), a, 20, 20, false, false);
+        checkRandomData(random(), a, 3, 20, false, false);
         a.close();
       }
     }
@@ -108,7 +110,7 @@ public class TestFactories extends BaseTokenStreamTestCase {
         // beast it just a little, it shouldnt throw exceptions:
         // (it should have thrown them in initialize)
         Analyzer a = new FactoryAnalyzer(assertingTokenizer, null, factory);
-        checkRandomData(random(), a, 20, 20, false, false);
+        checkRandomData(random(), a, 3, 20, false, false);
         a.close();
       }
     }

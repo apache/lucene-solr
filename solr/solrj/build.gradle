@@ -1,0 +1,57 @@
+
+apply plugin: 'java-library'
+
+dependencies {
+  api 'org.slf4j:slf4j-api'
+  implementation 'org.slf4j:jcl-over-slf4j'
+
+  api 'commons-io:commons-io'
+  api 'org.apache.commons:commons-math3'
+
+  api 'org.eclipse.jetty.http2:http2-client'
+  api 'org.eclipse.jetty.http2:http2-http-client-transport'
+  api 'org.eclipse.jetty:jetty-util'
+  api 'org.eclipse.jetty:jetty-http'
+  api 'org.eclipse.jetty:jetty-alpn-java-client'
+  api 'org.eclipse.jetty:jetty-alpn-client'
+
+  api('org.apache.httpcomponents:httpmime', {
+    exclude group: "commons-codec", module: "commons-codec"
+    exclude group: "commons-logging", module: "commons-logging"
+  })
+
+  api 'io.netty:netty-buffer'
+  api 'io.netty:netty-codec'
+  api 'io.netty:netty-common'
+  api 'io.netty:netty-handler'
+  api 'io.netty:netty-resolver'
+  api 'io.netty:netty-transport'
+  api 'io.netty:netty-transport-native-epoll'
+  api 'io.netty:netty-transport-native-unix-common'
+
+  api('org.apache.zookeeper:zookeeper', {
+    exclude group: "org.apache.yetus", module: "audience-annotations"
+    exclude group: "io.netty", module: "netty-all"
+    exclude group: "log4j", module: "log4j"
+    exclude group: "org.slf4j", module: "slf4j-log4j12"
+  })
+
+  api('org.codehaus.woodstox:woodstox-core-asl', {
+    exclude group: "javax.xml.stream", module: "stax-api"
+  })
+
+  testImplementation project(':solr:test-framework')
+  testImplementation 'org.eclipse.jetty:jetty-webapp'
+  testImplementation ('org.eclipse.jetty:jetty-alpn-java-server', {
+    exclude group: "org.eclipse.jetty.alpn", module: "alpn-api"
+  })
+  testImplementation 'org.restlet.jee:org.restlet.ext.servlet'
+  testImplementation 'org.objenesis:objenesis'
+  testImplementation('org.mockito:mockito-core', {
+    exclude group: "net.bytebuddy", module: "byte-buddy-agent"
+  })
+  testImplementation("org.apache.logging.log4j:log4j-slf4j-impl", {
+    exclude group: "org.apache.logging.log4j", module: "log4j-api"
+  })
+  testImplementation "org.hsqldb:hsqldb"
+}

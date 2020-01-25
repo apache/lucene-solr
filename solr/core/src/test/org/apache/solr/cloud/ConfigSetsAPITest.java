@@ -19,6 +19,10 @@ package org.apache.solr.cloud;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.ConfigSetAdminRequest;
 import org.apache.solr.common.SolrException;
+import org.apache.solr.core.CoreContainer;
+import org.apache.solr.core.SolrCore;
+import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -26,14 +30,25 @@ public class ConfigSetsAPITest extends SolrCloudTestCase {
 
   @BeforeClass
   public static void setupCluster() throws Exception {
-    configureCluster(1)
+    System.setProperty("shareSchema", "true");  // see testSharedSchema
+
+    configureCluster(1) // some tests here assume 1 node
         .addConfig("conf1", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
+        .addConfig("cShare", TEST_PATH().resolve("configsets").resolve("cloud-minimal").resolve("conf"))
         .configure();
+  }
+  @After
+  public void doAfter() throws Exception {
+    cluster.deleteAllCollections();
+  }
+
+  @AfterClass
+  public static void doAfterClass() {
+    System.clearProperty("shareSchema");
   }
 
   @Test
   public void testConfigSetDeleteWhenInUse() throws Exception {
-
     CollectionAdminRequest.createCollection("test_configset_delete", "conf1", 1, 1)
         .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
 
@@ -43,6 +58,35 @@ public class ConfigSetsAPITest extends SolrCloudTestCase {
     expectThrows(SolrException.class, () -> {
       deleteConfigRequest.process(cluster.getSolrClient());
     });
+  }
+
+  @Test
+  public void testSharedSchema() throws Exception {
+    CollectionAdminRequest.createCollection("col1", "cShare", 1, 1)
+        .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+    CollectionAdminRequest.createCollection("col2", "cShare", 1, 1)
+        .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+    CollectionAdminRequest.createCollection("col3", "conf1", 1, 1)
+        .processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+
+    CoreContainer coreContainer = cluster.getJettySolrRunner(0).getCoreContainer();
+
+    try (SolrCore coreCol1 = coreContainer.getCore("col1_shard1_replica_n1");
+         SolrCore coreCol2 = coreContainer.getCore("col2_shard1_replica_n1");
+         SolrCore coreCol3 = coreContainer.getCore("col3_shard1_replica_n1")) {
+      assertSame(coreCol1.getLatestSchema(), coreCol2.getLatestSchema());
+      assertNotSame(coreCol1.getLatestSchema(), coreCol3.getLatestSchema());
+    }
+
+    // change col1's configSet
+    CollectionAdminRequest.modifyCollection("col1",
+      map("collection.configName", "conf1")  // from cShare
+    ).processAndWait(cluster.getSolrClient(), DEFAULT_TIMEOUT);
+
+    try (SolrCore coreCol1 = coreContainer.getCore("col1_shard1_replica_n1");
+         SolrCore coreCol2 = coreContainer.getCore("col2_shard1_replica_n1")) {
+      assertNotSame(coreCol1.getLatestSchema(), coreCol2.getLatestSchema());
+    }
 
   }
 

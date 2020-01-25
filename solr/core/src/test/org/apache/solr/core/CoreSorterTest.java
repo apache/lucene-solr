@@ -38,7 +38,8 @@ import org.apache.solr.util.MockCoreContainer;
 
 import static java.util.stream.Collectors.toList;
 import static org.apache.solr.core.CoreSorter.getShardName;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class CoreSorterTest extends SolrTestCaseJ4 {
   Map<String, Boolean> nodes = new LinkedHashMap<>();
@@ -127,7 +128,7 @@ public class CoreSorterTest extends SolrTestCaseJ4 {
       p.setProperty(CoreDescriptor.CORE_SHARD, "shard_" + slice);
       p.setProperty(CoreDescriptor.CORE_COLLECTION, "coll_" + slice);
       p.setProperty(CoreDescriptor.CORE_NODE_NAME, replicaName);
-      cd = new CloudDescriptor(replicaName, p, null);
+      cd = new CloudDescriptor(null, replicaName, p);
     }
 
     @Override

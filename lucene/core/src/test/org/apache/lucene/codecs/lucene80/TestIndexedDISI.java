@@ -43,6 +43,7 @@ public class TestIndexedDISI extends LuceneTestCase {
   }
 
   // EMPTY blocks are special with regard to jumps as they have size 0
+  @Nightly
   public void testEmptyBlocks() throws IOException {
     final int B = 65536;
     int maxDoc = B*11;
@@ -121,6 +122,8 @@ public class TestIndexedDISI extends LuceneTestCase {
     }
   }
 
+  // TODO: can this be toned down?
+  @Nightly
   public void testRandomBlocks() throws IOException {
     final int BLOCKS = 5;
     FixedBitSet set = createSetWithRandomBlocks(BLOCKS);
@@ -316,7 +319,8 @@ public class TestIndexedDISI extends LuceneTestCase {
 
   public void testFewMissingDocs() throws IOException {
     try (Directory dir = newDirectory()) {
-      for (int iter = 0; iter < 100; ++iter) {
+      int numIters = atLeast(10);
+      for (int iter = 0; iter < numIters; ++iter) {
         int maxDoc = TestUtil.nextInt(random(), 1, 100000);
         FixedBitSet set = new FixedBitSet(maxDoc);
         set.set(0, maxDoc);
@@ -409,7 +413,8 @@ public class TestIndexedDISI extends LuceneTestCase {
 
   public void testRandom() throws IOException {
     try (Directory dir = newDirectory()) {
-      for (int i = 0; i < 10; ++i) {
+      int numIters = atLeast(3);
+      for (int i = 0; i < numIters; ++i) {
         doTestRandom(dir);
       }
     }

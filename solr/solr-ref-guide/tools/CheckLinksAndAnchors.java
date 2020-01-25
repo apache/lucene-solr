@@ -78,7 +78,7 @@ import org.jsoup.select.NodeVisitor;
  * This tool supports 2 command line options:
  * </p>
  * <ul>
- *  <li><b>-check-all-relative-links</b><br />
+ *  <li><b>-check-all-relative-links</b>
  *    <p>By default, only relative links to files in the same directory (ie: not startin with
  *       <code>"../"</code> are checked for existence.  This means that we can do a "quick" validatation of
  *       links to other ref-guide files, but ignore relative links to things outside of the ref-guide --
@@ -86,7 +86,7 @@ import org.jsoup.select.NodeVisitor;
  *       <em>also</em> check relative links where the path starts with <code>"../"</code>
  *    </p>
  *  </li>
- *  <li><b>-bare-bones</b><br/>
+ *  <li><b>-bare-bones</b>
  *    <p>By default, this tool assumes it is analyzing Jekyll generated files.  If this option is specified,
  *       then it instead assumes it's checking "bare bones" HTML files...
  *    </p>

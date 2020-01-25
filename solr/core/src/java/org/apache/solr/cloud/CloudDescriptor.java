@@ -20,16 +20,19 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
 
+import com.google.common.base.Strings;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.util.PropertiesUtil;
 
-import com.google.common.base.Strings;
-
+/**
+ * SolrCloud metadata attached to a {@link CoreDescriptor}.
+ */
 public class CloudDescriptor {
 
-  private final CoreDescriptor cd;
+  private final CoreDescriptor cd; // back-reference
+
   private String shardId;
   private String collectionName;
   private String roles = null;
@@ -53,7 +56,7 @@ public class CloudDescriptor {
    */
   private final Replica.Type replicaType;
 
-  public CloudDescriptor(String coreName, Properties props, CoreDescriptor cd) {
+  public CloudDescriptor(CoreDescriptor cd, String coreName, Properties props) {
     this.cd = cd;
     this.shardId = props.getProperty(CoreDescriptor.CORE_SHARD, null);
     if (Strings.isNullOrEmpty(shardId))

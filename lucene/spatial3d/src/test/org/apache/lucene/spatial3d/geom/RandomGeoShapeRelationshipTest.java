@@ -17,7 +17,6 @@
 
 package org.apache.lucene.spatial3d.geom;
 
-import com.carrotsearch.randomizedtesting.annotations.Repeat;
 import org.junit.Test;
 
 /**
@@ -32,7 +31,6 @@ public class RandomGeoShapeRelationshipTest extends RandomGeo3dShapeGenerator {
    *
    */
   @Test
-  @Repeat(iterations = 5)
   public void testRandomPointWithin() {
     int referenceShapeType = CONVEX_POLYGON;
     PlanetModel planetModel = randomPlanetModel();
@@ -65,7 +63,6 @@ public class RandomGeoShapeRelationshipTest extends RandomGeo3dShapeGenerator {
    * the original shape.
    *
    */
-  @Repeat(iterations = 5)
   public void testRandomPointNotWithin() {
     int referenceShapeType = CONVEX_POLYGON;
     PlanetModel planetModel = randomPlanetModel();
@@ -97,7 +94,6 @@ public class RandomGeoShapeRelationshipTest extends RandomGeo3dShapeGenerator {
    * Note that both shapes cannot be concave.
    */
   @Test
-  @Repeat(iterations = 5)
   public void testRandomDisjoint() {
     int referenceShapeType = CONVEX_SIMPLE_POLYGON;
     PlanetModel planetModel = randomPlanetModel();
@@ -136,7 +132,6 @@ public class RandomGeoShapeRelationshipTest extends RandomGeo3dShapeGenerator {
    * Note that if the geoAreaShape is not concave the other shape must be not concave.
    */
   @Test
-  @Repeat(iterations = 5)
   public void testRandomWithIn() {
     PlanetModel planetModel = randomPlanetModel();
     int geoAreaShapeType = randomGeoAreaShapeType();
@@ -186,8 +181,8 @@ public class RandomGeoShapeRelationshipTest extends RandomGeo3dShapeGenerator {
    * If shape is concave, the shape for reference should be concave as well.
    *
    */
-  @Test
-  @Repeat(iterations = 1)
+  // TODO: this test seems to hit pathological cases that cause it to run for many minutes?!
+  @Test @Nightly
   public void testRandomContains() {
     int referenceShapeType = CONVEX_SIMPLE_POLYGON;
     PlanetModel planetModel = randomPlanetModel();
@@ -236,7 +231,6 @@ public class RandomGeoShapeRelationshipTest extends RandomGeo3dShapeGenerator {
    * the geoAreaShape.
    */
   @Test
-  @Repeat(iterations = 5)
   public void testRandomOverlaps() {
     PlanetModel planetModel = randomPlanetModel();
     int geoAreaShapeType = randomGeoAreaShapeType();

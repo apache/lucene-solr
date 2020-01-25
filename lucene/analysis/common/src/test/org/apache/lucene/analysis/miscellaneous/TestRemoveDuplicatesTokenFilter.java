@@ -142,7 +142,7 @@ public class TestRemoveDuplicatesTokenFilter extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    final int numIters = atLeast(10);
+    final int numIters = atLeast(3);
     for (int i = 0; i < numIters; i++) {
       SynonymMap.Builder b = new SynonymMap.Builder(random().nextBoolean());
       final int numEntries = atLeast(10);

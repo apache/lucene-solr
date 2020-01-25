@@ -170,9 +170,11 @@ public class AuditEvent {
         .stream().map(r -> r.collectionName).collect(Collectors.toList());
     setResource(authorizationContext.getResource());
     this.requestType = RequestType.convertType(authorizationContext.getRequestType());
-    authorizationContext.getParams().forEach(p -> {
-      this.solrParams.put(p.getKey(), Arrays.asList(p.getValue()));
-    });
+    if (authorizationContext.getParams() != null) {
+      authorizationContext.getParams().forEach(p -> {
+        this.solrParams.put(p.getKey(), Arrays.asList(p.getValue()));
+      });
+    }
   }
 
   /**

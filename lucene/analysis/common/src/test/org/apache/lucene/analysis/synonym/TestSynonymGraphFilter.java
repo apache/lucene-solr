@@ -1001,7 +1001,7 @@ public class TestSynonymGraphFilter extends BaseTokenStreamTestCase {
   /** simple random test like testRandom2, but for larger docs
    */
   public void testRandomHuge() throws Exception {
-    final int numIters = atLeast(3);
+    final int numIters = atLeast(1);
     for (int i = 0; i < numIters; i++) {
       SynonymMap.Builder b = new SynonymMap.Builder(random().nextBoolean());
       final int numEntries = atLeast(10);
@@ -1406,7 +1406,7 @@ public class TestSynonymGraphFilter extends BaseTokenStreamTestCase {
       a = getAnalyzer(b, true);
     }
 
-    int iters = atLeast(20);
+    int iters = atLeast(1);
     for(int iter=0;iter<iters;iter++) {
 
       String doc = toTokenString(randomBinaryChars(50, 100, bias, 'a'));

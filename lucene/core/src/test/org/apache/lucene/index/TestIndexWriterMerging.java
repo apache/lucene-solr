@@ -383,7 +383,7 @@ public class TestIndexWriterMerging extends LuceneTestCase {
       IndexWriter writer = new IndexWriter(directory, conf);
       ((LogMergePolicy) writer.getConfig().getMergePolicy()).setMergeFactor(100);          
 
-      for(int iter=0;iter<10;iter++) {
+      for(int iter=0;iter<atLeast(3);iter++) {
         if (VERBOSE) {
           System.out.println("TEST: iter=" + iter);
         }

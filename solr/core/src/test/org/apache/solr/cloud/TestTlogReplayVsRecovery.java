@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 
@@ -39,10 +40,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.util.TimeSource;
-import org.apache.solr.update.DirectUpdateHandler2;
 import org.apache.solr.util.TestInjection;
-import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
 import org.slf4j.Logger;
@@ -64,11 +62,11 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
   // we also want to ensure that our leader doesn't do a "Commit on close"
   //
   // TODO: once SOLR-13486 is fixed, we should randomize this...
-  private static final boolean TEST_VALUE_FOR_COMMIT_ON_CLOSE = false;
+  private static final boolean TEST_VALUE_FOR_SKIP_COMMIT_ON_CLOSE = true;
   
   @Before
   public void setupCluster() throws Exception {
-    DirectUpdateHandler2.commitOnClose = TEST_VALUE_FOR_COMMIT_ON_CLOSE;
+    TestInjection.skipIndexWriterCommitOnClose = TEST_VALUE_FOR_SKIP_COMMIT_ON_CLOSE;
     
     System.setProperty("solr.directoryFactory", "solr.StandardDirectoryFactory");
     System.setProperty("solr.ulog.numRecordsToKeep", "1000");
@@ -99,7 +97,6 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
   @After
   public void tearDownCluster() throws Exception {
     TestInjection.reset();
-    DirectUpdateHandler2.commitOnClose = true;
     
     if (null != proxies) {
       for (SocketProxy proxy : proxies.values()) {
@@ -163,8 +160,8 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
     addDocs(false, uncommittedDocs, committedDocs + 1);
 
     log.info("Stopping leader node...");
-    assertEquals("Something broke our expected commitOnClose",
-                 TEST_VALUE_FOR_COMMIT_ON_CLOSE, DirectUpdateHandler2.commitOnClose);
+    assertEquals("Something broke our expected skipIndexWriterCommitOnClose",
+                 TEST_VALUE_FOR_SKIP_COMMIT_ON_CLOSE, TestInjection.skipIndexWriterCommitOnClose);
     NODE0.stop();
     cluster.waitForJettyToStop(NODE0);
 
@@ -174,13 +171,20 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
     waitForState("Timeout waiting for leader goes DOWN", COLLECTION, (liveNodes, collectionState)
                  -> collectionState.getReplica(leader.getName()).getState() == Replica.State.DOWN);
 
-    TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (!timeOut.hasTimedOut()) {
-      Replica newLeader = getCollectionState(COLLECTION).getLeader("shard1");
-      if (newLeader != null && !newLeader.getName().equals(leader.getName()) && newLeader.getState() == Replica.State.ACTIVE) {
-        fail("Out of sync replica became leader " + newLeader);
-      }
-    }
+    // Sanity check that a new (out of sync) replica doesn't come up in our place...
+    expectThrows(TimeoutException.class,
+                 "Did not time out waiting for new leader, out of sync replica became leader",
+                 () -> {
+                   cluster.getSolrClient().waitForState(COLLECTION, 10, TimeUnit.SECONDS, (state) -> {
+            Replica newLeader = state.getSlice("shard1").getLeader();
+            if (newLeader != null && !newLeader.getName().equals(leader.getName()) && newLeader.getState() == Replica.State.ACTIVE) {
+              // this is is the bad case, our "bad" state was found before timeout
+              log.error("WTF: New Leader={}", newLeader);
+              return true;
+            }
+            return false; // still no bad state, wait for timeout
+          });
+      });
 
     log.info("Enabling TestInjection.updateLogReplayRandomPause");
     TestInjection.updateLogReplayRandomPause = "true:100";
