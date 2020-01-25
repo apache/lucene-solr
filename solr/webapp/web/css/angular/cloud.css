@@ -158,10 +158,8 @@ limitations under the License.
 
 #content #cloud #file-content
 {
-  position: fixed;
-  width: 55%;
-  min-height: 100px;
-  right: 5%;
+  float: right;
+  width: 68%;
 }
 
 #content #cloud .show #file-content
@@ -568,7 +566,7 @@ limitations under the License.
   padding-left: 0;
 }
 
-#content #cloud .details-button 
+#content #cloud .details-button
 {
   background-image: url(../../img/ico/ui-check-box-uncheck.png);
   background-position: 0 50%;
@@ -593,27 +591,27 @@ limitations under the License.
 
 /* Disk usage details d3 chart bars style */
 .chart {
-    background: #eee;
-    padding: 1px;
+  background: #eee;
+  padding: 1px;
 }
 .chart div {
-    width:90%;
+  width:90%;
 }
 .chart div div {
-    display:inline-block;
+  display:inline-block;
 }
 .chart div div.rect {
-    transition: all 0.5s ease-out;
-    -moz-transition: all 0.5s ease-out;
-    -webkit-transition: all 0.5s ease-out;
-    width:0;
-    font: 10px sans-serif;
-    background-color: #4CAF50;
-    text-align: left;
-    padding: 3px;
-    margin: 2px;
-    color: #000000;
-    box-shadow: 1px 1px 1px #666;
+  transition: all 0.5s ease-out;
+  -moz-transition: all 0.5s ease-out;
+  -webkit-transition: all 0.5s ease-out;
+  width:0;
+  font: 10px sans-serif;
+  background-color: #4CAF50;
+  text-align: left;
+  padding: 3px;
+  margin: 2px;
+  color: #000000;
+  box-shadow: 1px 1px 1px #666;
 }
 
 #content #nodes-content .leader
@@ -647,18 +645,18 @@ limitations under the License.
 
 
 ::-webkit-scrollbar {
-    -webkit-appearance: none;
-    width: 7px;
-    height: 7px;
+  -webkit-appearance: none;
+  width: 7px;
+  height: 7px;
 }
 
 ::-webkit-scrollbar-thumb {
-    border-radius: 4px;
-    background-color: rgba(0,0,0,.5);
-    -webkit-box-shadow: 0 0 1px rgba(255,255,255,.5);
+  border-radius: 4px;
+  background-color: rgba(0,0,0,.5);
+  -webkit-box-shadow: 0 0 1px rgba(255,255,255,.5);
 }
 #content #cloud #zk-table td,
-#content #cloud #zk-table th 
+#content #cloud #zk-table th
 {
   border: 0px solid #ddd;
   border-bottom: 0.50px solid #eee;
@@ -666,7 +664,7 @@ limitations under the License.
   padding-left: 5px;
 }
 
-#content #cloud #zk-table th 
+#content #cloud #zk-table th
 {
   border-bottom: 1px solid #ddd;
   border-top: 1px solid #ddd;
@@ -684,7 +682,7 @@ limitations under the License.
   font-weight: bold;
 }
 
-#content #cloud #zk-table #detail-divider 
+#content #cloud #zk-table #detail-divider
 {
   background-color: #f8f8f8;
   height: 10px;
@@ -704,7 +702,7 @@ limitations under the License.
   margin-bottom: 10px;
 }
 
-.zookeeper-errors li::before 
+.zookeeper-errors li::before
 {
   content: "- ";
 }
