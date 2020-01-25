@@ -87,8 +87,6 @@ Improvements
 
 * LUCENE-8984: MoreLikeThis MLT is biased for uncommon fields (Andy Hind via Anshum Gupta)
 
-* SOLR-13749: New cross collection join filter (XCJF) (Dan Fox, Kevin Watters, via Gus Heck)
-
 Other Changes
 ----------------------
 * SOLR-10288: Remove non-minified JavaScript from the webapp. (Erik Hatcher, marcussorealheis)
@@ -165,6 +163,8 @@ New Features
    (Anatolii Siuniaev via Mikhail Khludnev)
 
  * SOLR-14130: Add postlogs command line tool for indexing Solr logs (Joel Bernstein)
+
+ * SOLR-13749: New cross collection join filter (XCJF) (Dan Fox, Kevin Watters, via Gus Heck)
 
 Improvements
 ---------------------
