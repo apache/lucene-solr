@@ -208,19 +208,6 @@
       <filter class="solr.DelimitedPayloadTokenFilterFactory" encoder="float" delimiter="|"/>
     </analyzer>
   </fieldType>
-
-  <fieldType name="text_pick_best_boost_by_payload_flat" class="solr.TextField" positionIncrementGap="100" synonymQueryStyle="pick_best" autoGeneratePhraseQueries="true" boostByPayload="true">
-    <analyzer type="index">
-      <tokenizer class="solr.MockTokenizerFactory"/>
-    </analyzer>
-    <analyzer type="query">
-      <tokenizer class="solr.MockTokenizerFactory"/>
-      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
-      <filter class="solr.LowerCaseFilterFactory"/>
-      <filter class="solr.DelimitedPayloadTokenFilterFactory" encoder="float" delimiter="|"/>
-      <filter class="solr.FlattenGraphFilterFactory"/>
-    </analyzer>
-  </fieldType>
   
   <fieldType name="text_as_distinct" class="solr.TextField" positionIncrementGap="100"  synonymQueryStyle="as_distinct_terms" autoGeneratePhraseQueries="true">
     <analyzer type="index">
@@ -260,19 +247,6 @@
       <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
       <filter class="solr.LowerCaseFilterFactory"/>
       <filter class="solr.DelimitedPayloadTokenFilterFactory" encoder="float" delimiter="|"/>
-    </analyzer>
-  </fieldType>
-
-  <fieldType name="text_as_distinct_boost_by_payload_flat" class="solr.TextField" positionIncrementGap="100"  synonymQueryStyle="as_distinct_terms" autoGeneratePhraseQueries="true" boostByPayload="true">
-    <analyzer type="index">
-      <tokenizer class="solr.MockTokenizerFactory"/>
-    </analyzer>
-    <analyzer type="query">
-      <tokenizer class="solr.MockTokenizerFactory"/>
-      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
-      <filter class="solr.LowerCaseFilterFactory"/>
-      <filter class="solr.DelimitedPayloadTokenFilterFactory" encoder="float" delimiter="|"/>
-      <filter class="solr.FlattenGraphFilterFactory"/>
     </analyzer>
   </fieldType>
 
@@ -703,10 +677,8 @@
 
   <dynamicField name="*_sI" type="string" indexed="true" stored="false"/>
   <dynamicField name="*_sS" type="string" indexed="false" stored="true"/>
-  <dynamicField name="t_pick_best_boost_by_payload_flat_*" type="text_pick_best_boost_by_payload_flat" indexed="true" stored="true"/>
   <dynamicField name="t_pick_best_boost_by_payload_*" type="text_pick_best_boost_by_payload" indexed="true" stored="true"/>
   <dynamicField name="t_pick_best_*" type="text_pick_best" indexed="true" stored="true"/>
-  <dynamicField name="t_as_distinct_boost_by_payload_flat_*" type="text_as_distinct_boost_by_payload_flat" indexed="true" stored="true"/>
   <dynamicField name="t_as_distinct_boost_by_payload_*" type="text_as_distinct_boost_by_payload" indexed="true" stored="true"/>
   <dynamicField name="t_as_distinct_*" type="text_as_distinct" indexed="true" stored="true"/>
 
