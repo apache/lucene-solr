@@ -23,21 +23,19 @@ def conf = [
     "flexible"   : ["inputFile": file('src/java/org/apache/lucene/queryparser/flexible/standard/parser/StandardSyntaxParser.jj'), "outputDir": file('src/java/org/apache/lucene/queryparser/flexible/standard/parser')]
 ]
 
-String javaCCClasspath
 String javaCCHome
 
 task installJavacc {
   doLast {
-    javaCCClasspath = project.project(":lucene:queryparser").configurations.javaCCDeps.asPath
-    javaCCHome = javaCCClasspath.substring(0, javaCCClasspath.lastIndexOf("/"))
+    // The ant JavaCC task requires that the file be named javacc.jar. What gets downloaded is
+    // javacc-5.0.jar so we have to copy it.
+    File javaCCDownloadedJar = new File(project.project(":lucene:queryparser").configurations.javaCCDeps.asPath)
+    javaCCHome = javaCCDownloadedJar.getParent()
+    File javaCCjarForAnt = new File(javaCCHome, "javacc.jar")
 
-    String hacky = javaCCHome + "/" + "javacc.jar"
-    File hackyFile = new File(hacky)
-    println hackyFile
-    println hackyFile.exists()
-    if (hackyFile.exists() == false) {
-      hackyFile.bytes = new File(javaCCClasspath).bytes
-      hackyFile.setExecutable(true)
+    if (javaCCjarForAnt.exists() == false) {
+      javaCCDownloadedJar.renameTo(javaCCjarForAnt)
+      javaCCjarForAnt.setExecutable(true)
     }
   }
 }
@@ -73,81 +71,30 @@ task runJavaccQueryParser(dependsOn: installJavacc) {
         byline: "true",
         match: "public QueryParser\\(QueryParserTokenManager ",
         replace: "protected QueryParser(QueryParserTokenManager ")
+    ant.replace(file: new File(outputDir, "QueryParser.java"),
+        token: "new java.util.ArrayList<int[]>();",
+        value: "new java.util.ArrayList<>();",
+        encoding: "UTF-8")
+
+
+
   }
 }
 
 task runJavaccSurround(dependsOn: installJavacc) {
   doLast {
-    println "Generating Surroundf parser"
+    println "Generating Surround parser"
     def inputFile = conf["surround"]["inputFile"].getAbsolutePath()
     def outputDir = conf["surround"]["outputDir"].getAbsolutePath()
 
     ant.javacc(target: inputFile, outputDirectory: outputDir, javacchome: javaCCHome)
 
-    // This is very clumsy, but these are unused imports that are necessary other generated files
-    [
-        "import java.util.Vector;",
-        "import org.apache.lucene.queryparser.flexible.messages.Message;",
-        "import org.apache.lucene.queryparser.flexible.messages.MessageImpl;",
-        "import org.apache.lucene.queryparser.flexible.core.QueryNodeParseException;",
-        "import org.apache.lucene.queryparser.flexible.core.messages.QueryParserMessages;",
-        "import org.apache.lucene.queryparser.flexible.core.nodes.AndQueryNode;",
-        "import org.apache.lucene.queryparser.flexible.core.nodes.BooleanQueryNode;",
-        "import org.apache.lucene.queryparser.flexible.core.nodes.BoostQueryNode;",
-        "import org.apache.lucene.queryparser.flexible.core.nodes.FieldQueryNode;",
-        "import org.apache.lucene.queryparser.flexible.core.nodes.FuzzyQueryNode;",
-        "import org.apache.lucene.queryparser.flexible.core.nodes.ModifierQueryNode;",
-        "import org.apache.lucene.queryparser.flexible.core.nodes.GroupQueryNode;",
-        "import org.apache.lucene.queryparser.flexible.core.nodes.OrQueryNode;",
-        "import org.apache.lucene.queryparser.flexible.standard.nodes.RegexpQueryNode;",
-        "import org.apache.lucene.queryparser.flexible.core.nodes.SlopQueryNode;",
-        "import org.apache.lucene.queryparser.flexible.core.nodes.QueryNode;",
-        "import org.apache.lucene.queryparser.flexible.core.nodes.QuotedFieldQueryNode;",
-        "import org.apache.lucene.queryparser.flexible.core.parser.SyntaxParser;",
-        "import org.apache.lucene.queryparser.flexible.standard.nodes.TermRangeQueryNode;",
-        "import java.io.StringReader;",
-        "import java.util.ArrayList;",
-        "import java.util.Arrays;",
-        "import java.util.HashSet;",
-        "import java.util.List;",
-        "import java.util.Locale;",
-        "import java.util.Set;",
-        "import org.apache.lucene.analysis.Analyzer;",
-        "import org.apache.lucene.document.DateTools;",
-        "import org.apache.lucene.search.BooleanClause;",
-        "import org.apache.lucene.search.Query;",
-        "import org.apache.lucene.search.TermRangeQuery;",
-        "import org.apache.lucene.analysis.TokenStream;",
-        "import org.apache.lucene.queryparser.surround.query.SrndQuery;",
-        "import org.apache.lucene.queryparser.surround.query.FieldsQuery;",
-        "import org.apache.lucene.queryparser.surround.query.OrQuery;",
-        "import org.apache.lucene.queryparser.surround.query.AndQuery;",
-        "import org.apache.lucene.queryparser.surround.query.NotQuery;",
-        "import org.apache.lucene.queryparser.surround.query.DistanceQuery;",
-        "import org.apache.lucene.queryparser.surround.query.SrndTermQuery;",
-        "import org.apache.lucene.queryparser.surround.query.SrndPrefixQuery;",
-        "import org.apache.lucene.queryparser.surround.query.SrndTruncQuery;"
-    ].each {
-      ant.replaceregexp(match: "${it}.*${lineSeparator}", replace: "", encoding: "UTF-8") {
-        ant.fileset(dir: outputDir, includes: "*TokenManager.java")
-      }
-    }
-    // StringBuffer -> StringBuilder
-    ant.replace(token: "StringBuffer", value: "StringBuilder", encoding: "UTF-8") {
-      ant.fileset(dir: outputDir, includes: "ParseException.java TokenMgrError.java")
-    }
+    ant.replace(file: new File(outputDir, "QueryParser.java"),
+        token: "new java.util.ArrayList<int[]>();",
+        value: "new java.util.ArrayList<>();",
+        encoding: "UTF-8")
 
-    [
-        "import org.apache.lucene.analysis.TokenStream;",
-    ].each {
-      ant.replaceregexp(match: "${it}.*${lineSeparator}", replace: "", encoding: "UTF-8") {
-        ant.fileset(dir: outputDir, includes: "QueryParser.java")
-      }
-    }
-    // StringBuffer -> StringBuilder
-    ant.replace(token: "StringBuffer", value: "StringBuilder", encoding: "UTF-8") {
-      ant.fileset(dir: outputDir, includes: "ParseException.java TokenMgrError.java")
-    }
+
   }
 }
 
@@ -283,9 +230,12 @@ def doCleanUpAfter(File outputDir) {
   ant.replace(token: "StringBuffer", value: "StringBuilder", encoding: "UTF-8") {
     ant.fileset(dir: outputDir.getAbsolutePath(), includes: "ParseException.java TokenMgrError.java")
   }
-  ant.replace(token: "implemetation", value: "implementation", encoding: "UTF-8") {
-    ant.fileset(dir: outputDir.getAbsolutePath(), includes: "CharStream.java")
-  }
+
+  ant.replace(file: new File(outputDir, "CharStream.java"),
+      token: "implemetation",
+      value: "implementation",
+      encoding: "UTF-8")
+
 
   // If nothing else, adds a newline to the end of the file if it doesn't already have one
   ant.fixcrlf(srcdir: outputDir.getAbsolutePath(), includes: '*.java', encoding: 'UTF-8') {

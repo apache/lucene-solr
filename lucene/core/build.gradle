@@ -6,81 +6,66 @@ dependencies {
   testImplementation project(':lucene:test-framework')
 }
 
-def momanCommitHash = "5c5c2a1e4dea"
-def momanUrl = "https://bitbucket.org/jpbarrette/moman/get/${momanCommitHash}.zip"
+// Some zip files to download and unpack
+
+def jflexVersion = "jflex-1.7.0"
+def jflexJar = "jflex-full-1.7.0.jar"
+def momanZip = "5c5c2a1e4dea.zip"
+
+ext.src = [
+    'downloads': [
+        "${jflexVersion}.zip": 'https://jflex.de/release',
+        "$momanZip"          : 'https://bitbucket.org/jpbarrette/moman/get']
+]
+
+task downloadAndUnzipFiles {
+  for (s in src.downloads) {
+    download {
+      src "$s.value/$s.key"
+      dest buildDir
+      onlyIfModified true
+    }
+    copy {
+      from zipTree("$buildDir/$s.key")
+      into buildDir
+    }
+  }
+}
+
 def python_exe = "python"
-
-def jflexUrl = "https://jflex.de/release/jflex-1.7.0.zip"
-
-// Download and extract Moman
-task installJFlex(type: Download) {
-  src jflexUrl
-  dest file("${buildDir}/jflex.zip")
-  onlyIfModified true
-  doLast {
-    ant.unzip(src: file("${buildDir}/jflex.zip"), dest: file("${buildDir}/jflex"), overwrite: "true") {
-      ant.cutdirsmapper(dirs: "1")
-    }
-  }
-}
-
-task installMoman(type: Download) {
-  src momanUrl
-  dest file("${buildDir}/moman.zip")
-  onlyIfModified true
-
-  doLast {
-    ant.unzip(src: file("${buildDir}/moman.zip"), dest: file("${buildDir}/moman"), overwrite: "true") {
-      ant.cutdirsmapper(dirs: "1")
-    }
-  }
-}
-
 task createPackedIntSources {
   doLast {
-    exec {
-      workingDir 'src/java/org/apache/lucene/util/packed'
-      executable "${python_exe}"
-      args = ['-B', 'gen_BulkOperation.py']
-    }
-    exec {
-      workingDir 'src/java/org/apache/lucene/util/packed'
-      executable "${python_exe}"
-      args = ['-B', 'gen_Packed64SingleBlock.py']
+    ['gen_BulkOperation.py', 'gen_Packed64SingleBlock.py'].each { prog ->
+      exec {
+        workingDir 'src/java/org/apache/lucene/util/packed'
+        executable "${python_exe}"
+        args = ['-B', prog]
+      }
     }
     ant.fixcrlf(srcdir: 'src/java/org/apache/lucene/util/packed', includes: 'Packed64SingleBlock.java', encoding: 'UTF-8')
     ant.fixcrlf(srcdir: 'src/java/org/apache/lucene/util/packed', includes: 'BulkOperation*.java', encoding: 'UTF-8')
   }
 }
 
-task createLevAutomaton(dependsOn: installMoman) {
-  doLast {
-    exec {
-      workingDir 'src/java/org/apache/lucene/util/automaton'
-      executable "${python_exe}"
-      args = ['-B', 'createLevAutomata.py', '1', 'True']
+// This is is somewhat fragile, the python script finds 'finenight' by having this line:
+// sys.path.insert(0, '../../../../../../../build/jpbarrette-moman-5c5c2a1e4dea/finenight/python')
+// If you change the version of moman you'll need to change the python script too. Why can't we pass
+// this in?
+task createLevAutomaton {
+  [1, 2].each { edits ->
+    [true, false].each { transpose ->
+      exec {
+        workingDir 'src/java/org/apache/lucene/util/automaton'
+        executable "${python_exe}"
+        args = ['-B', 'createLevAutomata.py', edits, transpose]
+      }
     }
-    exec {
-      workingDir 'src/java/org/apache/lucene/util/automaton'
-      executable "${python_exe}"
-      args = ['-B', 'createLevAutomata.py', '1', 'False']
-    }
-    exec {
-      workingDir 'src/java/org/apache/lucene/util/automaton'
-      executable "${python_exe}"
-      args = ['-B', 'createLevAutomata.py', '2', 'True']
-    }
-    exec {
-      workingDir 'src/java/org/apache/lucene/util/automaton'
-      executable "${python_exe}"
-      args = ['-B', 'createLevAutomata.py', '2', 'False']
-    }
-    ant.fixcrlf(srcdir: 'src/java/org/apache/lucene/util/automaton', includes: '*ParametricDescription.java', encoding: 'UTF-8')
   }
+  ant.fixcrlf(srcdir: 'src/java/org/apache/lucene/util/automaton', includes: '*ParametricDescription.java', encoding: 'UTF-8')
 }
 
-task runJFlex(dependsOn: installJFlex, type: JavaExec) {
-  classpath = files("${buildDir}/jflex/lib/jflex-full-1.7.0.jar")
+task runJFlex(type: JavaExec) {
+  classpath = files("${buildDir}/${jflexVersion}/lib/${jflexJar}")
   main = "jflex.Main"
 
   // arguments to pass to the application
@@ -109,8 +94,8 @@ task cleanJFlex {
 
 task regenerate {
   group = 'Build Regenerate'
-  description = "Regenerates various generated src files, automoton, packedints, jfles"
-  dependsOn cleanJFlex, createPackedIntSources, createLevAutomaton, runJFlex
+  description = "Regenerates various generated src files, automoton, packedints, jflex."
+  dependsOn cleanJFlex, downloadAndUnzipFiles, createPackedIntSources, createLevAutomaton, runJFlex
 }
 
 
