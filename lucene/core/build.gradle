@@ -8,33 +8,50 @@ dependencies {
 
 // Some zip files to download and unpack
 
-def jflexVersion = "jflex-1.7.0"
-def jflexJar = "jflex-full-1.7.0.jar"
-def momanZip = "5c5c2a1e4dea.zip"
+def jflexVersion = 'jflex-1.7.0'
+def jflexZip = "${jflexVersion}.zip"
+def jflexFullJar = "jflex-full-1.7.0.jar"
+def jflexUrl = "https://jflex.de/release/${jflexZip}"
+def momanZip = '5c5c2a1e4dea.zip'
+def momanUrl = "https://bitbucket.org/jpbarrette/moman/get/${momanZip}"
 
-ext.src = [
-    'downloads': [
-        "${jflexVersion}.zip": 'https://jflex.de/release',
-        "$momanZip"          : 'https://bitbucket.org/jpbarrette/moman/get']
-]
 
-task downloadAndUnzipFiles {
-  for (s in src.downloads) {
-    download {
-      src "$s.value/$s.key"
-      dest buildDir
-      onlyIfModified true
-    }
-    copy {
-      from zipTree("$buildDir/$s.key")
-      into buildDir
+task downloadJavacc(type: Download) {
+  src jflexUrl
+  dest buildDir
+  onlyIfModified true
+}
+
+task downloadMoman(type: Download) {
+  src momanUrl
+  dest buildDir
+  onlyIfModified true
+}
+
+task downloadAndUnzipFiles(dependsOn: [downloadJavacc, downloadMoman]) {
+  onlyIf { downloadJavacc.didWork || downloadMoman.didWork }
+  doLast {
+    [jflexZip, momanZip].each {
+      def unzipFile = "$buildDir/$it"
+      copy {
+        from zipTree(unzipFile)
+        into buildDir
+      }
     }
   }
 }
 
 def python_exe = "python"
-task createPackedIntSources {
+task createPackedIntSources(dependsOn: downloadAndUnzipFiles) {
+  onlyIf { downloadJavacc.didWork || downloadMoman.didWork }
+
   doLast {
+    ant.delete(failonerror: 'false') {
+      ant.fileset(dir: file("src/java/org/apache/lucene/util/packed"), includes: '**/*.java') {
+        ant.containsregexp(expression: "This file has been automatically generated, DO NOT EDIT")
+      }
+    }
+
     ['gen_BulkOperation.py', 'gen_Packed64SingleBlock.py'].each { prog ->
       exec {
         workingDir 'src/java/org/apache/lucene/util/packed'
@@ -51,29 +68,45 @@ task createPackedIntSources {
 // sys.path.insert(0, '../../../../../../../build/jpbarrette-moman-5c5c2a1e4dea/finenight/python')
 // If you change the version of moman you'll need to change the python script too. Why can't we pass
 // this in?
-task createLevAutomaton {
-  [1, 2].each { edits ->
-    [true, false].each { transpose ->
-      exec {
-        workingDir 'src/java/org/apache/lucene/util/automaton'
-        executable "${python_exe}"
-        args = ['-B', 'createLevAutomata.py', edits, transpose]
+task createLevAutomaton(dependsOn: downloadAndUnzipFiles) {
+  onlyIf { downloadJavacc.didWork || downloadMoman.didWork }
+  doLast {
+    ant.delete(failonerror: 'false') {
+      ant.fileset(dir: file('src/java/org/apache/lucene/util/automaton/'), includes: '*ParametricDescription.java')
+    }
+
+    [1, 2].each { edits ->
+      ['True', 'False'].each { transpose ->
+        println "EOE donig something $edits  $transpose"
+        exec {
+          workingDir 'src/java/org/apache/lucene/util/automaton'
+          executable "${python_exe}"
+          args = ['-B', 'createLevAutomata.py', edits, transpose]
+        }
       }
     }
+    ant.fixcrlf(srcdir: 'src/java/org/apache/lucene/util/automaton', includes: '*ParametricDescription.java', encoding: 'UTF-8')
   }
-  ant.fixcrlf(srcdir: 'src/java/org/apache/lucene/util/automaton', includes: '*ParametricDescription.java', encoding: 'UTF-8')
 }
 
-task runJFlex(type: JavaExec) {
-  classpath = files("${buildDir}/${jflexVersion}/lib/${jflexJar}")
-  main = "jflex.Main"
-
-  // arguments to pass to the application
-  args = ['--skel', project.project(":lucene:core").projectDir.getAbsolutePath() + "/src/data/jflex/skeleton.disable.buffer.expansion.txt",
-          '--nobak',
-          'src/java/org/apache/lucene/analysis/standard/StandardTokenizerImpl.jflex'
-  ]
+task runJFlex(dependsOn: downloadAndUnzipFiles) {
+  onlyIf { downloadJavacc.didWork || downloadMoman.didWork }
   doLast {
+    ant.delete(failonerror: 'false') {
+      ant.fileset(dir: file("src/java/org/apache/lucene/analysis/standard"), includes: '**/*.java') {
+        ant.containsregexp(expression: "generated.*by.*JFlex")
+      }
+    }
+    javaexec {
+      classpath = files("${buildDir}/${jflexVersion}/lib/${jflexFullJar}")
+      main = "jflex.Main"
+
+      // arguments to pass to the application
+      args = ['--skel', project.project(":lucene:core").projectDir.getAbsolutePath() + "/src/data/jflex/skeleton.disable.buffer.expansion.txt",
+              '--nobak',
+              'src/java/org/apache/lucene/analysis/standard/StandardTokenizerImpl.jflex'
+      ]
+    }
     //Since the ZZ_BUFFERSIZE declaration is generated rather than in the skeleton, we have to transform it here.
     ant.replace(token: "private static final int ZZ_BUFFERSIZE", value: "private int ZZ_BUFFERSIZE", encoding: "UTF-8") {
       ant.fileset(dir: "src/java/org/apache/lucene/analysis/standard", includes: "StandardTokenizerImpl.java")
@@ -81,21 +114,11 @@ task runJFlex(type: JavaExec) {
   }
 }
 
-task cleanJFlex {
-  doLast {
-    println "Cleaning JFlex"
-    ant.delete(failonerror: 'false') {
-      ant.fileset(dir: file("src/java/org/apache/lucene/analysis/standard"), includes: "**/*.java") {
-        ant.containsregexp(expression: "generated.*by.*JFlex")
-      }
-    }
-  }
-}
 
-task regenerate {
+task regenerate() {
   group = 'Build Regenerate'
   description = "Regenerates various generated src files, automoton, packedints, jflex."
-  dependsOn cleanJFlex, downloadAndUnzipFiles, createPackedIntSources, createLevAutomaton, runJFlex
+  dependsOn createPackedIntSources, createLevAutomaton, runJFlex
 }
 
 
