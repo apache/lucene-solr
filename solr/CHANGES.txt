@@ -164,6 +164,8 @@ Bug Fixes
 
 * SOLR-11554: Support handling OPTIONS request for Hadoop authentication filter (Peter Cseh via Kevin Risden)
 
+* SOLR-14189: Switch from String.trim() to StringUtils.isBlank() in query parsers (Andy Webb via Uwe Schindler)
+
 Other Changes
 ---------------------
 
