@@ -22,7 +22,8 @@ ext {
   // Workaround for this one, for now:
   // https://github.com/palantir/gradle-consistent-versions/issues/383
   scriptDepVersions = [
-      "apache-rat": "0.11"
+      "apache-rat": "0.11",
+      "jflex": "1.7.0"
   ]
 }
 
@@ -60,6 +61,9 @@ apply from: file('gradle/validation/validate-source-patterns.gradle')
 apply from: file('gradle/validation/config-file-sanity.gradle')
 apply from: file('gradle/validation/rat-sources.gradle')
 apply from: file('gradle/validation/owasp-dependency-check.gradle')
+
+// Source or data regeneration tasks
+apply from: file('gradle/generation/jflex.gradle')
 
 // Additional development aids.
 apply from: file('gradle/maven/maven-local.gradle')
