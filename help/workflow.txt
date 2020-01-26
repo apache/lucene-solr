@@ -31,3 +31,10 @@ Put together Solr distribution:
 gradlew -p solr/packaging assemble
 ls solr/packaging/build/solr-*
 
+
+Other validation and checks
+===========================
+
+Generate a report of dependencies with known OWASP vulnerabilities:
+gradlew :dependencyCheckAnalyze
+open ./build/reports/dependency-check-report.html
