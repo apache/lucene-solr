@@ -26,7 +26,9 @@ import java.io.IOException;
 import java.util.Objects;
 
 public class OverseerSolrResponse extends SolrResponse {
-  
+ 
+  private static final long serialVersionUID = 4721653044098960880L;
+
   NamedList<Object> responseList = null;
 
   private long elapsedTime;
