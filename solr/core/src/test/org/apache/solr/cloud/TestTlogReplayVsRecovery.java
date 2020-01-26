@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.apache.lucene.util.LuceneTestCase.AwaitsFix;
 
@@ -39,9 +40,7 @@ import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.util.TestInjection;
-import org.apache.solr.util.TimeOut;
 import org.junit.After;
 import org.junit.Before;
 import org.slf4j.Logger;
@@ -172,13 +171,20 @@ public class TestTlogReplayVsRecovery extends SolrCloudTestCase {
     waitForState("Timeout waiting for leader goes DOWN", COLLECTION, (liveNodes, collectionState)
                  -> collectionState.getReplica(leader.getName()).getState() == Replica.State.DOWN);
 
-    TimeOut timeOut = new TimeOut(10, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    while (!timeOut.hasTimedOut()) {
-      Replica newLeader = getCollectionState(COLLECTION).getLeader("shard1");
-      if (newLeader != null && !newLeader.getName().equals(leader.getName()) && newLeader.getState() == Replica.State.ACTIVE) {
-        fail("Out of sync replica became leader " + newLeader);
-      }
-    }
+    // Sanity check that a new (out of sync) replica doesn't come up in our place...
+    expectThrows(TimeoutException.class,
+                 "Did not time out waiting for new leader, out of sync replica became leader",
+                 () -> {
+                   cluster.getSolrClient().waitForState(COLLECTION, 10, TimeUnit.SECONDS, (state) -> {
+            Replica newLeader = state.getSlice("shard1").getLeader();
+            if (newLeader != null && !newLeader.getName().equals(leader.getName()) && newLeader.getState() == Replica.State.ACTIVE) {
+              // this is is the bad case, our "bad" state was found before timeout
+              log.error("WTF: New Leader={}", newLeader);
+              return true;
+            }
+            return false; // still no bad state, wait for timeout
+          });
+      });
 
     log.info("Enabling TestInjection.updateLogReplayRandomPause");
     TestInjection.updateLogReplayRandomPause = "true:100";

@@ -464,7 +464,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
           addedReplicas++;
         } else {
-          log.info("create jetty {} in directory {} of type {}", i, jettyDir, Replica.Type.NRT, ((currentI % sliceCount) + 1));
+          log.info("create jetty {} in directory {} of type {} for shard{}", i, jettyDir, Replica.Type.NRT, ((currentI % sliceCount) + 1));
           
           customThreadPool.submit(() -> {
             try {
@@ -492,7 +492,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
           addedReplicas++;
         }
       } else {
-        log.info("create jetty {} in directory {} of type {}", i, jettyDir, Replica.Type.PULL, ((currentI % sliceCount) + 1));
+        log.info("create jetty {} in directory {} of type {} for shard{}", i, jettyDir, Replica.Type.PULL, ((currentI % sliceCount) + 1));
         customThreadPool.submit(() -> {
           try {
             JettySolrRunner j = createJetty(jettyDir, useJettyDataDir ? getDataDir(testDir + "/jetty"

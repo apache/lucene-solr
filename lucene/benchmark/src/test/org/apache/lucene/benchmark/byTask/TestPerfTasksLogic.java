@@ -55,11 +55,13 @@ import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.DocIdSetIterator;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 
 /**
  * Test very simply that perf tasks - simple algorithms - are doing what they should.
  */
+@LuceneTestCase.SuppressCodecs("SimpleText")
 public class TestPerfTasksLogic extends BenchmarkTestCase {
 
   @Override

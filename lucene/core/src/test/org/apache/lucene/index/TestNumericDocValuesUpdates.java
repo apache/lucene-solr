@@ -1522,7 +1522,7 @@ public class TestNumericDocValuesUpdates extends LuceneTestCase {
     IndexWriter writer = new IndexWriter(dir, conf);
     
     // test data: lots of documents (few 10Ks) and lots of update terms (few hundreds)
-    final int numDocs = atLeast(20000);
+    final int numDocs = TEST_NIGHTLY ? atLeast(20000) : atLeast(200);
     final int numNumericFields = atLeast(5);
     final int numTerms = TestUtil.nextInt(random, 10, 100); // terms should affect many docs
     Set<String> updateTerms = new HashSet<>();

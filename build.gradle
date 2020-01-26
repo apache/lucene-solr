@@ -6,6 +6,7 @@ plugins {
   id "com.palantir.consistent-versions" version "1.14.0"
   id 'de.thetaphi.forbiddenapis' version '2.7' apply false
   id "de.undercouch.download" version "4.0.2" apply false
+  id "org.owasp.dependencycheck" version "5.3.0"
 }
 
 // Project version and main properties. Applies to all projects.
@@ -59,6 +60,7 @@ apply from: file('gradle/validation/versions-props-sorted.gradle')
 apply from: file('gradle/validation/validate-source-patterns.gradle')
 apply from: file('gradle/validation/config-file-sanity.gradle')
 apply from: file('gradle/validation/rat-sources.gradle')
+apply from: file('gradle/validation/owasp-dependency-check.gradle')
 
 // Additional development aids.
 apply from: file('gradle/maven/maven-local.gradle')

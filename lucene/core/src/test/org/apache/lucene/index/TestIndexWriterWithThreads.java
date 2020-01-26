@@ -50,7 +50,7 @@ import org.apache.lucene.util.LuceneTestCase.Slow;
 /**
  * MultiThreaded IndexWriter tests
  */
-@Slow
+@Slow @LuceneTestCase.SuppressCodecs("SimpleText")
 public class TestIndexWriterWithThreads extends LuceneTestCase {
 
   // Used by test cases below
@@ -141,7 +141,7 @@ public class TestIndexWriterWithThreads extends LuceneTestCase {
   public void testImmediateDiskFullWithThreads() throws Exception {
 
     int NUM_THREADS = 3;
-    final int numIterations = TEST_NIGHTLY ? 10 : 3;
+    final int numIterations = TEST_NIGHTLY ? 10 : 1;
     for (int iter=0;iter<numIterations;iter++) {
       if (VERBOSE) {
         System.out.println("\nTEST: iter=" + iter);
