@@ -83,8 +83,6 @@ import static org.hamcrest.CoreMatchers.equalTo;
 public class TestMemoryIndexAgainstDirectory extends BaseTokenStreamTestCase {
   private Set<String> queries = new HashSet<>();
   
-  public static final int ITERATIONS = 100 * RANDOM_MULTIPLIER;
-
   @Override
   public void setUp() throws Exception {
     super.setUp();
@@ -115,7 +113,8 @@ public class TestMemoryIndexAgainstDirectory extends BaseTokenStreamTestCase {
    */
   public void testRandomQueries() throws Exception {
     MemoryIndex index = randomMemoryIndex();
-    for (int i = 0; i < ITERATIONS; i++) {
+    int iterations = TEST_NIGHTLY ? 100 * RANDOM_MULTIPLIER : 10 * RANDOM_MULTIPLIER;
+    for (int i = 0; i < iterations; i++) {
       assertAgainstDirectory(index);
     }
   }

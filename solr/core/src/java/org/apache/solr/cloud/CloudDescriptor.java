@@ -21,15 +21,10 @@ import java.util.Map;
 import java.util.Properties;
 
 import com.google.common.base.Strings;
-import org.apache.solr.common.SolrException;
 import org.apache.solr.common.StringUtils;
 import org.apache.solr.common.cloud.Replica;
-import org.apache.solr.common.cloud.ZooKeeperException;
 import org.apache.solr.core.CoreDescriptor;
 import org.apache.solr.util.PropertiesUtil;
-import org.apache.zookeeper.KeeperException;
-
-import static org.apache.solr.core.CoreDescriptor.CORE_CONFIGSET;
 
 /**
  * SolrCloud metadata attached to a {@link CoreDescriptor}.
@@ -61,7 +56,7 @@ public class CloudDescriptor {
    */
   private final Replica.Type replicaType;
 
-  public CloudDescriptor(CoreDescriptor cd, String coreName, Properties props, ZkController zkController) {
+  public CloudDescriptor(CoreDescriptor cd, String coreName, Properties props) {
     this.cd = cd;
     this.shardId = props.getProperty(CoreDescriptor.CORE_SHARD, null);
     if (Strings.isNullOrEmpty(shardId))
@@ -82,19 +77,6 @@ public class CloudDescriptor {
     for (String propName : props.stringPropertyNames()) {
       if (propName.startsWith(ZkController.COLLECTION_PARAM_PREFIX)) {
         collectionParams.put(propName.substring(ZkController.COLLECTION_PARAM_PREFIX.length()), props.getProperty(propName));
-      }
-    }
-    // The configSet comes from ZK, not from CD's properties like it does in standalone.
-    // But we want to put it on CD because CD has getConfigSet() which is sensible; don't want that to return null.
-    if (zkController != null) { // there's a test where we pass null 'cause it wanted a dummy instance.  Yuck?
-      try {
-        //TODO readConfigName() also validates the configSet exists but seems needless.  We'll get errors soon enough.
-        String configSetName = zkController.getZkStateReader().readConfigName(collectionName);
-        props.setProperty(CORE_CONFIGSET, configSetName);
-        //noinspection StringEquality
-        assert cd.getConfigSet() == configSetName;
-      } catch (KeeperException ex) {
-        throw new ZooKeeperException(SolrException.ErrorCode.SERVER_ERROR, "Trouble resolving configSet for collection " + collectionName + ": " + ex.getMessage());
       }
     }
   }

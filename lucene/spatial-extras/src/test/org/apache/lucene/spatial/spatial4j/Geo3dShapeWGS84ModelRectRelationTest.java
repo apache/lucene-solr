@@ -115,4 +115,22 @@ public class Geo3dShapeWGS84ModelRectRelationTest extends ShapeRectRelationTestC
 
     assertEquals(circle.relate(bPoint), SpatialRelation.CONTAINS);
   }
+  
+  // very slow, test sources are not all here, no clue how to fix it
+  @Nightly
+  public void testGeoCircleRect() {
+    super.testGeoCircleRect();
+  }
+  
+  // very slow, test sources are not all here, no clue how to fix it
+  @Nightly
+  public void testGeoPolygonRect() {
+    super.testGeoPolygonRect();
+  }
+
+  // very slow, test sources are not all here, no clue how to fix it
+  @Nightly
+  public void testGeoPathRect() {
+    super.testGeoPathRect();
+  }
 }

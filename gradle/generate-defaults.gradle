@@ -13,11 +13,11 @@ def hasDefaults = rootProject.file("gradle.properties").exists()
 if (!hasDefaults) {
   configure(rootProject) {
     task setupLocalDefaultsOnce(type: GradleBuild) {
-      // Approximate a common-sense default for running gradle with parallel
+      // Approximate a common-sense default for running gradle/tests with parallel
       // workers: half the count of available cpus but not more than 12.
       def cpus = Runtime.runtime.availableProcessors()
       def maxWorkers = (int) Math.max(1d, Math.min(cpus * 0.5d, 12))
-      def testsJvms = (int) Math.max(1d, Math.min(cpus * 0.5d, 4))
+      def testsJvms = (int) Math.max(1d, Math.min(cpus * 0.5d, 12))
 
       // Reuse the same set of parameters for the recursive invocation and apply
       // some of these eagerly.
@@ -33,7 +33,7 @@ if (!hasDefaults) {
               "# See gradlew :helpLocalSettings for more information.",
               "systemProp.file.encoding=UTF-8",
               "org.gradle.daemon=true",
-              "org.gradle.jvmargs=-Xmx1g",
+              "org.gradle.jvmargs=-Xmx2g",
               "org.gradle.parallel=true",
               "org.gradle.priority=normal",
               "org.gradle.warning.mode=none", // Silence gradle warnings. We'll deal with them when we upgrade the wrapper.

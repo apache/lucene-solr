@@ -602,7 +602,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
     DirectoryReader r = w.getReader();
     //System.out.println("TEST: reader=" + r);
     IndexSearcher s = newSearcher(r);
-    int iters = atLeast(1000);
+    int iters = atLeast(200);
     for(int iter=0;iter<iters;iter++) {
       String queryTerm = randomSimpleString(digits);
       int prefixLength = random().nextInt(queryTerm.length());

@@ -108,7 +108,7 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
     byte[] pointValue = new byte[3];
     byte[] uniquePointValue = new byte[3];
     random().nextBytes(uniquePointValue);
-    final int numDocs = atLeast(10000); // make sure we have several leaves
+    final int numDocs = TEST_NIGHTLY ? atLeast(10000) : atLeast(500); // at night, make sure we have several leaves
     final boolean multiValues = random().nextBoolean();
     for (int i = 0; i < numDocs; ++i) {
       Document doc = new Document();
@@ -215,7 +215,7 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
     uniquePointValue[1] = new byte[3];
     random().nextBytes(uniquePointValue[0]);
     random().nextBytes(uniquePointValue[1]);
-    final int numDocs = atLeast(10000); // make sure we have several leaves
+    final int numDocs = TEST_NIGHTLY? atLeast(10000) : atLeast(1000); // in nightly, make sure we have several leaves
     final boolean multiValues = random().nextBoolean();
     for (int i = 0; i < numDocs; ++i) {
       Document doc = new Document();
