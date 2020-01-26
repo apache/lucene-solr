@@ -32,6 +32,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
 import java.util.concurrent.FutureTask;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.DirectoryReader;
@@ -597,18 +598,39 @@ public class IndexSearcher {
     }
     final int cappedNumHits = Math.min(numHits, limit);
     final Sort rewrittenSort = sort.rewrite(this);
+    final HitsThresholdChecker hitsThresholdChecker;
+    final MaxScoreAccumulator minScoreAcc;
+    final MaxScoreTerminator maxScoreTerminator;
+    final boolean canEarlyTerminate = TopFieldCollector.canEarlyTerminateAllSegments(rewrittenSort, leafContexts);
+
+    if (executor == null || leafSlices.length <= 1) {
+      hitsThresholdChecker = HitsThresholdChecker.create(TOTAL_HITS_THRESHOLD);
+      minScoreAcc = null;
+      maxScoreTerminator = null;
+    } else if (canEarlyTerminate) {
+      hitsThresholdChecker = HitsThresholdChecker.createShared(TOTAL_HITS_THRESHOLD);
+      minScoreAcc = null;
+      maxScoreTerminator = new MaxScoreTerminator(Math.max(cappedNumHits, hitsThresholdChecker.getHitsThreshold()));
+      if (executor instanceof ThreadPoolExecutor) {
+        // Scale the update frequency used with MaxScoreTerminator. We want it as low(frequent) as
+        // possible while avoiding thread contention. In case a user configures unbounded threads,
+        // cap this at a reasonable max for likely hardware.
+        int numThreads = Math.min(((ThreadPoolExecutor) executor).getMaximumPoolSize(), 128);
+        int numThreadsLog2 = 31 - Integer.numberOfLeadingZeros(numThreads);
+        maxScoreTerminator.setIntervalBits(numThreadsLog2 + 1);
+      }
+    } else {
+      hitsThresholdChecker = HitsThresholdChecker.createShared(TOTAL_HITS_THRESHOLD);
+      minScoreAcc = new MaxScoreAccumulator();
+      maxScoreTerminator = null;
+    }
 
     final CollectorManager<TopFieldCollector, TopFieldDocs> manager = new CollectorManager<>() {
-
-      private final HitsThresholdChecker hitsThresholdChecker = (executor == null || leafSlices.length <= 1) ? HitsThresholdChecker.create(TOTAL_HITS_THRESHOLD) :
-          HitsThresholdChecker.createShared(TOTAL_HITS_THRESHOLD);
-
-      private final MaxScoreAccumulator minScoreAcc = (executor == null || leafSlices.length <= 1) ? null : new MaxScoreAccumulator();
 
       @Override
       public TopFieldCollector newCollector() throws IOException {
         // TODO: don't pay the price for accurate hit counts by default
-        return TopFieldCollector.create(rewrittenSort, cappedNumHits, after, hitsThresholdChecker, minScoreAcc);
+        return TopFieldCollector.create(rewrittenSort, cappedNumHits, after, hitsThresholdChecker, minScoreAcc, maxScoreTerminator);
       }
 
       @Override

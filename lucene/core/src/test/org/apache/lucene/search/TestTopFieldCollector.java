@@ -34,6 +34,7 @@ import org.apache.lucene.document.TextField;
 import org.apache.lucene.index.DirectoryReader;
 import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
+import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.NoMergePolicy;
 import org.apache.lucene.index.RandomIndexWriter;
@@ -213,6 +214,7 @@ public class TestTopFieldCollector extends LuceneTestCase {
     for (int totalHitsThreshold = 0; totalHitsThreshold < 20; ++ totalHitsThreshold) {
       for (FieldDoc after : new FieldDoc[] { null, new FieldDoc(4, Float.NaN, new Object[] { 2L })}) {
         TopFieldCollector collector = TopFieldCollector.create(sort, 2, after, totalHitsThreshold);
+        collector.maxScoreTerminator.setIntervalBits(0); // check on every hit to ensure maximal early termination
         ScoreAndDoc scorer = new ScoreAndDoc();
 
         LeafCollector leafCollector1 = collector.getLeafCollector(reader.leaves().get(0));
@@ -224,17 +226,22 @@ public class TestTopFieldCollector extends LuceneTestCase {
 
         scorer.doc = 1;
         scorer.score = 3;
-        leafCollector1.collect(1);
+        if (totalHitsThreshold <= 2) {
+          expectThrows(CollectionTerminatedException.class, () -> leafCollector1.collect(1));
+          assertEquals(new TotalHits(2, TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO), collector.topDocs().totalHits);
+          continue;
+        } else {
+          leafCollector1.collect(1);
+        }
 
         LeafCollector leafCollector2 = collector.getLeafCollector(reader.leaves().get(1));
         leafCollector2.setScorer(scorer);
 
         scorer.doc = 1;
         scorer.score = 3;
-        if (totalHitsThreshold < 3) {
+        if (totalHitsThreshold == 3) {
           expectThrows(CollectionTerminatedException.class, () -> leafCollector2.collect(1));
-          TopDocs topDocs = collector.topDocs();
-          assertEquals(new TotalHits(3, TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO), topDocs.totalHits);
+          assertEquals(new TotalHits(3, TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO), collector.topDocs().totalHits);
           continue;
         } else {
           leafCollector2.collect(1);
@@ -242,7 +249,7 @@ public class TestTopFieldCollector extends LuceneTestCase {
 
         scorer.doc = 5;
         scorer.score = 4;
-        if (totalHitsThreshold == 3) {
+        if (totalHitsThreshold == 4) {
           expectThrows(CollectionTerminatedException.class, () -> leafCollector2.collect(1));
           TopDocs topDocs = collector.topDocs();
           assertEquals(new TotalHits(4, TotalHits.Relation.GREATER_THAN_OR_EQUAL_TO), topDocs.totalHits);
@@ -688,6 +695,96 @@ public class TestTopFieldCollector extends LuceneTestCase {
 
     indexReader.close();
     dir.close();
+  }
+
+  public void testConcurrentScoreboardTermination() throws Exception {
+    try(Directory dir = newDirectory();
+        IndexWriter w = new IndexWriter(dir, newIndexWriterConfig().setMergePolicy(NoMergePolicy.INSTANCE))) {
+      Document doc = new Document();
+      w.addDocuments(Arrays.asList(doc, doc, doc, doc, doc));
+      w.flush();
+      w.addDocuments(Arrays.asList(doc, doc, doc, doc, doc, doc));
+      w.flush();
+      w.addDocuments(Arrays.asList(doc, doc));
+      w.flush();
+      try (IndexReader reader = DirectoryReader.open(w)) {
+        assertEquals(3, reader.leaves().size());
+
+        Sort sort = new Sort(SortField.FIELD_DOC);
+        CollectorManager<TopFieldCollector, TopFieldDocs> manager =
+            TopFieldCollector.createSharedManager(sort, 2, null, 0);
+        TopFieldCollector collector = manager.newCollector();
+        TopFieldCollector collector2 = manager.newCollector();
+        assertNotNull(collector.maxScoreTerminator);
+        assertSame(collector.maxScoreTerminator, collector2.maxScoreTerminator);
+        assertEquals(0, collector.maxScoreTerminator.totalCollected);
+        assertEquals(2, collector.maxScoreTerminator.totalToCollect);
+        collector.maxScoreTerminator.setIntervalBits(0);
+
+        LeafCollector leafCollector0 = collector.getLeafCollector(reader.leaves().get(0));
+        LeafCollector leafCollector1 = collector2.getLeafCollector(reader.leaves().get(1));
+        LeafCollector leafCollector2 = collector2.getLeafCollector(reader.leaves().get(2));
+
+        leafCollector1.collect(0);
+        leafCollector0.collect(0); // we have collected numHits=2 docs, but there are better ones remaining
+        expectThrows(CollectionTerminatedException.class, () -> leafCollector1.collect(1));
+        expectThrows(CollectionTerminatedException.class, () -> leafCollector0.collect(1)); // now we have all the top docs
+        expectThrows(CollectionTerminatedException.class, () -> leafCollector2.collect(0));
+      }
+    }
+  }
+
+  public void testRandomMaxScoreTermination() throws Exception {
+    IndexWriterConfig iwc = newIndexWriterConfig();
+    iwc.setIndexSort(new Sort(new SortField("N", SortField.Type.INT, random().nextBoolean())));
+    // Sometimes index the sort key in order since this is an adversarial case for strategies that rely on
+    // fair distribution in the index
+    boolean randomizeSortKey = random().nextBoolean();
+    try (Directory dir = newDirectory();
+         RandomIndexWriter w = new RandomIndexWriter(random(), dir, iwc)) {
+      int numDocs = atLeast(1000);
+      for (int i = 0; i < numDocs; ++i) {
+        Document doc = new Document();
+        if (usually()) {
+          doc.add(new StringField("f", "A", Field.Store.NO));
+        }
+        if (rarely()) {
+          doc.add(new StringField("f", "B", Field.Store.NO));
+        }
+        if (usually()) {
+          if (randomizeSortKey) {
+            doc.add(new NumericDocValuesField("N", random().nextInt()));
+          } else {
+            doc.add(new NumericDocValuesField("N", i));
+          }
+        }
+        if (random().nextFloat() < 3f / numDocs) {
+          w.commit();
+        }
+        w.addDocument(doc);
+      }
+      try (IndexReader indexReader = w.getReader()) {
+        Query[] queries = new Query[]{
+            new TermQuery(new Term("f", "A")),
+            new TermQuery(new Term("f", "B")),
+            new BooleanQuery.Builder()
+                .add(new TermQuery(new Term("f", "A")), Occur.MUST)
+                .add(new TermQuery(new Term("f", "B")), Occur.MUST)
+                .build()
+        };
+        int numHits = 20;
+        for (Query query : queries) {
+          Sort sort = new Sort(new SortField[]{SortField.FIELD_DOC});
+          TopFieldCollector fieldCollector = doSearchWithThreshold(numHits, 0, query, sort, indexReader);
+          TopDocs tdc = doConcurrentSearchWithThreshold(numHits, 0, query, sort, indexReader);
+          TopDocs tdc2 = fieldCollector.topDocs();
+
+          assertTrue(tdc.totalHits.value > 0);
+          assertTrue(tdc2.totalHits.value > 0);
+          CheckHits.checkEqual(query, tdc.scoreDocs, tdc2.scoreDocs);
+        }
+      }
+    }
   }
 
 }
