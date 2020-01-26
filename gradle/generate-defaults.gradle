@@ -33,7 +33,7 @@ if (!hasDefaults) {
               "# See gradlew :helpLocalSettings for more information.",
               "systemProp.file.encoding=UTF-8",
               "org.gradle.daemon=true",
-              "org.gradle.jvmargs=-Xmx1g",
+              "org.gradle.jvmargs=-Xmx2g",
               "org.gradle.parallel=true",
               "org.gradle.priority=normal",
               "org.gradle.warning.mode=none", // Silence gradle warnings. We'll deal with them when we upgrade the wrapper.
