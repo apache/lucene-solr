@@ -16,6 +16,7 @@
  */
 package org.apache.solr.cloud;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.net.ConnectException;
 import java.util.List;
@@ -129,6 +130,8 @@ class FullThrottleStoppableIndexingThread extends StoppableIndexingThread {
     stop = true;
     try {
       cusc.blockUntilFinished();
+    } catch (IOException e) {
+      log.warn("Exception waiting for the indexing client to finish", e);
     } finally {
       cusc.shutdownNow();
     }

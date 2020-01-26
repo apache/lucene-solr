@@ -22,6 +22,8 @@ import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -38,6 +40,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.SolrResourceLoader;
+import org.apache.solr.util.TestInjection;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -52,6 +56,24 @@ public class ExecutePlanAction extends TriggerActionBase {
   private static final String PREFIX = "op-";
 
   static final int DEFAULT_TASK_TIMEOUT_SECONDS = 120;
+  public static final String TASK_TIMEOUT_SECONDS = "taskTimeoutSeconds";
+  public static final String TASK_TIMEOUT_FAIL = "taskTimeoutFail";
+
+  int taskTimeoutSeconds;
+  boolean taskTimeoutFail;
+
+  public ExecutePlanAction() {
+    TriggerUtils.validProperties(validProperties, TASK_TIMEOUT_SECONDS, TASK_TIMEOUT_FAIL);
+  }
+
+  @Override
+  public void configure(SolrResourceLoader loader, SolrCloudManager cloudManager, Map<String, Object> properties) throws TriggerValidationException {
+    super.configure(loader, cloudManager, properties);
+    String str = String.valueOf(properties.getOrDefault(TASK_TIMEOUT_SECONDS, DEFAULT_TASK_TIMEOUT_SECONDS));
+    taskTimeoutSeconds = Integer.parseInt(str);
+    str = String.valueOf(properties.getOrDefault(TASK_TIMEOUT_FAIL, false));
+    taskTimeoutFail = Boolean.parseBoolean(str);
+  }
 
   @Override
   public void process(TriggerEvent event, ActionContext context) throws Exception {
@@ -63,11 +85,11 @@ public class ExecutePlanAction extends TriggerActionBase {
       return;
     }
     try {
+      int counter = 0;
       for (SolrRequest operation : operations) {
         log.debug("Executing operation: {}", operation.getParams());
         try {
           SolrResponse response = null;
-          int counter = 0;
           if (operation instanceof CollectionAdminRequest.AsyncCollectionAdminRequest) {
             CollectionAdminRequest.AsyncCollectionAdminRequest req = (CollectionAdminRequest.AsyncCollectionAdminRequest) operation;
             // waitForFinalState so that the end effects of operations are visible
@@ -77,16 +99,34 @@ public class ExecutePlanAction extends TriggerActionBase {
             log.trace("Saved requestId: {} in znode: {}", asyncId, znode);
             // TODO: find a better way of using async calls using dataProvider API !!!
             req.setAsyncId(asyncId);
-            SolrResponse asyncResponse = cloudManager.request(req);
-            if (asyncResponse.getResponse().get("error") != null) {
-              throw new IOException("" + asyncResponse.getResponse().get("error"));
+            if (TestInjection.delayInExecutePlanAction != null) {
+              cloudManager.getTimeSource().sleep(TestInjection.delayInExecutePlanAction);
             }
-            asyncId = (String)asyncResponse.getResponse().get("requestid");
-            CollectionAdminRequest.RequestStatusResponse statusResponse = waitForTaskToFinish(cloudManager, asyncId,
-                DEFAULT_TASK_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            CollectionAdminRequest.RequestStatusResponse statusResponse = null;
+            RequestStatusState state = RequestStatusState.FAILED;
+            if (!TestInjection.failInExecutePlanAction) {
+              SolrResponse asyncResponse = cloudManager.request(req);
+              if (asyncResponse.getResponse().get("error") != null) {
+                throw new IOException("" + asyncResponse.getResponse().get("error"));
+              }
+              asyncId = (String)asyncResponse.getResponse().get("requestid");
+              statusResponse = waitForTaskToFinish(cloudManager, asyncId,
+                  taskTimeoutSeconds, TimeUnit.SECONDS);
+            }
             if (statusResponse != null) {
-              RequestStatusState state = statusResponse.getRequestStatus();
+              state = statusResponse.getRequestStatus();
+              // overwrite to test a long-running task
+              if (TestInjection.delayInExecutePlanAction != null &&
+                  TestInjection.delayInExecutePlanAction > TimeUnit.MILLISECONDS.convert(taskTimeoutSeconds, TimeUnit.SECONDS)) {
+                state = RequestStatusState.RUNNING;
+              }
+              if (TestInjection.failInExecutePlanAction) {
+                state = RequestStatusState.FAILED;
+              }
+              // should we accept partial success here? i.e. some operations won't be completed
+              // successfully but the event processing will still be declared a success
               if (state == RequestStatusState.COMPLETED || state == RequestStatusState.FAILED || state == RequestStatusState.NOT_FOUND) {
+                // remove pending task marker for this request
                 try {
                   cloudManager.getDistribStateManager().removeData(znode, -1);
                 } catch (Exception e) {
@@ -95,7 +135,26 @@ public class ExecutePlanAction extends TriggerActionBase {
               }
               response = statusResponse;
             }
+            if (state == RequestStatusState.RUNNING || state == RequestStatusState.SUBMITTED) {
+              String msg = String.format(Locale.ROOT, "Task %s is still running after " + taskTimeoutSeconds + " seconds. Consider increasing " +
+                      TASK_TIMEOUT_SECONDS + " action property or `waitFor` of the trigger %s. Operation: %s",
+                  asyncId, event.source, req);
+              if (taskTimeoutFail) {
+                throw new IOException(msg);
+              } else {
+                log.warn(msg);
+              }
+            } else if (state == RequestStatusState.FAILED) {
+              // remove it as a pending task
+              try {
+                cloudManager.getDistribStateManager().removeData(znode, -1);
+              } catch (Exception e) {
+                log.warn("Unexpected exception while trying to delete znode: " + znode, e);
+              }
+              throw new IOException("Task " + asyncId + " failed: " + (statusResponse != null ? statusResponse : " timed out. Operation: " + req));
+            }
           } else {
+            // generic response - can't easily determine success or failure
             response = cloudManager.request(operation);
           }
           NamedList<Object> result = response.getResponse();
@@ -105,6 +164,7 @@ public class ExecutePlanAction extends TriggerActionBase {
             responses.add(result);
             return responses;
           });
+          counter++;
         } catch (IOException e) {
           throw new SolrException(SolrException.ErrorCode.SERVER_ERROR,
               "Unexpected exception executing operation: " + operation.getParams(), e);
@@ -160,12 +220,14 @@ public class ExecutePlanAction extends TriggerActionBase {
       }
       cloudManager.getTimeSource().sleep(5000);
     }
-    log.debug("Task with requestId={} did not complete within 5 minutes. Last state={}", requestId, state);
+    log.debug("Task with requestId={} did not complete within {} seconds. Last state={}", timeoutSeconds, requestId, state);
     return statusResponse;
   }
 
   /**
-   * Saves the given asyncId in ZK as a persistent sequential node.
+   * Saves the given asyncId in ZK as a persistent sequential node. This allows us to wait for the completion
+   * of pending tasks from this event in {@link ScheduledTriggers}
+   * before starting the actions of the next event.
    *
    * @return the path of the newly created node in ZooKeeper
    */

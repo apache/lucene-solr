@@ -225,8 +225,8 @@ public class TermFilteredPresearcher extends Presearcher {
       @Override
       public Query build() {
         BooleanQuery.Builder builder = new BooleanQuery.Builder();
-        for (String field : terms.keySet()) {
-          builder.add(new TermInSetQuery(field, terms.get(field)), BooleanClause.Occur.SHOULD);
+        for (Map.Entry<String, List<BytesRef>> entry : terms.entrySet()) {
+          builder.add(new TermInSetQuery(entry.getKey(), entry.getValue()), BooleanClause.Occur.SHOULD);
         }
         return builder.build();
       }

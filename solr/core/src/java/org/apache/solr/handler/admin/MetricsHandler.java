@@ -38,6 +38,7 @@ import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.CommonTestInjection;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.SimpleOrderedMap;
 import org.apache.solr.common.util.StrUtils;
@@ -48,7 +49,6 @@ import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.response.SolrQueryResponse;
 import org.apache.solr.security.AuthorizationContext;
 import org.apache.solr.security.PermissionNameProvider;
-import org.apache.solr.util.TestInjection;
 import org.apache.solr.util.stats.MetricUtils;
 
 /**
@@ -70,7 +70,7 @@ public class MetricsHandler extends RequestHandlerBase implements PermissionName
 
   private static final Pattern KEY_REGEX = Pattern.compile("(?<!" + Pattern.quote("\\") + ")" + Pattern.quote(":"));
   private CoreContainer cc;
-  private final Map<String, String> injectedSysProps = TestInjection.injectAdditionalProps();
+  private final Map<String, String> injectedSysProps = CommonTestInjection.injectAdditionalProps();
 
   public MetricsHandler() {
     this.metricManager = null;

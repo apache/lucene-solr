@@ -34,7 +34,6 @@ import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
-import java.net.ServerSocket;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -121,6 +120,7 @@ import org.apache.solr.common.util.ExecutorUtil;
 import org.apache.solr.common.util.ObjectReleaseTracker;
 import org.apache.solr.common.util.SolrjNamedThreadFactory;
 import org.apache.solr.common.util.SuppressForbidden;
+import org.apache.solr.common.util.TimeSource;
 import org.apache.solr.common.util.Utils;
 import org.apache.solr.common.util.XML;
 import org.apache.solr.core.CoreContainer;
@@ -152,6 +152,7 @@ import org.apache.solr.util.SSLTestConfig;
 import org.apache.solr.util.StartupLoggingUtils;
 import org.apache.solr.util.TestHarness;
 import org.apache.solr.util.TestInjection;
+import org.apache.solr.util.TimeOut;
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.AfterClass;
@@ -330,6 +331,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
       
       if (null != testExecutor) {
         ExecutorUtil.shutdownAndAwaitTermination(testExecutor);
+        testExecutor = null;
       }
 
       resetExceptionIgnores();
@@ -375,6 +377,22 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     }
   }
   
+  /**
+   * a "dead" host, if you try to connect to it, it will likely fail fast
+   * please consider using mocks and not real networking to simulate failure
+   */
+  public static final String DEAD_HOST_1 = "[::1]:4";
+  /**
+   * a "dead" host, if you try to connect to it, it will likely fail fast
+   * please consider using mocks and not real networking to simulate failure
+   */
+  public static final String DEAD_HOST_2 = "[::1]:6";
+  /**
+   * a "dead" host, if you try to connect to it, it will likely fail fast
+   * please consider using mocks and not real networking to simulate failure
+   */
+  public static final String DEAD_HOST_3 = "[::1]:8";
+
   /** Assumes that Mockito/Bytebuddy is available and can be used to mock classes (e.g., fails if Java version is too new). */
   public static void assumeWorkingMockito() {
     // we use reflection here, because we do not have ByteBuddy/Mockito in all modules and the test framework!
@@ -488,6 +506,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     changedFactory = false;
     if (savedFactory != null) {
       System.setProperty("solr.directoryFactory", savedFactory);
+      savedFactory = null;
     } else {
       System.clearProperty("solr.directoryFactory");
     }
@@ -894,21 +913,8 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     lrf = null;
     configString = schemaString = null;
     initCoreDataDir = null;
+    hdfsDataDir = null;
   }
-
-  /**
-   * Find next available local port.
-   * @return available port number or -1 if none could be found
-   * @throws Exception on IO errors
-   */
-  protected static int getNextAvailablePort() throws Exception {
-    int port = -1;
-    try (ServerSocket s = new ServerSocket(0)) {
-      port = s.getLocalPort();
-    }
-    return port;
-  }
-
 
   /** Validates an update XML String is successful
    */
@@ -1268,7 +1274,16 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     return d;
   }
 
+  /**
+   * Generates the correct SolrParams from an even list of strings.
+   * A string in an even position will represent the name of a parameter, while the following string
+   * at position (i+1) will be the assigned value.
+   *
+   * @param params an even list of strings
+   * @return the ModifiableSolrParams generated from the given list of strings.
+   */
   public static ModifiableSolrParams params(String... params) {
+    if (params.length % 2 != 0) throw new RuntimeException("Params length should be even");
     ModifiableSolrParams msp = new ModifiableSolrParams();
     for (int i=0; i<params.length; i+=2) {
       msp.add(params[i], params[i+1]);
@@ -3116,7 +3131,7 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     QueryResponse rsp = client.query(collection, solrQuery);
     long found = rsp.getResults().getNumFound();
 
-    if (rsp.getResults().getNumFound() == expectedDocCount) {
+    if (found == expectedDocCount) {
       return;
     }
 
@@ -3131,9 +3146,17 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     // Add the bogus doc
     new UpdateRequest().add(bogus).commit(client, collection);
 
+    // Let's spin until we find the doc.
+    checkUniqueDoc(client, collection, idField, bogusID, true);
+
     // Then remove it, we should be OK now since new searchers have been opened.
     new UpdateRequest().deleteById(bogusID).commit(client, collection);
-    // Let's check again to see if we succeeded
+
+    // Now spin until the doc is gone.
+    checkUniqueDoc(client, collection, idField, bogusID, false);
+
+    // At this point we're absolutely, totally, positive that a new searcher has been opened, so go ahead and check
+    // the actual condition.
     rsp = client.query(collection, solrQuery);
     found = rsp.getResults().getNumFound();
 
@@ -3145,6 +3168,31 @@ public abstract class SolrTestCaseJ4 extends SolrTestCase {
     } else if (failAnyway) {
       fail("Solr11035BandAid failAnyway == true, would have successfully repaired the collection: '" + collection
           + "' extra info: '" + tag + "'");
+    } else {
+      log.warn("Solr11035BandAid, repair successful");
     }
+  }
+  // Helper for bandaid
+  private static void checkUniqueDoc(SolrClient client, String collection, String idField, String id, boolean shouldBeThere) throws IOException, SolrServerException {
+    TimeOut timeOut = new TimeOut(100, TimeUnit.SECONDS, TimeSource.NANO_TIME);
+    final SolrQuery solrQuery = new SolrQuery(idField + ":" + id);
+
+    while (!timeOut.hasTimedOut()) {
+      QueryResponse rsp = client.query(collection, solrQuery);
+      long found = rsp.getResults().getNumFound();
+      if (shouldBeThere && found == 1) {
+        return;
+      }
+      if (shouldBeThere == false && found == 0) {
+        return;
+      }
+      log.warn("Solr11035BandAid should have succeeded in checkUniqueDoc, shouldBeThere == {}, numFound = {}. Will try again after 250 ms sleep", shouldBeThere, found);
+      try {
+        Thread.sleep(250);
+      } catch (InterruptedException e) {
+        return; // just bail
+      }
+    }
+
   }
 }

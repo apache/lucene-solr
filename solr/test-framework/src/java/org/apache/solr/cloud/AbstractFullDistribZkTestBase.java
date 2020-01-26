@@ -16,6 +16,8 @@
  */
 package org.apache.solr.cloud;
 
+import static org.apache.solr.common.util.Utils.makeMap;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
@@ -39,7 +41,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.UnaryOperator;
+import java.util.function.Consumer;
 
 import org.apache.lucene.util.LuceneTestCase.Slow;
 import org.apache.solr.client.solrj.SolrClient;
@@ -105,8 +107,6 @@ import org.noggit.CharArr;
 import org.noggit.JSONWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.apache.solr.common.util.Utils.makeMap;
 
 /**
  * TODO: we should still test this works as a custom update chain as well as
@@ -464,7 +464,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
           addedReplicas++;
         } else {
-          log.info("create jetty {} in directory {} of type {}", i, jettyDir, Replica.Type.NRT, ((currentI % sliceCount) + 1));
+          log.info("create jetty {} in directory {} of type {} for shard{}", i, jettyDir, Replica.Type.NRT, ((currentI % sliceCount) + 1));
           
           customThreadPool.submit(() -> {
             try {
@@ -492,7 +492,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
           addedReplicas++;
         }
       } else {
-        log.info("create jetty {} in directory {} of type {}", i, jettyDir, Replica.Type.PULL, ((currentI % sliceCount) + 1));
+        log.info("create jetty {} in directory {} of type {} for shard{}", i, jettyDir, Replica.Type.PULL, ((currentI % sliceCount) + 1));
         customThreadPool.submit(() -> {
           try {
             JettySolrRunner j = createJetty(jettyDir, useJettyDataDir ? getDataDir(testDir + "/jetty"
@@ -1822,7 +1822,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
       cloudClient.waitForState(collectionName, 30, TimeUnit.SECONDS, SolrCloudTestCase.activeClusterShape(numShards,
           numShards * (numNrtReplicas + numTlogReplicas + numPullReplicas)));
     } catch (TimeoutException e) {
-      new RuntimeException("Timeout waiting for " + numShards + " shards and " + (numNrtReplicas + numTlogReplicas + numPullReplicas) + " replicas.", e);
+      throw new RuntimeException("Timeout waiting for " + numShards + " shards and " + (numNrtReplicas + numTlogReplicas + numPullReplicas) + " replicas.", e);
     }
     return res;
   }
@@ -2158,8 +2158,7 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
 
     log.info("Took {} ms to see all replicas become active.", timer.getTime());
 
-    List<Replica> replicas = new ArrayList<>();
-    replicas.addAll(notLeaders.values());
+    List<Replica> replicas = new ArrayList<>(notLeaders.values());
     return replicas;
   }
 
@@ -2423,10 +2422,8 @@ public abstract class AbstractFullDistribZkTestBase extends AbstractDistribZkTes
     return restTestHarnesses.get(random.nextInt(restTestHarnesses.size()));
   }
 
-  protected void forAllRestTestHarnesses(UnaryOperator<RestTestHarness> op) {
-    for (RestTestHarness h : restTestHarnesses) {
-      op.apply(h);
-    }
+  protected void forAllRestTestHarnesses(Consumer<RestTestHarness> op) {
+    restTestHarnesses.forEach(op);
   }
 
 }

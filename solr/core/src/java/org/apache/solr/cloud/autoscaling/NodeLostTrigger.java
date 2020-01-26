@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud.autoscaling;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -36,10 +37,15 @@ import org.apache.solr.common.AlreadyClosedException;
 import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.cloud.autoscaling.OverseerTriggerThread.MARKER_ACTIVE;
+import static org.apache.solr.cloud.autoscaling.OverseerTriggerThread.MARKER_INACTIVE;
+import static org.apache.solr.cloud.autoscaling.OverseerTriggerThread.MARKER_STATE;
 import static org.apache.solr.common.params.AutoScalingParams.PREFERRED_OP;
 
 /**
@@ -68,6 +74,16 @@ public class NodeLostTrigger extends TriggerBase {
     try {
       List<String> lost = stateManager.listData(ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH);
       lost.forEach(n -> {
+        String markerPath = ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH + "/" + n;
+        try {
+          Map<String, Object> markerData = Utils.getJson(stateManager, markerPath);
+          // skip inactive markers
+          if (markerData.getOrDefault(MARKER_STATE, MARKER_ACTIVE).equals(MARKER_INACTIVE)) {
+            return;
+          }
+        } catch (InterruptedException | IOException | KeeperException e) {
+          log.debug("-- ignoring marker " + markerPath + " state due to error", e);
+        }
         // don't add nodes that have since came back
         if (!lastLiveNodes.contains(n) && !nodeNameVsTimeRemoved.containsKey(n)) {
           // since {@code #restoreState(AutoScaling.Trigger)} is called first, the timeRemoved for a node may also be restored
@@ -149,7 +165,9 @@ public class NodeLostTrigger extends TriggerBase {
 
       Set<String> newLiveNodes = new HashSet<>(cloudManager.getClusterStateProvider().getLiveNodes());
       log.debug("Running NodeLostTrigger: {} with currently live nodes: {} and last live nodes: {}", name, newLiveNodes.size(), lastLiveNodes.size());
-
+      log.trace("Current Live Nodes for {}: {}", name, newLiveNodes);
+      log.trace("Last Live Nodes for {}: {}", name, lastLiveNodes);
+      
       // have any nodes that we were tracking been added to the cluster?
       // if so, remove them from the tracking map
       Set<String> trackingKeySet = nodeNameVsTimeRemoved.keySet();
@@ -191,6 +209,7 @@ public class NodeLostTrigger extends TriggerBase {
             log.debug("NodeLostTrigger processor for lost nodes: {} is not ready, will try later", nodeNames);
           }
         } else  {
+          log.debug("NodeLostTrigger firing, but no processor - so removing lost nodes: {}", nodeNames);
           nodeNames.forEach(n -> {
             nodeNameVsTimeRemoved.remove(n);
           });

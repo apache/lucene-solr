@@ -1,0 +1,16 @@
+apply plugin: 'java-library'
+
+dependencies {
+  api project(':lucene:core')
+
+  implementation project(':lucene:codecs')
+  implementation project(':lucene:backward-codecs')
+  implementation project(':lucene:analysis:common')
+  implementation project(':lucene:queries')
+  implementation project(':lucene:queryparser')
+  implementation project(':lucene:misc')
+
+  implementation 'org.apache.logging.log4j:log4j-core'
+
+  testImplementation project(':lucene:test-framework')
+}

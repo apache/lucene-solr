@@ -27,10 +27,10 @@ import org.apache.lucene.util.LuceneTestCase;
 public class TestUtil extends LuceneTestCase {
 
   public void testBinarySearch() throws Exception {
-    // Creates a node with 8 arcs spanning (z-A) = 57 chars that will be encoded as a sparse array (no gaps)
-    // requiring binary search
+    // Create a node with 8 arcs spanning (z-A) and ensure it is encoded as a packed array
+    // requiring binary search.
     List<String> letters = Arrays.asList("A", "E", "J", "K", "L", "O", "T", "z");
-    FST<Object> fst = buildFST(letters, true);
+    FST<Object> fst = buildFST(letters, true, false);
     FST.Arc<Object> arc = fst.getFirstArc(new FST.Arc<>());
     arc = fst.readFirstTargetArc(arc, arc, fst.getBytesReader());
     for (int i = 0; i < letters.size(); i++) {
@@ -47,21 +47,21 @@ public class TestUtil extends LuceneTestCase {
 
   public void testReadCeilArcPackedArray() throws Exception {
     List<String> letters = Arrays.asList("A", "E", "J", "K", "L", "O", "T", "z");
-    verifyReadCeilArc(letters, true);
+    verifyReadCeilArc(letters, true, false);
   }
 
   public void testReadCeilArcArrayWithGaps() throws Exception {
     List<String> letters = Arrays.asList("A", "E", "J", "K", "L", "O", "T");
-    verifyReadCeilArc(letters, true);
+    verifyReadCeilArc(letters, true, true);
   }
 
   public void testReadCeilArcList() throws Exception {
     List<String> letters = Arrays.asList("A", "E", "J", "K", "L", "O", "T", "z");
-    verifyReadCeilArc(letters, false);
+    verifyReadCeilArc(letters, false, false);
   }
 
-  private void verifyReadCeilArc(List<String> letters, boolean allowArrayArcs) throws Exception {
-    FST<Object> fst = buildFST(letters, allowArrayArcs);
+  private void verifyReadCeilArc(List<String> letters, boolean allowArrayArcs, boolean allowDirectAddressing) throws Exception {
+    FST<Object> fst = buildFST(letters, allowArrayArcs, allowDirectAddressing);
     FST.Arc<Object> first = fst.getFirstArc(new FST.Arc<>());
     FST.Arc<Object> arc = new FST.Arc<>();
     FST.BytesReader in = fst.getBytesReader();
@@ -81,14 +81,19 @@ public class TestUtil extends LuceneTestCase {
     assertNull(Util.readCeilArc('Z', fst, arc, arc, in));
   }
 
-  private FST<Object> buildFST(List<String> words, boolean allowArrayArcs) throws Exception {
+  private FST<Object> buildFST(List<String> words, boolean allowArrayArcs, boolean allowDirectAddressing) throws Exception {
     final Outputs<Object> outputs = NoOutputs.getSingleton();
-    final Builder<Object> b = new Builder<>(FST.INPUT_TYPE.BYTE1, 0, 0, true, true, Integer.MAX_VALUE, outputs, allowArrayArcs, 15);
+    final FSTCompiler.Builder<Object> builder = new FSTCompiler.Builder<>(FST.INPUT_TYPE.BYTE1, outputs)
+        .allowFixedLengthArcs(allowArrayArcs);
+    if (!allowDirectAddressing) {
+      builder.directAddressingMaxOversizingFactor(-1f);
+    }
+    final FSTCompiler<Object> fstCompiler = builder.build();
 
     for (String word : words) {
-      b.add(Util.toIntsRef(new BytesRef(word), new IntsRefBuilder()), outputs.getNoOutput());
+      fstCompiler.add(Util.toIntsRef(new BytesRef(word), new IntsRefBuilder()), outputs.getNoOutput());
     }
-    return b.finish();
+    return fstCompiler.compile();
   }
 
   private List<String> createRandomDictionary(int width, int depth) {

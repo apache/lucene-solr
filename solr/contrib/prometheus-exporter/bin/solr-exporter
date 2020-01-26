@@ -104,7 +104,23 @@ do
   CLASSPATH="$CLASSPATH":"$JAR"
 done
 
-EXTRA_JVM_ARGUMENTS="-Xmx512m -Dlog4j.configurationFile=file:"$BASEDIR"/../../server/resources/log4j2-console.xml"
+# Memory settings
+JAVA_MEM_OPTS=
+if [ -z "$JAVA_HEAP" ] && [ -n "$JAVA_MEM" ]; then
+  JAVA_MEM_OPTS="$JAVA_MEM"
+else
+  JAVA_HEAP="${JAVA_HEAP:-512m}"
+  JAVA_MEM_OPTS="-Xms$JAVA_HEAP -Xmx$JAVA_HEAP"
+fi
+
+# define default GC_TUNE
+if [ -z ${GC_TUNE+x} ]; then
+    GC_TUNE='-XX:+UseG1GC'
+else
+    GC_TUNE="$GC_TUNE"
+fi
+
+EXTRA_JVM_ARGUMENTS="-Dlog4j.configurationFile=file:"$BASEDIR"/../../server/resources/log4j2-console.xml"
 
 # For Cygwin, switch paths to Windows format before running java
 if $cygwin; then
@@ -115,7 +131,10 @@ if $cygwin; then
   [ -n "$REPO" ] && REPO=`cygpath --path --windows "$REPO"`
 fi
 
-exec "$JAVACMD" $JAVA_OPTS \
+exec "$JAVACMD" \
+  $JAVA_MEM_OPTS \
+  $GC_TUNE \
+  $JAVA_OPTS \
   $EXTRA_JVM_ARGUMENTS \
   -classpath "$CLASSPATH" \
   -Dapp.name="solr-exporter" \

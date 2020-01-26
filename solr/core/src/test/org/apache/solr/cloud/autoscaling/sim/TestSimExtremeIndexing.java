@@ -17,7 +17,6 @@
 package org.apache.solr.cloud.autoscaling.sim;
 
 import java.lang.invoke.MethodHandles;
-import java.util.Iterator;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
@@ -30,8 +29,6 @@ import org.apache.solr.cloud.CloudTestUtils.AutoScalingRequest;
 import org.apache.solr.cloud.CloudUtil;
 import org.apache.solr.cloud.autoscaling.ExecutePlanAction;
 import org.apache.solr.common.SolrDocumentList;
-import org.apache.solr.common.SolrInputDocument;
-import org.apache.solr.common.SolrInputField;
 import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.apache.solr.common.util.TimeSource;
@@ -142,38 +139,6 @@ public class TestSimExtremeIndexing extends SimSolrCloudTestCase {
     ureq.setParam("collection", collection);
     ureq.setDocIterator(new FakeDocIterator(start, count));
     solrClient.request(ureq);
-  }
-
-  // lightweight generator of fake documents
-  // NOTE: this iterator only ever returns the same document, which works ok
-  // for our "index update" simulation. Obviously don't use this for real indexing.
-  private static class FakeDocIterator implements Iterator<SolrInputDocument> {
-    final SolrInputDocument doc = new SolrInputDocument();
-    final SolrInputField idField = new SolrInputField("id");
-
-    final long start, count;
-
-    long current, max;
-
-    FakeDocIterator(long start, long count) {
-      this.start = start;
-      this.count = count;
-      current = start;
-      max = start + count;
-      doc.put("id", idField);
-      idField.setValue("foo");
-    }
-
-    @Override
-    public boolean hasNext() {
-      return current < max;
-    }
-
-    @Override
-    public SolrInputDocument next() {
-      current++;
-      return doc;
-    }
   }
 
 }

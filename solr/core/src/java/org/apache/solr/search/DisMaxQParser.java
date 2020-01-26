@@ -33,6 +33,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.commons.lang3.StringUtils;
+
 /**
  * Query parser for dismax queries
  * <p>
@@ -122,9 +124,9 @@ public class DisMaxQParser extends QParser {
       for (String boostFunc : boostFuncs) {
         if (null == boostFunc || "".equals(boostFunc)) continue;
         Map<String, Float> ff = SolrPluginUtils.parseFieldBoosts(boostFunc);
-        for (String f : ff.keySet()) {
-          Query fq = subQuery(f, FunctionQParserPlugin.NAME).getQuery();
-          Float b = ff.get(f);
+        for (Map.Entry<String, Float> entry : ff.entrySet()) {
+          Query fq = subQuery(entry.getKey(), FunctionQParserPlugin.NAME).getQuery();
+          Float b = entry.getValue();
           if (null != b) {
             fq = new BoostQuery(fq, b);
           }
@@ -193,7 +195,7 @@ public class DisMaxQParser extends QParser {
     parsedUserQuery = null;
     String userQuery = getString();
     altUserQuery = null;
-    if (userQuery == null || userQuery.trim().length() < 1) {
+    if (StringUtils.isBlank(userQuery)) {
       // If no query is specified, we may have an alternate
       altUserQuery = getAlternateUserQuery(solrParams);
       if (altUserQuery == null)

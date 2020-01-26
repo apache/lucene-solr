@@ -250,8 +250,17 @@ public class RequestParams implements MapSerializable {
       return m1;
     }
 
+    /**
+     * @param type one of defaults, appends, invariants
+     */
     public VersionedParams getParams(String type) {
       return paramsMap.get(type);
+    }
+
+    /**get the raw map
+     */
+    public Map<String, Object> get() {
+      return defaults;
     }
   }
 

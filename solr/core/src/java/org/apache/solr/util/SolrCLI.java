@@ -60,6 +60,7 @@ import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.HelpFormatter;
@@ -116,6 +117,7 @@ import org.apache.solr.client.solrj.response.CollectionAdminResponse;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.cloud.autoscaling.sim.NoopDistributedQueueFactory;
 import org.apache.solr.cloud.autoscaling.sim.SimCloudManager;
+import org.apache.solr.cloud.autoscaling.sim.SimScenario;
 import org.apache.solr.cloud.autoscaling.sim.SimUtils;
 import org.apache.solr.cloud.autoscaling.sim.SnapshotCloudManager;
 import org.apache.solr.common.MapWriter;
@@ -418,6 +420,8 @@ public class SolrCLI implements CLIO {
       return new AutoscalingTool();
     else if ("export".equals(toolType))
       return new ExportTool();
+    else if ("package".equals(toolType))
+      return new PackageTool();
 
     // If you add a built-in tool to this class, add it here to avoid
     // classpath scanning
@@ -930,11 +934,16 @@ public class SolrCLI implements CLIO {
               .withLongOpt("iterations")
               .create("i"),
           OptionBuilder
-              .withDescription("Save autoscaling shapshots at each step of simulated execution.")
+              .withDescription("Save autoscaling snapshots at each step of simulated execution.")
               .withArgName("DIR")
               .withLongOpt("saveSimulated")
               .hasArg()
               .create("ss"),
+          OptionBuilder
+              .withDescription("Execute a scenario from a file (and ignore all other options).")
+              .withArgName("FILE")
+              .hasArg()
+              .create("scenario"),
           OptionBuilder
               .withDescription("Turn on all options to get all available information.")
               .create("all")
@@ -949,6 +958,15 @@ public class SolrCLI implements CLIO {
 
     protected void runImpl(CommandLine cli) throws Exception {
       raiseLogLevelUnlessVerbose(cli);
+      if (cli.hasOption("scenario")) {
+        String data = IOUtils.toString(new FileInputStream(cli.getOptionValue("scenario")), "UTF-8");
+        try (SimScenario scenario = SimScenario.load(data)) {
+          scenario.verbose = verbose;
+          scenario.console = CLIO.getOutStream();
+          scenario.run();
+        }
+        return;
+      }
       SnapshotCloudManager cloudManager;
       AutoScalingConfig config = null;
       String configFile = cli.getOptionValue("a");
@@ -990,8 +1008,7 @@ public class SolrCLI implements CLIO {
         cloudManager.saveSnapshot(targetDir, true, redact);
         CLIO.err("- saved autoscaling snapshot to " + targetDir.getAbsolutePath());
       }
-      HashSet<String> liveNodes = new HashSet<>();
-      liveNodes.addAll(cloudManager.getClusterStateProvider().getLiveNodes());
+      HashSet<String> liveNodes = new HashSet<>(cloudManager.getClusterStateProvider().getLiveNodes());
       boolean withSuggestions = cli.hasOption("s");
       boolean withDiagnostics = cli.hasOption("d") || cli.hasOption("n");
       boolean withSortedNodes = cli.hasOption("n");
@@ -1408,19 +1425,17 @@ public class SolrCLI implements CLIO {
   private static final long MS_IN_HOUR = MS_IN_MIN * 60L;
   private static final long MS_IN_DAY = MS_IN_HOUR * 24L;
 
-  private static final String uptime(long uptimeMs) {
+  @VisibleForTesting
+  static final String uptime(long uptimeMs) {
     if (uptimeMs <= 0L) return "?";
 
-    long numDays = (uptimeMs >= MS_IN_DAY)
-        ? (long) Math.floor(uptimeMs / MS_IN_DAY) : 0L;
+    long numDays = (uptimeMs >= MS_IN_DAY) ? (uptimeMs / MS_IN_DAY) : 0L;
     long rem = uptimeMs - (numDays * MS_IN_DAY);
-    long numHours = (rem >= MS_IN_HOUR)
-        ? (long) Math.floor(rem / MS_IN_HOUR) : 0L;
+    long numHours = (rem >= MS_IN_HOUR) ?  (rem / MS_IN_HOUR) : 0L;
     rem = rem - (numHours * MS_IN_HOUR);
-    long numMinutes = (rem >= MS_IN_MIN)
-        ? (long) Math.floor(rem / MS_IN_MIN) : 0L;
+    long numMinutes = (rem >= MS_IN_MIN) ? (rem / MS_IN_MIN) : 0L;
     rem = rem - (numMinutes * MS_IN_MIN);
-    long numSeconds = Math.round(rem / 1000);
+    long numSeconds = Math.round(rem / 1000.0);
     return String.format(Locale.ROOT, "%d days, %d hours, %d minutes, %d seconds", numDays,
         numHours, numMinutes, numSeconds);
   }
@@ -3467,8 +3482,9 @@ public class SolrCLI implements CLIO {
         Map<String,String> startEnv = new HashMap<>();
         Map<String,String> procEnv = EnvironmentUtils.getProcEnvironment();
         if (procEnv != null) {
-          for (String envVar : procEnv.keySet()) {
-            String envVarVal = procEnv.get(envVar);
+          for (Map.Entry<String, String> entry : procEnv.entrySet()) {
+            String envVar = entry.getKey();
+            String envVarVal = entry.getValue();
             if (envVarVal != null && !"EXAMPLE".equals(envVar) && !envVar.startsWith("SOLR_")) {
               startEnv.put(envVar, envVarVal);
             }

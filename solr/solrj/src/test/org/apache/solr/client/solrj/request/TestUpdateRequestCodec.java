@@ -18,28 +18,33 @@ package org.apache.solr.client.solrj.request;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.StringWriter;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import junit.framework.Assert;
-
 import org.apache.solr.SolrTestCase;
+import org.apache.solr.common.IteratorWriter;
+import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.SolrInputDocument;
 import org.apache.solr.common.SolrInputField;
+import org.apache.solr.common.util.JavaBinCodec;
+import org.apache.solr.common.util.Utils;
 import org.junit.Test;
+
+import static org.apache.solr.common.params.CommonParams.CHILDDOC;
 
 /**
  * Test for UpdateRequestCodec
  *
- * @since solr 1.4
- *
  * @see org.apache.solr.client.solrj.request.UpdateRequest
+ * @since solr 1.4
  */
 public class TestUpdateRequestCodec extends SolrTestCase {
 
@@ -74,7 +79,7 @@ public class TestUpdateRequestCodec extends SolrTestCase {
     Collection<String> foobar = new HashSet<>();
     foobar.add("baz1");
     foobar.add("baz2");
-    doc.addField("foobar",foobar);
+    doc.addField("foobar", foobar);
     updateRequest.add(doc);
 
 //    updateRequest.setWaitFlush(true);
@@ -84,15 +89,12 @@ public class TestUpdateRequestCodec extends SolrTestCase {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     codec.marshal(updateRequest, baos);
     final List<SolrInputDocument> docs = new ArrayList<>();
-    JavaBinUpdateRequestCodec.StreamingUpdateHandler handler = new JavaBinUpdateRequestCodec.StreamingUpdateHandler() {
-      @Override
-      public void update(SolrInputDocument document, UpdateRequest req, Integer commitWithin, Boolean overwrite) {
-        Assert.assertNotNull(req.getParams());
-        docs.add(document);
-      }
+    JavaBinUpdateRequestCodec.StreamingUpdateHandler handler = (document, req, commitWithin, overwrite) -> {
+      Assert.assertNotNull(req.getParams());
+      docs.add(document);
     };
 
-    UpdateRequest updateUnmarshalled = codec.unmarshal(new ByteArrayInputStream(baos.toByteArray()) ,handler);
+    UpdateRequest updateUnmarshalled = codec.unmarshal(new ByteArrayInputStream(baos.toByteArray()), handler);
 
     for (SolrInputDocument document : docs) {
       updateUnmarshalled.add(document);
@@ -100,12 +102,12 @@ public class TestUpdateRequestCodec extends SolrTestCase {
     for (int i = 0; i < updateRequest.getDocuments().size(); i++) {
       SolrInputDocument inDoc = updateRequest.getDocuments().get(i);
       SolrInputDocument outDoc = updateUnmarshalled.getDocuments().get(i);
-      compareDocs("doc#"+i, inDoc, outDoc);
+      compareDocs("doc#" + i, inDoc, outDoc);
     }
-    Assert.assertEquals(updateUnmarshalled.getDeleteById().get(0) , 
-                        updateRequest.getDeleteById().get(0));
-    Assert.assertEquals(updateUnmarshalled.getDeleteQuery().get(0) , 
-                        updateRequest.getDeleteQuery().get(0));
+    Assert.assertEquals(updateUnmarshalled.getDeleteById().get(0),
+        updateRequest.getDeleteById().get(0));
+    Assert.assertEquals(updateUnmarshalled.getDeleteQuery().get(0),
+        updateRequest.getDeleteQuery().get(0));
 
     assertEquals("b", updateUnmarshalled.getParams().get("a"));
   }
@@ -125,10 +127,7 @@ public class TestUpdateRequestCodec extends SolrTestCase {
     doc.addField("desc", "one");
     // imagine someone adding a custom Bean that implements Iterable 
     // but is not a Collection
-    doc.addField("iter", new Iterable<String>() { 
-        @Override
-        public Iterator<String> iterator() { return values.iterator(); } 
-      });
+    doc.addField("iter", (Iterable<String>) values::iterator);
     doc.addField("desc", "1");
     updateRequest.add(doc);
 
@@ -136,16 +135,13 @@ public class TestUpdateRequestCodec extends SolrTestCase {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     codec.marshal(updateRequest, baos);
     final List<SolrInputDocument> docs = new ArrayList<>();
-    JavaBinUpdateRequestCodec.StreamingUpdateHandler handler = new JavaBinUpdateRequestCodec.StreamingUpdateHandler() {
-      @Override
-      public void update(SolrInputDocument document, UpdateRequest req, Integer commitWithin, Boolean overwrite) {
-        Assert.assertNotNull(req.getParams());
-        docs.add(document);
-      }
+    JavaBinUpdateRequestCodec.StreamingUpdateHandler handler = (document, req, commitWithin, overwrite) -> {
+      Assert.assertNotNull(req.getParams());
+      docs.add(document);
     };
 
-    UpdateRequest updateUnmarshalled = codec.unmarshal(new ByteArrayInputStream(baos.toByteArray()) ,handler);
- 
+    UpdateRequest updateUnmarshalled = codec.unmarshal(new ByteArrayInputStream(baos.toByteArray()), handler);
+
     for (SolrInputDocument document : docs) {
       updateUnmarshalled.add(document);
     }
@@ -154,9 +150,47 @@ public class TestUpdateRequestCodec extends SolrTestCase {
     SolrInputField iter = outDoc.getField("iter");
     Assert.assertNotNull("iter field is null", iter);
     Object iterVal = iter.getValue();
-    Assert.assertTrue("iterVal is not a Collection", 
-                      iterVal instanceof Collection);
+    Assert.assertTrue("iterVal is not a Collection",
+        iterVal instanceof Collection);
     Assert.assertEquals("iterVal contents", values, iterVal);
+
+  }
+
+  //this format accepts a 1:1 mapping of the json format and javabin format
+  public void testStreamableInputDocFormat() throws IOException {
+    Map m = Utils.makeMap("id","1","desc" ,"The desc 1");
+    m.put(CHILDDOC, (MapWriter) ew -> {
+      ew.put("id","1.1");
+      ew.put("desc" ,"The desc 1.1");
+      ew.put(CHILDDOC, (IteratorWriter) iw -> {
+        iw.add(Utils.makeMap("id", "1.1.1","desc","The desc 1.1.1"));
+        iw.add((MapWriter) ew1 -> {
+          ew1.put("id", "1.1.2");
+          ew1.put("desc", "The desc 1.1.2");
+        });
+      });
+    });
+    MapWriter m2 = ew -> {
+      ew.put("id", "2");
+      ew.put("des", "The desc 2");
+    };
+
+    List l = new ArrayList();
+    l.add(m);
+    l.add(m2);
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    new JavaBinCodec().marshal(l.iterator(), baos);
+
+    List<SolrInputDocument>  l2 = new ArrayList();
+
+    new JavaBinUpdateRequestCodec().unmarshal(new ByteArrayInputStream(baos.toByteArray()), (document, req, commitWithin, override) -> l2.add(document));
+
+   assertEquals(l2.get(0).getChildDocuments().size(), 1);
+
+   Object o = Utils.fromJSONString(Utils.writeJson(l.get(0), new StringWriter(), true).toString());
+   Object cdoc = Utils.getObjectByPath(o, false, CHILDDOC);
+   assertEquals(Utils.writeJson(cdoc, new StringWriter(), true).toString(),
+       Utils.writeJson(l2.get(0).getChildDocuments().get(0) ,new StringWriter(), true).toString());
 
   }
 
@@ -193,24 +227,20 @@ public class TestUpdateRequestCodec extends SolrTestCase {
     Collection<String> foobar = new HashSet<>();
     foobar.add("baz1");
     foobar.add("baz2");
-    doc.addField("foobar",foobar);
+    doc.addField("foobar", foobar);
     updateRequest.add(doc);
 
     updateRequest.deleteById("2");
     updateRequest.deleteByQuery("id:3");
 
 
-
     InputStream is = getClass().getResourceAsStream("/solrj/updateReq_4_5.bin");
     assertNotNull("updateReq_4_5.bin was not found", is);
-    UpdateRequest updateUnmarshalled = new JavaBinUpdateRequestCodec().unmarshal(is, new JavaBinUpdateRequestCodec.StreamingUpdateHandler() {
-      @Override
-      public void update(SolrInputDocument document, UpdateRequest req, Integer commitWithin, Boolean override) {
-        if(commitWithin == null ){
-                    req.add(document);
-        }
-        System.err.println("Doc" + document + " ,commitWithin:"+commitWithin+ " , override:"+ override);
+    UpdateRequest updateUnmarshalled = new JavaBinUpdateRequestCodec().unmarshal(is, (document, req, commitWithin, override) -> {
+      if (commitWithin == null) {
+        req.add(document);
       }
+      System.err.println("Doc" + document + " ,commitWithin:" + commitWithin + " , override:" + override);
     });
 
     System.err.println(updateUnmarshalled.getDocumentsMap());
@@ -219,11 +249,11 @@ public class TestUpdateRequestCodec extends SolrTestCase {
     for (int i = 0; i < updateRequest.getDocuments().size(); i++) {
       SolrInputDocument inDoc = updateRequest.getDocuments().get(i);
       SolrInputDocument outDoc = updateUnmarshalled.getDocuments().get(i);
-      compareDocs("doc#"+i, inDoc, outDoc);
+      compareDocs("doc#" + i, inDoc, outDoc);
     }
-    Assert.assertEquals(updateUnmarshalled.getDeleteById().get(0) ,
+    Assert.assertEquals(updateUnmarshalled.getDeleteById().get(0),
         updateRequest.getDeleteById().get(0));
-    Assert.assertEquals(updateUnmarshalled.getDeleteQuery().get(0) ,
+    Assert.assertEquals(updateUnmarshalled.getDeleteQuery().get(0),
         updateRequest.getDeleteQuery().get(0));
 
     assertEquals("b", updateUnmarshalled.getParams().get("a"));
@@ -231,9 +261,8 @@ public class TestUpdateRequestCodec extends SolrTestCase {
   }
 
 
-
-  private void compareDocs(String m, 
-                           SolrInputDocument expectedDoc, 
+  private void compareDocs(String m,
+                           SolrInputDocument expectedDoc,
                            SolrInputDocument actualDoc) {
 
     for (String s : expectedDoc.getFieldNames()) {
@@ -252,7 +281,7 @@ public class TestUpdateRequestCodec extends SolrTestCase {
       }
 
       Assert.assertEquals(m + " diff values for field: " + s,
-                          expectedVal, actualVal);
+          expectedVal, actualVal);
     }
   }
 

@@ -272,7 +272,7 @@ public class TestBufferedIndexInput extends LuceneTestCase {
         //int count = 0;
         for (final IndexInput ip : allIndexInputs) {
           BufferedIndexInput bii = (BufferedIndexInput) ip;
-          int bufferSize = 1024+Math.abs(rand.nextInt() % 32768);
+          int bufferSize = 1024 + rand.nextInt(32768);
           bii.setBufferSize(bufferSize);
           //count++;
         }

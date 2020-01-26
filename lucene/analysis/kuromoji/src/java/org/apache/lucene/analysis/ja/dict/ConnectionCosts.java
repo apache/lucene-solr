@@ -37,12 +37,16 @@ public final class ConnectionCosts {
   
   private final short[][] costs; // array is backward IDs first since get is called using the same backward ID consecutively. maybe doesn't matter.
   
-  private ConnectionCosts() throws IOException {
+  /**
+   * @param scheme - scheme for loading resources (FILE or CLASSPATH).
+   * @param path - where to load resources from, without the ".dat" suffix
+   */
+  public ConnectionCosts(BinaryDictionary.ResourceScheme scheme, String path) throws IOException {
     InputStream is = null;
     short[][] costs = null;
     boolean success = false;
     try {
-      is = BinaryDictionary.getClassResource(getClass(), FILENAME_SUFFIX);
+      is = BinaryDictionary.getResource(scheme, path.replace('.', '/') + FILENAME_SUFFIX);
       is = new BufferedInputStream(is);
       final DataInput in = new InputStreamDataInput(is);
       CodecUtil.checkHeader(in, HEADER, VERSION, VERSION);
@@ -68,7 +72,11 @@ public final class ConnectionCosts {
     
     this.costs = costs;
   }
-  
+
+  private ConnectionCosts() throws IOException {
+    this(BinaryDictionary.ResourceScheme.CLASSPATH, ConnectionCosts.class.getName());
+  }
+
   public int get(int forwardId, int backwardId) {
     return costs[backwardId][forwardId];
   }

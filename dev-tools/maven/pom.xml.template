@@ -23,7 +23,7 @@
   <parent>
     <groupId>org.apache</groupId>
     <artifactId>apache</artifactId>
-    <version>13</version>
+    <version>21</version>
     <relativePath/>
   </parent>
   <groupId>org.apache.lucene</groupId>
@@ -32,15 +32,15 @@
   <packaging>pom</packaging>
   <name>Grandparent POM for Apache Lucene Core and Apache Solr</name>
   <description>Grandparent POM for Apache Lucene Core and Apache Solr</description>
-  <url>http://lucene.apache.org</url>
+  <url>https://lucene.apache.org</url>
   <modules>
     <module>lucene</module>
     <module>solr</module>
   </modules>
   <properties>
-    <vc-anonymous-base-url>http://git-wip-us.apache.org/repos/asf/lucene-solr.git</vc-anonymous-base-url>
-    <vc-dev-base-url>https://git-wip-us.apache.org/repos/asf/lucene-solr.git</vc-dev-base-url>
-    <vc-browse-base-url>https://git1-us-west.apache.org/repos/asf?p=lucene-solr.git;a=tree</vc-browse-base-url>
+    <vc-anonymous-base-url>https://gitbox.apache.org/repos/asf/lucene-solr.git</vc-anonymous-base-url>
+    <vc-dev-base-url>https://gitbox.apache.org/repos/asf/lucene-solr.git</vc-dev-base-url>
+    <vc-browse-base-url>https://gitbox.apache.org/repos/asf?p=lucene-solr.git</vc-browse-base-url>
     <specification.version>@spec.version@</specification.version>
     <maven.build.timestamp.format>yyyy-MM-dd HH:mm:ss</maven.build.timestamp.format>
     <java.compat.version>11</java.compat.version>
@@ -80,7 +80,7 @@
       <subscribe>general-subscribe@lucene.apache.org</subscribe>
       <unsubscribe>general-unsubscribe@lucene.apache.org</unsubscribe>
       <archive>
-        http://mail-archives.apache.org/mod_mbox/lucene-general/
+        https://mail-archives.apache.org/mod_mbox/lucene-general/
       </archive>
     </mailingList>
     <mailingList>
@@ -88,21 +88,21 @@
       <subscribe>java-user-subscribe@lucene.apache.org</subscribe>
       <unsubscribe>java-user-unsubscribe@lucene.apache.org</unsubscribe>
       <archive>
-        http://mail-archives.apache.org/mod_mbox/lucene-java-user/
+        https://mail-archives.apache.org/mod_mbox/lucene-java-user/
       </archive>
     </mailingList>
     <mailingList>
       <name>Java Developer List</name>
       <subscribe>dev-subscribe@lucene.apache.org</subscribe>
       <unsubscribe>dev-unsubscribe@lucene.apache.org</unsubscribe>
-      <archive>http://mail-archives.apache.org/mod_mbox/lucene-dev/</archive>
+      <archive>https://mail-archives.apache.org/mod_mbox/lucene-dev/</archive>
     </mailingList>
     <mailingList>
       <name>Java Commits List</name>
       <subscribe>commits-subscribe@lucene.apache.org</subscribe>
       <unsubscribe>commits-unsubscribe@lucene.apache.org</unsubscribe>
       <archive>
-        http://mail-archives.apache.org/mod_mbox/lucene-java-commits/
+        https://mail-archives.apache.org/mod_mbox/lucene-java-commits/
       </archive>
     </mailingList>
   </mailingLists>
@@ -122,7 +122,7 @@
     <repository>
       <id>apache.snapshots</id>
       <name>Apache Snapshot Repository</name>
-      <url>http://repository.apache.org/snapshots</url>
+      <url>https://repository.apache.org/snapshots</url>
       <releases>
         <enabled>false</enabled>
       </releases>
@@ -159,7 +159,7 @@
         <plugin>
           <groupId>de.thetaphi</groupId>
           <artifactId>forbiddenapis</artifactId>
-          <version>2.6</version>
+          <version>2.7</version>
           <configuration>
             <!--
               This is the default setting, we don't support too new Java versions.
@@ -267,7 +267,7 @@
               <tempDir>.</tempDir>
               <java.awt.headless>true</java.awt.headless>
 
-              <!-- See <http://wiki.apache.org/lucene-java/RunningTests>
+              <!-- See <https://cwiki.apache.org/confluence/display/lucene/RunningTests>
                    for a description of the tests.* system properties. -->
 
               <!-- RandomizedTesting library system properties -->

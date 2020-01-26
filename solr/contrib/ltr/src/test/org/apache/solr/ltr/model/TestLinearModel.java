@@ -29,7 +29,8 @@ import org.apache.solr.ltr.norm.IdentityNormalizer;
 import org.apache.solr.ltr.norm.Normalizer;
 import org.apache.solr.ltr.store.FeatureStore;
 import org.apache.solr.ltr.store.rest.ManagedModelStore;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class TestLinearModel extends TestRerankBase {
@@ -58,15 +59,21 @@ public class TestLinearModel extends TestRerankBase {
   static ManagedModelStore store = null;
   static FeatureStore fstore = null;
 
-  @BeforeClass
-  public static void setup() throws Exception {
+  @Before
+  public void setup() throws Exception {
     setuptest(true);
     // loadFeatures("features-store-test-model.json");
     store = getManagedModelStore();
     fstore = getManagedFeatureStore().getFeatureStore("test");
 
   }
-
+  @After
+  public void cleanup() throws Exception {
+    store = null;
+    fstore = null;
+    aftertest();
+  }
+  
   @Test
   public void getInstanceTest() {
     final Map<String,Object> weights = new HashMap<>();

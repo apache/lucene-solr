@@ -1,0 +1,14 @@
+apply plugin: 'java-library'
+
+dependencies {
+  api project(':lucene:core')
+  api project(':lucene:spatial3d')
+
+  api 'org.locationtech.spatial4j:spatial4j'
+  api 'io.sgr:s2-geometry-library-java'
+
+  testImplementation project(':lucene:test-framework')
+
+  testImplementation 'org.locationtech.jts:jts-core'
+  testImplementation 'org.locationtech.spatial4j:spatial4j::tests'
+}

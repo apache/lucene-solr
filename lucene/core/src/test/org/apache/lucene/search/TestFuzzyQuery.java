@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.carrotsearch.randomizedtesting.RandomizedTest;
 import org.apache.lucene.analysis.MockAnalyzer;
 import org.apache.lucene.analysis.MockTokenizer;
 import org.apache.lucene.document.Document;
@@ -35,6 +36,8 @@ import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.RandomIndexWriter;
 import org.apache.lucene.index.Term;
+import org.apache.lucene.index.Terms;
+import org.apache.lucene.index.TermsEnum;
 import org.apache.lucene.search.BooleanClause.Occur;
 import org.apache.lucene.search.similarities.ClassicSimilarity;
 import org.apache.lucene.store.Directory;
@@ -43,6 +46,9 @@ import org.apache.lucene.util.IntsRef;
 import org.apache.lucene.util.LuceneTestCase;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.automaton.LevenshteinAutomata;
+import org.apache.lucene.util.automaton.Operations;
+
+import static org.hamcrest.CoreMatchers.containsString;
 
 /**
  * Tests {@link FuzzyQuery}.
@@ -492,7 +498,73 @@ public class TestFuzzyQuery extends LuceneTestCase {
     });
     assertTrue(expected.getMessage().contains("maxExpansions must be positive"));
   }
-  
+
+  private String randomRealisticMultiByteUnicode(int length) {
+    while (true) {
+      // There is 1 single-byte unicode block, and 194 multi-byte blocks
+      String value = RandomizedTest.randomRealisticUnicodeOfCodepointLength(length);
+      if (value.charAt(0) > Byte.MAX_VALUE) {
+        return value;
+      }
+    }
+  }
+
+  public void testErrorMessage() {
+    // 45 states per vector from Lev2TParametricDescription
+    final int length = (Operations.DEFAULT_MAX_DETERMINIZED_STATES / 45) + 10;
+    final String value = randomRealisticMultiByteUnicode(length);
+
+    FuzzyTermsEnum.FuzzyTermsException expected = expectThrows(FuzzyTermsEnum.FuzzyTermsException.class, () -> {
+      new FuzzyQuery(new Term("field", value)).getTermsEnum(new Terms() {
+        @Override
+        public TermsEnum iterator() {
+          return TermsEnum.EMPTY;
+        }
+
+        @Override
+        public long size() {
+          return 0;
+        }
+
+        @Override
+        public long getSumTotalTermFreq() {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long getSumDocFreq() {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public int getDocCount() {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean hasFreqs() {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean hasOffsets() {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean hasPositions() {
+          throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean hasPayloads() {
+          throw new UnsupportedOperationException();
+        }
+      });
+    });
+    assertThat(expected.getMessage(), containsString(value));
+  }
+
   private void addDoc(String text, RandomIndexWriter writer) throws IOException {
     Document doc = new Document();
     doc.add(newTextField("field", text, Field.Store.YES));
@@ -530,7 +602,7 @@ public class TestFuzzyQuery extends LuceneTestCase {
     DirectoryReader r = w.getReader();
     //System.out.println("TEST: reader=" + r);
     IndexSearcher s = newSearcher(r);
-    int iters = atLeast(1000);
+    int iters = atLeast(200);
     for(int iter=0;iter<iters;iter++) {
       String queryTerm = randomSimpleString(digits);
       int prefixLength = random().nextInt(queryTerm.length());

@@ -31,7 +31,7 @@ import org.apache.solr.core.PluginInfo;
 import org.apache.solr.core.SolrCore;
 import org.apache.solr.handler.RequestHandlerBase;
 import org.apache.solr.metrics.MetricsMap;
-import org.apache.solr.metrics.SolrMetrics;
+import org.apache.solr.metrics.SolrMetricsContext;
 import org.apache.solr.request.SolrQueryRequest;
 import org.apache.solr.request.SolrRequestHandler;
 import org.apache.solr.response.SolrQueryResponse;
@@ -385,13 +385,13 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     assertEquals("v1.1", resp.getValues()._getStr(Arrays.asList("metrics", "solr.core.collection1:QUERY./dumphandler.dumphandlergauge","d_k1"), null));
     assertEquals("v2.1", resp.getValues()._getStr(Arrays.asList("metrics","solr.core.collection1:QUERY./dumphandler.dumphandlergauge","d_k2"), null));
 
-
+    handler.close();
   }
 
   static class RefreshablePluginHolder extends PluginBag.PluginHolder<SolrRequestHandler> {
 
     private DumpRequestHandler rh;
-    private SolrMetrics metricsInfo;
+    private SolrMetricsContext metricsInfo;
 
     public RefreshablePluginHolder(PluginInfo info, DumpRequestHandler rh) {
       super(info);
@@ -404,18 +404,18 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     }
 
     void closeHandler() throws Exception {
-      this.metricsInfo = rh.getMetrics();
-      if(metricsInfo.tag.contains(String.valueOf(rh.hashCode()))){
-        //this created a new child metrics
-        metricsInfo = metricsInfo.getParent();
-      }
+      this.metricsInfo = rh.getSolrMetricsContext();
+//      if(metricsInfo.tag.contains(String.valueOf(rh.hashCode()))){
+//        //this created a new child metrics
+//        metricsInfo = metricsInfo.getParent();
+//      }
       this.rh.close();
     }
 
     void reset(DumpRequestHandler rh) throws Exception {
         this.rh = rh;
         if(metricsInfo != null)
-        this.rh.initializeMetrics(metricsInfo);
+        this.rh.initializeMetrics(metricsInfo, "/dumphandler");
     }
 
 
@@ -440,11 +440,11 @@ public class MetricsHandlerTest extends SolrTestCaseJ4 {
     }
 
     @Override
-    public void initializeMetrics(SolrMetrics m) {
-      super.initializeMetrics(m);
+    public void initializeMetrics(SolrMetricsContext parentContext, String scope) {
+      super.initializeMetrics(parentContext, scope);
       MetricsMap metrics = new MetricsMap((detailed, map) -> map.putAll(gaugevals));
-      solrMetrics.gauge(this,
-           metrics,  true, "dumphandlergauge", getCategory().toString());
+      solrMetricsContext.gauge(
+           metrics,  true, "dumphandlergauge", getCategory().toString(), scope);
 
     }
 

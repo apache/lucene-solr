@@ -210,8 +210,8 @@ public class SearchStream extends TupleStream implements Expressible  {
     if(documentIterator.hasNext()) {
       Map map = new HashMap();
       SolrDocument doc = documentIterator.next();
-      for(String key  : doc.keySet()) {
-        map.put(key, doc.get(key));
+      for(Entry<String, Object> entry : doc.entrySet()) {
+        map.put(entry.getKey(), entry.getValue());
       }
       return new Tuple(map);
     } else {

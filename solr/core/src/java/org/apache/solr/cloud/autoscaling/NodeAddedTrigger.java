@@ -17,6 +17,7 @@
 
 package org.apache.solr.cloud.autoscaling;
 
+import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -36,10 +37,15 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.cloud.Replica;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.params.CollectionParams;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
+import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.apache.solr.cloud.autoscaling.OverseerTriggerThread.MARKER_ACTIVE;
+import static org.apache.solr.cloud.autoscaling.OverseerTriggerThread.MARKER_INACTIVE;
+import static org.apache.solr.cloud.autoscaling.OverseerTriggerThread.MARKER_STATE;
 import static org.apache.solr.common.params.AutoScalingParams.PREFERRED_OP;
 import static org.apache.solr.common.params.AutoScalingParams.REPLICA_TYPE;
 
@@ -71,6 +77,16 @@ public class NodeAddedTrigger extends TriggerBase {
     try {
       List<String> added = stateManager.listData(ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH);
       added.forEach(n -> {
+        String markerPath = ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH + "/" + n;
+        try {
+          Map<String, Object> markerData = Utils.getJson(stateManager, markerPath);
+          // skip inactive markers
+          if (markerData.getOrDefault(MARKER_STATE, MARKER_ACTIVE).equals(MARKER_INACTIVE)) {
+            return;
+          }
+        } catch (InterruptedException | IOException | KeeperException e) {
+          log.debug("-- ignoring marker " + markerPath + " state due to error", e);
+        }
         // don't add nodes that have since gone away
         if (lastLiveNodes.contains(n) && !nodeNameVsTimeAdded.containsKey(n)) {
           // since {@code #restoreState(AutoScaling.Trigger)} is called first, the timeAdded for a node may also be restored

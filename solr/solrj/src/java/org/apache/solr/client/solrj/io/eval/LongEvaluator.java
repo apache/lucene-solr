@@ -44,7 +44,11 @@ public class LongEvaluator extends RecursiveObjectEvaluator implements OneValueW
       return ((List<?>)value).stream().map(innerValue -> doWork(innerValue)).collect(Collectors.toList());
     }
     else{
-      return Long.valueOf(value.toString());
+      if(value instanceof String) {
+        return Long.valueOf(value.toString());
+      } else {
+        return ((Number) value).longValue();
+      }
     }
   }
 }

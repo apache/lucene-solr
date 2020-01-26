@@ -20,6 +20,7 @@ package org.apache.solr.client.ref_guide_examples;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,10 +35,10 @@ import org.apache.solr.client.solrj.request.json.JsonQueryRequest;
 import org.apache.solr.client.solrj.request.json.QueryFacetMap;
 import org.apache.solr.client.solrj.request.json.RangeFacetMap;
 import org.apache.solr.client.solrj.request.json.TermsFacetMap;
-import org.apache.solr.client.solrj.response.json.BucketJsonFacet;
-import org.apache.solr.client.solrj.response.json.NestableJsonFacet;
 import org.apache.solr.client.solrj.response.QueryResponse;
 import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.client.solrj.response.json.BucketJsonFacet;
+import org.apache.solr.client.solrj.response.json.NestableJsonFacet;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.SolrDocument;
 import org.apache.solr.common.params.ModifiableSolrParams;
@@ -455,6 +456,7 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
         .setQuery("memory")
         .withFilter("inStock:true")
         .withStatFacet("avg_price", "avg(price)")
+        .withStatFacet("min_manufacturedate_dt", "min(manufacturedate_dt)")
         .withStatFacet("num_suppliers", "unique(manu_exact)")
         .withStatFacet("median_weight", "percentile(weight,50)");
     QueryResponse queryResponse = request.process(solrClient, COLLECTION_NAME);
@@ -464,9 +466,13 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
     assertEquals(4, queryResponse.getResults().getNumFound());
     assertEquals(4, queryResponse.getResults().size());
     final NestableJsonFacet topLevelFacetingData = queryResponse.getJsonFacetingResponse();
-    assertEquals(146.66, (double) topLevelFacetingData.getStatFacetValue("avg_price"), 0.5);
-    assertEquals(3, topLevelFacetingData.getStatFacetValue("num_suppliers"));
-    assertEquals(352.0, (double) topLevelFacetingData.getStatFacetValue("median_weight"), 0.5);
+    assertEquals(146.66, (double) topLevelFacetingData.getStatValue("avg_price"), 0.5);
+    assertEquals(3, topLevelFacetingData.getStatValue("num_suppliers"));
+    assertEquals(352.0, (double) topLevelFacetingData.getStatValue("median_weight"), 0.5);
+
+    Object val = topLevelFacetingData.getStatValue("min_manufacturedate_dt");
+    assertTrue(val instanceof Date);
+    assertEquals("2006-02-13T15:26:37Z", ((Date)val).toInstant().toString());
   }
 
   @Test
@@ -478,6 +484,7 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
         .setQuery("*:*")
         .withFilter("price:[1.0 TO *]")
         .withFilter("popularity:[0 TO 10]")
+        .withStatFacet("min_manu_id_s", "min(manu_id_s)")
         .withStatFacet("avg_value", "avg(div(popularity,price))");
     QueryResponse queryResponse = request.process(solrClient, COLLECTION_NAME);
     //end::solrj-json-metrics-facet-simple[]
@@ -486,7 +493,10 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
     assertEquals(13, queryResponse.getResults().getNumFound());
     assertEquals(10, queryResponse.getResults().size());
     final NestableJsonFacet topLevelFacetingData = queryResponse.getJsonFacetingResponse();
-    assertEquals(0.036, (double) topLevelFacetingData.getStatFacetValue("avg_value"), 0.1);
+    assertEquals(0.036, (double) topLevelFacetingData.getStatValue("avg_value"), 0.1);
+    Object val = topLevelFacetingData.getStatValue("min_manu_id_s");
+    assertTrue(val instanceof String);
+    assertEquals("apple", val.toString());
   }
 
   @Test
@@ -511,7 +521,7 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
     assertEquals(13, queryResponse.getResults().getNumFound());
     assertEquals(10, queryResponse.getResults().size());
     final NestableJsonFacet topLevelFacetingData = queryResponse.getJsonFacetingResponse();
-    assertEquals(0.108, (double) topLevelFacetingData.getStatFacetValue("avg_value"), 0.1);
+    assertEquals(0.108, (double) topLevelFacetingData.getStatValue("avg_value"), 0.1);
   }
 
   @Test
@@ -551,7 +561,7 @@ public class JsonRequestApiTest extends SolrCloudTestCase {
     assertEquals(10, queryResponse.getResults().size());
     final NestableJsonFacet topLevelFacetingData = queryResponse.getJsonFacetingResponse();
     assertEquals(2, topLevelFacetingData.getQueryFacet("high_popularity").getCount());
-    assertEquals(199.5, topLevelFacetingData.getQueryFacet("high_popularity").getStatFacetValue("average_price"));
+    assertEquals(199.5, topLevelFacetingData.getQueryFacet("high_popularity").getStatValue("average_price"));
   }
 
   @Test

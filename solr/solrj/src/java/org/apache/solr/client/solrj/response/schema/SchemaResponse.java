@@ -169,8 +169,7 @@ public class SchemaResponse extends SolrResponseBase {
     List<Map<String, Object>> fieldsAttributes = new LinkedList<>();
     List<NamedList<Object>> fieldsResponse = (List<NamedList<Object>>) schemaNamedList.get("fields");
     for (NamedList<Object> fieldNamedList : fieldsResponse) {
-      Map<String, Object> fieldAttributes = new LinkedHashMap<>();
-      fieldAttributes.putAll(extractAttributeMap(fieldNamedList));
+      Map<String, Object> fieldAttributes = new LinkedHashMap<>(extractAttributeMap(fieldNamedList));
       fieldsAttributes.add(fieldAttributes);
     }
 
@@ -182,8 +181,7 @@ public class SchemaResponse extends SolrResponseBase {
     List<Map<String, Object>> dynamicFieldsAttributes = new LinkedList<>();
     List<NamedList<Object>> dynamicFieldsResponse = (List<NamedList<Object>>) schemaNamedList.get("dynamicFields");
     for (NamedList<Object> fieldNamedList : dynamicFieldsResponse) {
-      Map<String, Object> dynamicFieldAttributes = new LinkedHashMap<>();
-      dynamicFieldAttributes.putAll(extractAttributeMap(fieldNamedList));
+      Map<String, Object> dynamicFieldAttributes = new LinkedHashMap<>(extractAttributeMap(fieldNamedList));
       dynamicFieldsAttributes.add(dynamicFieldAttributes);
     }
 
@@ -195,8 +193,7 @@ public class SchemaResponse extends SolrResponseBase {
     List<Map<String, Object>> copyFieldsAttributes = new LinkedList<>();
     List<NamedList<Object>> copyFieldsResponse = (List<NamedList<Object>>) schemaNamedList.get("copyFields");
     for (NamedList<Object> copyFieldNamedList : copyFieldsResponse) {
-      Map<String, Object> copyFieldAttributes = new LinkedHashMap<>();
-      copyFieldAttributes.putAll(extractAttributeMap(copyFieldNamedList));
+      Map<String, Object> copyFieldAttributes = new LinkedHashMap<>(extractAttributeMap(copyFieldNamedList));
       copyFieldsAttributes.add(copyFieldAttributes);
     }
 

@@ -56,19 +56,19 @@
   </updateHandler>
 
   <query>
-         <filterCache class="solr.FastLRUCache"
+         <filterCache
                  size="0"
                  initialSize="0"
                  autowarmCount="0"/>
-         <queryResultCache class="solr.LRUCache"
+         <queryResultCache
                   size="0"
                   initialSize="0"
                   autowarmCount="0"/>
-         <documentCache class="solr.LRUCache"
+         <documentCache
                    size="0"
                    initialSize="0"
                    autowarmCount="0"/>
-         <fieldValueCache class="solr.FastLRUCache"
+         <fieldValueCache
                 size="0"
                 autowarmCount="0"
                 showItems="0" />         

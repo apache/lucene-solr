@@ -47,13 +47,9 @@ public class TestSolrProperties extends AbstractEmbeddedSolrServerTestCase {
     RuleChain.outerRule(new SystemPropertiesRestoreRule());
 
   protected SolrClient getSolrAdmin() {
-    return new EmbeddedSolrServer(cores, "core0");
+    return new EmbeddedSolrServer(cores, null);
   }
   
-  protected SolrClient getRenamedSolrAdmin() {
-    return new EmbeddedSolrServer(cores, "renamed_core");
-  }
-
   @Test
   public void testProperties() throws Exception {
 

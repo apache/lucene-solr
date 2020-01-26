@@ -16,7 +16,7 @@ A. How to use nightly Jenkins-built Lucene/Solr Maven artifacts
    The most recently produced nightly Jenkins-built Lucene and Solr Maven
    snapshot artifacts are available in the Apache Snapshot repository here:
 
-      http://repository.apache.org/snapshots
+      https://repository.apache.org/snapshots
 
    An example POM snippet:
 
@@ -27,7 +27,7 @@ A. How to use nightly Jenkins-built Lucene/Solr Maven artifacts
          <repository>
            <id>apache.snapshots</id>
            <name>Apache Snapshot Repository</name>
-           <url>http://repository.apache.org/snapshots</url>
+           <url>https://repository.apache.org/snapshots</url>
            <releases>
              <enabled>false</enabled>
            </releases>
@@ -57,12 +57,12 @@ C. How to deploy Maven artifacts to a repository
    as in B. above, with the addition of two system properties:
 
       ant -Dm2.repository.id=my-repo-id \
-          -Dm2.repository.url=http://example.org/my/repo \
+          -Dm2.repository.url=https://example.org/my/repo \
           generate-maven-artifacts
 
    The repository ID given in the above command corresponds to a <server>
    entry in either your ~/.m2/settings.xml or ~/.ant/settings.xml.  See
-   <http://maven.apache.org/settings.html#Servers> for more information.
+   <https://maven.apache.org/settings.html#Servers> for more information.
    (Note that as of version 2.1.3, Maven Ant Tasks cannot handle encrypted
    passwords.)
 

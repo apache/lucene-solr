@@ -76,7 +76,7 @@ When adding data, you should usually direct documents to the alias (e.g., refere
 The Solr server and `CloudSolrClient` will direct an update request to the first collection that an alias points to.
 Once the server receives the data it will perform the necessary routing.
 
-WARNING: It's extremely important with all routed aliases that the route values NOT change. Re-indexing a document
+WARNING: It's extremely important with all routed aliases that the route values NOT change. Reindexing a document
 with a different route value for the same ID produces two distinct documents with the same ID accessible via the alias.
 All query time behavior of the routed alias is *_undefined_* and not easily predictable once duplicate ID's exist.
 
@@ -124,7 +124,7 @@ RAUP first reads TRA configuration from the alias properties when it is initiali
   within the target collection.
 
 * If it belongs in the current collection (which is usually the case if processing events as they occur), the document
-  passes through to DUP. DUP does it's normal collection-level processing that may involve routing the document
+  passes through to DUP. DUP does its normal collection-level processing that may involve routing the document
   to another shard & replica.
 
 * If the timestamp on the document is more recent than the most recent TRA segment, then a new collection needs to be
@@ -254,7 +254,7 @@ field during indexing is impractical, or the TRA behavior is desired across mult
 Dimensional Routed aliases may be used. This feature has been designed to handle an arbitrary number
 and combination of category and time dimensions in any order, but users are cautioned to carefully
 consider the total number of collections that will result from such configurations. Collection counts
-in the high hundreds or low 1000's begin to pose significant challenges with zookeeper.
+in the high hundreds or low 1000's begin to pose significant challenges with ZooKeeper.
 
 NOTE: DRA's are a new feature and presently only 2 dimensions are supported. More dimensions will
 be supported in the future (see https://issues.apache.org/jira/browse/SOLR-13628 for progress)
@@ -270,9 +270,9 @@ with 30 minute intervals):
 
 Note that the initial collection will be a throw away place holder for any DRA containing a category based dimension.
 Name generation for each sub-part of a collection name is identical to the corresponding potion of the component
-dimension type. (e.g. a category value generating __CRA__ or __TRA__ would still produce an error)
+dimension type. (e.g., a category value generating __CRA__ or __TRA__ would still produce an error)
 
-WARNING: The prior warning about reindexing documents with different route value applies to every dimensio of
+WARNING: The prior warning about reindexing documents with different route value applies to every dimension of
 a DRA. DRA's are inappropriate for documents where categories or timestamps used in routing will change (this of
 course applies to other route values in future RA types too).
 

@@ -112,7 +112,7 @@ public class TestArabicAnalyzer extends BaseTokenStreamTestCase {
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
     ArabicAnalyzer a = new ArabicAnalyzer();
-    checkRandomData(random(), a, 1000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), a, 200 * RANDOM_MULTIPLIER);
     a.close();
   }
 }

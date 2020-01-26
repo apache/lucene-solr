@@ -42,6 +42,7 @@ import org.apache.lucene.util.StringHelper;
 import org.apache.lucene.util.TestUtil;
 import org.apache.lucene.util.Version;
 
+@LuceneTestCase.SuppressCodecs("SimpleText")
 public class TestIndexWriterThreadsToSegments extends LuceneTestCase {
 
   // LUCENE-5644: for first segment, two threads each indexed one doc (likely concurrently), but for second segment, each thread indexed the

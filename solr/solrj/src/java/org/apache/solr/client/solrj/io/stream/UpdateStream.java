@@ -237,10 +237,10 @@ public class UpdateStream extends TupleStream implements Expressible {
   
   private int extractBatchSize(StreamExpression expression, StreamFactory factory) throws IOException {
     StreamExpressionNamedParameter batchSizeParam = factory.getNamedOperand(expression, "batchSize");
-    if(null == batchSizeParam || null == batchSizeParam.getParameter() || !(batchSizeParam.getParameter() instanceof StreamExpressionValue)){
-      throw new IOException(String.format(Locale.ROOT,"Invalid expression %s - expecting a 'batchSize' parameter of type positive integer but didn't find one",expression));
+    if(batchSizeParam == null) {
+      // Sensible default batch size
+      return 250;
     }
-    
     String batchSizeStr = ((StreamExpressionValue)batchSizeParam.getParameter()).getValue();
     return parseBatchSize(batchSizeStr, expression);
   }

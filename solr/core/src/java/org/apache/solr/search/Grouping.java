@@ -887,12 +887,13 @@ public class Grouping {
 
     @Override
     protected void finish() throws IOException {
-      TopDocsCollector topDocsCollector = (TopDocsCollector) collector.getDelegate();
-      TopDocs topDocs = topDocsCollector.topDocs();
+      TopDocs topDocs = topCollector.topDocs();
       float maxScore;
       if (withinGroupSort == null || withinGroupSort.equals(Sort.RELEVANCE)) {
         maxScore = topDocs.scoreDocs.length == 0 ? Float.NaN : topDocs.scoreDocs[0].score;
       } else if (needScores) {
+        // use top-level query to populate the scores
+        TopFieldCollector.populateScores(topDocs.scoreDocs, searcher, Grouping.this.query);
         maxScore = maxScoreCollector.getMaxScore();
       } else {
         maxScore = Float.NaN;

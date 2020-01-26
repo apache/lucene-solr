@@ -513,7 +513,7 @@ This starts the first node. When it's done start the second node, and tell it ho
 
 `./bin/solr start -c -p 7574 -s example/cloud/node2/solr -z localhost:9983`
 
-NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<setting-up-an-external-zookeeper-ensemble#updating-solr-s-include-files,instructions>>) you can omit `-z <zk host string>` from the above command.
+NOTE: If you have defined `ZK_HOST` in `solr.in.sh`/`solr.in.cmd` (see <<setting-up-an-external-zookeeper-ensemble#updating-solr-include-files,instructions>>) you can omit `-z <zk host string>` from the above command.
 
 === Create a New Collection
 

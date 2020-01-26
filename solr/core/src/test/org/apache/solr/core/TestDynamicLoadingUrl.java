@@ -77,7 +77,7 @@ public class TestDynamicLoadingUrl extends AbstractFullDistribZkTestBase {
     try {
       String payload = "{\n" +
           "'add-runtimelib' : { 'name' : 'urljar', url : 'http://localhost:" + port + "/jar1.jar'" +
-          "  'sha256':'e01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420'}" +
+          "  'sha512':'e01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420'}" +
           "}";
       RestTestHarness client = randomRestTestHarness();
       TestSolrConfigHandler.runConfigCommandExpectFailure(client, "/config", payload, "Invalid jar");
@@ -85,7 +85,7 @@ public class TestDynamicLoadingUrl extends AbstractFullDistribZkTestBase {
 
       payload = "{\n" +
           "'add-runtimelib' : { 'name' : 'urljar', url : 'http://localhost:" + port + "/jar1.jar'" +
-          "  'sha256':'e1f9e23988c19619402f1040c9251556dcd6e02b9d3e3b966a129ea1be5c70fc'}" +
+          "  'sha512':'d01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420'}" +
           "}";
       client = randomRestTestHarness();
       TestSolrConfigHandler.runConfigCommand(client, "/config", payload);
@@ -93,8 +93,8 @@ public class TestDynamicLoadingUrl extends AbstractFullDistribZkTestBase {
           null,
           "/config/overlay",
           null,
-          Arrays.asList("overlay", "runtimeLib", "urljar", "sha256"),
-          "e1f9e23988c19619402f1040c9251556dcd6e02b9d3e3b966a129ea1be5c70fc", 120);
+          Arrays.asList("overlay", "runtimeLib", "urljar", "sha512"),
+          "d01b51de67ae1680a84a813983b1de3b592fc32f1a22b662fc9057da5953abd1b72476388ba342cad21671cd0b805503c78ab9075ff2f3951fdf75fa16981420", 120);
 
       payload = "{\n" +
           "'create-requesthandler' : { 'name' : '/runtime', 'class': 'org.apache.solr.core.RuntimeLibReqHandler', 'runtimeLib' : true}" +

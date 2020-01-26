@@ -29,9 +29,9 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Test for QueryComponent's distributed querying
+ * Test for distributed ExpandComponent
  *
- * @see org.apache.solr.handler.component.QueryComponent
+ * @see org.apache.solr.handler.component.ExpandComponent
  */
 public class DistributedExpandComponentTest extends BaseDistributedSearchTestCase {
 

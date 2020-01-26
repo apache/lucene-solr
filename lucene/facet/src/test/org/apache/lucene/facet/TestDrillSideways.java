@@ -489,7 +489,7 @@ public class TestDrillSideways extends FacetTestCase {
 
     int numDims = TestUtil.nextInt(random(), 2, 5);
     //int numDims = 3;
-    int numDocs = atLeast(3000);
+    int numDocs = atLeast(300);
     //int numDocs = 20;
     if (VERBOSE) {
       System.out.println(

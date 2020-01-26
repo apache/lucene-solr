@@ -106,17 +106,15 @@ public class GroupOperation implements ReduceOperation {
   }
 
   public Tuple reduce() {
-    Map map = new HashMap();
-    List<Map> list = new ArrayList();
     LinkedList ll = new LinkedList();
     while(priorityQueue.size() > 0) {
       ll.addFirst(priorityQueue.poll().getMap());
       //This will clear priority queue and so it will be ready for the next group.
     }
 
-    list.addAll(ll);
+    List<Map> list = new ArrayList(ll);
     Map groupHead = list.get(0);
-    map.putAll(groupHead);
+    Map map = new HashMap(groupHead);
     map.put("group", list);
     return new Tuple(map);
   }

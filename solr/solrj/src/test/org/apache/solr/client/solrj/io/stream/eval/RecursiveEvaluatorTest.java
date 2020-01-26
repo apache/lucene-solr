@@ -67,8 +67,7 @@ public class RecursiveEvaluatorTest extends SolrTestCase {
     values.put("f", 2);
     values.put("g", 5);
     result = evaluator.evaluate(new Tuple(values));
-    Assert.assertTrue(result instanceof Long);
-    Assert.assertEquals(-16L, result);
+    Assert.assertEquals(-16D, result);
     
     values.clear();
     values.put("a", .1);

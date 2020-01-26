@@ -230,7 +230,7 @@ public class TestFeatureSort extends LuceneTestCase {
       if (random().nextBoolean()) {
         float f;
         do {
-          int freq = TestUtil.nextInt(random(), 1, (1 << 16) - 1);
+          int freq = TestUtil.nextInt(random(), 1, FeatureField.MAX_FREQ);
           f = FeatureField.decodeFeatureValue(freq);
         } while (f < Float.MIN_NORMAL);
         doc.add(new NumericDocValuesField("float", Float.floatToIntBits(f)));

@@ -54,6 +54,7 @@ public class AnalyticsRequestManager {
   public String analyticsRequest;
   public AnalyticsShardRequestManager shardStream;
   public boolean sendShards;
+  private boolean partialResults = false;
 
   /**
    * Create an manager with the given ungrouped expressions. This is straightforward in the new
@@ -179,9 +180,9 @@ public class AnalyticsRequestManager {
     ungroupedReductionManager.exportData();
 
     output.writeInt(groupingManagers.size());
-    for (String groupingName : groupingManagers.keySet()) {
-      output.writeUTF(groupingName);
-      groupingManagers.get(groupingName).exportShardData(output);
+    for (Map.Entry<String, AnalyticsGroupingManager> entry : groupingManagers.entrySet()) {
+      output.writeUTF(entry.getKey());
+      entry.getValue().exportShardData(output);
     }
   }
 
@@ -276,4 +277,14 @@ public class AnalyticsRequestManager {
     }
     return analyticsResponse;
   }
+
+  public void setPartialResults(boolean b) {
+    this.partialResults=b;
+  }
+
+  public boolean isPartialResults() {
+    return partialResults;
+  }
+  
+  
 }

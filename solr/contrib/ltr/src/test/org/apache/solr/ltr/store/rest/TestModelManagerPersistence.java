@@ -35,14 +35,19 @@ import org.apache.solr.ltr.model.DefaultWrapperModel;
 import org.apache.solr.ltr.model.LinearModel;
 import org.apache.solr.ltr.norm.Normalizer;
 import org.apache.solr.ltr.store.FeatureStore;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class TestModelManagerPersistence extends TestRerankBase {
 
-  @BeforeClass
-  public static void init() throws Exception {
+  @Before
+  public void init() throws Exception {
     setupPersistenttest(true);
+  }
+  @After
+  public void cleanup() throws Exception {
+    aftertest();
   }
 
   // executed first

@@ -61,6 +61,7 @@ import org.junit.Ignore;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 
+@org.apache.lucene.util.LuceneTestCase.AwaitsFix(bugUrl="https://issues.apache.org/jira/browse/SOLR-13696")
 @Ignore  // don't try too run abstract base class
 public abstract class RoutedAliasUpdateProcessorTest extends SolrCloudTestCase {
 

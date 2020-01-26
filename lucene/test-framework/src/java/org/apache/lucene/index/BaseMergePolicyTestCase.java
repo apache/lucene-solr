@@ -388,7 +388,8 @@ public abstract class BaseMergePolicyTestCase extends LuceneTestCase {
    * Simulate an update use-case where documents are uniformly updated across segments.
    */
   public void testSimulateUpdates() throws IOException {
-    doTestSimulateUpdates(mergePolicy(), 10_000_000, 2500);
+    int numDocs = atLeast(1_000_000);
+    doTestSimulateUpdates(mergePolicy(), numDocs, 2500);
   }
 
   /**

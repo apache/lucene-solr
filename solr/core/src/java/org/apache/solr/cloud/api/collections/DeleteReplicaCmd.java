@@ -145,9 +145,10 @@ public class DeleteReplicaCmd implements Cmd {
       }
     }
 
-    for (Slice shardSlice: shardToReplicasMapping.keySet()) {
+    for (Map.Entry<Slice, Set<String>> entry : shardToReplicasMapping.entrySet()) {
+      Slice shardSlice = entry.getKey();
       String shardId = shardSlice.getName();
-      Set<String> replicas = shardToReplicasMapping.get(shardSlice);
+      Set<String> replicas = entry.getValue();
       //callDeleteReplica on all replicas
       for (String replica: replicas) {
         log.debug("Deleting replica {}  for shard {} based on count {}", replica, shardId, count);

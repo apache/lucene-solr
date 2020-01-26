@@ -26,6 +26,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
+import org.apache.solr.common.params.CommonParams;
+
 /**
  * Represent the field-value information needed to construct and index
  * a Lucene Document.  Like the SolrDocument, the field values should
@@ -57,6 +59,9 @@ public class SolrInputDocument extends SolrDocumentBase<SolrInputField, SolrInpu
       bc.accept(k, o);
     };
     _fields.forEach(wrapper);
+    if (_childDocuments != null) {
+      ew.put(CommonParams.CHILDDOC, _childDocuments);
+    }
   }
 
   public SolrInputDocument(Map<String,SolrInputField> fields) {

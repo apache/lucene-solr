@@ -53,7 +53,7 @@ public final class CharacterUtils {
    */
   public static void toLowerCase(final char[] buffer, final int offset, final int limit) {
     assert buffer.length >= limit;
-    assert offset <=0 && offset <= buffer.length;
+    assert 0 <= offset && offset <= buffer.length;
     for (int i = offset; i < limit;) {
       i += Character.toChars(
               Character.toLowerCase(
@@ -70,7 +70,7 @@ public final class CharacterUtils {
    */
   public static void toUpperCase(final char[] buffer, final int offset, final int limit) {
     assert buffer.length >= limit;
-    assert offset <=0 && offset <= buffer.length;
+    assert 0 <= offset && offset <= buffer.length;
     for (int i = offset; i < limit;) {
       i += Character.toChars(
               Character.toUpperCase(

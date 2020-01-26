@@ -36,6 +36,7 @@ import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.ContentStream;
 import org.apache.solr.common.util.ContentStreamBase;
 import org.apache.solr.common.util.Utils;
+import org.apache.solr.core.SolrCore;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.ltr.feature.Feature;
 import org.apache.solr.ltr.feature.FeatureException;
@@ -129,11 +130,15 @@ public class TestRerankBase extends RestTestBase {
   }
 
   public static ManagedFeatureStore getManagedFeatureStore() {
-    return ManagedFeatureStore.getManagedFeatureStore(h.getCore());
+    try (SolrCore core = jetty.getCoreContainer().getCore(DEFAULT_TEST_CORENAME)) {
+      return ManagedFeatureStore.getManagedFeatureStore(core);
+    }
   }
 
   public static ManagedModelStore getManagedModelStore() {
-    return ManagedModelStore.getManagedModelStore(h.getCore());
+    try (SolrCore core = jetty.getCoreContainer().getCore(DEFAULT_TEST_CORENAME)) {
+      return ManagedModelStore.getManagedModelStore(core);
+    }
   }
 
   protected static SortedMap<ServletHolder,String>  setupTestInit(
@@ -192,7 +197,6 @@ public class TestRerankBase extends RestTestBase {
 
   public static void setuptest(String solrconfig, String schema)
       throws Exception {
-    initCore(solrconfig, schema);
 
     SortedMap<ServletHolder,String> extraServlets =
         setupTestInit(solrconfig,schema,false);
@@ -204,7 +208,6 @@ public class TestRerankBase extends RestTestBase {
 
   public static void setupPersistentTest(String solrconfig, String schema)
       throws Exception {
-    initCore(solrconfig, schema);
 
     SortedMap<ServletHolder,String> extraServlets =
         setupTestInit(solrconfig,schema,true);

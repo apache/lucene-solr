@@ -91,6 +91,8 @@ public class SolrStandaloneScraperTest extends RestTestBase {
       jetty.stop();
       jetty = null;
     }
+    solrScraper = null;
+    solrClient = null;
   }
 
   @Test

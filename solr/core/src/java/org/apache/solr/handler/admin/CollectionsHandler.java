@@ -16,25 +16,6 @@
  */
 package org.apache.solr.handler.admin;
 
-import java.io.IOException;
-import java.lang.invoke.MethodHandles;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import org.apache.commons.io.IOUtils;
@@ -101,6 +82,25 @@ import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.lang.invoke.MethodHandles;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 import static org.apache.solr.client.solrj.cloud.autoscaling.Policy.POLICY;
 import static org.apache.solr.client.solrj.response.RequestStatusState.COMPLETED;
@@ -368,7 +368,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         .getOverseerCollectionQueue()
         .offer(Utils.toJSON(m), timeout);
     if (event.getBytes() != null) {
-      return SolrResponse.deserialize(event.getBytes());
+      return OverseerSolrResponse.deserialize(event.getBytes());
     } else {
       if (System.nanoTime() - time >= TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS)) {
         throw new SolrException(ErrorCode.SERVER_ERROR, operation
@@ -874,11 +874,11 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       final NamedList<Object> results = new NamedList<>();
       if (zkController.getOverseerCompletedMap().contains(requestId)) {
         final byte[] mapEntry = zkController.getOverseerCompletedMap().get(requestId);
-        rsp.getValues().addAll(SolrResponse.deserialize(mapEntry).getResponse());
+        rsp.getValues().addAll(OverseerSolrResponse.deserialize(mapEntry).getResponse());
         addStatusToResponse(results, COMPLETED, "found [" + requestId + "] in completed tasks");
       } else if (zkController.getOverseerFailureMap().contains(requestId)) {
         final byte[] mapEntry = zkController.getOverseerFailureMap().get(requestId);
-        rsp.getValues().addAll(SolrResponse.deserialize(mapEntry).getResponse());
+        rsp.getValues().addAll(OverseerSolrResponse.deserialize(mapEntry).getResponse());
         addStatusToResponse(results, FAILED, "found [" + requestId + "] in failed tasks");
       } else if (zkController.getOverseerRunningMap().contains(requestId)) {
         addStatusToResponse(results, RUNNING, "found [" + requestId + "] in running tasks");
@@ -1060,8 +1060,9 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       copy(req.getParams().required(), m, COLLECTION_PROP);
       addMapObject(m, RULE);
       addMapObject(m, SNITCH);
-      for (String prop : m.keySet()) {
-        if ("".equals(m.get(prop))) {
+      for (Map.Entry<String, Object> entry : m.entrySet()) {
+        String prop = entry.getKey();
+        if ("".equals(entry.getValue())) {
           // set to an empty string is equivalent to removing the property, see SOLR-12507
           m.put(prop, null);
         }

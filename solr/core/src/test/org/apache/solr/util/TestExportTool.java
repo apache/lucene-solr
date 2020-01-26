@@ -36,7 +36,6 @@ import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.request.JavaBinUpdateRequestCodec;
 import org.apache.solr.client.solrj.request.UpdateRequest;
 import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.cloud.MiniSolrCloudCluster;
 import org.apache.solr.cloud.SolrCloudTestCase;
 import org.apache.solr.common.cloud.DocCollection;
 import org.apache.solr.common.cloud.Replica;
@@ -49,7 +48,7 @@ public class TestExportTool extends SolrCloudTestCase {
 
   public void testBasic() throws Exception {
     String COLLECTION_NAME = "globalLoaderColl";
-    MiniSolrCloudCluster cluster = configureCluster(4)
+    configureCluster(4)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
 
@@ -122,7 +121,7 @@ public class TestExportTool extends SolrCloudTestCase {
   @Nightly
   public void testVeryLargeCluster() throws Exception {
     String COLLECTION_NAME = "veryLargeColl";
-    MiniSolrCloudCluster cluster = configureCluster(4)
+    configureCluster(4)
         .addConfig("conf", configset("cloud-minimal"))
         .configure();
 

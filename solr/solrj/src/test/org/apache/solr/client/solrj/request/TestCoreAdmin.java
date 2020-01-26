@@ -82,7 +82,7 @@ public class TestCoreAdmin extends AbstractEmbeddedSolrServerTestCase {
   */
 
   protected SolrClient getSolrAdmin() {
-    return new EmbeddedSolrServer(cores, "core0");
+    return new EmbeddedSolrServer(cores, null);
   }
 
   @Test

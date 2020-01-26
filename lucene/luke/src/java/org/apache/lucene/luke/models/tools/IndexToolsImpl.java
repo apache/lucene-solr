@@ -193,7 +193,7 @@ public final class IndexToolsImpl extends LukeModel implements IndexTools {
     }
   }
 
-  public String exportTerms(String destDir, String field) {
+  public String exportTerms(String destDir, String field, String delimiter) {
     String filename = "terms_" + field + "_" + System.currentTimeMillis() + ".out";
     Path path = Paths.get(destDir, filename);
     try {
@@ -205,7 +205,7 @@ public final class IndexToolsImpl extends LukeModel implements IndexTools {
         TermsEnum termsEnum = terms.iterator();
         BytesRef term;
         while (!Thread.currentThread().isInterrupted() && (term = termsEnum.next()) != null) {
-          writer.write(String.format(Locale.US, "%s,%d\n", term.utf8ToString(), +termsEnum.docFreq()));
+          writer.write(String.format(Locale.US, "%s%s%d\n", term.utf8ToString(), delimiter, +termsEnum.docFreq()));
         }
         return path.toString();
       }

@@ -77,8 +77,8 @@ class StandardObjects {
    classRegsitry.put(GeoExactCircle.class, 37);
    classRegsitry.put(GeoS2Shape.class, 38);
 
-   for (Class<?> clazz : classRegsitry.keySet()){
-     codeRegsitry.put(classRegsitry.get(clazz), clazz);
+   for (Map.Entry<Class<?>, Integer> entry : classRegsitry.entrySet()){
+     codeRegsitry.put(entry.getValue(), entry.getKey());
    }
   }
 }

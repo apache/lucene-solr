@@ -20,14 +20,14 @@ package org.apache.solr.ltr;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.ltr.feature.SolrFeature;
 import org.apache.solr.ltr.model.LinearModel;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 public class TestLTRWithSort extends TestRerankBase {
 
-  @BeforeClass
-  public static void before() throws Exception {
+  @Before
+  public void before() throws Exception {
     setuptest(false);
     assertU(adoc("id", "1", "title", "a1", "description", "E", "popularity",
         "1"));
@@ -46,6 +46,11 @@ public class TestLTRWithSort extends TestRerankBase {
     assertU(adoc("id", "8", "title", "a1 b1 c1 d1 e1 f1 g1 h1", "description",
         "D", "popularity", "8"));
     assertU(commit());
+  }
+  
+  @After
+  public void after() throws Exception {
+    aftertest();
   }
 
   @Test
@@ -90,13 +95,6 @@ public class TestLTRWithSort extends TestRerankBase {
     assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/id=='1'");
     assertJQ("/query" + query.toQueryString(), "/response/docs/[3]/score==1.0");
 
-    // aftertest();
-
-  }
-
-  @AfterClass
-  public static void after() throws Exception {
-    aftertest();
   }
 
 }

@@ -144,8 +144,7 @@ public class IndexReplicationHandler implements ReplicationHandler {
       // if there were any IO errors reading the expected commit point (i.e.
       // segments files mismatch), then ignore that commit either.
       if (commit != null && commit.getSegmentsFileName().equals(segmentsFile)) {
-        Set<String> commitFiles = new HashSet<>();
-        commitFiles.addAll(commit.getFileNames());
+        Set<String> commitFiles = new HashSet<>(commit.getFileNames());
         Matcher matcher = IndexFileNames.CODEC_FILE_PATTERN.matcher("");
         for (String file : dir.listAll()) {
           if (!commitFiles.contains(file)

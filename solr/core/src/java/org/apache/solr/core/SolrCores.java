@@ -182,10 +182,9 @@ class SolrCores {
    */
 
   List<SolrCore> getCores() {
-    List<SolrCore> lst = new ArrayList<>();
 
     synchronized (modifyLock) {
-      lst.addAll(cores.values());
+      List<SolrCore> lst = new ArrayList<>(cores.values());
       return lst;
     }
   }
@@ -201,10 +200,10 @@ class SolrCores {
    * @return List of currently loaded cores.
    */
   Set<String> getLoadedCoreNames() {
-    Set<String> set = new TreeSet<>();
+    Set<String> set;
 
     synchronized (modifyLock) {
-      set.addAll(cores.keySet());
+      set = new TreeSet<>(cores.keySet());
       if (getTransientCacheHandler() != null) {
         set.addAll(getTransientCacheHandler().getLoadedCoreNames());
       }
@@ -239,9 +238,9 @@ class SolrCores {
    * @return all cores names, whether loaded or unloaded, transient or permanent.
    */
   public Collection<String> getAllCoreNames() {
-    Set<String> set = new TreeSet<>();
+    Set<String> set;
     synchronized (modifyLock) {
-      set.addAll(cores.keySet());
+      set = new TreeSet<>(cores.keySet());
       if (getTransientCacheHandler() != null) {
         set.addAll(getTransientCacheHandler().getAllCoreNames());
       }

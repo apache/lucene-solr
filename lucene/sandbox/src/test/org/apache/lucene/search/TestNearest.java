@@ -146,7 +146,7 @@ public class TestNearest extends LuceneTestCase {
 
   public void testNearestNeighborRandom() throws Exception {
     
-    int numPoints = atLeast(5000);
+    int numPoints = atLeast(1000);
     Directory dir;
     if (numPoints > 100000) {
       dir = newFSDirectory(createTempDir(getClass().getSimpleName()));
@@ -246,7 +246,7 @@ public class TestNearest extends LuceneTestCase {
 
   private IndexWriterConfig getIndexWriterConfig() {
     IndexWriterConfig iwc = newIndexWriterConfig();
-    iwc.setCodec(Codec.forName("Lucene80"));
+    iwc.setCodec(Codec.forName("Lucene84"));
     return iwc;
   }
 }

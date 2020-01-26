@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -76,7 +77,7 @@ public class RestManager {
   private static class ManagedResourceRegistration {
     String resourceId;
     Class<? extends ManagedResource> implClass;
-    List<ManagedResourceObserver> observers = new ArrayList<>();
+    Set<ManagedResourceObserver> observers = new LinkedHashSet<>();
 
     private ManagedResourceRegistration(String resourceId,
                                         Class<? extends ManagedResource> implClass, 
@@ -229,7 +230,7 @@ public class RestManager {
       }
       
       // there may be a RestManager, in which case, we want to add this new ManagedResource immediately
-      if (initializedRestManager != null) {
+      if (initializedRestManager != null && initializedRestManager.getManagedResourceOrNull(resourceId) == null) {
         initializedRestManager.addRegisteredResource(registered.get(resourceId));
       }
     }    
@@ -767,11 +768,12 @@ public class RestManager {
     }      
     
     int numAttached = 0;
-    for (String resourceId : managed.keySet()) {
+    for (Map.Entry<String, ManagedResource> entry : managed.entrySet()) {
+      String resourceId = entry.getKey();
       if (resourceId.startsWith(routerPath)) {
         // the way restlet works is you attach a path w/o the routerPath
         String path = resourceId.substring(routerPath.length());
-        attachManagedResource(managed.get(resourceId), path, router);
+        attachManagedResource(entry.getValue(), path, router);
         ++numAttached;
       }
     }

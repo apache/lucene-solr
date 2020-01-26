@@ -37,6 +37,7 @@ import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.ReaderUtil;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.FieldComparator;
+import org.apache.lucene.search.FuzzyTermsEnum;
 import org.apache.lucene.search.LeafFieldComparator;
 import org.apache.lucene.search.MatchNoDocsQuery;
 import org.apache.lucene.search.Query;
@@ -214,7 +215,7 @@ public class QueryComponent extends SearchComponent
           rb.setFilters( filters );
         }
       }
-    } catch (SyntaxError e) {
+    } catch (SyntaxError | FuzzyTermsEnum.FuzzyTermsException e) {
       throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, e);
     }
 
@@ -330,11 +331,11 @@ public class QueryComponent extends SearchComponent
       return;
     }
 
-    StatsCache statsCache = req.getCore().getStatsCache();
+    SolrIndexSearcher searcher = req.getSearcher();
+    StatsCache statsCache = searcher.getStatsCache();
     
     int purpose = params.getInt(ShardParams.SHARDS_PURPOSE, ShardRequest.PURPOSE_GET_TOP_IDS);
     if ((purpose & ShardRequest.PURPOSE_GET_TERM_STATS) != 0) {
-      SolrIndexSearcher searcher = req.getSearcher();
       statsCache.returnLocalStats(rb, searcher);
       return;
     }
@@ -686,7 +687,7 @@ public class QueryComponent extends SearchComponent
   }
 
   protected void createDistributedStats(ResponseBuilder rb) {
-    StatsCache cache = rb.req.getCore().getStatsCache();
+    StatsCache cache = rb.req.getSearcher().getStatsCache();
     if ( (rb.getFieldFlags() & SolrIndexSearcher.GET_SCORES)!=0 || rb.getSortSpec().includesScore()) {
       ShardRequest sreq = cache.retrieveStatsRequest(rb);
       if (sreq != null) {
@@ -696,7 +697,7 @@ public class QueryComponent extends SearchComponent
   }
 
   protected void updateStats(ResponseBuilder rb, ShardRequest sreq) {
-    StatsCache cache = rb.req.getCore().getStatsCache();
+    StatsCache cache = rb.req.getSearcher().getStatsCache();
     cache.mergeToGlobalStats(rb.req, sreq.responses);
   }
 
@@ -776,8 +777,9 @@ public class QueryComponent extends SearchComponent
 
     // TODO: should this really sendGlobalDfs if just includeScore?
 
-    if (shardQueryIncludeScore) {
-      StatsCache statsCache = rb.req.getCore().getStatsCache();
+    if (shardQueryIncludeScore || rb.isDebug()) {
+      StatsCache statsCache = rb.req.getSearcher().getStatsCache();
+      sreq.purpose |= ShardRequest.PURPOSE_SET_TERM_STATS;
       statsCache.sendGlobalStats(rb, sreq);
     }
 
@@ -1391,6 +1393,8 @@ public class QueryComponent extends SearchComponent
           .setSort(groupSortSpec.getSort())
           .setQuery(query, rb.req)
           .setDocSet(searcher)
+          .setMainQuery(rb.getQuery())
+          .setNeedScores(needScores)
           .build()
       );
     }
@@ -1480,7 +1484,6 @@ public class QueryComponent extends SearchComponent
     SolrQueryResponse rsp = rb.rsp;
 
     SolrIndexSearcher searcher = req.getSearcher();
-
     searcher.search(result, cmd);
     rb.setResult(result);
 

@@ -269,7 +269,10 @@ public class SolrRequestParsers
     }
     return q;
   }
-  
+
+  private static HttpSolrCall getHttpSolrCall(HttpServletRequest req) {
+    return req == null ? null : (HttpSolrCall) req.getAttribute(HttpSolrCall.class.getName());
+  }
   /**
    * Given a url-encoded query string (UTF-8), map it into solr params
    */
@@ -732,6 +735,7 @@ public class SolrRequestParsers
       String contentType = req.getContentType();
       String method = req.getMethod(); // No need to uppercase... HTTP verbs are case sensitive
       String uri = req.getRequestURI();
+      boolean isV2 = getHttpSolrCall(req) instanceof V2HttpCall;
       boolean isPost = "POST".equals(method);
 
       // SOLR-6787 changed the behavior of a POST without content type.  Previously it would throw an exception,
@@ -748,6 +752,9 @@ public class SolrRequestParsers
       // were handled by restlet if the URI contained /schema or /config
       // "handled by restlet" means that we don't attempt to handle any request body here.
       if (!isPost) {
+        if (isV2) {
+          return raw.parseParamsAndFillStreams(req, streams);
+        }
         if (contentType == null) {
           return parseQueryString(req.getQueryString());
         }

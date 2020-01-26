@@ -44,6 +44,7 @@ import org.apache.solr.client.solrj.impl.BinaryResponseParser;
 import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.impl.LBSolrClient;
 import org.apache.solr.client.solrj.request.QueryRequest;
+import org.apache.solr.client.solrj.routing.ReplicaListTransformer;
 import org.apache.solr.client.solrj.util.ClientUtils;
 import org.apache.solr.cloud.CloudDescriptor;
 import org.apache.solr.cloud.ZkController;
@@ -69,8 +70,6 @@ import org.apache.solr.util.tracing.SolrRequestCarrier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
-
-import static org.apache.solr.handler.component.ShardRequest.PURPOSE_GET_FIELDS;
 
 public class HttpShardHandler extends ShardHandler {
   
@@ -180,10 +179,7 @@ public class HttpShardHandler extends ShardHandler {
         SolrRequestInfo requestInfo = SolrRequestInfo.getRequestInfo();
         if (requestInfo != null) req.setUserPrincipal(requestInfo.getReq().getUserPrincipal());
 
-        if (sreq.purpose == PURPOSE_GET_FIELDS) {
-          req.setResponseParser(READ_STR_AS_CHARSEQ_PARSER);
-        }
-        // no need to set the response parser as binary is the default
+        // no need to set the response parser as binary is the defaultJab
         // req.setResponseParser(new BinaryResponseParser());
 
         // if there are no shards available for a slice, urls.size()==0

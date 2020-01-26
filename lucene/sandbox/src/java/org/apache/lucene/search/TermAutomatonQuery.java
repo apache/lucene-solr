@@ -360,9 +360,9 @@ public class TermAutomatonQuery extends Query implements Accountable {
       for(Map.Entry<Integer,BytesRef> ent : idToTerm.entrySet()) {
         Integer termID = ent.getKey();
         if (ent.getValue() != null) {
-          TermStatistics stats = searcher.termStatistics(new Term(field, ent.getValue()), termStates.get(termID));
-          if (stats != null) {
-            allTermStats.add(stats);
+          TermStates ts = termStates.get(termID);
+          if (ts.docFreq() > 0) {
+            allTermStats.add(searcher.termStatistics(new Term(field, ent.getValue()), ts.docFreq(), ts.totalTermFreq()));
           }
         }
       }

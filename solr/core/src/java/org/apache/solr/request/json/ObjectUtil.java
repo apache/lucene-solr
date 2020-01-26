@@ -22,6 +22,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.solr.common.SolrException;
+
 public class ObjectUtil {
 
   public static class ConflictHandler {
@@ -103,10 +105,14 @@ public class ObjectUtil {
         // OK, now we need to merge values
         handler.handleConflict(outer, path, key, val, existingVal);
       }
-    } else {
+    } else if (val instanceof Map) {
       // merging at top level...
       Map<String,Object> newMap = (Map<String,Object>)val;
       handler.mergeMap(outer, newMap, path);
+    } else {
+      // todo: find a way to return query param in error message
+      throw new SolrException(SolrException.ErrorCode.BAD_REQUEST,
+          "Expected JSON Object but got " + val.getClass().getSimpleName() + "=" + val);
     }
   }
 

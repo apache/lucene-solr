@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.commons.lang3.StringUtils;
+
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.core.StopFilterFactory;
 import org.apache.lucene.analysis.util.TokenFilterFactory;
@@ -132,7 +134,7 @@ public class ExtendedDismaxQParser extends QParser {
     parsedUserQuery = null;
     String userQuery = getString();
     altUserQuery = null;
-    if( userQuery == null || userQuery.trim().length() == 0 ) {
+    if (StringUtils.isBlank(userQuery)) {
       // If no query is specified, we may have an alternate
       if (config.altQ != null) {
         QParser altQParser = subQuery(config.altQ, null);
@@ -541,9 +543,9 @@ public class ExtendedDismaxQParser extends QParser {
       for (String boostFunc : config.boostFuncs) {
         if(null == boostFunc || "".equals(boostFunc)) continue;
         Map<String,Float> ff = SolrPluginUtils.parseFieldBoosts(boostFunc);
-        for (String f : ff.keySet()) {
-          Query fq = subQuery(f, FunctionQParserPlugin.NAME).getQuery();
-          Float b = ff.get(f);
+        for (Map.Entry<String, Float> entry : ff.entrySet()) {
+          Query fq = subQuery(entry.getKey(), FunctionQParserPlugin.NAME).getQuery();
+          Float b = entry.getValue();
           if (null != b && b.floatValue() != 1f) {
             fq = new BoostQuery(fq, b);
           }

@@ -627,8 +627,8 @@ public class TextLogitStream extends TupleStream implements Expressible {
       params.add("terms", TextLogitStream.toString(terms));
       params.add("idfs", TextLogitStream.toString(idfs));
 
-      for(String key : paramsMap.keySet()) {
-        params.add(key, paramsMap.get(key));
+      for(Entry<String, String> entry : paramsMap.entrySet()) {
+        params.add(entry.getKey(), entry.getValue());
       }
 
       if(weights != null) {

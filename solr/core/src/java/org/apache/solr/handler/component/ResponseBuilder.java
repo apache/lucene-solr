@@ -166,8 +166,6 @@ public class ResponseBuilder
     }
   }
 
-  public GlobalCollectionStat globalCollectionStat;
-
   public Map<Object, ShardDoc> resultIds;
   // Maps uniqueKeyValue to ShardDoc, which may be used to
   // determine order of the doc or uniqueKey in the final
@@ -415,18 +413,6 @@ public class ResponseBuilder
 
   public void setTimer(RTimer timer) {
     this.timer = timer;
-  }
-
-
-  public static class GlobalCollectionStat {
-    public final long numDocs;
-
-    public final Map<String, Long> dfMap;
-
-    public GlobalCollectionStat(int numDocs, Map<String, Long> dfMap) {
-      this.numDocs = numDocs;
-      this.dfMap = dfMap;
-    }
   }
 
   /**

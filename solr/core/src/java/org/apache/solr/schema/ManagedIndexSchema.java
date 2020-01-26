@@ -81,7 +81,7 @@ import org.xml.sax.InputSource;
 /** Solr-managed schema - non-user-editable, but can be mutable via internal and external REST API requests. */
 public final class ManagedIndexSchema extends IndexSchema {
 
-  private boolean isMutable = false;
+  private final boolean isMutable;
 
   @Override public boolean isMutable() { return isMutable; }
 
@@ -654,7 +654,7 @@ public final class ManagedIndexSchema extends IndexSchema {
           System.arraycopy(newSchema.dynamicFields, dfPos + 1, temp, dfPos, newSchema.dynamicFields.length - dfPos - 1);
           newSchema.dynamicFields = temp;
         } else {
-          newSchema.dynamicFields = new DynamicField[0];
+          newSchema.dynamicFields = new DynamicField[] {};
         }
       }
       // After removing all dynamic fields, rebuild affected dynamic copy fields.
@@ -840,26 +840,24 @@ public final class ManagedIndexSchema extends IndexSchema {
     boolean found = false;
 
     if (null == destSchemaField || null == sourceSchemaField) { // Must be dynamic copy field
-      if (dynamicCopyFields != null) {
-        for (int i = 0 ; i < dynamicCopyFields.length ; ++i) {
-          DynamicCopy dynamicCopy = dynamicCopyFields[i];
-          if (source.equals(dynamicCopy.getRegex()) && dest.equals(dynamicCopy.getDestFieldName())) {
-            found = true;
-            SchemaField destinationPrototype = dynamicCopy.getDestination().getPrototype();
-            if (copyFieldTargetCounts.containsKey(destinationPrototype)) {
-              decrementCopyFieldTargetCount(destinationPrototype);
-            }
-            if (dynamicCopyFields.length > 1) {
-              DynamicCopy[] temp = new DynamicCopy[dynamicCopyFields.length - 1];
-              System.arraycopy(dynamicCopyFields, 0, temp, 0, i);
-              // skip over the dynamic copy field to be deleted
-              System.arraycopy(dynamicCopyFields, i + 1, temp, i, dynamicCopyFields.length - i - 1);
-              dynamicCopyFields = temp;
-            } else {
-              dynamicCopyFields = null;
-            }
-            break;
+      for (int i = 0; i < dynamicCopyFields.length; ++i) {
+        DynamicCopy dynamicCopy = dynamicCopyFields[i];
+        if (source.equals(dynamicCopy.getRegex()) && dest.equals(dynamicCopy.getDestFieldName())) {
+          found = true;
+          SchemaField destinationPrototype = dynamicCopy.getDestination().getPrototype();
+          if (copyFieldTargetCounts.containsKey(destinationPrototype)) {
+            decrementCopyFieldTargetCount(destinationPrototype);
           }
+          if (dynamicCopyFields.length > 1) {
+            DynamicCopy[] temp = new DynamicCopy[dynamicCopyFields.length - 1];
+            System.arraycopy(dynamicCopyFields, 0, temp, 0, i);
+            // skip over the dynamic copy field to be deleted
+            System.arraycopy(dynamicCopyFields, i + 1, temp, i, dynamicCopyFields.length - i - 1);
+            dynamicCopyFields = temp;
+          } else {
+            dynamicCopyFields = new DynamicCopy[] {};
+          }
+          break;
         }
       }
     } else { // non-dynamic copy field directive

@@ -38,8 +38,10 @@ import java.awt.event.ActionEvent;
 import java.io.File;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
+import java.util.Arrays;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Stream;
 
 import org.apache.logging.log4j.Logger;
 import org.apache.lucene.luke.app.IndexHandler;
@@ -76,6 +78,8 @@ public final class ExportTermsDialogFactory implements DialogOpener.DialogFactor
 
   private final JComboBox<String> fieldCombo = new JComboBox<String>();
 
+  private final JComboBox<String> delimiterCombo = new JComboBox<String>();
+
   private final JTextField destDir = new JTextField();
 
   private final JLabel statusLbl = new JLabel();
@@ -88,6 +92,8 @@ public final class ExportTermsDialogFactory implements DialogOpener.DialogFactor
 
   private IndexTools toolsModel;
 
+  private String selectedDelimiter;
+
   public synchronized static ExportTermsDialogFactory getInstance() throws IOException {
     if (instance == null) {
       instance = new ExportTermsDialogFactory();
@@ -99,6 +105,8 @@ public final class ExportTermsDialogFactory implements DialogOpener.DialogFactor
     this.prefs = PreferencesFactory.getInstance();
     this.indexHandler = IndexHandler.getInstance();
     indexHandler.addObserver(new Observer());
+    Stream.of(Delimiter.values()).forEachOrdered(delimiterVal -> delimiterCombo.addItem(delimiterVal.getDescription()));
+    delimiterCombo.setSelectedItem(Delimiter.COMMA.getDescription());//Set default delimiter
   }
 
   @Override
@@ -120,6 +128,7 @@ public final class ExportTermsDialogFactory implements DialogOpener.DialogFactor
     panel.add(currentOpenIndexPanel());
     panel.add(fieldComboPanel());
     panel.add(destinationDirPanel());
+    panel.add(delimiterComboPanel());
     panel.add(statusPanel());
     panel.add(actionButtonsPanel());
 
@@ -135,6 +144,14 @@ public final class ExportTermsDialogFactory implements DialogOpener.DialogFactor
     value.setToolTipText(indexHandler.getState().getIndexPath());
     panel.add(label);
     panel.add(value);
+    return panel;
+  }
+
+  private JPanel delimiterComboPanel() {
+    JPanel panel = new JPanel(new GridLayout(2, 1));
+    panel.setOpaque(false);
+    panel.add(new JLabel("Select Delimiter: "));
+    panel.add(delimiterCombo);
     return panel;
   }
 
@@ -225,9 +242,11 @@ public final class ExportTermsDialogFactory implements DialogOpener.DialogFactor
           statusLbl.setText("Exporting...");
           indicatorLbl.setVisible(true);
           String field = (String) fieldCombo.getSelectedItem();
+          selectedDelimiter = Delimiter.getSelectedDelimiterValue((String) delimiterCombo.getSelectedItem());
+
           String directory = destDir.getText();
           try {
-            filename = toolsModel.exportTerms(directory, field);
+            filename = toolsModel.exportTerms(directory, field, selectedDelimiter);
           } catch (LukeException e) {
             log.error("Error while exporting terms from field " + field, e);
             statusLbl.setText(MessageUtils.getLocalizedMessage("export.terms.label.error", e.getMessage()));
@@ -245,7 +264,7 @@ public final class ExportTermsDialogFactory implements DialogOpener.DialogFactor
         protected void done() {
           indicatorLbl.setVisible(false);
           if (filename != null) {
-            statusLbl.setText(MessageUtils.getLocalizedMessage("export.terms.label.success", filename, "[term],[doc frequency]"));
+            statusLbl.setText(MessageUtils.getLocalizedMessage("export.terms.label.success", filename, "[term]" + selectedDelimiter + "[doc frequency]"));
           }
         }
       };
@@ -270,6 +289,37 @@ public final class ExportTermsDialogFactory implements DialogOpener.DialogFactor
       toolsModel = null;
     }
 
+  }
+
+  /**
+   * Delimiters that can be selected
+   */
+  private enum Delimiter {
+    COMMA("Comma", ","), WHITESPACE("Whitespace", " "), TAB("Tab", "\t");
+
+    private final String description;
+    private final String separator;
+
+    private Delimiter(final String description, final String separator) {
+      this.description = description;
+      this.separator = separator;
+    }
+
+    String getDescription() {
+      return this.description;
+    }
+
+    String getSeparator() {
+      return this.separator;
+    }
+
+    static String getSelectedDelimiterValue(String delimiter) {
+      return Arrays.stream(Delimiter.values())
+          .filter(e -> e.description.equals(delimiter))
+          .findFirst()
+          .orElse(COMMA)
+          .getSeparator();
+    }
   }
 
 }

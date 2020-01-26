@@ -159,20 +159,25 @@ bin/post -u solr:SolrRocks -c gettingstarted a.pdf
 
 == Post Tool Windows Support
 
-`bin/post` exists currently only as a Unix shell script, however it delegates its work to a cross-platform capable Java program. The <<SimplePostTool>> can be run directly in supported environments, including Windows.
+`bin/post` is a Unix shell script and as such cannot be used directly on Windows.
+However it delegates its work to a cross-platform capable Java program called "SimplePostTool" or `post.jar`, that can be used in Windows environments.
 
-== SimplePostTool
-
-The `bin/post` script currently delegates to a standalone Java program called `SimplePostTool`.
-
-This tool, bundled into a executable JAR, can be run directly using `java -jar example/exampledocs/post.jar`. See the help output and take it from there to post files, recurse a website or file system folder, or send direct commands to a Solr server.
+The argument syntax differs significantly from `bin/post`, so your first step should be to print the SimplePostTool help text.
 
 [source,plain]
 ----
-$ java -jar example/exampledocs/post.jar -h
-SimplePostTool version 5.0.0
-Usage: java [SystemProperties] -jar post.jar [-h|-] [<file|folder|url|arg> [<file|folder|url|arg>...]]
-.
-.
-.
+$ java -jar example\exampledocs\post.jar -h
 ----
+
+This command prints information about all the arguments and System properties available to SimplePostTool users.
+There are also examples showing how to post files, crawl a website or file system folder, and send update commands (deletes, etc.) directly to Solr.
+
+Most usage involves passing both Java System properties and program arguments on the command line.  Consider the example below:
+
+[source,plain]
+----
+$ java -jar -Dc=gettingstarted -Dauto example\exampledocs\post.jar example\exampledocs\*
+----
+
+This indexes the contents of the `exampledocs` directory into a collection called `gettingstarted`.
+The `-Dauto` System property governs whether or not Solr sends the document type to Solr during extraction.

@@ -25,6 +25,8 @@ import org.apache.solr.common.SolrException;
 import org.apache.solr.common.params.SolrParams;
 import org.apache.solr.request.SolrQueryRequest;
 
+import org.apache.commons.lang3.StringUtils;
+
 /*
 *
 *  Syntax: q=*:*&rq={!rerank reRankQuery=$rqq reRankDocs=300 reRankWeight=3}
@@ -56,7 +58,7 @@ public class ReRankQParserPlugin extends QParserPlugin {
 
     public Query parse() throws SyntaxError {
       String reRankQueryString = localParams.get(RERANK_QUERY);
-      if (reRankQueryString == null || reRankQueryString.trim().length() == 0)  {
+      if (StringUtils.isBlank(reRankQueryString)) {
         throw new SolrException(SolrException.ErrorCode.BAD_REQUEST, RERANK_QUERY+" parameter is mandatory");
       }
       QParser reRankParser = QParser.getParser(reRankQueryString, req);

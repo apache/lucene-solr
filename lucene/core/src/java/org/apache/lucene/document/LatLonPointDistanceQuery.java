@@ -177,7 +177,7 @@ final class LatLonPointDistanceQuery extends Query {
           @Override
           public long cost() {
             if (cost == -1) {
-              cost = values.estimatePointCount(visitor);
+              cost = values.estimateDocCount(visitor);
             }
             assert cost >= 0;
             return cost;

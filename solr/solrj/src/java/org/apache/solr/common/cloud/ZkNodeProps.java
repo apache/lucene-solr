@@ -94,8 +94,8 @@ public class ZkNodeProps implements JSONWriter.Writable {
   public static ZkNodeProps load(byte[] bytes) {
     Map<String, Object> props = null;
     if (bytes[0] == 2) {
-      try {
-        props = (Map<String, Object>) new JavaBinCodec().unmarshal(bytes);
+      try (JavaBinCodec jbc = new JavaBinCodec()) {
+        props = (Map<String, Object>) jbc.unmarshal(bytes);
       } catch (IOException e) {
         throw new RuntimeException("Unable to parse javabin content");
       }

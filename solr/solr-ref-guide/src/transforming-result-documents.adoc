@@ -124,7 +124,8 @@ A default style can be configured by specifying an `args` parameter in your `sol
 
 === [child] - ChildDocTransformerFactory
 
-This transformer returns all <<indexing-nested-documents.adoc#indexing-nested-documents,descendant documents>> of each parent document matching your query in a flat list nested inside the matching parent document. This is useful when you have indexed nested child documents and want to retrieve the child documents for the relevant parent documents for any type of search query.
+This transformer returns all <<indexing-nested-documents.adoc#indexing-nested-documents,descendant documents>> of each parent document matching your query.
+This is useful when you have indexed nested child documents and want to retrieve the child documents for the relevant parent documents for any type of search query.
 
 [source,plain]
 ----

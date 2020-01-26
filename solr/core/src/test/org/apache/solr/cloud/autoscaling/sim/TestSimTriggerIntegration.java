@@ -40,6 +40,7 @@ import org.apache.solr.client.solrj.cloud.SolrCloudManager;
 import org.apache.solr.client.solrj.cloud.autoscaling.AutoScalingConfig;
 import org.apache.solr.client.solrj.cloud.autoscaling.ReplicaInfo;
 import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventProcessorStage;
+import org.apache.solr.client.solrj.cloud.autoscaling.TriggerEventType;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.cloud.CloudTestUtils;
 import org.apache.solr.cloud.CloudUtil;
@@ -62,6 +63,7 @@ import org.apache.solr.common.MapWriter;
 import org.apache.solr.common.cloud.LiveNodesListener;
 import org.apache.solr.common.cloud.ZkStateReader;
 import org.apache.solr.common.util.TimeSource;
+import org.apache.solr.common.util.Utils;
 import org.apache.solr.core.SolrResourceLoader;
 import org.apache.solr.util.LogLevel;
 import org.apache.solr.util.TimeOut;
@@ -73,6 +75,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.util.concurrent.AtomicDouble;
+
+import static org.apache.solr.cloud.autoscaling.OverseerTriggerThread.MARKER_ACTIVE;
+import static org.apache.solr.cloud.autoscaling.OverseerTriggerThread.MARKER_INACTIVE;
+import static org.apache.solr.cloud.autoscaling.OverseerTriggerThread.MARKER_STATE;
 
 /**
  * An end-to-end integration test for triggers
@@ -864,10 +870,6 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
 
   public static class TestEventMarkerAction extends TriggerActionBase {
 
-    public TestEventMarkerAction() {
-      actionConstructorCalled.countDown();
-    }
-
     @Override
     public void process(TriggerEvent event, ActionContext actionContext) {
       boolean locked = lock.tryLock();
@@ -887,19 +889,29 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     }
 
     @Override
-    public void configure(SolrResourceLoader loader, SolrCloudManager cloudManager, Map<String, Object> args) throws TriggerValidationException {
+    public void init() throws Exception {
       log.info("TestEventMarkerAction init");
-      actionInitCalled.countDown();
-      super.configure(loader, cloudManager, args);
+      super.init();
+    }
+  }
+
+  public static class AssertingListener extends TriggerListenerBase {
+    @Override
+    public void onEvent(TriggerEvent event, TriggerEventProcessorStage stage, String actionName, ActionContext context, Throwable error, String message) throws Exception {
+      if (!Thread.currentThread().getName().startsWith("ScheduledTrigger")) {
+        // for future safety
+        throw new IllegalThreadStateException("AssertingListener should have been invoked by a thread from the scheduled trigger thread pool");
+      }
+      log.debug(" --- listener fired for event: {}, stage: {}", event, stage);
+      listenerEventLatch.await();
+      log.debug(" --- listener wait complete for event: {}, stage: {}", event, stage);
     }
   }
 
   @Test
   public void testNodeMarkersRegistration() throws Exception {
-    // for this test we want to create two triggers so we must assert that the actions were created twice
-    actionInitCalled = new CountDownLatch(2);
-    // similarly we want both triggers to fire
-    triggerFiredLatch = new CountDownLatch(2);
+    triggerFiredLatch = new CountDownLatch(1);
+    listenerEventLatch = new CountDownLatch(1);
     TestLiveNodesListener listener = registerLiveNodesListener();
 
     SolrClient solrClient = cluster.simGetSolrClient();
@@ -912,7 +924,7 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     assertTrue("cluster onChange listener didn't execute even after await()ing an excessive amount of time",
                listener.onChangeLatch.await(60, TimeUnit.SECONDS));
     assertEquals(1, listener.addedNodes.size());
-    assertEquals(node, listener.addedNodes.iterator().next());
+    assertTrue(listener.addedNodes.toString(), listener.addedNodes.contains(node));
     // verify that a znode doesn't exist (no trigger)
     String pathAdded = ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH + "/" + node;
     assertFalse("Path " + pathAdded + " was created but there are no nodeAdded triggers",
@@ -931,22 +943,28 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     assertEquals(0, listener.addedNodes.size());
     // wait until the new overseer is up
     cluster.getTimeSource().sleep(5000);
-    // verify that a znode does NOT exist - there's no nodeLost trigger,
-    // so the new overseer cleaned up existing nodeLost markers
-    
+
     String pathLost = ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH + "/" + overseerLeader;
     
     TimeOut timeout = new TimeOut(30, TimeUnit.SECONDS, TimeSource.NANO_TIME);
-    timeout.waitFor("Path " + pathLost + " exists", () -> {
+    AtomicBoolean markerInactive = new AtomicBoolean();
+    timeout.waitFor("nodeLost marker to get inactive", () -> {
       try {
-        return !cluster.getDistribStateManager().hasData(pathLost);
+        if (!cluster.getDistribStateManager().hasData(pathLost)) {
+          throw new RuntimeException("marker " + pathLost + " should exist!");
+        }
+        Map<String, Object> markerData = Utils.getJson(cluster.getDistribStateManager(), pathLost);
+        markerInactive.set(markerData.getOrDefault(MARKER_STATE, MARKER_ACTIVE).equals(MARKER_INACTIVE));
+        return markerInactive.get();
+
       } catch (IOException | KeeperException | InterruptedException e) {
         e.printStackTrace();
         throw new RuntimeException(e);
       }
     });
 
-    assertFalse("Path " + pathLost + " exists", cluster.getDistribStateManager().hasData(pathLost));
+    // verify that the marker is inactive - the new overseer should deactivate markers once they are processed
+    assertTrue("Marker " + pathLost + " still active!", markerInactive.get());
 
     listener.reset();
 
@@ -956,7 +974,7 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     assertAutoScalingRequest
       ("{" +
        "'set-trigger' : {" +
-       "'name' : 'node_added_trigger'," +
+       "'name' : 'node_added_triggerMR'," +
        "'event' : 'nodeAdded'," +
        "'waitFor' : '1s'," +
        "'enabled' : true," +
@@ -966,14 +984,25 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     assertAutoScalingRequest
       ("{" +
         "'set-trigger' : {" +
-        "'name' : 'node_lost_trigger'," +
+        "'name' : 'node_lost_triggerMR'," +
         "'event' : 'nodeLost'," +
         "'waitFor' : '1s'," +
         "'enabled' : true," +
         "'actions' : [{'name':'test','class':'" + TestEventMarkerAction.class.getName() + "'}]" +
        "}}");
 
+    assertAutoScalingRequest(
+        "{\n" +
+            "  \"set-listener\" : {\n" +
+            "    \"name\" : \"listener_node_added_triggerMR\",\n" +
+            "    \"trigger\" : \"node_added_triggerMR\",\n" +
+            "    \"stage\" : \"STARTED\",\n" +
+            "    \"class\" : \"" + AssertingListener.class.getName()  + "\"\n" +
+            "  }\n" +
+            "}"
+    );
     assertAutoscalingUpdateComplete();
+
     overseerLeader = cluster.getSimClusterStateProvider().simGetOverseerLeader();
 
     // create another node
@@ -987,41 +1016,51 @@ public class TestSimTriggerIntegration extends SimSolrCloudTestCase {
     pathAdded = ZkStateReader.SOLR_AUTOSCALING_NODE_ADDED_PATH + "/" + node1;
     assertTrue("Path " + pathAdded + " wasn't created", cluster.getDistribStateManager().hasData(pathAdded));
 
+    listenerEventLatch.countDown(); // let the trigger thread continue
+
+    assertTrue(triggerFiredLatch.await(10, TimeUnit.SECONDS));
+
+    // kill this node
     listener.reset();
     events.clear();
-    // one nodeAdded (not cleared yet) and one nodeLost
-    triggerFiredLatch = new CountDownLatch(2);
+    triggerFiredLatch = new CountDownLatch(1);
+
+    cluster.simRemoveNode(node1, true);
+    if (!listener.onChangeLatch.await(10, TimeUnit.SECONDS)) {
+      fail("onChange listener didn't execute on cluster change");
+    }
+    assertEquals(1, listener.lostNodes.size());
+    assertEquals(node1, listener.lostNodes.iterator().next());
+    // verify that a znode exists
+    String pathLost2 = ZkStateReader.SOLR_AUTOSCALING_NODE_LOST_PATH + "/" + node1;
+    assertTrue("Path " + pathLost2 + " wasn't created", cluster.getDistribStateManager().hasData(pathLost2));
+
+    listenerEventLatch.countDown(); // let the trigger thread continue
+
+    assertTrue(triggerFiredLatch.await(10, TimeUnit.SECONDS));
+
+    // triggers don't remove markers
+    assertTrue("Path " + pathLost2 + " should still exist", cluster.getDistribStateManager().hasData(pathLost2));
+
+    listener.reset();
+    events.clear();
+    triggerFiredLatch = new CountDownLatch(1);
     // kill overseer again
     log.info("====== KILL OVERSEER 2");
-    cluster.simRestartOverseer(overseerLeader);
-    assertTrue("cluster onChange listener didn't execute even after await()ing an excessive amount of time",
-               listener.onChangeLatch.await(60, TimeUnit.SECONDS));
-
-    assertAutoscalingUpdateComplete();
-
-    assertTrue("trigger did not fire event after await()ing an excessive amount of time",
-               triggerFiredLatch.await(60, TimeUnit.SECONDS));
-    assertEquals(2, events.size());
-    TriggerEvent nodeAdded = null;
-    TriggerEvent nodeLost = null;
-    for (TriggerEvent ev : events) {
-      switch (ev.getEventType()) {
-        case NODEADDED:
-          nodeAdded = ev;
-          break;
-        case NODELOST:
-          nodeLost = ev;
-          break;
-        default:
-          fail("unexpected event type: " + ev);
-      }
+    cluster.simRemoveNode(overseerLeader, true);
+    if (!listener.onChangeLatch.await(10, TimeUnit.SECONDS)) {
+      fail("onChange listener didn't execute on cluster change");
     }
-    assertNotNull("expected nodeAdded event", nodeAdded);
-    assertNotNull("expected nodeLost event", nodeLost);
-    List<String> nodeNames = (List<String>)nodeLost.getProperty(TriggerEvent.NODE_NAMES);
+
+
+    if (!triggerFiredLatch.await(20, TimeUnit.SECONDS)) {
+      fail("Trigger should have fired by now");
+    }
+    assertEquals(1, events.size());
+    TriggerEvent ev = events.iterator().next();
+    List<String> nodeNames = (List<String>) ev.getProperty(TriggerEvent.NODE_NAMES);
     assertTrue(nodeNames.contains(overseerLeader));
-    nodeNames = (List<String>)nodeAdded.getProperty(TriggerEvent.NODE_NAMES);
-    assertTrue(nodeNames.contains(node1));
+    assertEquals(TriggerEventType.NODELOST, ev.getEventType());
   }
 
   static final Map<String, List<CapturedEvent>> listenerEvents = new ConcurrentHashMap<>();

@@ -108,6 +108,22 @@ public class TestKoreanTokenizer extends BaseTokenStreamTestCase {
     };
   }
 
+  public void testSeparateNumber() throws IOException {
+    assertAnalyzesTo(analyzer, "44사이즈",
+        new String[]{"44", "사이즈"},
+        new int[]{0, 2},
+        new int[]{2, 5},
+        new int[]{1, 1}
+    );
+
+    assertAnalyzesTo(analyzer, "９.９사이즈",
+        new String[]{"９", "９", "사이즈"},
+        new int[]{0, 2, 3},
+        new int[]{1, 3, 6},
+        new int[]{1, 1, 1}
+    );
+  }
+
   public void testSpaces() throws IOException {
     assertAnalyzesTo(analyzer, "화학        이외의         것",
         new String[]{"화학", "이외", "의", "것"},
@@ -352,17 +368,25 @@ public class TestKoreanTokenizer extends BaseTokenStreamTestCase {
 
   /** blast some random strings through the tokenizer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), analyzer, 500*RANDOM_MULTIPLIER);
-    checkRandomData(random(), analyzerUnigram, 500*RANDOM_MULTIPLIER);
-    checkRandomData(random(), analyzerDecompound, 500*RANDOM_MULTIPLIER);
+    checkRandomData(random(), analyzer, 100*RANDOM_MULTIPLIER);
+    checkRandomData(random(), analyzerUnigram, 100*RANDOM_MULTIPLIER);
+    checkRandomData(random(), analyzerDecompound, 100*RANDOM_MULTIPLIER);
   }
 
   /** blast some random large strings through the tokenizer */
   public void testRandomHugeStrings() throws Exception {
     Random random = random();
-    checkRandomData(random, analyzer, 20*RANDOM_MULTIPLIER, 8192);
-    checkRandomData(random, analyzerUnigram, 20*RANDOM_MULTIPLIER, 8192);
-    checkRandomData(random, analyzerDecompound, 20*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, analyzer, RANDOM_MULTIPLIER, 4096);
+    checkRandomData(random, analyzerUnigram, RANDOM_MULTIPLIER, 4096);
+    checkRandomData(random, analyzerDecompound, RANDOM_MULTIPLIER, 4096);
+  }
+  
+  @Nightly
+  public void testRandomHugeStringsAtNight() throws Exception {
+    Random random = random();
+    checkRandomData(random, analyzer, 3*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, analyzerUnigram, 3*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, analyzerDecompound, 3*RANDOM_MULTIPLIER, 8192);
   }
 
   public void testRandomHugeStringsMockGraphAfter() throws Exception {
@@ -376,7 +400,7 @@ public class TestKoreanTokenizer extends BaseTokenStreamTestCase {
         return new TokenStreamComponents(tokenizer, graph);
       }
     };
-    checkRandomData(random, analyzer, 20*RANDOM_MULTIPLIER, 8192);
+    checkRandomData(random, analyzer, RANDOM_MULTIPLIER, 4096);
     analyzer.close();
   }
 

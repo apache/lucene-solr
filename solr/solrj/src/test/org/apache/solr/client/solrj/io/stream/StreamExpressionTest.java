@@ -662,13 +662,25 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       SolrStream solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
       List<Tuple> tuples4 = getTuples(solrStream);
       assert (tuples4.size() == 1);
+      //Assert no x-axis
+      assertNull(tuples4.get(0).get("x"));
+
 
       sParams = new ModifiableSolrParams(StreamingTest.mapParams(CommonParams.QT, "/stream"));
-      sParams.add("expr", "random(" + COLLECTIONORALIAS + ", q=\"*:*\", rows=\"10001\", fl=\"id, a_i\")");
+      sParams.add("expr", "random(" + COLLECTIONORALIAS + ")");
       jetty = cluster.getJettySolrRunner(0);
       solrStream = new SolrStream(jetty.getBaseUrl().toString() + "/collection1", sParams);
       tuples4 = getTuples(solrStream);
-      assert (tuples4.size() == 1000);
+      assert(tuples4.size() == 500);
+      Map fields = tuples4.get(0).fields;
+      assert(fields.containsKey("id"));
+      assert(fields.containsKey("a_f"));
+      assert(fields.containsKey("a_i"));
+      assert(fields.containsKey("a_s"));
+      //Assert the x-axis:
+      for(int i=0; i<tuples4.size(); i++) {
+        assertEquals(tuples4.get(i).getLong("x").longValue(), i);
+      }
 
     } finally {
       cache.close();
@@ -781,6 +793,41 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       Double avgi = tuple.getDouble("avg(a_i)");
       Double avgf = tuple.getDouble("avg(a_f)");
       Double count = tuple.getDouble("count(*)");
+
+      assertTrue(sumi.longValue() == 70);
+      assertTrue(sumf.doubleValue() == 55.0D);
+      assertTrue(mini.doubleValue() == 0.0D);
+      assertTrue(minf.doubleValue() == 1.0D);
+      assertTrue(maxi.doubleValue() == 14.0D);
+      assertTrue(maxf.doubleValue() == 10.0D);
+      assertTrue(avgi.doubleValue() == 7.0D);
+      assertTrue(avgf.doubleValue() == 5.5D);
+      assertTrue(count.doubleValue() == 10);
+
+      //Test without query
+
+      expr = "stats(" + COLLECTIONORALIAS + ", sum(a_i), sum(a_f), min(a_i), min(a_f), max(a_i), max(a_f), avg(a_i), avg(a_f), count(*))";
+      expression = StreamExpressionParser.parse(expr);
+      stream = factory.constructStream(expression);
+      stream.setStreamContext(streamContext);
+
+      tuples = getTuples(stream);
+
+      assert (tuples.size() == 1);
+
+      //Test Long and Double Sums
+
+      tuple = tuples.get(0);
+
+      sumi = tuple.getDouble("sum(a_i)");
+      sumf = tuple.getDouble("sum(a_f)");
+      mini = tuple.getDouble("min(a_i)");
+      minf = tuple.getDouble("min(a_f)");
+      maxi = tuple.getDouble("max(a_i)");
+      maxf = tuple.getDouble("max(a_f)");
+      avgi = tuple.getDouble("avg(a_i)");
+      avgf = tuple.getDouble("avg(a_f)");
+      count = tuple.getDouble("count(*)");
 
       assertTrue(sumi.longValue() == 70);
       assertTrue(sumf.doubleValue() == 55.0D);
@@ -939,7 +986,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
 
     paramsLoc = new ModifiableSolrParams();
-    expr = "facet2D(collection1, q=\"*:*\", x=\"diseases_s\", y=\"symptoms_s\", dimensions=\"3,1\")";
+    expr = "facet2D(collection1, x=\"diseases_s\", y=\"symptoms_s\", dimensions=\"3,1\")";
     paramsLoc.set("expr", expr);
     paramsLoc.set("qt", "/stream");
 
@@ -2780,7 +2827,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
       assertTrue(tuples.get(3).get("term_s").equals("f"));
 
       // update
-      expression = StreamExpressionParser.parse("update(destinationCollection, batchSize=5, " + featuresExpression + ")");
+      expression = StreamExpressionParser.parse("update(destinationCollection, " + featuresExpression + ")");
       stream = new UpdateStream(expression, factory);
       stream.setStreamContext(streamContext);
       getTuples(stream);
@@ -3086,6 +3133,46 @@ public class StreamExpressionTest extends SolrCloudTestCase {
   }
 
   @Test
+  public void testCatStreamEmptyFile() throws Exception {
+    final String catStream = "cat(\"topLevel-empty.txt\")";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", catStream);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+FILESTREAM_COLLECTION;
+
+    SolrStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+
+    assertEquals(0, tuples.size());
+  }
+
+  @Test
+  public void testCatStreamMultipleFilesOneEmpty() throws Exception {
+    final String catStream = "cat(\"topLevel1.txt,topLevel-empty.txt\")";
+    ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
+    paramsLoc.set("expr", catStream);
+    paramsLoc.set("qt", "/stream");
+    String url = cluster.getJettySolrRunners().get(0).getBaseUrl().toString()+"/"+FILESTREAM_COLLECTION;
+
+    SolrStream solrStream = new SolrStream(url, paramsLoc);
+
+    StreamContext context = new StreamContext();
+    solrStream.setStreamContext(context);
+    List<Tuple> tuples = getTuples(solrStream);
+
+    assertEquals(4, tuples.size());
+
+    for (int i = 0; i < 4; i++) {
+      Tuple t = tuples.get(i);
+      assertEquals("topLevel1.txt line " + String.valueOf(i+1), t.get("line"));
+      assertEquals("topLevel1.txt", t.get("file"));
+    }
+  }
+
+  @Test
   public void testCatStreamMaxLines() throws Exception {
     final String catStream = "cat(\"topLevel1.txt\", maxLines=2)";
     ModifiableSolrParams paramsLoc = new ModifiableSolrParams();
@@ -3199,6 +3286,7 @@ public class StreamExpressionTest extends SolrCloudTestCase {
    * dataDir
    *   |- topLevel1.txt
    *   |- topLevel2.txt
+   *   |- topLevel-empty.txt
    *   |- directory1
    *        |- secondLevel1.txt
    *        |- secondLevel2.txt
@@ -3213,10 +3301,12 @@ public class StreamExpressionTest extends SolrCloudTestCase {
 
     final File topLevel1 = new File(Paths.get(dataDir, "topLevel1.txt").toString());
     final File topLevel2 = new File(Paths.get(dataDir, "topLevel2.txt").toString());
+    final File topLevelEmpty = new File(Paths.get(dataDir, "topLevel-empty.txt").toString());
     final File secondLevel1 = new File(Paths.get(dataDir, "directory1", "secondLevel1.txt").toString());
     final File secondLevel2 = new File(Paths.get(dataDir, "directory1", "secondLevel2.txt").toString());
     populateFileWithData(topLevel1);
     populateFileWithData(topLevel2);
+    topLevelEmpty.createNewFile();
     populateFileWithData(secondLevel1);
     populateFileWithData(secondLevel2);
   }

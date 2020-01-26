@@ -138,8 +138,8 @@ public class TestSegmentingTokenizerBase extends BaseTokenStreamTestCase {
   
   /** blast some random strings through the analyzer */
   public void testRandomStrings() throws Exception {
-    checkRandomData(random(), sentence, 10000*RANDOM_MULTIPLIER);
-    checkRandomData(random(), sentenceAndWord, 10000*RANDOM_MULTIPLIER);
+    checkRandomData(random(), sentence, 200*RANDOM_MULTIPLIER);
+    checkRandomData(random(), sentenceAndWord, 200*RANDOM_MULTIPLIER);
   }
 
   // some tokenizers for testing

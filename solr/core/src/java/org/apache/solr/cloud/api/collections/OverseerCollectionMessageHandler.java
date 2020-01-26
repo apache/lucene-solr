@@ -249,7 +249,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
 
   @Override
   @SuppressWarnings("unchecked")
-  public SolrResponse processMessage(ZkNodeProps message, String operation) {
+  public OverseerSolrResponse processMessage(ZkNodeProps message, String operation) {
     MDCLoggingContext.setCollection(message.getStr(COLLECTION));
     MDCLoggingContext.setShard(message.getStr(SHARD_ID_PROP));
     MDCLoggingContext.setReplica(message.getStr(REPLICA_PROP));
@@ -277,7 +277,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       }
 
       results.add("Operation " + operation + " caused exception:", e);
-      SimpleOrderedMap nl = new SimpleOrderedMap();
+      SimpleOrderedMap<Object> nl = new SimpleOrderedMap<>();
       nl.add("msg", e.getMessage());
       nl.add("rspCode", e instanceof SolrException ? ((SolrException)e).code() : -1);
       results.add("exception", nl);
@@ -553,12 +553,14 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
     throw new SolrException(ErrorCode.SERVER_ERROR, "Could not find coreNodeName");
   }
 
-  void waitForNewShard(String collectionName, String sliceName) throws KeeperException, InterruptedException {
+  ClusterState waitForNewShard(String collectionName, String sliceName) throws KeeperException, InterruptedException {
     log.debug("Waiting for slice {} of collection {} to be available", sliceName, collectionName);
     RTimer timer = new RTimer();
     int retryCount = 320;
     while (retryCount-- > 0) {
-      DocCollection collection = zkStateReader.getClusterState().getCollection(collectionName);
+      ClusterState clusterState = zkStateReader.getClusterState();
+      DocCollection collection = clusterState.getCollection(collectionName);
+
       if (collection == null) {
         throw new SolrException(ErrorCode.SERVER_ERROR,
             "Unable to find collection: " + collectionName + " in clusterstate");
@@ -567,7 +569,7 @@ public class OverseerCollectionMessageHandler implements OverseerMessageHandler,
       if (slice != null) {
         log.debug("Waited for {}ms for slice {} of collection {} to be available",
             timer.getTime(), sliceName, collectionName);
-        return;
+        return clusterState;
       }
       Thread.sleep(1000);
     }

@@ -25,6 +25,7 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.PrefixQuery;
 import org.apache.lucene.search.WildcardQuery;
 import org.apache.lucene.util.BytesRef;
+import org.apache.lucene.util.automaton.Automaton;
 import org.apache.lucene.util.automaton.CompiledAutomaton;
 
 /**
@@ -195,6 +196,35 @@ public final class Intervals {
     return new MultiTermIntervalsSource(ca, maxExpansions, wildcard.utf8ToString());
   }
 
+  /**
+   * Expert: Return an {@link IntervalsSource} over the disjunction of all terms that's accepted by the given automaton 
+   *
+   * @param automaton accepts terms for to expand to
+   * @param pattern string representation of the given automaton, mostly used in exception messages  
+   *
+   * @throws IllegalStateException if the automaton accepts more than 128 terms
+   */
+  public static IntervalsSource multiterm(Automaton automaton, String pattern) {
+    return multiterm(automaton, 128, pattern);
+  }
+
+  /**
+   * Expert: Return an {@link IntervalsSource} over the disjunction of all terms that's accepted by the given automaton 
+   *
+   * WARNING: Setting {@code maxExpansions} to higher than the default value of 128
+   * can be both slow and memory-intensive
+   *
+   * @param automaton accepts terms for to expand to
+   * @param maxExpansions the maximum number of terms to expand to
+   * @param pattern string representation of the given automaton, mostly used in exception messages  
+   *
+   * @throws IllegalStateException if the automaton accepts more than {@code maxExpansions} terms
+   */
+  public static IntervalsSource multiterm(Automaton automaton, int maxExpansions, String pattern) {
+    CompiledAutomaton ca = new CompiledAutomaton(automaton);
+    return new MultiTermIntervalsSource(ca, maxExpansions, pattern);
+  }
+  
   /**
    * Create an {@link IntervalsSource} that filters a sub-source by the width of its intervals
    * @param width       the maximum width of intervals in the sub-source to filter

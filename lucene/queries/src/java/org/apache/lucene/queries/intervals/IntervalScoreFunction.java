@@ -82,7 +82,7 @@ abstract class IntervalScoreFunction {
           "Saturation function on interval frequency, computed as w * S / (S + k) from:",
           Explanation.match(weight, "w, weight of this function"),
           Explanation.match(pivot, "k, pivot feature value that would give a score contribution equal to w/2"),
-          Explanation.match(sloppyFreq, "S, the sloppy frequency of the interval " + interval));
+          Explanation.match(sloppyFreq, "S, the sloppy frequency of the interval query " + interval));
     }
 
     @Override
@@ -136,7 +136,7 @@ abstract class IntervalScoreFunction {
           Explanation.match(weight, "w, weight of this function"),
           Explanation.match(pivot, "k, pivot feature value that would give a score contribution equal to w/2"),
           Explanation.match(a, "a, exponent, higher values make the function grow slower before k and faster after k"),
-          Explanation.match(sloppyFreq, "S, the sloppy frequency of the interval " + interval));
+          Explanation.match(sloppyFreq, "S, the sloppy frequency of the interval query " + interval));
     }
 
     @Override

@@ -24,7 +24,6 @@ import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.lucene.util.Constants;
 import org.apache.solr.SolrTestCaseJ4;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrRequest;
@@ -32,8 +31,10 @@ import org.apache.solr.client.solrj.embedded.JettySolrRunner;
 import org.apache.solr.client.solrj.impl.HttpSolrClient;
 import org.apache.solr.client.solrj.request.CollectionAdminRequest;
 import org.apache.solr.client.solrj.response.CollectionAdminResponse;
+import org.apache.solr.cloud.hdfs.HdfsTestUtil;
 import org.apache.solr.common.params.ModifiableSolrParams;
 import org.apache.solr.common.params.SolrParams;
+import org.apache.solr.common.util.IOUtils;
 import org.apache.solr.core.CoreContainer;
 import org.apache.solr.handler.admin.CollectionsHandler;
 import org.apache.solr.request.SolrQueryRequest;
@@ -57,27 +58,25 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
 
   private static String getUsersFirstGroup() throws Exception {
     String group = "*"; // accept any group if a group can't be found
-    if (!Constants.WINDOWS) { // does not work on Windows!
-      org.apache.hadoop.security.Groups hGroups =
-          new org.apache.hadoop.security.Groups(new Configuration());
-      try {
-        List<String> g = hGroups.getGroups(System.getProperty("user.name"));
-        if (g != null && g.size() > 0) {
-          group = g.get(0);
-        }
-      } catch (NullPointerException npe) {
-        // if user/group doesn't exist on test box
+    org.apache.hadoop.security.Groups hGroups =
+        new org.apache.hadoop.security.Groups(new Configuration());
+    try {
+      List<String> g = hGroups.getGroups(System.getProperty("user.name"));
+      if (g != null && g.size() > 0) {
+        group = g.get(0);
       }
+    } catch (NullPointerException npe) {
+      // if user/group doesn't exist on test box
     }
     return group;
   }
 
   private static Map<String, String> getImpersonatorSettings() throws Exception {
-    Map<String, String> filterProps = new TreeMap<String, String>();
+    Map<String, String> filterProps = new TreeMap<>();
     filterProps.put(KerberosPlugin.IMPERSONATOR_PREFIX + "noGroups.hosts", "*");
     filterProps.put(KerberosPlugin.IMPERSONATOR_PREFIX + "anyHostAnyUser.groups", "*");
     filterProps.put(KerberosPlugin.IMPERSONATOR_PREFIX + "anyHostAnyUser.hosts", "*");
-    filterProps.put(KerberosPlugin.IMPERSONATOR_PREFIX + "wrongHost.hosts", "1.1.1.1.1.1");
+    filterProps.put(KerberosPlugin.IMPERSONATOR_PREFIX + "wrongHost.hosts", DEAD_HOST_1);
     filterProps.put(KerberosPlugin.IMPERSONATOR_PREFIX + "wrongHost.groups", "*");
     filterProps.put(KerberosPlugin.IMPERSONATOR_PREFIX + "noHosts.groups", "*");
     filterProps.put(KerberosPlugin.IMPERSONATOR_PREFIX + "localHostAnyGroup.groups", "*");
@@ -93,7 +92,7 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
 
   @BeforeClass
   public static void startup() throws Exception {
-    assumeFalse("Hadoop does not work on Windows", Constants.WINDOWS);
+    HdfsTestUtil.checkAssumptions();
     
     System.setProperty("authenticationPlugin", HttpParamDelegationTokenPlugin.class.getName());
     System.setProperty(KerberosPlugin.DELEGATION_TOKEN_ENABLED, "true");
@@ -142,32 +141,35 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
   }
 
   @Before
-  public void clearCalledIndicator() throws Exception {
+  public void clearCalledIndicator() {
     ImpersonatorCollectionsHandler.called.set(false);
   }
 
   @AfterClass
   public static void shutdown() throws Exception {
-    if (miniCluster != null) {
-      miniCluster.shutdown();
-    }
-    miniCluster = null;
     if (solrClient != null) {
-      solrClient.close();
+      IOUtils.closeQuietly(solrClient);
+      solrClient = null;
     }
-    solrClient = null;
-    System.clearProperty("authenticationPlugin");
-    System.clearProperty(KerberosPlugin.DELEGATION_TOKEN_ENABLED);
-    System.clearProperty("solr.kerberos.cookie.domain");
-    Map<String, String> impSettings = getImpersonatorSettings();
-    for (Map.Entry<String, String> entry : impSettings.entrySet()) {
-      System.clearProperty(entry.getKey());
-    }
-    System.clearProperty("solr.test.sys.prop1");
-    System.clearProperty("solr.test.sys.prop2");
-    System.clearProperty("collectionsHandler");
+    try {
+      if (miniCluster != null) {
+        miniCluster.shutdown();
+      }
+    } finally {
+      miniCluster = null;
+      System.clearProperty("authenticationPlugin");
+      System.clearProperty(KerberosPlugin.DELEGATION_TOKEN_ENABLED);
+      System.clearProperty("solr.kerberos.cookie.domain");
+      Map<String, String> impSettings = getImpersonatorSettings();
+      for (Map.Entry<String, String> entry : impSettings.entrySet()) {
+        System.clearProperty(entry.getKey());
+      }
+      System.clearProperty("solr.test.sys.prop1");
+      System.clearProperty("solr.test.sys.prop2");
+      System.clearProperty("collectionsHandler");
 
-    SolrRequestParsers.DEFAULT.setAddRequestHeadersToContext(false);
+      SolrRequestParsers.DEFAULT.setAddRequestHeadersToContext(false);
+    }
   }
 
   private void create1ShardCollection(String name, String config, MiniSolrCloudCluster solrCluster) throws Exception {
@@ -290,8 +292,7 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
   public void testProxyInvalidRemote() throws Exception {
     HttpSolrClient.RemoteSolrException e = expectThrows(HttpSolrClient.RemoteSolrException.class,
         () -> {
-          String invalidIpAddress = "-127.-128";
-          solrClient.request(getProxyRequest("localHostAnyGroup","bar", "[ff01::114]", invalidIpAddress));
+          solrClient.request(getProxyRequest("localHostAnyGroup","bar", "[ff01::114]", DEAD_HOST_2));
     });
     assertTrue(e.getMessage().contains(getExpectedHostExMsg("localHostAnyGroup")));
   }
@@ -319,15 +320,12 @@ public class TestSolrCloudWithSecureImpersonation extends SolrTestCaseJ4 {
 
     // try a command to each node, one of them must be forwarded
     for (JettySolrRunner jetty : miniCluster.getJettySolrRunners()) {
-      HttpSolrClient client =
-          new HttpSolrClient.Builder(jetty.getBaseUrl().toString() + "/" + collectionName).build();
-      try {
+      try (HttpSolrClient client = new HttpSolrClient.Builder(
+          jetty.getBaseUrl().toString() + "/" + collectionName).build()) {
         ModifiableSolrParams params = new ModifiableSolrParams();
         params.set("q", "*:*");
         params.set(USER_PARAM, "user");
         client.query(params);
-      } finally {
-        client.close();
       }
     }
   }

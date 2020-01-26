@@ -792,7 +792,7 @@ public class MiniSolrCloudCluster {
   }
 
   public void waitForJettyToStop(JettySolrRunner runner) throws TimeoutException {
-    log.info("waitForJettyToStop: {}", runner.getNodeName());
+    log.info("waitForJettyToStop: {}", runner.getLocalPort());
     TimeOut timeout = new TimeOut(15, TimeUnit.SECONDS, TimeSource.NANO_TIME);
     while(!timeout.hasTimedOut()) {
       if (runner.isStopped()) {

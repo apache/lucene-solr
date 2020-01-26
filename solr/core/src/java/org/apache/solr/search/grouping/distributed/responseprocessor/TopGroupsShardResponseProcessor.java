@@ -125,8 +125,8 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
       Map<String, ?> result = serializer.transformToNative(secondPhaseResult, groupSort, withinGroupSort, srsp.getShard());
       int numFound = 0;
       float maxScore = Float.NaN;
-      for (String field : commandTopGroups.keySet()) {
-        TopGroups<BytesRef> topGroups = (TopGroups<BytesRef>) result.get(field);
+      for (Map.Entry<String, List<TopGroups<BytesRef>>> entry : commandTopGroups.entrySet()) {
+        TopGroups<BytesRef> topGroups = (TopGroups<BytesRef>) result.get(entry.getKey());
         if (topGroups == null) {
           continue;
         }
@@ -134,7 +134,7 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
           numFound += topGroups.totalHitCount;
           if (Float.isNaN(maxScore) || topGroups.maxScore > maxScore) maxScore = topGroups.maxScore;
         }
-        commandTopGroups.get(field).add(topGroups);
+        entry.getValue().add(topGroups);
       }
       for (String query : queries) {
         QueryCommandResult queryCommandResult = (QueryCommandResult) result.get(query);
@@ -150,8 +150,8 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
         individualShardInfo.add("maxScore", maxScore);
       }
     }
-    for (String groupField : commandTopGroups.keySet()) {
-      List<TopGroups<BytesRef>> topGroups = commandTopGroups.get(groupField);
+    for (Map.Entry<String, List<TopGroups<BytesRef>>> entry : commandTopGroups.entrySet()) {
+      List<TopGroups<BytesRef>> topGroups = entry.getValue();
       if (topGroups.isEmpty()) {
         continue;
       }
@@ -164,7 +164,7 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
           docsPerGroup += subTopGroups.totalGroupedHitCount;
         }
       }
-      rb.mergedTopGroups.put(groupField, TopGroups.merge(topGroups.toArray(topGroupsArr), groupSort, withinGroupSort, groupOffsetDefault, docsPerGroup, TopGroups.ScoreMergeMode.None));
+      rb.mergedTopGroups.put(entry.getKey(), TopGroups.merge(topGroups.toArray(topGroupsArr), groupSort, withinGroupSort, groupOffsetDefault, docsPerGroup, TopGroups.ScoreMergeMode.None));
     }
 
     // calculate topN and start for group.query
@@ -177,8 +177,8 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
       topN = limit >= 0? limit: Integer.MAX_VALUE;
     }
 
-    for (String query : commandTopDocs.keySet()) {
-      List<QueryCommandResult> queryCommandResults = commandTopDocs.get(query);
+    for (Map.Entry<String, List<QueryCommandResult>> entry : commandTopDocs.entrySet()) {
+      List<QueryCommandResult> queryCommandResults = entry.getValue();
       List<TopDocs> topDocs = new ArrayList<>(queryCommandResults.size());
       int mergedMatches = 0;
       float maxScore = Float.NaN;
@@ -202,7 +202,7 @@ public class TopGroupsShardResponseProcessor implements ShardResponseProcessor {
         mergedTopDocs = TopDocs.merge(
             withinGroupSort, start, topN, topDocs.toArray(new TopFieldDocs[topDocs.size()]));
       }
-      rb.mergedQueryCommandResults.put(query, new QueryCommandResult(mergedTopDocs, mergedMatches, maxScore));
+      rb.mergedQueryCommandResults.put(entry.getKey(), new QueryCommandResult(mergedTopDocs, mergedMatches, maxScore));
     }
     fillResultIds(rb);
   }
