@@ -118,7 +118,7 @@ public class JoinQParserPlugin extends QParserPlugin {
       final String fromField = qparser.getParam("from");
       final String fromIndex = qparser.getParam("fromIndex");
       final String toField = qparser.getParam("to");
-      final String v = qparser.localParams.get("v");
+      final String v = qparser.localParams.get(QueryParsing.V);
       final String coreName;
 
       Query fromQuery;

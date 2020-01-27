@@ -657,14 +657,14 @@ Each implementation has its own performance characteristics, and users are encou
 Details and performance heuristics are given below.
 +
 `index` the default `method` unless the `score` parameter is specified.
-Uses inverted index structures to process the request.
+Uses the terms index structures to process the request.
 Performance scales linearly with the number of values matched in the "from" field.
-Consider this method when the "from" query matches few documents, when the "to" side returns a large number of documents, or when sporadic post-commit slowdowns cannot be tolerated (this a disadvantage of other methods that `index` avoids).
+Consider this method when the "from" query matches few documents, when the "to" side returns a large number of documents, or when sporadic post-commit slowdowns cannot be tolerated (this is a disadvantage of other methods that `index` avoids).
 
 +
 `dvWithScore` returns an optional "score" statistic alongside result documents.
-Uses docValues structures if available, but falls back to uninverted values when necessary.
-Uninversion slows down the initial requests following a commit and takes up additional space on the JVM heap, so docValues are recommended in most situations.
+Uses docValues structures if available, but falls back to the field cache when necessary.
+The first access to the field cache slows down the initial requests following a commit and takes up additional space on the JVM heap, so docValues are recommended in most situations.
 Performance scales linearly with the number of values matched in the "from" field.
 This method must be used if score information is required, and should also be considered when the "from" query matches few documents, regardless of the number of "to" side documents returned.
 +

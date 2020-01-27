@@ -69,7 +69,7 @@ public class TopLevelJoinQuery extends JoinQuery {
         return createNoMatchesWeight(boost);
       }
 
-      final LongBitSet fromOrdBitSet = findOrdinalsMatchingFromQuery(fromSearcher, topLevelFromDocValues);
+      final LongBitSet fromOrdBitSet = findFieldOrdinalsMatchingQuery(q, fromField, fromSearcher, topLevelFromDocValues);
       final LongBitSet toOrdBitSet = new LongBitSet(topLevelToDocValues.getValueCount());
       final BitsetBounds toBitsetBounds = convertFromOrdinalsIntoToField(fromOrdBitSet, topLevelFromDocValues, toOrdBitSet, topLevelToDocValues);
 
@@ -150,11 +150,11 @@ public class TopLevelJoinQuery extends JoinQuery {
     return DocValues.singleton(DocValues.getSorted(leafReader, fieldName));
   }
 
-  private LongBitSet findOrdinalsMatchingFromQuery(SolrIndexSearcher fromSearcher, SortedSetDocValues fromDocValues) throws IOException {
-    final LongBitSet fromOrdBitSet = new LongBitSet(fromDocValues.getValueCount());
-    final Collector fromCollector = new MultiValueTermOrdinalCollector(fromField, fromDocValues, fromOrdBitSet);
+  private static LongBitSet findFieldOrdinalsMatchingQuery(Query q, String field, SolrIndexSearcher searcher, SortedSetDocValues docValues) throws IOException {
+    final LongBitSet fromOrdBitSet = new LongBitSet(docValues.getValueCount());
+    final Collector fromCollector = new MultiValueTermOrdinalCollector(field, docValues, fromOrdBitSet);
 
-    fromSearcher.search(q, fromCollector);
+    searcher.search(q, fromCollector);
 
     return fromOrdBitSet;
   }

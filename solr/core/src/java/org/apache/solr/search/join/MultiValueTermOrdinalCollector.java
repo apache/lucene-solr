@@ -23,6 +23,7 @@ import java.lang.invoke.MethodHandles;
 import org.apache.lucene.index.LeafReaderContext;
 import org.apache.lucene.index.SortedSetDocValues;
 import org.apache.lucene.search.ScoreMode;
+import org.apache.lucene.search.SimpleCollector;
 import org.apache.lucene.util.LongBitSet;
 import org.apache.solr.search.DelegatingCollector;
 import org.slf4j.Logger;
@@ -31,12 +32,12 @@ import org.slf4j.LoggerFactory;
 /**
  * Populates a bitset of (top-level) ordinals based on field values in a multi-valued field.
  */
-public class MultiValueTermOrdinalCollector extends DelegatingCollector {
-  private static final Logger log = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
+public class MultiValueTermOrdinalCollector extends SimpleCollector {
 
   private int docBase;
   private SortedSetDocValues topLevelDocValues;
   private final String fieldName;
+  // Records all ordinals found during collection
   private final LongBitSet topLevelDocValuesBitSet;
 
   public MultiValueTermOrdinalCollector(String fieldName, SortedSetDocValues topLevelDocValues, LongBitSet topLevelDocValuesBitSet) {
@@ -47,10 +48,6 @@ public class MultiValueTermOrdinalCollector extends DelegatingCollector {
 
   public ScoreMode scoreMode() {
     return ScoreMode.COMPLETE_NO_SCORES;
-  }
-
-  public boolean needsScores(){
-    return false;
   }
 
   @Override
