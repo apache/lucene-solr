@@ -132,7 +132,7 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
     PointValues points = lr.getPointValues("f");
 
     // If all points match, then the point count is numLeaves * maxPointsInLeafNode
-    final int numLeaves = (int) Math.max(Math.ceil((double) points.size() / maxPointsInLeafNode), 1);
+    final int numLeaves = (int) Math.ceil((double) points.size() / maxPointsInLeafNode);
 
     IntersectVisitor allPointsVisitor = new IntersectVisitor() {
       @Override
