@@ -250,6 +250,18 @@
     </analyzer>
   </fieldType>
 
+  <fieldType name="text_as_same_term_boost_by_payload" class="solr.TextField" positionIncrementGap="100"  synonymQueryStyle="as_same_term" autoGeneratePhraseQueries="true" boostByPayload="true">
+    <analyzer type="index">
+      <tokenizer class="solr.MockTokenizerFactory"/>
+    </analyzer>
+    <analyzer type="query">
+      <tokenizer class="solr.MockTokenizerFactory"/>
+      <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" ignoreCase="true" expand="true"/>
+      <filter class="solr.LowerCaseFilterFactory"/>
+      <filter class="solr.DelimitedPayloadTokenFilterFactory" encoder="float" delimiter="|"/>
+    </analyzer>
+  </fieldType>
+
   <fieldType name="nametext" class="solr.TextField">
     <analyzer class="org.apache.lucene.analysis.core.WhitespaceAnalyzer"/>
   </fieldType>
@@ -680,6 +692,7 @@
   <dynamicField name="t_pick_best_boost_by_payload_*" type="text_pick_best_boost_by_payload" indexed="true" stored="true"/>
   <dynamicField name="t_pick_best_*" type="text_pick_best" indexed="true" stored="true"/>
   <dynamicField name="t_as_distinct_boost_by_payload_*" type="text_as_distinct_boost_by_payload" indexed="true" stored="true"/>
+  <dynamicField name="t_as_same_term_boost_by_payload_*" type="text_as_same_term_boost_by_payload" indexed="true" stored="true"/>
   <dynamicField name="t_as_distinct_*" type="text_as_distinct" indexed="true" stored="true"/>
 
 

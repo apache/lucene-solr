@@ -25,22 +25,18 @@ import java.util.List;
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.CachingTokenFilter;
 import org.apache.lucene.analysis.TokenStream;
-import org.apache.lucene.analysis.tokenattributes.PayloadAttribute;
-import org.apache.lucene.analysis.tokenattributes.PayloadAttributeImpl;
 import org.apache.lucene.analysis.tokenattributes.PositionIncrementAttribute;
 import org.apache.lucene.analysis.tokenattributes.PositionLengthAttribute;
 import org.apache.lucene.analysis.tokenattributes.TermToBytesRefAttribute;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.BooleanClause;
 import org.apache.lucene.search.BooleanQuery;
-import org.apache.lucene.search.BoostQuery;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MultiPhraseQuery;
 import org.apache.lucene.search.PhraseQuery;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SynonymQuery;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.search.spans.SpanBoostQuery;
 import org.apache.lucene.search.spans.SpanNearQuery;
 import org.apache.lucene.search.spans.SpanOrQuery;
 import org.apache.lucene.search.spans.SpanQuery;
@@ -67,7 +63,6 @@ public class QueryBuilder {
   protected boolean enablePositionIncrements = true;
   protected boolean enableGraphQueries = true;
   protected boolean autoGenerateMultiTermSynonymsPhraseQuery = false;
-  protected boolean synonymsBoostByPayload = false;
 
   /** Creates a new QueryBuilder using the given analyzer. */
   public QueryBuilder(Analyzer analyzer) {
@@ -223,14 +218,6 @@ public class QueryBuilder {
   }
 
   /**
-   * Set to <code>true</code> if synonyms should be automatically boosted by their payload.
-   * Default: false.
-   */
-  public void setSynonymsBoostByPayload(boolean enable) {
-    this.synonymsBoostByPayload = enable;
-  }
-
-  /**
    * Creates a query from the analysis chain.
    * <p>
    * Expert: this is more useful for subclasses such as queryparsers.
@@ -363,77 +350,13 @@ public class QueryBuilder {
    * returned.  When multiple tokens, an ordered <code>SpanNearQuery</code> with slop 0 is returned.
    */
   protected SpanQuery createSpanQuery(TokenStream in, String field) throws IOException {
-    PayloadAttribute payloadAttribute = null;
-    if(synonymsBoostByPayload){
-      payloadAttribute = in.getAttribute(PayloadAttribute.class);
-    }
-    TermToBytesRefAttribute termAtt = in.getAttribute(TermToBytesRefAttribute.class);
-    if (termAtt == null) {
-      return null;
-    }
-
-    List<SpanTermQuery> terms = new ArrayList<>();
-    List<BytesRef> payloads = new ArrayList<>();
+    List<AttributeSource> clonedAttributes = new ArrayList<>();
     while (in.incrementToken()) {
-      terms.add(new SpanTermQuery(new Term(field, termAtt.getBytesRef())));
-      if(payloadAttribute!=null){
-        payloads.add(payloadAttribute.getPayload());
-      }
+      clonedAttributes.add(in.cloneAttributes());
     }
-    in.end();
-    in.close();
-
-    BytesRef[] queryPayloadsArray = payloads.toArray(new BytesRef[payloads.size()]);
-    float queryPayloadBoost = 0;
-    if (!payloads.isEmpty()) {
-      queryPayloadBoost = extractQueryPayload(queryPayloadsArray);
-    }
-
-    if (terms.isEmpty()) {
-      return null;
-    } else if (terms.size() == 1) {
-      SpanTermQuery singleTermQuery = terms.get(0);
-      return getBoostedQuery(singleTermQuery,queryPayloadBoost);
-    } else {
-      SpanNearQuery multiTermQuery = new SpanNearQuery(terms.toArray(new SpanTermQuery[0]), 0, true);
-      return getBoostedQuery(multiTermQuery,queryPayloadBoost);
-    }
+    return newSpanQuery(field,clonedAttributes.toArray(new AttributeSource[clonedAttributes.size()]));
   }
-
-  private SpanQuery getBoostedQuery(SpanQuery query, float payloadBoost){
-    if (isAcceptableBoost(payloadBoost)) {
-      return new SpanBoostQuery(query, payloadBoost);
-    } else {
-      return query;
-    }
-  }
-
-  /*Current assumption is that the user will associate a single payload to the multi terms synonym
-   * that generated the phrase query, so a valid value for the payload associated to the query is just the first not null payload
-   * e.g.
-   * lion => panthera leo|0.99
-   * "panthera leo" query will have associated Payloads [null,0.99]
-   *  So the payload associated to the query will be 0.99 which is the first not null
-   * */
-  protected float extractQueryPayload(BytesRef[] payloadsForQueryTerms) {
-    for (BytesRef singlePayload : payloadsForQueryTerms) {
-      if (singlePayload != null) {
-        float decodedPayload = decodeFloat(singlePayload.bytes, singlePayload.offset);
-        return decodedPayload;
-      }
-    }
-    return 0;
-  }
-
-  protected static final float decodeFloat(byte [] bytes, int offset){
-
-    return Float.intBitsToFloat(decodeInt(bytes, offset));
-  }
-
-  protected static final int decodeInt(byte [] bytes, int offset){
-    return ((bytes[offset] & 0xFF) << 24) | ((bytes[offset + 1] & 0xFF) << 16)
-        | ((bytes[offset + 2] & 0xFF) <<  8) |  (bytes[offset + 3] & 0xFF);
-  }
+  
   /** 
    * Creates simple term query from the cached tokenstream contents 
    */
@@ -451,11 +374,11 @@ public class QueryBuilder {
    */
   protected Query analyzeBoolean(String field, TokenStream stream) throws IOException {
     stream.reset();
-    List<AttributeSource> attributes = new ArrayList<>();
+    List<AttributeSource> clonedAttributes = new ArrayList<>();
     while (stream.incrementToken()) {
-      attributes.add(stream.cloneAttributes());
+      clonedAttributes.add(stream.cloneAttributes());
     }
-    return newSynonymQuery(field, attributes.toArray(new AttributeSource[attributes.size()]));
+    return newSynonymQuery(field, clonedAttributes.toArray(new AttributeSource[clonedAttributes.size()]));
   }
 
   protected void add(BooleanQuery.Builder q, String field, List<AttributeSource> currentAttributes, BooleanClause.Occur operator) {
@@ -573,7 +496,7 @@ public class QueryBuilder {
         };
         positionalQuery = newGraphSynonymQuery(queries);
       } else {
-        List<AttributeSource> attributes = graph.getTerms( start);
+        List<AttributeSource> attributes = graph.getTerms(start);
         assert attributes.size()> 0;
         if (attributes.size() == 1) {
           positionalQuery = newTermQuery(field,attributes.get(0));
@@ -701,34 +624,10 @@ public class QueryBuilder {
     SynonymQuery.Builder builder = new SynonymQuery.Builder(field);
     for (int i = 0; i < attributes.length; i++) {
       TermToBytesRefAttribute termAttribute = attributes[i].getAttribute(TermToBytesRefAttribute.class);
-      Term term = new Term(field, termAttribute.getBytesRef());
-      
-      float payloadBoost = getDecodedPayload(attributes[i]);
-      if (isAcceptableBoost(payloadBoost)) {
-        builder.addTerm(term, payloadBoost);
-      } else {
-        builder.addTerm(term);
-      }
+      builder.addTerm(new Term(field, termAttribute.getBytesRef()));
     }
     return builder.build();
   }
-
-  private float getDecodedPayload(AttributeSource attribute) {
-    float payloadBoost = 0f;
-    PayloadAttributeImpl payloadAttribute = attribute.getAttributeImpl(PayloadAttributeImpl.class);
-    if(payloadAttribute!=null && synonymsBoostByPayload ) {
-      BytesRef payloadToDecode = payloadAttribute.getPayload();
-      if(payloadToDecode!=null){
-        payloadBoost = decodeFloat(payloadToDecode.bytes, payloadToDecode.offset);
-      }
-    }
-    return payloadBoost;
-  }
-
-  protected boolean isAcceptableBoost(float payloadBoost) {
-    return payloadBoost >0 && payloadBoost !=1;
-  }
-
 
   /**
    * Builds a new GraphQuery for multi-terms synonyms.
@@ -756,15 +655,7 @@ public class QueryBuilder {
    */
   protected Query newTermQuery(String field, AttributeSource attribute) {
     TermToBytesRefAttribute termAttribute = attribute.getAttribute(TermToBytesRefAttribute.class);
-    Term term = new Term(field, termAttribute.getBytesRef());
-    Query termQuery = new TermQuery(term);
-    
-    float payloadBoost = getDecodedPayload(attribute);
-    if (isAcceptableBoost(payloadBoost)) {
-      termQuery = new BoostQuery(termQuery, payloadBoost);
-    }
-    
-    return termQuery;
+    return new TermQuery(new Term(field, termAttribute.getBytesRef()));
   }
 
   /**
@@ -777,7 +668,6 @@ public class QueryBuilder {
     PhraseQuery.Builder builder = new PhraseQuery.Builder();
     builder.setSlop(slop);
     int position =-1;
-    float payloadBoost =-1;
     for (int i = 0; i < attributes.length; i++) {
       TermToBytesRefAttribute termAttribute = attributes[i].getAttribute(TermToBytesRefAttribute.class);
       PositionIncrementAttribute posIncrAtt = attributes[i].getAttribute(PositionIncrementAttribute.class);
@@ -786,15 +676,31 @@ public class QueryBuilder {
       } else {
         position += 1;
       }
-      payloadBoost = getDecodedPayload(attributes[i]);
       builder.add(new Term(field, termAttribute.getBytesRef()), position);
     }
+    return builder.build();
+  }
 
-    Query query = builder.build();
-    if (isAcceptableBoost(payloadBoost)) {
-      query = new BoostQuery(query, payloadBoost);
+  /**
+   * Builds a new PhraseQuery instance.
+   * <p>
+   * This is intended for subclasses that wish to customize the generated queries.
+   * @return new PhraseQuery instance
+   */
+  protected SpanQuery newSpanQuery(String field, AttributeSource[] attributes) {
+    List<SpanTermQuery> spanQueries = new ArrayList<>(attributes.length);
+    for (int i = 0; i < attributes.length; i++) {
+      TermToBytesRefAttribute termAttribute = attributes[i].getAttribute(TermToBytesRefAttribute.class);
+      SpanTermQuery q = new SpanTermQuery(new Term(field, termAttribute.getBytesRef()));
+      spanQueries.add(q);
     }
-    return query;
+    if (spanQueries.isEmpty()) {
+      return null;
+    } else if (spanQueries.size() == 1) {
+      return spanQueries.get(0);
+    } else {
+      return new SpanNearQuery(spanQueries.toArray(new SpanTermQuery[0]), 0, true);
+    }
   }
   
   /**

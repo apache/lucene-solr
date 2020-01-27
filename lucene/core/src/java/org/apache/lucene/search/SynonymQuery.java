@@ -124,13 +124,6 @@ public final class SynonymQuery extends Query {
             .collect(Collectors.toList())
     );
   }
-
-  public List<TermAndBoost> getTermsAndBoosts() {
-    return Collections.unmodifiableList(
-            Arrays.stream(terms)
-                    .collect(Collectors.toList())
-    );
-  }
   
   @Override
   public String toString(String field) {
@@ -623,7 +616,7 @@ public final class SynonymQuery extends Query {
     }
   }
 
-  public static class TermAndBoost {
+  private static class TermAndBoost {
     final Term term;
     final float boost;
 
@@ -632,12 +625,8 @@ public final class SynonymQuery extends Query {
       this.boost = boost;
     }
 
-    public Term getTerm() {
+    Term getTerm() {
       return term;
-    }
-
-    public float getBoost() {
-      return boost;
     }
 
     @Override
