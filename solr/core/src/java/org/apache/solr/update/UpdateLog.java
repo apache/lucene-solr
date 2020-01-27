@@ -362,7 +362,7 @@ public class UpdateLog implements PluginInfoInitialized, SolrMetricProducer {
       core.getCoreMetricManager().registerMetricProducer(SolrInfoBean.Category.TLOG.toString(), this);
 
       if (debug) {
-        log.debug("UpdateHandler init: tlogDir=" + tlogDir + ", next id=" + id, " this is a reopen... nothing else to do.");
+        log.debug("UpdateHandler init: tlogDir=" + tlogDir + ", next id=" + id + " this is a reopen... nothing else to do.");
       }
       return;
     }

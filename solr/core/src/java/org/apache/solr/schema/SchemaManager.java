@@ -422,11 +422,12 @@ public class SchemaManager {
     SolrResourceLoader resourceLoader = core.getResourceLoader();
     String name = core.getLatestSchema().getResourceName();
     if (resourceLoader instanceof ZkSolrResourceLoader) {
-      SolrZkClient zkClient = ((ZkSolrResourceLoader) resourceLoader).getZkController().getZkClient();
+      final ZkSolrResourceLoader zkLoader = (ZkSolrResourceLoader)resourceLoader;
+      SolrZkClient zkClient = zkLoader.getZkController().getZkClient();
       try {
-        if (!zkClient.exists(name, true)) {
+        if (!zkClient.exists(zkLoader.getConfigSetZkPath() + "/" + name, true)) {
           String backupName = name + ManagedIndexSchemaFactory.UPGRADED_SCHEMA_EXTENSION;
-          if (!zkClient.exists(backupName, true)) {
+          if (!zkClient.exists(zkLoader.getConfigSetZkPath() + "/" + backupName, true)) {
             log.warn("Unable to retrieve fresh managed schema, neither " + name + " nor " + backupName + " exist.");
             // use current schema
             return (ManagedIndexSchema) core.getLatestSchema();

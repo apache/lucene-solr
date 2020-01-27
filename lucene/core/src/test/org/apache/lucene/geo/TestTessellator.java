@@ -37,6 +37,17 @@ public class TestTessellator extends LuceneTestCase {
   }
 
   public void testSimpleTessellation() throws Exception {
+    Polygon poly = GeoTestUtil.createRegularPolygon(0.0, 0.0, 100000, 100000);
+    Polygon inner = new Polygon(new double[] {-1.0, -1.0, 0.5, 1.0, 1.0, 0.5, -1.0},
+        new double[]{1.0, -1.0, -0.5, -1.0, 1.0, 0.5, 1.0});
+    Polygon inner2 = new Polygon(new double[] {-1.0, -1.0, 0.5, 1.0, 1.0, 0.5, -1.0},
+        new double[]{-2.0, -4.0, -3.5, -4.0, -2.0, -2.5, -2.0});
+    poly = new Polygon(poly.getPolyLats(), poly.getPolyLons(), inner, inner2);
+    assertTrue(Tessellator.tessellate(poly).size() > 0);
+  }
+  
+  @Nightly
+  public void testSimpleTessellationAtNight() throws Exception {
     Polygon poly = GeoTestUtil.createRegularPolygon(0.0, 0.0, 1000000, 1000000);
     Polygon inner = new Polygon(new double[] {-1.0, -1.0, 0.5, 1.0, 1.0, 0.5, -1.0},
         new double[]{1.0, -1.0, -0.5, -1.0, 1.0, 0.5, 1.0});

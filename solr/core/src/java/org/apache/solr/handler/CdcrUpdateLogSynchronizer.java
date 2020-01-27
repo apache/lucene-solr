@@ -155,7 +155,7 @@ class CdcrUpdateLogSynchronizer implements CdcrStateManager.CdcrStateObserver {
           try {
             server.close();
           } catch (IOException ioe) {
-            log.warn("Caught exception trying to close server: ", leaderUrl, ioe.getMessage());
+            log.warn("Caught exception trying to close client to {}: {}", leaderUrl, ioe.getMessage());
           }
         }
 

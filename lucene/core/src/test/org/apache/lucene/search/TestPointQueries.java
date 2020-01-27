@@ -332,7 +332,7 @@ public class TestPointQueries extends LuceneTestCase {
   }
 
   public void testAllEqual() throws Exception {
-    int numValues = atLeast(10000);
+    int numValues = atLeast(1000);
     long value = randomValue();
     long[] values = new long[numValues];
 
@@ -350,7 +350,7 @@ public class TestPointQueries extends LuceneTestCase {
   }
 
   public void testRandomLongsMedium() throws Exception {
-    doTestRandomLongs(10000);
+    doTestRandomLongs(1000);
   }
 
   private void doTestRandomLongs(int count) throws Exception {
@@ -602,7 +602,7 @@ public class TestPointQueries extends LuceneTestCase {
   }
 
   public void testRandomBinaryMedium() throws Exception {
-    doTestRandomBinary(10000);
+    doTestRandomBinary(1000);
   }
 
   private void doTestRandomBinary(int count) throws Exception {
