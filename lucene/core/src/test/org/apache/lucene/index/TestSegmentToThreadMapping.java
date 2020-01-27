@@ -25,11 +25,11 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.MatchAllDocsQuery;
 import org.apache.lucene.search.Query;
+import org.apache.lucene.search.QueueSizeBasedExecutionControlPlane;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.util.Bits;
 import org.apache.lucene.util.IOUtils;
@@ -229,7 +229,7 @@ public class TestSegmentToThreadMapping extends LuceneTestCase {
     ExecutorService service = new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS,
         new LinkedBlockingQueue<Runnable>(),
         new NamedThreadFactory("TestSegmentToThreadMapping"));
-    IndexSearcher s = new IndexSearcher(r, service);
+    IndexSearcher s = new IndexSearcher(r, new QueueSizeBasedExecutionControlPlane(service));
     Query query = new MatchAllDocsQuery();
 
     s.search(query, Integer.MAX_VALUE);

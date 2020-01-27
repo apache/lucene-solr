@@ -30,10 +30,10 @@ import org.apache.lucene.util.Bits;
 public class ScorerIndexSearcher extends IndexSearcher {
 
   /** Creates a searcher searching the provided index. Search on individual
-   *  segments will be run in the provided {@link Executor}.
-   * @see IndexSearcher#IndexSearcher(IndexReader, Executor) */
+   *  segments will be run in the provided {@link SliceExecutionControlPlane}.
+   * @see IndexSearcher#IndexSearcher(IndexReader, SliceExecutionControlPlane) */
   public ScorerIndexSearcher(IndexReader r, Executor executor) {
-    super(r, executor);
+    super(r, new QueueSizeBasedExecutionControlPlane(executor));
   }
 
   /** Creates a searcher searching the provided index.

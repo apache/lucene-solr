@@ -87,6 +87,8 @@ import org.apache.lucene.search.LRUQueryCache;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.QueryCache;
 import org.apache.lucene.search.QueryCachingPolicy;
+import org.apache.lucene.search.QueueSizeBasedExecutionControlPlane;
+import org.apache.lucene.search.SliceExecutionControlPlane;
 import org.apache.lucene.store.BaseDirectoryWrapper;
 import org.apache.lucene.store.ByteBuffersDirectory;
 import org.apache.lucene.store.Directory;
@@ -1956,18 +1958,20 @@ public abstract class LuceneTestCase extends Assert {
             ? new AssertingIndexSearcher(random, r, ex)
             : new AssertingIndexSearcher(random, r.getContext(), ex);
       } else if (random.nextBoolean()) {
+        SliceExecutionControlPlane sliceExecutionControlPlane = ex != null ? new QueueSizeBasedExecutionControlPlane(ex) : null;
         int maxDocPerSlice = 1 + random.nextInt(100000);
         int maxSegmentsPerSlice = 1 + random.nextInt(20);
-        ret = new IndexSearcher(r, ex) {
+        ret = new IndexSearcher(r, sliceExecutionControlPlane) {
           @Override
           protected LeafSlice[] slices(List<LeafReaderContext> leaves) {
             return slices(leaves, maxDocPerSlice, maxSegmentsPerSlice);
           }
         };
       } else {
+        SliceExecutionControlPlane sliceExecutionControlPlane = ex != null ? new QueueSizeBasedExecutionControlPlane(ex) : null;
         ret = random.nextBoolean()
-            ? new IndexSearcher(r, ex)
-            : new IndexSearcher(r.getContext(), ex);
+            ? new IndexSearcher(r, new QueueSizeBasedExecutionControlPlane(ex))
+            : new IndexSearcher(r.getContext(), sliceExecutionControlPlane);
       }
       ret.setSimilarity(classEnvRule.similarity);
       ret.setQueryCachingPolicy(MAYBE_CACHE_POLICY);

@@ -24,8 +24,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
+import java.util.concurrent.FutureTask;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -34,8 +36,8 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Field;
+import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.SortedDocValuesField;
 import org.apache.lucene.document.StringField;
 import org.apache.lucene.index.IndexReader;
@@ -87,7 +89,7 @@ public class TestIndexSearcher extends LuceneTestCase {
 
     IndexSearcher searchers[] = new IndexSearcher[] {
         new IndexSearcher(reader),
-        new IndexSearcher(reader, service)
+        new IndexSearcher(reader, new QueueSizeBasedExecutionControlPlane(service))
     };
     Query queries[] = new Query[] {
         new MatchAllDocsQuery(),
@@ -238,7 +240,7 @@ public class TestIndexSearcher extends LuceneTestCase {
     ExecutorService service = new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS,
                                    new LinkedBlockingQueue<Runnable>(),
                                    new NamedThreadFactory("TestIndexSearcher"));
-    IndexSearcher s = new IndexSearcher(r, service);
+    IndexSearcher s = new IndexSearcher(r, new QueueSizeBasedExecutionControlPlane(service));
     IndexSearcher.LeafSlice[] slices = s.getSlices();
     assertNotNull(slices);
     assertEquals(1, slices.length);
@@ -251,10 +253,10 @@ public class TestIndexSearcher extends LuceneTestCase {
   public void testOneSegmentExecutesOnTheCallerThread() throws IOException {
     List<LeafReaderContext> leaves = reader.leaves();
     AtomicInteger numExecutions = new AtomicInteger(0);
-    IndexSearcher searcher = new IndexSearcher(reader, task -> {
+    IndexSearcher searcher = new IndexSearcher(reader, new QueueSizeBasedExecutionControlPlane(task -> {
       numExecutions.incrementAndGet();
       task.run();
-    }) {
+    })) {
       @Override
       protected LeafSlice[] slices(List<LeafReaderContext> leaves) {
         ArrayList<LeafSlice> slices = new ArrayList<>();
@@ -275,7 +277,7 @@ public class TestIndexSearcher extends LuceneTestCase {
   public void testRejectedExecution() throws IOException {
     ExecutorService service = new RejectingMockExecutor();
 
-    IndexSearcher searcher = new IndexSearcher(reader, service) {
+    IndexSearcher searcher = new IndexSearcher(reader, new QueueSizeBasedExecutionControlPlane(service)) {
       @Override
       protected LeafSlice[] slices(List<LeafReaderContext> leaves) {
         ArrayList<LeafSlice> slices = new ArrayList<>();
@@ -345,6 +347,83 @@ public class TestIndexSearcher extends LuceneTestCase {
 
     public void execute(final Runnable runnable) {
       throw new RejectedExecutionException();
+    }
+  }
+
+  public void testRandomBlockingCP() throws Exception {
+    ExecutorService service = new ThreadPoolExecutor(4, 4, 0L, TimeUnit.MILLISECONDS,
+        new LinkedBlockingQueue<Runnable>(),
+        new NamedThreadFactory("TestIndexSearcher"));
+
+    IndexSearcher searcher= new IndexSearcher(reader, new RandomBlockingSliceExecutionControlPlane(service));
+
+    Query queries[] = new Query[] {
+        new MatchAllDocsQuery(),
+        new TermQuery(new Term("field", "1"))
+    };
+    Sort sorts[] = new Sort[] {
+        null,
+        new Sort(new SortField("field2", SortField.Type.STRING))
+    };
+    ScoreDoc afters[] = new ScoreDoc[] {
+        null,
+        new FieldDoc(0, 0f, new Object[] { new BytesRef("boo!") })
+    };
+
+      for (ScoreDoc after : afters) {
+        for (Query query : queries) {
+          for (Sort sort : sorts) {
+            searcher.search(query, Integer.MAX_VALUE);
+            searcher.searchAfter(after, query, Integer.MAX_VALUE);
+            if (sort != null) {
+              searcher.search(query, Integer.MAX_VALUE, sort);
+              searcher.search(query, Integer.MAX_VALUE, sort, true);
+              searcher.search(query, Integer.MAX_VALUE, sort, false);
+              searcher.searchAfter(after, query, Integer.MAX_VALUE, sort);
+              searcher.searchAfter(after, query, Integer.MAX_VALUE, sort, true);
+              searcher.searchAfter(after, query, Integer.MAX_VALUE, sort, false);
+            }
+          }
+        }
+      }
+
+    TestUtil.shutdownExecutorService(service);
+  }
+
+  private class RandomBlockingSliceExecutionControlPlane<C> implements SliceExecutionControlPlane<C> {
+
+    private final Executor executor;
+
+    public RandomBlockingSliceExecutionControlPlane(Executor executor) {
+      this.executor = executor;
+    }
+
+    @Override
+    public List<Future<C>> invokeAll(Collection<FutureTask> tasks) {
+      List<Future<C>> futures = new ArrayList();
+
+      for (FutureTask task : tasks) {
+        boolean shouldExecuteOnCallerThread = false;
+
+        if (random().nextBoolean()) {
+          shouldExecuteOnCallerThread = true;
+        }
+
+        try {
+          executor.execute(task);
+        } catch (RejectedExecutionException e) {
+          // Execute on caller thread
+          shouldExecuteOnCallerThread = true;
+        }
+
+        if (shouldExecuteOnCallerThread) {
+          task.run();
+
+        }
+        futures.add(task);
+      }
+
+      return futures;
     }
   }
 }
