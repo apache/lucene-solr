@@ -326,6 +326,11 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     return schema;
   }
 
+  /** The core's instance directory. */
+  public Path getInstancePath() {
+    return getCoreDescriptor().getInstanceDir();
+  }
+
   /**
    * Sets the latest schema snapshot to be used by this core instance.
    * If the specified <code>replacementSchema</code> uses a {@link SimilarityFactory} which is
@@ -949,8 +954,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
       this.dataDir = initDataDir(dataDir, solrConfig, coreDescriptor);
       this.ulogDir = initUpdateLogDir(coreDescriptor);
 
-      log.info("[{}] Opening new SolrCore at [{}], dataDir=[{}]", logid, resourceLoader.getInstancePath(),
-          this.dataDir);
+      log.info("[{}] Opening new SolrCore at [{}], dataDir=[{}]", logid, getInstancePath(), this.dataDir);
 
       checkVersionFieldExistsInSchema(schema, coreDescriptor);
       setLatestSchema(schema);
@@ -1169,7 +1173,7 @@ public final class SolrCore implements SolrInfoBean, Closeable {
     parentContext.gauge(() -> name == null ? "(null)" : name, true, "coreName", Category.CORE.toString());
     parentContext.gauge(() -> startTime, true, "startTime", Category.CORE.toString());
     parentContext.gauge(() -> getOpenCount(), true, "refCount", Category.CORE.toString());
-    parentContext.gauge(() -> resourceLoader.getInstancePath().toString(), true, "instanceDir", Category.CORE.toString());
+    parentContext.gauge(() -> getInstancePath().toString(), true, "instanceDir", Category.CORE.toString());
     parentContext.gauge(() -> isClosed() ? "(closed)" : getIndexDir(), true, "indexDir", Category.CORE.toString());
     parentContext.gauge(() -> isClosed() ? 0 : getIndexSize(), true, "sizeInBytes", Category.INDEX.toString());
     parentContext.gauge(() -> isClosed() ? "(closed)" : NumberUtils.readableSize(getIndexSize()), true, "size", Category.INDEX.toString());

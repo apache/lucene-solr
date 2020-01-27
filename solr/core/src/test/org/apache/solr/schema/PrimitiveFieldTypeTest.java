@@ -45,7 +45,7 @@ public class PrimitiveFieldTypeTest extends SolrTestCaseJ4 {
     System.setProperty("solr.allow.unsafe.resourceloading", "true");
 
     initMap = new HashMap<>();
-    config = new SolrConfig(TEST_PATH().resolve("collection1"), testConfHome + "solrconfig.xml", null, true);
+    config = new SolrConfig(TEST_PATH().resolve("collection1"), testConfHome + "solrconfig.xml");
   }
   
   @Override
