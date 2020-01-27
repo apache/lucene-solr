@@ -7,6 +7,8 @@ configure(rootProject) {
   dependencyCheck {
     failBuildOnCVSS = propertyOrDefault("validation.owasp.threshold", 7) as Integer
     formats = ['HTML', 'JSON']
+    skipProjects = [':solr:solr-ref-guide']
+    skipConfigurations = ['unifiedClasspath']
     suppressionFile = rootProject.file('gradle/validation/owasp-dependency-check/exclusions.xml')
   }
 

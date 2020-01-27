@@ -103,7 +103,7 @@ configure(project(":lucene:analysis:common")) {
 
     jflexFile = file('src/java/org/apache/lucene/analysis/standard/UAX29URLEmailTokenizerImpl.jflex')
     skeleton = project(":lucene:core").file("src/data/jflex/skeleton.disable.buffer.expansion.txt")
-    heapSize = "8g"
+    heapSize = "12g"
 
     doFirst {
       logger.lifecycle("Regenerating UAX29URLEmailTokenizerImpl. This may take a long time (and requires tons of memory).")
