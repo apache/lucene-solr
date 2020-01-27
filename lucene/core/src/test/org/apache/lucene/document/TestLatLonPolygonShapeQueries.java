@@ -101,7 +101,7 @@ public class TestLatLonPolygonShapeQueries extends BaseLatLonShapeTestCase {
     public boolean testComponentQuery(Component2D query, Object o) {
       Polygon shape = (Polygon) o;
       if (queryRelation == QueryRelation.CONTAINS) {
-        return testWithinPolygon(query, (Polygon) shape);
+        return testWithinPolygon(query, shape);
       }
       List<Tessellator.Triangle> tessellation = Tessellator.tessellate(shape);
       for (Tessellator.Triangle t : tessellation) {
