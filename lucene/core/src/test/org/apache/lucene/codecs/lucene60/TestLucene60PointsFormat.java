@@ -132,7 +132,7 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
     PointValues points = lr.getPointValues("f");
 
     // If all points match, then the point count is numLeaves * maxPointsInLeafNode
-    final int numLeaves = (int) Math.ceil((double) points.size() / maxPointsInLeafNode);
+    final int numLeaves = (int) Math.max(Math.ceil((double) points.size() / maxPointsInLeafNode), 1);
 
     IntersectVisitor allPointsVisitor = new IntersectVisitor() {
       @Override
@@ -196,7 +196,7 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
     if (multiValues) {
       assertEquals(docCount, (long) (docCount * (1d - Math.pow( (numDocs -  pointCount) / points.size() , points.size() / docCount))));
     } else {
-      assertEquals(pointCount, docCount);
+      assertEquals(Math.min(pointCount, numDocs), docCount);
     }
     r.close();
     dir.close();
@@ -259,7 +259,7 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
     };
 
     // If all points match, then the point count is numLeaves * maxPointsInLeafNode
-    final int numLeaves = (int) Long.highestOneBit( ((points.size() - 1) / actualMaxPointsInLeafNode)) << 1;
+    final int numLeaves = (int) Math.max(Long.highestOneBit( ((points.size() - 1) / actualMaxPointsInLeafNode)) << 1, 1);
 
     assertEquals(numLeaves * actualMaxPointsInLeafNode, points.estimatePointCount(allPointsVisitor));
     assertEquals(numDocs, points.estimateDocCount(allPointsVisitor));
@@ -310,7 +310,7 @@ public class TestLucene60PointsFormat extends BasePointsFormatTestCase {
     if (multiValues) {
       assertEquals(docCount, (long) (docCount * (1d - Math.pow( (numDocs -  pointCount) / points.size() , points.size() / docCount))));
     } else {
-      assertEquals(pointCount, docCount);
+      assertEquals(Math.min(pointCount, numDocs), docCount);
     }
     r.close();
     dir.close();
