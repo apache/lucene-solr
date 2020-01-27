@@ -89,6 +89,7 @@ allprojects {
         showExceptions true
         showCauses true
         showStackTraces true
+        stackTraceFilters.clear()
         showStandardStreams false
       }
 
