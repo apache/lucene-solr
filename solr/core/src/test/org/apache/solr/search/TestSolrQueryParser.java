@@ -1211,10 +1211,10 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
   public void testSynonymQueryStyle() throws Exception {
 
     Query q = QParser.getParser("tabby", req(params("df", "t_pick_best_foo"))).getQuery();
-    assertEquals("(t_pick_best_foo:tabbi | t_pick_best_foo:cat | t_pick_best_foo:felin | t_pick_best_foo:anim)", q.toString());
+    assertEquals("(t_pick_best_foo:anim | t_pick_best_foo:cat | t_pick_best_foo:felin | t_pick_best_foo:tabbi)", q.toString());
 
     q = QParser.getParser("tabby", req(params("df", "t_as_distinct_foo"))).getQuery();
-    assertEquals("t_as_distinct_foo:tabbi t_as_distinct_foo:cat t_as_distinct_foo:felin t_as_distinct_foo:anim", q.toString());
+    assertEquals("t_as_distinct_foo:anim t_as_distinct_foo:cat t_as_distinct_foo:felin t_as_distinct_foo:tabbi", q.toString());
 
     /*confirm autoGeneratePhraseQueries always builds OR queries*/
     q = QParser.getParser("jeans",  req(params("df", "t_as_distinct_foo", "sow", "false"))).getQuery();
@@ -1228,10 +1228,10 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
   public void testSynonymsBoostByPayload_singleTermQuerySingleTermSynonyms_shouldParseBoostedQuery() throws Exception {
     //tiger, tigre|0.9
     Query q = QParser.getParser("tiger", req(params("df", "t_pick_best_boost_by_payload_foo"))).getQuery();
-    assertEquals("((t_pick_best_boost_by_payload_foo:tigre)^0.9 | t_pick_best_boost_by_payload_foo:tiger)", q.toString());
+    assertEquals("(t_pick_best_boost_by_payload_foo:tiger | (t_pick_best_boost_by_payload_foo:tigre)^0.9)", q.toString());
 
     q = QParser.getParser("tiger", req(params("df", "t_as_distinct_boost_by_payload_foo"))).getQuery();
-    assertEquals("(t_as_distinct_boost_by_payload_foo:tigre)^0.9 t_as_distinct_boost_by_payload_foo:tiger", q.toString());
+    assertEquals("t_as_distinct_boost_by_payload_foo:tiger (t_as_distinct_boost_by_payload_foo:tigre)^0.9", q.toString());
 
     //lynx => lince|0.8, lynx_canadensis|0.9
     q = QParser.getParser("lynx", req(params("df", "t_pick_best_boost_by_payload_foo"))).getQuery();
@@ -1261,12 +1261,12 @@ public class TestSolrQueryParser extends SolrTestCaseJ4 {
     //tiger, tigre|0.9
     //lynx => lince|0.8, lynx_canadensis|0.9
     Query q = QParser.getParser("tiger lynx", req(params("df", "t_pick_best_boost_by_payload_foo"))).getQuery();
-    assertEquals("((t_pick_best_boost_by_payload_foo:tigre)^0.9 | t_pick_best_boost_by_payload_foo:tiger)" +
-        " ((t_pick_best_boost_by_payload_foo:lince)^0.8 | (t_pick_best_boost_by_payload_foo:lynx_canadensis)^0.9)", q.toString());
+    assertEquals("(t_pick_best_boost_by_payload_foo:tiger | (t_pick_best_boost_by_payload_foo:tigre)^0.9)" +
+            " ((t_pick_best_boost_by_payload_foo:lince)^0.8 | (t_pick_best_boost_by_payload_foo:lynx_canadensis)^0.9)", q.toString());
 
     q = QParser.getParser("tiger lynx", req(params("df", "t_as_distinct_boost_by_payload_foo"))).getQuery();
-    assertEquals("((t_as_distinct_boost_by_payload_foo:tigre)^0.9 t_as_distinct_boost_by_payload_foo:tiger)" +
-        " ((t_as_distinct_boost_by_payload_foo:lince)^0.8 (t_as_distinct_boost_by_payload_foo:lynx_canadensis)^0.9)", q.toString());
+    assertEquals("(t_as_distinct_boost_by_payload_foo:tiger (t_as_distinct_boost_by_payload_foo:tigre)^0.9)" +
+            " ((t_as_distinct_boost_by_payload_foo:lince)^0.8 (t_as_distinct_boost_by_payload_foo:lynx_canadensis)^0.9)", q.toString());
   }
 
   public void testSynonymsBoostByPayload_multiTermQueryMultiTermSynonyms_shouldParseBoostedQuery() throws Exception {

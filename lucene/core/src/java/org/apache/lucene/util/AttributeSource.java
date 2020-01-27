@@ -171,6 +171,23 @@ public class AttributeSource {
     return implInterfaces.get(clazz);
   }
   
+  /**
+   * Returns the instance of the passed in AttributeImpl contained in this AttributeSource
+   * <p>
+   * The caller must pass in a Class&lt;? extends AttributeImpl&gt; value. 
+   *
+   * @return instance of the passed in AttributeImpl, or {@code null} if this AttributeSource 
+   *         does not contain the AttributeImpl. It is recommended to always use 
+   *         {@link #addAttributeImpl} even in consumers  of TokenStreams, because you cannot 
+   *         know if a specific TokenStream really uses a specific AttributeImpl. 
+   *         {@link #addAttributeImpl} will automatically make the attribute impl available. 
+   *         If you want to only use the attribute , if it is available (to optimize
+   *         consuming), use {@link #hasAttribute}.
+   */
+  public final <T extends AttributeImpl> T getAttributeImpl(Class<T> attClass) {
+    return attClass.cast(attributeImpls.get(attClass));
+  }
+  
   /** <b>Expert:</b> Adds a custom AttributeImpl instance with one or more Attribute interfaces.
    * <p><b>NOTE:</b> It is not guaranteed, that <code>att</code> is added to
    * the <code>AttributeSource</code>, because the provided attributes may already exist.
