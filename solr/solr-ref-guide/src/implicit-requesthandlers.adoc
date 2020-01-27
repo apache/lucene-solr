@@ -49,7 +49,7 @@ v2: `api/node/logging` |{solr-javadocs}/solr-core/org/apache/solr/handler/admin/
 
 Luke:: Expose the internal Lucene index. This handler must have a collection name in the path to the endpoint.
 +
-*Documentation*: http://wiki.apache.org/solr/LukeRequestHandler
+*Documentation*: https://cwiki.apache.org/confluence/display/solr/LukeRequestHandler
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
@@ -106,8 +106,6 @@ Segments:: Return info on last commit generation Lucene index segments.
 
 System Settings:: Return server statistics and settings.
 +
-*Documentation*: https://wiki.apache.org/solr/SystemInformationRequestHandlers#SystemInfoHandler
-+
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===
 |API Endpoints |Class & Javadocs |Paramset
@@ -145,7 +143,7 @@ This endpoint can also take the collection or core name in the path (`solr/<coll
 [horizontal]
 Document Analysis:: Return a breakdown of the analysis process of the given document.
 +
-*Documentation*: https://wiki.apache.org/solr/AnalysisRequestHandler
+*Documentation*: https://cwiki.apache.org/confluence/display/solr/AnalysisRequestHandler
 +
 [cols="3*.",frame=none,grid=cols,options="header"]
 |===

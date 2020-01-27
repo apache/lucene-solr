@@ -24,7 +24,7 @@ The Guide is written in simple AsciiDoc-formatted files, and the source lives in
 
 The following sections give an overview of how to work with AsciiDoc-format files, how our documentation is generated, and how to do a Ref Guide release.
 
-Once you have a patch you'd like to contribute, you can submit it with a JIRA issue, the same as any other patch. See also the Solr wiki section on https://wiki.apache.org/solr/HowToContribute[How To Contribute] for information on submitting patches.
+Once you have a patch you'd like to contribute, you can submit it with a JIRA issue, the same as any other patch. See also the Solr wiki section on https://cwiki.apache.org/confluence/display/solr/HowToContribute[How To Contribute] for information on submitting patches.
 
 == Working with AsciiDoc Files
 include::meta-docs/asciidoc-syntax.adoc[leveloffset=+2]
