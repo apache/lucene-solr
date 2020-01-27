@@ -26,7 +26,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.RegexpQuery;
 import org.apache.lucene.search.spans.FieldMaskingSpanQuery;
-import org.apache.lucene.search.spans.SpanBoostQuery;
 import org.apache.lucene.search.spans.SpanContainingQuery;
 import org.apache.lucene.search.spans.SpanFirstQuery;
 import org.apache.lucene.search.spans.SpanMultiTermQueryWrapper;
@@ -111,12 +110,6 @@ public class TestSpanExtractors extends LuceneTestCase  {
         new SpanTermQuery(t3));
 
     assertEquals(Collections.singleton(t3), collectTerms(swq));
-  }
-
-  public void testSpanBoost() {
-    Term t1 = new Term("field", "term1");
-    SpanBoostQuery q = new SpanBoostQuery(new SpanTermQuery(t1), 0.1f);
-    assertEquals(Collections.singleton(t1), collectTerms(q));
   }
 
   public void testFieldMaskingSpanQuery() {
