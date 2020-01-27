@@ -451,8 +451,8 @@ Contributions for further models, features and normalizers are welcome. Related 
 * {solr-javadocs}/solr-ltr/org/apache/solr/ltr/model/LTRScoringModel.html[LTRScoringModel javadocs]
 * {solr-javadocs}/solr-ltr/org/apache/solr/ltr/feature/Feature.html[Feature javadocs]
 * {solr-javadocs}/solr-ltr/org/apache/solr/ltr/norm/Normalizer.html[Normalizer javadocs]
-* http://wiki.apache.org/solr/HowToContribute
-* http://wiki.apache.org/lucene-java/HowToContribute
+* https://cwiki.apache.org/confluence/display/solr/HowToContribute
+* https://cwiki.apache.org/confluence/display/LUCENE/HowToContribute
 
 == LTR Lifecycle
 
