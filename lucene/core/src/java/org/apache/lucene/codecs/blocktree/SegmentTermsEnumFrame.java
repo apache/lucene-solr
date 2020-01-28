@@ -28,7 +28,6 @@ import org.apache.lucene.store.ByteArrayDataInput;
 import org.apache.lucene.util.ArrayUtil;
 import org.apache.lucene.util.BytesRef;
 import org.apache.lucene.util.FutureArrays;
-import org.apache.lucene.util.compress.LZ4;
 import org.apache.lucene.util.fst.FST;
 
 final class SegmentTermsEnumFrame {
@@ -47,7 +46,7 @@ final class SegmentTermsEnumFrame {
   long fp;
   long fpOrig;
   long fpEnd;
-  long totalSuffixBytes, totalStatsBytes; // for stats
+  long totalSuffixBytes; // for stats
 
   byte[] suffixBytes = new byte[128];
   final ByteArrayDataInput suffixesReader = new ByteArrayDataInput();
@@ -56,6 +55,7 @@ final class SegmentTermsEnumFrame {
   final ByteArrayDataInput suffixLengthsReader;
 
   byte[] statBytes = new byte[64];
+  int statsSingletonRunLength = 0;
   final ByteArrayDataInput statsReader = new ByteArrayDataInput();
 
   byte[] floorData = new byte[32];
@@ -203,7 +203,7 @@ final class SegmentTermsEnumFrame {
       if (allEqual) {
         Arrays.fill(suffixLengthBytes, 0, numSuffixLengthBytes, ste.in.readByte());
       } else {
-        LZ4.decompress(ste.in, numSuffixLengthBytes, suffixLengthBytes, 0);
+        ste.in.readBytes(suffixLengthBytes, 0, numSuffixLengthBytes);
       }
       suffixLengthsReader.reset(suffixLengthBytes, 0, numSuffixLengthBytes);
     } else {
@@ -227,27 +227,13 @@ final class SegmentTermsEnumFrame {
       }*/
 
     // stats
-    final long startStatsFP = ste.in.getFilePointer();
     int numBytes = ste.in.readVInt();
-    if (version >= BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
-      final boolean allOnes = (numBytes & 0x01) != 0;
-      numBytes >>>= 1;
-      if (statBytes.length < numBytes) {
-        statBytes = new byte[ArrayUtil.oversize(numBytes, 1)];
-      }
-      if (allOnes) {
-        Arrays.fill(statBytes, 0, numBytes, (byte) 1);
-      } else {
-        LZ4.decompress(ste.in, numBytes, statBytes, 0);
-      }
-    } else {
-      if (statBytes.length < numBytes) {
-        statBytes = new byte[ArrayUtil.oversize(numBytes, 1)];
-      }
-      ste.in.readBytes(statBytes, 0, numBytes);
+    if (statBytes.length < numBytes) {
+      statBytes = new byte[ArrayUtil.oversize(numBytes, 1)];
     }
-    totalStatsBytes = ste.in.getFilePointer() - startStatsFP;
+    ste.in.readBytes(statBytes, 0, numBytes);
     statsReader.reset(statBytes, 0, numBytes);
+    statsSingletonRunLength = 0;
     metaDataUpto = 0;
 
     state.termBlockOrd = 0;
@@ -474,15 +460,38 @@ final class SegmentTermsEnumFrame {
       // TODO: if docFreq were bulk decoded we could
       // just skipN here:
 
-      // stats
-      state.docFreq = statsReader.readVInt();
-      //if (DEBUG) System.out.println("    dF=" + state.docFreq);
-      if (ste.fr.fieldInfo.getIndexOptions() == IndexOptions.DOCS) {
-        state.totalTermFreq = state.docFreq; // all postings have freq=1
+      if (version >= BlockTreeTermsReader.VERSION_COMPRESSED_SUFFIXES) {
+        if (statsSingletonRunLength > 0) {
+          state.docFreq = 1;
+          state.totalTermFreq = 1;
+          statsSingletonRunLength--;
+        } else {
+          int token = statsReader.readVInt();
+          if ((token & 1) == 1) {
+            state.docFreq = 1;
+            state.totalTermFreq = 1;
+            statsSingletonRunLength = token >>> 1;
+          } else {
+            state.docFreq = token >>> 1;
+            if (ste.fr.fieldInfo.getIndexOptions() == IndexOptions.DOCS) {
+              state.totalTermFreq = state.docFreq;
+            } else {
+              state.totalTermFreq = state.docFreq + statsReader.readVLong();
+            }
+          }
+        }
       } else {
-        state.totalTermFreq = state.docFreq + statsReader.readVLong();
-        //if (DEBUG) System.out.println("    totTF=" + state.totalTermFreq);
+        assert statsSingletonRunLength == 0;
+        state.docFreq = statsReader.readVInt();
+        //if (DEBUG) System.out.println("    dF=" + state.docFreq);
+        if (ste.fr.fieldInfo.getIndexOptions() == IndexOptions.DOCS) {
+          state.totalTermFreq = state.docFreq; // all postings have freq=1
+        } else {
+          state.totalTermFreq = state.docFreq + statsReader.readVLong();
+          //if (DEBUG) System.out.println("    totTF=" + state.totalTermFreq);
+        }
       }
+
       // metadata
       ste.fr.parent.postingsReader.decodeTerm(bytesReader, ste.fr.fieldInfo, state, absolute);
 

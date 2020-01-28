@@ -512,6 +512,39 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
 
   static final BytesRef EMPTY_BYTES_REF = new BytesRef();
 
+  private static class StatsWriter {
+
+    private final DataOutput out;
+    private final boolean hasFreqs;
+    private int singletonCount;
+
+    StatsWriter(DataOutput out, boolean hasFreqs) {
+      this.out = out;
+      this.hasFreqs = hasFreqs;
+    }
+
+    void add(int df, long ttf) throws IOException {
+      // Singletons (DF==1, TTF==1) are run-length encoded
+      if (df == 1 && (hasFreqs == false || ttf == 1)) {
+        singletonCount++;
+      } else {
+        finish();
+        out.writeVInt(df << 1);
+        if (hasFreqs) {
+          out.writeVLong(ttf - df);
+        }
+      }
+    }
+
+    void finish() throws IOException {
+      if (singletonCount > 0) {
+        out.writeVInt(((singletonCount - 1) << 1) | 1);
+        singletonCount = 0;
+      }
+    }
+
+  }
+
   class TermsWriter {
     private final FieldInfo fieldInfo;
     private long numTerms;
@@ -703,6 +736,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
       if (isLeafBlock) {
         // Block contains only ordinary terms:
         subIndices = null;
+        StatsWriter statsWriter = new StatsWriter(this.statsWriter, fieldInfo.getIndexOptions() != IndexOptions.DOCS);
         for (int i=start;i<end;i++) {
           PendingEntry ent = pending.get(i);
           assert ent.isTerm: "i=" + i;
@@ -725,19 +759,17 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
           assert floorLeadLabel == -1 || (term.termBytes[prefixLength] & 0xff) >= floorLeadLabel;
 
           // Write term stats, to separate byte[] blob:
-          statsWriter.writeVInt(state.docFreq);
-          if (fieldInfo.getIndexOptions() != IndexOptions.DOCS) {
-            assert state.totalTermFreq >= state.docFreq: state.totalTermFreq + " vs " + state.docFreq;
-            statsWriter.writeVLong(state.totalTermFreq - state.docFreq);
-          }
+          statsWriter.add(state.docFreq, state.totalTermFreq);
 
           // Write term meta data
           postingsWriter.encodeTerm(metaWriter, fieldInfo, state, absolute);
           absolute = false;
         }
+        statsWriter.finish();
       } else {
         // Block has at least one prefix term or a sub block:
         subIndices = new ArrayList<>();
+        StatsWriter statsWriter = new StatsWriter(this.statsWriter, fieldInfo.getIndexOptions() != IndexOptions.DOCS);
         for (int i=start;i<end;i++) {
           PendingEntry ent = pending.get(i);
           if (ent.isTerm) {
@@ -762,11 +794,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
             suffixWriter.append(term.termBytes, prefixLength, suffix);
 
             // Write term stats, to separate byte[] blob:
-            statsWriter.writeVInt(state.docFreq);
-            if (fieldInfo.getIndexOptions() != IndexOptions.DOCS) {
-              assert state.totalTermFreq >= state.docFreq;
-              statsWriter.writeVLong(state.totalTermFreq - state.docFreq);
-            }
+            statsWriter.add(state.docFreq, state.totalTermFreq);
 
             // TODO: now that terms dict "sees" these longs,
             // we can explore better column-stride encodings
@@ -806,6 +834,7 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
             subIndices.add(block.index);
           }
         }
+        statsWriter.finish();
 
         assert subIndices.size() != 0;
       }
@@ -816,11 +845,16 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
       // makes the terms dictionary large, and it also tends to be frequently the case for dense IDs like
       // auto-increment IDs, so not compressing in that case helps not hurt ID lookups by too much.
       if (suffixWriter.length() > 2L * numEntries) {
-        LZ4.compress(suffixWriter.bytes(), 0, suffixWriter.length(), spareWriter, compressionHashTable);
-        if (spareWriter.getFilePointer() < suffixWriter.length() - (suffixWriter.length() >>> 2)) {
-          // LZ4 saved more than 25%, go for it
-          compressionAlg = CompressionAlgorithm.LZ4;
-        } else {
+        // LZ4 inserts references whenever it sees duplicate strings of 4 chars or more, so only try it out if the
+        // average suffix length is greater than 6.
+        if (suffixWriter.length() > 6L * numEntries) {
+          LZ4.compress(suffixWriter.bytes(), 0, suffixWriter.length(), spareWriter, compressionHashTable);
+          if (spareWriter.getFilePointer() < suffixWriter.length() - (suffixWriter.length() >>> 2)) {
+            // LZ4 saved more than 25%, go for it
+            compressionAlg = CompressionAlgorithm.LZ4;
+          }
+        }
+        if (compressionAlg == CompressionAlgorithm.NO_COMPRESSION) {
           spareWriter.reset();
           if (spareBytes.length < suffixWriter.length()) {
             spareBytes = new byte[ArrayUtil.oversize(suffixWriter.length(), 1)];
@@ -854,25 +888,15 @@ public final class BlockTreeTermsWriter extends FieldsConsumer {
         termsOut.writeVInt((numSuffixBytes << 1) | 1);
         termsOut.writeByte(spareBytes[0]);
       } else {
-        // Still give LZ4 a chance, there might be runs of terms with the same length
         termsOut.writeVInt(numSuffixBytes << 1);
-        LZ4.compress(spareBytes, 0, numSuffixBytes, termsOut, compressionHashTable);
+        termsOut.writeBytes(spareBytes, numSuffixBytes);
       }
 
       // Stats
       final int numStatsBytes = Math.toIntExact(statsWriter.getFilePointer());
-      spareBytes = ArrayUtil.grow(spareBytes, numStatsBytes);
-      statsWriter.writeTo(new ByteArrayDataOutput(spareBytes));
+      termsOut.writeVInt(numStatsBytes);
+      statsWriter.writeTo(termsOut);
       statsWriter.reset();
-      if (allEqual(spareBytes, 0, numStatsBytes, (byte) 1)) {
-        // ID fields would typically have blocks full of ones
-        // LZ4 would optimize this as well but we keep explicit specialization because the decoding logic is a bit faster
-        termsOut.writeVInt((numStatsBytes << 1) | 1);
-      } else {
-        // Still give LZ4 a chance otherwise, there might be runs of ones even if not all values are ones
-        termsOut.writeVInt(numStatsBytes << 1);
-        LZ4.compress(spareBytes, 0, numStatsBytes, termsOut, compressionHashTable);
-      }
 
       // Write term meta data byte[] blob
       termsOut.writeVInt((int) metaWriter.getFilePointer());
