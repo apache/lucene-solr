@@ -29,6 +29,7 @@ import org.apache.solr.client.solrj.request.CoreAdminRequest.RequestSyncShard;
 import org.apache.solr.client.solrj.response.RequestStatusState;
 import org.apache.solr.client.solrj.util.SolrIdentifierValidator;
 import org.apache.solr.cloud.OverseerSolrResponse;
+import org.apache.solr.cloud.OverseerSolrResponseSerializer;
 import org.apache.solr.cloud.OverseerTaskQueue;
 import org.apache.solr.cloud.OverseerTaskQueue.QueueEvent;
 import org.apache.solr.cloud.ZkController;
@@ -368,7 +369,7 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
         .getOverseerCollectionQueue()
         .offer(Utils.toJSON(m), timeout);
     if (event.getBytes() != null) {
-      return OverseerSolrResponse.deserialize(event.getBytes());
+      return OverseerSolrResponseSerializer.deserialize(event.getBytes());
     } else {
       if (System.nanoTime() - time >= TimeUnit.NANOSECONDS.convert(timeout, TimeUnit.MILLISECONDS)) {
         throw new SolrException(ErrorCode.SERVER_ERROR, operation
@@ -874,11 +875,11 @@ public class CollectionsHandler extends RequestHandlerBase implements Permission
       final NamedList<Object> results = new NamedList<>();
       if (zkController.getOverseerCompletedMap().contains(requestId)) {
         final byte[] mapEntry = zkController.getOverseerCompletedMap().get(requestId);
-        rsp.getValues().addAll(OverseerSolrResponse.deserialize(mapEntry).getResponse());
+        rsp.getValues().addAll(OverseerSolrResponseSerializer.deserialize(mapEntry).getResponse());
         addStatusToResponse(results, COMPLETED, "found [" + requestId + "] in completed tasks");
       } else if (zkController.getOverseerFailureMap().contains(requestId)) {
         final byte[] mapEntry = zkController.getOverseerFailureMap().get(requestId);
-        rsp.getValues().addAll(OverseerSolrResponse.deserialize(mapEntry).getResponse());
+        rsp.getValues().addAll(OverseerSolrResponseSerializer.deserialize(mapEntry).getResponse());
         addStatusToResponse(results, FAILED, "found [" + requestId + "] in failed tasks");
       } else if (zkController.getOverseerRunningMap().contains(requestId)) {
         addStatusToResponse(results, RUNNING, "found [" + requestId + "] in running tasks");
