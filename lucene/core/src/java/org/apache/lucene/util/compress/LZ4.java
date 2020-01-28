@@ -291,13 +291,6 @@ public final class LZ4 {
       Arrays.fill(chainTable, (short) 0xFFFF);
     }
 
-    private boolean assertReset() {
-      for (int i = 0; i < chainTable.length; ++i) {
-        assert chainTable[i] == (short) 0xFFFF : i;
-      }
-      return true;
-    }
-
     @Override
     void reset(byte[] bytes, int off, int len) {
       FutureObjects.checkFromIndexSize(off, len, bytes.length);
@@ -320,7 +313,6 @@ public final class LZ4 {
         Arrays.fill(hashTable, -1);
         Arrays.fill(chainTable, (short) 0xFFFF);
       }
-      assert assertReset();
       this.bytes = bytes;
       this.base = off;
       this.next = off;
